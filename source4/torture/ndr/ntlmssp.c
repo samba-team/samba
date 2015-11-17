@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    test suite for ntlmssp ndr operations
 
-   Copyright (C) Guenther Deschner 2010
+   Copyright (C) Guenther Deschner 2010,2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +33,24 @@ static const uint8_t ntlmssp_NEGOTIATE_MESSAGE_data[] = {
 static bool ntlmssp_NEGOTIATE_MESSAGE_check(struct torture_context *tctx,
 					    struct NEGOTIATE_MESSAGE *r)
 {
+	torture_assert_str_equal(tctx, r->Signature, "NTLMSSP", "Signature");
+	torture_assert_int_equal(tctx, r->MessageType, NtLmNegotiate, "MessageType");
+	torture_assert_int_equal(tctx, r->NegotiateFlags, 0xe2088297, "NegotiateFlags");
+	torture_assert_int_equal(tctx, r->DomainNameLen, 0, "DomainNameLen");
+	torture_assert_int_equal(tctx, r->DomainNameMaxLen, 0, "DomainNameMaxLen");
+	torture_assert(tctx, r->DomainName == NULL, "DomainName");
+	torture_assert_int_equal(tctx, r->WorkstationLen, 0, "WorkstationLen");
+	torture_assert_int_equal(tctx, r->WorkstationMaxLen, 0, "WorkstationMaxLen");
+	torture_assert(tctx, r->Workstation == NULL, "Workstation");
+	torture_assert_int_equal(tctx, r->Version.version.ProductMajorVersion, NTLMSSP_WINDOWS_MAJOR_VERSION_6, "ProductMajorVersion");
+	torture_assert_int_equal(tctx, r->Version.version.ProductMinorVersion, NTLMSSP_WINDOWS_MINOR_VERSION_1, "ProductMinorVersion");
+	torture_assert_int_equal(tctx, r->Version.version.ProductBuild, 0x1db0, "ProductBuild");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[0], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[1], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[2], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[3], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.NTLMRevisionCurrent, NTLMSSP_REVISION_W2K3, "NTLMRevisionCurrent");
+
 	return true;
 }
 
