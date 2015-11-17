@@ -362,15 +362,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
 	*pattr = (uint32_t)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
 
-	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
-
-	if (dosattr & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
-	if (dosattr & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
-	if (dosattr & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (dosattr & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (dosattr & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
-
-	DEBUG(8,("\n"));
+	dos_mode_debug_print(__func__, *pattr);
 
 	return True;
 }
