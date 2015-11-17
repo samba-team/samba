@@ -35,6 +35,10 @@ static void dos_mode_debug_print(const char *func, uint32_t mode)
 {
 	fstring modestr;
 
+	if (DEBUGLEVEL < DBGLVL_INFO) {
+		return;
+	}
+
 	modestr[0] = '\0';
 
 	if (mode & FILE_ATTRIBUTE_HIDDEN) {
