@@ -1228,8 +1228,9 @@ sub provision($$$$$$$$)
 
 	my ($max_uid, $max_gid);
 	my ($uid_nobody, $uid_root, $uid_pdbtest, $uid_pdbtest2, $uid_userdup);
+	my ($uid_pdbtest_wkn);
 	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers, $gid_domadmins);
-	my ($gid_userdup);
+	my ($gid_userdup, $gid_everyone);
 
 	if ($unix_uid < 0xffff - 5) {
 		$max_uid = 0xffff;
@@ -1242,8 +1243,9 @@ sub provision($$$$$$$$)
 	$uid_pdbtest = $max_uid - 3;
 	$uid_pdbtest2 = $max_uid - 4;
 	$uid_userdup = $max_uid - 5;
+	$uid_pdbtest_wkn = $max_uid - 6;
 
-	if ($unix_gids[0] < 0xffff - 6) {
+	if ($unix_gids[0] < 0xffff - 7) {
 		$max_gid = 0xffff;
 	} else {
 		$max_gid = $unix_gids[0];
@@ -1255,6 +1257,7 @@ sub provision($$$$$$$$)
 	$gid_domusers = $max_gid - 4;
 	$gid_domadmins = $max_gid - 5;
 	$gid_userdup = $max_gid - 6;
+	$gid_everyone = $max_gid - 7;
 
 	##
 	## create conffile
@@ -1398,8 +1401,14 @@ sub provision($$$$$$$$)
         force user = $unix_name
         guest ok = yes
 [forceuser_unixonly]
+	comment = force a user with unix user SID and group SID
 	path = $shrdir
 	force user = pdbtest
+	guest ok = yes
+[forceuser_wkngroup]
+	comment = force a user with well-known group SID
+	path = $shrdir
+	force user = pdbtest_wkn
 	guest ok = yes
 [forcegroup]
 	path = $shrdir
@@ -1528,6 +1537,7 @@ $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 pdbtest2:x:$uid_pdbtest2:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 userdup:x:$uid_userdup:$gid_userdup:userdup gecos:$prefix_abs:/bin/false
+pdbtest_wkn:x:$uid_pdbtest_wkn:$gid_everyone:pdbtest_wkn gecos:$prefix_abs:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
@@ -1545,6 +1555,7 @@ $unix_name-group:x:$unix_gids[0]:
 domusers:X:$gid_domusers:
 domadmins:X:$gid_domadmins:
 userdup:x:$gid_userdup:$unix_name
+everyone:x:$gid_everyone:
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
@@ -1734,6 +1745,10 @@ sub wait_for_start($$$$$)
 	    return 1;
 	}
 	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add rid=512 unixgroup=domadmins type=domain");
+	if ($ret != 0) {
+	    return 1;
+	}
+	$ret = system(Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} groupmap add sid=S-1-1-0 unixgroup=everyone type=builtin");
 	if ($ret != 0) {
 	    return 1;
 	}
