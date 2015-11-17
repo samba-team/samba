@@ -33,34 +33,36 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 
 static void dos_mode_debug_print(uint32_t mode)
 {
-	DEBUG(8,("dos_mode returning "));
+	fstring modestr;
+
+	modestr[0] = '\0';
 
 	if (mode & FILE_ATTRIBUTE_HIDDEN) {
-		DEBUG(8, ("h"));
+		fstrcat(modestr, "h");
 	}
 	if (mode & FILE_ATTRIBUTE_READONLY) {
-		DEBUG(8, ("r"));
+		fstrcat(modestr, "r");
 	}
 	if (mode & FILE_ATTRIBUTE_SYSTEM) {
-		DEBUG(8, ("s"));
+		fstrcat(modestr, "s");
 	}
 	if (mode & FILE_ATTRIBUTE_DIRECTORY) {
-		DEBUG(8, ("d"));
+		fstrcat(modestr, "d");
 	}
 	if (mode & FILE_ATTRIBUTE_ARCHIVE) {
-		DEBUG(8, ("a"));
+		fstrcat(modestr, "a");
 	}
 	if (mode & FILE_ATTRIBUTE_SPARSE) {
-		DEBUG(8, ("[sparse]"));
+		fstrcat(modestr, "[sparse]");
 	}
 	if (mode & FILE_ATTRIBUTE_OFFLINE) {
-		DEBUG(8, ("[offline]"));
+		fstrcat(modestr, "[offline]");
 	}
 	if (mode & FILE_ATTRIBUTE_COMPRESSED) {
-		DEBUG(8, ("[compressed]"));
+		fstrcat(modestr, "[compressed]");
 	}
 
-	DEBUG(8,("\n"));
+	DBG_INFO("dos_mode returning %s\n", modestr);
 }
 
 static uint32_t filter_mode_by_protocol(uint32_t mode)
