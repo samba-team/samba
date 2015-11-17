@@ -600,8 +600,6 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		 */
 		gid_to_sid(&group_sid, pwd->pw_gid);
 
-		ZERO_STRUCT(domain_sid);
-
 		/*
 		 * If we are a unix group, set the group_sid to the
 		 * 'Domain Users' RID of 513 which will always resolve to a
