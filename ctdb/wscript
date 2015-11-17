@@ -677,7 +677,6 @@ def build(bld):
     # Test binaries
     ctdb_tests = [
         'rb_test',
-        'ctdb_fetch',
         'ctdb_fetch_one',
         'ctdb_fetch_readonly_once',
         'ctdb_fetch_readonly_loop',
@@ -710,7 +709,8 @@ def build(bld):
 
     ctdb_tests = [
         'g_lock_loop',
-        'message_ring'
+        'message_ring',
+        'fetch_ring'
     ]
 
     for target in ctdb_tests:
