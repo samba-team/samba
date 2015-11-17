@@ -31,7 +31,7 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 				files_struct **ret_fsp,
 				bool *need_close);
 
-static void dos_mode_debug_print(uint32_t mode)
+static void dos_mode_debug_print(const char *func, uint32_t mode)
 {
 	fstring modestr;
 
@@ -62,7 +62,7 @@ static void dos_mode_debug_print(uint32_t mode)
 		fstrcat(modestr, "[compressed]");
 	}
 
-	DBG_INFO("dos_mode returning %s\n", modestr);
+	DBG_INFO("%s returning %s\n", func, modestr);
 }
 
 static uint32_t filter_mode_by_protocol(uint32_t mode)
@@ -541,16 +541,7 @@ uint32_t dos_mode_msdfs(connection_struct *conn,
 	 */
 	result |= FILE_ATTRIBUTE_REPARSE_POINT;
 
-	DEBUG(8,("dos_mode_msdfs returning "));
-
-	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
-	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
-	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
-	if (result & FILE_ATTRIBUTE_SPARSE ) DEBUG(8, ("[sparse]"));
-
-	DEBUG(8,("\n"));
+	dos_mode_debug_print(__func__, result);
 
 	return(result);
 }
@@ -655,7 +646,7 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 
 	result = filter_mode_by_protocol(result);
 
-	dos_mode_debug_print(result);
+	dos_mode_debug_print(__func__, result);
 
 	return result;
 }
