@@ -54,6 +54,15 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 				files_struct *fsp,
 				const SMB_STRUCT_STAT *psbuf);
 
+NTSTATUS check_access_fsp(const struct files_struct *fsp,
+			  uint32_t access_mask)
+{
+	if (!(fsp->access_mask & access_mask)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_OK;
+}
+
 /********************************************************************
  The canonical "check access" based on object handle or path function.
 ********************************************************************/
@@ -64,10 +73,8 @@ NTSTATUS check_access(connection_struct *conn,
 				uint32_t access_mask)
 {
 	if (fsp) {
-		if (!(fsp->access_mask & access_mask)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		return NT_STATUS_OK;
+		NTSTATUS status = check_access_fsp(fsp, access_mask);
+		return status;
 	} else {
 		NTSTATUS status = smbd_check_access_rights(conn,
 					smb_fname,

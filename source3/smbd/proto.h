@@ -1079,6 +1079,8 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 
 /* The following definitions come from smbd/trans2.c  */
 
+NTSTATUS check_access_fsp(const struct files_struct *fsp,
+			  uint32_t access_mask);
 NTSTATUS check_access(connection_struct *conn,
 				files_struct *fsp,
 				const struct smb_filename *smb_fname,
