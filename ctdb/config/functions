@@ -8,6 +8,7 @@ if [ -z "$CTDB_BASE" ] ; then
 fi
 
 CTDB_VARDIR="/usr/local/var/lib/ctdb"
+ctdb_rundir="/usr/local/var/run/ctdb"
 
 # Only (and always) override these variables in test code
 
@@ -21,6 +22,29 @@ fi
 
 #######################################
 # pull in a system config file, if any
+
+rewrite_ctdb_options ()
+{
+    case "$CTDB_DBDIR" in
+	tmpfs|tmpfs:*)
+	    _opts_defaults="mode=700"
+	    # Get any extra options specified after colon
+	    if [ "$CTDB_DBDIR" = "tmpfs" ] ; then
+		_opts=""
+	    else
+		_opts="${CTDB_DBDIR#tmpfs:}"
+	    fi
+	    # This is an internal variable, only used by ctdbd_wrapper.
+	    # It is OK to repeat mount options - last value wins
+	    CTDB_DBDIR_TMPFS_OPTIONS="${_opts_defaults}${_opts:+,}${_opts}"
+
+	    CTDB_DBDIR="${ctdb_rundir}/CTDB_DBDIR"
+	    ;;
+	*)
+	    CTDB_DBDIR_TMPFS_OPTIONS=""
+    esac
+}
+
 _loadconfig() {
 
     if [ -z "$1" ] ; then
@@ -52,6 +76,7 @@ _loadconfig() {
 	if [ -r "$_config" ] ; then
 	    . "$_config"
 	fi
+	rewrite_ctdb_options
     fi
 }
 
