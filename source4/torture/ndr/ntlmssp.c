@@ -76,6 +76,49 @@ static const uint8_t ntlmssp_CHALLENGE_MESSAGE_data[] = {
 static bool ntlmssp_CHALLENGE_MESSAGE_check(struct torture_context *tctx,
 					    struct CHALLENGE_MESSAGE *r)
 {
+	uint8_t chal[8] = { 0xed, 0xc8, 0x2b, 0x7d, 0x2e, 0xd7, 0xd0, 0xd9 };
+	uint8_t data[8] = { 0 };
+
+	torture_assert_str_equal(tctx, r->Signature, "NTLMSSP", "Signature");
+	torture_assert_int_equal(tctx, r->MessageType, NtLmChallenge, "MessageType");
+	torture_assert_int_equal(tctx, r->TargetNameLen, 10, "TargetNameLen");
+	torture_assert_int_equal(tctx, r->TargetNameMaxLen, 10, "TargetNameMaxLen");
+	torture_assert_str_equal(tctx, r->TargetName, "SAMBA", "TargetName");
+	torture_assert_int_equal(tctx, r->NegotiateFlags, 0xe2898295, "NegotiateFlags");
+	torture_assert_mem_equal(tctx, r->ServerChallenge, chal, 8, "ServerChallenge");
+	torture_assert_mem_equal(tctx, r->Reserved, data, 8, "Reserved");
+	torture_assert_int_equal(tctx, r->TargetInfoLen, 120, "TargetInfoLen");
+	torture_assert_int_equal(tctx, r->TargetInfoMaxLen, 120, "TargetInfoMaxLen");
+	torture_assert_int_equal(tctx, r->TargetInfo->count, 5, "TargetInfo->count");
+
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[0].AvId, MsvAvNbDomainName, "AvId");
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[0].AvLen, 10, "AvLen");
+	torture_assert_str_equal(tctx, r->TargetInfo->pair[0].Value.AvNbDomainName, "SAMBA", "AvNbDomainName");
+
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[1].AvId, MsvAvNbComputerName, "AvId");
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[1].AvLen, 16, "AvLen");
+	torture_assert_str_equal(tctx, r->TargetInfo->pair[1].Value.AvNbComputerName, "MTHELENA", "AvNbComputerName");
+
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[2].AvId, MsvAvDnsDomainName, "AvId");
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[2].AvLen, 28, "AvLen");
+	torture_assert_str_equal(tctx, r->TargetInfo->pair[2].Value.AvDnsDomainName, "ber.redhat.com", "AvDnsDomainName");
+
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[3].AvId, MsvAvDnsComputerName, "AvId");
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[3].AvLen, 46, "AvLen");
+	torture_assert_str_equal(tctx, r->TargetInfo->pair[3].Value.AvDnsComputerName, "mthelena.ber.redhat.com", "AvDnsComputerName");
+
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[4].AvId, MsvAvEOL, "AvId");
+	torture_assert_int_equal(tctx, r->TargetInfo->pair[4].AvLen, 0, "AvLen");
+
+	torture_assert_int_equal(tctx, r->Version.version.ProductMajorVersion, NTLMSSP_WINDOWS_MAJOR_VERSION_6, "ProductMajorVersion");
+	torture_assert_int_equal(tctx, r->Version.version.ProductMinorVersion, NTLMSSP_WINDOWS_MINOR_VERSION_1, "ProductMinorVersion");
+	torture_assert_int_equal(tctx, r->Version.version.ProductBuild, 0, "ProductBuild");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[0], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[1], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[2], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.Reserved[3], 0x00, "Reserved");
+	torture_assert_int_equal(tctx, r->Version.version.NTLMRevisionCurrent, NTLMSSP_REVISION_W2K3, "NTLMRevisionCurrent");
+
 	return true;
 }
 
