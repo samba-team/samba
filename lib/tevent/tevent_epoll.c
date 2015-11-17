@@ -216,7 +216,7 @@ static void epoll_update_event(struct epoll_event_context *epoll_ev, struct teve
 
 /*
   reopen the epoll handle when our pid changes
-  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an 
+  see http://junkcode.samba.org/ftp/unpacked/junkcode/epoll_fork.c for an
   demonstration of why this is needed
  */
 static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
@@ -661,7 +661,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	for (i=0;i<ret;i++) {
-		struct tevent_fd *fde = talloc_get_type(events[i].data.ptr, 
+		struct tevent_fd *fde = talloc_get_type(events[i].data.ptr,
 						       struct tevent_fd);
 		uint16_t flags = 0;
 		struct tevent_fd *mpx_fde = NULL;
@@ -888,7 +888,7 @@ static void epoll_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 }
 
 /*
-  do a single event loop using the events defined in ev 
+  do a single event loop using the events defined in ev
 */
 static int epoll_event_loop_once(struct tevent_context *ev, const char *location)
 {
