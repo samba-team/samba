@@ -242,15 +242,8 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
 
 	result |= set_link_read_only_flag(&smb_fname->st);
 
-	DEBUG(8,("dos_mode_from_sbuf returning "));
+	dos_mode_debug_print(__func__, result);
 
-	if (result & FILE_ATTRIBUTE_HIDDEN) DEBUG(8, ("h"));
-	if (result & FILE_ATTRIBUTE_READONLY ) DEBUG(8, ("r"));
-	if (result & FILE_ATTRIBUTE_SYSTEM) DEBUG(8, ("s"));
-	if (result & FILE_ATTRIBUTE_DIRECTORY   ) DEBUG(8, ("d"));
-	if (result & FILE_ATTRIBUTE_ARCHIVE  ) DEBUG(8, ("a"));
-
-	DEBUG(8,("\n"));
 	return result;
 }
 
