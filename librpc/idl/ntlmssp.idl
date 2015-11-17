@@ -54,7 +54,8 @@ interface ntlmssp
 
 	/*
 	   NTLMSSP_WINDOWS_MAJOR_VERSION_5: Windows XP SP2 and Server 2003
-	   NTLMSSP_WINDOWS_MAJOR_VERSION_6: Windows Vista, Server 2008, 7 and Server 2008 R2
+	   NTLMSSP_WINDOWS_MAJOR_VERSION_6: Windows Vista, Server 2008, 7, Server 2008 R2, 8, Server 2012, 8.1, Server 2012 R2
+	   NTLMSSP_WINDOWS_MAJOR_VERSION_10: Windows 10, Windows Server 2016 Technical Preview
 	 */
 
 	typedef [enum8bit] enum {
@@ -64,9 +65,10 @@ interface ntlmssp
 	} ntlmssp_WindowsMajorVersion;
 
 	/*
-	   NTLMSSP_WINDOWS_MINOR_VERSION_0: Windows Vista, Server 2008, 7, Server 2008 R2
-	   NTLMSSP_WINDOWS_MINOR_VERSION_1: Windows XP SP2
-	   NTLMSSP_WINDOWS_MINOR_VERSION_2: Windows Server 2003
+	   NTLMSSP_WINDOWS_MINOR_VERSION_0: Windows Vista, 10, Server 2016 Technical Preview
+	   NTLMSSP_WINDOWS_MINOR_VERSION_1: Windows XP SP2, 7, Server 2008 R2
+	   NTLMSSP_WINDOWS_MINOR_VERSION_2: Windows Server 2003, 8, Server 2012
+	   NTLMSSP_WINDOWS_MINOR_VERSION_3: Windows 8.1, Server 2012 R2
 	 */
 
 	typedef [enum8bit] enum {
