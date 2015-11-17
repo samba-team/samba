@@ -498,6 +498,7 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	int timeout = -1;
 	int poll_errno;
 	struct tevent_fd *fde = NULL;
+	struct tevent_fd *next = NULL;
 	unsigned i;
 
 	if (ev->signal_events && tevent_common_check_signal(ev)) {
@@ -542,10 +543,12 @@ static int poll_event_loop_poll(struct tevent_context *ev,
 	   which ones and call the handler, being careful to allow
 	   the handler to remove itself when called */
 
-	for (fde = ev->fd_events; fde; fde = fde->next) {
+	for (fde = ev->fd_events; fde; fde = next) {
 		uint64_t idx = fde->additional_flags;
 		struct pollfd *pfd;
 		uint16_t flags = 0;
+
+		next = fde->next;
 
 		if (idx == UINT64_MAX) {
 			continue;
