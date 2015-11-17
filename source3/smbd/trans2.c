@@ -72,19 +72,16 @@ NTSTATUS check_access(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint32_t access_mask)
 {
+	NTSTATUS status;
+
 	if (fsp) {
-		NTSTATUS status = check_access_fsp(fsp, access_mask);
-		return status;
+		status = check_access_fsp(fsp, access_mask);
 	} else {
-		NTSTATUS status = smbd_check_access_rights(conn,
-					smb_fname,
-					false,
-					access_mask);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-		return NT_STATUS_OK;
+		status = smbd_check_access_rights(conn, smb_fname,
+						  false, access_mask);
 	}
+
+	return status;
 }
 
 /********************************************************************
