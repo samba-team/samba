@@ -185,7 +185,7 @@ interface ntlmssp
 		uint8 ServerChallenge[8];
 		uint8 Reserved[8];
 		[value(ndr_size_AV_PAIR_LIST(TargetInfo, ndr->flags))] uint16 TargetInfoLen;
-		[value(TargetInfoLen)] uint16 TargetNameInfoMaxLen;
+		[value(TargetInfoLen)] uint16 TargetInfoMaxLen;
 		[relative] [subcontext(0),subcontext_size(TargetInfoLen)] AV_PAIR_LIST *TargetInfo;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 	} CHALLENGE_MESSAGE;
