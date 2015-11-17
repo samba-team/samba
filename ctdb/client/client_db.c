@@ -515,19 +515,26 @@ bool ctdb_attach_recv(struct tevent_req *req, int *perr,
 	return true;
 }
 
-int ctdb_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+int ctdb_attach(struct tevent_context *ev,
 		struct ctdb_client_context *client,
 		struct timeval timeout,
 		const char *db_name, uint8_t db_flags,
 		struct ctdb_db_context **out)
 {
+	TALLOC_CTX *mem_ctx;
 	struct tevent_req *req;
 	bool status;
 	int ret;
 
+	mem_ctx = talloc_new(client);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
 	req = ctdb_attach_send(mem_ctx, ev, client, timeout,
 			       db_name, db_flags);
 	if (req == NULL) {
+		talloc_free(mem_ctx);
 		return ENOMEM;
 	}
 
@@ -535,6 +542,7 @@ int ctdb_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	status = ctdb_attach_recv(req, &ret, out);
 	if (! status) {
+		talloc_free(mem_ctx);
 		return ret;
 	}
 
@@ -544,6 +552,7 @@ int ctdb_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	ctdb_set_call(db, CTDB_FETCH_WITH_HEADER_FUNC, ctdb_fetch_with_header_func);
 	*/
 
+	talloc_free(mem_ctx);
 	return 0;
 }
 

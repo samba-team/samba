@@ -718,7 +718,7 @@ struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,
 bool ctdb_attach_recv(struct tevent_req *req, int *perr,
 		      struct ctdb_db_context **out);
 
-int ctdb_attach(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+int ctdb_attach(struct tevent_context *ev,
 		struct ctdb_client_context *client,
 		struct timeval timeout,
 		const char *db_name, uint8_t db_flags,
