@@ -599,15 +599,26 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		 * will be rejected by other Samba code.
 		 */
 		gid_to_sid(&group_sid, pwd->pw_gid);
+	}
 
-		/*
-		 * If we are a unix group, set the group_sid to the
-		 * 'Domain Users' RID of 513 which will always resolve to a
-		 * name.
-		 */
-		if (sid_check_is_in_unix_groups(&group_sid)) {
+	/*
+	 * If we are a unix group, or a wellknown/builtin alias,
+	 * set the group_sid to the
+	 * 'Domain Users' RID of 513 which will always resolve to a
+	 * name.
+	 */
+	if (sid_check_is_in_unix_groups(&group_sid) ||
+	    sid_check_is_in_builtin(&group_sid) ||
+	    sid_check_is_in_wellknown_domain(&group_sid)) {
+		if (sid_check_is_in_unix_users(&user_sid)) {
 			sid_compose(&group_sid,
 				    get_global_sam_sid(),
+				    DOMAIN_RID_USERS);
+		} else {
+			sid_copy(&domain_sid, &user_sid);
+			sid_split_rid(&domain_sid, NULL);
+			sid_compose(&group_sid,
+				    &domain_sid,
 				    DOMAIN_RID_USERS);
 		}
 	}
