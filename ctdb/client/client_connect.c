@@ -394,3 +394,28 @@ bool ctdb_recovery_wait_recv(struct tevent_req *req, int *perr)
 
 	return true;
 }
+
+bool ctdb_recovery_wait(struct tevent_context *ev,
+			struct ctdb_client_context *client)
+{
+	TALLOC_CTX *mem_ctx;
+	struct tevent_req *req;
+	bool status;
+
+	mem_ctx = talloc_new(client);
+	if (mem_ctx == NULL) {
+		return false;
+	}
+
+	req = ctdb_recovery_wait_send(mem_ctx, ev, client);
+	if (req == NULL) {
+		return false;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_recovery_wait_recv(req, NULL);
+
+	talloc_free(mem_ctx);
+	return status;
+}

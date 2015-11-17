@@ -54,6 +54,9 @@ struct tevent_req *ctdb_recovery_wait_send(TALLOC_CTX *mem_ctx,
 
 bool ctdb_recovery_wait_recv(struct tevent_req *req, int *perr);
 
+bool ctdb_recovery_wait(struct tevent_context *ev,
+			struct ctdb_client_context *client);
+
 /* from client/client_call.c */
 
 struct tevent_req *ctdb_client_call_send(TALLOC_CTX *mem_ctx,
