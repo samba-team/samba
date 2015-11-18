@@ -82,6 +82,24 @@ int ctdb_client_message(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			uint32_t destnode, struct ctdb_req_message *message);
 
+struct tevent_req *ctdb_client_set_message_handler_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct ctdb_client_context *client,
+					uint64_t srvid,
+					srvid_handler_fn handler,
+					void *private_data);
+bool ctdb_client_set_message_handler_recv(struct tevent_req *req, int *perr);
+
+struct tevent_req *ctdb_client_remove_message_handler_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct ctdb_client_context *client,
+					uint64_t srvid,
+					void *private_data);
+bool ctdb_client_remove_message_handler_recv(struct tevent_req *req,
+					     int *perr);
+
 int ctdb_client_set_message_handler(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct ctdb_client_context *client,
