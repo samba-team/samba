@@ -2757,8 +2757,13 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 	}
 	ip = i;
 
-	nwrap_vector_add_item(&(ed->nwrap_addrdata),
-			      (void *const)ed->addr.host_addr);
+	ok = nwrap_vector_add_item(&(ed->nwrap_addrdata),
+				   (void *const)ed->addr.host_addr);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Unable to add addrdata to vector");
+		free(ed);
+		return false;
+	}
 	ed->ht.h_addr_list = nwrap_vector_head(&ed->nwrap_addrdata);
 
 	p++;
@@ -2844,7 +2849,12 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 		aliases_count += 1;
 	}
 
-	nwrap_vector_add_item(&(nwrap_he->entries), (void *const)ed);
+	ok = nwrap_vector_add_item(&(nwrap_he->entries), (void *const)ed);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Unable to add entry to vector");
+		free(ed);
+		return false;
+	}
 
 	ed->aliases_count = aliases_count;
 	/* Inventarize item */
