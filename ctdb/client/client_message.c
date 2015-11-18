@@ -371,16 +371,22 @@ bool ctdb_client_remove_message_handler_recv(struct tevent_req *req, int *perr)
 	return true;
 }
 
-int ctdb_client_set_message_handler(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev,
+int ctdb_client_set_message_handler(struct tevent_context *ev,
 				    struct ctdb_client_context *client,
 				    uint64_t srvid, srvid_handler_fn handler,
 				    void *private_data)
 {
+	TALLOC_CTX *mem_ctx;
 	int ret;
+
+	mem_ctx = talloc_new(client);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
 
 	ret = ctdb_ctrl_register_srvid(mem_ctx, ev, client, client->pnn,
 				       tevent_timeval_zero(), srvid);
+	talloc_free(mem_ctx);
 	if (ret != 0) {
 		return ret;
 	}
@@ -389,15 +395,21 @@ int ctdb_client_set_message_handler(TALLOC_CTX *mem_ctx,
 			      handler, private_data);
 }
 
-int ctdb_client_remove_message_handler(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
+int ctdb_client_remove_message_handler(struct tevent_context *ev,
 				       struct ctdb_client_context *client,
 				       uint64_t srvid, void *private_data)
 {
+	TALLOC_CTX *mem_ctx;
 	int ret;
+
+	mem_ctx = talloc_new(client);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
 
 	ret = ctdb_ctrl_deregister_srvid(mem_ctx, ev, client, client->pnn,
 					 tevent_timeval_zero(), srvid);
+	talloc_free(mem_ctx);
 	if (ret != 0) {
 		return ret;
 	}

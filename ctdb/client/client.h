@@ -100,14 +100,12 @@ struct tevent_req *ctdb_client_remove_message_handler_send(
 bool ctdb_client_remove_message_handler_recv(struct tevent_req *req,
 					     int *perr);
 
-int ctdb_client_set_message_handler(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev,
+int ctdb_client_set_message_handler(struct tevent_context *ev,
 				    struct ctdb_client_context *client,
 				    uint64_t srvid, srvid_handler_fn handler,
 				    void *private_data);
 
-int ctdb_client_remove_message_handler(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
+int ctdb_client_remove_message_handler(struct tevent_context *ev,
 				       struct ctdb_client_context *client,
 				       uint64_t srvid, void *private_data);
 
