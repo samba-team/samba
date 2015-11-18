@@ -705,7 +705,7 @@ def build(bld):
 
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
-                                          'cluster_wait.c'),
+                                          'cluster_wait.c test_options.c'),
                         includes='include',
                         deps='replace popt talloc tevent tdb')
 
