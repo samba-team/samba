@@ -133,6 +133,9 @@ def test(ctx):
     '''test tevent'''
     print("The tevent testsuite is part of smbtorture in samba4")
 
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
+
     pyret = samba_utils.RUN_PYTHON_TESTS(['bindings.py'])
     sys.exit(pyret)
 
