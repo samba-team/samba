@@ -192,6 +192,185 @@ int ctdb_client_message(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
+struct ctdb_client_set_message_handler_state {
+	struct ctdb_client_context *client;
+	uint64_t srvid;
+	srvid_handler_fn handler;
+	void *private_data;
+};
+
+static void ctdb_client_set_message_handler_done(struct tevent_req *subreq);
+
+struct tevent_req *ctdb_client_set_message_handler_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct ctdb_client_context *client,
+					uint64_t srvid,
+					srvid_handler_fn handler,
+					void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct ctdb_client_set_message_handler_state *state;
+	struct ctdb_req_control request;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ctdb_client_set_message_handler_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->client = client;
+	state->srvid = srvid;
+	state->handler = handler;
+	state->private_data = private_data;
+
+	ctdb_req_control_register_srvid(&request, srvid);
+	subreq = ctdb_client_control_send(state, ev, client, client->pnn,
+					  tevent_timeval_zero(), &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ctdb_client_set_message_handler_done,
+				req);
+
+	return req;
+}
+
+static void ctdb_client_set_message_handler_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_client_set_message_handler_state *state = tevent_req_data(
+		req, struct ctdb_client_set_message_handler_state);
+	struct ctdb_reply_control *reply;
+	bool status;
+	int ret;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_register_srvid(reply);
+	talloc_free(reply);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = srvid_register(state->client->srv, state->client, state->srvid,
+			     state->handler, state->private_data);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+bool ctdb_client_set_message_handler_recv(struct tevent_req *req, int *perr)
+{
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return false;
+	}
+	return true;
+}
+
+struct ctdb_client_remove_message_handler_state {
+	struct ctdb_client_context *client;
+	uint64_t srvid;
+	void *private_data;
+};
+
+static void ctdb_client_remove_message_handler_done(struct tevent_req *subreq);
+
+struct tevent_req *ctdb_client_remove_message_handler_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct ctdb_client_context *client,
+					uint64_t srvid,
+					void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct ctdb_client_remove_message_handler_state *state;
+	struct ctdb_req_control request;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ctdb_client_remove_message_handler_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->client = client;
+	state->srvid = srvid;
+	state->private_data = private_data;
+
+	ctdb_req_control_deregister_srvid(&request, srvid);
+	subreq = ctdb_client_control_send(state, ev, client, client->pnn,
+					  tevent_timeval_zero(), &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				ctdb_client_remove_message_handler_done, req);
+
+	return req;
+}
+
+static void ctdb_client_remove_message_handler_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_client_remove_message_handler_state *state = tevent_req_data(
+		req, struct ctdb_client_remove_message_handler_state);
+	struct ctdb_reply_control *reply;
+	bool status;
+	int ret;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_deregister_srvid(reply);
+	talloc_free(reply);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = srvid_deregister(state->client->srv, state->srvid,
+			       state->private_data);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+bool ctdb_client_remove_message_handler_recv(struct tevent_req *req, int *perr)
+{
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return false;
+	}
+	return true;
+}
+
 int ctdb_client_set_message_handler(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct ctdb_client_context *client,
