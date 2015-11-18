@@ -407,10 +407,18 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 	}
 
 	talloc_free(msg->elements);
-	msg->elements = talloc_realloc(msg, el2, struct ldb_message_element, msg->num_elements);
+
+	if (num_elements > 0) {
+		msg->elements = talloc_realloc(msg, el2, struct ldb_message_element,
+					       num_elements);
+	} else {
+		msg->elements = talloc_array(msg, struct ldb_message_element, 0);
+		talloc_free(el2);
+	}
 	if (msg->elements == NULL) {
 		return -1;
 	}
+
 	msg->num_elements = num_elements;
 
 	return 0;

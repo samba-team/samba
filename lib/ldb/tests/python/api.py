@@ -256,6 +256,23 @@ class SimpleLdb(TestCase):
         finally:
             l.delete(ldb.Dn(l, "dc=bar"))
 
+    def test_empty_dn(self):
+        l = ldb.Ldb(filename())
+        self.assertEqual(0, len(l.search()))
+        m = ldb.Message()
+        m.dn = ldb.Dn(l, "dc=empty")
+        l.add(m)
+        rm = l.search()
+        self.assertEqual(1, len(rm))
+        self.assertEqual(set(["dn", "distinguishedName"]), set(rm[0].keys()))
+
+        rm = l.search(m.dn)
+        self.assertEqual(1, len(rm))
+        self.assertEqual(set(["dn", "distinguishedName"]), set(rm[0].keys()))
+        rm = l.search(m.dn, attrs=["blah"])
+        self.assertEqual(1, len(rm))
+        self.assertEqual(0, len(rm[0]))
+
     def test_modify_delete(self):
         l = ldb.Ldb(filename())
         m = ldb.Message()
@@ -270,10 +287,12 @@ class SimpleLdb(TestCase):
             m["bla"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "bla")
             self.assertEqual(ldb.FLAG_MOD_DELETE, m["bla"].flags())
             l.modify(m)
-            rm = l.search(m.dn)[0]
+            rm = l.search(m.dn)
             self.assertEqual(1, len(rm))
+            self.assertEqual(set(["dn", "distinguishedName"]), set(rm[0].keys()))
             rm = l.search(m.dn, attrs=["bla"])
-            self.assertEqual(0, len(rm))
+            self.assertEqual(1, len(rm))
+            self.assertEqual(0, len(rm[0]))
         finally:
             l.delete(ldb.Dn(l, "dc=modifydelete"))
 
@@ -291,10 +310,12 @@ class SimpleLdb(TestCase):
             m["bla"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "bla")
             self.assertEqual(ldb.FLAG_MOD_DELETE, m["bla"].flags())
             l.modify(m)
-            rm = l.search(m.dn)[0]
+            rm = l.search(m.dn)
             self.assertEqual(1, len(rm))
+            self.assertEqual(set(["dn", "distinguishedName"]), set(rm[0].keys()))
             rm = l.search(m.dn, attrs=["bla"])
-            self.assertEqual(0, len(rm))
+            self.assertEqual(1, len(rm))
+            self.assertEqual(0, len(rm[0]))
         finally:
             l.delete(ldb.Dn(l, "dc=modifydelete"))
 
