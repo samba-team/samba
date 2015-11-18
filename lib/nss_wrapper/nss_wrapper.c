@@ -770,7 +770,6 @@ struct nwrap_entlist {
 struct nwrap_he {
 	struct nwrap_cache *cache;
 
-	struct nwrap_entdata *list;
 	struct nwrap_vector entdata;
 
 	int num;
