@@ -770,7 +770,7 @@ struct nwrap_entlist {
 struct nwrap_he {
 	struct nwrap_cache *cache;
 
-	struct nwrap_vector entdata;
+	struct nwrap_vector entries;
 
 	int num;
 	int idx;
@@ -2844,7 +2844,7 @@ static bool nwrap_he_parse_line(struct nwrap_cache *nwrap, char *line)
 		aliases_count += 1;
 	}
 
-	nwrap_vector_add_item(&(nwrap_he->entdata), (void *const)ed);
+	nwrap_vector_add_item(&(nwrap_he->entries), (void *const)ed);
 
 	ed->aliases_count = aliases_count;
 	/* Inventarize item */
@@ -2869,14 +2869,14 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 	struct nwrap_entdata *ed;
 	size_t i;
 
-	nwrap_vector_foreach (ed, nwrap_he->entdata, i)
+	nwrap_vector_foreach (ed, nwrap_he->entries, i)
 	{
 		SAFE_FREE(ed->nwrap_addrdata.items);
 		SAFE_FREE(ed->ht.h_aliases);
 		SAFE_FREE(ed);
 	}
-	SAFE_FREE(nwrap_he->entdata.items);
-	nwrap_he->entdata.count = nwrap_he->entdata.capacity = 0;
+	SAFE_FREE(nwrap_he->entries.items);
+	nwrap_he->entries.count = nwrap_he->entries.capacity = 0;
 
 	nwrap_he->num = 0;
 	nwrap_he->idx = 0;
@@ -3630,7 +3630,7 @@ static struct hostent *nwrap_files_gethostbyaddr(const void *addr,
 		return NULL;
 	}
 
-	nwrap_vector_foreach(ed, nwrap_he_global.entdata, i)
+	nwrap_vector_foreach(ed, nwrap_he_global.entries, i)
 	{
 		he = &(ed->ht);
 		if (he->h_addrtype != type) {
@@ -3708,7 +3708,7 @@ static struct hostent *nwrap_files_gethostent(void)
 		return NULL;
 	}
 
-	he = &((struct nwrap_entdata *)nwrap_he_global.entdata.items[nwrap_he_global.idx++])->ht;
+	he = &((struct nwrap_entdata *)nwrap_he_global.entries.items[nwrap_he_global.idx++])->ht;
 
 	NWRAP_LOG(NWRAP_LOG_DEBUG, "return hosts[%s]", he->h_name);
 
