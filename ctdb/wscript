@@ -703,6 +703,12 @@ def build(bld):
                          deps='ctdb-client ctdb-common ctdb-util',
                          install_path='${CTDB_TEST_LIBDIR}')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
+                        source=bld.SUBDIR('tests/src',
+                                          'cluster_wait.c'),
+                        includes='include',
+                        deps='replace popt talloc tevent tdb')
+
     bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='''replace popt tdb tevent talloc ctdb-system
