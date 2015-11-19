@@ -771,6 +771,7 @@ struct nwrap_he {
 	struct nwrap_cache *cache;
 
 	struct nwrap_vector entries;
+	struct nwrap_vector lists;
 
 	int num;
 	int idx;
@@ -2575,6 +2576,7 @@ static bool nwrap_ed_inventarize_add_new(char *const h_name,
 	ENTRY e;
 	ENTRY *p;
 	struct nwrap_entlist *el;
+	bool ok;
 
 	if (h_name == NULL) {
 		NWRAP_LOG(NWRAP_LOG_ERROR, "h_name NULL - can't add");
@@ -2592,6 +2594,13 @@ static bool nwrap_ed_inventarize_add_new(char *const h_name,
 	p = hsearch(e, ENTER);
 	if (p == NULL) {
 		NWRAP_LOG(NWRAP_LOG_ERROR, "Hash table is full!");
+		return false;
+	}
+
+	ok = nwrap_vector_add_item(&(nwrap_he_global.lists), (void *)el);
+	if (!ok) {
+		NWRAP_LOG(NWRAP_LOG_ERROR,
+			  "Failed to add list entry to vector.");
 		return false;
 	}
 
@@ -2877,6 +2886,7 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 	struct nwrap_he *nwrap_he =
 		(struct nwrap_he *)nwrap->private_data;
 	struct nwrap_entdata *ed;
+	struct nwrap_entlist *el;
 	size_t i;
 
 	nwrap_vector_foreach (ed, nwrap_he->entries, i)
@@ -2887,6 +2897,19 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 	}
 	SAFE_FREE(nwrap_he->entries.items);
 	nwrap_he->entries.count = nwrap_he->entries.capacity = 0;
+
+	nwrap_vector_foreach(el, nwrap_he->lists, i)
+	{
+		while (el != NULL) {
+			struct nwrap_entlist *el_next;
+
+			el_next = el->next;
+			SAFE_FREE(el);
+			el = el_next;
+		}
+	}
+	SAFE_FREE(nwrap_he->lists.items);
+	nwrap_he->lists.count = nwrap_he->lists.capacity = 0;
 
 	nwrap_he->num = 0;
 	nwrap_he->idx = 0;
