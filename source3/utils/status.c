@@ -320,6 +320,7 @@ static int traverse_connections(const struct connections_key *key,
 static int traverse_sessionid(const char *key, struct sessionid *session,
 			      void *private_data)
 {
+	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	fstring uid_str, gid_str;
 	struct server_id_buf tmp;
 
@@ -522,7 +523,7 @@ int main(int argc, const char *argv[])
 		d_printf("PID     Username      Group         Machine            Protocol Version       \n");
 		d_printf("------------------------------------------------------------------------------\n");
 
-		sessionid_traverse_read(traverse_sessionid, NULL);
+		sessionid_traverse_read(traverse_sessionid, frame);
 
 		if (processes_only) {
 			goto done;
