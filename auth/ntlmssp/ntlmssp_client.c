@@ -90,6 +90,12 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		}
 	}
 
+	ntlmssp_state->negotiate_blob = data_blob_dup_talloc(ntlmssp_state,
+							     *out);
+	if (ntlmssp_state->negotiate_blob.length != out->length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -113,8 +119,15 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 	if (in.length == 0) {
 		/*
 		 * This is compat code for older callers
-		 * which were missing the "initial_blob"
+		 * which were missing the "initial_blob"/"negotiate_blob".
+		 *
+		 * That means we can't calculate the NTLMSSP_MIC
+		 * field correctly and need to force the
+		 * old_spnego behaviour.
 		 */
+		DEBUG(10, ("%s: in.length==%u force_old_spnego!\n",
+			   __func__, (unsigned int)in.length));
+		ntlmssp_state->force_old_spnego = true;
 		ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
 		ntlmssp_state->required_flags = 0;
 		ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
@@ -187,6 +200,12 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 		}
 	}
 
+	ntlmssp_state->negotiate_blob = data_blob_dup_talloc(ntlmssp_state,
+							     in);
+	if (ntlmssp_state->negotiate_blob.length != in.length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -229,6 +248,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	bool is_anonymous = false;
 	const DATA_BLOB version_blob = ntlmssp_version_blob();
 	const NTTIME *server_timestamp = NULL;
+	uint8_t mic_buffer[NTLMSSP_MIC_SIZE] = { 0, };
+	DATA_BLOB mic_blob = data_blob_const(mic_buffer, sizeof(mic_buffer));
+	HMACMD5Context ctx;
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -266,7 +288,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string = "CdUdbdd";
 			chal_parse_string_short = "CdUdb";
 		}
-		auth_gen_string = "CdBBUUUBdb";
+		auth_gen_string = "CdBBUUUBdbb";
 	} else {
 		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdAdbddB";
@@ -275,7 +297,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string_short = "CdAdb";
 		}
 
-		auth_gen_string = "CdBBAAABdb";
+		auth_gen_string = "CdBBAAABdbb";
 	}
 
 	if (!msrpc_parse(mem_ctx,
@@ -386,11 +408,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		struct wbcCredentialCacheParams params;
 		struct wbcCredentialCacheInfo *info = NULL;
 		struct wbcAuthErrorInfo *error = NULL;
-		struct wbcNamedBlob auth_blobs[1];
+		struct wbcNamedBlob auth_blobs[2];
 		const struct wbcBlob *wbc_auth_blob = NULL;
 		const struct wbcBlob *wbc_session_key = NULL;
 		wbcErr wbc_status;
 		int i;
+		bool new_spnego = false;
 
 		params.account_name = user;
 		params.domain_name = domain;
@@ -400,6 +423,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		auth_blobs[0].flags = 0;
 		auth_blobs[0].blob.data = in.data;
 		auth_blobs[0].blob.length = in.length;
+		auth_blobs[1].name = "negotiate_blob";
+		auth_blobs[1].flags = 0;
+		auth_blobs[1].blob.data = ntlmssp_state->negotiate_blob.data;
+		auth_blobs[1].blob.length = ntlmssp_state->negotiate_blob.length;
 		params.num_blobs = ARRAY_SIZE(auth_blobs);
 		params.blobs = auth_blobs;
 
@@ -415,6 +442,9 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			}
 			if (strequal(info->blobs[i].name, "session_key")) {
 				wbc_session_key = &info->blobs[i].blob;
+			}
+			if (strequal(info->blobs[i].name, "new_spnego")) {
+				new_spnego = true;
 			}
 		}
 		if ((wbc_auth_blob == NULL) || (wbc_session_key == NULL)) {
@@ -436,6 +466,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			wbcFreeMemory(info);
 			return NT_STATUS_NO_MEMORY;
 		}
+		ntlmssp_state->new_spnego = new_spnego;
 
 		wbcFreeMemory(info);
 		goto done;
@@ -452,6 +483,150 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 	if (ntlmssp_state->allow_lm_response) {
 		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (target_info.length != 0 && !is_anonymous) {
+		struct AV_PAIR *pairs = NULL;
+		uint32_t count = 0;
+		enum ndr_err_code err;
+		struct AV_PAIR *timestamp = NULL;
+		struct AV_PAIR *eol = NULL;
+		uint32_t i = 0;
+		const char *service = NULL;
+		const char *hostname = NULL;
+
+		err = ndr_pull_struct_blob(&target_info,
+					ntlmssp_state,
+					&ntlmssp_state->server.av_pair_list,
+					(ndr_pull_flags_fn_t)ndr_pull_AV_PAIR_LIST);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return ndr_map_error2ntstatus(err);
+		}
+
+		count = ntlmssp_state->server.av_pair_list.count;
+		/*
+		 * We need room for Flags, SingleHost,
+		 * ChannelBindings and Target
+		 */
+		pairs = talloc_zero_array(ntlmssp_state, struct AV_PAIR,
+					  count + 4);
+		if (pairs == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < count; i++) {
+			pairs[i] = ntlmssp_state->server.av_pair_list.pair[i];
+		}
+
+		ntlmssp_state->client.av_pair_list.count = count;
+		ntlmssp_state->client.av_pair_list.pair = pairs;
+
+		eol = ndr_ntlmssp_find_av(&ntlmssp_state->client.av_pair_list,
+					  MsvAvEOL);
+		if (eol == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		timestamp = ndr_ntlmssp_find_av(&ntlmssp_state->client.av_pair_list,
+						MsvAvTimestamp);
+		if (timestamp != NULL) {
+			uint32_t sign_features =
+					GENSEC_FEATURE_SESSION_KEY |
+					GENSEC_FEATURE_SIGN |
+					GENSEC_FEATURE_SEAL;
+
+			server_timestamp = &timestamp->Value.AvTimestamp;
+
+			if (ntlmssp_state->force_old_spnego) {
+				sign_features = 0;
+			}
+
+			if (gensec_security->want_features & sign_features) {
+				struct AV_PAIR *av_flags = NULL;
+
+				av_flags = ndr_ntlmssp_find_av(&ntlmssp_state->client.av_pair_list,
+							       MsvAvFlags);
+				if (av_flags == NULL) {
+					av_flags = eol;
+					eol++;
+					count++;
+					*eol = *av_flags;
+					av_flags->AvId = MsvAvFlags;
+					av_flags->Value.AvFlags = 0;
+				}
+
+				av_flags->Value.AvFlags |= NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE;
+				ntlmssp_state->new_spnego = true;
+			}
+		}
+
+		{
+			struct AV_PAIR *SingleHost = NULL;
+
+			SingleHost = eol;
+			eol++;
+			count++;
+			*eol = *SingleHost;
+
+			/*
+			 * This is not really used, but we want to
+			 * add some more random bytes and match
+			 * Windows.
+			 */
+			SingleHost->AvId = MsvAvSingleHost;
+			SingleHost->Value.AvSingleHost.token_info.Flags = 0;
+			SingleHost->Value.AvSingleHost.token_info.TokenIL = 0;
+			generate_random_buffer(SingleHost->Value.AvSingleHost.token_info.MachineId,
+					sizeof(SingleHost->Value.AvSingleHost.token_info.MachineId));
+			SingleHost->Value.AvSingleHost.remaining = data_blob_null;
+		}
+
+		{
+			struct AV_PAIR *ChannelBindings = NULL;
+
+			ChannelBindings = eol;
+			eol++;
+			count++;
+			*eol = *ChannelBindings;
+
+			/*
+			 * gensec doesn't support channel bindings yet,
+			 * but we want to match Windows on the wire
+			 */
+			ChannelBindings->AvId = MsvChannelBindings;
+			memset(ChannelBindings->Value.ChannelBindings, 0,
+			       sizeof(ChannelBindings->Value.ChannelBindings));
+		}
+
+		service = gensec_get_target_service(gensec_security);
+		hostname = gensec_get_target_hostname(gensec_security);
+		if (service != NULL && hostname != NULL) {
+			struct AV_PAIR *target = NULL;
+
+			target = eol;
+			eol++;
+			count++;
+			*eol = *target;
+
+			target->AvId = MsvAvTargetName;
+			target->Value.AvTargetName = talloc_asprintf(pairs, "%s/%s",
+								     service,
+								     hostname);
+			if (target->Value.AvTargetName == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		ntlmssp_state->client.av_pair_list.count = count;
+		ntlmssp_state->client.av_pair_list.pair = pairs;
+
+		err = ndr_push_struct_blob(&target_info,
+					ntlmssp_state,
+					&ntlmssp_state->client.av_pair_list,
+					(ndr_push_flags_fn_t)ndr_push_AV_PAIR_LIST);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	nt_status = cli_credentials_get_ntlm_response(gensec_security->credentials, mem_ctx,
@@ -522,13 +697,34 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       workstation,
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags,
-		       version_blob.data, version_blob.length);
+		       version_blob.data, version_blob.length,
+		       mic_blob.data, mic_blob.length);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
 	}
 
+	/*
+	 * We always include the MIC, even without:
+	 * av_flags->Value.AvFlags |= NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE;
+	 * ntlmssp_state->new_spnego = true;
+	 *
+	 * This matches a Windows client.
+	 */
+	hmac_md5_init_limK_to_64(session_key.data,
+				 session_key.length,
+				 &ctx);
+	hmac_md5_update(ntlmssp_state->negotiate_blob.data,
+			ntlmssp_state->negotiate_blob.length,
+			&ctx);
+	hmac_md5_update(in.data, in.length, &ctx);
+	hmac_md5_update(out->data, out->length, &ctx);
+	hmac_md5_final(mic_buffer, &ctx);
+	memcpy(out->data + NTLMSSP_MIC_OFFSET, mic_buffer, NTLMSSP_MIC_SIZE);
+
 done:
+	data_blob_free(&ntlmssp_state->negotiate_blob);
+
 	ntlmssp_state->session_key = session_key;
 	talloc_steal(ntlmssp_state, session_key.data);
 

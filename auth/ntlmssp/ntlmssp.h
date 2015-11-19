@@ -80,6 +80,7 @@ struct ntlmssp_state
 	struct {
 		const char *netbios_name;
 		const char *netbios_domain;
+		struct AV_PAIR_LIST av_pair_list;
 	} client;
 
 	struct {
