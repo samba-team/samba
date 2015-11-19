@@ -5551,6 +5551,18 @@ void nwrap_destructor(void)
 		nwrap_pw_global.num = 0;
 	}
 
+	if (nwrap_sp_global.cache != NULL) {
+		struct nwrap_cache *c = nwrap_sp_global.cache;
+
+		nwrap_files_cache_unload(c);
+		if (c->fd >= 0) {
+			fclose(c->fp);
+			c->fd = -1;
+		}
+
+		nwrap_he_global.num = 0;
+	}
+
 	if (nwrap_he_global.cache != NULL) {
 		struct nwrap_cache *c = nwrap_he_global.cache;
 
