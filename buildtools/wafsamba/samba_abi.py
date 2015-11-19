@@ -225,7 +225,7 @@ def abi_build_vscript(task):
 def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None):
     '''generate a vscript file for our public libraries'''
     if abi_directory:
-        source = bld.path.ant_glob('%s/%s-[0-9]*.sigs' % (abi_directory, libname))
+        source = bld.path.ant_glob('%s/%s-[0-9]*.sigs' % (abi_directory, libname), flat=True)
         def abi_file_key(path):
             return version_key(path[:-len(".sigs")].rsplit("-")[-1])
         source = sorted(source.split(), key=abi_file_key)
