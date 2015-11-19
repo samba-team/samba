@@ -227,29 +227,11 @@ def configure(conf):
     # we need git for 'waf dist'
     conf.find_program('git', var='GIT')
 
-    # older gcc versions (< 4.4) does not work with gccdeps, so we have to see if the .d file is generated
-    if Options.options.enable_gccdeps:
-        from TaskGen import feature, after
-        @feature('testd')
-        @after('apply_core')
-        def check_d(self):
-            tsk = self.compiled_tasks[0]
-            tsk.outputs.append(tsk.outputs[0].change_ext('.d'))
-
-        import Task
-        cc = Task.TaskBase.classes['cc']
-        oldmeth = cc.run
-
-        cc.run = Task.compile_fun_noshell('cc', '${CC} ${CCFLAGS} ${CPPFLAGS} ${_CCINCFLAGS} ${_CCDEFFLAGS} ${CC_SRC_F}${SRC} ${CC_TGT_F}${TGT[0].abspath(env)}')[0]
-        try:
-            try:
-                conf.check(features='c testd', fragment='int main() {return 0;}\n', ccflags=['-MD'], mandatory=True, msg='Check for -MD')
-            except:
-                pass
-            else:
-                conf.check_tool('gccdeps', tooldir=conf.srcdir + "/buildtools/wafsamba")
-        finally:
-            cc.run = oldmeth
+    # stale file removal - the configuration may pick up the old .pyc file
+    p = os.path.join(conf.srcdir, 'buildtools/wafsamba/gccdeps.pyc')
+    if os.path.exists(p):
+        os.remove(p)
+    conf.check_tool('gccdeps')
 
     # make the install paths available in environment
     conf.env.LIBDIR = Options.options.LIBDIR or '${PREFIX}/lib'
@@ -572,6 +554,13 @@ struct foo bar = { .y = 'X', .x = 1 };
 
 
 def build(bld):
+    # the file gccdeps.pyc is not removed after "git pull", and a reconfiguration is necessary
+    p = os.path.join(bld.curdir, 'gccdeps.pyc')
+    if 'gccdeps' in sys.modules and (os.path.exists(p) or not bld.env.GCCDEPS):
+        if os.path.exists(p):
+            os.remove(p)
+        raise Utils.WafError('The gccdeps module has been upgraded. Please run distclean and reconfigure')
+
     # give a more useful message if the source directory has moved
     relpath = os_path_relpath(bld.curdir, bld.srcnode.abspath())
     if relpath.find('../') != -1:
