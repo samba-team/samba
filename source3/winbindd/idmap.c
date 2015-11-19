@@ -146,6 +146,7 @@ static bool idmap_found_domain_backend(
 		if (dom == NULL) {
 			DBG_NOTICE("Could not init idmap domain %s\n",
 				   domname);
+			return false;
 		}
 
 		tmp = talloc_realloc(idmap_domains, idmap_domains,
