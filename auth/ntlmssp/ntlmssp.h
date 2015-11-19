@@ -72,6 +72,11 @@ struct ntlmssp_state
 	uint8_t *nt_hash;
 	uint8_t *lm_hash;
 
+	DATA_BLOB negotiate_blob;
+	DATA_BLOB challenge_blob;
+	bool new_spnego;
+	bool force_old_spnego;
+
 	struct {
 		const char *netbios_name;
 		const char *netbios_domain;
@@ -83,6 +88,7 @@ struct ntlmssp_state
 		const char *netbios_domain;
 		const char *dns_name;
 		const char *dns_domain;
+		NTTIME challenge_endtime;
 		struct AV_PAIR_LIST av_pair_list;
 	} server;
 
