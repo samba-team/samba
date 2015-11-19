@@ -171,7 +171,7 @@ interface ntlmssp
 		[subcontext(0),subcontext_size(AvLen),switch_is(AvId)] ntlmssp_AvValue Value;
 	} AV_PAIR;
 
-	typedef [gensize,nopush,nopull,flag(NDR_NOALIGN)] struct {
+	typedef [public,gensize,nopush,nopull,flag(NDR_NOALIGN)] struct {
 		uint32 count;
 		AV_PAIR pair[count];
 	} AV_PAIR_LIST;
