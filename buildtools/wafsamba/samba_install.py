@@ -92,6 +92,7 @@ def install_library(self):
             t = self.clone(self.env)
             t.posted = False
             t.target += '.inst'
+            t.name = self.name + '.inst'
             self.env.RPATH = build_ldflags
         else:
             t = self
