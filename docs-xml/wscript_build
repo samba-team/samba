@@ -116,7 +116,7 @@ def smbdotconf_generate_parameter_list(task):
     save_file(parameter_all, t , create_dir=True)
     return 0
 
-articles = bld.path.ant_glob("smbdotconf/**/*.xml")
+articles = bld.path.ant_glob("smbdotconf/**/*.xml", flat=True)
 parameter_all = 'smbdotconf/parameters.all.xml'
 bld.SAMBA_GENERATOR(parameter_all,
                     source=articles,

@@ -727,7 +727,7 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
     '''used to copy scripts from the source tree into the build directory
        for use by selftest'''
 
-    source = bld.path.ant_glob(pattern)
+    source = bld.path.ant_glob(pattern, flat=True)
 
     bld.SET_BUILD_GROUP('build_source')
     for s in TO_LIST(source):
@@ -856,7 +856,7 @@ Build.BuildContext.INSTALL_FILES = INSTALL_FILES
 def INSTALL_WILDCARD(bld, destdir, pattern, chmod=MODE_644, flat=False,
                      python_fixup=False, exclude=None, trim_path=None):
     '''install a set of files matching a wildcard pattern'''
-    files=TO_LIST(bld.path.ant_glob(pattern))
+    files=TO_LIST(bld.path.ant_glob(pattern, flat=True))
     if trim_path:
         files2 = []
         for f in files:
