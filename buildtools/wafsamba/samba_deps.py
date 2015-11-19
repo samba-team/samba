@@ -360,7 +360,7 @@ def check_group_ordering(bld, tgt_list):
                 ret = False
 
     return ret
-
+Build.BuildContext.check_group_ordering = check_group_ordering
 
 def show_final_deps(bld, tgt_list):
     '''show the final dependencies for all targets'''
@@ -1159,7 +1159,7 @@ def check_project_rules(bld):
 
     debug("deps: check_duplicate_sources: %f" % (time.clock() - tstart))
 
-    if not check_group_ordering(bld, tgt_list):
+    if not bld.check_group_ordering(tgt_list):
         Logs.error("Bad group ordering - aborting")
         sys.exit(1)
 
