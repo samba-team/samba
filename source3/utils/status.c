@@ -297,8 +297,9 @@ static const char *session_dialect_str(uint16_t dialect)
 
 static int traverse_connections(const struct connections_key *key,
 				const struct connections_data *crec,
-				void *state)
+				void *private_data)
 {
+	TALLOC_CTX *mem_ctx = (TALLOC_CTX *)private_data;
 	struct server_id_buf tmp;
 
 	if (crec->cnum == TID_FIELD_INVALID)
@@ -538,7 +539,7 @@ int main(int argc, const char *argv[])
 		d_printf("\nService      pid     machine       Connected at\n");
 		d_printf("-------------------------------------------------------\n");
 
-		connections_forall_read(traverse_connections, NULL);
+		connections_forall_read(traverse_connections, frame);
 
 		d_printf("\n");
 
