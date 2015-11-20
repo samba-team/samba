@@ -250,7 +250,9 @@ struct composite_context *wb_cmd_pam_auth_send(TALLOC_CTX *mem_ctx,
 		cli_credentials_get_domain(credentials));
 
 	status = cli_credentials_get_ntlm_response(
-		credentials, mem_ctx, &flags, chal, names_blob,
+		credentials, mem_ctx, &flags, chal,
+		NULL, /* server_timestamp */
+		names_blob,
 		&lm_resp, &nt_resp, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
