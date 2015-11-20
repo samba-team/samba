@@ -50,7 +50,8 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 					    const DATA_BLOB challenge_msg,
 					    TALLOC_CTX *mem_ctx,
 					    DATA_BLOB *auth_msg,
-					    uint8_t session_key[16])
+					    uint8_t session_key[16],
+					    uint8_t *new_spnego)
 {
 	NTSTATUS status;
 	struct auth_generic_state *auth_generic_state = NULL;
@@ -144,6 +145,8 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 	memcpy(session_key, session_key_blob.data, 16);
 	data_blob_free(&session_key_blob);
 	*auth_msg = reply;
+	*new_spnego = gensec_have_feature(auth_generic_state->gensec_security,
+					  GENSEC_FEATURE_NEW_SPNEGO);
 	status = NT_STATUS_OK;
 
 done:
@@ -272,7 +275,8 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 	result = do_ntlm_auth_with_stored_pw(
 		name_user, name_domain, entry->pass,
 		initial, challenge, talloc_tos(), &auth,
-		state->response->data.ccache_ntlm_auth.session_key);
+		state->response->data.ccache_ntlm_auth.session_key,
+		&state->response->data.ccache_ntlm_auth.new_spnego);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto process_result;
