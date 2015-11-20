@@ -5551,6 +5551,7 @@ void nwrap_destructor(void)
 		nwrap_pw_global.num = 0;
 	}
 
+#if defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM)
 	if (nwrap_sp_global.cache != NULL) {
 		struct nwrap_cache *c = nwrap_sp_global.cache;
 
@@ -5562,6 +5563,7 @@ void nwrap_destructor(void)
 
 		nwrap_sp_global.num = 0;
 	}
+#endif /* defined(HAVE_SHADOW_H) && defined(HAVE_GETSPNAM) */
 
 	if (nwrap_he_global.cache != NULL) {
 		struct nwrap_cache *c = nwrap_he_global.cache;
