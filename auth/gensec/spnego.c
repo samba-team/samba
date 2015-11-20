@@ -970,13 +970,15 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		}
 
 		/* Server didn't like our choice of mech, and chose something else */
-		if ((spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_INCOMPLETE) &&
+		if (((spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_INCOMPLETE) ||
+		     (spnego.negTokenTarg.negResult == SPNEGO_REQUEST_MIC)) &&
 		    spnego.negTokenTarg.supportedMech &&
 		    strcmp(spnego.negTokenTarg.supportedMech, spnego_state->neg_oid) != 0) {
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
-				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech), 
-				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid)));
+				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
+				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech)));
 
+			spnego_state->no_response_expected = false;
 			talloc_free(spnego_state->sub_sec_security);
 			nt_status = gensec_subcontext_start(spnego_state,
 							    gensec_security,
