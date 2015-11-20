@@ -784,6 +784,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		const char *my_mechs[] = {NULL, NULL};
 		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
+		bool ok;
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
@@ -844,6 +845,14 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 			DEBUG(1, ("Failed to write SPNEGO reply to NEG_TOKEN_INIT\n"));
 				return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		ok = spnego_write_mech_types(spnego_state,
+					     my_mechs,
+					     &spnego_state->mech_types);
+		if (!ok) {
+			DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* set next state */
