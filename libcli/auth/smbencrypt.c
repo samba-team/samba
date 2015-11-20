@@ -387,14 +387,13 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 	return names_blob;
 }
 
-static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLOB *names_blob)
+static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx,
+					     NTTIME nttime,
+					     const DATA_BLOB *names_blob)
 {
 	uint8_t client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
 	uint8_t long_date[8];
-	NTTIME nttime;
-
-	unix_to_nt_time(&nttime, time(NULL));
 
 	generate_random_buffer(client_chal, sizeof(client_chal));
 
@@ -417,6 +416,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 					  const uint8_t ntlm_v2_hash[16],
 					  const DATA_BLOB *server_chal,
+					  NTTIME nttime,
 					  const DATA_BLOB *names_blob)
 {
 	uint8_t ntlmv2_response[16];
@@ -433,7 +433,7 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 	/* NTLMv2 */
 	/* generate some data to pass into the response function - including
 	   the hostname and domain name of the server */
-	ntlmv2_client_data = NTLMv2_generate_client_data(mem_ctx, names_blob);
+	ntlmv2_client_data = NTLMv2_generate_client_data(mem_ctx, nttime, names_blob);
 
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
@@ -479,6 +479,7 @@ static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx,
 bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 			   const char *user, const char *domain, const uint8_t nt_hash[16],
 			   const DATA_BLOB *server_chal,
+			   const NTTIME *server_timestamp,
 			   const DATA_BLOB *names_blob,
 			   DATA_BLOB *lm_response, DATA_BLOB *nt_response,
 			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key)
@@ -494,8 +495,19 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	}
 
 	if (nt_response) {
+		const NTTIME *nttime = server_timestamp;
+		NTTIME _now = 0;
+
+		if (nttime == NULL) {
+			struct timeval tv_now = timeval_current();
+			_now = timeval_to_nttime(&tv_now);
+			nttime = &_now;
+		}
+
 		*nt_response = NTLMv2_generate_response(mem_ctx,
-							ntlm_v2_hash, server_chal,
+							ntlm_v2_hash,
+							server_chal,
+							*nttime,
 							names_blob);
 		if (user_session_key) {
 			*user_session_key = data_blob_talloc(mem_ctx, NULL, 16);
@@ -509,8 +521,13 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	/* LMv2 */
 
 	if (lm_response) {
-		*lm_response = LMv2_generate_response(mem_ctx,
-						      ntlm_v2_hash, server_chal);
+		if (server_timestamp != NULL) {
+			*lm_response = data_blob_talloc_zero(mem_ctx, 24);
+		} else {
+			*lm_response = LMv2_generate_response(mem_ctx,
+							      ntlm_v2_hash,
+							      server_chal);
+		}
 		if (lm_session_key) {
 			*lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 
@@ -535,7 +552,8 @@ bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx,
 	E_md4hash(password, nt_hash);
 
 	return SMBNTLMv2encrypt_hash(mem_ctx,
-				     user, domain, nt_hash, server_chal, names_blob,
+				     user, domain, nt_hash,
+				     server_chal, NULL, names_blob,
 				     lm_response, nt_response, lm_session_key, user_session_key);
 }
 
