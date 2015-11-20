@@ -22,6 +22,7 @@
 #ifndef __CREDENTIALS_H__
 #define __CREDENTIALS_H__
 
+#include "../lib/util/time.h"
 #include "../lib/util/data_blob.h"
 #include "librpc/gen_ndr/misc.h"
 
