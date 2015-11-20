@@ -59,15 +59,17 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	NTSTATUS status;
+	const DATA_BLOB version_blob = ntlmssp_version_blob();
 
 	/* generate the ntlmssp negotiate packet */
 	status = msrpc_gen(out_mem_ctx,
-		  out, "CddAA",
+		  out, "CddAAb",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
-		  "",  /* domain */
-		  ""); /* workstation */
+		  "", /* domain */
+		  "", /* workstation */
+		  version_blob.data, version_blob.length);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntlmssp_client_initial: failed to generate "
 			  "ntlmssp negotiate packet\n"));
@@ -220,6 +222,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	int flags = 0;
 	const char *user = NULL, *domain = NULL, *workstation = NULL;
 	bool is_anonymous = false;
+	const DATA_BLOB version_blob = ntlmssp_version_blob();
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -253,7 +256,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string = "CdUdbdd";
 			chal_parse_string_short = "CdUdb";
 		}
-		auth_gen_string = "CdBBUUUBd";
+		auth_gen_string = "CdBBUUUBdb";
 	} else {
 		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdAdbddB";
@@ -262,7 +265,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string_short = "CdAdb";
 		}
 
-		auth_gen_string = "CdBBAAABd";
+		auth_gen_string = "CdBBAAABdb";
 	}
 
 	if (!msrpc_parse(mem_ctx,
@@ -508,7 +511,8 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       user,
 		       workstation,
 		       encrypted_session_key.data, encrypted_session_key.length,
-		       ntlmssp_state->neg_flags);
+		       ntlmssp_state->neg_flags,
+		       version_blob.data, version_blob.length);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
@@ -581,6 +585,7 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_NEGOTIATE_VERSION |
 		NTLMSSP_REQUEST_TARGET;
 
 	if (ntlmssp_state->unicode) {
