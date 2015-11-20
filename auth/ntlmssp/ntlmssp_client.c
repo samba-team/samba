@@ -58,18 +58,7 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	const char *domain = ntlmssp_state->client.netbios_domain;
-	const char *workstation = ntlmssp_state->client.netbios_name;
 	NTSTATUS status;
-
-	/* These don't really matter in the initial packet, so don't panic if they are not set */
-	if (!domain) {
-		domain = "";
-	}
-
-	if (!workstation) {
-		workstation = "";
-	}
 
 	/* generate the ntlmssp negotiate packet */
 	status = msrpc_gen(out_mem_ctx,
@@ -77,9 +66,8 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
-		  domain,
-		  workstation);
-
+		  "",  /* domain */
+		  ""); /* workstation */
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntlmssp_client_initial: failed to generate "
 			  "ntlmssp negotiate packet\n"));
