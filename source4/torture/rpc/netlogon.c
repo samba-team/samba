@@ -882,6 +882,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
