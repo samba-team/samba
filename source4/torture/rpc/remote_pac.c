@@ -735,6 +735,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	status = cli_credentials_get_ntlm_response(client_creds, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
