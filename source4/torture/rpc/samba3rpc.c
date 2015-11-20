@@ -1192,7 +1192,7 @@ static bool schan(struct torture_context *tctx,
 			cli_credentials_get_workstation(user_creds),
 			cli_credentials_get_domain(user_creds));
 		status = cli_credentials_get_ntlm_response(
-			user_creds, mem_ctx, &flags, chal, names_blob,
+			user_creds, mem_ctx, &flags, chal, NULL, names_blob,
 			&lm_resp, &nt_resp, NULL, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_comment(tctx, "cli_credentials_get_ntlm_response failed:"
