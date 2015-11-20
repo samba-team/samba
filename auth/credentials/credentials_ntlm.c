@@ -104,7 +104,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 					   user, 
 					   domain, 
 					   nt_hash->hash, &challenge, 
-					   &target_info, 
+					   server_timestamp, &target_info,
 					   &lm_response, &nt_response, 
 					   NULL, &session_key)) {
 			return NT_STATUS_NO_MEMORY;

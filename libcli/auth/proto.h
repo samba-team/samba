@@ -144,6 +144,7 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx, 
 			   const char *user, const char *domain, const uint8_t nt_hash[16],
 			   const DATA_BLOB *server_chal, 
+			   const NTTIME *server_timestamp,
 			   const DATA_BLOB *names_blob,
 			   DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
 			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) ;
