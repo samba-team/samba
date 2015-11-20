@@ -1286,7 +1286,17 @@ wbcErr wbcCtxCredentialCache(struct wbcContext *ctx,
 	}
 
 	for (i=0; i<params->num_blobs; i++) {
-		if (strcasecmp(params->blobs[i].name, "initial_blob") == 0) {
+		/*
+		 * Older callers may used to provide the NEGOTIATE request
+		 * as "initial_blob", but it was completely ignored by winbindd.
+		 *
+		 * So we keep ignoring it.
+		 *
+		 * A new callers that is capable to support "new_spnego",
+		 * will provide the NEGOTIATE request as "negotiate_blob"
+		 * instead.
+		 */
+		if (strcasecmp(params->blobs[i].name, "negotiate_blob") == 0) {
 			if (initial_blob != NULL) {
 				status = WBC_ERR_INVALID_PARAM;
 				goto fail;
@@ -1383,6 +1393,15 @@ wbcErr wbcCtxCredentialCache(struct wbcContext *ctx,
 		sizeof(response.data.ccache_ntlm_auth.session_key));
 	if (!WBC_ERROR_IS_OK(status)) {
 		goto fail;
+	}
+	if (response.data.ccache_ntlm_auth.new_spnego) {
+		status = wbcAddNamedBlob(
+			&result->num_blobs, &result->blobs, "new_spnego", 0,
+			&response.data.ccache_ntlm_auth.new_spnego,
+			sizeof(response.data.ccache_ntlm_auth.new_spnego));
+		if (!WBC_ERROR_IS_OK(status)) {
+			goto fail;
+		}
 	}
 
 	*info = result;
