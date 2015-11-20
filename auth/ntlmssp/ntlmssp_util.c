@@ -119,10 +119,6 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_VERSION)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_VERSION;
-	}
-
 	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
