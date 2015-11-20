@@ -904,7 +904,9 @@ static void ctdb_fetch_lock_migrate_done(struct tevent_req *subreq)
 
 	ret = ctdb_fetch_lock_check(req);
 	if (ret != 0) {
-		tevent_req_error(req, ret);
+		if (ret != EAGAIN) {
+			tevent_req_error(req, ret);
+		}
 		return;
 	}
 
