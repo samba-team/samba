@@ -5560,7 +5560,7 @@ void nwrap_destructor(void)
 			c->fd = -1;
 		}
 
-		nwrap_he_global.num = 0;
+		nwrap_sp_global.num = 0;
 	}
 
 	if (nwrap_he_global.cache != NULL) {
