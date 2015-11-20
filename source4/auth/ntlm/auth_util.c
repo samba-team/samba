@@ -350,7 +350,9 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 				if (!SMBNTLMv2encrypt_hash(user_info_temp,
 							   user_info_in->client.account_name, 
 							   user_info_in->client.domain_name, 
-							   user_info_in->password.hash.nt->hash, &chall_blob,
+							   user_info_in->password.hash.nt->hash,
+							   &chall_blob,
+							   NULL, /* server_timestamp */
 							   &names_blob,
 							   &lmv2_response, &ntlmv2_response, 
 							   &lmv2_session_key, &ntlmv2_session_key)) {
