@@ -228,6 +228,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	const char *user = NULL, *domain = NULL, *workstation = NULL;
 	bool is_anonymous = false;
 	const DATA_BLOB version_blob = ntlmssp_version_blob();
+	const NTTIME *server_timestamp = NULL;
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -454,10 +455,10 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	nt_status = cli_credentials_get_ntlm_response(gensec_security->credentials, mem_ctx,
-						      &flags, challenge_blob, target_info,
+						      &flags, challenge_blob,
+						      server_timestamp, target_info,
 						      &lm_response, &nt_response,
 						      &lm_session_key, &session_key);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}

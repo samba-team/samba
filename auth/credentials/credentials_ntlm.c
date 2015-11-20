@@ -30,7 +30,9 @@
 
 _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					   int *flags,
-					   DATA_BLOB challenge, DATA_BLOB target_info, 
+					   DATA_BLOB challenge,
+					   const NTTIME *server_timestamp,
+					   DATA_BLOB target_info,
 					   DATA_BLOB *_lm_response, DATA_BLOB *_nt_response, 
 					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key) 
 {

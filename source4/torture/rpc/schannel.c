@@ -87,6 +87,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
@@ -853,6 +854,7 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	status = cli_credentials_get_ntlm_response(user_creds, conn->tmp,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
