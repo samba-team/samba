@@ -5577,6 +5577,9 @@ void nwrap_destructor(void)
 		nwrap_he_global.num = 0;
 	}
 
+	free(user_addrlist.items);
+	free(user_addrlist2.items);
+
 	hdestroy();
 	NWRAP_UNLOCK_ALL;
 }
