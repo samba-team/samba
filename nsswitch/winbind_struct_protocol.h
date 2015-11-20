@@ -486,6 +486,7 @@ struct winbindd_response {
 		struct {
 			uint8_t session_key[16];
 			uint32_t auth_blob_len; /* blob in extra_data */
+			uint8_t new_spnego;
 		} ccache_ntlm_auth;
 		struct {
 			fstring dc_unc;
