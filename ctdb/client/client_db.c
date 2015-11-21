@@ -869,6 +869,7 @@ static void ctdb_fetch_lock_migrate(struct tevent_req *req)
 	request.db_id = state->h->db->db_id;
 	request.callid = CTDB_NULL_FUNC;
 	request.key = state->h->key;
+	request.calldata = tdb_null;
 
 	subreq = ctdb_client_call_send(state, state->ev, state->client,
 				       &request);
