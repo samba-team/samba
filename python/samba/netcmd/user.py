@@ -52,17 +52,17 @@ Unix (RFC2307) attributes may be added to the user account. Attributes taken fro
 The command may be run from the root userid or another authorized userid.  The -H or --URL= option can be used to execute the command against a remote server.
 
 Example1:
-samba-tool user add User1 passw0rd --given-name=John --surname=Smith --must-change-at-next-login -H ldap://samba.samdom.example.com -Uadministrator%passw1rd
+samba-tool user create User1 passw0rd --given-name=John --surname=Smith --must-change-at-next-login -H ldap://samba.samdom.example.com -Uadministrator%passw1rd
 
 Example1 shows how to create a new user in the domain against a remote LDAP server.  The -H parameter is used to specify the remote target server.  The -U option is used to pass the userid and password authorized to issue the command remotely.
 
 Example2:
-sudo samba-tool user add User2 passw2rd --given-name=Jane --surname=Doe --must-change-at-next-login
+sudo samba-tool user create User2 passw2rd --given-name=Jane --surname=Doe --must-change-at-next-login
 
 Example2 shows how to create a new user in the domain against the local server.   sudo is used so a user may run the command as root.  In this example, after User2 is created, he/she will be forced to change their password when they logon.
 
 Example3:
-samba-tool user add User3 passw3rd --userou='OU=OrgUnit'
+samba-tool user create User3 passw3rd --userou='OU=OrgUnit'
 
 Example3 shows how to create a new user in the OrgUnit organizational unit.
 
@@ -72,7 +72,7 @@ samba-tool user create User4 passw4rd --rfc2307-from-nss --gecos 'some text'
 Example4 shows how to create a new user with Unix UID, GID and login-shell set from the local NSS and GECOS set to 'some text'.
 
 Example5:
-samba-tool user add User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \
+samba-tool user create User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \
            --uid-number=10005 --login-shell=/bin/false --gid-number=10000
 
 Example5 shows how to create an RFC2307/NIS domain enabled user account. If
