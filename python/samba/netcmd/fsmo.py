@@ -38,7 +38,8 @@ def get_fsmo_roleowner(samdb, roledn):
     """
     res = samdb.search(roledn,
                        scope=ldb.SCOPE_BASE, attrs=["fSMORoleOwner"])
-    assert len(res) == 1
+    if len(res) == 0:
+        raise CommandError('"%s" does not have a FSMO roleowner' % roledn)
     master_owner = res[0]["fSMORoleOwner"][0]
     return master_owner
 
