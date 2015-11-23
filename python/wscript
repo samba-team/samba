@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+
+import os
+
+def configure(conf):
+    kerberos_py = conf.srcdir + "/python/samba/provision/kerberos_implementation.py"
+
+    f = open(kerberos_py, 'w')
+    try:
+        header = """#
+# Copyright (c) 2016      Andreas Schneider <asn@samba.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+"""
+        f.write(header)
+
+        data = """kdb_modules_dir = "{0}"
+kdc_default_config_dir = "{1}"
+"""
+
+        if conf.env.HEIMDAL_KRB5_CONFIG:
+            f.write(data.format("", ""))
+        else:
+            modulesdir = "%s/krb5/plugins/kdb" % conf.env.LIBDIR
+            paths = [ "/var/kerberos/krb5kdc", "/var/lib/kerberos/krb5kdc" ]
+            kdc_path = None
+            for p in paths:
+                if os.path.exists(p):
+                    kdc_path = p
+
+            f.write(data.format(modulesdir, kdc_path))
+    finally:
+        f.close()
