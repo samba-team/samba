@@ -5578,7 +5578,9 @@ void nwrap_destructor(void)
 	}
 
 	free(user_addrlist.items);
+#ifdef HAVE_GETHOSTBYNAME2
 	free(user_addrlist2.items);
+#endif
 
 	hdestroy();
 	NWRAP_UNLOCK_ALL;
