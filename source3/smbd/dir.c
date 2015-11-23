@@ -1912,14 +1912,14 @@ static int files_below_forall_fn(struct file_id fid,
 		return 0;
 	}
 
-	if (memcmp(state->dirpath, fullpath, len) != 0) {
+	if (memcmp(state->dirpath, fullpath, state->dirpath_len) != 0) {
 		/*
 		 * Not a parent
 		 */
 		return 0;
 	}
 
-	return state->fn(fid, data, private_data);
+	return state->fn(fid, data, state->private_data);
 }
 
 static int files_below_forall(connection_struct *conn,
@@ -1929,7 +1929,10 @@ static int files_below_forall(connection_struct *conn,
 					void *private_data),
 			      void *private_data)
 {
-	struct files_below_forall_state state = {};
+	struct files_below_forall_state state = {
+			.fn = fn,
+			.private_data = private_data,
+	};
 	int ret;
 	char tmpbuf[PATH_MAX];
 	char *to_free;
@@ -1963,7 +1966,9 @@ static int have_file_open_below_fn(struct file_id fid,
 static bool have_file_open_below(connection_struct *conn,
 				 const struct smb_filename *name)
 {
-	struct have_file_open_below_state state = {};
+	struct have_file_open_below_state state = {
+		.found_one = false,
+	};
 	int ret;
 
 	if (!VALID_STAT(name->st)) {
