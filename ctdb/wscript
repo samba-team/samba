@@ -373,6 +373,17 @@ def build(bld):
                         includes='include',
                         deps='replace talloc tevent tdb tdb-wrap')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-ipalloc',
+                        source=bld.SUBDIR('server',
+                                          '''ipalloc_deterministic.c
+                                             ipalloc_nondeterministic.c
+                                             ipalloc_lcp2.c
+                                             ipalloc_common.c
+                                             ipalloc.c
+                                          '''),
+                        includes='include',
+                        deps='ctdb-protocol replace talloc tevent')
+
     bld.SAMBA_SUBSYSTEM('ctdb-server',
                         source='server/ctdbd.c ' +
                                bld.SUBDIR('server',
@@ -393,7 +404,7 @@ def build(bld):
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c'''),
                         includes='include',
-                        deps='replace popt talloc tevent tdb talloc_report')
+                        deps='ctdb-ipalloc replace popt talloc tevent tdb talloc_report')
 
     bld.SAMBA_BINARY('ctdbd',
                      source='',
@@ -664,7 +675,8 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='''replace popt tdb tevent talloc ctdb-system
-                             samba-util tdb-wrap talloc_report''' +
+                             samba-util tdb-wrap talloc_report
+                             ctdb-protocol''' +
                           ib_deps,
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')

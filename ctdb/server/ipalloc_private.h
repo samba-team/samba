@@ -1,0 +1,43 @@
+/*
+   CTDB IP takeover code
+
+   Copyright (C) Ronnie Sahlberg  2007
+   Copyright (C) Andrew Tridgell  2007
+   Copyright (C) Martin Schwenke  2015
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef __CTDB_IPALLOC_PRIVATE_H__
+#define __CTDB_IPALLOC_PRIVATE_H__
+
+#include "protocol/protocol.h"
+
+#include "server/ipalloc.h"
+
+bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
+			  int32_t pnn,
+			  struct public_ip_list *ip);
+int node_ip_coverage(int32_t pnn, struct public_ip_list *ips);
+int find_takeover_node(struct ipalloc_state *ipalloc_state,
+		       struct public_ip_list *ip);
+
+void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state);
+void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state);
+
+bool ipalloc_nondeterministic(struct ipalloc_state *ipalloc_state);
+bool ipalloc_deterministic(struct ipalloc_state *ipalloc_state);
+bool ipalloc_lcp2(struct ipalloc_state *ipalloc_state);
+
+#endif /* __CTDB_IPALLOC_PRIVATE_H__ */
