@@ -43,3 +43,47 @@ kdc_default_config_dir = "{1}"
             f.write(data.format(modulesdir, kdc_path))
     finally:
         f.close()
+
+def build(bld):
+    bld.SAMBA_LIBRARY('samba_python',
+                      source=[],
+                      deps='''
+                           LIBPYTHON
+                           pytalloc-util
+                           pyrpc_util
+                           ''',
+                      grouping_library=True,
+                      private_library=True,
+                      pyembed=True,
+                      enabled=bld.PYTHON_BUILD_IS_ENABLED())
+
+    bld.SAMBA_SUBSYSTEM('LIBPYTHON',
+                        source='modules.c',
+                        public_deps='',
+                        init_function_sentinel='{NULL,NULL}',
+                        deps='talloc',
+                        pyext=True,
+                        enabled=bld.PYTHON_BUILD_IS_ENABLED())
+
+    for env in bld.gen_python_environments():
+        pytalloc_util = bld.pyembed_libname('pytalloc-util')
+        pyparam_util = bld.pyembed_libname('pyparam_util')
+
+        bld.SAMBA_PYTHON('python_glue',
+                         source='pyglue.c',
+                         deps='''
+                              %s
+                              samba-util
+                              netif
+                              %s
+                              ''' % (pyparam_util, pytalloc_util),
+                         realname='samba/_glue.so')
+
+    if bld.PYTHON_BUILD_IS_ENABLED():
+        for env in bld.gen_python_environments():
+            # install out various python scripts for use by make test
+            bld.SAMBA_SCRIPT('samba_python_files',
+                             pattern='samba/**/*.py',
+                             installdir='python')
+
+            bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'samba/**/*.py', flat=False)
