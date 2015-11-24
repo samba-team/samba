@@ -229,6 +229,8 @@ long TellDir(struct smb_Dir *dirp);
 bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset);
 NTSTATUS can_delete_directory(struct connection_struct *conn,
 				const char *dirname);
+bool have_file_open_below(connection_struct *conn,
+			const struct smb_filename *name);
 
 /* The following definitions come from smbd/dmapi.c  */
 

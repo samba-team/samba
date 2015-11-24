@@ -1965,7 +1965,7 @@ static int have_file_open_below_fn(struct file_id fid,
 	return 1;
 }
 
-static bool have_file_open_below(connection_struct *conn,
+bool have_file_open_below(connection_struct *conn,
 				 const struct smb_filename *name)
 {
 	struct have_file_open_below_state state = {
