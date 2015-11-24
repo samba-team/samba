@@ -1940,7 +1940,6 @@ static int files_below_forall(connection_struct *conn,
 					  &state.dirpath, &to_free);
 	if (state.dirpath_len == -1) {
 		return -1;
-
 	}
 
 	ret = share_mode_forall(files_below_forall_fn, &state);
