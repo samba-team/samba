@@ -133,3 +133,38 @@ bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob)
 		return false;
 	}
 }
+
+const DATA_BLOB ntlmssp_version_blob(void)
+{
+	/*
+	 * This is a simplified version of
+	 *
+	 * enum ndr_err_code err;
+	 * struct ntlmssp_VERSION vers;
+	 *
+	 * ZERO_STRUCT(vers);
+	 * vers.ProductMajorVersion = NTLMSSP_WINDOWS_MAJOR_VERSION_6;
+	 * vers.ProductMinorVersion = NTLMSSP_WINDOWS_MINOR_VERSION_1;
+	 * vers.ProductBuild = 0;
+	 * vers.NTLMRevisionCurrent = NTLMSSP_REVISION_W2K3;
+	 *
+	 * err = ndr_push_struct_blob(&version_blob,
+	 * 			ntlmssp_state,
+	 * 			&vers,
+	 * 			(ndr_push_flags_fn_t)ndr_push_ntlmssp_VERSION);
+	 *
+	 * if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+	 * 	data_blob_free(&struct_blob);
+	 * 	return NT_STATUS_NO_MEMORY;
+	 * }
+	 */
+	static const uint8_t version_buffer[8] = {
+		NTLMSSP_WINDOWS_MAJOR_VERSION_6,
+		NTLMSSP_WINDOWS_MINOR_VERSION_1,
+		0x00, 0x00, /* product build */
+		0x00, 0x00, 0x00, /* reserved */
+		NTLMSSP_REVISION_W2K3
+	};
+
+	return data_blob_const(version_buffer, ARRAY_SIZE(version_buffer));
+}
