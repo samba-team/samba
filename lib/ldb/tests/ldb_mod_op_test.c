@@ -247,6 +247,36 @@ static int base_search_count(struct ldbtest_ctx *test_ctx, const char *entry_dn)
 	return count;
 }
 
+static int sub_search_count(struct ldbtest_ctx *test_ctx,
+			    const char *base_dn,
+			    const char *filter)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *basedn;
+	struct ldb_result *result = NULL;
+	int ret;
+	int count;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	basedn = ldb_dn_new_fmt(tmp_ctx, test_ctx->ldb, "%s", base_dn);
+	assert_non_null(basedn);
+
+	ret = ldb_search(test_ctx->ldb, tmp_ctx, &result, basedn,
+			 LDB_SCOPE_SUBTREE, NULL, "%s", filter);
+	assert_int_equal(ret, LDB_SUCCESS);
+	assert_non_null(result);
+
+	count = result->count;
+	talloc_free(tmp_ctx);
+	return count;
+}
+
+/* In general it would be better if utility test functions didn't assert
+ * but only returned a value, then assert in the test shows correct
+ * line
+ */
 static void assert_dn_exists(struct ldbtest_ctx *test_ctx,
 			     const char *entry_dn)
 {
@@ -1139,6 +1169,87 @@ static void test_search_match_basedn(void **state)
 	assert_int_equal(ret, 0);
 }
 
+static int ldb_case_test_setup(void **state)
+{
+	int ret;
+	struct ldb_ldif *ldif;
+	struct ldbtest_ctx *ldb_test_ctx;
+	const char *attrs_ldif =  \
+		"dn: @ATTRIBUTES\n"
+		"cn: CASE_INSENSITIVE\n"
+		"\n";
+	struct keyval kvs[] = {
+		{ "cn", "CaseInsensitiveValue" },
+		{ "uid", "CaseSensitiveValue" },
+		{ NULL, NULL },
+	};
+
+
+	ldbtest_setup((void **) &ldb_test_ctx);
+
+	while ((ldif = ldb_ldif_read_string(ldb_test_ctx->ldb, &attrs_ldif))) {
+		ret = ldb_add(ldb_test_ctx->ldb, ldif->msg);
+		assert_int_equal(ret, LDB_SUCCESS);
+	}
+
+	ldb_test_add_data(ldb_test_ctx,
+			  ldb_test_ctx,
+			  "cn=CaseInsensitiveValue",
+			  kvs);
+
+	*state = ldb_test_ctx;
+	return 0;
+}
+
+static int ldb_case_test_teardown(void **state)
+{
+	int ret;
+	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+
+	struct ldb_dn *del_dn;
+
+	del_dn = ldb_dn_new_fmt(ldb_test_ctx,
+				ldb_test_ctx->ldb,
+				"@ATTRIBUTES");
+	assert_non_null(del_dn);
+
+	ret = ldb_delete(ldb_test_ctx->ldb, del_dn);
+	assert_int_equal(ret, LDB_SUCCESS);
+
+	assert_dn_doesnt_exist(ldb_test_ctx,
+			       "@ATTRIBUTES");
+
+	ldb_test_remove_data(ldb_test_ctx, ldb_test_ctx,
+			     "cn=CaseInsensitiveValue");
+
+	ldbtest_teardown((void **) &ldb_test_ctx);
+	return 0;
+}
+
+static void test_ldb_attrs_case_insensitive(void **state)
+{
+	int cnt;
+	struct ldbtest_ctx *ldb_test_ctx = talloc_get_type_abort(*state,
+			struct ldbtest_ctx);
+
+	/* cn matches exact case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=CaseInsensitiveValue");
+	assert_int_equal(cnt, 1);
+
+	/* cn matches lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "cn=caseinsensitivevalue");
+	assert_int_equal(cnt, 1);
+
+	/* uid matches exact case */
+	cnt = sub_search_count(ldb_test_ctx, "", "uid=CaseSensitiveValue");
+	assert_int_equal(cnt, 1);
+
+	/* uid does not match lower case */
+	cnt = sub_search_count(ldb_test_ctx, "", "uid=casesensitivevalue");
+	assert_int_equal(cnt, 0);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1202,6 +1313,9 @@ int main(int argc, const char **argv)
 		cmocka_unit_test_setup_teardown(test_search_match_basedn,
 						ldb_search_test_setup,
 						ldb_search_test_teardown),
+		cmocka_unit_test_setup_teardown(test_ldb_attrs_case_insensitive,
+						ldb_case_test_setup,
+						ldb_case_test_teardown),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
