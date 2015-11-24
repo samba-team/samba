@@ -2622,12 +2622,14 @@ static bool nwrap_ed_inventarize_add_to_existing(struct nwrap_entdata *const ed,
 	for (cursor = el; cursor->next != NULL; cursor = cursor->next)
 	{
 		if (cursor->ed == ed) {
-			return false;
+			/* The entry already exists in this list. */
+			return true;
 		}
 	}
 
 	if (cursor->ed == ed) {
-		return false;
+		/* The entry already exists in this list. */
+		return true;
 	}
 
 	el_new = nwrap_entlist_init(ed);
