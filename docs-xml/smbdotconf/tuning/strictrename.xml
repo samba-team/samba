@@ -15,9 +15,18 @@
     Samba system the cost is even greater than the non-clustered
     case.</para>
 
-    <para>For this reason the default is "no", and it is recommended
-    to be left that way unless a specific Windows application requires
-    it to be changed.</para>
+    <para>When set to "no" smbd only checks the local process
+    the client is attached to for open files below a directory
+    being renamed, instead of checking for open files across all
+    smbd processes.</para>
+
+    <para>Because of the expense in fully searching the database,
+    the default is "no", and it is recommended to be left that way
+    unless a specific Windows application requires it to be changed.</para>
+
+    <para>If the client has requested UNIX extensions (POSIX
+    pathnames) then renames are always allowed and this parameter
+    has no effect.</para>
 
 </description>
 
