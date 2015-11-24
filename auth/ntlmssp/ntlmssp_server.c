@@ -168,29 +168,7 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	{
 		/* Marshal the packet in the right format, be it unicode or ASCII */
 		const char *gen_string;
-		DATA_BLOB version_blob = data_blob_null;
-
-		if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
-			enum ndr_err_code err;
-			struct ntlmssp_VERSION vers;
-
-			/* "What Windows returns" as a version number. */
-			ZERO_STRUCT(vers);
-			vers.ProductMajorVersion = NTLMSSP_WINDOWS_MAJOR_VERSION_6;
-			vers.ProductMinorVersion = NTLMSSP_WINDOWS_MINOR_VERSION_1;
-			vers.ProductBuild = 0;
-			vers.NTLMRevisionCurrent = NTLMSSP_REVISION_W2K3;
-
-			err = ndr_push_struct_blob(&version_blob,
-						ntlmssp_state,
-						&vers,
-						(ndr_push_flags_fn_t)ndr_push_ntlmssp_VERSION);
-
-			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
-				data_blob_free(&struct_blob);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
+		const DATA_BLOB version_blob = ntlmssp_version_blob();
 
 		if (ntlmssp_state->unicode) {
 			gen_string = "CdUdbddBb";
@@ -209,12 +187,9 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 			version_blob.data, version_blob.length);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			data_blob_free(&version_blob);
 			data_blob_free(&struct_blob);
 			return status;
 		}
-
-		data_blob_free(&version_blob);
 
 		if (DEBUGLEVEL >= 10) {
 			struct CHALLENGE_MESSAGE *challenge = talloc(
