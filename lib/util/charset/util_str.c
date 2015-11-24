@@ -210,7 +210,8 @@ _PUBLIC_ size_t strlen_m_ext_handle(struct smb_iconv_handle *ic,
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_handle_ext(ic, s, src_charset, &c_size);
+		codepoint_t c = next_codepoint_handle_ext(ic, s, strnlen(s, 5),
+							  src_charset, &c_size);
 		s += c_size;
 
 		switch (dst_charset) {
