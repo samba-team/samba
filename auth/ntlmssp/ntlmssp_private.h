@@ -61,6 +61,7 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 void debug_ntlmssp_flags(uint32_t neg_flags);
 void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 			      uint32_t neg_flags, bool allow_lm);
+const DATA_BLOB ntlmssp_version_blob(void);
 
 /* The following definitions come from auth/ntlmssp_server.c  */
 
