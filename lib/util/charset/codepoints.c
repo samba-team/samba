@@ -331,7 +331,10 @@ _PUBLIC_ codepoint_t next_codepoint_handle_ext(
 	size_t olen;
 	char *outbuf;
 
-	if ((str[0] & 0x80) == 0) {
+
+	if (((str[0] & 0x80) == 0) && (src_charset == CH_DOS ||
+				       src_charset == CH_UNIX ||
+				       src_charset == CH_UTF8)) {
 		*bytes_consumed = 1;
 		return (codepoint_t)str[0];
 	}
