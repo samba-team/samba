@@ -112,7 +112,8 @@ _PUBLIC_ char *strupper_talloc_n_handle(struct smb_iconv_handle *iconv_handle,
 
 	while (n-- && *src) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_handle(iconv_handle, src, &c_size);
+		codepoint_t c = next_codepoint_handle_ext(iconv_handle, src, n,
+							  CH_UNIX, &c_size);
 		src += c_size;
 
 		c = toupper_m(c);
