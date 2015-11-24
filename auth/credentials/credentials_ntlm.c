@@ -110,6 +110,12 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 
 		/* LM Key is incompatible... */
 		*flags &= ~CLI_CRED_LANMAN_AUTH;
+		if (lm_response.length != 0) {
+			/*
+			 * We should not expose the lm key.
+			 */
+			memset(lm_response.data, 0, lm_response.length);
+		}
 	} else if (*flags & CLI_CRED_NTLM2) {
 		MD5_CTX md5_session_nonce_ctx;
 		uint8_t session_nonce[16];
