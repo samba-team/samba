@@ -48,6 +48,10 @@ static const struct ntlmssp_callbacks {
 		.command	= NTLMSSP_INITIAL,
 		.sync_fn	= ntlmssp_client_initial,
 	},{
+		.role		= NTLMSSP_CLIENT,
+		.command	= NTLMSSP_NEGOTIATE,
+		.sync_fn	= gensec_ntlmssp_resume_ccache,
+	},{
 		.role		= NTLMSSP_SERVER,
 		.command	= NTLMSSP_NEGOTIATE,
 		.sync_fn	= gensec_ntlmssp_server_negotiate,
@@ -82,6 +86,15 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
 	if (!input.length) {
 		switch (gensec_ntlmssp->ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
+			if (gensec_ntlmssp->ntlmssp_state->resume_ccache) {
+				/*
+				 * make sure gensec_ntlmssp_resume_ccache()
+				 * will be called
+				 */
+				ntlmssp_command = NTLMSSP_NEGOTIATE;
+				break;
+			}
+
 			ntlmssp_command = NTLMSSP_INITIAL;
 			break;
 		case NTLMSSP_SERVER:
@@ -194,6 +207,15 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.priority       = GENSEC_NTLMSSP
 };
 
+static const struct gensec_security_ops gensec_ntlmssp_resume_ccache_ops = {
+	.name		= "ntlmssp_resume_ccache",
+	.client_start   = gensec_ntlmssp_resume_ccache_start,
+	.update 	= gensec_ntlmssp_update,
+	.session_key	= gensec_ntlmssp_session_key,
+	.have_feature   = gensec_ntlmssp_have_feature,
+	.enabled        = true,
+	.priority       = GENSEC_NTLMSSP
+};
 
 _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 {
@@ -203,6 +225,13 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",
 			gensec_ntlmssp_security_ops.name));
+		return ret;
+	}
+
+	ret = gensec_register(&gensec_ntlmssp_resume_ccache_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_ntlmssp_resume_ccache_ops.name));
 		return ret;
 	}
 

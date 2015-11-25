@@ -114,6 +114,98 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
+NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
+				TALLOC_CTX *out_mem_ctx,
+				DATA_BLOB in, DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	uint32_t neg_flags = 0;
+	uint32_t ntlmssp_command;
+	NTSTATUS status;
+	bool ok;
+
+	*out = data_blob_null;
+
+	if (in.length == 0) {
+		/*
+		 * This is compat code for older callers
+		 * which were missing the "initial_blob"
+		 */
+		ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	/* parse the NTLMSSP packet */
+
+	if (in.length > UINT16_MAX) {
+		DEBUG(1, ("%s: reject large request of length %u\n",
+			__func__, (unsigned int)in.length));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ok = msrpc_parse(ntlmssp_state, &in, "Cdd",
+			 "NTLMSSP",
+			 &ntlmssp_command,
+			 &neg_flags);
+	if (!ok) {
+		DEBUG(1, ("%s: failed to parse NTLMSSP Negotiate of length %u\n",
+			__func__, (unsigned int)in.length));
+		dump_data(2, in.data, in.length);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
+		DEBUG(1, ("%s: no NTLMSSP Negotiate message (length %u)\n",
+			__func__, (unsigned int)in.length));
+		dump_data(2, in.data, in.length);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ntlmssp_state->neg_flags = neg_flags;
+	DEBUG(3, ("Imported Negotiate flags:\n"));
+	debug_ntlmssp_flags(neg_flags);
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
+		ntlmssp_state->unicode = true;
+	} else {
+		ntlmssp_state->unicode = false;
+	}
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		gensec_security->want_features |= GENSEC_FEATURE_SIGN;
+
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		gensec_security->want_features |= GENSEC_FEATURE_SEAL;
+
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		struct NEGOTIATE_MESSAGE *negotiate = talloc(
+			ntlmssp_state, struct NEGOTIATE_MESSAGE);
+		if (negotiate != NULL) {
+			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
+				&in, negotiate, negotiate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE,
+						negotiate);
+			}
+			TALLOC_FREE(negotiate);
+		}
+	}
+
+	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
 /**
  * Next state function for the Challenge Packet.  Generate an auth packet.
  *
@@ -473,6 +565,25 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gensec_ntlmssp_resume_ccache_start(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp = NULL;
+	NTSTATUS status;
+
+	status = gensec_ntlmssp_client_start(gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
+					       struct gensec_ntlmssp_context);
+	gensec_ntlmssp->ntlmssp_state->use_ccache = false;
+	gensec_ntlmssp->ntlmssp_state->resume_ccache = true;
+	gensec_ntlmssp->ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
 	return NT_STATUS_OK;
 }
