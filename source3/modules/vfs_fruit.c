@@ -124,7 +124,8 @@ struct fruit_config_data {
 	enum fruit_meta meta;
 	enum fruit_locking locking;
 	enum fruit_encoding encoding;
-	bool use_aapl;
+	bool use_aapl;		/* config from smb.conf */
+	bool nego_aapl;		/* client negotiated AAPL */
 	bool use_copyfile;
 	bool readdir_attr_enabled;
 	bool unix_info_enabled;
@@ -1894,6 +1895,9 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 				      out_context_blobs,
 				      SMB2_CREATE_TAG_AAPL,
 				      blob);
+	if (NT_STATUS_IS_OK(status)) {
+		config->nego_aapl = true;
+	}
 
 	return status;
 }
@@ -3338,16 +3342,20 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
 	fsp = *result;
 
-	if (config->copyfile_enabled) {
-		/*
-		 * Set a flag in the fsp. Gets used in copychunk to
-		 * check whether the special Apple copyfile semantics
-		 * for copychunk should be allowed in a copychunk
-		 * request with a count of 0.
-		 */
-		fsp->aapl_copyfile_supported = true;
+	if (config->nego_aapl) {
+		if (config->copyfile_enabled) {
+			/*
+			 * Set a flag in the fsp. Gets used in
+			 * copychunk to check whether the special
+			 * Apple copyfile semantics for copychunk
+			 * should be allowed in a copychunk request
+			 * with a count of 0.
+			 */
+			fsp->aapl_copyfile_supported = true;
+		}
 	}
 
 	/*
