@@ -775,6 +775,11 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 			return PAM_IGNORE;
 		}
 		return retval;
+	case PAM_AUTHTOK_ERR:
+		/* Authentication token manipulation error */
+		_pam_log(ctx, LOG_WARNING, "user `%s' authentication token change failed "
+			"(pwd complexity/history/min_age not met?)", user);
+		return retval;
 	case PAM_SUCCESS:
 		/* Otherwise, the authentication looked good */
 		if (strcmp(fn, "wbcLogonUser") == 0) {
