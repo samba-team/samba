@@ -153,7 +153,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
-	node = talloc_size(db_ctx, reclen);
+	node = talloc_zero_size(db_ctx, reclen);
 	if (node == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -171,8 +171,6 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 * existed before, we reference the key data in there.
 		 */
 	}
-
-	ZERO_STRUCT(node->rb_node);
 
 	node->keysize = rec->key.dsize;
 	node->valuesize = data.dsize;
