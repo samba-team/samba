@@ -27,6 +27,8 @@
 
 struct db_rbt_ctx {
 	struct rb_root tree;
+	size_t traverse_read;
+	bool traverse_write;
 };
 
 struct db_rbt_rec {
@@ -126,6 +128,10 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	ssize_t reclen;
 	TDB_DATA this_key, this_val;
 
+	if (db_ctx->traverse_read > 0) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
 	if (rec_priv->node != NULL) {
 
 		/*
@@ -222,6 +228,10 @@ static NTSTATUS db_rbt_delete(struct db_record *rec)
 		rec->db->private_data, struct db_rbt_ctx);
 	struct db_rbt_rec *rec_priv = (struct db_rbt_rec *)rec->private_data;
 
+	if (db_ctx->traverse_read > 0) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
 	if (rec_priv->node == NULL) {
 		return NT_STATUS_OK;
 	}
@@ -230,16 +240,6 @@ static NTSTATUS db_rbt_delete(struct db_record *rec)
 	TALLOC_FREE(rec_priv->node);
 
 	return NT_STATUS_OK;
-}
-
-static NTSTATUS db_rbt_store_deny(struct db_record *rec, TDB_DATA data, int flag)
-{
-	return NT_STATUS_MEDIA_WRITE_PROTECTED;
-}
-
-static NTSTATUS db_rbt_delete_deny(struct db_record *rec)
-{
-	return NT_STATUS_MEDIA_WRITE_PROTECTED;
 }
 
 struct db_rbt_search_result {
@@ -414,13 +414,8 @@ static int db_rbt_traverse_internal(struct db_context *db,
 	ZERO_STRUCT(rec);
 	rec.db = db;
 	rec.private_data = &rec_priv;
-	if (rw) {
-		rec.store = db_rbt_store;
-		rec.delete_rec = db_rbt_delete;
-	} else {
-		rec.store = db_rbt_store_deny;
-		rec.delete_rec = db_rbt_delete_deny;
-	}
+	rec.store = db_rbt_store;
+	rec.delete_rec = db_rbt_delete;
 	db_rbt_parse_node(rec_priv.node, &rec.key, &rec.value);
 
 	ret = f(&rec, private_data);
@@ -440,18 +435,21 @@ static int db_rbt_traverse_internal(struct db_context *db,
 	return db_rbt_traverse_internal(db, rb_right, f, private_data, count, rw);
 }
 
-static int db_rbt_traverse(struct db_context *db,
-			   int (*f)(struct db_record *db,
-				    void *private_data),
-			   void *private_data)
+static int db_rbt_traverse_read(struct db_context *db,
+				int (*f)(struct db_record *db,
+					 void *private_data),
+				void *private_data)
 {
 	struct db_rbt_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_rbt_ctx);
 	uint32_t count = 0;
+	int ret;
 
-	int ret = db_rbt_traverse_internal(db, ctx->tree.rb_node,
-					   f, private_data, &count,
-					   true /* rw */);
+	ctx->traverse_read++;
+	ret = db_rbt_traverse_internal(db, ctx->tree.rb_node,
+				       f, private_data, &count,
+				       false /* rw */);
+	ctx->traverse_read--;
 	if (ret != 0) {
 		return -1;
 	}
@@ -461,18 +459,29 @@ static int db_rbt_traverse(struct db_context *db,
 	return count;
 }
 
-static int db_rbt_traverse_read(struct db_context *db,
-				int (*f)(struct db_record *db,
-					 void *private_data),
-				void *private_data)
+static int db_rbt_traverse(struct db_context *db,
+			   int (*f)(struct db_record *db,
+				    void *private_data),
+			   void *private_data)
 {
 	struct db_rbt_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_rbt_ctx);
 	uint32_t count = 0;
+	int ret;
 
-	int ret = db_rbt_traverse_internal(db, ctx->tree.rb_node,
-					   f, private_data, &count,
-					   false /* rw */);
+	if (ctx->traverse_write) {
+		return -1;
+	};
+
+	if (ctx->traverse_read > 0) {
+		return db_rbt_traverse_read(db, f, private_data);
+	}
+
+	ctx->traverse_write = true;
+	ret = db_rbt_traverse_internal(db, ctx->tree.rb_node,
+				       f, private_data, &count,
+				       true /* rw */);
+	ctx->traverse_write = false;
 	if (ret != 0) {
 		return -1;
 	}
