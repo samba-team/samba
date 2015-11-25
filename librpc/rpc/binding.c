@@ -1226,7 +1226,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_towe
 			continue; 
 		}
 
-		for (j = 0; j < transports[i].num_protocols; j++) {
+		for (j = 0; j < transports[i].num_protocols && j < MAX_PROTSEQ; j++) {
 			if (transports[i].protseq[j] != tower->floors[j+2].lhs.protocol) {
 				break;
 			}
