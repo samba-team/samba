@@ -586,12 +586,15 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				p++;
 				*d++ = '\0';
-				dn->components[dn->comp_num].value.data = (uint8_t *)talloc_strdup(dn->components, dt);
+				dn->components[dn->comp_num].value.data = \
+					(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
 				dn->components[dn->comp_num].value.length = l;
 				if ( ! dn->components[dn->comp_num].value.data) {
 					/* ouch ! */
 					goto failed;
 				}
+				talloc_set_name_const(dn->components[dn->comp_num].value.data,
+						      (const char *)dn->components[dn->comp_num].value.data);
 
 				dt = d;
 
@@ -707,11 +710,13 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	*d++ = '\0';
 	dn->components[dn->comp_num].value.length = l;
 	dn->components[dn->comp_num].value.data =
-				(uint8_t *)talloc_strdup(dn->components, dt);
+		(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
 	if ( ! dn->components[dn->comp_num].value.data) {
 		/* ouch */
 		goto failed;
 	}
+	talloc_set_name_const(dn->components[dn->comp_num].value.data,
+			      (const char *)dn->components[dn->comp_num].value.data);
 
 	dn->comp_num++;
 
