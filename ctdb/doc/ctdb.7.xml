@@ -588,7 +588,29 @@ CTDB_LVS_PUBLIC_IP=10.1.1.237
 
     </refsect2>
   </refsect1>
-    
+
+  <refsect1>
+    <title>TRACKING AND RESETTING TCP CONNECTIONS</title>
+
+    <para>
+      CTDB tracks TCP connections from clients to public IP addresses,
+      on known ports.  When an IP address moves from one node to
+      another, all existing TCP connections to that IP address are
+      reset.  The node taking over this IP address will also send
+      gratuitous ARPs (for IPv4, or neighbour advertisement, for
+      IPv6).  This allows clients to reconnect quickly, rather than
+      waiting for TCP timeouts, which can be very long.
+    </para>
+
+    <para>
+      It is important that established TCP connections do not survive
+      a release and take of a public IP address on the same node.
+      Such connections can get out of sync with sequence and ACK
+      numbers, potentially causing a disruptive ACK storm.
+    </para>
+
+  </refsect1>
+
   <refsect1>
     <title>NAT GATEWAY</title>
 
