@@ -39,21 +39,16 @@
 		(<citerefentry><refentrytitle>idmap_tdb2</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
 		ldap
 		(<citerefentry><refentrytitle>idmap_ldap</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
-		,
 		rid
 		(<citerefentry><refentrytitle>idmap_rid</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
-		,
 		hash
 		(<citerefentry><refentrytitle>idmap_hash</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
-		,
 		autorid
 		(<citerefentry><refentrytitle>idmap_autorid</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
-		,
 		ad
-		(<citerefentry><refentrytitle>idmap_ad</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
-		,
-		and nss.
-		(<citerefentry><refentrytitle>idmap_nss</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
+		(<citerefentry><refentrytitle>idmap_ad</refentrytitle> <manvolnum>8</manvolnum></citerefentry>)
+		and nss
+		(<citerefentry><refentrytitle>idmap_nss</refentrytitle> <manvolnum>8</manvolnum></citerefentry>).
 		The corresponding manual pages contain the details, but
 		here is a summary.
 		</para>
@@ -66,9 +61,9 @@
 		mixture of the tdb and rid backend. It creates ranges for
 		each domain encountered and then uses the rid algorithm for each
 		of these automatically configured domains individually.
-		The ad backend uses unix IDs stored in Active Directory via
+		The ad backend uses unix ids stored in Active Directory via
 		the standard schema extensions. The nss backend reverses
-		the standard winbindd setup and gets the unixids via names
+		the standard winbindd setup and gets the unix ids via names
 		from nsswitch which can be useful in an ldap setup.
 		</para></listitem>
 		</varlistentry>
