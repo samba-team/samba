@@ -54,7 +54,7 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 {
 	NTSTATUS status;
 	struct auth_generic_state *auth_generic_state = NULL;
-	DATA_BLOB dummy_msg, reply, session_key_blob;
+	DATA_BLOB reply, session_key_blob;
 
 	status = auth_generic_client_prepare(mem_ctx, &auth_generic_state);
 
@@ -88,29 +88,26 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 		goto done;
 	}
 
-	gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SESSION_KEY);
+	if (initial_msg.length == 0) {
+		gensec_want_feature(auth_generic_state->gensec_security,
+				    GENSEC_FEATURE_SESSION_KEY);
+	}
 
-	status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	status = auth_generic_client_start_by_name(auth_generic_state,
+						   "ntlmssp_resume_ccache");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Could not start NTLMSSP mech: %s\n",
+		DEBUG(1, ("Could not start NTLMSSP resume mech: %s\n",
 			nt_errstr(status)));
 		goto done;
 	}
 
-	/* We need to get our protocol handler into the right state. So first
-	   we ask it to generate the initial message. Actually the client has already
-	   sent its own initial message, so we're going to drop this one on the floor.
-	   The client might have sent a different message, for example with different
-	   negotiation options, but as far as I can tell this won't hurt us. (Unless
-	   the client sent a different username or domain, in which case that's their
-	   problem for telling us the wrong username or domain.)
-	   Since we have a copy of the initial message that the client sent, we could
-	   resolve any discrepancies if we had to.
-	*/
-	dummy_msg = data_blob_null;
+	/*
+	 * We inject the inital NEGOTIATE message our caller used
+	 * in order to get the state machine into the correct possition.
+	 */
 	reply = data_blob_null;
 	status = gensec_update(auth_generic_state->gensec_security,
-			       talloc_tos(), dummy_msg, &reply);
+			       talloc_tos(), initial_msg, &reply);
 	data_blob_free(&reply);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
