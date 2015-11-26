@@ -2345,37 +2345,6 @@ static int send_election_request(struct ctdb_recoverd *rec, uint32_t pnn)
 }
 
 /*
-  this function will unban all nodes in the cluster
-*/
-static void unban_all_nodes(struct ctdb_context *ctdb)
-{
-	int ret, i;
-	struct ctdb_node_map_old *nodemap;
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " failed to get nodemap to unban all nodes\n"));
-		return;
-	}
-
-	for (i=0;i<nodemap->num;i++) {
-		if ( (!(nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED))
-		  && (nodemap->nodes[i].flags & NODE_FLAGS_BANNED) ) {
-			ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(),
-						 nodemap->nodes[i].pnn, 0,
-						 NODE_FLAGS_BANNED);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " failed to reset ban state\n"));
-			}
-		}
-	}
-
-	talloc_free(tmp_ctx);
-}
-
-
-/*
   we think we are winning the election - send a broadcast election request
  */
 static void election_send_request(struct tevent_context *ev,
@@ -2725,7 +2694,6 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 					timeval_current_ofs(0, 500000),
 					election_send_request, rec);
 		}
-		/*unban_all_nodes(ctdb);*/
 		return;
 	}
 
@@ -2735,7 +2703,6 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	/* Release the recovery lock file */
 	if (ctdb_recovery_have_lock(ctdb)) {
 		ctdb_recovery_unlock(ctdb);
-		unban_all_nodes(ctdb);
 	}
 
 	clear_ip_assignment_tree(ctdb);
