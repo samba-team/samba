@@ -100,7 +100,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
 
-	backends[idx++] = &gensec_ntlmssp3_client_ops;
+	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
 
 	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
 	backends[idx++] = gensec_security_by_auth_type(NULL, DCERPC_AUTH_TYPE_SCHANNEL);
