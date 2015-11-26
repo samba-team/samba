@@ -412,21 +412,17 @@ if __name__ == '__main__':
     # Special stuff for DLZ backend
     if opts.dns_backend == "BIND9_DLZ":
         # Check if dns-HOSTNAME account exists and create it if required
-        try:
-            dn = 'samAccountName=dns-%s,CN=Principals' % hostname
-            msg = ldbs.secrets.search(expression='(dn=%s)' % dn, attrs=['secret'])
-        except IndexError:
+        secrets_msgs = ldbs.secrets.search(expression='(samAccountName=dns-%s)' % hostname, attrs=['secret'])
+        if len(secrets_msgs) == 0:
 
             logger.info("Adding dns-%s account" % hostname)
 
-            try:
-                msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
-                                      expression='(sAMAccountName=dns-%s)' % (hostname),
-                                      attrs=[])
+            msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
+                                  expression='(sAMAccountName=dns-%s)' % (hostname),
+                                  attrs=[])
+            if len(msg) == 1:
                 dn = msg[0].dn
                 ldbs.sam.delete(dn)
-            except IndexError:
-                pass
 
             dnspass = samba.generate_random_password(128, 255)
             setup_add_ldif(ldbs.sam, setup_path("provision_dns_add_samba.ldif"), {
