@@ -247,8 +247,8 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
-								 const char *name)
+const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
+							  const char *name)
 {
 	int i;
 	const struct gensec_security_ops **backends;
