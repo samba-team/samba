@@ -151,6 +151,29 @@ NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *o
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_generic_client_start_by_name(struct auth_generic_state *ans,
+					   const char *name)
+{
+	NTSTATUS status;
+
+	/* Transfer the credentials to gensec */
+	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	talloc_unlink(ans, ans->credentials);
+	ans->credentials = NULL;
+
+	status = gensec_start_mech_by_name(ans->gensec_security, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 					       uint8_t auth_type,
 					       uint8_t auth_level)
