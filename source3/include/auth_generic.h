@@ -40,7 +40,8 @@ NTSTATUS auth_generic_set_password(struct auth_generic_state *ans,
 NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx,
 				     struct auth_generic_state **_ans);
 NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *oid);
-
+NTSTATUS auth_generic_client_start_by_name(struct auth_generic_state *ans,
+					   const char *name);
 NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 					       uint8_t auth_type,
 					       uint8_t auth_level);
