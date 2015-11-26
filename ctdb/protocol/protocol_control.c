@@ -713,7 +713,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
 		u64 = cd->data.db_id;
-		ctdb_uint32_push(u64, buf);
+		ctdb_uint64_push(u64, buf);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
