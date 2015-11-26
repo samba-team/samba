@@ -446,8 +446,19 @@ if __name__ == '__main__':
                                 dnsdomain=names.dnsdomain,
                                 dns_keytab_path=paths.dns_keytab, dnspass=dnspass,
                                 key_version_number=dns_key_version_number)
+
         else:
             logger.info("dns-%s account already exists" % hostname)
+
+        dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
+        if os.path.isfile(dns_keytab_path) and paths.bind_gid is not None:
+            try:
+                os.chmod(dns_keytab_path, 0640)
+                os.chown(dns_keytab_path, -1, paths.bind_gid)
+            except OSError:
+                if not os.environ.has_key('SAMBA_SELFTEST'):
+                    logger.info("Failed to chown %s to bind gid %u",
+                                dns_keytab_path, paths.bind_gid)
 
         # This forces a re-creation of dns directory and all the files within
         # It's an overkill, but it's easier to re-create a samdb copy, rather
