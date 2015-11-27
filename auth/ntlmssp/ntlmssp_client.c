@@ -34,6 +34,7 @@ struct auth_session_info;
 #include "auth/ntlmssp/ntlmssp_private.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 #include "../auth/ntlmssp/ntlmssp_ndr.h"
+#include "../nsswitch/libwbclient/wbclient.h"
 
 /*********************************************************************
  Client side NTLMSSP
@@ -240,6 +241,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	NTSTATUS nt_status;
 	int flags = 0;
 	const char *user = NULL, *domain = NULL, *workstation = NULL;
+	bool is_anonymous = false;
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -345,6 +347,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	is_anonymous = cli_credentials_is_anonymous(gensec_security->credentials);
 	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, mem_ctx,
 						 &user, &domain);
 
@@ -363,6 +366,87 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (workstation == NULL) {
 		DEBUG(10, ("Workstation is NULL, returning INVALID_PARAMETER\n"));
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (is_anonymous) {
+		/*
+		 * don't use the ccache for anonymous auth
+		 */
+		ntlmssp_state->use_ccache = false;
+	}
+	if (ntlmssp_state->use_ccache) {
+		struct samr_Password *nt_hash = NULL;
+
+		/*
+		 * If we have a password given we don't
+		 * use the ccache
+		 */
+		nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials,
+						      mem_ctx);
+		if (nt_hash != NULL) {
+			ZERO_STRUCTP(nt_hash);
+			TALLOC_FREE(nt_hash);
+			ntlmssp_state->use_ccache = false;
+		}
+	}
+
+	if (ntlmssp_state->use_ccache) {
+		struct wbcCredentialCacheParams params;
+		struct wbcCredentialCacheInfo *info = NULL;
+		struct wbcAuthErrorInfo *error = NULL;
+		struct wbcNamedBlob auth_blobs[1];
+		const struct wbcBlob *wbc_auth_blob = NULL;
+		const struct wbcBlob *wbc_session_key = NULL;
+		wbcErr wbc_status;
+		int i;
+
+		params.account_name = user;
+		params.domain_name = domain;
+		params.level = WBC_CREDENTIAL_CACHE_LEVEL_NTLMSSP;
+
+		auth_blobs[0].name = "challenge_blob";
+		auth_blobs[0].flags = 0;
+		auth_blobs[0].blob.data = in.data;
+		auth_blobs[0].blob.length = in.length;
+		params.num_blobs = ARRAY_SIZE(auth_blobs);
+		params.blobs = auth_blobs;
+
+		wbc_status = wbcCredentialCache(&params, &info, &error);
+		wbcFreeMemory(error);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
+		}
+
+		for (i=0; i<info->num_blobs; i++) {
+			if (strequal(info->blobs[i].name, "auth_blob")) {
+				wbc_auth_blob = &info->blobs[i].blob;
+			}
+			if (strequal(info->blobs[i].name, "session_key")) {
+				wbc_session_key = &info->blobs[i].blob;
+			}
+		}
+		if ((wbc_auth_blob == NULL) || (wbc_session_key == NULL)) {
+			wbcFreeMemory(info);
+			return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
+		}
+
+		session_key = data_blob_talloc(mem_ctx,
+					       wbc_session_key->data,
+					       wbc_session_key->length);
+		if (session_key.length != wbc_session_key->length) {
+			wbcFreeMemory(info);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*out = data_blob_talloc(mem_ctx,
+					wbc_auth_blob->data,
+					wbc_auth_blob->length);
+		if (out->length != wbc_auth_blob->length) {
+			wbcFreeMemory(info);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		wbcFreeMemory(info);
+		goto done;
 	}
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -434,9 +518,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
 	}
 
-	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
-	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
-
 	/* this generates the actual auth packet */
 	nt_status = msrpc_gen(mem_ctx,
 		       out, auth_gen_string,
@@ -454,8 +535,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return nt_status;
 	}
 
+done:
 	ntlmssp_state->session_key = session_key;
 	talloc_steal(ntlmssp_state, session_key.data);
+
+	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
+	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
 	talloc_steal(out_mem_ctx, out->data);
 
@@ -564,6 +649,9 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_NTLM_CCACHE) {
+		ntlmssp_state->use_ccache = true;
 	}
 
 	return NT_STATUS_OK;
