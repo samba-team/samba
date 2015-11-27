@@ -231,7 +231,7 @@ static NTSTATUS smbd_smb2_close(struct smbd_smb2_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	posix_open = fsp->posix_open;
+	posix_open = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN);
 	smb_fname = cp_smb_filename(talloc_tos(), fsp->fsp_name);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;

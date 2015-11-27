@@ -1386,7 +1386,7 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	int ret;
 
 	if(fsp->fh->fd == -1) {
-		if (fsp->posix_open) {
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
 		} else {
 			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
@@ -2018,7 +2018,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
                 path = fsp->fsp_name->base_name;
         }
 
-	if (fsp->posix_open || as_root) {
+	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) || as_root) {
 		ret = SMB_VFS_LCHOWN(fsp->conn,
 			path,
 			uid, gid);

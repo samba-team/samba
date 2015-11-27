@@ -212,6 +212,9 @@ struct fsp_lease {
 	struct smb2_lease lease;
 };
 
+/* VFS ABI stability hack */
+#define posix_flags posix_open
+
 typedef struct files_struct {
 	struct files_struct *next, *prev;
 	uint64_t fnum;
@@ -249,7 +252,7 @@ typedef struct files_struct {
 	bool aio_write_behind;
 	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	bool delete_on_close;
-	bool posix_open;
+	uint8_t posix_flags;
 	bool is_sparse;
 	bool backup_intent; /* Handle was successfully opened with backup intent
 				and opener has privilege to do so. */
@@ -290,6 +293,11 @@ typedef struct files_struct {
 	struct tevent_req *deferred_close;
 	bool aapl_copyfile_supported;
 } files_struct;
+
+#define FSP_POSIX_FLAGS_OPEN		0x01
+
+#define FSP_POSIX_FLAGS_ALL			\
+	(FSP_POSIX_FLAGS_OPEN)
 
 struct vuid_cache_entry {
 	struct auth_session_info *session_info;
