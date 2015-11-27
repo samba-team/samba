@@ -1089,7 +1089,7 @@ static int chmod_acl_module_common(struct vfs_handle_struct *handle,
 static int fchmod_acl_module_common(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, mode_t mode)
 {
-	if (fsp->posix_open) {
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Only allow this on POSIX opens. */
 		return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 	}
@@ -1109,7 +1109,7 @@ static int chmod_acl_acl_module_common(struct vfs_handle_struct *handle,
 static int fchmod_acl_acl_module_common(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, mode_t mode)
 {
-	if (fsp->posix_open) {
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Only allow this on POSIX opens. */
 		return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 	}
