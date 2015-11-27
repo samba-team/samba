@@ -7,7 +7,7 @@ bld.SAMBA_SUBSYSTEM('NTLMSSP_COMMON',
 		    ntlmssp_server.c
 		    ntlmssp_sign.c
 		    gensec_ntlmssp_server.c''',
-                    deps='samba-util NDR_NTLMSSP MSRPC_PARSE NTLM_CHECK samba-credentials')
+                    deps='samba-util NDR_NTLMSSP MSRPC_PARSE NTLM_CHECK samba-credentials wbclient')
 
 bld.SAMBA_MODULE('gensec_ntlmssp',
 	source='''''',
