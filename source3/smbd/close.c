@@ -327,7 +327,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 			if (e->name_hash != fsp->name_hash) {
 				continue;
 			}
-			if (fsp->posix_open
+			if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN)
 			    && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
 				continue;
 			}
@@ -1103,7 +1103,9 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			struct share_mode_entry *e = &lck->data->share_modes[i];
 			if (is_valid_share_mode_entry(e) &&
 					e->name_hash == fsp->name_hash) {
-				if (fsp->posix_open && (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
+				if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
+				    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN))
+				{
 					continue;
 				}
 				if (serverid_equal(&self, &e->pid) &&

@@ -193,7 +193,7 @@ void trigger_write_time_update(struct files_struct *fsp)
 {
 	int delay;
 
-	if (fsp->posix_open) {
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Don't use delayed writes on POSIX files. */
 		return;
 	}
@@ -238,7 +238,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 {
 	struct smb_file_time ft;
 
-	if (fsp->posix_open) {
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Don't use delayed writes on POSIX files. */
 		return;
 	}
@@ -284,7 +284,7 @@ void mark_file_modified(files_struct *fsp)
 	}
 	trigger_write_time_update(fsp);
 
-	if (fsp->posix_open) {
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		return;
 	}
 	if (!(lp_store_dos_attributes(SNUM(fsp->conn)) ||
@@ -1047,7 +1047,7 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 int fsp_stat(files_struct *fsp)
 {
 	if (fsp->fh->fd == -1) {
-		if (fsp->posix_open) {
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 			return SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
 		} else {
 			return SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
