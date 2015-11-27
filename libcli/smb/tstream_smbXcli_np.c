@@ -976,7 +976,14 @@ static void tstream_smbXcli_np_readv_trans_done(struct tevent_req *subreq)
 		received = out_output_buffer.length;
 	}
 	TALLOC_FREE(subreq);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+		/*
+		 * STATUS_BUFFER_OVERFLOW means that there's
+		 * more data to read when the named pipe is used
+		 * in message mode (which is the case here).
+		 *
+		 * But we hide this from the caller.
+		 */
 		status = NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1052,9 +1059,9 @@ static void tstream_smbXcli_np_readv_read_done(struct tevent_req *subreq)
 	 * We can't TALLOC_FREE(subreq) as usual here, as rcvbuf still is a
 	 * child of that.
 	 */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
 		/*
-		 * NT_STATUS_BUFFER_TOO_SMALL means that there's
+		 * STATUS_BUFFER_OVERFLOW means that there's
 		 * more data to read when the named pipe is used
 		 * in message mode (which is the case here).
 		 *
