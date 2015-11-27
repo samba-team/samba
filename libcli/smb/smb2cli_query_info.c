@@ -29,6 +29,7 @@ struct smb2cli_query_info_state {
 	uint32_t max_output_length;
 	struct iovec *recv_iov;
 	DATA_BLOB out_output_buffer;
+	bool out_valid;
 };
 
 static void smb2cli_query_info_done(struct tevent_req *subreq);
@@ -135,8 +136,12 @@ static void smb2cli_query_info_done(struct tevent_req *subreq)
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
+	if (NT_STATUS_EQUAL(status, STATUS_BUFFER_OVERFLOW)) {
+		/* no error */
+	} else {
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	}
 
 	state->recv_iov = iov;
@@ -170,6 +175,12 @@ static void smb2cli_query_info_done(struct tevent_req *subreq)
 		state->out_output_buffer.length = output_buffer_length;
 	}
 
+	state->out_valid = true;
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
@@ -180,9 +191,12 @@ NTSTATUS smb2cli_query_info_recv(struct tevent_req *req,
 	struct smb2cli_query_info_state *state =
 		tevent_req_data(req,
 		struct smb2cli_query_info_state);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
-	if (tevent_req_is_nterror(req, &status)) {
+	if (tevent_req_is_nterror(req, &status) && !state->out_valid) {
+		if (out_output_buffer) {
+			*out_output_buffer = data_blob_null;
+		}
 		tevent_req_received(req);
 		return status;
 	}
@@ -193,7 +207,7 @@ NTSTATUS smb2cli_query_info_recv(struct tevent_req *req,
 	}
 
 	tevent_req_received(req);
-	return NT_STATUS_OK;
+	return status;
 }
 
 NTSTATUS smb2cli_query_info(struct smbXcli_conn *conn,
