@@ -1188,6 +1188,73 @@ static bool torture_setup_file(TALLOC_CTX *mem_ctx, struct smb2_tree *tree,
 	return true;
 }
 
+static bool enable_aapl(struct torture_context *tctx,
+			struct smb2_tree *tree1)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_create io;
+	DATA_BLOB data;
+	struct smb2_create_blob *aapl = NULL;
+	uint32_t aapl_server_caps;
+	uint32_t expexted_scaps = (SMB2_CRTCTX_AAPL_UNIX_BASED |
+				   SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
+				   SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE |
+				   SMB2_CRTCTX_AAPL_SUPPORTS_OSX_COPYFILE);
+
+	ZERO_STRUCT(io);
+	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes    = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.share_access = (NTCREATEX_SHARE_ACCESS_DELETE |
+			      NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE);
+	io.in.fname = "";
+
+	/*
+	 * Issuing an SMB2/CREATE with a suitably formed AAPL context,
+	 * controls behaviour of Apple's SMB2 extensions for the whole
+	 * session!
+	 */
+
+	data = data_blob_talloc(mem_ctx, NULL, 3 * sizeof(uint64_t));
+	SBVAL(data.data, 0, SMB2_CRTCTX_AAPL_SERVER_QUERY);
+	SBVAL(data.data, 8, (SMB2_CRTCTX_AAPL_SERVER_CAPS |
+			     SMB2_CRTCTX_AAPL_VOLUME_CAPS |
+			     SMB2_CRTCTX_AAPL_MODEL_INFO));
+	SBVAL(data.data, 16, (SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
+			      SMB2_CRTCTX_AAPL_UNIX_BASED |
+			      SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE));
+
+	status = smb2_create_blob_add(tctx, &io.in.blobs, "AAPL", data);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create_blob_add");
+
+	status = smb2_create(tree1, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+
+	status = smb2_util_close(tree1, io.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_close");
+
+	/*
+	 * Now check returned AAPL context
+	 */
+	torture_comment(tctx, "Comparing returned AAPL capabilities\n");
+
+	aapl = smb2_create_blob_find(&io.out.blobs,
+				     SMB2_CREATE_TAG_AAPL);
+	torture_assert_goto(tctx, aapl != NULL, ret, done, "missing AAPL context");
+	torture_assert_goto(tctx, aapl->data.length == 50, ret, done, "bad AAPL size");
+
+	aapl_server_caps = BVAL(aapl->data.data, 16);
+	torture_assert_goto(tctx, aapl_server_caps == expexted_scaps,
+			    ret, done, "bad AAPL caps");
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_read_atalk_metadata(struct torture_context *tctx,
 				     struct smb2_tree *tree1,
 				     struct smb2_tree *tree2)
@@ -2554,6 +2621,139 @@ done:
 	return ret;
 }
 
+/* Renaming a directory with open file, should work for OS X AAPL clients */
+static bool test_rename_dir_openfile(struct torture_context *torture,
+				     struct smb2_tree *tree1,
+				     struct smb2_tree *tree2)
+{
+	bool ret = true;
+	NTSTATUS status;
+	union smb_open io;
+	union smb_close cl;
+	union smb_setfileinfo sinfo;
+	struct smb2_handle d1, h1;
+	const char *renamedir = BASEDIR "-new";
+
+	smb2_deltree(tree1, BASEDIR);
+	smb2_util_rmdir(tree1, BASEDIR);
+	smb2_deltree(tree1, renamedir);
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = 0;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR;
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	torture_assert_ntstatus_ok(torture, status, "smb2_create dir");
+	d1 = io.smb2.out.file.handle;
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.create_flags = 0;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_CREATE;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR "\\file.txt";
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	torture_assert_ntstatus_ok(torture, status, "smb2_create file");
+	h1 = io.smb2.out.file.handle;
+
+	torture_comment(torture, "Renaming directory without AAPL, must fail\n");
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = d1;
+	sinfo.rename_information.in.overwrite = 0;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = renamedir;
+	status = smb2_setinfo_file(tree1, &sinfo);
+	torture_assert_ntstatus_equal(torture, status, NT_STATUS_ACCESS_DENIED,
+				      "smb2_setinfo_file");
+
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = d1;
+	status = smb2_close(tree1, &(cl.smb2));
+	torture_assert_ntstatus_ok(torture, status, "smb2_close");
+	ZERO_STRUCT(d1);
+
+	torture_comment(torture, "Enabling AAPL\n");
+
+	ret = enable_aapl(torture, tree1);
+	torture_assert(torture, ret == true, "enable_aapl failed");
+
+	torture_comment(torture, "Renaming directory with AAPL\n");
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR;
+
+	status = smb2_create(tree1, torture, &(io.smb2));
+	torture_assert_ntstatus_ok(torture, status, "smb2_create dir");
+	d1 = io.smb2.out.file.handle;
+
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.desired_access = 0x0017019f;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.smb2.in.share_access = 0;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = BASEDIR;
+	sinfo.rename_information.in.file.handle = d1;
+
+	status = smb2_setinfo_file(tree1, &sinfo);
+	torture_assert_ntstatus_ok(torture, status, "smb2_setinfo_file");
+
+	ZERO_STRUCT(cl.smb2);
+	cl.smb2.level = RAW_CLOSE_SMB2;
+	cl.smb2.in.file.handle = d1;
+	status = smb2_close(tree1, &(cl.smb2));
+	torture_assert_ntstatus_ok(torture, status, "smb2_close");
+	ZERO_STRUCT(d1);
+
+	cl.smb2.in.file.handle = h1;
+	status = smb2_close(tree1, &(cl.smb2));
+	torture_assert_ntstatus_ok(torture, status, "smb2_close");
+	ZERO_STRUCT(h1);
+
+	torture_comment(torture, "Cleaning up\n");
+
+	if (h1.data) {
+		ZERO_STRUCT(cl.smb2);
+		cl.smb2.level = RAW_CLOSE_SMB2;
+		cl.smb2.in.file.handle = h1;
+		status = smb2_close(tree1, &(cl.smb2));
+	}
+
+	smb2_deltree(tree1, BASEDIR);
+	smb2_deltree(tree1, renamedir);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit
  * streams_xattr".  Note: To run this test, use
@@ -2577,6 +2777,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_2ns_smb2_test(suite, "stream names", test_stream_names);
 	torture_suite_add_2ns_smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
 	torture_suite_add_2ns_smb2_test(suite, "opening and creating resource fork", test_rfork_create);
+	torture_suite_add_2ns_smb2_test(suite, "rename_dir_openfile", test_rename_dir_openfile);
 
 	return suite;
 }
