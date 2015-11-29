@@ -2669,7 +2669,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 	}
 
 	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
-		if (fsp->posix_flags & (FSP_POSIX_FLAGS_OPEN|FSP_POSIX_FLAGS_RENAME)) {
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_RENAME) {
 			return NT_STATUS_OK;
 		}
 
