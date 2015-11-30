@@ -6458,7 +6458,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	/*
 	 * Check for special case with case preserving and not
-	 * case sensitive. If the old last component differs from the original
+	 * case sensitive. If the new last component differs from the original
 	 * last component only by case, then we should allow
 	 * the rename (user is trying to change the case of the
 	 * filename).
