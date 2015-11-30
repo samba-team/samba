@@ -84,10 +84,18 @@ krb5_error_code kdb_samba_db_put_principal(krb5_context context,
 krb5_error_code kdb_samba_db_delete_principal(krb5_context context,
 					      krb5_const_principal princ);
 
+#if KRB5_KDB_API_VERSION == 8
+krb5_error_code kdb_samba_db_iterate(krb5_context context,
+				     char *match_entry,
+				     int (*func)(krb5_pointer, krb5_db_entry *),
+				     krb5_pointer func_arg,
+				     krb5_flags iterflags);
+#else
 krb5_error_code kdb_samba_db_iterate(krb5_context context,
 				     char *match_entry,
 				     int (*func)(krb5_pointer, krb5_db_entry *),
 				     krb5_pointer func_arg);
+#endif
 
 /* from kdb_samba_masterkey.c */
 
