@@ -266,6 +266,35 @@ static void print_brl(struct file_id id,
 	TALLOC_FREE(share_mode);
 }
 
+static const char *session_dialect_str(uint16_t dialect)
+{
+	static fstring unkown_dialect;
+
+	switch(dialect){
+	case SMB2_DIALECT_REVISION_000:
+		return "NT1";
+	case SMB2_DIALECT_REVISION_202:
+		return "SMB2_02";
+	case SMB2_DIALECT_REVISION_210:
+		return "SMB2_10";
+	case SMB2_DIALECT_REVISION_222:
+		return "SMB2_22";
+	case SMB2_DIALECT_REVISION_224:
+		return "SMB2_24";
+	case SMB3_DIALECT_REVISION_300:
+		return "SMB3_00";
+	case SMB3_DIALECT_REVISION_302:
+		return "SMB3_02";
+	case SMB3_DIALECT_REVISION_310:
+		return "SMB3_10";
+	case SMB3_DIALECT_REVISION_311:
+		return "SMB3_11";
+	}
+
+	fstr_sprintf(unkown_dialect, "Unknown (0x%04x)", dialect);
+	return unkown_dialect;
+}
+
 static int traverse_connections(const struct connections_key *key,
 				const struct connections_data *crec,
 				void *state)
@@ -325,7 +354,8 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	d_printf("%-7s   %-12s  %-12s  %-12s (%s) %-12s\n",
 		 server_id_str_buf(session->pid, &tmp),
 		 uid_str, gid_str,
-		 session->remote_machine, session->hostname, session->protocol_ver);
+		 session->remote_machine, session->hostname,
+		 session_dialect_str(session->connection_dialect));
 
 	return 0;
 }

@@ -43,41 +43,8 @@ static int sessionid_traverse_read_fn(struct smbXsrv_session_global0 *global,
 		.id_num = global->session_global_id,
 		.connect_start = nt_time_to_unix(global->creation_time),
 		.pid = global->channels[0].server_id,
+		.connection_dialect = global->connection_dialect,
 	};
-
-	switch(global->connection_dialect){
-	case SMB2_DIALECT_REVISION_000:
-		fstrcpy(session.protocol_ver, "NT1");
-		break;
-	case SMB2_DIALECT_REVISION_202:
-		fstrcpy(session.protocol_ver, "SMB2_02");
-		break;
-	case SMB2_DIALECT_REVISION_210:
-		fstrcpy(session.protocol_ver, "SMB2_10");
-		break;
-	case SMB2_DIALECT_REVISION_222:
-		fstrcpy(session.protocol_ver, "SMB2_22");
-		break;
-	case SMB2_DIALECT_REVISION_224:
-		fstrcpy(session.protocol_ver, "SMB2_24");
-		break;
-	case SMB3_DIALECT_REVISION_300:
-		fstrcpy(session.protocol_ver, "SMB3_00");
-		break;
-	case SMB3_DIALECT_REVISION_302:
-		fstrcpy(session.protocol_ver, "SMB3_02");
-		break;
-	case SMB3_DIALECT_REVISION_310:
-		fstrcpy(session.protocol_ver, "SMB3_10");
-		break;
-	case SMB3_DIALECT_REVISION_311:
-		fstrcpy(session.protocol_ver, "SMB3_11");
-		break;
-	default:
-		fstr_sprintf(session.protocol_ver, "Unknown (0x%04x)",
-			     global->connection_dialect);
-		break;
-	}
 
 	if (session_info != NULL) {
 		session.uid = session_info->unix_token->uid;
