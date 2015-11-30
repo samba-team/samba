@@ -6463,7 +6463,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	 * the rename (user is trying to change the case of the
 	 * filename).
 	 */
-	if((conn->case_sensitive == False) && (conn->case_preserve == True) &&
+	if (!conn->case_sensitive && conn->case_preserve &&
 	    strequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
 	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name)) {
 		char *last_slash;
