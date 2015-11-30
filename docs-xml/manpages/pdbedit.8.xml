@@ -43,6 +43,7 @@
 		<arg choice="opt">-r</arg>
 		<arg choice="opt">-s configfile</arg>
 		<arg choice="opt">-S script</arg>
+		<arg choice="opt">--set-nt-hash</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">--time-format</arg>
 		<arg choice="opt">-u username</arg>
@@ -99,7 +100,8 @@ samba:45:Test User
 		<term>-v|--verbose</term>
 		<listitem><para>This option enables the verbose listing format.
 		It causes pdbedit to list the users in the database, printing
-		out the account fields in a descriptive format.</para>
+		out the account fields in a descriptive format. Used together
+		with -w also shows passwords hashes.</para>
 
 		<para>Example: <command>pdbedit -L -v</command></para>
 		<para><programlisting>
@@ -134,7 +136,9 @@ Profile Path:   \\BERSERKER\profile
 		out the account fields in a format compatible with the
 		<filename>smbpasswd</filename> file format. (see the
 		<citerefentry><refentrytitle>smbpasswd</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> for details)</para>
+		<manvolnum>5</manvolnum></citerefentry> for details).
+		Instead used together with (-v) displays the passwords
+		hashes in verbose output.</para>
 
 		<para>Example: <command>pdbedit -L -w</command></para>
 		<programlisting>
@@ -204,6 +208,18 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term>--set-nt-hash</term>
+		<listitem><para>This option can be used while modifying
+		a user account. It will set the user's password using
+		the nt-hash value given as hexadecimal string.
+		Useful to synchronize passwords.</para>
+       
+		<para>Example: <literal>--set-nt-hash 8846F7EAEE8FB117AD06BDD830B7586C</literal>
+		</para>
+		</listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>-p|--profile profile</term>
 		<listitem><para>This option can be used while adding or
