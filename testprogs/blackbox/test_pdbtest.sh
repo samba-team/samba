@@ -98,6 +98,13 @@ testit "modify user - disable password expiry"  $VALGRIND $net sam set pwnoexp $
 
 test_smbclient "Test login with no expiry (ntlm)" 'ls' -k no -U$USER%$NEWUSERPASS || failed=`expr $failed + 1`
 
+NEWUSERPASS=testPaSS@03%
+NEWUSERHASH=062519096c45739c1938800f80906731
+
+testit "Set user password with password hash" $VALGRIND $pdbedit -u $USER --set-nt-hash $NEWUSERHASH $@ || failed=`expr $failed + 1`
+
+test_smbclient "Test login with new password (from hash)" 'ls' -k no -U$USER%$NEWUSERPASS || failed=`expr $failed + 1`
+
 testit "del user"  $VALGRIND $pdbedit -x $USER $@ || failed=`expr $failed + 1`
 
 rm ./tmpsmbpasswdscript
