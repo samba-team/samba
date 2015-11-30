@@ -243,9 +243,12 @@ interface ntlmssp
 		[default] NTLMv2_RESPONSE v2;
 	} ntlmssp_NTLM_RESPONSE;
 
+	const int NTLMSSP_MIC_OFFSET = 72;
+	const int NTLMSSP_MIC_SIZE = 16;
+
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 MIC[16];
-	} MIC;
+		uint8 MIC[NTLMSSP_MIC_SIZE];
+	} ntlmssp_MIC;
 
 	/* [MS-NLMP] 2.2.1.3 AUTHENTICATE_MESSAGE */
 
@@ -274,7 +277,7 @@ interface ntlmssp
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 		/* MIC (Message Integrity) is only included when the client has
 		 * sent a timestap Av struct in the CHALLENGE_MESSAGE AvPair */
-		/* [flag(NDR_REMAINING)] MIC mic; */
+		/* [flag(NDR_REMAINING)] ntlmssp_MIC mic; */
 	} AUTHENTICATE_MESSAGE;
 
 	/* NTLMSSP signature version */
