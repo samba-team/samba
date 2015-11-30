@@ -42,6 +42,7 @@ struct connections_forall_session {
 	fstring machine;
 	fstring addr;
 	uint16_t cipher;
+	uint16_t dialect;
 };
 
 static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
@@ -64,6 +65,7 @@ static int collect_sessions_fn(struct smbXsrv_session_global0 *global,
 	fstrcpy(sess.machine, global->channels[0].remote_name);
 	fstrcpy(sess.addr, global->channels[0].remote_address);
 	sess.cipher = global->channels[0].encryption_cipher;
+	sess.dialect = global->connection_dialect;
 
 	status = dbwrap_store(state->session_by_pid,
 			      make_tdb_data((void*)&id, sizeof(id)),
@@ -127,6 +129,7 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 	data.start = nt_time_to_unix(global->creation_time);
 	data.encryption_flags = global->encryption_flags;
 	data.cipher = sess.cipher;
+	data.dialect = sess.dialect;
 
 	state->count++;
 
