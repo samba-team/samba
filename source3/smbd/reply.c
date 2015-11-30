@@ -2661,7 +2661,7 @@ static NTSTATUS can_rename(connection_struct *conn, files_struct *fsp,
 	if ((dirtype & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) !=
 			(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 		/* Only bother to read the DOS attribute if we might deny the
-		   rename on the grounds of attribute missmatch. */
+		   rename on the grounds of attribute mismatch. */
 		uint32_t fmode = dos_mode(conn, fsp->fsp_name);
 		if ((fmode & ~dirtype) & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM)) {
 			return NT_STATUS_NO_SUCH_FILE;
