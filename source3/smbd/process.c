@@ -1431,6 +1431,54 @@ static void smb_dump(const char *name, int type, const char *data)
 	TALLOC_FREE(fname);
 }
 
+static void smb1srv_update_crypto_flags(struct smbXsrv_session *session,
+					struct smb_request *req,
+					uint8_t type,
+					bool *update_session_globalp,
+					bool *update_tcon_globalp)
+{
+	connection_struct *conn = req->conn;
+	struct smbXsrv_tcon *tcon = conn ? conn->tcon : NULL;
+	uint8_t encrypt_flag = SMBXSRV_PROCESSED_UNENCRYPTED_PACKET;
+	uint8_t sign_flag = SMBXSRV_PROCESSED_UNSIGNED_PACKET;
+	bool update_session = false;
+	bool update_tcon = false;
+
+	if (req->encrypted) {
+		encrypt_flag = SMBXSRV_PROCESSED_ENCRYPTED_PACKET;
+	}
+
+	if (srv_is_signing_active(req->xconn)) {
+		sign_flag = SMBXSRV_PROCESSED_SIGNED_PACKET;
+	} else if ((type == SMBecho) || (type == SMBsesssetupX)) {
+		/*
+		 * echo can be unsigned. Sesssion setup except final
+		 * session setup response too
+		 */
+		sign_flag &= ~SMBXSRV_PROCESSED_UNSIGNED_PACKET;
+	}
+
+	update_session |= smbXsrv_set_crypto_flag(
+		&session->global->encryption_flags, encrypt_flag);
+	update_session |= smbXsrv_set_crypto_flag(
+		&session->global->signing_flags, sign_flag);
+
+	if (tcon) {
+		update_tcon |= smbXsrv_set_crypto_flag(
+			&tcon->global->encryption_flags, encrypt_flag);
+		update_tcon |= smbXsrv_set_crypto_flag(
+			&tcon->global->signing_flags, sign_flag);
+	}
+
+	if (update_session) {
+		session->global->channels[0].encryption_cipher = SMB_ENCRYPTION_GSSAPI;
+	}
+
+	*update_session_globalp = update_session;
+	*update_tcon_globalp = update_tcon;
+	return;
+}
+
 /****************************************************************************
  Prepare everything for calling the actual request function, and potentially
  call the request function via the "new" interface.
@@ -1644,6 +1692,35 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		if (!ok) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return conn;
+		}
+	}
+
+	/*
+	 * Update encryption and signing state tracking flags that are
+	 * used by smbstatus to display signing and encryption status.
+	 */
+	if (session != NULL) {
+		bool update_session_global = false;
+		bool update_tcon_global = false;
+
+		smb1srv_update_crypto_flags(session, req, type,
+					    &update_session_global,
+					    &update_tcon_global);
+
+		if (update_session_global) {
+			status = smbXsrv_session_update(session);
+			if (!NT_STATUS_IS_OK(status)) {
+				reply_nterror(req, NT_STATUS_UNSUCCESSFUL);
+				return conn;
+			}
+		}
+
+		if (update_tcon_global) {
+			status = smbXsrv_tcon_update(req->conn->tcon);
+			if (!NT_STATUS_IS_OK(status)) {
+				reply_nterror(req, NT_STATUS_UNSUCCESSFUL);
+				return conn;
+			}
 		}
 	}
 
