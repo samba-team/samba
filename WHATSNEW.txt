@@ -1,4 +1,89 @@
                    =============================
+                   Release Notes for Samba 4.3.2
+                         December 01, 2015
+                   =============================
+
+
+This is the latest stable release of Samba 4.3.
+
+
+Changes since 4.3.1:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11577: ctdb: Open the RO tracking db with perms 0600 instead of 0000.
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11452: s3-smbd: Fix old DOS client doing wildcard delete - gives an
+      attribute type of zero.
+    * BUG 11565: auth: gensec: Fix a memory leak.
+    * BUG 11566: lib: util: Make non-critical message a warning.
+    * BUG 11589: s3: smbd: If EAs are turned off on a share don't allow an SMB2
+      create containing them.
+    * BUG 11615: s3: smbd: have_file_open_below() fails to enumerate open files
+      below an open directory handle.
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11562: s4:lib/messaging: Use correct path for names.tdb.
+    * BUG 11564: async_req: Fix non-blocking connect().
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11243: vfs_gpfs: Re-enable share modes.
+    * BUG 11570: smbd: Send SMB2 oplock breaks unencrypted.
+    * BUG 11612: winbind: Fix crash on invalid idmap configs.
+
+o   YvanM <yvan.masson@openmailbox.org>
+    * BUG 11584: manpage: Correct small typo error.
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11327: dcerpc.idl: Accept invalid dcerpc_bind_nak pdus.
+    * BUG 11581: s3:smb2_server: Make the logic of SMB2_CANCEL DLIST_REMOVE()
+      clearer.
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 9912: Changing log level of two entries to DBG_NOTICE.
+    * BUG 11581: s3-smbd: Fix use after issue in smbd_smb2_request_dispatch().
+
+o   Noel Power <noel.power@suse.com>
+    * BUG 11569: Fix winbindd crashes with samlogon for trusted domain user.
+    * BUG 11597: Backport some valgrind fixes from upstream master.
+
+o   Andreas Schneider <asn@samba.org
+    * BUG 11563: Fix segfault of 'net ads (join|leave) -S INVALID' with
+      nss_wins.
+
+o   Tom Schulz <schulz@adi.com>
+    * BUG 11511: Add libreplace dependency to texpect, fixes a linking error on
+      Solaris.
+    * BUG 11512: s4: Fix linking of 'smbtorture' on Solaris.
+
+o   Uri Simchoni <uri@samba.org>
+    * BUG 11608: auth: Consistent handling of well-known alias as primary gid.
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Older release notes to follow:
+------------------------------
+
+                   =============================
                    Release Notes for Samba 4.3.1
                          October 20, 2015
                    =============================
@@ -78,8 +163,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Older release notes to follow:
-------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.3.0
