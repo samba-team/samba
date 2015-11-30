@@ -215,7 +215,7 @@ samba:45:0F2B255F7B67A7A9AAD3B435B51404EE:
 		the nt-hash value given as hexadecimal string.
 		Useful to synchronize passwords.</para>
        
-		<para>Example: <literal>--set-nt-hash 8846F7EAEE8FB117AD06BDD830B7586C</literal>
+		<para>Example: <command>--set-nt-hash 8846F7EAEE8FB117AD06BDD830B7586C</command>
 		</para>
 		</listitem>
 		</varlistentry>
