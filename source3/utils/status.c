@@ -305,6 +305,7 @@ static int traverse_connections(const struct connections_key *key,
 	char *timestr = NULL;
 	int result = 0;
 	const char *encryption = "-";
+	const char *signing = "-";
 
 	if (crec->cnum == TID_FIELD_INVALID)
 		return 0;
@@ -334,11 +335,20 @@ static int traverse_connections(const struct connections_key *key,
 		}
 	}
 
-	d_printf("%-12s %-7s %-13s %-32s %-10s\n",
+	if (smbXsrv_is_signed(crec->signing_flags)) {
+		if (crec->dialect >= SMB3_DIALECT_REVISION_302) {
+			signing = "AES-128-CMAC";
+		} else if (crec->dialect >= SMB2_DIALECT_REVISION_202) {
+			signing = "HMAC-SHA256";
+		}
+	}
+
+	d_printf("%-12s %-7s %-13s %-32s %-12s %-12s\n",
 		 crec->servicename, server_id_str_buf(crec->pid, &tmp),
 		 crec->machine,
 		 timestr,
-		 encryption);
+		 encryption,
+		 signing);
 
 	TALLOC_FREE(timestr);
 
@@ -354,6 +364,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	char *machine_hostname = NULL;
 	int result = 0;
 	const char *encryption = "-";
+	const char *signing = "-";
 
 	if (do_checks &&
 	    (!process_exists(session->pid) ||
@@ -418,12 +429,28 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 		}
 	}
 
-	d_printf("%-7s %-12s %-12s %-41s %-17s %-20s\n",
+	if (smbXsrv_is_signed(session->signing_flags)) {
+		if (session->connection_dialect >= SMB3_DIALECT_REVISION_302) {
+			signing = "AES-128-CMAC";
+		} else if (session->connection_dialect >= SMB2_DIALECT_REVISION_202) {
+			signing = "HMAC-SHA256";
+		}
+	} else if (smbXsrv_is_partially_signed(session->signing_flags)) {
+		if (session->connection_dialect >= SMB3_DIALECT_REVISION_302) {
+			signing = "partial(AES-128-CMAC)";
+		} else if (session->connection_dialect >= SMB2_DIALECT_REVISION_202) {
+			signing = "partial(HMAC-SHA256)";
+		}
+	}
+
+
+	d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n",
 		 server_id_str_buf(session->pid, &tmp),
 		 uid_str, gid_str,
 		 machine_hostname,
 		 session_dialect_str(session->connection_dialect),
-		 encryption);
+		 encryption,
+		 signing);
 
 	TALLOC_FREE(machine_hostname);
 
@@ -589,8 +616,8 @@ int main(int argc, const char *argv[])
 
 	if ( show_processes ) {
 		d_printf("\nSamba version %s\n",samba_version_string());
-		d_printf("%-7s %-12s %-12s %-41s %-17s %-20s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption");
-		d_printf("------------------------------------------------------------------------------------------------------------------\n");
+		d_printf("%-7s %-12s %-12s %-41s %-17s %-20s %-21s\n", "PID", "Username", "Group", "Machine", "Protocol Version", "Encryption", "Signing");
+		d_printf("----------------------------------------------------------------------------------------------------------------------------------------\n");
 
 		sessionid_traverse_read(traverse_sessionid, frame);
 
@@ -604,8 +631,8 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		d_printf("\n%-12s %-7s %-13s %-32s %-10s\n", "Service", "pid", "Machine", "Connected at", "Encryption");
-		d_printf("---------------------------------------------------------------------------------\n");
+		d_printf("\n%-12s %-7s %-13s %-32s %-12s %-12s\n", "Service", "pid", "Machine", "Connected at", "Encryption", "Signing");
+		d_printf("---------------------------------------------------------------------------------------------\n");
 
 		connections_forall_read(traverse_connections, frame);
 

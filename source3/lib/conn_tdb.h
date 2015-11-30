@@ -36,6 +36,7 @@ struct connections_data {
 	uint8_t encryption_flags;
 	uint16_t cipher;
 	uint16_t dialect;
+	uint8_t signing_flags;
 };
 
 /* The following definitions come from lib/conn_tdb.c  */
