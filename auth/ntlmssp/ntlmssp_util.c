@@ -85,20 +85,24 @@ NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->unicode = false;
 	}
 
-	if ((flags & NTLMSSP_NEGOTIATE_LM_KEY) && ntlmssp_state->allow_lm_key) {
-		/* other end forcing us to use LM */
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
-		ntlmssp_state->use_ntlmv2 = false;
-	} else {
+	/*
+	 * NTLMSSP_NEGOTIATE_NTLM2 (NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY)
+	 * has priority over NTLMSSP_NEGOTIATE_LM_KEY
+	 */
+	if (!(flags & NTLMSSP_NEGOTIATE_NTLM2)) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
+	}
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
+	}
+
+	if (!(flags & NTLMSSP_NEGOTIATE_LM_KEY)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
 	if (!(flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
-	}
-
-	if (!(flags & NTLMSSP_NEGOTIATE_NTLM2)) {
-		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	if (!(flags & NTLMSSP_NEGOTIATE_128)) {
