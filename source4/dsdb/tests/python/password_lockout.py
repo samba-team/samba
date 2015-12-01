@@ -1657,6 +1657,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # and the workstation.
         creds2 = insta_creds()
         creds2.set_kerberos_state(use_kerberos)
+        self.assertEqual(creds2.get_kerberos_state(), use_kerberos)
 
         if use_kerberos == MUST_USE_KERBEROS:
             print "Testing multiple logon with Kerberos"
