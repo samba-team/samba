@@ -115,6 +115,8 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 		 * This is compat code for older callers
 		 * which were missing the "initial_blob"
 		 */
+		ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+		ntlmssp_state->required_flags = 0;
 		ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
@@ -158,14 +160,14 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
 		gensec_security->want_features |= GENSEC_FEATURE_SIGN;
 
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
 		gensec_security->want_features |= GENSEC_FEATURE_SEAL;
 
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
 	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
@@ -650,10 +652,10 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		 * that it thinks is only used for NTLMSSP signing and
 		 * sealing.  (It is actually pulled out and used directly)
 		 */
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
 
 		if (gensec_security->want_features & GENSEC_FEATURE_LDAP_STYLE) {
 			/*
@@ -669,12 +671,12 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 			 * in a few years. As all servers should have
 			 * GENSEC_FEATURE_LDAP_STYLE by then.
 			 */
-			ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+			ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
 		}
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_NTLM_CCACHE) {
 		ntlmssp_state->use_ccache = true;
