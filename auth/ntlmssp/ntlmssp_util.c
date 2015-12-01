@@ -73,6 +73,8 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 				  uint32_t flags, const char *name)
 {
+	uint32_t missing_flags = ntlmssp_state->required_flags;
+
 	if (flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
@@ -121,6 +123,24 @@ NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 
 	if ((flags & NTLMSSP_REQUEST_TARGET)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
+	}
+
+	missing_flags &= ~ntlmssp_state->neg_flags;
+	if (missing_flags != 0) {
+		HRESULT hres = HRES_SEC_E_UNSUPPORTED_FUNCTION;
+		NTSTATUS status = NT_STATUS(HRES_ERROR_V(hres));
+		DEBUG(1, ("%s: Got %s flags[0x%08x] "
+			  "- possible downgrade detected! "
+			  "missing_flags[0x%08x] - %s\n",
+			  __func__, name,
+			  (unsigned)flags,
+			  (unsigned)missing_flags,
+			  nt_errstr(status)));
+		debug_ntlmssp_flags_raw(1, missing_flags);
+		DEBUGADD(4, ("neg_flags[0x%08x]\n",
+			     (unsigned)ntlmssp_state->neg_flags));
+		debug_ntlmssp_flags_raw(4, ntlmssp_state->neg_flags);
+		return status;
 	}
 
 	return NT_STATUS_OK;

@@ -168,6 +168,9 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
+	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
+
 	if (DEBUGLEVEL >= 10) {
 		struct NEGOTIATE_MESSAGE *negotiate = talloc(
 			ntlmssp_state, struct NEGOTIATE_MESSAGE);
@@ -668,6 +671,9 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	if (gensec_security->want_features & GENSEC_FEATURE_NTLM_CCACHE) {
 		ntlmssp_state->use_ccache = true;
 	}
+
+	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
 
 	return NT_STATUS_OK;
 }
