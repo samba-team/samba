@@ -209,6 +209,12 @@ static PyObject *py_creds_get_nt_hash(pytalloc_Object *self)
 	return PyString_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
 }
 
+static PyObject *py_creds_get_kerberos_state(pytalloc_Object *self)
+{
+	int state = cli_credentials_get_kerberos_state(PyCredentials_AsCliCredentials(self));
+	return PyInt_FromLong(state);
+}
+
 static PyObject *py_creds_set_kerberos_state(pytalloc_Object *self, PyObject *args)
 {
 	int state;
@@ -451,6 +457,8 @@ static PyMethodDef py_creds_methods[] = {
 		"S.parse_string(text, obtained=CRED_SPECIFIED) -> None\n"
 		"Parse credentials string." },
 	{ "get_nt_hash", (PyCFunction)py_creds_get_nt_hash, METH_NOARGS,
+		NULL },
+	{ "get_kerberos_state", (PyCFunction)py_creds_get_kerberos_state, METH_NOARGS,
 		NULL },
 	{ "set_kerberos_state", (PyCFunction)py_creds_set_kerberos_state, METH_VARARGS,
 		NULL },
