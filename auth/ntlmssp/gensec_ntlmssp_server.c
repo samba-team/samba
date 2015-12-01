@@ -118,7 +118,10 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	if (lpcfg_lanman_auth(gensec_security->settings->lp_ctx) &&
+	ntlmssp_state->allow_lm_response =
+		lpcfg_lanman_auth(gensec_security->settings->lp_ctx);
+
+	if (ntlmssp_state->allow_lm_response &&
 	    gensec_setting_bool(gensec_security->settings,
 				"ntlmssp_server", "allow_lm_key", false))
 	{
