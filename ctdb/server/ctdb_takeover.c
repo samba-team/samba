@@ -1434,7 +1434,7 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
 					TAKEOVER_TIMEOUT(),
 					j,
-					ctdb->nodes,
+					ipalloc_state->known_public_ips,
 					0,
 					&ipalloc_state->known_public_ips[j]);
 		if (ret != 0) {
@@ -1454,7 +1454,7 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
 					TAKEOVER_TIMEOUT(),
 					j,
-					ctdb->nodes,
+					ipalloc_state->available_public_ips,
 					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
 					&ipalloc_state->available_public_ips[j]);
 		if (ret != 0) {
