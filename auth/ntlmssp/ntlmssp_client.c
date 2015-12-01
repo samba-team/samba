@@ -247,7 +247,11 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DEBUG(3, ("Got challenge flags:\n"));
 	debug_ntlmssp_flags(chal_flags);
 
-	ntlmssp_handle_neg_flags(ntlmssp_state, chal_flags, ntlmssp_state->allow_lm_key);
+	nt_status = ntlmssp_handle_neg_flags(ntlmssp_state,
+					     chal_flags, "challenge");
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	if (ntlmssp_state->unicode) {
 		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
