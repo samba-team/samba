@@ -633,7 +633,7 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	}
 
 	if (ntlmssp_state->use_ntlmv2) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 		ntlmssp_state->allow_lm_response = false;
 		ntlmssp_state->allow_lm_key = false;
 	}
