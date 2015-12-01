@@ -386,8 +386,8 @@ struct torture_suite *torture_trans2_aliases(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "aliases");
 
-	torture_suite_add_1smb_test(suite, "QFILEINFO aliases", qfsinfo_aliases);
-	torture_suite_add_1smb_test(suite, "QFSINFO aliases", qfileinfo_aliases);
+	torture_suite_add_1smb_test(suite, "QFSINFO aliases", qfsinfo_aliases);
+	torture_suite_add_1smb_test(suite, "QFILEINFO aliases", qfileinfo_aliases);
 	torture_suite_add_1smb_test(suite, "QPATHINFO aliases", qpathinfo_aliases);
 	torture_suite_add_1smb_test(suite, "FINDFIRST aliases", findfirst_aliases);
 	torture_suite_add_1smb_test(suite, "setfileinfo_aliases", setfileinfo_aliases);
