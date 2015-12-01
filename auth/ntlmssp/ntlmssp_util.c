@@ -70,10 +70,10 @@ void debug_ntlmssp_flags(uint32_t neg_flags)
 	debug_ntlmssp_flags_raw(4, neg_flags);
 }
 
-void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
-			      uint32_t neg_flags, bool allow_lm)
+NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
+				  uint32_t flags, const char *name)
 {
-	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
+	if (flags & NTLMSSP_NEGOTIATE_UNICODE) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_OEM;
 		ntlmssp_state->unicode = true;
@@ -83,7 +83,7 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->unicode = false;
 	}
 
-	if ((neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) && allow_lm) {
+	if ((flags & NTLMSSP_NEGOTIATE_LM_KEY) && ntlmssp_state->allow_lm_key) {
 		/* other end forcing us to use LM */
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
 		ntlmssp_state->use_ntlmv2 = false;
@@ -91,37 +91,39 @@ void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_ALWAYS_SIGN)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_ALWAYS_SIGN;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_128)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_128)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_128;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_56)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_56)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_56;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_KEY_EXCH;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_SIGN)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
 	}
 
-	if (!(neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
+	if (!(flags & NTLMSSP_NEGOTIATE_SEAL)) {
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	if ((neg_flags & NTLMSSP_REQUEST_TARGET)) {
+	if ((flags & NTLMSSP_REQUEST_TARGET)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_REQUEST_TARGET;
 	}
+
+	return NT_STATUS_OK;
 }
 
 /* Does this blob looks like it could be NTLMSSP? */
