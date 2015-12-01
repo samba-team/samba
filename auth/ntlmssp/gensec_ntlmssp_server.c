@@ -225,6 +225,9 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
 	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_domain);
 
+	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
+
 	return NT_STATUS_OK;
 }
 
