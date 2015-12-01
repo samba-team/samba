@@ -1588,8 +1588,7 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 				  ipalloc_state->num);
 	if (ipalloc_state->known_public_ips == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		talloc_free(ipalloc_state);
-		return NULL;
+		goto fail;
 	}
 	ipalloc_state->available_public_ips =
 		talloc_zero_array(ipalloc_state,
@@ -1597,8 +1596,7 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 				  ipalloc_state->num);
 	if (ipalloc_state->available_public_ips == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		talloc_free(ipalloc_state);
-		return NULL;
+		goto fail;
 	}
 	ipalloc_state->noiptakeover =
 		talloc_zero_array(ipalloc_state,
@@ -1606,8 +1604,7 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 				  ipalloc_state->num);
 	if (ipalloc_state->noiptakeover == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		talloc_free(ipalloc_state);
-		return NULL;
+		goto fail;
 	}
 	ipalloc_state->noiphost =
 		talloc_zero_array(ipalloc_state,
@@ -1615,8 +1612,7 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 				  ipalloc_state->num);
 	if (ipalloc_state->noiphost == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		talloc_free(ipalloc_state);
-		return NULL;
+		goto fail;
 	}
 
 	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
@@ -1630,6 +1626,9 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 	ipalloc_state->no_ip_failback = ctdb->tunable.no_ip_failback;
 
 	return ipalloc_state;
+fail:
+	talloc_free(ipalloc_state);
+	return NULL;
 }
 
 struct iprealloc_callback_data {
