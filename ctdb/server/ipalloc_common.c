@@ -32,8 +32,6 @@
 #include "common/common.h"
 #include "common/rb_tree.h"
 
-#include "include/ctdb_protocol.h"
-
 #include "server/ipalloc_private.h"
 
 #define TAKEOVER_TIMEOUT() timeval_current_ofs(ctdb->tunable.takeover_timeout,0)
@@ -61,21 +59,21 @@ static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 			     int32_t pnn,
 			     struct public_ip_list *ip)
 {
-	struct ctdb_public_ip_list_old *public_ips;
+	struct ctdb_public_ip_list *public_ips;
 	int i;
 
 	if (ipalloc_state->noiphost[pnn]) {
 		return false;
 	}
 
-	public_ips = ipalloc_state->available_public_ips[pnn];
+	public_ips = &ipalloc_state->available_public_ips[pnn];
 
 	if (public_ips == NULL) {
 		return false;
 	}
 
 	for (i=0; i<public_ips->num; i++) {
-		if (ctdb_same_ip(&ip->addr, &public_ips->ips[i].addr)) {
+		if (ctdb_same_ip(&ip->addr, &public_ips->ip[i].addr)) {
 			/* yes, this node can serve this public ip */
 			return true;
 		}

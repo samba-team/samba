@@ -1254,7 +1254,7 @@ static int getips_count_callback(void *param, void *data)
 }
 
 static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				       struct ctdb_public_ip_list_old *ips,
+				       struct ctdb_public_ip_list *ips,
 				       uint32_t pnn);
 
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
@@ -1263,6 +1263,7 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 {
 	int j;
 	int ret;
+	struct ctdb_public_ip_list_old *ip_list;
 
 	if (ipalloc_state->num != nodemap->num) {
 		DEBUG(DEBUG_ERR,
@@ -1283,18 +1284,25 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 					j,
 					ipalloc_state->known_public_ips,
 					0,
-					&ipalloc_state->known_public_ips[j]);
+					&ip_list);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to read known public IPs from node: %u\n",
 			       j));
 			return -1;
 		}
+		ipalloc_state->known_public_ips[j].num = ip_list->num;
+		/* This could be copied and freed.  However, ip_list
+		 * is allocated off ipalloc_state->known_public_ips,
+		 * so this is a safe hack.  This will go away in a
+		 * while anyway... */
+		ipalloc_state->known_public_ips[j].ip = &ip_list->ips[0];
 
 		if (ctdb->do_checkpublicip) {
-			verify_remote_ip_allocation(ctdb,
-						    ipalloc_state->known_public_ips[j],
-						    j);
+			verify_remote_ip_allocation(
+				ctdb,
+				&ipalloc_state->known_public_ips[j],
+				j);
 		}
 
 		/* Retrieve the list of available public IPs from the node */
@@ -1303,13 +1311,19 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 					j,
 					ipalloc_state->available_public_ips,
 					CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE,
-					&ipalloc_state->available_public_ips[j]);
+					&ip_list);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to read available public IPs from node: %u\n",
 			       j));
 			return -1;
 		}
+		ipalloc_state->available_public_ips[j].num = ip_list->num;
+		/* This could be copied and freed.  However, ip_list
+		 * is allocated off ipalloc_state->available_public_ips,
+		 * so this is a safe hack.  This will go away in a
+		 * while anyway... */
+		ipalloc_state->available_public_ips[j].ip = &ip_list->ips[0];
 	}
 
 	return 0;
@@ -1320,13 +1334,13 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 {
 	int i, j;
 	struct public_ip_list *ip_list;
-	struct ctdb_public_ip_list_old *public_ips;
+	struct ctdb_public_ip_list *public_ips;
 
 	TALLOC_FREE(ctdb->ip_tree);
 	ctdb->ip_tree = trbt_create(ctdb, 0);
 
 	for (i=0; i < ctdb->num_nodes; i++) {
-		public_ips = ipalloc_state->known_public_ips[i];
+		public_ips = &ipalloc_state->known_public_ips[i];
 
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;
@@ -1344,16 +1358,16 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
 			/* Do not use information about IP addresses hosted
 			 * on other nodes, it may not be accurate */
-			if (public_ips->ips[j].pnn == ctdb->nodes[i]->pnn) {
-				tmp_ip->pnn = public_ips->ips[j].pnn;
+			if (public_ips->ip[j].pnn == ctdb->nodes[i]->pnn) {
+				tmp_ip->pnn = public_ips->ip[j].pnn;
 			} else {
 				tmp_ip->pnn = -1;
 			}
-			tmp_ip->addr = public_ips->ips[j].addr;
+			tmp_ip->addr = public_ips->ip[j].addr;
 			tmp_ip->next = NULL;
 
 			trbt_insertarray32_callback(ctdb->ip_tree,
-				IP_KEYLEN, ip_key(&public_ips->ips[j].addr),
+				IP_KEYLEN, ip_key(&public_ips->ip[j].addr),
 				add_ip_callback,
 				tmp_ip);
 		}
@@ -1582,17 +1596,19 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 	}
 
 	ipalloc_state->num = ctdb->num_nodes;
+
 	ipalloc_state->known_public_ips =
 		talloc_zero_array(ipalloc_state,
-				  struct ctdb_public_ip_list_old *,
+				  struct ctdb_public_ip_list,
 				  ipalloc_state->num);
 	if (ipalloc_state->known_public_ips == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
 		goto fail;
 	}
+
 	ipalloc_state->available_public_ips =
 		talloc_zero_array(ipalloc_state,
-				  struct ctdb_public_ip_list_old *,
+				  struct ctdb_public_ip_list,
 				  ipalloc_state->num);
 	if (ipalloc_state->available_public_ips == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
@@ -1804,7 +1820,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	/* Short-circuit IP allocation if no node has available IPs */
 	can_host_ips = false;
 	for (i=0; i < ipalloc_state->num; i++) {
-		if (ipalloc_state->available_public_ips[i] != NULL) {
+		if (ipalloc_state->available_public_ips[i].num != 0) {
 			can_host_ips = true;
 		}
 	}
@@ -3459,7 +3475,7 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
    This is verified against ctdb->ip_tree
 */
 static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				       struct ctdb_public_ip_list_old *ips,
+				       struct ctdb_public_ip_list *ips,
 				       uint32_t pnn)
 {
 	struct public_ip_list *tmp_ip;
@@ -3476,22 +3492,22 @@ static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
 	}
 
 	for (i=0; i<ips->num; i++) {
-		tmp_ip = trbt_lookuparray32(ctdb->ip_tree, IP_KEYLEN, ip_key(&ips->ips[i].addr));
+		tmp_ip = trbt_lookuparray32(ctdb->ip_tree, IP_KEYLEN, ip_key(&ips->ip[i].addr));
 		if (tmp_ip == NULL) {
-			DEBUG(DEBUG_ERR,("Node %u has new or unknown public IP %s\n", pnn, ctdb_addr_to_str(&ips->ips[i].addr)));
+			DEBUG(DEBUG_ERR,("Node %u has new or unknown public IP %s\n", pnn, ctdb_addr_to_str(&ips->ip[i].addr)));
 			return -1;
 		}
 
-		if (tmp_ip->pnn == -1 || ips->ips[i].pnn == -1) {
+		if (tmp_ip->pnn == -1 || ips->ip[i].pnn == -1) {
 			continue;
 		}
 
-		if (tmp_ip->pnn != ips->ips[i].pnn) {
+		if (tmp_ip->pnn != ips->ip[i].pnn) {
 			DEBUG(DEBUG_ERR,
 			      ("Inconsistent IP allocation - node %u thinks %s is held by node %u while it is assigned to node %u\n",
 			       pnn,
-			       ctdb_addr_to_str(&ips->ips[i].addr),
-			       ips->ips[i].pnn, tmp_ip->pnn));
+			       ctdb_addr_to_str(&ips->ip[i].addr),
+			       ips->ip[i].pnn, tmp_ip->pnn));
 			return -1;
 		}
 	}
