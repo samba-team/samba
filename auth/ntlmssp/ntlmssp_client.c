@@ -71,16 +71,6 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		workstation = "";
 	}
 
-	if (ntlmssp_state->unicode) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
-	} else {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
-	}
-
-	if (ntlmssp_state->use_ntlmv2) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
-	}
-
 	/* generate the ntlmssp negotiate packet */
 	status = msrpc_gen(out_mem_ctx,
 		  out, "CddAA",
@@ -604,6 +594,12 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_REQUEST_TARGET;
 
+	if (ntlmssp_state->unicode) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
+	} else {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
+	}
+
 	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "128bit", true)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;
 	}
@@ -629,6 +625,10 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 	} else {
 		/* apparently we can't do ntlmv2 if we don't do ntlm2 */
 		ntlmssp_state->use_ntlmv2 = false;
+	}
+
+	if (ntlmssp_state->use_ntlmv2) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
