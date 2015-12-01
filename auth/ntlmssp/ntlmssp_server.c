@@ -117,7 +117,10 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 		}
 	}
 
-	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, ntlmssp_state->allow_lm_key);
+	status = ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, "negotiate");
+	if (!NT_STATUS_IS_OK(status)){
+		return status;
+	}
 
 	/* Ask our caller what challenge they would like in the packet */
 	if (auth_context->get_ntlm_challenge) {
@@ -331,8 +334,14 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 
 	talloc_steal(state, state->encrypted_session_key.data);
 
-	if (auth_flags)
-		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, ntlmssp_state->allow_lm_key);
+	if (auth_flags != 0) {
+		nt_status = ntlmssp_handle_neg_flags(ntlmssp_state,
+						     auth_flags,
+						     "authenticate");
+		if (!NT_STATUS_IS_OK(nt_status)){
+			return nt_status;
+		}
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		struct AUTHENTICATE_MESSAGE *authenticate = talloc(
