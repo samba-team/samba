@@ -196,7 +196,12 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 		while (t != NULL) {
 			n = (int) strtol(t, (char **) NULL, 10);
 			if ((*known)[n] == NULL) {
-				(*known)[n] = talloc_array(ctx, struct ctdb_public_ip_list_old, CTDB_TEST_MAX_IPS);
+				/* Array size here has to be
+				 * CTDB_TEST_MAX_IPS because total
+				 * number of IPs isn't yet known */
+				(*known)[n] = talloc_size(ctx,
+							  offsetof(struct ctdb_public_ip_list_old, ips) +
+							  CTDB_TEST_MAX_IPS * sizeof(struct ctdb_public_ip));
 				(*known)[n]->num = 0;
 			}
 			curr = (*known)[n]->num;
@@ -210,7 +215,9 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 	}
 
 	/* Build list of all allowed IPs */
-	a = talloc_array(ctx, struct ctdb_public_ip_list_old, CTDB_TEST_MAX_IPS);
+	a = talloc_size(ctx,
+			offsetof(struct ctdb_public_ip_list_old, ips) +
+			numips * sizeof(struct ctdb_public_ip));
 	a->num = numips;
 	for (ta = *all_ips, i=0; ta != NULL && i < numips ; ta = ta->next, i++) {
 		a->ips[i].pnn = ta->pnn;
