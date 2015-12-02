@@ -168,7 +168,7 @@ int do_smb_browse(void)
 	for (;;)  {
 		int revents;
 
-		ret = poll_one_fd(mdnsfd, POLLIN|POLLHUP, &revents, 1000);
+		ret = poll_one_fd(mdnsfd, POLLIN|POLLHUP, 1000, &revents);
 		if (ret <= 0 && errno != EINTR) {
 			break;
 		}
