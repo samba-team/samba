@@ -61,7 +61,7 @@ WERROR _PNP_GetDeviceListSize(struct pipes_struct *p,
 	}
 
 	if (!(devicepath = get_device_path(p->mem_ctx, r->in.devicename))) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*r->out.size = strlen(devicepath) + 2;
@@ -89,7 +89,7 @@ WERROR _PNP_GetDeviceList(struct pipes_struct *p,
 	}
 
 	if (!(devicepath = get_device_path(p->mem_ctx, r->in.filter))) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	size = strlen(devicepath) + 2;
@@ -100,13 +100,13 @@ WERROR _PNP_GetDeviceList(struct pipes_struct *p,
 
 	multi_sz = talloc_zero_array(p->mem_ctx, const char *, 2);
 	if (!multi_sz) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	multi_sz[0] = devicepath;
 
 	if (!push_reg_multi_sz(multi_sz, &blob, multi_sz)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (*r->in.length < blob.length/2) {
@@ -168,7 +168,7 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 		r->out.buffer = (uint8_t *)talloc_memdup(p->mem_ctx, blob.data, blob.length);
 		talloc_free(mem_ctx);
 		if (!r->out.buffer) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		*r->out.reg_data_type = REG_SZ;	/* always 1...tested using a remove device manager connection */

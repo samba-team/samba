@@ -42,7 +42,7 @@ WERROR winreg_printer_binding_handle(TALLOC_CTX *mem_ctx,
 					       0,
 					       &local);
 	if (rc < 0) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = rpcint_binding_handle(mem_ctx,
@@ -73,7 +73,7 @@ WERROR winreg_delete_printer_key_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -102,7 +102,7 @@ WERROR winreg_printer_update_changeid_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -131,7 +131,7 @@ WERROR winreg_printer_get_changeid_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -161,7 +161,7 @@ WERROR winreg_get_printer_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -190,7 +190,7 @@ WERROR winreg_create_printer_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -222,7 +222,7 @@ WERROR winreg_update_printer_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -259,7 +259,7 @@ WERROR winreg_set_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -295,7 +295,7 @@ WERROR winreg_enum_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -331,7 +331,7 @@ WERROR winreg_get_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -366,7 +366,7 @@ WERROR winreg_delete_printer_dataex_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -399,7 +399,7 @@ WERROR winreg_get_driver_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -433,7 +433,7 @@ WERROR winreg_get_driver_list_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -465,7 +465,7 @@ WERROR winreg_del_driver_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -496,7 +496,7 @@ WERROR winreg_add_driver_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -527,7 +527,7 @@ WERROR winreg_get_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -557,7 +557,7 @@ WERROR winreg_set_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -587,7 +587,7 @@ WERROR winreg_printer_enumforms1_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -617,7 +617,7 @@ WERROR winreg_printer_getform1_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -646,7 +646,7 @@ WERROR winreg_printer_addform1_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -675,7 +675,7 @@ WERROR winreg_printer_setform1_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -704,7 +704,7 @@ WERROR winreg_printer_deleteform1_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
@@ -735,7 +735,7 @@ WERROR winreg_enum_printer_key_internal(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);

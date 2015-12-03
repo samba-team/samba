@@ -268,7 +268,7 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 	{
 		if (strequal(r->in.value_name->name, "Global"))	{
 			if (!prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL))
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			status = reg_perfcount_get_hkpd(
 				&prs_hkpd, *r->in.data_size, &outbuf_size, NULL);
 			outbuf = (uint8_t *)prs_hkpd.data_p;
@@ -290,7 +290,7 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 			/* we probably have a request for a specific object
 			 * here */
 			if (!prs_init(&prs_hkpd, *r->in.data_size, p->mem_ctx, MARSHALL))
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			status = reg_perfcount_get_hkpd(
 				&prs_hkpd, *r->in.data_size, &outbuf_size,
 				r->in.value_name->name);
@@ -532,7 +532,7 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 
 	shutdown_script = lp_shutdown_script(p->mem_ctx);
 	if (!shutdown_script) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (!*shutdown_script) {
 		return WERR_ACCESS_DENIED;
@@ -542,11 +542,11 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 
 	if ( r->in.message && r->in.message->string ) {
 		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->string )) == NULL ) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		chkmsg = talloc_array(p->mem_ctx, char, strlen(msg)+1);
 		if (!chkmsg) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		alpha_strcpy(chkmsg, msg, NULL, strlen(msg)+1);
 	}
@@ -559,27 +559,27 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 	shutdown_script = talloc_all_string_sub(p->mem_ctx,
 				shutdown_script, "%z", chkmsg ? chkmsg : "");
 	if (!shutdown_script) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	shutdown_script = talloc_all_string_sub(p->mem_ctx,
 					shutdown_script, "%t", str_timeout);
 	if (!shutdown_script) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	shutdown_script = talloc_all_string_sub(p->mem_ctx,
 						shutdown_script, "%r", do_reboot);
 	if (!shutdown_script) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	shutdown_script = talloc_all_string_sub(p->mem_ctx,
 						shutdown_script, "%f", f);
 	if (!shutdown_script) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	shutdown_script = talloc_all_string_sub(p->mem_ctx,
 					shutdown_script, "%x", str_reason);
 	if (!shutdown_script) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	can_shutdown = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_REMOTE_SHUTDOWN);
@@ -698,7 +698,7 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 
 	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
 	if (!fname) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	DEBUG(8,("_winreg_RestoreKey: verifying restore of key [%s] from "
@@ -738,7 +738,7 @@ WERROR _winreg_SaveKey(struct pipes_struct *p,
 
 	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
 	if (!fname) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	DEBUG(8,("_winreg_SaveKey: verifying backup of key [%s] to \"%s\"\n",
@@ -816,7 +816,7 @@ WERROR _winreg_SetValue(struct pipes_struct *p,
 
 	val = talloc_zero(p->mem_ctx, struct registry_value);
 	if (val == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	val->type = r->in.type;
@@ -1027,12 +1027,12 @@ static WERROR construct_multiple_entry(TALLOC_CTX *mem_ctx,
 {
 	r->ve_valuename = talloc_zero(mem_ctx, struct winreg_ValNameBuf);
 	if (r->ve_valuename == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	r->ve_valuename->name = talloc_strdup(r->ve_valuename, valuename ? valuename : "");
 	if (r->ve_valuename->name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	r->ve_valuename->size = strlen_m_term(r->ve_valuename->name)*2;
@@ -1064,7 +1064,7 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 
 	names = talloc_zero_array(p->mem_ctx, const char *, r->in.num_values);
 	if (names == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	for (i=0; i < r->in.num_values; i++) {
@@ -1073,7 +1073,7 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 			names[i] = talloc_strdup(names,
 				r->in.values_in[i].ve_valuename->name);
 			if (names[i] == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		}
 	}
@@ -1094,7 +1094,7 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 			if (!data_blob_append(p->mem_ctx, &result,
 					      vals[i].data.data,
 					      vals[i].data.length)) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		}
 

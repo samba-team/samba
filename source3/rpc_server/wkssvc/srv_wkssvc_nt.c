@@ -351,7 +351,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 		 * so no access checks are needed for this case */
 		r->out.info->info100 = create_wks_info_100(p->mem_ctx);
 		if (r->out.info->info100 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case 101:
@@ -370,7 +370,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 		}
 		r->out.info->info101 = create_wks_info_101(p->mem_ctx);
 		if (r->out.info->info101 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case 102:
@@ -388,7 +388,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 		}
 		r->out.info->info102 = create_wks_info_102(p->mem_ctx);
 		if (r->out.info->info102 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	default:
@@ -575,7 +575,7 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 	case 0:
 		r->out.info->ctr.user0 = create_enum_users0(p->mem_ctx);
 		if (r->out.info->ctr.user0 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		r->out.info->level = r->in.info->level;
 		*r->out.entries_read = r->out.info->ctr.user0->entries_read;
@@ -586,7 +586,7 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 	case 1:
 		r->out.info->ctr.user1 = create_enum_users1(p->mem_ctx);
 		if (r->out.info->ctr.user1 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		r->out.info->level = r->in.info->level;
 		*r->out.entries_read = r->out.info->ctr.user1->entries_read;
@@ -869,7 +869,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 			       &admin_domain,
 			       &admin_account);
 	if (!ok) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	werr = libnet_init_JoinCtx(p->mem_ctx, &j);
@@ -952,7 +952,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 			       &admin_domain,
 			       &admin_account);
 	if (!ok) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	werr = libnet_init_UnjoinCtx(p->mem_ctx, &u);

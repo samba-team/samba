@@ -1094,7 +1094,7 @@ static WERROR init_srv_conn_info_0(struct srvsvc_NetConnCtr0 *ctr0,
 						   struct srvsvc_NetConnInfo0,
 						   num_entries+1);
 		if (!ctr0->array) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		ctr0->array[num_entries].conn_id = *total_entries;
@@ -1152,7 +1152,7 @@ static WERROR init_srv_conn_info_1(const char *name,
 		snum = find_service(talloc_tos(), name, &share_name);
 
 		if (!share_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		if (snum < 0) {
@@ -1328,7 +1328,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 
 		info102 = talloc(p->mem_ctx, struct srvsvc_NetSrvInfo102);
 		if (!info102) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		info102->platform_id	= PLATFORM_ID_NT;
@@ -1354,7 +1354,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 
 		info101 = talloc(p->mem_ctx, struct srvsvc_NetSrvInfo101);
 		if (!info101) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		info101->platform_id	= PLATFORM_ID_NT;
@@ -1373,7 +1373,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 
 		info100 = talloc(p->mem_ctx, struct srvsvc_NetSrvInfo100);
 		if (!info100) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		info100->platform_id	= PLATFORM_ID_NT;
@@ -1631,7 +1631,7 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 
 	snum = find_service(talloc_tos(), r->in.share_name, &share_name);
 	if (!share_name) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (snum < 0) {
 		return WERR_INVALID_NAME;
@@ -1748,7 +1748,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 	snum = find_service(talloc_tos(), r->in.share_name, &share_name);
 	if (!share_name) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Does this share exist ? */
@@ -1855,7 +1855,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	}
 
 	if (comment == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Check if the pathname is valid. */
@@ -1894,7 +1894,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 				max_connections,
 				csc_policy);
 		if (!command) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		DEBUG(10,("_srvsvc_NetShareSetInfo: Running [%s]\n", command ));
@@ -2049,7 +2049,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	snum = find_service(ctx, share_name_in, &share_name);
 	if (!share_name) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Share already exists. */
@@ -2094,7 +2094,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 			comment ? comment : "",
 			max_connections);
 	if (!command) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	DEBUG(10,("_srvsvc_NetShareAdd: Running [%s]\n", command ));
@@ -2176,7 +2176,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 
 	snum = find_service(talloc_tos(), r->in.share_name, &share_name);
 	if (!share_name) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (snum < 0) {
@@ -2203,7 +2203,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 			get_dyn_CONFIGFILE(),
 			share_name);
 	if (!command) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	DEBUG(10,("_srvsvc_NetShareDel: Running [%s]\n", command ));
@@ -2274,7 +2274,7 @@ WERROR _srvsvc_NetRemoteTOD(struct pipes_struct *p,
 	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
 	if ( !(tod = talloc_zero(p->mem_ctx, struct srvsvc_NetRemoteTODInfo)) )
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 
 	*r->out.info = tod;
 
@@ -2330,7 +2330,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	}
 	snum = find_service(talloc_tos(), r->in.share, &servicename);
 	if (!servicename) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto error_exit;
 	}
 	if (snum == -1) {
@@ -2393,7 +2393,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 
 	sd_buf = talloc_zero(p->mem_ctx, struct sec_desc_buf);
 	if (!sd_buf) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto error_exit;
 	}
 
@@ -2479,7 +2479,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 
 	snum = find_service(talloc_tos(), r->in.share, &servicename);
 	if (!servicename) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto error_exit;
 	}
 

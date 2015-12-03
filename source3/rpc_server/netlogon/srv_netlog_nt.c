@@ -299,7 +299,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 
 		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_name2);
 		if (!dc_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		tc_status = WERR_OK;
@@ -327,7 +327,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 
 		dc_name = talloc_asprintf(p->mem_ctx, "\\\\%s", dc_info->dc_unc);
 		if (!dc_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		tc_status = WERR_OK;
@@ -1988,7 +1988,7 @@ static bool wb_getdcname(TALLOC_CTX *mem_ctx,
 	*dcname = talloc_strdup(mem_ctx, dc_info->dc_name);
 	wbcFreeMemory(dc_info);
 	if (!*dcname) {
-		*werr = WERR_NOMEM;
+		*werr = WERR_NOT_ENOUGH_MEMORY;
 		return false;
 	}
 
@@ -2037,7 +2037,7 @@ WERROR _netr_GetDcName(struct pipes_struct *p,
 	*r->out.dcname = talloc_strdup(p->mem_ctx, info->dc_unc);
 	talloc_free(info);
 	if (!*r->out.dcname) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -2082,7 +2082,7 @@ WERROR _netr_GetAnyDCName(struct pipes_struct *p,
 	*r->out.dcname = talloc_strdup(p->mem_ctx, info->dc_unc);
 	talloc_free(info);
 	if (!*r->out.dcname) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -2446,19 +2446,19 @@ WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 		info_ptr = talloc(p->mem_ctx, struct lsa_ForestTrustInformation *);
 		if (info_ptr == NULL) {
 			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		info = talloc_zero(info_ptr, struct lsa_ForestTrustInformation);
 		if (info == NULL) {
 			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		/* Fill forest trust information and expand UPN suffixes list */
 		status = fill_forest_trust_array(p->mem_ctx, info);
 		if (!NT_STATUS_IS_OK(status)) {
 			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		*info_ptr = info;

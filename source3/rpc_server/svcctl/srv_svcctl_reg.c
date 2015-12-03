@@ -487,7 +487,7 @@ static bool svcctl_add_service(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(wkey);
 	wkey.name = talloc_asprintf(mem_ctx, "%s\\%s\\Security", key, name);
 	if (wkey.name == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 

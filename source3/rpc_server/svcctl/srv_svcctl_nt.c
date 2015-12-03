@@ -211,7 +211,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 	struct service_control_op *s_op;
 
 	if ( !(info = talloc_zero( NULL, SERVICE_INFO )) )
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 
 	/* the Service Manager has a NULL name */
 
@@ -239,7 +239,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 		info->ops = s_op->ops;
 
 		if ( !(info->name  = talloc_strdup( info, s_op->name )) ) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 		break;
@@ -279,7 +279,7 @@ WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !(sec_desc = construct_scm_sd( p->mem_ctx )) )
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 
 	se_map_generic( &r->in.access_mask, &scm_generic_map );
 	status = svcctl_access_check( sec_desc, p->session_info->security_token,
@@ -304,7 +304,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 
 	service = r->in.ServiceName;
 	if (!service) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	DEBUG(5, ("_svcctl_OpenServiceW: Attempting to open Service [%s], \n", service));
 
@@ -324,7 +324,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	if (sec_desc == NULL) {
 		DEBUG(0, ("_svcctl_OpenServiceW: Failed to get a valid security "
 			  "descriptor"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
@@ -473,7 +473,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 					p->session_info,
 					&services);
 	if (num_services == -1 ) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
         for ( i=0; i<num_services; i++ ) {
@@ -922,7 +922,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 				      get_session_info_system(),
 				      info->name);
 	if (sec_desc == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*r->out.needed = ndr_size_security_descriptor(sec_desc, 0);

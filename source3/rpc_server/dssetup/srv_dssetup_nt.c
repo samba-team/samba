@@ -45,7 +45,7 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 	basic = talloc_zero(ctx, struct dssetup_DsRolePrimaryDomInfoBasic);
 	if (!basic) {
 		DEBUG(0,("fill_dsrole_dominfo_basic: out of memory\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	switch (lp_server_role()) {
@@ -76,7 +76,7 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 	if (lp_security() == SEC_ADS) {
 		dnsdomain = talloc_strdup(ctx, lp_realm());
 		if (!dnsdomain) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		if (!strlower_m(dnsdomain)) {
 			return WERR_INVALID_PARAM;

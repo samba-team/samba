@@ -389,7 +389,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 			"%s \"%s\"",
 			cmd, sharename);
 	if (!command) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if ( token )
 		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
@@ -578,7 +578,7 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		}
 		Printer->servername = talloc_asprintf(Printer, "\\\\%s", servername);
 		if (Printer->servername == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -624,7 +624,7 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	cache_key = talloc_asprintf(talloc_tos(), "PRINTERNAME/%s", aprinter);
 	if (cache_key == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/*
@@ -736,7 +736,7 @@ static WERROR open_printer_hnd(struct pipes_struct *p,
 
 	new_printer = talloc_zero(p->mem_ctx, struct printer_handle);
 	if (new_printer == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	talloc_set_destructor(new_printer, printer_entry_destructor);
 
@@ -1658,7 +1658,7 @@ static WERROR copy_devicemode(TALLOC_CTX *mem_ctx,
 
 	dm = talloc(mem_ctx, struct spoolss_DeviceMode);
 	if (!dm) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* copy all values, then duplicate strings and structs */
@@ -1666,18 +1666,18 @@ static WERROR copy_devicemode(TALLOC_CTX *mem_ctx,
 
 	dm->devicename = talloc_strdup(dm, orig->devicename);
 	if (!dm->devicename) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	dm->formname = talloc_strdup(dm, orig->formname);
 	if (!dm->formname) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (orig->driverextra_data.data) {
 		dm->driverextra_data.data =
 			(uint8_t *) talloc_memdup(dm, orig->driverextra_data.data,
 					orig->driverextra_data.length);
 		if (!dm->driverextra_data.data) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -1878,14 +1878,14 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		raddr = tsocket_address_inet_addr_string(p->remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		rc = get_remote_hostname(p->remote_address,
 					 &rhost,
 					 p->mem_ctx);
 		if (rc < 0) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		if (strequal(rhost, "UNKNOWN")) {
 			rhost = raddr;
@@ -2085,7 +2085,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = winreg_printer_binding_handle(tmp_ctx,
@@ -2224,7 +2224,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = winreg_printer_binding_handle(tmp_ctx,
@@ -2712,7 +2712,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 						  (struct sockaddr *) &client_ss,
 						  sizeof(struct sockaddr_storage));
 	if (client_len < 0) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
@@ -3667,7 +3667,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	 */
 	pinfo2->servername = talloc_strdup(pinfo2, Printer->servername);
 	if (pinfo2->servername == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto err_pdb_drop;
 	}
 
@@ -3750,7 +3750,7 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(struct pipes_struct *p,
 	/* we always have a spoolss_NotifyInfo struct */
 	info = talloc_zero(p->mem_ctx, struct spoolss_NotifyInfo);
 	if (!info) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -4088,7 +4088,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 
 		r->secdesc = security_descriptor_copy(mem_ctx, info2->secdesc);
 		if (r->secdesc == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -4114,7 +4114,7 @@ static WERROR construct_printer_info3(TALLOC_CTX *mem_ctx,
 
 		r->secdesc = security_descriptor_copy(mem_ctx, info2->secdesc);
 		if (r->secdesc == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -4218,7 +4218,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	session_info = get_session_info_system();
@@ -4266,7 +4266,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 		r->action = DSPRINT_UNPUBLISH;
 	}
 	if (r->guid == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto out_tmp_free;
 	}
 
@@ -4342,7 +4342,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/*
@@ -4391,7 +4391,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 					    union spoolss_PrinterInfo,
 					    count + 1);
 		if (!info) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto out;
 		}
 
@@ -4973,7 +4973,7 @@ static WERROR string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 
 		if (!add_string_to_array(mem_ctx, str, &array, &num_strings)) {
 			TALLOC_FREE(array);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -5629,7 +5629,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx,
@@ -5897,13 +5897,13 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 				 &rhost,
 				 p->mem_ctx);
 	if (rc < 0) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (strequal(rhost,"UNKNOWN")) {
 		rhost = tsocket_address_inet_addr_string(p->remote_address,
 							 p->mem_ctx);
 		if (rhost == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -6151,7 +6151,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx,
@@ -6211,7 +6211,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 	new_secdesc = sec_desc_merge(tmp_ctx, secdesc_ctr->sd, old_secdesc);
 	if (new_secdesc == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -6304,7 +6304,7 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\"", cmd, portname, uri );
 	if (!command) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if ( token )
@@ -6448,7 +6448,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx,
@@ -6796,7 +6796,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		longname = talloc_strdup(tmp_ctx, lp_netbios_name());
 	}
 	if (longname == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -6866,7 +6866,7 @@ static WERROR update_printer(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (!Printer) {
@@ -6925,7 +6925,7 @@ static WERROR update_printer(struct pipes_struct *p,
 		raddr = tsocket_address_inet_addr_string(p->remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		/* add_printer_hook() will call reload_services() */
@@ -7095,7 +7095,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 
 			tmp_ctx = talloc_new(p->mem_ctx);
 			if (tmp_ctx == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
@@ -7123,13 +7123,13 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 			old_printer->servername = talloc_strdup(tmp_ctx, r->in.info_ctr->info.info4->servername);
 			if (old_printer->servername == NULL) {
 				TALLOC_FREE(tmp_ctx);
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			old_printer->printername = talloc_strdup(tmp_ctx, r->in.info_ctr->info.info4->printername);
 			if (old_printer->printername == NULL) {
 				TALLOC_FREE(tmp_ctx);
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			old_printer->attributes = r->in.info_ctr->info.info4->attributes;
@@ -7137,7 +7137,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 			set_old_printer = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfo2);
 			if (set_old_printer == NULL) {
 				TALLOC_FREE(tmp_ctx);
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			spoolss_printerinfo2_to_setprinterinfo2(old_printer, set_old_printer);
@@ -7145,7 +7145,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 			info_ctr = talloc_zero(tmp_ctx, struct spoolss_SetPrinterInfoCtr);
 			if (info_ctr == NULL) {
 				TALLOC_FREE(tmp_ctx);
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			info_ctr->level = 2;
@@ -7355,7 +7355,7 @@ static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
 
 	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
 	if (info == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto err_out;
 	}
 
@@ -7421,7 +7421,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 
 	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
 	if (info == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto err_out;
 	}
 
@@ -7496,7 +7496,7 @@ static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
 
 	info = talloc_array(mem_ctx, union spoolss_JobInfo, num_queues);
 	if (info == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto err_out;
 	}
 
@@ -7764,7 +7764,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx,
@@ -7793,7 +7793,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 			if (!info) {
 				DEBUG(0,("enumprinterdrivers_level_by_architecture: "
 					"failed to enlarge driver info buffer!\n"));
-				result = WERR_NOMEM;
+				result = WERR_NOT_ENOUGH_MEMORY;
 				goto out;
 			}
 		}
@@ -8124,11 +8124,11 @@ static WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines)
 
 	if ( !*cmd ) {
 		if (!(qlines = talloc_array( NULL, char*, 2 ))) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		if (!(qlines[0] = talloc_strdup(qlines, SAMBA_PRINTER_PORT_NAME ))) {
 			TALLOC_FREE(qlines);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		qlines[1] = NULL;
 		numlines = 1;
@@ -8138,7 +8138,7 @@ static WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines)
 
 		command = talloc_asprintf(ctx, "%s \"%d\"", cmd, 1);
 		if (!command) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		DEBUG(10,("Running [%s]\n", command));
@@ -8186,8 +8186,8 @@ static WERROR enumports_level_1(TALLOC_CTX *mem_ctx,
 	if (numlines) {
 		info = talloc_array(mem_ctx, union spoolss_PortInfo, numlines);
 		if (!info) {
-			DEBUG(10,("Returning WERR_NOMEM\n"));
-			result = WERR_NOMEM;
+			DEBUG(10,("Returning WERR_NOT_ENOUGH_MEMORY\n"));
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto out;
 		}
 
@@ -8238,8 +8238,8 @@ static WERROR enumports_level_2(TALLOC_CTX *mem_ctx,
 	if (numlines) {
 		info = talloc_array(mem_ctx, union spoolss_PortInfo, numlines);
 		if (!info) {
-			DEBUG(10,("Returning WERR_NOMEM\n"));
-			result = WERR_NOMEM;
+			DEBUG(10,("Returning WERR_NOT_ENOUGH_MEMORY\n"));
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto out;
 		}
 
@@ -8380,7 +8380,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 		raddr = tsocket_address_inet_addr_string(p->remote_address,
 							 p->mem_ctx);
 		if (raddr == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		if ( !add_printer_hook(p->mem_ctx, p->session_info->security_token,
@@ -8666,7 +8666,7 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!*path) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -8819,7 +8819,7 @@ WERROR _spoolss_EnumPrinterData(struct pipes_struct *p,
 			*r->out.value_needed = 1;
 			r->out.value_name = talloc_strdup(r, "");
 			if (!r->out.value_name) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		} else {
 			r->out.value_name = NULL;
@@ -8845,7 +8845,7 @@ WERROR _spoolss_EnumPrinterData(struct pipes_struct *p,
 		if (r->in.value_offered) {
 			r->out.value_name = talloc_strdup(r, val->value_name);
 			if (!r->out.value_name) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			*r->out.value_needed = val->value_name_len;
 		} else {
@@ -8997,7 +8997,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = winreg_printer_binding_handle(tmp_ctx,
@@ -9062,7 +9062,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = winreg_printer_binding_handle(tmp_ctx,
@@ -9141,7 +9141,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = winreg_printer_binding_handle(tmp_ctx,
@@ -9776,7 +9776,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (!Printer) {
@@ -9938,7 +9938,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_printer_binding_handle(tmp_ctx,
@@ -9980,7 +9980,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 			char *str = talloc_asprintf(tmp_ctx, "%s\\%s",
 				r->in.key_name, SPOOL_OID_KEY);
 			if (!str) {
-				result = WERR_NOMEM;
+				result = WERR_NOT_ENOUGH_MEMORY;
 				goto done;
 			}
 
@@ -10037,7 +10037,7 @@ WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 	}
 
 	if (!r->in.value_name || !r->in.key_name) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
@@ -10099,7 +10099,7 @@ WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 	}
 
 	if (!push_reg_multi_sz(p->mem_ctx, &blob, array)) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -10164,7 +10164,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 
 	tmp_ctx = talloc_new(p->mem_ctx);
 	if (!tmp_ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = winreg_printer_binding_handle(tmp_ctx,
@@ -10331,7 +10331,7 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 
 	snum = find_service(talloc_tos(), "prnproc$", &prnproc_share);
 	if (!prnproc_share) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto err_info_free;
 	}
 	if (snum != -1) {
@@ -10393,7 +10393,7 @@ static WERROR xcvtcp_monitorui(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!push_monitorui_buf(mem_ctx, out, dllname)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -10463,7 +10463,7 @@ static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(port1);
 
 			if (!pull_port_data_1(mem_ctx, &port1, in)) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			portname	= port1.portname;
@@ -10477,7 +10477,7 @@ static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
 			ZERO_STRUCT(port2);
 
 			if (!pull_port_data_2(mem_ctx, &port2, in)) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			portname	= port2.portname;
@@ -10512,7 +10512,7 @@ static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!device_uri) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return add_port_hook(mem_ctx, token, portname, device_uri);
@@ -10562,7 +10562,7 @@ static WERROR xcvlocal_monitorui(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!push_monitorui_buf(mem_ctx, out, dllname)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -10638,7 +10638,7 @@ WERROR _spoolss_XcvData(struct pipes_struct *p,
 	if (r->in.out_data_size) {
 		out_data = data_blob_talloc_zero(p->mem_ctx, r->in.out_data_size);
 		if (out_data.data == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 

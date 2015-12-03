@@ -126,7 +126,7 @@ bool eventlog_init_winreg(struct messaging_context *msg_ctx)
 
 		wkey.name = talloc_asprintf(tmp_ctx, "%s\\%s", key, *elogs);
 		if (wkey.name == NULL) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
@@ -210,7 +210,7 @@ bool eventlog_init_winreg(struct messaging_context *msg_ctx)
 						    "%s\\%s",
 						    wkey.name, *elogs);
 			if (wkey.name == NULL) {
-				result = WERR_NOMEM;
+				result = WERR_NOT_ENOUGH_MEMORY;
 				goto done;
 			}
 
