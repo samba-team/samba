@@ -82,7 +82,6 @@ typedef uint32_t WERROR;
 /* these are win32 error codes. There are only a few places where
    these matter for Samba, primarily in the NT printing code */
 #define WERR_OK W_ERROR(0x00000000)
-#define WERR_BADFILE W_ERROR(0x00000002)
 #define WERR_ACCESS_DENIED W_ERROR(0x00000005)
 #define WERR_BADFID W_ERROR(0x00000006)
 #define WERR_NOMEM W_ERROR(0x00000008)

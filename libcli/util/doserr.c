@@ -29,7 +29,6 @@ struct werror_code_struct {
 static const struct werror_code_struct dos_errs[] =
 {
 	{ "WERR_OK", WERR_OK },
-	{ "WERR_BADFILE", WERR_BADFILE },
 	{ "WERR_ACCESS_DENIED", WERR_ACCESS_DENIED },
 	{ "WERR_BADFID", WERR_BADFID },
 	{ "WERR_BAD_NETPATH", WERR_BAD_NETPATH },
