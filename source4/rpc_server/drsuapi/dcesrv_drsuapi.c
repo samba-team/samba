@@ -680,7 +680,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 							  "serverReference");
 
 			if (!ntds_dn || !ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings")) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
@@ -747,12 +747,12 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 							  "serverReference");
 
 			if (!ntds_dn || !ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings")) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
 			if (!site_dn || !ldb_dn_remove_child_components(site_dn, 2)) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn,
@@ -847,12 +847,12 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 							  "serverReference");
 
 			if (!ntds_dn || !ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings")) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
 			if (!site_dn || !ldb_dn_remove_child_components(site_dn, 2)) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn,

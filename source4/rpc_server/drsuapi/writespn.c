@@ -173,7 +173,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 
 			msg = ldb_msg_new(mem_ctx);
 			if (msg == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			msg->dn = ldb_dn_new(msg, b_state->sam_ctx,
@@ -195,7 +195,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 							 "servicePrincipalName",
 							 req->spn_names[i].str);
 				if (ret != LDB_SUCCESS) {
-					return WERR_NOMEM;
+					return WERR_NOT_ENOUGH_MEMORY;
 				}
 				spn_count++;
 			}

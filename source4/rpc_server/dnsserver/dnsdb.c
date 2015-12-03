@@ -328,7 +328,7 @@ static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 	msg->dn = dn;
 	ret = ldb_msg_add_string(msg, "objectClass", "dnsNode");
 	if (ret != LDB_SUCCESS) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (num_rec > 0 && rec) {
@@ -341,7 +341,7 @@ static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 
 			ret = ldb_msg_add_value(msg, "dnsRecord", &v, NULL);
 			if (ret != LDB_SUCCESS) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		}
 	}
@@ -381,7 +381,7 @@ WERROR dnsserver_db_add_empty_node(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(dn);
 
 	if (!ldb_dn_add_child_fmt(dn, "DC=%s", name)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return dnsserver_db_do_add_rec(mem_ctx, samdb, dn, 0, NULL);
@@ -449,7 +449,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	if (el == NULL) {
 		ret = ldb_msg_add_empty(res->msgs[0], "dnsRecord", 0, &el);
 		if (ret != LDB_SUCCESS) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -746,7 +746,7 @@ static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,
 	sddl = talloc_asprintf(tmp_ctx, sddl_template,
 			       dom_sid_string(tmp_ctx, &dnsadmins_sid));
 	if (sddl == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	talloc_free(res);
 
@@ -766,7 +766,7 @@ static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,
 	msg->dn = zone_dn;
 	ret = ldb_msg_add_string(msg, "objectClass", "dnsZone");
 	if (ret != LDB_SUCCESS) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	sd_encoded = talloc_zero(tmp_ctx, DATA_BLOB);
@@ -780,7 +780,7 @@ static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,
 
 	ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd_encoded);
 	if (ret != LDB_SUCCESS) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* dns zone Properties */
@@ -793,49 +793,49 @@ static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,
 	prop->id = DSPROPERTY_ZONE_TYPE;
 	prop->data.zone_type = z->zoneinfo->dwZoneType;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* allow update */
 	prop->id = DSPROPERTY_ZONE_ALLOW_UPDATE;
 	prop->data.allow_update_flag = z->zoneinfo->fAllowUpdate;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* secure time */
 	prop->id = DSPROPERTY_ZONE_SECURE_TIME;
 	prop->data.zone_secure_time = 0;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* norefresh interval */
 	prop->id = DSPROPERTY_ZONE_NOREFRESH_INTERVAL;
 	prop->data.norefresh_hours = 168;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* refresh interval */
 	prop->id = DSPROPERTY_ZONE_REFRESH_INTERVAL;
 	prop->data.refresh_hours = 168;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* aging state */
 	prop->id = DSPROPERTY_ZONE_AGING_STATE;
 	prop->data.aging_enabled = z->zoneinfo->fAging;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* aging enabled time */
 	prop->id = DSPROPERTY_ZONE_AGING_ENABLED_TIME;
 	prop->data.next_scavenging_cycle_hours = 0;
 	if (!dnsserver_db_msg_add_dnsproperty(tmp_ctx, msg, prop)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	talloc_free(prop);
@@ -893,7 +893,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 
 	if(!ldb_dn_add_child_fmt(dn, "DC=%s,CN=MicrosoftDNS", zone->name)) {
 		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Add dnsZone record */
@@ -905,7 +905,7 @@ WERROR dnsserver_db_create_zone(struct ldb_context *samdb,
 
 	if (!ldb_dn_add_child_fmt(dn, "DC=@")) {
 		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	dns_rec = talloc_zero_array(tmp_ctx, struct dnsp_DnssrvRpcRecord, 2);

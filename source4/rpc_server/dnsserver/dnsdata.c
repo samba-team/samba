@@ -799,7 +799,7 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 		recs->rec = talloc_realloc(recs, recs->rec, struct DNS_RPC_RECORDS, recs->count+1);
 	}
 	if (recs->rec == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	i = recs->count;
 	recs->rec[i].wLength = 0;
@@ -888,7 +888,7 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 							struct DNS_RPC_RECORD,
 							recs->rec[i].wRecordCount+1);
 				if (recs->rec[i].records == NULL) {
-					return WERR_NOMEM;
+					return WERR_NOT_ENOUGH_MEMORY;
 				}
 
 				dns_rec = &recs->rec[i].records[recs->rec[i].wRecordCount];

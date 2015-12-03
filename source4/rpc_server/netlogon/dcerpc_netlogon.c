@@ -1345,7 +1345,7 @@ static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl
 			info1 = talloc_zero(state->mem_ctx,
 					    struct netr_NETLOGON_INFO_1);
 			if (info1 == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			state->r.out.query->info1 = info1;
 			return WERR_OK;
@@ -1354,7 +1354,7 @@ static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl
 			info3 = talloc_zero(state->mem_ctx,
 					    struct netr_NETLOGON_INFO_3);
 			if (info3 == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			state->r.out.query->info3 = info3;
 			return WERR_OK;
@@ -1493,7 +1493,7 @@ static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl
 						  state->r.in.data,
 						  state->r.out.query);
 	if (subreq == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	tevent_req_set_callback(subreq,
@@ -1549,7 +1549,7 @@ static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLO
 
 	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonControl_base_state);
 	if (state == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	state->dce_call = dce_call;
@@ -1583,7 +1583,7 @@ static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALL
 
 	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonControl_base_state);
 	if (state == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	state->dce_call = dce_call;
@@ -1617,7 +1617,7 @@ static WERROR dcesrv_netr_LogonControl2Ex(struct dcesrv_call_state *dce_call, TA
 
 	state = talloc_zero(mem_ctx, struct dcesrv_netr_LogonControl_base_state);
 	if (state == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	state->dce_call = dce_call;
@@ -2958,7 +2958,7 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	state = talloc_zero(mem_ctx,
 			struct dcesrv_netr_DsRGetForestTrustInformation_state);
 	if (state == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	state->dce_call = dce_call;
 	state->mem_ctx = mem_ctx;
@@ -2986,7 +2986,7 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 						r->in.flags,
 						r->out.forest_trust_info);
 	if (subreq == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	state->dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 	tevent_req_set_callback(subreq,

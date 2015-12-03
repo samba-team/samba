@@ -276,7 +276,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	obj->object.identifier = get_object_identifier(obj, msg);
 	if (obj->object.identifier == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	dom_sid_split_rid(NULL, &obj->object.identifier->sid, NULL, &rid);
 
@@ -370,7 +370,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	obj->object.attribute_ctr.attributes = talloc_array(obj, struct drsuapi_DsReplicaAttribute,
 							    obj->object.attribute_ctr.num_attributes);
 	if (obj->object.attribute_ctr.attributes == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/*
@@ -1646,7 +1646,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 						     (*search_res)->count);
 		if ((*search_res)->msgs == NULL) {
 			TALLOC_FREE(frame);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 
@@ -1745,7 +1745,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	case 8:
 		req10 = getncchanges_map_req8(mem_ctx, &r->in.req->req8);
 		if (req10 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case 10:
@@ -1911,7 +1911,7 @@ allowed:
 	if (getnc_state == NULL) {
 		getnc_state = talloc_zero(b_state, struct drsuapi_getncchanges_state);
 		if (getnc_state == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		b_state->getncchanges_state = getnc_state;
 		getnc_state->ncRoot_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
@@ -2015,7 +2015,7 @@ allowed:
 		getnc_state->final_udv = talloc_zero(getnc_state,
 					struct drsuapi_DsReplicaCursor2CtrEx);
 		if (getnc_state->final_udv == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		werr = get_nc_changes_udv(sam_ctx, getnc_state->ncRoot_dn,
 					  getnc_state->final_udv);
@@ -2301,7 +2301,7 @@ allowed:
 		ureq.dest_dsa_dns_name = samdb_ntds_msdcs_dns_name(b_state->sam_ctx, mem_ctx,
 								   &req10->destination_dsa_guid);
 		if (!ureq.dest_dsa_dns_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		ureq.dest_dsa_guid = req10->destination_dsa_guid;
 		ureq.options = DRSUAPI_DRS_ADD_REF |
@@ -2344,7 +2344,7 @@ allowed:
 			struct la_for_sorting *guid_array = talloc_array(getnc_state, struct la_for_sorting, getnc_state->la_count);
 			if (guid_array == NULL) {
 				DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", getnc_state->la_count));
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			for (j = 0; j < getnc_state->la_count; j++) {
 				/* we need to get the target GUIDs to compare */
@@ -2402,7 +2402,7 @@ allowed:
 		r->out.ctr->ctr6.linked_attributes = talloc_array(r->out.ctr, struct drsuapi_DsReplicaLinkedAttribute, link_count);
 		if (r->out.ctr->ctr6.linked_attributes == NULL) {
 			DEBUG(0, ("Out of memory allocating %u linked attributes for output", link_count));
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		for (k = 0; k < link_count; k++) {

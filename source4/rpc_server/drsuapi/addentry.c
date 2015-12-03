@@ -105,14 +105,14 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 		 */
 		msg = ldb_msg_new(mem_ctx);
 		if (msg == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		msg->dn = ref_dn;
 		ret = ldb_msg_add_empty(msg, "servicePrincipalName",
 					LDB_FLAG_MOD_ADD, &el);
 		if (ret != LDB_SUCCESS) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 
@@ -132,7 +132,7 @@ static WERROR drsuapi_add_SPNs(struct drsuapi_bind_state *b_state,
 						 talloc_asprintf(el->values, "ldap/%s", dNSHostName));
 		}
 		if (el->num_values < 2) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		ret = dsdb_modify(b_state->sam_ctx, msg, DSDB_MODIFY_PERMISSIVE);
