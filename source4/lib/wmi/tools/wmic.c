@@ -186,8 +186,8 @@ int main(int argc, char **argv)
 		struct WbemClassObject *co[cnt];
 
 		result = IEnumWbemClassObject_SmartNext(pEnum, ctx, 0xFFFFFFFF, cnt, co, &ret);
-		/* WERR_BADFUNC is OK, it means only that there is less returned objects than requested */
-		if (!W_ERROR_EQUAL(result, WERR_BADFUNC)) {
+		/* WERR_INVALID_FUNCTION is OK, it means only that there is less returned objects than requested */
+		if (!W_ERROR_EQUAL(result, WERR_INVALID_FUNCTION)) {
 			WERR_CHECK("Retrieve result data.");
 		} else {
 			DEBUG(1, ("OK   : Retrieved less objects than requested (it is normal).\n"));

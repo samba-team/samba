@@ -376,7 +376,7 @@ WERROR IEnumWbemClassObject_SmartNext(struct IEnumWbemClassObject *d, TALLOC_CTX
 	}
 
 	result = IWbemWCOSmartEnum_Next(ecod->pSE, loc_ctx, &ecod->guid, lTimeout, uCount, puReturned, &size, &data);
-	if (!W_ERROR_EQUAL(result, WERR_BADFUNC)) {
+	if (!W_ERROR_EQUAL(result, WERR_INVALID_FUNCTION)) {
 		WERR_CHECK("IWbemWCOSmartEnum_Next.");
 	}
 
