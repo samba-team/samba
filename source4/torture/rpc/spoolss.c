@@ -2599,7 +2599,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 		torture_skip(tctx, "EnumForms level 2 not supported");
 	}
 
-	if (print_server && W_ERROR_EQUAL(r.out.result, WERR_BADFID)) {
+	if (print_server && W_ERROR_EQUAL(r.out.result, WERR_INVALID_HANDLE)) {
 		torture_fail(tctx, "EnumForms on the PrintServer isn't supported by test server (NT4)");
 	}
 
