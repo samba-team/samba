@@ -188,7 +188,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	}
 
 	if (!keypath) {
-		return WERR_OBJECT_PATH_INVALID;
+		return WERR_BAD_PATHNAME;
 	}
 
 	/* split up the registry key path */
@@ -198,7 +198,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (!reg_split_key(key_tmp, &parentpath, &keyname)) {
-		return WERR_OBJECT_PATH_INVALID;
+		return WERR_BAD_PATHNAME;
 	}
 
 	if (!keyname) {
