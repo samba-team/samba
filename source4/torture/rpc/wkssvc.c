@@ -1204,7 +1204,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	/* FIXME: this test assumes to join workstations / servers and does not
-	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
+	 * handle DCs (WERR_NERR_SETUPDOMAINCONTROLLER) */
 
 	if (!test_GetJoinInformation(tctx, p, &join_status, &join_name))
 	{
@@ -1289,7 +1289,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	/* FIXME: this test assumes to join workstations / servers and does not
-	 * handle DCs (WERR_SETUP_DOMAIN_CONTROLLER) */
+	 * handle DCs (WERR_NERR_SETUPDOMAINCONTROLLER) */
 
 	if (!test_GetJoinInformation(tctx, p, &join_status, &join_name))
 	{
