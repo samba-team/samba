@@ -297,6 +297,7 @@
 #
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_extended_dn
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_g1_member_of_g4
+^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_not_linked_attrs
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_object_dn_binary
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_one_way_links
 ^samba4.ldap.match_rules.python.__main__.MatchRulesTests.test_u1_groups

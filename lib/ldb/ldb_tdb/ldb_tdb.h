@@ -48,6 +48,9 @@ struct ltdb_context {
 	enum ldb_scope scope;
 	const char * const *attrs;
 	struct tevent_timer *timeout_event;
+
+	/* error handling */
+	int error;
 };
 
 /* special record types */

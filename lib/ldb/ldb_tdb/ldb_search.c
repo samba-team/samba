@@ -445,6 +445,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 	msg = ldb_msg_new(ac);
 	if (!msg) {
+		ac->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
 
@@ -452,6 +453,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	ret = ldb_unpack_data(ldb, (struct ldb_val *)&data, msg);
 	if (ret == -1) {
 		talloc_free(msg);
+		ac->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
 
@@ -460,6 +462,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 				     (char *)key.dptr + 3);
 		if (msg->dn == NULL) {
 			talloc_free(msg);
+			ac->error = LDB_ERR_OPERATIONS_ERROR;
 			return -1;
 		}
 	}
@@ -469,6 +472,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 				  ac->tree, ac->base, ac->scope, &matched);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
+		ac->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
 	if (!matched) {
@@ -481,6 +485,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 
 	if (ret == -1) {
 		talloc_free(msg);
+		ac->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
 
@@ -488,6 +493,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	if (ret != LDB_SUCCESS) {
 		ac->request_terminated = true;
 		/* the callback failed, abort the operation */
+		ac->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
 	}
 
@@ -505,6 +511,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
 
+	ctx->error = LDB_SUCCESS;
 	if (ltdb->in_transaction != 0) {
 		ret = tdb_traverse(ltdb->tdb, search_func, ctx);
 	} else {
@@ -515,7 +522,7 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return LDB_SUCCESS;
+	return ctx->error;
 }
 
 /*

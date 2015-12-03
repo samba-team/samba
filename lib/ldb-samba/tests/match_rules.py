@@ -14,7 +14,7 @@ from samba.dcerpc import security, misc
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.ndr import ndr_unpack
-from ldb import Message, MessageElement, Dn
+from ldb import Message, MessageElement, Dn, LdbError
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
 
@@ -301,11 +301,14 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertTrue(len(res1) == 0)
 
-        # Search with transitive match must return 1 results
-        res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                        scope=SCOPE_BASE,
-                        expression="member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
-        self.assertTrue(len(res1) == 1)
+        try:
+            # Search with transitive match must return 1 results
+            res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
+                            scope=SCOPE_BASE,
+                            expression="member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
+            self.assertTrue(len(res1) == 1)
+        except LdbError, err:
+            self.fail(str(err))
 
         res1 = self.ldb.search("cn=u1,%s" % self.ou_users,
                         scope=SCOPE_BASE,
@@ -324,11 +327,14 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="memberOf=cn=g4,%s" % self.ou_groups)
         self.assertTrue(len(res1) == 0)
 
-        # Search with transitive match must return 1 results
-        res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
-                        scope=SCOPE_BASE,
-                        expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
-        self.assertTrue(len(res1) == 1)
+        try:
+            # Search with transitive match must return 1 results
+            res1 = self.ldb.search("cn=g4,%s" % self.ou_groups,
+                            scope=SCOPE_BASE,
+                            expression="member:1.2.840.113556.1.4.1941:=cn=g1,%s" % self.ou_groups)
+            self.assertTrue(len(res1) == 1)
+        except LdbError, err:
+            self.fail(str(err))
 
         res1 = self.ldb.search("cn=g1,%s" % self.ou_groups,
                         scope=SCOPE_BASE,
@@ -341,10 +347,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="member=cn=u1,%s" % self.ou_users)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou_groups,
-                        scope=SCOPE_SUBTREE,
-                        expression="member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
-        self.assertTrue(len(res1) == 4)
+        try:
+            res1 = self.ldb.search(self.ou_groups,
+                            scope=SCOPE_SUBTREE,
+                            expression="member:1.2.840.113556.1.4.1941:=cn=u1,%s" % self.ou_users)
+            self.assertTrue(len(res1) == 4)
+        except LdbError, err:
+            self.fail(str(err))
 
     def test_u2_groups(self):
         res1 = self.ldb.search(self.ou_groups,
@@ -352,10 +361,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="member=cn=u2,%s" % self.ou_users)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou_groups,
-                        scope=SCOPE_SUBTREE,
-                        expression="member:1.2.840.113556.1.4.1941:=cn=u2,%s" % self.ou_users)
-        self.assertTrue(len(res1) == 3)
+        try:
+            res1 = self.ldb.search(self.ou_groups,
+                            scope=SCOPE_SUBTREE,
+                            expression="member:1.2.840.113556.1.4.1941:=cn=u2,%s" % self.ou_users)
+            self.assertTrue(len(res1) == 3)
+        except LdbError, err:
+            self.fail(str(err))
 
     def test_u3_groups(self):
         res1 = self.ldb.search(self.ou_groups,
@@ -363,10 +375,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="member=cn=u3,%s" % self.ou_users)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou_groups,
-                        scope=SCOPE_SUBTREE,
-                        expression="member:1.2.840.113556.1.4.1941:=cn=u3,%s" % self.ou_users)
-        self.assertTrue(len(res1) == 2)
+        try:
+            res1 = self.ldb.search(self.ou_groups,
+                            scope=SCOPE_SUBTREE,
+                            expression="member:1.2.840.113556.1.4.1941:=cn=u3,%s" % self.ou_users)
+            self.assertTrue(len(res1) == 2)
+        except LdbError, err:
+            self.fail(str(err))
 
     def test_u4_groups(self):
         res1 = self.ldb.search(self.ou_groups,
@@ -374,10 +389,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="member=cn=u4,%s" % self.ou_users)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou_groups,
-                        scope=SCOPE_SUBTREE,
-                        expression="member:1.2.840.113556.1.4.1941:=cn=u4,%s" % self.ou_users)
-        self.assertTrue(len(res1) == 1)
+        try:
+            res1 = self.ldb.search(self.ou_groups,
+                            scope=SCOPE_SUBTREE,
+                            expression="member:1.2.840.113556.1.4.1941:=cn=u4,%s" % self.ou_users)
+            self.assertTrue(len(res1) == 1)
+        except LdbError, err:
+            self.fail(str(err))
 
     def test_extended_dn(self):
         res1 = self.ldb.search("cn=u1,%s" % self.ou_users,
@@ -399,10 +417,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="member=<GUID=%s>" % guid)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou_groups,
-                        scope=SCOPE_SUBTREE,
-                        expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
-        self.assertTrue(len(res1) == 4)
+        try:
+            res1 = self.ldb.search(self.ou_groups,
+                            scope=SCOPE_SUBTREE,
+                            expression="member:1.2.840.113556.1.4.1941:=<SID=%s>" % sid)
+            self.assertTrue(len(res1) == 4)
+        except LdbError, err:
+            self.fail(str(err))
 
         res1 = self.ldb.search(self.ou_groups,
                         scope=SCOPE_SUBTREE,
@@ -415,10 +436,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="msDS-RevealedUsers=B:8:01010101:cn=c3,%s" % self.ou_computers)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou_computers,
-                        scope=SCOPE_SUBTREE,
-                        expression="msDS-RevealedUsers:1.2.840.113556.1.4.1941:=B:8:01010101:cn=c3,%s" % self.ou_computers)
-        self.assertTrue(len(res1) == 2)
+        try:
+            res1 = self.ldb.search(self.ou_computers,
+                            scope=SCOPE_SUBTREE,
+                            expression="msDS-RevealedUsers:1.2.840.113556.1.4.1941:=B:8:01010101:cn=c3,%s" % self.ou_computers)
+            self.assertTrue(len(res1) == 2)
+        except LdbError, err:
+            self.fail(str(err))
 
     def test_one_way_links(self):
         res1 = self.ldb.search(self.ou,
@@ -426,10 +450,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="addressBookRoots2=cn=c1,%s" % self.ou_computers)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.ou,
-                        scope=SCOPE_SUBTREE,
-                        expression="addressBookRoots2:1.2.840.113556.1.4.1941:=cn=c1,%s" % self.ou_computers)
-        self.assertTrue(len(res1) == 2)
+        try:
+            res1 = self.ldb.search(self.ou,
+                            scope=SCOPE_SUBTREE,
+                            expression="addressBookRoots2:1.2.840.113556.1.4.1941:=cn=c1,%s" % self.ou_computers)
+            self.assertTrue(len(res1) == 2)
+        except LdbError, err:
+            self.fail(str(err))
 
     def test_not_linked_attrs(self):
         res1 = self.ldb.search(self.base_dn,
@@ -437,10 +464,13 @@ class MatchRulesTests(samba.tests.TestCase):
                         expression="wellKnownObjects=B:32:aa312825768811d1aded00c04fd8d5cd:CN=computers,%s" % self.base_dn)
         self.assertTrue(len(res1) == 1)
 
-        res1 = self.ldb.search(self.base_dn,
-                        scope=SCOPE_BASE,
-                        expression="wellKnownObjects:1.2.840.113556.1.4.1941:=B:32:aa312825768811d1aded00c04fd8d5cd:CN=computers,%s" % self.base_dn)
-        self.assertTrue(len(res1) == 0)
+        try:
+            res1 = self.ldb.search(self.base_dn,
+                            scope=SCOPE_BASE,
+                            expression="wellKnownObjects:1.2.840.113556.1.4.1941:=B:32:aa312825768811d1aded00c04fd8d5cd:CN=computers,%s" % self.base_dn)
+            self.assertTrue(len(res1) == 0)
+        except LdbError, err:
+            self.fail(str(err))
 
 
 	res1 = self.ldb.search(self.ou,
