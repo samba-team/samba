@@ -1323,7 +1323,7 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_SetPrinter_r(b, tctx, &r),
 		"failed to call SetPrinter");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
 		"failed to call SetPrinter");
 
  again:
@@ -1434,7 +1434,7 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 		case 4:
 		case 5:
 		case 7:
-			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
 				"unexpected error code returned");
 			break;
 		case 9:
@@ -2241,10 +2241,10 @@ static bool test_devicemode_full(struct torture_context *tctx,
 	uint16_t __driverextra_length;/* [value(r->driverextra_data.length)] */
 	uint32_t fields;
 #endif
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, __LINE__, WERR_INVALID_PARAM);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0, WERR_INVALID_PARAM);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0xffff, WERR_INVALID_PARAM);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAM : WERR_OK);
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, __LINE__, WERR_INVALID_PARAMETER);
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0, WERR_INVALID_PARAMETER);
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0xffff, WERR_INVALID_PARAMETER);
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAMETER : WERR_OK);
 	TEST_DEVMODE_INT(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
 
 	devmode_ctr.devmode->driverextra_data = data_blob_string_const("foobar");
@@ -2252,7 +2252,7 @@ static bool test_devicemode_full(struct torture_context *tctx,
 		test_devmode_set_level(tctx, b, handle, 8, devmode_ctr.devmode),
 		"failed to set devmode");
 
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAM : WERR_OK);
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAMETER : WERR_OK);
 	TEST_DEVMODE_INT(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
 
 	TEST_DEVMODE_INT(8, orientation,	8, orientation, __LINE__);
@@ -2743,8 +2743,8 @@ static bool test_AddForm(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_spoolss_AddForm_r(b, tctx, &r),
 		"2nd AddForm failed");
-	if (W_ERROR_EQUAL(expected_result, WERR_INVALID_PARAM)) {
-		torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+	if (W_ERROR_EQUAL(expected_result, WERR_INVALID_PARAMETER)) {
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
 			"2nd AddForm gave unexpected result");
 	} else {
 		torture_assert_werr_equal(tctx, r.out.result, WERR_FILE_EXISTS,
@@ -2895,7 +2895,7 @@ static bool test_Forms_args(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, info.info1.size.width, add_info.info1->size.width, "width mismatch");
 	}
 
-	if (!W_ERROR_EQUAL(expected_add_result, WERR_INVALID_PARAM)) {
+	if (!W_ERROR_EQUAL(expected_add_result, WERR_INVALID_PARAMETER)) {
 		torture_assert(tctx,
 			test_EnumForms_find_one(tctx, b, handle, print_server, form_name),
 			"Newly added form not found in enum call");
@@ -2955,7 +2955,7 @@ static bool test_Forms(struct torture_context *tctx,
 				.area		= area,
 			},
 			.expected_add_result	= WERR_OK,
-			.expected_delete_result	= WERR_INVALID_PARAM,
+			.expected_delete_result	= WERR_INVALID_PARAMETER,
 		},
 */
 		{
@@ -2976,7 +2976,7 @@ static bool test_Forms(struct torture_context *tctx,
 				.area		= area,
 			},
 			.expected_add_result	= WERR_FILE_EXISTS,
-			.expected_delete_result	= WERR_INVALID_PARAM
+			.expected_delete_result	= WERR_INVALID_PARAMETER
 		},
 		{
 			.info1 = {
@@ -2986,7 +2986,7 @@ static bool test_Forms(struct torture_context *tctx,
 				.area		= area,
 			},
 			.expected_add_result	= WERR_FILE_EXISTS,
-			.expected_delete_result	= WERR_INVALID_PARAM
+			.expected_delete_result	= WERR_INVALID_PARAMETER
 		},
 		{
 			.info1 = {
@@ -2996,7 +2996,7 @@ static bool test_Forms(struct torture_context *tctx,
 				.area		= area,
 			},
 			.expected_add_result	= WERR_FILE_EXISTS,
-			.expected_delete_result	= WERR_INVALID_PARAM
+			.expected_delete_result	= WERR_INVALID_PARAMETER
 		},
 		{
 			.info1 = {
@@ -3005,7 +3005,7 @@ static bool test_Forms(struct torture_context *tctx,
 				.size		= size,
 				.area		= area,
 			},
-			.expected_add_result	= WERR_INVALID_PARAM,
+			.expected_add_result	= WERR_INVALID_PARAMETER,
 			.expected_delete_result	= WERR_INVALID_FORM_NAME
 		}
 
@@ -3256,7 +3256,7 @@ static bool test_AddJob(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_AddJob_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "AddJob failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM, "AddJob failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER, "AddJob failed");
 
 	return true;
 }
@@ -6360,7 +6360,7 @@ static bool test_OpenPrinter_badname(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_OpenPrinterEx_r(b, tctx, &opEx);
 	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
-	torture_assert_werr_equal(tctx, opEx.out.result, WERR_INVALID_PARAM,
+	torture_assert_werr_equal(tctx, opEx.out.result, WERR_INVALID_PARAMETER,
 		"unexpected result");
 
 	if (W_ERROR_IS_OK(opEx.out.result)) {
@@ -9750,11 +9750,11 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx level 2");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriver level 2");
 	}
 
@@ -9762,11 +9762,11 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx level 2");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriver level 2");
 	}
 
@@ -9774,11 +9774,11 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx level 2");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriver level 2");
 	}
 
@@ -9786,11 +9786,11 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx level 2");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriver level 2");
 	}
 
@@ -9798,11 +9798,11 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx level 2");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriver level 2");
 	}
 
@@ -9810,11 +9810,11 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx level 2");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAM),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriver level 2");
 	}
 
@@ -9822,7 +9822,7 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, 0, WERR_INVALID_PARAM),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, 0, WERR_INVALID_PARAMETER),
 			"failed to test AddPrinterDriverEx");
 	}
 

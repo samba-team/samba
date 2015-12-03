@@ -175,7 +175,7 @@ static bool test_witness_UnRegister_with_handle(struct torture_context *tctx,
 
 	torture_assert_werr_equal(tctx,
 		r.out.result,
-		WERR_INVALID_PARAM,
+		WERR_INVALID_PARAMETER,
 		"UnRegister failed");
 
 	return true;
@@ -270,14 +270,14 @@ static bool test_witness_Register(struct torture_context *tctx,
 			.ip_address		= "",
 			.client_computer_name	= "",
 			.expected_status	= NT_STATUS_OK,
-			.expected_result	= WERR_INVALID_PARAM
+			.expected_result	= WERR_INVALID_PARAMETER
 		},{
 			.version		= WITNESS_V1,
 			.net_name		= NULL,
 			.ip_address		= NULL,
 			.client_computer_name	= lpcfg_netbios_name(tctx->lp_ctx),
 			.expected_status	= NT_STATUS_OK,
-			.expected_result	= WERR_INVALID_PARAM
+			.expected_result	= WERR_INVALID_PARAMETER
 		},{
 			.version		= WITNESS_V2,
 			.net_name		= NULL,
@@ -291,7 +291,7 @@ static bool test_witness_Register(struct torture_context *tctx,
 			.ip_address		= NULL,
 			.client_computer_name	= lpcfg_netbios_name(tctx->lp_ctx),
 			.expected_status	= NT_STATUS_OK,
-			.expected_result	= WERR_INVALID_PARAM
+			.expected_result	= WERR_INVALID_PARAMETER
 		}
 
 	};
@@ -406,14 +406,14 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 			.ip_address		= "",
 			.client_computer_name	= "",
 			.expected_status	= NT_STATUS_OK,
-			.expected_result	= WERR_INVALID_PARAM
+			.expected_result	= WERR_INVALID_PARAMETER
 		},{
 			.version		= WITNESS_V2,
 			.net_name		= NULL,
 			.ip_address		= NULL,
 			.client_computer_name	= lpcfg_netbios_name(tctx->lp_ctx),
 			.expected_status	= NT_STATUS_OK,
-			.expected_result	= WERR_INVALID_PARAM
+			.expected_result	= WERR_INVALID_PARAMETER
 		},{
 			.version		= WITNESS_V1,
 			.net_name		= NULL,
@@ -427,7 +427,7 @@ static bool test_witness_RegisterEx(struct torture_context *tctx,
 			.ip_address		= NULL,
 			.client_computer_name	= lpcfg_netbios_name(tctx->lp_ctx),
 			.expected_status	= NT_STATUS_OK,
-			.expected_result	= WERR_INVALID_PARAM
+			.expected_result	= WERR_INVALID_PARAMETER
 		}
 
 	};

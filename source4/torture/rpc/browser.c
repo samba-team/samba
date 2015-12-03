@@ -71,7 +71,7 @@ bool test_BrowserrQueryOtherDomains(struct torture_context *tctx,
 	info.info.info100 = NULL;
 	status = dcerpc_BrowserrQueryOtherDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BrowserrQueryOtherDomains failed");
-	torture_assert_werr_equal(tctx, WERR_INVALID_PARAM, r.out.result,
+	torture_assert_werr_equal(tctx, WERR_INVALID_PARAMETER, r.out.result,
 				  "BrowserrQueryOtherDomains failed");
 
 	info.level = 101;

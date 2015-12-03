@@ -469,7 +469,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 	ret &= test_OpenPrinterSequence(tctx, p, &handle01);
 	ret &= test_GetPrinterData(tctx, b, &handle01,"UISingleJobStatusString",
-			WERR_INVALID_PARAM, 0);
+			WERR_INVALID_PARAMETER, 0);
 	torture_comment(tctx, "Skip RemoteFindNextPrinterChangeNotifyEx test\n");
 
 	server_name = talloc_asprintf(ctx, "\\\\%s", dcerpc_server_name(p));
@@ -547,7 +547,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	}
 
 	ret &= test_EnumPrinterDataEx(tctx, b, &handle03, "", 0,
-			WERR_INVALID_PARAM);
+			WERR_INVALID_PARAMETER);
 
 	ret &= test_GetPrinter(tctx, b, &handle03, tmp_ctx, 2, 0);
 

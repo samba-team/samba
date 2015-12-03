@@ -129,7 +129,7 @@ static bool test_NetrWkstaTransportAdd(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "NetrWkstaTransportAdd failed");
 	torture_assert_werr_equal(tctx, r.out.result,
-				  WERR_INVALID_PARAM,
+				  WERR_INVALID_PARAMETER,
 				  "NetrWkstaTransportAdd level 0 failed");
 
 	return true;
@@ -231,12 +231,12 @@ static bool test_NetrWkstaUserGetInfo(struct torture_context *tctx,
 		{ NULL, 0, WERR_NO_SUCH_LOGON_SESSION },
 		{ NULL, 1, WERR_NO_SUCH_LOGON_SESSION },
 		{ NULL, 1101, WERR_OK },
-		{ dom, 0, WERR_INVALID_PARAM },
-		{ dom, 1, WERR_INVALID_PARAM },
-		{ dom, 1101, WERR_INVALID_PARAM },
-		{ user, 0, WERR_INVALID_PARAM },
-		{ user, 1, WERR_INVALID_PARAM },
-		{ user, 1101, WERR_INVALID_PARAM },
+		{ dom, 0, WERR_INVALID_PARAMETER },
+		{ dom, 1, WERR_INVALID_PARAMETER },
+		{ dom, 1101, WERR_INVALID_PARAMETER },
+		{ user, 0, WERR_INVALID_PARAMETER },
+		{ user, 1, WERR_INVALID_PARAMETER },
+		{ user, 1101, WERR_INVALID_PARAMETER },
 	};
 
 	for (i=0; i<ARRAY_SIZE(tests); i++) {

@@ -1228,7 +1228,7 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 			false, (secinfo_verify_fn)_test_owner_present },
 		{ sd_owner, SECINFO_OWNER, WERR_OK,
 			true, (secinfo_verify_fn)_test_owner_present },
-		{ sd_owner, SECINFO_GROUP, WERR_INVALID_PARAM },
+		{ sd_owner, SECINFO_GROUP, WERR_INVALID_PARAMETER },
 		{ sd_owner, SECINFO_DACL, WERR_OK,
 			true, (secinfo_verify_fn)_test_owner_present },
 		{ sd_owner, SECINFO_SACL, WERR_ACCESS_DENIED },
@@ -1242,7 +1242,7 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	struct winreg_secinfo_table sec_info_group_tests[] = {
 		{ sd_group, 0, WERR_OK,
 			false, (secinfo_verify_fn)_test_group_present },
-		{ sd_group, SECINFO_OWNER, WERR_INVALID_PARAM },
+		{ sd_group, SECINFO_OWNER, WERR_INVALID_PARAMETER },
 		{ sd_group, SECINFO_GROUP, WERR_OK,
 			true, (secinfo_verify_fn)_test_group_present },
 		{ sd_group, SECINFO_DACL, WERR_OK,
@@ -1257,8 +1257,8 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	struct winreg_secinfo_table sec_info_dacl_tests[] = {
 		{ sd_dacl, 0, WERR_OK,
 			false, (secinfo_verify_fn)_test_dacl_trustee_present },
-		{ sd_dacl, SECINFO_OWNER, WERR_INVALID_PARAM },
-		{ sd_dacl, SECINFO_GROUP, WERR_INVALID_PARAM },
+		{ sd_dacl, SECINFO_OWNER, WERR_INVALID_PARAMETER },
+		{ sd_dacl, SECINFO_GROUP, WERR_INVALID_PARAMETER },
 		{ sd_dacl, SECINFO_DACL, WERR_OK,
 			true, (secinfo_verify_fn)_test_dacl_trustee_present },
 		{ sd_dacl, SECINFO_SACL, WERR_ACCESS_DENIED },
@@ -1272,8 +1272,8 @@ static bool test_SecurityDescriptorsSecInfo(struct dcerpc_pipe *p,
 	struct winreg_secinfo_table sec_info_sacl_tests[] = {
 		{ sd_sacl, 0, WERR_OK,
 			false, (secinfo_verify_fn)_test_sacl_trustee_present },
-		{ sd_sacl, SECINFO_OWNER, WERR_INVALID_PARAM },
-		{ sd_sacl, SECINFO_GROUP, WERR_INVALID_PARAM },
+		{ sd_sacl, SECINFO_OWNER, WERR_INVALID_PARAMETER },
+		{ sd_sacl, SECINFO_GROUP, WERR_INVALID_PARAMETER },
 		{ sd_sacl, SECINFO_DACL, WERR_OK,
 			false, (secinfo_verify_fn)_test_sacl_trustee_present },
 		{ sd_sacl, SECINFO_SACL, WERR_OK,
@@ -1882,8 +1882,8 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 	const char *errmsg_nonexisting = "expected WERR_FILE_NOT_FOUND for nonexisting value";
 
 	if (valuename == NULL) {
-		expected_error = WERR_INVALID_PARAM;
-		errmsg_nonexisting = "expected WERR_INVALID_PARAM for NULL valuename";
+		expected_error = WERR_INVALID_PARAMETER;
+		errmsg_nonexisting = "expected WERR_INVALID_PARAMETER for NULL valuename";
 	}
 
 	ZERO_STRUCT(r);
@@ -1896,30 +1896,30 @@ static bool test_QueryValue_full(struct dcerpc_binding_handle *b,
 	r.in.value_name = &value_name;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r), "QueryValue failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"expected WERR_INVALID_PARAM for NULL winreg_String.name");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
+		"expected WERR_INVALID_PARAMETER for NULL winreg_String.name");
 
 	init_winreg_String(&value_name, valuename);
 	r.in.value_name = &value_name;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"expected WERR_INVALID_PARAM for missing type length and size");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
+		"expected WERR_INVALID_PARAMETER for missing type length and size");
 
 	r.in.type = &type;
 	r.out.type = &type;
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"expected WERR_INVALID_PARAM for missing length and size");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
+		"expected WERR_INVALID_PARAMETER for missing length and size");
 
 	r.in.data_length = &data_length;
 	r.out.data_length = &data_length;
 	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_QueryValue_r(b, tctx, &r),
 		"QueryValue failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
-		"expected WERR_INVALID_PARAM for missing size");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
+		"expected WERR_INVALID_PARAMETER for missing size");
 
 	r.in.data_size = &data_size;
 	r.out.data_size = &data_size;

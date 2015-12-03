@@ -796,7 +796,7 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 		out_blob.length = *r->out.data_out_len;
 		ndr_err = ndr_pull_struct_blob(&out_blob, tctx, &resp, (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped);
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
-		if (!W_ERROR_EQUAL(r->out.result, WERR_INVALID_PARAM)) {
+		if (!W_ERROR_EQUAL(r->out.result, WERR_INVALID_PARAMETER)) {
 			torture_assert_werr_equal(tctx, r->out.result,
 						  WERR_INVALID_DATA,
 						  "Wrong error code");
@@ -829,7 +829,7 @@ static bool test_RestoreGUID_wrongversion(struct torture_context *tctx,
 		out_blob.length = *r->out.data_out_len;
 		ndr_err = ndr_pull_struct_blob(&out_blob, tctx, &resp, (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped);
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
-		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Wrong error code on wrong version");
+		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER, "Wrong error code on wrong version");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
@@ -978,7 +978,7 @@ static bool test_RestoreGUID_emptyrequest(struct torture_context *tctx,
 		r->in.param = 0;
 		torture_assert_ntstatus_ok(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r), "Restore GUID");
 		out_blob.length = *r->out.data_out_len;
-		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Bad error code on wrong has in access check");
+		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER, "Bad error code on wrong has in access check");
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
@@ -1384,8 +1384,8 @@ static bool test_ServerWrap_decrypt_empty_request(struct torture_context *tctx,
 	}
 	torture_assert_werr_equal(tctx,
 				  r.out.result,
-				  WERR_INVALID_PARAM,
-				  "decrypt should fail with WERR_INVALID_PARAM");
+				  WERR_INVALID_PARAMETER,
+				  "decrypt should fail with WERR_INVALID_PARAMETER");
 
 	/* Decrypt */
 	torture_assert_ntstatus_ok(tctx,
@@ -1403,8 +1403,8 @@ static bool test_ServerWrap_decrypt_empty_request(struct torture_context *tctx,
 				   "decrypt");
 	torture_assert_werr_equal(tctx,
 				  r.out.result,
-				  WERR_INVALID_PARAM,
-				  "decrypt should fail with WERR_INVALID_PARAM");
+				  WERR_INVALID_PARAMETER,
+				  "decrypt should fail with WERR_INVALID_PARAMETER");
 
 	/* Decrypt */
 	torture_assert_ntstatus_ok(tctx,
@@ -1481,8 +1481,8 @@ static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
 	}
 	torture_assert_werr_equal(tctx,
 				  r.out.result,
-				  WERR_INVALID_PARAM,
-				  "decrypt should fail with WERR_INVALID_PARM");
+				  WERR_INVALID_PARAMETER,
+				  "decrypt should fail with WERR_INVALID_PARAMETER");
 
 	/* Decrypt */
 	torture_assert_ntstatus_ok(tctx,
@@ -1500,8 +1500,8 @@ static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
 				   "decrypt");
 	torture_assert_werr_equal(tctx,
 				  r.out.result,
-				  WERR_INVALID_PARAM,
-				  "decrypt should fail with WERR_INVALID_PARAM");
+				  WERR_INVALID_PARAMETER,
+				  "decrypt should fail with WERR_INVALID_PARAMETER");
 
 	/* Decrypt */
 	torture_assert_ntstatus_ok(tctx,
@@ -1519,8 +1519,8 @@ static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
 				   "decrypt");
 	torture_assert_werr_equal(tctx,
 				  r.out.result,
-				  WERR_INVALID_PARAM,
-				  "decrypt should fail with WERR_INVALID_PARAM");
+				  WERR_INVALID_PARAMETER,
+				  "decrypt should fail with WERR_INVALID_PARAMETER");
 
 	/* Decrypt */
 	torture_assert_ntstatus_ok(tctx,
@@ -1538,8 +1538,8 @@ static bool test_ServerWrap_decrypt_short_request(struct torture_context *tctx,
 				   "decrypt");
 	torture_assert_werr_equal(tctx,
 				  r.out.result,
-				  WERR_INVALID_PARAM,
-				  "decrypt should fail with WERR_INVALID_PARAM");
+				  WERR_INVALID_PARAMETER,
+				  "decrypt should fail with WERR_INVALID_PARAMETER");
 
 	return true;
 }
@@ -1927,7 +1927,7 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
 					  WERR_INVALID_SID,
-					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAM");
+					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAMETER");
 	} else if (wrong == RIGHT_KEY) {
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
@@ -1939,11 +1939,11 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 					  WERR_INVALID_ACCESS,
 					  "decrypt should fail with WERR_INVALID_ACCESS");
 	} else {
-		if (!W_ERROR_EQUAL(r.out.result, WERR_INVALID_PARAM)) {
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INVALID_PARAMETER)) {
 			torture_assert_werr_equal(tctx,
 						  r.out.result,
 						  WERR_INVALID_ACCESS,
-						  "decrypt should fail with WERR_INVALID_ACCESS or WERR_INVALID_PARAM");
+						  "decrypt should fail with WERR_INVALID_ACCESS or WERR_INVALID_PARAMETER");
 		}
 	}
 
@@ -1967,7 +1967,7 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
 					  WERR_INVALID_SID,
-					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAM");
+					  "decrypt should fail with WERR_INVALID_SID or WERR_INVALID_PARAMETER");
 	} else if (wrong == RIGHT_KEY) {
 		torture_assert_werr_equal(tctx,
 					  r.out.result,
@@ -1980,10 +1980,10 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 					  "decrypt should fail with WERR_INVALID_ACCESS");
 	} else {
 		if (!W_ERROR_EQUAL(r.out.result, WERR_INVALID_ACCESS)
-		    && !W_ERROR_EQUAL(r.out.result, WERR_INVALID_PARAM)) {
+		    && !W_ERROR_EQUAL(r.out.result, WERR_INVALID_PARAMETER)) {
 			torture_assert_werr_equal(tctx, r.out.result,
 						  WERR_INVALID_DATA,
-						  "decrypt should fail with WERR_INVALID_ACCESS, WERR_INVALID_PARAM or WERR_INVALID_DATA");
+						  "decrypt should fail with WERR_INVALID_ACCESS, WERR_INVALID_PARAMETER or WERR_INVALID_DATA");
 		}
 	}
 

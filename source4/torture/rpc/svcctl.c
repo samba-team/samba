@@ -300,7 +300,7 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_svcctl_QueryServiceObjectSecurity_r(b, tctx, &r),
 		"QueryServiceObjectSecurity failed!");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
 		"QueryServiceObjectSecurity failed!");
 
 	r.in.security_flags = SECINFO_DACL;
@@ -454,7 +454,7 @@ static bool test_ControlService(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_svcctl_ControlService_r(b, tctx, &r),
 		"ControlService failed!");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
 		"ControlService failed!");
 
 	if (!test_CloseServiceHandle(b, tctx, &s))
@@ -574,7 +574,7 @@ static bool test_EnumDependentServicesW(struct torture_context *tctx,
 		dcerpc_svcctl_EnumDependentServicesW_r(b, tctx, &r),
 		"EnumDependentServicesW failed!");
 
-	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM,
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
 		"EnumDependentServicesW failed!");
 
 	for (i=0; i<ARRAY_SIZE(states); i++) {

@@ -445,7 +445,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.ModifyResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAMETER) &&
 	     !W_ERROR_EQUAL(err, WERR_DS_UNWILLING_TO_PERFORM))
 		|| (rep->r.ModifyResponse.resultcode != LDAP_UNWILLING_TO_PERFORM)) {
 		return false;
@@ -480,7 +480,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.ModifyResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAMETER) &&
 	     !W_ERROR_EQUAL(err, WERR_DS_UNWILLING_TO_PERFORM))
 		|| (rep->r.ModifyResponse.resultcode != LDAP_UNWILLING_TO_PERFORM)) {
 		return false;
@@ -618,7 +618,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.ModifyDNResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAMETER) &&
 	     !W_ERROR_EQUAL(err, WERR_DS_NAMING_VIOLATION))
 		|| (rep->r.ModifyDNResponse.resultcode != LDAP_NAMING_VIOLATION)) {
 		return false;
@@ -654,7 +654,7 @@ static bool test_error_codes(struct torture_context *tctx,
 	err = ad_error(rep->r.ModifyDNResponse.errormessage, &endptr);
 	err_code_str = win_errstr(err);
 	printf(" - Errorcode: %s; Reason: %s\n", err_code_str, endptr);
-	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAM) &&
+	if ((!W_ERROR_EQUAL(err, WERR_INVALID_PARAMETER) &&
 	     !W_ERROR_EQUAL(err, WERR_DS_PROTOCOL_ERROR))
 		|| (rep->r.ModifyDNResponse.resultcode != LDAP_PROTOCOL_ERROR)) {
 		return false;

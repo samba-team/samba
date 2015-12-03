@@ -113,7 +113,7 @@ static bool createkey_out_check(struct torture_context *tctx,
 {
 	torture_assert(tctx, GUID_all_zero(&r->out.new_handle->uuid), "new_handle");
 	torture_assert(tctx, r->out.action_taken == NULL, "action_taken pointer");
-	torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, 
+	torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER,
 							  "return code");
 
 	return true;
@@ -487,7 +487,7 @@ static const uint8_t notifychangekeyvalue_out_data[] = {
 
 static bool notifychangekeyvalue_out_check(struct torture_context *tctx, struct winreg_NotifyChangeKeyValue *r)
 {
-	torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "notify change key value");
+	torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAMETER, "notify change key value");
 	return true;
 }
 
