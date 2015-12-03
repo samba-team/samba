@@ -652,7 +652,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 		}
 
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 
@@ -834,7 +834,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 		break;
 
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	buffer_size = blob.length;

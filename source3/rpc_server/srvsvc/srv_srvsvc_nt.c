@@ -768,7 +768,7 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 	default:
 		DEBUG(5,("init_srv_share_info_ctr: unsupported switch value %d\n",
 			info_ctr->level));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	*total_entries = alloc_entries;
@@ -1265,7 +1265,7 @@ WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 	case 3:
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
@@ -1384,7 +1384,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 		break;
 	}
 	default:
-		status = WERR_UNKNOWN_LEVEL;
+		status = WERR_INVALID_LEVEL;
 		break;
 	}
 
@@ -1442,7 +1442,7 @@ WERROR _srvsvc_NetConnEnum(struct pipes_struct *p,
 						    r->out.totalentries);
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
@@ -1482,7 +1482,7 @@ WERROR _srvsvc_NetSessEnum(struct pipes_struct *p,
 						    r->out.totalentries);
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
@@ -1691,7 +1691,7 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 		default:
 			DEBUG(5,("_srvsvc_NetShareGetInfo: unsupported switch value %d\n",
 				r->in.level));
-			status = WERR_UNKNOWN_LEVEL;
+			status = WERR_INVALID_LEVEL;
 			break;
 	}
 
@@ -1843,7 +1843,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	default:
 		DEBUG(5,("_srvsvc_NetShareSetInfo: unsupported switch value %d\n",
 			r->in.level));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	/* We can only modify disk shares. */
@@ -2028,7 +2028,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	default:
 		DEBUG(5,("_srvsvc_NetShareAdd: unsupported switch value %d\n",
 			r->in.level));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	/* check for invalid share names */
@@ -2695,7 +2695,7 @@ WERROR _srvsvc_NetNameValidate(struct pipes_struct *p,
 		break;
 
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_OK;

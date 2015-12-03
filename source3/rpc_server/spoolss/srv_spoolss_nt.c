@@ -4430,7 +4430,7 @@ static WERROR enum_all_printers_info_level(TALLOC_CTX *mem_ctx,
 			break;
 
 		default:
-			result = WERR_UNKNOWN_LEVEL;
+			result = WERR_INVALID_LEVEL;
 			goto out;
 		}
 
@@ -4652,7 +4652,7 @@ static WERROR enumprinters_level2(TALLOC_CTX *mem_ctx,
 	}
 
 	if (flags & PRINTER_ENUM_REMOTE) {
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_OK;
@@ -4766,7 +4766,7 @@ WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 					     r->out.info, r->out.count);
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -4902,7 +4902,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 						 &r->out.info->info8, snum);
 		break;
 	default:
-		result = WERR_UNKNOWN_LEVEL;
+		result = WERR_INVALID_LEVEL;
 		break;
 	}
 	TALLOC_FREE(info2);
@@ -5624,7 +5624,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = NULL;
 
 	if (level == 101) {
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -5713,7 +5713,7 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		break;
 #endif
 	default:
-		result = WERR_UNKNOWN_LEVEL;
+		result = WERR_INVALID_LEVEL;
 		break;
 	}
 
@@ -5862,7 +5862,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 	}
 
 	if (r->in.info_ctr->level != 1) {
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	info_1 = r->in.info_ctr->info.info1;
@@ -6036,7 +6036,7 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 		errcode = print_queue_purge(session_info, p->msg_ctx, snum);
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return errcode;
@@ -6978,7 +6978,7 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 	struct printer_handle *Printer;
 
 	if ( lp_security() != SEC_ADS ) {
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	Printer = find_printer_index_by_hnd(p, handle);
@@ -7009,7 +7009,7 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 	TALLOC_FREE(pinfo2);
 	return WERR_OK;
 #else
-	return WERR_UNKNOWN_LEVEL;
+	return WERR_INVALID_LEVEL;
 #endif
 }
 
@@ -7175,7 +7175,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 			return update_printer_devmode(p, r->in.handle,
 						      r->in.devmode_ctr->devmode);
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 }
 
@@ -7231,7 +7231,7 @@ WERROR _spoolss_AddJob(struct pipes_struct *p,
 	 * non-local printers */
 
 	if (r->in.level != 1) {
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_INVALID_PARAMETER;
@@ -7560,7 +7560,7 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 
 	if ((r->in.level != 1) && (r->in.level != 2) && (r->in.level != 3)) {
 		DEBUG(4, ("EnumJobs level %d not supported\n", r->in.level));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	DEBUG(4,("_spoolss_EnumJobs\n"));
@@ -7707,7 +7707,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 		errcode = WERR_OK;
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!W_ERROR_IS_OK(errcode)) {
@@ -7729,7 +7729,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 	case 3:
 	case 4:
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return errcode;
@@ -7838,7 +7838,7 @@ static WERROR enumprinterdrivers_level_by_architecture(TALLOC_CTX *mem_ctx,
 								   driver, servername);
 				break;
 			default:
-				result = WERR_UNKNOWN_LEVEL;
+				result = WERR_INVALID_LEVEL;
 				break;
 			}
 
@@ -7999,7 +7999,7 @@ WERROR _spoolss_EnumForms(struct pipes_struct *p,
 						   r->out.info);
 		break;
 	default:
-		result = WERR_UNKNOWN_LEVEL;
+		result = WERR_INVALID_LEVEL;
 		break;
 	}
 
@@ -8050,7 +8050,7 @@ WERROR _spoolss_GetForm(struct pipes_struct *p,
 						 &r->out.info->info1);
 		break;
 	default:
-		result = WERR_UNKNOWN_LEVEL;
+		result = WERR_INVALID_LEVEL;
 		break;
 	}
 
@@ -8299,7 +8299,7 @@ WERROR _spoolss_EnumPorts(struct pipes_struct *p,
 					   r->out.count);
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -8462,7 +8462,7 @@ WERROR _spoolss_AddPrinterEx(struct pipes_struct *p,
 	case 1:
 		/* we don't handle yet */
 		/* but I know what to do ... */
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	case 2:
 		return spoolss_addprinterex_level_2(p, r->in.server,
 						    r->in.info_ctr,
@@ -8471,7 +8471,7 @@ WERROR _spoolss_AddPrinterEx(struct pipes_struct *p,
 						    r->in.userlevel_ctr,
 						    r->out.handle);
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 }
 
@@ -8528,7 +8528,7 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	    r->in.info_ctr->level != 8) {
 		DEBUG(0,("%s: level %d not yet implemented\n", __func__,
 			r->in.info_ctr->level));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
@@ -8584,7 +8584,7 @@ WERROR _spoolss_AddPrinterDriver(struct pipes_struct *p,
 	case 5:
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	a.in.servername		= r->in.servername;
@@ -9261,7 +9261,7 @@ WERROR _spoolss_EnumPrintProcessors(struct pipes_struct *p,
 						     r->out.count);
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -9357,7 +9357,7 @@ WERROR _spoolss_EnumPrintProcessorDataTypes(struct pipes_struct *p,
 							r->out.count);
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -9530,7 +9530,7 @@ WERROR _spoolss_EnumMonitors(struct pipes_struct *p,
 						   r->out.count);
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
@@ -9720,7 +9720,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 					&r->out.info->info2);
 		break;
 	default:
-		result = WERR_UNKNOWN_LEVEL;
+		result = WERR_INVALID_LEVEL;
 		break;
 	}
 

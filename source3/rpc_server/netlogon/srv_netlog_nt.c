@@ -72,7 +72,7 @@ WERROR _netr_LogonControl(struct pipes_struct *p,
 	case 2:
 		return WERR_NOT_SUPPORTED;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	switch (r->in.function_code) {
@@ -393,7 +393,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		r->out.query->info4 = info4;
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_OK;

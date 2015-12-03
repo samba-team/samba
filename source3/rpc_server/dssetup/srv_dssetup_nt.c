@@ -120,7 +120,7 @@ WERROR _dssetup_DsRoleGetPrimaryDomainInformation(struct pipes_struct *p,
 		default:
 			DEBUG(0,("_dssetup_DsRoleGetPrimaryDomainInformation: "
 				"Unknown info level [%d]!\n", r->in.level));
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 	}
 
 	return werr;

@@ -392,7 +392,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 		}
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_OK;
@@ -595,7 +595,7 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 		}
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_OK;
