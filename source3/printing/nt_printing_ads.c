@@ -123,14 +123,14 @@ static WERROR nt_printer_dn_lookup(TALLOC_CTX *mem_ctx,
 	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
 	ads_msgfree(ads, res);
 	if (srv_dn_utf8 == NULL) {
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto err_out;
 	}
 
 	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
 	if (srv_cn_utf8 == NULL) {
 		ldap_memfree(srv_dn_utf8);
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto err_out;
 	}
 
@@ -139,26 +139,26 @@ static WERROR nt_printer_dn_lookup(TALLOC_CTX *mem_ctx,
 	ldap_memfree(srv_dn_utf8);
 	if (!ok) {
 		ldap_memfree(srv_cn_utf8);
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto err_out;
 	}
 
 	ok = pull_utf8_talloc(mem_ctx, &srv_cn_0, srv_cn_utf8[0], &converted_size);
 	ldap_memfree(srv_cn_utf8);
 	if (!ok) {
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto err_out;
 	}
 
 	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
 	if (srv_cn_escaped == NULL) {
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto err_out;
 	}
 
 	sharename_escaped = escape_rdn_val_string_alloc(printer);
 	if (sharename_escaped == NULL) {
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto err_out;
 	}
 
@@ -229,7 +229,7 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (ads == NULL) {
-		result = WERR_SERVER_UNAVAILABLE;
+		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto out;
 	}
 
@@ -578,7 +578,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
-		win_rc = WERR_SERVER_UNAVAILABLE;
+		win_rc = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto done;
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
@@ -634,7 +634,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
-		return WERR_SERVER_UNAVAILABLE;
+		return WERR_RPC_S_SERVER_UNAVAILABLE;
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
