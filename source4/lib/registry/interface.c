@@ -90,7 +90,7 @@ _PUBLIC_ WERROR reg_open_key(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 	if (parent == NULL) {
 		DEBUG(0, ("Invalid parent key specified for open of '%s'\n",
 			name));
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (parent->context->ops->open_key == NULL) {
@@ -110,7 +110,7 @@ _PUBLIC_ WERROR reg_key_get_value_by_index(TALLOC_CTX *mem_ctx,
 					   uint32_t *type, DATA_BLOB *data)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->enum_value == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -133,7 +133,7 @@ _PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
 				 uint32_t *max_valbufsize)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->get_key_info == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -155,7 +155,7 @@ _PUBLIC_ WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 					    NTTIME *last_changed_time)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->enum_key == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -174,7 +174,7 @@ _PUBLIC_ WERROR reg_key_get_value_by_name(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *data)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->get_value == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -189,7 +189,7 @@ _PUBLIC_ WERROR reg_key_del(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 			    const char *name)
 {
 	if (parent == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (parent->context->ops->delete_key == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -207,7 +207,7 @@ _PUBLIC_ WERROR reg_key_add_name(TALLOC_CTX *mem_ctx,
 				 struct registry_key **newkey)
 {
 	if (parent == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (parent->context->ops->create_key == NULL) {
 		DEBUG(1, ("Backend '%s' doesn't support method add_key\n",
@@ -226,7 +226,7 @@ _PUBLIC_ WERROR reg_val_set(struct registry_key *key, const char *value,
 			    uint32_t type, const DATA_BLOB data)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	/* A 'real' set function has preference */
 	if (key->context->ops->set_value == NULL) {
@@ -246,7 +246,7 @@ _PUBLIC_ WERROR reg_get_sec_desc(TALLOC_CTX *ctx,
 				 struct security_descriptor **secdesc)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	/* A 'real' set function has preference */
 	if (key->context->ops->get_sec_desc == NULL)
@@ -262,7 +262,7 @@ _PUBLIC_ WERROR reg_del_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
 			      const char *valname)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->delete_value == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -276,7 +276,7 @@ _PUBLIC_ WERROR reg_del_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
 _PUBLIC_ WERROR reg_key_flush(struct registry_key *key)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->flush_key == NULL)
 		return WERR_NOT_SUPPORTED;
@@ -288,7 +288,7 @@ _PUBLIC_ WERROR reg_set_sec_desc(struct registry_key *key,
 				 const struct security_descriptor *security)
 {
 	if (key == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (key->context->ops->set_sec_desc == NULL)
 		return WERR_NOT_SUPPORTED;

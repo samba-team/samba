@@ -81,7 +81,7 @@ static WERROR local_open_key(TALLOC_CTX *mem_ctx,
 	int el;
 
 	if (path == NULL || path[0] == '\0') {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	orig = talloc_strdup(mem_ctx, path);
@@ -185,7 +185,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 	int el;
 
 	if (path == NULL || path[0] == '\0') {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	orig = talloc_strdup(mem_ctx, path);
@@ -249,7 +249,7 @@ static WERROR local_set_value(struct registry_key *key, const char *name,
 	struct local_key *local = (struct local_key *)key;
 
 	if (name == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	return hive_key_set_value(local->hive_key, name, type, data);
@@ -262,7 +262,7 @@ static WERROR local_get_value(TALLOC_CTX *mem_ctx,
 	const struct local_key *local = (const struct local_key *)key;
 
 	if (name == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	return hive_get_value(mem_ctx, local->hive_key, name, type, data);
@@ -286,7 +286,7 @@ static WERROR local_delete_key(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	const struct local_key *local = (const struct local_key *)key;
 
 	if (name == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	return hive_key_del(mem_ctx, local->hive_key, name);
@@ -298,7 +298,7 @@ static WERROR local_delete_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	const struct local_key *local = (const struct local_key *)key;
 
 	if (name == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	return hive_key_del_value(mem_ctx, local->hive_key, name);

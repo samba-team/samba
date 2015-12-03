@@ -192,12 +192,12 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, const char **argv)
 
 	if (argc < 4) {
 		fprintf(stderr, "Usage: set value-name type value\n");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!reg_string_to_val(ctx, argv[2], argv[3], &val.data_type, &val.data)) {
 		fprintf(stderr, "Unable to interpret data\n");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	error = reg_val_set(ctx->current, argv[1], val.data_type, val.data);
@@ -218,7 +218,7 @@ static WERROR cmd_ck(struct regshell_context *ctx, int argc, const char **argv)
 	if(argc == 2) {
 		if (!W_ERROR_IS_OK(get_full_path(ctx, argv[1], &full_path))) {
 			fprintf(stderr, "Unable to parse the supplied path\n");
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 		error = reg_open_key(ctx->registry, ctx->root, full_path,
 				     &nkey);
@@ -246,7 +246,7 @@ static WERROR cmd_print(struct regshell_context *ctx, int argc, const char **arg
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: print <valuename>\n");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	error = reg_key_get_value_by_name(ctx, ctx->current, argv[1],
@@ -299,7 +299,7 @@ static WERROR cmd_mkkey(struct regshell_context *ctx, int argc, const char **arg
 
 	if(argc < 2) {
 		fprintf(stderr, "Usage: mkkey <keyname>\n");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	error = reg_key_add_name(ctx, ctx->current, argv[1], 0, NULL, &tmp);
@@ -320,7 +320,7 @@ static WERROR cmd_rmkey(struct regshell_context *ctx,
 
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmkey <name>\n");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	error = reg_key_del(ctx, ctx->current, argv[1]);
@@ -340,7 +340,7 @@ static WERROR cmd_rmval(struct regshell_context *ctx, int argc, const char **arg
 
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmval <valuename>\n");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	error = reg_del_value(ctx, ctx->current, argv[1]);
@@ -404,7 +404,7 @@ static WERROR process_cmd(struct regshell_context *ctx,
 
 	if ((ret = poptParseArgvString(line, &argc, &argv)) != 0) {
 		fprintf(stderr, "regshell: %s\n", poptStrerror(ret));
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	for(i = 0; regshell_cmds[i].name; i++) {
@@ -416,7 +416,7 @@ static WERROR process_cmd(struct regshell_context *ctx,
 
 	fprintf(stderr, "No such command '%s'\n", argv[0]);
 
-	return WERR_INVALID_PARAM;
+	return WERR_INVALID_PARAMETER;
 }
 
 #define MAX_COMPLETIONS 100

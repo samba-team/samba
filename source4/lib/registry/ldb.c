@@ -545,7 +545,7 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 	struct ldb_message *attrs_msg;
 
 	if (location == NULL)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	wrap = ldb_wrap_connect(parent_ctx, ev_ctx, lp_ctx,
 				location, session_info, credentials, 0);

@@ -242,7 +242,7 @@ static bool test_flush_key(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "flush key");
 
 	torture_assert_werr_equal(tctx, reg_key_flush(NULL),
-				  WERR_INVALID_PARAM, "flush key");
+				  WERR_INVALID_PARAMETER, "flush key");
 
 	return true;
 }
