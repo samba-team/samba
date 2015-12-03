@@ -358,7 +358,7 @@ enum smb_whoami_flags {
  */
 
 #define SMB_REQUEST_TRANSPORT_ENCRYPTION     0x203 /* QFSINFO */
-
+#define SMB_ENCRYPTION_GSSAPI                0x8000
 
 /* The query/set info levels for POSIX ACLs. */
 #define SMB_QUERY_POSIX_ACL  0x204
