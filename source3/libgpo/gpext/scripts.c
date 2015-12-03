@@ -233,7 +233,7 @@ static WERROR scripts_store_reg_gpovals(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (!key || !gpo) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = gp_store_reg_val_sz(mem_ctx, key, "DisplayName",

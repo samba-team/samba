@@ -66,7 +66,7 @@ WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (!reg_ctx) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = registry_init_basic();
@@ -151,7 +151,7 @@ WERROR gp_read_reg_subkey(TALLOC_CTX *mem_ctx,
 	const char *tmp = NULL;
 
 	if (!reg_ctx || !subkeyname || !key) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	tmp = talloc_asprintf(mem_ctx, "%s\\%s", reg_ctx->path, subkeyname);
@@ -257,7 +257,7 @@ static WERROR gp_store_reg_gpovals(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (!key || !gpo) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = gp_store_reg_val_dword(mem_ctx, key, "Version",
@@ -562,7 +562,7 @@ static WERROR gp_read_reg_gpovals(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (!key || !gpo) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = gp_read_reg_val_dword(mem_ctx, key, "Version",
@@ -599,7 +599,7 @@ static WERROR gp_read_reg_gpo(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (!gpo_ret || !key) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	gpo = talloc_zero(mem_ctx, struct GROUP_POLICY_OBJECT);
@@ -631,7 +631,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 	const char *gp_state_path = NULL;
 
 	if (!gpo_list) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCTP(gpo_list);
@@ -1032,7 +1032,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 			return WERR_NOT_SUPPORTED;
 		default:
 			DEBUG(0,("invalid action: %d\n", entry->action));
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 	}
 
 	return werr;
