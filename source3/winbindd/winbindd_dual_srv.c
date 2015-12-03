@@ -885,7 +885,7 @@ static WERROR _winbind_LogonControl_REDISCOVER(struct pipes_struct *p,
 
 	info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
 	if (info2 == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (domain->internal) {
@@ -925,12 +925,12 @@ check_return:
 		info2->trusted_dc_name = talloc_asprintf(info2, "\\\\%s",
 							 domain->dcname);
 		if (info2->trusted_dc_name == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	} else {
 		info2->trusted_dc_name = talloc_strdup(info2, "");
 		if (info2->trusted_dc_name == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 	info2->tc_connection_status = check_result;
@@ -961,7 +961,7 @@ static WERROR _winbind_LogonControl_TC_QUERY(struct pipes_struct *p,
 
 	info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
 	if (info2 == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (domain->internal) {
@@ -990,12 +990,12 @@ check_return:
 		info2->trusted_dc_name = talloc_asprintf(info2, "\\\\%s",
 							 domain->dcname);
 		if (info2->trusted_dc_name == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	} else {
 		info2->trusted_dc_name = talloc_strdup(info2, "");
 		if (info2->trusted_dc_name == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 	info2->tc_connection_status = check_result;
@@ -1051,7 +1051,7 @@ static WERROR _winbind_LogonControl_TC_VERIFY(struct pipes_struct *p,
 	info2 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_2);
 	if (info2 == NULL) {
 		TALLOC_FREE(frame);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (domain->internal) {
@@ -1308,13 +1308,13 @@ verify_return:
 							 domain->dcname);
 		if (info2->trusted_dc_name == NULL) {
 			TALLOC_FREE(frame);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	} else {
 		info2->trusted_dc_name = talloc_strdup(info2, "");
 		if (info2->trusted_dc_name == NULL) {
 			TALLOC_FREE(frame);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 	info2->tc_connection_status = check_result;
@@ -1351,7 +1351,7 @@ static WERROR _winbind_LogonControl_CHANGE_PASSWORD(struct pipes_struct *p,
 
 	info1 = talloc_zero(p->mem_ctx, struct netr_NETLOGON_INFO_1);
 	if (info1 == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (domain->internal) {

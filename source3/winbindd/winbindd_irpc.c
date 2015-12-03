@@ -174,7 +174,7 @@ static NTSTATUS wb_irpc_LogonControl(struct irpc_message *msg,
 
 		domain_name = talloc_strdup(frame, req->in.data->domain);
 		if (domain_name == NULL) {
-			req->out.result = WERR_NOMEM;
+			req->out.result = WERR_NOT_ENOUGH_MEMORY;
 			TALLOC_FREE(frame);
 			return NT_STATUS_OK;
 		}
