@@ -510,7 +510,7 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 			}
 		}
 	}
-	return WERR_UNKNOWN_LEVEL;
+	return WERR_INVALID_LEVEL;
 }
 
 
@@ -635,7 +635,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 	switch (*r->out.level_out) {
 	case -1:
 		/* this level is not like the others */
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	case 1:
 		attrs = attrs_1;
 		break;
@@ -644,7 +644,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		attrs = attrs_2;
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	sites_dn = samdb_sites_dn(b_state->sam_ctx, mem_ctx);
@@ -932,7 +932,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		}
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 	return WERR_OK;
 }
@@ -953,7 +953,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo(struct dcesrv_call_state 
 		return dcesrv_drsuapi_DsGetDomainControllerInfo_1(b_state, mem_ctx, r);
 	}
 
-	return WERR_UNKNOWN_LEVEL;
+	return WERR_INVALID_LEVEL;
 }
 
 

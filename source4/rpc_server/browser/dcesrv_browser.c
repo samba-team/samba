@@ -70,7 +70,7 @@ static WERROR dcesrv_BrowserrQueryOtherDomains(struct dcesrv_call_state *dce_cal
 		*r->out.total_entries = ctr100->entries_read;
 		return WERR_OK;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 }
 
