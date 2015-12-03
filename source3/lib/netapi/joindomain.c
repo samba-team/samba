@@ -116,7 +116,7 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	DATA_BLOB session_key;
 
 	if (IS_DC) {
-		return WERR_SETUP_DOMAIN_CONTROLLER;
+		return WERR_NERR_SETUPDOMAINCONTROLLER;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server,
