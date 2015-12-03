@@ -83,7 +83,6 @@ typedef uint32_t WERROR;
    these matter for Samba, primarily in the NT printing code */
 #define WERR_OK W_ERROR(0x00000000)
 #define WERR_ACCESS_DENIED W_ERROR(0x00000005)
-#define WERR_GENERAL_FAILURE W_ERROR(0x0000001F)
 #define WERR_NOT_SUPPORTED W_ERROR(0x00000032)
 #define WERR_DUP_NAME W_ERROR(0x00000034)
 #define WERR_BAD_NETPATH W_ERROR(0x00000035)
