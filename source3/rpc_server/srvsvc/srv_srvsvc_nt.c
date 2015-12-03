@@ -2180,7 +2180,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	}
 
 	if (snum < 0) {
-		return WERR_NO_SUCH_SHARE;
+		return WERR_BAD_NET_NAME;
 	}
 
 	/* No change to printer shares. */
