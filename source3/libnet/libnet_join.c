@@ -1692,7 +1692,7 @@ static WERROR libnet_join_post_verify(TALLOC_CTX *mem_ctx,
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to verify domain membership after joining: %s",
 			get_friendly_nt_error_msg(status));
-		return WERR_SETUP_NOT_JOINED;
+		return WERR_NERR_SETUPNOTJOINED;
 	}
 
 	return WERR_OK;
@@ -2596,7 +2596,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
-		werr = WERR_SETUP_NOT_JOINED;
+		werr = WERR_NERR_SETUPNOTJOINED;
 		goto done;
 	}
 
@@ -2700,7 +2700,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		if (!secrets_fetch_domain_sid(lp_workgroup(), &sid)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
 				"Unable to fetch domain sid: are we joined?");
-			return WERR_SETUP_NOT_JOINED;
+			return WERR_NERR_SETUPNOTJOINED;
 		}
 		r->in.domain_sid = dom_sid_dup(mem_ctx, &sid);
 		W_ERROR_HAVE_NO_MEMORY(r->in.domain_sid);
@@ -2775,7 +2775,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				"failed to disable machine account via rpc: %s",
 				get_friendly_nt_error_msg(status));
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-				return WERR_SETUP_NOT_JOINED;
+				return WERR_NERR_SETUPNOTJOINED;
 			}
 			return ntstatus_to_werror(status);
 		}
