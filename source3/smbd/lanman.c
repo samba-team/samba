@@ -5394,7 +5394,7 @@ static bool api_RNetSessionEnum(struct smbd_server_connection *sconn,
 	info_ctr.level = 1;
 	info_ctr.ctr.ctr1 = talloc_zero(talloc_tos(), struct srvsvc_NetSessCtr1);
 	if (info_ctr.ctr.ctr1 == NULL) {
-		desc.errcode = W_ERROR_V(WERR_NOMEM);
+		desc.errcode = W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 		goto out;
 	}
 
