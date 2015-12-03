@@ -36,7 +36,7 @@ bool torture_libnetapi_init_context(struct torture_context *tctx,
 	if (!lp_load_global(lpcfg_configfile(tctx->lp_ctx))) {
 		fprintf(stderr, "error loading %s\n", lpcfg_configfile(tctx->lp_ctx));
 		talloc_free(frame);
-		return W_ERROR_V(WERR_GENERAL_FAILURE);
+		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
 
 	init_names();
