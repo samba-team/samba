@@ -138,7 +138,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 {
 	struct policy_handle hService;
 	struct SERVICE_STATUS service_status;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -186,7 +186,7 @@ static WERROR watch_service_state(struct rpc_pipe_client *pipe_hnd,
 {
 	uint32_t i;
 	uint32_t state = 0;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 
 
 	i = 0;
@@ -220,7 +220,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 				uint32_t watch_state )
 {
 	struct policy_handle hService;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	struct SERVICE_STATUS service_status;
 	uint32_t state = 0;
@@ -284,7 +284,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	struct ENUM_SERVICE_STATUSW *services = NULL;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	int i;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
@@ -413,7 +413,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 						const char **argv )
 {
 	struct policy_handle hSCM, hService;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	struct SERVICE_STATUS service_status;
 	struct QUERY_SERVICE_CONFIG config;
@@ -562,7 +562,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 					const char **argv )
 {
 	struct policy_handle hSCM;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {
@@ -602,7 +602,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 					const char **argv )
 {
 	struct policy_handle hSCM;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {
@@ -642,7 +642,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 					const char **argv )
 {
 	struct policy_handle hSCM;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {
@@ -682,7 +682,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					const char **argv )
 {
 	struct policy_handle hSCM, hService;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	uint32_t state = 0;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
@@ -765,7 +765,7 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 					    const char **argv)
 {
 	struct policy_handle hSCM, hService;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -840,7 +840,7 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 					    const char **argv)
 {
 	struct policy_handle hSCM, hService;
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	NTSTATUS status;
 	const char *ServiceName;
 	const char *DisplayName;

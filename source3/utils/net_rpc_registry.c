@@ -1111,7 +1111,7 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 					int argc,
 					const char **argv )
 {
-	WERROR result = WERR_GENERAL_FAILURE;
+	WERROR result = WERR_GEN_FAILURE;
 	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct winreg_String filename;
@@ -1864,7 +1864,7 @@ static WERROR import_close_key(struct import_ctx* ctx,
 		goto done;
 	}
 
-	werr = (talloc_free(key) == 0) ? WERR_OK : WERR_GENERAL_FAILURE;
+	werr = (talloc_free(key) == 0) ? WERR_OK : WERR_GEN_FAILURE;
 done:
 	talloc_free(mem_ctx);
 	return werr;
