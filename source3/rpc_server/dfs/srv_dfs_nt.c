@@ -105,7 +105,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	jn->referral_list[jn->referral_count-1].alternate_path = altpath;
 
 	if(!create_msdfs_link(jn)) {
-		return WERR_DFS_CANT_CREATE_JUNCT;
+		return WERR_NERR_DFSCANTCREATEJUNCTIONPOINT;
 	}
 
 	return WERR_OK;
@@ -188,7 +188,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 			}
 		} else {
 			if(!create_msdfs_link(jn)) {
-				return WERR_DFS_CANT_CREATE_JUNCT;
+				return WERR_NERR_DFSCANTCREATEJUNCTIONPOINT;
 			}
 		}
 	}
