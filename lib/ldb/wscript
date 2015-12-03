@@ -142,12 +142,12 @@ def build(bld):
                                      realname='ldb.so',
                                      cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
-        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-            bld.SAMBA_SCRIPT('_ldb_text.py',
-                             pattern='_ldb_text.py',
-                             installdir='python')
+            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+                bld.SAMBA_SCRIPT('_ldb_text.py',
+                                 pattern='_ldb_text.py',
+                                 installdir='python')
 
-            bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
+                bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         if bld.is_install:
