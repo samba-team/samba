@@ -54,7 +54,7 @@ static bool test_get_predefined_unknown(struct torture_context *tctx,
 	WERROR error;
 
 	error = reg_get_predefined_key(rctx, 1337, &root);
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "getting predefined key failed");
 	return true;
 }
@@ -86,7 +86,7 @@ static bool test_predef_key_by_name_invalid(struct torture_context *tctx,
 	WERROR error;
 
 	error = reg_get_predefined_key_by_name(rctx, "BLA", &root);
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "getting predefined key failed");
 	return true;
 }
@@ -200,7 +200,7 @@ static bool test_del_key(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "Delete key");
 
 	error = reg_key_del(tctx, root, "Polen");
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "Delete missing key");
 
 	return true;
@@ -432,7 +432,7 @@ static bool test_get_value(struct torture_context *tctx, void *_data)
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__, &type,
 					  &data);
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
@@ -483,7 +483,7 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__, &type,
 					  &data);
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
@@ -495,11 +495,11 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__,
 					  &type, &data);
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "getting missing value");
 
 	error = reg_del_value(tctx, subkey, "");
-	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
+	torture_assert_werr_equal(tctx, error, WERR_FILE_NOT_FOUND,
 				  "unsetting missing default value");
 
 	error = reg_val_set(subkey, "", REG_SZ,

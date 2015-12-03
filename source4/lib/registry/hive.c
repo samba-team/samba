@@ -38,14 +38,14 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 	fd = open(location, O_RDWR);
 	if (fd == -1) {
 		if (errno == ENOENT)
-			return WERR_BADFILE;
-		return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	num = read(fd, peek, 20);
 	close(fd);
 	if (num == -1) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if (!strncmp(peek, "regf", 4)) {
@@ -55,7 +55,7 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 					 credentials, ev_ctx, lp_ctx, root);
 	}
 
-	return WERR_BADFILE;
+	return WERR_FILE_NOT_FOUND;
 }
 
 _PUBLIC_ WERROR hive_key_get_info(TALLOC_CTX *mem_ctx,

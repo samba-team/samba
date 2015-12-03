@@ -148,7 +148,7 @@ WERROR local_get_predefined_key(struct registry_context *ctx,
 	}
 
 	if (mp == NULL)
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 
 	*key = reg_import_hive_key(ctx, mp->key,
 				   mp->path.predefined_key,
@@ -218,7 +218,7 @@ static WERROR local_create_key(TALLOC_CTX *mem_ctx,
 		elements[el] = NULL;
 		error = hive_get_key_by_name(mem_ctx, curkey,
 					     curbegin, &curkey);
-		if (W_ERROR_EQUAL(error, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(error, WERR_FILE_NOT_FOUND)) {
 			error = hive_key_add_name(mem_ctx, curkey, curbegin,
 						  key_class, security,
 						  &curkey);

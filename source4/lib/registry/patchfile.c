@@ -79,18 +79,18 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		if (newkey != NULL) {
 			error2 = reg_open_key(mem_ctx, newkey, keyname1, &t2);
 		} else {
-			error2 = WERR_BADFILE;
+			error2 = WERR_FILE_NOT_FOUND;
 			t2 = NULL;
 		}
 
-		if (!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
+		if (!W_ERROR_IS_OK(error2) && !W_ERROR_EQUAL(error2, WERR_FILE_NOT_FOUND)) {
 			DEBUG(0, ("Error occurred while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
 			return error2;
 		}
 
-		/* if "error2" is going to be "WERR_BADFILE", then newkey */
+		/* if "error2" is going to be "WERR_FILE_NOT_FOUND", then newkey */
 		/* didn't have such a subkey and therefore add a del diff */
 		tmppath = talloc_asprintf(mem_ctx, "%s\\%s", path, keyname1);
 		if (tmppath == NULL) {
@@ -146,11 +146,11 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			if (W_ERROR_IS_OK(error2))
 				continue;
 		} else {
-			error2 = WERR_BADFILE;	
+			error2 = WERR_FILE_NOT_FOUND;
 			t1 = NULL;
 		}
 
-		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
+		if (!W_ERROR_EQUAL(error2, WERR_FILE_NOT_FOUND)) {
 			DEBUG(0, ("Error occurred while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -199,10 +199,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 							   name, &type2,
 							   &contents2);
 		} else
-			error2 = WERR_BADFILE;
+			error2 = WERR_FILE_NOT_FOUND;
 
 		if (!W_ERROR_IS_OK(error2)
-			&& !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
+			&& !W_ERROR_EQUAL(error2, WERR_FILE_NOT_FOUND)) {
 			DEBUG(0, ("Error occurred while getting value by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -245,7 +245,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			error2 = reg_key_get_value_by_name(mem_ctx, newkey,
 				 name, &type, &contents);
 		else
-			error2 = WERR_BADFILE;
+			error2 = WERR_FILE_NOT_FOUND;
 
 		if (W_ERROR_IS_OK(error2)) {
 			talloc_free(discard_const_p(char, name));
@@ -253,7 +253,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			continue;
 		}
 
-		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
+		if (!W_ERROR_EQUAL(error2, WERR_FILE_NOT_FOUND)) {
 			DEBUG(0, ("Error occurred while getting value by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -287,7 +287,7 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 		error = reg_get_predefined_key(ctx1,
 			reg_predefined_keys[i].handle, &r1);
 		if (!W_ERROR_IS_OK(error) &&
-		    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
+		    !W_ERROR_EQUAL(error, WERR_FILE_NOT_FOUND)) {
 			DEBUG(0, ("Unable to open hive %s for backend 1\n",
 				reg_predefined_keys[i].name));
 			continue;
@@ -296,7 +296,7 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 		error = reg_get_predefined_key(ctx2,
 			reg_predefined_keys[i].handle, &r2);
 		if (!W_ERROR_IS_OK(error) &&
-		    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
+		    !W_ERROR_EQUAL(error, WERR_FILE_NOT_FOUND)) {
 			DEBUG(0, ("Unable to open hive %s for backend 2\n",
 				reg_predefined_keys[i].name));
 			continue;
@@ -429,7 +429,7 @@ static WERROR reg_diff_apply_del_key(void *_ctx, const char *key_name)
 
 	/* We can't proof here for success, because a common superkey could */
 	/* have been deleted before the subkey's (diff order). This removed */
-	/* therefore all children recursively and the "WERR_BADFILE" result is */
+	/* therefore all children recursively and the "WERR_FILE_NOT_FOUND" result is */
 	/* expected. */
 
 	reg_key_del_abs(ctx, key_name);
@@ -448,7 +448,7 @@ static WERROR reg_diff_apply_set_value(void *_ctx, const char *path,
 	/* Open key */
 	error = reg_open_key_abs(ctx, ctx, path, &tmp);
 
-	if (W_ERROR_EQUAL(error, WERR_BADFILE)) {
+	if (W_ERROR_EQUAL(error, WERR_FILE_NOT_FOUND)) {
 		DEBUG(0, ("Error opening key '%s'\n", path));
 		return error;
 	}

@@ -69,7 +69,7 @@ _PUBLIC_ WERROR reg_get_predefined_key_by_name(struct registry_context *ctx,
 
 	DEBUG(1, ("No predefined key with name '%s'\n", name));
 
-	return WERR_BADFILE;
+	return WERR_FILE_NOT_FOUND;
 }
 
 /** Get predefined key by id. */

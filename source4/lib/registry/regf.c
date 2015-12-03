@@ -596,7 +596,7 @@ static WERROR regf_get_value_by_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 
 	return error;
 }
@@ -864,7 +864,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 
 	/* Make sure that we don't crash if the key is empty */
 	if (nk->subkeys_offset == -1) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	data = hbin_get(private_data->hive, nk->subkeys_offset);
@@ -903,7 +903,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				break;
 		}
 		if (key_off == 0)
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
 		struct tdr_pull *pull = tdr_pull_init(ctx);
@@ -938,7 +938,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				break;
 		}
 		if (key_off == 0)
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct lh_block lh;
 		struct tdr_pull *pull = tdr_pull_init(ctx);
@@ -975,7 +975,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				break;
 		}
 		if (key_off == 0)
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 	} else if (!strncmp((char *)data.data, "ri", 2)) {
 		struct ri_block ri;
 		struct tdr_pull *pull = tdr_pull_init(ctx);
@@ -1055,7 +1055,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 		}
 		talloc_free(pull);
 		if (!key_off)
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 	} else {
 		DEBUG(0, ("Unknown subkey list type.\n"));
 		return WERR_GENERAL_FAILURE;
@@ -1093,7 +1093,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 	if (!hbin_get_tdr(regf, private_data->nk->sk_offset, regf,
 			  (tdr_pull_fn_t) tdr_pull_sk_block, &cur_sk)) {
 		DEBUG(0, ("Unable to find security descriptor for current key\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 	/* If there's no change, change nothing. */
 	if (memcmp(data.data, cur_sk.sec_desc,
@@ -1107,7 +1107,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 		if (!hbin_get_tdr(regf, cur_sk.prev_offset, regf,
 				  (tdr_pull_fn_t) tdr_pull_sk_block, &sk)) {
 			DEBUG(0, ("Unable to find prev security descriptor for current key\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		/* Change and store the previous security descriptor */
 		sk.next_offset = cur_sk.next_offset;
@@ -1118,7 +1118,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 		if (!hbin_get_tdr(regf, cur_sk.next_offset, regf,
 				  (tdr_pull_fn_t) tdr_pull_sk_block, &sk)) {
 			DEBUG(0, ("Unable to find next security descriptor for current key\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		/* Change and store the next security descriptor */
 		sk.prev_offset = cur_sk.prev_offset;
@@ -1139,7 +1139,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 		if (!hbin_get_tdr(regf, sk_offset, regf,
 				  (tdr_pull_fn_t) tdr_pull_sk_block, &sk)) {
 			DEBUG(0, ("Unable to find security descriptor\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		if (memcmp(data.data, sk.sec_desc, MIN(data.length, sk.rec_size)) == 0) {
 			private_data->nk->sk_offset = sk_offset;
@@ -1183,7 +1183,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 	if (!hbin_get_tdr(regf, new_sk.prev_offset, regf,
 			  (tdr_pull_fn_t) tdr_pull_sk_block, &sk)) {
 		DEBUG(0, ("Unable to find security descriptor for previous key\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 	/* Change and store the previous security descriptor */
 	sk.next_offset = sk_offset;
@@ -1195,7 +1195,7 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 	if (!hbin_get_tdr(regf, new_sk.next_offset, regf,
 			  (tdr_pull_fn_t) tdr_pull_sk_block, &sk)) {
 		DEBUG(0, ("Unable to find security descriptor for current key\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 	/* Change and store the next security descriptor (always root, as we append) */
 	sk.prev_offset = sk_offset;
@@ -1316,7 +1316,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 	data = hbin_get(regf, list_offset);
 	if (!data.data) {
 		DEBUG(0, ("Unable to find subkey list\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if (!strncmp((char *)data.data, "li", 2)) {
@@ -1330,14 +1330,14 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 		if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull, regf, &li))) {
 			DEBUG(0, ("Error parsing LI list\n"));
 			talloc_free(pull);
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		talloc_free(pull);
 
 		if (strncmp(li.header, "li", 2) != 0) {
 			abort();
 			DEBUG(0, ("LI header corrupt\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 
 		/* 
@@ -1381,7 +1381,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, regf, &lf))) {
 			DEBUG(0, ("Error parsing LF list\n"));
 			talloc_free(pull);
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lf.header, "lf", 2));
@@ -1429,7 +1429,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull, regf, &lh))) {
 			DEBUG(0, ("Error parsing LH list\n"));
 			talloc_free(pull);
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		talloc_free(pull);
 		SMB_ASSERT(!strncmp(lh.header, "lh", 2));
@@ -1471,7 +1471,7 @@ static WERROR regf_sl_add_entry(struct regf_data *regf, uint32_t list_offset,
 		return WERR_NOT_SUPPORTED;
 	} else {
 		DEBUG(0, ("Cannot add to unknown subkey list\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	return WERR_OK;
@@ -1485,7 +1485,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 	data = hbin_get(regf, list_offset);
 	if (!data.data) {
 		DEBUG(0, ("Unable to find subkey list\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if (strncmp((char *)data.data, "li", 2) == 0) {
@@ -1501,7 +1501,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		if (NT_STATUS_IS_ERR(tdr_pull_li_block(pull, regf, &li))) {
 			DEBUG(0, ("Error parsing LI list\n"));
 			talloc_free(pull);
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		talloc_free(pull);
 
@@ -1518,7 +1518,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		if (!found_offset) {
 			DEBUG(2, ("Subkey not found\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		li.key_count--;
 
@@ -1545,7 +1545,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		if (NT_STATUS_IS_ERR(tdr_pull_lf_block(pull, regf, &lf))) {
 			DEBUG(0, ("Error parsing LF list\n"));
 			talloc_free(pull);
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		talloc_free(pull);
 
@@ -1563,7 +1563,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		if (!found_offset) {
 			DEBUG(2, ("Subkey not found\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		lf.key_count--;
 
@@ -1591,7 +1591,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		if (NT_STATUS_IS_ERR(tdr_pull_lh_block(pull, regf, &lh))) {
 			DEBUG(0, ("Error parsing LF list\n"));
 			talloc_free(pull);
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		talloc_free(pull);
 
@@ -1609,7 +1609,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		if (!found_offset) {
 			DEBUG(0, ("Subkey not found\n"));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 		lh.key_count--;
 
@@ -1630,7 +1630,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		return WERR_NOT_SUPPORTED;
 	} else {
 		DEBUG (0, ("Unknown header found in subkey list.\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 	return WERR_OK;
 }
@@ -1648,7 +1648,7 @@ static WERROR regf_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 	unsigned int i;
 
 	if (nk->values_offset == -1) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	values = hbin_get(regf, nk->values_offset);
@@ -1663,7 +1663,7 @@ static WERROR regf_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 					  &vk)) {
 				DEBUG(0, ("Unable to get VK block at %d\n",
 					vk_offset));
-				return WERR_BADFILE;
+				return WERR_FILE_NOT_FOUND;
 			}
 			if (strcmp(vk.data_name, name) == 0) {
 				hbin_free(regf, vk_offset);
@@ -1672,7 +1672,7 @@ static WERROR regf_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 		}
 	}
 	if (!found_offset) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	} else {
 		nk->num_values--;
 		values.length = (nk->num_values)*4;
@@ -1709,14 +1709,14 @@ static WERROR regf_del_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 
 	if (parent_nk->subkeys_offset == -1) {
 		DEBUG(4, ("Subkey list is empty, this key cannot contain subkeys.\n"));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	/* Find the key */
 	if (!W_ERROR_IS_OK(regf_get_subkey_by_name(parent_nk, parent, name,
 						   (struct hive_key **)&key))) {
 		DEBUG(2, ("Key '%s' not found\n", name));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if (key->nk->subkeys_offset != -1) {

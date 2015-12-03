@@ -182,7 +182,7 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 		data->fd = open(filename, O_CREAT|O_WRONLY, 0755);
 		if (data->fd < 0) {
 			DEBUG(0, ("Unable to open %s\n", filename));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 	} else {
 		data->fd = STDOUT_FILENO;

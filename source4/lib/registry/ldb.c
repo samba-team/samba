@@ -419,7 +419,7 @@ static WERROR ldb_get_default_value(TALLOC_CTX *mem_ctx,
 
 	if (res->count == 0 || res->msgs[0]->num_elements == 0) {
 		talloc_free(res);
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if ((data_type != NULL) && (data != NULL)) {
@@ -488,7 +488,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 		}
 	}
 
-	return WERR_BADFILE;
+	return WERR_FILE_NOT_FOUND;
 }
 
 static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
@@ -515,7 +515,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 		DEBUG(3, ("Key '%s' not found\n",
 			ldb_dn_get_linearized(ldb_path)));
 		talloc_free(res);
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	newkd = talloc_zero(mem_ctx, struct ldb_key_data);
@@ -661,7 +661,7 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 		talloc_free(msg);
 
 		if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		} else if (ret != LDB_SUCCESS) {
 			DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 			return WERR_FOOBAR;
@@ -681,7 +681,7 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 		talloc_free(childdn);
 
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		} else if (ret != LDB_SUCCESS) {
 			DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 			return WERR_FOOBAR;
@@ -906,7 +906,7 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 	 * remain { NULL, 0 }. */
 	werr = ldb_get_default_value(mem_ctx, key, NULL, &default_value_type,
 				     &default_value);
-	if ((!W_ERROR_IS_OK(werr)) && (!W_ERROR_EQUAL(werr, WERR_BADFILE))) {
+	if ((!W_ERROR_IS_OK(werr)) && (!W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND))) {
 		return werr;
 	}
 
