@@ -2818,7 +2818,7 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	}
 
 	if (IS_DC) {
-		return WERR_SETUP_DOMAIN_CONTROLLER;
+		return WERR_NERR_SETUPDOMAINCONTROLLER;
 	}
 
 	if (!r->in.admin_domain) {
