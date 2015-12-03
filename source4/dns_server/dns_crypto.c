@@ -311,11 +311,11 @@ static WERROR dns_tsig_compute_mac(TALLOC_CTX *mem_ctx,
 
 	buffer_len += packet_blob.length;
 	if (buffer_len < packet_blob.length) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 	buffer_len += tsig_blob.length;
 	if (buffer_len < tsig_blob.length) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
