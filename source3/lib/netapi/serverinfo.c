@@ -486,7 +486,7 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b;
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -547,14 +547,14 @@ static WERROR NetServerSetInfo_l_1005(struct libnetapi_ctx *ctx,
 
 	if (!r->in.buffer) {
 		*r->out.parm_error = 1005; /* sure here ? */
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	info1005 = (struct srvsvc_NetSrvInfo1005 *)r->in.buffer;
 
 	if (!info1005->comment) {
 		*r->out.parm_error = 1005;
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!lp_config_backend_is_registry()) {

@@ -34,7 +34,7 @@ static NET_API_STATUS libnetapi_init_private_context(struct libnetapi_ctx *ctx)
 	struct libnetapi_private_ctx *priv;
 
 	if (!ctx) {
-		return W_ERROR_V(WERR_INVALID_PARAM);
+		return W_ERROR_V(WERR_INVALID_PARAMETER);
 	}
 
 	priv = talloc_zero(ctx, struct libnetapi_private_ctx);

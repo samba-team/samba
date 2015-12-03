@@ -54,7 +54,7 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -268,7 +268,7 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -488,7 +488,7 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -766,7 +766,7 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -914,7 +914,7 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -1074,7 +1074,7 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -1527,7 +1527,7 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*r->out.buffer = NULL;
@@ -1724,7 +1724,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {

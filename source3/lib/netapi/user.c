@@ -385,7 +385,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(user_handle);
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -466,7 +466,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (!(user_info->info16.acct_flags & ACB_NORMAL)) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -1297,7 +1297,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(builtin_handle);
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*r->out.buffer = NULL;
@@ -1741,7 +1741,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(user_handle);
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -1879,7 +1879,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(user_handle);
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -2371,7 +2371,7 @@ WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -2843,7 +2843,7 @@ WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -2996,7 +2996,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*r->out.buffer = NULL;
@@ -3191,7 +3191,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(group_handle);
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -3528,7 +3528,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	ZERO_STRUCT(domain_handle);
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*r->out.buffer = NULL;

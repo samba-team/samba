@@ -44,7 +44,7 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		struct libnetapi_private_ctx);
 
 	if (!r->in.domain) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnet_init_JoinCtx(mem_ctx, &j);

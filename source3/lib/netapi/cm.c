@@ -73,7 +73,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 
 	if (!ctx || !pp || !server_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	priv_ctx = (struct libnetapi_private_ctx *)ctx->private_data;
@@ -239,7 +239,7 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 	struct client_ipc_connection *ipc = NULL;
 
 	if (!presult) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = libnetapi_open_ipc_connection(ctx, server_name, &ipc);

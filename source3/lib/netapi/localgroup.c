@@ -162,7 +162,7 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 	const char *alias_name = NULL;
 
 	if (!r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCT(connect_handle);
@@ -310,7 +310,7 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b = NULL;
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCT(connect_handle);
@@ -481,7 +481,7 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b = NULL;
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -660,7 +660,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b = NULL;
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -804,7 +804,7 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b = NULL;
 
 	if (!r->out.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -1085,7 +1085,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	struct dcerpc_binding_handle *b = NULL;
 
 	if ((!add && !del && !set) || (add && del && set)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (add) {
@@ -1101,7 +1101,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (!r->in.group_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {
@@ -1113,7 +1113,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (r->in.total_entries == 0 || !r->in.buffer) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCT(connect_handle);

@@ -47,7 +47,7 @@ static WERROR construct_data(enum netr_LogonControlCode function_code,
 		ZERO_STRUCTP(data_out);
 		break;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	return WERR_OK;
@@ -64,7 +64,7 @@ static WERROR construct_buffer(TALLOC_CTX *mem_ctx,
 	struct NETLOGON_INFO_4 *i4;
 
 	if (!q) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (level) {
