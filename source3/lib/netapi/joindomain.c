@@ -432,13 +432,13 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 	ads_status = ads_connect_user_creds(ads);
 	if (!ADS_ERR_OK(ads_status)) {
 		ads_destroy(&ads);
-		return WERR_DEFAULT_JOIN_REQUIRED;
+		return WERR_NERR_DEFAULTJOINREQUIRED;
 	}
 
 	ads_status = ads_get_joinable_ous(ads, ctx, &p, &s);
 	if (!ADS_ERR_OK(ads_status)) {
 		ads_destroy(&ads);
-		return WERR_DEFAULT_JOIN_REQUIRED;
+		return WERR_NERR_DEFAULTJOINREQUIRED;
 	}
 	*r->out.ous = discard_const_p(const char *, p);
 	*r->out.ou_count = s;
