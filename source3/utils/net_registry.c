@@ -366,7 +366,7 @@ static int net_registry_deletekey_internal(struct net_context *c, int argc,
 		werr = reg_deletekey(hivekey, subkeyname);
 	}
 	if (!W_ERROR_IS_OK(werr) &&
-	    !(c->opt_force && W_ERROR_EQUAL(werr, WERR_BADFILE)))
+	    !(c->opt_force && W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)))
 	{
 		d_fprintf(stderr, "reg_deletekey %s: %s\n", _("failed"),
 			  win_errstr(werr));
@@ -1110,7 +1110,7 @@ static WERROR precheck_delete_key(struct precheck_ctx *ctx,
 		d_printf("Precheck: key [%s\\%s] should not exist\n",
 			 parent->key->name, name);
 		werr = WERR_FILE_EXISTS;
-	} else if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+	} else if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 		werr = WERR_OK;
 	} else {
 		d_printf("Precheck: openkey [%s\\%s] failed: %s\n",
@@ -1165,7 +1165,7 @@ static WERROR precheck_delete_val(struct precheck_ctx *ctx,
 		d_printf("Precheck: value \"%s\" of key [%s] should not exist\n",
 			 name, parent->key->name);
 		werr = WERR_FILE_EXISTS;
-	} else if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+	} else if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 		werr = WERR_OK;
 	} else {
 		printf("Precheck: queryvalue \"%s\" of key [%s] failed: %s\n",

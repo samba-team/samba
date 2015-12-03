@@ -231,7 +231,7 @@ static NTSTATUS rpc_conf_del_value(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!(W_ERROR_IS_OK(result))) {
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)){
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)){
 			result = WERR_OK;
 			goto error;
 		}
@@ -648,7 +648,7 @@ static NTSTATUS rpc_conf_open_conf(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (access_mask == REG_KEY_READ &&
-	    W_ERROR_EQUAL(result, WERR_BADFILE))
+	    W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND))
 	{
 		goto error;
 	}
@@ -675,7 +675,7 @@ static NTSTATUS rpc_conf_open_conf(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (access_mask == REG_KEY_READ &&
-	    W_ERROR_EQUAL(result, WERR_BADFILE))
+	    W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND))
 	{
 		goto error;
 	}
@@ -854,7 +854,7 @@ static NTSTATUS rpc_conf_delshare_internal(struct net_context *c,
 		goto error;
 	}
 
-	if (W_ERROR_EQUAL(werr, WERR_BADFILE)){
+	if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)){
 		d_fprintf(stderr, _("ERROR: Key does not exist\n"));
 	}
 
@@ -1675,7 +1675,7 @@ static NTSTATUS rpc_conf_getparm_internal(struct net_context *c,
 			goto error;
 	}
 
-	if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+	if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 		d_fprintf(stderr, _("ERROR: Share %s does not exist\n"),
 				argv[0]);
 		goto error;
@@ -1700,7 +1700,7 @@ static NTSTATUS rpc_conf_getparm_internal(struct net_context *c,
 	if (!param_is_set) {
 		d_fprintf(stderr, _("ERROR: Given parameter '%s' has not been set\n"),
 				argv[1]);
-		werr = WERR_BADFILE;
+		werr = WERR_FILE_NOT_FOUND;
 		goto error;
 	}
 
