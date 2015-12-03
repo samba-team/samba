@@ -135,11 +135,11 @@ WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
 	const char *tmp_subkeyname;
 
 	if ((path == NULL) || (hivename == NULL) || (subkeyname == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (strlen(path) == 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (strchr(path, '\\') == NULL) {

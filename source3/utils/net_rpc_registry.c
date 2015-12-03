@@ -1881,7 +1881,7 @@ static WERROR import_create_val(struct import_ctx* ctx,
 	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
 	if (parent == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCT(valuename);
@@ -1917,7 +1917,7 @@ static WERROR import_delete_val(struct import_ctx* ctx,
 	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
 	if (parent == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ZERO_STRUCT(valuename);

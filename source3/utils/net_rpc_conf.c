@@ -1832,7 +1832,7 @@ static NTSTATUS rpc_conf_setparm_internal(struct net_context *c,
 	 */
 
 	if (!net_conf_param_valid(service_name, param_name, valstr)) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto error;
 	}
 

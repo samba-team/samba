@@ -59,7 +59,7 @@ static WERROR open_hive(TALLOC_CTX *ctx, const char *path,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	if ((hive == NULL) || (subkeyname == NULL)) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -100,7 +100,7 @@ static WERROR open_key(TALLOC_CTX *ctx, const char *path,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
 	if ((path == NULL) || (key == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = open_hive(tmp_ctx, path, desired_access, &hive, &subkey_name);
@@ -720,13 +720,13 @@ static WERROR net_registry_getsd_internal(struct net_context *c,
 
 	if (sd == NULL) {
 		d_fprintf(stderr, _("internal error: invalid argument\n"));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
 	if (strlen(keyname) == 0) {
 		d_fprintf(stderr, _("error: zero length key name given\n"));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -835,7 +835,7 @@ static WERROR net_registry_setsd_internal(struct net_context *c,
 
 	if (strlen(keyname) == 0) {
 		d_fprintf(stderr, _("error: zero length key name given\n"));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -1004,7 +1004,7 @@ static WERROR import_create_val (struct import_ctx *ctx,
 	WERROR werr;
 
 	if (parent == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = reg_setvalue(parent, name, value);
@@ -1021,7 +1021,7 @@ static WERROR import_delete_val (struct import_ctx *ctx,
 	WERROR werr;
 
 	if (parent == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = reg_deletevalue(parent, name);
