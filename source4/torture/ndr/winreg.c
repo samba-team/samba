@@ -376,7 +376,7 @@ static const uint8_t openkey_out_data[] = {
 static bool openkey_out_check(struct torture_context *tctx, struct winreg_OpenKey *r)
 {
 	torture_assert(tctx, GUID_all_zero(&r->out.handle->uuid), "handle");
-	torture_assert_werr_equal(tctx, r->out.result, WERR_BADFILE, "return code");
+	torture_assert_werr_equal(tctx, r->out.result, WERR_FILE_NOT_FOUND, "return code");
 	return true;
 }
 
@@ -402,7 +402,7 @@ static const uint8_t deletekey_out_data[] = {
 
 static bool deletekey_out_check(struct torture_context *tctx, struct winreg_DeleteKey *r)
 {
-	torture_assert_werr_equal(tctx, r->out.result, WERR_BADFILE, "return code");
+	torture_assert_werr_equal(tctx, r->out.result, WERR_FILE_NOT_FOUND, "return code");
 	return true;
 }
 
