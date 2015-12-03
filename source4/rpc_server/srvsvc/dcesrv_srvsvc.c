@@ -1374,7 +1374,7 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 		device = talloc_strdup(mem_ctx, &r->in.device_name[2]);
 	} else {
 		/* no chance we have a share that doesn't start with C:\ */
-		return WERR_DEVICE_NOT_SHARED;
+		return WERR_NERR_DEVICENOTSHARED;
 	}
 	all_string_sub(device, "\\", "/", 0);
 
@@ -1420,7 +1420,7 @@ static WERROR dcesrv_srvsvc_NetShareCheck(struct dcesrv_call_state *dce_call, TA
 		}
 	}
 
-	return WERR_DEVICE_NOT_SHARED;
+	return WERR_NERR_DEVICENOTSHARED;
 }
 
 
