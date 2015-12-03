@@ -1862,7 +1862,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (!(path = valid_share_pathname(p->mem_ctx, pathname ))) {
 		DEBUG(5,("_srvsvc_NetShareSetInfo: invalid pathname %s\n",
 			pathname ));
-		return WERR_OBJECT_PATH_INVALID;
+		return WERR_BAD_PATHNAME;
 	}
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
@@ -2064,7 +2064,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	/* Check if the pathname is valid. */
 	if (!(path = valid_share_pathname(p->mem_ctx, pathname))) {
-		return WERR_OBJECT_PATH_INVALID;
+		return WERR_BAD_PATHNAME;
 	}
 
 	ret = sys_lstat(path, &st, false);

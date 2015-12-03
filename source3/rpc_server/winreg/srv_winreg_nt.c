@@ -705,7 +705,7 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 		 "\"%s\"\n", regkey->key->name, fname));
 
 	if ((snum = validate_reg_filename(p->mem_ctx, &fname)) == -1)
-		return WERR_OBJECT_PATH_INVALID;
+		return WERR_BAD_PATHNAME;
 
 	/* user must posses SeRestorePrivilege for this this proceed */
 
@@ -745,7 +745,7 @@ WERROR _winreg_SaveKey(struct pipes_struct *p,
 		 regkey->key->name, fname));
 
 	if ((snum = validate_reg_filename(p->mem_ctx, &fname)) == -1 )
-		return WERR_OBJECT_PATH_INVALID;
+		return WERR_BAD_PATHNAME;
 
 	DEBUG(2,("_winreg_SaveKey: Saving [%s] to %s in share %s\n",
 		 regkey->key->name, fname, lp_servicename(talloc_tos(), snum) ));
