@@ -9033,7 +9033,7 @@ static bool test_printer_ic(struct torture_context *tctx,
 			torture_assert_ntstatus_ok(tctx,
 				dcerpc_spoolss_PlayGDIScriptOnPrinterIC_r(b, tctx, &r),
 				"PlayGDIScriptOnPrinterIC failed");
-			torture_assert_werr_equal(tctx, r.out.result, WERR_NOMEM,
+			torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_ENOUGH_MEMORY,
 				"PlayGDIScriptOnPrinterIC failed");
 		}
 
