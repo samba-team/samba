@@ -96,7 +96,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		if (tmppath == NULL) {
 			DEBUG(0, ("Out of memory\n"));
 			talloc_free(mem_ctx);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		if (!W_ERROR_IS_OK(error2))
 			callbacks->del_key(callback_data, tmppath);
@@ -162,7 +162,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		if (tmppath == NULL) {
 			DEBUG(0, ("Out of memory\n"));
 			talloc_free(mem_ctx);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		callbacks->add_key(callback_data, tmppath);
 

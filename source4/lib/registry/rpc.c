@@ -393,7 +393,7 @@ static WERROR rpc_add_key(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (rpck == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	rpck->key.context = parentkd->key.context;
