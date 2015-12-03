@@ -569,7 +569,7 @@ static WERROR NetServerSetInfo_l_1005(struct libnetapi_ctx *ctx,
 		libnetapi_set_error_string(ctx,
 			"Could not initialize backend: %s",
 			sbcErrorString(err));
-		werr = WERR_NO_SUCH_SERVICE;
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
@@ -579,7 +579,7 @@ static WERROR NetServerSetInfo_l_1005(struct libnetapi_ctx *ctx,
 		libnetapi_set_error_string(ctx,
 			"Could not set global parameter: %s",
 			sbcErrorString(err));
-		werr = WERR_NO_SUCH_SERVICE;
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
