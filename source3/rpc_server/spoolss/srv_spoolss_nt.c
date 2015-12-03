@@ -2705,7 +2705,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 	if (!lp_print_notify_backchannel(snum)) {
 		DEBUG(10, ("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
 			"backchannel disabled\n"));
-		return WERR_SERVER_UNAVAILABLE;
+		return WERR_RPC_S_SERVER_UNAVAILABLE;
 	}
 
 	client_len = tsocket_address_bsd_sockaddr(p->remote_address,
@@ -2720,7 +2720,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 					&Printer->notify.cli_hnd,
 					&Printer->notify.cli_chan,
 					&client_ss, p->msg_ctx)) {
-		return WERR_SERVER_UNAVAILABLE;
+		return WERR_RPC_S_SERVER_UNAVAILABLE;
 	}
 
 	return WERR_OK;
