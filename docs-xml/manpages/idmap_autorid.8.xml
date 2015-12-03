@@ -38,6 +38,21 @@
 
 	<variablelist>
 		<varlistentry>
+		<term>range = low - high</term>
+		<listitem><para>
+			Defines the available matching uid and gid
+			range for which the backend is
+			authoritative. Note that the range acts as a
+			filter.  If algorithmically determined UID or
+			GID fall outside the range, they are ignored
+			and the corresponding map is discarded.  It is
+			intended as a way to avoid accidental UID/GID
+			overlaps between local and remotely defined
+			IDs.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>rangesize = numberofidsperdomain</term>
 		<listitem><para>
 			Defines the number of uids/gids available per
