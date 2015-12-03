@@ -44,14 +44,14 @@ typedef uint32_t WERROR;
 
 #define W_ERROR_HAVE_NO_MEMORY(x) do { \
 	if (!(x)) {\
-		return WERR_NOMEM;\
+		return WERR_NOT_ENOUGH_MEMORY;\
 	}\
 } while (0)
 
 #define W_ERROR_HAVE_NO_MEMORY_AND_FREE(x, ctx) do { \
 	if (!(x)) {\
 		talloc_free(ctx); \
-		return WERR_NOMEM;\
+		return WERR_NOT_ENOUGH_MEMORY;\
 	}\
 } while (0)
 
