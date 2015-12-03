@@ -2355,7 +2355,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os,
 			(ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (DEBUGLEVEL >= 10) {
@@ -10453,7 +10453,7 @@ static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
 	/* peek for spoolss_PortData version */
 
 	if (!in || (in->length < (128 + 4))) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	version = IVAL(in->data, 128);

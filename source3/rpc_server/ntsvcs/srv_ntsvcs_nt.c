@@ -136,11 +136,11 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 		/* just parse the service name from the device path and then
 		   lookup the display name */
 		if ( !(ptr = strrchr_m( r->in.devicepath, '\\' )) )
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		*ptr = '\0';
 
 		if ( !(ptr = strrchr_m( r->in.devicepath, '_' )) )
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		ptr++;
 
 		mem_ctx = talloc_stackframe();
@@ -150,12 +150,12 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 						p->session_info,
 						ptr);
 		if (result == NULL) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (!push_reg_sz(mem_ctx, &blob, result)) {
 			talloc_free(mem_ctx);
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (*r->in.buffer_size < blob.length) {
