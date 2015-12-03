@@ -299,7 +299,7 @@ static int net_dom_renamecomputer(struct net_context *c, int argc, const char **
 					  account, password, rename_options);
 	if (status != 0) {
 		printf(_("Failed to rename machine: "));
-		if (status == W_ERROR_V(WERR_SETUP_NOT_JOINED)) {
+		if (status == W_ERROR_V(WERR_NERR_SETUPNOTJOINED)) {
 			printf(_("Computer is not joined to a Domain\n"));
 			goto done;
 		}

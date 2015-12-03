@@ -1459,7 +1459,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	TALLOC_CTX *ctx = NULL;
 	struct libnet_JoinCtx *r = NULL;
 	const char *domain = lp_realm();
-	WERROR werr = WERR_SETUP_NOT_JOINED;
+	WERROR werr = WERR_NERR_SETUPNOTJOINED;
 	bool createupn = false;
 	const char *machineupn = NULL;
 	const char *machine_password = NULL;
