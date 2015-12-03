@@ -6012,7 +6012,7 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 {
 	const struct auth_session_info *session_info = p->session_info;
 	int snum;
-	WERROR errcode = WERR_BADFUNC;
+	WERROR errcode = WERR_INVALID_FUNCTION;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
@@ -7675,7 +7675,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 {
 	const struct auth_session_info *session_info = p->session_info;
 	int snum;
-	WERROR errcode = WERR_BADFUNC;
+	WERROR errcode = WERR_INVALID_FUNCTION;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_BADFID;
@@ -10542,7 +10542,7 @@ static WERROR process_xcvtcp_command(TALLOC_CTX *mem_ctx,
 			return xcvtcp_cmds[i].fn(mem_ctx, token, inbuf, outbuf, needed);
 	}
 
-	return WERR_BADFUNC;
+	return WERR_INVALID_FUNCTION;
 }
 
 /*******************************************************************
@@ -10599,7 +10599,7 @@ static WERROR process_xcvlocal_command(TALLOC_CTX *mem_ctx,
 		if ( strcmp( command, xcvlocal_cmds[i].name ) == 0 )
 			return xcvlocal_cmds[i].fn(mem_ctx, token, inbuf, outbuf, needed);
 	}
-	return WERR_BADFUNC;
+	return WERR_INVALID_FUNCTION;
 }
 
 /****************************************************************
