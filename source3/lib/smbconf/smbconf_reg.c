@@ -104,7 +104,7 @@ static sbcErr smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 	}
 	werr = reg_openkey(mem_ctx, rpd(ctx)->base_key, servicename,
 			   desired_access, key);
-	if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+	if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 		return SBC_ERR_NO_SUCH_SERVICE;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
