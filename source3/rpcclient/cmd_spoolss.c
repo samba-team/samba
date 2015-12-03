@@ -2725,13 +2725,13 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 			if (!add_string_to_array(mem_ctx, argv[i],
 						 &strings,
 						 &num_strings)) {
-				result = WERR_NOMEM;
+				result = WERR_NOT_ENOUGH_MEMORY;
 				goto done;
 			}
 		}
 		data.string_array = talloc_zero_array(mem_ctx, const char *, num_strings + 1);
 		if (!data.string_array) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 		for (i=0; i < num_strings; i++) {
@@ -3330,7 +3330,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 
 	option.types = talloc_array(mem_ctx, struct spoolss_NotifyOptionType, 2);
 	if (option.types == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -3338,7 +3338,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	option.types[0].count = 1;
 	option.types[0].fields = talloc_array(mem_ctx, union spoolss_Field, 1);
 	if (option.types[0].fields == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 	option.types[0].fields[0].field = PRINTER_NOTIFY_FIELD_SERVER_NAME;
@@ -3347,14 +3347,14 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	option.types[1].count = 1;
 	option.types[1].fields = talloc_array(mem_ctx, union spoolss_Field, 1);
 	if (option.types[1].fields == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 	option.types[1].fields[0].field = JOB_NOTIFY_FIELD_PRINTER_NAME;
 
 	clientname = talloc_asprintf(mem_ctx, "\\\\%s", lp_netbios_name());
 	if (!clientname) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 

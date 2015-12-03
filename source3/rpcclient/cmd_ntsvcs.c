@@ -262,7 +262,7 @@ static WERROR cmd_ntsvcs_get_dev_list(struct rpc_pipe_client *cli,
 
 	buffer = talloc(mem_ctx, uint16_t);
 	if (!buffer) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = dcerpc_PNP_GetDeviceList(b, mem_ctx,

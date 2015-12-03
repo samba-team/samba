@@ -232,13 +232,13 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 
 	if (argc >= 3) {
 		if (!NT_STATUS_IS_OK(GUID_from_string(argv[2], &domain_guid))) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
 	if (argc >= 4) {
 		if (!NT_STATUS_IS_OK(GUID_from_string(argv[3], &site_guid))) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -293,7 +293,7 @@ static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
 
 	if (argc >= 3) {
 		if (!NT_STATUS_IS_OK(GUID_from_string(argv[2], &domain_guid))) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -364,7 +364,7 @@ static WERROR cmd_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
 
 	if (argc >= 5) {
 		if (!NT_STATUS_IS_OK(GUID_from_string(argv[4], &domain_guid))) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 

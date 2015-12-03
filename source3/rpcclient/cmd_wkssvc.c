@@ -110,7 +110,7 @@ static WERROR cmd_wkssvc_messagebuffersend(struct rpc_pipe_client *cli,
 	if (!push_ucs2_talloc(mem_ctx, &message_buffer, message,
 			      &message_size))
 	{
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = dcerpc_wkssvc_NetrMessageBufferSend(b, mem_ctx,
