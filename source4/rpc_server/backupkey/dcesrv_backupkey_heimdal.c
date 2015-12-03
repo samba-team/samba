@@ -629,14 +629,14 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 
 	guid_string = GUID_string(mem_ctx, &uncrypt_request.guid);
 	if (guid_string == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	cert_secret_name = talloc_asprintf(mem_ctx,
 					   "BCKUPKEY_%s",
 					   guid_string);
 	if (cert_secret_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = get_lsa_secret(mem_ctx,
@@ -675,7 +675,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 						    uncrypt_request.encrypted_secret_len);
 		if (reversed_secret.data == NULL) {
 			hx509_private_key_free(&pk);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		/* The secret has to be reversed ... */
@@ -867,7 +867,7 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 
 	p0 = talloc_size(ctx, len);
 	if (p0 == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 	p = p0;
@@ -949,7 +949,7 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 
 	uniqueid.data = talloc_memdup(ctx, guidblob->data, guidblob->length);
 	if (uniqueid.data == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	/* uniqueid is a bit string in which each byte represent 1 bit (1 or 0)
 	 * so as 1 byte is 8 bits we need to provision 8 times more space as in the
@@ -961,7 +961,7 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 					    guidblob->length);
 	if (serialnumber.data == NULL) {
 		talloc_free(uniqueid.data);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Native AD generates certificates with serialnumber in reversed notation */
@@ -1381,7 +1381,7 @@ static WERROR generate_bkrp_server_wrap_key(TALLOC_CTX *ctx, struct ldb_context 
 	secret_name = talloc_asprintf(frame, "BCKUPKEY_%s", GUID_string(ctx, &guid));
 	if (secret_name == NULL) {
 		TALLOC_FREE(frame);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = set_lsa_secret(frame, ldb_ctx, secret_name, &blob_wrap_key);
@@ -1434,7 +1434,7 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 
 	secret_name = talloc_asprintf(mem_ctx, "BCKUPKEY_%s", guid_string);
 	if (secret_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = get_lsa_secret(mem_ctx, ldb_ctx, secret_name, &lsa_secret);

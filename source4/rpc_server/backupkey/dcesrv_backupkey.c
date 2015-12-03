@@ -565,14 +565,14 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 
 	guid_string = GUID_string(mem_ctx, &uncrypt_request.guid);
 	if (guid_string == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	cert_secret_name = talloc_asprintf(mem_ctx,
 					   "BCKUPKEY_%s",
 					   guid_string);
 	if (cert_secret_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = get_lsa_secret(mem_ctx,
@@ -612,7 +612,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 						    uncrypt_request.encrypted_secret_len);
 		if (reversed_secret.data == NULL) {
 			gnutls_privkey_deinit(privkey);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		/* The secret has to be reversed ... */
@@ -840,13 +840,13 @@ static WERROR self_sign_cert(TALLOC_CTX *mem_ctx,
 				       guidblob->data,
 				       guidblob->length);
 	if (unique_id.data == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	reversed = talloc_array(mem_ctx, uint8_t, guidblob->length);
 	if (reversed == NULL) {
 		talloc_free(unique_id.data);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Native AD generates certificates with serialnumber in reversed notation */
@@ -862,7 +862,7 @@ static WERROR self_sign_cert(TALLOC_CTX *mem_ctx,
 	if (rc != GNUTLS_E_SUCCESS) {
 		DBG_ERR("gnutls_x509_crt_init failed - %s\n",
 			gnutls_strerror(rc));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	rc = gnutls_x509_crt_set_dn(issuer_cert, dn, &error_string);
@@ -1043,7 +1043,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *mem_ctx,
 	gnutls_free(cert_blob.data);
 	if (keypair.cert.data == NULL) {
 		gnutls_privkey_deinit(issuer_privkey);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	rc = gnutls_privkey_export_rsa_raw(issuer_privkey,
@@ -1271,7 +1271,7 @@ static WERROR generate_bkrp_server_wrap_key(TALLOC_CTX *ctx, struct ldb_context 
 	secret_name = talloc_asprintf(frame, "BCKUPKEY_%s", GUID_string(ctx, &guid));
 	if (secret_name == NULL) {
 		TALLOC_FREE(frame);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = set_lsa_secret(frame, ldb_ctx, secret_name, &blob_wrap_key);
@@ -1324,7 +1324,7 @@ static WERROR bkrp_do_retrieve_server_wrap_key(TALLOC_CTX *mem_ctx, struct ldb_c
 
 	secret_name = talloc_asprintf(mem_ctx, "BCKUPKEY_%s", guid_string);
 	if (secret_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = get_lsa_secret(mem_ctx, ldb_ctx, secret_name, &lsa_secret);
