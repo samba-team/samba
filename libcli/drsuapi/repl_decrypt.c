@@ -255,7 +255,7 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	enc_buffer = data_blob_talloc(mem_ctx, NULL, in->length+20);
 	if (!enc_buffer.data) {
 		talloc_free(rid_crypt_out.data);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	};
 	
 	confounder = data_blob_const(enc_buffer.data, 16);
