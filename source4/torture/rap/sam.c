@@ -284,7 +284,7 @@ static bool test_useradd(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx,
 			smbcli_rap_netuseradd(cli->tree, tctx, &r),
 			"2nd smbcli_rap_netuseradd failed");
-		torture_assert_werr_equal(tctx, W_ERROR(r.out.status), WERR_USEREXISTS,
+		torture_assert_werr_equal(tctx, W_ERROR(r.out.status), WERR_NERR_USEREXISTS,
 			"2nd smbcli_rap_netuseradd failed");
 
 		{
