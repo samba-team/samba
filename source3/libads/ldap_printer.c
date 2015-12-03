@@ -298,7 +298,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 
 	if ((asprintf(&printername, "%s\\%s", cli->srv_name_slash, printer) == -1)) {
 		DEBUG(3, ("Insufficient memory\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
