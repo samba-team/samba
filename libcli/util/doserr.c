@@ -36,7 +36,6 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_INSUFFICIENT_BUFFER", WERR_INSUFFICIENT_BUFFER },
 	{ "WERR_SEM_TIMEOUT", WERR_SEM_TIMEOUT },
 	{ "WERR_FILE_EXISTS", WERR_FILE_EXISTS },
-	{ "WERR_INVALID_PARAM", WERR_INVALID_PARAM },
 	{ "WERR_NOT_SUPPORTED", WERR_NOT_SUPPORTED },
 	{ "WERR_DUP_NAME", WERR_DUP_NAME },
 	{ "WERR_INVALID_NAME", WERR_INVALID_NAME },
@@ -2700,7 +2699,6 @@ struct werror_str_struct {
 const struct werror_str_struct dos_err_strs[] = {
 	{ WERR_OK, "Success" },
 	{ WERR_ACCESS_DENIED, "Access is denied" },
-	{ WERR_INVALID_PARAM, "Invalid parameter" },
 	{ WERR_NOT_SUPPORTED, "Not supported" },
 	{ WERR_NO_LOGON_SERVERS, "No logon servers found" },
 	{ WERR_NO_SUCH_LOGON_SESSION, "No such logon session" },
