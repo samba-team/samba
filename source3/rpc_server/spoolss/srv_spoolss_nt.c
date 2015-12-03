@@ -4814,7 +4814,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 		struct dcerpc_binding_handle *b;
 
 		if (r->in.level != 3) {
-			result = WERR_UNKNOWN_LEVEL;
+			result = WERR_INVALID_LEVEL;
 			goto err_info_free;
 		}
 

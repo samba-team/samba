@@ -215,7 +215,6 @@ typedef uint32_t WERROR;
 #define WERR_FOOBAR WERR_GEN_FAILURE
 
 /* TODO: remove WERR_UNKNOWN_LEVEL in all callers */
-#define WERR_UNKNOWN_LEVEL WERR_INVALID_LEVEL
 
 /*****************************************************************************
  Auto-generated Win32 error from:
