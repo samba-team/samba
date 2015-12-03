@@ -734,7 +734,7 @@ WERROR regdb_init(void)
 
 	db_path = state_path("registry.tdb");
 	if (db_path == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	regdb = db_open(NULL, db_path, 0,
@@ -862,7 +862,7 @@ WERROR regdb_open( void )
 
 	db_path = state_path("registry.tdb");
 	if (db_path == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	become_root();
@@ -945,7 +945,7 @@ static WERROR regdb_delete_key_with_prefix(struct db_context *db,
 					   const char *prefix)
 {
 	char *path;
-	WERROR werr = WERR_NOMEM;
+	WERROR werr = WERR_NOT_ENOUGH_MEMORY;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (keyname == NULL) {
@@ -1046,13 +1046,13 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 
 	keyname = talloc_strdup(ctx, key);
 	if (!keyname) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
 	keyname = normalize_reg_path(ctx, keyname);
 	if (!keyname) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -1060,7 +1060,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 
 	buffer = (uint8_t *)SMB_MALLOC(1024);
 	if (buffer == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 	buflen = 1024;
@@ -1089,7 +1089,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 				DEBUG(0, ("regdb_store_keys: Failed to realloc "
 					  "memory of size [%u]\n",
 					  (unsigned int)(len+thistime)*2));
-				werr = WERR_NOMEM;
+				werr = WERR_NOT_ENOUGH_MEMORY;
 				goto done;
 			}
 			buflen = (len+thistime)*2;
@@ -1142,7 +1142,7 @@ static WERROR regdb_store_subkey_list(struct db_context *db, const char *parent,
 		path = talloc_asprintf(frame, "%s\\%s", parent, key);
 	}
 	if (!path) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -1245,7 +1245,7 @@ static NTSTATUS regdb_store_keys_action(struct db_context *db,
 		path = talloc_asprintf(mem_ctx, "%s\\%s", store_ctx->key,
 				       oldkeyname);
 		if (!path) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
@@ -1436,7 +1436,7 @@ static WERROR regdb_create_subkey_internal(struct db_context *db,
 
 		newkey = talloc_asprintf(mem_ctx, "%s\\%s", key, subkey);
 		if (newkey == NULL) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
@@ -1563,7 +1563,7 @@ static WERROR regdb_delete_subkey(const char *key, const char *subkey, bool lazy
 
 	path = talloc_asprintf(mem_ctx, "%s\\%s", key, subkey);
 	if (path == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -2095,13 +2095,13 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 
 	tdbkey = talloc_asprintf(tmp_ctx, "%s\\%s", REG_SECDESC_PREFIX, key);
 	if (tdbkey == NULL) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
 	tdbkey = normalize_reg_path(tmp_ctx, tdbkey);
 	if (tdbkey == NULL) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -2115,7 +2115,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 				     psecdesc);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		err = WERR_REG_CORRUPT;
 	}

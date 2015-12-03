@@ -175,7 +175,7 @@ int reg_parse_callback_val_regval_blob(struct reg_import *p,
 	v = regval_compose(mem_ctx, name, type, data, len);
 	if (v == NULL) {
 		DEBUG(0, ("regval_compose %s failed\n", name));
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 

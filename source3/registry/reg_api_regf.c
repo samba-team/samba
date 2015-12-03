@@ -58,7 +58,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	registry_key.name = talloc_strdup(regfile->mem_ctx, topkeypath);
 	if (!registry_key.name) {
 		DEBUG(0, ("reg_load_tree: Talloc failed for reg_key.name!\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* now start parsing the values and subkeys */
@@ -113,7 +113,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 				       topkeypath,
 				       subkey->keyname);
 		if (path == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		result = reg_load_tree(regfile, path, subkey);
 		if (!W_ERROR_IS_OK(result)) {
@@ -195,7 +195,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 
 	key_tmp = talloc_strdup(regfile->mem_ctx, keypath);
 	if (!key_tmp) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (!reg_split_key(key_tmp, &parentpath, &keyname)) {
 		return WERR_OBJECT_PATH_INVALID;
@@ -211,7 +211,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 
 	registry_key.name = talloc_strdup(regfile->mem_ctx, keypath);
 	if (registry_key.name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	registry_key.ops = reghook_cache_find(registry_key.name);
@@ -252,7 +252,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 		subkeypath = talloc_asprintf(regfile->mem_ctx, "%s\\%s",
 					     keypath, subkeyname);
 		if (subkeypath == NULL) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 		result = reg_write_tree(regfile, subkeypath, key);

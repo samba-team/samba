@@ -148,7 +148,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	    !(regkey->token = dup_nt_token(regkey, token)) ||
 	    !(regkey->key = talloc_zero(regkey, struct registry_key_handle)))
 	{
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -185,7 +185,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	}
 
 	if (key->name == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -263,7 +263,7 @@ WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 
 	path = talloc_strdup(frame, name);
 	if (path == NULL) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto error;
 	}
 
@@ -279,7 +279,7 @@ WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 
 		name_component = talloc_strndup(frame, path, (p - path));
 		if (name_component == NULL) {
-			err = WERR_NOMEM;
+			err = WERR_NOT_ENOUGH_MEMORY;
 			goto error;
 		}
 
@@ -324,7 +324,7 @@ WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	if (!(*name = talloc_strdup(mem_ctx,
 			regsubkey_ctr_specific_key(key->subkeys, idx))))
 	{
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (last_write_time) {
@@ -358,7 +358,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 
 	val = talloc_zero(mem_ctx, struct registry_value);
 	if (val == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	val->type = regval_type(blob);
@@ -368,7 +368,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	    && !(*pname = talloc_strdup(
 			 mem_ctx, regval_name(blob)))) {
 		TALLOC_FREE(val);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*pval = val;
@@ -395,7 +395,7 @@ static WERROR reg_enumvalue_nocachefill(TALLOC_CTX *mem_ctx,
 
 	val = talloc_zero(mem_ctx, struct registry_value);
 	if (val == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	val->type = regval_type(blob);
@@ -405,7 +405,7 @@ static WERROR reg_enumvalue_nocachefill(TALLOC_CTX *mem_ctx,
 	    && !(*pname = talloc_strdup(
 			 mem_ctx, regval_name(blob)))) {
 		TALLOC_FREE(val);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*pval = val;
@@ -469,7 +469,7 @@ WERROR reg_querymultiplevalues(TALLOC_CTX *mem_ctx,
 
 	vals = talloc_zero_array(mem_ctx, struct registry_value, num_names);
 	if (vals == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	for (n=0; n < num_names; n++) {
@@ -539,7 +539,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 	*max_valbufsize = max_size;
 
 	if (!(mem_ctx = talloc_new(key))) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	err = regkey_get_secdesc(mem_ctx, key->key, &secdesc);
@@ -569,12 +569,12 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 
 	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	path = talloc_strdup(mem_ctx, subkeypath);
 	if (path == NULL) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -682,7 +682,7 @@ static WERROR reg_deletekey_internal(TALLOC_CTX *mem_ctx,
 	struct registry_key *key;
 	name = talloc_strdup(mem_ctx, path);
 	if (name == NULL) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -797,7 +797,7 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 
 	if (res == 0) {
 		TALLOC_FREE(key->values);
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 

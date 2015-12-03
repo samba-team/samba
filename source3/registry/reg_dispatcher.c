@@ -65,7 +65,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, struct security_descriptor 
 
 	theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
 	if (theacl == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	sd = make_sec_desc(ctx, SD_REVISION, SEC_DESC_SELF_RELATIVE,
@@ -73,7 +73,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, struct security_descriptor 
 			   &global_sid_System, NULL, theacl,
 			   &sd_size);
 	if (sd == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*psd = sd;

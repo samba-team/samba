@@ -43,7 +43,7 @@ static WERROR keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname,
 	tmp_path = talloc_asprintf(mem_ctx, "\\%s", keyname);
 	if (tmp_path == NULL) {
 		DEBUG(0, ("talloc_asprintf failed!\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*path = tmp_path;
@@ -63,7 +63,7 @@ WERROR reghook_cache_init(void)
 
 	cache_tree = pathtree_init(&regdb_ops);
 	if (cache_tree == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	DEBUG(10, ("reghook_cache_init: new tree with default "
 		   "ops %p for key [%s]\n", (void *)&regdb_ops,
@@ -94,7 +94,7 @@ WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops)
 		   (void *)ops, key));
 
 	if (!pathtree_add(cache_tree, key, ops))
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 	else
 		werr = WERR_OK;
 

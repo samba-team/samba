@@ -1440,10 +1440,10 @@ WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32_t max_buf_size, uint32_t *o
 		*outbuf_len = buffer_size;
 
 		if (!_reg_perfcount_marshall_perf_data_block(ps, block, 0))
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 
 		if (!_reg_perfcount_marshall_perf_objects(ps, block, 0))
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 
 		return WERR_OK;
 	}
@@ -1451,7 +1451,7 @@ WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32_t max_buf_size, uint32_t *o
 	{
 		*outbuf_len = max_buf_size;
 		if (!_reg_perfcount_marshall_perf_data_block(ps, block, 0))
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 
 		return WERR_INSUFFICIENT_BUFFER;
 	}

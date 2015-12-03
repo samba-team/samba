@@ -76,13 +76,13 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 
 	*ctr = talloc_zero(mem_ctx, struct regsubkey_ctr);
 	if (*ctr == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	(*ctr)->subkeys_hash = db_open_rbt(*ctr);
 	if ((*ctr)->subkeys_hash == NULL) {
 		talloc_free(*ctr);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -216,7 +216,7 @@ WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 
 	if (!(newkeys = talloc_realloc(ctr, ctr->subkeys, char *,
 					     ctr->num_subkeys+1))) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ctr->subkeys = newkeys;
@@ -226,7 +226,7 @@ WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 		/*
 		 * Don't shrink the new array again, this wastes a pointer
 		 */
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	werr = regsubkey_ctr_hash_keyname(ctr, keyname, ctr->num_subkeys);
@@ -330,7 +330,7 @@ WERROR regval_ctr_init(TALLOC_CTX *mem_ctx, struct regval_ctr **ctr)
 
 	*ctr = talloc_zero(mem_ctx, struct regval_ctr);
 	if (*ctr == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
