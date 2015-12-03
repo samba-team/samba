@@ -368,7 +368,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 							       &result);
 			break;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -983,7 +983,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 			info_ctr.ctr.ctr1 = &ctr1;
 			break;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 	}
 
 	status = dcerpc_srvsvc_NetConnEnum(b, mem_ctx,

@@ -288,7 +288,7 @@ static WERROR cmd_witness_UnRegister(struct rpc_pipe_client *cli,
 	}
 
 	if (!read_context_handle(argv[1], &hnd)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -388,7 +388,7 @@ static WERROR cmd_witness_AsyncNotify(struct rpc_pipe_client *cli,
 	}
 
 	if (!read_context_handle(argv[1], &hnd)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 

@@ -1825,7 +1825,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 	arch = cmd_spoolss_get_short_archi(argv[1]);
 	if (!arch) {
 		printf ("Error Unknown architecture [%s]\n", argv[1]);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	set_drv_info_3_env(mem_ctx, &info3, arch);
@@ -1834,7 +1834,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct rpc_pipe_client *cli,
 	if (!init_drv_info_3_members(mem_ctx, &info3, driver_args ))
 	{
 		printf ("Error Invalid parameter list - %s.\n", argv[2]);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* if printer driver version specified, override the default version
@@ -2267,7 +2267,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 		break;
 	default:
-		werror = WERR_INVALID_PARAM;
+		werror = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -2672,7 +2672,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 
 	if (type == REG_NONE) {
 		printf("Unknown data type: %s\n", argv[2]);
-		result =  WERR_INVALID_PARAM;
+		result =  WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -2741,7 +2741,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		}
 	default:
 		printf("Unknown data type: %s\n", argv[2]);
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
