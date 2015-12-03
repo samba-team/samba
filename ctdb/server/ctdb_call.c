@@ -620,9 +620,10 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	if (ctdb_lmaster(ctdb, &key) != ctdb->pnn) {
-		DEBUG(DEBUG_ALERT,("pnn %u dmaster request to non-lmaster lmaster=%u gen=%u curgen=%u\n",
-			 ctdb->pnn, ctdb_lmaster(ctdb, &key), 
-			 hdr->generation, ctdb->vnn_map->generation));
+		DEBUG(DEBUG_ERR, ("dmaster request to non-lmaster "
+				  "db=%s lmaster=%u gen=%u curgen=%u\n",
+				  ctdb_db->db_name, ctdb_lmaster(ctdb, &key),
+				  hdr->generation, ctdb_db->generation));
 		ctdb_fatal(ctdb, "ctdb_req_dmaster to non-lmaster");
 	}
 
