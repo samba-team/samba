@@ -275,12 +275,12 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 
 	dm = talloc_zero(mem_ctx, struct spoolss_DeviceMode);
 	if (dm == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	dname = talloc_asprintf(dm, "%s", devicename);
 	if (dname == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (strlen(dname) > MAXDEVICENAME) {
 		dname[MAXDEVICENAME] = '\0';
@@ -289,7 +289,7 @@ WERROR spoolss_create_default_devmode(TALLOC_CTX *mem_ctx,
 
 	dm->formname = talloc_strdup(dm, "Letter");
 	if (dm->formname == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	dm->specversion          = DMSPEC_NT4_AND_ABOVE;
@@ -423,7 +423,7 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 
 	if (psd == NULL) {
 		DEBUG(0,("construct_default_printer_sd: Failed to make SEC_DESC.\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	DEBUG(4,("construct_default_printer_sdb: size = %u.\n",

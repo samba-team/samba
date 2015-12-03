@@ -772,21 +772,21 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 	enum_names = talloc_zero_array(tmp_ctx, const char *, num_values);
 
 	if (enum_names == NULL) {
-		*pwerr = WERR_NOMEM;
+		*pwerr = WERR_NOT_ENOUGH_MEMORY;
 		goto error;
 	}
 
 	enum_types = talloc_zero_array(tmp_ctx, enum winreg_Type, num_values);
 
 	if (enum_types == NULL) {
-		*pwerr = WERR_NOMEM;
+		*pwerr = WERR_NOT_ENOUGH_MEMORY;
 		goto error;
 	}
 
 	enum_data_blobs = talloc_zero_array(tmp_ctx, DATA_BLOB, num_values);
 
 	if (enum_data_blobs == NULL) {
-		*pwerr = WERR_NOMEM;
+		*pwerr = WERR_NOT_ENOUGH_MEMORY;
 		goto error;
 	}
 
@@ -847,7 +847,7 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 
 		name = talloc_strdup(enum_names, name_buf.name);
 		if (name == NULL) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			*pwerr = result;
 			goto error;
 		}

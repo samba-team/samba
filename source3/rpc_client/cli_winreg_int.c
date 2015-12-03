@@ -57,7 +57,7 @@ static WERROR _split_hive_key(TALLOC_CTX *mem_ctx,
 	}
 
 	if (*hivename == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* strip trailing '\\' chars */
@@ -78,7 +78,7 @@ static WERROR _split_hive_key(TALLOC_CTX *mem_ctx,
 	}
 	*subkeyname = talloc_strdup(mem_ctx, tmp_subkeyname);
 	if (*subkeyname == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
