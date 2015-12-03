@@ -361,7 +361,7 @@ WERROR NetGetJoinInformation_l(struct libnetapi_ctx *ctx,
 		*r->out.name_buffer = talloc_strdup(ctx, lp_workgroup());
 	}
 	if (!*r->out.name_buffer) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	switch (lp_server_role()) {

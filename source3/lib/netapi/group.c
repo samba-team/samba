@@ -722,7 +722,7 @@ static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
 			break;
 		case 3:
 			if (!sid_compose(&sid, domain_sid, rid)) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			info3.grpi3_name	= info->name.string;
@@ -1315,7 +1315,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_3_buffer(TALLOC_CTX *mem_ct
 		struct dom_sid sid;
 
 		if (!sid_compose(&sid, domain_sid, groups->entries[i].rid)) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		g3[i].grpi3_name = talloc_strdup(mem_ctx,
@@ -1824,7 +1824,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 
 	lsa_names = talloc_array(ctx, struct lsa_String, r->in.num_entries);
 	if (!lsa_names) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 

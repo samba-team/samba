@@ -1461,7 +1461,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_USER(TALLOC_CTX *mem_ctx,
 			info->entries[i].idx;
 
 		if (!user[i].usri1_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -1503,7 +1503,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_MACHINE(TALLOC_CTX *mem_ctx,
 			info->entries[i].idx;
 
 		if (!machine[i].usri2_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -1545,7 +1545,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY_GROUP(TALLOC_CTX *mem_ctx,
 			info->entries[i].idx;
 
 		if (!group[i].grpi3_name) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
@@ -3087,7 +3087,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 
 	rids = talloc_array(ctx, uint32_t, rid_array->count);
 	if (!rids) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -3274,7 +3274,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 
 	lsa_names = talloc_array(ctx, struct lsa_String, r->in.num_entries);
 	if (!lsa_names) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -3630,20 +3630,20 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (!sid_compose(&user_sid, domain_sid, user_rids.ids[0])) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
 	sid_array.num_sids = rid_array->count + 1;
 	sid_array.sids = talloc_array(ctx, struct lsa_SidPtr, sid_array.num_sids);
 	if (!sid_array.sids) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
 	sid_array.sids[0].sid = dom_sid_dup(ctx, &user_sid);
 	if (!sid_array.sids[0].sid) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -3651,13 +3651,13 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		struct dom_sid sid;
 
 		if (!sid_compose(&sid, domain_sid, rid_array->rids[i].rid)) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
 		sid_array.sids[i+1].sid = dom_sid_dup(ctx, &sid);
 		if (!sid_array.sids[i+1].sid) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 	}
@@ -3679,7 +3679,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	for (i=0; i < domain_rids.count; i++) {
 		if (!add_rid_to_array_unique(ctx, domain_rids.ids[i],
 					     &rids, &num_rids)) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 	}
@@ -3701,7 +3701,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	for (i=0; i < builtin_rids.count; i++) {
 		if (!add_rid_to_array_unique(ctx, builtin_rids.ids[i],
 					     &rids, &num_rids)) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 	}

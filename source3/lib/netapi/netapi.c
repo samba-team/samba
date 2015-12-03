@@ -39,7 +39,7 @@ static NET_API_STATUS libnetapi_init_private_context(struct libnetapi_ctx *ctx)
 
 	priv = talloc_zero(ctx, struct libnetapi_private_ctx);
 	if (!priv) {
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
 	ctx->private_data = priv;
@@ -108,7 +108,7 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
 	if (!ctx) {
 		TALLOC_FREE(frame);
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
 	BlockSignals(True, SIGPIPE);
@@ -121,7 +121,7 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 	if (!ctx->username) {
 		TALLOC_FREE(frame);
 		fprintf(stderr, "libnetapi_init: out of memory\n");
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
 	status = libnetapi_init_private_context(ctx);
@@ -233,7 +233,7 @@ NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 	ctx->username = talloc_strdup(ctx, username ? username : "");
 
 	if (!ctx->username) {
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 	return NET_API_STATUS_SUCCESS;
 }
@@ -244,7 +244,7 @@ NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
 	TALLOC_FREE(ctx->password);
 	ctx->password = talloc_strdup(ctx, password);
 	if (!ctx->password) {
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 	return NET_API_STATUS_SUCCESS;
 }
@@ -255,7 +255,7 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 	TALLOC_FREE(ctx->workgroup);
 	ctx->workgroup = talloc_strdup(ctx, workgroup);
 	if (!ctx->workgroup) {
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 	return NET_API_STATUS_SUCCESS;
 }
@@ -312,7 +312,7 @@ NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 	va_end(args);
 
 	if (!ctx->error_string) {
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 	return NET_API_STATUS_SUCCESS;
 }
@@ -359,7 +359,7 @@ NET_API_STATUS NetApiBufferAllocate(uint32_t byte_count,
 
 	buf = talloc_size(NULL, byte_count);
 	if (!buf) {
-		return W_ERROR_V(WERR_NOMEM);
+		return W_ERROR_V(WERR_NOT_ENOUGH_MEMORY);
 	}
 
  done:

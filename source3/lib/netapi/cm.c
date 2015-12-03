@@ -86,7 +86,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 
 	auth_info = user_auth_info_init(ctx);
 	if (!auth_info) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	auth_info->signing_state = SMB_SIGNING_IPC_DEFAULT;
 	set_cmdline_auth_info_use_kerberos(auth_info, ctx->use_kerberos);
@@ -126,7 +126,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 
 	p = talloc_zero(ctx, struct client_ipc_connection);
 	if (p == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	p->cli = cli_ipc;

@@ -44,7 +44,7 @@ static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
 
 	*buffer = (uint8_t *)talloc_memdup(ctx, &i, sizeof(i));
 	if (!*buffer) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -61,7 +61,7 @@ static WERROR NetServerGetInfo_l_1005(struct libnetapi_ctx *ctx,
 	info1005.sv1005_comment = lp_server_string(ctx);
 	*buffer = (uint8_t *)talloc_memdup(ctx, &info1005, sizeof(info1005));
 	if (!*buffer) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;

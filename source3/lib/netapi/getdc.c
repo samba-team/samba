@@ -69,7 +69,7 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (NetApiBufferAllocate(strlen_m_term(dcname), &buffer)) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 	memcpy(buffer, dcname, strlen_m_term(dcname));
@@ -122,7 +122,7 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (NetApiBufferAllocate(strlen_m_term(dcname), &buffer)) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 	memcpy(buffer, dcname, strlen_m_term(dcname));
