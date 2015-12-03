@@ -84,7 +84,7 @@ WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 	}
 	if (!tmp_ctx->token) {
 		TALLOC_FREE(tmp_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	werr = regdb_open();
@@ -96,7 +96,7 @@ WERROR gp_init_reg_ctx(TALLOC_CTX *mem_ctx,
 		tmp_ctx->path = talloc_strdup(mem_ctx, initial_path);
 		if (!tmp_ctx->path) {
 			TALLOC_FREE(tmp_ctx);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		werr = reg_open_path(mem_ctx, tmp_ctx->path, desired_access,
@@ -173,7 +173,7 @@ WERROR gp_store_reg_val_sz(TALLOC_CTX *mem_ctx,
 
 	reg_val.type = REG_SZ;
 	if (!push_reg_sz(mem_ctx, &reg_val.data, val)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return reg_setvalue(key, val_name, &reg_val);
@@ -215,7 +215,7 @@ WERROR gp_read_reg_val_sz(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!pull_reg_sz(mem_ctx, &reg_val->data, val)) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;
@@ -487,7 +487,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 
 	subkeyname = gp_req_state_path(mem_ctx, &token->sids[0], flags);
 	if (!subkeyname) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -529,7 +529,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 
 		subkeyname = talloc_asprintf(mem_ctx, "%d", count++);
 		if (!subkeyname) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
@@ -638,7 +638,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 
 	gp_state_path = gp_req_state_path(mem_ctx, sid, flags);
 	if (!gp_state_path) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -647,7 +647,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 			       gp_state_path,
 			       "GPO-List");
 	if (!path) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -660,7 +660,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 
 		subkeyname = talloc_asprintf(mem_ctx, "%d", count++);
 		if (!subkeyname) {
-			werr = WERR_NOMEM;
+			werr = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
