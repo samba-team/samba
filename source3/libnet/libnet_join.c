@@ -2108,7 +2108,7 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 	if (!r->in.domain_name) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"No domain name defined");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (strlen(r->in.machine_name) > 15) {
@@ -2117,7 +2117,7 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
                          "\"%s\" is %u chars long\n",
                          r->in.machine_name,
 			 (unsigned int)strlen(r->in.machine_name));
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
         }
 
 	if (!libnet_parse_domain_dc(mem_ctx, r->in.domain_name,
@@ -2125,7 +2125,7 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 				    &r->in.dc_name)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"Failed to parse domain name");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!r->in.admin_domain) {
@@ -2806,7 +2806,7 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	if (!r->in.domain_name) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
 			"No domain name defined");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!libnet_parse_domain_dc(mem_ctx, r->in.domain_name,
@@ -2814,7 +2814,7 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 				    &r->in.dc_name)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
 			"Failed to parse domain name");
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (IS_DC) {
