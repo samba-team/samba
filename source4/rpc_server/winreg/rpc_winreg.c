@@ -139,12 +139,12 @@ static WERROR dcesrv_winreg_CreateKey(struct dcesrv_call_state *dce_call,
 			sdblob.data = r->in.secdesc->sd.data;
 			sdblob.length = r->in.secdesc->sd.len;
 			if (sdblob.data == NULL) {
-				return WERR_INVALID_PARAM;
+				return WERR_INVALID_PARAMETER;
 			}
 			ndr_err = ndr_pull_struct_blob_all(&sdblob, mem_ctx, &sd,
 							   (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return WERR_INVALID_PARAM;
+				return WERR_INVALID_PARAMETER;
 			}
 		}
 		
@@ -512,7 +512,7 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 	case SECURITY_USER:
 		if ((r->in.type == NULL) || (r->in.data_length == NULL) ||
 		    (r->in.data_size == NULL)) {
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 
 		result = reg_key_get_value_by_name(mem_ctx, key, 

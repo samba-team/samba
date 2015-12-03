@@ -972,7 +972,7 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 		return status;
 	}
 	if (r->in.req->ctr1.taskID != 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 	if (r->in.req->ctr1.flags & DRSUAPI_DS_EXECUTE_KCC_ASYNCHRONOUS_OPERATION) {
 		timeout = IRPC_CALL_TIMEOUT;

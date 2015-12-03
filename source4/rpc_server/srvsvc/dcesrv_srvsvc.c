@@ -441,7 +441,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 			info[i].value = talloc_strdup(info, "IPC");
 			break;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 		W_ERROR_HAVE_NO_MEMORY(info[i].value);
 		i++;
@@ -539,7 +539,7 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 			info[i].value = talloc_strdup(info, "IPC");
 			break;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 		W_ERROR_HAVE_NO_MEMORY(info[i].value);
 		i++;
@@ -947,7 +947,7 @@ static WERROR dcesrv_srvsvc_NetShareGetInfo(struct dcesrv_call_state *dce_call, 
 	 */
 
 	if (strcmp("", r->in.share_name) == 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
@@ -1142,7 +1142,7 @@ static WERROR dcesrv_srvsvc_fill_share_info(struct share_info *info, int *count,
 			info[i].value = talloc_strdup(info, "IPC");
 			break;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 		W_ERROR_HAVE_NO_MEMORY(info[i].value);
 		i++;
@@ -1197,7 +1197,7 @@ static WERROR dcesrv_srvsvc_NetShareSetInfo(struct dcesrv_call_state *dce_call, 
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	if (strcmp("", r->in.share_name) == 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	nterr = share_get_context_by_name(mem_ctx, lpcfg_share_backend(dce_call->conn->dce_ctx->lp_ctx), dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, &sctx);
@@ -1753,7 +1753,7 @@ static WERROR dcesrv_srvsvc_NetNameValidate(struct dcesrv_call_state *dce_call, 
 	case 13:
 		return WERR_NOT_SUPPORTED;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 }
 

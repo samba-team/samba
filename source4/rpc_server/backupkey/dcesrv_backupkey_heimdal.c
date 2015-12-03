@@ -601,7 +601,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	blob.length = r->in.data_in_len;
 
 	if (r->in.data_in_len < 4 || r->in.data_in == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/*
@@ -618,7 +618,7 @@ static WERROR bkrp_client_wrap_decrypt_data(struct dcesrv_call_state *dce_call,
 	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &uncrypt_request,
 				       (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_wrapped);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if ((uncrypt_request.version != BACKUPKEY_CLIENT_WRAP_VERSION2)
@@ -1514,17 +1514,17 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 	blob.length = r->in.data_in_len;
 
 	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ndr_err = ndr_pull_struct_blob_all(&blob, mem_ctx, &decrypt_request,
 					   (ndr_pull_flags_fn_t)ndr_pull_bkrp_server_side_wrapped);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (decrypt_request.magic != BACKUPKEY_SERVER_WRAP_VERSION) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = bkrp_do_retrieve_server_wrap_key(mem_ctx, ldb_ctx, &server_key,
@@ -1558,11 +1558,11 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 	ndr_err = ndr_pull_struct_blob_all(&encrypted_blob, mem_ctx, &rc4payload,
 					   (ndr_pull_flags_fn_t)ndr_pull_bkrp_rc4encryptedpayload);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (decrypt_request.payload_length != rc4payload.secret_data.length) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	dump_data_pw("r3: \n", rc4payload.r3, sizeof(rc4payload.r3));
@@ -1622,7 +1622,7 @@ static WERROR bkrp_generic_decrypt_data(struct dcesrv_call_state *dce_call, TALL
 					struct bkrp_BackupKey *r, struct ldb_context *ldb_ctx)
 {
 	if (r->in.data_in_len < 4 || r->in.data_in == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (IVAL(r->in.data_in, 0) == BACKUPKEY_SERVER_WRAP_VERSION) {
@@ -1666,7 +1666,7 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 	struct GUID guid;
 
 	if (r->in.data_in_len == 0 || r->in.data_in == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = bkrp_do_retrieve_default_server_wrap_key(mem_ctx,
@@ -1794,7 +1794,7 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 				    TALLOC_CTX *mem_ctx, struct bkrp_BackupKey *r)
 {
-	WERROR error = WERR_INVALID_PARAM;
+	WERROR error = WERR_INVALID_PARAMETER;
 	struct ldb_context *ldb_ctx;
 	bool is_rodc;
 	const char *addr = "unknown";
@@ -1820,7 +1820,7 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 
 	if (samdb_rodc(ldb_ctx, &is_rodc) != LDB_SUCCESS) {
 		talloc_unlink(mem_ctx, ldb_ctx);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!is_rodc) {
