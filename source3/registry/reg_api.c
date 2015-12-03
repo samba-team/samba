@@ -96,7 +96,7 @@ static WERROR fill_value_cache(struct registry_key *key)
 
 	if (fetch_reg_values(key->key, key->values) == -1) {
 		TALLOC_FREE(key->values);
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	return WERR_OK;
@@ -118,7 +118,7 @@ static WERROR fill_subkey_cache(struct registry_key *key)
 
 	if (fetch_reg_keys(key->key, key->subkeys) == -1) {
 		TALLOC_FREE(key->subkeys);
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	return WERR_OK;
@@ -169,7 +169,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 		 * Open a copy of the parent key
 		 */
 		if (!parent) {
-			result = WERR_BADFILE;
+			result = WERR_FILE_NOT_FOUND;
 			goto done;
 		}
 		key->name = talloc_strdup(key, parent->key->name);
@@ -200,7 +200,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	if (key->ops == NULL) {
 		DEBUG(0,("reg_open_onelevel: Failed to assign "
 			 "registry_ops to [%s]\n", key->name ));
-		result = WERR_BADFILE;
+		result = WERR_FILE_NOT_FOUND;
 		goto done;
 	}
 
@@ -239,7 +239,7 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 
 	hi = hive_info(hive);
 	if (hi == NULL) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	return regkey_open_onelevel(mem_ctx, NULL, hi->short_name, token,
@@ -441,7 +441,7 @@ WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		}
 	}
 
-	return WERR_BADFILE;
+	return WERR_FILE_NOT_FOUND;
 }
 
 WERROR reg_querymultiplevalues(TALLOC_CTX *mem_ctx,
@@ -512,7 +512,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 
 	if (!W_ERROR_IS_OK(fill_subkey_cache(key)) ||
 	    !W_ERROR_IS_OK(fill_value_cache(key))) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	max_len = 0;
@@ -618,7 +618,7 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 		goto trans_done;
 	}
 
-	if (!W_ERROR_EQUAL(err, WERR_BADFILE)) {
+	if (!W_ERROR_EQUAL(err, WERR_FILE_NOT_FOUND)) {
 		/*
 		 * Something but "notfound" has happened, so bail out
 		 */
@@ -833,7 +833,7 @@ static WERROR reg_value_exists(struct registry_key *key, const char *name)
 	blob = regval_ctr_getvalue(key->values, name);
 
 	if (blob == NULL) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	} else {
 		return WERR_OK;
 	}
@@ -1018,7 +1018,7 @@ static WERROR reg_deletekey_recursive_trans(struct registry_key *parent,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		WERROR werr2;
-		DEBUG(W_ERROR_EQUAL(werr, WERR_BADFILE) ? 5 : 1,
+		DEBUG(W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND) ? 5 : 1,
 		      (__location__ ": failed to delete key '%s' from key "
 		       "'%s': %s\n", path, parent->key->name,
 		       win_errstr(werr)));

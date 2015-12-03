@@ -78,7 +78,7 @@ int reg_parse_callback_key(struct reg_import *p,
 
 	if (del) {
 		werr = p->call.deletekey(p->call.data, NULL, key[0]);
-		if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 			/* the key didn't exist, treat as success */
 			werr = WERR_OK;
 		}

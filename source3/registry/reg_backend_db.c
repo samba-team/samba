@@ -2089,7 +2089,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 	DEBUG(10, ("regdb_get_secdesc: Getting secdesc of key [%s]\n", key));
 
 	if (!regdb_key_exists(regdb, key)) {
-		err = WERR_BADFILE;
+		err = WERR_FILE_NOT_FOUND;
 		goto done;
 	}
 
@@ -2107,7 +2107,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 
 	status = dbwrap_fetch_bystring(regdb, tmp_ctx, tdbkey, &data);
 	if (!NT_STATUS_IS_OK(status)) {
-		err = WERR_BADFILE;
+		err = WERR_FILE_NOT_FOUND;
 		goto done;
 	}
 
@@ -2178,7 +2178,7 @@ static WERROR regdb_set_secdesc(const char *key,
 	struct regdb_set_secdesc_ctx ctx;
 
 	if (!regdb_key_exists(regdb, key)) {
-		err = WERR_BADFILE;
+		err = WERR_FILE_NOT_FOUND;
 		goto done;
 	}
 

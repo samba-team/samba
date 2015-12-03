@@ -52,7 +52,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	if (!registry_key.ops) {
 		DEBUG(0, ("reg_load_tree: Failed to assign registry_ops "
 			  "to [%s]\n", topkeypath));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	registry_key.name = talloc_strdup(regfile->mem_ctx, topkeypath);
@@ -216,7 +216,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 
 	registry_key.ops = reghook_cache_find(registry_key.name);
 	if (registry_key.ops == NULL) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	/* lookup the values and subkeys */
