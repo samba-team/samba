@@ -341,7 +341,7 @@ static bool test_userdelete(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_rap_netuserdelete(cli->tree, tctx, &r),
 		"2nd smbcli_rap_netuserdelete failed");
-	torture_assert_werr_equal(tctx, W_ERROR(r.out.status), WERR_USER_NOT_FOUND,
+	torture_assert_werr_equal(tctx, W_ERROR(r.out.status), WERR_NERR_USERNOTFOUND,
 		"2nd smbcli_rap_netuserdelete failed");
 
 	return true;
