@@ -149,13 +149,13 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 				   true, /*allow_broken_path */
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status)) {
-		return WERR_DFS_NO_SUCH_VOL;
+		return WERR_NERR_DFSNOSUCHVOLUME;
 	}
 
 	/* if no server-share pair given, remove the msdfs link completely */
 	if(!r->in.servername && !r->in.sharename) {
 		if(!remove_msdfs_link(jn)) {
-			return WERR_DFS_NO_SUCH_VOL;
+			return WERR_NERR_DFSNOSUCHVOLUME;
 		}
 	} else {
 		int i=0;
@@ -184,7 +184,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		/* Only one referral, remove it */
 		if(jn->referral_count == 1) {
 			if(!remove_msdfs_link(jn)) {
-				return WERR_DFS_NO_SUCH_VOL;
+				return WERR_NERR_DFSNOSUCHVOLUME;
 			}
 		} else {
 			if(!create_msdfs_link(jn)) {
@@ -378,7 +378,7 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 				   jn, &consumedcnt, &self_ref);
 	if(!NT_STATUS_IS_OK(status) ||
 			consumedcnt < strlen(r->in.dfs_entry_path)) {
-		return WERR_DFS_NO_SUCH_VOL;
+		return WERR_NERR_DFSNOSUCHVOLUME;
 	}
 
 	switch (r->in.level) {
