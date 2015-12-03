@@ -1470,7 +1470,7 @@ static WERROR enum_driver_by_architecture(struct rpc_pipe_client *cli,
 		break;
 	default:
 		printf("unknown info level %d\n", level);
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	return werror;
