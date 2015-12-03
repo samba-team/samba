@@ -2555,7 +2555,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 		ads_status = libnet_join_connect_ads_user(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
-			return WERR_DEFAULT_JOIN_REQUIRED;
+			return WERR_NERR_DEFAULTJOINREQUIRED;
 		}
 
 		ads_status = libnet_join_precreate_machine_acct(mem_ctx, r);
@@ -2575,7 +2575,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				"failed to precreate account in ou %s: %s",
 				r->in.account_ou,
 				ads_errstr(ads_status));
-			return WERR_DEFAULT_JOIN_REQUIRED;
+			return WERR_NERR_DEFAULTJOINREQUIRED;
 		}
 
 		DEBUG(5, ("failed to precreate account in ou %s: %s",
