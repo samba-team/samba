@@ -856,7 +856,7 @@ static WERROR cmd_netlogon_gettrustrid(struct rpc_pipe_client *cli,
 				       const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *server_name = cli->desthost;
 	const char *domain_name = lp_workgroup();
 	uint32_t rid = 0;
@@ -898,7 +898,7 @@ static WERROR cmd_netlogon_dsr_enumtrustdom(struct rpc_pipe_client *cli,
 					    const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *server_name = cli->desthost;
 	uint32_t trust_flags = NETR_TRUST_FLAG_IN_FOREST;
 	struct netr_DomainTrustList trusts;
@@ -948,7 +948,7 @@ static WERROR cmd_netlogon_deregisterdnsrecords(struct rpc_pipe_client *cli,
 						const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *server_name = cli->desthost;
 	const char *domain = lp_workgroup();
 	const char *dns_host = NULL;
@@ -996,7 +996,7 @@ static WERROR cmd_netlogon_dsr_getforesttrustinfo(struct rpc_pipe_client *cli,
 						  const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *server_name = cli->desthost;
 	const char *trusted_domain_name = NULL;
 	struct lsa_ForestTrustInformation *info = NULL;
@@ -1083,7 +1083,7 @@ static WERROR cmd_netlogon_enumtrusteddomainsex(struct rpc_pipe_client *cli,
 						const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *server_name = cli->desthost;
 	struct netr_DomainTrustList list;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
@@ -1118,7 +1118,7 @@ static WERROR cmd_netlogon_getdcsitecoverage(struct rpc_pipe_client *cli,
 					     const char **argv)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *server_name = cli->desthost;
 	struct DcSitesCtr *ctr = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;

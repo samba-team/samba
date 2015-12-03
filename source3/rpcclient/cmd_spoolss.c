@@ -3528,14 +3528,14 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 					get_cmdline_auth_info_signing_state(rpcclient_auth_info));
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 
 	nt_status = cli_rpc_pipe_open_noauth(cli_server2, &ndr_table_spoolss,
 					     &cli2);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		printf("failed to open spoolss pipe on server %s (%s)\n",
 			argv[2], nt_errstr(nt_status));
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	/* now open up both printers */
