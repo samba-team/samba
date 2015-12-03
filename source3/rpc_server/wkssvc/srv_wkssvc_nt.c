@@ -828,11 +828,11 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	bool ok;
 
 	if (!r->in.domain_name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!r->in.admin_account || !r->in.encrypted_password) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!security_token_has_privilege(token, SEC_PRIV_MACHINE_ACCOUNT) &&
@@ -920,7 +920,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	bool ok;
 
 	if (!r->in.account || !r->in.encrypted_password) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!security_token_has_privilege(token, SEC_PRIV_MACHINE_ACCOUNT) &&

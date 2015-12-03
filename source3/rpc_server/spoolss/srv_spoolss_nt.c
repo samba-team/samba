@@ -1639,7 +1639,7 @@ WERROR _spoolss_OpenPrinter(struct pipes_struct *p,
 
 	werr = _spoolss_OpenPrinterEx(p, &e);
 
-	if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
+	if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAMETER)) {
 		/* OpenPrinterEx returns this for a bad
 		 * printer name. We must return WERR_INVALID_PRINTER_NAME
 		 * instead.
@@ -1700,20 +1700,20 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 	int rc;
 
 	if (!r->in.printername) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!*r->in.printername) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (r->in.userlevel_ctr.level > 3) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 	if ((r->in.userlevel_ctr.level == 1 && !r->in.userlevel_ctr.user_info.level1) ||
 	    (r->in.userlevel_ctr.level == 2 && !r->in.userlevel_ctr.user_info.level2) ||
 	    (r->in.userlevel_ctr.level == 3 && !r->in.userlevel_ctr.user_info.level3)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/*
@@ -1745,7 +1745,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			"handle we created for printer %s\n", r->in.printername));
 		close_printer_handle(p, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/*
@@ -2417,7 +2417,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 
 	*type = REG_NONE;
 
-	return WERR_INVALID_PARAM;
+	return WERR_INVALID_PARAMETER;
 }
 
 /****************************************************************
@@ -4227,7 +4227,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	printer = lp_servicename(tmp_ctx, snum);
 	if (printer == NULL) {
 		DEBUG(0, ("invalid printer snum %d\n", snum));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto out_tmp_free;
 	}
 
@@ -4708,7 +4708,7 @@ WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(4,("_spoolss_EnumPrinters\n"));
@@ -4798,7 +4798,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_info_free;
 	}
 
@@ -5738,7 +5738,7 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_info_free;
 	}
 
@@ -6106,7 +6106,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 	if (secdesc_ctr == NULL) {
 		DEBUG(10,("update_printer_sec: secdesc_ctr is NULL !\n"));
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -6897,7 +6897,7 @@ static WERROR update_printer(struct pipes_struct *p,
 
 	/* Do sanity check on the requested changes for Samba */
 	if (!check_printer_ok(tmp_ctx, printer, snum)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -7224,7 +7224,7 @@ WERROR _spoolss_AddJob(struct pipes_struct *p,
 		       struct spoolss_AddJob *r)
 {
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* this is what a NT server returns for AddJob. AddJob must fail on
@@ -7234,7 +7234,7 @@ WERROR _spoolss_AddJob(struct pipes_struct *p,
 		return WERR_UNKNOWN_LEVEL;
 	}
 
-	return WERR_INVALID_PARAM;
+	return WERR_INVALID_PARAMETER;
 }
 
 /****************************************************************************
@@ -7361,7 +7361,7 @@ static WERROR enumjobs_level1(TALLOC_CTX *mem_ctx,
 
 	pdb = get_print_db_byname(pinfo2->sharename);
 	if (pdb == NULL) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_info_free;
 	}
 
@@ -7427,7 +7427,7 @@ static WERROR enumjobs_level2(TALLOC_CTX *mem_ctx,
 
 	pdb = get_print_db_byname(pinfo2->sharename);
 	if (pdb == NULL) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_info_free;
 	}
 
@@ -7502,7 +7502,7 @@ static WERROR enumjobs_level3(TALLOC_CTX *mem_ctx,
 
 	pdb = get_print_db_byname(pinfo2->sharename);
 	if (pdb == NULL) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_info_free;
 	}
 
@@ -7555,7 +7555,7 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if ((r->in.level != 1) && (r->in.level != 2) && (r->in.level != 3)) {
@@ -7930,7 +7930,7 @@ WERROR _spoolss_EnumPrinterDrivers(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(4,("_spoolss_EnumPrinterDrivers\n"));
@@ -7983,7 +7983,7 @@ WERROR _spoolss_EnumForms(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0) ) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(4,("_spoolss_EnumForms\n"));
@@ -8034,7 +8034,7 @@ WERROR _spoolss_GetForm(struct pipes_struct *p,
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
 		TALLOC_FREE(r->out.info);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(4,("_spoolss_GetForm\n"));
@@ -8280,7 +8280,7 @@ WERROR _spoolss_EnumPorts(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(4,("_spoolss_EnumPorts\n"));
@@ -8412,7 +8412,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	 */
 
 	if (!check_printer_ok(p->mem_ctx, info2, snum)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (devmode == NULL) {
@@ -8509,14 +8509,13 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	WERROR err = WERR_OK;
 	const char *driver_name = NULL;
 	uint32_t version;
-
 	/*
 	 * we only support the semantics of AddPrinterDriver()
 	 * i.e. only copy files that are newer than existing ones
 	 */
 
 	if (r->in.flags == 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (r->in.flags != APD_COPY_NEW_FILES) {
@@ -8637,7 +8636,7 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 		pservername = canon_servername(servername);
 
 		if (!is_myname_or_ipaddr(pservername)) {
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 	}
 
@@ -8662,7 +8661,7 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!*path) {
@@ -8712,7 +8711,7 @@ WERROR _spoolss_GetPrinterDriverDirectory(struct pipes_struct *p,
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
 		TALLOC_FREE(r->out.info);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(5,("_spoolss_GetPrinterDriverDirectory: level %d\n",
@@ -8983,7 +8982,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 
 	form = r->in.info_ctr->info.info1;
 	if (!form) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (form->flags) {
@@ -8992,7 +8991,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	case SPOOLSS_FORM_PRINTER:
 		break;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	tmp_ctx = talloc_new(p->mem_ctx);
@@ -9136,7 +9135,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 
 	form = r->in.info_ctr->info.info1;
 	if (!form) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	tmp_ctx = talloc_new(p->mem_ctx);
@@ -9236,7 +9235,7 @@ WERROR _spoolss_EnumPrintProcessors(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(5,("_spoolss_EnumPrintProcessors\n"));
@@ -9338,7 +9337,7 @@ WERROR _spoolss_EnumPrintProcessorDataTypes(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(5,("_spoolss_EnumPrintProcessorDataTypes\n"));
@@ -9505,7 +9504,7 @@ WERROR _spoolss_EnumMonitors(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(5,("_spoolss_EnumMonitors\n"));
@@ -9571,7 +9570,7 @@ static WERROR getjob_level_1(TALLOC_CTX *mem_ctx,
 
 	if (found == false) {
 		/* NT treats not found as bad param... yet another bad choice */
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	return fill_job_info1(mem_ctx,
@@ -9609,7 +9608,7 @@ static WERROR getjob_level_2(TALLOC_CTX *mem_ctx,
 	if (found == false) {
 		/* NT treats not found as bad param... yet another bad
 		   choice */
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/*
@@ -9659,7 +9658,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_jinfo_free;
 	}
 
@@ -9674,7 +9673,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 
 	svc_name = lp_const_servicename(snum);
 	if (svc_name == NULL) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_jinfo_free;
 	}
 
@@ -9690,7 +9689,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	pdb = get_print_db_byname(svc_name);
 	if (pdb == NULL) {
 		DEBUG(3, ("failed to get print db for svc %s\n", svc_name));
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_pinfo_free;
 	}
 
@@ -9698,7 +9697,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	release_print_db(pdb);
 	if (sysjob == -1) {
 		DEBUG(3, ("no sysjob for spoolss jobid %u\n", r->in.job_id));
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_pinfo_free;
 	}
 
@@ -9818,7 +9817,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 
 	/* check to see if the keyname is valid */
 	if (!strlen(r->in.key_name)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -9915,7 +9914,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 	if (Printer->printer_type == SPLHND_SERVER) {
 		DEBUG(10,("_spoolss_SetPrinterDataEx: "
 			"Not implemented for server handles yet\n"));
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
@@ -10148,7 +10147,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 
 	/* if keyname == NULL, return error */
 	if ( !r->in.key_name )
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		return WERR_INVALID_HANDLE;
@@ -10216,13 +10215,13 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 
 	/*
 	 * first check for a keyname of NULL or "".  Win2k seems to send
-	 * this a lot and we should send back WERR_INVALID_PARAM
+	 * this a lot and we should send back WERR_INVALID_PARAMETER
 	 * no need to spend time looking up the printer in this case.
 	 * --jerry
 	 */
 
 	if (!strlen(r->in.key_name)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -10314,7 +10313,7 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 	/* that's an [in out] buffer */
 
 	if (!r->in.buffer && (r->in.offered != 0)) {
-		result = WERR_INVALID_PARAM;
+		result = WERR_INVALID_PARAMETER;
 		goto err_info_free;
 	}
 

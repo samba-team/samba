@@ -494,7 +494,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 
 		ndr = ndr_push_init_ctx(p->mem_ctx);
 		if (ndr == NULL) {
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 
 		ndr_err = ndr_push_ENUM_SERVICE_STATUSW_array(
@@ -564,7 +564,7 @@ WERROR _svcctl_ControlService(struct pipes_struct *p,
 		return info->ops->service_status( info->name,
 						  r->out.service_status );
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 }
 
@@ -591,7 +591,7 @@ WERROR _svcctl_EnumDependentServicesW(struct pipes_struct *p,
 	case SERVICE_STATE_ALL:
 		break;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* we have to set the outgoing buffer size to the same as the
@@ -643,7 +643,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &svc_stat_proc,
 						       (ndr_push_flags_fn_t)ndr_push_SERVICE_STATUS_PROCESS);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return WERR_INVALID_PARAM;
+				return WERR_INVALID_PARAMETER;
 			}
 
 			r->out.buffer = blob.data;
@@ -808,7 +808,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &desc_buf,
 						       (ndr_push_flags_fn_t)ndr_push_SERVICE_DESCRIPTION);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return WERR_INVALID_PARAM;
+				return WERR_INVALID_PARAMETER;
 			}
 
 			break;
@@ -826,7 +826,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &actions,
 						       (ndr_push_flags_fn_t)ndr_push_SERVICE_FAILURE_ACTIONS);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return WERR_INVALID_PARAM;
+				return WERR_INVALID_PARAMETER;
 			}
 
 			break;
@@ -914,7 +914,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	/* TODO: handle something besides SECINFO_DACL */
 
 	if ( (r->in.security_flags & SECINFO_DACL) != SECINFO_DACL )
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	/* Lookup the security descriptor and marshall it up for a reply */
 	sec_desc = svcctl_get_secdesc(p->mem_ctx,
@@ -975,9 +975,9 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 			break;
 
 		case SECINFO_SACL:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 	}
 
 	if ( !(info->access_granted & required_access) )

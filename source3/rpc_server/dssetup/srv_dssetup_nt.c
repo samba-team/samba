@@ -79,7 +79,7 @@ static WERROR fill_dsrole_dominfo_basic(TALLOC_CTX *ctx,
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		if (!strlower_m(dnsdomain)) {
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 		basic->dns_domain = dnsdomain;
 

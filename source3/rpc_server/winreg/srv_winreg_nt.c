@@ -253,11 +253,11 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 
 	if (r->in.value_name->name == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if ((r->out.data_length == NULL) || (r->out.type == NULL) || (r->out.data_size == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	DEBUG(7,("_winreg_QueryValue: policy key name = [%s]\n", regkey->key->name));
@@ -417,7 +417,7 @@ WERROR _winreg_EnumKey(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.name || !r->in.keyclass )
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	DEBUG(8,("_winreg_EnumKey: enumerating key [%s]\n", key->key->name));
 
@@ -447,7 +447,7 @@ WERROR _winreg_EnumValue(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.name )
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	DEBUG(8,("_winreg_EnumValue: enumerating values for key [%s]\n",
 		 key->key->name));
@@ -467,7 +467,7 @@ WERROR _winreg_EnumValue(struct pipes_struct *p,
 
 	if (r->out.value != NULL) {
 		if ((r->out.size == NULL) || (r->out.length == NULL)) {
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 
 		if (val->data.length > *r->out.size) {
@@ -694,7 +694,7 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.filename || !r->in.filename->name )
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
 	if (!fname) {
@@ -734,7 +734,7 @@ WERROR _winreg_SaveKey(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.filename || !r->in.filename->name )
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
 	if (!fname) {

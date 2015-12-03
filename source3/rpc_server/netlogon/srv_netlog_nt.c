@@ -211,7 +211,7 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		fn = "_netr_LogonControl2Ex";
 		break;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (r->in.level) {

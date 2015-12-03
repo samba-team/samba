@@ -139,7 +139,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		if (!strlower_m(altpath)) {
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 		DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
@@ -329,7 +329,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 		r->out.info->e.info3->count = num_jn;
 		break;
 	default:
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	for (i = 0; i < num_jn; i++) {
@@ -344,7 +344,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 			init_reply_dfs_info_3(ctx, &jn[i], &r->out.info->e.info3->s[i]);
 			break;
 		default:
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 		}
 	}
 
@@ -412,11 +412,11 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 			break;
 		default:
 			r->out.info->info1 = NULL;
-			return WERR_INVALID_PARAM;
+			return WERR_INVALID_PARAMETER;
 	}
 
 	if (!ret)
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 
 	return WERR_OK;
 }
