@@ -120,7 +120,7 @@ WERROR _winreg_CloseKey(struct pipes_struct *p,
 	/* close the policy handle */
 
 	if (!close_registry_key(p, r->in.handle))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -227,7 +227,7 @@ WERROR _winreg_OpenKey(struct pipes_struct *p,
 	struct registry_key *parent = find_regkey_by_hnd(p, r->in.parent_handle );
 
 	if ( !parent )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	return open_registry_key(p, r->out.handle, parent, r->in.keyname.name, r->in.access_mask);
 }
@@ -250,7 +250,7 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 	bool free_prs = False;
 
 	if ( !regkey )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if (r->in.value_name->name == NULL) {
 		return WERR_INVALID_PARAM;
@@ -360,7 +360,7 @@ WERROR _winreg_QueryInfoKey(struct pipes_struct *p,
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 
 	if ( !regkey )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	r->out.classname->name = NULL;
 
@@ -396,7 +396,7 @@ WERROR _winreg_GetVersion(struct pipes_struct *p,
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 
 	if ( !regkey )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	return reg_getversion(r->out.version);
 }
@@ -414,7 +414,7 @@ WERROR _winreg_EnumKey(struct pipes_struct *p,
 	char *name;
 
 	if ( !key )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.name || !r->in.keyclass )
 		return WERR_INVALID_PARAM;
@@ -444,7 +444,7 @@ WERROR _winreg_EnumValue(struct pipes_struct *p,
 	struct registry_value *val = NULL;
 
 	if ( !key )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.name )
 		return WERR_INVALID_PARAM;
@@ -691,7 +691,7 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 	int snum = -1;
 
 	if ( !regkey )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
@@ -731,7 +731,7 @@ WERROR _winreg_SaveKey(struct pipes_struct *p,
 	int snum = -1;
 
 	if ( !regkey )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !r->in.filename || !r->in.filename->name )
 		return WERR_INVALID_PARAM;
@@ -779,7 +779,7 @@ WERROR _winreg_CreateKey(struct pipes_struct *p,
 	WERROR result = WERR_OK;
 
 	if ( !parent )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	DEBUG(10, ("_winreg_CreateKey called with parent key '%s' and "
 		   "subkey name '%s'\n", parent->key->name, r->in.name.name));
@@ -809,7 +809,7 @@ WERROR _winreg_SetValue(struct pipes_struct *p,
 	struct registry_value *val = NULL;
 
 	if ( !key )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	DEBUG(8,("_winreg_SetValue: Setting value for [%s:%s]\n",
 			 key->key->name, r->in.name.name));
@@ -835,7 +835,7 @@ WERROR _winreg_DeleteKey(struct pipes_struct *p,
 	struct registry_key *parent = find_regkey_by_hnd(p, r->in.handle);
 
 	if ( !parent )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	return reg_deletekey(parent, r->in.key.name);
 }
@@ -851,7 +851,7 @@ WERROR _winreg_DeleteValue(struct pipes_struct *p,
 	struct registry_key *key = find_regkey_by_hnd(p, r->in.handle);
 
 	if ( !key )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	return reg_deletevalue(key, r->in.value.name);
 }
@@ -870,7 +870,7 @@ WERROR _winreg_GetKeySecurity(struct pipes_struct *p,
 	size_t len = 0;
 
 	if ( !key )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/* access checks first */
 
@@ -912,7 +912,7 @@ WERROR _winreg_SetKeySecurity(struct pipes_struct *p,
 	WERROR err = WERR_OK;
 
 	if ( !key )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/* access checks first */
 
@@ -1059,7 +1059,7 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 	WERROR err = WERR_OK;
 
 	if (!regkey) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	names = talloc_zero_array(p->mem_ctx, const char *, r->in.num_values);

@@ -427,7 +427,7 @@ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p, DATA_BLOB *sessio
 } while (0)
 
 #define DCESRV_PULL_HANDLE(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, NT_STATUS_INVALID_HANDLE)
-#define DCESRV_PULL_HANDLE_WERR(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, WERR_BADFID)
+#define DCESRV_PULL_HANDLE_WERR(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, WERR_INVALID_HANDLE)
 
 NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
 		       struct loadparm_context *lp_ctx,

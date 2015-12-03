@@ -416,7 +416,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 	TALLOC_FREE(command);
 
 	if (ret != 0)
-		return WERR_BADFID; /* What to return here? */
+		return WERR_INVALID_HANDLE; /* What to return here? */
 
 	return WERR_OK;
 }
@@ -433,7 +433,7 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 	if (!Printer) {
 		DEBUG(2,("delete_printer_handle: Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(hnd)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/*
@@ -458,7 +458,7 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 					   "");
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3,("Error deleting printer %s\n", Printer->sharename));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	result = delete_printer_hook(p->mem_ctx, p->session_info->security_token,
@@ -1849,7 +1849,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		if (!get_printer_snum(p, r->out.handle, &snum, NULL)) {
 			close_printer_handle(p, r->out.handle);
 			ZERO_STRUCTP(r->out.handle);
-			return WERR_BADFID;
+			return WERR_INVALID_HANDLE;
 		}
 
 		if (r->in.access_mask == SEC_FLAG_MAXIMUM_ALLOWED) {
@@ -1935,7 +1935,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 	default:
 		/* sanity check to prevent programmer error */
 		ZERO_STRUCTP(r->out.handle);
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	Printer->access_granted = r->in.access_mask;
@@ -1972,7 +1972,7 @@ WERROR _spoolss_ClosePrinter(struct pipes_struct *p,
 	}
 
 	if (!close_printer_handle(p, r->in.handle))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/* clear the returned printer handle.  Observed behavior
 	   from Win2k server.  Don't think this really matters.
@@ -2677,7 +2677,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 		DEBUG(2,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
 			"Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	Printer->notify.flags		= r->in.flags;
@@ -2696,7 +2696,7 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct pipes_struct *p,
 		snum = -1;
 	else if ( (Printer->printer_type == SPLHND_PRINTER) &&
 			!get_printer_snum(p, r->in.handle, &snum, NULL) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	DEBUG(10,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
 		  "remote_address is %s\n",
@@ -3530,7 +3530,7 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 	DEBUG(4,("printserver_notify_info\n"));
 
 	if (!Printer)
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	option = Printer->notify.option;
 
@@ -3542,7 +3542,7 @@ static WERROR printserver_notify_info(struct pipes_struct *p,
 	   sending a ffpcn() request first */
 
 	if ( !option )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	for (i=0; i<option->count; i++) {
 		option_type = option->types[i];
@@ -3627,7 +3627,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	DEBUG(4,("printer_notify_info\n"));
 
 	if (!Printer)
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	option = Printer->notify.option;
 	id = 0x0;
@@ -3640,15 +3640,15 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 	   sending a ffpcn() request first */
 
 	if ( !option )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if (!get_printer_snum(p, hnd, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	pdb = get_print_db_byname(Printer->sharename);
 	if (pdb == NULL) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* Maybe we should use the SYSTEM session_info here... */
@@ -3657,7 +3657,7 @@ static WERROR printer_notify_info(struct pipes_struct *p,
 				    p->msg_ctx,
 				    lp_servicename(talloc_tos(), snum), &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto err_pdb_drop;
 	}
 
@@ -3745,7 +3745,7 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(struct pipes_struct *p,
 	struct spoolss_NotifyInfo *info;
 
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
-	WERROR result = WERR_BADFID;
+	WERROR result = WERR_INVALID_HANDLE;
 
 	/* we always have a spoolss_NotifyInfo struct */
 	info = talloc_zero(p->mem_ctx, struct spoolss_NotifyInfo);
@@ -4805,7 +4805,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	*r->out.needed = 0;
 
 	if (Printer == NULL) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto err_info_free;
 	}
 
@@ -4837,7 +4837,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto err_info_free;
 	}
 
@@ -5755,7 +5755,7 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 	*r->out.server_minor_version = 0;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto err_info_free;
 	}
 
@@ -5800,7 +5800,7 @@ WERROR _spoolss_StartPagePrinter(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(3,("_spoolss_StartPagePrinter: "
 			"Error in startpageprinter printer handle\n"));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	Printer->page_started = true;
@@ -5821,11 +5821,11 @@ WERROR _spoolss_EndPagePrinter(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_EndPagePrinter: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	Printer->page_started = false;
 	print_job_endpage(p->msg_ctx, snum, Printer->jobid);
@@ -5851,7 +5851,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 		DEBUG(2,("_spoolss_StartDocPrinter: "
 			"Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (Printer->jobid) {
@@ -5890,7 +5890,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 
 	/* get the share number of the printer */
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	rc = get_remote_hostname(p->remote_address,
@@ -5943,11 +5943,11 @@ WERROR _spoolss_EndDocPrinter(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_EndDocPrinter: Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	Printer->document_started = false;
@@ -5977,11 +5977,11 @@ WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 		DEBUG(2,("_spoolss_WritePrinter: Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(r->in.handle)));
 		*r->out.num_written = r->in._data_size;
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/* print_job_write takes care of checking for PJOB_SMBD_SPOOLING */
 	buffer_written = print_job_write(server_event_context(),p->msg_ctx,
@@ -6018,11 +6018,11 @@ static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 	if (!Printer) {
 		DEBUG(2,("control_printer: Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, handle, &snum, NULL))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	switch (command) {
 	case SPOOLSS_PRINTER_CONTROL_PAUSE:
@@ -6059,11 +6059,11 @@ WERROR _spoolss_AbortPrinter(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_AbortPrinter: Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if (!Printer->document_started) {
 		return WERR_SPL_NO_STARTDOC;
@@ -6100,7 +6100,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
 			 OUR_HANDLE(handle)));
 
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 
@@ -6117,7 +6117,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		if (!get_printer_snum(p, handle, &snum, NULL)) {
 			DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
 				 OUR_HANDLE(handle)));
-			result = WERR_BADFID;
+			result = WERR_INVALID_HANDLE;
 			goto done;
 		}
 		printer = lp_const_servicename(snum);
@@ -6175,7 +6175,7 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 	}
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2,("update_printer_sec: winreg_get_printer_secdesc_internal() failed\n"));
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 
@@ -6870,12 +6870,12 @@ static WERROR update_printer(struct pipes_struct *p,
 	}
 
 	if (!Printer) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 
 	if (!get_printer_snum(p, handle, &snum, NULL)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 
@@ -6891,7 +6891,7 @@ static WERROR update_printer(struct pipes_struct *p,
 				    lp_const_servicename(snum),
 				    &old_printer);
 	if (!W_ERROR_IS_OK(result)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 
@@ -6986,10 +6986,10 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 	DEBUG(5,("publish_or_unpublish_printer, action = %d\n",info7->action));
 
 	if (!Printer)
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if (!get_printer_snum(p, handle, &snum, NULL))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	result = winreg_get_printer_internal(p->mem_ctx,
 				    get_session_info_system(),
@@ -6997,7 +6997,7 @@ static WERROR publish_or_unpublish_printer(struct pipes_struct *p,
 				    lp_servicename(talloc_tos(), snum),
 				    &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	nt_printer_publish(pinfo2,
@@ -7027,11 +7027,11 @@ static WERROR update_printer_devmode(struct pipes_struct *p,
 	DEBUG(8,("update_printer_devmode\n"));
 
 	if (!Printer) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* Check calling user has permission to update printer description */
@@ -7065,7 +7065,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_SetPrinter: Invalid handle (%s:%u:%u)\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* check the level */
@@ -7100,7 +7100,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 
 			if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 				TALLOC_FREE(tmp_ctx);
-				return WERR_BADFID;
+				return WERR_INVALID_HANDLE;
 			}
 
 			result = winreg_printer_binding_handle(tmp_ctx,
@@ -7117,7 +7117,7 @@ WERROR _spoolss_SetPrinter(struct pipes_struct *p,
 						    &old_printer);
 			if (!W_ERROR_IS_OK(result)) {
 				TALLOC_FREE(tmp_ctx);
-				return WERR_BADFID;
+				return WERR_INVALID_HANDLE;
 			}
 
 			old_printer->servername = talloc_strdup(tmp_ctx, r->in.info_ctr->info.info4->servername);
@@ -7191,7 +7191,7 @@ WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_FindClosePrinterNotify: "
 			"Invalid handle (%s:%u:%u)\n", OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (Printer->notify.cli_chan != NULL &&
@@ -7200,7 +7200,7 @@ WERROR _spoolss_FindClosePrinterNotify(struct pipes_struct *p,
 
 		if (Printer->printer_type == SPLHND_PRINTER) {
 			if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-				return WERR_BADFID;
+				return WERR_INVALID_HANDLE;
 			}
 		}
 
@@ -7572,7 +7572,7 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 	/* lookup the printer snum and tdb entry */
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	result = winreg_get_printer_internal(p->mem_ctx,
@@ -7651,7 +7651,7 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
 	char *old_doc_name;
 
 	if (!print_job_get_name(mem_ctx, printer_name, job_id, &old_doc_name)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (strequal(old_doc_name, r->document_name)) {
@@ -7660,7 +7660,7 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
 
 	if (!print_job_set_name(server_event_context(), msg_ctx,
 				printer_name, job_id, r->document_name)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	return WERR_OK;
@@ -7678,7 +7678,7 @@ WERROR _spoolss_SetJob(struct pipes_struct *p,
 	WERROR errcode = WERR_INVALID_FUNCTION;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!print_job_exists(lp_const_servicename(snum), r->in.job_id)) {
@@ -8918,11 +8918,11 @@ WERROR _spoolss_ResetPrinter(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_ResetPrinter: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL))
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 
 	/* blindly return success */
@@ -8964,7 +8964,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_AddForm: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
@@ -9018,7 +9018,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	 */
 	if (Printer->printer_type == SPLHND_PRINTER) {
 		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-			status = WERR_BADFID;
+			status = WERR_INVALID_HANDLE;
 			goto done;
 		}
 
@@ -9050,7 +9050,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_DeleteForm: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if ((p->session_info->unix_token->uid != sec_initial_uid()) &&
@@ -9083,7 +9083,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	 */
 	if (Printer->printer_type == SPLHND_PRINTER) {
 		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-			status = WERR_BADFID;
+			status = WERR_INVALID_HANDLE;
 			goto done;
 		}
 
@@ -9117,7 +9117,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_SetForm: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
@@ -9164,7 +9164,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	 */
 	if (Printer->printer_type == SPLHND_PRINTER) {
 		if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-			status = WERR_BADFID;
+			status = WERR_INVALID_HANDLE;
 			goto done;
 		}
 
@@ -9668,7 +9668,7 @@ WERROR _spoolss_GetJob(struct pipes_struct *p,
 	*r->out.needed = 0;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto err_jinfo_free;
 	}
 
@@ -9782,7 +9782,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_GetPrinterDataEx: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 
@@ -9823,7 +9823,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		result = WERR_BADFID;
+		result = WERR_INVALID_HANDLE;
 		goto done;
 	}
 	printer = lp_const_servicename(snum);
@@ -9909,7 +9909,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_SetPrinterDataEx: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (Printer->printer_type == SPLHND_SERVER) {
@@ -9919,7 +9919,7 @@ WERROR _spoolss_SetPrinterDataEx(struct pipes_struct *p,
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/*
@@ -10027,7 +10027,7 @@ WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 		DEBUG(2,("_spoolss_DeletePrinterDataEx: "
 			"Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -10041,7 +10041,7 @@ WERROR _spoolss_DeletePrinterDataEx(struct pipes_struct *p,
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 	printer = lp_const_servicename(snum);
 
@@ -10080,11 +10080,11 @@ WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_EnumPrinterKey: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	result = winreg_enum_printer_key_internal(p->mem_ctx,
@@ -10143,7 +10143,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_DeletePrinterKey: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* if keyname == NULL, return error */
@@ -10151,7 +10151,7 @@ WERROR _spoolss_DeletePrinterKey(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -10211,7 +10211,7 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_EnumPrinterDataEx: Invalid handle (%s:%u:%u1<).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/*
@@ -10227,7 +10227,7 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 	}
 
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* now look for a match on the key name */
@@ -10616,14 +10616,14 @@ WERROR _spoolss_XcvData(struct pipes_struct *p,
 	if (!Printer) {
 		DEBUG(2,("_spoolss_XcvData: Invalid handle (%s:%u:%u).\n",
 			OUR_HANDLE(r->in.handle)));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* Has to be a handle to the TCP/IP port monitor */
 
 	if ( !(Printer->printer_type & (SPLHND_PORTMON_LOCAL|SPLHND_PORTMON_TCP)) ) {
 		DEBUG(2,("_spoolss_XcvData: Call only valid for Port Monitors\n"));
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* requires administrative access to the server */

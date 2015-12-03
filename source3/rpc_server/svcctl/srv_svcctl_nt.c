@@ -311,7 +311,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	/* based on my tests you can open a service if you have a valid scm handle */
 
 	if ( !find_service_info_by_hnd( p, r->in.scmanager_handle) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/*
 	 * Perform access checks. Use the system session_info in order to ensure
@@ -344,7 +344,7 @@ WERROR _svcctl_CloseServiceHandle(struct pipes_struct *p,
 				  struct svcctl_CloseServiceHandle *r)
 {
 	if ( !close_policy_hnd( p, r->in.handle ) )
-		return  WERR_BADFID;
+		return  WERR_INVALID_HANDLE;
 
 	ZERO_STRUCTP(r->out.handle);
 
@@ -365,7 +365,7 @@ WERROR _svcctl_GetServiceDisplayNameW(struct pipes_struct *p,
 	/* can only use an SCM handle here */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	service = r->in.service_name;
 
@@ -395,7 +395,7 @@ WERROR _svcctl_QueryServiceStatus(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
 		return WERR_ACCESS_DENIED;
@@ -462,7 +462,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_MGR_ENUMERATE_SERVICE) ) {
 		return WERR_ACCESS_DENIED;
@@ -527,7 +527,7 @@ WERROR _svcctl_StartServiceW(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_SVC_START) )
 		return WERR_ACCESS_DENIED;
@@ -547,7 +547,7 @@ WERROR _svcctl_ControlService(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	switch ( r->in.control ) {
 	case SVCCTL_CONTROL_STOP:
@@ -580,7 +580,7 @@ WERROR _svcctl_EnumDependentServicesW(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_SVC_ENUMERATE_DEPENDENTS) )
 		return WERR_ACCESS_DENIED;
@@ -619,7 +619,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
 		return WERR_ACCESS_DENIED;
@@ -739,7 +739,7 @@ WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_CONFIG) )
 		return WERR_ACCESS_DENIED;
@@ -782,7 +782,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_CONFIG) )
 		return WERR_ACCESS_DENIED;
@@ -861,7 +861,7 @@ WERROR _svcctl_LockServiceDatabase(struct pipes_struct *p,
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	if ( !(info->access_granted & SC_RIGHT_MGR_LOCK) )
 		return WERR_ACCESS_DENIED;
@@ -882,9 +882,9 @@ WERROR _svcctl_UnlockServiceDatabase(struct pipes_struct *p,
 
 
 	if ( !info || (info->type != SVC_HANDLE_IS_DBLOCK) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
-	return close_policy_hnd( p, r->out.lock) ? WERR_OK : WERR_BADFID;
+	return close_policy_hnd( p, r->out.lock) ? WERR_OK : WERR_INVALID_HANDLE;
 }
 
 /********************************************************************
@@ -904,7 +904,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	/* only support the SCM and individual services */
 
 	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM)) )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/* check access reights (according to MSDN) */
 
@@ -955,7 +955,7 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 	NTSTATUS status;
 
 	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM))  )
-		return WERR_BADFID;
+		return WERR_INVALID_HANDLE;
 
 	/* can't set the security de4scriptor on the ServiceControlManager */
 
