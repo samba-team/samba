@@ -471,7 +471,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	info1->result_name = NULL;
 
 	if (!name) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* TODO: - fill the correct names in all cases!

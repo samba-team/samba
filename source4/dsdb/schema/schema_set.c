@@ -832,7 +832,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 	 */
 	ldif = ldb_ldif_read_string(ldb, &pf);
 	if (!ldif) {
-		status = WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAMETER;
 		goto failed;
 	}
 	talloc_steal(mem_ctx, ldif);
@@ -845,7 +845,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 
 	prefix_val = ldb_msg_find_ldb_val(msg, "prefixMap");
 	if (!prefix_val) {
-	    	status = WERR_INVALID_PARAM;
+		status = WERR_INVALID_PARAMETER;
 		goto failed;
 	}
 

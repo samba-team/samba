@@ -524,7 +524,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	if (get_string_val == NULL) { \
 		if (strict) {					  \
 			d_printf("%s: %s == NULL in %s\n", __location__, attr, ldb_dn_get_linearized(msg->dn)); \
-			return WERR_INVALID_PARAM;			\
+			return WERR_INVALID_PARAMETER;			\
 		} else {						\
 			(p)->elem = NULL;				\
 		}							\
@@ -569,7 +569,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	if (str == NULL) { \
 		if (strict) { \
 			d_printf("%s: %s == NULL\n", __location__, attr); \
-			return WERR_INVALID_PARAM; \
+			return WERR_INVALID_PARAMETER; \
 		} else { \
 			(p)->elem = false; \
 		} \
@@ -579,7 +579,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 		(p)->elem = false; \
 	} else { \
 		d_printf("%s: %s == %s\n", __location__, attr, str); \
-		return WERR_INVALID_PARAM; \
+		return WERR_INVALID_PARAMETER; \
 	} \
 } while (0)
 
@@ -594,7 +594,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	} else if (_v > UINT32_MAX) { \
 		d_printf("%s: %s == 0x%llX\n", __location__, \
 			 attr, (unsigned long long)_v); \
-		return WERR_INVALID_PARAM; \
+		return WERR_INVALID_PARAMETER; \
 	} else { \
 		(p)->elem = talloc(mem_ctx, uint32_t); \
 		if (!(p)->elem) { \
@@ -630,7 +630,7 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 	WERROR status;
 	if (attr == NULL) {
 		DEBUG(0, ("%s: attr is null, it's expected not to be so\n", __location__));
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	GET_STRING_LDB(msg, "cn", attr, attr, cn, false);
