@@ -232,7 +232,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 		/* lookup the SERVICE_CONTROL_OPS */
 
 		if ( !(s_op = find_service_by_name( service )) ) {
-			result = WERR_NO_SUCH_SERVICE;
+			result = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 
@@ -245,7 +245,7 @@ static WERROR create_open_service_handle(struct pipes_struct *p,
 		break;
 
 	default:
-		result = WERR_NO_SUCH_SERVICE;
+		result = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
