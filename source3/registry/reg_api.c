@@ -700,7 +700,7 @@ static WERROR reg_deletekey_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name[0] == '\0') {
-		err = WERR_INVALID_PARAM;
+		err = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -908,7 +908,7 @@ WERROR reg_setkeysecurity(struct registry_key *key,
 WERROR reg_getversion(uint32_t *version)
 {
 	if (version == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*version = 0x00000005; /* Windows 2000 registry API version */

@@ -37,7 +37,7 @@ static WERROR keyname_to_path(TALLOC_CTX *mem_ctx, const char *keyname,
 	char *tmp_path = NULL;
 
 	if ((keyname == NULL) || (path == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	tmp_path = talloc_asprintf(mem_ctx, "\\%s", keyname);
@@ -82,7 +82,7 @@ WERROR reghook_cache_add(const char *keyname, struct registry_ops *ops)
 	char *key = NULL;
 
 	if ((keyname == NULL) || (ops == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	werr = keyname_to_path(talloc_tos(), keyname, &key);

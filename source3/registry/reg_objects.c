@@ -71,7 +71,7 @@ struct regsubkey_ctr {
 WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 {
 	if (ctr == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*ctr = talloc_zero(mem_ctx, struct regsubkey_ctr);
@@ -96,7 +96,7 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 WERROR regsubkey_ctr_reinit(struct regsubkey_ctr *ctr)
 {
 	if (ctr == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	talloc_free(ctr->subkeys_hash);
@@ -114,7 +114,7 @@ WERROR regsubkey_ctr_reinit(struct regsubkey_ctr *ctr)
 WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum)
 {
 	if (ctr == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ctr->seqnum = seqnum;
@@ -173,7 +173,7 @@ static WERROR regsubkey_ctr_index_for_keyname(struct regsubkey_ctr *ctr,
 	NTSTATUS status;
 
 	if ((ctr == NULL) || (keyname == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	status = dbwrap_fetch_bystring_upper(ctr->subkeys_hash, ctr, keyname,
@@ -247,7 +247,7 @@ WERROR regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname )
 	uint32_t idx, j;
 
 	if (keyname == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* make sure the keyname is actually already there */
@@ -325,7 +325,7 @@ char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32_t key_index 
 WERROR regval_ctr_init(TALLOC_CTX *mem_ctx, struct regval_ctr **ctr)
 {
 	if (ctr == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*ctr = talloc_zero(mem_ctx, struct regval_ctr);
@@ -605,7 +605,7 @@ int regval_ctr_get_seqnum(struct regval_ctr *ctr)
 WERROR regval_ctr_set_seqnum(struct regval_ctr *ctr, int seqnum)
 {
 	if (ctr == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	ctr->seqnum = seqnum;

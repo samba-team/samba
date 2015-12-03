@@ -181,7 +181,7 @@ static WERROR create_key_recursive(struct db_context *db,
 	char *p;
 
 	if (subkey == NULL) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (path == NULL) {
@@ -220,7 +220,7 @@ static WERROR init_registry_key_internal(struct db_context *db,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (add_path == NULL) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -949,7 +949,7 @@ static WERROR regdb_delete_key_with_prefix(struct db_context *db,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (keyname == NULL) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 
@@ -1040,7 +1040,7 @@ static WERROR regdb_store_keys_internal2(struct db_context *db,
 	WERROR werr;
 
 	if (!key) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto done;
 	}
 

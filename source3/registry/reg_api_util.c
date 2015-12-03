@@ -158,7 +158,7 @@ WERROR reg_delete_path(const struct security_token *token,
 
 	if ((p == NULL) || (p[1] == '\0')) {
 		SAFE_FREE(path);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	*p = '\0';
