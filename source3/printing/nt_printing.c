@@ -700,7 +700,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 		return -1;
 	}
 	if (printdollar_snum == -1) {
-		*perr = WERR_NO_SUCH_SHARE;
+		*perr = WERR_BAD_NET_NAME;
 		return -1;
 	}
 
@@ -1120,7 +1120,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (printdollar_snum == -1) {
-		return WERR_NO_SUCH_SHARE;
+		return WERR_BAD_NET_NAME;
 	}
 
 	nt_status = create_conn_struct_cwd(talloc_tos(),
