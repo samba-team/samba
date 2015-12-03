@@ -21,14 +21,28 @@ def configure(conf):
             conf.fatal("--disable-gnutls given: Building the AD DC requires GnuTLS (eg libgnutls-dev, gnutls-devel) for ldaps:// support and for the BackupKey protocol")
         return
 
-    if conf.CHECK_CFG(package='gnutls',
-                      args='"gnutls >= 3.0.0" --cflags --libs',
-                      msg='Checking for gnutls >= 3.0.0s', mandatory=False):
+    if Options.options.with_system_mitkrb5 and conf.env.AD_DC_BUILD_IS_ENABLED:
+        conf.CHECK_CFG(package='gnutls',
+                       args='"gnutls >= 3.4.7" --cflags --libs',
+                       msg='Checking for gnutls >= 3.4.7',
+                       mandatory=True)
+        conf.DEFINE('HAVE_GNUTLS_3_4_7', 1)
         conf.DEFINE('HAVE_GNUTLS3', 1)
     else:
-        conf.CHECK_CFG(package='gnutls',
-                       args='"gnutls >= 1.4.0 gnutls != 2.2.4 gnutls != 2.8.0 gnutls != 2.8.1" --cflags --libs',
-                       msg='Checking for gnutls >= 1.4.0 and broken versions', mandatory=False)
+        if conf.CHECK_CFG(package='gnutls',
+                          args='"gnutls >= 3.4.7" --cflags --libs',
+                          msg='Checking for gnutls >= 3.4.7',
+                          mandatory=False):
+            conf.DEFINE('HAVE_GNUTLS_3_4_7', 1)
+            conf.DEFINE('HAVE_GNUTLS3', 1)
+        elif conf.CHECK_CFG(package='gnutls',
+                            args='"gnutls >= 3.0.0" --cflags --libs',
+                            msg='Checking for gnutls >= 3.0.0s', mandatory=False):
+            conf.DEFINE('HAVE_GNUTLS3', 1)
+        else:
+            conf.CHECK_CFG(package='gnutls',
+                           args='"gnutls >= 1.4.0 gnutls != 2.2.4 gnutls != 2.8.0 gnutls != 2.8.1" --cflags --libs',
+                           msg='Checking for gnutls >= 1.4.0 and broken versions', mandatory=False)
 
     if 'HAVE_GNUTLS' in conf.env:
         conf.DEFINE('ENABLE_GNUTLS', 1)
