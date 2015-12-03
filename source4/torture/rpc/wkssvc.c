@@ -1298,7 +1298,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 
 	switch (join_status) {
 		case NET_SETUP_UNJOINED:
-			expected_err = WERR_SETUP_NOT_JOINED;
+			expected_err = WERR_NERR_SETUPNOTJOINED;
 			break;
 		case NET_SETUP_DOMAIN_NAME:
 		case NET_SETUP_UNKNOWN_STATUS:
