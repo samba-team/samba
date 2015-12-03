@@ -92,7 +92,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	jn->referral_list = talloc_array(ctx, struct referral, jn->referral_count);
 	if(jn->referral_list == NULL) {
 		DEBUG(0,("init_reply_dfs_add: talloc failed for referral list!\n"));
-		return WERR_DFS_INTERNAL_ERROR;
+		return WERR_NERR_DFSINTERNALERROR;
 	}
 
 	if(old_referral_list && jn->referral_list) {
