@@ -306,7 +306,7 @@ WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 		if (!ok) {
 			DEBUG(0, ("Failed to unmarshall GUID for printer %s\n",
 				  printer));
-			result = WERR_REG_CORRUPT;
+			result = WERR_REGISTRY_CORRUPT;
 			goto out_ctx_free;
 		}
 		status = GUID_from_string(guid_str, guid);
@@ -320,14 +320,14 @@ WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 	case REG_BINARY:
 		if (blob.length != sizeof(struct GUID)) {
 			DEBUG(0, ("bad GUID for printer %s\n", printer));
-			result = WERR_REG_CORRUPT;
+			result = WERR_REGISTRY_CORRUPT;
 			goto out_ctx_free;
 		}
 		memcpy(guid, blob.data, sizeof(struct GUID));
 		break;
 	default:
 		DEBUG(0,("GUID value stored as invalid type (%d)\n", type));
-		result = WERR_REG_CORRUPT;
+		result = WERR_REGISTRY_CORRUPT;
 		goto out_ctx_free;
 		break;
 	}
