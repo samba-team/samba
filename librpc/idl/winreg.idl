@@ -341,7 +341,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		[in,unique] uint16 *hostname,
 		/*
 		 * Note: lsa_String and winreg_String both result
-		 *       in WERR_INVALID_PARAM
+		 *       in WERR_INVALID_PARAMETER
 		 */
 		[in,unique] lsa_StringLarge *message,
 		[in]	uint32 timeout,
@@ -402,7 +402,7 @@ import "lsa.idl", "security.idl", "misc.idl";
 		[in,unique] uint16 *hostname,
 		/*
 		 * Note: lsa_String and winreg_String both result
-		 *       in WERR_INVALID_PARAM
+		 *       in WERR_INVALID_PARAMETER
 		 */
 		[in,unique] lsa_StringLarge *message,
 		[in] uint32 timeout,
