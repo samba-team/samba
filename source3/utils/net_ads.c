@@ -1586,7 +1586,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.msg_ctx		= c->msg_ctx;
 
 	werr = libnet_Join(ctx, r);
-	if (W_ERROR_EQUAL(werr, WERR_DCNOTFOUND) &&
+	if (W_ERROR_EQUAL(werr, WERR_NERR_DCNOTFOUND) &&
 	    strequal(domain, lp_realm())) {
 		r->in.domain_name = lp_workgroup();
 		r->in.domain_name_type = JoinDomNameTypeNBT;
