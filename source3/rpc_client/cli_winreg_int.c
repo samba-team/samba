@@ -43,11 +43,11 @@ static WERROR _split_hive_key(TALLOC_CTX *mem_ctx,
 	const char *tmp_subkeyname;
 
 	if ((path == NULL) || (hivename == NULL) || (subkeyname == NULL)) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (strlen(path) == 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (strchr(path, '\\') == NULL) {

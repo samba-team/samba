@@ -1042,7 +1042,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 		}
 
 		if (devmode->size != (ndr_size_spoolss_DeviceMode(devmode, 0) - devmode->__driverextra_length)) {
-			result = WERR_INVALID_PARAM;
+			result = WERR_INVALID_PARAMETER;
 			goto done;
 		}
 
@@ -2952,7 +2952,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < num_builtin; i++) {
 		if (strequal(builtin_forms1[i].form_name, form->form_name)) {
-			result = WERR_INVALID_PARAM;
+			result = WERR_INVALID_PARAMETER;
 			goto done;
 		}
 	}
