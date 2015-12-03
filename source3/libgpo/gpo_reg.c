@@ -665,7 +665,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 		}
 
 		werr = gp_read_reg_subkey(mem_ctx, reg_ctx, subkeyname, &key);
-		if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
 			werr = WERR_OK;
 			break;
 		}
