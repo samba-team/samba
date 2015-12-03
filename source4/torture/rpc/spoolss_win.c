@@ -518,7 +518,7 @@ static bool test_WinXP(struct torture_context *tctx, struct dcerpc_pipe *p)
 	ret &= test_OpenPrinterEx(tctx, b, &handle04,
 			ctx->printer_info[0].info2.printername, PRINTER_READ);
 	ret &= test_GetPrinterData(tctx, b, &handle04,"UISingleJobStatusString",
-			WERR_BADFILE, 0);
+			WERR_FILE_NOT_FOUND, 0);
 	torture_comment(tctx, "Skip RemoteFindNextPrinterChangeNotifyEx test\n");
 
 	ret &= test_OpenPrinterEx(tctx, b, &unused_handle2,
