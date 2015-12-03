@@ -191,7 +191,7 @@ WERROR dns_generate_options(struct dns_server *dns,
 
 	o = talloc_zero(mem_ctx, struct dns_res_rec);
 	if (o == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	o->name = NULL;
 	o->rr_type = DNS_QTYPE_OPT;

@@ -356,7 +356,7 @@ static WERROR dns_rr_to_dnsp(TALLOC_CTX *mem_ctx,
 						    &rrec->rdata.txt_record.txt,
 						    &r->data.txt);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		break;

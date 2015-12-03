@@ -83,7 +83,7 @@ WERROR dns_common_extract(const struct ldb_message_element *el,
 	recs = talloc_zero_array(mem_ctx, struct dnsp_DnssrvRpcRecord,
 				 el->num_values);
 	if (recs == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	for (ri = 0; ri < el->num_values; ri++) {
 		struct ldb_val *v = &el->values[ri];
@@ -162,7 +162,7 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 					    struct dnsp_DnssrvRpcRecord,
 					    1);
 			if (recs == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			recs[0] = (struct dnsp_DnssrvRpcRecord) {
 				.wType = DNS_TYPE_TOMBSTONE,

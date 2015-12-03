@@ -272,7 +272,7 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 drop:
 	*out = data_blob_talloc(mem_ctx, state->in->data, state->in->length);
 	if (out->data == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
 	out->data[3] |= state->dns_err;

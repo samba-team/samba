@@ -63,7 +63,7 @@ static WERROR add_response_rr(const char *name,
 	 */
 	ans = talloc_realloc(ans, ans, struct dns_res_rec, ai+1);
 	if (ans == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ZERO_STRUCT(ans[ai]);
@@ -115,7 +115,7 @@ static WERROR add_response_rr(const char *name,
 		ans[ai].rdata.mx_record.exchange = talloc_strdup(
 			ans, rec->data.mx.nameTarget);
 		if (ans[ai].rdata.mx_record.exchange == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_TXT:
@@ -123,7 +123,7 @@ static WERROR add_response_rr(const char *name,
 						    &rec->data.txt,
 						    &ans[ai].rdata.txt_record.txt);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	default:
@@ -156,7 +156,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 
 	dst = talloc_realloc(dst, dst, struct dns_res_rec, di+1);
 	if (dst == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ZERO_STRUCT(dst[di]);
@@ -170,7 +170,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 	};
 
 	if (dst[di].name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	switch (src->rr_type) {
@@ -178,28 +178,28 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 		dst[di].rdata.cname_record = talloc_strdup(
 			dst, src->rdata.cname_record);
 		if (dst[di].rdata.cname_record == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_A:
 		dst[di].rdata.ipv4_record = talloc_strdup(
 			dst, src->rdata.ipv4_record);
 		if (dst[di].rdata.ipv4_record == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_AAAA:
 		dst[di].rdata.ipv6_record = talloc_strdup(
 			dst, src->rdata.ipv6_record);
 		if (dst[di].rdata.ipv6_record == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_TYPE_NS:
 		dst[di].rdata.ns_record = talloc_strdup(
 			dst, src->rdata.ns_record);
 		if (dst[di].rdata.ns_record == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_SRV:
@@ -211,7 +211,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 				dst, src->rdata.srv_record.target)
 		};
 		if (dst[di].rdata.srv_record.target == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_SOA:
@@ -229,7 +229,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 
 		if ((dst[di].rdata.soa_record.mname == NULL) ||
 		    (dst[di].rdata.soa_record.rname == NULL)) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		break;
@@ -237,7 +237,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 		dst[di].rdata.ptr_record = talloc_strdup(
 			dst, src->rdata.ptr_record);
 		if (dst[di].rdata.ptr_record == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_MX:
@@ -248,7 +248,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 		};
 
 		if (dst[di].rdata.mx_record.exchange == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	case DNS_QTYPE_TXT:
@@ -256,7 +256,7 @@ static WERROR add_dns_res_rec(struct dns_res_rec **pdst,
 						    &src->rdata.txt_record.txt,
 						    &dst[di].rdata.txt_record.txt);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		break;
 	default:
@@ -816,12 +816,12 @@ static WERROR handle_tkey(struct dns_server *dns,
 
 	ret_tkey = talloc_zero(mem_ctx, struct dns_res_rec);
 	if (ret_tkey == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ret_tkey->name = talloc_strdup(ret_tkey, in_tkey->name);
 	if (ret_tkey->name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ret_tkey->rr_type = DNS_QTYPE_TKEY;
@@ -831,7 +831,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 	ret_tkey->rdata.tkey_record.algorithm = talloc_strdup(ret_tkey,
 			in_tkey->rdata.tkey_record.algorithm);
 	if (ret_tkey->rdata.tkey_record.algorithm  == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ret_tkey->rdata.tkey_record.inception = in_tkey->rdata.tkey_record.inception;
@@ -885,7 +885,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 			state->sign = true;
 			state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
 			if (state->key_name == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		} else {
 			DEBUG(1, ("GSS key negotiation returned %s\n", nt_errstr(status)));

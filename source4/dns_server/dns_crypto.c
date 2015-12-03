@@ -133,7 +133,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 
 	state->tsig = talloc_zero(state->mem_ctx, struct dns_res_rec);
 	if (state->tsig == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	werror = dns_copy_tsig(state->tsig, &packet->additional[i],
@@ -154,7 +154,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		state->key_name = talloc_strdup(state->mem_ctx,
 						state->tsig->name);
 		if (state->key_name == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		state->tsig_error = DNS_RCODE_BADKEY;
 		return DNS_ERR(NOTAUTH);
@@ -167,24 +167,24 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	 */
 	state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
 	if (state->key_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* FIXME: check TSIG here */
 	if (check_rec == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* first build and verify check packet */
 	check_rec->name = talloc_strdup(check_rec, tkey->name);
 	if (check_rec->name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	check_rec->rr_class = DNS_QCLASS_ANY;
 	check_rec->ttl = 0;
 	check_rec->algorithm_name = talloc_strdup(check_rec, tkey->algorithm);
 	if (check_rec->algorithm_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	check_rec->time_prefix = 0;
 	check_rec->time = state->tsig->rdata.tsig_record.time;
@@ -215,7 +215,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	buffer_len = packet_len + fake_tsig_blob.length;
 	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
 	if (buffer == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	memcpy(buffer, in->data, packet_len);
@@ -224,7 +224,7 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	sig.length = state->tsig->rdata.tsig_record.mac_size;
 	sig.data = talloc_memdup(mem_ctx, state->tsig->rdata.tsig_record.mac, sig.length);
 	if (sig.data == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Now we also need to count down the additional record counter */
@@ -266,19 +266,19 @@ static WERROR dns_tsig_compute_mac(TALLOC_CTX *mem_ctx,
 	size_t mac_size = 0;
 
 	if (check_rec == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* first build and verify check packet */
 	check_rec->name = talloc_strdup(check_rec, tkey->name);
 	if (check_rec->name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	check_rec->rr_class = DNS_QCLASS_ANY;
 	check_rec->ttl = 0;
 	check_rec->algorithm_name = talloc_strdup(check_rec, tkey->algorithm);
 	if (check_rec->algorithm_name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	check_rec->time_prefix = 0;
 	check_rec->time = current_time;
@@ -320,7 +320,7 @@ static WERROR dns_tsig_compute_mac(TALLOC_CTX *mem_ctx,
 
 	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
 	if (buffer == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	p = buffer;
@@ -368,7 +368,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 
 	tsig = talloc_zero(mem_ctx, struct dns_res_rec);
 	if (tsig == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (state->tsig_error == DNS_RCODE_OK) {
@@ -387,7 +387,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 
 	tsig->name = talloc_strdup(tsig, state->key_name);
 	if (tsig->name == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	tsig->rr_class = DNS_QCLASS_ANY;
 	tsig->rr_type = DNS_QTYPE_TSIG;
@@ -409,14 +409,14 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	if (packet->arcount == 0) {
 		packet->additional = talloc_zero(mem_ctx, struct dns_res_rec);
 		if (packet->additional == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 	packet->additional = talloc_realloc(mem_ctx, packet->additional,
 					    struct dns_res_rec,
 					    packet->arcount + 1);
 	if (packet->additional == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	werror = dns_copy_tsig(mem_ctx, tsig,
