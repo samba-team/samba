@@ -696,7 +696,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 
 	printdollar_snum = find_service(talloc_tos(), "print$", &printdollar);
 	if (!printdollar) {
-		*perr = WERR_NOMEM;
+		*perr = WERR_NOT_ENOUGH_MEMORY;
 		return -1;
 	}
 	if (printdollar_snum == -1) {
@@ -738,7 +738,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 					architecture,
 					driverpath_in);
 	if (!driverpath) {
-		*perr = WERR_NOMEM;
+		*perr = WERR_NOT_ENOUGH_MEMORY;
 		goto error_exit;
 	}
 
@@ -1029,21 +1029,21 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 				   short_architecture, driver_version, driver_file);
 	if (new_name == NULL) {
 		TALLOC_FREE(old_name);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (version != -1 && (version = file_version_is_newer(conn, old_name, new_name)) > 0) {
 
 		status = driver_unix_convert(conn, old_name, &smb_fname_old);
 		if (!NT_STATUS_IS_OK(status)) {
-			ret = WERR_NOMEM;
+			ret = WERR_NOT_ENOUGH_MEMORY;
 			goto out;
 		}
 
 		/* Setup a synthetic smb_filename struct */
 		smb_fname_new = talloc_zero(mem_ctx, struct smb_filename);
 		if (!smb_fname_new) {
-			ret = WERR_NOMEM;
+			ret = WERR_NOT_ENOUGH_MEMORY;
 			goto out;
 		}
 
@@ -1117,7 +1117,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 
 	printdollar_snum = find_service(ctx, "print$", &printdollar);
 	if (!printdollar) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	if (printdollar_snum == -1) {
 		return WERR_NO_SUCH_SHARE;
@@ -1155,12 +1155,12 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 				short_architecture,
 				driver->version);
 	if (!new_dir) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto err_exit;
 	}
 	nt_status = driver_unix_convert(conn, new_dir, &smb_dname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		err = WERR_NOMEM;
+		err = WERR_NOT_ENOUGH_MEMORY;
 		goto err_exit;
 	}
 
@@ -1857,7 +1857,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 	/* Get printer security descriptor */
 
 	if(!(mem_ctx = talloc_init("print_access_check"))) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_get_printer_secdesc_internal(mem_ctx,
@@ -1867,7 +1867,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 					    &secdesc);
 	if (!W_ERROR_IS_OK(result)) {
 		talloc_destroy(mem_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (access_type == JOB_ACCESS_ADMINISTER) {

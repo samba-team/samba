@@ -47,20 +47,20 @@ WERROR nt_printer_guid_store(struct messaging_context *msg_ctx,
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) {
 		DEBUG(0, ("Out of memory?!\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	session_info = get_session_info_system();
 	if (session_info == NULL) {
 		DEBUG(0, ("Could not get system session_info\n"));
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
 	guid_str = GUID_string(tmp_ctx, &guid);
 	if (!guid_str) {
 		DEBUG(0, ("Out of memory?!\n"));
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -70,7 +70,7 @@ WERROR nt_printer_guid_store(struct messaging_context *msg_ctx,
 	if (!push_reg_sz(tmp_ctx, &blob, guid_str)) {
 		DEBUG(0, ("Could not marshall string %s for objectGUID\n",
 			  guid_str));
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
@@ -168,7 +168,7 @@ static WERROR nt_printer_dn_lookup(TALLOC_CTX *mem_ctx,
 				     sharename_escaped,
 				     srv_dn);
 	if (printer_dn == NULL) {
-		result = WERR_NOMEM;
+		result = WERR_NOT_ENOUGH_MEMORY;
 		goto err_out;
 	}
 
@@ -204,7 +204,7 @@ static WERROR nt_printer_guid_retrieve_internal(ADS_STRUCT *ads,
 	ok = ads_pull_guid(ads, res, &guid);
 	ads_msgfree(ads, res);
 	if (!ok) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*pguid = guid;
@@ -224,7 +224,7 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
@@ -279,7 +279,7 @@ WERROR nt_printer_guid_get(TALLOC_CTX *mem_ctx,
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		DEBUG(0, ("out of memory?!\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_get_printer_dataex_internal(tmp_ctx, session_info,
@@ -351,13 +351,13 @@ static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
 	info_str = talloc_asprintf(ctx, "\\\\%s\\%s",
 				   get_mydnsfullname(), info2->sharename);
 	if (info_str == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	ads_mod_str(ctx, mods, SPOOL_REG_UNCNAME, info_str);
 
 	info_str = talloc_asprintf(ctx, "%d", 4);
 	if (info_str == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	ads_mod_str(ctx, mods, SPOOL_REG_VERSIONNUMBER, info_str);
 
@@ -375,19 +375,19 @@ static WERROR nt_printer_info_to_mods(TALLOC_CTX *ctx,
 
 	info_str = talloc_asprintf(ctx, "%u", info2->starttime);
 	if (info_str == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	ads_mod_str(ctx, mods, SPOOL_REG_PRINTSTARTTIME, info_str);
 
 	info_str = talloc_asprintf(ctx, "%u", info2->untiltime);
 	if (info_str == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	ads_mod_str(ctx, mods, SPOOL_REG_PRINTENDTIME, info_str);
 
 	info_str = talloc_asprintf(ctx, "%u", info2->priority);
 	if (info_str == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	ads_mod_str(ctx, mods, SPOOL_REG_PRIORITY, info_str);
 
@@ -433,7 +433,7 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");
 	if (ctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	DEBUG(5, ("publishing printer %s\n", printer));
@@ -449,7 +449,7 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 
 	if (mods == NULL) {
 		TALLOC_FREE(ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	win_rc = nt_printer_info_to_mods(ctx, pinfo2, &mods);
@@ -510,7 +510,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 		prt_dn = ads_get_dn(ads, talloc_tos(), res);
 		if (!prt_dn) {
 			ads_msgfree(ads, res);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		ads_rc = ads_del_dn(ads, prt_dn);
 		TALLOC_FREE(prt_dn);
@@ -547,7 +547,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 	sinfo2 = talloc_zero(mem_ctx, struct spoolss_SetPrinterInfo2);
 	if (!sinfo2) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	switch (action) {
@@ -629,7 +629,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	char *old_krb5ccname = NULL;
 
 	tmp_ctx = talloc_new(NULL);
-	if (!tmp_ctx) return WERR_NOMEM;
+	if (!tmp_ctx) return WERR_NOT_ENOUGH_MEMORY;
 
 	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
 	if (!ads) {

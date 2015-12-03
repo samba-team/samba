@@ -94,7 +94,7 @@ WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername)
 			drivername, get_os2_driver()));
 		drivername = talloc_strdup(mem_ctx, get_os2_driver());
 		if (drivername == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		*pdrivername = drivername;
 		return WERR_OK;
@@ -153,7 +153,7 @@ WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername)
 			drivername = talloc_strdup(mem_ctx, os2_name);
 			TALLOC_FREE(lines);
 			if (drivername == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			*pdrivername = drivername;
 			return WERR_OK;
