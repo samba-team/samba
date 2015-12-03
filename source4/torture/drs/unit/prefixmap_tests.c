@@ -177,7 +177,7 @@ static WERROR _drsut_prefixmap_new(const struct drsut_pfm_oid_data *_pfm_init_da
 	pfm->prefixes = talloc_array(pfm, struct dsdb_schema_prefixmap_oid, pfm->length);
 	if (!pfm->prefixes) {
 		talloc_free(pfm);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	for (i = 0; i < pfm->length; i++) {
@@ -185,7 +185,7 @@ static WERROR _drsut_prefixmap_new(const struct drsut_pfm_oid_data *_pfm_init_da
 		pfm->prefixes[i].bin_oid = strhex_to_data_blob(pfm, _pfm_init_data[i].bin_oid);
 		if (!pfm->prefixes[i].bin_oid.data) {
 			talloc_free(pfm);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 
