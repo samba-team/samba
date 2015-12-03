@@ -148,7 +148,7 @@ static WERROR restore_registry_key(struct registry_key_handle *krecord,
 
 	if (!(rootkey = regfio_rootkey(regfile))) {
 		regfio_close(regfile);
-		return WERR_REG_FILE_INVALID;
+		return WERR_NOT_REGISTRY_FILE;
 	}
 
 	result = reg_load_tree(regfile, krecord->name, rootkey);
