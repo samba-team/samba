@@ -180,7 +180,7 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 			alias_name = info1->lgrpi1_name;
 			break;
 		default:
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 			goto done;
 	}
 
@@ -459,7 +459,7 @@ static WERROR map_alias_info_to_buffer(TALLOC_CTX *mem_ctx,
 
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	return WERR_OK;
@@ -490,7 +490,7 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		case 1002:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	ZERO_STRUCT(connect_handle);
@@ -669,7 +669,7 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 		case 1002:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	ZERO_STRUCT(connect_handle);
@@ -812,7 +812,7 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 		case 1:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	if (r->out.total_entries) {
@@ -1109,7 +1109,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		case 3:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	if (r->in.total_entries == 0 || !r->in.buffer) {

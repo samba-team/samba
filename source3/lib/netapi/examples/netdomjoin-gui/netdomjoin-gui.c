@@ -1697,7 +1697,7 @@ static NET_API_STATUS get_server_properties(struct join_state *state)
 	}
 
 	switch (status) {
-		case 124: /* WERR_UNKNOWN_LEVEL */
+		case 124: /* WERR_INVALID_LEVEL */
 		case 50: /* WERR_NOT_SUPPORTED */
 			break;
 		default:

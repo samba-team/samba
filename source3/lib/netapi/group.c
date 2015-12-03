@@ -71,7 +71,7 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 			info3 = (struct GROUP_INFO_3 *)r->in.buffer;
 			break;
 		default:
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 			goto done;
 	}
 
@@ -734,7 +734,7 @@ static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
 
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	W_ERROR_HAVE_NO_MEMORY(*buffer);
@@ -1358,7 +1358,7 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_buffer(TALLOC_CTX *mem_ctx,
 		case 3:
 			return convert_samr_disp_groups_to_GROUP_INFO_3_buffer(mem_ctx, groups, domain_sid, buffer);
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 }
 
@@ -1393,7 +1393,7 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 		case 3:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -1539,7 +1539,7 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 		case 1:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 
@@ -1732,7 +1732,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 		case 1:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,

@@ -1315,7 +1315,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 		case 23:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -1588,7 +1588,7 @@ static WERROR convert_samr_dispinfo_to_NET_DISPLAY(TALLOC_CTX *mem_ctx,
 			break;
 	}
 
-	return WERR_UNKNOWN_LEVEL;
+	return WERR_INVALID_LEVEL;
 }
 
 /****************************************************************
@@ -1623,7 +1623,7 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 		case 3:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -1756,7 +1756,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 		case 23:
 			break;
 		default:
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 			goto done;
 	}
 
@@ -1928,7 +1928,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 			werr = WERR_NOT_SUPPORTED;
 			goto done;
 		default:
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 			goto done;
 	}
 
@@ -2387,7 +2387,7 @@ WERROR NetUserModalsGet_r(struct libnetapi_ctx *ctx,
 			access_mask |= SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1;
 			break;
 		default:
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 			goto done;
 	}
 
@@ -2872,7 +2872,7 @@ WERROR NetUserModalsSet_r(struct libnetapi_ctx *ctx,
 			werr = WERR_NOT_SUPPORTED;
 			break;
 		default:
-			werr = WERR_UNKNOWN_LEVEL;
+			werr = WERR_INVALID_LEVEL;
 			goto done;
 	}
 
@@ -3008,7 +3008,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 		case 1:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -3199,7 +3199,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 		case 1:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
@@ -3540,7 +3540,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		case 1:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,

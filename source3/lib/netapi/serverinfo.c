@@ -82,7 +82,7 @@ WERROR NetServerGetInfo_l(struct libnetapi_ctx *ctx,
 			break;
 	}
 
-	return WERR_UNKNOWN_LEVEL;
+	return WERR_INVALID_LEVEL;
 }
 
 /****************************************************************
@@ -499,7 +499,7 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 		case 1005:
 			break;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
@@ -601,7 +601,7 @@ WERROR NetServerSetInfo_l(struct libnetapi_ctx *ctx,
 			break;
 	}
 
-	return WERR_UNKNOWN_LEVEL;
+	return WERR_INVALID_LEVEL;
 }
 
 /****************************************************************

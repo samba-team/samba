@@ -222,7 +222,7 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 		case 503:
 			return WERR_NOT_SUPPORTED;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
@@ -341,7 +341,7 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 		case 503:
 			return WERR_NOT_SUPPORTED;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	ZERO_STRUCT(info_ctr);
@@ -450,7 +450,7 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 		case 503:
 			return WERR_NOT_SUPPORTED;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
@@ -524,7 +524,7 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 		case 1501:
 			return WERR_NOT_SUPPORTED;
 		default:
-			return WERR_UNKNOWN_LEVEL;
+			return WERR_INVALID_LEVEL;
 	}
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,

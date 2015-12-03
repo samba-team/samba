@@ -116,7 +116,7 @@ static WERROR construct_buffer(TALLOC_CTX *mem_ctx,
 
 		break;
 	default:
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 	return WERR_OK;
 }
