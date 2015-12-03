@@ -1908,7 +1908,7 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 
 	err = smbconf_init_reg(r, &ctx, NULL);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NO_SUCH_SERVICE;
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
@@ -1916,14 +1916,14 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 
 		err = smbconf_set_global_parameter(ctx, "security", "user");
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NO_SUCH_SERVICE;
+			werr = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 
 		err = smbconf_set_global_parameter(ctx, "workgroup",
 						   r->in.domain_name);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NO_SUCH_SERVICE;
+			werr = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 
@@ -1933,28 +1933,28 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 
 	err = smbconf_set_global_parameter(ctx, "security", "domain");
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NO_SUCH_SERVICE;
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
 	err = smbconf_set_global_parameter(ctx, "workgroup",
 					   r->out.netbios_domain_name);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NO_SUCH_SERVICE;
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
 	if (r->out.domain_is_ad) {
 		err = smbconf_set_global_parameter(ctx, "security", "ads");
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NO_SUCH_SERVICE;
+			werr = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 
 		err = smbconf_set_global_parameter(ctx, "realm",
 						   r->out.dns_domain_name);
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NO_SUCH_SERVICE;
+			werr = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 	}
@@ -1975,7 +1975,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 
 	err = smbconf_init_reg(r, &ctx, NULL);
 	if (!SBC_ERROR_IS_OK(err)) {
-		werr = WERR_NO_SUCH_SERVICE;
+		werr = WERR_SERVICE_DOES_NOT_EXIST;
 		goto done;
 	}
 
@@ -1983,13 +1983,13 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 
 		err = smbconf_set_global_parameter(ctx, "security", "user");
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NO_SUCH_SERVICE;
+			werr = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 
 		err = smbconf_delete_global_parameter(ctx, "workgroup");
 		if (!SBC_ERROR_IS_OK(err)) {
-			werr = WERR_NO_SUCH_SERVICE;
+			werr = WERR_SERVICE_DOES_NOT_EXIST;
 			goto done;
 		}
 
