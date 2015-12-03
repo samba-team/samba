@@ -4013,7 +4013,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	struct lsa_String names;
 	struct samr_Ids rids;
 	struct samr_Ids types;
-	int errcode = W_ERROR_V(WERR_USER_NOT_FOUND);
+	int errcode = W_ERROR_V(WERR_NERR_USERNOTFOUND);
 	uint32_t rid;
 	union samr_UserInfo *info;
 	struct dcerpc_binding_handle *b = NULL;
