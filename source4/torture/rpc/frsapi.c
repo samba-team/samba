@@ -154,7 +154,7 @@ static bool test_IsPathReplicated(struct torture_context *tctx,
 	bool ret = true;
 
 	if (!test_IsPathReplicated_err(tctx, b, NULL, 0,
-				       WERR_FRS_INVALID_SERVICE_PARAMETER)) {
+				       WERR_FRS_ERR_INVALID_SERVICE_PARAMETER)) {
 		ret = false;
 	}
 
