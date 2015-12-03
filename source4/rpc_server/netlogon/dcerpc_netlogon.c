@@ -1237,7 +1237,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 		size_t len = strlen(r->in.domainname);
 
 		if (dot || len > 15) {
-			return WERR_DCNOTFOUND;
+			return WERR_NERR_DCNOTFOUND;
 		}
 
 		/*
