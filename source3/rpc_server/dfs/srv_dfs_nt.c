@@ -178,7 +178,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 		}
 
 		if(!found) {
-			return WERR_DFS_NO_SUCH_SHARE;
+			return WERR_NERR_DFSNOSUCHSHARE;
 		}
 
 		/* Only one referral, remove it */
