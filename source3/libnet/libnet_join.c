@@ -2471,7 +2471,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				"failed to find DC for domain %s - %s",
 				r->in.domain_name,
 				get_friendly_nt_error_msg(status));
-			return WERR_DCNOTFOUND;
+			return WERR_NERR_DCNOTFOUND;
 		}
 
 		dc = strip_hostname(info->dc_unc);
@@ -2482,7 +2482,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		    info->dc_address[1] != '\\') {
 			DBG_ERR("ill-formed DC address '%s'\n",
 				info->dc_address);
-			return WERR_DCNOTFOUND;
+			return WERR_NERR_DCNOTFOUND;
 		}
 
 		numeric_dcip = info->dc_address + 2;
@@ -2500,14 +2500,14 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				DBG_ERR(
 				    "cannot parse IP address '%s' of DC '%s'\n",
 				    numeric_dcip, r->in.dc_name);
-				return WERR_DCNOTFOUND;
+				return WERR_NERR_DCNOTFOUND;
 			}
 		} else {
 			if (!interpret_string_addr(&ss, r->in.dc_name, 0)) {
 				DBG_WARNING(
 				    "cannot resolve IP address of DC '%s'\n",
 				    r->in.dc_name);
-				return WERR_DCNOTFOUND;
+				return WERR_NERR_DCNOTFOUND;
 			}
 		}
 
@@ -2735,7 +2735,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				"failed to find DC for domain %s - %s",
 				r->in.domain_name,
 				get_friendly_nt_error_msg(status));
-			return WERR_DCNOTFOUND;
+			return WERR_NERR_DCNOTFOUND;
 		}
 
 		dc = strip_hostname(info->dc_unc);
