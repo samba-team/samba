@@ -346,14 +346,14 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 	if (fd == -1) {
 		DEBUG(0, ("Error opening registry patch file `%s'\n",
 			filename));
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	if (read(fd, &hdr, 4) != 4) {
 		DEBUG(0, ("Error reading registry patch file `%s'\n",
 			filename));
 		close(fd);
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	/* Reset position in file */

@@ -244,7 +244,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 		DEBUG(0, ("Can't read from file.\n"));
 		talloc_free(mem_ctx);
 		close(fd);
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	while ((line = afdgets(fd, mem_ctx, 0))) {
@@ -405,7 +405,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 		if (!result) {
 			DEBUG(0, ("Error converting string to value for line:\n%s\n",
 					line));
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		error = callbacks->set_value(callback_data, curkey, value,
