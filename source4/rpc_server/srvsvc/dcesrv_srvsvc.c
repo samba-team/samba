@@ -736,7 +736,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 			info.info0 = &ctr0->array[i];
 			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
@@ -777,7 +777,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 			info.info1 = &ctr1->array[i];
 			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
@@ -821,7 +821,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 			info.info2 = &ctr2->array[i];
 			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
@@ -865,7 +865,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 			info.info501 = &ctr501->array[i];
 			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
@@ -909,7 +909,7 @@ static WERROR dcesrv_srvsvc_NetShareEnumAll(struct dcesrv_call_state *dce_call, 
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 			info.info502 = &ctr502->array[i];
 			status = dcesrv_srvsvc_fiel_ShareInfo(dce_call, mem_ctx, scfg, r->in.info_ctr->level, &info);
@@ -1826,7 +1826,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 			
 			type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, scfg);
@@ -1878,7 +1878,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 
 			type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, scfg);
@@ -1932,7 +1932,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 
 			type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, scfg);
@@ -1986,7 +1986,7 @@ static WERROR dcesrv_srvsvc_NetShareEnum(struct dcesrv_call_state *dce_call, TAL
 			nterr = share_get_config(mem_ctx, sctx, snames[i], &scfg);
 			if (!NT_STATUS_IS_OK(nterr)) {
 				DEBUG(1, ("ERROR: Service [%s] disappeared after enumeration", snames[i]));
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 
 		       	type = dcesrv_common_get_share_type(mem_ctx, dce_ctx, scfg);

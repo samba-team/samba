@@ -658,7 +658,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 	if (ret) {
 		DEBUG(1, ("searching for servers in sites DN %s failed: %s\n", 
 			  ldb_dn_get_linearized(sites_dn), ldb_errstring(b_state->sam_ctx)));
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	switch (*r->out.level_out) {
@@ -706,7 +706,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
 								 ldb_dn_get_linearized(ntds_dn));
 					if (ret) {
-						return WERR_GENERAL_FAILURE;
+						return WERR_GEN_FAILURE;
 					}
 					if (res_domain->count == 1) {
 						ctr1->array[i].is_pdc = true;

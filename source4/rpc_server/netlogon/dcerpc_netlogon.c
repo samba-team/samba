@@ -2644,7 +2644,7 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 				    ldb_get_default_basedn(sam_ctx),
 				    "(&(objectClass=container)(cn=System))");
 	if (!system_dn) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	ret = gendb_search(sam_ctx, mem_ctx, system_dn,
@@ -2770,7 +2770,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
 				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	if ((r->in.trust_flags & NETR_TRUST_FLAG_INBOUND) ||
@@ -2788,7 +2788,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 		ret = gendb_search_dn(sam_ctx, mem_ctx, NULL,
 				      &dom_res, dom_attrs);
 		if (ret != 1) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		trusts->count = n + 1;
@@ -2903,17 +2903,17 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
 				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	domain_dn = ldb_get_default_basedn(sam_ctx);
 	if (domain_dn == NULL) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	forest_dn = ldb_get_root_basedn(sam_ctx);
 	if (forest_dn == NULL) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	cmp = ldb_dn_compare(domain_dn, forest_dn);

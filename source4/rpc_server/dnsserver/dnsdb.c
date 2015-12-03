@@ -336,7 +336,7 @@ static WERROR dnsserver_db_do_add_rec(TALLOC_CTX *mem_ctx,
 			ndr_err = ndr_push_struct_blob(&v, mem_ctx, &rec[i],
 					(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return WERR_GENERAL_FAILURE;
+				return WERR_GEN_FAILURE;
 			}
 
 			ret = ldb_msg_add_value(msg, "dnsRecord", &v, NULL);
@@ -465,7 +465,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec2,
 						(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (dns_record_match(rec, &rec2)) {
@@ -485,7 +485,7 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_push_struct_blob(&el->values[i], mem_ctx, rec,
 					(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	el->flags = LDB_FLAG_MOD_REPLACE;
@@ -553,7 +553,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec2,
 						(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (dns_record_match(arec, &rec2)) {
@@ -571,7 +571,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec2,
 						(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (dns_record_match(drec, &rec2)) {
@@ -594,7 +594,7 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_push_struct_blob(&el->values[i], mem_ctx, arec,
 					(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	el->flags = LDB_FLAG_MOD_REPLACE;
@@ -651,7 +651,7 @@ WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&el->values[i], mem_ctx, &rec2,
 						(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 
 		if (dns_record_match(rec, &rec2)) {
@@ -757,7 +757,7 @@ static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,
 
 	secdesc = sddl_decode(tmp_ctx, sddl, domain_sid);
 	if (secdesc == NULL) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	msg = ldb_msg_new(tmp_ctx);
@@ -775,7 +775,7 @@ static WERROR dnsserver_db_do_create_zone(TALLOC_CTX *tmp_ctx,
 	ndr_err = ndr_push_struct_blob(sd_encoded, tmp_ctx, secdesc,
 			(ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd_encoded);
