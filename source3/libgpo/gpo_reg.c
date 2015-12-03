@@ -462,7 +462,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 			  struct GROUP_POLICY_OBJECT *gpo_list)
 {
 	struct gp_registry_context *reg_ctx = NULL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *subkeyname = NULL;
 	struct GROUP_POLICY_OBJECT *gpo;
 	int count = 0;
@@ -622,7 +622,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 			 struct GROUP_POLICY_OBJECT **gpo_list)
 {
 	struct gp_registry_context *reg_ctx = NULL;
-	WERROR werr = WERR_GENERAL_FAILURE;
+	WERROR werr = WERR_GEN_FAILURE;
 	const char *subkeyname = NULL;
 	struct GROUP_POLICY_OBJECT *gpo = NULL;
 	int count = 0;
