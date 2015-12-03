@@ -252,7 +252,7 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 		libnetapi_set_error_string(ctx, "failed to open PIPE %s: %s",
 			table->name,
 			get_friendly_nt_error_msg(status));
-		return WERR_DEST_NOT_FOUND;
+		return WERR_NERR_DESTNOTFOUND;
 	}
 
 	*presult = result;
