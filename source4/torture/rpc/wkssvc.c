@@ -476,7 +476,7 @@ static bool test_NetrUseGetInfo(struct torture_context *tctx,
 
 			if (!test_NetrUseGetInfo_level(tctx, p, use_name,
 						       levels[i],
-						       WERR_NOT_CONNECTED))
+						       WERR_NERR_USENOTFOUND))
 			{
 				if (levels[i] != 0) {
 					return false;
