@@ -204,7 +204,7 @@ WERROR IWbemClassObject_Put(struct IWbemClassObject *d, TALLOC_CTX *mem_ctx, con
 	wco = (struct IWbemClassObject *)d->object_data;
 	for (i = 0; i < wco->obj_class->__PROPERTY_COUNT; ++i) {
 		if (!strcmp(wco->obj_class->properties[i].property.name, name)) {
-			if (cimtype && cimtype != wco->obj_class->properties[i].property.desc->cimtype) return WERR_INVALID_PARAM;
+			if (cimtype && cimtype != wco->obj_class->properties[i].property.desc->cimtype) return WERR_INVALID_PARAMETER;
 			wco->instance->default_flags[i] = 0;
 			duplicate_CIMVAR(wco->instance, val, &wco->instance->data[i], wco->obj_class->properties[i].property.desc->cimtype);
 			return WERR_OK;
