@@ -1896,7 +1896,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 			if (!add_rid_to_array_unique(ctx,
 						     member_rids[i],
 						     &add_rids, &num_add_rids)) {
-				werr = WERR_GENERAL_FAILURE;
+				werr = WERR_GEN_FAILURE;
 				goto done;
 			}
 		}
@@ -1916,7 +1916,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 			if (!add_rid_to_array_unique(ctx,
 						     rid_array->rids[k],
 						     &del_rids, &num_del_rids)) {
-				werr = WERR_GENERAL_FAILURE;
+				werr = WERR_GEN_FAILURE;
 				goto done;
 			}
 		}

@@ -77,7 +77,7 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		TALLOC_FREE(frame);
 		fprintf(stderr, "error loading %s\n", get_dyn_CONFIGFILE() );
-		return W_ERROR_V(WERR_GENERAL_FAILURE);
+		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
 
 	init_names();
@@ -207,7 +207,7 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 	
 	if (!lp_set_cmdline("log level", debuglevel)) {
 		TALLOC_FREE(frame);
-		return W_ERROR_V(WERR_GENERAL_FAILURE);
+		return W_ERROR_V(WERR_GEN_FAILURE);
 	}
 	TALLOC_FREE(frame);
 	return NET_API_STATUS_SUCCESS;

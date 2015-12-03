@@ -412,7 +412,7 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 
 	ads = ads_init(info->domain_name, info->domain_name, dc);
 	if (!ads) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	SAFE_FREE(ads->auth.user_name);
