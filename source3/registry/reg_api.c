@@ -804,7 +804,7 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 	if (!store_reg_values(key->key, key->values)) {
 		TALLOC_FREE(key->values);
 		DEBUG(0, ("reg_setvalue: store_reg_values failed\n"));
-		err = WERR_REG_IO_FAILURE;
+		err = WERR_REGISTRY_IO_FAILED;
 		goto done;
 	}
 
@@ -870,7 +870,7 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 
 	if (!store_reg_values(key->key, key->values)) {
 		TALLOC_FREE(key->values);
-		err = WERR_REG_IO_FAILURE;
+		err = WERR_REGISTRY_IO_FAILED;
 		DEBUG(0, ("reg_deletevalue: store_reg_values failed\n"));
 		goto done;
 	}
@@ -940,7 +940,7 @@ WERROR reg_deleteallvalues(struct registry_key *key)
 
 	if (!store_reg_values(key->key, key->values)) {
 		TALLOC_FREE(key->values);
-		return WERR_REG_IO_FAILURE;
+		return WERR_REGISTRY_IO_FAILED;
 	}
 
 	return WERR_OK;

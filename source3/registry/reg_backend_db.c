@@ -509,7 +509,7 @@ static WERROR regdb_upgrade_v1_to_v2(struct db_context *db)
 
 	status = dbwrap_traverse(db, regdb_normalize_keynames_fn, db, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = WERR_REG_IO_FAILURE;
+		werr = WERR_REGISTRY_IO_FAILED;
 		goto done;
 	}
 
@@ -704,7 +704,7 @@ static WERROR regdb_upgrade_v2_to_v3(struct db_context *db)
 
 	status = dbwrap_traverse(db, regdb_upgrade_v2_to_v3_fn, db, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = WERR_REG_IO_FAILURE;
+		werr = WERR_REGISTRY_IO_FAILED;
 		goto done;
 	}
 
@@ -805,7 +805,7 @@ WERROR regdb_init(void)
 	}
 
 	if (dbwrap_transaction_start(regdb) != 0) {
-		return WERR_REG_IO_FAILURE;
+		return WERR_REGISTRY_IO_FAILED;
 	}
 
 	if (vers_id == REGDB_VERSION_V1) {
@@ -837,7 +837,7 @@ WERROR regdb_init(void)
 	/* future upgrade code should go here */
 
 	if (dbwrap_transaction_commit(regdb) != 0) {
-		return WERR_REG_IO_FAILURE;
+		return WERR_REGISTRY_IO_FAILED;
 	}
 
 	return WERR_OK;
@@ -914,19 +914,19 @@ int regdb_close( void )
 WERROR regdb_transaction_start(void)
 {
 	return (dbwrap_transaction_start(regdb) == 0) ?
-		WERR_OK : WERR_REG_IO_FAILURE;
+		WERR_OK : WERR_REGISTRY_IO_FAILED;
 }
 
 WERROR regdb_transaction_commit(void)
 {
 	return (dbwrap_transaction_commit(regdb) == 0) ?
-		WERR_OK : WERR_REG_IO_FAILURE;
+		WERR_OK : WERR_REGISTRY_IO_FAILED;
 }
 
 WERROR regdb_transaction_cancel(void)
 {
 	return (dbwrap_transaction_cancel(regdb) == 0) ?
-		WERR_OK : WERR_REG_IO_FAILURE;
+		WERR_OK : WERR_REGISTRY_IO_FAILED;
 }
 
 /***********************************************************************

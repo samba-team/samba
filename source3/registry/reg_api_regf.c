@@ -95,7 +95,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	    || !store_reg_keys(&registry_key, subkeys))
 	{
 		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
-		result = WERR_REG_IO_FAILURE;
+		result = WERR_REGISTRY_IO_FAILED;
 	}
 
 	TALLOC_FREE(subkeys);
