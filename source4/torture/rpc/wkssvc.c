@@ -1213,7 +1213,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 
 	switch (join_status) {
 		case NET_SETUP_DOMAIN_NAME:
-			expected_err = WERR_SETUP_ALREADY_JOINED;
+			expected_err = WERR_NERR_SETUPALREADYJOINED;
 			break;
 		case NET_SETUP_UNKNOWN_STATUS:
 		case NET_SETUP_UNJOINED:
