@@ -79,7 +79,7 @@ bool test_BrowserrQueryOtherDomains(struct torture_context *tctx,
 
 	status = dcerpc_BrowserrQueryOtherDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BrowserrQueryOtherDomains failed");
-	torture_assert_werr_equal(tctx, WERR_UNKNOWN_LEVEL, r.out.result,
+	torture_assert_werr_equal(tctx, WERR_INVALID_LEVEL, r.out.result,
 				  "BrowserrQueryOtherDomains");
 
 	info.info.info101 = &ctr101;
@@ -88,25 +88,25 @@ bool test_BrowserrQueryOtherDomains(struct torture_context *tctx,
 
 	status = dcerpc_BrowserrQueryOtherDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BrowserrQueryOtherDomains failed");
-	torture_assert_werr_equal(tctx, WERR_UNKNOWN_LEVEL, r.out.result,
+	torture_assert_werr_equal(tctx, WERR_INVALID_LEVEL, r.out.result,
 				  "BrowserrQueryOtherDomains");
 
 	info.info.info101 = NULL;
 	status = dcerpc_BrowserrQueryOtherDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BrowserrQueryOtherDomains failed");
-	torture_assert_werr_equal(tctx, WERR_UNKNOWN_LEVEL, r.out.result,
+	torture_assert_werr_equal(tctx, WERR_INVALID_LEVEL, r.out.result,
 				  "BrowserrQueryOtherDomains");
 
 	info.level = 102;
 	status = dcerpc_BrowserrQueryOtherDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BrowserrQueryOtherDomains failed");
-	torture_assert_werr_equal(tctx, WERR_UNKNOWN_LEVEL, r.out.result,
+	torture_assert_werr_equal(tctx, WERR_INVALID_LEVEL, r.out.result,
 				  "BrowserrQueryOtherDomains");
 
 	info.level = 0;
 	status = dcerpc_BrowserrQueryOtherDomains_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "BrowserrQueryOtherDomains failed");
-	torture_assert_werr_equal(tctx, WERR_UNKNOWN_LEVEL, r.out.result,
+	torture_assert_werr_equal(tctx, WERR_INVALID_LEVEL, r.out.result,
 				  "BrowserrQueryOtherDomains");
 
 	return true;

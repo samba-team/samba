@@ -1423,7 +1423,7 @@ static bool test_SetPrinter_errors(struct torture_context *tctx,
 
 		switch (info_ctr.level) {
 		case 1:
-			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL,
 				"unexpected error code returned");
 			break;
 		case 2:
@@ -2595,7 +2595,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 		dcerpc_spoolss_EnumForms_r(b, tctx, &r),
 		"EnumForms failed");
 
-	if ((r.in.level == 2) && (W_ERROR_EQUAL(r.out.result, WERR_UNKNOWN_LEVEL))) {
+	if ((r.in.level == 2) && (W_ERROR_EQUAL(r.out.result, WERR_INVALID_LEVEL))) {
 		torture_skip(tctx, "EnumForms level 2 not supported");
 	}
 
@@ -3134,7 +3134,7 @@ static bool test_GetJob_args(struct torture_context *tctx,
 	status = dcerpc_spoolss_GetJob_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
 	if (level == 0) {
-		torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "Unexpected return code");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL, "Unexpected return code");
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
@@ -3250,7 +3250,7 @@ static bool test_AddJob(struct torture_context *tctx,
 
 	status = dcerpc_spoolss_AddJob_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "AddJob failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "AddJob failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL, "AddJob failed");
 
 	r.in.level = 1;
 
@@ -9708,11 +9708,11 @@ static bool test_AddPrinterDriver_args_level_1(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_UNKNOWN_LEVEL),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_LEVEL),
 			"failed to test AddPrinterDriverEx level 1");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_LEVEL),
 			"failed to test AddPrinterDriver level 1");
 	}
 
@@ -9720,11 +9720,11 @@ static bool test_AddPrinterDriver_args_level_1(struct torture_context *tctx,
 
 	if (ex) {
 		torture_assert(tctx,
-			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_UNKNOWN_LEVEL),
+			test_AddPrinterDriverEx_exp(tctx, b, server_name, &info_ctr, flags, WERR_INVALID_LEVEL),
 			"failed to test AddPrinterDriverEx level 1");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_LEVEL),
 			"failed to test AddPrinterDriver level 1");
 	}
 
@@ -10002,7 +10002,7 @@ static bool test_AddPrinterDriver_args_level_6(struct torture_context *tctx,
 			"failed to test AddPrinterDriverEx level 6");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_LEVEL),
 			"failed to test AddPrinterDriver level 6");
 	}
 
@@ -10053,7 +10053,7 @@ static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
 			"failed to test AddPrinterDriverEx level 8");
 	} else {
 		torture_assert(tctx,
-			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_UNKNOWN_LEVEL),
+			test_AddPrinterDriver_exp(tctx, b, server_name, &info_ctr, WERR_INVALID_LEVEL),
 			"failed to test AddPrinterDriver level 8");
 	}
 

@@ -2175,7 +2175,7 @@ static bool test_LogonControl(struct torture_context *tctx,
 				"LogonControl returned unexpected error code");
 			break;
 		default:
-			torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+			torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL,
 				"LogonControl returned unexpected error code");
 			break;
 		}
@@ -2355,7 +2355,7 @@ static bool test_LogonControl2(struct torture_context *tctx,
 
 	status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL, "LogonControl2");
 
 	return true;
 }
@@ -2545,7 +2545,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 
 	status = dcerpc_netr_LogonControl2Ex_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "LogonControl2Ex");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2Ex");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL, "LogonControl2Ex");
 
 	return true;
 }

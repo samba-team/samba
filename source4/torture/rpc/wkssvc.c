@@ -346,7 +346,7 @@ static bool test_NetrUseAdd(struct torture_context *tctx,
 	status = dcerpc_wkssvc_NetrUseAdd_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "NetrUseAdd failed");
-	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL,
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL,
 			       "NetrUseAdd failed");
 
 	ZERO_STRUCT(r);

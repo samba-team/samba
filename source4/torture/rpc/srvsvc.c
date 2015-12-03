@@ -557,10 +557,10 @@ static bool test_NetShareAddSetDel(struct torture_context *tctx,
 		uint32_t level;
 		WERROR expected;
 	} levels[] = {
-		 { 0,		WERR_UNKNOWN_LEVEL },
+		 { 0,		WERR_INVALID_LEVEL },
 		 { 1,		WERR_OK },
 		 { 2,		WERR_OK },
-		 { 501,		WERR_UNKNOWN_LEVEL },
+		 { 501,		WERR_INVALID_LEVEL },
 		 { 502,		WERR_OK },
 		 { 1004,	WERR_OK },
 		 { 1005,	WERR_OK },
@@ -860,7 +860,7 @@ static bool test_NetShareEnum(struct torture_context *tctx,
 		 { 0,	WERR_OK,		WERR_OK },
 		 { 1,	WERR_OK,		WERR_OK },
 		 { 2,	WERR_ACCESS_DENIED,	WERR_OK },
-		 { 501,	WERR_UNKNOWN_LEVEL,	WERR_UNKNOWN_LEVEL },
+		 { 501,	WERR_INVALID_LEVEL,	WERR_INVALID_LEVEL },
 		 { 502,	WERR_ACCESS_DENIED,	WERR_OK },
 	};
 	int i;
