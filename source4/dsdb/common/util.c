@@ -2318,7 +2318,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 	if (ret == LDB_ERR_CONSTRAINT_VIOLATION) {
 		const char *errmsg = ldb_errstring(ldb);
 		char *endptr = NULL;
-		WERROR werr = WERR_GENERAL_FAILURE;
+		WERROR werr = WERR_GEN_FAILURE;
 		status = NT_STATUS_UNSUCCESSFUL;
 		if (errmsg != NULL) {
 			werr = W_ERROR(strtol(errmsg, &endptr, 16));
