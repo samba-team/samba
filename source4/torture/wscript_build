@@ -65,6 +65,10 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	deps='torture'
 	)
 
+if bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'):
+    torture_rpc_backupkey = 'rpc/backupkey.c'
+else:
+    torture_rpc_backupkey = 'rpc/backupkey_heimdal.c'
 
 bld.SAMBA_MODULE('torture_rpc',
                  source='''
@@ -120,8 +124,7 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/fsrvp.c
                         rpc/clusapi.c
                         rpc/witness.c
-                        rpc/backupkey_heimdal.c
-                        ''' + ntvfs_specific['source'],
+                        ''' + torture_rpc_backupkey + ntvfs_specific['source'],
                  autoproto='rpc/proto.h',
                  subsystem='smbtorture',
                  init_function='torture_rpc_init',
