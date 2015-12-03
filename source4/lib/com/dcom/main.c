@@ -329,7 +329,7 @@ WERROR dcom_create_object(struct com_context *ctx, struct GUID *clsid, const cha
 	if (!m->rem_unknown) {
 		if (!ru_template) {
 			DEBUG(1,("dcom_create_object: Cannot Create IRemUnknown - template interface not available\n"));
-			hr = WERR_GENERAL_FAILURE;
+			hr = WERR_GEN_FAILURE;
 		}
 		m->rem_unknown = talloc_zero(m, struct IRemUnknown);
 		memcpy(m->rem_unknown, ru_template, sizeof(struct IUnknown));
