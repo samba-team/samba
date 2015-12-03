@@ -1754,7 +1754,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 
 	path = winreg_printer_data_keyname(mem_ctx, sharename);
 	if (path == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_get_secdesc(mem_ctx, winreg_handle,
@@ -1896,7 +1896,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 
 	path = winreg_printer_data_keyname(mem_ctx, sharename);
 	if (path == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	result = winreg_set_secdesc(mem_ctx, winreg_handle,
