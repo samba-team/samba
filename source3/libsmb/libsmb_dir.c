@@ -317,7 +317,7 @@ net_share_enum_rpc(struct cli_state *cli,
 
 	if (total_entries == 0) {
                 /*  Nope.  Go clean up. */
-		result = WERR_GENERAL_FAILURE;
+		result = WERR_GEN_FAILURE;
 		goto done;
 	}
 
