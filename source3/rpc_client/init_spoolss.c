@@ -123,7 +123,7 @@ WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_pull_union_blob(blob, mem_ctx, data, type,
 			(ndr_pull_flags_fn_t)ndr_pull_spoolss_PrinterData);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 	return WERR_OK;
 }
@@ -139,7 +139,7 @@ WERROR push_spoolss_PrinterData(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 	ndr_err = ndr_push_union_blob(blob, mem_ctx, data, type,
 			(ndr_push_flags_fn_t)ndr_push_spoolss_PrinterData);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 	return WERR_OK;
 }
