@@ -608,7 +608,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	if (W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("winreg_create_printer: Skipping, %s already exists\n", path));
 		goto done;
-	} else if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+	} else if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 		DEBUG(2, ("winreg_create_printer: Creating default values in %s\n", path));
 	} else if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_create_printer: Could not open key %s: %s\n",
@@ -1619,7 +1619,7 @@ static WERROR winreg_get_secdesc(TALLOC_CTX *mem_ctx,
 					&hive_hnd,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 			goto create_default;
 		}
 		goto done;
@@ -1635,7 +1635,7 @@ static WERROR winreg_get_secdesc(TALLOC_CTX *mem_ctx,
 		result = ntstatus_to_werror(status);
 	}
 	if (!W_ERROR_IS_OK(result)) {
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 
 			if (is_valid_policy_hnd(&key_hnd)) {
 				dcerpc_winreg_CloseKey(winreg_handle,
@@ -2413,7 +2413,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
 		/* key doesn't exist */
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 			result = WERR_OK;
 			goto done;
 		}
@@ -2750,7 +2750,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 					&key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
 		/* key doesn't exist */
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 			result = WERR_OK;
 			goto done;
 		}
@@ -2898,7 +2898,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_deleteform1: Could not open key %s: %s\n",
 			  TOP_LEVEL_CONTROL_FORMS_KEY, win_errstr(result)));
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 			result = WERR_INVALID_FORM_NAME;
 		}
 		goto done;
@@ -2918,7 +2918,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+	if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 		result = WERR_INVALID_FORM_NAME;
 	}
 
@@ -3824,7 +3824,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 					   &key_hnd);
 	if (!W_ERROR_IS_OK(result)) {
 		/* key doesn't exist */
-		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 			result = WERR_OK;
 			goto done;
 		}

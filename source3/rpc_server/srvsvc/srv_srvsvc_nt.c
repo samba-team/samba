@@ -2071,10 +2071,10 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	if (ret == -1 && (errno != EACCES)) {
 		/*
 		 * If path has any other than permission
-		 * problem, return WERR_BADFILE (as Windows
+		 * problem, return WERR_FILE_NOT_FOUND (as Windows
 		 * does.
 		 */
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
@@ -2764,7 +2764,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 	/* enum_file_close_fn sends the close message to
 	 * the relevant smbd process. */
 
-	r->out.result = WERR_BADFILE;
+	r->out.result = WERR_FILE_NOT_FOUND;
 	state.r = r;
 	state.msg_ctx = p->msg_ctx;
 	share_entry_forall(enum_file_close_fn, &state);

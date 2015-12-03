@@ -83,7 +83,7 @@ static WERROR open_registry_key(struct pipes_struct *p,
 	}
 
 	if ( !create_policy_hnd( p, hnd, key ) ) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	return WERR_OK;
@@ -239,7 +239,7 @@ WERROR _winreg_OpenKey(struct pipes_struct *p,
 WERROR _winreg_QueryValue(struct pipes_struct *p,
 			  struct winreg_QueryValue *r)
 {
-	WERROR        status = WERR_BADFILE;
+	WERROR        status = WERR_FILE_NOT_FOUND;
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
 	prs_struct    prs_hkpd;
 
@@ -300,7 +300,7 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 		else {
 			DEBUG(3,("Unsupported key name [%s] for HKPD.\n",
 				 r->in.value_name->name));
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 
 		*r->out.type = REG_BINARY;
@@ -329,7 +329,7 @@ WERROR _winreg_QueryValue(struct pipes_struct *p,
 		*r->out.type = val->type;
 	}
 
-	status = WERR_BADFILE;
+	status = WERR_FILE_NOT_FOUND;
 
 	if (*r->in.data_size < outbuf_size) {
 		*r->out.data_size = outbuf_size;
@@ -792,7 +792,7 @@ WERROR _winreg_CreateKey(struct pipes_struct *p,
 
 	if (!create_policy_hnd(p, r->out.new_handle, new_key)) {
 		TALLOC_FREE(new_key);
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	return WERR_OK;
@@ -1119,7 +1119,7 @@ WERROR _winreg_QueryMultipleValues2(struct pipes_struct *p,
 	*r->out.needed = result.length;
 
 	if (r->in.num_values != num_vals) {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if (*r->in.offered >= *r->out.needed) {

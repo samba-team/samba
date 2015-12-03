@@ -2405,7 +2405,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		const char *hostname = get_mydnsfullname();
 
 		if (!hostname) {
-			return WERR_BADFILE;
+			return WERR_FILE_NOT_FOUND;
 		}
 
 		*type = REG_SZ;
@@ -10071,7 +10071,7 @@ WERROR _spoolss_EnumPrinterKey(struct pipes_struct *p,
 	uint32_t	num_keys;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, r->in.handle);
 	int 		snum = 0;
-	WERROR		result = WERR_BADFILE;
+	WERROR		result = WERR_FILE_NOT_FOUND;
 	const char **array = NULL;
 	DATA_BLOB blob;
 
