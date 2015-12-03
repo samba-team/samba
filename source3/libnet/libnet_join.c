@@ -2595,7 +2595,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 			"failed to join domain '%s' over rpc: %s",
 			r->in.domain_name, get_friendly_nt_error_msg(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			return WERR_SETUP_ALREADY_JOINED;
+			return WERR_NERR_SETUPALREADYJOINED;
 		}
 		werr = ntstatus_to_werror(status);
 		goto done;
