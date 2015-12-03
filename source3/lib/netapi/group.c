@@ -997,7 +997,7 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 	if (!NT_STATUS_IS_OK(result)) {
-		werr = WERR_USER_NOT_FOUND;
+		werr = WERR_NERR_USERNOTFOUND;
 		goto done;
 	}
 	if (rids.count != 1) {
@@ -1010,7 +1010,7 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (types.ids[0] != SID_NAME_USER) {
-		werr = WERR_USER_NOT_FOUND;
+		werr = WERR_NERR_USERNOTFOUND;
 		goto done;
 	}
 
@@ -1158,7 +1158,7 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(result)) {
-		werr = WERR_USER_NOT_FOUND;
+		werr = WERR_NERR_USERNOTFOUND;
 		goto done;
 	}
 	if (rids.count != 1) {
@@ -1171,7 +1171,7 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	}
 
 	if (types.ids[0] != SID_NAME_USER) {
-		werr = WERR_USER_NOT_FOUND;
+		werr = WERR_NERR_USERNOTFOUND;
 		goto done;
 	}
 
