@@ -203,7 +203,7 @@ bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
 
 		wkey.name = talloc_asprintf(tmp_ctx, "%s\\Security", key);
 		if (wkey.name == NULL) {
-			result = WERR_NOMEM;
+			result = WERR_NOT_ENOUGH_MEMORY;
 			goto done;
 		}
 
