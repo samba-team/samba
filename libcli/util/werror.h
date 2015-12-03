@@ -176,7 +176,6 @@ typedef uint32_t WERROR;
 #define WERR_PRINTER_HAS_JOBS_QUEUED		W_ERROR(0x00000BC1)
 
 #define WERR_NO_SHUTDOWN_IN_PROGRESS W_ERROR(0x0000045c)
-#define WERR_SHUTDOWN_ALREADY_IN_PROGRESS W_ERROR(0x0000045b)
 
 /* Configuration Manager Errors */
 /* Basically Win32 errors meanings are specific to the \ntsvcs pipe */
