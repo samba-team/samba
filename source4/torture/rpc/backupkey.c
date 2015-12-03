@@ -1176,8 +1176,8 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 /*
  * Check that the RSA modulus in the certificate of the DCs has 2048 bits.
  */
-static bool test_RetrieveBackupKeyGUID_2048bits(struct torture_context *tctx,
-					struct dcerpc_pipe *p)
+static bool test_RetrieveBackupKeyGUID_validate(struct torture_context *tctx,
+						struct dcerpc_pipe *p)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	DATA_BLOB out_blob;
@@ -1187,7 +1187,7 @@ static bool test_RetrieveBackupKeyGUID_2048bits(struct torture_context *tctx,
 
 	gnutls_global_init();
 
-	torture_assert(tctx, r != NULL, "createRetrieveBackupKeyGUIDStruct failed");
+	torture_assert(tctx, r != NULL, "test_RetrieveBackupKeyGUID_validate failed");
 
 	if (r == NULL) {
 		return false;
@@ -1200,7 +1200,24 @@ static bool test_RetrieveBackupKeyGUID_2048bits(struct torture_context *tctx,
 		gnutls_pubkey_t pubkey = NULL;
 		gnutls_datum_t x509_crt_data;
 		gnutls_pk_algorithm_t pubkey_algo;
+		uint8_t dummy[1] = {0};
+		DATA_BLOB subject_unique_id = {
+			.data = dummy,
+			.length = 0,
+		};
+		DATA_BLOB issuer_unique_id = {
+			.data = dummy,
+			.length = 0,
+		};
+		DATA_BLOB reversed = {
+			.data = dummy,
+			.length = 0,
+		};
+		DATA_BLOB serial_number;
 		unsigned int RSA_returned_bits = 0;
+		int version;
+		size_t i;
+		int cmp;
 		int rc;
 
 		torture_assert_ntstatus_ok(tctx,
@@ -1228,6 +1245,101 @@ static bool test_RetrieveBackupKeyGUID_2048bits(struct torture_context *tctx,
 					 GNUTLS_E_SUCCESS,
 					 "gnutls_x509_crt_import failed");
 
+		/* Compare unique ids */
+
+		/* Get buffer size */
+		rc = gnutls_x509_crt_get_subject_unique_id(x509_cert,
+							   (char *)subject_unique_id.data,
+							   &subject_unique_id.length);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 GNUTLS_E_SHORT_MEMORY_BUFFER,
+					 "gnutls_x509_crt_get_subject_unique_id "
+					 "get buffer size failed");
+
+		subject_unique_id = data_blob_talloc_zero(tctx,
+							  subject_unique_id.length);
+
+		rc = gnutls_x509_crt_get_subject_unique_id(x509_cert,
+							   (char *)subject_unique_id.data,
+							   &subject_unique_id.length);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 GNUTLS_E_SUCCESS,
+					 "gnutls_x509_crt_get_subject_unique_id failed");
+
+		rc = gnutls_x509_crt_get_issuer_unique_id(x509_cert,
+							  (char *)issuer_unique_id.data,
+							  &issuer_unique_id.length);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 GNUTLS_E_SHORT_MEMORY_BUFFER,
+					 "gnutls_x509_crt_get_issuer_unique_id "
+					 "get buffer size failed");
+
+		issuer_unique_id = data_blob_talloc_zero(tctx,
+							 issuer_unique_id.length);
+
+		rc = gnutls_x509_crt_get_issuer_unique_id(x509_cert,
+							  (char *)issuer_unique_id.data,
+							  &issuer_unique_id.length);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 GNUTLS_E_SUCCESS,
+					 "gnutls_x509_crt_get_issuer_unique_id failed");
+
+		cmp = data_blob_cmp(&subject_unique_id, &issuer_unique_id);
+		torture_assert(tctx,
+			       cmp == 0,
+			       "The GUID to identify the public key is not "
+			       "identical");
+
+		rc = gnutls_x509_crt_get_serial(x509_cert,
+						reversed.data,
+						&reversed.length);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 GNUTLS_E_SHORT_MEMORY_BUFFER,
+					 "gnutls_x509_crt_get_serial "
+					 "get buffer size failed");
+
+		reversed = data_blob_talloc_zero(tctx,
+						 reversed.length);
+
+		rc = gnutls_x509_crt_get_serial(x509_cert,
+						reversed.data,
+						&reversed.length);
+		torture_assert_int_equal(tctx,
+					 rc,
+					 GNUTLS_E_SUCCESS,
+					 "gnutls_x509_crt_get_serial failed");
+
+		/*
+		 * Heimdal sometimes adds a leading byte to the data buffer of
+		 * the serial number. So lets uses the subject_unique_id size
+		 * and ignore the leading byte.
+		 */
+		serial_number = data_blob_talloc_zero(tctx,
+						      subject_unique_id.length);
+
+		for (i = 0; i < serial_number.length; i++) {
+			serial_number.data[i] = reversed.data[reversed.length - i - 1];
+		}
+
+		cmp = data_blob_cmp(&subject_unique_id, &serial_number);
+		torture_assert(tctx,
+			       cmp == 0,
+			       "The GUID to identify the public key is not "
+			       "identical");
+
+		/* Check certificate version */
+		version = gnutls_x509_crt_get_version(x509_cert);
+		torture_assert_int_equal(tctx,
+					 version,
+					 3,
+					 "Invalid certificate version");
+
+		/* Get the public key */
 		rc = gnutls_pubkey_init(&pubkey);
 		torture_assert_int_equal(tctx,
 					 rc,
@@ -2254,8 +2366,8 @@ struct torture_suite *torture_rpc_backupkey(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "empty_request_restore_guid",
 				   test_RestoreGUID_emptyrequest);
 
-	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid_2048_bits",
-				   test_RetrieveBackupKeyGUID_2048bits);
+	torture_rpc_tcase_add_test(tcase, "retreive_backup_key_guid_validate",
+				   test_RetrieveBackupKeyGUID_validate);
 
 	torture_rpc_tcase_add_test(tcase, "server_wrap_encrypt_decrypt",
 				   test_ServerWrap_encrypt_decrypt);
