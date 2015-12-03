@@ -42,7 +42,7 @@ bool tevent_req_is_werror(struct tevent_req *req, WERROR *error)
 		*error = WERR_TIMEOUT;
 		break;
 	case TEVENT_REQ_NO_MEMORY:
-		*error = WERR_NOMEM;
+		*error = WERR_NOT_ENOUGH_MEMORY;
 		break;
 	case TEVENT_REQ_USER_ERROR:
 		*error = W_ERROR(err);
