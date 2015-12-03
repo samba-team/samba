@@ -2222,7 +2222,7 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 
 		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_GEN_FAILURE;
 		}
 	}
 #endif /* HAVE_ADS */
