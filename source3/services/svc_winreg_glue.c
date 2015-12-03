@@ -127,7 +127,7 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 			  "%s\n", nt_errstr(status)));
 		return NULL;
 	}
-	if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
+	if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
 		goto fallback_to_default_sd;
 	} else if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("svcctl_get_secdesc: error getting value 'Security': "
