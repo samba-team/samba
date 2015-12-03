@@ -161,7 +161,7 @@ static NTSTATUS migrate_internal(TALLOC_CTX *mem_ctx,
 						 dbuf.dptr,
 						 dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
-			if (NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_BADFILE))) {
+			if (NT_STATUS_EQUAL(status, werror_to_ntstatus(WERR_FILE_NOT_FOUND))) {
 				DEBUG(2, ("Skipping secdesc migration for non-existent "
 						"printer: %s\n", secdesc_name));
 			} else if (!NT_STATUS_IS_OK(status)) {

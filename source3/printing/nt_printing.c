@@ -751,7 +751,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 	nt_status = vfs_file_exist(conn, smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(3,("get_correct_cversion: vfs_file_exist failed\n"));
-		*perr = WERR_BADFILE;
+		*perr = WERR_FILE_NOT_FOUND;
 		goto error_exit;
 	}
 

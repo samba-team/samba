@@ -86,7 +86,7 @@ WERROR spoolss_map_to_os2_driver(TALLOC_CTX *mem_ctx, const char **pdrivername)
 	drivername = *pdrivername;
 
 	if (mapfile[0] == '\0') {
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	if (strequal(drivername, get_win_driver())) {

@@ -197,7 +197,7 @@ static WERROR nt_printer_guid_retrieve_internal(ADS_STRUCT *ads,
 	if (!ADS_ERR_OK(ads_status)) {
 		DEBUG(2, ("Failed to retrieve GUID from DC - %s\n",
 			  ads_errstr(ads_status)));
-		return WERR_BADFILE;
+		return WERR_FILE_NOT_FOUND;
 	}
 
 	ZERO_STRUCT(guid);
