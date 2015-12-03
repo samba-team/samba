@@ -678,7 +678,7 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 	char *printdollar = NULL;
 	int printdollar_snum;
 
-	*perr = WERR_INVALID_PARAM;
+	*perr = WERR_INVALID_PARAMETER;
 
 	/* If architecture is Windows 95/98/ME, the version is always 0. */
 	if (strcmp(architecture, SPL_ARCH_WIN40) == 0) {
@@ -787,13 +787,13 @@ static uint32_t get_correct_cversion(struct auth_session_info *session_info,
 
 		ret = get_file_version(fsp, smb_fname->base_name, &major, &minor);
 		if (ret == -1) {
-			*perr = WERR_INVALID_PARAM;
+			*perr = WERR_INVALID_PARAMETER;
 			goto error_exit;
 		} else if (!ret) {
 			DEBUG(6,("get_correct_cversion: Version info not "
 				 "found [%s]\n",
 				 smb_fname_str_dbg(smb_fname)));
-			*perr = WERR_INVALID_PARAM;
+			*perr = WERR_INVALID_PARAMETER;
 			goto error_exit;
 		}
 
@@ -872,11 +872,11 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	char *_p;
 
 	if (!*driver_path || !*data_file) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!strequal(architecture, SPOOLSS_ARCHITECTURE_4_0) && !*config_file) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* clean up the driver name.

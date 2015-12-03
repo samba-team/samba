@@ -2345,14 +2345,14 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 	if (!pjob || !server_info) {
 		DEBUG(10, ("print_job_pause: no pjob or user for jobid %u\n",
 			(unsigned int)jobid ));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto err_out;
 	}
 
 	if (!pjob->spooled || pjob->sysjob == -1) {
 		DEBUG(10, ("print_job_pause: not spooled or bad sysjob = %d for jobid %u\n",
 			(int)pjob->sysjob, (unsigned int)jobid ));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto err_out;
 	}
 
@@ -2372,7 +2372,7 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 	ret = (*(current_printif->job_pause))(snum, pjob);
 
 	if (ret != 0) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto err_out;
 	}
 
@@ -2412,14 +2412,14 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 	if (!pjob || !server_info) {
 		DEBUG(10, ("print_job_resume: no pjob or user for jobid %u\n",
 			(unsigned int)jobid ));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto err_out;
 	}
 
 	if (!pjob->spooled || pjob->sysjob == -1) {
 		DEBUG(10, ("print_job_resume: not spooled or bad sysjob = %d for jobid %u\n",
 			(int)pjob->sysjob, (unsigned int)jobid ));
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto err_out;
 	}
 
@@ -2438,7 +2438,7 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 	ret = (*(current_printif->job_resume))(snum, pjob);
 
 	if (ret != 0) {
-		werr = WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAMETER;
 		goto err_out;
 	}
 
@@ -3330,7 +3330,7 @@ WERROR print_queue_pause(const struct auth_session_info *server_info,
 	unbecome_root();
 
 	if (ret != 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* force update the database */
@@ -3366,7 +3366,7 @@ WERROR print_queue_resume(const struct auth_session_info *server_info,
 	unbecome_root();
 
 	if (ret != 0) {
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* make sure the database is up to date */
