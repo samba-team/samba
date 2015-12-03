@@ -1753,7 +1753,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 	/* Does this share exist ? */
 	if (snum < 0)
-		return WERR_NET_NAME_NOT_FOUND;
+		return WERR_NERR_NETNAMENOTFOUND;
 
 	/* No change to printer shares. */
 	if (lp_printable(snum))
@@ -2164,7 +2164,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	DEBUG(5,("_srvsvc_NetShareDel: %d\n", __LINE__));
 
 	if (!r->in.share_name) {
-		return WERR_NET_NAME_NOT_FOUND;
+		return WERR_NERR_NETNAMENOTFOUND;
 	}
 
 	if ( strequal(r->in.share_name,"IPC$")
@@ -2325,7 +2325,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	ZERO_STRUCT(st);
 
 	if (!r->in.share) {
-		werr = WERR_NET_NAME_NOT_FOUND;
+		werr = WERR_NERR_NETNAMENOTFOUND;
 		goto error_exit;
 	}
 	snum = find_service(talloc_tos(), r->in.share, &servicename);
@@ -2335,7 +2335,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	}
 	if (snum == -1) {
 		DEBUG(10, ("Could not find service %s\n", servicename));
-		werr = WERR_NET_NAME_NOT_FOUND;
+		werr = WERR_NERR_NETNAMENOTFOUND;
 		goto error_exit;
 	}
 
@@ -2473,7 +2473,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	ZERO_STRUCT(st);
 
 	if (!r->in.share) {
-		werr = WERR_NET_NAME_NOT_FOUND;
+		werr = WERR_NERR_NETNAMENOTFOUND;
 		goto error_exit;
 	}
 
@@ -2485,7 +2485,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 
 	if (snum == -1) {
 		DEBUG(10, ("Could not find service %s\n", servicename));
-		werr = WERR_NET_NAME_NOT_FOUND;
+		werr = WERR_NERR_NETNAMENOTFOUND;
 		goto error_exit;
 	}
 
