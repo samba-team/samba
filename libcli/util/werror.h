@@ -197,7 +197,6 @@ typedef uint32_t WERROR;
 
 
 /* FRS errors */
-#define WERR_FRS_INVALID_SERVICE_PARAMETER W_ERROR(0x00001F51)
 
 /* RPC/COM/OLE HRESULT error codes */
 /* RPC errors */
