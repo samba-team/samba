@@ -1107,7 +1107,7 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 		break;
 	default:
 		DEBUG(0,("move_driver_to_download_area: Unknown info level (%u)\n", (unsigned int)r->level));
-		return WERR_UNKNOWN_LEVEL;
+		return WERR_INVALID_LEVEL;
 	}
 
 	short_architecture = get_short_archi(driver->architecture);
