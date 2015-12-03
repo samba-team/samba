@@ -2138,7 +2138,7 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 				       &admin_domain,
 				       &admin_account);
 		if (!ok) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		if (admin_domain != NULL) {
@@ -2266,7 +2266,7 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 
 	ctx = talloc_zero(mem_ctx, struct libnet_JoinCtx);
 	if (!ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	talloc_set_destructor(ctx, libnet_destroy_JoinCtx);
@@ -2301,7 +2301,7 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 
 	ctx = talloc_zero(mem_ctx, struct libnet_UnjoinCtx);
 	if (!ctx) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	talloc_set_destructor(ctx, libnet_destroy_UnjoinCtx);
@@ -2831,7 +2831,7 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 				       &admin_domain,
 				       &admin_account);
 		if (!ok) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		if (admin_domain != NULL) {
