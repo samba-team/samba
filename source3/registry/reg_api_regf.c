@@ -184,7 +184,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	struct security_descriptor *sec_desc = NULL;
 
 	if (!regfile) {
-		return WERR_GENERAL_FAILURE;
+		return WERR_GEN_FAILURE;
 	}
 
 	if (!keypath) {
