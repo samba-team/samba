@@ -225,7 +225,7 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 		
 		attr_list = talloc_realloc(mem_ctx, attr_list, const char *, i+2);
 		if (!attr_list) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		attr_list[i] = cur->lDAPDisplayName;
 		i++;

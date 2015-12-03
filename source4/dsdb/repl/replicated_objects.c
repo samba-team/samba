@@ -60,7 +60,7 @@ static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
 		 */
 		tmp2 = talloc(dest_schema, struct dsdb_class);
 		if (tmp2 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		*tmp2 = *cur_class;
 		DLIST_ADD(dest_schema->classes, tmp2);
@@ -87,7 +87,7 @@ static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
 		 */
 		tmp2 = talloc(dest_schema, struct dsdb_attribute);
 		if (tmp2 == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		*tmp2 = *cur_attr;
 		DLIST_ADD(dest_schema->attributes, tmp2);
@@ -134,7 +134,7 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 	for (cur = first_object; cur; cur = cur->next_object) {
 		schema_list_item = talloc(frame, struct schema_list);
 		if (schema_list_item == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		schema_list_item->obj = cur;
@@ -298,7 +298,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 	working_schema = dsdb_schema_copy_shallow(mem_ctx, ldb, initial_schema);
 	if (!working_schema) {
 		DEBUG(0,(__location__ ": schema copy failed!\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	working_schema->resolving_in_progress = true;
 
@@ -832,7 +832,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 	TALLOC_CTX *tmp_ctx = talloc_new(objects);
 	if (!tmp_ctx) {
 		DEBUG(0,("Failed to start talloc\n"));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* TODO: handle linked attributes */
@@ -1104,7 +1104,7 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 	objects	= talloc_array(mem_ctx, struct ldb_message *,
 			       num_objects);
 	if (objects == NULL) {
-		status = WERR_NOMEM;
+		status = WERR_NOT_ENOUGH_MEMORY;
 		goto cancel;
 	}
 
@@ -1125,7 +1125,7 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 			   struct drsuapi_DsReplicaObjectIdentifier2,
 			   num_objects);
 	if (ids == NULL) {
-		status = WERR_NOMEM;
+		status = WERR_NOT_ENOUGH_MEMORY;
 		goto cancel;
 	}
 

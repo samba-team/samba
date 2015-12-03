@@ -54,7 +54,7 @@ static WERROR dreplsrv_init_creds(struct dreplsrv_service *service)
 {
 	service->system_session_info = system_session(service->task->lp_ctx);
 	if (service->system_session_info == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;

@@ -198,7 +198,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 		DEBUG(2, ("Could not parse principal: %s: %s\n",
 			  name, smb_get_krb5_error_message(smb_krb5_context->krb5_context, 
 							   ret, mem_ctx)));
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* grab cifs/, http/ etc */
@@ -226,7 +226,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 		info1->dns_domain_name	= talloc_strdup(mem_ctx, dns_name);
 		if (!info1->dns_domain_name) {
-			wret = WERR_NOMEM;
+			wret = WERR_NOT_ENOUGH_MEMORY;
 		}
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return wret;
@@ -240,7 +240,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	new_princ = talloc_asprintf(mem_ctx, "%s/%s", new_service, dns_name);
 	if (!new_princ) {
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	wret = DsCrackNameOneName(sam_ctx, mem_ctx, format_flags, format_offered, format_desired,
@@ -250,7 +250,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 		info1->dns_domain_name	= talloc_strdup(mem_ctx, dns_name);
 		if (!info1->dns_domain_name) {
-			wret = WERR_NOMEM;
+			wret = WERR_NOT_ENOUGH_MEMORY;
 		}
 	}
 	krb5_free_principal(smb_krb5_context->krb5_context, principal);
@@ -337,7 +337,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 	if (ret) {
 		free(unparsed_name_short);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* This may need to be extended for more userPrincipalName variations */
@@ -348,7 +348,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 	if (!result_filter || !domain_filter) {
 		free(unparsed_name_short);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	status = DsCrackNameOneFilter(sam_ctx, mem_ctx, 
 				      smb_krb5_context, 
@@ -629,7 +629,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 
 		ldap_guid = ldap_encode_ndr_GUID(mem_ctx, &guid);
 		if (!ldap_guid) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		result_filter = talloc_asprintf(mem_ctx, "(objectGUID=%s)",
 						ldap_guid);
@@ -660,7 +660,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		ldap_sid = ldap_encode_ndr_dom_sid(mem_ctx, 
 						   sid);
 		if (!ldap_sid) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		result_filter = talloc_asprintf(mem_ctx, "(objectSid=%s)",
 						ldap_sid);
@@ -676,7 +676,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					    &smb_krb5_context);
 
 		if (ret) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		/* Ensure we reject compleate junk first */
@@ -702,7 +702,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					      &unparsed_name);
 		if (ret) {
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
@@ -726,7 +726,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					    &smb_krb5_context);
 
 		if (ret) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		ret = krb5_parse_name(smb_krb5_context->krb5_context, name, &principal);
@@ -752,7 +752,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 					      KRB5_PRINCIPAL_UNPARSE_NO_REALM, &unparsed_name_short);
 		if (ret) {
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 
 		component = krb5_princ_component(smb_krb5_context->krb5_context,
@@ -771,7 +771,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			if (computer_name == NULL) {
 				krb5_free_principal(smb_krb5_context->krb5_context, principal);
 				free(unparsed_name_short);
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 
 			result_filter = talloc_asprintf(mem_ctx, "(|(&(servicePrincipalName=%s)(objectClass=user))(&(cn=%s)(objectClass=computer)))", 
@@ -836,7 +836,7 @@ static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 	info1->status = DRSUAPI_DS_NAME_STATUS_OK;
 	info1->result_name	= cracked;
 	if (!cracked) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;	

@@ -1862,7 +1862,7 @@ static WERROR dsdb_syntax_DN_validate_one_val(const struct dsdb_syntax_ctx *ctx,
 	dn2 = ldb_dn_copy(tmp_ctx, dn);
 	if (dn == NULL) {
 		talloc_free(tmp_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	num_components = ldb_dn_get_comp_num(dn);

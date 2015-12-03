@@ -4655,7 +4655,7 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
 				  &guid_str_buf);
 
 	filter = talloc_asprintf(ar, "(objectGUID=%s)", tmp_str);
-	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 
 	ret = ldb_build_search_req(&search_req,
 				   ldb,
@@ -4820,7 +4820,7 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 								  "Failed to form conflict DN for %s\n",
 								  ldb_dn_get_linearized(msg->dn));
 
-			return replmd_replicated_request_werror(ar, WERR_NOMEM);
+			return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 		}
 
 		ret = dsdb_module_rename(ar->module, ar->search_msg->dn, new_dn,
@@ -5048,7 +5048,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	nmd.ctr.ctr1.array = talloc_array(ar,
 					  struct replPropertyMetaData1,
 					  nmd.ctr.ctr1.count);
-	if (!nmd.ctr.ctr1.array) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	if (!nmd.ctr.ctr1.array) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 
 	/* first copy the old meta data */
 	for (i=0; i < omd.ctr.ctr1.count; i++) {
@@ -5482,7 +5482,7 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				  &guid_str_buf);
 
 	filter = talloc_asprintf(ar, "(objectGUID=%s)", tmp_str);
-	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 
 	ret = ldb_build_search_req(&search_req,
 				   ldb,
@@ -5688,7 +5688,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	nuv.ctr.ctr2.cursors = talloc_array(ar,
 					    struct drsuapi_DsReplicaCursor2,
 					    nuv.ctr.ctr2.count);
-	if (!nuv.ctr.ctr2.cursors) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	if (!nuv.ctr.ctr2.cursors) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 
 	/* first copy the old vector */
 	for (i=0; i < ouv.ctr.ctr2.count; i++) {
@@ -5740,7 +5740,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 * create the change ldb_message
 	 */
 	msg = ldb_msg_new(ar);
-	if (!msg) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	if (!msg) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 	msg->dn = ar->search_msg->dn;
 
 	ndr_err = ndr_push_struct_blob(&nuv_value, msg, &nuv,
@@ -5775,7 +5775,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 			struct repsFromToBlob *trf;
 
 			trf = talloc(ar, struct repsFromToBlob);
-			if (!trf) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+			if (!trf) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 
 			ndr_err = ndr_pull_struct_blob(&orf_el->values[i], trf, trf,
 						       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
@@ -5988,7 +5988,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	if (req->controls) {
 		req->controls = talloc_memdup(ar, req->controls,
 					      talloc_get_size(req->controls));
-		if (!req->controls) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+		if (!req->controls) return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 	}
 
 	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);

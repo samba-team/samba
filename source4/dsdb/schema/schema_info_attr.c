@@ -125,7 +125,7 @@ WERROR dsdb_schema_info_from_blob(const DATA_BLOB *blob,
 	schema_info = talloc(mem_ctx, struct dsdb_schema_info);
 	if (!schema_info) {
 		talloc_free(temp_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* note that we accept revision numbers of zero now - w2k8r2

@@ -894,7 +894,7 @@ WERROR dsdb_set_schema_from_ldif(struct ldb_context *ldb,
 	goto done;
 
 nomem:
-	status = WERR_NOMEM;
+	status = WERR_NOT_ENOUGH_MEMORY;
 failed:
 done:
 	talloc_free(mem_ctx);

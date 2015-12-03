@@ -165,7 +165,7 @@ WERROR dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm,
 	prefixes_new = talloc_realloc(pfm, pfm->prefixes, struct dsdb_schema_prefixmap_oid, pfm->length + 1);
 	if (!prefixes_new) {
 		talloc_free(bin_oid.data);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	pfm->prefixes = prefixes_new;
 
@@ -571,7 +571,7 @@ WERROR dsdb_schema_pfm_from_drsuapi_pfm(const struct drsuapi_DsReplicaOIDMapping
 					ctr->mappings[i].oid.length);
 		if (!blob.data) {
 			talloc_free(pfm);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		pfm->prefixes[i].id = ctr->mappings[i].id_prefix;
 		pfm->prefixes[i].bin_oid = blob;
@@ -633,7 +633,7 @@ WERROR dsdb_drsuapi_pfm_from_schema_pfm(const struct dsdb_schema_prefixmap *pfm,
 	ctr->mappings = talloc_array(ctr, struct drsuapi_DsReplicaOIDMapping, ctr->num_mappings);
 	if (!ctr->mappings) {
 		talloc_free(ctr);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* copy entries from schema_prefixMap */
@@ -641,7 +641,7 @@ WERROR dsdb_drsuapi_pfm_from_schema_pfm(const struct dsdb_schema_prefixmap *pfm,
 		blob = data_blob_dup_talloc(ctr, pfm->prefixes[i].bin_oid);
 		if (!blob.data) {
 			talloc_free(ctr);
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		ctr->mappings[i].id_prefix = pfm->prefixes[i].id;
 		ctr->mappings[i].oid.length = blob.length;

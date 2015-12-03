@@ -43,7 +43,7 @@ static WERROR kccsrv_init_creds(struct kccsrv_service *service)
 {
 	service->system_session_info = system_session(service->task->lp_ctx);
 	if (!service->system_session_info) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;

@@ -387,7 +387,7 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	msg = ldb_msg_new(temp_ctx);
 	if (!msg) {
 		talloc_free(temp_ctx);
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	msg->dn = schema_dn;
@@ -395,7 +395,7 @@ WERROR dsdb_write_prefixes_from_schema_to_ldb(TALLOC_CTX *mem_ctx, struct ldb_co
 	if (ldb_ret != 0) {
 		talloc_free(temp_ctx);
 		DEBUG(0,("dsdb_write_prefixes_from_schema_to_ldb: ldb_msg_add_value failed\n"));	
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
  	}
  
 	ldb_ret = dsdb_replace(ldb, msg, DSDB_FLAG_AS_SYSTEM);
@@ -534,7 +534,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 					   get_string_val->length); \
 		if (!(p)->elem) {					\
 			d_printf("%s: talloc_strndup failed for %s\n", __location__, attr); \
-			return WERR_NOMEM;				\
+			return WERR_NOT_ENOUGH_MEMORY;				\
 		}							\
 	}								\
 } while (0)
@@ -556,7 +556,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 								    get_string_list_el->values[get_string_list_counter].length); \
 		if (!(p)->elem[get_string_list_counter]) {		\
 			d_printf("%s: talloc_strndup failed for %s\n", __location__, attr); \
-			return WERR_NOMEM;				\
+			return WERR_NOT_ENOUGH_MEMORY;				\
 		}							\
 		(p)->elem[get_string_list_counter+1] = NULL;		\
 	}								\
@@ -599,7 +599,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 		(p)->elem = talloc(mem_ctx, uint32_t); \
 		if (!(p)->elem) { \
 			d_printf("%s: talloc failed for %s\n", __location__, attr); \
-			return WERR_NOMEM; \
+			return WERR_NOT_ENOUGH_MEMORY; \
 		} \
 		*(p)->elem = (uint32_t)_v; \
 	} \
@@ -720,7 +720,7 @@ WERROR dsdb_set_attribute_from_ldb_dups(struct ldb_context *ldb,
 	WERROR status;
 	struct dsdb_attribute *attr = talloc_zero(schema, struct dsdb_attribute);
 	if (!attr) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	status = dsdb_attribute_from_ldb(schema, msg, attr);
@@ -758,7 +758,7 @@ WERROR dsdb_set_attribute_from_ldb_dups(struct ldb_context *ldb,
 		a = talloc_realloc(schema, schema->attributes_to_remove,
 				   struct dsdb_attribute *, i + 1);
 		if (a == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		/* Mark the old attribute as to be removed */
 		a[i] = discard_const_p(struct dsdb_attribute, a2);
@@ -785,7 +785,7 @@ WERROR dsdb_set_class_from_ldb_dups(struct dsdb_schema *schema,
 	WERROR status;
 	struct dsdb_class *obj = talloc_zero(schema, struct dsdb_class);
 	if (!obj) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	GET_STRING_LDB(msg, "cn", obj, obj, cn, false);
 
@@ -862,7 +862,7 @@ WERROR dsdb_set_class_from_ldb_dups(struct dsdb_schema *schema,
 		c = talloc_realloc(schema, schema->classes_to_remove,
 				   struct dsdb_class *, i + 1);
 		if (c == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		/* Mark the old class to be removed */
 		c[i] = discard_const_p(struct dsdb_class, c2);

@@ -117,7 +117,7 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 	 */
 	op->source_dsa	= talloc_reference(op, source);
 	if (!op->source_dsa) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	op->options	= options;
@@ -233,7 +233,7 @@ void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 
 	subreq = dreplsrv_op_pull_source_send(op, s->task->event_ctx, op);
 	if (!subreq) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto failed;
 	}
 
