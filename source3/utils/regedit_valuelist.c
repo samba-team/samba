@@ -290,7 +290,7 @@ static WERROR append_data_summary(TALLOC_CTX *ctx, struct value_item *vitem)
 		}
 		tmp = talloc_asprintf(ctx, "(%u) ", (unsigned)len);
 		if (tmp == NULL) {
-			return WERR_NOMEM;
+			return WERR_NOT_ENOUGH_MEMORY;
 		}
 		for (i = 0; i < len; ++i) {
 			if (!string_is_printable(a[i])) {
@@ -309,7 +309,7 @@ static WERROR append_data_summary(TALLOC_CTX *ctx, struct value_item *vitem)
 							     (unsigned)i, val);
 			}
 			if (tmp == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		}
 		break;
@@ -324,7 +324,7 @@ static WERROR append_data_summary(TALLOC_CTX *ctx, struct value_item *vitem)
 	}
 
 	if (tmp == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	vitem->value = tmp;
@@ -356,7 +356,7 @@ WERROR value_list_load_quick(struct value_list *vl, struct registry_key *key)
 
 	new_items = talloc_zero_array(vl, struct value_item, nvalues);
 	if (new_items == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	for (idx = 0; idx < nvalues; ++idx) {

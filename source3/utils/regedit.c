@@ -258,7 +258,7 @@ static WERROR regedit_search(struct regedit *regedit, struct tree_node *node,
 			save_value_name = talloc_strdup(regedit,
 							it->value_name);
 			if (save_value_name == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 		}
 

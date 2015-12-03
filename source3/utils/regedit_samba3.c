@@ -234,7 +234,7 @@ WERROR reg_open_samba3(TALLOC_CTX *mem_ctx, struct registry_context **ctx)
 
 	rctx = talloc_zero(mem_ctx, struct samba3_registry_context);
 	if (rctx == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	*ctx = (struct registry_context *)rctx;

@@ -87,7 +87,7 @@ WERROR hexedit_set_buf(struct hexedit *buf, const void *data, size_t sz)
 
 	buf->data = talloc_zero_array(buf, uint8_t, sz);
 	if (buf->data == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	if (data != NULL) {
@@ -549,7 +549,7 @@ WERROR hexedit_resize_buffer(struct hexedit *buf, size_t newsz)
 			d = talloc_realloc(buf, buf->data, uint8_t,
 					   buf->alloc_size);
 			if (d == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			buf->data = d;
 		}

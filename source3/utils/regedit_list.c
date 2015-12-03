@@ -261,7 +261,7 @@ static WERROR put_data(struct multilist *list)
 			SMB_ASSERT(item != NULL);
 			tmp = talloc_asprintf(list, "%s%s", prefix, item);
 			if (tmp == NULL) {
-				return WERR_NOMEM;
+				return WERR_NOT_ENOUGH_MEMORY;
 			}
 			put_item(list, list->pad, col, tmp, 0);
 			talloc_free(tmp);
@@ -384,7 +384,7 @@ WERROR multilist_set_data(struct multilist *list, const void *data)
 	list->nrows = data_get_row_count(list);
 	list->pad = newpad(MAX(list->nrows, 1), list->window_width);
 	if (list->pad == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* add the column headers to the window and render all rows to

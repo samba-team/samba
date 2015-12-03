@@ -269,7 +269,7 @@ WERROR tree_node_load_children(struct tree_node *node)
 
 	array = talloc_zero_array(node, struct tree_node *, nsubkeys);
 	if (array == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	for (count = 0, i = 0; i < nsubkeys; ++i) {
@@ -287,7 +287,7 @@ WERROR tree_node_load_children(struct tree_node *node)
 
 		array[count] = tree_node_new(array, node, reg_key_name, key);
 		if (array[count] == NULL) {
-			rv = WERR_NOMEM;
+			rv = WERR_NOT_ENOUGH_MEMORY;
 			goto finish;
 		}
 		++count;
