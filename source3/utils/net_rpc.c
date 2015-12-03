@@ -383,7 +383,7 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 
 	pw = talloc_strndup(r, lp_netbios_name(), 14);
 	if (pw == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto fail;
 	}
 
@@ -394,7 +394,7 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 	r->in.admin_account		= "";
 	r->in.admin_password		= strlower_talloc(r, pw);
 	if (r->in.admin_password == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto fail;
 	}
 	r->in.debug			= true;

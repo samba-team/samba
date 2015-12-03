@@ -149,7 +149,7 @@ WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
 	}
 
 	if (*hivename == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	/* strip trailing '\\' chars */
@@ -170,7 +170,7 @@ WERROR split_hive_key(TALLOC_CTX *ctx, const char *path, char **hivename,
 	}
 	*subkeyname = talloc_strdup(ctx, tmp_subkeyname);
 	if (*subkeyname == NULL) {
-		return WERR_NOMEM;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	return WERR_OK;

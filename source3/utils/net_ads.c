@@ -1485,7 +1485,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
 		d_fprintf(stderr, _("Could not initialise talloc context.\n"));
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto fail;
 	}
 

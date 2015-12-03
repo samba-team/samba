@@ -69,7 +69,7 @@ static WERROR open_hive(TALLOC_CTX *ctx, const char *path,
 	}
 	*subkeyname = talloc_strdup(ctx, tmp_subkeyname);
 	if (*subkeyname == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 

@@ -1723,7 +1723,7 @@ static WERROR import_create_key(struct import_ctx* ctx,
 
 	key = talloc_zero(mem_ctx, struct policy_handle);
 	if (key == NULL) {
-		werr = WERR_NOMEM;
+		werr = WERR_NOT_ENOUGH_MEMORY;
 		goto done;
 	}
 
