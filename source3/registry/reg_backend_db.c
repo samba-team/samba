@@ -2117,7 +2117,7 @@ static WERROR regdb_get_secdesc(TALLOC_CTX *mem_ctx, const char *key,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		err = WERR_NOT_ENOUGH_MEMORY;
 	} else if (!NT_STATUS_IS_OK(status)) {
-		err = WERR_REG_CORRUPT;
+		err = WERR_REGISTRY_CORRUPT;
 	}
 
 done:
