@@ -181,7 +181,7 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		struct libnetapi_private_ctx);
 
 	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
-		return WERR_SETUP_NOT_JOINED;
+		return WERR_NERR_SETUPNOTJOINED;
 	}
 
 	werr = libnet_init_UnjoinCtx(mem_ctx, &u);
