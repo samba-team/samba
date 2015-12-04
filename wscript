@@ -190,17 +190,15 @@ def configure(conf):
         if Options.options.with_pam:
             conf.RECURSE('lib/pam_wrapper')
         if Options.options.with_ntvfs_fileserver != False:
-            if not (Options.options.without_ad_dc or Options.options.with_system_mitkrb5):
+            if not (Options.options.without_ad_dc):
                 conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
         if Options.options.with_ntvfs_fileserver == False:
-            if not (Options.options.without_ad_dc or Options.options.with_system_mitkrb5):
+            if not (Options.options.without_ad_dc):
                 raise Utils.WafError('--without-ntvfs-fileserver conflicts with --enable-selftest while building the AD DC')
 
     if Options.options.with_ntvfs_fileserver == True:
         if Options.options.without_ad_dc:
             raise Utils.WafError('--with-ntvfs-fileserver conflicts with --without-ad-dc')
-        if Options.options.with_system_mitkrb5:
-            raise Utils.WafError('--with-ntvfs-fileserver conflicts with --with-system-mitkrb5')
         conf.DEFINE('WITH_NTVFS_FILESERVER', 1)
 
     if Options.options.with_pthreadpool:
