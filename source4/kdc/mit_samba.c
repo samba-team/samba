@@ -179,7 +179,9 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 			    unsigned int kflags,
 			    krb5_db_entry **_kentry)
 {
-	struct sdb_entry_ex sentry;
+	struct sdb_entry_ex sentry = {
+		.free_entry = NULL,
+	};
 	krb5_db_entry *kentry;
 	int ret;
 	int sflags = 0;
@@ -238,7 +240,9 @@ done:
 int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 			   krb5_db_entry **_kentry)
 {
-	struct sdb_entry_ex sentry;
+	struct sdb_entry_ex sentry = {
+		.free_entry = NULL,
+	};
 	krb5_db_entry *kentry;
 	int ret;
 
@@ -276,7 +280,9 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 			  krb5_db_entry **_kentry)
 {
-	struct sdb_entry_ex sentry;
+	struct sdb_entry_ex sentry = {
+		.free_entry = NULL,
+	};
 	krb5_db_entry *kentry;
 	int ret;
 
