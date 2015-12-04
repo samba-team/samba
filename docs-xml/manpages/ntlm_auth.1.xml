@@ -381,6 +381,12 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>--offline-logon</term>
+	<listitem><para>Allow offline logons for plain text auth.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>--configfile=&lt;configuration file&gt;</term>
 	<listitem><para>The file specified contains the
 	configuration details required by the server.  The

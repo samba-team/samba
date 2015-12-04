@@ -166,6 +166,7 @@ static DATA_BLOB opt_nt_response;
 static int request_lm_key;
 static int request_user_session_key;
 static int use_cached_creds;
+static int offline_logon;
 
 static const char *require_membership_of;
 static const char *require_membership_of_sid;
@@ -461,6 +462,10 @@ static bool check_plaintext_auth(const char *user, const char *pass,
 		strlcpy(request.data.auth.require_membership_of_sid,
 			require_membership_of_sid,
 			sizeof(request.data.auth.require_membership_of_sid));
+	}
+
+	if (offline_logon) {
+		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
 	}
 
 	result = winbindd_request_response(NULL, WINBINDD_PAM_AUTH, &request, &response);
@@ -2713,7 +2718,8 @@ enum {
 	OPT_USE_CACHED_CREDS,
 	OPT_PAM_WINBIND_CONF,
 	OPT_TARGET_SERVICE,
-	OPT_TARGET_HOSTNAME
+	OPT_TARGET_HOSTNAME,
+	OPT_OFFLINE_LOGON
 };
 
  int main(int argc, const char **argv)
@@ -2750,6 +2756,9 @@ enum {
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retrieve LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retrieve User (NT) session key"},
 		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
+		{ "offline-logon", 0, POPT_ARG_NONE, &offline_logon,
+		  OPT_OFFLINE_LOGON,
+		  "Use cached passwords when DC is offline"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics,
 		  OPT_DIAGNOSTICS,
 		  "Perform diagnostics on the authentication chain"},
