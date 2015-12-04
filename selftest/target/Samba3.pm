@@ -599,6 +599,9 @@ sub setup_fileserver($$)
 	my $offline_sharedir="$share_dir/offline";
 	push(@dirs,$offline_sharedir);
 
+	my $force_user_valid_users_dir = "$share_dir/force_user_valid_users";
+	push(@dirs, $force_user_valid_users_dir);
+
 	my $fileserver_options = "
 [lowercase]
 	path = $lower_case_share_dir
@@ -624,6 +627,16 @@ sub setup_fileserver($$)
 [offline]
 	path = $offline_sharedir
 	vfs objects = offline
+
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=9878
+# RH BUG: https://bugzilla.redhat.com/show_bug.cgi?id=1077651
+[force_user_valid_users]
+	path = $force_user_valid_users_dir
+	comment = force user with valid users combination test share
+	valid users = +force_user
+	force user = force_user
+	force group = everyone
+	write list = force_user
 	";
 
 	my $vars = $self->provision($path,
@@ -1266,10 +1279,12 @@ sub provision($$$$$$$$)
 	my ($max_uid, $max_gid);
 	my ($uid_nobody, $uid_root, $uid_pdbtest, $uid_pdbtest2, $uid_userdup);
 	my ($uid_pdbtest_wkn);
+	my ($uid_force_user);
 	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers, $gid_domadmins);
 	my ($gid_userdup, $gid_everyone);
+	my ($gid_force_user);
 
-	if ($unix_uid < 0xffff - 5) {
+	if ($unix_uid < 0xffff - 7) {
 		$max_uid = 0xffff;
 	} else {
 		$max_uid = $unix_uid;
@@ -1281,8 +1296,9 @@ sub provision($$$$$$$$)
 	$uid_pdbtest2 = $max_uid - 4;
 	$uid_userdup = $max_uid - 5;
 	$uid_pdbtest_wkn = $max_uid - 6;
+	$uid_force_user = $max_uid - 7;
 
-	if ($unix_gids[0] < 0xffff - 7) {
+	if ($unix_gids[0] < 0xffff - 8) {
 		$max_gid = 0xffff;
 	} else {
 		$max_gid = $unix_gids[0];
@@ -1295,6 +1311,7 @@ sub provision($$$$$$$$)
 	$gid_domadmins = $max_gid - 5;
 	$gid_userdup = $max_gid - 6;
 	$gid_everyone = $max_gid - 7;
+	$gid_force_user = $max_gid - 8;
 
 	##
 	## create conffile
@@ -1659,6 +1676,7 @@ pdbtest:x:$uid_pdbtest:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 pdbtest2:x:$uid_pdbtest2:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 userdup:x:$uid_userdup:$gid_userdup:userdup gecos:$prefix_abs:/bin/false
 pdbtest_wkn:x:$uid_pdbtest_wkn:$gid_everyone:pdbtest_wkn gecos:$prefix_abs:/bin/false
+force_user:x:$uid_force_user:$gid_force_user:force user gecos:$prefix_abs:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
@@ -1677,6 +1695,7 @@ domusers:X:$gid_domusers:
 domadmins:X:$gid_domadmins:
 userdup:x:$gid_userdup:$unix_name
 everyone:x:$gid_everyone:
+force_user:x:$gid_force_user:
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:
@@ -1738,6 +1757,18 @@ everyone:x:$gid_everyone:
 	unless (close(PWD)) {
              warn("Unable to set password for test account\n$cmd");
              return undef; 
+        }
+
+	# Add another user named: force_user
+        my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a force_user > /dev/null";
+	unless (open(PWD, "|$cmd")) {
+             warn("Unable to set password for test account force_user\n$cmd");
+             return undef;
+        }
+	print PWD "$password\n$password\n";
+	unless (close(PWD)) {
+             warn("Unable to set password for test account force_user\n$cmd");
+             return undef;
         }
 	print "DONE\n";
 
