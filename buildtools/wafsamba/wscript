@@ -229,6 +229,11 @@ def configure(conf):
 
     # older gcc versions (< 4.4) does not work with gccdeps, so we have to see if the .d file is generated
     if Options.options.enable_gccdeps:
+        # stale file removal - the configuration may pick up the old .pyc file
+        p = os.path.join(conf.srcdir, 'buildtools/wafsamba/gccdeps.pyc')
+        if os.path.exists(p):
+            os.remove(p)
+
         from TaskGen import feature, after
         @feature('testd')
         @after('apply_core')
