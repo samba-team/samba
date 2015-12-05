@@ -764,7 +764,6 @@ void flush_negative_conn_cache_for_domain(const char *domain);
 
 struct netr_DsRGetDCNameInfo;
 
-void debug_dsdcinfo_flags(int lvl, uint32_t flags);
 NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		     struct messaging_context *msg_ctx,
 		     const char *domain_name,

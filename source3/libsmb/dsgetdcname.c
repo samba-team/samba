@@ -44,7 +44,7 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-void debug_dsdcinfo_flags(int lvl, uint32_t flags)
+static void debug_dsdcinfo_flags(int lvl, uint32_t flags)
 {
 	DEBUG(lvl,("debug_dsdcinfo_flags: 0x%08x\n\t", flags));
 
