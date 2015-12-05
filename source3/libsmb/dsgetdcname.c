@@ -483,10 +483,6 @@ static NTSTATUS discover_dc_netbios(TALLOC_CTX *mem_ctx,
 	*returned_dclist = NULL;
 	*returned_count = 0;
 
-	if (lp_disable_netbios()) {
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	if (flags & DS_PDC_REQUIRED) {
 		name_type = NBT_NAME_PDC;
 	}
@@ -1046,6 +1042,10 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 
 	if (flags & DS_IS_FLAT_NAME) {
 
+		if (lp_disable_netbios()) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+
 		status = discover_dc_netbios(mem_ctx, domain_name, flags,
 					     &dclist, &num_dcs);
 		NT_STATUS_NOT_OK_RETURN(status);
@@ -1074,6 +1074,10 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 		if (NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+	}
+
+	if (lp_disable_netbios()) {
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
 
 	status = discover_dc_netbios(mem_ctx, domain_name, flags, &dclist,
