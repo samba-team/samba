@@ -543,7 +543,6 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 	int numaddrs = 0;
 	struct ip_service_name *dclist = NULL;
 	int count = 0;
-	char *guid_string;
 
 	if (flags & DS_PDC_REQUIRED) {
 		status = ads_dns_query_pdc(mem_ctx,
@@ -569,17 +568,14 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 					   &dcs,
 					   &numdcs);
 	} else if (domain_guid) {
-		guid_string = GUID_string(mem_ctx, domain_guid);
-		if (!guid_string) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		struct GUID_txt_buf buf;
+		GUID_buf_string(domain_guid, &buf);
 
 		status = ads_dns_query_dcs_guid(mem_ctx,
 						domain_name,
-						guid_string,
+						buf.buf,
 						&dcs,
 						&numdcs);
-		TALLOC_FREE(guid_string);
 	} else {
 		status = ads_dns_query_dcs(mem_ctx,
 					   domain_name,
