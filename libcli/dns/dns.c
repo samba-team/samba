@@ -67,20 +67,20 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 	ret = tsocket_address_inet_from_strings(state, "ip", NULL, 0,
 						&local_addr);
 	if (ret != 0) {
-		tevent_req_werror(req, unix_to_werror(ret));
+		tevent_req_werror(req, unix_to_werror(errno));
 		return tevent_req_post(req, ev);
 	}
 
 	ret = tsocket_address_inet_from_strings(state, "ip", server_addr_string,
 						DNS_SERVICE_PORT, &server_addr);
 	if (ret != 0) {
-		tevent_req_werror(req, unix_to_werror(ret));
+		tevent_req_werror(req, unix_to_werror(errno));
 		return tevent_req_post(req, ev);
 	}
 
 	ret = tdgram_inet_udp_socket(local_addr, server_addr, state, &dgram);
 	if (ret != 0) {
-		tevent_req_werror(req, unix_to_werror(ret));
+		tevent_req_werror(req, unix_to_werror(errno));
 		return tevent_req_post(req, ev);
 	}
 
