@@ -203,12 +203,14 @@ static void ask_forwarder_done(struct tevent_req *subreq)
 		req, struct ask_forwarder_state);
 	DATA_BLOB in_blob;
 	enum ndr_err_code ndr_err;
-	WERROR ret;
+	int ret;
 
 	ret = dns_udp_request_recv(subreq, state,
 				   &in_blob.data, &in_blob.length);
 	TALLOC_FREE(subreq);
-	if (tevent_req_werror(req, ret)) {
+
+	if (ret != 0) {
+		tevent_req_werror(req, unix_to_werror(ret));
 		return;
 	}
 

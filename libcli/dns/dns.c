@@ -23,9 +23,8 @@
 #include "system/network.h"
 #include <tevent.h>
 #include "lib/tsocket/tsocket.h"
-#include "libcli/util/werror.h"
 #include "libcli/dns/libdns.h"
-#include "lib/util/tevent_werror.h"
+#include "lib/util/tevent_unix.h"
 #include "lib/util/samba_util.h"
 #include "libcli/util/error.h"
 #include "librpc/gen_ndr/dns.h"
@@ -67,20 +66,20 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 	ret = tsocket_address_inet_from_strings(state, "ip", NULL, 0,
 						&local_addr);
 	if (ret != 0) {
-		tevent_req_werror(req, unix_to_werror(errno));
+		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
 
 	ret = tsocket_address_inet_from_strings(state, "ip", server_addr_string,
 						DNS_SERVICE_PORT, &server_addr);
 	if (ret != 0) {
-		tevent_req_werror(req, unix_to_werror(errno));
+		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
 
 	ret = tdgram_inet_udp_socket(local_addr, server_addr, state, &dgram);
 	if (ret != 0) {
-		tevent_req_werror(req, unix_to_werror(errno));
+		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
 
@@ -118,12 +117,12 @@ static void dns_udp_request_get_reply(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (len == -1 && err != 0) {
-		tevent_req_werror(req, unix_to_werror(err));
+		tevent_req_error(req, err);
 		return;
 	}
 
 	if (len != state->query_len) {
-		tevent_req_werror(req, WERR_NET_WRITE_FAULT);
+		tevent_req_error(req, EIO);
 		return;
 	}
 
@@ -150,7 +149,7 @@ static void dns_udp_request_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 
 	if (len == -1 && err != 0) {
-		tevent_req_werror(req, unix_to_werror(err));
+		tevent_req_error(req, err);
 		return;
 	}
 
@@ -159,23 +158,23 @@ static void dns_udp_request_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-WERROR dns_udp_request_recv(struct tevent_req *req,
-			    TALLOC_CTX *mem_ctx,
-			    uint8_t **reply,
-			    size_t *reply_len)
+int dns_udp_request_recv(struct tevent_req *req,
+			 TALLOC_CTX *mem_ctx,
+			 uint8_t **reply,
+			 size_t *reply_len)
 {
 	struct dns_udp_request_state *state = tevent_req_data(req,
 			struct dns_udp_request_state);
-	WERROR w_error;
+	int err;
 
-	if (tevent_req_is_werror(req, &w_error)) {
+	if (tevent_req_is_unix_error(req, &err)) {
 		tevent_req_received(req);
-		return w_error;
+		return err;
 	}
 
 	*reply = talloc_move(mem_ctx, &state->reply);
 	*reply_len = state->reply_len;
 	tevent_req_received(req);
 
-	return WERR_OK;
+	return 0;
 }

@@ -43,11 +43,11 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
  *@param mem_ctx   talloc memory context to use for the reply string
  *@param reply     buffer that will be allocated and filled with the dns reply
  *@param reply_len length of the reply buffer
- *@return WERROR code depending on the async request result
+ *@return 0/errno
  */
-WERROR dns_udp_request_recv(struct tevent_req *req,
-			    TALLOC_CTX *mem_ctx,
-			    uint8_t **reply,
-			    size_t *reply_len);
+int dns_udp_request_recv(struct tevent_req *req,
+			 TALLOC_CTX *mem_ctx,
+			 uint8_t **reply,
+			 size_t *reply_len);
 
 #endif /*__LIBDNS_H__*/
