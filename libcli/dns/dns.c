@@ -99,7 +99,6 @@ struct tevent_req *dns_udp_request_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-
 	tevent_req_set_callback(subreq, dns_udp_request_get_reply, req);
 	return req;
 }
@@ -132,7 +131,6 @@ static void dns_udp_request_get_reply(struct tevent_req *subreq)
 	}
 
 	tevent_req_set_callback(subreq, dns_udp_request_done, req);
-	return;
 }
 
 static void dns_udp_request_done(struct tevent_req *subreq)
