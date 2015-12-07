@@ -1,4 +1,91 @@
                    =============================
+                   Release Notes for Samba 4.2.6
+                         December 08, 2015
+                   =============================
+
+
+This is the latest stable release of Samba 4.2.
+
+
+Changes since 4.2.5:
+--------------------
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 11365: ctdb: Strip trailing spaces from nodes file.
+    * BUG 11577: ctdb: Open the RO tracking db with perms 0600 instead of 0000.
+    * BUG 11619: doc: Fix a typo in the smb.conf manpage.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 11452: s3-smbd: Fix old DOS client doing wildcard delete - gives a
+      attribute type of zero.
+    * BUG 11565: auth: gensec: Fix a memory leak.
+    * BUG 11566: lib: util: Make non-critical message a warning.
+    * BUG 11589: s3: smbd: If EA's are turned off on a share don't allow an SMB2
+      create containing them.
+    * BUG 11615: s3: smbd: have_file_open_below() fails to enumerate open files
+      below an open directory handle.
+
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 11564: async_req: Fix non-blocking connect().
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 11243: vfs_gpfs: Re-enable share modes.
+    * BUG 11570: smbd: Send SMB2 oplock breaks unencrypted.
+
+
+o   YvanM <yvan.masson@openmailbox.org>
+    * BUG 11584: manpage: Correct small typo error.
+
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 9912: Changing log level of two entries to from 1 to 3.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 11346: wafsamba: Also build libraries with RELRO protection.
+    * BUG 11563: nss_wins: Do not run into use after free issues when we access
+      memory allocated on the globals and the global being reinitialized.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 11619: docs: Fix some typos in the idmap config section of man 5
+      smb.conf.
+
+
+o   Noel Power <noel.power@suse.com>
+    * BUG 11569: Fix winbindd crashes with samlogon for trusted domain user.
+    * BUG 11597: Backport some valgrind fixes from upstream master.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.2 product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+======================================================================
+
+                   =============================
                    Release Notes for Samba 4.2.5
                          October 27, 2015
                    =============================
@@ -84,10 +171,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    =============================
                    Release Notes for Samba 4.2.4
