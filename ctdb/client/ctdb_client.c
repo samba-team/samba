@@ -3777,7 +3777,7 @@ ctdb_get_capabilities(struct ctdb_context *ctdb,
 	uint32_t i, res;
 	struct ctdb_node_capabilities *ret;
 
-	nodes = list_of_connected_nodes(ctdb, nodemap, mem_ctx, true);
+	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
 
 	ret = talloc_array(mem_ctx, struct ctdb_node_capabilities,
 			   nodemap->num);
