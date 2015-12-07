@@ -2,7 +2,7 @@
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''atsvc.idl auth.idl drsuapi.idl epmapper.idl initshutdown.idl
-                       misc.idl ntlmssp.idl schannel.idl trkwks.idl
+                       misc.idl ntlmssp.idl negoex.idl schannel.idl trkwks.idl
                        audiosrv.idl dfsblobs.idl dsbackup.idl eventlog.idl file_id.idl keysvc.idl
                        msgsvc.idl ntsvcs.idl remact.idl security.idl smb_acl.idl unixinfo.idl wzcsvc.idl
                        browser.idl dfs.idl dssetup.idl frsapi.idl krb5pac.idl

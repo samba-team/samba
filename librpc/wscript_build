@@ -232,6 +232,11 @@ bld.SAMBA_SUBSYSTEM('NDR_NTLMSSP',
     public_deps='ndr ndr-standard'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_NEGOEX',
+    source='ndr/ndr_negoex.c gen_ndr/ndr_negoex.c',
+    public_deps='ndr'
+    )
+
 bld.SAMBA_SUBSYSTEM('NDR_DNSP',
     source='gen_ndr/ndr_dnsp.c ndr/ndr_dnsp.c',
     public_deps='ndr'
@@ -678,7 +683,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_MDSSVC',
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
-    deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT
+    deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_NEGOEX NDR_SCHANNEL NDR_MGMT
     NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV''',
     private_library=True,

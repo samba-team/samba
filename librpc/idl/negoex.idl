@@ -1,0 +1,144 @@
+#include "idl_types.h"
+
+/*
+  NEGOEX interface definition
+  See http://ietfreport.isoc.org/all-ids/draft-zhu-negoex-04.txt
+*/
+
+import "misc.idl";
+
+[
+	uuid("fcc30ddc-98d0-11e5-8a56-83e9a6706f2f"),
+	helper("../librpc/ndr/ndr_negoex.h"),
+	helpstring("NEGOEX messages")
+]
+interface negoex
+{
+	typedef [nopush,nopull,noprint] struct {
+		[relative,size_is(length)] uint8 *data;
+		uint32 length;
+	} negoex_BYTE_VECTOR;
+
+	typedef [public] struct {
+		GUID guid;
+	} negoex_AUTH_SCHEME;
+
+	typedef [nopush,nopull] struct {
+		[relative,size_is(count)] negoex_AUTH_SCHEME *array;
+		uint32 count;
+	} negoex_AUTH_SCHEME_VECTOR;
+
+	typedef [v1_enum] enum {
+		NEGOEX_EXTENSION_TYPE_TODO = 0 /* TODO */
+	} negoex_ExtensionTypes;
+
+	typedef [public] struct {
+		negoex_ExtensionTypes type;
+		negoex_BYTE_VECTOR value;
+	} negoex_EXTENSION;
+
+	typedef [nopush,nopull] struct {
+		[relative,size_is(count)] negoex_EXTENSION *array;
+		uint32 count;
+	} negoex_EXTENSION_VECTOR;
+
+	typedef [v1_enum] enum {
+		NEGOEX_CHECKSUM_SCHEME_RFC3961 = 1
+	} negoex_ChecksumSchemes;
+
+	typedef struct {
+		[value(20)] uint32 header_length;
+		negoex_ChecksumSchemes scheme;
+		uint32 type;
+		negoex_BYTE_VECTOR value;
+	} negoex_CHECKSUM;
+
+	typedef [v1_enum] enum {
+		NEGOEX_ALERT_VERIFY_NO_KEY = 1
+	} negoex_AlertReason;
+
+	typedef [public] struct {
+		[value(4)] uint32 header_length; /* TODO: is 4 correct? */
+		negoex_AlertReason reason;
+	} negoex_ALERT_PULSE;
+
+	typedef [v1_enum] enum {
+		NEGOEX_ALERT_TYPE_PULSE = 1
+	} negoex_AlertTypes;
+
+	typedef [public] struct {
+		negoex_AlertTypes type;
+		negoex_BYTE_VECTOR value;
+	} negoex_ALERT;
+
+	typedef [nopush,nopull] struct {
+		[relative,size_is(count)] negoex_ALERT *array;
+		uint32 count;
+	} negoex_ALERT_VECTOR;
+
+	typedef [public,v1_enum] enum {
+		NEGOEX_MESSAGE_TYPE_INITIATOR_NEGO = 0,
+		NEGOEX_MESSAGE_TYPE_ACCEPTOR_NEGO = 1,
+		NEGOEX_MESSAGE_TYPE_INITIATOR_META_DATA = 2,
+		NEGOEX_MESSAGE_TYPE_ACCEPTOR_META_DATA = 3,
+		NEGOEX_MESSAGE_TYPE_CHALLENGE = 4,
+		NEGOEX_MESSAGE_TYPE_AP_REQUEST = 5,
+		NEGOEX_MESSAGE_TYPE_VERIFY = 6,
+		NEGOEX_MESSAGE_TYPE_ALERT = 7
+	} negoex_MESSAGE_TYPE;
+
+	const uint32 NEGOEX_PROTOCOL_VERSION_0 = 0;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		[flag(NDR_PAHEX)] uint8 random[32];
+		[value(NEGOEX_PROTOCOL_VERSION_0)] udlong protocol_version;
+		negoex_AUTH_SCHEME_VECTOR auth_schemes;
+		negoex_EXTENSION_VECTOR extensions;
+	} negoex_NEGO_PAYLOAD;
+
+	typedef struct {
+		negoex_AUTH_SCHEME auth_scheme;
+		negoex_BYTE_VECTOR exchange;
+	} negoex_EXCHANGE_PAYLOAD;
+
+	typedef struct {
+		negoex_AUTH_SCHEME auth_scheme;
+		negoex_CHECKSUM checksum;
+	} negoex_VERIFY_PAYLOAD;
+
+	typedef struct {
+		negoex_AUTH_SCHEME auth_scheme;
+		NTSTATUS status;
+		negoex_ALERT_VECTOR alerts;
+	} negoex_ALERT_PAYLOAD;
+
+	typedef [public,nodiscriminant] union {
+	[case(NEGOEX_MESSAGE_TYPE_INITIATOR_NEGO)] negoex_NEGO_PAYLOAD nego;
+	[case(NEGOEX_MESSAGE_TYPE_ACCEPTOR_NEGO)] negoex_NEGO_PAYLOAD nego;
+	[case(NEGOEX_MESSAGE_TYPE_INITIATOR_META_DATA)] negoex_EXCHANGE_PAYLOAD exchange;
+	[case(NEGOEX_MESSAGE_TYPE_ACCEPTOR_META_DATA)] negoex_EXCHANGE_PAYLOAD exchange;
+	[case(NEGOEX_MESSAGE_TYPE_CHALLENGE)] negoex_EXCHANGE_PAYLOAD exchange;
+	[case(NEGOEX_MESSAGE_TYPE_AP_REQUEST)] negoex_EXCHANGE_PAYLOAD exchange;
+	[case(NEGOEX_MESSAGE_TYPE_VERIFY)] negoex_VERIFY_PAYLOAD verify;
+	[case(NEGOEX_MESSAGE_TYPE_ALERT)] negoex_ALERT_PAYLOAD alert;
+	} negoex_PAYLOAD;
+
+	typedef [public,relative_base,gensize,nopull] struct {
+		[charset(DOS),value("NEGOEXTS")] uint8 signature[8];
+		negoex_MESSAGE_TYPE type;
+		uint32 sequence_number;
+		[value(ndr_negoex_MESSAGE_header_length(r))] uint32 header_length;
+		[value(ndr_size_negoex_MESSAGE(r, ndr->flags))] uint32 message_length;
+		GUID conversation_id;
+		[switch_is(type)] negoex_PAYLOAD p;
+	} negoex_MESSAGE;
+
+	typedef [public,nopush,nopull,flag(NDR_NOALIGN)] struct {
+		uint32 count;
+		negoex_MESSAGE messages[count];
+	} negoex_MESSAGE_ARRAY;
+
+	void decode_negoex_MESSAGE(
+		[in] negoex_MESSAGE_ARRAY array
+		);
+}
