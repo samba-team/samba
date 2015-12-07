@@ -28,13 +28,7 @@ void ndr_print_negoex_BYTE_VECTOR(struct ndr_print *ndr, const char *name, const
 	ndr_print_struct(ndr, name, "negoex_BYTE_VECTOR");
 	if (r == NULL) { ndr_print_null(ndr); return; }
 	ndr->depth++;
-	ndr_print_ptr(ndr, "data", r->data);
-	ndr->depth++;
-	if (r->data) {
-		ndr_print_array_uint8(ndr, "data", r->data, r->length);
-	}
-	ndr->depth--;
-	ndr_print_uint32(ndr, "length", r->length);
+	ndr_print_DATA_BLOB(ndr, "blob", r->blob);
 	ndr->depth--;
 }
 
@@ -43,18 +37,18 @@ enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, int ndr_flag
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
-		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->data));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
+		NDR_CHECK(ndr_push_relative_ptr1(ndr, r->blob.data));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->blob.length));
 		NDR_CHECK(ndr_push_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data) {
-			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->data));
+		if (r->blob.data) {
+			NDR_CHECK(ndr_push_relative_ptr2_start(ndr, r->blob.data));
 #if 0
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->length));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, r->blob.length));
 #endif
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->data, r->length));
-			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->data));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->blob.data, r->blob.length));
+			NDR_CHECK(ndr_push_relative_ptr2_end(ndr, r->blob.data));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -66,33 +60,37 @@ enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, int ndr_flag
 	uint32_t size_data_1 = 0;
 	TALLOC_CTX *_mem_save_data_0 = NULL;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	r->_dummy = NULL;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 5));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
 		if (_ptr_data) {
-			NDR_PULL_ALLOC(ndr, r->data);
-			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->data, _ptr_data));
+			NDR_PULL_ALLOC(ndr, r->blob.data);
+			NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->blob.data, _ptr_data));
 		} else {
-			r->data = NULL;
+			r->blob.data = NULL;
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
+		r->blob.length = 0;
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &size_data_1));
+		r->_length = size_data_1;
 		NDR_CHECK(ndr_pull_trailer_align(ndr, 5));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data) {
+		if (r->blob.data) {
 			uint32_t _relative_save_offset;
 			_relative_save_offset = ndr->offset;
-			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->data));
+			NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->blob.data));
 			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, r->blob.data, 0);
 #if 0
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
-			size_data_1 = ndr_get_array_size(ndr, &r->data);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->blob.data));
+			size_data_1 = ndr_get_array_size(ndr, &r->blob.data);
 #else
-			size_data_1 = r->length;
+			size_data_1 = r->_length;
 #endif
-			NDR_PULL_ALLOC_N(ndr, r->data, size_data_1);
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, size_data_1));
+			NDR_PULL_ALLOC_N(ndr, r->blob.data, size_data_1);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->blob.data, size_data_1));
+			r->blob.length = size_data_1;
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
 			if (ndr->offset > ndr->relative_highest_offset) {
 				ndr->relative_highest_offset = ndr->offset;
@@ -100,8 +98,8 @@ enum ndr_err_code ndr_pull_negoex_BYTE_VECTOR(struct ndr_pull *ndr, int ndr_flag
 			ndr->offset = _relative_save_offset;
 		}
 #if 0
-		if (r->data) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->length));
+		if (r->blob.data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->blob.data, r->blob.length));
 		}
 #endif
 	}

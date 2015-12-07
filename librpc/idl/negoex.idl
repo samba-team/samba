@@ -15,8 +15,20 @@ import "misc.idl";
 interface negoex
 {
 	typedef [nopush,nopull,noprint] struct {
+#if 0
 		[relative,size_is(length)] uint8 *data;
 		uint32 length;
+#else
+		DATA_BLOB blob;
+		/*
+		 * internal helper variable */
+		uint32 _length;
+		/*
+		 * the dummy pointer is needed in order to let the
+		 * callers use NDR_BUFFERS
+		 */
+		[relative] uint8 *_dummy;
+#endif
 	} negoex_BYTE_VECTOR;
 
 	typedef [public] struct {
