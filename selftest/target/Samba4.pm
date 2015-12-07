@@ -2016,14 +2016,19 @@ sub check_env($$)
 	my ($self, $envvars) = @_;
 	my $samba_pid = $envvars->{SAMBA_PID};
 
-	return 1 if $samba_pid == -1;
+	if (not defined($samba_pid)) {
+	    return 0;
+	} elsif ($samba_pid > 0) {
+	    my $childpid = Samba::cleanup_child($samba_pid, "samba");
 
-	my $childpid = Samba::cleanup_child($samba_pid, "samba");
-
-	if ($childpid == 0) {
+	    if ($childpid == 0) {
+		return 1;
+	    }
+	    return 0;
+	} else {
 	    return 1;
 	}
-	return 0;
+
 }
 
 sub setup_env($$$)
