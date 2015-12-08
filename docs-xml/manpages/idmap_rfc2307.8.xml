@@ -88,11 +88,11 @@
 			no.</para></listitem>
 		</varlistentry>
 		<varlistentry>
-			<term>cn_realm = &lt;yes | no&gt;</term>
+			<term>realm</term>
 			<listitem><para>Append @realm to cn for groups
 			(and users if user_cn is set) in
-			LDAP. This option is not required, the default
-			is no.</para></listitem>
+			LDAP queries. This option is not required, the default
+			is not to append the realm.</para></listitem>
 		</varlistentry>
 		<varlistentry>
 			<term>ldap_domain</term>
@@ -123,13 +123,6 @@
 			<manvolnum>8</manvolnum></citerefentry>). If
 			absent, an anonymous bind will be
 			performed.</para></listitem>
-		</varlistentry>
-		<varlistentry>
-			<term>ldap_realm</term>
-			<listitem><para>Defines the realm to use in
-			the user and group names. This is only
-			required when using cn_realm together with a
-			stand-alone ldap server.</para></listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
