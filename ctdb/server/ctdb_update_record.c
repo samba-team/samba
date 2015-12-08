@@ -276,10 +276,7 @@ static struct childwrite_handle *ctdb_childwrite(
 
 		sys_write(result->fd[1], &c, 1);
 
-		/* make sure we die when our parent dies */
-		while (ctdb_kill(ctdb_db->ctdb, parent, 0) == 0 || errno != ESRCH) {
-			sleep(5);
-		}
+		ctdb_wait_for_process_to_exit(parent);
 		_exit(0);
 	}
 

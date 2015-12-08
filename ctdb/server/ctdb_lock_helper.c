@@ -182,8 +182,6 @@ int main(int argc, char *argv[])
 
 	send_result(write_fd, result);
 
-	while (kill(ppid, 0) == 0 || errno != ESRCH) {
-		sleep(5);
-	}
+	ctdb_wait_for_process_to_exit(ppid);
 	return 0;
 }

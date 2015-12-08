@@ -1865,10 +1865,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 
 child_finished:
 		sys_write(rc->fd[1], &c, 1);
-		/* make sure we die when our parent dies */
-		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
-			sleep(5);
-		}
+		ctdb_wait_for_process_to_exit(parent);
 		_exit(0);
 	}
 

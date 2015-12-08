@@ -3824,10 +3824,7 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 		}
 
 		sys_write(h->fd[1], &res, 1);
-		/* make sure we die when our parent dies */
-		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
-			sleep(5);
-		}
+		ctdb_wait_for_process_to_exit(parent);
 		_exit(0);
 	}
 

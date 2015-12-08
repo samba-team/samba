@@ -260,9 +260,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 
 		sys_write(h->fd[1], &res, sizeof(res));
 
-		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
-			sleep(5);
-		}
+		ctdb_wait_for_process_to_exit(parent);
 		_exit(0);
 	}
 
