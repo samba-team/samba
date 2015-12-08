@@ -1,5 +1,6 @@
-<samba:parameter name="disable openfile inode check" context="S" type="boolean"
-                 function="_disable_openfile_inode_check"
+<samba:parameter name="disable openfile inode check"
+                 type="boolean"
+                 context="S"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>If this parameter is <constant>yes</constant> then openfile does not check dev and inode of file. Use yes with overlayfs.
