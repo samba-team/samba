@@ -38,7 +38,6 @@ struct idmap_rfc2307_context {
 	const char *bind_path_user;
 	const char *bind_path_group;
 	const char *ldap_domain;
-	bool cn_realm;
 	bool user_cn;
 	const char *realm;
 
@@ -82,9 +81,6 @@ static NTSTATUS idmap_rfc2307_ads_check_connection(struct idmap_domain *dom)
 	status = ads_idmap_cached_connection(&ctx->ads, dom_name);
 	if (ADS_ERR_OK(status)) {
 		ctx->ldap = ctx->ads->ldap.ld;
-		if (ctx->cn_realm) {
-			ctx->realm = ctx->ads->server.realm;
-		}
 	} else {
 		DEBUG(1, ("Could not connect to domain %s: %s\n", dom->name,
 			  ads_errstr(status)));
@@ -172,7 +168,7 @@ static NTSTATUS idmap_rfc2307_init_ldap(struct idmap_rfc2307_context *ctx,
 	NTSTATUS ret;
 	char *url;
 	char *secret = NULL;
-	const char *ldap_url, *user_dn, *ldap_realm;
+	const char *ldap_url, *user_dn;
 	TALLOC_CTX *mem_ctx = ctx;
 
 	ldap_url = lp_parm_const_string(-1, config_option, "ldap_url", NULL);
@@ -203,21 +199,6 @@ static NTSTATUS idmap_rfc2307_init_ldap(struct idmap_rfc2307_context *ctx,
 	}
 
 	ctx->search = idmap_rfc2307_ldap_search;
-
-	if (ctx->cn_realm) {
-		ldap_realm = lp_parm_const_string(-1, config_option,
-						  "ldap_realm", NULL);
-		if (!ldap_realm) {
-			DEBUG(1, ("ERROR: cn_realm set, "
-				  "but ldap_realm is missing\n"));
-			ret = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-		ctx->realm = talloc_strdup(mem_ctx, ldap_realm);
-		if (!ctx->realm) {
-			ret = NT_STATUS_NO_MEMORY;
-		}
-	}
 
 done:
 	talloc_free(url);
@@ -276,7 +257,7 @@ static void idmap_rfc2307_map_sid_results(struct idmap_rfc2307_context *ctx,
 			continue;
 		}
 
-		if (ctx->cn_realm) {
+		if (ctx->realm != NULL) {
 			/* Strip @realm from user or group name */
 			char *delim;
 
@@ -487,7 +468,7 @@ static NTSTATUS idmap_rfc_2307_sids_to_names(TALLOC_CTX *mem_ctx,
 		switch(lsa_type) {
 		case SID_NAME_USER:
 			id->xid.type = map->type = ID_TYPE_UID;
-			if (ctx->user_cn && ctx->cn_realm) {
+			if (ctx->user_cn && ctx->realm != NULL) {
 				name = talloc_asprintf(mem_ctx, "%s@%s",
 						       name, ctx->realm);
 			}
@@ -497,7 +478,7 @@ static NTSTATUS idmap_rfc_2307_sids_to_names(TALLOC_CTX *mem_ctx,
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_ALIAS:
 		case SID_NAME_WKN_GRP:
-			if (ctx->cn_realm) {
+			if (ctx->realm != NULL) {
 				name = talloc_asprintf(mem_ctx, "%s@%s",
 						       name, ctx->realm);
 			}
@@ -781,7 +762,7 @@ static NTSTATUS idmap_rfc2307_initialize(struct idmap_domain *domain)
 {
 	struct idmap_rfc2307_context *ctx;
 	char *cfg_opt;
-	const char *bind_path_user, *bind_path_group, *ldap_server;
+	const char *bind_path_user, *bind_path_group, *ldap_server, *realm;
 	NTSTATUS status;
 
 	ctx = talloc_zero(domain, struct idmap_rfc2307_context);
@@ -842,7 +823,15 @@ static NTSTATUS idmap_rfc2307_initialize(struct idmap_domain *domain)
 		goto err;
 	}
 
-	ctx->cn_realm = lp_parm_bool(-1, cfg_opt, "cn_realm", false);
+	realm = lp_parm_const_string(-1, cfg_opt, "realm", NULL);
+	if (realm) {
+		ctx->realm = talloc_strdup(ctx, realm);
+		if (ctx->realm == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto err;
+		}
+	}
+
 	ctx->user_cn = lp_parm_bool(-1, cfg_opt, "user_cn", false);
 
 	domain->private_data = ctx;
