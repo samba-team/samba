@@ -650,7 +650,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		/* make sure we die when our parent dies */
 		while (ctdb_kill(ctdb, parent, 0) == 0 || errno != ESRCH) {
 			sleep(5);
-			sys_write(state->fd[1], &cc, 1);
 		}
 		_exit(0);
 	}
