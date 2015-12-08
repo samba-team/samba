@@ -359,6 +359,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	if (is_anonymous) {
+		ntlmssp_state->neg_flags |= NTLMSSP_ANONYMOUS;
 		/*
 		 * don't use the ccache for anonymous auth
 		 */
