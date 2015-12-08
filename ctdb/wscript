@@ -451,6 +451,12 @@ def build(bld):
                              samba-util replace tdb''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_BINARY('ctdb_mutex_fcntl_helper',
+                     source='server/ctdb_mutex_fcntl_helper.c',
+                     deps='ctdb-system',
+                     includes='include',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_GENERATOR('ctdb-smnotify-h',
                         source='utils/smnotify/smnotify.x',
                         target='utils/smnotify/smnotify.h',

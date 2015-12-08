@@ -204,6 +204,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/ctdb/ctdb_lock_helper
 %{_libexecdir}/ctdb/ctdb_event_helper
 %{_libexecdir}/ctdb/ctdb_recovery_helper
+%{_libexecdir}/ctdb/ctdb_mutex_fcntl_helper
 %{_libexecdir}/ctdb/ctdb_natgw
 %{_libexecdir}/ctdb/ctdb_lvs
 %{_libexecdir}/ctdb/ctdb_killtcp
