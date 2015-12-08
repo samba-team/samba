@@ -508,16 +508,36 @@ bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
 }
 
 
+/* this is used to prevent lots of mallocs of size 1 */
+static const char lpcfg_string_emtpy[] = "";
+
+/**
+ Free a string value.
+**/
+void lpcfg_string_free(char **s)
+{
+	if (s == NULL) {
+		return;
+	}
+	if (*s == lpcfg_string_emtpy) {
+		*s = NULL;
+		return;
+	}
+	TALLOC_FREE(*s);
+}
+
 /**
  * Set a string value, deallocating any existing space, and allocing the space
  * for the string
  */
 bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
-	talloc_free(*dest);
+	lpcfg_string_free(dest);
 
-	if (src == NULL)
-		src = "";
+	if ((src == NULL) || (*src == '\0')) {
+		*dest = discard_const_p(char, lpcfg_string_emtpy);
+		return true;
+	}
 
 	*dest = talloc_strdup(mem_ctx, src);
 	if ((*dest) == NULL) {
@@ -534,10 +554,12 @@ bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
  */
 bool lpcfg_string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
-	talloc_free(*dest);
+	lpcfg_string_free(dest);
 
-	if (src == NULL)
-		src = "";
+	if ((src == NULL) || (*src == '\0')) {
+		*dest = discard_const_p(char, lpcfg_string_emtpy);
+		return true;
+	}
 
 	*dest = strupper_talloc(mem_ctx, src);
 	if ((*dest) == NULL) {
@@ -811,9 +833,8 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
 				   overridden */
 				return;
 			}
-			TALLOC_FREE(opt->value);
 			TALLOC_FREE(opt->list);
-			opt->value = talloc_strdup(opt, opt_value);
+			lpcfg_string_set(opt, &opt->value, opt_value);
 			opt->priority = priority;
 			not_added = false;
 			break;
@@ -825,16 +846,10 @@ void set_param_opt(TALLOC_CTX *mem_ctx,
 		if (new_opt == NULL) {
 			smb_panic("OOM");
 		}
-
-		new_opt->key = talloc_strdup(new_opt, opt_name);
-		if (new_opt->key == NULL) {
-			smb_panic("talloc_strdup failed");
-		}
-
-		new_opt->value = talloc_strdup(new_opt, opt_value);
-		if (new_opt->value == NULL) {
-			smb_panic("talloc_strdup failed");
-		}
+		new_opt->key = NULL;
+		lpcfg_string_set(new_opt, &new_opt->key, opt_name);
+		new_opt->value = NULL;
+		lpcfg_string_set(new_opt, &new_opt->value, opt_value);
 
 		new_opt->list = NULL;
 		new_opt->priority = priority;
@@ -2404,13 +2419,16 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		if ((parm_table[i].type == P_STRING ||
 		     parm_table[i].type == P_USTRING) &&
 		    !(lp_ctx->flags[i] & FLAG_CMDLINE)) {
+			TALLOC_CTX *parent_mem;
 			char **r;
 			if (parm_table[i].p_class == P_LOCAL) {
+				parent_mem = lp_ctx->sDefault;
 				r = (char **)(((char *)lp_ctx->sDefault) + parm_table[i].offset);
 			} else {
+				parent_mem = lp_ctx->globals;
 				r = (char **)(((char *)lp_ctx->globals) + parm_table[i].offset);
 			}
-			*r = talloc_strdup(lp_ctx, "");
+			lpcfg_string_set(parent_mem, r, "");
 		}
 	}
 
