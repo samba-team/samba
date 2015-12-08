@@ -420,3 +420,10 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 #endif
         return ret;
 }
+
+void ctdb_wait_for_process_to_exit(pid_t pid)
+{
+	while (kill(pid, 0) == 0 || errno != ESRCH) {
+		sleep(5);
+	}
+}

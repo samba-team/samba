@@ -62,4 +62,6 @@ void mkdir_p_or_die(const char *dir, int mode);
 ssize_t sys_read(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
 
+void ctdb_wait_for_process_to_exit(pid_t pid);
+
 #endif /* __CTDB_SYSTEM_H__ */
