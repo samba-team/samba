@@ -2805,7 +2805,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		file_existed = false;
 	}
 
-	if (file_existed && !check_same_dev_ino(&saved_stat, &smb_fname->st)) {
+	if (file_existed && !lp_disable_openfile_inode_check(SNUM(conn)) && !check_same_dev_ino(&saved_stat, &smb_fname->st)) {
 		/*
 		 * The file did exist, but some other (local or NFS)
 		 * process either renamed/unlinked and re-created the
