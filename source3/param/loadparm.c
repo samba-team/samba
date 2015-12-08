@@ -244,6 +244,7 @@ static struct loadparm_service sDefault =
 	.kernel_share_modes = true,
 	.durable_handles = true,
 	.param_opt = NULL,
+	.disable_openfile_inode_check = false,
 	.dummy = ""
 };
 
@@ -903,8 +904,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.aio_max_threads = 100;
 	
-	Globals.disable_openfile_inode_check = false;
-
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
