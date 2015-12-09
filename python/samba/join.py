@@ -833,7 +833,7 @@ class dc_join(object):
                     repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                 destination_dsa_guid, rodc=ctx.RODC,
                                 replica_flags=ctx.domain_replica_flags)
-                    ctx.domain_replica_flags ^= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY | drsuapi.DRSUAPI_DRS_GET_ANC
+                    ctx.domain_replica_flags ^= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
                 else:
                     ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_GET_ANC
                 repl.replicate(ctx.base_dn, source_dsa_invocation_id,
@@ -1189,6 +1189,7 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
     ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
                          drsuapi.DRSUAPI_DRS_INIT_SYNC |
                          drsuapi.DRSUAPI_DRS_PER_SYNC |
+                         drsuapi.DRSUAPI_DRS_GET_ANC |
                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
                          drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
     ctx.domain_replica_flags = ctx.replica_flags
@@ -1213,6 +1214,7 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
     ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
                          drsuapi.DRSUAPI_DRS_INIT_SYNC |
                          drsuapi.DRSUAPI_DRS_PER_SYNC |
+                         drsuapi.DRSUAPI_DRS_GET_ANC |
                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
                          drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
     if not include_secrets:
@@ -1268,6 +1270,7 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
     ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
                          drsuapi.DRSUAPI_DRS_INIT_SYNC |
                          drsuapi.DRSUAPI_DRS_PER_SYNC |
+                         drsuapi.DRSUAPI_DRS_GET_ANC |
                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
                          drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
     ctx.domain_replica_flags = ctx.replica_flags

@@ -2806,7 +2806,8 @@ static void becomeDC_drsuapi3_pull_schema_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_PER_SYNC
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
-					| DRSUAPI_DRS_USE_COMPRESSION;
+					| DRSUAPI_DRS_USE_COMPRESSION
+					| DRSUAPI_DRS_GET_ANC;
 	if (s->rodc_join) {
 	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
@@ -2866,7 +2867,8 @@ static void becomeDC_drsuapi3_pull_config_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_PER_SYNC
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
-					| DRSUAPI_DRS_USE_COMPRESSION;
+					| DRSUAPI_DRS_USE_COMPRESSION
+					| DRSUAPI_DRS_GET_ANC;
 	if (s->rodc_join) {
 	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
@@ -2924,9 +2926,10 @@ static void becomeDC_drsuapi3_pull_domain_send(struct libnet_BecomeDC_state *s)
 					| DRSUAPI_DRS_PER_SYNC
 					| DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS
 					| DRSUAPI_DRS_NEVER_SYNCED
-					| DRSUAPI_DRS_USE_COMPRESSION;
+					| DRSUAPI_DRS_USE_COMPRESSION
+					| DRSUAPI_DRS_GET_ANC;
 	if (s->critical_only) {
-		s->domain_part.replica_flags |= DRSUAPI_DRS_CRITICAL_ONLY | DRSUAPI_DRS_GET_ANC;
+		s->domain_part.replica_flags |= DRSUAPI_DRS_CRITICAL_ONLY;
 	}
 	if (s->rodc_join) {
 	    s->schema_part.replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
