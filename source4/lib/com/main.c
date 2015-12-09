@@ -83,7 +83,7 @@ WERROR com_get_class_object(struct com_context *ctx, struct GUID *clsid, struct 
 	
 	iu = com_class_by_clsid(ctx, clsid);
 	if (!iu) {
-		return WERR_CLASS_NOT_REGISTERED;
+		return W_ERROR(HRES_ERROR_V(HRES_REGDB_E_CLASSNOTREG));
 	}
 	
 	return IUnknown_QueryInterface(iu, ctx, iid, ip);

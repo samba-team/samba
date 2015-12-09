@@ -129,7 +129,6 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_SEC_E_DECRYPT_FAILURE",	WERR_SEC_E_DECRYPT_FAILURE },
 	{ "WERR_SEC_E_ALGORITHM_MISMATCH", WERR_SEC_E_ALGORITHM_MISMATCH },
 	{ "WERR_RPC_E_REMOTE_DISABLED", WERR_RPC_E_REMOTE_DISABLED },
-	{ "WERR_CLASS_NOT_REGISTERED", WERR_CLASS_NOT_REGISTERED },
 	/*****************************************************************************
 	 Auto-generated Win32 error from:
 	 http://msdn.microsoft.com/en-us/library/cc231199%28PROT.10%29.aspx
