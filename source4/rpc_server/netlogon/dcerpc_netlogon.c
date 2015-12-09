@@ -828,6 +828,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
 static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonSamLogonEx *r, struct netlogon_creds_CredentialState *creds)
 {
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const char *workgroup = lpcfg_workgroup(lp_ctx);
 	struct auth4_context *auth_context;
 	struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
@@ -897,6 +899,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
 		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon->network->lm.data, r->in.logon->network->lm.length);
 		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon->network->nt.data, r->in.logon->network->nt.length);
+
+		nt_status = NTLMv2_RESPONSE_verify_netlogon_creds(
+					user_info->client.account_name,
+					user_info->client.domain_name,
+					user_info->password.response.nt,
+					creds, workgroup);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		break;
 
