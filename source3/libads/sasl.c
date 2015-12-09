@@ -158,11 +158,11 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		} else {
 			/*
 			 * windows servers are broken with sign only,
-			 * so we need to use seal here too
+			 * so we let the NTLMSSP backend to seal here,
+			 * via GENSEC_FEATURE_LDAP_STYLE.
 			 */
 			gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SIGN);
-			gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_SEAL);
-			ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
+			gensec_want_feature(auth_generic_state->gensec_security, GENSEC_FEATURE_LDAP_STYLE);
 		}
 		break;
 	case ADS_SASLWRAP_TYPE_PLAIN:
