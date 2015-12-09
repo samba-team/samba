@@ -381,6 +381,11 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>--allow-mschapv2</term>
+	<listitem><para>Explicitly allow MSCHAPv2.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>--offline-logon</term>
 	<listitem><para>Allow offline logons for plain text auth.
 	</para></listitem>
