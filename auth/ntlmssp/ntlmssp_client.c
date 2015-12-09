@@ -647,6 +647,14 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 			 * is requested.
 			 */
 			ntlmssp_state->force_wrap_seal = true;
+			/*
+			 * We want also work against old Samba servers
+			 * which didn't had GENSEC_FEATURE_LDAP_STYLE
+			 * we negotiate SEAL too. We may remove this
+			 * in a few years. As all servers should have
+			 * GENSEC_FEATURE_LDAP_STYLE by then.
+			 */
+			ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 		}
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
