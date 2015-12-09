@@ -1573,6 +1573,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	case NetlogonNetworkTransitiveInformation:
 	{
 		const char *wksname = nt_workstation;
+		const char *workgroup = lp_workgroup();
 
 		status = make_auth_context_fixed(talloc_tos(), &auth_context,
 						 logon->network->challenge);
@@ -1598,6 +1599,14 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 						     logon->network->nt.data,
 						     logon->network->nt.length)) {
 			status = NT_STATUS_NO_MEMORY;
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			status = NTLMv2_RESPONSE_verify_netlogon_creds(
+						user_info->client.account_name,
+						user_info->client.domain_name,
+						user_info->password.response.nt,
+						creds, workgroup);
 		}
 		break;
 	}
