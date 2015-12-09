@@ -358,13 +358,9 @@ bld.SAMBA3_LIBRARY('smbd_shim',
 		   deps='talloc',
                    private_library=True)
 
-bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
-                    source='''libsmb/ntlmssp.c''',
-                    deps='NDR_NTLMSSP NTLMSSP_COMMON wbclient')
-
 bld.SAMBA3_SUBSYSTEM('auth_generic',
                     source='libsmb/auth_generic.c',
-                    deps='LIBNTLMSSP gse gensec')
+                    deps='gse gensec')
 
 bld.SAMBA3_LIBRARY('libsmb',
                    source='''libsmb/clientgen.c
@@ -392,7 +388,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                    libsmb/smbsock_connect.c
                    libsmb/cli_smb2_fnum.c''',
                    deps='''
-                   LIBNTLMSSP
                    auth_generic
                    CLDAP
                    LIBNMB
@@ -1411,7 +1406,7 @@ bld.SAMBA3_BINARY('ntlm_auth',
                  tiniparser
                  libsmb
                  popt_samba3
-                 LIBNTLMSSP gse gensec''')
+                 gse gensec''')
 
 bld.SAMBA3_BINARY('timelimit',
                  source='script/tests/timelimit.c',
