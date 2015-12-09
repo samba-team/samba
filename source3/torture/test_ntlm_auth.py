@@ -80,6 +80,8 @@ def parseCommandLine():
                 help="Domain the client authenticates for. [default: FOO]")
     parser.add_option("--client-helper", dest="client_helper",\
                 help="Helper mode for the ntlm_auth client. [default: ntlmssp-client-1]")
+    parser.add_option("--client-use-cached-creds", dest="client_use_cached_creds",\
+                help="Use winbindd credentials cache (rather than default username/pw)", action="store_true")
 
     parser.add_option("--target-hostname", dest="target_hostname",\
                 help="Target hostname for kerberos")
@@ -142,7 +144,10 @@ def main():
         client_args = []
         client_args.append("--helper-protocol=%s" % opts.client_helper)
         client_args.append("--username=%s" % opts.client_username)
-        client_args.append("--password=%s" % opts.client_password)
+        if opts.client_use_cached_creds:
+            client_args.append("--use-cached-creds")
+        else:
+            client_args.append("--password=%s" % opts.client_password)
         client_args.append("--domain=%s" % opts.client_domain)
         client_args.append("--configfile=%s" % opts.config_file)
         if opts.target_service:
