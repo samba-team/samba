@@ -101,7 +101,7 @@ WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(plain_buffer.data);
 
 	if (crc32_given != crc32_calc) {
-		return WERR_SEC_E_DECRYPT_FAILURE;
+		return W_ERROR(HRES_ERROR_V(HRES_SEC_E_DECRYPT_FAILURE));
 	}
 	/*
 	 * The following rid_crypt obfuscation isn't session specific
