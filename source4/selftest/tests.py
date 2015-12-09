@@ -647,6 +647,11 @@ for env in ['vampire_dc', 'promoted_dc']:
                            name="samba4.drs.repl_schema.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+    planoldpythontestsuite(env, "repl_move",
+                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                           name="samba4.drs.repl_move.python(%s)" % env,
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 
 for env in ["ad_dc_ntvfs", "s4member", "rodc", "promoted_dc", "ad_dc", "ad_member"]:
