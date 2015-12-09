@@ -1212,7 +1212,7 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	}
 
 	winbindd_free_response(&wb_response);
-	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	return NT_STATUS_OK;
 }
 
 static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode,
@@ -1271,7 +1271,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		DATA_BLOB empty_blob = data_blob_null;
 
 		nt_status = do_ccache_ntlm_auth(empty_blob, empty_blob, NULL);
-		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			/* failed to use cached creds */
 			use_cached_creds = False;
 		}
