@@ -558,6 +558,22 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (ntlmssp_state->force_wrap_seal &&
+	    (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN))
+	{
+		/*
+		 * We need to handle NTLMSSP_NEGOTIATE_SIGN as
+		 * NTLMSSP_NEGOTIATE_SEAL if GENSEC_FEATURE_LDAP_STYLE
+		 * is requested.
+		 *
+		 * The negotiation of flags (and authentication)
+		 * is completed when ntlmssp_sign_init() is called
+		 * so we can safely pretent NTLMSSP_NEGOTIATE_SEAL
+		 * was negotiated.
+		 */
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		DATA_BLOB weak_session_key = ntlmssp_state->session_key;
 		const char *send_sign_const;
