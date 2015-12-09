@@ -855,31 +855,6 @@ bool get_dc_name(const char *domain,
 		fstring srv_name,
 		struct sockaddr_storage *ss_out);
 
-/* The following definitions come from libsmb/ntlmssp.c  */
-struct ntlmssp_state;
-NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
-NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
-NTSTATUS ntlmssp_set_password_hash(struct ntlmssp_state *ntlmssp_state,
-				   const char *hash);
-NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
-void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);
-void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature);
-NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
-			const DATA_BLOB in, DATA_BLOB *out) ;
-bool ntlmssp_is_anonymous(struct ntlmssp_state *ntlmssp_state);
-NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
-			      bool is_standalone,
-			      const char *netbios_name,
-			      const char *netbios_domain,
-			      const char *dns_name,
-			      const char *dns_domain,
-			      struct ntlmssp_state **ntlmssp_state);
-NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
-			      const char *netbios_name,
-			      const char *netbios_domain,
-			      bool use_ntlmv2,
-			      struct ntlmssp_state **_ntlmssp_state);
-
 /* The following definitions come from libsmb/passchange.c  */
 
 NTSTATUS remote_password_change(const char *remote_machine, const char *user_name, 
