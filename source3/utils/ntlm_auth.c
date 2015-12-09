@@ -169,6 +169,7 @@ static int request_lm_key;
 static int request_user_session_key;
 static int use_cached_creds;
 static int offline_logon;
+static int opt_allow_mschapv2;
 
 static const char *require_membership_of;
 static const char *require_membership_of_sid;
@@ -532,6 +533,10 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	request.data.auth_crap.logon_parameters = extra_logon_parameters
 		| MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT | MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT;
+
+	if (opt_allow_mschapv2) {
+			request.data.auth_crap.logon_parameters |= MSV1_0_ALLOW_MSVCHAPV2;
+	}
 
 	if (require_membership_of_sid)
 		fstrcpy(request.data.auth_crap.require_membership_of_sid, require_membership_of_sid);
@@ -2185,6 +2190,7 @@ enum {
 	OPT_DIAGNOSTICS,
 	OPT_REQUIRE_MEMBERSHIP,
 	OPT_USE_CACHED_CREDS,
+	OPT_ALLOW_MSCHAPV2,
 	OPT_PAM_WINBIND_CONF,
 	OPT_TARGET_SERVICE,
 	OPT_TARGET_HOSTNAME,
@@ -2225,6 +2231,7 @@ enum {
 		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retrieve LM session key"},
 		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retrieve User (NT) session key"},
 		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
+		{ "allow-mschapv2", 0, POPT_ARG_NONE, &opt_allow_mschapv2, OPT_ALLOW_MSCHAPV2, "Explicitly allow MSCHAPv2" },
 		{ "offline-logon", 0, POPT_ARG_NONE, &offline_logon,
 		  OPT_OFFLINE_LOGON,
 		  "Use cached passwords when DC is offline"},
