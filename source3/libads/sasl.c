@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/spnego.h"
+#include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"
 #include "ads.h"
@@ -120,16 +121,11 @@ static const struct ads_saslwrap_ops ads_sasl_ntlmssp_ops = {
 */
 static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 {
-	DATA_BLOB msg1 = data_blob_null;
-	DATA_BLOB blob = data_blob_null;
 	DATA_BLOB blob_in = data_blob_null;
 	DATA_BLOB blob_out = data_blob_null;
-	struct berval cred, *scred = NULL;
 	int rc;
 	NTSTATUS nt_status;
 	ADS_STATUS status;
-	int turn = 1;
-
 	struct auth_generic_state *auth_generic_state;
 
 	nt_status = auth_generic_client_prepare(NULL, &auth_generic_state);
@@ -146,6 +142,9 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	if (!NT_STATUS_IS_OK(nt_status = auth_generic_set_password(auth_generic_state, ads->auth.password))) {
 		return ADS_ERROR_NT(nt_status);
 	}
+
+	cli_credentials_set_kerberos_state(auth_generic_state->credentials,
+					   CRED_DONT_USE_KERBEROS);
 
 	switch (ads->ldap.wrap_type) {
 	case ADS_SASLWRAP_TYPE_SEAL:
@@ -169,87 +168,68 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		break;
 	}
 
-	nt_status = auth_generic_client_start(auth_generic_state, GENSEC_OID_NTLMSSP);
+	nt_status = auth_generic_client_start(auth_generic_state, GENSEC_OID_SPNEGO);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ADS_ERROR_NT(nt_status);
 	}
 
+	rc = LDAP_SASL_BIND_IN_PROGRESS;
+	nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	blob_in = data_blob_null;
+	blob_out = data_blob_null;
 
-	do {
+	while (true) {
+		struct berval cred, *scred = NULL;
+
 		nt_status = gensec_update(auth_generic_state->gensec_security,
 					  talloc_tos(), blob_in, &blob_out);
 		data_blob_free(&blob_in);
-		if ((NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
-		     || NT_STATUS_IS_OK(nt_status))
-		    && blob_out.length) {
-			if (turn == 1) {
-				const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
-				/* and wrap it in a SPNEGO wrapper */
-				msg1 = spnego_gen_negTokenInit(talloc_tos(),
-						OIDs_ntlm, &blob_out, NULL);
-			} else {
-				/* wrap it in SPNEGO */
-				msg1 = spnego_gen_auth(talloc_tos(), blob_out);
-			}
-
-			data_blob_free(&blob_out);
-
-			cred.bv_val = (char *)msg1.data;
-			cred.bv_len = msg1.length;
-			scred = NULL;
-			rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
-			data_blob_free(&msg1);
-			if ((rc != LDAP_SASL_BIND_IN_PROGRESS) && (rc != 0)) {
-				if (scred) {
-					ber_bvfree(scred);
-				}
-
-				TALLOC_FREE(auth_generic_state);
-				return ADS_ERROR(rc);
-			}
-			if (scred) {
-				blob = data_blob(scred->bv_val, scred->bv_len);
-				ber_bvfree(scred);
-			} else {
-				blob = data_blob_null;
-			}
-
-		} else {
-
+		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)
+		    && !NT_STATUS_IS_OK(nt_status))
+		{
 			TALLOC_FREE(auth_generic_state);
 			data_blob_free(&blob_out);
 			return ADS_ERROR_NT(nt_status);
 		}
-		
-		if ((turn == 1) && 
-		    (rc == LDAP_SASL_BIND_IN_PROGRESS)) {
-			DATA_BLOB tmp_blob = data_blob_null;
-			/* the server might give us back two challenges */
-			if (!spnego_parse_challenge(talloc_tos(), blob, &blob_in, 
-						    &tmp_blob)) {
 
-				TALLOC_FREE(auth_generic_state);
-				data_blob_free(&blob);
-				DEBUG(3,("Failed to parse challenges\n"));
-				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
-			data_blob_free(&tmp_blob);
-		} else if (rc == LDAP_SASL_BIND_IN_PROGRESS) {
-			if (!spnego_parse_auth_response(talloc_tos(), blob, nt_status, OID_NTLMSSP, 
-							&blob_in)) {
-
-				TALLOC_FREE(auth_generic_state);
-				data_blob_free(&blob);
-				DEBUG(3,("Failed to parse auth response\n"));
-				return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-			}
+		if (NT_STATUS_IS_OK(nt_status) && rc == 0 && blob_out.length == 0) {
+			break;
 		}
-		data_blob_free(&blob);
+
+		cred.bv_val = (char *)blob_out.data;
+		cred.bv_len = blob_out.length;
+		scred = NULL;
+		rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
 		data_blob_free(&blob_out);
-		turn++;
-	} while (rc == LDAP_SASL_BIND_IN_PROGRESS && !NT_STATUS_IS_OK(nt_status));
-	
+		if ((rc != LDAP_SASL_BIND_IN_PROGRESS) && (rc != 0)) {
+			if (scred) {
+				ber_bvfree(scred);
+			}
+
+			TALLOC_FREE(auth_generic_state);
+			return ADS_ERROR(rc);
+		}
+		if (scred) {
+			blob_in = data_blob_talloc(talloc_tos(),
+						   scred->bv_val,
+						   scred->bv_len);
+			if (blob_in.length != scred->bv_len) {
+				ber_bvfree(scred);
+				TALLOC_FREE(auth_generic_state);
+				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
+			ber_bvfree(scred);
+		} else {
+			blob_in = data_blob_null;
+		}
+		if (NT_STATUS_IS_OK(nt_status) && rc == 0 && blob_in.length == 0) {
+			break;
+		}
+	}
+
+	data_blob_free(&blob_in);
+	data_blob_free(&blob_out);
+
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
 		size_t max_wrapped = gensec_max_wrapped_size(auth_generic_state->gensec_security);
 		ads->ldap.out.max_unwrapped = gensec_max_input_size(auth_generic_state->gensec_security);
