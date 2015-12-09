@@ -348,15 +348,12 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      TALLOC_CTX *mem_ctx,
 			      struct dsdb_extended_replicated_object *out)
 {
-	NTSTATUS nt_status;
 	WERROR status = WERR_OK;
 	uint32_t i;
 	struct ldb_message *msg;
 	struct replPropertyMetaDataBlob *md;
 	int instanceType;
 	struct ldb_message_element *instanceType_e = NULL;
-	struct ldb_val guid_value;
-	struct ldb_val parent_guid_value;
 	NTTIME whenChanged = 0;
 	time_t whenChanged_t;
 	const char *whenChanged_s;
@@ -615,23 +612,17 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	whenChanged_s = ldb_timestring(msg, whenChanged_t);
 	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
 
-	nt_status = GUID_to_ndr_blob(&in->object.identifier->guid, msg, &guid_value);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ntstatus_to_werror(nt_status);
-	}
+	out->object_guid = in->object.identifier->guid;
 
-	if (in->parent_object_guid) {
-		nt_status = GUID_to_ndr_blob(in->parent_object_guid, msg, &parent_guid_value);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return ntstatus_to_werror(nt_status);
-		}
+	if (in->parent_object_guid == NULL) {
+		out->parent_guid = NULL;
 	} else {
-		parent_guid_value = data_blob_null;
+		out->parent_guid = talloc(mem_ctx, struct GUID);
+		W_ERROR_HAVE_NO_MEMORY(out->parent_guid);
+		*out->parent_guid = *in->parent_object_guid;
 	}
 
 	out->msg		= msg;
-	out->guid_value		= guid_value;
-	out->parent_guid_value	= parent_guid_value;
 	out->when_changed	= whenChanged_s;
 	out->meta_data		= md;
 	return WERR_OK;
@@ -844,6 +835,10 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 			 ldb_errstring(ldb), ldb_strerror(ret)));
 		ldb_transaction_cancel(ldb);
 		TALLOC_FREE(tmp_ctx);
+
+		if (!W_ERROR_IS_OK(objects->error)) {
+			return objects->error;
+		}
 		return WERR_FOOBAR;
 	}
 	talloc_free(ext_res);

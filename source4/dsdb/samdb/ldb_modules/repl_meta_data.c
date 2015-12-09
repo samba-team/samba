@@ -91,6 +91,7 @@ struct replmd_replicated_request {
 	struct dsdb_extended_replicated_objects *objs;
 
 	struct ldb_message *search_msg;
+	struct GUID local_parent_guid;
 
 	uint64_t seq_num;
 	bool is_urgent;
@@ -3527,6 +3528,10 @@ static int replmd_replicated_request_werror(struct replmd_replicated_request *ar
 {
 	int ret = LDB_ERR_OTHER;
 	/* TODO: do some error mapping */
+
+	/* Let the caller know the full WERROR */
+	ar->objs->error = status;
+
 	return ret;
 }
 
@@ -4014,7 +4019,9 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 		return replmd_replicated_request_error(ar, ret);
 	}
 
-	ret = ldb_msg_add_value(msg, "objectGUID", &ar->objs->objects[ar->index_current].guid_value, NULL);
+	ret = dsdb_msg_add_guid(msg,
+				&ar->objs->objects[ar->index_current].object_guid,
+				"objectGUID");
 	if (ret != LDB_SUCCESS) {
 		return replmd_replicated_request_error(ar, ret);
 	}
@@ -4154,12 +4161,14 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 		return ldb_module_done(ar->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
-	if (ares->error != LDB_SUCCESS &&
-	    ares->error != LDB_ERR_NO_SUCH_OBJECT) {
-		/*
-		 * TODO: deal with the above error that the parent object doesn't exist
-		 */
 
+	/*
+	 * The error NO_SUCH_OBJECT is not expected, unless the search
+	 * base is the partition DN, and that case doesn't happen here
+	 * because then we wouldn't get a parent_guid_value in any
+	 * case.
+	 */
+	if (ares->error != LDB_SUCCESS) {
 		return ldb_module_done(ar->req, ares->controls,
 					ares->response, ares->error);
 	}
@@ -4217,9 +4226,13 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 			}
 			ar->objs->objects[ar->index_current].last_known_parent
 				= talloc_steal(ar->objs->objects[ar->index_current].msg, parent_msg->dn);
+
 		} else {
-			parent_dn = parent_msg->dn;
+			parent_dn
+				= talloc_steal(ar->objs->objects[ar->index_current].msg, parent_msg->dn);
+
 		}
+		ar->objs->objects[ar->index_current].local_parent_dn = parent_dn;
 
 		comp_num = ldb_dn_get_comp_num(msg->dn);
 		if (comp_num > 1) {
@@ -4239,6 +4252,32 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 		break;
 
 	case LDB_REPLY_DONE:
+
+		if (ar->objs->objects[ar->index_current].local_parent_dn == NULL) {
+			struct GUID_txt_buf str_buf;
+			if (ar->search_msg != NULL) {
+				ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+						       "No parent with GUID %s found for object locally known as %s",
+						       GUID_buf_string(ar->objs->objects[ar->index_current].parent_guid, &str_buf),
+						       ldb_dn_get_linearized(ar->search_msg->dn));
+			} else {
+				ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+						       "No parent with GUID %s found for object remotely known as %s",
+						       GUID_buf_string(ar->objs->objects[ar->index_current].parent_guid, &str_buf),
+						       ldb_dn_get_linearized(ar->objs->objects[ar->index_current].msg->dn));
+			}
+
+			/*
+			 * This error code is really important, as it
+			 * is the flag back to the callers to retry
+			 * this with DRSUAPI_DRS_GET_ANC, and so get
+			 * the parent objects before the child
+			 * objects
+			 */
+			return ldb_module_done(ar->req, NULL, NULL,
+					       replmd_replicated_request_werror(ar, WERR_DS_DRA_MISSING_PARENT));
+		}
+
 		if (ar->search_msg != NULL) {
 			ret = replmd_replicated_apply_merge(ar);
 		} else {
@@ -4268,10 +4307,11 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
 	char *filter;
 	struct ldb_request *search_req;
 	static const char *attrs[] = {"isDeleted", NULL};
+	struct GUID_txt_buf guid_str_buf;
 
 	ldb = ldb_module_get_ctx(ar->module);
 
-	if (!ar->objs->objects[ar->index_current].parent_guid_value.data) {
+	if (ar->objs->objects[ar->index_current].parent_guid == NULL) {
 		if (ar->search_msg != NULL) {
 			return replmd_replicated_apply_merge(ar);
 		} else {
@@ -4279,12 +4319,11 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
 		}
 	}
 
-	tmp_str = ldb_binary_encode(ar, ar->objs->objects[ar->index_current].parent_guid_value);
-	if (!tmp_str) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	tmp_str = GUID_buf_string(ar->objs->objects[ar->index_current].parent_guid,
+				  &guid_str_buf);
 
 	filter = talloc_asprintf(ar, "(objectGUID=%s)", tmp_str);
 	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOMEM);
-	talloc_free(tmp_str);
 
 	ret = ldb_build_search_req(&search_req,
 				   ldb,
@@ -4375,6 +4414,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	const struct ldb_val *omd_value;
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
+	struct GUID remote_parent_guid;
 	unsigned int i;
 	uint32_t j,ni=0;
 	unsigned int removed_attrs = 0;
@@ -4386,6 +4426,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	bool take_remote_isDeleted = false;
 	bool sd_updated = false;
 	bool renamed = false;
+	NTSTATUS nt_status;
 
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
@@ -4400,7 +4441,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		ndr_err = ndr_pull_struct_blob(omd_value, ar, &omd,
 					       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+			nt_status = ndr_map_error2ntstatus(ndr_err);
 			return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
 		}
 
@@ -4414,7 +4455,27 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
 						     "isDeleted", false);
 
-	if (strcmp(ldb_dn_get_linearized(msg->dn), ldb_dn_get_linearized(ar->search_msg->dn)) == 0) {
+	/*
+	 * Fill in the remote_parent_guid with the GUID or an all-zero
+	 * GUID.
+	 */
+	if (ar->objs->objects[ar->index_current].parent_guid != NULL) {
+		remote_parent_guid = *ar->objs->objects[ar->index_current].parent_guid;
+	} else {
+		remote_parent_guid = GUID_zero();
+	}
+
+	/*
+	 * To ensure we follow a complex rename chain around, we have
+	 * to confirm that the DN is the same (mostly to confirm the
+	 * RDN) and the parentGUID is the same.
+	 *
+	 * This ensures we keep things under the correct parent, which
+	 * replmd_replicated_handle_rename() will do.
+	 */
+
+	if (strcmp(ldb_dn_get_linearized(msg->dn), ldb_dn_get_linearized(ar->search_msg->dn)) == 0
+	    && GUID_equal(&remote_parent_guid, &ar->local_parent_guid)) {
 		ret = LDB_SUCCESS;
 	} else {
 		/*
@@ -4437,14 +4498,10 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 * need to rename the incoming record
 	 */
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		struct GUID guid;
-		NTSTATUS status;
 		struct ldb_dn *new_dn;
-		status = GUID_from_ndr_blob(&ar->objs->objects[ar->index_current].guid_value, &guid);
-		/* This really, really can't fail */
-		SMB_ASSERT(NT_STATUS_IS_OK(status));
 
-		new_dn = replmd_conflict_dn(msg, msg->dn, &guid);
+		new_dn = replmd_conflict_dn(msg, msg->dn,
+					    &ar->objs->objects[ar->index_current].object_guid);
 		if (new_dn == NULL) {
 			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
 								  "Failed to form conflict DN for %s\n",
@@ -4648,7 +4705,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	ndr_err = ndr_push_struct_blob(&nmd_value, msg, &nmd,
 				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+		nt_status = ndr_map_error2ntstatus(ndr_err);
 		return replmd_replicated_request_werror(ar, ntstatus_to_werror(nt_status));
 	}
 
@@ -4745,7 +4802,7 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 		const struct ldb_val *omd_value;
 		struct replPropertyMetaDataBlob *rmd;
 		struct ldb_message *msg;
-
+		ar->objs->objects[ar->index_current].local_parent_dn = NULL;
 		ar->objs->objects[ar->index_current].last_known_parent = NULL;
 
 		/*
@@ -4787,6 +4844,8 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 			}
 		}
 
+		ar->local_parent_guid = samdb_result_guid(ar->search_msg, "parentGUID");
+
 		/*
 		 * now we need to check for double renames. We could have a
 		 * local rename pending which our replication partner hasn't
@@ -4811,9 +4870,13 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 
 			/*
 			 * This assignment ensures that the strcmp()
-			 * in replmd_replicated_apply_merge() avoids
-			 * the rename call
+			 * and GUID_equal() calls in
+			 * replmd_replicated_apply_merge() avoids the
+			 * rename call
 			 */
+			ar->objs->objects[ar->index_current].parent_guid =
+				&ar->local_parent_guid;
+
 			msg->dn = ar->search_msg->dn;
 			ret = replmd_replicated_apply_merge(ar);
 		}
@@ -4836,9 +4899,10 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	char *tmp_str;
 	char *filter;
 	struct ldb_request *search_req;
-	static const char *attrs[] = { "*", "instanceType",
+	static const char *attrs[] = { "*", "parentGUID", "instanceType",
 				       "replPropertyMetaData", "nTSecurityDescriptor",
 				       NULL };
+	struct GUID_txt_buf guid_str_buf;
 
 	if (ar->index_current >= ar->objs->num_objects) {
 		/* done with it, go to next stage */
@@ -4849,12 +4913,11 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	ar->search_msg = NULL;
 	ar->isDeleted = false;
 
-	tmp_str = ldb_binary_encode(ar, ar->objs->objects[ar->index_current].guid_value);
-	if (!tmp_str) return replmd_replicated_request_werror(ar, WERR_NOMEM);
+	tmp_str = GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid,
+				  &guid_str_buf);
 
 	filter = talloc_asprintf(ar, "(objectGUID=%s)", tmp_str);
 	if (!filter) return replmd_replicated_request_werror(ar, WERR_NOMEM);
-	talloc_free(tmp_str);
 
 	ret = ldb_build_search_req(&search_req,
 				   ldb,

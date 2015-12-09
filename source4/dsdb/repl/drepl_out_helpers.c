@@ -458,6 +458,10 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	replica_flags = rf1->replica_flags;
 	highwatermark = rf1->highwatermark;
 
+	if (state->op->options & DRSUAPI_DRS_GET_ANC) {
+		replica_flags |= DRSUAPI_DRS_GET_ANC;
+	}
+
 	if (partition->partial_replica) {
 		status = dreplsrv_get_gc_partial_attribute_set(service, r, &pas);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -873,7 +877,27 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	talloc_free(objects);
 
 	if (!W_ERROR_IS_OK(status)) {
-		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+
+		/*
+		 * If we failed to apply the records due to a missing
+		 * parent, try again after asking for the parent
+		 * records first.  Because we don't update the
+		 * highwatermark, we start this part of the cycle
+		 * again.
+		 */
+		if (((state->op->options & DRSUAPI_DRS_GET_ANC) == 0)
+		    && W_ERROR_EQUAL(status, WERR_DS_DRA_MISSING_PARENT)) {
+			state->op->options |= DRSUAPI_DRS_GET_ANC;
+			DEBUG(4,("Missing parent object when we didn't set the DRSUAPI_DRS_GET_ANC flag, retrying\n"));
+			dreplsrv_op_pull_source_get_changes_trigger(req);
+			return;
+		} else if (((state->op->options & DRSUAPI_DRS_GET_ANC))
+			   && W_ERROR_EQUAL(status, WERR_DS_DRA_MISSING_PARENT)) {
+			DEBUG(1,("Missing parent object despite setting DRSUAPI_DRS_GET_ANC flag\n"));
+			nt_status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		} else {
+			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+		}
 		DEBUG(0,("Failed to commit objects: %s/%s\n",
 			  win_errstr(status), nt_errstr(nt_status)));
 		tevent_req_nterror(req, nt_status);

@@ -161,13 +161,14 @@ struct dsdb_control_password_change {
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
-	struct ldb_val guid_value;
-	struct ldb_val parent_guid_value;
+	struct GUID object_guid;
+	struct GUID *parent_guid;
 	const char *when_changed;
 	struct replPropertyMetaDataBlob *meta_data;
 
 	/* Only used for internal processing in repl_meta_data */
 	struct ldb_dn *last_known_parent;
+	struct ldb_dn *local_parent_dn;
 };
 
 struct dsdb_extended_replicated_objects {
@@ -191,6 +192,8 @@ struct dsdb_extended_replicated_objects {
 
 	uint32_t linked_attributes_count;
 	const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+
+	WERROR error;
 };
 
 #define DSDB_EXTENDED_CREATE_PARTITION_OID "1.3.6.1.4.1.7165.4.4.4"
