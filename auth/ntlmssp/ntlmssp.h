@@ -94,6 +94,8 @@ struct ntlmssp_state
 
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
 
+	bool force_wrap_seal;
+
 	union ntlmssp_crypt_state *crypt;
 };
 
