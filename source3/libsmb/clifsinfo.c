@@ -21,8 +21,6 @@
 
 #include "includes.h"
 #include "libsmb/libsmb.h"
-#include "../libcli/auth/spnego.h"
-#include "../auth/ntlmssp/ntlmssp.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "../libcli/smb/smb_seal.h"
