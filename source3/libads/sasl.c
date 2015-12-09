@@ -29,7 +29,7 @@
 
 #ifdef HAVE_LDAP
 
-static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t len)
+static ADS_STATUS ads_sasl_gensec_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t len)
 {
 	struct gensec_security *gensec_security =
 		talloc_get_type_abort(ads->ldap.wrap_private_data,
@@ -62,7 +62,7 @@ static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t 
 	return ADS_SUCCESS;
 }
 
-static ADS_STATUS ads_sasl_ntlmssp_unwrap(ADS_STRUCT *ads)
+static ADS_STATUS ads_sasl_gensec_unwrap(ADS_STRUCT *ads)
 {
 	struct gensec_security *gensec_security =
 		talloc_get_type_abort(ads->ldap.wrap_private_data,
@@ -96,7 +96,7 @@ static ADS_STATUS ads_sasl_ntlmssp_unwrap(ADS_STRUCT *ads)
 	return ADS_SUCCESS;
 }
 
-static void ads_sasl_ntlmssp_disconnect(ADS_STRUCT *ads)
+static void ads_sasl_gensec_disconnect(ADS_STRUCT *ads)
 {
 	struct gensec_security *gensec_security =
 		talloc_get_type_abort(ads->ldap.wrap_private_data,
@@ -108,18 +108,23 @@ static void ads_sasl_ntlmssp_disconnect(ADS_STRUCT *ads)
 	ads->ldap.wrap_private_data = NULL;
 }
 
-static const struct ads_saslwrap_ops ads_sasl_ntlmssp_ops = {
-	.name		= "ntlmssp",
-	.wrap		= ads_sasl_ntlmssp_wrap,
-	.unwrap		= ads_sasl_ntlmssp_unwrap,
-	.disconnect	= ads_sasl_ntlmssp_disconnect
+static const struct ads_saslwrap_ops ads_sasl_gensec_ops = {
+	.name		= "gensec",
+	.wrap		= ads_sasl_gensec_wrap,
+	.unwrap		= ads_sasl_gensec_unwrap,
+	.disconnect	= ads_sasl_gensec_disconnect
 };
 
 /* 
-   perform a LDAP/SASL/SPNEGO/NTLMSSP bind (just how many layers can
+   perform a LDAP/SASL/SPNEGO/{NTLMSSP,KRB5} bind (just how many layers can
    we fit on one socket??)
 */
-static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
+static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
+				const char *sasl,
+				enum credentials_use_kerberos krb5_state,
+				const char *target_service,
+				const char *target_hostname,
+				const DATA_BLOB server_blob)
 {
 	DATA_BLOB blob_in = data_blob_null;
 	DATA_BLOB blob_out = data_blob_null;
@@ -127,6 +132,8 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 	NTSTATUS nt_status;
 	ADS_STATUS status;
 	struct auth_generic_state *auth_generic_state;
+	bool use_spnego_principal = lp_client_use_spnego_principal();
+	const char *sasl_list[] = { sasl, NULL };
 
 	nt_status = auth_generic_client_prepare(NULL, &auth_generic_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -143,8 +150,38 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		return ADS_ERROR_NT(nt_status);
 	}
 
+	if (server_blob.length == 0) {
+		use_spnego_principal = false;
+	}
+
+	if (krb5_state == CRED_DONT_USE_KERBEROS) {
+		use_spnego_principal = false;
+	}
+
 	cli_credentials_set_kerberos_state(auth_generic_state->credentials,
-					   CRED_DONT_USE_KERBEROS);
+					   krb5_state);
+
+	if (target_service != NULL) {
+		nt_status = gensec_set_target_service(
+					auth_generic_state->gensec_security,
+					target_service);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ADS_ERROR_NT(nt_status);
+		}
+	}
+
+	if (target_hostname != NULL) {
+		nt_status = gensec_set_target_hostname(
+					auth_generic_state->gensec_security,
+					target_hostname);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ADS_ERROR_NT(nt_status);
+		}
+	}
+
+	if (target_service != NULL && target_hostname != NULL) {
+		use_spnego_principal = false;
+	}
 
 	switch (ads->ldap.wrap_type) {
 	case ADS_SASLWRAP_TYPE_SEAL:
@@ -168,14 +205,23 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		break;
 	}
 
-	nt_status = auth_generic_client_start(auth_generic_state, GENSEC_OID_SPNEGO);
+	nt_status = auth_generic_client_start_by_sasl(auth_generic_state,
+						      sasl_list);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ADS_ERROR_NT(nt_status);
 	}
 
 	rc = LDAP_SASL_BIND_IN_PROGRESS;
 	nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-	blob_in = data_blob_null;
+	if (use_spnego_principal) {
+		blob_in = data_blob_dup_talloc(talloc_tos(), server_blob);
+		if (blob_in.length == 0) {
+			TALLOC_FREE(auth_generic_state);
+			return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		}
+	} else {
+		blob_in = data_blob_null;
+	}
 	blob_out = data_blob_null;
 
 	while (true) {
@@ -199,7 +245,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		cred.bv_val = (char *)blob_out.data;
 		cred.bv_len = blob_out.length;
 		scred = NULL;
-		rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
+		rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, sasl, &cred, NULL, NULL, &scred);
 		data_blob_free(&blob_out);
 		if ((rc != LDAP_SASL_BIND_IN_PROGRESS) && (rc != 0)) {
 			if (scred) {
@@ -237,7 +283,7 @@ static ADS_STATUS ads_sasl_spnego_ntlmssp_bind(ADS_STRUCT *ads)
 		ads->ldap.out.sig_size = max_wrapped - ads->ldap.out.max_unwrapped;
 		ads->ldap.in.min_wrapped = ads->ldap.out.sig_size;
 		ads->ldap.in.max_wrapped = max_wrapped;
-		status = ads_setup_sasl_wrapping(ads, &ads_sasl_ntlmssp_ops, auth_generic_state->gensec_security);
+		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gensec_ops, auth_generic_state->gensec_security);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
 				ads_errstr(status)));
@@ -1024,7 +1070,10 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	/* lets do NTLMSSP ... this has the big advantage that we don't need
 	   to sync clocks, and we don't rely on special versions of the krb5 
 	   library for HMAC_MD4 encryption */
-	return ads_sasl_spnego_ntlmssp_bind(ads);
+	return ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+					   CRED_DONT_USE_KERBEROS,
+					   NULL, NULL,
+					   data_blob_null);
 
 failed:
 	return status;
