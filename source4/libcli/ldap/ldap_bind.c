@@ -318,6 +318,13 @@ try_logon_again:
 	 * context, so we don't tatoo it ) */
 	cli_credentials_set_gensec_features(creds, old_gensec_features);
 
+	/*
+	 * This is an indication for the NTLMSSP backend to
+	 * also encrypt when only GENSEC_FEATURE_SIGN is requested
+	 * in gensec_[un]wrap().
+	 */
+	gensec_want_feature(conn->gensec, GENSEC_FEATURE_LDAP_STYLE);
+
 	if (conn->host) {
 		status = gensec_set_target_hostname(conn->gensec, conn->host);
 		if (!NT_STATUS_IS_OK(status)) {
