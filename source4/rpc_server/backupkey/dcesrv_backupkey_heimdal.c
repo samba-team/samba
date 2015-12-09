@@ -985,10 +985,6 @@ static WERROR self_sign_cert(TALLOC_CTX *ctx, hx509_context *hctx, hx509_request
 	if (ret !=0) {
 		goto fail;
 	}
-	ret = hx509_ca_tbs_set_ca(*hctx, tbs, 1);
-	if (ret !=0) {
-		goto fail;
-	}
 	ret = hx509_ca_tbs_set_notAfter_lifetime(*hctx, tbs, lifetime);
 	if (ret !=0) {
 		goto fail;
