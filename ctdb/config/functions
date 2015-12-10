@@ -1082,15 +1082,18 @@ update_tickles ()
 	# IPs as a regexp choice
 	_ipschoice="($(echo $_ips | sed -e 's/ /|/g' -e 's/\./\\\\./g'))"
 
-	# Record connections to our public IPs in a temporary file
-	_my_connections="${tickledir}/${_port}.connections"
+	# Record connections to our public IPs in a temporary file.
+	# This temporary file is in CTDB's private state directory and
+	# $$ is used to avoid a very rare race involving CTDB's script
+	# debugging.  No security issue, nothing to see here...
+	_my_connections="${tickledir}/${_port}.connections.$$"
 	netstat -tn |
 	awk -v destpat="^${_ipschoice}:${_port}\$" \
 	  '$1 == "tcp" && $6 == "ESTABLISHED" && $4 ~ destpat {print $5, $4}' |
 	sort >"$_my_connections"
 
 	# Record our current tickles in a temporary file
-	_my_tickles="${tickledir}/${_port}.tickles"
+	_my_tickles="${tickledir}/${_port}.tickles.$$"
 	for _i in $_ips ; do
 		ctdb -X gettickles $_i $_port |
 		awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
@@ -1109,7 +1112,10 @@ update_tickles ()
 		ctdb deltickle $_src $_dst
 	done
 
-	rm -f "$_my_connections" "$_my_tickles" 
+	rm -f "$_my_connections" "$_my_tickles"
+
+	# Remove stale files from killed scripts
+	find "$tickledir" -type f -mmin +10 | xargs -r rm
 }
 
 ########################################################
