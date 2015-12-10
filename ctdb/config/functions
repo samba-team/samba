@@ -1084,7 +1084,6 @@ update_tickles ()
 
 	# Record connections to our public IPs in a temporary file
 	_my_connections="${tickledir}/${_port}.connections"
-	rm -f "$_my_connections"
 	netstat -tn |
 	awk -v destpat="^${_ipschoice}:${_port}\$" \
 	  '$1 == "tcp" && $6 == "ESTABLISHED" && $4 ~ destpat {print $5, $4}' |
@@ -1092,7 +1091,6 @@ update_tickles ()
 
 	# Record our current tickles in a temporary file
 	_my_tickles="${tickledir}/${_port}.tickles"
-	rm -f "$_my_tickles"
 	for _i in $_ips ; do
 		ctdb -X gettickles $_i $_port |
 		awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
