@@ -1,4 +1,162 @@
                    ==============================
+                   Release Notes for Samba 4.1.22
+                          December 16, 2015
+                   ==============================
+
+
+This is a security release in order to address the following CVEs:
+
+o  CVE-2015-7540 (Remote DoS in Samba (AD) LDAP server)
+o  CVE-2015-3223 (Denial of service in Samba Active Directory
+		  server)
+o  CVE-2015-5252 (Insufficient symlink verification in smbd)
+o  CVE-2015-5299 (Missing access control check in shadow copy
+		  code)
+o  CVE-2015-5296 (Samba client requesting encryption vulnerable
+		  to downgrade attack)
+o  CVE-2015-8467 (Denial of service attack against Windows
+		  Active Directory server)
+o  CVE-2015-5330 (Remote memory read in Samba LDAP server)
+
+Please note that if building against a system libldb, the required
+version has been bumped to ldb-1.1.24.  This is needed to ensure
+we build against a system ldb library that contains the fixes
+for CVE-2015-5330 and CVE-2015-3223.
+
+=======
+Details
+=======
+
+o  CVE-2015-7540:
+   All versions of Samba from 4.0.0 to 4.1.21 inclusive are vulnerable to
+   an anonymous memory exhaustion attack in the samba daemon LDAP server.
+
+   A malicious client can send packets that cause the LDAP server provided
+   by the AD DC in the samba daemon process to consume unlimited memory
+   and be terminated.
+
+o  CVE-2015-3223:
+   All versions of Samba from 4.0.0 to 4.3.2 inclusive (resp. all
+   ldb versions up to 1.1.23 inclusive) are vulnerable to
+   a denial of service attack in the samba daemon LDAP server.
+
+   A malicious client can send packets that cause the LDAP server in the
+   samba daemon process to become unresponsive, preventing the server
+   from servicing any other requests.
+
+   This flaw is not exploitable beyond causing the code to loop expending
+   CPU resources.
+
+o  CVE-2015-5252:
+   All versions of Samba from 3.0.0 to 4.3.2 inclusive are vulnerable to
+   a bug in symlink verification, which under certain circumstances could
+   allow client access to files outside the exported share path.
+
+   If a Samba share is configured with a path that shares a common path
+   prefix with another directory on the file system, the smbd daemon may
+   allow the client to follow a symlink pointing to a file or directory
+   in that other directory, even if the share parameter "wide links" is
+   set to "no" (the default).
+
+o  CVE-2015-5299:
+   All versions of Samba from 3.2.0 to 4.3.2 inclusive are vulnerable to
+   a missing access control check in the vfs_shadow_copy2 module. When
+   looking for the shadow copy directory under the share path the current
+   accessing user should have DIRECTORY_LIST access rights in order to
+   view the current snapshots.
+
+   This was not being checked in the affected versions of Samba.
+
+o  CVE-2015-5296:
+   Versions of Samba from 3.2.0 to 4.3.2 inclusive do not ensure that
+   signing is negotiated when creating an encrypted client connection to
+   a server.
+
+   Without this a man-in-the-middle attack could downgrade the connection
+   and connect using the supplied credentials as an unsigned, unencrypted
+   connection.
+
+o  CVE-2015-8467:
+   Samba, operating as an AD DC, is sometimes operated in a domain with a
+   mix of Samba and Windows Active Directory Domain Controllers.
+
+   All versions of Samba from 4.0.0 to 4.3.2 inclusive, when deployed as
+   an AD DC in the same domain with Windows DCs, could be used to
+   override the protection against the MS15-096 / CVE-2015-2535 security
+   issue in Windows.
+
+   Prior to MS16-096 it was possible to bypass the quota of machine
+   accounts a non-administrative user could create.  Pure Samba domains
+   are not impacted, as Samba does not implement the
+   SeMachineAccountPrivilege functionality to allow non-administrator
+   users to create new computer objects.
+
+o  CVE-2015-5330:
+   All versions of Samba from 4.0.0 to 4.3.2 inclusive (resp. all
+   ldb versions up to 1.1.23 inclusive) are vulnerable to
+   a remote memory read attack in the samba daemon LDAP server.
+
+   A malicious client can send packets that cause the LDAP server in the
+   samba daemon process to return heap memory beyond the length of the
+   requested value.
+
+   This memory may contain data that the client should not be allowed to
+   see, allowing compromise of the server.
+
+   The memory may either be returned to the client in an error string, or
+   stored in the database by a suitabily privileged user.  If untrusted
+   users can create objects in your database, please confirm that all DN
+   and name attributes are reasonable.
+
+
+Changes since 4.1.21:
+---------------------
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 11552: CVE-2015-8467: samdb: Match MS15-096 behaviour for
+     userAccountControl.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 9187:  CVE-2015-7540: Bogus LDAP request cause samba to use all the
+     memory and be ookilled.
+   * BUG 11325: CVE-2015-3223: Fix LDAP \00 search expression attack DoS.
+   * BUG 11395: CVE-2015-5252: Fix insufficient symlink verification (file
+     access outside the share).
+   * BUG 11529: CVE-2015-5299: s3-shadow-copy2: Fix missing access check on
+     snapdir.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 11599: CVE-2015-5330: Fix remote read memory exploit in LDB.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11536: CVE-2015-5296: Add man in the middle protection when forcing
+     smb encryption on the client side.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.1.21
                           October 13, 2015
                    ==============================
@@ -35,10 +193,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
-======================================================================
 
                    ==============================
                    Release Notes for Samba 4.1.20
