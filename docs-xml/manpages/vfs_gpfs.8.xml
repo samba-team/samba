@@ -42,14 +42,14 @@
 	</itemizedlist>
 	</para>
 
-	<para><command>NOTE:</command>This module follows the posix-acl behaviour
+	<para><command>NOTE:</command> This module follows the posix-acl behaviour
 	and hence allows permission stealing via chown. Samba might allow at a later
 	point in time, to restrict the chown via this module as such restrictions
 	are the responsibility of the underlying filesystem than of Samba.
 	</para>
 
 	<para>This module makes use of the smb.conf parameter
-	<smbconfoption name="acl map full control">acl map full control</smbconfoption>
+	<smbconfoption name="acl map full control"></smbconfoption>.
 	When set to yes (the default), this parameter will add in the FILE_DELETE_CHILD
 	bit on a returned ACE entry for a file (not a directory) that already
 	contains all file permissions except for FILE_DELETE and FILE_DELETE_CHILD.
@@ -471,7 +471,7 @@
 	</para>
 	<para>
 	At build time, only the header file <command>gpfs_gpl.h</command>
-	is required , which is a symlink to <command>gpfs.h</command> in
+	is required, which is a symlink to <command>gpfs.h</command> in
 	gpfs versions newer than 3.2.1 PTF8.
 	</para>
 </refsect1>
