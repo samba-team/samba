@@ -104,7 +104,6 @@ typedef uint32_t WERROR;
 /* RPC/COM/OLE HRESULT error codes */
 /* RPC errors */
 #define WERR_RPC_E_INVALID_HEADER	W_ERROR(0x80010111)
-#define WERR_RPC_E_REMOTE_DISABLED	W_ERROR(0x8001011c)
 
 /* Generic error code aliases */
 #define WERR_FOOBAR WERR_GEN_FAILURE

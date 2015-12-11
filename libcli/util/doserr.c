@@ -125,7 +125,6 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_DNS_ERROR_DP_ALREADY_ENLISTED", WERR_DNS_ERROR_DP_ALREADY_ENLISTED },
 	{ "WERR_DNS_ERROR_DP_NOT_AVAILABLE", WERR_DNS_ERROR_DP_NOT_AVAILABLE },
 	{ "WERR_DNS_ERROR_DP_FSMO_ERROR", WERR_DNS_ERROR_DP_FSMO_ERROR },
-	{ "WERR_RPC_E_REMOTE_DISABLED", WERR_RPC_E_REMOTE_DISABLED },
 	/*****************************************************************************
 	 Auto-generated Win32 error from:
 	 http://msdn.microsoft.com/en-us/library/cc231199%28PROT.10%29.aspx
