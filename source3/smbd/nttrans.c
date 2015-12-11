@@ -1548,7 +1548,7 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	if (ms_has_wild(oldname)) {
+	if (!lp_posix_pathnames() && ms_has_wild(oldname)) {
 		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 		goto out;
 	}
