@@ -448,11 +448,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * is true.
 	 */
 
-	name_has_wildcard = ms_has_wild(smb_fname->base_name);
-	if (name_has_wildcard && !allow_wcard_last_component) {
-		/* Wildcard not valid anywhere. */
-		status = NT_STATUS_OBJECT_NAME_INVALID;
-		goto fail;
+	if (!posix_pathnames) {
+		/* POSIX pathnames have no wildcards. */
+		name_has_wildcard = ms_has_wild(smb_fname->base_name);
+		if (name_has_wildcard && !allow_wcard_last_component) {
+			/* Wildcard not valid anywhere. */
+			status = NT_STATUS_OBJECT_NAME_INVALID;
+			goto fail;
+		}
 	}
 
 	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
@@ -647,7 +650,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		/* The name cannot have a wildcard if it's not
 		   the last component. */
 
-		name_has_wildcard = ms_has_wild(start);
+		if (!posix_pathnames) {
+			name_has_wildcard = ms_has_wild(start);
+		}
 
 		/* Wildcards never valid within a pathname. */
 		if (name_has_wildcard && end) {
