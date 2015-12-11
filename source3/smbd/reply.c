@@ -1749,7 +1749,9 @@ void reply_search(struct smb_request *req)
 		 * For a 'continue' search we have no string. So
 		 * check from the initial saved string.
 		 */
-		mask_contains_wcard = ms_has_wild(mask);
+		if (!lp_posix_pathnames()) {
+			mask_contains_wcard = ms_has_wild(mask);
+		}
 		dirtype = dptr_attr(sconn, dptr_num);
 	}
 
