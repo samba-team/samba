@@ -809,6 +809,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			wild = smb_fname->base_name;
 		}
 		if ((local_flags & O_CREAT) && !file_existed &&
+		    !(fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
 		    ms_has_wild(wild))  {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
