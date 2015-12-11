@@ -48,6 +48,4 @@ NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 NTSTATUS auth_generic_client_start_by_sasl(struct auth_generic_state *ans,
 					   const char **sasl_list);
 
-extern const struct gensec_security_ops gensec_ntlmssp3_client_ops;
-
 #endif /* _AUTH_GENERIC_ */
