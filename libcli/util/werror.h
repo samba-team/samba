@@ -101,10 +101,6 @@ typedef uint32_t WERROR;
 #define MAX_NERR (NERR_BASE+899)
 #endif
 
-/* RPC/COM/OLE HRESULT error codes */
-/* RPC errors */
-#define WERR_RPC_E_INVALID_HEADER	W_ERROR(0x80010111)
-
 /* Generic error code aliases */
 #define WERR_FOOBAR WERR_GEN_FAILURE
 
