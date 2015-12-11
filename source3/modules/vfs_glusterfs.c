@@ -691,10 +691,10 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 		tevent_req_error(req, EIO);
 		return tevent_req_post(req, ev);
 	}
+
 	ret = glfs_pread_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), data, n, offset, 0, aio_glusterfs_done,
 				state);
-
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
 		return tevent_req_post(req, ev);
@@ -739,6 +739,7 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 		tevent_req_error(req, EIO);
 		return tevent_req_post(req, ev);
 	}
+
 	ret = glfs_pwrite_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), data, n, offset, 0, aio_glusterfs_done,
 				state);
@@ -746,6 +747,7 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 		tevent_req_error(req, -ret);
 		return tevent_req_post(req, ev);
 	}
+
 	return req;
 }
 
