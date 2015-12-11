@@ -703,19 +703,6 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 	return req;
 }
 
-static ssize_t vfs_gluster_write(struct vfs_handle_struct *handle,
-				 files_struct *fsp, const void *data, size_t n)
-{
-	return glfs_write(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, 0);
-}
-
-static ssize_t vfs_gluster_pwrite(struct vfs_handle_struct *handle,
-				  files_struct *fsp, const void *data,
-				  size_t n, off_t offset)
-{
-	return glfs_pwrite(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, offset, 0);
-}
-
 static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 						  *handle, TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,
@@ -783,6 +770,19 @@ static ssize_t vfs_gluster_recv(struct tevent_req *req, int *err)
 	TALLOC_FREE(state);
 
 	return ret;
+}
+
+static ssize_t vfs_gluster_write(struct vfs_handle_struct *handle,
+				 files_struct *fsp, const void *data, size_t n)
+{
+	return glfs_write(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, 0);
+}
+
+static ssize_t vfs_gluster_pwrite(struct vfs_handle_struct *handle,
+				  files_struct *fsp, const void *data,
+				  size_t n, off_t offset)
+{
+	return glfs_pwrite(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle, fsp), data, n, offset, 0);
 }
 
 static off_t vfs_gluster_lseek(struct vfs_handle_struct *handle,
