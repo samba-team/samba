@@ -371,8 +371,7 @@ bld.SAMBA3_LIBRARY('smbd_shim',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBNTLMSSP',
-                    source='''libsmb/ntlmssp.c
-                    libsmb/ntlmssp_wrap.c''',
+                    source='''libsmb/ntlmssp.c''',
                     deps='NDR_NTLMSSP NTLMSSP_COMMON wbclient')
 
 bld.SAMBA3_SUBSYSTEM('auth_generic',
