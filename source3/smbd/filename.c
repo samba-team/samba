@@ -55,9 +55,11 @@ static bool mangled_equal(const char *name1,
 ****************************************************************************/
 
 static NTSTATUS determine_path_error(const char *name,
-			bool allow_wcard_last_component)
+			bool allow_wcard_last_component,
+			bool posix_pathnames)
 {
 	const char *p;
+	bool name_has_wild = false;
 
 	if (!allow_wcard_last_component) {
 		/* Error code within a pathname. */
@@ -74,7 +76,11 @@ static NTSTATUS determine_path_error(const char *name,
 
 	p = strchr(name, '/');
 
-	if (!p && (ms_has_wild(name) || ISDOT(name))) {
+	if (!posix_pathnames) {
+		name_has_wild = ms_has_wild(name);
+	}
+
+	if (!p && (name_has_wild || ISDOT(name))) {
 		/* Error code at the end of a pathname. */
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	} else {
@@ -300,7 +306,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			status = NT_STATUS_OBJECT_NAME_INVALID;
 		} else {
 			status =determine_path_error(&orig_path[2],
-			    allow_wcard_last_component);
+			    allow_wcard_last_component,
+			    posix_pathnames);
 		}
 		goto err;
 	}
@@ -626,7 +633,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				status = NT_STATUS_OBJECT_NAME_INVALID;
 			} else {
 				status = determine_path_error(end+1,
-						allow_wcard_last_component);
+						allow_wcard_last_component,
+						posix_pathnames);
 			}
 			goto fail;
 		}
