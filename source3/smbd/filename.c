@@ -128,12 +128,17 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	const char *last_component = NULL;
 	NTSTATUS status;
 	int ret;
+	bool parent_fname_has_wild = false;
 
 	ZERO_STRUCT(parent_fname);
 	if (!parent_dirname(ctx, smb_fname->base_name,
 				&parent_fname.base_name,
 				&last_component)) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!posix_pathnames) {
+		parent_fname_has_wild = ms_has_wild(parent_fname.base_name);
 	}
 
 	/*
@@ -143,7 +148,7 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	 * optimization.
 	 */
 	if ((smb_fname->base_name == last_component) ||
-			ms_has_wild(parent_fname.base_name)) {
+			parent_fname_has_wild) {
 		return NT_STATUS_OK;
 	}
 
