@@ -325,7 +325,9 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		dptr_CloseDir(fsp);
 	}
 
-	wcard_has_wild = ms_has_wild(in_file_name);
+	if (!lp_posix_pathnames()) {
+		wcard_has_wild = ms_has_wild(in_file_name);
+	}
 
 	/* Ensure we've canonicalized any search path if not a wildcard. */
 	if (!wcard_has_wild) {
