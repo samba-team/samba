@@ -1729,7 +1729,32 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 }
 
 /*
-  make any IP alias changes for public addresses that are necessary 
+ * Recalculate the allocation of public IPs to nodes and have the
+ * nodes host their allocated addresses.
+ *
+ * - Allocate memory for IP allocation state, including per node
+ *   arrays
+ * - Populate IP allocation algorithm in IP allocation state
+ * - Populate local value of tunable NoIPFailback in IP allocation
+     state - this is really a cluster-wide configuration variable and
+     only the value form the master node is used
+ * - Retrieve tunables NoIPTakeover and NoIPHostOnAllDisabled from all
+ *   connected nodes - this is done separately so tunable values can
+ *   be faked in unit testing
+ * - Populate NoIPTakover tunable in IP allocation state
+ * - Populate NoIPHost in IP allocation state, derived from node flags
+ *   and NoIPHostOnAllDisabled tunable
+ * - Retrieve and populate known and available IP lists in IP
+ *   allocation state
+ * - If no available IP addresses then early exit
+ * - Build list of (known IPs, currently assigned node)
+ * - Populate list of nodes to force rebalance - internal structure,
+ *   currently no way to fetch, only used by LCP2 for nodes that have
+ *   had new IP addresses added
+ * - Run IP allocation algorithm
+ * - Send RELEASE_IP to all nodes for IPs they should not host
+ * - Send TAKE_IP to all nodes for IPs they should host
+ * - Send IPREALLOCATED to all nodes (with backward compatibility hack)
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
 		      uint32_t *force_rebalance_nodes,
