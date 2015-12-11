@@ -2423,7 +2423,7 @@ static int fruit_unlink(vfs_handle_struct *handle,
 		}
 
 		/* FIXME: direct unlink(), missing smb_fname */
-		DEBUG(1,("fruit_unlink: %s\n", adp));
+		DBG_DEBUG("fruit_unlink: %s\n", adp);
 		rc = unlink(adp);
 		if ((rc == -1) && (errno == ENOENT)) {
 			rc = 0;
@@ -3271,8 +3271,8 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
         struct adouble *ad =
 		(struct adouble *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	DEBUG(10, ("streams_xattr_ftruncate called for file %s offset %.0f\n",
-		   fsp_str_dbg(fsp), (double)offset));
+	DBG_DEBUG("fruit_ftruncate called for file %s offset %.0f\n",
+		   fsp_str_dbg(fsp), (double)offset);
 
 	if (ad == NULL) {
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
@@ -3553,7 +3553,7 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 	mode_t ms_nfs_mode;
 	int result;
 
-	DEBUG(1, ("fruit_fset_nt_acl: %s\n", fsp_str_dbg(fsp)));
+	DBG_DEBUG("fruit_fset_nt_acl: %s\n", fsp_str_dbg(fsp));
 
 	status = check_ms_nfs(handle, fsp, psd, &ms_nfs_mode, &do_chmod);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3569,10 +3569,8 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 
 	if (do_chmod) {
 		if (fsp->fh->fd != -1) {
-			DEBUG(1, ("fchmod: %s\n", fsp_str_dbg(fsp)));
 			result = SMB_VFS_FCHMOD(fsp, ms_nfs_mode);
 		} else {
-			DEBUG(1, ("chmod: %s\n", fsp_str_dbg(fsp)));
 			result = SMB_VFS_CHMOD(fsp->conn,
 					       fsp->fsp_name->base_name,
 					       ms_nfs_mode);
