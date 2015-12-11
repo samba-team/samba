@@ -653,7 +653,7 @@ static bool test_NetrValidateName2(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status,
 					   "NetrValidateName2 failed");
 		torture_assert_werr_equal(tctx, r.out.result,
-					  WERR_RPC_E_REMOTE_DISABLED,
+					  W_ERROR(HRES_ERROR_V(HRES_RPC_E_REMOTE_DISABLED)),
 					  "NetrValidateName2 failed");
 	}
 
@@ -1113,7 +1113,7 @@ static bool test_NetrGetJoinableOus2(struct torture_context *tctx,
 	status = dcerpc_wkssvc_NetrGetJoinableOus2_r(b, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "NetrGetJoinableOus2 failed");
 	torture_assert_werr_equal(tctx, r.out.result,
-				  WERR_RPC_E_REMOTE_DISABLED,
+				  W_ERROR(HRES_ERROR_V(HRES_RPC_E_REMOTE_DISABLED)),
 				  "NetrGetJoinableOus2 failed");
 
 	return true;
