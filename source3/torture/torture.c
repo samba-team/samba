@@ -8348,11 +8348,29 @@ static bool rbt_testval(struct db_context *db, const char *key,
 	return ret;
 }
 
+static int local_rbtree_traverse_read(struct db_record *rec, void *private_data)
+{
+	int *count2 = (int *)private_data;
+	(*count2)++;
+	return 0;
+}
+
+static int local_rbtree_traverse_delete(struct db_record *rec, void *private_data)
+{
+	int *count2 = (int *)private_data;
+	(*count2)++;
+	dbwrap_record_delete(rec);
+	return 0;
+}
+
 static bool run_local_rbtree(int dummy)
 {
 	struct db_context *db;
 	bool ret = false;
 	int i;
+	NTSTATUS status;
+	int count = 0;
+	int count2 = 0;
 
 	db = db_open_rbt(NULL);
 
@@ -8395,6 +8413,27 @@ static bool run_local_rbtree(int dummy)
 	}
 
 	ret = true;
+	count = 0; count2 = 0;
+	status = dbwrap_traverse_read(db, local_rbtree_traverse_read,
+				      &count2, &count);
+	printf("%s: read1: %d %d, %s\n", __func__, count, count2, nt_errstr(status));
+	if ((count != count2) || (count != 1000)) {
+		ret = false;
+	}
+	count = 0; count2 = 0;
+	status = dbwrap_traverse(db, local_rbtree_traverse_delete,
+				 &count2, &count);
+	printf("%s: delete: %d %d, %s\n", __func__, count, count2, nt_errstr(status));
+	if ((count != count2) || (count != 1000)) {
+		ret = false;
+	}
+	count = 0; count2 = 0;
+	status = dbwrap_traverse_read(db, local_rbtree_traverse_read,
+				      &count2, &count);
+	printf("%s: read2: %d %d, %s\n", __func__, count, count2, nt_errstr(status));
+	if ((count != count2) || (count != 0)) {
+		ret = false;
+	}
 
  done:
 	TALLOC_FREE(db);
