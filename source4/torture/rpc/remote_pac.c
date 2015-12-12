@@ -729,8 +729,8 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	chal = data_blob_const(ninfo.challenge,
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(client_creds),
-						cli_credentials_get_domain(client_creds));
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(server_creds),
+						cli_credentials_get_domain(server_creds));
 
 	status = cli_credentials_get_ntlm_response(client_creds, tctx,
 						   &flags,
