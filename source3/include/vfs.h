@@ -301,9 +301,11 @@ typedef struct files_struct {
 
 #define FSP_POSIX_FLAGS_OPEN		0x01
 #define FSP_POSIX_FLAGS_RENAME		0x02
+#define FSP_POSIX_FLAGS_PATHNAMES	0x04
 
 #define FSP_POSIX_FLAGS_ALL			\
 	(FSP_POSIX_FLAGS_OPEN |			\
+	 FSP_POSIX_FLAGS_PATHNAMES |		\
 	 FSP_POSIX_FLAGS_RENAME)
 
 struct vuid_cache_entry {
