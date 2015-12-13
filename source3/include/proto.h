@@ -400,9 +400,7 @@ int smb_mkstemp(char *name_template);
 void *smb_xmalloc_array(size_t size, unsigned int count);
 char *myhostname(void);
 char *myhostname_upper(void);
-char *lock_path(const char *name);
-char *state_path(const char *name);
-char *cache_path(const char *name);
+#include "lib/util_path.h"
 bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 		    const char **name);
 bool ms_has_wild(const char *s);
