@@ -88,26 +88,7 @@ int map_errno_from_nt_status(NTSTATUS status);
 
 struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf);
 
-/* The following definitions come from lib/gencache.c  */
-
-bool gencache_set(const char *keystr, const char *value, time_t timeout);
-bool gencache_del(const char *keystr);
-bool gencache_get(const char *keystr, TALLOC_CTX *mem_ctx, char **value,
-		  time_t *ptimeout);
-bool gencache_parse(const char *keystr,
-		    void (*parser)(time_t timeout, DATA_BLOB blob,
-				   void *private_data),
-		    void *private_data);
-bool gencache_get_data_blob(const char *keystr, TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *blob,
-			    time_t *timeout, bool *was_expired);
-bool gencache_stabilize(void);
-bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob, time_t timeout);
-void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
-				       time_t timeout, void *private_data),
-			    void *private_data, const char *pattern);
-void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout, void* dptr),
-                      void* data, const char* keystr_pattern);
+#include "lib/gencache.h"
 
 /* The following definitions come from lib/interface.c  */
 
