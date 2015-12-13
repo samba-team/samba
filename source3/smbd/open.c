@@ -2704,7 +2704,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	fsp->access_mask = open_access_mask; /* We change this to the
 					      * requested access_mask after
 					      * the open is done. */
-	fsp->posix_flags |= posix_open ? FSP_POSIX_FLAGS_OPEN : 0;
+	if (posix_open) {
+		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
+	}
 
 	if (timeval_is_zero(&request_time)) {
 		request_time = fsp->open_time;
