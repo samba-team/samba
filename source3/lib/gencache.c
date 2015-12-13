@@ -283,6 +283,8 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 			    time_t timeout)
 {
 	int ret;
+	fstring hdr;
+	int hdr_len;
 	char* val;
 	time_t last_stabilize;
 	static int writecount;
@@ -307,18 +309,22 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		return true;
 	}
 
-	val = talloc_asprintf(talloc_tos(), CACHE_DATA_FMT, (int)timeout);
+	hdr_len = fstr_sprintf(hdr, CACHE_DATA_FMT, (int)timeout);
+
+	if (hdr_len == -1) {
+		return false;
+	}
+	if ((blob->length + (size_t)hdr_len) < blob->length) {
+		return false;
+	}
+
+	val = talloc_array(talloc_tos(), char, hdr_len + blob->length);
 	if (val == NULL) {
 		return false;
 	}
-	val = talloc_realloc(NULL, val, char, talloc_array_length(val)-1);
-	if (val == NULL) {
-		return false;
-	}
-	val = (char *)talloc_append_blob(NULL, val, *blob);
-	if (val == NULL) {
-		return false;
-	}
+
+	memcpy(val, hdr, hdr_len);
+	memcpy(val+hdr_len, blob->data, blob->length);
 
 	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
 	           "[%s] (%d seconds %s)\n", keystr,
