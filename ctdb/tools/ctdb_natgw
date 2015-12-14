@@ -1,0 +1,199 @@
+#!/bin/sh
+
+if [ -z "$CTDB_BASE" ] ; then
+    export CTDB_BASE="/usr/local/etc/ctdb"
+fi
+
+. "${CTDB_BASE}/functions"
+loadconfig "ctdb"
+
+# Default NAT gateway nodes file location
+[ -n "$CTDB_NATGW_NODES" ] || CTDB_NATGW_NODES="${CTDB_BASE}/natgw_nodes"
+
+[ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
+
+############################################################
+
+usage ()
+{
+cat <<EOF
+$0 <option>
+
+<option> is one of:
+  master     Display node number and private IP address of master node
+  list       List private IP addresses of nodes in group, annotate master
+  status     Show status of nodes in NAT gateway group
+  natgwlist  Combination of "master" and "status", for backward compatiblity
+EOF
+    exit 1
+}
+
+nodestatus_X=""
+# Fields are:
+# Node|IP|Disconnected|Banned|Disabled|Unhealthy|Stopped|Inactive|PartiallyOnline|ThisNode
+get_nodestatus_X ()
+{
+    # Result is cached in global variable nodestatus_X
+    [ -n "$nodestatus_X" ] || \
+	nodestatus_X=$(ctdb -X nodestatus all |
+			      sed -e '1d' -e 's@^|@@' -e 's@|$@@')
+}
+
+get_nodestatus ()
+{
+    # Result is cached in global variable nodestatus
+    [ -n "$nodestatus" ] || nodestatus=$(ctdb nodestatus all)
+    [ $? -ne 255 ] # ctdb nodestatus returns 255 on failure
+}
+
+get_natgw_nodes ()
+{
+    # Result is cached in global variable natgw_nodes
+    if [ -n "$natgw_nodes" ] ; then
+	return
+    fi
+
+    if [ ! -r "$CTDB_NATGW_NODES" ] ; then
+	return 1
+    fi
+
+    natgw_nodes=$(cat "$CTDB_NATGW_NODES") || return 1
+
+    # Sanity check file contents here
+    while read _ip _options ; do
+	# Skip comments
+	case "$_ip" in
+	    \#*) continue ;;
+	esac
+	case "$_options" in
+	    slave-only|"") : ;;
+	    *) die "${prog}: Invalid options \"${_options}\" in  \"$CTDB_NATGW_NODES\""
+	esac
+    done <<EOF
+$natgw_nodes
+EOF
+
+    return 0
+}
+
+# Print the PNN and IP address of the NAT gateway master node
+find_master ()
+{
+    get_natgw_nodes || \
+	die "${prog}: NAT gateway nodes file \"$CTDB_NATGW_NODES\" not found"
+    get_nodestatus_X  || \
+	die "${prog}: Unable to get status of nodes"
+
+    # $_ms is an @-delimited list of nodes that are allowed to be the master
+    _ms="@"
+    while read _ip _options ; do
+	case "$_options" in
+	    "") _ms="${_ms}${_ip}@" ;;
+	esac
+    done <<EOF
+$natgw_nodes
+EOF
+
+    # Now filter by $ms and by status of nodes...
+
+    # Note that the 3 awk invocations below have "||" between them, so
+    # the first to succeed will select the master node.
+
+    # First try for a fully active and healthy node, so must not be
+    # DISABLED, UNHEALTHY or INACTIVE (last covers DISCONNECTED,
+    # BANNED or STOPPED)
+    awk -F '|' -v ms="$_ms" \
+	'BEGIN { ret = 2 }
+	 ms ~ "@" $2 "@" && \
+	     $5 == 0 && $6 == 0 && $8 == 0 { print $1, $2 ; ret=0 ; exit }
+	 END { exit ret }' <<EOF ||
+$nodestatus_X
+EOF
+    # Not found?  UNHEALTHY/BANNED will do, so node must not be
+    # DISCONNECTED, DISABLED or STOPPED
+    awk -F '|' -v ms="$_ms" \
+	'BEGIN { ret = 2 }
+	 ms ~ "@" $2 "@" && \
+	     $3 == 0 && $5 == 0 && $7 == 0 { print $1, $2 ; ret=0 ; exit }
+	 END { exit ret }' <<EOF ||
+$nodestatus_X
+EOF
+    # Not found?  STOPPED will do, so node must not be DISCONNECTED or
+    # DISABLED
+    awk -F '|' -v ms="$_ms" \
+	'BEGIN { ret = 2 }
+	 ms ~ "@" $2 "@" && \
+	     $3 == 0 && $5 == 0 { print $1, $2 ; ret=0 ; exit }
+	 END { exit ret }' <<EOF
+$nodestatus_X
+EOF
+}
+
+# List all nodes in the NAT gateway group, annotating the master node
+nodes_list ()
+{
+    get_natgw_nodes || \
+	die "${prog}: NAT gateway nodes file \"$CTDB_NATGW_NODES\" not found"
+    set -- $(find_master)  || \
+	die "${prog}: Unable to determine NAT gateway master node"
+    _master_ip="$2"
+
+    # Annotate the master node
+    while read _ip _options ; do
+	if [ "$_ip" = "$_master_ip" ] ; then
+	    _options="MASTER${_options:+,}${_options}"
+	fi
+	printf "${_ip}\t${_options}\n"
+    done <<EOF
+$natgw_nodes
+EOF
+}
+
+# Print the status of all nodes in the NAT gateway group, along with a count
+nodes_status ()
+{
+    get_natgw_nodes || \
+	die "${prog}: NAT gateway nodes file \"$CTDB_NATGW_NODES\" not found"
+    get_nodestatus || \
+	die "${prog}: Unable to get status of nodes"
+
+    # $_ns is a @-delimited list of nodes in the NAT gateway group
+    _ns="@"
+    while read _ip _options ; do
+	_ns="${_ns}${_ip}@"
+    done <<EOF
+$natgw_nodes
+EOF
+
+    # Print status of nodes in $_ns, along with node count
+    awk -v ns="$_ns" \
+	'BEGIN { out = "" ; count = 0 } \
+         ns ~ "@" $2 "@" { out =  out "\n" $0 ; count += 1 } \
+         END { print "Number of nodes:" count out }' <<EOF
+$nodestatus
+EOF
+}
+
+# For backward compatibility
+natgwlist ()
+{
+    ret=0
+    find_master
+    if [ $? -eq 2 ] ; then
+	echo "-1 0.0.0.0"
+	ret=2
+    fi
+    nodes_status || return $?
+    return $ret
+}
+
+prog=$(basename "$0")
+cmd="$1"
+
+case "$cmd" in
+    master)    find_master ;;
+    list)      nodes_list ;;
+    status)    nodes_status ;;
+    natgwlist) natgwlist ;;
+    *)         usage ;;
+esac

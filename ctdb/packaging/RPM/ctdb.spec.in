@@ -203,6 +203,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ltdbtool
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
+%{_bindir}/ctdb_natgw
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
 %{_libdir}/libtevent-unix-util.so.0*

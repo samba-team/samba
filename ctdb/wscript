@@ -536,6 +536,13 @@ def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'ctdb_diagnostics',
                       destname='ctdb_diagnostics', chmod=0755)
 
+    bld.SAMBA_GENERATOR('ctdb-natgw',
+                        source='tools/ctdb_natgw',
+                        target='ctdb_natgw',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES('${BINDIR}', 'ctdb_natgw',
+                      destname='ctdb_natgw', chmod=0755)
+
     bld.SAMBA_GENERATOR('ctdbd-wrapper',
                         source='config/ctdbd_wrapper',
                         target='ctdbd_wrapper',
