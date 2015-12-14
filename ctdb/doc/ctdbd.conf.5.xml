@@ -561,8 +561,19 @@
 	    <para>
 	      File format:
 	      <screen>
-<parameter>IPADDR</parameter>
+<parameter>IPADDR</parameter> <optional>slave-only</optional>
 	      </screen>
+	    </para>
+	    <para>
+	      IPADDR is the private IP address of each node in the NAT
+	      gateway group.
+	    </para>
+	    <para>
+	      If "slave-only" is specified then the corresponding node
+	      can not be the NAT gateway master node.  In this case
+	      <varname>CTDB_NATGW_PUBLIC_IFACE</varname> and
+	      <varname>CTDB_NATGW_PUBLIC_IP</varname> are optional and
+	      unused.
 	    </para>
 	    <para>
 	      No default, usually
@@ -611,22 +622,6 @@
 	    </para>
 	    <para>
 	      No default.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
-	<varlistentry>
-	  <term>CTDB_NATGW_SLAVE_ONLY=yes|no</term>
-	  <listitem>
-	    <para>
-	      When set to "yes" a node can not be a NAT gateway master
-	      node.  In this case
-	      <varname>CTDB_NATGW_PUBLIC_IFACE</varname> and
-	      <varname>CTDB_NATGW_PUBLIC_IP</varname> are optional
-	      and unused.
-	    </para>
-	    <para>
-	      Default is no.
 	    </para>
 	  </listitem>
 	</varlistentry>

@@ -1,0 +1,34 @@
+#!/bin/sh
+
+prog="ctdb_natgw"
+
+not_implemented_exit_code=1
+
+not_implemented ()
+{
+    echo "${prog}: command \"$1\" not implemented in stub" >&2
+    exit $not_implemented_exit_code
+}
+
+ctdb_natgw_master ()
+{
+    [ -r "$CTDB_NATGW_NODES" ] || \
+	die "error: missing CTDB_NATGW_NODES=${CTDB_NATGW_NODES}"
+
+    # Determine the master node
+    _master="-1 0.0.0.0"
+    _pnn=0
+    while read _ip ; do
+	if [ "$FAKE_CTDB_NATGW_MASTER" = "$_ip" ] ; then
+	    _master="${_pnn} ${_ip}"
+	    break
+	fi
+	_pnn=$(($_pnn + 1))
+    done <"$CTDB_NATGW_NODES"
+    echo "$_master"
+}
+
+case "$1" in
+    master) ctdb_natgw_master "$@" ;;
+    *) not_implemented "$1" ;;
+esac

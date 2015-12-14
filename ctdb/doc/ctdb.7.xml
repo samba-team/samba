@@ -681,14 +681,15 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
       <para>
 	Normally any node in a NATGW group can act as the NATGW
 	master.  Some configurations may have special nodes that lack
-	connectivity to a public network.  In such cases,
-	<varname>CTDB_NATGW_SLAVE_ONLY</varname> can be used to limit the
-	NATGW functionality of thos nodes.
+	connectivity to a public network.  In such cases, those nodes
+	can be flagged with the "slave-only" option in the
+	<varname>CTDB_NATGW_NODES</varname> file to limit the NATGW
+	functionality of those nodes.
       </para>
 
       <para>
 	See the <citetitle>NAT GATEWAY</citetitle> section in
-	<citerefentry><refentrytitle>ctdb.conf</refentrytitle>
+	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
 	<manvolnum>5</manvolnum></citerefentry> for more details of
 	NATGW configuration.
       </para>

@@ -2,11 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "CTDB_NATGW_SLAVE_ONLY=yes, CTDB_NATGW_PUBLIC_IP unset"
+define_test "slave-only, CTDB_NATGW_PUBLIC_IP unset"
 
 setup_ctdb
 setup_ctdb_natgw <<EOF
-192.168.1.21
+192.168.1.21 slave-only
 192.168.1.22 master
 192.168.1.23
 192.168.1.24
@@ -14,7 +14,6 @@ EOF
 
 CTDB_NATGW_PUBLIC_IFACE=""
 CTDB_NATGW_PUBLIC_IP=""
-CTDB_NATGW_SLAVE_ONLY="yes"
 
 ok_null
 simple_test_event "ipreallocated"
