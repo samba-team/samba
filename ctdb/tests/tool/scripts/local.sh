@@ -1,5 +1,11 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
+# Augment PATH with stubs/ directory.
+
+if [ -d "${TEST_SUBDIR}/stubs" ] ; then
+    PATH="${TEST_SUBDIR}/stubs:$PATH"
+fi
+
 if "$TEST_VERBOSE" ; then
     debug () { echo "$@" ; }
 else
@@ -14,12 +20,14 @@ define_test ()
 	func.*)
 	    _func="${_f#func.}"
 	    _func="${_func%.*}" # Strip test number
-	    test_prog="ctdb_functest ${_func}"
+	    export CTDB_TEST_PROG="ctdb_functest"
+	    test_args="$_func"
 	    ;;
 	stubby.*)
 	    _cmd="${_f#stubby.}"
 	    _cmd="${_cmd%.*}" # Strip test number
-	    test_prog="ctdb_stubtest ${_cmd}"
+	    export CTDB_TEST_PROG="ctdb_stubtest"
+	    test_args="$_cmd"
 	    ;;
 	*)
 	    die "Unknown pattern for testcase \"$_f\""
@@ -71,5 +79,5 @@ simple_test ()
     : ${CTDB_DEBUGLEVEL:=3}
     export CTDB_DEBUGLEVEL
 
-    unit_test $test_prog "$@"
+    unit_test ctdb $test_args "$@"
 }

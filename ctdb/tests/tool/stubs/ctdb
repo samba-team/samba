@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# If "ctdb" is called several time in a test then it must always get
+# the same input.  So, it is read here the first time and then fed to
+# all future instances.
+if [ -z "$_CTDB_TOOL_STUB_INPUT" ] ; then
+    if ! tty -s ; then
+	_CTDB_TOOL_STUB_INPUT=$(cat)
+    else
+	_CTDB_TOOL_STUB_INPUT=""
+    fi
+    # Let's not try being subtle about whether this variable is unset
+    # or empty.  If we've been here then it is set, even if input was
+    # empty.
+    if [ -z "$_CTDB_TOOL_STUB_INPUT" ] ; then
+	_CTDB_TOOL_STUB_INPUT="@@@EMPTY@@@"
+    fi
+    export _CTDB_TOOL_STUB_INPUT
+fi
+
+if [ "$_CTDB_TOOL_STUB_INPUT" != "@@@EMPTY@@@" ] ; then
+    exec "$CTDB_TEST_PROG" "$@" <<EOF
+$_CTDB_TOOL_STUB_INPUT
+EOF
+else
+    exec "$CTDB_TEST_PROG" "$@" </dev/null
+fi
