@@ -3230,19 +3230,23 @@ static int fruit_ftruncate_meta(struct vfs_handle_struct *handle,
 				off_t offset,
 				struct adouble *ad)
 {
-	/*
-	 * As this request hasn't been seen in the wild,
-	 * the only sensible use I can imagine is the client
-	 * truncating the stream to 0 bytes size.
-	 * We simply remove the metadata on such a request.
-	 */
-	if (offset != 0) {
+	struct fruit_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	if (offset > 60) {
 		DEBUG(1,("ftruncate %s to %jd",
 			 fsp_str_dbg(fsp), (intmax_t)offset));
+		/* OS X returns NT_STATUS_ALLOTTED_SPACE_EXCEEDED  */
+		errno = EOVERFLOW;
 		return -1;
 	}
 
-	return SMB_VFS_FREMOVEXATTR(fsp, AFPRESOURCE_EA_NETATALK);
+	DEBUG(1,("ignoring ftruncate %s to %jd",
+		 fsp_str_dbg(fsp), (intmax_t)offset));
+	/* OS X returns success but does nothing  */
+	return 0;
 }
 
 static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
