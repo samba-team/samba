@@ -419,7 +419,6 @@ member: %s
                 loginshell, nisdomain, unixhome))):
             ldbmessage2 = ldb.Message()
             ldbmessage2.dn = ldb.Dn(self, user_dn)
-            ldbmessage2["objectClass"] = ldb.MessageElement('posixAccount', ldb.FLAG_MOD_ADD, 'objectClass')
             if uid is not None:
                 ldbmessage2["uid"] = ldb.MessageElement(str(uid), ldb.FLAG_MOD_REPLACE, 'uid')
             if uidnumber is not None:
