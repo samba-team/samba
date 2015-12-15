@@ -151,7 +151,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_nbt_string(struct ndr_push *ndr, int ndr_fla
 		size_t complen;
 		uint32_t offset;
 
-		/* see if we have pushed the remaing string allready,
+		/* see if we have pushed the remaining string already,
 		 * if so we use a label pointer to this string
 		 */
 		ndr_err = ndr_token_retrieve_cmp_fn(&ndr->nbt_string_list, s, &offset, (comparison_fn_t)strcmp, false);
