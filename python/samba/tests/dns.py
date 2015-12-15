@@ -387,32 +387,31 @@ class TestDNSUpdates(DNSTest):
             # request is formatted.
             pass
 
-# I'd love to test this one, but it segfaults. :)
-#    def test_update_prereq_with_non_null_length(self):
-#        "test update with a non-null length"
-#        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-#        updates = []
-#
-#        name = self.get_dns_domain()
-#
-#        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-#        updates.append(u)
-#        self.finish_name_packet(p, updates)
-#
-#        prereqs = []
-#        r = dns.res_rec()
-#        r.name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
-#        r.rr_type = dns.DNS_QTYPE_TXT
-#        r.rr_class = dns.DNS_QCLASS_ANY
-#        r.ttl = 0
-#        r.length = 1
-#        prereqs.append(r)
-#
-#        p.ancount = len(prereqs)
-#        p.answers = prereqs
-#
-#        response = self.dns_transaction_udp(p)
-#        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+    def test_update_prereq_with_non_null_length(self):
+        "test update with a non-null length"
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        prereqs = []
+        r = dns.res_rec()
+        r.name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.rr_type = dns.DNS_QTYPE_TXT
+        r.rr_class = dns.DNS_QCLASS_ANY
+        r.ttl = 0
+        r.length = 1
+        prereqs.append(r)
+
+        p.ancount = len(prereqs)
+        p.answers = prereqs
+
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
 
     def test_update_prereq_nonexisting_name(self):
         "test update with a nonexisting name"
