@@ -672,9 +672,15 @@ static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 static bool schannel_have_feature(struct gensec_security *gensec_security,
 					 uint32_t feature)
 {
-	if (feature & (GENSEC_FEATURE_SIGN |
-		       GENSEC_FEATURE_SEAL)) {
-		return true;
+	if (gensec_security->dcerpc_auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		if (feature & GENSEC_FEATURE_SIGN) {
+			return true;
+		}
+	}
+	if (gensec_security->dcerpc_auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		if (feature & GENSEC_FEATURE_SEAL) {
+			return true;
+		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return true;
