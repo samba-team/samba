@@ -27,7 +27,6 @@
 #include "replace.h"
 #include "system/time.h"
 #include "lib/util/data_blob.h"
-#include "libcli/util/ntstatus.h"
 
 bool gencache_set(const char *keystr, const char *value, time_t timeout);
 bool gencache_del(const char *keystr);
