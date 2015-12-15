@@ -467,6 +467,16 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 
 	*out = data_blob(NULL, 0);
 
+	if (gensec_security->dcerpc_auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		switch (gensec_security->gensec_role) {
+		case GENSEC_CLIENT:
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		case GENSEC_SERVER:
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
 		if (state != NULL) {
