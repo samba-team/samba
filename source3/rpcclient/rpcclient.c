@@ -1071,10 +1071,9 @@ out_free:
 		}
 	}
 	if (pipe_default_auth_type != DCERPC_AUTH_TYPE_NONE) {
-		/* If neither Integrity or Privacy are requested then
-		 * Use just Connect level */
+		/* If nothing is requested then default to integrity */
 		if (pipe_default_auth_level == DCERPC_AUTH_LEVEL_NONE) {
-			pipe_default_auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+			pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 		}
 	}
 
