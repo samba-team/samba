@@ -591,7 +591,7 @@ _PUBLIC_ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 	} else if (b->flags & DCERPC_CONNECT) {
 		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 	} else if (auth_type != DCERPC_AUTH_TYPE_NONE) {
-		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	} else {
 		auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}
