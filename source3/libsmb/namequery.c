@@ -2327,7 +2327,8 @@ static NTSTATUS resolve_lmhosts(const char *name, int name_type,
 *********************************************************/
 
 static NTSTATUS resolve_hosts(const char *name, int name_type,
-			      struct ip_service **return_iplist,
+			      TALLOC_CTX *mem_ctx,
+			      struct sockaddr_storage **return_iplist,
 			      int *return_count)
 {
 	/*
@@ -2388,16 +2389,15 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
 
 		*return_count += 1;
 
-		*return_iplist = SMB_REALLOC_ARRAY(*return_iplist,
-						struct ip_service,
-						*return_count);
+		*return_iplist = talloc_realloc(
+			mem_ctx, *return_iplist, struct sockaddr_storage,
+			*return_count);
 		if (!*return_iplist) {
 			DEBUG(3,("resolve_hosts: malloc fail !\n"));
 			freeaddrinfo(ailist);
 			return NT_STATUS_NO_MEMORY;
 		}
-		(*return_iplist)[i].ss = ss;
-		(*return_iplist)[i].port = PORT_NONE;
+		(*return_iplist)[i] = ss;
 		i++;
 	}
 	if (ailist) {
@@ -2715,9 +2715,16 @@ NTSTATUS internal_resolve_name(const char *name,
 		tok = resolve_order[i];
 
 		if((strequal(tok, "host") || strequal(tok, "hosts"))) {
-			status = resolve_hosts(name, name_type, return_iplist,
+			struct sockaddr_storage *ss_list;
+			status = resolve_hosts(name, name_type,
+					       talloc_tos(), &ss_list,
 					       return_count);
 			if (NT_STATUS_IS_OK(status)) {
+				if (!convert_ss2service(return_iplist,
+							ss_list,
+							return_count)) {
+					status = NT_STATUS_NO_MEMORY;
+				}
 				goto done;
 			}
 		} else if(strequal( tok, "kdc")) {
