@@ -500,10 +500,8 @@ struct glusterfs_aio_state {
 	bool cancelled;
 };
 
-static int aio_wrapper_destructor(void *ptr)
+static int aio_wrapper_destructor(struct glusterfs_aio_wrapper *wrap)
 {
-	struct glusterfs_aio_wrapper *wrap = (struct glusterfs_aio_wrapper *)ptr;
-
 	wrap->state->cancelled = true;
 
 	return 0;
@@ -658,6 +656,7 @@ static struct glusterfs_aio_state *aio_state_create(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
+	talloc_set_destructor(wrapper, aio_wrapper_destructor);
 	state->cancelled = false;
 	state->ret = 0;
 	state->err = 0;
