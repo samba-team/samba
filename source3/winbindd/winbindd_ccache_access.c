@@ -48,6 +48,7 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 					    const char *password,
 					    const DATA_BLOB initial_msg,
 					    const DATA_BLOB challenge_msg,
+					    TALLOC_CTX *mem_ctx,
 					    DATA_BLOB *auth_msg,
 					    uint8_t session_key[16])
 {
@@ -55,7 +56,7 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 	struct auth_generic_state *auth_generic_state = NULL;
 	DATA_BLOB dummy_msg, reply, session_key_blob;
 
-	status = auth_generic_client_prepare(NULL, &auth_generic_state);
+	status = auth_generic_client_prepare(mem_ctx, &auth_generic_state);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not start NTLMSSP client: %s\n",
@@ -120,7 +121,7 @@ static NTSTATUS do_ntlm_auth_with_stored_pw(const char *username,
 
 	/* Now we are ready to handle the server's actual response. */
 	status = gensec_update(auth_generic_state->gensec_security,
-			       NULL, challenge_msg, &reply);
+			       mem_ctx, challenge_msg, &reply);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
 		DEBUG(1, ("We didn't get a response to the challenge! [%s]\n",
 			nt_errstr(status)));
@@ -273,7 +274,7 @@ void winbindd_ccache_ntlm_auth(struct winbindd_cli_state *state)
 
 	result = do_ntlm_auth_with_stored_pw(
 		name_user, name_domain, entry->pass,
-		initial, challenge, &auth,
+		initial, challenge, talloc_tos(), &auth,
 		state->response->data.ccache_ntlm_auth.session_key);
 
 	if (!NT_STATUS_IS_OK(result)) {
