@@ -757,7 +757,8 @@ static bool encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		}
 
 		if (lssc[num]->orderingRule) {
-			if (!asn1_write_OctetString(data, lssc[num]->orderingRule, strlen(lssc[num]->orderingRule))) {
+			DATA_BLOB order = data_blob_string_const(lssc[num]->orderingRule);
+			if (!asn1_write_ContextSimple(data, 0, &order)) {
 				return false;
 			}
 		}
