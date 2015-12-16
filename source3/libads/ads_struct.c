@@ -144,14 +144,6 @@ ADS_STRUCT *ads_init(const char *realm,
 	ads->server.workgroup = workgroup ? SMB_STRDUP(workgroup) : NULL;
 	ads->server.ldap_server = ldap_server? SMB_STRDUP(ldap_server) : NULL;
 
-	/* we need to know if this is a foreign realm */
-	if (realm && *realm && !strequal(lp_realm(), realm)) {
-		ads->server.foreign = 1;
-	}
-	if (workgroup && *workgroup && !strequal(lp_workgroup(), workgroup)) {
-		ads->server.foreign = 1;
-	}
-
 	/* the caller will own the memory by default */
 	ads->is_mine = 1;
 
