@@ -240,7 +240,6 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	struct ldb_val val;
 	struct ldb_val cnk;
 	struct ldb_val *chunk;
-	char *p, *g;
 	uint8_t *save_p = NULL;
 	unsigned int c = 0;
 
@@ -270,6 +269,14 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		if (cnk.length > val.length) {
 			goto mismatch;
 		}
+		/*
+		 * Empty strings are returned as length 0. Ensure
+		 * we can cope with this.
+		 */
+		if (cnk.length == 0) {
+			goto mismatch;
+		}
+
 		if (memcmp((char *)val.data, (char *)cnk.data, cnk.length) != 0) goto mismatch;
 		val.length -= cnk.length;
 		val.data += cnk.length;
@@ -279,20 +286,36 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	}
 
 	while (tree->u.substring.chunks[c]) {
+		uint8_t *p;
 
 		chunk = tree->u.substring.chunks[c];
 		if(a->syntax->canonicalise_fn(ldb, ldb, chunk, &cnk) != 0) goto mismatch;
 
-		/* FIXME: case of embedded nulls */
-		p = strstr((char *)val.data, (char *)cnk.data);
+		/*
+		 * Empty strings are returned as length 0. Ensure
+		 * we can cope with this.
+		 */
+		if (cnk.length == 0) {
+			goto mismatch;
+		}
+		/*
+		 * Values might be binary blobs. Don't use string
+		 * search, but memory search instead.
+		 */
+		p = memmem((const void *)val.data,val.length,
+			   (const void *)cnk.data, cnk.length);
 		if (p == NULL) goto mismatch;
 		if ( (! tree->u.substring.chunks[c + 1]) && (! tree->u.substring.end_with_wildcard) ) {
+			uint8_t *g;
 			do { /* greedy */
-				g = strstr((char *)p + cnk.length, (char *)cnk.data);
+				g = memmem(p + cnk.length,
+					val.length - (p - val.data),
+					(const uint8_t *)cnk.data,
+					cnk.length);
 				if (g) p = g;
 			} while(g);
 		}
-		val.length = val.length - (p - (char *)(val.data)) - cnk.length;
+		val.length = val.length - (p - (uint8_t *)(val.data)) - cnk.length;
 		val.data = (uint8_t *)(p + cnk.length);
 		c++;
 		talloc_free(cnk.data);
