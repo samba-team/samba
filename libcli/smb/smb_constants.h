@@ -95,6 +95,7 @@ enum protocol_types {
 #define PROTOCOL_LATEST PROTOCOL_SMB3_11
 
 enum smb_signing_setting {
+	SMB_SIGNING_IPC_DEFAULT = -2, /* Only used in C code */
 	SMB_SIGNING_DEFAULT = -1,
 	SMB_SIGNING_OFF = 0,
 	SMB_SIGNING_IF_REQUIRED = 1,
