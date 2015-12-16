@@ -620,7 +620,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	}
 
 	ZERO_STRUCTP(srv);
-	srv->cli = c;
+	DLIST_ADD(srv->cli, c);
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
@@ -816,7 +816,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 }
 
                 ZERO_STRUCTP(ipc_srv);
-                ipc_srv->cli = ipc_cli;
+                DLIST_ADD(ipc_srv->cli, ipc_cli);
 
                 nt_status = cli_rpc_pipe_open_noauth(
 			ipc_srv->cli, &ndr_table_lsarpc, &pipe_hnd);
