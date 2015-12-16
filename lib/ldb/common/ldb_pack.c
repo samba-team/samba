@@ -169,17 +169,21 @@ static bool ldb_consume_element_data(uint8_t **pp, unsigned int *premaining)
 	*pp = p;
 	return true;
 }
-/*
-  unpack a ldb message from a linear buffer in ldb_val
 
-  Free with ldb_unpack_data_free()
-*/
-int ldb_unpack_data_withlist(struct ldb_context *ldb,
-			     const struct ldb_val *data,
-			     struct ldb_message *message,
-			     const char * const *list,
-			     unsigned int list_size,
-			     unsigned int *nb_elements_in_db)
+/*
+ * Unpack a ldb message from a linear buffer in ldb_val
+ *
+ * Providing a list of attributes to this function allows selective unpacking.
+ * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
+ *
+ * Free with ldb_unpack_data_free()
+ */
+int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
+				   const struct ldb_val *data,
+				   struct ldb_message *message,
+				   const char * const *list,
+				   unsigned int list_size,
+				   unsigned int *nb_elements_in_db)
 {
 	uint8_t *p;
 	unsigned int remaining;
@@ -272,10 +276,14 @@ int ldb_unpack_data_withlist(struct ldb_context *ldb,
 			goto failed;
 		}
 		attr = (char *)p;
+
 		/*
+		 * The general idea is to reduce allocations by skipping over
+		 * attributes that we do not actually care about.
+		 *
 		 * This is a bit expensive but normally the list is pretty small
 		 * also the cost of freeing unused attributes is quite important
-		 * and can dwarf the cost of looping
+		 * and can dwarf the cost of looping.
 		 */
 		if (list_size != 0) {
 			bool keep = false;
@@ -356,7 +364,7 @@ int ldb_unpack_data_withlist(struct ldb_context *ldb,
 
 	if (remaining != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Error: %d bytes unread in ldb_unpack_data_withlist",
+			  "Error: %d bytes unread in ldb_unpack_data_only_attr_list",
 			  remaining);
 	}
 
@@ -371,5 +379,5 @@ int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message)
 {
-	return ldb_unpack_data_withlist(ldb, data, message, NULL, 0, NULL);
+	return ldb_unpack_data_only_attr_list(ldb, data, message, NULL, 0, NULL);
 }
