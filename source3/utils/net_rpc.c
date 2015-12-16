@@ -7396,7 +7396,7 @@ bool net_rpc_check(struct net_context *c, unsigned flags)
 		return false;
 
 	status = cli_connect_nb(server_name, &server_ss, 0, 0x20,
-				lp_netbios_name(), SMB_SIGNING_DEFAULT,
+				lp_netbios_name(), SMB_SIGNING_IPC_DEFAULT,
 				0, &cli);
 	if (!NT_STATUS_IS_OK(status)) {
 		return false;
