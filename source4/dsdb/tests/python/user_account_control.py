@@ -240,6 +240,16 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
+        try:
+            self.samdb.modify(m)
+            self.fail("Unexpectedly able to set userAccountControl to be an Workstation on %s" % m.dn)
+        except LdbError, (enum, estr):
+            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+
+        m = ldb.Message()
+        m.dn = res[0].dn
+        m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_NORMAL_ACCOUNT),
+                                                     ldb.FLAG_MOD_REPLACE, "userAccountControl")
         self.samdb.modify(m)
 
         m = ldb.Message()
@@ -306,7 +316,12 @@ class UserAccountControlTests(samba.tests.TestCase):
         m.dn = res[0].dn
         m["userAccountControl"] = ldb.MessageElement(str(samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT),
                                                      ldb.FLAG_MOD_REPLACE, "userAccountControl")
-        self.samdb.modify(m)
+        try:
+            self.samdb.modify(m)
+            self.fail("Unexpectedly able to set userAccountControl to be an Workstation on %s" % m.dn)
+        except LdbError, (enum, estr):
+            self.assertEqual(ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, enum)
+
 
     def test_admin_mod_uac(self):
         computername=self.computernames[0]
@@ -382,9 +397,10 @@ class UserAccountControlTests(samba.tests.TestCase):
         priv_to_auth_users_bits = set([UF_PASSWD_NOTREQD, UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED,
                                        UF_DONT_EXPIRE_PASSWD])
 
-        # These bits really are privileged
+        # These bits really are privileged, or can't be changed from UF_NORMAL as a non-admin
         priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
-                         UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION])
+                         UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION,
+                         UF_WORKSTATION_TRUST_ACCOUNT])
 
         invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
 
@@ -446,7 +462,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                             int("0x10000000", 16), int("0x20000000", 16), int("0x40000000", 16), int("0x80000000", 16)])
         super_priv_bits = set([UF_INTERDOMAIN_TRUST_ACCOUNT])
 
-        priv_to_remove_bits = set([UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION])
+        priv_to_remove_bits = set([UF_TRUSTED_FOR_DELEGATION, UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION, UF_WORKSTATION_TRUST_ACCOUNT])
 
         for bit in bits:
             # Reset this to the initial position, just to be sure
@@ -507,6 +523,31 @@ class UserAccountControlTests(samba.tests.TestCase):
             except LdbError, (enum, estr):
                 self.fail("Unable to set userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
+            res = self.admin_samdb.search("%s" % self.base_dn,
+                                          expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
+                                          scope=SCOPE_SUBTREE,
+                                          attrs=["userAccountControl"])
+
+            if bit in account_types:
+                self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                 bit|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                 "bit 0X%08x should have been added (0X%08x vs 0X%08x)"
+                                 % (bit, int(res[0]["userAccountControl"][0]),
+                                    bit|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD))
+            elif bit in ignored_bits:
+                self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                 UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                 "bit 0X%08x should have been added (0X%08x vs 0X%08x)"
+                                 % (bit, int(res[0]["userAccountControl"][0]),
+                                    UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD))
+
+            else:
+                self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                 bit|UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                 "bit 0X%08x should have been added (0X%08x vs 0X%08x)"
+                                 % (bit, int(res[0]["userAccountControl"][0]),
+                                    bit|UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD))
+
             try:
                 m = ldb.Message()
                 m.dn = res[0].dn
@@ -520,7 +561,7 @@ class UserAccountControlTests(samba.tests.TestCase):
                 if bit in priv_to_remove_bits:
                     self.assertEqual(enum, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
                 else:
-                    self.fail("Unexpectedly able to remove userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
+                    self.fail("Unexpectedly unable to remove userAccountControl bit 0x%08X on %s: %s" % (bit, m.dn, estr))
 
             res = self.admin_samdb.search("%s" % self.base_dn,
                                           expression="(&(objectClass=computer)(samAccountName=%s$))" % computername,
@@ -528,9 +569,14 @@ class UserAccountControlTests(samba.tests.TestCase):
                                           attrs=["userAccountControl"])
 
             if bit in priv_to_remove_bits:
-                self.assertEqual(int(res[0]["userAccountControl"][0]),
-                                 bit|UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
-                                 "bit 0X%08x should not have been removed" % bit)
+                if bit in account_types:
+                    self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                     bit|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                     "bit 0X%08x should not have been removed" % bit)
+                else:
+                    self.assertEqual(int(res[0]["userAccountControl"][0]),
+                                     bit|UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
+                                     "bit 0X%08x should not have been removed" % bit)
             else:
                 self.assertEqual(int(res[0]["userAccountControl"][0]),
                                  UF_NORMAL_ACCOUNT|UF_ACCOUNTDISABLE|UF_PASSWD_NOTREQD,
@@ -553,7 +599,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.sd_utils.dacl_add_ace("OU=test_computer_ou1," + self.base_dn, mod)
 
         invalid_bits = set([UF_TEMP_DUPLICATE_ACCOUNT, UF_PARTIAL_SECRETS_ACCOUNT])
-
         # These bits are privileged, but authenticated users have that CAR by default, so this is a pain to test
         priv_to_auth_users_bits = set([UF_PASSWD_NOTREQD, UF_ENCRYPTED_TEXT_PASSWORD_ALLOWED,
                                        UF_DONT_EXPIRE_PASSWD])

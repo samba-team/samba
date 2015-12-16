@@ -2,6 +2,7 @@
 
 APPNAME = 'ldb'
 VERSION = '1.1.21'
+SYSTEM_VERSION = '1.1.24'
 
 blddir = 'bin'
 
@@ -55,11 +56,11 @@ def configure(conf):
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_ldb:
-        if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
+        if conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=SYSTEM_VERSION,
                                      onlyif='talloc tdb tevent',
                                      implied_deps='replace talloc tdb tevent ldb'):
             conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
-            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=SYSTEM_VERSION,
                                          onlyif='talloc tdb tevent pyldb-util',
                                          implied_deps='replace talloc tdb tevent'):
                 conf.define('USING_SYSTEM_LDB', 1)

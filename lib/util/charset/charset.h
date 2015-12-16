@@ -174,15 +174,16 @@ smb_iconv_t get_conv_handle(struct smb_iconv_handle *ic,
 			    charset_t from, charset_t to);
 const char *charset_name(struct smb_iconv_handle *ic, charset_t ch);
 
-codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
-			       size_t *size);
+codepoint_t next_codepoint_ext(const char *str, size_t len,
+			       charset_t src_charset, size_t *size);
 codepoint_t next_codepoint(const char *str, size_t *size);
 ssize_t push_codepoint(char *str, codepoint_t c);
 
 /* codepoints */
 codepoint_t next_codepoint_handle_ext(struct smb_iconv_handle *ic,
-			    const char *str, charset_t src_charset,
-			    size_t *size);
+				      const char *str, size_t len,
+				      charset_t src_charset,
+				      size_t *size);
 codepoint_t next_codepoint_handle(struct smb_iconv_handle *ic,
 			    const char *str, size_t *size);
 ssize_t push_codepoint_handle(struct smb_iconv_handle *ic,

@@ -105,7 +105,7 @@ tasks = {
                       ("ldb-make", "cd lib/ldb && make", "text/plain"),
                       ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+                      ("configure", "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=!talloc,!tdb,!pytdb,!ldb,!pyldb,!tevent,!pytevent --minimum-library-version=ldb:1.1.21,pyldb-util:1.1.21 --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
                       ("make", "make", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("dist", "make dist", "text/plain")],
