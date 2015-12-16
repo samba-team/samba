@@ -382,6 +382,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 		conn->desire_signing = true;
 		conn->mandatory_signing = false;
 		break;
+	case SMB_SIGNING_IPC_DEFAULT:
 	case SMB_SIGNING_REQUIRED:
 		/* always */
 		conn->allow_signing = true;

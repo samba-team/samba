@@ -147,6 +147,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 
 	switch (signing_setting) {
 	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_IPC_DEFAULT:
 		smb_panic(__location__);
 		break;
 	case SMB_SIGNING_OFF:

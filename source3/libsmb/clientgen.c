@@ -170,6 +170,15 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		use_level_II_oplocks = true;
 	}
 
+	if (signing_state == SMB_SIGNING_IPC_DEFAULT) {
+		/*
+		 * Ensure for IPC/RPC the default is to require
+		 * signing unless explicitly turned off by the
+		 * administrator.
+		 */
+		signing_state = lp_client_ipc_signing();
+	}
+
 	if (signing_state == SMB_SIGNING_DEFAULT) {
 		signing_state = lp_client_signing();
 	}
