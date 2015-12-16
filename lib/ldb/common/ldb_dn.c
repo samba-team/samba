@@ -189,33 +189,23 @@ struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx,
 /* see RFC2253 section 2.4 */
 static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 {
-	const char *p, *s;
+	char c;
 	char *d;
-	size_t l;
-
-	p = s = src;
+	int i;
 	d = dst;
 
-	while (p - src < len) {
-		p += strcspn(p, ",=\n\r+<>#;\\\" ");
-
-		if (p - src == len) /* found no escapable chars */
-			break;
-
-		/* copy the part of the string before the stop */
-		memcpy(d, s, p - s);
-		d += (p - s); /* move to current position */
-		
-		switch (*p) {
+	for (i = 0; i < len; i++){
+		c = src[i];
+		switch (c) {
 		case ' ':
-			if (p == src || (p-src)==(len-1)) {
+			if (i == 0 || i == len - 1) {
 				/* if at the beginning or end
 				 * of the string then escape */
 				*d++ = '\\';
-				*d++ = *p++;					 
+				*d++ = c;
 			} else {
 				/* otherwise don't escape */
-				*d++ = *p++;
+				*d++ = c;
 			}
 			break;
 
@@ -231,36 +221,36 @@ static int ldb_dn_escape_internal(char *dst, const char *src, int len)
 		case '?':
 			/* these must be escaped using \c form */
 			*d++ = '\\';
-			*d++ = *p++;
+			*d++ = c;
 			break;
 
-		default: {
+		case ';':
+		case '\r':
+		case '\n':
+		case '=':
+		case '\0': {
 			/* any others get \XX form */
 			unsigned char v;
 			const char *hexbytes = "0123456789ABCDEF";
-			v = *(const unsigned char *)p;
+			v = (const unsigned char)c;
 			*d++ = '\\';
 			*d++ = hexbytes[v>>4];
 			*d++ = hexbytes[v&0xF];
-			p++;
 			break;
 		}
+		default:
+			*d++ = c;
 		}
-		s = p; /* move forward */
 	}
 
-	/* copy the last part (with zero) and return */
-	l = len - (s - src);
-	memcpy(d, s, l + 1);
-
 	/* return the length of the resulting string */
-	return (l + (d - dst));
+	return (d - dst);
 }
 
 char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value)
 {
 	char *dst;
-
+	size_t len;
 	if (!value.length)
 		return NULL;
 
@@ -271,10 +261,14 @@ char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value)
 		return NULL;
 	}
 
-	ldb_dn_escape_internal(dst, (const char *)value.data, value.length);
+	len = ldb_dn_escape_internal(dst, (const char *)value.data, value.length);
 
-	dst = talloc_realloc(mem_ctx, dst, char, strlen(dst) + 1);
-
+	dst = talloc_realloc(mem_ctx, dst, char, len + 1);
+	if ( ! dst) {
+		talloc_free(dst);
+		return NULL;
+	}
+	dst[len] = '\0';
 	return dst;
 }
 
@@ -592,12 +586,15 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				p++;
 				*d++ = '\0';
-				dn->components[dn->comp_num].value.data = (uint8_t *)talloc_strdup(dn->components, dt);
+				dn->components[dn->comp_num].value.data = \
+					(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
 				dn->components[dn->comp_num].value.length = l;
 				if ( ! dn->components[dn->comp_num].value.data) {
 					/* ouch ! */
 					goto failed;
 				}
+				talloc_set_name_const(dn->components[dn->comp_num].value.data,
+						      (const char *)dn->components[dn->comp_num].value.data);
 
 				dt = d;
 
@@ -713,11 +710,13 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	*d++ = '\0';
 	dn->components[dn->comp_num].value.length = l;
 	dn->components[dn->comp_num].value.data =
-				(uint8_t *)talloc_strdup(dn->components, dt);
+		(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
 	if ( ! dn->components[dn->comp_num].value.data) {
 		/* ouch */
 		goto failed;
 	}
+	talloc_set_name_const(dn->components[dn->comp_num].value.data,
+			      (const char *)dn->components[dn->comp_num].value.data);
 
 	dn->comp_num++;
 
