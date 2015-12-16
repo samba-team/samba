@@ -89,7 +89,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli_ret,
 
 	/* Attempt connection */
 	result = cli_full_connection(&cli, lp_netbios_name(), dc_name, dc_ss, 0,
-		"IPC$", "IPC", "", "", "", 0, SMB_SIGNING_DEFAULT);
+		"IPC$", "IPC", "", "", "", 0, SMB_SIGNING_IPC_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* map to something more useful */
