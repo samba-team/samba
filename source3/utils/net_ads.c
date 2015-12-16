@@ -1933,7 +1933,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 					c->opt_user_name, c->opt_workgroup,
 					c->opt_password ? c->opt_password : "",
 					CLI_FULL_CONNECTION_USE_KERBEROS,
-					SMB_SIGNING_DEFAULT);
+					SMB_SIGNING_IPC_DEFAULT);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		d_fprintf(stderr, _("Unable to open a connection to %s to "
