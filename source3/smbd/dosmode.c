@@ -364,7 +364,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 		dosattr |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
-	*pattr = (uint32)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
+	*pattr |= (uint32)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
 
 	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
 
