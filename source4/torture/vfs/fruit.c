@@ -2812,6 +2812,298 @@ done:
 	return ret;
 }
 
+static bool test_create_delete_on_close(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_create create;
+	struct smb2_handle h1;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\file";
+	const char *sname = BASEDIR "\\file" AFPINFO_STREAM_NAME;
+	const char *type_creator = "SMB,OLE!";
+	AfpInfo *info = NULL;
+	const char *streams_basic[] = {
+		"::$DATA"
+	};
+	const char *streams_afpinfo[] = {
+		"::$DATA",
+		AFPINFO_STREAM
+	};
+
+	torture_assert_goto(tctx, mem_ctx != NULL, ret, done, "talloc_new");
+
+	torture_comment(tctx, "Checking whether create with delete-on-close work with AFP_AfpInfo\n");
+
+	smb2_deltree(tree, BASEDIR);
+	status = torture_smb2_testdir(tree, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
+	smb2_util_close(tree, h1);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	torture_comment(tctx, "Opening not existing AFP_AfpInfo\n");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE; /* stat open */
+	create.in.fname = sname;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done, "Got unexpected AFP_AfpInfo stream");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done, "Got unexpected AFP_AfpInfo stream");
+
+	ret = check_stream_list(tree, tctx, fname, 1, streams_basic, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	torture_comment(tctx, "Deleting AFP_AfpInfo via create with delete-on-close\n");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, info != NULL, ret, done, "torture_afpinfo_new failed");
+
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, type_creator);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad type/creator in AFP_AfpInfo");
+
+	ret = check_stream_list(tree, tctx, fname, 2, streams_afpinfo, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE | SEC_STD_SYNCHRONIZE | SEC_STD_DELETE;
+	create.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h1 = create.out.file.handle;
+	smb2_util_close(tree, h1);
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done, "Got unexpected AFP_AfpInfo stream");
+
+	ret = check_stream_list(tree, tctx, fname, 1, streams_basic, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_util_rmdir(tree, BASEDIR);
+	return ret;
+}
+
+static bool test_setinfo_delete_on_close(struct torture_context *tctx,
+					 struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_create create;
+	union smb_setfileinfo sfinfo;
+	struct smb2_handle h1;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\file";
+	const char *sname = BASEDIR "\\file" AFPINFO_STREAM_NAME;
+	const char *type_creator = "SMB,OLE!";
+	AfpInfo *info = NULL;
+	const char *streams_basic[] = {
+		"::$DATA"
+	};
+
+	torture_assert_goto(tctx, mem_ctx != NULL, ret, done, "talloc_new");
+
+	torture_comment(tctx, "Deleting AFP_AfpInfo via setinfo with delete-on-close\n");
+
+	smb2_deltree(tree, BASEDIR);
+	status = torture_smb2_testdir(tree, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
+	smb2_util_close(tree, h1);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, info != NULL, ret, done, "torture_afpinfo_new failed");
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_READ_ATTRIBUTE | SEC_STD_SYNCHRONIZE | SEC_STD_DELETE;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h1 = create.out.file.handle;
+
+	/* Delete stream via setinfo delete-on-close */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.disposition_info.in.delete_on_close = 1;
+	sfinfo.generic.level = RAW_SFILEINFO_DISPOSITION_INFORMATION;
+	sfinfo.generic.in.file.handle = h1;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "set delete-on-close failed");
+
+	smb2_util_close(tree, h1);
+
+	ret = check_stream_list(tree, tctx, fname, 1, streams_basic, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done, "Got unexpected AFP_AfpInfo stream");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_util_rmdir(tree, BASEDIR);
+	return ret;
+}
+
+static bool test_setinfo_eof(struct torture_context *tctx,
+			     struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_create create;
+	union smb_setfileinfo sfinfo;
+	struct smb2_handle h1;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\file";
+	const char *sname = BASEDIR "\\file" AFPINFO_STREAM_NAME;
+	const char *type_creator = "SMB,OLE!";
+	AfpInfo *info = NULL;
+	const char *streams_afpinfo[] = {
+		"::$DATA",
+		AFPINFO_STREAM
+	};
+
+	torture_assert_goto(tctx, mem_ctx != NULL, ret, done, "talloc_new");
+
+	torture_comment(tctx, "Set AFP_AfpInfo EOF to 61, 1 and 0\n");
+
+	smb2_deltree(tree, BASEDIR);
+	status = torture_smb2_testdir(tree, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
+	smb2_util_close(tree, h1);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, info != NULL, ret, done, "torture_afpinfo_new failed");
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h1 = create.out.file.handle;
+
+	torture_comment(tctx, "Set AFP_AfpInfo EOF to 61\n");
+
+	/* Test setinfo end-of-file info */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.in.file.handle = h1;
+	sfinfo.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfinfo.position_information.in.position = 61;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_ALLOTTED_SPACE_EXCEEDED,
+					   ret, done, "set eof 61 failed");
+
+	torture_comment(tctx, "Set AFP_AfpInfo EOF to 1\n");
+
+	/* Truncation returns success, but has no effect */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.in.file.handle = h1;
+	sfinfo.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfinfo.position_information.in.position = 1;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status,
+					ret, done, "set eof 1 failed");
+	smb2_util_close(tree, h1);
+
+	ret = check_stream_list(tree, tctx, fname, 2, streams_afpinfo, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, type_creator);
+	torture_assert_goto(tctx, ret == true, ret, done, "FinderInfo changed");
+
+	ZERO_STRUCT(create);
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.fname = sname;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
+
+	status = smb2_create(tree, mem_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h1 = create.out.file.handle;
+
+	/*
+	 * Delete stream via setinfo end-of-file info to 0, should
+	 * return success but stream MUST NOT deleted
+	 */
+	ZERO_STRUCT(sfinfo);
+	sfinfo.generic.in.file.handle = h1;
+	sfinfo.generic.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
+	sfinfo.position_information.in.position = 0;
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "set eof 0 failed");
+
+	smb2_util_close(tree, h1);
+
+	ret = check_stream_list(tree, tctx, fname, 2, streams_afpinfo, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, type_creator);
+	torture_assert_goto(tctx, ret == true, ret, done, "FinderInfo changed");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_util_rmdir(tree, BASEDIR);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -2838,6 +3130,9 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "opening and creating resource fork", test_rfork_create);
 	torture_suite_add_1smb2_test(suite, "rename_dir_openfile", test_rename_dir_openfile);
 	torture_suite_add_1smb2_test(suite, "File without AFP_AfpInfo", test_afpinfo_enoent);
+	torture_suite_add_1smb2_test(suite, "create delete-on-close AFP_AfpInfo", test_create_delete_on_close);
+	torture_suite_add_1smb2_test(suite, "setinfo delete-on-close AFP_AfpInfo", test_setinfo_delete_on_close);
+	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpInfo", test_setinfo_eof);
 
 	return suite;
 }
