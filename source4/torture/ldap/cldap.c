@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap_client.h"
+#include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
 
@@ -87,10 +88,20 @@ static bool test_cldap_generic(struct torture_context *tctx, const char *dest)
 	const char *attrs2[] = { "currentTime", "highestCommittedUSN", "netlogon", NULL };
 	const char *attrs3[] = { "netlogon", NULL };
 	struct tsocket_address *dest_addr;
+	const char *ip;
+	struct nbt_name nbt_name;
 	int ret;
 
+	make_nbt_name_server(&nbt_name, dest);
+
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				 0, 0, &nbt_name, tctx, &ip, tctx->ev);
+	torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx,"Failed to resolve %s: %s",
+					nbt_name.name, nt_errstr(status)));
+
 	ret = tsocket_address_inet_from_strings(tctx, "ip",
-						dest,
+						ip,
 						lpcfg_cldap_port(tctx->lp_ctx),
 						&dest_addr);
 	CHECK_VAL(ret, 0);
