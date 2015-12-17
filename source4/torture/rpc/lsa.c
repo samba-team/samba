@@ -3217,7 +3217,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	k5ret = smb_krb5_init_context(ctx, tctx->lp_ctx, &ctx->smb_krb5_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "smb_krb5_init_context failed");
 
-	ok = interpret_string_addr_internal(&ctx->server, host, AI_NUMERICHOST);
+	ok = interpret_string_addr_internal(&ctx->server, host, 0);
 	torture_assert(tctx, ok, "Failed to parse target server");
 	talloc_set_destructor(ctx, check_pw_with_krb5_ctx_destructor);
 
