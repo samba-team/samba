@@ -900,7 +900,8 @@ static bool check_stream(struct smb2_tree *tree,
 	struct smb2_create create;
 	struct smb2_read r;
 	NTSTATUS status;
-	const char *full_name;
+	char *full_name;
+	bool ret = true;
 
 	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, sname);
 	if (full_name == NULL) {
@@ -917,21 +918,20 @@ static bool check_stream(struct smb2_tree *tree,
 
 	status = smb2_create(tree, mem_ctx, &create);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(full_name);
 		if (value == NULL) {
 			return true;
-		} else {
-			torture_comment(tctx, "Unable to open stream %s\n",
-			    full_name);
-			sleep(10000000);
-			return false;
 		}
+		torture_comment(tctx, "Unable to open stream %s\n", full_name);
+		return false;
 	}
 
 	handle = create.out.file.handle;
 	if (value == NULL) {
+		TALLOC_FREE(full_name);
+		smb2_util_close(tree, handle);
 		return true;
 	}
-
 
 	ZERO_STRUCT(r);
 	r.in.file.handle = handle;
@@ -940,19 +940,24 @@ static bool check_stream(struct smb2_tree *tree,
 
 	status = smb2_read(tree, tree, &r);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "(%s) Failed to read %lu bytes from "
-		    "stream '%s'\n", location, (long)strlen(value), full_name);
-		return false;
-	}
+	torture_assert_ntstatus_ok_goto(
+		tctx, status, ret, done,
+		talloc_asprintf(tctx, "(%s) Failed to read %lu bytes from stream '%s'\n",
+				location, (long)strlen(value), full_name));
 
-	if (memcmp(r.out.data.data + comp_offset, value, comp_count) != 0) {
-		torture_comment(tctx, "(%s) Bad data in stream\n", location);
-		return false;
-	}
+	torture_assert_goto(tctx, r.out.data.length == read_count, ret, done,
+			    talloc_asprintf(tctx, "smb2_read returned %jd bytes, expected %jd\n",
+					    (intmax_t)r.out.data.length, (intmax_t)read_count));
 
+	torture_assert_goto(
+		tctx, memcmp(r.out.data.data + comp_offset, value, comp_count) == 0,
+		ret, done,
+		talloc_asprintf(tctx, "(%s) Bad data in stream\n", location));
+
+done:
+	TALLOC_FREE(full_name);
 	smb2_util_close(tree, handle);
-	return true;
+	return ret;
 }
 
 /**
