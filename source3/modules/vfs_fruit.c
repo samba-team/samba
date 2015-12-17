@@ -2846,6 +2846,17 @@ static int fruit_stat_meta(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname,
 			   bool follow_links)
 {
+	struct adouble *ad = NULL;
+
+	ad = ad_get(talloc_tos(), handle, smb_fname->base_name, ADOUBLE_META);
+	if (ad == NULL) {
+		DBG_INFO("fruit_stat_meta %s: %s\n",
+			 smb_fname_str_dbg(smb_fname), strerror(errno));
+		errno = ENOENT;
+		return -1;
+	}
+	TALLOC_FREE(ad);
+
 	/* Populate the stat struct with info from the base file. */
 	if (fruit_stat_base(handle, smb_fname, follow_links) == -1) {
 		return -1;
