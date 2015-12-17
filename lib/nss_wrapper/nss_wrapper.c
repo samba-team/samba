@@ -2890,6 +2890,7 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 	struct nwrap_entdata *ed;
 	struct nwrap_entlist *el;
 	size_t i;
+	int rc;
 
 	nwrap_vector_foreach (ed, nwrap_he->entries, i)
 	{
@@ -2915,6 +2916,18 @@ static void nwrap_he_unload(struct nwrap_cache *nwrap)
 
 	nwrap_he->num = 0;
 	nwrap_he->idx = 0;
+
+	/*
+	 * If we unload the file, the pointers in the hash table point to
+	 * invalid memory. So we need to destroy the hash table and recreate
+	 * it.
+	 */
+	hdestroy();
+	rc = hcreate(max_hostents);
+	if (rc == 0) {
+		NWRAP_LOG(NWRAP_LOG_ERROR, "Failed to initialize hash table");
+		exit(-1);
+	}
 }
 
 
