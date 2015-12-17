@@ -115,6 +115,9 @@ static const struct {
 #ifdef ETXTBSY
 	{ ETXTBSY,      NT_STATUS_SHARING_VIOLATION },
 #endif
+#ifdef EOVERFLOW
+	{ EOVERFLOW,      NT_STATUS_ALLOTTED_SPACE_EXCEEDED },
+#endif
 };
 
 /*********************************************************************
