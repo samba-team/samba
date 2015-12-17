@@ -849,7 +849,7 @@ static bool torture_write_afpinfo(struct smb2_tree *tree,
 	char *infobuf;
 	bool ret = true;
 
-	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, AFPINFO_STREAM);
+	full_name = talloc_asprintf(mem_ctx, "%s%s", fname, AFPINFO_STREAM_NAME);
 	if (full_name == NULL) {
 	    torture_comment(tctx, "talloc_asprintf error\n");
 	    return false;
@@ -1362,7 +1362,7 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_write_rfork_io";
-	const char *rfork = BASEDIR "\\torture_write_rfork_io" AFPRESOURCE_STREAM;
+	const char *rfork = BASEDIR "\\torture_write_rfork_io" AFPRESOURCE_STREAM_NAME;
 	const char *rfork_content = "1234567890";
 	NTSTATUS status;
 	struct smb2_handle testdirh;
@@ -1388,11 +1388,11 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	    __location__);
 
 	ret &= write_stream(tree, __location__, tctx, mem_ctx,
-			    fname, AFPRESOURCE_STREAM,
+			    fname, AFPRESOURCE_STREAM_NAME,
 			    10, 10, rfork_content);
 
 	ret &= check_stream(tree, __location__, tctx, mem_ctx,
-			    fname, AFPRESOURCE_STREAM,
+			    fname, AFPRESOURCE_STREAM_NAME,
 			    0, 20, 10, 10, rfork_content);
 
 	/* Check size after write */
@@ -1430,11 +1430,11 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 			__location__);
 
 	ret &= write_stream(tree, __location__, tctx, mem_ctx,
-			    fname, AFPRESOURCE_STREAM,
+			    fname, AFPRESOURCE_STREAM_NAME,
 			    (off_t)1<<32, 10, rfork_content);
 
 	ret &= check_stream(tree, __location__, tctx, mem_ctx,
-			    fname, AFPRESOURCE_STREAM,
+			    fname, AFPRESOURCE_STREAM_NAME,
 			    (off_t)1<<32, 10, 0, 10, rfork_content);
 
 	/* Truncate back to size of 1 byte */
@@ -1944,7 +1944,7 @@ static bool test_aapl(struct torture_context *tctx,
 	}
 
 	ret = write_stream(tree, __location__, tctx, mem_ctx,
-			   fname, AFPRESOURCE_STREAM,
+			   fname, AFPRESOURCE_STREAM_NAME,
 			   0, 3, "foo");
 	if (ret == false) {
 		torture_result(tctx, TORTURE_FAIL,
