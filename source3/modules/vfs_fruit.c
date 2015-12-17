@@ -2795,6 +2795,23 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		}
 		memcpy(ad_entry(ad, ADEID_FINDERI),
 		       &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
+		if (empty_finderinfo(ad)) {
+			/* Discard metadata */
+			if (config->meta == FRUIT_META_STREAM) {
+				rc = SMB_VFS_FTRUNCATE(fsp, 0);
+			} else {
+				rc = SMB_VFS_REMOVEXATTR(handle->conn,
+							 fsp->fsp_name->base_name,
+							 AFPINFO_EA_NETATALK);
+			}
+			if (rc != 0 && errno != ENOENT && errno != ENOATTR) {
+				DEBUG(1,("Can't delete metadata for %s: %s\n",
+					 fsp->fsp_name->base_name, strerror(errno)));
+				goto exit;
+			}
+			rc = 0;
+			goto exit;
+		}
 		rc = ad_write(ad, name);
 	} else {
 		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
