@@ -25,6 +25,7 @@
 #include "libcli/cldap/cldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
@@ -579,14 +580,24 @@ static NTSTATUS udp_ldap_netlogon(void *data,
 bool torture_netlogon_udp(struct torture_context *tctx)
 {
 	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *ip;
+	struct nbt_name nbt_name;
 	bool ret = true;
 	int r;
 	struct cldap_socket *cldap;
 	NTSTATUS status;
 	struct tsocket_address *dest_addr;
 
+	make_nbt_name_server(&nbt_name, host);
+
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				 0, 0, &nbt_name, tctx, &ip, tctx->ev);
+	torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx,"Failed to resolve %s: %s",
+					nbt_name.name, nt_errstr(status)));
+
 	r = tsocket_address_inet_from_strings(tctx, "ip",
-					      host,
+					      ip,
 					      lpcfg_cldap_port(tctx->lp_ctx),
 					      &dest_addr);
 	CHECK_VAL(r, 0);
