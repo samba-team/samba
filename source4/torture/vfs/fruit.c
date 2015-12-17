@@ -64,7 +64,7 @@ static bool check_stream_list(struct smb2_tree *tree,
 			      const char *fname,
 			      int num_exp,
 			      const char **exp,
-			      struct smb2_handle h);
+			      bool is_dir);
 
 static int qsort_string(char * const *s1, char * const *s2)
 {
@@ -1694,22 +1694,12 @@ static bool test_rfork_create(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
 
-	ZERO_STRUCT(create);
-	create.in.fname = fname;
-	create.in.create_disposition = NTCREATEX_DISP_OPEN;
-	create.in.desired_access = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
-	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
-	status = smb2_create(tree, mem_ctx, &create);
-	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
-
-	ret = check_stream_list(tree, tctx, fname, 1, streams,
-				create.out.file.handle);
+	ret = check_stream_list(tree, tctx, fname, 1, streams, false);
 	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
-	smb2_util_close(tree, create.out.file.handle);
 
 	torture_comment(tctx, "(%s) close empty created rfork, open should return ENOENT\n",
 			__location__);
-	smb2_util_close(tree, fh1);
+
 	ZERO_STRUCT(create);
 	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
 	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
@@ -2486,50 +2476,69 @@ static bool check_stream_list(struct smb2_tree *tree,
 			      const char *fname,
 			      int num_exp,
 			      const char **exp,
-			      struct smb2_handle h)
+			      bool is_dir)
 {
+	bool ret = true;
 	union smb_fileinfo finfo;
 	NTSTATUS status;
 	int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	char **exp_sort;
 	struct stream_struct *stream_sort;
+	struct smb2_create create;
+	struct smb2_handle h;
+
+	ZERO_STRUCT(h);
+	torture_assert_goto(tctx, tmp_ctx != NULL, ret, done, "talloc_new failed");
+
+	ZERO_STRUCT(create);
+	create.in.fname = fname;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.create_options = is_dir ? NTCREATEX_OPTIONS_DIRECTORY : 0;
+	create.in.file_attributes = is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+	status = smb2_create(tree, tmp_ctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
+	h = create.out.file.handle;
 
 	finfo.generic.level = RAW_FILEINFO_STREAM_INFORMATION;
 	finfo.generic.in.file.handle = h;
 
 	status = smb2_getinfo_file(tree, tctx, &finfo);
-	torture_assert_ntstatus_ok(tctx, status, "get stream info");
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "get stream info");
 
-	torture_assert_int_equal(tctx, finfo.stream_info.out.num_streams, num_exp,
-				 "stream count");
+	smb2_util_close(tree, h);
+
+	torture_assert_int_equal_goto(tctx, finfo.stream_info.out.num_streams, num_exp,
+				      ret, done, "stream count");
 
 	if (num_exp == 0) {
 		TALLOC_FREE(tmp_ctx);
-		return true;
+		goto done;
 	}
 
 	exp_sort = talloc_memdup(tmp_ctx, exp, num_exp * sizeof(*exp));
-	torture_assert(tctx, exp_sort != NULL, __location__);
+	torture_assert_goto(tctx, exp_sort != NULL, ret, done, __location__);
 
 	TYPESAFE_QSORT(exp_sort, num_exp, qsort_string);
 
 	stream_sort = talloc_memdup(tmp_ctx, finfo.stream_info.out.streams,
 				    finfo.stream_info.out.num_streams *
 				    sizeof(*stream_sort));
-	torture_assert(tctx, stream_sort != NULL, __location__);
+	torture_assert_goto(tctx, stream_sort != NULL, ret, done, __location__);
 
 	TYPESAFE_QSORT(stream_sort, finfo.stream_info.out.num_streams, qsort_stream);
 
 	for (i=0; i<num_exp; i++) {
 		torture_comment(tctx, "i[%d] exp[%s] got[%s]\n",
 				i, exp_sort[i], stream_sort[i].stream_name.s);
-		torture_assert_str_equal(tctx, stream_sort[i].stream_name.s, exp_sort[i],
-					 "stream name");
+		torture_assert_str_equal_goto(tctx, stream_sort[i].stream_name.s, exp_sort[i],
+					      ret, done, "stream name");
 	}
 
+done:
 	TALLOC_FREE(tmp_ctx);
-	return true;
+	return ret;
 }
 
 /*
@@ -2584,20 +2593,8 @@ static bool test_stream_names(struct torture_context *tctx,
 					"data", strlen("data"));
 	CHECK_VALUE(ret, true);
 
-	ZERO_STRUCT(create);
-	create.in.fname = fname;
-	create.in.create_disposition = NTCREATEX_DISP_OPEN;
-	create.in.desired_access = SEC_RIGHTS_FILE_ALL;
-	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
-	create.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
-	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_OK);
-
-	ret = check_stream_list(tree, tctx, fname, 3, streams,
-				create.out.file.handle);
+	ret = check_stream_list(tree, tctx, fname, 3, streams, false);
 	CHECK_VALUE(ret, true);
-
-	smb2_util_close(tree, create.out.file.handle);
 
 done:
 	status = smb2_util_unlink(tree, fname);
