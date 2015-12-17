@@ -1659,11 +1659,11 @@ static int insert_record_into_delete_queue(struct ctdb_db_context *ctdb_db,
 
 	hash = (uint32_t)ctdb_hash(&key);
 
-	DEBUG(DEBUG_INFO, (__location__ " schedule for deletion: db[%s] "
-			   "db_id[0x%08x] "
-			   "key_hash[0x%08x] "
-			   "lmaster[%u] "
-			   "migrated_with_data[%s]\n",
+	DEBUG(DEBUG_DEBUG, (__location__ " schedule for deletion: db[%s] "
+			    "db_id[0x%08x] "
+			    "key_hash[0x%08x] "
+			    "lmaster[%u] "
+			    "migrated_with_data[%s]\n",
 			    ctdb_db->db_name, ctdb_db->db_id,
 			    hash,
 			    ctdb_lmaster(ctdb_db->ctdb, &key),
