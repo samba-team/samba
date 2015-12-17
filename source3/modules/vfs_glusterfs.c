@@ -577,17 +577,13 @@ static void aio_tevent_fd_done(struct tevent_context *event_ctx,
 		DEBUG(0,("\nRead from pipe failed (%s)", strerror(errno)));
 	}
 
-	if (state->cancelled) {
-		return;
-	}
-
-	req = state->req;
-
 	/* if we've cancelled the op, there is no req, so just clean up. */
 	if (state->cancelled == true) {
 		TALLOC_FREE(state);
 		return;
 	}
+
+	req = state->req;
 
 	if (req) {
 		tevent_req_done(req);
