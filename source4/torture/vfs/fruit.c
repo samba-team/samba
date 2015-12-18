@@ -1337,6 +1337,84 @@ done:
 	return ret;
 }
 
+static bool test_read_afpinfo(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\torture_read_metadata";
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	ssize_t len;
+	AfpInfo *info;
+	const char *type_creator = "SMB,OLE!";
+
+	torture_comment(tctx, "Checking metadata access\n");
+
+	smb2_util_unlink(tree, fname);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir failed");
+	smb2_util_close(tree, testdirh);
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, info != NULL, ret, done, "torture_afpinfo_new failed");
+
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 0, 4, "AFP");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, type_creator);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+	/*
+	 * OS X ignores offset <= 60 and treats the as
+	 * offset=0. Reading from offsets > 60 returns EOF=0.
+	 */
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   16, 8, 0, 8, "AFP\0\0\0\001\0");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 0, 61);
+	torture_assert_goto(tctx, len == 60, ret, done, "read_stream failed");
+
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 59, 2);
+	torture_assert_goto(tctx, len == 2, ret, done, "read_stream failed");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   59, 2, 0, 2, "AF");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 60, 1);
+	torture_assert_goto(tctx, len == 1, ret, done, "read_stream failed");
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   60, 1, 0, 1, "A");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
+			  AFPINFO_STREAM, 61, 1);
+	torture_assert_goto(tctx, len == 0, ret, done, "read_stream failed");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static bool test_write_atalk_metadata(struct torture_context *tctx,
 				      struct smb2_tree *tree)
 {
@@ -3463,6 +3541,7 @@ struct torture_suite *torture_vfs_fruit(void)
 
 	torture_suite_add_1smb2_test(suite, "copyfile", test_copyfile);
 	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
+	torture_suite_add_1smb2_test(suite, "read metadata", test_read_afpinfo);
 	torture_suite_add_1smb2_test(suite, "write metadata", test_write_atalk_metadata);
 	torture_suite_add_1smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
