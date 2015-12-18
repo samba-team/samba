@@ -437,6 +437,13 @@ try_logon_again:
 
 		result = response->r.BindResponse.response.resultcode;
 
+		if (result == LDAP_STRONG_AUTH_REQUIRED) {
+			if (wrap_flags == 0) {
+				wrap_flags = ADS_AUTH_SASL_SIGN;
+				goto try_logon_again;
+			}
+		}
+
 		if (result == LDAP_INVALID_CREDENTIALS) {
 			/*
 			  try a second time on invalid credentials, to
