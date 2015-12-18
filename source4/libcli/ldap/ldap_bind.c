@@ -32,6 +32,7 @@
 #include "auth/credentials/credentials.h"
 #include "lib/stream/packet.h"
 #include "param/param.h"
+#include "param/loadparm.h"
 
 struct ldap_simple_creds {
 	const char *dn;
@@ -216,7 +217,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 	struct ldap_SearchResEntry *search;
 	int count, i;
 	bool first = true;
-
+	int wrap_flags = 0;
 	const char **sasl_names;
 	uint32_t old_gensec_features;
 	static const char *supported_sasl_mech_attrs[] = {
@@ -285,6 +286,21 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 
 	gensec_init();
 
+	if (conn->sockets.active == conn->sockets.tls) {
+		/*
+		 * require Kerberos SIGN/SEAL only if we don't use SSL
+		 * Windows seem not to like double encryption
+		 */
+		wrap_flags = 0;
+	} else if (cli_credentials_is_anonymous(creds)) {
+		/*
+		 * anonymous isn't protected
+		 */
+		wrap_flags = 0;
+	} else {
+		wrap_flags = lpcfg_client_ldap_sasl_wrapping(lp_ctx);
+	}
+
 try_logon_again:
 	/*
 	  we loop back here on a logon failure, and re-create the
@@ -301,10 +317,8 @@ try_logon_again:
 		goto failed;
 	}
 
-	/* require Kerberos SIGN/SEAL only if we don't use SSL
-	 * Windows seem not to like double encryption */
 	old_gensec_features = cli_credentials_get_gensec_features(creds);
-	if (conn->sockets.active == conn->sockets.tls) {
+	if (wrap_flags == 0) {
 		cli_credentials_set_gensec_features(creds, old_gensec_features & ~(GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL));
 	}
 
@@ -319,6 +333,14 @@ try_logon_again:
 	/* reset the original gensec_features (on the credentials
 	 * context, so we don't tatoo it ) */
 	cli_credentials_set_gensec_features(creds, old_gensec_features);
+
+	if (wrap_flags & ADS_AUTH_SASL_SEAL) {
+		gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
+		gensec_want_feature(conn->gensec, GENSEC_FEATURE_SEAL);
+	}
+	if (wrap_flags & ADS_AUTH_SASL_SIGN) {
+		gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
+	}
 
 	/*
 	 * This is an indication for the NTLMSSP backend to
