@@ -218,7 +218,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
-		struct auth_session_info *old_session_info=NULL;
 		struct ldapsrv_sasl_postprocess_context *context = NULL;
 
 		result = LDAP_SUCCESS;
@@ -266,14 +265,13 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		}
 
 		if (result != LDAP_SUCCESS) {
-			conn->session_info = old_session_info;
 		} else if (!NT_STATUS_IS_OK(status)) {
-			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, 
 						 "SASL:[%s]: Failed to setup SASL socket: %s", 
 						 req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
+			struct auth_session_info *old_session_info=NULL;
 
 			old_session_info = conn->session_info;
 			conn->session_info = NULL;
