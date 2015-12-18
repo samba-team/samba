@@ -2593,6 +2593,12 @@ static bool test_stream_names(struct torture_context *tctx,
 		":bar" "\xef\x80\xa2" "baz:$DATA", /* "bar:baz:$DATA" */
 		"::$DATA"
 	};
+	const char *localdir = NULL;
+
+	localdir = torture_setting_string(tctx, "localdir", NULL);
+	if (localdir == NULL) {
+		torture_skip(tctx, "Need localdir for test");
+	}
 
 	sname1 = talloc_asprintf(mem_ctx, "%s%s", fname, streams[0]);
 
