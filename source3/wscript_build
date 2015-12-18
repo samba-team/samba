@@ -96,6 +96,7 @@ bld.SAMBA3_SUBSYSTEM('GROUPDB',
 bld.SAMBA3_SUBSYSTEM('TLDAP',
                     source='''lib/tldap.c
                     lib/tldap_util.c
+                    lib/tldap_gensec_bind.c
                     ''',
                     deps='asn1util LIBTSOCKET samba3util')
 
