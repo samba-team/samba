@@ -60,6 +60,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
                   ndr/backupkey.c
                   ndr/witness.c
                   ndr/clusapi.c
+                  ndr/negoex.c
 		  ''',
 	autoproto='ndr/proto.h',
 	deps='torture'
