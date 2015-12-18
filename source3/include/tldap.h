@@ -20,6 +20,7 @@
 #ifndef __TLDAP_H__
 #define __TLDAP_H__
 
+#include "replace.h"
 #include <talloc.h>
 #include <tevent.h>
 #include "lib/util/data_blob.h"
