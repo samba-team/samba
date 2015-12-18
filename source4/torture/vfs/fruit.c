@@ -1339,8 +1339,7 @@ static bool test_write_atalk_metadata(struct torture_context *tctx,
 	bool ret = true;
 	AfpInfo *info;
 
-	smb2_util_unlink(tree, fname);
-
+	smb2_deltree(tree, BASEDIR);
 	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	smb2_util_close(tree, testdirh);
@@ -1361,6 +1360,7 @@ static bool test_write_atalk_metadata(struct torture_context *tctx,
 			    0, 60, 16, 8, type_creator);
 
 done:
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
@@ -1496,6 +1496,7 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	smb2_util_close(tree, filehandle);
 
 done:
+	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
@@ -2033,6 +2034,8 @@ static bool test_aapl(struct torture_context *tctx,
 	}
 
 done:
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -2740,8 +2743,10 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 		status = smb2_close(tree, &(cl.smb2));
 	}
 
-	smb2_deltree(tree, BASEDIR);
+	smb2_util_unlink(tree, BASEDIR "\\file.txt");
+	smb2_util_unlink(tree, BASEDIR "-new\\file.txt");
 	smb2_deltree(tree, renamedir);
+	smb2_deltree(tree, BASEDIR);
 	return ret;
 }
 
