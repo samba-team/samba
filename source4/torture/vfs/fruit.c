@@ -2647,6 +2647,7 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	union smb_setfileinfo sinfo;
 	struct smb2_handle d1, h1;
 	const char *renamedir = BASEDIR "-new";
+	bool server_is_osx = torture_setting_bool(torture, "osx", false);
 
 	smb2_deltree(tree, BASEDIR);
 	smb2_util_rmdir(tree, BASEDIR);
@@ -2686,24 +2687,28 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	torture_assert_ntstatus_ok(torture, status, "smb2_create file");
 	h1 = io.smb2.out.file.handle;
 
-	torture_comment(torture, "Renaming directory without AAPL, must fail\n");
+	if (!server_is_osx) {
+		torture_comment(torture, "Renaming directory without AAPL, must fail\n");
 
-	ZERO_STRUCT(sinfo);
-	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
-	sinfo.rename_information.in.file.handle = d1;
-	sinfo.rename_information.in.overwrite = 0;
-	sinfo.rename_information.in.root_fid = 0;
-	sinfo.rename_information.in.new_name = renamedir;
-	status = smb2_setinfo_file(tree, &sinfo);
-	torture_assert_ntstatus_equal(torture, status, NT_STATUS_ACCESS_DENIED,
-				      "smb2_setinfo_file");
+		ZERO_STRUCT(sinfo);
+		sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+		sinfo.rename_information.in.file.handle = d1;
+		sinfo.rename_information.in.overwrite = 0;
+		sinfo.rename_information.in.root_fid = 0;
+		sinfo.rename_information.in.new_name = renamedir;
+		status = smb2_setinfo_file(tree, &sinfo);
 
-	ZERO_STRUCT(cl.smb2);
-	cl.smb2.level = RAW_CLOSE_SMB2;
-	cl.smb2.in.file.handle = d1;
-	status = smb2_close(tree, &(cl.smb2));
-	torture_assert_ntstatus_ok(torture, status, "smb2_close");
-	ZERO_STRUCT(d1);
+		torture_assert_ntstatus_equal(torture, status,
+					      NT_STATUS_ACCESS_DENIED,
+					      "smb2_setinfo_file");
+
+		ZERO_STRUCT(cl.smb2);
+		cl.smb2.level = RAW_CLOSE_SMB2;
+		cl.smb2.in.file.handle = d1;
+		status = smb2_close(tree, &(cl.smb2));
+		torture_assert_ntstatus_ok(torture, status, "smb2_close");
+		ZERO_STRUCT(d1);
+	}
 
 	torture_comment(torture, "Enabling AAPL\n");
 
@@ -2727,17 +2732,12 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	torture_assert_ntstatus_ok(torture, status, "smb2_create dir");
 	d1 = io.smb2.out.file.handle;
 
-	ZERO_STRUCT(io.smb2);
-	io.generic.level = RAW_OPEN_SMB2;
-	io.smb2.in.desired_access = 0x0017019f;
-	io.smb2.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
-	io.smb2.in.share_access = 0;
-	io.smb2.in.alloc_size = 0;
-	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
-	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
-	io.smb2.in.security_flags = 0;
-	io.smb2.in.fname = BASEDIR;
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
 	sinfo.rename_information.in.file.handle = d1;
+	sinfo.rename_information.in.overwrite = 0;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = renamedir;
 
 	status = smb2_setinfo_file(tree, &sinfo);
 	torture_assert_ntstatus_ok(torture, status, "smb2_setinfo_file");
