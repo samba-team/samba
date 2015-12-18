@@ -291,6 +291,8 @@ try_logon_again:
 	  gensec session. The logon_retries counter ensures we don't
 	  loop forever.
 	 */
+	data_blob_free(&input);
+	TALLOC_FREE(conn->gensec);
 
 	status = gensec_client_start(conn, &conn->gensec,
 				     lpcfg_gensec_settings(conn, lp_ctx));
@@ -441,8 +443,6 @@ try_logon_again:
 				  new credentials, or get a new ticket
 				  if using kerberos
 				 */
-				talloc_free(conn->gensec);
-				conn->gensec = NULL;
 				goto try_logon_again;
 			}
 		}
