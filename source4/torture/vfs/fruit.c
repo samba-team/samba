@@ -1874,8 +1874,9 @@ static bool test_aapl(struct torture_context *tctx,
 		 * uint32_t ModelStringLen = 10;
 		 * ucs2_t ModelString[5] = "Samba";
 		 */
-		ret = false;
-		goto done;
+		torture_warning(tctx,
+				"(%s) unexpected AAPL context length: %zd, expected 50",
+				__location__, aapl->data.length);
 	}
 
 	aapl_cmd = IVAL(aapl->data.data, 0);
@@ -1913,11 +1914,9 @@ static bool test_aapl(struct torture_context *tctx,
 	aapl_vol_caps = BVAL(aapl->data.data, 24);
 	if (aapl_vol_caps != SMB2_CRTCTX_AAPL_CASE_SENSITIVE) {
 		/* this will fail on a case insensitive fs ... */
-		torture_result(tctx, TORTURE_FAIL,
-			       "(%s) unexpected vol_caps: %d",
-			       __location__, (int)aapl_vol_caps);
-		ret = false;
-		goto done;
+		torture_warning(tctx,
+				"(%s) unexpected vol_caps: %d",
+				__location__, (int)aapl_vol_caps);
 	}
 
 	ret = convert_string_talloc(mem_ctx,
@@ -1983,7 +1982,7 @@ static bool test_aapl(struct torture_context *tctx,
 	 */
 
 	ZERO_STRUCT(io);
-	io.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	io.in.desired_access = SEC_RIGHTS_DIR_READ;
 	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
 	io.in.share_access = (NTCREATEX_SHARE_ACCESS_READ |
