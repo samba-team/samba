@@ -1207,6 +1207,7 @@ static bool enable_aapl(struct torture_context *tctx,
 				   SMB2_CRTCTX_AAPL_SUPPORTS_READ_DIR_ATTR |
 				   SMB2_CRTCTX_AAPL_SUPPORTS_NFS_ACE |
 				   SMB2_CRTCTX_AAPL_SUPPORTS_OSX_COPYFILE);
+	bool is_osx_server = torture_setting_bool(tctx, "osx", false);
 
 	ZERO_STRUCT(io);
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1249,7 +1250,10 @@ static bool enable_aapl(struct torture_context *tctx,
 	aapl = smb2_create_blob_find(&io.out.blobs,
 				     SMB2_CREATE_TAG_AAPL);
 	torture_assert_goto(tctx, aapl != NULL, ret, done, "missing AAPL context");
-	torture_assert_goto(tctx, aapl->data.length == 50, ret, done, "bad AAPL size");
+
+	if (!is_osx_server) {
+		torture_assert_goto(tctx, aapl->data.length == 50, ret, done, "bad AAPL size");
+	}
 
 	aapl_server_caps = BVAL(aapl->data.data, 16);
 	torture_assert_goto(tctx, aapl_server_caps == expexted_scaps,
@@ -2746,6 +2750,8 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
  * some tests torture must be run on the host it tests and takes an additional
  * argument with the local path to the share:
  * "--option=torture:localdir=<SHAREPATH>".
+ *
+ * When running against an OS X SMB server add "--option=torture:osx=true"
  */
 struct torture_suite *torture_vfs_fruit(void)
 {
