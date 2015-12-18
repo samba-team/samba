@@ -44,7 +44,7 @@ bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
 # Simple tests for LDAP and CLDAP
 for auth_type in ['', '-k no', '-k yes']:
-    for auth_level in ['', '--sign', '--encrypt']:
+    for auth_level in ['--option=clientldapsaslwrapping=plain', '--sign', '--encrypt']:
         creds = '-U"$USERNAME%$PASSWORD"'
         options = creds + ' ' + auth_type + ' ' + auth_level
         plantestsuite("samba4.ldb.ldap with options %r(ad_dc_ntvfs)" % options, "ad_dc_ntvfs", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
