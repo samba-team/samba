@@ -76,6 +76,71 @@ get_real_iface ()
     esac
 }
 
+# Check whether an interface is operational
+interface_monitor ()
+{
+    _iface="$1"
+
+    _iface_info=$(ip link show "$_iface" 2>&1) || {
+	echo "ERROR: Monitored interface ${_iface} does not exist"
+	return 1
+    }
+
+
+    # If the interface is a virtual one (e.g. VLAN) then get the
+    # underlying interface.
+    _realiface=$(get_real_iface "$_iface_info")
+
+    if _bi=$(get_proc "net/bonding/${_realiface}" 2>/dev/null) ; then
+	# This is a bond: various monitoring strategies
+	echo "$_bi" | grep -q 'Currently Active Slave: None' && {
+	    echo "ERROR: No active slaves for bond device ${_realiface}"
+	    return 1
+	}
+	echo "$_bi" | grep -q '^MII Status: up' || {
+	    echo "ERROR: public network interface ${_realiface} is down"
+	    return 1
+	}
+	echo "$_bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
+	    # This works around a bug in the driver where the
+	    # overall bond status can be up but none of the actual
+	    # physical interfaces have a link.
+	    echo "$_bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
+		echo "ERROR: No active slaves for 802.ad bond device ${_realiface}"
+		return 1
+	    }
+	}
+
+	return 0
+    else
+	# Not a bond
+	case "$_iface" in
+	    lo*)
+		# loopback is always working
+		return 0
+		;;
+	    ib*)
+		# we don't know how to test ib links
+		return 0
+		;;
+	    *)
+		ethtool "$_iface" | grep -q 'Link detected: yes' || {
+		    # On some systems, this is not successful when a
+		    # cable is plugged but the interface has not been
+		    # brought up previously. Bring the interface up
+		    # and try again...
+		    ip link set "$_iface" up
+		    ethtool "$_iface" | grep -q 'Link detected: yes' || {
+			echo "ERROR: No link on the public network interface ${_iface}"
+			return 1
+		    }
+		}
+		return 0
+		;;
+	esac
+    fi
+}
+
 monitor_interfaces()
 {
 	get_all_interfaces
@@ -87,69 +152,12 @@ monitor_interfaces()
 	# all interfaces so that the correct state for each interface
 	# is set in CTDB using mark_up/mark_down.  If there is a
 	# problem with an interface then set fail=true and continue.
-	for iface in $all_interfaces ; do
-
-	    _iface_info=$(ip link show $iface 2>&1) || {
-		echo "ERROR: Interface $iface does not exist but it is used by public addresses."
-		mark_down $iface
-		continue
-	    }
-
-	    # These interfaces are sometimes bond devices
-	    # When we use VLANs for bond interfaces, there will only
-	    # be an entry in /proc for the underlying real interface
-	    realiface=$(get_real_iface "$_iface_info")
-	    bi=$(get_proc "net/bonding/$realiface" 2>/dev/null) && {
-		echo "$bi" | grep -q 'Currently Active Slave: None' && {
-			echo "ERROR: No active slaves for bond device $realiface"
-			mark_down $iface
-			continue
-		}
-		echo "$bi" | grep -q '^MII Status: up' || {
-			echo "ERROR: public network interface $realiface is down"
-			mark_down $iface
-			continue
-		}
-		echo "$bi" | grep -q '^Bonding Mode: IEEE 802.3ad Dynamic link aggregation' && {
-			# This works around a bug in the driver where the
-			# overall bond status can be up but none of the actual
-			# physical interfaces have a link.
-			echo "$bi" | grep 'MII Status:' | tail -n +2 | grep -q '^MII Status: up' || {
-				echo "ERROR: No active slaves for 802.ad bond device $realiface"
-				mark_down $iface
-				continue
-			}
-		}
-		mark_up $iface
-		continue
-	    }
-
-	    case $iface in
-	    lo*)
-		# loopback is always working
-		mark_up $iface
-		;;
-	    ib*)
-		# we don't know how to test ib links
-		mark_up $iface
-		;;
-	    *)
-		ethtool $iface | grep -q 'Link detected: yes' || {
-		    # On some systems, this is not successful when a
-		    # cable is plugged but the interface has not been
-		    # brought up previously. Bring the interface up
-		    # and try again...
-		    ip link set $iface up
-		    ethtool $iface | grep -q 'Link detected: yes' || {
-			echo "ERROR: No link on the public network interface $iface"
-			mark_down $iface
-			continue
-		    }
-		}
-		mark_up $iface
-		;;
-	    esac
-
+	for _iface in $all_interfaces ; do
+		if interface_monitor "$_iface" ; then
+			mark_up "$_iface"
+		else
+			mark_down "$_iface"
+		fi
 	done
 
 	if ! $fail ; then
