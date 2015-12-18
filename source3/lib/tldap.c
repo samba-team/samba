@@ -589,6 +589,7 @@ static void tldap_msg_received(struct tevent_req *subreq)
 	received = read_ldap_recv(subreq, talloc_tos(), &inbuf, &err);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
+		ld->server_down = true;
 		status = TLDAP_SERVER_DOWN;
 		goto fail;
 	}
