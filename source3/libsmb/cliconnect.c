@@ -3152,6 +3152,8 @@ fail:
 struct cli_start_connection_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
+	int min_protocol;
+	int max_protocol;
 };
 
 static void cli_start_connection_connected(struct tevent_req *subreq);
@@ -3181,6 +3183,14 @@ static struct tevent_req *cli_start_connection_send(
 	}
 	state->ev = ev;
 
+	if (signing_state == SMB_SIGNING_IPC_DEFAULT) {
+		state->min_protocol = lp_client_ipc_min_protocol();
+		state->max_protocol = lp_client_ipc_max_protocol();
+	} else {
+		state->min_protocol = lp_client_min_protocol();
+		state->max_protocol = lp_client_max_protocol();
+	}
+
 	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss, port,
 				     0x20, my_name, signing_state, flags);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3206,8 +3216,8 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 
 	subreq = smbXcli_negprot_send(state, state->ev, state->cli->conn,
 				      state->cli->timeout,
-				      lp_client_min_protocol(),
-				      lp_client_max_protocol());
+				      state->min_protocol,
+				      state->max_protocol);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
