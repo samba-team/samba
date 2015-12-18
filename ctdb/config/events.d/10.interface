@@ -291,7 +291,7 @@ case "$1" in
 	_ip=$4
 	_maskbits=$5
 
-	get_iface_ip_maskbits_family "$_oiface" "$ip" "$maskbits"
+	get_iface_ip_maskbits_family "$_oiface" "$_ip" "$_maskbits"
 	oiface="$iface"
 
 	# we do an extra delete to cope with the script being killed
