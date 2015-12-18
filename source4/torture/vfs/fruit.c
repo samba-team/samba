@@ -1264,8 +1264,8 @@ done:
 	return ret;
 }
 
-static bool test_read_atalk_metadata(struct torture_context *tctx,
-				     struct smb2_tree *tree)
+static bool test_read_netatalk_metadata(struct torture_context *tctx,
+					struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_read_metadata";
@@ -1273,8 +1273,14 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 	struct smb2_handle testdirh;
 	bool ret = true;
 	ssize_t len;
+	const char *localdir = NULL;
 
 	torture_comment(tctx, "Checking metadata access\n");
+
+	localdir = torture_setting_string(tctx, "localdir", NULL);
+	if (localdir == NULL) {
+		torture_skip(tctx, "Need localdir for test");
+	}
 
 	smb2_util_unlink(tree, fname);
 
@@ -1295,14 +1301,17 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 		goto done;
 	}
 
-	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
-			    0, 60, 0, 4, "AFP");
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 0, 4, "AFP");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
 
-	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
-			    0, 60, 16, 8, "BARRFOOO");
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, "BARRFOOO");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
 
-	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
-			    16, 8, 0, 8, "BARRFOOO");
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   16, 8, 0, 8, "BARRFOOO");
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
 
 	/* Check reading offset and read size > sizeof(AFPINFO_STREAM) */
 
@@ -2772,7 +2781,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
 	torture_suite_add_1smb2_test(suite, "copyfile", test_copyfile);
-	torture_suite_add_1smb2_test(suite, "read metadata", test_read_atalk_metadata);
+	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "write metadata", test_write_atalk_metadata);
 	torture_suite_add_1smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
 	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
