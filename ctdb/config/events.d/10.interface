@@ -52,7 +52,9 @@ get_all_interfaces ()
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
 }
 
-get_real_iface ()
+# If the interface is a virtual one (e.g. VLAN) then get the
+# underlying interface
+interface_get_real ()
 {
     # Output of "ip link show <iface>"
     _iface_info="$1"
@@ -89,7 +91,7 @@ interface_monitor ()
 
     # If the interface is a virtual one (e.g. VLAN) then get the
     # underlying interface.
-    _realiface=$(get_real_iface "$_iface_info")
+    _realiface=$(interface_get_real "$_iface_info")
 
     if _bi=$(get_proc "net/bonding/${_realiface}" 2>/dev/null) ; then
 	# This is a bond: various monitoring strategies
