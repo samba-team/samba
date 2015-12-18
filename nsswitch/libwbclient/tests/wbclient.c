@@ -22,6 +22,7 @@
 #include "libcli/util/werror.h"
 #include "lib/util/data_blob.h"
 #include "lib/util/time.h"
+#include "libcli/resolve/resolve.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
@@ -418,10 +419,21 @@ static bool test_wbc_resolve_winsbyname(struct torture_context *tctx)
 static bool test_wbc_resolve_winsbyip(struct torture_context *tctx)
 {
 	const char *ip;
+	const char *host;
+	struct nbt_name nbt_name;
 	char *name;
 	wbcErr ret;
+	NTSTATUS status;
 
-	ip = torture_setting_string(tctx, "host", NULL);
+	host = torture_setting_string(tctx, "host", NULL);
+
+	make_nbt_name_server(&nbt_name, host);
+
+	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
+				 0, 0, &nbt_name, tctx, &ip, tctx->ev);
+	torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx,"Failed to resolve %s: %s",
+					nbt_name.name, nt_errstr(status)));
 
 	ret = wbcResolveWinsByIP(ip, &name);
 
