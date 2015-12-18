@@ -1749,6 +1749,12 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 	bool ret = true;
 	const char *data = "This resource fork intentionally left blank";
 	size_t datalen = strlen(data);
+	const char *localdir = NULL;
+
+	localdir = torture_setting_string(tctx, "localdir", NULL);
+	if (localdir == NULL) {
+		torture_skip(tctx, "Need localdir for test");
+	}
 
 	smb2_util_unlink(tree, fname);
 
