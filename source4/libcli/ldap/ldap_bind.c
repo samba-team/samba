@@ -495,6 +495,20 @@ try_logon_again:
 	conn->bind.type = LDAP_BIND_SASL;
 	conn->bind.creds = creds;
 
+	if (wrap_flags & ADS_AUTH_SASL_SEAL) {
+		if (!gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
+		if (!gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+	} else if (wrap_flags & ADS_AUTH_SASL_SIGN) {
+		if (!gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN)) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+	}
+
 	if (!gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) &&
 	    !gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
 		return NT_STATUS_OK;
