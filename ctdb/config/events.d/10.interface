@@ -30,7 +30,6 @@ get_all_interfaces ()
 
     # Add some special interfaces if they're defined
     [ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"
-    [ "$CTDB_NATGW_PUBLIC_IFACE" ] && all_interfaces="$CTDB_NATGW_PUBLIC_IFACE $all_interfaces"
 
     # Get the interfaces for which CTDB has public IPs configured.
     # That is, for all but the 1st line, get the 1st field.

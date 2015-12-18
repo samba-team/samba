@@ -239,6 +239,14 @@ case "$1" in
 	natgw_clear
 	;;
 
+    monitor)
+	natgw_check_config
+
+	if [ -n "$CTDB_NATGW_PUBLIC_IFACE" ] ; then
+	    interface_monitor "$CTDB_NATGW_PUBLIC_IFACE" || exit 1
+	fi
+	;;
+
     *)
 	ctdb_standard_event_handler "@"
 	;;
