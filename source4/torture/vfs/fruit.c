@@ -1462,8 +1462,7 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 
 	ZERO_STRUCT(io);
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
-	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
-		SEC_FILE_WRITE_ATTRIBUTE;
+	io.smb2.in.desired_access = SEC_FILE_ALL;
 	io.smb2.in.fname = rfork;
 	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
