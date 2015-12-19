@@ -2668,13 +2668,19 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 		char afpinfo_buf[AFP_INFO_SIZE];
 		size_t to_return;
 
-		if ((offset < 0) || (offset >= AFP_INFO_SIZE)) {
+		/*
+		 * OS X has a off-by-1 error in the offset calculation, so we're
+		 * bug compatible here. It won't hurt, as any relevant real
+		 * world read requests from the AFP_AfpInfo stream will be
+		 * offset=0 n=60. offset is ignored anyway, see below.
+		 */
+		if ((offset < 0) || (offset >= AFP_INFO_SIZE + 1)) {
 			len = 0;
 			rc = 0;
 			goto exit;
 		}
 
-		to_return = AFP_INFO_SIZE - offset;
+		to_return = MIN(n, AFP_INFO_SIZE);
 
 		ai = afpinfo_new(talloc_tos());
 		if (ai == NULL) {
@@ -2697,7 +2703,10 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 			goto exit;
 		}
 
-		memcpy(data, afpinfo_buf + offset, to_return);
+		/*
+		 * OS X ignores offset when reading from AFP_AfpInfo stream!
+		 */
+		memcpy(data, afpinfo_buf, to_return);
 		len = to_return;
 	} else {
 		len = SMB_VFS_NEXT_PREAD(
