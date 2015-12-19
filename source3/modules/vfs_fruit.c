@@ -2446,27 +2446,8 @@ static int fruit_unlink(vfs_handle_struct *handle,
 	}
 
 	if (is_afpresource_stream(smb_fname)) {
-		if (config->rsrc == FRUIT_RSRC_ADFILE) {
-			char *adp = NULL;
-
-			rc = adouble_path(talloc_tos(),
-					  smb_fname->base_name, &adp);
-			if (rc != 0) {
-				return -1;
-			}
-			/* FIXME: direct unlink(), missing smb_fname */
-			rc = unlink(adp);
-			if ((rc == -1) && (errno == ENOENT)) {
-				rc = 0;
-			}
-			TALLOC_FREE(adp);
-		} else {
-			rc = SMB_VFS_REMOVEXATTR(handle->conn,
-						 smb_fname->base_name,
-						 AFPRESOURCE_EA_NETATALK);
-		}
-
-		return rc;
+		/* OS X ignores deletes on the AFP_Resource stream */
+		return 0;
 	}
 
 	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
