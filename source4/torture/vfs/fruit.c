@@ -1310,7 +1310,7 @@ static bool test_read_netatalk_metadata(struct torture_context *tctx,
 	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
 
 	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
-			   16, 8, 0, 8, "BARRFOOO");
+			   16, 8, 0, 3, "AFP");
 	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
 
 	/* Check reading offset and read size > sizeof(AFPINFO_STREAM) */
@@ -1321,11 +1321,11 @@ static bool test_read_netatalk_metadata(struct torture_context *tctx,
 
 	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 59, 2);
-	CHECK_VALUE(len, 1);
+	CHECK_VALUE(len, 2);
 
 	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 60, 1);
-	CHECK_VALUE(len, 0);
+	CHECK_VALUE(len, 1);
 
 	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 61, 1);
