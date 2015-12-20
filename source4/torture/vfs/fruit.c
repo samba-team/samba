@@ -1256,8 +1256,7 @@ done:
 }
 
 static bool test_read_atalk_metadata(struct torture_context *tctx,
-				     struct smb2_tree *tree1,
-				     struct smb2_tree *tree2)
+				     struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_read_metadata";
@@ -1321,8 +1320,7 @@ done:
 }
 
 static bool test_write_atalk_metadata(struct torture_context *tctx,
-				      struct smb2_tree *tree1,
-				      struct smb2_tree *tree2)
+				      struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_write_metadata";
@@ -1360,8 +1358,7 @@ done:
 }
 
 static bool test_write_atalk_rfork_io(struct torture_context *tctx,
-				      struct smb2_tree *tree1,
-				      struct smb2_tree *tree2)
+				      struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_write_rfork_io";
@@ -1496,8 +1493,7 @@ done:
 }
 
 static bool test_rfork_truncate(struct torture_context *tctx,
-				struct smb2_tree *tree1,
-				struct smb2_tree *tree2)
+				struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_rfork_truncate";
@@ -1613,8 +1609,7 @@ done:
 }
 
 static bool test_rfork_create(struct torture_context *tctx,
-			      struct smb2_tree *tree1,
-			      struct smb2_tree *tree2)
+			      struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_rfork_create";
@@ -1734,8 +1729,7 @@ done:
 }
 
 static bool test_adouble_conversion(struct torture_context *tctx,
-				    struct smb2_tree *tree1,
-				    struct smb2_tree *tree2)
+				    struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\test_adouble_conversion";
@@ -1780,8 +1774,7 @@ done:
 }
 
 static bool test_aapl(struct torture_context *tctx,
-		      struct smb2_tree *tree1,
-		      struct smb2_tree *tree2)
+		      struct smb2_tree *tree1)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\test_aapl";
@@ -2549,8 +2542,7 @@ static bool check_stream_list(struct smb2_tree *tree,
   test stream names
 */
 static bool test_stream_names(struct torture_context *tctx,
-			      struct smb2_tree *tree,
-			      struct smb2_tree *tree2)
+			      struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	NTSTATUS status;
@@ -2623,8 +2615,7 @@ done:
 
 /* Renaming a directory with open file, should work for OS X AAPL clients */
 static bool test_rename_dir_openfile(struct torture_context *torture,
-				     struct smb2_tree *tree1,
-				     struct smb2_tree *tree2)
+				     struct smb2_tree *tree1)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -2755,11 +2746,10 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 }
 
 /*
- * Note: This test depends on "vfs objects = catia fruit
- * streams_xattr".  Note: To run this test, use
- * "--option=torture:share1=<SHARENAME1>
- * --option=torture:share2=<SHARENAME2>
- * --option=torture:localdir=<SHAREPATH>"
+ * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
+ * some tests torture must be run on the host it tests and takes an additional
+ * argument with the local path to the share:
+ * "--option=torture:localdir=<SHAREPATH>".
  */
 struct torture_suite *torture_vfs_fruit(void)
 {
@@ -2769,15 +2759,15 @@ struct torture_suite *torture_vfs_fruit(void)
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
 	torture_suite_add_1smb2_test(suite, "copyfile", test_copyfile);
-	torture_suite_add_2ns_smb2_test(suite, "read metadata", test_read_atalk_metadata);
-	torture_suite_add_2ns_smb2_test(suite, "write metadata", test_write_atalk_metadata);
-	torture_suite_add_2ns_smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
-	torture_suite_add_2ns_smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
-	torture_suite_add_2ns_smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
-	torture_suite_add_2ns_smb2_test(suite, "stream names", test_stream_names);
-	torture_suite_add_2ns_smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
-	torture_suite_add_2ns_smb2_test(suite, "opening and creating resource fork", test_rfork_create);
-	torture_suite_add_2ns_smb2_test(suite, "rename_dir_openfile", test_rename_dir_openfile);
+	torture_suite_add_1smb2_test(suite, "read metadata", test_read_atalk_metadata);
+	torture_suite_add_1smb2_test(suite, "write metadata", test_write_atalk_metadata);
+	torture_suite_add_1smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
+	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
+	torture_suite_add_1smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
+	torture_suite_add_1smb2_test(suite, "stream names", test_stream_names);
+	torture_suite_add_1smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
+	torture_suite_add_1smb2_test(suite, "opening and creating resource fork", test_rfork_create);
+	torture_suite_add_1smb2_test(suite, "rename_dir_openfile", test_rename_dir_openfile);
 
 	return suite;
 }
