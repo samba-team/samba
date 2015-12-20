@@ -100,7 +100,6 @@ bool asn1_check_enumerated(struct asn1_data *data, int v);
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v);
 bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob);
 void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len);
-NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
 NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
 
 #endif /* _ASN_1_H */
