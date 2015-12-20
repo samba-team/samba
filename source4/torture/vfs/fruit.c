@@ -3098,6 +3098,58 @@ done:
 	return ret;
 }
 
+static bool test_afpinfo_all0(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_handle h1;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = BASEDIR "\\file";
+	const char *type_creator = "SMB,OLE!";
+	AfpInfo *info = NULL;
+	const char *streams_basic[] = {
+		"::$DATA"
+	};
+	const char *streams_afpinfo[] = {
+		"::$DATA",
+		AFPINFO_STREAM
+	};
+
+	torture_assert_goto(tctx, mem_ctx != NULL, ret, done, "talloc_new");
+
+	torture_comment(tctx, "Write all 0 to AFP_AfpInfo and see what happens\n");
+
+	smb2_deltree(tree, BASEDIR);
+	status = torture_smb2_testdir(tree, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
+	smb2_util_close(tree, h1);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, info != NULL, ret, done, "torture_afpinfo_new failed");
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ret = check_stream_list(tree, tctx, fname, 2, streams_afpinfo, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	/* Write all 0 to AFP_AfpInfo */
+	memset(info->afpi_FinderInfo, 0, AFP_FinderSize);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ret = check_stream_list(tree, tctx, fname, 1, streams_basic, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_util_rmdir(tree, BASEDIR);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -3127,6 +3179,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "create delete-on-close AFP_AfpInfo", test_create_delete_on_close);
 	torture_suite_add_1smb2_test(suite, "setinfo delete-on-close AFP_AfpInfo", test_setinfo_delete_on_close);
 	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpInfo", test_setinfo_eof);
+	torture_suite_add_1smb2_test(suite, "delete AFP_AfpInfo by writing all 0", test_afpinfo_all0);
 
 	return suite;
 }
