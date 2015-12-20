@@ -1189,7 +1189,7 @@ static bool torture_setup_file(TALLOC_CTX *mem_ctx, struct smb2_tree *tree,
 }
 
 static bool enable_aapl(struct torture_context *tctx,
-			struct smb2_tree *tree1)
+			struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	NTSTATUS status;
@@ -1230,10 +1230,10 @@ static bool enable_aapl(struct torture_context *tctx,
 	status = smb2_create_blob_add(tctx, &io.in.blobs, "AAPL", data);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create_blob_add");
 
-	status = smb2_create(tree1, tctx, &io);
+	status = smb2_create(tree, tctx, &io);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 
-	status = smb2_util_close(tree1, io.out.file.handle);
+	status = smb2_util_close(tree, io.out.file.handle);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_close");
 
 	/*
@@ -1256,7 +1256,7 @@ done:
 }
 
 static bool test_read_atalk_metadata(struct torture_context *tctx,
-				     struct smb2_tree *tree1)
+				     struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_read_metadata";
@@ -1267,13 +1267,13 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 
 	torture_comment(tctx, "Checking metadata access\n");
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
-	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
 	if (ret == false) {
 		goto done;
 	}
@@ -1286,41 +1286,41 @@ static bool test_read_atalk_metadata(struct torture_context *tctx,
 		goto done;
 	}
 
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
 			    0, 60, 0, 4, "AFP");
 
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
 			    0, 60, 16, 8, "BARRFOOO");
 
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
 			    16, 8, 0, 8, "BARRFOOO");
 
 	/* Check reading offset and read size > sizeof(AFPINFO_STREAM) */
 
-	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 0, 61);
 	CHECK_VALUE(len, 60);
 
-	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 59, 2);
 	CHECK_VALUE(len, 1);
 
-	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 60, 1);
 	CHECK_VALUE(len, 0);
 
-	len = read_stream(tree1, __location__, tctx, mem_ctx, fname,
+	len = read_stream(tree, __location__, tctx, mem_ctx, fname,
 			  AFPINFO_STREAM, 61, 1);
 	CHECK_VALUE(len, 0);
 
 done:
-	smb2_deltree(tree1, BASEDIR);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static bool test_write_atalk_metadata(struct torture_context *tctx,
-				      struct smb2_tree *tree1)
+				      struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_write_metadata";
@@ -1330,13 +1330,13 @@ static bool test_write_atalk_metadata(struct torture_context *tctx,
 	bool ret = true;
 	AfpInfo *info;
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
-	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
 	if (ret == false) {
 		goto done;
 	}
@@ -1347,18 +1347,18 @@ static bool test_write_atalk_metadata(struct torture_context *tctx,
 	}
 
 	memcpy(info->afpi_FinderInfo, type_creator, 8);
-	ret = torture_write_afpinfo(tree1, tctx, mem_ctx, fname, info);
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	ret &= check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
 			    0, 60, 16, 8, type_creator);
 
 done:
-	smb2_deltree(tree1, BASEDIR);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static bool test_write_atalk_rfork_io(struct torture_context *tctx,
-				      struct smb2_tree *tree1)
+				      struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_write_rfork_io";
@@ -1373,13 +1373,13 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	union smb_fileinfo finfo;
 	union smb_setfileinfo sinfo;
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
-	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
 	if (ret == false) {
 		goto done;
 	}
@@ -1387,11 +1387,11 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	torture_comment(tctx, "(%s) writing to resource fork\n",
 	    __location__);
 
-	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
+	ret &= write_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    10, 10, rfork_content);
 
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx,
+	ret &= check_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    0, 20, 10, 10, rfork_content);
 
@@ -1402,7 +1402,7 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
 		SEC_FILE_WRITE_ATTRIBUTE;
 	io.smb2.in.fname = rfork;
-	status = smb2_create(tree1, mem_ctx, &(io.smb2));
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 	filehandle = io.smb2.out.file.handle;
 
@@ -1412,28 +1412,28 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	ZERO_STRUCT(finfo);
 	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
 	finfo.generic.in.file.handle = filehandle;
-	status = smb2_getinfo_file(tree1, mem_ctx, &finfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	if (finfo.all_info.out.size != 20) {
 		torture_result(tctx, TORTURE_FAIL,
 			       "(%s) Incorrect resource fork size\n",
 			       __location__);
 		ret = false;
-		smb2_util_close(tree1, filehandle);
+		smb2_util_close(tree, filehandle);
 		goto done;
 	}
-	smb2_util_close(tree1, filehandle);
+	smb2_util_close(tree, filehandle);
 
 	/* Write at large offset */
 
 	torture_comment(tctx, "(%s) writing to resource fork at large offset\n",
 			__location__);
 
-	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
+	ret &= write_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    (off_t)1<<32, 10, rfork_content);
 
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx,
+	ret &= check_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    (off_t)1<<32, 10, 0, 10, rfork_content);
 
@@ -1447,7 +1447,7 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
 		SEC_FILE_WRITE_ATTRIBUTE;
 	io.smb2.in.fname = rfork;
-	status = smb2_create(tree1, mem_ctx, &(io.smb2));
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 	filehandle = io.smb2.out.file.handle;
 
@@ -1456,10 +1456,10 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 		RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 	sinfo.end_of_file_info.in.file.handle = filehandle;
 	sinfo.end_of_file_info.in.size = 1;
-	status = smb2_setinfo_file(tree1, &sinfo);
+	status = smb2_setinfo_file(tree, &sinfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	smb2_util_close(tree1, filehandle);
+	smb2_util_close(tree, filehandle);
 
 	/* Now check size */
 	ZERO_STRUCT(io);
@@ -1467,33 +1467,33 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
 		SEC_FILE_WRITE_ATTRIBUTE;
 	io.smb2.in.fname = rfork;
-	status = smb2_create(tree1, mem_ctx, &(io.smb2));
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 	filehandle = io.smb2.out.file.handle;
 
 	ZERO_STRUCT(finfo);
 	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
 	finfo.generic.in.file.handle = filehandle;
-	status = smb2_getinfo_file(tree1, mem_ctx, &finfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	if (finfo.all_info.out.size != 1) {
 		torture_result(tctx, TORTURE_FAIL,
 			       "(%s) Incorrect resource fork size\n",
 			       __location__);
 		ret = false;
-		smb2_util_close(tree1, filehandle);
+		smb2_util_close(tree, filehandle);
 		goto done;
 	}
-	smb2_util_close(tree1, filehandle);
+	smb2_util_close(tree, filehandle);
 
 done:
-	smb2_deltree(tree1, BASEDIR);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static bool test_rfork_truncate(struct torture_context *tctx,
-				struct smb2_tree *tree1)
+				struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_rfork_truncate";
@@ -1506,18 +1506,18 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	struct smb2_handle fh1, fh2, fh3;
 	union smb_setfileinfo sinfo;
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
-	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
 	if (ret == false) {
 		goto done;
 	}
 
-	ret &= write_stream(tree1, __location__, tctx, mem_ctx,
+	ret &= write_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    10, 10, rfork_content);
 
@@ -1534,7 +1534,7 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 	fh1 = create.out.file.handle;
 
@@ -1546,7 +1546,7 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 	fh2 = create.out.file.handle;
 
@@ -1554,7 +1554,7 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	sinfo.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFORMATION;
 	sinfo.end_of_file_info.in.file.handle = fh2;
 	sinfo.end_of_file_info.in.size = 0;
-	status = smb2_setinfo_file(tree1, &sinfo);
+	status = smb2_setinfo_file(tree, &sinfo);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_setinfo_file");
 
 	/*
@@ -1568,7 +1568,7 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
 
 	/*
@@ -1586,30 +1586,30 @@ static bool test_rfork_truncate(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 	fh3 = create.out.file.handle;
 
-	status = smb2_util_write(tree1, fh3, "foo", 0, 3);
+	status = smb2_util_write(tree, fh3, "foo", 0, 3);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_write");
 
-	smb2_util_close(tree1, fh3);
-	smb2_util_close(tree1, fh2);
-	smb2_util_close(tree1, fh1);
+	smb2_util_close(tree, fh3);
+	smb2_util_close(tree, fh2);
+	smb2_util_close(tree, fh1);
 
-	ret = check_stream(tree1, __location__, tctx, mem_ctx, fname, AFPRESOURCE_STREAM,
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPRESOURCE_STREAM,
 			   0, 3, 0, 3, "foo");
 	torture_assert_goto(tctx, ret == true, ret, done, "check_stream");
 
 done:
-	smb2_util_unlink(tree1, fname);
-	smb2_deltree(tree1, BASEDIR);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static bool test_rfork_create(struct torture_context *tctx,
-			      struct smb2_tree *tree1)
+			      struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\torture_rfork_create";
@@ -1624,13 +1624,13 @@ static bool test_rfork_create(struct torture_context *tctx,
 	};
 	union smb_fileinfo finfo;
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir");
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
-	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
 	if (ret == false) {
 		goto done;
 	}
@@ -1646,7 +1646,7 @@ static bool test_rfork_create(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
 
 	torture_comment(tctx, "(%s) create resource fork\n", __location__);
@@ -1659,7 +1659,7 @@ static bool test_rfork_create(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 	fh1 = create.out.file.handle;
 
@@ -1669,14 +1669,14 @@ static bool test_rfork_create(struct torture_context *tctx,
 	ZERO_STRUCT(finfo);
 	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
 	finfo.generic.in.file.handle = fh1;
-	status = smb2_getinfo_file(tree1, mem_ctx, &finfo);
+	status = smb2_getinfo_file(tree, mem_ctx, &finfo);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_getinfo_file");
 	if (finfo.all_info.out.size != 0) {
 		torture_result(tctx, TORTURE_FAIL,
 			       "(%s) Incorrect resource fork size\n",
 			       __location__);
 		ret = false;
-		smb2_util_close(tree1, fh1);
+		smb2_util_close(tree, fh1);
 		goto done;
 	}
 
@@ -1691,7 +1691,7 @@ static bool test_rfork_create(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
 
 	ZERO_STRUCT(create);
@@ -1699,17 +1699,17 @@ static bool test_rfork_create(struct torture_context *tctx,
 	create.in.create_disposition = NTCREATEX_DISP_OPEN;
 	create.in.desired_access = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
 	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create");
 
-	ret = check_stream_list(tree1, tctx, fname, 1, streams,
+	ret = check_stream_list(tree, tctx, fname, 1, streams,
 				create.out.file.handle);
 	torture_assert_goto(tctx, ret == true, ret, done, "check_stream_list");
-	smb2_util_close(tree1, create.out.file.handle);
+	smb2_util_close(tree, create.out.file.handle);
 
 	torture_comment(tctx, "(%s) close empty created rfork, open should return ENOENT\n",
 			__location__);
-	smb2_util_close(tree1, fh1);
+	smb2_util_close(tree, fh1);
 	ZERO_STRUCT(create);
 	create.in.create_disposition  = NTCREATEX_DISP_OPEN;
 	create.in.desired_access      = SEC_STD_READ_CONTROL | SEC_FILE_ALL;
@@ -1718,18 +1718,18 @@ static bool test_rfork_create(struct torture_context *tctx,
 	create.in.share_access        = NTCREATEX_SHARE_ACCESS_DELETE |
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	status = smb2_create(tree1, mem_ctx, &create);
+	status = smb2_create(tree, mem_ctx, &create);
 	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND, ret, done, "smb2_create");
 
 done:
-	smb2_util_unlink(tree1, fname);
-	smb2_deltree(tree1, BASEDIR);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static bool test_adouble_conversion(struct torture_context *tctx,
-				    struct smb2_tree *tree1)
+				    struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\test_adouble_conversion";
@@ -1741,11 +1741,11 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 	const char *data = "This resource fork intentionally left blank";
 	size_t datalen = strlen(data);
 
-	smb2_util_unlink(tree1, fname);
+	smb2_util_unlink(tree, fname);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
 	ret = torture_setup_local_file(tctx, "localdir", fname_local,
 				       NULL, 0);
@@ -1763,18 +1763,18 @@ static bool test_adouble_conversion(struct torture_context *tctx,
 	torture_comment(tctx, "(%s) test OS X AppleDouble conversion\n",
 	    __location__);
 
-	ret &= check_stream(tree1, __location__, tctx, mem_ctx,
+	ret &= check_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM,
 			    16, datalen, 0, datalen, data);
 
 done:
-	smb2_deltree(tree1, BASEDIR);
+	smb2_deltree(tree, BASEDIR);
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static bool test_aapl(struct torture_context *tctx,
-		      struct smb2_tree *tree1)
+		      struct smb2_tree *tree)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	const char *fname = BASEDIR "\\test_aapl";
@@ -1797,11 +1797,11 @@ static bool test_aapl(struct torture_context *tctx,
 	union smb_search_data *d;
 	uint64_t rfork_len;
 
-	smb2_deltree(tree1, BASEDIR);
+	smb2_deltree(tree, BASEDIR);
 
-	status = torture_smb2_testdir(tree1, BASEDIR, &testdirh);
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	smb2_util_close(tree1, testdirh);
+	smb2_util_close(tree, testdirh);
 
 	ZERO_STRUCT(io);
 	io.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1831,9 +1831,9 @@ static bool test_aapl(struct torture_context *tctx,
 	status = smb2_create_blob_add(tctx, &io.in.blobs, "AAPL", data);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb2_create(tree1, tctx, &io);
+	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	status = smb2_util_close(tree1, io.out.file.handle);
+	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	/*
@@ -1927,7 +1927,7 @@ static bool test_aapl(struct torture_context *tctx,
 	 * Now that Requested AAPL extensions are enabled, setup some
 	 * Mac files with metadata and resource fork
 	 */
-	ret = torture_setup_file(mem_ctx, tree1, fname, false);
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
 	if (ret == false) {
 		torture_result(tctx, TORTURE_FAIL,
 			       "(%s) torture_setup_file() failed",
@@ -1945,7 +1945,7 @@ static bool test_aapl(struct torture_context *tctx,
 	}
 
 	memcpy(info->afpi_FinderInfo, type_creator, 8);
-	ret = torture_write_afpinfo(tree1, tctx, mem_ctx, fname, info);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
 	if (ret == false) {
 		torture_result(tctx, TORTURE_FAIL,
 			       "(%s) torture_write_afpinfo() failed",
@@ -1953,7 +1953,7 @@ static bool test_aapl(struct torture_context *tctx,
 		goto done;
 	}
 
-	ret = write_stream(tree1, __location__, tctx, mem_ctx,
+	ret = write_stream(tree, __location__, tctx, mem_ctx,
 			   fname, AFPRESOURCE_STREAM,
 			   0, 3, "foo");
 	if (ret == false) {
@@ -1976,7 +1976,7 @@ static bool test_aapl(struct torture_context *tctx,
 			      NTCREATEX_SHARE_ACCESS_DELETE);
 	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.fname = BASEDIR;
-	status = smb2_create(tree1, tctx, &io);
+	status = smb2_create(tree, tctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	ZERO_STRUCT(f);
@@ -1986,10 +1986,10 @@ static bool test_aapl(struct torture_context *tctx,
 	f.in.max_response_size	= 0x1000;
 	f.in.level              = SMB2_FIND_ID_BOTH_DIRECTORY_INFO;
 
-	status = smb2_find_level(tree1, tree1, &f, &count, &d);
+	status = smb2_find_level(tree, tree, &f, &count, &d);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	status = smb2_util_close(tree1, io.out.file.handle);
+	status = smb2_util_close(tree, io.out.file.handle);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	if (strcmp(d[0].id_both_directory_info.name.s, "test_aapl") != 0) {
@@ -2615,7 +2615,7 @@ done:
 
 /* Renaming a directory with open file, should work for OS X AAPL clients */
 static bool test_rename_dir_openfile(struct torture_context *torture,
-				     struct smb2_tree *tree1)
+				     struct smb2_tree *tree)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -2625,9 +2625,9 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	struct smb2_handle d1, h1;
 	const char *renamedir = BASEDIR "-new";
 
-	smb2_deltree(tree1, BASEDIR);
-	smb2_util_rmdir(tree1, BASEDIR);
-	smb2_deltree(tree1, renamedir);
+	smb2_deltree(tree, BASEDIR);
+	smb2_util_rmdir(tree, BASEDIR);
+	smb2_deltree(tree, renamedir);
 
 	ZERO_STRUCT(io.smb2);
 	io.generic.level = RAW_OPEN_SMB2;
@@ -2642,7 +2642,7 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	io.smb2.in.security_flags = 0;
 	io.smb2.in.fname = BASEDIR;
 
-	status = smb2_create(tree1, torture, &(io.smb2));
+	status = smb2_create(tree, torture, &(io.smb2));
 	torture_assert_ntstatus_ok(torture, status, "smb2_create dir");
 	d1 = io.smb2.out.file.handle;
 
@@ -2659,7 +2659,7 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	io.smb2.in.security_flags = 0;
 	io.smb2.in.fname = BASEDIR "\\file.txt";
 
-	status = smb2_create(tree1, torture, &(io.smb2));
+	status = smb2_create(tree, torture, &(io.smb2));
 	torture_assert_ntstatus_ok(torture, status, "smb2_create file");
 	h1 = io.smb2.out.file.handle;
 
@@ -2671,20 +2671,20 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	sinfo.rename_information.in.overwrite = 0;
 	sinfo.rename_information.in.root_fid = 0;
 	sinfo.rename_information.in.new_name = renamedir;
-	status = smb2_setinfo_file(tree1, &sinfo);
+	status = smb2_setinfo_file(tree, &sinfo);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_ACCESS_DENIED,
 				      "smb2_setinfo_file");
 
 	ZERO_STRUCT(cl.smb2);
 	cl.smb2.level = RAW_CLOSE_SMB2;
 	cl.smb2.in.file.handle = d1;
-	status = smb2_close(tree1, &(cl.smb2));
+	status = smb2_close(tree, &(cl.smb2));
 	torture_assert_ntstatus_ok(torture, status, "smb2_close");
 	ZERO_STRUCT(d1);
 
 	torture_comment(torture, "Enabling AAPL\n");
 
-	ret = enable_aapl(torture, tree1);
+	ret = enable_aapl(torture, tree);
 	torture_assert(torture, ret == true, "enable_aapl failed");
 
 	torture_comment(torture, "Renaming directory with AAPL\n");
@@ -2700,7 +2700,7 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	io.smb2.in.security_flags = 0;
 	io.smb2.in.fname = BASEDIR;
 
-	status = smb2_create(tree1, torture, &(io.smb2));
+	status = smb2_create(tree, torture, &(io.smb2));
 	torture_assert_ntstatus_ok(torture, status, "smb2_create dir");
 	d1 = io.smb2.out.file.handle;
 
@@ -2716,18 +2716,18 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 	io.smb2.in.fname = BASEDIR;
 	sinfo.rename_information.in.file.handle = d1;
 
-	status = smb2_setinfo_file(tree1, &sinfo);
+	status = smb2_setinfo_file(tree, &sinfo);
 	torture_assert_ntstatus_ok(torture, status, "smb2_setinfo_file");
 
 	ZERO_STRUCT(cl.smb2);
 	cl.smb2.level = RAW_CLOSE_SMB2;
 	cl.smb2.in.file.handle = d1;
-	status = smb2_close(tree1, &(cl.smb2));
+	status = smb2_close(tree, &(cl.smb2));
 	torture_assert_ntstatus_ok(torture, status, "smb2_close");
 	ZERO_STRUCT(d1);
 
 	cl.smb2.in.file.handle = h1;
-	status = smb2_close(tree1, &(cl.smb2));
+	status = smb2_close(tree, &(cl.smb2));
 	torture_assert_ntstatus_ok(torture, status, "smb2_close");
 	ZERO_STRUCT(h1);
 
@@ -2737,11 +2737,11 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = h1;
-		status = smb2_close(tree1, &(cl.smb2));
+		status = smb2_close(tree, &(cl.smb2));
 	}
 
-	smb2_deltree(tree1, BASEDIR);
-	smb2_deltree(tree1, renamedir);
+	smb2_deltree(tree, BASEDIR);
+	smb2_deltree(tree, renamedir);
 	return ret;
 }
 
