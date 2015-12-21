@@ -996,7 +996,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	enum smb_signing_setting smb_sign_client_connections = lp_client_signing();
+	enum smb_signing_setting smb_sign_client_connections = lp_client_ipc_signing();
 
 	if (smb_sign_client_connections == SMB_SIGNING_DEFAULT) {
 		/*
