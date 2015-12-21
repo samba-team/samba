@@ -1095,26 +1095,24 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	size_t expected;
-	NTSTATUS status;
 	bool ok;
 
 	*full_in = data_blob_null;
 
 	if (spnego_state->in_needed == 0) {
 		size_t size = 0;
+		int ret;
 
 		/*
 		 * try to work out the size of the full
 		 * input token, it might be fragmented
 		 */
-		status = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-			status = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
+		ret = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
+		if ((ret != 0) && (ret != EAGAIN)) {
+			ret = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
 		}
 
-		if (NT_STATUS_IS_OK(status) ||
-		    NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		if ((ret == 0) || (ret == EAGAIN)) {
 			spnego_state->in_needed = size;
 		} else {
 			/*
