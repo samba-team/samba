@@ -225,13 +225,14 @@ static bool ntlmssp_AUTHENTICATE_MESSAGE_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, AvPairs.pair[3].AvLen, 46, "AvLen");
 	torture_assert_str_equal(tctx, AvPairs.pair[3].Value.AvDnsComputerName, "mthelena.ber.redhat.com", "Value.AvDnsComputerName");
 
-	torture_assert_int_equal(tctx, AvPairs.pair[4].AvId, MsAvRestrictions, "AvId");
+	torture_assert_int_equal(tctx, AvPairs.pair[4].AvId, MsvAvSingleHost, "AvId");
 	torture_assert_int_equal(tctx, AvPairs.pair[4].AvLen, 48, "AvLen");
-	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvRestrictions.Size, 48, "Value.AvRestrictions.Size");
-	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvRestrictions.Z4, 0, "Value.AvRestrictions.Z4");
-	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvRestrictions.IntegrityLevel, 0, "Value.AvRestrictions.IntegrityLevel");
-	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvRestrictions.SubjectIntegrityLevel, 0x00003000, "Value.AvRestrictions.SubjectIntegrityLevel");
-	torture_assert_mem_equal(tctx, AvPairs.pair[4].Value.AvRestrictions.MachineId, MachineId, 32, "Value.AvRestrictions.MachineId");
+	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvSingleHost.Size, 48, "Value.AvSingleHost.Size");
+	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvSingleHost.Z4, 0, "Value.AvSingleHost.Z4");
+	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvSingleHost.token_info.Flags, 0, "Value.AvSingleHost.token_info.Flags");
+	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvSingleHost.token_info.TokenIL, 0x00003000, "Value.AvSingleHost.token_info.TokenIL");
+	torture_assert_mem_equal(tctx, AvPairs.pair[4].Value.AvSingleHost.token_info.MachineId, MachineId, 32, "Value.AvSingleHost.token_info.MachineId");
+	torture_assert_int_equal(tctx, AvPairs.pair[4].Value.AvSingleHost.remaining.length, 0, "Value.AvSingleHost.remaining.length");
 
 	torture_assert_int_equal(tctx, AvPairs.pair[5].AvId, MsvChannelBindings, "AvId");
 	torture_assert_int_equal(tctx, AvPairs.pair[5].AvLen, 16, "AvLen");
