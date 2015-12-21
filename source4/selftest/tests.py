@@ -67,6 +67,30 @@ if have_tls_support:
         plantestsuite("samba4.ldb.ldaps with options %s(dc)" % options, "dc",
                 "%s/test_ldb.sh ldaps $SERVER_IP %s" % (bbdir, options))
 
+# test all "ldap server require strong auth" combinations
+for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
+    options = '--simple-bind-dn="$USERNAME@$REALM" --password="$PASSWORD"'
+    plantestsuite("samba4.ldb.simple.ldap with SIMPLE-BIND %s(%s)" % (options, env),
+                  env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
+    if have_tls_support:
+        plantestsuite("samba4.ldb.simple.ldaps with SIMPLE-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+
+    auth_options = [
+        '--option=clientldapsaslwrapping=plain',
+        '--sign',
+        '--encrypt',
+    ]
+
+    for auth_option in auth_options:
+        options = '-U"$USERNAME%$PASSWORD"' + ' ' + auth_option
+        plantestsuite("samba4.ldb.simple.ldap with SASL-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
+    if have_tls_support:
+        options = '-U"$USERNAME%$PASSWORD"'
+        plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldapi with options %s(dc:local)" % options, "dc:local",
             "%s/test_ldb.sh ldapi $PREFIX_ABS/dc/private/ldapi %s" % (bbdir, options))

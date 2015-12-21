@@ -308,3 +308,9 @@
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
 ^samba.ntlm_auth.\(dc:local\).wbinfo store cached credentials
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth ccached credentials with NTLMSSP client and gss-spnego server
+#
+## We assert all "ldap server require strong auth" combinations
+#
+^samba4.ldb.simple.ldap with SIMPLE-BIND.*ad_dc_ntvfs # ldap server require strong auth = allow_sasl_over_tls
+^samba4.ldb.simple.ldap with SIMPLE-BIND.*fl2003dc    # ldap server require strong auth = yes
+^samba4.ldb.simple.ldaps with SASL-BIND.*fl2003dc     # ldap server require strong auth = yes
