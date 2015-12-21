@@ -649,6 +649,15 @@ interface security
 		0);
 
 	/*
+	 * See [MS-KILE] 2.2.5 LSAP_TOKEN_INFO_INTEGRITY
+	 */
+	typedef [public,gensize,flag(NDR_PAHEX)] struct {
+		uint32 Flags;
+		uint32 TokenIL;
+		uint8 MachineId[32];
+	} LSAP_TOKEN_INFO_INTEGRITY;
+
+	/*
 	 * See [MS-KILE] 2.2.6 Supported Encryption Types Bit Flags
 	 */
 	typedef [public,bitmap32bit] bitmap {
