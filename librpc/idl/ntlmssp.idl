@@ -1,5 +1,7 @@
 #include "idl_types.h"
 
+import "security.idl";
+
 /*
   ntlmssp interface definition
 */
@@ -126,20 +128,19 @@ interface ntlmssp
 		MsvAvDnsTreeName	= 5,
 		MsvAvFlags		= 6,
 		MsvAvTimestamp		= 7,
-		MsAvRestrictions	= 8,
+		MsvAvSingleHost		= 8,
 		MsvAvTargetName		= 9,
 		MsvChannelBindings	= 10
 	} ntlmssp_AvId;
 
-	/* [MS-NLMP] 2.2.2.2 Restriction_Encoding */
+	/* [MS-NLMP] 2.2.2.2 SingleHostData */
 
-	typedef struct {
-		uint32 Size;
+	typedef [flag(NDR_PAHEX)] struct {
+		[value(8+ndr_size_LSAP_TOKEN_INFO_INTEGRITY(&r->token_info, 0)+r->remaining.length)] uint32 Size;
 		[value(0)] uint32 Z4;
-		boolean32 IntegrityLevel;
-		uint32 SubjectIntegrityLevel;
-		uint8 MachineId[32];
-	} Restriction_Encoding;
+		LSAP_TOKEN_INFO_INTEGRITY token_info;
+		[flag(NDR_REMAINING)] DATA_BLOB remaining;
+	} ntlmssp_SingleHostData;
 
 	typedef [bitmap32bit] bitmap {
 		NTLMSSP_AVFLAG_CONSTRAINTED_ACCOUNT		= 0x00000001,
@@ -156,7 +157,7 @@ interface ntlmssp
 		[case(MsvAvDnsTreeName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvDnsTreeName;
 		[case(MsvAvFlags)]		ntlmssp_AvFlags AvFlags;
 		[case(MsvAvTimestamp)]		NTTIME AvTimestamp;
-		[case(MsAvRestrictions)]	Restriction_Encoding AvRestrictions;
+		[case(MsvAvSingleHost)]		ntlmssp_SingleHostData AvSingleHost;
 		[case(MsvAvTargetName)]		[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvTargetName;
 		[case(MsvChannelBindings)]	uint8 ChannelBindings[16];
 		[default]			[flag(NDR_REMAINING)] DATA_BLOB blob;
