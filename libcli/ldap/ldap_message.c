@@ -1626,6 +1626,8 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 */
 NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size)
 {
+	int ret;
+
 	if (blob.length < 6) {
 		/*
 		 * We need at least 6 bytes to workout the length
@@ -1633,5 +1635,10 @@ NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_siz
 		 */
 		return STATUS_MORE_ENTRIES;
 	}
-	return asn1_peek_full_tag(blob, ASN1_SEQUENCE(0), packet_size);
+
+	ret = asn1_peek_full_tag(blob, ASN1_SEQUENCE(0), packet_size);
+	if (ret != 0) {
+		return map_nt_error_from_unix_common(ret);
+	}
+	return NT_STATUS_OK;
 }
