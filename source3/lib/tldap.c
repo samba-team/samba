@@ -1840,11 +1840,9 @@ int tldap_search(struct tldap_context *ld,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	struct tldap_sync_search_state state;
-
-	ZERO_STRUCT(state);
-	state.mem_ctx = mem_ctx;
-	state.rc = TLDAP_SUCCESS;
+	struct tldap_sync_search_state state = {
+		.mem_ctx = mem_ctx, .rc = TLDAP_SUCCESS
+	};
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
