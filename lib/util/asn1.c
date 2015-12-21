@@ -996,7 +996,7 @@ void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
 	data->length = len;
 }
 
-NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
+int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 {
 	struct asn1_data asn1;
 	size_t size;
@@ -1008,14 +1008,14 @@ NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 
 	ok = asn1_peek_tag_needed_size(&asn1, tag, &size);
 	if (!ok) {
-		return NT_STATUS_INVALID_BUFFER_SIZE;
+		return EMSGSIZE;
 	}
 
 	if (size > blob.length) {
 		*packet_size = size;
-		return STATUS_MORE_ENTRIES;
+		return EAGAIN;
 	}		
 
 	*packet_size = size;
-	return NT_STATUS_OK;
+	return 0;
 }
