@@ -188,6 +188,7 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 			 * an object. We should convert more objects on next pass.
 			 */
 			werr = dsdb_convert_object_ex(ldb, working_schema,
+						      NULL,
 						      pfm_remote,
 						      cur, &empty_key,
 						      ignore_attids,
@@ -338,6 +339,7 @@ static bool dsdb_attid_in_list(const uint32_t attid_list[], uint32_t attid)
 
 WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      const struct dsdb_schema *schema,
+			      struct ldb_dn *partition_dn,
 			      const struct dsdb_schema_prefixmap *pfm_remote,
 			      const struct drsuapi_DsReplicaObjectListItemEx *in,
 			      const DATA_BLOB *gensec_skey,
@@ -548,6 +550,17 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	}
 
 	instanceType = ldb_msg_find_attr_as_int(msg, "instanceType", 0);
+
+	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD && partition_dn) {
+		int partition_dn_cmp = ldb_dn_compare(partition_dn, msg->dn);
+		if (partition_dn_cmp != 0) {
+			DEBUG(4, ("Remote server advised us of a new partition %s while processing %s, ignoring\n",
+				  ldb_dn_get_linearized(msg->dn),
+				  ldb_dn_get_linearized(partition_dn)));
+			return WERR_DS_ADD_REPLICA_INHIBITED;
+		}
+	}
+
 	if (dsdb_repl_flags & DSDB_REPL_FLAG_PARTIAL_REPLICA) {
 		/* the instanceType type for partial_replica
 		   replication is sent via DRS with TYPE_WRITE set, but
@@ -678,10 +691,10 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	out->source_dsa		= source_dsa;
 	out->uptodateness_vector= uptodateness_vector;
 
-	out->num_objects	= object_count;
+	out->num_objects	= 0;
 	out->objects		= talloc_array(out,
 					       struct dsdb_extended_replicated_object,
-					       out->num_objects);
+					       object_count);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(out->objects, out);
 
 	/* pass the linked attributes down to the repl_meta_data
@@ -690,16 +703,30 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	out->linked_attributes       = linked_attributes;
 
 	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
-		if (i == out->num_objects) {
+		if (i == object_count) {
 			talloc_free(out);
 			return WERR_FOOBAR;
 		}
 
-		status = dsdb_convert_object_ex(ldb, schema, pfm_remote,
+		status = dsdb_convert_object_ex(ldb, schema, out->partition_dn,
+						pfm_remote,
 						cur, gensec_skey,
 						NULL,
 						dsdb_repl_flags,
-						out->objects, &out->objects[i]);
+						out->objects,
+						&out->objects[out->num_objects]);
+
+		/*
+		 * Check to see if we have been advised of a
+		 * subdomain or new application partition.  We don't
+		 * want to start on that here, instead the caller
+		 * should consider if it would like to replicate it
+		 * based on the cross-ref object.
+		 */
+		if (W_ERROR_EQUAL(status, WERR_DS_ADD_REPLICA_INHIBITED)) {
+			continue;
+		}
+
 		if (!W_ERROR_IS_OK(status)) {
 			talloc_free(out);
 			DEBUG(0,("Failed to convert object %s: %s\n",
@@ -707,8 +734,18 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 				 win_errstr(status)));
 			return status;
 		}
+
+		/* Assuming we didn't skip or error, increment the number of objects */
+		out->num_objects++;
 	}
-	if (i != out->num_objects) {
+	out->objects = talloc_realloc(out, out->objects,
+				      struct dsdb_extended_replicated_object,
+				      out->num_objects);
+	if (out->num_objects != 0 && out->objects == NULL) {
+		talloc_free(out);
+		return WERR_FOOBAR;
+	}
+	if (i != object_count) {
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
