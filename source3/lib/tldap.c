@@ -1788,11 +1788,10 @@ static void tldap_search_cb(struct tevent_req *req)
 		(struct tldap_sync_search_state *)
 		tevent_req_callback_data_void(req);
 	struct tldap_message *msg, **tmp;
-	int rc, num_entries, num_refs;
+	int num_entries, num_refs;
 
-	rc = tldap_search_recv(req, talloc_tos(), &msg);
-	if (rc != TLDAP_SUCCESS) {
-		state->rc = rc;
+	state->rc = tldap_search_recv(req, talloc_tos(), &msg);
+	if (state->rc != TLDAP_SUCCESS) {
 		return;
 	}
 
