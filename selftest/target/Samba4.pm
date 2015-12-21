@@ -545,6 +545,7 @@ sub provision_raw_step1($$)
         dcerpc endpoint servers = +winreg +srvsvc
 	notify:inotify = false
 	ldb:nosync = true
+	ldap server require strong auth = yes
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log file = $ctx->{logdir}/log.\%m
@@ -1334,7 +1335,9 @@ sub provision_ad_dc_ntvfs($$)
 
 	print "PROVISIONING AD DC (NTVFS)...";
         my $extra_conf_options = "netbios aliases = localDC1-a
-        server services = +winbind -winbindd";
+        server services = +winbind -winbindd
+	ldap server require strong auth = allow_sasl_over_tls
+	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1452,6 +1455,7 @@ sub provision_fl2008r2dc($$$)
 	my ($self, $prefix, $dcvars) = @_;
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...";
+        my $extra_conf_options = "ldap server require strong auth = no";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
@@ -1461,7 +1465,7 @@ sub provision_fl2008r2dc($$$)
 				   "locDCpass7",
 				   undef,
 				   undef,
-				   "",
+				   $extra_conf_options,
 				   "",
 				   undef);
 
