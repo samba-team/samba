@@ -301,3 +301,9 @@
 # match Windows 2012R2 behaviour.
 #
 ^samba4.ldap.sort.python.+UnicodeSortTests
+#
+## We assert all "ldap server require strong auth" combinations
+#
+^samba4.ldb.simple.ldap with SIMPLE-BIND.*ad_dc_ntvfs # ldap server require strong auth = allow_sasl_over_tls
+^samba4.ldb.simple.ldap with SIMPLE-BIND.*fl2003dc    # ldap server require strong auth = yes
+^samba4.ldb.simple.ldaps with SASL-BIND.*fl2003dc     # ldap server require strong auth = yes
