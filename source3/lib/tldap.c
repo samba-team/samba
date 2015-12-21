@@ -17,8 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "tldap.h"
+#include "system/network.h"
+#include "system/locale.h"
+#include "lib/util/talloc_stack.h"
+#include "lib/util/samba_util.h"
 #include "lib/util_tsock.h"
 #include "../lib/util/asn1.h"
 #include "../lib/tsocket/tsocket.h"
