@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/util_tsock.h"
 #include "lib/tsocket/tsocket.h"
 #include "libsmb/nmblib.h"
 #include "lib/util/sys_rw.h"

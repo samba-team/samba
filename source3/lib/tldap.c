@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "tldap.h"
+#include "lib/util_tsock.h"
 #include "../lib/util/asn1.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_unix.h"
