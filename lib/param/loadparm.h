@@ -193,6 +193,12 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 #define ADS_AUTH_SASL_FORCE       0x0080
 #define ADS_AUTH_USER_CREDS       0x0100
 
+enum ldap_server_require_strong_auth {
+	LDAP_SERVER_REQUIRE_STRONG_AUTH_NO,
+	LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS,
+	LDAP_SERVER_REQUIRE_STRONG_AUTH_YES,
+};
+
 /* DNS update settings */
 enum dns_update_settings {DNS_UPDATE_OFF, DNS_UPDATE_ON, DNS_UPDATE_SIGNED};
 
