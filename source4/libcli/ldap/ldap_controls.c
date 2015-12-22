@@ -675,7 +675,7 @@ static bool decode_vlv_response(void *mem_ctx, DATA_BLOB in, void *_out)
 		if (!asn1_read_OctetString(data, mem_ctx, &context_id)) {
 			return false;
 		}
-		lvrc->contextId = talloc_strndup(lvrc, (const char *)context_id.data, context_id.length);
+		lvrc->contextId = talloc_memdup(lvrc, (const char *)context_id.data, context_id.length);
 		if (!lvrc->contextId) {
 			return false;
 		}
