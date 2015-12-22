@@ -2311,6 +2311,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	files_struct *fsp = NULL;
 	int snum;
 	char *oldcwd = NULL;
+	uint32_t ucf_flags = 0;
 
 	ZERO_STRUCT(st);
 
@@ -2346,7 +2347,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 					conn,
 					false,
 					r->in.file,
-					0,
+					ucf_flags,
 					NULL,
 					&smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2458,6 +2459,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	char *oldcwd = NULL;
 	struct security_descriptor *psd = NULL;
 	uint32_t security_info_sent = 0;
+	uint32_t ucf_flags = 0;
 
 	ZERO_STRUCT(st);
 
@@ -2495,7 +2497,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 					conn,
 					false,
 					r->in.file,
-					0,
+					ucf_flags,
 					NULL,
 					&smb_fname);
 	if (!NT_STATUS_IS_OK(nt_status)) {
