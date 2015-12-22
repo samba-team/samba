@@ -586,7 +586,7 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 
 		lvrc->type = 1;
 
-		if (!asn1_start_tag(data, ASN1_CONTEXT(1))) {
+		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(1))) {
 			return false;
 		}
 
@@ -1007,10 +1007,6 @@ static bool encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 			return false;
 		}
 		
-		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
-			return false;
-		}
-		
 		if (!asn1_write_Integer(data, lvrc->match.byOffset.offset)) {
 			return false;
 		}
@@ -1019,19 +1015,15 @@ static bool encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 			return false;
 		}
 
-		if (!asn1_pop_tag(data)) { /*SEQUENCE*/
-			return false;
-		}
-
 		if (!asn1_pop_tag(data)) { /*CONTEXT*/
 			return false;
 		}
 	} else {
-		if (!asn1_push_tag(data, ASN1_CONTEXT(1))) {
+		if (!asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(1))) {
 			return false;
 		}
 		
-		if (!asn1_write_OctetString(data, lvrc->match.gtOrEq.value, lvrc->match.gtOrEq.value_len)) {
+		if (!asn1_write(data, lvrc->match.gtOrEq.value, lvrc->match.gtOrEq.value_len)) {
 			return false;
 		}
 
