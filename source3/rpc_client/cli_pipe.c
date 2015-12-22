@@ -936,6 +936,12 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 
 	state->pkt = talloc(state, struct ncacn_packet);
 	if (!state->pkt) {
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
@@ -945,6 +951,12 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 					  state->pkt,
 					  !state->endianess);
 	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
 		tevent_req_nterror(req, status);
 		return;
 	}
@@ -962,6 +974,28 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 		  (unsigned)state->reply_pdu_offset,
 		  nt_errstr(status)));
 
+	if (state->pkt->ptype != DCERPC_PKT_FAULT && !NT_STATUS_IS_OK(status)) {
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
@@ -986,12 +1020,24 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 			 "%s\n",
 			 state->endianess?"little":"big",
 			 state->pkt->drep[0]?"little":"big"));
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
 		return;
 	}
 
 	if (state->reply_pdu_offset + rdata.length > MAX_RPC_DATA_SIZE) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
+		tevent_req_nterror(req, NT_STATUS_RPC_PROTOCOL_ERROR);
 		return;
 	}
 
@@ -999,6 +1045,12 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 	if (state->reply_pdu.length < state->reply_pdu_offset + rdata.length) {
 		if (!data_blob_realloc(NULL, &state->reply_pdu,
 				state->reply_pdu_offset + rdata.length)) {
+			/*
+			 * TODO: do a real async disconnect ...
+			 *
+			 * For now do it sync...
+			 */
+			TALLOC_FREE(state->cli->transport);
 			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
@@ -1027,6 +1079,14 @@ static void rpc_api_pipe_got_pdu(struct tevent_req *subreq)
 
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
 					&state->incoming_frag);
+	if (subreq == NULL) {
+		/*
+		 * TODO: do a real async disconnect ...
+		 *
+		 * For now do it sync...
+		 */
+		TALLOC_FREE(state->cli->transport);
+	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2275,8 +2335,9 @@ static struct tevent_req *rpccli_bh_disconnect_send(TALLOC_CTX *mem_ctx,
 	/*
 	 * TODO: do a real async disconnect ...
 	 *
-	 * For now the caller needs to free rpc_cli
+	 * For now we do it sync...
 	 */
+	TALLOC_FREE(hs->rpc_cli->transport);
 	hs->rpc_cli = NULL;
 
 	tevent_req_done(req);
