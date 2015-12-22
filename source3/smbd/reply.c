@@ -417,7 +417,7 @@ size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		return 0;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (req->posix_pathnames) {
 		return srvstr_get_path_wcard_internal(mem_ctx,
 				(const char *)req->inbuf,
 				req->flags2,
