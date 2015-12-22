@@ -335,6 +335,8 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		const char *fullpath;
 		char tmpbuf[PATH_MAX];
 		char *to_free = NULL;
+		uint32_t ucf_flags = UCF_SAVE_LCOMP |
+				     UCF_ALWAYS_ALLOW_WCARD_LCOMP;
 
 		if (ISDOT(fsp->fsp_name->base_name)) {
 			fullpath = in_file_name;
@@ -355,7 +357,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 				conn,
 				false, /* Not a DFS path. */
 				fullpath,
-				UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP,
+				ucf_flags,
 				&wcard_has_wild,
 				&smb_fname);
 
