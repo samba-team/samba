@@ -4828,6 +4828,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 	files_struct *dir_fsp;
 	char *parent_fname = NULL;
 	char *new_base_name = NULL;
+	uint32_t ucf_flags = 0;
 	NTSTATUS status;
 
 	if (root_dir_fid == 0 || !smb_fname) {
@@ -4922,7 +4923,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				new_base_name,
-				0,
+				ucf_flags,
 				NULL,
 				smb_fname_out);
 	if (!NT_STATUS_IS_OK(status)) {
