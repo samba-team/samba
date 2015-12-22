@@ -1835,9 +1835,28 @@ static void call_nt_transact_rename(connection_struct *conn,
 	if (!check_fsp(conn, req, fsp)) {
 		return;
 	}
-	srvstr_get_path_wcard(ctx, params, req->flags2, &new_name, params+4,
-			      parameter_count - 4,
-			      STR_TERMINATE, &status, &dest_has_wcard);
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_wcard_posix(ctx,
+				params,
+				req->flags2,
+				&new_name,
+				params+4,
+				parameter_count - 4,
+				STR_TERMINATE,
+				&status,
+				&dest_has_wcard);
+	} else {
+		srvstr_get_path_wcard(ctx,
+				params,
+				req->flags2,
+				&new_name,
+				params+4,
+				parameter_count - 4,
+				STR_TERMINATE,
+				&status,
+				&dest_has_wcard);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;

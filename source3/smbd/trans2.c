@@ -2537,9 +2537,27 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 			goto out;
 	}
 
-	srvstr_get_path_wcard(ctx, params, req->flags2, &directory,
-			      params+12, total_params - 12,
-			      STR_TERMINATE, &ntstatus, &mask_contains_wcard);
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_wcard_posix(ctx,
+				params,
+				req->flags2,
+				&directory,
+				params+12,
+				total_params - 12,
+				STR_TERMINATE,
+				&ntstatus,
+				&mask_contains_wcard);
+	} else {
+		srvstr_get_path_wcard(ctx,
+				params,
+				req->flags2,
+				&directory,
+				params+12,
+				total_params - 12,
+				STR_TERMINATE,
+				&ntstatus,
+				&mask_contains_wcard);
+	}
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		reply_nterror(req, ntstatus);
 		goto out;
@@ -2895,10 +2913,27 @@ static void call_trans2findnext(connection_struct *conn,
 
 	if (!continue_bit) {
 		/* We only need resume_name if continue_bit is zero. */
-		srvstr_get_path_wcard(ctx, params, req->flags2, &resume_name,
-			      params+12,
-			      total_params - 12, STR_TERMINATE, &ntstatus,
-			      &mask_contains_wcard);
+		if (lp_posix_pathnames()) {
+			srvstr_get_path_wcard_posix(ctx,
+				params,
+				req->flags2,
+				&resume_name,
+				params+12,
+				total_params - 12,
+				STR_TERMINATE,
+				&ntstatus,
+				&mask_contains_wcard);
+		} else {
+			srvstr_get_path_wcard(ctx,
+				params,
+				req->flags2,
+				&resume_name,
+				params+12,
+				total_params - 12,
+				STR_TERMINATE,
+				&ntstatus,
+				&mask_contains_wcard);
+		}
 		if (!NT_STATUS_IS_OK(ntstatus)) {
 			/* Win9x or OS/2 can send a resume name of ".." or ".". This will cause the parser to
 			   complain (it thinks we're asking for the directory above the shared
@@ -6610,9 +6645,27 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path_wcard(ctx, pdata, req->flags2, &newname, &pdata[12],
-			      len, 0, &status,
-			      &dest_has_wcard);
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_wcard_posix(ctx,
+				pdata,
+				req->flags2,
+				&newname,
+				&pdata[12],
+				len,
+				0,
+				&status,
+				&dest_has_wcard);
+	} else {
+		srvstr_get_path_wcard(ctx,
+				pdata,
+				req->flags2,
+				&newname,
+				&pdata[12],
+				len,
+				0,
+				&status,
+				&dest_has_wcard);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
