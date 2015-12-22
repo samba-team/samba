@@ -320,7 +320,7 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 			src,
 			src_len,
 			flags,
-			lp_posix_pathnames(),
+			false,
 			err,
 			contains_wcard);
 }
