@@ -301,7 +301,33 @@ class SimpleSubnetTests(SitesBaseTests):
             # IP4 embedded - rejected
             "a::10.0.0.0/120",
             "a::10.9.8.7/128",
+
+            # The next ones tinker indirectly with IPv4 embedding,
+            # where Windows has some odd behaviour.
+            #
+            # Samba's libreplace inet_ntop6 expects IPv4 embedding
+            # with addresses in these forms:
+            #
+            #     ::wx:yz
+            #     ::FFFF:wx:yz
+            #
+            # these will be stringified with trailing dottted decimal, thus:
+            #
+            #     ::w.x.y.z
+            #     ::ffff:w.x.y.z
+            #
+            # and this will cause the address to be rejected by Samba,
+            # because it uses a inet_pton / inet_ntop round trip to
+            # ascertain correctness.
+
             "::ffff:0:0/96", #this one fails on WIN2012r2
+            "::ffff:aaaa:a000/120",
+            "::ffff:10:0/120",
+            "::ffff:2:300/120",
+            "::3:0/120",
+            "::2:30/124",
+            "::ffff:2:30/124",
+
             # completely wrong
             None,
             "bob",
@@ -443,6 +469,12 @@ class SimpleSubnetTests(SitesBaseTests):
             "10:0:0:42::/64",
             "1::4:5:0:0:8/127",
             "2001:db8:0:1:1:1:1:1/128",
+
+            # The "well-known prefix" 64::ff9b is another IPv4
+            # embedding scheme. Let's try that.
+            "64:ff9b::aaaa:aaaa/127",
+            "64:ff9b::/120",
+            "64:ff9b::ffff:2:3/128",
         ]
         failures = []
 

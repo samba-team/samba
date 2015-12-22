@@ -2753,6 +2753,17 @@ static int check_address_roundtrip(const char *address, int family,
 	if (strcasecmp(address, address_redux) != 0){
 		DBG_INFO("Address %s round trips to %s; fail!\n",
 			 address, address_redux);
+		/* If the address family is IPv6, and the address is in a
+		   certain range
+
+		 */
+		if (strchr(address_redux, '.') != NULL){
+			DEBUG(0, ("The IPv6 address '%s' has the misfortune of "
+				  "lying in a range that was once used for "
+				  "IPv4 embedding (that is, it might also be "
+				  "represented as '%s').\n", address,
+				  address_redux));
+		}
 		return -1;
 	}
 	return 0;
