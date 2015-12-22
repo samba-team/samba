@@ -379,7 +379,8 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(
 	const struct smb2_lease *lease_ptr)
 {
 	struct smb_filename *smb_fname = NULL;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE;
+	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
+		(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	NTSTATUS status;
 
 	if (lease_ptr == NULL) {
@@ -1005,7 +1006,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			info = FILE_WAS_OPENED;
 		} else {
 			struct smb_filename *smb_fname = NULL;
-			uint32_t ucf_flags = UCF_PREP_CREATEFILE;
+			uint32_t ucf_flags = UCF_PREP_CREATEFILE |
+				(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 
 			if (requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
 				if (lease_ptr == NULL) {
