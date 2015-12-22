@@ -1097,6 +1097,7 @@ static void call_trans2open(connection_struct *conn,
 	uint32_t create_disposition;
 	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
+	uint32_t ucf_flags = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/*
@@ -1146,7 +1147,7 @@ static void call_trans2open(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
-				0,
+				ucf_flags,
 				NULL,
 				&smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6372,6 +6373,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 {
 	char *oldname = NULL;
 	struct smb_filename *smb_fname_old = NULL;
+	uint32_t ucf_flags = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -6393,7 +6395,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				oldname,
-				0,
+				ucf_flags,
 				NULL,
 				&smb_fname_old);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6419,6 +6421,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	uint32_t len;
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	uint32_t ucf_flags = UCF_SAVE_LCOMP;
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -6451,7 +6454,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				newname,
-				UCF_SAVE_LCOMP,
+				ucf_flags,
 				NULL,
 				&smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6511,6 +6514,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
+	uint32_t ucf_flags = UCF_SAVE_LCOMP;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -6542,7 +6546,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				newname,
-				UCF_SAVE_LCOMP,
+				ucf_flags,
 				NULL,
 				&smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -8556,6 +8560,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	char *directory = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
+	uint32_t ucf_flags = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!CAN_WRITE(conn)) {
@@ -8582,7 +8587,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				directory,
-				0,
+				ucf_flags,
 				NULL,
 				&smb_dname);
 
