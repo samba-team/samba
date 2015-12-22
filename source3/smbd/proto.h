@@ -864,6 +864,14 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags,
 			NTSTATUS *err);
+size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
+			const char *inbuf,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err);
 size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
 				 NTSTATUS *err, bool *contains_wcard);

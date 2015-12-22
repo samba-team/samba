@@ -391,6 +391,34 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 	}
 }
 
+/****************************************************************************
+ Pull a string and check the path - provide for error return.
+ posix_pathnames version.
+****************************************************************************/
+
+size_t srvstr_get_path_posix(TALLOC_CTX *ctx,
+			const char *base_ptr,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err)
+{
+	bool ignore;
+	return srvstr_get_path_wcard_internal(ctx,
+			base_ptr,
+			smb_flags2,
+			pp_dest,
+			src,
+			src_len,
+			flags,
+			true,
+			err,
+			&ignore);
+}
+
+
 size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 char **pp_dest, const char *src, int flags,
 				 NTSTATUS *err, bool *contains_wcard)
