@@ -461,7 +461,8 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	int oplock_request;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	struct case_semantics_state *case_state = NULL;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE;
+	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
+			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
@@ -1001,7 +1002,8 @@ static void call_nt_transact_create(connection_struct *conn,
 	int oplock_request;
 	uint8_t oplock_granted;
 	struct case_semantics_state *case_state = NULL;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE;
+	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
+			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1526,8 +1528,8 @@ void reply_ntrename(struct smb_request *req)
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
 	uint32_t attrs;
-	uint32_t ucf_flags_src = 0;
-	uint32_t ucf_flags_dst = 0;
+	uint32_t ucf_flags_src = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags_dst = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	uint16_t rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool stream_rename = false;
