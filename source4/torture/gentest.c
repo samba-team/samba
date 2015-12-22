@@ -295,7 +295,12 @@ static unsigned int time_skew(void)
 		nt0 = servers[0].smb_tree[0]->session->transport->negotiate.server_time;
 		nt1 = servers[1].smb_tree[0]->session->transport->negotiate.server_time;
 	}
-	ret = labs(nt0 - nt1);
+	/* Samba's NTTIME is unsigned, abs() won't work! */
+	if (nt0 > nt1){
+		ret = nt0 - nt1;
+	} else {
+		ret = nt1 - nt0;
+	}
 	return ret + 300;
 }
 
