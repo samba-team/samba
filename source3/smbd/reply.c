@@ -1276,7 +1276,7 @@ void reply_checkpath(struct smb_request *req)
 	struct smb_filename *smb_fname = NULL;
 	char *name = NULL;
 	NTSTATUS status;
-	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcheckpath);
@@ -1391,7 +1391,7 @@ void reply_getatr(struct smb_request *req)
 		size = 0;
 		mtime = 0;
 	} else {
-		uint32_t ucf_flags = (lp_posix_pathnames() ?
+		uint32_t ucf_flags = (req->posix_pathnames ?
 				UCF_POSIX_PATHNAMES : 0);
 		status = filename_convert(ctx,
 				conn,
@@ -1478,7 +1478,7 @@ void reply_setatr(struct smb_request *req)
 	time_t mtime;
 	const char *p;
 	NTSTATUS status;
-	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsetatr);
@@ -1755,7 +1755,7 @@ void reply_search(struct smb_request *req)
 		goto out;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (req->posix_pathnames) {
 		reply_unknown_new(req, req->cmd);
 		goto out;
 	}
@@ -1784,7 +1784,7 @@ void reply_search(struct smb_request *req)
 
 	if (status_len == 0) {
 		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 		nt_status = filename_convert(ctx, conn,
 					     req->flags2 & FLAGS2_DFS_PATHNAMES,
 					     path,
@@ -1866,7 +1866,7 @@ void reply_search(struct smb_request *req)
 		 * For a 'continue' search we have no string. So
 		 * check from the initial saved string.
 		 */
-		if (!lp_posix_pathnames()) {
+		if (!req->posix_pathnames) {
 			mask_contains_wcard = ms_has_wild(mask);
 		}
 		dirtype = dptr_attr(sconn, dptr_num);
@@ -2023,7 +2023,7 @@ void reply_fclose(struct smb_request *req)
 
 	START_PROFILE(SMBfclose);
 
-	if (lp_posix_pathnames()) {
+	if (req->posix_pathnames) {
 		reply_unknown_new(req, req->cmd);
 		END_PROFILE(SMBfclose);
 		return;
@@ -2087,7 +2087,7 @@ void reply_open(struct smb_request *req)
 	uint32_t private_flags = 0;
 	NTSTATUS status;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopen);
@@ -2241,7 +2241,7 @@ void reply_open_and_X(struct smb_request *req)
 	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopenX);
@@ -2501,7 +2501,7 @@ void reply_mknew(struct smb_request *req)
 	uint32_t create_disposition;
 	uint32_t create_options = 0;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcreate);
@@ -2634,7 +2634,7 @@ void reply_ctemp(struct smb_request *req)
 	NTSTATUS status;
 	int i;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBctemp);
@@ -2840,7 +2840,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	uint32_t dirtype_orig = dirtype;
 	NTSTATUS status;
 	int ret;
-	bool posix_paths = lp_posix_pathnames();
+	bool posix_paths = (req != NULL && req->posix_pathnames);
 
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
 		  smb_fname_str_dbg(smb_fname),
@@ -3179,7 +3179,7 @@ void reply_unlink(struct smb_request *req)
 	NTSTATUS status;
 	bool path_contains_wcard = False;
 	uint32_t ucf_flags = UCF_COND_ALLOW_WCARD_LCOMP |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBunlink);
@@ -6089,7 +6089,7 @@ void reply_mkdir(struct smb_request *req)
 	char *directory = NULL;
 	NTSTATUS status;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBmkdir);
@@ -6160,7 +6160,7 @@ void reply_rmdir(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	files_struct *fsp = NULL;
 	int info = 0;
-	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBrmdir);
@@ -6855,7 +6855,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	char *talloced = NULL;
 	long offset = 0;
 	int create_options = 0;
-	bool posix_pathnames = lp_posix_pathnames();
+	bool posix_pathnames = (req != NULL && req->posix_pathnames);
 	int rc;
 
 	/*
@@ -7197,11 +7197,11 @@ void reply_mv(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	uint32_t src_ucf_flags = (lp_posix_pathnames() ?
+	uint32_t src_ucf_flags = (req->posix_pathnames ?
 		(UCF_UNIX_NAME_LOOKUP|UCF_POSIX_PATHNAMES) :
 		UCF_COND_ALLOW_WCARD_LCOMP);
 	uint32_t dst_ucf_flags = UCF_SAVE_LCOMP |
-		(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES :
+		(req->posix_pathnames ? UCF_POSIX_PATHNAMES :
 		 UCF_COND_ALLOW_WCARD_LCOMP);
 	bool stream_rename = false;
 
@@ -7229,7 +7229,7 @@ void reply_mv(struct smb_request *req)
 		goto out;
 	}
 
-	if (!lp_posix_pathnames()) {
+	if (!req->posix_pathnames) {
 		/* The newname must begin with a ':' if the
 		   name contains a ':'. */
 		if (strchr_m(name, ':')) {
@@ -7514,9 +7514,9 @@ void reply_copy(struct smb_request *req)
 	bool dest_has_wild = False;
 	NTSTATUS status;
 	uint32_t ucf_flags_src = UCF_COND_ALLOW_WCARD_LCOMP |
-		(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+		(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	uint32_t ucf_flags_dst = UCF_COND_ALLOW_WCARD_LCOMP |
-		(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+		(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcopy);
