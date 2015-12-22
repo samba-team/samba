@@ -23,6 +23,9 @@ bin/ldbmodify -H st/promoted_dc/private/sam.ldb $MASTER_SRC/source4/selftest/pro
 
 bin/ldbsearch -H st/promoted_dc/private/sam.ldb cn=ops_run_anything \* replpropertymetadata --show-binary > source4/selftest/provisions/release-4-1-0rc3/expected-replpropertymetadata-before-dbcheck.ldif
 
+bin/ldbadd -H st/promoted_dc/private/sam.ldb --configfile st/dc/private/sam.ldb $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3/sudoers2.ldif
+# Note that sudoers2-mod.ldif is used with the git build, not the 4.1 build
+
 # Then these modified files can be pushed back into master by running
 
 $MASTER_SRC/source4/selftest/provisions/dump.sh st/promoted_dc $MASTER_SRC/source4/selftest/provisions/release-4-1-0rc3

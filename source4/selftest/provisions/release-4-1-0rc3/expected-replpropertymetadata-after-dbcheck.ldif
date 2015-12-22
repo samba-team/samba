@@ -1,28 +1,21 @@
 # record 1
 dn: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+cn: ops_run_anything
+distinguishedName: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+name: ops_run_anything
+objectCategory: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
 objectClass: top
 objectClass: sudoRole
-cn: ops_run_anything
-instanceType: 4
-whenCreated: 20150802225130.0Z
-uSNCreated: 3514
-name: ops_run_anything
 objectGUID: 0609a23b-81a4-44c0-9220-b89085775441
-objectCategory: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
-sudoHost: ALL
-sudoCommand: ALL
-sudoRunAsUser: ALL
-sudoRunAsGroup: ALL
-whenChanged: 20150802225647.0Z
-uSNChanged: 3515
 replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
         version                  : 0x00000001 (1)
         reserved                 : 0x00000000 (0)
         ctr                      : union replPropertyMetaDataCtr(case 1)
         ctr1: struct replPropertyMetaDataCtr1
-            count                    : 0x0000000d (13)
+            count                    : 0x0000000c (12)
             reserved                 : 0x00000000 (0)
-            array: ARRAY(13)
+            array: ARRAY(12)
                 array: struct replPropertyMetaData1
                     attid                    : DRSUAPI_ATTID_objectClass (0x0)
                     version                  : 0x00000001 (1)
@@ -66,19 +59,12 @@ replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
                     originating_usn          : 0x0000000000000eb1 (3761)
                     local_usn                : 0x0000000000000dba (3514)
                 array: struct replPropertyMetaData1
-                    attid                    : UNKNOWN_ENUM_VALUE (0x290001)
+                    attid                    : UNKNOWN_ENUM_VALUE (0x9DDA71B0)
                     version                  : 0x00000001 (1)
                     originating_change_time  : Sun Aug  2 22:56:47 2015 UTC
                     originating_invocation_id: b249ef44-b215-4d3b-b5d6-7cec08154b7a
                     originating_usn          : 0x0000000000000dbb (3515)
                     local_usn                : 0x0000000000000dbb (3515)
-                array: struct replPropertyMetaData1
-                    attid                    : UNKNOWN_ENUM_VALUE (0x9DDA71B0)
-                    version                  : 0x00000001 (1)
-                    originating_change_time  : Sun Aug  2 22:51:30 2015 UTC
-                    originating_invocation_id: 7b2e1a86-f4d6-4e7f-a49f-d40f3596aa63
-                    originating_usn          : 0x0000000000000eb1 (3761)
-                    local_usn                : 0x0000000000000dba (3514)
                 array: struct replPropertyMetaData1
                     attid                    : UNKNOWN_ENUM_VALUE (0x9DDA71B1)
                     version                  : 0x00000001 (1)
@@ -115,7 +101,14 @@ replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
                     originating_usn          : 0x0000000000000eb1 (3761)
                     local_usn                : 0x0000000000000dba (3514)
 
-distinguishedName: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+sudoCommand: ALL
+sudoHost: ALL
+sudoRunAsGroup: ALL
+sudoRunAsUser: ALL
+uSNChanged: 3515
+uSNCreated: 3514
+whenChanged: 20150802225647.0Z
+whenCreated: 20150802225130.0Z
 
 # returned 1 records
 # 1 entries

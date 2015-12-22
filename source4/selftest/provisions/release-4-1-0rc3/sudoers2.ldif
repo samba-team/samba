@@ -1,0 +1,21 @@
+dn: CN=ops_run_anything2,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+sudoUser: %ops
+sudoHost: ALL
+sudoCommand: ALL
+sudoRunAsUser: ALL
+sudoRunAsGroup: ALL
+objectClass: top
+objectClass: sudoRole
+-
+
+dn: CN=ops_run_anything3,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: add
+sudoUser: %ops
+sudoHost: ALL
+sudoCommand: ALL
+sudoRunAsUser: ALL
+sudoRunAsGroup: ALL
+objectClass: top
+objectClass: sudoRole
+-

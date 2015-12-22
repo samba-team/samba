@@ -1,0 +1,4 @@
+dn: CN=ops_run_anything2,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+changetype: modify
+delete: sudoUser
+-
