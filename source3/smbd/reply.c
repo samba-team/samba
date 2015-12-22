@@ -253,15 +253,17 @@ NTSTATUS check_path_syntax_posix(char *path)
 
 /****************************************************************************
  Pull a string and check the path allowing a wilcard - provide for error return.
+ Passes in posix flag.
 ****************************************************************************/
 
-size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
+static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
 			const char *base_ptr,
 			uint16_t smb_flags2,
 			char **pp_dest,
 			const char *src,
 			size_t src_len,
 			int flags,
+			bool posix_pathnames,
 			NTSTATUS *err,
 			bool *contains_wcard)
 {
@@ -288,13 +290,39 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 		return ret;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (posix_pathnames) {
 		*err = check_path_syntax_posix(*pp_dest);
 	} else {
 		*err = check_path_syntax_wcard(*pp_dest, contains_wcard);
 	}
 
 	return ret;
+}
+
+/****************************************************************************
+ Pull a string and check the path allowing a wilcard - provide for error return.
+****************************************************************************/
+
+size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
+			const char *base_ptr,
+			uint16_t smb_flags2,
+			char **pp_dest,
+			const char *src,
+			size_t src_len,
+			int flags,
+			NTSTATUS *err,
+			bool *contains_wcard)
+{
+	return srvstr_get_path_wcard_internal(ctx,
+			base_ptr,
+			smb_flags2,
+			pp_dest,
+			src,
+			src_len,
+			flags,
+			lp_posix_pathnames(),
+			err,
+			contains_wcard);
 }
 
 /****************************************************************************
