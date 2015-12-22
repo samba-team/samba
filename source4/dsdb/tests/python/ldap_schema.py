@@ -41,6 +41,8 @@ from ldb import FLAG_MOD_REPLACE
 from samba.samdb import SamDB
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from samba.tests import delete_force
+from samba.ndr import ndr_unpack
+from samba.dcerpc import drsblobs
 
 parser = optparse.OptionParser("ldap_schema.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -124,10 +126,16 @@ schemaUpdateNow: 1
         # Search for created attribute
         res = []
         res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE,
-                              attrs=["lDAPDisplayName","schemaIDGUID"])
+                              attrs=["lDAPDisplayName","schemaIDGUID", "msDS-IntID"])
         self.assertEquals(len(res), 1)
         self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
         self.assertTrue("schemaIDGUID" in res[0])
+        if "msDS-IntId" in res[0]:
+            msDS_IntId = int(res[0]["msDS-IntId"][0])
+            if msDS_IntId < 0:
+                msDS_IntId += (1 << 32)
+        else:
+            msDS_IntId = None
 
         class_name = "test-Class" + time.strftime("%s", time.gmtime())
         class_ldap_display_name = class_name.replace("-", "")
@@ -211,9 +219,24 @@ name: """ + object_name + """
         self.ldb.add_ldif(ldif)
 
         # Search for created object
-        res = []
-        res = self.ldb.search("cn=%s,cn=Users,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["dn"])
-        self.assertEquals(len(res), 1)
+        obj_res = self.ldb.search("cn=%s,cn=Users,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["replPropertyMetaData"])
+
+        self.assertEquals(len(obj_res), 1)
+        self.assertTrue("replPropertyMetaData" in obj_res[0])
+        val = obj_res[0]["replPropertyMetaData"][0]
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(val))
+        obj = repl.ctr
+
+        # Windows 2000 functional level won't have this.  It is too
+        # hard to work it out from the prefixmap however, so we skip
+        # this test in that case.
+        if msDS_IntId is not None:
+            found = False
+            for o in repl.ctr.array:
+                if o.attid == msDS_IntId:
+                    found = True
+                    break
+            self.assertTrue(found, "Did not find 0x%08x in replPropertyMetaData" % msDS_IntId)
         # Delete the object
         delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
