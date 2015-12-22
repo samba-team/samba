@@ -40,6 +40,12 @@ void asn1_free(struct asn1_data *data)
 bool asn1_write(struct asn1_data *data, const void *p, int len)
 {
 	if (data->has_error) return false;
+
+	if ((len < 0) || (data->ofs + (size_t)len < data->ofs)) {
+		data->has_error = true;
+		return false;
+	}
+
 	if (data->length < data->ofs+len) {
 		uint8_t *newp;
 		newp = talloc_realloc(data, data->data, uint8_t, data->ofs+len);
