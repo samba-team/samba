@@ -1546,7 +1546,16 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	}
 
 	if (pkt->ptype == DCERPC_PKT_FAULT) {
+		status = dcerpc_fault_to_nt_status(pkt->u.fault.status);
 		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt->u.fault.status)));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+			dcerpc_connection_dead(c, status);
+			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_SEC_PKG_ERROR)) {
+			dcerpc_connection_dead(c, status);
+			return;
+		}
 		req->fault_code = pkt->u.fault.status;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		goto req_done;
@@ -1555,16 +1564,15 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 	if (pkt->ptype != DCERPC_PKT_RESPONSE) {
 		DEBUG(2,("Unexpected packet type %d in dcerpc response\n",
 			 (int)pkt->ptype)); 
-		req->fault_code = DCERPC_FAULT_OTHER;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
-		goto req_done;
+		dcerpc_connection_dead(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
 	}
 
 	/* now check the status from the auth routines, and if it failed then fail
 	   this request accordingly */
 	if (!NT_STATUS_IS_OK(status)) {
-		req->status = status;
-		goto req_done;
+		dcerpc_connection_dead(c, status);
+		return;
 	}
 
 	length = pkt->u.response.stub_and_verifier.length;
@@ -1573,9 +1581,8 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 		DEBUG(2,("Unexpected total payload 0x%X > 0x%X dcerpc response\n",
 			 (unsigned)req->payload.length + length,
 			 DCERPC_NCACN_PAYLOAD_MAX_SIZE));
-		req->fault_code = DCERPC_FAULT_OTHER;
-		req->status = NT_STATUS_NET_WRITE_FAULT;
-		goto req_done;
+		dcerpc_connection_dead(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
 	}
 
 	if (length > 0) {
