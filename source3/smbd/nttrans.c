@@ -462,7 +462,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	struct case_semantics_state *case_state = NULL;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
@@ -762,7 +762,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 
 	flags = IVAL(params,0);
 
-	if (lp_posix_pathnames()) {
+	if (req->posix_pathnames) {
 		srvstr_get_path_posix(ctx,
 			params,
 			req->flags2,
@@ -1019,7 +1019,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	uint8_t oplock_granted;
 	struct case_semantics_state *case_state = NULL;
 	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1068,7 +1068,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	 */
 	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
 
-	if (lp_posix_pathnames()) {
+	if (req->posix_pathnames) {
 		srvstr_get_path_posix(ctx,
 			params,
 			req->flags2,
@@ -1560,8 +1560,8 @@ void reply_ntrename(struct smb_request *req)
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
 	uint32_t attrs;
-	uint32_t ucf_flags_src = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
-	uint32_t ucf_flags_dst = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags_src = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags_dst = (req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 	uint16_t rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool stream_rename = false;
@@ -1584,7 +1584,7 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	if (!lp_posix_pathnames() && ms_has_wild(oldname)) {
+	if (!req->posix_pathnames && ms_has_wild(oldname)) {
 		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 		goto out;
 	}
@@ -1597,7 +1597,7 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	if (!lp_posix_pathnames()) {
+	if (!req->posix_pathnames) {
 		/* The newname must begin with a ':' if the
 		   oldname contains a ':'. */
 		if (strchr_m(oldname, ':')) {
@@ -1867,7 +1867,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	if (!check_fsp(conn, req, fsp)) {
 		return;
 	}
-	if (lp_posix_pathnames()) {
+	if (req->posix_pathnames) {
 		srvstr_get_path_wcard_posix(ctx,
 				params,
 				req->flags2,
