@@ -719,12 +719,10 @@ static struct tevent_req *tldap_req_create(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	ZERO_STRUCTP(state);
 	state->out = asn1_init(state);
 	if (state->out == NULL) {
 		goto err;
 	}
-	state->result = NULL;
 	state->id = tldap_next_msgid(ld);
 
 	if (!asn1_push_tag(state->out, ASN1_SEQUENCE(0))) goto err;
