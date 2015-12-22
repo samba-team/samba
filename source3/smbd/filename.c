@@ -240,8 +240,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	char *stream = NULL;
 	bool component_was_mangled = False;
 	bool name_has_wildcard = False;
-	bool posix_pathnames = (lp_posix_pathnames() ||
-				(ucf_flags & UCF_POSIX_PATHNAMES));
+	bool posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES);
 	bool allow_wcard_last_component =
 	    (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
 	bool save_last_component = ucf_flags & UCF_SAVE_LCOMP;
