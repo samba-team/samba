@@ -169,6 +169,7 @@
 /* Version 33 - Remove notify_watch_fn */
 /* Bump to version 34 - Samba 4.4 will ship with that */
 /* Version 34 - Remove bool posix_open, add uint64_t posix_flags */
+/* Version 34 - Added bool posix_pathnames to struct smb_request */
 
 #define SMB_VFS_INTERFACE_VERSION 34
 
@@ -464,6 +465,8 @@ struct smb_request {
 	struct smb_request **chain;
 
 	struct timeval request_time;
+
+	bool posix_pathnames;
 };
 
 /*
