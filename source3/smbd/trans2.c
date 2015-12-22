@@ -1097,7 +1097,7 @@ static void call_trans2open(connection_struct *conn,
 	uint32_t create_disposition;
 	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
-	uint32_t ucf_flags = 0;
+	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/*
@@ -2478,7 +2478,8 @@ static void call_trans2findfirst(connection_struct *conn,
 	TALLOC_CTX *ctx = talloc_tos();
 	struct dptr_struct *dirptr = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
-	uint32_t ucf_flags = (UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP);
+	uint32_t ucf_flags = UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP |
+			(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	bool backup_priv = false;
 	bool as_root = false;
 
@@ -5543,7 +5544,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	} else {
 		uint32_t name_hash;
 		char *fname = NULL;
-		uint32_t ucf_flags = 0;
+		uint32_t ucf_flags = (lp_posix_pathnames() ?
+				UCF_POSIX_PATHNAMES : 0);
 
 		/* qpathinfo */
 		if (total_params < 7) {
@@ -6373,7 +6375,7 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 {
 	char *oldname = NULL;
 	struct smb_filename *smb_fname_old = NULL;
-	uint32_t ucf_flags = 0;
+	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -6421,7 +6423,8 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 	uint32_t len;
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
-	uint32_t ucf_flags = UCF_SAVE_LCOMP;
+	uint32_t ucf_flags = UCF_SAVE_LCOMP |
+		(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -6514,7 +6517,8 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 	char *newname = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
-	uint32_t ucf_flags = UCF_SAVE_LCOMP;
+	uint32_t ucf_flags = UCF_SAVE_LCOMP |
+		(lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!fsp) {
@@ -8426,7 +8430,8 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 	} else {
 		char *fname = NULL;
-		uint32_t ucf_flags = 0;
+		uint32_t ucf_flags = (lp_posix_pathnames() ?
+			UCF_POSIX_PATHNAMES : 0);
 
 		/* set path info */
 		if (total_params < 7) {
@@ -8560,7 +8565,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 	char *directory = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct ea_list *ea_list = NULL;
-	uint32_t ucf_flags = 0;
+	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!CAN_WRITE(conn)) {
