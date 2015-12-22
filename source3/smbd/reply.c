@@ -375,9 +375,29 @@ size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 		return 0;
 	}
 
-	return srvstr_get_path_wcard(mem_ctx, (const char *)req->inbuf,
-				     req->flags2, pp_dest, src, bufrem, flags,
-				     err, contains_wcard);
+	if (lp_posix_pathnames()) {
+		return srvstr_get_path_wcard_internal(mem_ctx,
+				(const char *)req->inbuf,
+				req->flags2,
+				pp_dest,
+				src,
+				bufrem,
+				flags,
+				true,
+				err,
+				contains_wcard);
+	} else {
+		return srvstr_get_path_wcard_internal(mem_ctx,
+				(const char *)req->inbuf,
+				req->flags2,
+				pp_dest,
+				src,
+				bufrem,
+				flags,
+				false,
+				err,
+				contains_wcard);
+	}
 }
 
 size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
