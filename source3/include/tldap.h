@@ -171,6 +171,18 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 				     int deref);
 TLDAPRC tldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			  struct tldap_message **pmsg);
+
+struct tevent_req *tldap_search_all_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct tldap_context *ld, const char *base, int scope,
+	const char *filter, const char **attrs, int num_attrs, int attrsonly,
+	struct tldap_control *sctrls, int num_sctrls,
+	struct tldap_control *cctrls, int num_cctrls,
+	int timelimit, int sizelimit, int deref);
+TLDAPRC tldap_search_all_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			      struct tldap_message ***msgs,
+			      struct tldap_message **result);
+
 TLDAPRC tldap_search(struct tldap_context *ld,
 		     const char *base, int scope, const char *filter,
 		     const char **attrs, int num_attrs, int attrsonly,

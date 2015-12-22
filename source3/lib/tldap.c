@@ -1850,6 +1850,99 @@ TLDAPRC tldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return TLDAP_SUCCESS;
 }
 
+struct tldap_search_all_state {
+	struct tldap_message **msgs;
+	struct tldap_message *result;
+};
+
+static void tldap_search_all_done(struct tevent_req *subreq);
+
+struct tevent_req *tldap_search_all_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct tldap_context *ld, const char *base, int scope,
+	const char *filter, const char **attrs, int num_attrs, int attrsonly,
+	struct tldap_control *sctrls, int num_sctrls,
+	struct tldap_control *cctrls, int num_cctrls,
+	int timelimit, int sizelimit, int deref)
+{
+	struct tevent_req *req, *subreq;
+	struct tldap_search_all_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct tldap_search_all_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = tldap_search_send(state, ev, ld, base, scope, filter,
+				   attrs, num_attrs, attrsonly,
+				   sctrls, num_sctrls, cctrls, num_cctrls,
+				   timelimit, sizelimit, deref);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, tldap_search_all_done, req);
+	return req;
+}
+
+static void tldap_search_all_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct tldap_search_all_state *state = tevent_req_data(
+		req, struct tldap_search_all_state);
+	struct tldap_message *msg, **tmp;
+	size_t num_msgs;
+	TLDAPRC rc;
+	int msgtype;
+
+	rc = tldap_search_recv(subreq, state, &msg);
+	/* No TALLOC_FREE(subreq), this is multi-step */
+	if (tevent_req_ldap_error(req, rc)) {
+		TALLOC_FREE(subreq);
+		return;
+	}
+
+	msgtype = tldap_msg_type(msg);
+	if (msgtype == TLDAP_RES_SEARCH_RESULT) {
+		state->result = msg;
+		tevent_req_done(req);
+		return;
+	}
+
+	num_msgs = talloc_array_length(state->msgs);
+
+	tmp = talloc_realloc(state, state->msgs, struct tldap_message *,
+			     num_msgs + 1);
+	if (tevent_req_nomem(tmp, req)) {
+		return;
+	}
+	state->msgs = tmp;
+	state->msgs[num_msgs] = talloc_move(state->msgs, &msg);
+}
+
+TLDAPRC tldap_search_all_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			      struct tldap_message ***msgs,
+			      struct tldap_message **result)
+{
+	struct tldap_search_all_state *state = tevent_req_data(
+		req, struct tldap_search_all_state);
+	TLDAPRC rc;
+
+	if (tevent_req_is_ldap_error(req, &rc)) {
+		return rc;
+	}
+
+	if (msgs != NULL) {
+		*msgs = talloc_move(mem_ctx, &state->msgs);
+	}
+	if (result != NULL) {
+		*result = talloc_move(mem_ctx, &state->result);
+	}
+
+	return TLDAP_SUCCESS;
+}
+
 struct tldap_sync_search_state {
 	TALLOC_CTX *mem_ctx;
 	struct tldap_message **entries;
