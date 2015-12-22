@@ -485,7 +485,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 		if (smb_dname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		if (lp_posix_pathnames()) {
+		if (req != NULL && req->posix_pathnames) {
 			ret = SMB_VFS_LSTAT(conn, smb_dname);
 		} else {
 			ret = SMB_VFS_STAT(conn, smb_dname);
@@ -545,7 +545,8 @@ NTSTATUS dptr_create(connection_struct *conn,
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
+	if ((req != NULL && req->posix_pathnames) ||
+			(wcard[0] == '.' && wcard[1] == 0)) {
 		dptr->has_wild = True;
 	} else {
 		dptr->has_wild = wcard_has_wild;
