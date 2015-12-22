@@ -1,18 +1,13 @@
 # record 1
 dn: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+cn: ops_run_anything
+distinguishedName: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+instanceType: 4
+name: ops_run_anything
+objectCategory: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
 objectClass: top
 objectClass: sudoRole
-cn: ops_run_anything
-instanceType: 4
-whenCreated: 20150802225130.0Z
-uSNCreated: 3514
-name: ops_run_anything
 objectGUID: 0609a23b-81a4-44c0-9220-b89085775441
-objectCategory: CN=sudoRole,CN=Schema,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
-sudoHost: ALL
-sudoCommand: ALL
-sudoRunAsUser: ALL
-sudoRunAsGroup: ALL
 replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
         version                  : 0x00000001 (1)
         reserved                 : 0x00000000 (0)
@@ -113,9 +108,14 @@ replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
                     originating_usn          : 0x0000000000000eb1 (3761)
                     local_usn                : 0x0000000000000dba (3514)
 
-whenChanged: 20150802225647.0Z
+sudoCommand: ALL
+sudoHost: ALL
+sudoRunAsGroup: ALL
+sudoRunAsUser: ALL
 uSNChanged: 3515
-distinguishedName: CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp
+uSNCreated: 3514
+whenChanged: 20150802225647.0Z
+whenCreated: 20150802225130.0Z
 
 # returned 1 records
 # 1 entries

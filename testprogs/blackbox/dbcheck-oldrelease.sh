@@ -141,11 +141,38 @@ reindex() {
        $PYTHON $BINDIR/samba-tool dbcheck --reindex -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
 
+do_current_version_mod() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	# Confirm (in combination with the ldbsearch below) that
+	# changing the attribute with current Samba fixes it, and that
+	# a fixed attriute isn't unfixed by dbcheck.
+	tmpldif=$release_dir/sudoers2-mod.ldif
+	$ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $tmpldif
+    fi
+    return 0
+}
+
 check_expected_before_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-before-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --show-binary > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
+
+	# Here we remove originating_change_time and whenChanged as
+	# these are time-dependent, caused by the ldbmodify above.
+
+	diff $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck2.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	diff $tmpldif $release_dir/expected-replpropertymetadata-before-dbcheck3.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
@@ -160,9 +187,19 @@ dbcheck() {
 
 check_expected_after_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-after-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b CN=ops_run_anything,OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --show-binary > $tmpldif
-	diff -u $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck.ldif
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-before-dbcheck.ldif.tmp
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	diff $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything2 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary | grep -v originating_change_time| grep -v whenChanged > $tmpldif
+	diff $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck2.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything3 -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
+	diff $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck3.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
@@ -228,6 +265,7 @@ ldapcmp_sd() {
 if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "reindex" reindex
+    testit "current_version_mod" do_current_version_mod
     testit "check_expected_before_values" check_expected_before_values
     testit_expect_failure "dbcheck" dbcheck
     testit "check_expected_after_values" check_expected_after_values
