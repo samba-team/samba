@@ -2311,7 +2311,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	files_struct *fsp = NULL;
 	int snum;
 	char *oldcwd = NULL;
-	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = 0;
 
 	ZERO_STRUCT(st);
 
@@ -2459,7 +2459,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	char *oldcwd = NULL;
 	struct security_descriptor *psd = NULL;
 	uint32_t security_info_sent = 0;
-	uint32_t ucf_flags = (lp_posix_pathnames() ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags = 0;
 
 	ZERO_STRUCT(st);
 
