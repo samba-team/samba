@@ -376,6 +376,16 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 				return werr;
 			}
 		}
+		if (attids[i] != obj->object.attribute_ctr.attributes[i].attid) {
+			DEBUG(0, ("Unable to replicate attribute %s on %s via DRS, incorrect attributeID:  "
+				  "0x%08x vs 0x%08x "
+				  "Run dbcheck!\n",
+				  sa->lDAPDisplayName,
+				  ldb_dn_get_linearized(msg->dn),
+				  attids[i],
+				  obj->object.attribute_ctr.attributes[i].attid));
+			return WERR_DS_DATABASE_ERROR;
+		}
 	}
 
 	return WERR_OK;
