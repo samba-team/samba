@@ -468,7 +468,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		}
 			
 		if ((ret < 4) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid server_sort control syntax\n");
+			error_string = talloc_asprintf(mem_ctx, "invalid VLV control syntax\n");
 			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):bc(n):ac(n):<os(n):cc(n)|attr(s)>[:ctxid(o)]\n");
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, s = string, o = b64 binary blob");
 			ldb_set_errstring(ldb, error_string);
