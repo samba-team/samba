@@ -1131,9 +1131,25 @@ static void call_trans2open(connection_struct *conn,
 		goto out;
 	}
 
-	srvstr_get_path(ctx, params, req->flags2, &fname, pname,
-			total_params - 28, STR_TERMINATE,
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+			params,
+			req->flags2,
+			&fname,
+			pname,
+			total_params - 28,
+			STR_TERMINATE,
 			&status);
+	} else {
+		srvstr_get_path(ctx,
+			params,
+			req->flags2,
+			&fname,
+			pname,
+			total_params - 28,
+			STR_TERMINATE,
+			&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
@@ -5604,9 +5620,25 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 		}
 
-		srvstr_get_path(req, params, req->flags2, &fname, &params[6],
+		if (lp_posix_pathnames()) {
+			srvstr_get_path_posix(req,
+				params,
+				req->flags2,
+				&fname,
+				&params[6],
 				total_params - 6,
-				STR_TERMINATE, &status);
+				STR_TERMINATE,
+				&status);
+		} else {
+			srvstr_get_path(req,
+				params,
+				req->flags2,
+				&fname,
+				&params[6],
+				total_params - 6,
+				STR_TERMINATE,
+				&status);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -6419,8 +6451,25 @@ static NTSTATUS smb_set_file_unix_hlink(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(ctx, pdata, req->flags2, &oldname, pdata,
-			total_data, STR_TERMINATE, &status);
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+			pdata,
+			req->flags2,
+			&oldname,
+			pdata,
+			total_data,
+			STR_TERMINATE,
+			&status);
+	} else {
+		srvstr_get_path(ctx,
+			pdata,
+			req->flags2,
+			&oldname,
+			pdata,
+			total_data,
+			STR_TERMINATE,
+			&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6478,9 +6527,25 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(ctx, pdata, req->flags2, &newname,
-				&pdata[20], len, STR_TERMINATE,
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+				pdata,
+				req->flags2,
+				&newname,
+				&pdata[20],
+				len,
+				STR_TERMINATE,
 				&status);
+	} else {
+		srvstr_get_path(ctx,
+				pdata,
+				req->flags2,
+				&newname,
+				&pdata[20],
+				len,
+				STR_TERMINATE,
+				&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -6571,9 +6636,25 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	srvstr_get_path(ctx, pdata, req->flags2, &newname,
-				&pdata[20], len, STR_TERMINATE,
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+				pdata,
+				req->flags2,
+				&newname,
+				&pdata[20],
+				len,
+				STR_TERMINATE,
 				&status);
+	} else {
+		srvstr_get_path(ctx,
+				pdata,
+				req->flags2,
+				&newname,
+				&pdata[20],
+				len,
+				STR_TERMINATE,
+				&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -8493,9 +8574,25 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		}
 
 		info_level = SVAL(params,0);
-		srvstr_get_path(req, params, req->flags2, &fname, &params[6],
-				total_params - 6, STR_TERMINATE,
+		if (lp_posix_pathnames()) {
+			srvstr_get_path_posix(req,
+				params,
+				req->flags2,
+				&fname,
+				&params[6],
+				total_params - 6,
+				STR_TERMINATE,
 				&status);
+		} else {
+			srvstr_get_path(req,
+				params,
+				req->flags2,
+				&fname,
+				&params[6],
+				total_params - 6,
+				STR_TERMINATE,
+				&status);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -8631,9 +8728,25 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	srvstr_get_path(ctx, params, req->flags2, &directory, &params[4],
-			total_params - 4, STR_TERMINATE,
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+			params,
+			req->flags2,
+			&directory,
+			&params[4],
+			total_params - 4,
+			STR_TERMINATE,
 			&status);
+	} else {
+		srvstr_get_path(ctx,
+			params,
+			req->flags2,
+			&directory,
+			&params[4],
+			total_params - 4,
+			STR_TERMINATE,
+			&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;

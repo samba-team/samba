@@ -762,9 +762,25 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 
 	flags = IVAL(params,0);
 
-	srvstr_get_path(ctx, params, req->flags2, &fname, params+53,
-			parameter_count-53, STR_TERMINATE,
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+			params,
+			req->flags2,
+			&fname,
+			params+53,
+			parameter_count-53,
+			STR_TERMINATE,
 			&status);
+	} else {
+		srvstr_get_path(ctx,
+			params,
+			req->flags2,
+			&fname,
+			params+53,
+			parameter_count-53,
+			STR_TERMINATE,
+			&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
@@ -1052,9 +1068,25 @@ static void call_nt_transact_create(connection_struct *conn,
 	 */
 	create_options &= ~NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
 
-	srvstr_get_path(ctx, params, req->flags2, &fname,
-			params+53, parameter_count-53,
-			STR_TERMINATE, &status);
+	if (lp_posix_pathnames()) {
+		srvstr_get_path_posix(ctx,
+			params,
+			req->flags2,
+			&fname,
+			params+53,
+			parameter_count-53,
+			STR_TERMINATE,
+			&status);
+	} else {
+		srvstr_get_path(ctx,
+			params,
+			req->flags2,
+			&fname,
+			params+53,
+			parameter_count-53,
+			STR_TERMINATE,
+			&status);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		goto out;
