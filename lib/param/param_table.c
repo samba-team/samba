@@ -32,6 +32,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/param/param_global.h"
 #include "libcli/smb/smb_constants.h"
+#include "source4/lib/tls/tls.h"
 
 #ifndef N_
 #define N_(x) x
@@ -121,6 +122,20 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{SMB_SIGNING_REQUIRED, "force"},
 	{SMB_SIGNING_REQUIRED, "forced"},
 	{SMB_SIGNING_REQUIRED, "enforced"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_tls_verify_peer_vals[] = {
+	{TLS_VERIFY_PEER_NO_CHECK,
+	 TLS_VERIFY_PEER_NO_CHECK_STRING},
+	{TLS_VERIFY_PEER_CA_ONLY,
+	 TLS_VERIFY_PEER_CA_ONLY_STRING},
+	{TLS_VERIFY_PEER_CA_AND_NAME_IF_AVAILABLE,
+	 TLS_VERIFY_PEER_CA_AND_NAME_IF_AVAILABLE_STRING},
+	{TLS_VERIFY_PEER_CA_AND_NAME,
+	 TLS_VERIFY_PEER_CA_AND_NAME_STRING},
+	{TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE,
+	 TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE_STRING},
 	{-1, NULL}
 };
 
