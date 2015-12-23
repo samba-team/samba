@@ -475,6 +475,8 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 							   ca_file,
 							   crl_file,
 							   tls_priority,
+							   TLS_VERIFY_PEER_NO_CHECK,
+							   NULL,
 							   &state->tls_params);
 			if (!NT_STATUS_IS_OK(status)) {
 				composite_error(result, status);
