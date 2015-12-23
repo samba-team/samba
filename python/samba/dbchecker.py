@@ -1369,7 +1369,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if str(attrname).lower() == 'objectclass':
                 normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, obj[attrname])
-                if normalised != obj[attrname]:
+                # Do not consider the attribute incorrect if:
+                #  - The sorted (alphabetically) list is the same, inclding case
+                #  - The first and last elements are the same
+                #
+                # This avoids triggering an error due to
+                # non-determinism in the sort routine in (at least)
+                # 4.3 and earlier, and the fact that any AUX classes
+                # in these attributes are also not sorted when
+                # imported from Windows (they are just in the reverse
+                # order of last set)
+                if sorted(normalised) != sorted(obj[attrname]) \
+                   or normalised[0] != obj[attrname][0] \
+                   or normalised[-1] != obj[attrname][-1]:
                     self.err_normalise_mismatch_replace(dn, attrname, list(obj[attrname]))
                     error_count += 1
                 continue
