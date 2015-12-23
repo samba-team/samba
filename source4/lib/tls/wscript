@@ -39,6 +39,11 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('gnutls_global_init', 'gnutls',
                         headers='gnutls/gnutls.h')
 
+    conf.CHECK_FUNCS_IN('gnutls_certificate_verify_peers3', 'gnutls',
+                        headers='gnutls/gnutls.h')
+    conf.CHECK_DECLS('GNUTLS_CERT_EXPIRED GNUTLS_CERT_NOT_ACTIVATED GNUTLS_CERT_UNEXPECTED_OWNER',
+                     headers='gnutls/gnutls.h gnutls/x509.h')
+
     conf.CHECK_VARIABLE('gnutls_x509_crt_set_version',
                         headers='gnutls/gnutls.h gnutls/x509.h',
                         define='HAVE_GNUTLS_X509_CRT_SET_VERSION',
