@@ -1484,7 +1484,7 @@ void set_incoming_fault(struct pipes_struct *p)
 	data_blob_free(&p->in_data.data);
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
-	p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+	p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
 
 	p->allow_alter = false;
 	p->allow_auth3 = false;
@@ -1748,7 +1748,7 @@ done:
 	if (!reply) {
 		DEBUG(3,("DCE/RPC fault sent!"));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_NCA_S_PROTO_ERROR));
 	}
 	/* pkt and p->in_data.pdu.data freed by caller */
 }
