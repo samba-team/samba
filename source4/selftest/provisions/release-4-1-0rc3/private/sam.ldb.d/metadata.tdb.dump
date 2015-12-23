@@ -1,8 +1,8 @@
 {
-key(14) = "SCHEMA_SEQ_NUM"
-data(1) = "2"
+key(7) = "SEQ_NUM"
+data(4) = "3517"
 }
 {
-key(7) = "SEQ_NUM"
-data(4) = "3515"
+key(14) = "SCHEMA_SEQ_NUM"
+data(1) = "2"
 }
