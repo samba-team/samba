@@ -558,6 +558,12 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (npc->p->fault_state != 0) {
+		DEBUG(2, ("Disconnect after fault\n"));
+		sys_errno = EINVAL;
+		goto fail;
+	}
+
 	/* clear out any data that may have been left around */
 	npc->count = 0;
 	TALLOC_FREE(npc->iov);
@@ -1289,6 +1295,12 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 	if (rc < 0) {
 		DEBUG(2, ("Writev failed!\n"));
 		status = map_nt_error_from_unix(sys_errno);
+		goto fail;
+	}
+
+	if (ncacn_conn->p->fault_state != 0) {
+		DEBUG(2, ("Disconnect after fault\n"));
+		sys_errno = EINVAL;
 		goto fail;
 	}
 
