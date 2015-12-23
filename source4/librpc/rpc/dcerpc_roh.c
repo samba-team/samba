@@ -187,6 +187,8 @@ struct tevent_req *dcerpc_pipe_open_roh_send(struct dcecli_connection *conn,
 	if (use_tls) {
 		status = tstream_tls_params_client(state->roh, NULL, NULL,
 						   lpcfg_tls_priority(lp_ctx),
+						   TLS_VERIFY_PEER_NO_CHECK,
+						   NULL,
 						   &state->tls_params);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("%s: Failed tstream_tls_params_client - %s\n",
