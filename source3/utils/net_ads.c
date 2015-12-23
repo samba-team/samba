@@ -1910,6 +1910,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	char *prt_dn, *srv_dn, **srv_cn;
 	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
+	bool ok;
 
 	if (argc < 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1937,7 +1938,14 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 
 	/* Get printer data from SPOOLSS */
 
-	resolve_name(servername, &server_ss, 0x20, false);
+	ok = resolve_name(servername, &server_ss, 0x20, false);
+	if (!ok) {
+		d_fprintf(stderr, _("Could not find server %s\n"),
+			  servername);
+		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
 
 	nt_status = cli_full_connection(&cli, lp_netbios_name(), servername,
 					&server_ss, 0,
