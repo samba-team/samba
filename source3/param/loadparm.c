@@ -69,6 +69,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "../lib/util/bitmap.h"
+#include "source4/lib/tls/tls.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -833,6 +834,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.dcerpc_endpoint_servers = (const char **)str_list_make_v3(NULL, "epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey dnsserver", NULL);
 
 	Globals.tls_enabled = true;
+	Globals.tls_verify_peer = TLS_VERIFY_PEER_NO_CHECK;
 
 	lpcfg_string_set(Globals.ctx, &Globals._tls_keyfile, "tls/key.pem");
 	lpcfg_string_set(Globals.ctx, &Globals._tls_certfile, "tls/cert.pem");
