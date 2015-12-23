@@ -464,7 +464,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_VLV_REQ_NAME)]);
 		ret = sscanf(p, "%d:%d:%d:%d:%d:%1023[^$]", &crit, &bc, &ac, &os, &cc, ctxid);
 		if (ret < 5) {
-			ret = sscanf(p, "%d:%d:%d:%1023[^:]:%1023[^$]", &crit, &bc, &ac, attr, ctxid);
+			ret = sscanf(p, "%d:%d:%d:>=%1023[^:]:%1023[^$]", &crit, &bc, &ac, attr, ctxid);
 		}
 			
 		if ((ret < 4) || (crit < 0) || (crit > 1)) {
