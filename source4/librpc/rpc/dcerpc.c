@@ -2232,6 +2232,9 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 		if (pkt->u.fault.status == DCERPC_FAULT_ACCESS_DENIED) {
 			state->p->last_fault_code = pkt->u.fault.status;
 			tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
+		} else if (pkt->u.fault.status == DCERPC_FAULT_SEC_PKG_ERROR) {
+			state->p->last_fault_code = pkt->u.fault.status;
+			tevent_req_nterror(req, NT_STATUS_LOGON_FAILURE);
 		} else {
 			state->p->last_fault_code = pkt->u.fault.status;
 			status = dcerpc_fault_to_nt_status(pkt->u.fault.status);
