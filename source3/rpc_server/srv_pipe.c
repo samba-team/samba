@@ -1243,6 +1243,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 
 	if (!srv_pipe_check_verification_trailer(p, pkt, pipe_fns)) {
 		DEBUG(1, ("srv_pipe_check_verification_trailer: failed\n"));
+		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_ACCESS_DENIED));
 		data_blob_free(&p->out_data.rdata);
 		TALLOC_FREE(frame);
