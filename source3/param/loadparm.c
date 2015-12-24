@@ -4262,17 +4262,6 @@ void set_use_sendfile(int snum, bool val)
 		sDefault._use_sendfile = val;
 }
 
-/*******************************************************************
- Turn off storing DOS attributes if this share doesn't support it.
-********************************************************************/
-
-void set_store_dos_attributes(int snum, bool val)
-{
-	if (!LP_SNUM_OK(snum))
-		return;
-	ServicePtrs[(snum)]->store_dos_attributes = val;
-}
-
 void lp_set_mangling_method(const char *new_method)
 {
 	lpcfg_string_set(Globals.ctx, &Globals.mangling_method, new_method);
