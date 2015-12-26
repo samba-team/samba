@@ -65,7 +65,8 @@ struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 					int num_sctrls,
 					struct tldap_control *cctrls,
 					int num_cctrls);
-int tldap_sasl_bind_recv(struct tevent_req *req);
+int tldap_sasl_bind_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 DATA_BLOB *serverSaslCreds);
 int tldap_sasl_bind(struct tldap_context *ldap,
 		    const char *dn,
 		    const char *mechanism,
@@ -73,7 +74,9 @@ int tldap_sasl_bind(struct tldap_context *ldap,
 		    struct tldap_control *sctrls,
 		    int num_sctrls,
 		    struct tldap_control *cctrls,
-		    int num_ctrls);
+		    int num_cctrls,
+		    TALLOC_CTX *mem_ctx,
+		    DATA_BLOB *serverSaslCreds);
 
 struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,

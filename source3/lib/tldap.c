@@ -94,6 +94,7 @@ struct tldap_message {
 	char *res_matcheddn;
 	char *res_diagnosticmessage;
 	char *res_referral;
+	DATA_BLOB res_serverSaslCreds;
 	struct tldap_control *res_sctrls;
 
 	/* Controls sent by the server */
@@ -877,6 +878,7 @@ static void tldap_sasl_bind_done(struct tevent_req *subreq)
 	struct tldap_req_state *state = tevent_req_data(
 		req, struct tldap_req_state);
 	int err;
+	bool ok;
 
 	err = tldap_msg_recv(subreq, state, &state->result);
 	TALLOC_FREE(subreq);
@@ -888,25 +890,75 @@ static void tldap_sasl_bind_done(struct tevent_req *subreq)
 		tevent_req_error(req, TLDAP_PROTOCOL_ERROR);
 		return;
 	}
-	if (!asn1_start_tag(state->result->data, state->result->type) ||
-	    !tldap_decode_response(state) ||
-	    !asn1_end_tag(state->result->data)) {
-		tevent_req_error(req, TLDAP_DECODING_ERROR);
-		return;
+
+	ok = asn1_start_tag(state->result->data, TLDAP_RES_BIND);
+	ok &= tldap_decode_response(state);
+
+	if (asn1_peek_tag(state->result->data, ASN1_CONTEXT_SIMPLE(7))) {
+		int len;
+
+		ok &= asn1_start_tag(state->result->data,
+				     ASN1_CONTEXT_SIMPLE(7));
+		if (!ok) {
+			goto decode_error;
+		}
+
+		len = asn1_tag_remaining(state->result->data);
+		if (len == -1) {
+			goto decode_error;
+		}
+
+		state->result->res_serverSaslCreds =
+			data_blob_talloc(state->result, NULL, len);
+		if (state->result->res_serverSaslCreds.data == NULL) {
+			goto decode_error;
+		}
+
+		ok = asn1_read(state->result->data,
+			       state->result->res_serverSaslCreds.data,
+			       state->result->res_serverSaslCreds.length);
+
+		ok &= asn1_end_tag(state->result->data);
 	}
-	/*
-	 * TODO: pull the reply blob
-	 */
-	if (state->result->lderr != TLDAP_SUCCESS) {
+
+	ok &= asn1_end_tag(state->result->data);
+
+	if (!ok) {
+		goto decode_error;
+	}
+
+	if ((state->result->lderr != TLDAP_SUCCESS) &&
+	    (state->result->lderr != TLDAP_SASL_BIND_IN_PROGRESS)) {
 		tevent_req_error(req, state->result->lderr);
 		return;
 	}
 	tevent_req_done(req);
+	return;
+
+decode_error:
+	tevent_req_error(req, TLDAP_DECODING_ERROR);
+	return;
 }
 
-int tldap_sasl_bind_recv(struct tevent_req *req)
+int tldap_sasl_bind_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 DATA_BLOB *serverSaslCreds)
 {
-	return tldap_simple_recv(req);
+	struct tldap_req_state *state = tevent_req_data(
+		req, struct tldap_req_state);
+	int err;
+
+	if (tevent_req_is_ldap_error(req, &err)) {
+		return err;
+	}
+
+	if (serverSaslCreds != NULL) {
+		serverSaslCreds->data = talloc_move(
+			mem_ctx, &state->result->res_serverSaslCreds.data);
+		serverSaslCreds->length =
+			state->result->res_serverSaslCreds.length;
+	}
+
+	return state->result->lderr;
 }
 
 int tldap_sasl_bind(struct tldap_context *ld,
@@ -916,7 +968,9 @@ int tldap_sasl_bind(struct tldap_context *ld,
 		    struct tldap_control *sctrls,
 		    int num_sctrls,
 		    struct tldap_control *cctrls,
-		    int num_cctrls)
+		    int num_cctrls,
+		    TALLOC_CTX *mem_ctx,
+		    DATA_BLOB *serverSaslCreds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -941,7 +995,7 @@ int tldap_sasl_bind(struct tldap_context *ld,
 		goto fail;
 	}
 
-	result = tldap_sasl_bind_recv(req);
+	result = tldap_sasl_bind_recv(req, mem_ctx, serverSaslCreds);
 	tldap_save_msg(ld, req);
  fail:
 	TALLOC_FREE(frame);
@@ -969,7 +1023,7 @@ struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 
 int tldap_simple_bind_recv(struct tevent_req *req)
 {
-	return tldap_sasl_bind_recv(req);
+	return tldap_sasl_bind_recv(req, NULL, NULL);
 }
 
 int tldap_simple_bind(struct tldap_context *ld, const char *dn,
@@ -984,7 +1038,8 @@ int tldap_simple_bind(struct tldap_context *ld, const char *dn,
 		cred.data = discard_const_p(uint8_t, "");
 		cred.length = 0;
 	}
-	return tldap_sasl_bind(ld, dn, NULL, &cred, NULL, 0, NULL, 0);
+	return tldap_sasl_bind(ld, dn, NULL, &cred, NULL, 0, NULL, 0,
+			       NULL, NULL);
 }
 
 /*****************************************************************************/
