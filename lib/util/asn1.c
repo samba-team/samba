@@ -72,7 +72,9 @@ bool asn1_push_tag(struct asn1_data *data, uint8_t tag)
 {
 	struct nesting *nesting;
 
-	asn1_write_uint8(data, tag);
+	if (!asn1_write_uint8(data, tag)) {
+		return false;
+	}
 	nesting = talloc(data, struct nesting);
 	if (!nesting) {
 		data->has_error = true;
@@ -90,6 +92,10 @@ bool asn1_pop_tag(struct asn1_data *data)
 {
 	struct nesting *nesting;
 	size_t len;
+
+	if (data->has_error) {
+		return false;
+	}
 
 	nesting = data->nesting;
 
@@ -190,6 +196,10 @@ static bool push_int_bigendian(struct asn1_data *data, unsigned int i, bool nega
 
 bool asn1_write_implicit_Integer(struct asn1_data *data, int i)
 {
+	if (data->has_error) {
+		return false;
+	}
+
 	if (i == -1) {
 		/* -1 is special as it consists of all-0xff bytes. In
                     push_int_bigendian this is the only case that is not
