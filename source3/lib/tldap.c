@@ -57,9 +57,6 @@ struct tldap_ctx_attribute {
 
 struct tldap_context {
 	int ld_version;
-	int ld_deref;
-	int ld_sizelimit;
-	int ld_timelimit;
 	struct tstream_context *conn;
 	bool server_down;
 	int msgid;
