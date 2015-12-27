@@ -279,7 +279,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 				   SAMBA_XATTR_DOS_ATTRIB, attrstr,
 				   sizeof(attrstr));
 	if (sizeret == -1) {
-		DBG_INFO("get_ea_dos_attribute: Cannot get attribute "
+		DBG_INFO("Cannot get attribute "
 			 "from EA on file %s: Error = %s\n",
 			 smb_fname_str_dbg(smb_fname), strerror(errno));
 		return False;
@@ -413,7 +413,7 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 		files_struct *fsp = NULL;
 
 		if((errno != EPERM) && (errno != EACCES)) {
-			DBG_INFO("set_ea_dos_attributes: Cannot set "
+			DBG_INFO("Cannot set "
 				 "attribute EA on file %s: Error = %s\n",
 				 smb_fname_str_dbg(smb_fname), strerror(errno));
 			return false;
