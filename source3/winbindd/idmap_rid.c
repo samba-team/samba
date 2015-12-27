@@ -94,7 +94,7 @@ static NTSTATUS idmap_rid_id_to_sid(struct idmap_domain *dom, struct id_map *map
 }
 
 /**********************************
- Single sid to id lookup function. 
+ Single sid to id lookup function.
 **********************************/
 
 static NTSTATUS idmap_rid_sid_to_id(struct idmap_domain *dom, struct id_map *map)
@@ -123,7 +123,7 @@ static NTSTATUS idmap_rid_sid_to_id(struct idmap_domain *dom, struct id_map *map
 }
 
 /**********************************
- lookup a set of unix ids. 
+ lookup a set of unix ids.
 **********************************/
 
 static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
@@ -151,7 +151,7 @@ static NTSTATUS idmap_rid_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 }
 
 /**********************************
- lookup a set of sids. 
+ lookup a set of sids.
 **********************************/
 
 static NTSTATUS idmap_rid_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
