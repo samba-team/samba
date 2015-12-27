@@ -28,7 +28,7 @@ bld.SAMBA3_MODULE('idmap_ad',
                  subsystem='idmap',
                  allow_undefined_symbols=True,
                  source='',
-                 deps='IDMAP_AD',
+                 deps='IDMAP_AD TLDAP LIBNMB',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad'))

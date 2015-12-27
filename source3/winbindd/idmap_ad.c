@@ -1,15 +1,7 @@
 /*
- *  idmap_ad: map between Active Directory and RFC 2307 or "Services for Unix" (SFU) Accounts
+ * idmap_ad: map between Active Directory and RFC 2307 accounts
  *
- * Unix SMB/CIFS implementation.
- *
- * Winbind ADS backend functions
- *
- * Copyright (C) Andrew Tridgell 2001
- * Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
- * Copyright (C) Gerald (Jerry) Carter 2004-2007
- * Copyright (C) Luke Howard 2001-2004
- * Copyright (C) Michael Adam 2008,2010
+ * Copyright (C) Volker Lendecke 2015
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,480 +19,739 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "../libds/common/flags.h"
-#include "ads.h"
-#include "libads/ldap_schema.h"
-#include "nss_info.h"
 #include "idmap.h"
-#include "../libcli/ldap/ldap_ndr.h"
-#include "../libcli/security/security.h"
+#include "tldap_gensec_bind.h"
+#include "tldap_util.h"
+#include "lib/param/param.h"
+#include "utils/net.h"
+#include "auth/gensec/gensec.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "libads/ldap_schema_oids.h"
+#include "../libds/common/flags.h"
+#include "libcli/ldap/ldap_ndr.h"
+#include "libcli/security/dom_sid.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_IDMAP
-
-#define CHECK_ALLOC_DONE(mem) do { \
-     if (!mem) { \
-           DEBUG(0, ("Out of memory!\n")); \
-           ret = NT_STATUS_NO_MEMORY; \
-           goto done; \
-      } \
-} while (0)
+struct idmap_ad_schema_names;
 
 struct idmap_ad_context {
-	ADS_STRUCT *ads;
-	struct posix_schema *ad_schema;
-	enum wb_posix_mapping ad_map_type; /* WB_POSIX_MAP_UNKNOWN */
+	struct idmap_domain *dom;
+	struct tldap_context *ld;
+	struct idmap_ad_schema_names *schema;
+	const char *default_nc;
 };
 
-/************************************************************************
- ***********************************************************************/
-
-static ADS_STATUS ad_idmap_cached_connection(struct idmap_domain *dom)
+static char *get_schema_path(TALLOC_CTX *mem_ctx, struct tldap_context *ld)
 {
-	ADS_STATUS status;
-	struct idmap_ad_context * ctx;
+	struct tldap_message *rootdse;
 
-	DEBUG(10, ("ad_idmap_cached_connection: called for domain '%s'\n",
-		   dom->name));
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
-	status = ads_idmap_cached_connection(&ctx->ads, dom->name);
-	if (!ADS_ERR_OK(status)) {
-		return status;
+	rootdse = tldap_rootdse(ld);
+	if (rootdse == NULL) {
+		return NULL;
 	}
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
+	return tldap_talloc_single_attribute(rootdse, "schemaNamingContext",
+					     mem_ctx);
+}
 
-	/* if we have a valid ADS_STRUCT and the schema model is
-	   defined, then we can return here. */
+static char *get_default_nc(TALLOC_CTX *mem_ctx, struct tldap_context *ld)
+{
+	struct tldap_message *rootdse;
 
-	if ( ctx->ad_schema ) {
-		return ADS_SUCCESS;
+	rootdse = tldap_rootdse(ld);
+	if (rootdse == NULL) {
+		return NULL;
 	}
 
-	/* Otherwise, set the schema model */
+	return tldap_talloc_single_attribute(rootdse, "defaultNamingContext",
+					     mem_ctx);
+}
 
-	if ( (ctx->ad_map_type ==  WB_POSIX_MAP_SFU) ||
-	     (ctx->ad_map_type ==  WB_POSIX_MAP_SFU20) ||
-	     (ctx->ad_map_type ==  WB_POSIX_MAP_RFC2307) )
-	{
-		status = ads_check_posix_schema_mapping(
-			ctx, ctx->ads, ctx->ad_map_type, &ctx->ad_schema);
-		if ( !ADS_ERR_OK(status) ) {
-			DEBUG(2,("ad_idmap_cached_connection: Failed to obtain schema details!\n"));
+struct idmap_ad_schema_names {
+	char *name;
+	char *uid;
+	char *gid;
+	char *gecos;
+	char *dir;
+	char *shell;
+};
+
+static TLDAPRC get_attrnames_by_oids(struct tldap_context *ld,
+				     TALLOC_CTX *mem_ctx,
+				     const char *schema_path,
+				     size_t num_oids,
+				     const char **oids,
+				     char **names)
+{
+	char *filter;
+	const char *attrs[] = { "lDAPDisplayName", "attributeId" };
+	size_t i;
+	TLDAPRC rc;
+	struct tldap_message **msgs;
+	size_t num_msgs;
+
+	filter = talloc_strdup(mem_ctx, "(|");
+	if (filter == NULL) {
+		return TLDAP_NO_MEMORY;
+	}
+
+	for (i=0; i<num_oids; i++) {
+		filter = talloc_asprintf_append_buffer(
+			filter, "(attributeId=%s)", oids[i]);
+		if (filter == NULL) {
+			return TLDAP_NO_MEMORY;
 		}
 	}
 
-	return status;
+	filter = talloc_asprintf_append_buffer(filter, ")");
+	if (filter == NULL) {
+		return TLDAP_NO_MEMORY;
+	}
+
+	rc = tldap_search(ld, schema_path, TLDAP_SCOPE_SUB, filter,
+			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
+			  0, 0, 0, mem_ctx, &msgs);;
+	TALLOC_FREE(filter);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		return rc;
+	}
+
+	for (i=0; i<num_oids; i++) {
+		names[i] = NULL;
+	}
+
+	num_msgs = talloc_array_length(msgs);
+
+	for (i=0; i<num_msgs; i++) {
+		struct tldap_message *msg = msgs[i];
+		char *oid;
+		size_t j;
+
+		if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
+			/* Could be a TLDAP_RES_SEARCH_REFERENCE */
+			continue;
+		}
+
+		oid = tldap_talloc_single_attribute(
+			msg, "attributeId", msg);
+		if (oid == NULL) {
+			continue;
+		}
+
+		for (j=0; j<num_oids; j++) {
+			if (strequal(oid, oids[j])) {
+				break;
+			}
+		}
+		TALLOC_FREE(oid);
+
+		if (j == num_oids) {
+			/* not found */
+			continue;
+		}
+
+		names[j] = tldap_talloc_single_attribute(
+			msg, "lDAPDisplayName", mem_ctx);
+	}
+
+	TALLOC_FREE(msgs);
+
+	return TLDAP_SUCCESS;
+}
+
+static TLDAPRC get_posix_schema_names(struct tldap_context *ld,
+				      const char *schema_mode,
+				      TALLOC_CTX *mem_ctx,
+				      struct idmap_ad_schema_names **pschema)
+{
+	char *schema_path;
+	struct idmap_ad_schema_names *schema;
+	char *names[6];
+	const char *oids_sfu[] = {
+		ADS_ATTR_SFU_UIDNUMBER_OID,
+		ADS_ATTR_SFU_GIDNUMBER_OID,
+		ADS_ATTR_SFU_HOMEDIR_OID,
+		ADS_ATTR_SFU_SHELL_OID,
+		ADS_ATTR_SFU_GECOS_OID,
+		ADS_ATTR_SFU_UID_OID
+	};
+	const char *oids_sfu20[] = {
+		ADS_ATTR_SFU20_UIDNUMBER_OID,
+		ADS_ATTR_SFU20_GIDNUMBER_OID,
+		ADS_ATTR_SFU20_HOMEDIR_OID,
+		ADS_ATTR_SFU20_SHELL_OID,
+		ADS_ATTR_SFU20_GECOS_OID,
+		ADS_ATTR_SFU20_UID_OID
+	};
+	const char *oids_rfc2307[] = {
+		ADS_ATTR_RFC2307_UIDNUMBER_OID,
+		ADS_ATTR_RFC2307_GIDNUMBER_OID,
+		ADS_ATTR_RFC2307_HOMEDIR_OID,
+		ADS_ATTR_RFC2307_SHELL_OID,
+		ADS_ATTR_RFC2307_GECOS_OID,
+		ADS_ATTR_RFC2307_UID_OID
+	};
+	const char **oids;
+
+	TLDAPRC rc;
+
+	schema = talloc(mem_ctx, struct idmap_ad_schema_names);
+	if (schema == NULL) {
+		return TLDAP_NO_MEMORY;
+	}
+
+	schema_path = get_schema_path(schema, ld);
+	if (schema_path == NULL) {
+		TALLOC_FREE(schema);
+		return TLDAP_NO_MEMORY;
+	}
+
+	oids = oids_rfc2307;
+
+	if ((schema_mode != NULL) && (schema_mode[0] != '\0')) {
+		if (strequal(schema_mode, "sfu")) {
+			oids = oids_sfu;
+		} else if (strequal(schema_mode, "sfu20")) {
+			oids = oids_sfu20;
+		} else if (strequal(schema_mode, "rfc2307" )) {
+			oids = oids_rfc2307;
+		} else {
+			DBG_WARNING("Unknown schema mode %s\n", schema_mode);
+		}
+	}
+
+	rc = get_attrnames_by_oids(ld, schema, schema_path, 6, oids, names);
+	TALLOC_FREE(schema_path);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		TALLOC_FREE(schema);
+		return rc;
+	}
+
+	schema->uid = names[0];
+	schema->gid = names[1];
+	schema->dir = names[2];
+	schema->shell = names[3];
+	schema->gecos = names[4];
+	schema->name = names[5];
+
+	*pschema = schema;
+
+	return TLDAP_SUCCESS;
+}
+
+static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
+				       const char *domname,
+				       struct tldap_context **pld)
+{
+	struct netr_DsRGetDCNameInfo *dcinfo;
+	struct sockaddr_storage dcaddr;
+	struct cli_credentials *creds;
+	struct loadparm_context *lp_ctx;
+	struct tldap_context *ld;
+	int fd;
+	NTSTATUS status;
+	bool ok;
+	TLDAPRC rc;
+
+	status = wb_dsgetdcname_gencache_get(mem_ctx, domname, &dcinfo);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Could not get dcinfo for %s: %s\n", domname,
+			  nt_errstr(status));
+		return status;
+	}
+
+	if (dcinfo->dc_unc == NULL) {
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+	if (dcinfo->dc_unc[0] == '\\') {
+		dcinfo->dc_unc += 1;
+	}
+	if (dcinfo->dc_unc[0] == '\\') {
+		dcinfo->dc_unc += 1;
+	}
+
+	ok = resolve_name(dcinfo->dc_unc, &dcaddr, 0x20, true);
+	if (!ok) {
+		DBG_DEBUG("Could not resolve name %s\n", dcinfo->dc_unc);
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	status = open_socket_out(&dcaddr, 389, 10000, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("open_socket_out failed: %s\n", nt_errstr(status));
+		TALLOC_FREE(dcinfo);
+		return status;
+	}
+
+	ld = tldap_context_create(dcinfo, fd);
+	if (ld == NULL) {
+		DBG_DEBUG("tldap_context_create failed\n");
+		close(fd);
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	creds = cli_credentials_init(dcinfo);
+	if (creds == NULL) {
+		DBG_DEBUG("cli_credentials_init failed\n");
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lp_ctx = loadparm_init_s3(dcinfo, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		DBG_DEBUG("loadparm_init_s3 failed\n");
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_conf(creds, lp_ctx);
+
+	status = cli_credentials_set_machine_account(creds, lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("cli_credentials_set_machine_account "
+			  "failed: %s\n", nt_errstr(status));
+		TALLOC_FREE(dcinfo);
+		return status;
+	}
+
+	rc = tldap_gensec_bind(ld, creds, "ldap", dcinfo->dc_unc, NULL, lp_ctx,
+			       GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		DBG_DEBUG("tldap_gensec_bind failed: %s\n",
+			  tldap_errstr(dcinfo, ld, rc));
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
+	}
+
+	rc = tldap_fetch_rootdse(ld);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		DBG_DEBUG("tldap_fetch_rootdse failed: %s\n",
+			  tldap_errstr(dcinfo, ld, rc));
+		TALLOC_FREE(dcinfo);
+		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
+	}
+
+	*pld = talloc_move(mem_ctx, &ld);
+	TALLOC_FREE(dcinfo);
+	return NT_STATUS_OK;
 }
 
 static int idmap_ad_context_destructor(struct idmap_ad_context *ctx)
 {
-	if (ctx->ads != NULL) {
-		/* we own this ADS_STRUCT so make sure it goes away */
-		ctx->ads->is_mine = True;
-		ads_destroy( &ctx->ads );
-		ctx->ads = NULL;
+	if ((ctx->dom != NULL) && (ctx->dom->private_data == ctx)) {
+		ctx->dom->private_data = NULL;
 	}
 	return 0;
 }
 
-/************************************************************************
- ***********************************************************************/
-
-static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
+static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
+					struct idmap_domain *dom,
+					const char *domname,
+					struct idmap_ad_context **pctx)
 {
 	struct idmap_ad_context *ctx;
-	char *config_option;
-	const char *schema_mode = NULL;	
+	char *schema_config_option;
+	const char *schema_mode;
+	NTSTATUS status;
+	TLDAPRC rc;
 
-	ctx = talloc_zero(dom, struct idmap_ad_context);
+	ctx = talloc(mem_ctx, struct idmap_ad_context);
 	if (ctx == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+	ctx->dom = dom;
+
 	talloc_set_destructor(ctx, idmap_ad_context_destructor);
 
-	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
-	if (config_option == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		talloc_free(ctx);
+	status = idmap_ad_get_tldap_ctx(ctx, domname, &ctx->ld);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("idmap_ad_get_tldap_ctx failed: %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(ctx);
+		return status;
+	}
+
+	ctx->default_nc = get_default_nc(ctx, ctx->ld);
+	if (ctx->default_nc == NULL) {
+		DBG_DEBUG("No default nc\n");
+		TALLOC_FREE(ctx);
+		return status;
+	}
+
+	schema_config_option = talloc_asprintf(
+		ctx, "idmap config %s", domname);
+	if (schema_config_option == NULL) {
+		TALLOC_FREE(ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* default map type */
-	ctx->ad_map_type = WB_POSIX_MAP_RFC2307;
+	schema_mode = lp_parm_const_string(
+		-1, schema_config_option, "schema_mode", "rfc2307");
+	TALLOC_FREE(schema_config_option);
 
-	/* schema mode */
-	schema_mode = lp_parm_const_string(-1, config_option, "schema_mode", NULL);
-	if ( schema_mode && schema_mode[0] ) {
-		if ( strequal(schema_mode, "sfu") )
-			ctx->ad_map_type = WB_POSIX_MAP_SFU;
-		else if ( strequal(schema_mode, "sfu20" ) )
-			ctx->ad_map_type = WB_POSIX_MAP_SFU20;
-		else if ( strequal(schema_mode, "rfc2307" ) )
-			ctx->ad_map_type = WB_POSIX_MAP_RFC2307;
-		else
-			DEBUG(0,("idmap_ad_initialize: Unknown schema_mode (%s)\n",
-				 schema_mode));
+	rc = get_posix_schema_names(ctx->ld, schema_mode, ctx, &ctx->schema);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		DBG_DEBUG("get_posix_schema_names failed: %s\n",
+			  tldap_errstr(ctx, ctx->ld, rc));
+		TALLOC_FREE(ctx);
+		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
 
-	dom->private_data = ctx;
-
-	talloc_free(config_option);
-
+	*pctx = ctx;
 	return NT_STATUS_OK;
 }
 
-/************************************************************************
- ***********************************************************************/
-
-static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map **ids)
+static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 {
-	NTSTATUS ret;
-	TALLOC_CTX *memctx;
+	dom->private_data = NULL;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS idmap_ad_get_context(struct idmap_domain *dom,
+				     struct idmap_ad_context **pctx)
+{
+	struct idmap_ad_context *ctx = NULL;
+	NTSTATUS status;
+
+	if (dom->private_data != NULL) {
+		*pctx = talloc_get_type_abort(dom->private_data,
+					      struct idmap_ad_context);
+		return NT_STATUS_OK;
+	}
+
+	status = idmap_ad_context_create(dom, dom, dom->name, &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("idmap_ad_context_create failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	dom->private_data = ctx;
+	*pctx = ctx;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom,
+					 struct id_map **ids)
+{
 	struct idmap_ad_context *ctx;
-	ADS_STATUS rc;
-	const char *attrs[] = { "sAMAccountType", 
-				"objectSid",
-				NULL, /* uidnumber */
-				NULL, /* gidnumber */
-				NULL };
-	LDAPMessage *res = NULL;
-	LDAPMessage *entry = NULL;
-	char *filter = NULL;
-	int idx = 0;
-	int bidx = 0;
-	int count;
-	int i;
-	char *u_filter = NULL;
-	char *g_filter = NULL;
+	TLDAPRC rc;
+	NTSTATUS status;
+	struct tldap_message **msgs;
 
-	/* initialize the status to avoid suprise */
-	for (i = 0; ids[i]; i++) {
-		ids[i]->status = ID_UNKNOWN;
+	size_t i, num_msgs;
+	char *u_filter, *g_filter, *filter;
+
+	const char *attrs[] = {
+		"sAMAccountType",
+		"objectSid",
+		NULL, /* attr_uidnumber */
+		NULL, /* attr_gidnumber */
+	};
+
+	status = idmap_ad_get_context(dom, &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/* Only do query if we are online */
-	if (idmap_is_offline())	{
-		return NT_STATUS_FILE_IS_OFFLINE;
-	}
+	attrs[2] = ctx->schema->uid;
+	attrs[3] = ctx->schema->gid;
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
-	if ( (memctx = talloc_new(ctx)) == NULL ) {
-		DEBUG(0, ("Out of memory!\n"));
+	u_filter = talloc_strdup(talloc_tos(), "");
+	if (u_filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = ad_idmap_cached_connection(dom);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1, ("ADS uninitialized: %s\n", ads_errstr(rc)));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		/* ret = ads_ntstatus(rc); */
-		goto done;
+	g_filter = talloc_strdup(talloc_tos(), "");
+	if (g_filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	attrs[2] = ctx->ad_schema->posix_uidnumber_attr;
-	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
+	for (i=0; ids[i] != NULL; i++) {
+		struct id_map *id = ids[i];
 
-again:
-	bidx = idx;
-	for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
-		switch (ids[idx]->xid.type) {
-		case ID_TYPE_UID:     
-			if ( ! u_filter) {
-				u_filter = talloc_asprintf(memctx, "(&(|"
-							   "(sAMAccountType=%d)"
-							   "(sAMAccountType=%d)"
-							   "(sAMAccountType=%d))(|",
-							   ATYPE_NORMAL_ACCOUNT,
-							   ATYPE_WORKSTATION_TRUST,
-							   ATYPE_INTERDOMAIN_TRUST);
-			}
-			u_filter = talloc_asprintf_append_buffer(u_filter, "(%s=%lu)",
-							  ctx->ad_schema->posix_uidnumber_attr,
-							  (unsigned long)ids[idx]->xid.id);
-			CHECK_ALLOC_DONE(u_filter);
-			break;
+		id->status = ID_UNKNOWN;
 
-		case ID_TYPE_GID:
-			if ( ! g_filter) {
-				g_filter = talloc_asprintf(memctx, "(&(|"
-							   "(sAMAccountType=%d)"
-							   "(sAMAccountType=%d))(|",
-							   ATYPE_SECURITY_GLOBAL_GROUP,
-							   ATYPE_SECURITY_LOCAL_GROUP);
-			}
-			g_filter = talloc_asprintf_append_buffer(g_filter, "(%s=%lu)",
-							  ctx->ad_schema->posix_gidnumber_attr,
-							  (unsigned long)ids[idx]->xid.id);
-			CHECK_ALLOC_DONE(g_filter);
-			break;
+		switch (id->xid.type) {
+		    case ID_TYPE_UID: {
+			    u_filter = talloc_asprintf_append_buffer(
+				    u_filter, "(%s=%ju)", ctx->schema->uid,
+				    (uintmax_t)id->xid.id);
+			    if (u_filter == NULL) {
+				    return NT_STATUS_NO_MEMORY;
+			    }
+			    break;
+		    }
 
-		default:
-			DEBUG(3, ("Error: mapping requested but Unknown ID type\n"));
-			ids[idx]->status = ID_UNKNOWN;
-			continue;
+		    case ID_TYPE_GID: {
+			    g_filter = talloc_asprintf_append_buffer(
+				    g_filter, "(%s=%ju)", ctx->schema->gid,
+				    (uintmax_t)id->xid.id);
+			    if (g_filter == NULL) {
+				    return NT_STATUS_NO_MEMORY;
+			    }
+			    break;
+		    }
+
+		    default:
+			    DBG_WARNING("Unknown id type: %u\n",
+					(unsigned)id->xid.type);
+			    break;
 		}
 	}
-	filter = talloc_asprintf(memctx, "(|");
-	CHECK_ALLOC_DONE(filter);
-	if ( u_filter) {
-		filter = talloc_asprintf_append_buffer(filter, "%s))", u_filter);
-		CHECK_ALLOC_DONE(filter);
-			TALLOC_FREE(u_filter);
+
+	filter = talloc_strdup(talloc_tos(), "(|");
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
-	if ( g_filter) {
-		filter = talloc_asprintf_append_buffer(filter, "%s))", g_filter);
-		CHECK_ALLOC_DONE(filter);
-		TALLOC_FREE(g_filter);
+
+	if (*u_filter != '\0') {
+		filter = talloc_asprintf_append_buffer(
+			filter,
+			"(&(|(sAMAccountType=%d)(sAMAccountType=%d)"
+			"(sAMAccountType=%d))(|%s))",
+			ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST,
+			ATYPE_INTERDOMAIN_TRUST, u_filter);
+		if (filter == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
+	TALLOC_FREE(u_filter);
+
+	if (*g_filter != '\0') {
+		filter = talloc_asprintf_append_buffer(
+			filter,
+			"(&(|(sAMAccountType=%d)(sAMAccountType=%d))(|%s))",
+			ATYPE_SECURITY_GLOBAL_GROUP,
+			ATYPE_SECURITY_LOCAL_GROUP,
+			g_filter);
+		if (filter == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	TALLOC_FREE(g_filter);
+
 	filter = talloc_asprintf_append_buffer(filter, ")");
-	CHECK_ALLOC_DONE(filter);
-
-	rc = ads_search_retry(ctx->ads, &res, filter, attrs);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1, ("ERROR: ads search returned: %s\n", ads_errstr(rc)));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( (count = ads_count_replies(ctx->ads, res)) == 0 ) {
-		DEBUG(10, ("No IDs found\n"));
+	DBG_DEBUG("Filter: [%s]\n", filter);
+
+	rc = tldap_search(ctx->ld, ctx->default_nc, TLDAP_SCOPE_SUB, filter,
+			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
+			  0, 0, 0, talloc_tos(), &msgs);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
 
-	entry = res;
-	for (i = 0; (i < count) && entry; i++) {
-		struct dom_sid sid;
-		enum id_type type;
+	TALLOC_FREE(filter);
+
+	num_msgs = talloc_array_length(msgs);
+
+	for (i=0; i<num_msgs; i++) {
+		struct tldap_message *msg = msgs[i];
+		char *dn;
 		struct id_map *map;
-		uint32_t id;
-		uint32_t atype;
+		struct dom_sid sid;
+		size_t j;
+		bool ok;
+		uint32_t atype, xid;
+		enum id_type type;
 
-		if (i == 0) { /* first entry */
-			entry = ads_first_entry(ctx->ads, entry);
-		} else { /* following ones */
-			entry = ads_next_entry(ctx->ads, entry);
-		}
-
-		if ( !entry ) {
-			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			break;
-		}
-
-		/* first check if the SID is present */
-		if (!ads_pull_sid(ctx->ads, entry, "objectSid", &sid)) {
-			DEBUG(2, ("Could not retrieve SID from entry\n"));
+		if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
 			continue;
 		}
 
-		/* get type */
-		if (!ads_pull_uint32(ctx->ads, entry, "sAMAccountType", &atype)) {
-			DEBUG(1, ("could not get SAM account type\n"));
+		ok = tldap_entry_dn(msg, &dn);
+		if (!ok) {
+			DBG_DEBUG("No dn found in msg %zu\n", i);
+			continue;
+		}
+
+		ok = tldap_pull_uint32(msg, "sAMAccountType", &atype);
+		if (!ok) {
+			DBG_DEBUG("No atype in object %s\n", dn);
 			continue;
 		}
 
 		switch (atype & 0xF0000000) {
-		case ATYPE_SECURITY_GLOBAL_GROUP:
-		case ATYPE_SECURITY_LOCAL_GROUP:
-			type = ID_TYPE_GID;
-			break;
-		case ATYPE_NORMAL_ACCOUNT:
-		case ATYPE_WORKSTATION_TRUST:
-		case ATYPE_INTERDOMAIN_TRUST:
-			type = ID_TYPE_UID;
-			break;
-		default:
-			DEBUG(1, ("unrecognized SAM account type %08x\n", atype));
+		    case ATYPE_SECURITY_GLOBAL_GROUP:
+		    case ATYPE_SECURITY_LOCAL_GROUP:
+			    type = ID_TYPE_GID;
+			    break;
+		    case ATYPE_NORMAL_ACCOUNT:
+		    case ATYPE_WORKSTATION_TRUST:
+		    case ATYPE_INTERDOMAIN_TRUST:
+			    type = ID_TYPE_UID;
+			    break;
+		    default:
+			    DBG_WARNING("unrecognized SAM account type %08x\n",
+					atype);
 			continue;
 		}
 
-		if (!ads_pull_uint32(ctx->ads, entry, (type==ID_TYPE_UID) ?
-				                 ctx->ad_schema->posix_uidnumber_attr :
-				                 ctx->ad_schema->posix_gidnumber_attr,
-				     &id)) 
-		{
-			DEBUG(1, ("Could not get unix ID for SID %s\n",
-				  dom_sid_string(talloc_tos(), &sid)));
+		ok = tldap_pull_uint32(msg, (type == ID_TYPE_UID) ?
+				       ctx->schema->uid : ctx->schema->gid,
+				       &xid);
+		if (!ok) {
+			DBG_WARNING("No unix id in object %s\n", dn);
 			continue;
 		}
 
-		if (!idmap_unix_id_is_in_range(id, dom)) {
-			DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				id, dom->low_id, dom->high_id));
+		ok = tldap_pull_binsid(msg, "objectSid", &sid);
+		if (!ok) {
+			DBG_DEBUG("No objectSid in object %s\n", dn);
 			continue;
 		}
 
-		map = idmap_find_map_by_id(&ids[bidx], type, id);
-		if (!map) {
-			DEBUG(2, ("WARNING: couldn't match result with requested ID\n"));
+		map = NULL;
+		for (j=0; ids[j]; j++) {
+			if ((type == ids[j]->xid.type) &&
+			    (xid == ids[j]->xid.id)) {
+				map = ids[j];
+				break;
+			}
+		}
+		if (map == NULL) {
+			DBG_DEBUG("Got unexpected sid %s from object %s\n",
+				  sid_string_tos(&sid), dn);
 			continue;
 		}
 
 		sid_copy(map->sid, &sid);
-
-		/* mapped */
 		map->status = ID_MAPPED;
 
-		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
-			   (unsigned long)map->xid.id,
-			   map->xid.type));
+		DBG_DEBUG("Mapped %s -> %ju (%d)\n", sid_string_dbg(map->sid),
+			  (uintmax_t)map->xid.id, map->xid.type);
 	}
 
-	if (res) {
-		ads_msgfree(ctx->ads, res);
-	}
+	TALLOC_FREE(msgs);
 
-	if (ids[idx]) { /* still some values to map */
-		goto again;
-	}
-
-	ret = NT_STATUS_OK;
-
-	/* mark all unknown/expired ones as unmapped */
-	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status != ID_MAPPED) 
-			ids[i]->status = ID_UNMAPPED;
-	}
-
-done:
-	talloc_free(memctx);
-	return ret;
+	return NT_STATUS_OK;
 }
 
-/************************************************************************
- ***********************************************************************/
-
-static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map **ids)
+static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom,
+					 struct id_map **ids)
 {
-	NTSTATUS ret;
-	TALLOC_CTX *memctx;
 	struct idmap_ad_context *ctx;
-	ADS_STATUS rc;
-	const char *attrs[] = { "sAMAccountType", 
-				"objectSid",
-				NULL, /* attr_uidnumber */
-				NULL, /* attr_gidnumber */
-				NULL };
-	LDAPMessage *res = NULL;
-	LDAPMessage *entry = NULL;
-	char *filter = NULL;
-	int idx = 0;
-	int bidx = 0;
-	int count;
-	int i;
-	char *sidstr;
+	TLDAPRC rc;
+	NTSTATUS status;
+	struct tldap_message **msgs;
 
-	/* initialize the status to avoid suprise */
-	for (i = 0; ids[i]; i++) {
-		ids[i]->status = ID_UNKNOWN;
+	char *filter;
+	size_t i, num_msgs;
+
+	const char *attrs[] = {
+		"sAMAccountType",
+		"objectSid",
+		NULL, /* attr_uidnumber */
+		NULL, /* attr_gidnumber */
+	};
+
+	status = idmap_ad_get_context(dom, &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	/* Only do query if we are online */
-	if (idmap_is_offline())	{
-		return NT_STATUS_FILE_IS_OFFLINE;
-	}
+	attrs[2] = ctx->schema->uid;
+	attrs[3] = ctx->schema->gid;
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);	
-
-	if ( (memctx = talloc_new(ctx)) == NULL ) {		
-		DEBUG(0, ("Out of memory!\n"));
+	filter = talloc_asprintf(
+		talloc_tos(),
+		"(&(|(sAMAccountType=%d)(sAMAccountType=%d)(sAMAccountType=%d)"
+		"(sAMAccountType=%d)(sAMAccountType=%d))(|",
+		ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST,
+		ATYPE_INTERDOMAIN_TRUST, ATYPE_SECURITY_GLOBAL_GROUP,
+		ATYPE_SECURITY_LOCAL_GROUP);
+	if (filter == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = ad_idmap_cached_connection(dom);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1, ("ADS uninitialized: %s\n", ads_errstr(rc)));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		/* ret = ads_ntstatus(rc); */
-		goto done;
-	}
+	for (i=0; ids[i]; i++) {
+		char *sidstr;
 
-	if (ctx->ad_schema == NULL) {
-		DEBUG(0, ("haven't got ctx->ad_schema ! \n"));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+		ids[i]->status = ID_UNKNOWN;
 
-	attrs[2] = ctx->ad_schema->posix_uidnumber_attr;
-	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
+		sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), ids[i]->sid);
+		if (sidstr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-again:
-	filter = talloc_asprintf(memctx, "(&(|"
-				 "(sAMAccountType=%d)(sAMAccountType=%d)(sAMAccountType=%d)" /* user account types */
-				 "(sAMAccountType=%d)(sAMAccountType=%d)" /* group account types */
-				 ")(|",
-				 ATYPE_NORMAL_ACCOUNT, ATYPE_WORKSTATION_TRUST, ATYPE_INTERDOMAIN_TRUST,
-				 ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_LOCAL_GROUP);
-
-	CHECK_ALLOC_DONE(filter);
-
-	bidx = idx;
-	for (i = 0; (i < IDMAP_LDAP_MAX_IDS) && ids[idx]; i++, idx++) {
-
-		ids[idx]->status = ID_UNKNOWN;
-
-		sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), ids[idx]->sid);
-		filter = talloc_asprintf_append_buffer(filter, "(objectSid=%s)", sidstr);
-
+		filter = talloc_asprintf_append_buffer(
+			filter, "(objectSid=%s)", sidstr);
 		TALLOC_FREE(sidstr);
-		CHECK_ALLOC_DONE(filter);
+		if (filter == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
+
 	filter = talloc_asprintf_append_buffer(filter, "))");
-	CHECK_ALLOC_DONE(filter);
-	DEBUG(10, ("Filter: [%s]\n", filter));
-
-	rc = ads_search_retry(ctx->ads, &res, filter, attrs);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1, ("ERROR: ads search returned: %s\n", ads_errstr(rc)));
-		ret = NT_STATUS_UNSUCCESSFUL;
-		goto done;
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( (count = ads_count_replies(ctx->ads, res)) == 0 ) {
-		DEBUG(10, ("No IDs found\n"));
+	DBG_DEBUG("Filter: [%s]\n", filter);
+
+	rc = tldap_search(ctx->ld, ctx->default_nc, TLDAP_SCOPE_SUB, filter,
+			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
+			  0, 0, 0, talloc_tos(), &msgs);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
 	}
 
-	entry = res;	
-	for (i = 0; (i < count) && entry; i++) {
-		struct dom_sid sid;
-		enum id_type type;
+	TALLOC_FREE(filter);
+
+	num_msgs = talloc_array_length(msgs);
+
+	for (i=0; i<num_msgs; i++) {
+		struct tldap_message *msg = msgs[i];
+		char *dn;
 		struct id_map *map;
-		uint32_t id;
-		uint32_t atype;
+		struct dom_sid sid;
+		size_t j;
+		bool ok;
+		uint64_t account_type, xid;
+		enum id_type type;
 
-		if (i == 0) { /* first entry */
-			entry = ads_first_entry(ctx->ads, entry);
-		} else { /* following ones */
-			entry = ads_next_entry(ctx->ads, entry);
-		}
-
-		if ( !entry ) {
-			DEBUG(2, ("ERROR: Unable to fetch ldap entries from results\n"));
-			break;
-		}
-
-		/* first check if the SID is present */
-		if (!ads_pull_sid(ctx->ads, entry, "objectSid", &sid)) {
-			DEBUG(2, ("Could not retrieve SID from entry\n"));
+		if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
 			continue;
 		}
 
-		map = idmap_find_map_by_sid(&ids[bidx], &sid);
-		if (!map) {
-			DEBUG(2, ("WARNING: couldn't match result with requested SID\n"));
+		ok = tldap_entry_dn(msg, &dn);
+		if (!ok) {
+			DBG_DEBUG("No dn found in msg %zu\n", i);
 			continue;
 		}
 
-		/* get type */
-		if (!ads_pull_uint32(ctx->ads, entry, "sAMAccountType", &atype)) {
-			DEBUG(1, ("could not get SAM account type\n"));
+		ok = tldap_pull_binsid(msg, "objectSid", &sid);
+		if (!ok) {
+			DBG_DEBUG("No objectSid in object %s\n", dn);
 			continue;
 		}
 
-		switch (atype & 0xF0000000) {
+		map = NULL;
+		for (j=0; ids[j]; j++) {
+			if (dom_sid_equal(&sid, ids[j]->sid)) {
+				map = ids[j];
+				break;
+			}
+		}
+		if (map == NULL) {
+			DBG_DEBUG("Got unexpected sid %s from object %s\n",
+				  sid_string_tos(&sid), dn);
+			continue;
+		}
+
+		ok = tldap_pull_uint64(msg, "sAMAccountType", &account_type);
+		if (!ok) {
+			DBG_DEBUG("No sAMAccountType in %s\n", dn);
+			continue;
+		}
+
+		switch (account_type & 0xF0000000) {
 		case ATYPE_SECURITY_GLOBAL_GROUP:
 		case ATYPE_SECURITY_LOCAL_GROUP:
 			type = ID_TYPE_GID;
@@ -511,91 +762,89 @@ again:
 			type = ID_TYPE_UID;
 			break;
 		default:
-			DEBUG(1, ("unrecognized SAM account type %08x\n", atype));
+			DBG_WARNING("unrecognized SAM account type %"PRIu64"\n",
+				    account_type);
 			continue;
 		}
 
-		if (!ads_pull_uint32(ctx->ads, entry, (type==ID_TYPE_UID) ?
-				                 ctx->ad_schema->posix_uidnumber_attr :
-				                 ctx->ad_schema->posix_gidnumber_attr,
-				     &id)) 
-		{
-			DEBUG(1, ("Could not get unix ID for SID %s\n",
-				sid_string_dbg(map->sid)));
-			continue;
-		}
-		if (!idmap_unix_id_is_in_range(id, dom)) {
-			DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				id, dom->low_id, dom->high_id));
+		ok = tldap_pull_uint64(msg,
+				       type == ID_TYPE_UID ?
+				       ctx->schema->uid : ctx->schema->gid,
+				       &xid);
+		if (!ok) {
+			DBG_DEBUG("No xid in %s\n", dn);
 			continue;
 		}
 
 		/* mapped */
 		map->xid.type = type;
-		map->xid.id = id;
+		map->xid.id = xid;
 		map->status = ID_MAPPED;
 
 		DEBUG(10, ("Mapped %s -> %lu (%d)\n", sid_string_dbg(map->sid),
-			   (unsigned long)map->xid.id,
-			   map->xid.type));
+			   (unsigned long)map->xid.id, map->xid.type));
 	}
 
-	if (res) {
-		ads_msgfree(ctx->ads, res);
-	}
+	TALLOC_FREE(msgs);
 
-	if (ids[idx]) { /* still some values to map */
-		goto again;
-	}
-
-	ret = NT_STATUS_OK;
-
-	/* mark all unknown/expired ones as unmapped */
-	for (i = 0; ids[i]; i++) {
-		if (ids[i]->status != ID_MAPPED) 
-			ids[i]->status = ID_UNMAPPED;
-	}
-
-done:
-	talloc_free(memctx);
-	return ret;
+	return NT_STATUS_OK;
 }
 
-/************************************************************************
- Function dispatch tables for the idmap and nss plugins
- ***********************************************************************/
+static NTSTATUS idmap_ad_unixids_to_sids_retry(struct idmap_domain *dom,
+					       struct id_map **ids)
+{
+	const NTSTATUS status_server_down =
+		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_SERVER_DOWN));
+	NTSTATUS status;
+
+	status = idmap_ad_unixids_to_sids(dom, ids);
+
+	if (NT_STATUS_EQUAL(status, status_server_down)) {
+		TALLOC_FREE(dom->private_data);
+		status = idmap_ad_unixids_to_sids(dom, ids);
+	}
+
+	return status;
+}
+
+static NTSTATUS idmap_ad_sids_to_unixids_retry(struct idmap_domain *dom,
+					       struct id_map **ids)
+{
+	const NTSTATUS status_server_down =
+		NT_STATUS_LDAP(TLDAP_RC_V(TLDAP_SERVER_DOWN));
+	NTSTATUS status;
+
+	status = idmap_ad_sids_to_unixids(dom, ids);
+
+	if (NT_STATUS_EQUAL(status, status_server_down)) {
+		TALLOC_FREE(dom->private_data);
+		status = idmap_ad_sids_to_unixids(dom, ids);
+	}
+
+	return status;
+}
 
 static struct idmap_methods ad_methods = {
 	.init            = idmap_ad_initialize,
-	.unixids_to_sids = idmap_ad_unixids_to_sids,
-	.sids_to_unixids = idmap_ad_sids_to_unixids,
+	.unixids_to_sids = idmap_ad_unixids_to_sids_retry,
+	.sids_to_unixids = idmap_ad_sids_to_unixids_retry,
 };
-
-/************************************************************************
- Initialize the plugins
- ***********************************************************************/
 
 static_decl_idmap;
 NTSTATUS idmap_ad_init(void)
 {
-	static NTSTATUS status_idmap_ad = NT_STATUS_UNSUCCESSFUL;
-	static NTSTATUS status_ad_nss = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
-	/* Always register the AD method first in order to get the
-	   idmap_domain interface called */
-
-	if ( !NT_STATUS_IS_OK(status_idmap_ad) ) {
-		status_idmap_ad = smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, 
-						     "ad", &ad_methods);
-		if ( !NT_STATUS_IS_OK(status_idmap_ad) )
-			return status_idmap_ad;		
+	status = smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION,
+				    "ad", &ad_methods);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if ( !NT_STATUS_IS_OK( status_ad_nss ) ) {
-		status_ad_nss = idmap_ad_nss_init();
-		if ( !NT_STATUS_IS_OK(status_ad_nss) )
-			return status_ad_nss;
+	status = idmap_ad_nss_init();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	return NT_STATUS_OK;	
+	return NT_STATUS_OK;
 }
