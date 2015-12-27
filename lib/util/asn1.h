@@ -20,11 +20,7 @@
 #ifndef _ASN_1_H
 #define _ASN_1_H
 
-struct nesting {
-	off_t start;
-	size_t taglen; /* for parsing */
-	struct nesting *next;
-};
+struct nesting;
 
 struct asn1_data {
 	uint8_t *data;

@@ -20,6 +20,12 @@
 #include "includes.h"
 #include "../lib/util/asn1.h"
 
+struct nesting {
+	off_t start;
+	size_t taglen; /* for parsing */
+	struct nesting *next;
+};
+
 /* allocate an asn1 structure */
 struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx)
 {
