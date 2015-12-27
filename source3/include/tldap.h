@@ -117,6 +117,10 @@ bool tevent_req_ldap_error(struct tevent_req *req, TLDAPRC rc);
 bool tevent_req_is_ldap_error(struct tevent_req *req, TLDAPRC *perr);
 
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
+struct tstream_context *tldap_get_tstream(struct tldap_context *ld);
+void tldap_set_tstream(struct tldap_context *ld,
+		       struct tstream_context *stream);
+
 bool tldap_connection_ok(struct tldap_context *ld);
 bool tldap_context_setattr(struct tldap_context *ld,
 			   const char *name, const void *pptr);

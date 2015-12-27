@@ -196,6 +196,17 @@ static size_t tldap_pending_reqs(struct tldap_context *ld)
 	return talloc_array_length(ld->pending);
 }
 
+struct tstream_context *tldap_get_tstream(struct tldap_context *ld)
+{
+	return ld->conn;
+}
+
+void tldap_set_tstream(struct tldap_context *ld,
+		       struct tstream_context *stream)
+{
+	ld->conn = stream;
+}
+
 static struct tldap_ctx_attribute *tldap_context_findattr(
 	struct tldap_context *ld, const char *name)
 {
