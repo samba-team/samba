@@ -184,16 +184,22 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		struct lsa_DomainInfo *info;
 		struct lsa_TranslatedName *n = &names->names[i];
 		struct wbint_TransID *t = &state->ids.ids[i];
+		int domain_index;
 
 		sid_copy(&dom_sid, &state->non_cached[i]);
 		sid_split_rid(&dom_sid, &t->rid);
 
 		info = &domains->domains[n->sid_index];
 		t->type = lsa_SidType_to_id_type(n->sid_type);
-		t->domain_index = init_lsa_ref_domain_list(state,
-							   state->idmap_doms,
-							   info->name.string,
-							   &dom_sid);
+
+		domain_index = init_lsa_ref_domain_list(
+			state, state->idmap_doms, info->name.string, &dom_sid);
+		if (domain_index == -1) {
+			tevent_req_oom(req);
+			return;
+		}
+		t->domain_index = domain_index;
+
 		t->xid.id = UINT32_MAX;
 		t->xid.type = t->type;
 	}
