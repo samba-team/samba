@@ -22,6 +22,7 @@
 #include "param/param.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
+#include "libds/common/roles.h"
 
 static bool test_create(struct torture_context *tctx)
 {

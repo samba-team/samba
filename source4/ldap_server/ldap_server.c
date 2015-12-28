@@ -46,6 +46,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../libcli/util/tstream.h"
+#include "libds/common/roles.h"
 
 static void ldapsrv_terminate_connection_done(struct tevent_req *subreq);
 

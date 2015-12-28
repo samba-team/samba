@@ -39,8 +39,6 @@ struct smbsrv_connection;
 
 #define Auto (2)
 
-#include "libds/common/roles.h"
-
 struct loadparm_context;
 struct loadparm_service;
 struct smbcli_options;

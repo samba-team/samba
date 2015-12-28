@@ -27,6 +27,7 @@
 #include "param/param.h"
 #include "rpc_server/common/common.h"
 #include "rpc_server/common/share.h"
+#include "libds/common/roles.h"
 
 /* 
     Here are common server info functions used by some dcerpc server interfaces

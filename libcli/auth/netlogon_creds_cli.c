@@ -35,6 +35,7 @@
 #include "netlogon_creds_cli.h"
 #include "source3/include/messages.h"
 #include "source3/include/g_lock.h"
+#include "libds/common/roles.h"
 
 struct netlogon_creds_cli_locked_state;
 

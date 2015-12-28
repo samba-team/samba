@@ -32,6 +32,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "auth/kerberos/kerberos_util.h"
+#include "libds/common/roles.h"
 
 static NTSTATUS auth_generate_session_info_wrapper(struct auth4_context *auth_context,
 						   TALLOC_CTX *mem_ctx,

@@ -44,6 +44,7 @@
 #include "dynconfig/dynconfig.h"
 #include "lib/util/samba_modules.h"
 #include "nsswitch/winbind_client.h"
+#include "libds/common/roles.h"
 
 /*
   recursively delete a directory tree

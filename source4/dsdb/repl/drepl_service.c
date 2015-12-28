@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "param/param.h"
+#include "libds/common/roles.h"
 
 /**
  * Call-back data for _drepl_replica_sync_done_cb()

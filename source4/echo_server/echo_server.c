@@ -31,6 +31,7 @@
 #include "libcli/util/ntstatus.h"
 /* tsocket-related functions */
 #include "lib/tsocket/tsocket.h"
+#include "libds/common/roles.h"
 
 NTSTATUS server_service_echo_init(void);
 
