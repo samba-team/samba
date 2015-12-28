@@ -146,8 +146,12 @@ def SAMBA_LIBRARY(bld, libname, source,
     if pyembed and bld.env['IS_EXTRA_PYTHON']:
         public_headers = pc_files = None
 
+    if private_library and public_headers:
+        raise Utils.WafError("private library '%s' must not have public header files" %
+                             libname)
+
     if LIB_MUST_BE_PRIVATE(bld, libname):
-        private_library=True
+        private_library = True
 
     if not enabled:
         SET_TARGET_TYPE(bld, libname, 'DISABLED')
