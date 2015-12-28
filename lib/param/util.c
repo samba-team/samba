@@ -28,6 +28,7 @@
 #include "system/filesys.h"
 #include "system/dir.h"
 #include "param/param.h"
+#include "libds/common/roles.h"
 
 /**
  * @file

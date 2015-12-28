@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/auth/libcli_auth.h"
+#include "libds/common/roles.h"
 
 NTSTATUS auth_sam_init(void);
 

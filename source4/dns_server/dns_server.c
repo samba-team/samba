@@ -47,6 +47,7 @@
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/messaging/irpc.h"
+#include "libds/common/roles.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS

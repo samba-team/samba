@@ -33,6 +33,7 @@
 #include "libcli/security/session.h"
 #include "libcli/lsarpc/util_lsarpc.h"
 #include "lib/messaging/irpc.h"
+#include "libds/common/roles.h"
 
 /*
   this type allows us to distinguish handle types
