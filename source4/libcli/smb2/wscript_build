@@ -5,6 +5,6 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB2',
 	autoproto='smb2_proto.h',
 	deps='tevent-util cli_smb_common',
 	public_deps='smbclient-raw gensec samba-credentials tevent',
-	public_headers='smb2.h',
+	private_headers='smb2.h',
 	)
 
