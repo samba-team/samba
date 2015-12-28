@@ -2112,7 +2112,7 @@ static bool test_durable_open_open2_lease(struct torture_context *tctx,
 	status = smb2_create(tree2, mem_ctx, &io2);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h2 = io2.out.file.handle;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
 
 	/* Reconnect */
 	if (!torture_smb2_connection_ext(tctx, 0, &options, &tree1)) {
