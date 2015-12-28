@@ -24,6 +24,8 @@
 
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/ndr/libndr.h"
+#include "lib/util/xfile.h"
+
 /*
   possible states for pending requests
 */

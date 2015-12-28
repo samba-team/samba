@@ -23,6 +23,7 @@
 #define __DEFAULT_LIBRPC_RPCCOMMON_H__
 
 #include "gen_ndr/dcerpc.h"
+#include "lib/util/attr.h"
 
 struct dcerpc_binding_handle;
 struct GUID;
