@@ -49,6 +49,10 @@ struct wb_sids2xids_state {
 	 */
 	struct lsa_RefDomainList idmap_doms;
 
+	uint32_t dom_index;
+	struct wbint_TransIDArray *dom_ids;
+	struct lsa_RefDomainList idmap_dom;
+
 	struct wbint_TransIDArray ids;
 };
 
@@ -148,6 +152,9 @@ static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map)
 }
 
 static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type);
+static struct wbint_TransIDArray *wb_sids2xids_extract_for_domain_index(
+	TALLOC_CTX *mem_ctx, const struct wbint_TransIDArray *src,
+	uint32_t domain_index);
 
 static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 {
@@ -204,9 +211,21 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 
 	child = idmap_child();
 
+	state->dom_ids = wb_sids2xids_extract_for_domain_index(
+		state, &state->ids, state->dom_index);
+	if (tevent_req_nomem(state->dom_ids, req)) {
+		return;
+	}
+
+	state->idmap_dom = (struct lsa_RefDomainList) {
+		.count = 1,
+		.domains = &state->idmap_doms.domains[state->dom_index],
+		.max_size = 1
+	};
+
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
-		state, state->ev, child->binding_handle, &state->idmap_doms,
-		&state->ids);
+		state, state->ev, child->binding_handle, &state->idmap_dom,
+		state->dom_ids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -243,14 +262,68 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	struct wb_sids2xids_state *state = tevent_req_data(
 		req, struct wb_sids2xids_state);
 	NTSTATUS status, result;
+	struct winbindd_child *child;
+
+	struct wbint_TransIDArray *src, *dst;
+	uint32_t i, src_idx;
 
 	status = dcerpc_wbint_Sids2UnixIDs_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
+
+	src = state->dom_ids;
+	src_idx = 0;
+	dst = &state->ids;
+
 	if (any_nt_status_not_ok(status, result, &status)) {
-		tevent_req_nterror(req, status);
+		DBG_DEBUG("status=%s, result=%s\n", nt_errstr(status),
+			  nt_errstr(result));
+
+		/*
+		 * All we can do here is to report "not mapped"
+		 */
+		for (i=0; i<src->num_ids; i++) {
+			src->ids[i].type = ID_TYPE_NOT_SPECIFIED;
+		}
+	}
+
+	for (i=0; i<dst->num_ids; i++) {
+		if (dst->ids[i].domain_index == state->dom_index) {
+			dst->ids[i].type = src->ids[src_idx].type;
+			dst->ids[i].xid  = src->ids[src_idx].xid;
+			src_idx += 1;
+		}
+	}
+
+	TALLOC_FREE(state->dom_ids);
+
+	state->dom_index += 1;
+
+	if (state->dom_index == state->idmap_doms.count) {
+		tevent_req_done(req);
 		return;
 	}
-	tevent_req_done(req);
+
+	child = idmap_child();
+
+	state->dom_ids = wb_sids2xids_extract_for_domain_index(
+		state, &state->ids, state->dom_index);
+	if (tevent_req_nomem(state->dom_ids, req)) {
+		return;
+	}
+
+	state->idmap_dom = (struct lsa_RefDomainList) {
+		.count = 1,
+		.domains = &state->idmap_doms.domains[state->dom_index],
+		.max_size = 1
+	};
+
+	subreq = dcerpc_wbint_Sids2UnixIDs_send(
+		state, state->ev, child->binding_handle, &state->idmap_dom,
+		state->dom_ids);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_sids2xids_done, req);
 }
 
 NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
@@ -295,4 +368,32 @@ NTSTATUS wb_sids2xids_recv(struct tevent_req *req,
 	}
 
 	return NT_STATUS_OK;
+}
+
+static struct wbint_TransIDArray *wb_sids2xids_extract_for_domain_index(
+	TALLOC_CTX *mem_ctx, const struct wbint_TransIDArray *src,
+	uint32_t domain_index)
+{
+	struct wbint_TransIDArray *ret;
+	uint32_t i;
+
+	ret = talloc_zero(mem_ctx, struct wbint_TransIDArray);
+	if (ret == NULL) {
+		return NULL;
+	}
+	ret->ids = talloc_array(ret, struct wbint_TransID, src->num_ids);
+	if (ret->ids == NULL) {
+		TALLOC_FREE(ret);
+		return NULL;
+	}
+
+	for (i=0; i<src->num_ids; i++) {
+		if (src->ids[i].domain_index == domain_index) {
+			ret->ids[ret->num_ids] = src->ids[i];
+			ret->ids[ret->num_ids].domain_index = 0;
+			ret->num_ids += 1;
+		}
+	}
+
+	return ret;
 }
