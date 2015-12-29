@@ -87,7 +87,7 @@ bool asn1_check_OID(struct asn1_data *data, const char *OID);
 bool asn1_read_LDAPString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s);
 bool asn1_read_GeneralString(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **s);
 bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob);
-bool asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob);
+bool asn1_read_ContextSimple(struct asn1_data *data, TALLOC_CTX *mem_ctx, uint8_t num, DATA_BLOB *blob);
 bool asn1_read_implicit_Integer(struct asn1_data *data, int *i);
 bool asn1_read_Integer(struct asn1_data *data, int *i);
 bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB *blob, uint8_t *padding);

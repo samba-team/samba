@@ -927,7 +927,8 @@ bool asn1_read_OctetString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLO
 	return false;
 }
 
-bool asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blob)
+bool asn1_read_ContextSimple(struct asn1_data *data, TALLOC_CTX *mem_ctx, uint8_t num,
+			     DATA_BLOB *blob)
 {
 	int len;
 	ZERO_STRUCTP(blob);
@@ -937,7 +938,7 @@ bool asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blo
 		data->has_error = true;
 		return false;
 	}
-	*blob = data_blob(NULL, len);
+	*blob = data_blob_talloc(mem_ctx, NULL, len);
 	if ((len != 0) && (!blob->data)) {
 		data->has_error = true;
 		return false;
