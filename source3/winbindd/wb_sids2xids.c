@@ -47,7 +47,7 @@ struct wb_sids2xids_state {
 	 * new domain, but this approach avoids id mappings for
 	 * invalid SIDs.
 	 */
-	struct lsa_RefDomainList *idmap_doms;
+	struct lsa_RefDomainList idmap_doms;
 
 	struct wbint_TransIDArray ids;
 };
@@ -174,11 +174,6 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->idmap_doms = talloc_zero(state, struct lsa_RefDomainList);
-	if (tevent_req_nomem(state->idmap_doms, req)) {
-		return;
-	}
-
 	for (i=0; i<state->num_non_cached; i++) {
 		struct dom_sid dom_sid;
 		struct lsa_DomainInfo *info;
@@ -193,7 +188,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 		t->type = lsa_SidType_to_id_type(n->sid_type);
 
 		domain_index = init_lsa_ref_domain_list(
-			state, state->idmap_doms, info->name.string, &dom_sid);
+			state, &state->idmap_doms, info->name.string, &dom_sid);
 		if (domain_index == -1) {
 			tevent_req_oom(req);
 			return;
@@ -210,7 +205,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	child = idmap_child();
 
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
-		state, state->ev, child->binding_handle, state->idmap_doms,
+		state, state->ev, child->binding_handle, &state->idmap_doms,
 		&state->ids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
