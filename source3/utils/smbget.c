@@ -91,10 +91,18 @@ static void human_readable(off_t s, char *buffer, int l)
 static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen, char *un, int unlen, char *pw, int pwlen)
 {
 	static char hasasked = 0;
+	static char *savedwg;
+	static char *savedun;
+	static char *savedpw;
 	char *wgtmp, *usertmp;
 	char tmp[128];
 
-	if(hasasked) return;
+	if (hasasked) {
+		strncpy(wg, savedwg, wglen - 1);
+		strncpy(un, savedun, unlen - 1);
+		strncpy(pw, savedpw, pwlen - 1);
+		return;
+	}
 	hasasked = 1;
 
 	if(!nonprompt && !username) {
@@ -118,6 +126,11 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 	} else if(password) strncpy(pw, password, pwlen-1);
 
 	if(workgroup)strncpy(wg, workgroup, wglen-1);
+
+	/* save the values found for later */
+	savedwg = SMB_STRDUP(wg);
+	savedun = SMB_STRDUP(un);
+	savedpw = SMB_STRDUP(pw);
 
 	wgtmp = SMB_STRNDUP(wg, wglen); 
 	usertmp = SMB_STRNDUP(un, unlen);
