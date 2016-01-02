@@ -512,10 +512,10 @@ static bool encode_verify_name_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -716,10 +716,10 @@ static bool encode_server_sort_response(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -774,10 +774,10 @@ static bool encode_server_sort_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -809,10 +809,10 @@ static bool encode_extended_dn_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -837,10 +837,10 @@ static bool encode_sd_flags_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -865,10 +865,10 @@ static bool encode_search_options_request(void *mem_ctx, void *in, DATA_BLOB *ou
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -897,10 +897,10 @@ static bool encode_paged_results_request(void *mem_ctx, void *in, DATA_BLOB *out
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -935,10 +935,10 @@ static bool encode_asq_control(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -971,10 +971,10 @@ static bool encode_dirsync_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -1047,10 +1047,10 @@ static bool encode_vlv_request(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -1089,10 +1089,10 @@ static bool encode_vlv_response(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 
 	return true;
@@ -1140,10 +1140,10 @@ static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
 		return false;
 	}
 
-	*out = data_blob_talloc(mem_ctx, data->data, data->length);
-	if (out->data == NULL) {
+	if (!asn1_extract_blob(data, mem_ctx, out)) {
 		return false;
 	}
+
 	talloc_free(data);
 	return true;
 }

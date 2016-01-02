@@ -691,7 +691,10 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 
 	if (!asn1_pop_tag(data)) goto err;
 
-	*result = data_blob_talloc(mem_ctx, data->data, data->length);
+	if (!asn1_extract_blob(data, mem_ctx, result)) {
+		goto err;
+	}
+
 	asn1_free(data);
 
 	return true;

@@ -79,7 +79,9 @@ DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
 
 	if (!asn1_pop_tag(data)) goto err;
 
-	ret = data_blob_talloc(ctx, data->data, data->length);
+	if (!asn1_extract_blob(data, ctx, &ret)) {
+		goto err;
+	}
 
   err:
 
@@ -250,7 +252,9 @@ DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const ui
 	if (!asn1_write(data, ticket.data, ticket.length)) goto err;
 	if (!asn1_pop_tag(data)) goto err;
 
-	ret = data_blob_talloc(ctx, data->data, data->length);
+	if (!asn1_extract_blob(data, ctx, &ret)) {
+		goto err;
+	}
 
   err:
 
@@ -377,7 +381,9 @@ DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob)
 	if (!asn1_pop_tag(data)) goto err;
 	if (!asn1_pop_tag(data)) goto err;
 
-	ret = data_blob_talloc(ctx, data->data, data->length);
+	if (!asn1_extract_blob(data, ctx, &ret)) {
+		goto err;
+	}
 
  err:
 

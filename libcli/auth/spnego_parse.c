@@ -357,10 +357,11 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 		break;
 	}
 
-	if (!asn1_has_error(asn1)) {
-		*blob = data_blob_talloc(mem_ctx, asn1->data, asn1->length);
-		ret = asn1->ofs;
+	if (!asn1_extract_blob(asn1, mem_ctx, blob)) {
+		goto err;
 	}
+
+	ret = asn1->ofs;
 
   err:
 
@@ -427,8 +428,7 @@ bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
 		goto err;
 	}
 
-	*blob = data_blob_talloc(mem_ctx, asn1->data, asn1->length);
-	if (blob->length != asn1->length) {
+	if (!asn1_extract_blob(asn1, mem_ctx, blob)) {
 		goto err;
 	}
 
