@@ -322,7 +322,7 @@ static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		if (!asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(7))) return false;
 		if (!asn1_write_LDAPString(data, tree->u.present.attr)) return false;
 		if (!asn1_pop_tag(data)) return false;
-		return !data->has_error;
+		return !asn1_has_error(data);
 
 	case LDB_OP_APPROX:
 		/* approx test */
@@ -366,7 +366,7 @@ static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 	default:
 		return false;
 	}
-	return !data->has_error;
+	return !asn1_has_error(data);
 }
 
 static bool ldap_encode_response(struct asn1_data *data, struct ldap_Result *result)
@@ -845,7 +845,8 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		if (!asn1_read_OctetString_talloc(mem_ctx, data, &attrib)) goto failed;
 		if (!asn1_read_OctetString(data, mem_ctx, &value)) goto failed;
 		if (!asn1_end_tag(data)) goto failed;
-		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+		if (asn1_has_error(data) || (attrib == NULL) ||
+		    (value.data == NULL)) {
 			goto failed;
 		}
 
@@ -960,7 +961,8 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		if (!asn1_read_OctetString_talloc(mem_ctx, data, &attrib)) goto failed;
 		if (!asn1_read_OctetString(data, mem_ctx, &value)) goto failed;
 		if (!asn1_end_tag(data)) goto failed;
-		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+		if (asn1_has_error(data) || (attrib == NULL) ||
+		    (value.data == NULL)) {
 			goto failed;
 		}
 
@@ -979,7 +981,8 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		if (!asn1_read_OctetString_talloc(mem_ctx, data, &attrib)) goto failed;
 		if (!asn1_read_OctetString(data, mem_ctx, &value)) goto failed;
 		if (!asn1_end_tag(data)) goto failed;
-		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+		if (asn1_has_error(data) || (attrib == NULL) ||
+		    (value.data == NULL)) {
 			goto failed;
 		}
 
@@ -1017,7 +1020,8 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 		if (!asn1_read_OctetString_talloc(mem_ctx, data, &attrib)) goto failed;
 		if (!asn1_read_OctetString(data, mem_ctx, &value)) goto failed;
 		if (!asn1_end_tag(data)) goto failed;
-		if ((data->has_error) || (attrib == NULL) || (value.data == NULL)) {
+		if (asn1_has_error(data) || (attrib == NULL) ||
+		    (value.data == NULL)) {
 			goto failed;
 		}
 
@@ -1618,7 +1622,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 	}
 
 	if (!asn1_end_tag(data)) goto prot_err;
-	if ((data->has_error) || (data->nesting != NULL)) {
+	if (asn1_has_error(data) || (data->nesting != NULL)) {
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 	return NT_STATUS_OK;
