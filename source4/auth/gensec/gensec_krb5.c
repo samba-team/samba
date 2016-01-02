@@ -417,7 +417,9 @@ static DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLO
 	if (!asn1_pop_tag(data)) goto err;
 
 
-	ret = data_blob_talloc(mem_ctx, data->data, data->length);
+	if (!asn1_extract_blob(data, mem_ctx, &ret)) {
+		goto err;
+	}
 	asn1_free(data);
 
 	return ret;
