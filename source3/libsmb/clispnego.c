@@ -83,7 +83,7 @@ DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
 
   err:
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		DEBUG(1,("Failed to build negTokenInit at offset %d\n", (int)data->ofs));
 	}
 
@@ -143,7 +143,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 		if (!asn1_read_OID(data,ctx, &OIDs[i])) {
 			goto err;
 		}
-		if (data->has_error) {
+		if (asn1_has_error(data)) {
 			goto err;
 		}
 	}
@@ -209,11 +209,11 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 
 	if (!asn1_end_tag(data)) goto err;
 
-	ret = !data->has_error;
+	ret = !asn1_has_error(data);
 
   err:
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		int j;
 		if (principal) {
 			TALLOC_FREE(*principal);
@@ -254,7 +254,7 @@ DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const ui
 
   err:
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
 	}
 
@@ -342,11 +342,11 @@ bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 	if (!asn1_end_tag(data)) goto err;
 	if (!asn1_end_tag(data)) goto err;
 
-	ret = !data->has_error;
+	ret = !asn1_has_error(data);
 
   err:
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		data_blob_free(chal1);
 		data_blob_free(chal2);
 	}
@@ -452,11 +452,11 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 	if (!asn1_end_tag(data)) goto err;
 	if (!asn1_end_tag(data)) goto err;
 
-	ret = !data->has_error;
+	ret = !asn1_has_error(data);
 
   err:
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		DEBUG(3,("spnego_parse_auth_response failed at %d\n", (int)data->ofs));
 		asn1_free(data);
 		data_blob_free(auth);

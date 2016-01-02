@@ -1315,7 +1315,7 @@ done:
 	}
 	s++;
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		return false;
 	}
 
@@ -1529,7 +1529,7 @@ static bool tldap_push_filter_basic(struct tldap_context *ld,
 		if (!asn1_write_OctetString(data, uval, uval_len)) return false;
 	}
 
-	if (data->has_error) {
+	if (asn1_has_error(data)) {
 		return false;
 	}
 	return asn1_pop_tag(data);
@@ -2019,7 +2019,7 @@ static bool tldap_decode_controls(struct tldap_req_state *state)
 
 		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) goto out;
 		if (!asn1_read_OctetString_talloc(msg, data, &oid)) goto out;
-		if ((data->has_error) || (oid == NULL)) {
+		if (asn1_has_error(data) || (oid == NULL)) {
 			goto out;
 		}
 		c->oid = oid;
