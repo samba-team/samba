@@ -586,6 +586,12 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				p++;
 				*d++ = '\0';
+
+				/*
+				 * This talloc_memdup() is OK with the
+				 * +1 because *d has been set to '\0'
+				 * just above
+				 */
 				dn->components[dn->comp_num].value.data = \
 					(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
 				dn->components[dn->comp_num].value.length = l;
@@ -708,6 +714,11 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	}
 
 	*d++ = '\0';
+	/*
+	 * This talloc_memdup() is OK with the
+	 * +1 because *d has been set to '\0'
+	 * just above.
+	 */
 	dn->components[dn->comp_num].value.length = l;
 	dn->components[dn->comp_num].value.data =
 		(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
