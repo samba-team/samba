@@ -26,6 +26,15 @@ struct nesting {
 	struct nesting *next;
 };
 
+
+struct asn1_data {
+	uint8_t *data;
+	size_t length;
+	off_t ofs;
+	struct nesting *nesting;
+	bool has_error;
+};
+
 /* allocate an asn1 structure */
 struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx)
 {

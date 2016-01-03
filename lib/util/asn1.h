@@ -21,15 +21,7 @@
 #define _ASN_1_H
 
 struct nesting;
-
-struct asn1_data {
-	uint8_t *data;
-	size_t length;
-	off_t ofs;
-	struct nesting *nesting;
-	bool has_error;
-};
-
+struct asn1_data;
 typedef struct asn1_data ASN1_DATA;
 
 #define ASN1_APPLICATION(x) ((x)+0x60)
