@@ -1907,11 +1907,23 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 	}
 
 	v.length = val.length;
-	v.data = (uint8_t *)talloc_memdup(dn, val.data, v.length+1);
+
+	/*
+	 * This is like talloc_memdup(dn, v.data, v.length + 1), but
+	 * avoids the over-read
+	 */
+	v.data = (uint8_t *)talloc_size(dn, v.length+1);
 	if ( ! v.data) {
 		talloc_free(n);
 		return LDB_ERR_OTHER;
 	}
+	memcpy(v.data, val.data, val.length);
+
+	/*
+	 * Enforce NUL termination outside the stated length, as is
+	 * traditional in LDB
+	 */
+	v.data[v.length] = '\0';
 
 	talloc_free(dn->components[num].name);
 	talloc_free(dn->components[num].value.data);
