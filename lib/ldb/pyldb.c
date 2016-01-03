@@ -489,7 +489,7 @@ static PyObject *py_ldb_dn_set_extended_component(PyLdbDnObject *self, PyObject 
 	char *name;
 	int err;
 	uint8_t *value;
-	int size = 0;
+	Py_ssize_t size = 0;
 
 	if (!PyArg_ParseTuple(args, "sz#", &name, (const char**)&value, &size))
 		return NULL;
@@ -3642,7 +3642,7 @@ static PyObject *py_valid_attr_name(PyObject *self, PyObject *args)
 static PyObject *py_binary_encode(PyObject *self, PyObject *args)
 {
 	char *str, *encoded;
-	int size = 0;
+	Py_ssize_t size = 0;
 	struct ldb_val val;
 	PyObject *ret;
 
