@@ -1912,6 +1912,14 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 		return LDB_ERR_OTHER;
 	}
 
+	if (num < 0) {
+		return LDB_ERR_OTHER;
+	}
+
+	if (v.length > v.length + 1) {
+		return LDB_ERR_OTHER;
+	}
+
 	n = talloc_strdup(dn, name);
 	if ( ! n) {
 		return LDB_ERR_OTHER;
