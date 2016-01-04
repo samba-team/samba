@@ -147,7 +147,7 @@ static PyObject *py_imessaging_send(PyObject *self, PyObject *args, PyObject *kw
 	NTSTATUS status;
 	struct server_id server;
 	const char *kwnames[] = { "target", "msg_type", "data", NULL };
-	int length;
+	Py_ssize_t length;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ois#:send", 
 		discard_const_p(char *, kwnames), &target, &msg_type, &data.data, &length)) {
