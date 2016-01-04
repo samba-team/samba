@@ -96,9 +96,10 @@ static void release_file_oplock(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
+	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) && koplocks;
 
 	if ((fsp->oplock_type != NO_OPLOCK) &&
-	    koplocks) {
+	    use_kernel) {
 		koplocks->ops->release_oplock(koplocks, fsp, NO_OPLOCK);
 	}
 
