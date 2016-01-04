@@ -28,13 +28,6 @@
 #include "lib/tsocket/tsocket.h"
 #include "python/modules.h"
 
-/* There's no Py_ssize_t in 2.4, apparently */
-#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
-typedef int Py_ssize_t;
-typedef inquiry lenfunc;
-typedef intargfunc ssizeargfunc;
-#endif
-
 typedef struct {
 	PyObject_HEAD
 	struct websrv_context *web;
