@@ -24,6 +24,7 @@
 #include "librpc/ndr/libndr.h"
 #include "lib/util/util_net.h"
 #include "lib/util/debug.h"
+#include "lib/util/util.h"
 
 #define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
 #define NDR_IVAL(ndr, ofs) (NDR_BE(ndr)?RIVAL(ndr->data,ofs):IVAL(ndr->data,ofs))

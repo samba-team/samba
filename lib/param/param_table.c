@@ -32,6 +32,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/param/param_global.h"
 #include "libcli/smb/smb_constants.h"
+#include "libds/common/roles.h"
 
 #ifndef N_
 #define N_(x) x

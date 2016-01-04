@@ -127,7 +127,7 @@ def build(bld):
                 bld.SAMBA_LIBRARY(name,
                                   deps='ldb',
                                   source='pyldb_util.c',
-                                  public_headers='pyldb.h',
+                                  public_headers=('' if private_library else 'pyldb.h'),
                                   public_headers_install=not private_library,
                                   vnum=VERSION,
                                   private_library=private_library,
@@ -159,12 +159,14 @@ def build(bld):
 
         abi_match = '!ldb_*module_ops !ldb_*backend_ops ldb_*'
 
+        ldb_headers = ('include/ldb.h include/ldb_errors.h '
+                       'include/ldb_module.h include/ldb_handlers.h')
+
         bld.SAMBA_LIBRARY('ldb',
                           COMMON_SRC + ' ' + LDB_MAP_SRC,
                           deps='tevent LIBLDB_MAIN replace',
                           includes='include',
-                          public_headers='include/ldb.h include/ldb_errors.h '\
-                          'include/ldb_module.h include/ldb_handlers.h',
+                          public_headers=('' if private_library else ldb_headers),
                           public_headers_install=not private_library,
                           pc_files='ldb.pc',
                           vnum=VERSION,

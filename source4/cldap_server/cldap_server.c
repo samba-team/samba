@@ -34,6 +34,7 @@
 #include "auth/auth.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
+#include "libds/common/roles.h"
 
 NTSTATUS server_service_cldapd_init(void);
 

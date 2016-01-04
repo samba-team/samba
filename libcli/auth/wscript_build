@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('cliauth',
                   source='',
-                  deps='MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE krb5samba errors NTLM_CHECK UTIL_LSARPC',
+                  deps='MSRPC_PARSE LIBCLI_AUTH COMMON_SCHANNEL PAM_ERRORS SPNEGO_PARSE krb5samba samba-errors NTLM_CHECK UTIL_LSARPC',
                   private_library=True,
                   grouping_library=True)
 

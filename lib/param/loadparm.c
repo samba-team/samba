@@ -68,6 +68,7 @@
 #include "libcli/smb/smb_constants.h"
 #include "tdb.h"
 #include "librpc/gen_ndr/nbt.h"
+#include "libds/common/roles.h"
 
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>

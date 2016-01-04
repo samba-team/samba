@@ -20,6 +20,7 @@
 */
 
 #include "param/param.h"
+#include "libds/common/roles.h"
 
 /*
   this type allows us to distinguish handle types

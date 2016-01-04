@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 bld.SAMBA_LIBRARY('gensec',
 	source='gensec.c gensec_start.c gensec_util.c',
-	pc_files='gensec.pc',
 	autoproto='gensec_toplevel_proto.h',
-	public_deps='tevent-util samba-util errors auth_system_session samba-modules gensec_util asn1util',
-	public_headers='gensec.h',
+	public_deps='tevent-util samba-util samba-errors auth_system_session samba-modules gensec_util asn1util',
+	private_headers='gensec.h',
 	deps='com_err',
-	vnum='0.0.1'
+	private_library=True,
 	)
 
 bld.SAMBA_MODULE('gensec_spnego',

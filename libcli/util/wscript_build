@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 
-bld.SAMBA_LIBRARY('errors',
+bld.SAMBA_LIBRARY('samba-errors',
                   public_headers='error.h ntstatus.h doserr.h werror.h hresult.h',
                   header_path='core',
                   source='doserr.c errormap.c nterr.c errmap_unix.c hresult.c',
                   public_deps='talloc samba-debug',
-                  private_library=True
+                  # private_library=True,
+                  pc_files=[],
+                  vnum='1',
                   )
 

@@ -106,6 +106,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   includes='',
                   public_headers=None,
                   public_headers_install=True,
+                  private_headers=None,
                   header_path=None,
                   pc_files=None,
                   vnum=None,
@@ -145,8 +146,12 @@ def SAMBA_LIBRARY(bld, libname, source,
     if pyembed and bld.env['IS_EXTRA_PYTHON']:
         public_headers = pc_files = None
 
+    if private_library and public_headers:
+        raise Utils.WafError("private library '%s' must not have public header files" %
+                             libname)
+
     if LIB_MUST_BE_PRIVATE(bld, libname):
-        private_library=True
+        private_library = True
 
     if not enabled:
         SET_TARGET_TYPE(bld, libname, 'DISABLED')
@@ -187,6 +192,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         includes       = includes,
                         public_headers = public_headers,
                         public_headers_install = public_headers_install,
+                        private_headers= private_headers,
                         header_path    = header_path,
                         cflags         = cflags,
                         group          = subsystem_group,
@@ -337,6 +343,7 @@ def SAMBA_BINARY(bld, binname, source,
                  deps='',
                  includes='',
                  public_headers=None,
+                 private_headers=None,
                  header_path=None,
                  modules=None,
                  ldflags=None,
@@ -539,6 +546,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     includes='',
                     public_headers=None,
                     public_headers_install=True,
+                    private_headers=None,
                     header_path=None,
                     cflags='',
                     cflags_end=None,
@@ -631,6 +639,7 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
                     group='generators', enabled=True,
                     public_headers=None,
                     public_headers_install=True,
+                    private_headers=None,
                     header_path=None,
                     vars=None,
                     dep_vars=[],

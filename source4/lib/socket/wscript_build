@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('netif',
 bld.SAMBA_MODULE('socket_ip',
     source='socket_ip.c',
     subsystem='samba_socket',
-    deps='errors',
+    deps='samba-errors',
     internal_module=True
     )
 
