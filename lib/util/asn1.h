@@ -97,6 +97,8 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v);
 bool asn1_check_enumerated(struct asn1_data *data, int v);
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v);
 bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob);
+bool asn1_extract_blob(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
+		       DATA_BLOB *pblob);
 void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len);
 int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size);
 
