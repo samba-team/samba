@@ -138,7 +138,7 @@ def build(bld):
                           abi_match='tdb_*',
                           hide_symbols=True,
                           vnum=VERSION,
-                          public_headers='include/tdb.h',
+                          public_headers=('' if private_library else 'include/tdb.h'),
                           public_headers_install=not private_library,
                           pc_files='tdb.pc',
                           private_library=private_library)
