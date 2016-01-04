@@ -337,8 +337,10 @@ static bool test_asn1_Integer(struct torture_context *tctx)
 
 		if (!asn1_write_Integer(data, integer_tests[i].value)) goto err;
 
-		blob.data = data->data;
-		blob.length = data->length;
+		if (!asn1_blob(data, &blob)) {
+			goto err;
+		}
+
 		torture_assert_data_blob_equal(tctx, blob, integer_tests[i].blob, "asn1_write_Integer gave incorrect result");
 
 		if (!asn1_load(data, blob)) goto err;
