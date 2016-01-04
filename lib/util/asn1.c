@@ -57,6 +57,11 @@ bool asn1_has_nesting(const struct asn1_data *data)
 	return data->nesting != NULL;
 }
 
+off_t asn1_current_ofs(const struct asn1_data *data)
+{
+	return data->ofs;
+}
+
 /* write to the ASN1 buffer, advancing the buffer pointer */
 bool asn1_write(struct asn1_data *data, const void *p, int len)
 {
