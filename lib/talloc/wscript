@@ -116,7 +116,7 @@ def build(bld):
                           abi_match='talloc* _talloc*',
                           hide_symbols=True,
                           vnum=VERSION,
-                          public_headers='talloc.h',
+                          public_headers=('' if private_library else 'talloc.h'),
                           pc_files='talloc.pc',
                           public_headers_install=not private_library,
                           private_library=private_library,
@@ -135,7 +135,7 @@ def build(bld):
                 abi_directory='ABI',
                 abi_match='pytalloc_*',
                 private_library=private_library,
-                public_headers='pytalloc.h',
+                public_headers=('' if private_library else 'pytalloc.h'),
                 pc_files='pytalloc-util.pc'
                 )
             bld.SAMBA_PYTHON('pytalloc',
