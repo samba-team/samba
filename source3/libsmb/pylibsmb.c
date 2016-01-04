@@ -650,7 +650,7 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 	int fnum;
 	unsigned mode = 0;
 	char *buf;
-	int buflen;
+	Py_ssize_t buflen;
 	unsigned long long offset;
 	struct tevent_req *req;
 	NTSTATUS status;
