@@ -212,7 +212,7 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 	char *name;
 	uint32_t type;
 	DATA_BLOB value;
-	int value_length = 0;
+	Py_ssize_t value_length = 0;
 	WERROR result;
 	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
