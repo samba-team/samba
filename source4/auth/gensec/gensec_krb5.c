@@ -449,7 +449,7 @@ static bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *
 	data_remaining = asn1_tag_remaining(data);
 
 	if (data_remaining < 3) {
-		data->has_error = true;
+		asn1_set_error(data);
 	} else {
 		if (!asn1_read(data, tok_id, 2)) goto err;
 		data_remaining -= 2;

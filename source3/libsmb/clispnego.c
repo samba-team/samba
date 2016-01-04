@@ -431,7 +431,7 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 			if (!asn1_end_tag(data)) goto err;
 		}
 	} else if (negResult == SPNEGO_ACCEPT_INCOMPLETE) {
-		data->has_error = 1;
+		asn1_set_error(data);
 		goto err;
 	}
 
