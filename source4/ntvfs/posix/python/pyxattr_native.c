@@ -38,7 +38,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 {
 	char *filename, *attribute;
 	int ret = 0;
-	int blobsize;
+	Py_ssize_t blobsize;
 	DATA_BLOB blob;
 
 	if (!PyArg_ParseTuple(args, "sss#", &filename, &attribute, &blob.data, 
