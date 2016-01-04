@@ -221,7 +221,7 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
 class builder(object):
     '''handle build of one directory'''
 
-    def __init__(self, name, sequence):
+    def __init__(self, name, sequence, cp=True):
         self.name = name
         self.dir = builddirs[name]
 
@@ -244,7 +244,10 @@ class builder(object):
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
         run_cmd("rm -rf %s" % self.sdir)
-        run_cmd("git clone --recursive --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
+        if cp:
+            run_cmd("cp --recursive --link --archive %s %s" % (test_master, self.sdir), dir=test_master, show=True)
+        else:
+            run_cmd("git clone --recursive --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
         self.start_next()
 
     def start_next(self):
@@ -283,7 +286,7 @@ class buildlist(object):
             os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
 
         for n in tasknames:
-            b = builder(n, tasks[n])
+            b = builder(n, tasks[n], cp=n is not "pidl")
             self.tlist.append(b)
         if options.retry:
             rebase_remote = "rebaseon"
