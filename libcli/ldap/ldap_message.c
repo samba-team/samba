@@ -1616,7 +1616,7 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 	}
 
 	if (!asn1_end_tag(data)) goto prot_err;
-	if (asn1_has_error(data) || (data->nesting != NULL)) {
+	if (asn1_has_error(data) || asn1_has_nesting(data)) {
 		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 	}
 	return NT_STATUS_OK;
