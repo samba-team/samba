@@ -47,6 +47,11 @@ bool asn1_has_error(const struct asn1_data *data)
 	return data->has_error;
 }
 
+void asn1_set_error(struct asn1_data *data)
+{
+	data->has_error = true;
+}
+
 /* write to the ASN1 buffer, advancing the buffer pointer */
 bool asn1_write(struct asn1_data *data, const void *p, int len)
 {
