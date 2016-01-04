@@ -43,7 +43,7 @@ static PyObject *py_wrap_setxattr(PyObject *self, PyObject *args)
 {
 	char *filename, *attribute, *tdbname;
 	DATA_BLOB blob;
-	int blobsize;
+	Py_ssize_t blobsize;
 	int ret;
 	TALLOC_CTX *mem_ctx;
 	struct loadparm_context *lp_ctx;
