@@ -200,7 +200,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	DATA_BLOB data_in, data_out;
 	NTSTATUS status;
 	char *in_data;
-	int in_length;
+	Py_ssize_t in_length;
 	PyObject *ret;
 	PyObject *object = NULL;
 	struct GUID object_guid;
