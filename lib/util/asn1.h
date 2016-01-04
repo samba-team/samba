@@ -51,6 +51,7 @@ typedef struct asn1_data ASN1_DATA;
 struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx);
 void asn1_free(struct asn1_data *data);
 bool asn1_has_error(const struct asn1_data *data);
+void asn1_set_error(struct asn1_data *data);
 bool asn1_write(struct asn1_data *data, const void *p, int len);
 bool asn1_write_uint8(struct asn1_data *data, uint8_t v);
 bool asn1_push_tag(struct asn1_data *data, uint8_t tag);
