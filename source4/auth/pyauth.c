@@ -36,13 +36,6 @@ void initauth(void);
 
 staticforward PyTypeObject PyAuthContext;
 
-/* There's no Py_ssize_t in 2.4, apparently */
-#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
-typedef int Py_ssize_t;
-typedef inquiry lenfunc;
-typedef intargfunc ssizeargfunc;
-#endif
-
 static PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
 {
 	return py_return_ndr_struct("samba.dcerpc.auth", "session_info", session, session);

@@ -26,12 +26,6 @@
 
 void initparam(void);
 
-/* There's no Py_ssize_t in 2.4, apparently */
-#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
-typedef int Py_ssize_t;
-typedef inquiry lenfunc;
-#endif
-
 #define PyLoadparmContext_AsLoadparmContext(obj) pytalloc_get_type(obj, struct loadparm_context)
 #define PyLoadparmService_AsLoadparmService(obj) pytalloc_get_type(obj, struct loadparm_service)
 
