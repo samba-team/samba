@@ -37,7 +37,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		uint8_t context;
 
 		if (!asn1_peek_uint8(asn1, &context)) {
-			asn1->has_error = true;
+			asn1_set_error(asn1);
 			break;
 		}
 
@@ -51,7 +51,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 
 			mechTypes = talloc(mem_ctx, const char *);
 			if (mechTypes == NULL) {
-				asn1->has_error = true;
+				asn1_set_error(asn1);
 				return false;
 			}
 			for (i = 0; !asn1_has_error(asn1) &&
@@ -63,7 +63,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 						   const char *, i+2);
 				if (p == NULL) {
 					talloc_free(mechTypes);
-					asn1->has_error = true;
+					asn1_set_error(asn1);
 					return false;
 				}
 				mechTypes = p;
@@ -97,7 +97,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			uint8_t type_peek;
 			if (!asn1_start_tag(asn1, ASN1_CONTEXT(3))) return false;
 			if (!asn1_peek_uint8(asn1, &type_peek)) {
-				asn1->has_error = true;
+				asn1_set_error(asn1);
 				break;
 			}
 			if (type_peek == ASN1_OCTET_STRING) {
@@ -119,7 +119,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			break;
 		}
 		default:
-			asn1->has_error = true;
+			asn1_set_error(asn1);
 			break;
 		}
 	}
@@ -205,7 +205,7 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 		uint8_t context;
 		char *oid;
 		if (!asn1_peek_uint8(asn1, &context)) {
-			asn1->has_error = true;
+			asn1_set_error(asn1);
 			break;
 		}
 
@@ -234,7 +234,7 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			if (!asn1_end_tag(asn1)) return false;
 			break;
 		default:
-			asn1->has_error = true;
+			asn1_set_error(asn1);
 			break;
 		}
 	}
@@ -302,7 +302,7 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 	if (!asn1_load(asn1, data)) goto err;
 
 	if (!asn1_peek_uint8(asn1, &context)) {
-		asn1->has_error = true;
+		asn1_set_error(asn1);
 	} else {
 		switch (context) {
 		case ASN1_APPLICATION(0):
@@ -319,7 +319,7 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 			}
 			break;
 		default:
-			asn1->has_error = true;
+			asn1_set_error(asn1);
 			break;
 		}
 	}
@@ -353,7 +353,7 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 		write_negTokenTarg(asn1, &spnego->negTokenTarg);
 		break;
 	default:
-		asn1->has_error = true;
+		asn1_set_error(asn1);
 		break;
 	}
 
