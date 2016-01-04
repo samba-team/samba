@@ -107,7 +107,7 @@ def build(bld):
                           abi_directory='ABI',
                           abi_match='tevent_* _tevent_*',
                           vnum=VERSION,
-                          public_headers='tevent.h',
+                          public_headers=('' if private_library else 'tevent.h'),
                           public_headers_install=not private_library,
                           pc_files='tevent.pc',
                           private_library=private_library)
