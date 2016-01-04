@@ -9,7 +9,7 @@ def build(bld):
         deps='LIBASYNC_REQ',
         public_deps='talloc tevent',
         private_library=True,
-        public_headers='''
+        private_headers='''
             read_smb.h
         ''',
         )
@@ -48,7 +48,7 @@ def build(bld):
         ''',
 	public_deps='talloc samba-util iov_buf',
 	private_library=True,
-	public_headers='''
+	private_headers='''
 		smb_common.h smb2_constants.h smb_constants.h
 		smb_signing.h smb_seal.h
 		smb2_create_blob.h smb2_signing.h
