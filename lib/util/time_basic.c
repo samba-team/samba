@@ -22,6 +22,7 @@
  */
 
 #include "replace.h"
+#include "system/time.h"
 #include "lib/util/time_basic.h"
 
 /**
