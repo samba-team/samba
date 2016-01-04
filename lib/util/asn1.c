@@ -1018,6 +1018,26 @@ bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob)
 	return true;
 }
 
+bool asn1_extract_blob(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
+		       DATA_BLOB *pblob)
+{
+	DATA_BLOB blob;
+
+	if (!asn1_blob(asn1, &blob)) {
+		return false;
+	}
+
+	*pblob = (DATA_BLOB) { .length = blob.length };
+	pblob->data = talloc_move(mem_ctx, &blob.data);
+
+	/*
+	 * Stop access from here on
+	 */
+	asn1->has_error = true;
+
+	return true;
+}
+
 /*
   Fill in an asn1 struct without making a copy
 */
