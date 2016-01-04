@@ -114,7 +114,7 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.SAMBA_LIBRARY('samba-modules',
                       source='modules.c',
-                      deps='errors samba-util',
+                      deps='samba-errors samba-util',
                       local_include=False,
                       private_library=True)
 
@@ -143,7 +143,7 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
     bld.SAMBA_LIBRARY('tevent-util',
                       source='tevent_ntstatus.c tevent_werror.c',
                       local_include=False,
-                      public_deps='tevent errors tevent-unix-util',
+                      public_deps='tevent samba-errors tevent-unix-util',
                       public_headers='tevent_ntstatus.h tevent_werror.h',
                       header_path=[ ('*', 'util') ],
                       pc_files=[],

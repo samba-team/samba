@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('samdb',
 	public_deps='krb5',
 	public_headers='',
 	vnum='0.0.1',
-	deps='ndr NDR_DRSUAPI NDR_DRSBLOBS auth_system_session LIBCLI_AUTH ndr SAMDB_SCHEMA ldbsamba samdb-common LIBCLI_DRSUAPI cli-ldap-common samba-util com_err authkrb5 samba-credentials ldbwrap errors krb5samba ldb',
+	deps='ndr NDR_DRSUAPI NDR_DRSBLOBS auth_system_session LIBCLI_AUTH ndr SAMDB_SCHEMA ldbsamba samdb-common LIBCLI_DRSUAPI cli-ldap-common samba-util com_err authkrb5 samba-credentials ldbwrap samba-errors krb5samba ldb',
 	)
 
 bld.SAMBA_LIBRARY('samdb-common',
@@ -53,7 +53,7 @@ bld.SAMBA_MODULE('service_dns_update',
 	source='dns/dns_update.c',
 	subsystem='service',
 	init_function='server_service_dnsupdate_init',
-	deps='samdb UTIL_RUNCMD samba-util ldb samdb-common errors talloc auth_system_session samba-hostconfig',
+	deps='samdb UTIL_RUNCMD samba-util ldb samdb-common samba-errors talloc auth_system_session samba-hostconfig',
 	internal_module=False,
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)

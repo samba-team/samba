@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('dnsserver_common',
         source='dnsserver_common.c',
-        deps='samba-util errors ldbsamba clidns',
+        deps='samba-util samba-errors ldbsamba clidns',
         private_library=True,
         enabled=bld.AD_DC_BUILD_IS_ENABLED())
 
