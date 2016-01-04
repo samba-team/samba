@@ -52,6 +52,11 @@ void asn1_set_error(struct asn1_data *data)
 	data->has_error = true;
 }
 
+bool asn1_has_nesting(const struct asn1_data *data)
+{
+	return data->nesting != NULL;
+}
+
 /* write to the ASN1 buffer, advancing the buffer pointer */
 bool asn1_write(struct asn1_data *data, const void *p, int len)
 {
