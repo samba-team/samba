@@ -8,6 +8,7 @@ cache: ccache
 # Everything except samba (long tests)
 env:
   - TASK=ctdb
+  - TASK=samba
   - TASK=samba-xc
   - TASK=samba-ctdb
   - TASK=samba-libs
@@ -25,5 +26,4 @@ before_install:
 
 script:
  - git fetch --unshallow
- - ./script/autobuild.py --tail --testbase=/tmp $TASK
-
+ - SELFTEST_QUICK=1 ./script/autobuild.py --tail --testbase=/tmp $TASK
