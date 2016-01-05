@@ -582,9 +582,6 @@ int ctdb_ctrl_stop_node(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_ctrl_continue_node(struct ctdb_context *ctdb, struct timeval timeout,
 			    uint32_t destnode);
 
-int ctdb_ctrl_setnatgwstate(struct ctdb_context *ctdb,
-			    struct timeval timeout, uint32_t destnode,
-			    uint32_t natgwstate);
 int ctdb_ctrl_setlmasterrole(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     uint32_t lmasterrole);
