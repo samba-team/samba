@@ -882,6 +882,12 @@ NTSTATUS set_sd(files_struct *fsp, struct security_descriptor *psd,
 		return NT_STATUS_OK;
 	}
 
+	if (S_ISLNK(fsp->fsp_name->st.st_ex_mode)) {
+		DEBUG(10, ("ACL set on symlink %s denied.\n",
+			fsp_str_dbg(fsp)));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (psd->owner_sid == NULL) {
 		security_info_sent &= ~SECINFO_OWNER;
 	}
