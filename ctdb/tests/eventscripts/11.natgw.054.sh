@@ -12,8 +12,6 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-ctdb setnatgwstate on
-
 ethtool_interfaces_down "$CTDB_NATGW_PUBLIC_IFACE"
 
 required_result 1 <<EOF

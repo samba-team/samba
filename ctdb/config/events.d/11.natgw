@@ -98,16 +98,6 @@ natgw_config_has_changed ()
     return 0
 }
 
-natgw_set_capability ()
-{
-    # Set NATGW capability depending on configuration
-    if ctdb_natgw_slave_only ; then
-	ctdb setnatgwstate off
-    else
-	ctdb setnatgwstate on
-    fi
-}
-
 _natgw_clear ()
 {
     _ip="${CTDB_NATGW_PUBLIC_IP%/*}"
@@ -210,10 +200,9 @@ natgw_save_state ()
 }
 
 
-case "$1" in 
+case "$1" in
     setup)
 	natgw_check_config
-	natgw_set_capability
 	;;
 
     startup)
@@ -235,7 +224,6 @@ case "$1" in
 
 	ctdb_get_pnn
 
-	natgw_set_capability
 	natgw_ensure_master
 
 	natgw_config_has_changed || natgw_master_has_changed || exit 0

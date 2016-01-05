@@ -12,7 +12,5 @@ setup_ctdb_natgw <<EOF
 192.168.1.24
 EOF
 
-ctdb setnatgwstate on
-
 ok_null
 simple_test_event "monitor"
