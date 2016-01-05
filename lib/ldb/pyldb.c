@@ -1808,7 +1808,7 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 		base = ldb_get_default_basedn(ldb_ctx);
 	} else {
 		if (!pyldb_Object_AsDn(ldb_ctx, py_base, ldb_ctx, &base)) {
-			talloc_free(attrs);
+			talloc_free(mem_ctx);
 			return NULL;
 		}
 	}
