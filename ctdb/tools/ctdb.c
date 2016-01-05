@@ -3433,19 +3433,17 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 		DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n", options.pnn));
 		return -1;
 	}
-	
+
 	if (!options.machinereadable){
 		printf("RECMASTER: %s\n", (capabilities&CTDB_CAP_RECMASTER)?"YES":"NO");
 		printf("LMASTER: %s\n", (capabilities&CTDB_CAP_LMASTER)?"YES":"NO");
 		printf("LVS: %s\n", (capabilities&CTDB_CAP_LVS)?"YES":"NO");
-		printf("NATGW: %s\n", (capabilities&CTDB_CAP_NATGW)?"YES":"NO");
 	} else {
-		printm(":RECMASTER:LMASTER:LVS:NATGW:\n");
-		printm(":%d:%d:%d:%d:\n",
+		printm(":RECMASTER:LMASTER:LVS:\n");
+		printm(":%d:%d:%d:\n",
 			!!(capabilities&CTDB_CAP_RECMASTER),
 			!!(capabilities&CTDB_CAP_LMASTER),
-			!!(capabilities&CTDB_CAP_LVS),
-			!!(capabilities&CTDB_CAP_NATGW));
+			!!(capabilities&CTDB_CAP_LVS));
 	}
 	return 0;
 }
@@ -4801,35 +4799,6 @@ static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **
 		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
 		return ret;
 	}
-	return 0;
-}
-
-/*
-  set the natgw state on/off
- */
-static int control_setnatgwstate(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	uint32_t natgwstate = 0;
-
-	if (argc == 0) {
-		usage();
-	}
-
-	if (!strcmp(argv[0], "on")) {
-		natgwstate = 1;
-	} else if (!strcmp(argv[0], "off")) {
-		natgwstate = 0;
-	} else {
-		usage();
-	}
-
-	ret = ctdb_ctrl_setnatgwstate(ctdb, TIMELIMIT(), options.pnn, natgwstate);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to set the natgw state for node %u\n", options.pnn));
-		return ret;
-	}
-
 	return 0;
 }
 
@@ -6414,7 +6383,6 @@ static const struct {
 	{ "xpnn",             control_xpnn,             false,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 	{ "getreclock",       control_getreclock,	true,	false, "Show the reclock file of a node"},
 	{ "setreclock",       control_setreclock,	true,	false, "Set/clear the reclock file of a node", "[filename]"},
-	{ "setnatgwstate",    control_setnatgwstate,	false,	false, "Set NATGW state to on/off", "{on|off}"},
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbname|dbid> <prio:1-3>"},

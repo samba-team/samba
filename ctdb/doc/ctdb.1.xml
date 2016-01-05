@@ -769,7 +769,6 @@ MaxRedirectCount    = 3
 RECMASTER: YES
 LMASTER: YES
 LVS: NO
-NATGW: YES
       </screen>
 
     </refsect2>
@@ -1401,13 +1400,6 @@ RUNNING
       </para>
       <para>
 	Example: ctdb setifacelink eth0 up
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>setnatgwstate on|off</title>
-      <para>
-	Enable or disable the NAT gateway master capability on a node.
       </para>
     </refsect2>
 

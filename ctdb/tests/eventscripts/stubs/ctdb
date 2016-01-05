@@ -243,13 +243,6 @@ ctdb_shutdown ()
 
 ######################################################################
 
-FAKE_CTDB_NATGW_STATE="${FAKE_CTDB_STATE}/natgw_state"
-
-ctdb_setnatgwstate ()
-{
-    echo "$2" >"$FAKE_CTDB_NATGW_STATE"
-}
-
 # This is only used by the NAT gateway code at the moment, so use a
 # hack.  Assume that $CTDB_NATGW_NODES contains all nodes in the
 # cluster (which is what current tests assume).  Use the PNN to find
@@ -468,7 +461,6 @@ case "$1" in
     disable)       ctdb_disable "$@";;
     moveip)        ctdb_moveip "$@";;
     shutdown)      ctdb_shutdown "$@";;
-    setnatgwstate) ctdb_setnatgwstate "$@" ;;
     setvar)	   ctdb_setvar "$@" ;;
     nodestatus)	   ctdb_nodestatus "$@" ;;
     *) not_implemented "$1" ;;

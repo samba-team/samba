@@ -10,7 +10,7 @@ input="\
 NODEMAP
 0       192.168.20.41   0x0     CURRENT RECMASTER CTDB_CAP_LVS
 1       192.168.20.42   0x0	-CTDB_CAP_LMASTER
-2       192.168.20.43   0x0	-CTDB_CAP_RECMASTER -CTDB_CAP_NATGW
+2       192.168.20.43   0x0	-CTDB_CAP_RECMASTER
 
 IFACES
 :Name:LinkStatus:References:
@@ -27,7 +27,6 @@ required_result 0 <<EOF
 RECMASTER: YES
 LMASTER: YES
 LVS: YES
-NATGW: YES
 EOF
 
 simple_test -n 0 <<EOF
@@ -38,7 +37,6 @@ required_result 0 <<EOF
 RECMASTER: YES
 LMASTER: NO
 LVS: NO
-NATGW: YES
 EOF
 
 simple_test -n 1 <<EOF
@@ -49,7 +47,6 @@ required_result 0 <<EOF
 RECMASTER: NO
 LMASTER: YES
 LVS: NO
-NATGW: NO
 EOF
 
 simple_test -n 2 <<EOF

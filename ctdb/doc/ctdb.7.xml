@@ -446,18 +446,6 @@ Node 3:/usr/local/etc/ctdb/public_addresses
 	</listitem>
       </varlistentry>
 
-      <varlistentry>
-	<term>NATGW</term>
-	<listitem>
-	  <para>
-	    Indicates that this node is configured to become the NAT
-	    gateway master in a NAT gateway group.  See the
-	    <citetitle>NAT GATEWAY</citetitle> section for more
-	    details.
-	  </para>
-	</listitem>
-      </varlistentry>
-
     </variablelist>
 
     <para>
