@@ -6932,6 +6932,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	uint16_t num_def_acls;
 	bool valid_file_acls = True;
 	bool valid_def_acls = True;
+	NTSTATUS status;
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -6957,6 +6958,11 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
 			(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = refuse_symlink(conn, fsp, smb_fname->base_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10,("smb_set_posix_acl: file %s num_file_acls = %u, num_def_acls = %u\n",
