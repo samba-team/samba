@@ -558,18 +558,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_continue_node(ctdb);
 
-	case CTDB_CONTROL_SET_NATGWSTATE: {
-		uint32_t natgwstate;
-
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));		
-		natgwstate = *(uint32_t *)indata.dptr;
-		if (natgwstate == 0) {
-			ctdb->capabilities &= ~CTDB_CAP_NATGW;
-		} else {
-			ctdb->capabilities |= CTDB_CAP_NATGW;
-		}
-		return 0;
-	}
+	case CTDB_CONTROL_SET_NATGWSTATE:
+		return control_not_implemented("SET_NATGWSTATE", NULL);
 
 	case CTDB_CONTROL_SET_LMASTERROLE: {
 		uint32_t lmasterrole;

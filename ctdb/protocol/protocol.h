@@ -313,7 +313,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SET_RECLOCK_FILE        = 100,
 		    CTDB_CONTROL_STOP_NODE               = 101,
 		    CTDB_CONTROL_CONTINUE_NODE           = 102,
-		    CTDB_CONTROL_SET_NATGWSTATE          = 103,
+		    CTDB_CONTROL_SET_NATGWSTATE          = 103, /* obsolete */
 		    CTDB_CONTROL_SET_LMASTERROLE         = 104,
 		    CTDB_CONTROL_SET_RECMASTERROLE       = 105,
 		    CTDB_CONTROL_ENABLE_SCRIPT           = 107,
@@ -697,8 +697,7 @@ struct ctdb_public_ip_list {
 #define CTDB_CAP_LMASTER		0x00000002
 /* This capability is set if CTDB_LVS_PUBLIC_IP is set */
 #define CTDB_CAP_LVS			0x00000004
-/* This capability is set if NATGW is enabled */
-#define CTDB_CAP_NATGW			0x00000008
+#define CTDB_CAP_NATGW			0x00000008 /* obsolete */
 
 /*
  * Node features
