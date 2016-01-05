@@ -3406,6 +3406,14 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	}
 
 	status = cm_connect_netlogon_transport(domain, NCACN_NP, cli);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
+		/*
+		 * SMB2 session expired, needs reauthentication. Drop
+		 * connection and retry.
+		 */
+		invalidate_cm_connection(domain);
+		status = cm_connect_netlogon_transport(domain, NCACN_NP, cli);
+	}
 
 	return status;
 }
