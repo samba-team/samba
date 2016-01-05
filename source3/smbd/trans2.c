@@ -5248,6 +5248,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				uint16 num_file_acls = 0;
 				uint16 num_def_acls = 0;
 
+				status = refuse_symlink(conn,
+						fsp,
+						smb_fname->base_name);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
+
 				if (fsp && fsp->fh->fd != -1) {
 					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
 						talloc_tos());
