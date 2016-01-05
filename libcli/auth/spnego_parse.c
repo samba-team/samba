@@ -324,7 +324,9 @@ ssize_t spnego_read_data(TALLOC_CTX *mem_ctx, DATA_BLOB data, struct spnego_data
 		}
 	}
 
-	if (!asn1_has_error(asn1)) ret = asn1->ofs;
+	if (!asn1_has_error(asn1)) {
+		ret = asn1_current_ofs(asn1);
+	}
 
   err:
 
@@ -361,7 +363,7 @@ ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_da
 		goto err;
 	}
 
-	ret = asn1->ofs;
+	ret = asn1_current_ofs(asn1);
 
   err:
 
