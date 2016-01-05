@@ -237,6 +237,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	char **names, **tmp;
 	size_t num_names;
 	ssize_t sizeret = -1;
+	NTSTATUS status;
 
 	if (pnames) {
 		*pnames = NULL;
@@ -244,6 +245,14 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	*pnum_names = 0;
 
 	if (!lp_ea_support(SNUM(conn))) {
+		return NT_STATUS_OK;
+	}
+
+	status = refuse_symlink(conn, fsp, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Just return no EA's on a symlink.
+		 */
 		return NT_STATUS_OK;
 	}
 
