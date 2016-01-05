@@ -658,6 +658,11 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
+	status = refuse_symlink(conn, fsp, smb_fname->base_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = check_access(conn, fsp, smb_fname, FILE_WRITE_EA);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
