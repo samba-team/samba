@@ -590,6 +590,8 @@ sub setup_fileserver($$)
 
 	my $dfree_share_dir="$share_dir/dfree";
 	push(@dirs, $dfree_share_dir);
+	push(@dirs, "$dfree_share_dir/subdir1");
+	push(@dirs, "$dfree_share_dir/subdir2");
 
 	my $fileserver_options = "
 [lowercase]
