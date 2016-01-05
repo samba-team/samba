@@ -312,7 +312,7 @@ static int do_dskattr(void)
 		return 1;
 	}
 
-	status = cli_disk_size(targetcli, &bsize, &total, &avail);
+	status = cli_disk_size(targetcli, targetpath, &bsize, &total, &avail);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Error in dskattr: %s\n", nt_errstr(status));
 		return 1;

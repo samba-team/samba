@@ -117,6 +117,7 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
                         time_t access_time,
                         time_t write_time);
 NTSTATUS cli_smb2_dskattr(struct cli_state *cli,
+			const char *path,
 			uint64_t *bsize,
 			uint64_t *total,
 			uint64_t *avail);

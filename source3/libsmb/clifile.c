@@ -4199,7 +4199,8 @@ NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return status;
 }
 
-NTSTATUS cli_disk_size(struct cli_state *cli, uint64_t *bsize, uint64_t *total, uint64_t *avail)
+NTSTATUS cli_disk_size(struct cli_state *cli, const char *path, uint64_t *bsize,
+		       uint64_t *total, uint64_t *avail)
 {
 	uint64_t sectors_per_block;
 	uint64_t bytes_per_sector;
@@ -4207,7 +4208,7 @@ NTSTATUS cli_disk_size(struct cli_state *cli, uint64_t *bsize, uint64_t *total, 
 	NTSTATUS status;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		return cli_smb2_dskattr(cli, bsize, total, avail);
+		return cli_smb2_dskattr(cli, path, bsize, total, avail);
 	}
 
 	/*

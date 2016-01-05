@@ -1592,7 +1592,8 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
  Synchronous only.
 ***************************************************************/
 
-NTSTATUS cli_smb2_dskattr(struct cli_state *cli, uint64_t *bsize, uint64_t *total, uint64_t *avail)
+NTSTATUS cli_smb2_dskattr(struct cli_state *cli, const char *path,
+			  uint64_t *bsize, uint64_t *total, uint64_t *avail)
 {
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
@@ -1619,7 +1620,7 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, uint64_t *bsize, uint64_t *tota
 
 	/* First open the top level directory. */
 	status = cli_smb2_create_fnum(cli,
-			"",
+			path,
 			0,			/* create_flags */
 			FILE_READ_ATTRIBUTES,	/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
