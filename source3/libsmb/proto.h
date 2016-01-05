@@ -513,7 +513,8 @@ struct tevent_req *cli_dskattr_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_dskattr_recv(struct tevent_req *req, int *bsize, int *total,
 			  int *avail);
 NTSTATUS cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
-NTSTATUS cli_disk_size(struct cli_state *cli, uint64_t *bsize, uint64_t *total, uint64_t *avail);
+NTSTATUS cli_disk_size(struct cli_state *cli, const char *path, uint64_t *bsize,
+		       uint64_t *total, uint64_t *avail);
 struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,
