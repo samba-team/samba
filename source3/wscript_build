@@ -908,6 +908,7 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  winbindd/winbindd_msrpc.c
                  winbindd/winbindd_rpc.c
                  winbindd/winbindd_reconnect.c
+                 winbindd/winbindd_reconnect_ads.c
                  winbindd/winbindd_ads.c
                  winbindd/winbindd_samr.c
                  winbindd/winbindd_dual.c
