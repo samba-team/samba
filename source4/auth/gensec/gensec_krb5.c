@@ -426,7 +426,8 @@ static DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLO
 
   err:
 
-	DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
+	DEBUG(1, ("Failed to build krb5 wrapper at offset %d\n",
+		  (int)asn1_current_ofs(data)));
 	asn1_free(data);
 	return ret;
 }
