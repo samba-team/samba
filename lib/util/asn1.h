@@ -20,6 +20,11 @@
 #ifndef _ASN_1_H
 #define _ASN_1_H
 
+#include "replace.h"
+#include <talloc.h>
+#include "lib/util/data_blob.h"
+
+
 struct nesting;
 struct asn1_data;
 typedef struct asn1_data ASN1_DATA;

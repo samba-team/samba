@@ -17,8 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "../lib/util/asn1.h"
+#include "replace.h"
+#include "system/locale.h"
+#include "lib/util/asn1.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
 
 struct nesting {
 	off_t start;
