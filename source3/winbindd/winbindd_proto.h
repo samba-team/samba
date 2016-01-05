@@ -933,4 +933,8 @@ ADS_STATUS ads_idmap_cached_connection(ADS_STRUCT **adsp, const char *dom_name);
 
 /* The following definitions come from winbindd/winbindd_irpc.c  */
 NTSTATUS wb_irpc_register(void);
+
+/* The following definitions come from winbindd/winbindd_reconnect.c  */
+bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain);
+
 #endif /*  _WINBINDD_PROTO_H_  */

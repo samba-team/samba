@@ -27,8 +27,7 @@
 
 extern struct winbindd_methods msrpc_methods;
 
-static bool reconnect_need_retry(NTSTATUS status,
-				 struct winbindd_domain *domain)
+bool reconnect_need_retry(NTSTATUS status, struct winbindd_domain *domain)
 {
 	if (NT_STATUS_IS_OK(status)) {
 		return false;

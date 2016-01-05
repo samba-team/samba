@@ -75,6 +75,7 @@ void ndr_print_winbindd_cm_conn(struct ndr_print *ndr,
 
 #ifdef HAVE_ADS
 extern struct winbindd_methods ads_methods;
+extern struct winbindd_methods reconnect_ads_methods;
 #endif
 extern struct winbindd_methods msrpc_methods;
 extern struct winbindd_methods builtin_passdb_methods;
@@ -100,6 +101,8 @@ void ndr_print_winbindd_methods(struct ndr_print *ndr,
 #ifdef HAVE_ADS
 	} else if (r == &ads_methods) {
 		ndr_print_string(ndr, name, "ads_methods");
+	} else if (r == &reconnect_ads_methods) {
+		ndr_print_string(ndr, name, "reconnect_ads_methods");
 #endif
 	} else if (r == &builtin_passdb_methods) {
 		ndr_print_string(ndr, name, "builtin_passdb_methods");
