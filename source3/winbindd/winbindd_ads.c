@@ -38,6 +38,7 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 extern struct winbindd_methods reconnect_methods;
+extern struct winbindd_methods msrpc_methods;
 
 #define WINBIND_CCACHE_NAME "MEMORY:winbind_ccache"
 
@@ -563,9 +564,8 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    struct dom_sid *sid,
 			    enum lsa_SidType *type)
 {
-	return reconnect_methods.name_to_sid(domain, mem_ctx,
-					     domain_name, name, flags,
-					     sid, type);
+	return msrpc_methods.name_to_sid(domain, mem_ctx, domain_name, name,
+					 flags, sid, type);
 }
 
 /* convert a domain SID to a user or group name - use rpc methods */
@@ -576,8 +576,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 			    char **name,
 			    enum lsa_SidType *type)
 {
-	return reconnect_methods.sid_to_name(domain, mem_ctx, sid,
-					     domain_name, name, type);
+	return msrpc_methods.sid_to_name(domain, mem_ctx, sid,
+					 domain_name, name, type);
 }
 
 /* convert a list of rids to names - use rpc methods */
@@ -590,9 +590,9 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 			      char ***names,
 			      enum lsa_SidType **types)
 {
-	return reconnect_methods.rids_to_names(domain, mem_ctx, sid,
-					       rids, num_rids,
-					       domain_name, names, types);
+	return msrpc_methods.rids_to_names(domain, mem_ctx, sid,
+					   rids, num_rids,
+					   domain_name, names, types);
 }
 
 /* If you are looking for "dn_lookup": Yes, it used to be here!
@@ -1142,10 +1142,8 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 				   uint32_t num_sids, const struct dom_sid *sids,
 				   uint32_t *num_aliases, uint32_t **alias_rids)
 {
-	return reconnect_methods.lookup_useraliases(domain, mem_ctx,
-						    num_sids, sids,
-						    num_aliases,
-						    alias_rids);
+	return msrpc_methods.lookup_useraliases(domain, mem_ctx, num_sids, sids,
+						num_aliases, alias_rids);
 }
 
 static NTSTATUS add_primary_group_members(
@@ -1527,7 +1525,7 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
 			       struct samr_DomInfo12 *policy)
 {
-	return reconnect_methods.lockout_policy(domain, mem_ctx, policy);
+	return msrpc_methods.lockout_policy(domain, mem_ctx, policy);
 }
 
 /* find the password policy of a domain - use rpc methods */
@@ -1535,7 +1533,7 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				struct samr_DomInfo1 *policy)
 {
-	return reconnect_methods.password_policy(domain, mem_ctx, policy);
+	return msrpc_methods.password_policy(domain, mem_ctx, policy);
 }
 
 /* get a list of trusted domains */
