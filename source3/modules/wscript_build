@@ -490,3 +490,10 @@ bld.SAMBA3_MODULE('vfs_offline',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_offline'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_offline'))
+
+bld.SAMBA3_MODULE('vfs_fake_dfq',
+                 subsystem='vfs',
+                 source='vfs_fake_dfq.c',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_fake_dfq'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_fake_dfq'))
