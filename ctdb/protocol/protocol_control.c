@@ -333,10 +333,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_CONTINUE_NODE:
 		break;
 
-	case CTDB_CONTROL_SET_NATGWSTATE:
-		len = ctdb_uint32_len(cd->data.role);
-		break;
-
 	case CTDB_CONTROL_SET_LMASTERROLE:
 		len = ctdb_uint32_len(cd->data.role);
 		break;
@@ -665,10 +661,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_SET_RECLOCK_FILE:
 		ctdb_string_push(cd->data.reclock_file, buf);
-		break;
-
-	case CTDB_CONTROL_SET_NATGWSTATE:
-		ctdb_uint32_push(cd->data.role, buf);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
@@ -1021,11 +1013,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_SET_RECLOCK_FILE:
 		ret = ctdb_string_pull(buf, buflen, mem_ctx,
 				       &cd->data.reclock_file);
-		break;
-
-	case CTDB_CONTROL_SET_NATGWSTATE:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.role);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
@@ -1445,9 +1432,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_CONTINUE_NODE:
-		break;
-
-	case CTDB_CONTROL_SET_NATGWSTATE:
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:

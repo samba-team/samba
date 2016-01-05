@@ -477,10 +477,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_CONTINUE_NODE:
 		break;
 
-	case CTDB_CONTROL_SET_NATGWSTATE:
-		cd->data.role = rand_int(2);
-		break;
-
 	case CTDB_CONTROL_SET_LMASTERROLE:
 		cd->data.role = rand_int(2);
 		break;
@@ -951,10 +947,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CONTINUE_NODE:
-		break;
-
-	case CTDB_CONTROL_SET_NATGWSTATE:
-		assert(cd->data.role == cd2->data.role);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
@@ -1429,9 +1421,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_CONTINUE_NODE:
 		break;
 
-	case CTDB_CONTROL_SET_NATGWSTATE:
-		break;
-
 	case CTDB_CONTROL_SET_LMASTERROLE:
 		break;
 
@@ -1825,9 +1814,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_CONTINUE_NODE:
-		break;
-
-	case CTDB_CONTROL_SET_NATGWSTATE:
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:

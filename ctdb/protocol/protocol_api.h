@@ -468,10 +468,6 @@ int ctdb_reply_control_stop_node(struct ctdb_reply_control *reply);
 void ctdb_req_control_continue_node(struct ctdb_req_control *request);
 int ctdb_reply_control_continue_node(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_set_natgwstate(struct ctdb_req_control *request,
-				     uint32_t natgw_role);
-int ctdb_reply_control_set_natgwstate(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_set_lmasterrole(struct ctdb_req_control *request,
 				      uint32_t lmaster_role);
 int ctdb_reply_control_set_lmasterrole(struct ctdb_reply_control *reply);

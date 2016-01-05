@@ -1650,26 +1650,6 @@ int ctdb_reply_control_continue_node(struct ctdb_reply_control *reply)
 	return ctdb_reply_control_generic(reply);
 }
 
-/* CTDB_CONTROL_SET_NATGWSTATE */
-
-void ctdb_req_control_set_natgwstate(struct ctdb_req_control *request,
-				     uint32_t natgw_role)
-{
-	request->opcode = CTDB_CONTROL_SET_NATGWSTATE;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_SET_NATGWSTATE;
-	request->rdata.data.role = natgw_role;
-}
-
-int ctdb_reply_control_set_natgwstate(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply);
-}
-
 /* CTDB_CONTROL_SET_LMASTERROLE */
 
 void ctdb_req_control_set_lmasterrole(struct ctdb_req_control *request,
