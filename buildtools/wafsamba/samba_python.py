@@ -99,6 +99,17 @@ def SAMBA_PYTHON(bld, name,
     if init_function_sentinel is not None:
         cflags += '-DSTATIC_LIBPYTHON_MODULES=%s' % init_function_sentinel
 
+    # From https://docs.python.org/2/c-api/arg.html:
+    # Starting with Python 2.5 the type of the length argument to
+    # PyArg_ParseTuple(), PyArg_ParseTupleAndKeywords() and PyArg_Parse()
+    # can be controlled by defining the macro PY_SSIZE_T_CLEAN before
+    # including Python.h. If the macro is defined, length is a Py_ssize_t
+    # rather than an int.
+
+    # Because <Python.h> if often included before includes.h/config.h
+    # This must be in the -D compiler options
+    cflags += ' -DPY_SSIZE_T_CLEAN=1'
+
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     if realname is not None:
