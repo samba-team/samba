@@ -23,11 +23,16 @@ natgw_cfg_new="${service_state_dir}/cfg_new"
 natgw_cfg_old="${service_state_dir}/cfg_old"
 natgw_master_old="${service_state_dir}/master_old"
 
+ctdb_natgw_slave_only ()
+{
+    [ "$CTDB_NATGW_SLAVE_ONLY" = "yes" ]
+}
+
 natgw_check_config ()
 {
     [ -r "$CTDB_NATGW_NODES" ] || \
 	die "error: CTDB_NATGW_NODES=${CTDB_NATGW_NODES} unreadable"
-    if [ "$CTDB_NATGW_SLAVE_ONLY" != "yes" ] ; then
+    if ! ctdb_natgw_slave_only ; then
 	[ -n "$CTDB_NATGW_PUBLIC_IP" ] || \
 	    die "Invalid configuration: CTDB_NATGW_PUBLIC_IP not set"
 	[ -n "$CTDB_NATGW_PUBLIC_IFACE" ] || \
@@ -80,7 +85,7 @@ natgw_config_has_changed ()
 natgw_set_capability ()
 {
     # Set NATGW capability depending on configuration
-    if [ "$CTDB_NATGW_SLAVE_ONLY" = "yes" ] ; then
+    if ctdb_natgw_slave_only ; then
 	ctdb setnatgwstate off
     else
 	ctdb setnatgwstate on
