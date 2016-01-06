@@ -79,18 +79,17 @@ interface krb5pac
 		[size_is(num_transited_services)] lsa_String *transited_services;
 	} PAC_CONSTRAINED_DELEGATION;
 
+	typedef [bitmap32bit] bitmap {
+		PAC_UPN_DNS_FLAG_CONSTRUCTED = 0x00000001
+	} PAC_UPN_DNS_FLAGS;
+
 	typedef struct {
-		[value(2*strlen_m(upn_name))] uint16 upn_size;
-		uint16 upn_offset;
-		[value(2*strlen_m(domain_name))] uint16 domain_size;
-		uint16 domain_offset;
-		uint16 unknown3; /* 0x01 */
-		uint16 unknown4;
-		uint32 unknown5;
-		[charset(UTF16)] uint8 upn_name[upn_size+2];
-		[charset(UTF16)] uint8 domain_name[domain_size+2];
-		uint32 unknown6; /* padding */
-	} PAC_UNKNOWN_12;
+		[value(2*strlen_m(upn_name))] uint16 upn_name_size;
+		[relative_short,subcontext(0),subcontext_size(upn_name_size),flag(NDR_ALIGN8|STR_NOTERM|NDR_REMAINING)] string *upn_name;
+		[value(2*strlen_m(dns_domain_name))] uint16 dns_domain_name_size;
+		[relative_short,subcontext(0),subcontext_size(dns_domain_name_size),flag(NDR_ALIGN8|STR_NOTERM|NDR_REMAINING)] string *dns_domain_name;
+		PAC_UPN_DNS_FLAGS flags;
+	} PAC_UPN_DNS_INFO;
 
 	typedef [public] struct {
 		PAC_LOGON_INFO *info;
@@ -107,7 +106,7 @@ interface krb5pac
 		PAC_TYPE_KDC_CHECKSUM = 7,
 		PAC_TYPE_LOGON_NAME = 10,
 		PAC_TYPE_CONSTRAINED_DELEGATION = 11,
-		PAC_TYPE_UNKNOWN_12 = 12
+		PAC_TYPE_UPN_DNS_INFO = 12
 	} PAC_TYPE;
 
 	typedef struct {
@@ -122,12 +121,12 @@ interface krb5pac
 		[case(PAC_TYPE_LOGON_NAME)]	PAC_LOGON_NAME logon_name;
 		[case(PAC_TYPE_CONSTRAINED_DELEGATION)][subcontext(0xFFFFFC01)]
 			PAC_CONSTRAINED_DELEGATION_CTR constrained_delegation;
+		[case(PAC_TYPE_UPN_DNS_INFO)]	PAC_UPN_DNS_INFO upn_dns_info;
 		/* when new PAC info types are added they are supposed to be done
 		   in such a way that they are backwards compatible with existing
 		   servers. This makes it safe to just use a [default] for
 		   unknown types, which lets us ignore the data */
 		[default]	[subcontext(0)] DATA_BLOB_REM unknown;
-		/* [case(PAC_TYPE_UNKNOWN_12)]	PAC_UNKNOWN_12 unknown; */
 	} PAC_INFO;
 
 	typedef [public,nopush,nopull] struct {
@@ -191,6 +190,10 @@ interface krb5pac
 
 	[nopython] void decode_credential_data_ndr(
 		[in] PAC_CREDENTIAL_DATA_NDR credential_data_ndr
+		);
+
+	[nopython] void decode_upn_dns_info(
+		[in] PAC_UPN_DNS_INFO upn_dns_info
 		);
 
 	[nopython] void decode_pac_validate(

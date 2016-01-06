@@ -29,6 +29,8 @@ size_t _ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
 	switch (level) {
 		case PAC_TYPE_LOGON_INFO:
 			return NDR_ROUND(s,8);
+		case PAC_TYPE_UPN_DNS_INFO:
+			return NDR_ROUND(s,8);
 		default:
 			return s;
 	}
