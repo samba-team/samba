@@ -83,14 +83,19 @@ DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
 		goto err;
 	}
 
+	asn1_free(data);
+	data = NULL;
+
   err:
 
-	if (asn1_has_error(data)) {
-		DEBUG(1, ("Failed to build negTokenInit at offset %d\n",
-			  (int)asn1_current_ofs(data)));
-	}
+	if (data != NULL) {
+		if (asn1_has_error(data)) {
+			DEBUG(1, ("Failed to build negTokenInit at offset %d\n",
+				  (int)asn1_current_ofs(data)));
+		}
 
-	asn1_free(data);
+		asn1_free(data);
+	}
 
 	return ret;
 }
