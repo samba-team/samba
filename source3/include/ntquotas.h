@@ -63,7 +63,7 @@ enum SMB_QUOTA_TYPE {
 	SMB_USER_FS_QUOTA_TYPE = 1,
 	SMB_USER_QUOTA_TYPE = 2,
 	SMB_GROUP_FS_QUOTA_TYPE = 3,/* not used yet */
-	SMB_GROUP_QUOTA_TYPE = 4 /* not in use yet, maybe for disk_free queries */
+	SMB_GROUP_QUOTA_TYPE = 4 /* used by disk_free queries */
 };
 
 typedef struct _SMB_NTQUOTA_STRUCT {
