@@ -2960,7 +2960,9 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct netlogon_creds_cli_context *p_creds;
 	struct cli_credentials *creds = NULL;
+	bool retry = false; /* allow one retry attempt for expired session */
 
+retry:
 	result = init_dc_connection_rpc(domain, false);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -2995,6 +2997,14 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		 smbXcli_conn_remote_name(conn->cli->conn),
 		 creds,
 		 &conn->lsa_pipe);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NETWORK_SESSION_EXPIRED)
+	    && !retry) {
+		invalidate_cm_connection(domain);
+		retry = true;
+		goto retry;
+	}
+
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
 			  "domain %s using NTLMSSP authenticated pipe: user "
@@ -3012,6 +3022,13 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
+	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_DEVICE_ERROR) && !retry) {
+		invalidate_cm_connection(domain);
+		TALLOC_FREE(conn->lsa_pipe);
+		retry = true;
+		goto retry;
+	}
+
 	if (NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -3047,6 +3064,13 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		(conn->cli, &ndr_table_lsarpc, NCACN_NP,
 		 creds, p_creds, &conn->lsa_pipe);
 
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NETWORK_SESSION_EXPIRED)
+	    && !retry) {
+		invalidate_cm_connection(domain);
+		retry = true;
+		goto retry;
+	}
+
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("cm_connect_lsa: failed to connect to LSA pipe for "
 			  "domain %s using schannel. Error was %s\n",
@@ -3059,6 +3083,14 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_DEVICE_ERROR) && !retry) {
+		invalidate_cm_connection(domain);
+		TALLOC_FREE(conn->lsa_pipe);
+		retry = true;
+		goto retry;
+	}
+
 	if (NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -3083,6 +3115,14 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = cli_rpc_pipe_open_noauth(conn->cli,
 					  &ndr_table_lsarpc,
 					  &conn->lsa_pipe);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NETWORK_SESSION_EXPIRED)
+	    && !retry) {
+		invalidate_cm_connection(domain);
+		retry = true;
+		goto retry;
+	}
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -3090,6 +3130,14 @@ NTSTATUS cm_connect_lsa(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	result = rpccli_lsa_open_policy(conn->lsa_pipe, mem_ctx, True,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&conn->lsa_policy);
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_DEVICE_ERROR) && !retry) {
+		invalidate_cm_connection(domain);
+		TALLOC_FREE(conn->lsa_pipe);
+		retry = true;
+		goto retry;
+	}
+
  done:
 	if (!NT_STATUS_IS_OK(result)) {
 		invalidate_cm_connection(domain);
