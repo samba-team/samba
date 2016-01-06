@@ -1440,9 +1440,44 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 {
 	uint32_t save_offset;
 	uint32_t ptr_offset = 0xFFFF;
+	uint32_t relative_offset;
+	size_t pad;
+	size_t align = 1;
+
 	if (p == NULL) {
 		return NDR_ERR_SUCCESS;
 	}
+
+	if (ndr->offset < ndr->relative_base_offset) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
+				      "ndr_push_relative_ptr2 ndr->offset(%u) < ndr->relative_base_offset(%u)",
+				      ndr->offset, ndr->relative_base_offset);
+	}
+
+	relative_offset = ndr->offset - ndr->relative_base_offset;
+
+	if (ndr->flags & LIBNDR_FLAG_NOALIGN) {
+		align = 1;
+	} else if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+		align = 2;
+	} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
+		align = 4;
+	} else if (ndr->flags & LIBNDR_FLAG_ALIGN8) {
+		align = 8;
+	}
+
+	pad = ndr_align_size(relative_offset, align);
+	if (pad != 0) {
+		NDR_CHECK(ndr_push_zero(ndr, pad));
+	}
+
+	relative_offset = ndr->offset - ndr->relative_base_offset;
+	if (relative_offset > UINT16_MAX) {
+		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
+				      "ndr_push_relative_ptr2 relative_offset(%u) > UINT16_MAX",
+				      relative_offset);
+	}
+
 	save_offset = ndr->offset;
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &ptr_offset));
 	if (ptr_offset > ndr->offset) {
@@ -1451,12 +1486,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 				      ptr_offset, ndr->offset);
 	}
 	ndr->offset = ptr_offset;
-	if (save_offset < ndr->relative_base_offset) {
-		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_push_relative_ptr2 save_offset(%u) < ndr->relative_base_offset(%u)",
-				      save_offset, ndr->relative_base_offset);
-	}
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, save_offset - ndr->relative_base_offset));
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, relative_offset));
 	ndr->offset = save_offset;
 	return NDR_ERR_SUCCESS;
 }
