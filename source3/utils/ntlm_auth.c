@@ -2175,7 +2175,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			uchar lm_key[8];
 			uchar user_session_key[16];
 			uint32_t flags = 0;
-
+			NTSTATUS nt_status;
 			if (full_username && !username) {
 				fstring fstr_user;
 				fstring fstr_domain;
@@ -2190,29 +2190,67 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				domain = smb_xstrdup(fstr_domain);
 			}
 
-			if (!domain) {
-				domain = smb_xstrdup(get_winbind_domain());
+			if (opt_password) {
+				DATA_BLOB nt_session_key, lm_session_key;
+				struct samr_Password lm_pw, nt_pw;
+				TALLOC_CTX *mem_ctx = talloc_new(NULL);
+				ZERO_STRUCT(user_session_key);
+				ZERO_STRUCT(lm_key);
+
+				nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
+				nt_status = ntlm_password_check(mem_ctx,
+								true, true, 0,
+								&challenge,
+								&lm_response,
+								&nt_response,
+								username,
+								username,
+								domain,
+								&lm_pw, &nt_pw,
+								&nt_session_key,
+								&lm_session_key);
+				error_string = smb_xstrdup(get_friendly_nt_error_msg(nt_status));
+				if (ntlm_server_1_user_session_key) {
+					if (nt_session_key.length == sizeof(user_session_key)) {
+						memcpy(user_session_key,
+						       nt_session_key.data,
+						       sizeof(user_session_key));
+					}
+				}
+				if (ntlm_server_1_lm_session_key) {
+					if (lm_session_key.length == sizeof(lm_key)) {
+						memcpy(lm_key,
+						       lm_session_key.data,
+						       sizeof(lm_key));
+					}
+				}
+				TALLOC_FREE(mem_ctx);
+
+			} else {
+				if (!domain) {
+					domain = smb_xstrdup(get_winbind_domain());
+				}
+
+				if (ntlm_server_1_lm_session_key)
+					flags |= WBFLAG_PAM_LMKEY;
+
+				if (ntlm_server_1_user_session_key)
+					flags |= WBFLAG_PAM_USER_SESSION_KEY;
+
+				nt_status = contact_winbind_auth_crap(username,
+								      domain,
+								      lp_netbios_name(),
+								      &challenge,
+								      &lm_response,
+								      &nt_response,
+								      flags, 0,
+								      lm_key,
+								      user_session_key,
+								      &error_string,
+								      NULL);
 			}
 
-			if (ntlm_server_1_lm_session_key) 
-				flags |= WBFLAG_PAM_LMKEY;
-
-			if (ntlm_server_1_user_session_key) 
-				flags |= WBFLAG_PAM_USER_SESSION_KEY;
-
-			if (!NT_STATUS_IS_OK(
-				    contact_winbind_auth_crap(username, 
-							      domain, 
-							      lp_netbios_name(),
-							      &challenge, 
-							      &lm_response, 
-							      &nt_response, 
-							      flags, 0,
-							      lm_key, 
-							      user_session_key,
-							      &error_string,
-							      NULL))) {
-
+			if (!NT_STATUS_IS_OK(nt_status)) {
 				x_fprintf(x_stdout, "Authenticated: No\n");
 				x_fprintf(x_stdout, "Authentication-Error: %s\n.\n", error_string);
 			} else {
