@@ -1244,6 +1244,7 @@ sub provision($$$$$$$$)
 	symlink "$widelinks_shrdir", "$widelinks_shrdir/dot";
 
 	my $conffile="$libdir/server.conf";
+	my $dfqconffile="$libdir/dfq.conf";
 
 	my $nss_wrapper_pl = "$ENV{PERL} $self->{srcdir}/lib/nss_wrapper/nss_wrapper.pl";
 	my $nss_wrapper_passwd = "$privatedir/passwd";
@@ -1630,8 +1631,19 @@ sub provision($$$$$$$$)
 	vfs objects = shadow_copy2
 	shadow:mountpoint = $shadow_mntdir
 	wide links = yes
+[dfq]
+	path = $shrdir/dfree
+	vfs objects = fake_dfq
+	admin users = $unix_name
+	include = $dfqconffile
 	";
 	close(CONF);
+
+	unless (open(DFQCONF, ">$dfqconffile")) {
+	        warn("Unable to open $dfqconffile");
+		return undef;
+	}
+	close(DFQCONF);
 
 	##
 	## create a test account
