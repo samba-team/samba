@@ -20,11 +20,19 @@ import struct
 import random
 from samba import socket
 import samba.ndr as ndr
-import samba.dcerpc.dns as dns
+from samba import credentials, param
 from samba.tests import TestCase
+from samba.dcerpc import dns, dnsp, dnsserver
 
 FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
 
+def make_txt_record(records):
+    rdata_txt = dns.txt_record()
+    s_list = dnsp.string_list()
+    s_list.count = len(records)
+    s_list.str = records
+    rdata_txt.txt = s_list
+    return rdata_txt
 
 class DNSTest(TestCase):
 
@@ -421,8 +429,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -442,7 +449,7 @@ class TestDNSUpdates(DNSTest):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt, '"This is a test"')
+        self.assertEquals(response.answers[0].rdata.txt.str[0], '"This is a test"')
 
     def test_update_add_two_txt_records(self):
         "test adding two txt records works"
@@ -462,8 +469,8 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test" "and this is a test, too"'
+        rdata = make_txt_record(['"This is a test"',
+                                 '"and this is a test, too"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -483,7 +490,8 @@ class TestDNSUpdates(DNSTest):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt, '"This is a test" "and this is a test, too"')
+        self.assertEquals(response.answers[0].rdata.txt.str[0], '"This is a test"')
+        self.assertEquals(response.answers[0].rdata.txt.str[1], '"and this is a test, too"')
 
     def test_delete_record(self):
         "Test if deleting records works"
@@ -507,8 +515,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -544,8 +551,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -587,8 +593,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -624,8 +629,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -662,8 +666,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
