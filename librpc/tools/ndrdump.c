@@ -463,7 +463,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (dumpdata) {
-		printf("%d bytes consumed\n", ndr_pull->offset);
+		printf("%d bytes consumed\n", highest_ofs);
 		ndrdump_data(blob.data, blob.length, dumpdata);
 	}
 
@@ -487,6 +487,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		struct ndr_push *ndr_v_push;
 		struct ndr_pull *ndr_v_pull;
 		struct ndr_print *ndr_v_print;
+		uint32_t highest_v_ofs;
 		uint32_t i;
 		uint8_t byte_a, byte_b;
 		bool differ;
@@ -523,11 +524,17 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			exit(1);
 		}
 
+		if (ndr_v_pull->offset > ndr_v_pull->relative_highest_offset) {
+			highest_v_ofs = ndr_v_pull->offset;
+		} else {
+			highest_v_ofs = ndr_v_pull->relative_highest_offset;
+		}
 
-		if (ndr_v_pull->offset != ndr_v_pull->data_size) {
-			printf("WARNING! %d unread bytes in validation\n", ndr_v_pull->data_size - ndr_v_pull->offset);
-			ndrdump_data(ndr_v_pull->data+ndr_v_pull->offset,
-				     ndr_v_pull->data_size - ndr_v_pull->offset,
+		if (highest_v_ofs != ndr_v_pull->data_size) {
+			printf("WARNING! %d unread bytes in validation\n",
+			       ndr_v_pull->data_size - highest_v_ofs);
+			ndrdump_data(ndr_v_pull->data + highest_v_ofs,
+				     ndr_v_pull->data_size - highest_v_ofs,
 				     dumpdata);
 		}
 
@@ -541,9 +548,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			       (unsigned long long)blob.length, (unsigned long long)v_blob.length);
 		}
 
-		if (ndr_pull->offset != ndr_v_pull->offset) {
+		if (highest_ofs != highest_v_ofs) {
 			printf("WARNING! orig pulled bytes:%llu validated pulled bytes:%llu\n", 
-			       (unsigned long long)ndr_pull->offset, (unsigned long long)ndr_v_pull->offset);
+			       (unsigned long long)highest_ofs, (unsigned long long)highest_v_ofs);
 		}
 
 		differ = false;
