@@ -35,6 +35,7 @@
 #include <ldb_module.h>
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/ldb-samba/ldb_matching_rules.h"
 
 /*
   TODO: if relax is not set then we need to reject the fancy RMD_* and
@@ -406,7 +407,8 @@ static int extended_dn_filter_callback(struct ldb_parse_tree *tree, void *privat
 
 	if (tree->operation == LDB_OP_EQUALITY) {
 		dn = ldb_dn_from_ldb_val(filter_ctx, ldb_module_get_ctx(filter_ctx->module), &tree->u.equality.value);
-	} else if (tree->operation == LDB_OP_EXTENDED) {
+	} else if (tree->operation == LDB_OP_EXTENDED
+		   && (strcmp(tree->u.extended.rule_id, SAMBA_LDAP_MATCH_RULE_TRANSITIVE_EVAL) == 0)) {
 		dn = ldb_dn_from_ldb_val(filter_ctx, ldb_module_get_ctx(filter_ctx->module), &tree->u.extended.value);
 	}
 	if (dn == NULL) {
