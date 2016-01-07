@@ -202,6 +202,32 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/* Note that the validity of the _sam2 structure is only as long as
+ * the user_info_dc it was generated from */
+NTSTATUS auth_convert_user_info_dc_saminfo2(TALLOC_CTX *mem_ctx,
+					   const struct auth_user_info_dc *user_info_dc,
+					   struct netr_SamInfo2 **_sam2)
+{
+	NTSTATUS status;
+	struct netr_SamInfo6 *sam6 = NULL;
+	struct netr_SamInfo2 *sam2 = NULL;
+
+	sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
+	if (sam2 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = auth_convert_user_info_dc_saminfo6(sam2, user_info_dc, &sam6);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sam2);
+		return status;
+	}
+	sam2->base	= sam6->base;
+
+	*_sam2 = sam2;
+	return NT_STATUS_OK;
+}
+
 /* Note that the validity of the _sam3 structure is only as long as
  * the user_info_dc it was generated from */
 NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
