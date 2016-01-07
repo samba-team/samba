@@ -66,12 +66,23 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	sam->allow_password_change = info->allow_password_change;
 	sam->force_password_change = info->force_password_change;
 
-	sam->account_name.string = info->account_name;
-	sam->full_name.string = info->full_name;
-	sam->logon_script.string = info->logon_script;
-	sam->profile_path.string = info->profile_path;
-	sam->home_directory.string = info->home_directory;
-	sam->home_drive.string = info->home_drive;
+#define _COPY_STRING_TALLOC(src_name, dst_name) do { \
+	if (info->src_name != NULL) {\
+		sam->dst_name.string = talloc_strdup(sam, info->src_name); \
+		if (sam->dst_name.string == NULL) { \
+			return NT_STATUS_NO_MEMORY; \
+		} \
+	} \
+} while(0)
+	_COPY_STRING_TALLOC(account_name, account_name);
+	_COPY_STRING_TALLOC(full_name, full_name);
+	_COPY_STRING_TALLOC(logon_script, logon_script);
+	_COPY_STRING_TALLOC(profile_path, profile_path);
+	_COPY_STRING_TALLOC(home_directory, home_directory);
+	_COPY_STRING_TALLOC(home_drive, home_drive);
+	_COPY_STRING_TALLOC(logon_server, logon_server);
+	_COPY_STRING_TALLOC(domain_name, logon_domain);
+#undef _COPY_STRING_TALLOC
 
 	sam->logon_count = info->logon_count;
 	sam->bad_password_count = info->bad_password_count;
@@ -106,8 +117,6 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 		sam->user_flags |= NETLOGON_GUEST;
 	}
 	sam->acct_flags = user_info_dc->info->acct_flags;
-	sam->logon_server.string = user_info_dc->info->logon_server;
-	sam->logon_domain.string = user_info_dc->info->domain_name;
 	sam->sub_auth_status = 0;
 	sam->last_successful_logon = 0;
 	sam->last_failed_logon = 0;
