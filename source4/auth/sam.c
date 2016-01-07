@@ -284,6 +284,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 					   struct ldb_context *sam_ctx,
 					   const char *netbios_name,
 					   const char *domain_name,
+					   const char *dns_domain_name,
 					   struct ldb_dn *domain_dn, 
 					   struct ldb_message *msg,
 					   DATA_BLOB user_sess_key,
@@ -401,10 +402,31 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	info->account_name = talloc_steal(info,
 		ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
 
+	info->user_principal_name = talloc_steal(info,
+		ldb_msg_find_attr_as_string(msg, "userPrincipalName", NULL));
+	if (info->user_principal_name == NULL && dns_domain_name != NULL) {
+		info->user_principal_name = talloc_asprintf(info, "%s@%s",
+					info->account_name,
+					dns_domain_name);
+		if (info->user_principal_name == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
+		info->user_principal_constructed = true;
+	}
+
 	info->domain_name = talloc_strdup(info, domain_name);
 	if (info->domain_name == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (dns_domain_name != NULL) {
+		info->dns_domain_name = talloc_strdup(info, dns_domain_name);
+		if (info->dns_domain_name == NULL) {
+			TALLOC_FREE(user_info_dc);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	str = ldb_msg_find_attr_as_string(msg, "displayName", "");
@@ -630,6 +652,7 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 	nt_status = authsam_make_user_info_dc(tmp_ctx, sam_ctx,
 					     lpcfg_netbios_name(lp_ctx),
 					     lpcfg_sam_name(lp_ctx),
+					     lpcfg_sam_dnsname(lp_ctx),
 					     domain_dn,
 					     msg,
 					     user_sess_key, lm_sess_key,

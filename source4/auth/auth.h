@@ -123,6 +123,7 @@ struct auth_session_info *system_session(struct loadparm_context *lp_ctx);
 NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx,
 					   const char *netbios_name,
 					   const char *domain_name,
+					   const char *dns_domain_name,
 					   struct ldb_dn *domain_dn,
 					   struct ldb_message *msg,
 					   DATA_BLOB user_sess_key, DATA_BLOB lm_sess_key,

@@ -611,8 +611,10 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return nt_status;
 	}
 
-	nt_status = authsam_make_user_info_dc(tmp_ctx, ctx->auth_ctx->sam_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+	nt_status = authsam_make_user_info_dc(tmp_ctx, ctx->auth_ctx->sam_ctx,
+					     lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
 					     lpcfg_sam_name(ctx->auth_ctx->lp_ctx),
+					     lpcfg_sam_dnsname(ctx->auth_ctx->lp_ctx),
 					     domain_dn,
 					     msg,
 					     user_sess_key, lm_sess_key,
