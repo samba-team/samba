@@ -2886,6 +2886,12 @@ static int samldb_verify_subnet(struct samldb_ctx *ac)
 	const struct ldb_val *rdn_value = NULL;
 
 	rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+	if (rdn_value == NULL) {
+		ldb_set_errstring(ldb, "samldb: ldb_dn_get_rdn_val "
+				  "failed");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
 	cidr = ldb_dn_escape_value(ac, *rdn_value);
 	DBG_INFO("looking at cidr '%s'\n", cidr);
 	if (cidr == NULL) {
