@@ -271,6 +271,16 @@ const char *lpcfg_sam_name(struct loadparm_context *lp_ctx)
 	}
 }
 
+const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx)
+{
+	switch (lpcfg_server_role(lp_ctx)) {
+	case ROLE_ACTIVE_DIRECTORY_DC:
+		return lpcfg_dnsdomain(lp_ctx);
+	default:
+		return NULL;
+	}
+}
+
 void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
 				time_t *svc_tkt_lifetime,
 				time_t *usr_tkt_lifetime,

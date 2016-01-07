@@ -306,6 +306,7 @@ struct smb_iconv_handle *smb_iconv_handle_reinit_lp(TALLOC_CTX *mem_ctx,
 							      struct smb_iconv_handle *old_ic);
 
 const char *lpcfg_sam_name(struct loadparm_context *lp_ctx);
+const char *lpcfg_sam_dnsname(struct loadparm_context *lp_ctx);
 
 void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
 				time_t *svc_tkt_lifetime,
