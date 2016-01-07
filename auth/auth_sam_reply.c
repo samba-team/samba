@@ -506,6 +506,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			      const struct PAC_LOGON_INFO *pac_logon_info,
+			      const struct PAC_UPN_DNS_INFO *pac_upn_dns_info,
 			      struct auth_user_info_dc **_user_info_dc)
 {
 	uint32_t i;
@@ -574,6 +575,27 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			user_info_dc->num_sids++;
 		}
 	}
+
+	if (pac_upn_dns_info != NULL) {
+		user_info_dc->info->user_principal_name =
+			talloc_strdup(user_info_dc->info,
+				      pac_upn_dns_info->upn_name);
+		if (user_info_dc->info->user_principal_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		user_info_dc->info->dns_domain_name =
+			talloc_strdup(user_info_dc->info,
+				      pac_upn_dns_info->dns_domain_name);
+		if (user_info_dc->info->dns_domain_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (pac_upn_dns_info->flags & PAC_UPN_DNS_FLAG_CONSTRUCTED) {
+			user_info_dc->info->user_principal_constructed = true;
+		}
+	}
+
 	*_user_info_dc = user_info_dc;
 	return NT_STATUS_OK;
 }

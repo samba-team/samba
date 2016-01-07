@@ -63,6 +63,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			      const struct PAC_LOGON_INFO *pac_logon_info,
+			      const struct PAC_UPN_DNS_INFO *pac_upn_dns_info,
 			      struct auth_user_info_dc **_user_info_dc);
 
 /* The following definitions come from auth/wbc_auth_util.c  */
