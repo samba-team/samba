@@ -26,7 +26,7 @@
 #include "auth/auth_sam_reply.h"
 
 NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
-					      struct auth_user_info_dc *user_info_dc,
+					      const struct auth_user_info_dc *user_info_dc,
 					      struct netr_SamBaseInfo **_sam)
 {
 	NTSTATUS status;
@@ -133,7 +133,7 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 /* Note that the validity of the _sam3 structure is only as long as
  * the user_info_dc it was generated from */
 NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
-					   struct auth_user_info_dc *user_info_dc,
+					   const struct auth_user_info_dc *user_info_dc,
 					   struct netr_SamInfo3 **_sam3)
 {
 	struct netr_SamBaseInfo *sam;
@@ -191,7 +191,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 
 NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 				    const char *account_name,
-				    struct netr_SamBaseInfo *base,
+				    const struct netr_SamBaseInfo *base,
 				    bool authenticated,
 				    struct auth_user_info **_user_info)
 {
@@ -259,7 +259,7 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      const char *account_name,
 					      uint16_t validation_level,
-					      union netr_Validation *validation,
+					      const union netr_Validation *validation,
 					       bool authenticated,
 					      struct auth_user_info_dc **_user_info_dc)
 {
@@ -396,7 +396,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
  * Make a user_info_dc struct from the PAC_LOGON_INFO supplied in the krb5 logon
  */
 NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
-			      struct PAC_LOGON_INFO *pac_logon_info,
+			      const struct PAC_LOGON_INFO *pac_logon_info,
 			      struct auth_user_info_dc **_user_info_dc)
 {
 	uint32_t i;
@@ -404,7 +404,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 	union netr_Validation validation;
 	struct auth_user_info_dc *user_info_dc;
 
-	validation.sam3 = &pac_logon_info->info3;
+	validation.sam3 = discard_const_p(struct netr_SamInfo3, &pac_logon_info->info3);
 
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx, "", 3, &validation,
 							  true, /* This user was authenticated */

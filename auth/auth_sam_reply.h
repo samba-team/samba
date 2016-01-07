@@ -33,16 +33,16 @@
 /* The following definitions come from auth/auth_sam_reply.c  */
 
 NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
-				    const char *account_name,
-				    struct netr_SamBaseInfo *base,
+				    const const char *account_name,
+				    const struct netr_SamBaseInfo *base,
 				    bool authenticated,
 				    struct auth_user_info **_user_info);
 
 NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
-					      struct auth_user_info_dc *user_info_dc,
+					      const struct auth_user_info_dc *user_info_dc,
 					      struct netr_SamBaseInfo **_sam);
 NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
-					   struct auth_user_info_dc *user_info_dc,
+					   const struct auth_user_info_dc *user_info_dc,
 					   struct netr_SamInfo3 **_sam3);
 
 /**
@@ -51,15 +51,15 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      const char *account_name,
 					      uint16_t validation_level,
-					      union netr_Validation *validation,
-					       bool authenticated,
+					      const union netr_Validation *validation,
+					      bool authenticated,
 					      struct auth_user_info_dc **_user_info_dc);
 
 /**
  * Make a user_info_dc struct from the PAC_LOGON_INFO supplied in the krb5 logon
  */
 NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
-			      struct PAC_LOGON_INFO *pac_logon_info,
+			      const struct PAC_LOGON_INFO *pac_logon_info,
 			      struct auth_user_info_dc **_user_info_dc);
 
 /* The following definitions come from auth/wbc_auth_util.c  */
