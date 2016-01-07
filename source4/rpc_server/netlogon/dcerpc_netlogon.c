@@ -841,7 +841,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_user_info_dc *user_info_dc = NULL;
 	NTSTATUS nt_status;
-	struct netr_SamBaseInfo *sam = NULL;
 	struct netr_SamInfo2 *sam2 = NULL;
 	struct netr_SamInfo3 *sam3 = NULL;
 	struct netr_SamInfo6 *sam6 = NULL;
@@ -983,29 +982,21 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 
 	switch (r->in.validation_level) {
 	case 2:
-		nt_status = auth_convert_user_info_dc_sambaseinfo(mem_ctx, user_info_dc, &sam);
+		nt_status = auth_convert_user_info_dc_saminfo2(mem_ctx,
+							       user_info_dc,
+							       &sam2);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
-		sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
-		NT_STATUS_HAVE_NO_MEMORY(sam2);
-		sam2->base = *sam;
-
-		/* And put into the talloc tree */
-		talloc_steal(sam2, sam);
 		r->out.validation->sam2 = sam2;
-
-		sam = &sam2->base;
 		break;
 
 	case 3:
 		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
-							      user_info_dc,
-							      &sam3);
+							       user_info_dc,
+							       &sam3);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		r->out.validation->sam3 = sam3;
-
-		sam = &sam3->base;
 		break;
 
 	case 6:
@@ -1013,25 +1004,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
-							   user_info_dc,
-							   &sam3);
+		nt_status = auth_convert_user_info_dc_saminfo6(mem_ctx,
+							       user_info_dc,
+							       &sam6);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
-
-		sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
-		NT_STATUS_HAVE_NO_MEMORY(sam6);
-		sam6->base = sam3->base;
-		sam = &sam6->base;
-		sam6->sidcount = sam3->sidcount;
-		sam6->sids = sam3->sids;
-
-		sam6->dns_domainname.string = lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
-		sam6->principal_name.string = talloc_asprintf(
-			mem_ctx, "%s@%s", sam->account_name.string,
-			sam6->dns_domainname.string);
-		NT_STATUS_HAVE_NO_MEMORY(sam6->principal_name.string);
-		/* And put into the talloc tree */
-		talloc_steal(sam6, sam3);
 
 		r->out.validation->sam6 = sam6;
 		break;
