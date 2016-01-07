@@ -38,9 +38,6 @@ NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
 				    bool authenticated,
 				    struct auth_user_info **_user_info);
 
-NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
-					      const struct auth_user_info_dc *user_info_dc,
-					      struct netr_SamBaseInfo **_sam);
 NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 					   const struct auth_user_info_dc *user_info_dc,
 					   struct netr_SamInfo6 **_sam6);

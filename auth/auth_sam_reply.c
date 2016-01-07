@@ -25,14 +25,14 @@
 #include "libcli/security/security.h"
 #include "auth/auth_sam_reply.h"
 
-NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
-					      const struct auth_user_info_dc *user_info_dc,
-					      struct netr_SamBaseInfo **_sam)
+static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
+				const struct auth_user_info_dc *user_info_dc,
+				struct netr_SamBaseInfo *sam)
 {
 	NTSTATUS status;
-	struct auth_user_info *info;
-	struct netr_SamBaseInfo *sam = talloc_zero(mem_ctx, struct netr_SamBaseInfo);
-	NT_STATUS_HAVE_NO_MEMORY(sam);
+	const struct auth_user_info *info;
+
+	ZERO_STRUCTP(sam);
 
 	if (user_info_dc->num_sids > PRIMARY_USER_SID_INDEX) {
 		status = dom_sid_split_rid(sam, &user_info_dc->sids[PRIMARY_USER_SID_INDEX],
@@ -68,7 +68,7 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 
 #define _COPY_STRING_TALLOC(src_name, dst_name) do { \
 	if (info->src_name != NULL) {\
-		sam->dst_name.string = talloc_strdup(sam, info->src_name); \
+		sam->dst_name.string = talloc_strdup(mem_ctx, info->src_name); \
 		if (sam->dst_name.string == NULL) { \
 			return NT_STATUS_NO_MEMORY; \
 		} \
@@ -91,7 +91,7 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 
 	if (user_info_dc->num_sids > 2) {
 		size_t i;
-		sam->groups.rids = talloc_array(sam, struct samr_RidWithAttribute,
+		sam->groups.rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
 						user_info_dc->num_sids);
 
 		if (sam->groups.rids == NULL)
@@ -134,8 +134,6 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 		       sizeof(sam->LMSessKey.key));
 	}
 
-	*_sam = sam;
-
 	return NT_STATUS_OK;
 }
 
@@ -146,7 +144,6 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 					    struct netr_SamInfo6 **_sam6)
 {
 	NTSTATUS status;
-	struct netr_SamBaseInfo *sam = NULL;
 	struct netr_SamInfo6 *sam6 = NULL;
 	size_t i;
 
@@ -155,12 +152,13 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = auth_convert_user_info_dc_sambaseinfo(sam6, user_info_dc, &sam);
+	status = auth_convert_user_info_dc_sambaseinfo(sam6,
+						       user_info_dc,
+						       &sam6->base);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(sam6);
 		return status;
 	}
-	sam6->base = *sam;
 
 	sam6->sids = talloc_array(sam6, struct netr_SidAttr,
 				  user_info_dc->num_sids);
@@ -171,7 +169,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
 
 	/* We don't put the user and group SIDs in there */
 	for (i=2; i<user_info_dc->num_sids; i++) {
-		if (dom_sid_in_domain(sam->domain_sid, &user_info_dc->sids[i])) {
+		if (dom_sid_in_domain(sam6->base.domain_sid, &user_info_dc->sids[i])) {
 			continue;
 		}
 		sam6->sids[sam6->sidcount].sid = dom_sid_dup(sam6->sids, &user_info_dc->sids[i]);
