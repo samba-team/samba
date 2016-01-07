@@ -264,8 +264,12 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 					      struct auth_user_info_dc **_user_info_dc)
 {
 	NTSTATUS status;
-	struct auth_user_info_dc *user_info_dc;
-	struct netr_SamBaseInfo *base = NULL;
+	struct auth_user_info_dc *user_info_dc = NULL;
+	const struct netr_SamBaseInfo *base = NULL;
+	uint32_t sidcount = 0;
+	const struct netr_SidAttr *sids = NULL;
+	const char *dns_domainname = NULL;
+	const char *principal = NULL;
 	uint32_t i;
 
 	switch (validation_level) {
@@ -280,12 +284,18 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		base = &validation->sam3->base;
+		sidcount = validation->sam3->sidcount;
+		sids = validation->sam3->sids;
 		break;
 	case 6:
 		if (!validation || !validation->sam6) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		base = &validation->sam6->base;
+		sidcount = validation->sam6->sidcount;
+		sids = validation->sam6->sids;
+		dns_domainname = validation->sam6->dns_domainname.string;
+		principal = validation->sam6->principal_name.string;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
@@ -339,26 +349,29 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
            http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
          */
 
-	if (validation_level == 3) {
-		struct dom_sid *dgrps = user_info_dc->sids;
-		size_t sidcount;
+	/*
+	 * The IDL layer would be a better place to check this, but to
+	 * guard the integer addition below, we double-check
+	 */
+	if (sidcount > UINT16_MAX) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-		/* The IDL layer would be a better place to check this, but to
-		 * guard the integer addition below, we double-check */
-		if (validation->sam3->sidcount > 65535) {
-			return NT_STATUS_INVALID_PARAMETER;
+	if (sidcount > 0) {
+		struct dom_sid *dgrps = user_info_dc->sids;
+		size_t dgrps_count;
+
+		dgrps_count = user_info_dc->num_sids + sidcount;
+		dgrps = talloc_realloc(user_info_dc, dgrps, struct dom_sid,
+				       dgrps_count);
+		if (dgrps == NULL) {
+			return NT_STATUS_NO_MEMORY;
 		}
 
-		sidcount = user_info_dc->num_sids + validation->sam3->sidcount;
-		if (validation->sam3->sidcount > 0) {
-			dgrps = talloc_realloc(user_info_dc, dgrps, struct dom_sid, sidcount);
-			NT_STATUS_HAVE_NO_MEMORY(dgrps);
-
-			for (i = 0; i < validation->sam3->sidcount; i++) {
-				if (validation->sam3->sids[i].sid) {
-					dgrps[user_info_dc->num_sids] = *validation->sam3->sids[i].sid;
-					user_info_dc->num_sids++;
-				}
+		for (i = 0; i < sidcount; i++) {
+			if (sids[i].sid) {
+				dgrps[user_info_dc->num_sids] = *sids[i].sid;
+				user_info_dc->num_sids++;
 			}
 		}
 
@@ -370,6 +383,22 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	status = make_user_info_SamBaseInfo(user_info_dc, account_name, base, authenticated, &user_info_dc->info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (dns_domainname != NULL) {
+		user_info_dc->info->dns_domain_name = talloc_strdup(user_info_dc->info,
+								    dns_domainname);
+		if (user_info_dc->info->dns_domain_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (principal != NULL) {
+		user_info_dc->info->user_principal_name = talloc_strdup(user_info_dc->info,
+									principal);
+		if (user_info_dc->info->user_principal_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	/* ensure we are never given NULL session keys */
