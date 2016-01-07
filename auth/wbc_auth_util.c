@@ -106,14 +106,14 @@ static NTSTATUS wbcsids_to_netr_SidAttrArray(
 
 #define RET_NOMEM(ptr) do { \
 	if (!ptr) { \
-		TALLOC_FREE(info3); \
+		TALLOC_FREE(info6); \
 		return NULL; \
 	} } while(0)
 
-struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
+struct netr_SamInfo6 *wbcAuthUserInfo_to_netr_SamInfo6(TALLOC_CTX *mem_ctx,
 					const struct wbcAuthUserInfo *info)
 {
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo6 *info6;
 	struct dom_sid user_sid;
 	struct dom_sid group_sid;
 	struct dom_sid domain_sid;
@@ -123,110 +123,120 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 	memcpy(&user_sid, &info->sids[0].sid, sizeof(user_sid));
 	memcpy(&group_sid, &info->sids[1].sid, sizeof(group_sid));
 
-	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
-	if (!info3) return NULL;
+	info6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
+	if (!info6) return NULL;
 
-	unix_to_nt_time(&info3->base.logon_time, info->logon_time);
-	unix_to_nt_time(&info3->base.logoff_time, info->logoff_time);
-	unix_to_nt_time(&info3->base.kickoff_time, info->kickoff_time);
-	unix_to_nt_time(&info3->base.last_password_change, info->pass_last_set_time);
-	unix_to_nt_time(&info3->base.allow_password_change,
+	unix_to_nt_time(&info6->base.logon_time, info->logon_time);
+	unix_to_nt_time(&info6->base.logoff_time, info->logoff_time);
+	unix_to_nt_time(&info6->base.kickoff_time, info->kickoff_time);
+	unix_to_nt_time(&info6->base.last_password_change, info->pass_last_set_time);
+	unix_to_nt_time(&info6->base.allow_password_change,
 			info->pass_can_change_time);
-	unix_to_nt_time(&info3->base.force_password_change,
+	unix_to_nt_time(&info6->base.force_password_change,
 			info->pass_must_change_time);
 
 	if (info->account_name) {
-		info3->base.account_name.string	=
-				talloc_strdup(info3, info->account_name);
-		RET_NOMEM(info3->base.account_name.string);
+		info6->base.account_name.string	=
+				talloc_strdup(info6, info->account_name);
+		RET_NOMEM(info6->base.account_name.string);
+	}
+	if (info->user_principal) {
+		info6->principal_name.string	=
+				talloc_strdup(info6, info->user_principal);
+		RET_NOMEM(info6->principal_name.string);
 	}
 	if (info->full_name) {
-		info3->base.full_name.string =
-				talloc_strdup(info3, info->full_name);
-		RET_NOMEM(info3->base.full_name.string);
+		info6->base.full_name.string =
+				talloc_strdup(info6, info->full_name);
+		RET_NOMEM(info6->base.full_name.string);
 	}
 	if (info->domain_name) {
-		info3->base.logon_domain.string	=
-				talloc_strdup(info3, info->domain_name);
-		RET_NOMEM(info3->base.logon_domain.string);
+		info6->base.logon_domain.string	=
+				talloc_strdup(info6, info->domain_name);
+		RET_NOMEM(info6->base.logon_domain.string);
+	}
+	if (info->dns_domain_name) {
+		info6->dns_domainname.string	=
+				talloc_strdup(info6, info->dns_domain_name);
+		RET_NOMEM(info6->dns_domainname.string);
 	}
 	if (info->logon_script) {
-		info3->base.logon_script.string =
-				talloc_strdup(info3, info->logon_script);
-		RET_NOMEM(info3->base.logon_script.string);
+		info6->base.logon_script.string =
+				talloc_strdup(info6, info->logon_script);
+		RET_NOMEM(info6->base.logon_script.string);
 	}
 	if (info->profile_path) {
-		info3->base.profile_path.string	=
-				talloc_strdup(info3, info->profile_path);
-		RET_NOMEM(info3->base.profile_path.string);
+		info6->base.profile_path.string	=
+				talloc_strdup(info6, info->profile_path);
+		RET_NOMEM(info6->base.profile_path.string);
 	}
 	if (info->home_directory) {
-		info3->base.home_directory.string =
-				talloc_strdup(info3, info->home_directory);
-		RET_NOMEM(info3->base.home_directory.string);
+		info6->base.home_directory.string =
+				talloc_strdup(info6, info->home_directory);
+		RET_NOMEM(info6->base.home_directory.string);
 	}
 	if (info->home_drive) {
-		info3->base.home_drive.string =
-				talloc_strdup(info3, info->home_drive);
-		RET_NOMEM(info3->base.home_drive.string);
+		info6->base.home_drive.string =
+				talloc_strdup(info6, info->home_drive);
+		RET_NOMEM(info6->base.home_drive.string);
 	}
 
-	info3->base.logon_count	= info->logon_count;
-	info3->base.bad_password_count = info->bad_password_count;
+	info6->base.logon_count	= info->logon_count;
+	info6->base.bad_password_count = info->bad_password_count;
 
 	sid_copy(&domain_sid, &user_sid);
-	sid_split_rid(&domain_sid, &info3->base.rid);
+	sid_split_rid(&domain_sid, &info6->base.rid);
 
 	ok = sid_peek_check_rid(&domain_sid, &group_sid,
-				&info3->base.primary_gid);
+				&info6->base.primary_gid);
 	if (!ok) {
 		DEBUG(1, ("The primary group sid domain does not"
 			  "match user sid domain for user: %s\n",
 			  info->account_name));
-		TALLOC_FREE(info3);
+		TALLOC_FREE(info6);
 		return NULL;
 	}
 
-	status = wbcsids_to_samr_RidWithAttributeArray(info3,
-						       &info3->base.groups,
+	status = wbcsids_to_samr_RidWithAttributeArray(info6,
+						       &info6->base.groups,
 						       &domain_sid,
 						       &info->sids[1],
 						       info->num_sids - 1);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(info3);
+		TALLOC_FREE(info6);
 		return NULL;
 	}
 
 	status = wbcsids_to_netr_SidAttrArray(&domain_sid,
 					      &info->sids[1],
 					      info->num_sids - 1,
-					      info3,
-					      &info3->sids,
-					      &info3->sidcount);
+					      info6,
+					      &info6->sids,
+					      &info6->sidcount);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(info3);
+		TALLOC_FREE(info6);
 		return NULL;
 	}
 
-	info3->base.user_flags = info->user_flags;
-	memcpy(info3->base.key.key, info->user_session_key, 16);
+	info6->base.user_flags = info->user_flags;
+	memcpy(info6->base.key.key, info->user_session_key, 16);
 
 	if (info->logon_server) {
-		info3->base.logon_server.string =
-				talloc_strdup(info3, info->logon_server);
-		RET_NOMEM(info3->base.logon_server.string);
+		info6->base.logon_server.string =
+				talloc_strdup(info6, info->logon_server);
+		RET_NOMEM(info6->base.logon_server.string);
 	}
 	if (info->domain_name) {
-		info3->base.logon_domain.string =
-				talloc_strdup(info3, info->domain_name);
-		RET_NOMEM(info3->base.logon_domain.string);
+		info6->base.logon_domain.string =
+				talloc_strdup(info6, info->domain_name);
+		RET_NOMEM(info6->base.logon_domain.string);
 	}
 
-	info3->base.domain_sid = dom_sid_dup(info3, &domain_sid);
-	RET_NOMEM(info3->base.domain_sid);
+	info6->base.domain_sid = dom_sid_dup(info6, &domain_sid);
+	RET_NOMEM(info6->base.domain_sid);
 
-	memcpy(info3->base.LMSessKey.key, info->lm_session_key, 8);
-	info3->base.acct_flags = info->acct_flags;
+	memcpy(info6->base.LMSessKey.key, info->lm_session_key, 8);
+	info6->base.acct_flags = info->acct_flags;
 
-	return info3;
+	return info6;
 }

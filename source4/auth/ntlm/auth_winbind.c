@@ -166,9 +166,8 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 	struct wbcAuthErrorInfo *err = NULL;
 	wbcErr wbc_status;
 	NTSTATUS nt_status;
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo6 *info6 = NULL;
 	union netr_Validation validation;
-
 
 	/* Send off request */
 	const struct auth_usersupplied_info *user_info_temp;
@@ -181,7 +180,7 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 	user_info = user_info_temp;
 
 	ZERO_STRUCT(params);
-	ZERO_STRUCT(info3);
+	ZERO_STRUCT(validation);
 	/*params.flags = WBFLAG_PAM_INFO3_NDR;*/
 
 	params.parameter_control = user_info->logon_parameters;
@@ -231,17 +230,17 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 		}
 		return NT_STATUS_LOGON_FAILURE;
 	}
-	info3 = wbcAuthUserInfo_to_netr_SamInfo3(mem_ctx, info);
+	info6 = wbcAuthUserInfo_to_netr_SamInfo6(mem_ctx, info);
 	wbcFreeMemory(info);
-	if (!info3) {
-		DEBUG(1, ("wbcAuthUserInfo_to_netr_SamInfo3 failed\n"));
+	if (!info6) {
+		DEBUG(1, ("wbcAuthUserInfo_to_netr_SamInfo6 failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	validation.sam3 = info3;
+	validation.sam6 = info6;
 	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 							  user_info->client.account_name,
-							  3, &validation,
+							  6, &validation,
 							  true, /* This user was authenticated */
 							  user_info_dc);
 	return nt_status;

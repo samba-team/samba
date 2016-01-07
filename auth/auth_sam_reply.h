@@ -66,7 +66,7 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 
 struct wbcAuthUserInfo;
 
-struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
+struct netr_SamInfo6 *wbcAuthUserInfo_to_netr_SamInfo6(TALLOC_CTX *mem_ctx,
 						       const struct wbcAuthUserInfo *info);
 
 #undef _PRINTF_ATTRIBUTE

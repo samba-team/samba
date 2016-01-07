@@ -1494,16 +1494,21 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					  const struct wbcAuthUserInfo *info,
 					  struct auth_serversupplied_info **server_info)
 {
-	struct netr_SamInfo3 *info3;
+	struct netr_SamInfo3 info3;
+	struct netr_SamInfo6 *info6;
 
-	info3 = wbcAuthUserInfo_to_netr_SamInfo3(mem_ctx, info);
-	if (!info3) {
+	info6 = wbcAuthUserInfo_to_netr_SamInfo6(mem_ctx, info);
+	if (!info6) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	info3.base = info6->base;
+	info3.sidcount = info6->sidcount;
+	info3.sids = info6->sids;
+
 	return make_server_info_info3(mem_ctx,
 				      sent_nt_username, domain,
-				      server_info, info3);
+				      server_info, &info3);
 }
 
 /**
