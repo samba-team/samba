@@ -697,6 +697,106 @@ NTSTATUS cli_posix_getacl(struct cli_state *cli,
 }
 
 /****************************************************************************
+ Do a POSIX setacl - pathname based ACL set (UNIX extensions).
+****************************************************************************/
+
+struct setacl_state {
+	uint8_t *data;
+};
+
+static void cli_posix_setacl_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_posix_setacl_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					const void *data,
+					size_t num_data)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct setacl_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct setacl_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->data = talloc_memdup(state, data, num_data);
+	if (tevent_req_nomem(state->data, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_setpathinfo_send(state,
+				ev,
+				cli,
+				SMB_SET_POSIX_ACL,
+				fname,
+				state->data,
+				num_data);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_setacl_done, req);
+	return req;
+}
+
+static void cli_posix_setacl_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setpathinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_posix_setacl_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_posix_setacl(struct cli_state *cli,
+			const char *fname,
+			const void *acl_buf,
+			size_t acl_buf_size)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_setacl_send(frame,
+				ev,
+				cli,
+				fname,
+				acl_buf,
+				acl_buf_size);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+
+	status = cli_posix_setacl_recv(req);
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/****************************************************************************
  Stat a file (UNIX extensions).
 ****************************************************************************/
 
