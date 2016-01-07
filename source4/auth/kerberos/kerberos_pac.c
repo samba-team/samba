@@ -310,9 +310,14 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 	kerberos_free_data_contents(context, &k5pac_logon_info_in);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !info.logon_info.info) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
+		talloc_free(tmp_ctx);
+		return EINVAL;
+	}
+	if (info.logon_info.info == NULL) {
+		DEBUG(0,("can't parse the PAC LOGON_INFO: missing info pointer\n"));
 		talloc_free(tmp_ctx);
 		return EINVAL;
 	}
