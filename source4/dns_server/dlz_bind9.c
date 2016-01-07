@@ -1438,10 +1438,20 @@ static bool b9_record_match(struct dlz_bind9_data *state,
 	switch (rec1->wType) {
 	case DNS_TYPE_A:
 		return strcmp(rec1->data.ipv4, rec2->data.ipv4) == 0;
-	case DNS_TYPE_AAAA:
-		inet_pton(AF_INET6, rec1->data.ipv6, &rec1_in_addr6);
-		inet_pton(AF_INET6, rec2->data.ipv6, &rec2_in_addr6);
+	case DNS_TYPE_AAAA: {
+		int ret;
+
+		ret = inet_pton(AF_INET6, rec1->data.ipv6, &rec1_in_addr6);
+		if (ret != 1) {
+			return false;
+		}
+		ret = inet_pton(AF_INET6, rec2->data.ipv6, &rec2_in_addr6);
+		if (ret != 1) {
+			return false;
+		}
+
 		return memcmp(&rec1_in_addr6, &rec2_in_addr6, sizeof(rec1_in_addr6)) == 0;
+	}
 	case DNS_TYPE_CNAME:
 		return dns_name_equal(rec1->data.cname, rec2->data.cname);
 	case DNS_TYPE_TXT:
