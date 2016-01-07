@@ -3376,7 +3376,7 @@ static int cmd_getfacl(void)
 		return 1;
 	}
 
-	status = cli_posix_getfacl(targetcli, targetname, ctx, &rb_size, &retbuf);
+	status = cli_posix_getacl(targetcli, targetname, ctx, &rb_size, &retbuf);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getfacl file %s\n",
 			 nt_errstr(status), src);
