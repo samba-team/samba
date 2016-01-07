@@ -247,7 +247,13 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		ip6->ip6_hlim = 255;
 		ip6->ip6_src  = addr->ip6.sin6_addr;
 		/* all-nodes multicast */
-		inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
+
+		ret = inet_pton(AF_INET6, "ff02::1", &ip6->ip6_dst);
+		if (ret != 1) {
+			close(s);
+			DEBUG(DEBUG_CRIT,(__location__ " failed inet_pton\n"));
+			return -1;
+		}
 
 		nd_na = (struct nd_neighbor_advert *)(ip6+1);
 		nd_na->nd_na_type = ND_NEIGHBOR_ADVERT;
