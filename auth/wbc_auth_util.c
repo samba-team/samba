@@ -145,6 +145,11 @@ struct netr_SamInfo3 *wbcAuthUserInfo_to_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 				talloc_strdup(info3, info->full_name);
 		RET_NOMEM(info3->base.full_name.string);
 	}
+	if (info->domain_name) {
+		info3->base.logon_domain.string	=
+				talloc_strdup(info3, info->domain_name);
+		RET_NOMEM(info3->base.logon_domain.string);
+	}
 	if (info->logon_script) {
 		info3->base.logon_script.string =
 				talloc_strdup(info3, info->logon_script);
