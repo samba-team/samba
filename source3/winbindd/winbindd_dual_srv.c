@@ -741,14 +741,6 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 
 reconnect:
 	status = cm_connect_netlogon(domain, &netlogon_pipe);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NETWORK_SESSION_EXPIRED)) {
-		/*
-		 * Retry to open new connection with new kerberos ticket.
-		 */
-		invalidate_cm_connection(domain);
-		status = cm_connect_netlogon(domain, &netlogon_pipe);
-	}
-
 	reset_cm_connection_on_error(domain, status);
         if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("could not open handle to NETLOGON pipe: %s\n",
