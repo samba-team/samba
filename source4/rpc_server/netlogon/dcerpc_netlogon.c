@@ -837,14 +837,14 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 {
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	const char *workgroup = lpcfg_workgroup(lp_ctx);
-	struct auth4_context *auth_context;
-	struct auth_usersupplied_info *user_info;
-	struct auth_user_info_dc *user_info_dc;
+	struct auth4_context *auth_context = NULL;
+	struct auth_usersupplied_info *user_info = NULL;
+	struct auth_user_info_dc *user_info_dc = NULL;
 	NTSTATUS nt_status;
-	struct netr_SamBaseInfo *sam;
-	struct netr_SamInfo2 *sam2;
-	struct netr_SamInfo3 *sam3;
-	struct netr_SamInfo6 *sam6;
+	struct netr_SamBaseInfo *sam = NULL;
+	struct netr_SamInfo2 *sam2 = NULL;
+	struct netr_SamInfo3 *sam3 = NULL;
+	struct netr_SamInfo6 *sam6 = NULL;
 
 	*r->out.authoritative = 1;
 
