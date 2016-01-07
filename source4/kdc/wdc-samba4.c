@@ -85,13 +85,23 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 		talloc_get_type_abort(krbtgt->ctx,
 		struct samba_kdc_entry);
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac context");
-	DATA_BLOB *pac_blob;
+	krb5_pac new_pac = NULL;
+	DATA_BLOB *pac_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct PAC_SIGNATURE_DATA *pac_srv_sig;
 	struct PAC_SIGNATURE_DATA *pac_kdc_sig;
 	bool is_in_db, is_untrusted;
+	size_t num_types = 0;
+	uint32_t *types = NULL;
+	uint32_t forced_next_type = 0;
+	size_t i = 0;
+	ssize_t logon_info_idx = -1;
+	ssize_t delegation_idx = -1;
+	ssize_t logon_name_idx = -1;
+	ssize_t srv_checksum_idx = -1;
+	ssize_t kdc_checksum_idx = -1;
 
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -187,10 +197,209 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 		}
 	}
 
-	/* We now completely regenerate this pac */
-	krb5_pac_free(context, *pac);
+	/* Check the types of the given PAC */
+	ret = krb5_pac_get_types(context, *pac, &num_types, &types);
+	if (ret != 0) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
-	ret = samba_make_krb5_pac(context, pac_blob, deleg_blob, pac);
+	for (i = 0; i < num_types; i++) {
+		switch (types[i]) {
+		case PAC_TYPE_LOGON_INFO:
+			if (logon_info_idx != -1) {
+				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
+					  (int)types[i],
+					  (int)logon_info_idx,
+					  (int)i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			logon_info_idx = i;
+			break;
+		case PAC_TYPE_CONSTRAINED_DELEGATION:
+			if (delegation_idx != -1) {
+				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
+					  (int)types[i],
+					  (int)logon_info_idx,
+					  (int)i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			delegation_idx = i;
+			break;
+		case PAC_TYPE_LOGON_NAME:
+			if (logon_name_idx != -1) {
+				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
+					  (int)types[i],
+					  (int)logon_info_idx,
+					  (int)i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			logon_name_idx = i;
+			break;
+		case PAC_TYPE_SRV_CHECKSUM:
+			if (srv_checksum_idx != -1) {
+				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
+					  (int)types[i],
+					  (int)logon_info_idx,
+					  (int)i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			srv_checksum_idx = i;
+			break;
+		case PAC_TYPE_KDC_CHECKSUM:
+			if (kdc_checksum_idx != -1) {
+				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
+					  (int)types[i],
+					  (int)logon_info_idx,
+					  (int)i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			kdc_checksum_idx = i;
+			break;
+		default:
+			continue;
+		}
+	}
+
+	if (logon_info_idx == -1) {
+		DEBUG(1, ("PAC_TYPE_LOGON_INFO missing\n"));
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+	if (logon_name_idx == -1) {
+		DEBUG(1, ("PAC_TYPE_LOGON_NAME missing\n"));
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+	if (srv_checksum_idx == -1) {
+		DEBUG(1, ("PAC_TYPE_SRV_CHECKSUM missing\n"));
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+	if (kdc_checksum_idx == -1) {
+		DEBUG(1, ("PAC_TYPE_KDC_CHECKSUM missing\n"));
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return EINVAL;
+	}
+
+	/* Build an updated PAC */
+	ret = krb5_pac_init(context, &new_pac);
+	if (ret != 0) {
+		SAFE_FREE(types);
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	for (i = 0;;) {
+		const uint8_t zero_byte = 0;
+		krb5_data type_data;
+		DATA_BLOB type_blob = data_blob_null;
+		uint32_t type;
+
+		if (forced_next_type != 0) {
+			/*
+			 * We need to inject possible missing types
+			 */
+			type = forced_next_type;
+			forced_next_type = 0;
+		} else if (i < num_types) {
+			type = types[i];
+			i++;
+		} else {
+			break;
+		}
+
+		switch (type) {
+		case PAC_TYPE_LOGON_INFO:
+			type_blob = *pac_blob;
+
+			if (delegation_idx == -1 && deleg_blob != NULL) {
+				/* inject CONSTRAINED_DELEGATION behind */
+				forced_next_type = PAC_TYPE_CONSTRAINED_DELEGATION;
+			}
+			break;
+		case PAC_TYPE_CONSTRAINED_DELEGATION:
+			if (deleg_blob != NULL) {
+				type_blob = *deleg_blob;
+			}
+			break;
+		case PAC_TYPE_LOGON_NAME:
+			/*
+			 * this is generated in the main KDC code
+			 * we just add a place holder here.
+			 */
+			type_blob = data_blob_const(&zero_byte, 1);
+			break;
+		case PAC_TYPE_SRV_CHECKSUM:
+			/*
+			 * this are generated in the main KDC code
+			 * we just add a place holder here.
+			 */
+			type_blob = data_blob_const(&zero_byte, 1);
+			break;
+		case PAC_TYPE_KDC_CHECKSUM:
+			/*
+			 * this are generated in the main KDC code
+			 * we just add a place holders here.
+			 */
+			type_blob = data_blob_const(&zero_byte, 1);
+			break;
+		default:
+			/* just copy... */
+			break;
+		}
+
+		if (type_blob.length != 0) {
+			ret = krb5_copy_data_contents(&type_data,
+						      type_blob.data,
+						      type_blob.length);
+			if (ret != 0) {
+				SAFE_FREE(types);
+				krb5_pac_free(context, new_pac);
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		} else {
+			ret = krb5_pac_get_buffer(context, *pac,
+						  type, &type_data);
+			if (ret != 0) {
+				SAFE_FREE(types);
+				krb5_pac_free(context, new_pac);
+				talloc_free(mem_ctx);
+				return ret;
+			}
+		}
+
+		ret = krb5_pac_add_buffer(context, new_pac,
+					  type, &type_data);
+		kerberos_free_data_contents(context, &type_data);
+		if (ret != 0) {
+			SAFE_FREE(types);
+			krb5_pac_free(context, new_pac);
+			talloc_free(mem_ctx);
+			return ret;
+		}
+	}
+
+	SAFE_FREE(types);
+
+	/* We now replace the pac */
+	krb5_pac_free(context, *pac);
+	*pac = new_pac;
 
 	talloc_free(mem_ctx);
 	return ret;
