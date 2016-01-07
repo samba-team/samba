@@ -235,7 +235,15 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		      uint32_t ucf_flags)
 {
 	struct smb_filename *smb_fname = NULL;
-	char *start, *end;
+
+	/*
+	 * This looks strange. But we need "start" initialized to "" here but
+	 * it can't be a const char *, so 'char *start = "";' does not work.
+	 */
+	char cnull = '\0';
+	char *start = &cnull;
+
+	char *end;
 	char *dirpath = NULL;
 	char *stream = NULL;
 	bool component_was_mangled = False;
