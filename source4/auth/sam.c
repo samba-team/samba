@@ -629,7 +629,7 @@ NTSTATUS authsam_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 
 	nt_status = authsam_make_user_info_dc(tmp_ctx, sam_ctx,
 					     lpcfg_netbios_name(lp_ctx),
-					     lpcfg_workgroup(lp_ctx),
+					     lpcfg_sam_name(lp_ctx),
 					     domain_dn,
 					     msg,
 					     user_sess_key, lm_sess_key,
