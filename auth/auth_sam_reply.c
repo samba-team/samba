@@ -130,32 +130,33 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* Note that the validity of the _sam3 structure is only as long as
+/* Note that the validity of the _sam6 structure is only as long as
  * the user_info_dc it was generated from */
-NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
-					   const struct auth_user_info_dc *user_info_dc,
-					   struct netr_SamInfo3 **_sam3)
+NTSTATUS auth_convert_user_info_dc_saminfo6(TALLOC_CTX *mem_ctx,
+					    const struct auth_user_info_dc *user_info_dc,
+					    struct netr_SamInfo6 **_sam6)
 {
-	struct netr_SamBaseInfo *sam;
-	struct netr_SamInfo3 *sam3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	NTSTATUS status;
+	struct netr_SamBaseInfo *sam = NULL;
+	struct netr_SamInfo6 *sam6 = NULL;
 	size_t i;
-	NT_STATUS_HAVE_NO_MEMORY(sam3);
 
-	status = auth_convert_user_info_dc_sambaseinfo(sam3, user_info_dc, &sam);
+	sam6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
+	if (sam6 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = auth_convert_user_info_dc_sambaseinfo(sam6, user_info_dc, &sam);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(sam3);
+		TALLOC_FREE(sam6);
 		return status;
 	}
-	sam3->base = *sam;
-	sam3->sidcount	= 0;
-	sam3->sids	= NULL;
+	sam6->base = *sam;
 
-
-	sam3->sids = talloc_array(sam, struct netr_SidAttr,
+	sam6->sids = talloc_array(sam6, struct netr_SidAttr,
 				  user_info_dc->num_sids);
-	if (sam3->sids == NULL) {
-		TALLOC_FREE(sam3);
+	if (sam6->sids == NULL) {
+		TALLOC_FREE(sam6);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -164,22 +165,68 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 		if (dom_sid_in_domain(sam->domain_sid, &user_info_dc->sids[i])) {
 			continue;
 		}
-		sam3->sids[sam3->sidcount].sid = dom_sid_dup(sam3->sids, &user_info_dc->sids[i]);
-		if (sam3->sids[sam3->sidcount].sid == NULL) {
-			TALLOC_FREE(sam3);
+		sam6->sids[sam6->sidcount].sid = dom_sid_dup(sam6->sids, &user_info_dc->sids[i]);
+		if (sam6->sids[sam6->sidcount].sid == NULL) {
+			TALLOC_FREE(sam6);
 			return NT_STATUS_NO_MEMORY;
 		}
-		sam3->sids[sam3->sidcount].attributes =
+		sam6->sids[sam6->sidcount].attributes =
 			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
-		sam3->sidcount += 1;
+		sam6->sidcount += 1;
 	}
-	if (sam3->sidcount) {
-		sam3->base.user_flags |= NETLOGON_EXTRA_SIDS;
+	if (sam6->sidcount) {
+		sam6->base.user_flags |= NETLOGON_EXTRA_SIDS;
 	} else {
-		sam3->sids = NULL;
+		sam6->sids = NULL;
 	}
-	*_sam3 = sam3;
 
+	if (user_info_dc->info->dns_domain_name != NULL) {
+		sam6->dns_domainname.string = talloc_strdup(sam6,
+					user_info_dc->info->dns_domain_name);
+		if (sam6->dns_domainname.string == NULL) {
+			TALLOC_FREE(sam6);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	if (user_info_dc->info->user_principal_name != NULL) {
+		sam6->principal_name.string = talloc_strdup(sam6,
+					user_info_dc->info->user_principal_name);
+		if (sam6->principal_name.string == NULL) {
+			TALLOC_FREE(sam6);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	*_sam6 = sam6;
+	return NT_STATUS_OK;
+}
+
+/* Note that the validity of the _sam3 structure is only as long as
+ * the user_info_dc it was generated from */
+NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
+					   const struct auth_user_info_dc *user_info_dc,
+					   struct netr_SamInfo3 **_sam3)
+{
+	NTSTATUS status;
+	struct netr_SamInfo6 *sam6 = NULL;
+	struct netr_SamInfo3 *sam3 = NULL;
+
+	sam3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
+	if (sam3 == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = auth_convert_user_info_dc_saminfo6(sam3, user_info_dc, &sam6);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(sam3);
+		return status;
+	}
+	sam3->base	= sam6->base;
+	sam3->sidcount	= sam6->sidcount;
+	sam3->sids	= sam6->sids;
+
+	*_sam3 = sam3;
 	return NT_STATUS_OK;
 }
 
