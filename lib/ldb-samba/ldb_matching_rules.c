@@ -30,7 +30,7 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 					     const struct dsdb_dn *dn_to_match,
 					     const char *dn_oid,
 					     struct dsdb_dn *to_visit,
-					     struct dsdb_dn **visited,
+					     struct dsdb_dn ***visited,
 					     unsigned int *visited_count,
 					     bool *matched)
 {
@@ -107,21 +107,23 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 	 * memory context.
 	 */
 	if (visited == NULL) {
-		visited = talloc_array(mem_ctx, struct dsdb_dn *, 1);
-		if (visited == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	} else if (*visited == NULL) {
+		*visited = talloc_array(mem_ctx, struct dsdb_dn *, 1);
+		if (*visited == NULL) {
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		visited[0] = to_visit;
+		(*visited)[0] = to_visit;
 		(*visited_count) = 1;
 	} else {
-		visited = talloc_realloc(mem_ctx, visited, struct dsdb_dn *,
+		*visited = talloc_realloc(mem_ctx, *visited, struct dsdb_dn *,
 					 (*visited_count) + 1);
-		if (visited == NULL) {
+		if (*visited == NULL) {
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		visited[(*visited_count)] = to_visit;
+		(*visited)[(*visited_count)] = to_visit;
 		(*visited_count)++;
 	}
 
@@ -129,7 +131,7 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 	 * steal to_visit into visited array context, as it has to live until
 	 * the array is freed.
 	 */
-	talloc_steal(visited, to_visit);
+	talloc_steal(*visited, to_visit);
 
 	/*
 	 * Iterate over the values of the attribute of the entry being
@@ -155,7 +157,7 @@ static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 		 * the current entry DN.
 		 */
 		for (j=0; j < (*visited_count) - 1; j++) {
-			struct dsdb_dn *visited_dn = visited[j];
+			struct dsdb_dn *visited_dn = (*visited)[j];
 			if (ldb_dn_compare(visited_dn->dn,
 					   next_to_visit->dn) == 0) {
 				skip = true;
@@ -204,6 +206,7 @@ static int ldb_eval_transitive_filter(TALLOC_CTX *mem_ctx,
 	struct dsdb_dn *dn_to_match;
 	const char *dn_oid;
 	unsigned int count;
+	struct dsdb_dn **visited;
 
 	schema = dsdb_get_schema(ldb, mem_ctx);
 	if (schema == NULL) {
@@ -231,7 +234,7 @@ static int ldb_eval_transitive_filter(TALLOC_CTX *mem_ctx,
 	return ldb_eval_transitive_filter_helper(mem_ctx, ldb, attr,
 						 dn_to_match, dn_oid,
 						 current_object_dn,
-						 NULL, &count, matched);
+						 &visited, &count, matched);
 }
 
 /*
