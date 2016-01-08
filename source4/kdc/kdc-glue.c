@@ -52,11 +52,7 @@ int kdc_check_pac(krb5_context context,
 		}
 	}
 
-#if HDB_ENCTYPE2KEY_TAKES_KEYSET
 	ret = hdb_enctype2key(context, &ent->entry, NULL, etype, &key);
-#else
-	ret = hdb_enctype2key(context, &ent->entry, etype, &key);
-#endif
 
 	if (ret != 0) {
 		return ret;

@@ -235,8 +235,12 @@ static struct SDBFlags uf2SDBFlags(krb5_context context, uint32_t userAccountCon
 		flags.require_preauth = 0;
 	} else {
 		flags.require_preauth = 1;
-
 	}
+
+	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
+		flags.no_auth_data_reqd = 1;
+	}
+
 	return flags;
 }
 
@@ -2540,9 +2544,9 @@ krb5_error_code samba_kdc_nextkey(krb5_context context,
  * the time the principal was presented to the KDC.
  */
 krb5_error_code
-samba_kdc_check_s4u2self(krb5_context context,
-			 struct samba_kdc_entry *skdc_entry_client,
-			 struct samba_kdc_entry *skdc_entry_server_target)
+samba_kdc_check_client_matches_target_service(krb5_context context,
+					      struct samba_kdc_entry *skdc_entry_client,
+					      struct samba_kdc_entry *skdc_entry_server_target)
 {
 	struct dom_sid *orig_sid;
 	struct dom_sid *target_sid;

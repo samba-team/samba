@@ -51,12 +51,12 @@ static void sdb_flags_to_hdb_flags(const struct SDBFlags *s,
 	h->allow_kerberos4 = s->allow_kerberos4;
 	h->allow_digest = s->allow_digest;
 	h->locked_out = s->locked_out;
-	h->_unused18 = s->_unused18;
-	h->_unused19 = s->_unused19;
-	h->_unused20 = s->_unused20;
-	h->_unused21 = s->_unused21;
-	h->_unused22 = s->_unused22;
-	h->_unused23 = s->_unused23;
+	h->require_pwchange = s->require_pwchange;
+	h->materialize = s->materialize;
+	h->virtual_keys = s->virtual_keys;
+	h->virtual = s->virtual;
+	h->synthetic = s->synthetic;
+	h->no_auth_data_reqd = s->no_auth_data_reqd;
 	h->_unused24 = s->_unused24;
 	h->_unused25 = s->_unused25;
 	h->_unused26 = s->_unused26;
@@ -175,7 +175,7 @@ static int sdb_event_to_Event(krb5_context context,
 
 static int sdb_entry_to_hdb_entry(krb5_context context,
 				  const struct sdb_entry *s,
-				  struct hdb_entry *h)
+				  hdb_entry *h)
 {
 	unsigned int i;
 	int rc;
