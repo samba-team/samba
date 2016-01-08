@@ -405,6 +405,8 @@ static bool test_wbc_resolve_winsbyname(struct torture_context *tctx)
 
 	name = torture_setting_string(tctx, "host", NULL);
 
+	torture_comment(tctx, "test-WinsByName: host='%s'\n", name);
+
 	ret = wbcResolveWinsByName(name, &ip);
 
 	if (is_ipaddress(name)) {
@@ -427,6 +429,8 @@ static bool test_wbc_resolve_winsbyip(struct torture_context *tctx)
 
 	host = torture_setting_string(tctx, "host", NULL);
 
+	torture_comment(tctx, "test-WinsByIp: host='%s'\n", host);
+
 	make_nbt_name_server(&nbt_name, host);
 
 	status = resolve_name_ex(lpcfg_resolve_context(tctx->lp_ctx),
@@ -434,6 +438,8 @@ static bool test_wbc_resolve_winsbyip(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status,
 			talloc_asprintf(tctx,"Failed to resolve %s: %s",
 					nbt_name.name, nt_errstr(status)));
+
+	torture_comment(tctx, "test-WinsByIp: ip='%s'\n", ip);
 
 	ret = wbcResolveWinsByIP(ip, &name);
 
