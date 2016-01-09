@@ -501,6 +501,8 @@ sub provision_raw_step1($$)
 	}
 
 	Samba::prepare_keyblobs($ctx);
+	my $crlfile = "$ctx->{tlsdir}/crl.pem";
+	$crlfile = "" unless -e ${crlfile};
 
 	print CONFFILE "
 [global]
@@ -520,6 +522,7 @@ sub provision_raw_step1($$)
 	winbind separator = /
 	interfaces = $ctx->{interfaces}
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
+	tls crlfile = ${crlfile}
 	panic action = $RealBin/gdb_backtrace \%d
 	wins support = yes
 	server role = $ctx->{server_role}
