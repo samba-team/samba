@@ -9,10 +9,10 @@ set -x
 # All passwords are "1234"
 #
 
-./manage-ca.sh manage-CA-samba.example.com.cnf init_ca
-
-./manage-ca.sh manage-CA-samba.example.com.cnf create_dc localdc.samba.example.com 0123456789ABCDEF
-./manage-ca.sh manage-CA-samba.example.com.cnf create_user administrator@samba.example.com
-
-./manage-ca.sh manage-CA-samba.example.com.cnf create_dc addc.addom.samba.example.com 0123456789ABCDEF
-./manage-ca.sh manage-CA-samba.example.com.cnf create_user administrator@addom.samba.example.com
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf init_ca
+# DONE #
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_dc localdc.samba.example.com 0123456789ABCDEF
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_user administrator@samba.example.com
+# DONE #
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_dc addc.addom.samba.example.com 0123456789ABCDEF
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_user administrator@addom.samba.example.com
