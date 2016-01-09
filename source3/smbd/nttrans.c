@@ -2310,7 +2310,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	ZERO_STRUCT(qt);
 
 	/* access check */
-	if (get_current_uid(conn) != 0) {
+	if (get_current_uid(conn) != sec_initial_uid()) {
 		DEBUG(1,("get_user_quota: access_denied service [%s] user "
 			 "[%s]\n", lp_servicename(talloc_tos(), SNUM(conn)),
 			 conn->session_info->unix_info->unix_name));
