@@ -37,7 +37,7 @@
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_irpc_c.h"
 #include "param/param.h"
-#include "dlinklist.h"
+#include "util/dlinklist.h"
 
 struct dns_notify_watched_dn {
 	struct dns_notify_watched_dn *next, *prev;

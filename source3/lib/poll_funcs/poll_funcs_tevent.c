@@ -19,7 +19,7 @@
 #include "poll_funcs_tevent.h"
 #include "tevent.h"
 #include "system/select.h"
-#include "dlinklist.h"
+#include "lib/util/dlinklist.h"
 
 /*
  * A poll_watch is asked for by the engine using this library via
