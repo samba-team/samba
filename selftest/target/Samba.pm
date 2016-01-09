@@ -71,6 +71,111 @@ sub nss_wrapper_winbind_so_path($) {
 	return $ret;
 }
 
+sub copy_file_content($$)
+{
+	my ($in, $out) = @_;
+	open(IN, "${in}") or die("failed to open in[${in}] for reading: $!");
+	open(OUT, ">${out}") or die("failed to open out[${out}] for writing: $!");
+	while(<IN>) {
+		print OUT $_;
+	}
+	close(OUT);
+	close(IN);
+}
+
+sub prepare_keyblobs($)
+{
+	my ($ctx) = @_;
+
+	my $cadir = "$ENV{SRCDIR_ABS}/selftest/manage-ca/CA-samba.example.com";
+	my $cacert = "$cadir/Public/CA-samba.example.com-cert.pem";
+	my $cacrl_pem = "$cadir/Public/CA-samba.example.com-crl.pem";
+	my $dcdnsname = "$ctx->{hostname}.$ctx->{dnsname}";
+	my $dcdir = "$cadir/DCs/$dcdnsname";
+	my $dccert = "$dcdir/DC-$dcdnsname-cert.pem";
+	my $dckey_private = "$dcdir/DC-$dcdnsname-private-key.pem";
+	my $userprincipalname = "administrator\@$ctx->{dnsname}";
+	my $userdir = "$cadir/Users/$userprincipalname";
+	my $usercert = "$userdir/USER-$userprincipalname-cert.pem";
+	my $userkey_private = "$userdir/USER-$userprincipalname-private-key.pem";
+
+	my $tlsdir = "$ctx->{tlsdir}";
+	my $pkinitdir = "$ctx->{prefix_abs}/pkinit";
+	#TLS and PKINIT crypto blobs
+	my $dhfile = "$tlsdir/dhparms.pem";
+	my $cafile = "$tlsdir/ca.pem";
+	my $crlfile = "$tlsdir/crl.pem";
+	my $certfile = "$tlsdir/cert.pem";
+	my $keyfile = "$tlsdir/key.pem";
+	my $usercertfile = "$pkinitdir/USER-$userprincipalname-cert.pem";
+	my $userkeyfile = "$pkinitdir/USER-$userprincipalname-private-key.pem";
+
+	mkdir($tlsdir, 0700);
+	mkdir($pkinitdir, 0700);
+	my $oldumask = umask;
+	umask 0077;
+
+	# This is specified here to avoid draining entropy on every run
+	# generate by
+	# openssl dhparam -out dhparms.pem -text -2 8192
+	open(DHFILE, ">$dhfile");
+	print DHFILE <<EOF;
+-----BEGIN DH PARAMETERS-----
+MIIECAKCBAEAlcpjuJptCzC2bIIApLuyFLw2nODQUztqs/peysY9e3LgWh/xrc87
+SWJNSUrqFJFh2m357WH0XGcTdTk0b/8aIYIWjbwEhWR/5hZ+1x2TDrX1awkYayAe
+pr0arycmWHaAmhw+m+dBdj2O2jRMe7gn0ha85JALNl+Z3wv2q2eys8TIiQ2dbHPx
+XvpMmlAv7QHZnpSpX/XgueQr6T3EYggljppZwk1fe4W2cxBjCv9w/Q83pJXMEVVB
+WESEQPZC38v6hVIXIlF4J7jXjV3+NtCLL4nvsy0jrLEntyKz5OB8sNPRzJr0Ju2Y
+yXORCSMMXMygP+dxJtQ6txzQYWyaCYN1HqHDZy3cFL9Qy8kTFqIcW56Lti2GsW/p
+jSMzEOa1NevhKNFL3dSZJx5m+5ZeMvWXlCqXSptmVdbs5wz5jkMUm/E6pVfM5lyb
+Ttlcq2iYPqnJz1jcL5xwhoufID8zSJCPJ7C0jb0Ngy5wLIUZfjXJUXxUyxTnNR9i
+N9Sc+UkDvLxnCW+qzjyPXGlQU1SsJwMLWa2ZecL/uYE4bOdcN3g+5WHkevyDnXqR
++yy9x7sGXjBT3bRWK5tVHJWOi6eBu1hp39U6aK8oOJWiUt3vmC2qEdIsT6JaLNNi
+YKrSfRGBf19IJBaagen1S19bb3dnmwoU1RaWM0EeJQW1oXOBg7zLisB2yuu5azBn
+tse00+0nc+GbH2y+jP0sE7xil1QeilZl+aQ3tX9vL0cnCa+8602kXxU7P5HaX2+d
+05pvoHmeZbDV85io36oF976gBYeYN+qAkTUMsIZhuLQDuyn0963XOLyn1Pm6SBrU
+OkIZXW7WoKEuO/YSfizUIqXwmAMJjnEMJCWG51MZZKx//9Hsdp1RXSm/bRSbvXB7
+MscjvQYWmfCFnIk8LYnEt3Yey40srEiS9xyZqdrvobxz+sU1XcqR38kpVf4gKASL
+xURia64s4emuJF+YHIObyydazQ+6/wX/C+m+nyfhuxSO6j1janPwtYbU+Uj3TzeM
+04K1mpPQpZcaMdZZiNiu7i8VJlOPKAz7aJT8TnMMF5GMyzyLpSMpc+NF9L/BSocV
+/cUM4wQT2PTHrcyYzmTVH7c9bzBkuxqrwVB1BY1jitDV9LIYIVBglKcX88qrfHIM
+XiXPAIwGclD59qm2cG8OdM9NA5pNMI119KuUAIJsUdgPbR1LkT2XTT15YVoHmFSQ
+DlaWOXn4td031jr0EisX8QtFR7+/0Nfoni6ydFGs5fNH/L1ckq6FEO4OhgucJw9H
+YRmiFlsQBQNny78vNchwZne3ZixkShtGW0hWDdi2n+h7St1peNJCNJjMbEhRsPRx
+RmNGWh4AL8rho4RO9OBao0MnUdjbbffD+wIBAg==
+-----END DH PARAMETERS-----
+EOF
+	close(DHFILE);
+
+	if (! -e ${dckey_private}) {
+		umask $oldumask;
+		return;
+	}
+
+	copy_file_content(${cacert}, ${cafile});
+	copy_file_content(${cacrl_pem}, ${crlfile});
+	copy_file_content(${dccert}, ${certfile});
+	copy_file_content(${dckey_private}, ${keyfile});
+	if (-e ${userkey_private}) {
+		copy_file_content(${usercert}, ${usercertfile});
+		copy_file_content(${userkey_private}, ${userkeyfile});
+	}
+
+	# COMPAT stuff to be removed in a later commit
+	my $kdccertfile = "$tlsdir/kdc.pem";
+	copy_file_content(${dccert}, ${kdccertfile});
+	if (-e ${userkey_private}) {
+		my $adminkeyfile = "$tlsdir/adminkey.pem";
+		my $admincertfile = "$tlsdir/admincert.pem";
+		my $admincertupnfile = "$tlsdir/admincertupn.pem";
+		copy_file_content(${userkey_private}, ${adminkeyfile});
+		copy_file_content(${usercert}, ${admincertfile});
+		copy_file_content(${usercert}, ${admincertupnfile});
+	}
+
+	umask $oldumask;
+}
+
 sub mk_krb5_conf($$)
 {
 	my ($ctx) = @_;
