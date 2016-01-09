@@ -1,0 +1,3 @@
+V	360311232844Z		00	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Domain Controllers/CN=localdc.samba.example.com/emailAddress=ca-samba.example.com@samba.example.com
+V	360311232904Z		01	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Users/CN=administrator@samba.example.com/emailAddress=administrator@samba.example.com
+V	360311232925Z		02	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Domain Controllers/CN=addc.addom.samba.example.com/emailAddress=ca-samba.example.com@samba.example.com
