@@ -1,0 +1,49 @@
+#[ usr_cert_mskdc ]
+[ template_x509_extensions ]
+
+# These extensions are added when 'ca' signs a request for a domain controller certificate.
+
+# This goes against PKIX guidelines but some CAs do it and some software
+# requires this to avoid interpreting an end user certificate as a CA.
+
+basicConstraints=CA:FALSE
+crlDistributionPoints=URI:$CRLDISTPT
+
+# Here are some examples of the usage of nsCertType. If it is omitted
+# the certificate can be used for anything *except* object signing.
+
+# This is OK for an SSL server.
+nsCertType          = server
+
+# This is typical in keyUsage for a client certificate.
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+# This will be displayed in Netscape's comment listbox.
+nsComment           = "Domain Controller Certificate @@DC_DNS_NAME@@"
+
+# PKIX recommendations harmless if included in all certificates.
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+
+# This stuff is for subjectAltName and issuerAltname.
+
+subjectAltName=@dc_subjalt
+
+# Copy subject details
+issuerAltName=issuer:copy
+
+nsCaRevocationUrl       = $CRLDISTPT
+#nsBaseUrl
+#nsRevocationUrl
+#nsRenewalUrl
+#nsCaPolicyUrl
+#nsSslServerName
+
+#Extended Key requirements for our domain controller certs
+# serverAuth - says cert can be used to identify an ssl/tls server
+# msKDC - says cert can be used to identify a Kerberos Domain Controller.
+extendedKeyUsage = clientAuth,serverAuth,msKDC
+
+[dc_subjalt]
+DNS=@@DC_DNS_NAME@@
+otherName=msADGUID;FORMAT:HEX,OCTETSTRING:@@DC_OBJECTGUID_HEX@@
