@@ -50,98 +50,10 @@ static uint64_t dfq_load_param(int snum, const char *path, const char *section,
 	return ret;
 }
 
-static bool dfq_disk_quotas(vfs_handle_struct *handle, const char *path,
-			    uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
-{
-	int r;
-	SMB_DISK_QUOTA D;
-	unid_t id;
-
-	id.uid = geteuid();
-
-	ZERO_STRUCT(D);
-	r = dfq_get_quota(handle, path, SMB_USER_QUOTA_TYPE, id, &D);
-
-	/* Use softlimit to determine disk space, except when it has been
-	 * exceeded */
-	*bsize = D.bsize;
-	if (r == -1) {
-		if (errno == EDQUOT) {
-			*dfree = 0;
-			*dsize = D.curblocks;
-			return (true);
-		} else {
-			goto try_group_quota;
-		}
-	}
-
-	/* Use softlimit to determine disk space, except when it has been
-	 * exceeded */
-	if ((D.softlimit && D.curblocks >= D.softlimit) ||
-	    (D.hardlimit && D.curblocks >= D.hardlimit) ||
-	    (D.isoftlimit && D.curinodes >= D.isoftlimit) ||
-	    (D.ihardlimit && D.curinodes >= D.ihardlimit)) {
-		*dfree = 0;
-		*dsize = D.curblocks;
-	} else if (D.softlimit == 0 && D.hardlimit == 0) {
-		goto try_group_quota;
-	} else {
-		if (D.softlimit == 0) {
-			D.softlimit = D.hardlimit;
-		}
-		*dfree = D.softlimit - D.curblocks;
-		*dsize = D.softlimit;
-	}
-
-	return true;
-
-try_group_quota:
-	id.gid = getegid();
-
-	ZERO_STRUCT(D);
-	r = dfq_get_quota(handle, path, SMB_GROUP_QUOTA_TYPE, id, &D);
-
-	/* Use softlimit to determine disk space, except when it has been
-	 * exceeded */
-	*bsize = D.bsize;
-	if (r == -1) {
-		if (errno == EDQUOT) {
-			*dfree = 0;
-			*dsize = D.curblocks;
-			return (true);
-		} else {
-			return false;
-		}
-	}
-
-	/* Use softlimit to determine disk space, except when it has been
-	 * exceeded */
-	if ((D.softlimit && D.curblocks >= D.softlimit) ||
-	    (D.hardlimit && D.curblocks >= D.hardlimit) ||
-	    (D.isoftlimit && D.curinodes >= D.isoftlimit) ||
-	    (D.ihardlimit && D.curinodes >= D.ihardlimit)) {
-		*dfree = 0;
-		*dsize = D.curblocks;
-	} else if (D.softlimit == 0 && D.hardlimit == 0) {
-		return false;
-	} else {
-		if (D.softlimit == 0) {
-			D.softlimit = D.hardlimit;
-		}
-		*dfree = D.softlimit - D.curblocks;
-		*dsize = D.softlimit;
-	}
-
-	return (true);
-}
-
 static uint64_t dfq_disk_free(vfs_handle_struct *handle, const char *path,
 			      uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	uint64_t free_1k;
-	uint64_t dfree_q = 0;
-	uint64_t bsize_q = 0;
-	uint64_t dsize_q = 0;
 	int snum = SNUM(handle->conn);
 	uint64_t dfq_bsize = 0;
 	char *rpath = NULL;
@@ -162,14 +74,6 @@ static uint64_t dfq_disk_free(vfs_handle_struct *handle, const char *path,
 	*bsize = dfq_bsize;
 	*dfree = dfq_load_param(snum, rpath, "df", "disk free", 0);
 	*dsize = dfq_load_param(snum, rpath, "df", "disk size", 0);
-
-	if (dfq_disk_quotas(handle, path, &bsize_q, &dfree_q, &dsize_q)) {
-		(*bsize) = bsize_q;
-		(*dfree) = MIN(*dfree, dfree_q);
-		(*dsize) = MIN(*dsize, dsize_q);
-	}
-
-	disk_norm(bsize, dfree, dsize);
 
 	if ((*bsize) < 1024) {
 		free_1k = (*dfree) / (1024 / (*bsize));
