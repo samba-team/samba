@@ -938,12 +938,14 @@ bool asn1_read_ContextSimple(struct asn1_data *data, TALLOC_CTX *mem_ctx, uint8_
 		data->has_error = true;
 		return false;
 	}
-	*blob = data_blob_talloc(mem_ctx, NULL, len);
+	*blob = data_blob_talloc(mem_ctx, NULL, len + 1);
 	if ((len != 0) && (!blob->data)) {
 		data->has_error = true;
 		return false;
 	}
 	if (!asn1_read(data, blob->data, len)) return false;
+	blob->length--;
+	blob->data[len] = 0;
 	return asn1_end_tag(data);
 }
 
