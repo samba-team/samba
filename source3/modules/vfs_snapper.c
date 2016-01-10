@@ -2767,6 +2767,39 @@ static uint64_t snapper_gmt_disk_free(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int snapper_gmt_get_quota(vfs_handle_struct *handle, const char *path,
+				 enum SMB_QUOTA_TYPE qtype, unid_t id,
+				 SMB_DISK_QUOTA *dq)
+{
+	time_t timestamp;
+	char *stripped;
+	int ret;
+	int saved_errno;
+	char *conv;
+
+	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, path, &timestamp,
+					&stripped)) {
+		return -1;
+	}
+	if (timestamp == 0) {
+		return SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, dq);
+	}
+
+	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
+	TALLOC_FREE(stripped);
+	if (conv == NULL) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_GET_QUOTA(handle, conv, qtype, id, dq);
+
+	saved_errno = errno;
+	TALLOC_FREE(conv);
+	errno = saved_errno;
+
+	return ret;
+}
+
 
 static struct vfs_fn_pointers snapper_fns = {
 	.snap_check_path_fn = snapper_snap_check_path,
@@ -2775,6 +2808,7 @@ static struct vfs_fn_pointers snapper_fns = {
 	.get_shadow_copy_data_fn = snapper_get_shadow_copy_data,
 	.opendir_fn = snapper_gmt_opendir,
 	.disk_free_fn = snapper_gmt_disk_free,
+	.get_quota_fn = snapper_gmt_get_quota,
 	.rename_fn = snapper_gmt_rename,
 	.link_fn = snapper_gmt_link,
 	.symlink_fn = snapper_gmt_symlink,
