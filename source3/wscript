@@ -375,7 +375,7 @@ int main(int argc, char **argv) {
                     msg="Checking for LL suffix on long long integers")
 
     conf.CHECK_FUNCS('''
-_acl __acl atexit 
+_acl __acl atexit
  _chdir __chdir chflags chmod _close __close _closedir
 __closedir crypt16 devnm dirfd
 DNSServiceRegister _dup __dup _dup2 __dup2 endmntent execl
@@ -453,12 +453,12 @@ utimensat vsyslog _write __write __xstat
 
     if Options.options.with_acl_support:
         if (host_os.rfind('hpux') > -1):
-		Logs.info('Using HPUX ACLs')
+                Logs.info('Using HPUX ACLs')
                 conf.DEFINE('HAVE_HPUX_ACLS',1)
                 conf.DEFINE('POSIX_ACL_NEEDS_MASK',1)
                 default_static_modules.extend(TO_LIST('vfs_hpuxacl'))
-	elif (host_os.rfind('aix') > -1):
-		Logs.info('Using AIX ACLs')
+        elif (host_os.rfind('aix') > -1):
+                Logs.info('Using AIX ACLs')
                 conf.DEFINE('HAVE_AIX_ACLS',1)
                 default_static_modules.extend(TO_LIST('vfs_aixacl vfs_aixacl2'))
         elif (host_os.rfind('darwin') > -1):
@@ -542,13 +542,13 @@ return acl_get_perm_np(permset_d, perm);
     conf.CHECK_DECLS('readahead', headers='fcntl.h', always=True)
 
     conf.CHECK_CODE('int fd = openat(AT_FDCWD, ".", O_RDONLY);',
-		'HAVE_OPENAT',
-		msg='Checking for openat',
-		headers='fcntl.h')
+                'HAVE_OPENAT',
+                msg='Checking for openat',
+                headers='fcntl.h')
 
     if host_os.rfind('linux') > -1:
-	conf.CHECK_FUNCS_IN('io_submit', 'aio')
-	conf.CHECK_CODE('''
+        conf.CHECK_FUNCS_IN('io_submit', 'aio')
+        conf.CHECK_CODE('''
 struct io_event ioev;
 struct iocb *ioc;
 io_context_t ctx;
@@ -564,10 +564,10 @@ io_set_callback(ioc, (io_callback_t)(0));
 io_submit(ctx, 1, &ioc);
 io_getevents(ctx, 1, 1, &ioev, &ts);
 ''',
-			'HAVE_LINUX_KERNEL_AIO',
-			msg='Checking for linux kernel asynchronous io support',
-			headers='unistd.h stdlib.h sys/types.h fcntl.h sys/eventfd.h libaio.h',
-			lib='aio')
+            'HAVE_LINUX_KERNEL_AIO',
+            msg='Checking for linux kernel asynchronous io support',
+            headers='unistd.h stdlib.h sys/types.h fcntl.h sys/eventfd.h libaio.h',
+            lib='aio')
 
     conf.CHECK_CODE('''
 struct msghdr msg;
@@ -1283,7 +1283,7 @@ main() {
                             hdr.trl_cnt = 0;
                             hdtrl.iov_base = (void *)0;
                             hdtrl.iov_len = 0;
-			    ret = sendfile(fromfd, tofd, offset, &nwritten, &hdr, 0);
+                            ret = sendfile(fromfd, tofd, offset, &nwritten, &hdr, 0);
                             ''',
                             '_HAVE_SENDFILE',
                             msg='Checking for darwin sendfile support')
@@ -1400,7 +1400,7 @@ main() {
                 msg='for XFS QUOTA in <sys/quota.h>',
                 execute=False,
                 local_include=False)
-        
+
         # For IRIX like dqb_isoftlimit instead of dqb_fsoftlimit in struc dqblk
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_fsoftlimit', define='HAVE_DQB_FSOFTLIMIT',
                                 headers='sys/quota.h')
@@ -1440,7 +1440,7 @@ main() {
 
         conf.CHECK_CODE('''
                      clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");
-''', 
+''',
                         headers="rpc/rpc.h rpc/types.h rpcsvc/rquota.h rpc/nettype.h rpc/xdr.h", 
                         define='HAVE_NFS_QUOTAS',
                         msg='for NFS QUOTAS',
@@ -1482,8 +1482,8 @@ main() {
             conf.undefine('WITH_PTHREADPOOL')
 
     if (conf.CHECK_HEADERS('linux/ioctl.h sys/ioctl.h linux/fs.h') and
-	conf.CHECK_DECLS('FS_IOC_GETFLAGS FS_COMPR_FL', headers='linux/fs.h')):
-	    conf.DEFINE('HAVE_LINUX_IOCTL', '1')
+        conf.CHECK_DECLS('FS_IOC_GETFLAGS FS_COMPR_FL', headers='linux/fs.h')):
+            conf.DEFINE('HAVE_LINUX_IOCTL', '1')
 
     conf.env['CCFLAGS_CEPHFS'] = "-D_FILE_OFFSET_BITS=64"
     if Options.options.libcephfs_dir:
@@ -1509,7 +1509,7 @@ main() {
         conf.undefine('HAVE_GLUSTERFS')
 
     if Options.options.enable_vxfs:
-	conf.DEFINE('HAVE_VXFS', '1')
+        conf.DEFINE('HAVE_VXFS', '1')
 
     if conf.CHECK_CFG(package='dbus-1', args='--cflags --libs',
                       msg='Checking for dbus', uselib_store="DBUS-1"):
@@ -1590,8 +1590,7 @@ main() {
         default_shared_modules.extend(TO_LIST('auth_skel pdb_test'))
 
     if Options.options.enable_selftest or Options.options.developer:
-	default_shared_modules.extend(TO_LIST('vfs_fake_acls vfs_nfs4acl_xattr'))
-        
+        default_shared_modules.extend(TO_LIST('vfs_fake_acls vfs_nfs4acl_xattr'))
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
@@ -1625,7 +1624,7 @@ main() {
 
     if (conf.CONFIG_SET('HAVE_LINUX_IOCTL')
       and conf.CONFIG_SET('HAVE_BASENAME') and conf.CONFIG_SET('HAVE_DIRNAME')):
-	default_shared_modules.extend(TO_LIST('vfs_btrfs'))
+        default_shared_modules.extend(TO_LIST('vfs_btrfs'))
 
     if conf.CONFIG_SET("HAVE_CEPH"):
         default_shared_modules.extend(TO_LIST('vfs_ceph'))
@@ -1637,7 +1636,7 @@ main() {
         default_shared_modules.extend(TO_LIST('vfs_vxfs'))
 
     if conf.CONFIG_SET('HAVE_DBUS'):
-	default_shared_modules.extend(TO_LIST('vfs_snapper'))
+        default_shared_modules.extend(TO_LIST('vfs_snapper'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
