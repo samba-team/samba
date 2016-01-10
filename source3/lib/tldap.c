@@ -168,7 +168,7 @@ bool tldap_connection_ok(struct tldap_context *ld)
 static struct tldap_ctx_attribute *tldap_context_findattr(
 	struct tldap_context *ld, const char *name)
 {
-	int i, num_attrs;
+	size_t i, num_attrs;
 
 	num_attrs = talloc_array_length(ld->ctx_attrs);
 
