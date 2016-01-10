@@ -2204,8 +2204,7 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 	vfs_gpfs_disk_free_quota(qi_user, cur_time, dfree, dsize);
 	vfs_gpfs_disk_free_quota(qi_group, cur_time, dfree, dsize);
 
-	disk_norm(bsize, dfree, dsize);
-	return *dfree;
+	return *dfree / 2;
 }
 
 static uint32_t vfs_gpfs_capabilities(struct vfs_handle_struct *handle,
