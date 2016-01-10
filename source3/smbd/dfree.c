@@ -116,13 +116,14 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 			   syscmd, strerror(errno) ));
 	}
 
-	if (sys_fsusage(path, dfree, dsize) != 0) {
-		DEBUG (0, ("disk_free: sys_fsusage() failed. Error was : %s\n",
-			strerror(errno) ));
+	if (SMB_VFS_DISK_FREE(conn, path, bsize, dfree, dsize) ==
+	    (uint64_t)-1) {
+		DBG_ERR("VFS disk_free failed. Error was : %s\n",
+			strerror(errno));
 		return (uint64_t)-1;
 	}
 
-	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
+	if (disk_quotas(conn, path, &bsize_q, &dfree_q, &dsize_q)) {
 		(*bsize) = bsize_q;
 		(*dfree) = MIN(*dfree,dfree_q);
 		(*dsize) = MIN(*dsize,dsize_q);
@@ -170,7 +171,7 @@ uint64_t get_dfree_info(connection_struct *conn,
 	uint64_t dfree_ret;
 
 	if (!dfree_cache_time) {
-		return SMB_VFS_DISK_FREE(conn, path, bsize, dfree, dsize);
+		return sys_disk_free(conn, path, bsize, dfree, dsize);
 	}
 
 	if (dfc && (conn->lastused - dfc->last_dfree_time < dfree_cache_time)) {
@@ -181,7 +182,7 @@ uint64_t get_dfree_info(connection_struct *conn,
 		return dfc->dfree_ret;
 	}
 
-	dfree_ret = SMB_VFS_DISK_FREE(conn, path, bsize, dfree, dsize);
+	dfree_ret = sys_disk_free(conn, path, bsize, dfree, dsize);
 
 	if (dfree_ret == (uint64_t)-1) {
 		/* Don't cache bad data. */

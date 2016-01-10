@@ -58,10 +58,12 @@ static uint64_t vfswrap_disk_free(vfs_handle_struct *handle, const char *path,
 				  uint64_t *bsize, uint64_t *dfree,
 				  uint64_t *dsize)
 {
-	uint64_t result;
+	if (sys_fsusage(path, dfree, dsize) != 0) {
+		return (uint64_t)-1;
+	}
 
-	result = sys_disk_free(handle->conn, path, bsize, dfree, dsize);
-	return result;
+	*bsize = 512;
+	return *dfree / 2;
 }
 
 static int vfswrap_get_quota(struct vfs_handle_struct *handle, const char *path,
