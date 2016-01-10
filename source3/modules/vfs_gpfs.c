@@ -2207,6 +2207,30 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle, const char *path,
 	return *dfree / 2;
 }
 
+static int vfs_gpfs_get_quota(vfs_handle_struct *handle, const char *path,
+			  enum SMB_QUOTA_TYPE qtype, unid_t id,
+			  SMB_DISK_QUOTA *dq)
+{
+	switch(qtype) {
+		/*
+		 * User/group quota are being used for disk-free
+		 * determination, which in this module is done directly
+		 * by the disk-free function. It's important that this
+		 * module does not return wrong quota values by mistake,
+		 * which would modify the correct values set by disk-free.
+		 * User/group quota are also being used for processing
+		 * NT_TRANSACT_GET_USER_QUOTA in smb1 protocol, which is
+		 * currently not supported by this module.
+		 */
+		case SMB_USER_QUOTA_TYPE:
+		case SMB_GROUP_QUOTA_TYPE:
+			errno = ENOSYS;
+			return -1;
+		default:
+			return SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, dq);
+	}
+}
+
 static uint32_t vfs_gpfs_capabilities(struct vfs_handle_struct *handle,
 				      enum timestamp_set_resolution *p_ts_res)
 {
@@ -2445,6 +2469,7 @@ static ssize_t vfs_gpfs_pwrite_recv(struct tevent_req *req, int *err)
 static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.connect_fn = vfs_gpfs_connect,
 	.disk_free_fn = vfs_gpfs_disk_free,
+	.get_quota_fn = vfs_gpfs_get_quota,
 	.fs_capabilities_fn = vfs_gpfs_capabilities,
 	.kernel_flock_fn = vfs_gpfs_kernel_flock,
 	.linux_setlease_fn = vfs_gpfs_setlease,
