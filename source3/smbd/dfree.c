@@ -25,7 +25,7 @@
  Normalise for DOS usage.
 ****************************************************************************/
 
-void disk_norm(uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+static void disk_norm(uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	/* check if the disk is beyond the max disk size */
 	uint64_t maxdisksize = lp_max_disk_size();
