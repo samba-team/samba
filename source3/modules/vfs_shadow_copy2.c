@@ -1864,6 +1864,39 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int shadow_copy2_get_quota(vfs_handle_struct *handle, const char *path,
+				  enum SMB_QUOTA_TYPE qtype, unid_t id,
+				  SMB_DISK_QUOTA *dq)
+{
+	time_t timestamp;
+	char *stripped;
+	int ret;
+	int saved_errno;
+	char *conv;
+
+	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, path, &timestamp,
+					 &stripped)) {
+		return -1;
+	}
+	if (timestamp == 0) {
+		return SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, dq);
+	}
+
+	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
+	TALLOC_FREE(stripped);
+	if (conv == NULL) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_GET_QUOTA(handle, conv, qtype, id, dq);
+
+	saved_errno = errno;
+	TALLOC_FREE(conv);
+	errno = saved_errno;
+
+	return ret;
+}
+
 static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				const char *service, const char *user)
 {
@@ -2131,6 +2164,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.connect_fn = shadow_copy2_connect,
 	.opendir_fn = shadow_copy2_opendir,
 	.disk_free_fn = shadow_copy2_disk_free,
+	.get_quota_fn = shadow_copy2_get_quota,
 	.rename_fn = shadow_copy2_rename,
 	.link_fn = shadow_copy2_link,
 	.symlink_fn = shadow_copy2_symlink,
