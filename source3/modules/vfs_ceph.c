@@ -185,7 +185,9 @@ static uint64_t cephwrap_disk_free(struct vfs_handle_struct *handle,
 	}
 }
 
-static int cephwrap_get_quota(struct vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+static int cephwrap_get_quota(struct vfs_handle_struct *handle,
+			      const char *path, enum SMB_QUOTA_TYPE qtype,
+			      unid_t id, SMB_DISK_QUOTA *qt)
 {
 	/* libceph: Ceph does not implement this */
 #if 0

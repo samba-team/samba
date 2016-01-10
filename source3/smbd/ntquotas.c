@@ -96,7 +96,7 @@ int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid
 			 sid_string_dbg(psid)));
 	}
 
-	ret = SMB_VFS_GET_QUOTA(fsp->conn, qtype, id, &D);
+	ret = SMB_VFS_GET_QUOTA(fsp->conn, ".", qtype, id, &D);
 
 	if (psid)
 		qt->sid    = *psid;

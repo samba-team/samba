@@ -27,9 +27,9 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-static int dfq_get_quota_do(struct vfs_handle_struct *handle, const char *path,
-			    enum SMB_QUOTA_TYPE qtype, unid_t id,
-			    SMB_DISK_QUOTA *qt);
+static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
+			 enum SMB_QUOTA_TYPE qtype, unid_t id,
+			 SMB_DISK_QUOTA *qt);
 
 static uint64_t dfq_load_param(int snum, const char *path, const char *section,
 			       const char *param, uint64_t def_val)
@@ -60,7 +60,7 @@ static bool dfq_disk_quotas(vfs_handle_struct *handle, const char *path,
 	id.uid = geteuid();
 
 	ZERO_STRUCT(D);
-	r = dfq_get_quota_do(handle, path, SMB_USER_QUOTA_TYPE, id, &D);
+	r = dfq_get_quota(handle, path, SMB_USER_QUOTA_TYPE, id, &D);
 
 	/* Use softlimit to determine disk space, except when it has been
 	 * exceeded */
@@ -99,7 +99,7 @@ try_group_quota:
 	id.gid = getegid();
 
 	ZERO_STRUCT(D);
-	r = dfq_get_quota_do(handle, path, SMB_GROUP_QUOTA_TYPE, id, &D);
+	r = dfq_get_quota(handle, path, SMB_GROUP_QUOTA_TYPE, id, &D);
 
 	/* Use softlimit to determine disk space, except when it has been
 	 * exceeded */
@@ -181,9 +181,9 @@ static uint64_t dfq_disk_free(vfs_handle_struct *handle, const char *path,
 	return free_1k;
 }
 
-static int dfq_get_quota_do(struct vfs_handle_struct *handle, const char *path,
-			    enum SMB_QUOTA_TYPE qtype, unid_t id,
-			    SMB_DISK_QUOTA *qt)
+static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
+			 enum SMB_QUOTA_TYPE qtype, unid_t id,
+			 SMB_DISK_QUOTA *qt)
 {
 	int rc = 0;
 	int save_errno;
@@ -245,7 +245,7 @@ static int dfq_get_quota_do(struct vfs_handle_struct *handle, const char *path,
 	goto out;
 
 dflt:
-	rc = SMB_VFS_NEXT_GET_QUOTA(handle, qtype, id, qt);
+	rc = SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, qt);
 
 out:
 	save_errno = errno;
@@ -253,14 +253,6 @@ out:
 	SAFE_FREE(rpath);
 	errno = save_errno;
 	return rc;
-}
-
-static int dfq_get_quota(struct vfs_handle_struct *handle,
-			 enum SMB_QUOTA_TYPE qtype, unid_t id,
-			 SMB_DISK_QUOTA *qt)
-{
-	return dfq_get_quota_do(handle, handle->conn->connectpath, qtype, id,
-				qt);
 }
 
 struct vfs_fn_pointers vfs_fake_dfq_fns = {

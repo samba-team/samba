@@ -1404,12 +1404,12 @@ uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
 	return handle->fns->disk_free_fn(handle, path, bsize, dfree, dsize);
 }
 
-int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
+int smb_vfs_call_get_quota(struct vfs_handle_struct *handle, const char *path,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt)
 {
 	VFS_FIND(get_quota);
-	return handle->fns->get_quota_fn(handle, qtype, id, qt);
+	return handle->fns->get_quota_fn(handle, path, qtype, id, qt);
 }
 
 int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,

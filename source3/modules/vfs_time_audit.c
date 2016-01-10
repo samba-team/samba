@@ -178,15 +178,15 @@ static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_get_quota(struct vfs_handle_struct *handle,
-				    enum SMB_QUOTA_TYPE qtype, unid_t id,
-				    SMB_DISK_QUOTA *qt)
+				    const char *path, enum SMB_QUOTA_TYPE qtype,
+				    unid_t id, SMB_DISK_QUOTA *qt)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_GET_QUOTA(handle, qtype, id, qt);
+	result = SMB_VFS_NEXT_GET_QUOTA(handle, path, qtype, id, qt);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

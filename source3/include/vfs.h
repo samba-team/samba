@@ -526,7 +526,9 @@ struct vfs_fn_pointers {
 	void (*disconnect_fn)(struct vfs_handle_struct *handle);
 	uint64_t (*disk_free_fn)(struct vfs_handle_struct *handle, const char *path, uint64_t *bsize,
 			      uint64_t *dfree, uint64_t *dsize);
-	int (*get_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
+	int (*get_quota_fn)(struct vfs_handle_struct *handle, const char *path,
+			    enum SMB_QUOTA_TYPE qtype, unid_t id,
+			    SMB_DISK_QUOTA *qt);
 	int (*set_quota_fn)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 	int (*get_shadow_copy_data_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, struct shadow_copy_data *shadow_copy_data, bool labels);
 	int (*statvfs_fn)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
@@ -931,7 +933,7 @@ void smb_vfs_call_disconnect(struct vfs_handle_struct *handle);
 uint64_t smb_vfs_call_disk_free(struct vfs_handle_struct *handle,
 				const char *path, uint64_t *bsize,
 				uint64_t *dfree, uint64_t *dsize);
-int smb_vfs_call_get_quota(struct vfs_handle_struct *handle,
+int smb_vfs_call_get_quota(struct vfs_handle_struct *handle, const char *path,
 			   enum SMB_QUOTA_TYPE qtype, unid_t id,
 			   SMB_DISK_QUOTA *qt);
 int smb_vfs_call_set_quota(struct vfs_handle_struct *handle,
