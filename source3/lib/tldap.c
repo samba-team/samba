@@ -482,7 +482,6 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 	 */
 	ld->pending = talloc_realloc(NULL, ld->pending, struct tevent_req *,
 				     num_pending - 1);
-	return;
 }
 
 static void tldap_msg_cleanup(struct tevent_req *req,
