@@ -22,6 +22,7 @@
 
 #include <talloc.h>
 #include <tevent.h>
+#include "lib/util/data_blob.h"
 
 struct tldap_context;
 struct tldap_message;
