@@ -886,7 +886,7 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 			goto failed;
 		}
 
-		while (asn1_tag_remaining(data)) {
+		while (asn1_tag_remaining(data) > 0) {
 			if (!asn1_peek_uint8(data, &subs_tag)) goto failed;
 			subs_tag &= 0x1f;	/* strip off the asn1 stuff */
 			if (subs_tag > 2) goto failed;
