@@ -1650,6 +1650,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	 * wait for replies since a failure here might cause some
 	 * noise in the logs but will not actually cause a problem.
 	 */
+	ZERO_STRUCT(dtr);
 	dtr.srvid = 0; /* No reply */
 	dtr.pnn = -1;
 
@@ -3202,6 +3203,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 
 		DEBUG(DEBUG_CRIT,("Trigger takeoverrun\n"));
 
+		ZERO_STRUCT(rd);
 		rd.pnn = ctdb->pnn;
 		rd.srvid = 0;
 		data.dptr = (uint8_t *)&rd;

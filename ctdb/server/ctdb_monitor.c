@@ -134,6 +134,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	c.pnn = ctdb->pnn;
 	c.old_flags = node->flags;
 
+	ZERO_STRUCT(rd);
 	rd.pnn   = ctdb->pnn;
 	rd.srvid = CTDB_SRVID_TAKEOVER_RUN_RESPONSE;
 
