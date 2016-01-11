@@ -349,7 +349,7 @@ bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
 	if (!asn1_end_tag(data)) goto err;
 
 	/* the second challenge is optional (XP doesn't send it) */
-	if (asn1_tag_remaining(data)) {
+	if (asn1_tag_remaining(data) > 0) {
 		if (!asn1_start_tag(data,ASN1_CONTEXT(3))) goto err;
 		if (!asn1_read_OctetString(data, ctx, chal2)) goto err;
 		if (!asn1_end_tag(data)) goto err;
@@ -438,12 +438,12 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 	if (!asn1_check_enumerated(data, negResult)) goto err;
 	if (!asn1_end_tag(data)) goto err;
 
-	if (asn1_tag_remaining(data)) {
+	if (asn1_tag_remaining(data) > 0) {
 		if (!asn1_start_tag(data,ASN1_CONTEXT(1))) goto err;
 		if (!asn1_check_OID(data, mechOID)) goto err;
 		if (!asn1_end_tag(data)) goto err;
 
-		if (asn1_tag_remaining(data)) {
+		if (asn1_tag_remaining(data) > 0) {
 			if (!asn1_start_tag(data,ASN1_CONTEXT(2))) goto err;
 			if (!asn1_read_OctetString(data, ctx, auth)) goto err;
 			if (!asn1_end_tag(data)) goto err;
@@ -457,7 +457,7 @@ bool spnego_parse_auth_response(TALLOC_CTX *ctx,
 	 * the optional mechListMIC field. This is a bug in Win2K. We ignore
 	 * this field if it exists. Win2K8 may return a proper mechListMIC at
 	 * which point we need to implement the integrity checking. */
-	if (asn1_tag_remaining(data)) {
+	if (asn1_tag_remaining(data) > 0) {
 		DATA_BLOB mechList = data_blob_null;
 		if (!asn1_start_tag(data, ASN1_CONTEXT(3))) goto err;
 		if (!asn1_read_OctetString(data, ctx, &mechList)) goto err;
