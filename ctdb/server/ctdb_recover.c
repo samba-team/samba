@@ -592,13 +592,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		}
 	}
 
-	state = talloc(ctdb, struct ctdb_set_recmode_state);
-	CTDB_NO_MEMORY(ctdb, state);
-
-	state->start_time = timeval_current();
-	state->fd[0] = -1;
-	state->fd[1] = -1;
-
 	/* release any deferred attach calls from clients */
 	if (recmode == CTDB_RECOVERY_NORMAL) {
 		ctdb_process_deferred_attach(ctdb);
@@ -609,6 +602,13 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		ctdb->recovery_mode = recmode;
 		return 0;
 	}
+
+	state = talloc(ctdb, struct ctdb_set_recmode_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->start_time = timeval_current();
+	state->fd[0] = -1;
+	state->fd[1] = -1;
 
 	/* For the rest of what needs to be done, we need to do this in
 	   a child process since 
