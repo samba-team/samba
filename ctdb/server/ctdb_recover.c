@@ -451,9 +451,6 @@ static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 	if (state->fd[0] != -1) {
 		state->fd[0] = -1;
 	}
-	if (state->fd[1] != -1) {
-		state->fd[1] = -1;
-	}
 	ctdb_kill(state->ctdb, state->child, SIGKILL);
 	return 0;
 }
