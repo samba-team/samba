@@ -284,7 +284,7 @@ bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 	if (newp[0] != '.') return false;
 	p = newp + 1;
 
-	/*the ber representation can't use more space then the string one */
+	/*the ber representation can't use more space than the string one */
 	*blob = data_blob_talloc(mem_ctx, NULL, strlen(OID));
 	if (!blob->data) return false;
 
