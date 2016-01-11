@@ -1,4 +1,77 @@
                    =============================
+                   Release Notes for Samba 4.3.4
+                         January 12, 2016
+                   =============================
+
+
+This is the latest stable release of Samba 4.3.
+
+
+Changes since 4.3.3:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11619: doc: Fix a typo in the smb.conf manpage, explanation of idmap
+     config.
+   * BUG 11647: s3:smbd: Fix a corner case of the symlink verification.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11624: s3: libsmb: Correctly initialize the list head when keeping a
+     list of primary followed by DFS connections.
+   * BUG 11625: Reduce the memory footprint of empty string options.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 11659: Update lastLogon and lastLogonTimestamp.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11065: vfs_fruit: Enable POSIX directory rename semantics.
+   * BUG 11466: Copying files with vfs_fruit fails when using vfs_streams_xattr
+     without stream prefix and type suffix.
+   * BUG 11645: smbd: Make "hide dot files" option work with "store dos
+     attributes = yes".
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11639: lib/async_req: Do not install async_connect_send_test.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11394: Crash: Bad talloc magic value - access after free.
+
+o  Rowland Penny <repenny241155@gmail.com>
+   * BUG 11613: samba-tool: Fix uncaught exception if no fSMORoleOwner
+     attribute is given.
+
+o  Karolin Seeger <kseeger@samba.org>
+   * BUG 11619: docs: Fix some typos in the idmap backend section.
+   * BUG 11641: docs: Fix typos in man vfs_gpfs.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11649: smbd: Do not disable "store dos attributes" on-the-fly.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Older release notes to follow:
+------------------------------
+
+                   =============================
                    Release Notes for Samba 4.3.3
                          December 16, 2015
                    =============================
@@ -142,8 +215,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Older release notes to follow:
-------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.3.2
