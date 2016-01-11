@@ -410,7 +410,6 @@ failed:
 struct ctdb_set_recmode_state {
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control_old *c;
-	uint32_t recmode;
 	int fd[2];
 	struct tevent_timer *te;
 	struct tevent_fd *fde;
@@ -435,7 +434,7 @@ static void ctdb_set_recmode_timeout(struct tevent_context *ev,
 	   arbitrate locks immediately after a node failure.	   
 	 */
 	DEBUG(DEBUG_ERR,(__location__ " set_recmode child process hung/timedout CFS slow to grant locks? (allowing recmode set anyway)\n"));
-	state->ctdb->recovery_mode = state->recmode;
+	state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
 	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
 }
@@ -493,12 +492,10 @@ static void set_recmode_handler(struct tevent_context *ev,
 		return;
 	}
 
-	state->ctdb->recovery_mode = state->recmode;
+	state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
 
 	/* release any deferred attach calls from clients */
-	if (state->recmode == CTDB_RECOVERY_NORMAL) {
-		ctdb_process_deferred_attach(state->ctdb);
-	}
+	ctdb_process_deferred_attach(state->ctdb);
 
 	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
@@ -573,7 +570,10 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	/* some special handling when ending recovery mode */
+	/* From this point: recmode == CTDB_RECOVERY_NORMAL
+	 *
+	 * Therefore, what follows is special handling when setting
+	 * recovery mode back to normal */
 
 	for (ctdb_db = ctdb->db_list; ctdb_db != NULL; ctdb_db = ctdb_db->next) {
 		if (ctdb_db->generation != ctdb->vnn_map->generation) {
@@ -672,7 +672,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	tevent_fd_set_auto_close(state->fde);
 
 	state->ctdb    = ctdb;
-	state->recmode = recmode;
 	state->c       = talloc_steal(state, c);
 
 	*async_reply = true;
