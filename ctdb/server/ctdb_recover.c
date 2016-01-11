@@ -747,7 +747,7 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 	return 0;
 }
 
-struct ctdb_set_recmode_state {
+struct ctdb_cluster_mutex_handle {
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control_old *c;
 	int fd[2];
@@ -761,45 +761,45 @@ struct ctdb_set_recmode_state {
   called if our set_recmode child times out. this would happen if
   ctdb_recovery_lock() would block.
  */
-static void ctdb_set_recmode_timeout(struct tevent_context *ev,
-				     struct tevent_timer *te,
-				     struct timeval t, void *private_data)
+static void cluster_mutex_timeout(struct tevent_context *ev,
+				  struct tevent_timer *te,
+				  struct timeval t, void *private_data)
 {
-	struct ctdb_set_recmode_state *state = talloc_get_type(private_data, 
-					   struct ctdb_set_recmode_state);
+	struct ctdb_cluster_mutex_handle *h =
+		talloc_get_type(private_data, struct ctdb_cluster_mutex_handle);
 
 	/* we consider this a success, not a failure, as we failed to
 	   set the recovery lock which is what we wanted.  This can be
 	   caused by the cluster filesystem being very slow to
-	   arbitrate locks immediately after a node failure.	   
+	   arbitrate locks immediately after a node failure.
 	 */
 	DEBUG(DEBUG_ERR,(__location__ " set_recmode child process hung/timedout CFS slow to grant locks? (allowing recmode set anyway)\n"));
-	state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
-	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
-	talloc_free(state);
+	h->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+	ctdb_request_control_reply(h->ctdb, h->c, NULL, 0, NULL);
+	talloc_free(h);
 }
 
 
-/* when we free the recmode state we must kill any child process.
-*/
-static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
+/* When the handle is freed it causes any child holding the mutex to
+ * be killed, thus freeing the mutex */
+static int cluster_mutex_destructor(struct ctdb_cluster_mutex_handle *h)
 {
-	if (state->fd[0] != -1) {
-		state->fd[0] = -1;
+	if (h->fd[0] != -1) {
+		h->fd[0] = -1;
 	}
-	ctdb_kill(state->ctdb, state->child, SIGKILL);
+	ctdb_kill(h->ctdb, h->child, SIGKILL);
 	return 0;
 }
 
 /* this is called when the client process has completed ctdb_recovery_lock()
    and has written data back to us through the pipe.
 */
-static void set_recmode_handler(struct tevent_context *ev,
-				struct tevent_fd *fde,
-				uint16_t flags, void *private_data)
+static void cluster_mutex_handler(struct tevent_context *ev,
+				  struct tevent_fd *fde,
+				  uint16_t flags, void *private_data)
 {
-	struct ctdb_set_recmode_state *state= talloc_get_type(private_data, 
-					     struct ctdb_set_recmode_state);
+	struct ctdb_cluster_mutex_handle *h=
+		talloc_get_type(private_data, struct ctdb_cluster_mutex_handle);
 	char c = 0;
 	int ret;
 	int status = 0;
@@ -808,28 +808,28 @@ static void set_recmode_handler(struct tevent_context *ev,
 	/* we got a response from our child process so we can abort the
 	   timeout.
 	*/
-	talloc_free(state->te);
-	state->te = NULL;
+	talloc_free(h->te);
+	h->te = NULL;
 
-	ret = sys_read(state->fd[0], &c, 1);
+	ret = sys_read(h->fd[0], &c, 1);
 	if (ret == 1) {
 		/* Child wrote status. EACCES indicates that it was unable
 		 * to take the lock, which is the expected outcome.
 		 * 0 indicates that it was able to take the
 		 * lock, which is an error because the recovery daemon
 		 * should be holding the lock. */
-		double l = timeval_elapsed(&state->start_time);
+		double l = timeval_elapsed(&h->start_time);
 
 		if (c == EACCES) {
 			status = 0;
 			err = NULL;
 
-			state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+			h->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
 
 			/* release any deferred attach calls from clients */
-			ctdb_process_deferred_attach(state->ctdb);
+			ctdb_process_deferred_attach(h->ctdb);
 
-			CTDB_UPDATE_RECLOCK_LATENCY(state->ctdb, "daemon reclock", reclock.ctdbd, l);
+			CTDB_UPDATE_RECLOCK_LATENCY(h->ctdb, "daemon reclock", reclock.ctdbd, l);
 		} else {
 			status = -1;
 			err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
@@ -841,8 +841,8 @@ static void set_recmode_handler(struct tevent_context *ev,
 		err = "Unexpected error when testing recovery lock";
 	}
 
-	ctdb_request_control_reply(state->ctdb, state->c, NULL, status, err);
-	talloc_free(state);
+	ctdb_request_control_reply(h->ctdb, h->c, NULL, status, err);
+	talloc_free(h);
 }
 
 static void
@@ -886,7 +886,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
 	int i, ret;
-	struct ctdb_set_recmode_state *state;
+	struct ctdb_cluster_mutex_handle *h;
 	pid_t parent = getpid();
 	struct ctdb_db_context *ctdb_db;
 
@@ -946,36 +946,36 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	state = talloc(ctdb, struct ctdb_set_recmode_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	h = talloc(ctdb, struct ctdb_cluster_mutex_handle);
+	CTDB_NO_MEMORY(ctdb, h);
 
-	state->start_time = timeval_current();
-	state->fd[0] = -1;
-	state->fd[1] = -1;
+	h->start_time = timeval_current();
+	h->fd[0] = -1;
+	h->fd[1] = -1;
 
 	/* For the rest of what needs to be done, we need to do this in
 	   a child process since 
 	   1, the call to ctdb_recovery_lock() can block if the cluster
 	      filesystem is in the process of recovery.
 	*/
-	ret = pipe(state->fd);
+	ret = pipe(h->fd);
 	if (ret != 0) {
-		talloc_free(state);
+		talloc_free(h);
 		DEBUG(DEBUG_CRIT,(__location__ " Failed to open pipe for set_recmode child\n"));
 		return -1;
 	}
 
-	state->child = ctdb_fork(ctdb);
-	if (state->child == (pid_t)-1) {
-		close(state->fd[0]);
-		close(state->fd[1]);
-		talloc_free(state);
+	h->child = ctdb_fork(ctdb);
+	if (h->child == (pid_t)-1) {
+		close(h->fd[0]);
+		close(h->fd[1]);
+		talloc_free(h);
 		return -1;
 	}
 
-	if (state->child == 0) {
+	if (h->child == 0) {
 		char cc = EACCES;
-		close(state->fd[0]);
+		close(h->fd[0]);
 
 		prctl_set_comment("ctdb_recmode");
 		debug_extra = talloc_asprintf(NULL, "set_recmode:");
@@ -989,33 +989,33 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 			cc = 0;
 		}
 
-		sys_write(state->fd[1], &cc, 1);
+		sys_write(h->fd[1], &cc, 1);
 		ctdb_wait_for_process_to_exit(parent);
 		_exit(0);
 	}
-	close(state->fd[1]);
-	set_close_on_exec(state->fd[0]);
+	close(h->fd[1]);
+	set_close_on_exec(h->fd[0]);
 
-	state->fd[1] = -1;
+	h->fd[1] = -1;
 
-	talloc_set_destructor(state, set_recmode_destructor);
+	talloc_set_destructor(h, cluster_mutex_destructor);
 
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for setrecmode\n", state->fd[0]));
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for setrecmode\n", h->fd[0]));
 
-	state->te = tevent_add_timer(ctdb->ev, state, timeval_current_ofs(5, 0),
-				     ctdb_set_recmode_timeout, state);
+	h->te = tevent_add_timer(ctdb->ev, h, timeval_current_ofs(5, 0),
+				 cluster_mutex_timeout, h);
 
-	state->fde = tevent_add_fd(ctdb->ev, state, state->fd[0], TEVENT_FD_READ,
-				   set_recmode_handler, (void *)state);
+	h->fde = tevent_add_fd(ctdb->ev, h, h->fd[0], TEVENT_FD_READ,
+			       cluster_mutex_handler, (void *)h);
 
-	if (state->fde == NULL) {
-		talloc_free(state);
+	if (h->fde == NULL) {
+		talloc_free(h);
 		return -1;
 	}
-	tevent_fd_set_auto_close(state->fde);
+	tevent_fd_set_auto_close(h->fde);
 
-	state->ctdb    = ctdb;
-	state->c       = talloc_steal(state, c);
+	h->ctdb = ctdb;
+	h->c    = talloc_steal(h, c);
 
 	*async_reply = true;
 
