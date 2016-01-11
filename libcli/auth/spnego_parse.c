@@ -32,7 +32,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 	if (!asn1_start_tag(asn1, ASN1_CONTEXT(0))) return false;
 	if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
-	while (!asn1_has_error(asn1) && 0 < asn1_tag_remaining(asn1)) {
+	while (asn1_tag_remaining(asn1) > 0) {
 		int i;
 		uint8_t context;
 
@@ -54,8 +54,7 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 				asn1_set_error(asn1);
 				return false;
 			}
-			for (i = 0; !asn1_has_error(asn1) &&
-				     0 < asn1_tag_remaining(asn1); i++) {
+			for (i = 0; asn1_tag_remaining(asn1) > 0; i++) {
 				char *oid;
 				const char **p;
 				p = talloc_realloc(mem_ctx,
@@ -201,7 +200,7 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 	if (!asn1_start_tag(asn1, ASN1_CONTEXT(1))) return false;
 	if (!asn1_start_tag(asn1, ASN1_SEQUENCE(0))) return false;
 
-	while (!asn1_has_error(asn1) && 0 < asn1_tag_remaining(asn1)) {
+	while (asn1_tag_remaining(asn1) > 0) {
 		uint8_t context;
 		char *oid;
 		if (!asn1_peek_uint8(asn1, &context)) {
