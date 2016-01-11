@@ -757,6 +757,63 @@ struct ctdb_cluster_mutex_handle {
 	struct timeval start_time;
 };
 
+static void set_recmode_handler(struct ctdb_context *ctdb,
+				char status,
+				double latency,
+				struct ctdb_cluster_mutex_handle *h,
+				struct ctdb_req_control_old *c)
+{
+	int s = 0;
+	const char *err = NULL;
+
+	switch (status) {
+	case '0':
+		/* Mutex taken */
+		DEBUG(DEBUG_ERR,
+		      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
+		       ctdb->recovery_lock_file));
+		s = -1;
+		err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
+		break;
+
+	case '1':
+		/* Contention */
+		DEBUG(DEBUG_DEBUG, (__location__ " Recovery lock check OK\n"));
+		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb_process_deferred_attach(ctdb);
+
+		s = 0;
+
+		CTDB_UPDATE_RECLOCK_LATENCY(ctdb, "daemon reclock",
+					    reclock.ctdbd, latency);
+		break;
+
+	case '2':
+		/* Timeout.  Consider this a success, not a failure,
+		 * as we failed to set the recovery lock which is what
+		 * we wanted.  This can be caused by the cluster
+		 * filesystem being very slow to arbitrate locks
+		 * immediately after a node failure. */
+		DEBUG(DEBUG_WARNING,
+		      (__location__
+		       "Time out getting recovery lock, allowing recmode set anyway\n"));
+		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb_process_deferred_attach(ctdb);
+
+		s = 0;
+		break;
+
+	default:
+		DEBUG(DEBUG_ERR,
+		      ("Unexpected error when testing recovery lock\n"));
+		s = -1;
+		err = "Unexpected error when testing recovery lock";
+	}
+
+	ctdb_request_control_reply(ctdb, c, NULL, s, err);
+	talloc_free(h);
+}
+
 /*
   called if our set_recmode child times out. this would happen if
   ctdb_recovery_lock() would block.
@@ -767,16 +824,9 @@ static void cluster_mutex_timeout(struct tevent_context *ev,
 {
 	struct ctdb_cluster_mutex_handle *h =
 		talloc_get_type(private_data, struct ctdb_cluster_mutex_handle);
+	double latency = timeval_elapsed(&h->start_time);
 
-	/* we consider this a success, not a failure, as we failed to
-	   set the recovery lock which is what we wanted.  This can be
-	   caused by the cluster filesystem being very slow to
-	   arbitrate locks immediately after a node failure.
-	 */
-	DEBUG(DEBUG_ERR,(__location__ " set_recmode child process hung/timedout CFS slow to grant locks? (allowing recmode set anyway)\n"));
-	h->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
-	ctdb_request_control_reply(h->ctdb, h->c, NULL, 0, NULL);
-	talloc_free(h);
+	set_recmode_handler(h->ctdb, '2', latency, h, h->c);
 }
 
 
@@ -800,10 +850,9 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 {
 	struct ctdb_cluster_mutex_handle *h=
 		talloc_get_type(private_data, struct ctdb_cluster_mutex_handle);
+	double latency = timeval_elapsed(&h->start_time);
 	char c = '0';
 	int ret;
-	int status = 0;
-	const char *err = NULL;
 
 	/* we got a response from our child process so we can abort the
 	   timeout.
@@ -812,37 +861,11 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 	h->te = NULL;
 
 	ret = sys_read(h->fd[0], &c, 1);
-	if (ret == 1) {
-		/* Child wrote status. '1' indicates that it was unable
-		 * to take the lock, which is the expected outcome.
-		 * '0' indicates that it was able to take the
-		 * lock, which is an error because the recovery daemon
-		 * should be holding the lock. */
-		double l = timeval_elapsed(&h->start_time);
 
-		if (c == '1') {
-			status = 0;
-			err = NULL;
-
-			h->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
-
-			/* release any deferred attach calls from clients */
-			ctdb_process_deferred_attach(h->ctdb);
-
-			CTDB_UPDATE_RECLOCK_LATENCY(h->ctdb, "daemon reclock", reclock.ctdbd, l);
-		} else {
-			status = -1;
-			err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
-		}
-	} else {
-		/* Child did not write status.  Unexpected error.
-		 * Child may have received a signal.  */
-		status = -1;
-		err = "Unexpected error when testing recovery lock";
-	}
-
-	ctdb_request_control_reply(h->ctdb, h->c, NULL, status, err);
-	talloc_free(h);
+	/* If the child wrote status then just pass it to the handler.
+	 * If no status was written then this is an unexpected error
+	 * so pass generic error code to handler. */
+	set_recmode_handler(h->ctdb, ret == 1 ? c : '3', latency, h, h->c);
 }
 
 static void
@@ -982,9 +1005,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		/* Daemon should not be able to get the recover lock,
 		 * as it should be held by the recovery master */
 		if (ctdb_recovery_lock(ctdb)) {
-			DEBUG(DEBUG_ERR,
-			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
-			       ctdb->recovery_lock_file));
 			ctdb_recovery_unlock(ctdb);
 			cc = '0';
 		}
