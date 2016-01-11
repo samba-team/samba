@@ -543,7 +543,8 @@ bool asn1_peek_tag(struct asn1_data *data, uint8_t tag)
 /*
  * just get the needed size the tag would consume
  */
-bool asn1_peek_tag_needed_size(struct asn1_data *data, uint8_t tag, size_t *size)
+static bool asn1_peek_tag_needed_size(struct asn1_data *data, uint8_t tag,
+				      size_t *size)
 {
 	off_t start_ofs = data->ofs;
 	uint8_t b;
