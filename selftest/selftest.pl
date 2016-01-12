@@ -321,6 +321,7 @@ $ENV{KRB5CCNAME} = "$prefix/krb5ticket";
 $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
+$ENV{GNUPGHOME} = "$srcdir_abs/selftest/gnupg";
 $ENV{BINDIR} = $bindir_abs;
 
 my $tls_enabled = not $opt_quick;

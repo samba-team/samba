@@ -1631,6 +1631,27 @@ sub provision_rodc($$$)
 	return $ret;
 }
 
+sub read_config_h($)
+{
+	my ($name) = @_;
+	my %ret = {};
+	open(LF, "<$name") or die("unable to read $name: $!");
+	while (<LF>) {
+		chomp;
+		next if not (/^#define /);
+		if (/^#define (.*?)[ \t]+(.*?)$/) {
+			$ret{$1} = $2;
+			next;
+		}
+		if (/^#define (.*?)[ \t]+$/) {
+			$ret{$1} = 1;;
+			next;
+		}
+	}
+	close(LF);
+	return \%ret;
+}
+
 sub provision_ad_dc($$)
 {
 	my ($self, $prefix) = @_;
@@ -1644,12 +1665,23 @@ sub provision_ad_dc($$)
 	my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
 	$require_mutexes = "" if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} eq "1");
 
+	my $config_h = {};
+
+	if (defined($ENV{CONFIG_H})) {
+		$config_h = read_config_h($ENV{CONFIG_H});
+	}
+
+	my $password_hash_gpg_key_ids = "password hash gpg key ids = 4952E40301FAB41A";
+	$password_hash_gpg_key_ids = "" unless defined($config_h->{HAVE_GPGME});
+
 	my $extra_smbconf_options = "
         server services = -smb +s3fs
         xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
 
 	dbwrap_tdb_mutexes:* = yes
 	${require_mutexes}
+
+	${password_hash_gpg_key_ids}
 
 	kernel oplocks = no
 	kernel change notify = no
