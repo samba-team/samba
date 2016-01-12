@@ -22,6 +22,7 @@
 #include "../libcli/security/security.h"
 #include "idmap_cache.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct wb_xids2sids_dom_map {
 	unsigned low_id;
@@ -136,10 +137,12 @@ static void wb_xids2sids_init_dom_maps(void)
 }
 
 struct wb_xids2sids_dom_state {
+	struct tevent_context *ev;
 	struct unixid *all_xids;
 	size_t num_all_xids;
 	struct dom_sid *all_sids;
 	struct wb_xids2sids_dom_map *dom_map;
+	bool tried_dclookup;
 
 	size_t num_dom_xids;
 	struct unixid *dom_xids;
@@ -147,6 +150,7 @@ struct wb_xids2sids_dom_state {
 };
 
 static void wb_xids2sids_dom_done(struct tevent_req *subreq);
+static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq);
 
 static struct tevent_req *wb_xids2sids_dom_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -163,6 +167,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->all_xids = xids;
 	state->num_all_xids = num_xids;
 	state->all_sids = sids;
@@ -224,6 +229,20 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
+	    !state->tried_dclookup) {
+
+		subreq = wb_dsgetdcname_send(
+			state, state->ev, state->dom_map->name, NULL, NULL,
+			DS_RETURN_DNS_NAME);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_xids2sids_dom_gotdc, req);
+		return;
+	}
+
 	if (!NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
 	    tevent_req_nterror(req, result)) {
 		return;
@@ -247,6 +266,39 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 	}
 
 	tevent_req_done(req);
+}
+
+static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_xids2sids_dom_state *state = tevent_req_data(
+		req, struct wb_xids2sids_dom_state);
+	struct winbindd_child *child = idmap_child();
+	struct netr_DsRGetDCNameInfo *dcinfo;
+	NTSTATUS status;
+
+	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->tried_dclookup = true;
+
+	status = wb_dsgetdcname_gencache_set(state->dom_map->name, dcinfo);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	child = idmap_child();
+	subreq = dcerpc_wbint_UnixIDs2Sids_send(
+		state, state->ev, child->binding_handle, state->dom_map->name,
+		state->num_dom_xids, state->dom_xids, state->dom_sids);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_xids2sids_dom_done, req);
 }
 
 static NTSTATUS wb_xids2sids_dom_recv(struct tevent_req *req)
