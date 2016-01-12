@@ -901,6 +901,92 @@ ctdb_drop_all_ips_event(struct tevent_context *ev, struct tevent_timer *te,
 	ctdb_release_all_ips(ctdb);
 }
 
+static struct ctdb_cluster_mutex_handle *
+ctdb_cluster_mutex(struct ctdb_context *ctdb)
+{
+	struct ctdb_cluster_mutex_handle *h;
+	pid_t parent = getpid();
+	int ret;
+
+	h = talloc(ctdb, struct ctdb_cluster_mutex_handle);
+	if (h == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return NULL;
+	}
+
+	h->start_time = timeval_current();
+	h->fd[0] = -1;
+	h->fd[1] = -1;
+
+	/* For the rest of what needs to be done, we need to do this in
+	   a child process since
+	   1, the call to ctdb_recovery_lock() can block if the cluster
+	      filesystem is in the process of recovery.
+	*/
+	ret = pipe(h->fd);
+	if (ret != 0) {
+		talloc_free(h);
+		DEBUG(DEBUG_ERR, (__location__ " Failed to open pipe\n"));
+		return NULL;
+	}
+
+	h->child = ctdb_fork(ctdb);
+	if (h->child == (pid_t)-1) {
+		close(h->fd[0]);
+		close(h->fd[1]);
+		talloc_free(h);
+		return NULL;
+	}
+
+	if (h->child == 0) {
+		char cc = '1';
+		close(h->fd[0]);
+
+		prctl_set_comment("ctdb_cluster_mutex");
+		debug_extra = talloc_asprintf(NULL, "cluster_mutex:");
+		/* Daemon should not be able to get the recover lock,
+		 * as it should be held by the recovery master */
+		if (ctdb_recovery_lock(ctdb)) {
+			DEBUG(DEBUG_ERR,
+			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
+			       ctdb->recovery_lock_file));
+			ctdb_recovery_unlock(ctdb);
+			cc = '0';
+		}
+
+		sys_write(h->fd[1], &cc, 1);
+		ctdb_wait_for_process_to_exit(parent);
+		_exit(0);
+	}
+
+	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d\n", h->fd[0]));
+	set_close_on_exec(h->fd[0]);
+
+	close(h->fd[1]);
+	h->fd[1] = -1;
+
+	talloc_set_destructor(h, cluster_mutex_destructor);
+
+	h->te = tevent_add_timer(ctdb->ev, h, timeval_current_ofs(5, 0),
+				 cluster_mutex_timeout, h);
+
+	h->fde = tevent_add_fd(ctdb->ev, h, h->fd[0], TEVENT_FD_READ,
+			       cluster_mutex_handler, (void *)h);
+
+	if (h->fde == NULL) {
+		talloc_free(h);
+		return NULL;
+	}
+	tevent_fd_set_auto_close(h->fde);
+
+	h->ctdb = ctdb;
+	h->handler = NULL;
+	h->private_data = NULL;
+
+	return h;
+}
+
+
 /*
  * Set up an event to drop all public ips if we remain in recovery for too
  * long
@@ -928,10 +1014,9 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 const char **errormsg)
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
-	int i, ret;
-	struct ctdb_cluster_mutex_handle *h;
-	pid_t parent = getpid();
+	int i;
 	struct ctdb_db_context *ctdb_db;
+	struct ctdb_cluster_mutex_handle *h;
 
 	/* if we enter recovery but stay in recovery for too long
 	   we will eventually drop all our ip addresses
@@ -989,72 +1074,12 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	h = talloc(ctdb, struct ctdb_cluster_mutex_handle);
-	CTDB_NO_MEMORY(ctdb, h);
-
-	h->start_time = timeval_current();
-	h->fd[0] = -1;
-	h->fd[1] = -1;
-
-	/* For the rest of what needs to be done, we need to do this in
-	   a child process since 
-	   1, the call to ctdb_recovery_lock() can block if the cluster
-	      filesystem is in the process of recovery.
-	*/
-	ret = pipe(h->fd);
-	if (ret != 0) {
-		talloc_free(h);
-		DEBUG(DEBUG_CRIT,(__location__ " Failed to open pipe for set_recmode child\n"));
+	h = ctdb_cluster_mutex(ctdb);
+	if (h == NULL) {
 		return -1;
 	}
 
-	h->child = ctdb_fork(ctdb);
-	if (h->child == (pid_t)-1) {
-		close(h->fd[0]);
-		close(h->fd[1]);
-		talloc_free(h);
-		return -1;
-	}
-
-	if (h->child == 0) {
-		char cc = '1';
-		close(h->fd[0]);
-
-		prctl_set_comment("ctdb_recmode");
-		debug_extra = talloc_asprintf(NULL, "set_recmode:");
-		/* Daemon should not be able to get the recover lock,
-		 * as it should be held by the recovery master */
-		if (ctdb_recovery_lock(ctdb)) {
-			ctdb_recovery_unlock(ctdb);
-			cc = '0';
-		}
-
-		sys_write(h->fd[1], &cc, 1);
-		ctdb_wait_for_process_to_exit(parent);
-		_exit(0);
-	}
-	close(h->fd[1]);
-	set_close_on_exec(h->fd[0]);
-
-	h->fd[1] = -1;
-
-	talloc_set_destructor(h, cluster_mutex_destructor);
-
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d for setrecmode\n", h->fd[0]));
-
-	h->te = tevent_add_timer(ctdb->ev, h, timeval_current_ofs(5, 0),
-				 cluster_mutex_timeout, h);
-
-	h->fde = tevent_add_fd(ctdb->ev, h, h->fd[0], TEVENT_FD_READ,
-			       cluster_mutex_handler, (void *)h);
-
-	if (h->fde == NULL) {
-		talloc_free(h);
-		return -1;
-	}
-	tevent_fd_set_auto_close(h->fde);
-
-	h->ctdb = ctdb;
+	/* set_recmode_handler() frees h */
 	h->handler = set_recmode_handler;
 	h->private_data = talloc_steal(h, c);
 
