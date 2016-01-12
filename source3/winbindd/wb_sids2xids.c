@@ -23,6 +23,7 @@
 #include "../libcli/security/security.h"
 #include "idmap_cache.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "lsa.h"
 
 struct wb_sids2xids_state {
@@ -52,6 +53,7 @@ struct wb_sids2xids_state {
 	uint32_t dom_index;
 	struct wbint_TransIDArray *dom_ids;
 	struct lsa_RefDomainList idmap_dom;
+	bool tried_dclookup;
 
 	struct wbint_TransIDArray ids;
 };
@@ -60,6 +62,7 @@ struct wb_sids2xids_state {
 static bool wb_sids2xids_in_cache(struct dom_sid *sid, struct id_map *map);
 static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq);
 static void wb_sids2xids_done(struct tevent_req *subreq);
+static void wb_sids2xids_gotdc(struct tevent_req *subreq);
 
 struct tevent_req *wb_sids2xids_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -254,7 +257,6 @@ static enum id_type lsa_SidType_to_id_type(const enum lsa_SidType sid_type)
 	return type;
 }
 
-
 static void wb_sids2xids_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
@@ -269,6 +271,27 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 
 	status = dcerpc_wbint_Sids2UnixIDs_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND) &&
+	    !state->tried_dclookup) {
+
+		struct lsa_DomainInfo *d;
+
+		d = &state->idmap_doms.domains[state->dom_index];
+
+		subreq = wb_dsgetdcname_send(
+			state, state->ev, d->name.string, NULL, NULL,
+			DS_RETURN_DNS_NAME);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_sids2xids_gotdc, req);
+		return;
+	}
 
 	src = state->dom_ids;
 	src_idx = 0;
@@ -297,6 +320,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 	TALLOC_FREE(state->dom_ids);
 
 	state->dom_index += 1;
+	state->tried_dclookup = false;
 
 	if (state->dom_index == state->idmap_doms.count) {
 		tevent_req_done(req);
@@ -316,6 +340,44 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		.domains = &state->idmap_doms.domains[state->dom_index],
 		.max_size = 1
 	};
+
+	subreq = dcerpc_wbint_Sids2UnixIDs_send(
+		state, state->ev, child->binding_handle, &state->idmap_dom,
+		state->dom_ids);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_sids2xids_done, req);
+}
+
+static void wb_sids2xids_gotdc(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_sids2xids_state *state = tevent_req_data(
+		req, struct wb_sids2xids_state);
+	struct winbindd_child *child = idmap_child();
+	struct netr_DsRGetDCNameInfo *dcinfo;
+	NTSTATUS status;
+
+	status = wb_dsgetdcname_recv(subreq, state, &dcinfo);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	state->tried_dclookup = true;
+
+	{
+		struct lsa_DomainInfo *d =
+			&state->idmap_doms.domains[state->dom_index];
+		const char *dom_name = d->name.string;
+
+		status = wb_dsgetdcname_gencache_set(dom_name, dcinfo);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
 
 	subreq = dcerpc_wbint_Sids2UnixIDs_send(
 		state, state->ev, child->binding_handle, &state->idmap_dom,
