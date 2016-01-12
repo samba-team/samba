@@ -40,6 +40,15 @@
 	generates the device number based on the configured algorithm
 	(see the "fileid:algorithm" option).
 	</para>
+
+	<para>When using the fsname or fsid algorithm a
+	<command>stat()</command> and <command>statfs()</command> call is
+	required for all mounted file systems to generate the file_id. If e.g.
+	an NFS file system is unresponsive such a call might block and the smbd
+	process will become unresponsive. Use the "fileid:fstype deny",
+	"fileid:fstype allow", "fileid:mntdir deny", or "fileid:mntdir allow"
+	options to ignore potentially unresponsive file systems.
+	</para>
 </refsect1>
 
 
@@ -71,6 +80,44 @@
 		<para>This option is the legacy version of the
 		<command>fileid:algorithm</command> option, which was used in earlier
 		versions of fileid mapping feature in custom Samba 3.0 versions.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:fstype deny = LIST</term>
+		<listitem>
+		<para>List of file system types to be ignored for file_id
+		generation.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:fstype allow = LIST</term>
+		<listitem>
+		<para>List of file system types to be allowed for file_id
+		generation. If this option is set, file system types not listed
+		here are ignored.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:mntdir deny = LIST</term>
+		<listitem>
+		<para>List of file system mount points to be ignored for
+		file_id	generation.
+		</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>fileid:mntdir allow = LIST</term>
+		<listitem>
+		<para>List of file system mount points to be allowed for file_id
+		generation. If this option is set, file system mount points
+		not listed here are ignored.
 		</para>
 		</listitem>
 		</varlistentry>

@@ -38,9 +38,61 @@ struct fileid_mount_entry {
 struct fileid_handle_data {
 	uint64_t (*device_mapping_fn)(struct fileid_handle_data *data,
 				      SMB_DEV_T dev);
+	char **fstype_deny_list;
+	char **fstype_allow_list;
+	char **mntdir_deny_list;
+	char **mntdir_allow_list;
 	unsigned num_mount_entries;
 	struct fileid_mount_entry *mount_entries;
 };
+
+/* check if a mount entry is allowed based on fstype and mount directory */
+static bool fileid_mount_entry_allowed(struct fileid_handle_data *data,
+				       struct mntent *m)
+{
+	int i;
+	char **fstype_deny = data->fstype_deny_list;
+	char **fstype_allow = data->fstype_allow_list;
+	char **mntdir_deny = data->mntdir_deny_list;
+	char **mntdir_allow = data->mntdir_allow_list;
+
+	if (fstype_deny != NULL) {
+		for (i = 0; fstype_deny[i] != NULL; i++) {
+			if (strcmp(m->mnt_type, fstype_deny[i]) == 0) {
+				return false;
+			}
+		}
+	}
+	if (fstype_allow != NULL) {
+		for (i = 0; fstype_allow[i] != NULL; i++) {
+			if (strcmp(m->mnt_type, fstype_allow[i]) == 0) {
+				break;
+			}
+		}
+		if (fstype_allow[i] == NULL) {
+			return false;
+		}
+	}
+	if (mntdir_deny != NULL) {
+		for (i=0; mntdir_deny[i] != NULL; i++) {
+			if (strcmp(m->mnt_dir, mntdir_deny[i]) == 0) {
+				return false;
+			}
+		}
+	}
+	if (mntdir_allow != NULL) {
+		for (i=0; mntdir_allow[i] != NULL; i++) {
+			if (strcmp(m->mnt_dir, mntdir_allow[i]) == 0) {
+				break;
+			}
+		}
+		if (mntdir_allow[i] == NULL) {
+			return false;
+		}
+	}
+	return true;
+}
+
 
 /* load all the mount entries from the mtab */
 static void fileid_load_mount_entries(struct fileid_handle_data *data)
@@ -58,7 +110,13 @@ static void fileid_load_mount_entries(struct fileid_handle_data *data)
 		struct stat st;
 		struct statfs sfs;
 		struct fileid_mount_entry *cur;
+		bool allowed;
 
+		allowed = fileid_mount_entry_allowed(data, m);
+		if (!allowed) {
+			DBG_DEBUG("skipping mount entry %s\n", m->mnt_dir);
+			continue;
+		}
 		if (stat(m->mnt_dir, &st) != 0) continue;
 		if (statfs(m->mnt_dir, &sfs) != 0) continue;
 
@@ -183,6 +241,10 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 {
 	struct fileid_handle_data *data;
 	const char *algorithm;
+	const char **fstype_deny_list = NULL;
+	const char **fstype_allow_list = NULL;
+	const char **mntdir_deny_list = NULL;
+	const char **mntdir_allow_list = NULL;
 	int saved_errno;
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
@@ -217,6 +279,58 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 		SMB_VFS_NEXT_DISCONNECT(handle);
 		DEBUG(0,("fileid_connect(): unknown algorithm[%s]\n", algorithm));
 		return -1;
+	}
+
+	fstype_deny_list = lp_parm_string_list(SNUM(handle->conn), "fileid",
+					       "fstype deny", NULL);
+	if (fstype_deny_list != NULL) {
+		data->fstype_deny_list = str_list_copy(data, fstype_deny_list);
+		if (data->fstype_deny_list == NULL) {
+			saved_errno = errno;
+			DBG_ERR("str_list_copy failed\n");
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+	}
+
+	fstype_allow_list = lp_parm_string_list(SNUM(handle->conn), "fileid",
+						"fstype allow", NULL);
+	if (fstype_allow_list != NULL) {
+		data->fstype_allow_list = str_list_copy(data, fstype_allow_list);
+		if (data->fstype_allow_list == NULL) {
+			saved_errno = errno;
+			DBG_ERR("str_list_copy failed\n");
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+	}
+
+	mntdir_deny_list = lp_parm_string_list(SNUM(handle->conn), "fileid",
+					       "mntdir deny", NULL);
+	if (mntdir_deny_list != NULL) {
+		data->mntdir_deny_list = str_list_copy(data, mntdir_deny_list);
+		if (data->mntdir_deny_list == NULL) {
+			saved_errno = errno;
+			DBG_ERR("str_list_copy failed\n");
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+	}
+
+	mntdir_allow_list = lp_parm_string_list(SNUM(handle->conn), "fileid",
+						"mntdir allow", NULL);
+	if (mntdir_allow_list != NULL) {
+		data->mntdir_allow_list = str_list_copy(data, mntdir_allow_list);
+		if (data->mntdir_allow_list == NULL) {
+			saved_errno = errno;
+			DBG_ERR("str_list_copy failed\n");
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
 	}
 
 	SMB_VFS_HANDLE_SET_DATA(handle, data, NULL,
