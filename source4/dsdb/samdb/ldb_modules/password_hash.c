@@ -45,6 +45,11 @@
 #include "param/param.h"
 #include "lib/krb5_wrap/krb5_samba.h"
 
+#ifdef ENABLE_GPGME
+#undef class
+#include <gpgme.h>
+#endif
+
 /* If we have decided there is a reason to work on this request, then
  * setup all the password hash types correctly.
  *
@@ -93,6 +98,8 @@ struct ph_context {
 
 	struct dsdb_control_password_change_status *status;
 	struct dsdb_control_password_change *change;
+
+	const char **gpg_key_ids;
 
 	bool pwd_reset;
 	bool change_status;
@@ -1404,16 +1411,152 @@ static int setup_primary_wdigest(struct setup_password_fields_io *io,
 	return LDB_SUCCESS;
 }
 
+static int setup_primary_samba_gpg(struct setup_password_fields_io *io,
+				   struct package_PrimarySambaGPGBlob *pgb)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
+#ifdef ENABLE_GPGME
+	gpgme_error_t gret;
+	gpgme_ctx_t ctx = NULL;
+	size_t num_keys = str_list_length(io->ac->gpg_key_ids);
+	gpgme_key_t keys[num_keys+1];
+	size_t ki = 0;
+	size_t kr = 0;
+	gpgme_data_t plain_data = NULL;
+	gpgme_data_t crypt_data = NULL;
+	size_t crypt_length = 0;
+	char *crypt_mem = NULL;
+
+	gret = gpgme_new(&ctx);
+	if (gret != GPG_ERR_NO_ERROR) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "%s:%s: gret[%u] %s\n",
+			  __location__, __func__,
+			  gret, gpgme_strerror(gret));
+		return ldb_module_operr(io->ac->module);
+	}
+
+	gpgme_set_armor(ctx, 1);
+
+	gret = gpgme_data_new_from_mem(&plain_data,
+				       (const char *)io->n.cleartext_utf16->data,
+				       io->n.cleartext_utf16->length,
+				       0 /* no copy */);
+	if (gret != GPG_ERR_NO_ERROR) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "%s:%s: gret[%u] %s\n",
+			  __location__, __func__,
+			  gret, gpgme_strerror(gret));
+		gpgme_release(ctx);
+		return ldb_module_operr(io->ac->module);
+	}
+	gret = gpgme_data_new(&crypt_data);
+	if (gret != GPG_ERR_NO_ERROR) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "%s:%s: gret[%u] %s\n",
+			  __location__, __func__,
+			  gret, gpgme_strerror(gret));
+		gpgme_data_release(plain_data);
+		gpgme_release(ctx);
+		return ldb_module_operr(io->ac->module);
+	}
+
+	for (ki = 0; ki < num_keys; ki++) {
+		const char *key_id = io->ac->gpg_key_ids[ki];
+		size_t len = strlen(key_id);
+
+		keys[ki] = NULL;
+
+		if (len < 16) {
+			ldb_debug(ldb, LDB_DEBUG_FATAL,
+				  "%s:%s: ki[%zu] key_id[%s] strlen < 16, "
+				  "please specifiy at least the 64bit key id\n",
+				  __location__, __func__,
+				  ki, key_id);
+			for (kr = 0; keys[kr] != NULL; kr++) {
+				gpgme_key_release(keys[kr]);
+			}
+			gpgme_data_release(crypt_data);
+			gpgme_data_release(plain_data);
+			gpgme_release(ctx);
+			return ldb_module_operr(io->ac->module);
+		}
+
+		gret = gpgme_get_key(ctx, key_id, &keys[ki], 0 /* public key */);
+		if (gret != GPG_ERR_NO_ERROR) {
+			keys[ki] = NULL;
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "%s:%s: ki[%zu] key_id[%s] gret[%u] %s\n",
+				  __location__, __func__,
+				  ki, key_id,
+				  gret, gpgme_strerror(gret));
+			for (kr = 0; keys[kr] != NULL; kr++) {
+				gpgme_key_release(keys[kr]);
+			}
+			gpgme_data_release(crypt_data);
+			gpgme_data_release(plain_data);
+			gpgme_release(ctx);
+			return ldb_module_operr(io->ac->module);
+		}
+	}
+	keys[ki] = NULL;
+
+	gret = gpgme_op_encrypt(ctx, keys,
+				GPGME_ENCRYPT_ALWAYS_TRUST,
+				plain_data, crypt_data);
+	gpgme_data_release(plain_data);
+	plain_data = NULL;
+	for (kr = 0; keys[kr] != NULL; kr++) {
+		gpgme_key_release(keys[kr]);
+		keys[kr] = NULL;
+	}
+	gpgme_release(ctx);
+	ctx = NULL;
+	if (gret != GPG_ERR_NO_ERROR) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "%s:%s: gret[%u] %s\n",
+			  __location__, __func__,
+			  gret, gpgme_strerror(gret));
+		gpgme_data_release(crypt_data);
+		return ldb_module_operr(io->ac->module);
+	}
+
+	crypt_mem = gpgme_data_release_and_get_mem(crypt_data, &crypt_length);
+	crypt_data = NULL;
+	if (crypt_mem == NULL) {
+		return ldb_module_oom(io->ac->module);
+	}
+
+	pgb->gpg_blob = data_blob_talloc(io->ac,
+					 (const uint8_t *)crypt_mem,
+					 crypt_length);
+	gpgme_free(crypt_mem);
+	crypt_mem = NULL;
+	crypt_length = 0;
+	if (pgb->gpg_blob.data == NULL) {
+		return ldb_module_oom(io->ac->module);
+	}
+
+	return LDB_SUCCESS;
+#else /* ENABLE_GPGME */
+	ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+		      "You configured 'password hash gpg key ids', "
+		      "but GPGME support is missing. (%s:%d)",
+		      __FILE__, __LINE__);
+	return LDB_ERR_UNWILLING_TO_PERFORM;
+#endif /* else ENABLE_GPGME */
+}
+
 static int setup_supplemental_field(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
 	struct supplementalCredentialsBlob scb;
 	struct supplementalCredentialsBlob *old_scb = NULL;
-	/* Packages + (Kerberos-Newer-Keys, Kerberos, WDigest and CLEARTEXT) */
+	/* Packages + (Kerberos-Newer-Keys, Kerberos, WDigest, CLEARTEXT, SambaGPG) */
 	uint32_t num_names = 0;
-	const char *names[1+4];
+	const char *names[1+5];
 	uint32_t num_packages = 0;
-	struct supplementalCredentialsPackage packages[1+4];
+	struct supplementalCredentialsPackage packages[1+5];
 	/* Packages */
 	struct supplementalCredentialsPackage *pp = NULL;
 	struct package_PackagesBlob pb;
@@ -1443,14 +1586,22 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	struct package_PrimaryCLEARTEXTBlob pcb;
 	DATA_BLOB pcb_blob;
 	char *pcb_hexstr;
+	/* Primary:SambaGPG */
+	const char **ng = NULL;
+	struct supplementalCredentialsPackage *pg = NULL;
+	struct package_PrimarySambaGPGBlob pgb;
+	DATA_BLOB pgb_blob;
+	char *pgb_hexstr;
 	int ret;
 	enum ndr_err_code ndr_err;
 	uint8_t zero16[16];
 	bool do_newer_keys = false;
 	bool do_cleartext = false;
+	bool do_samba_gpg = false;
 
 	ZERO_STRUCT(zero16);
 	ZERO_STRUCT(names);
+	ZERO_STRUCT(packages);
 
 	ldb = ldb_module_get_ctx(io->ac->module);
 
@@ -1483,6 +1634,10 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		do_cleartext = true;
 	}
 
+	if (io->ac->gpg_key_ids != NULL) {
+		do_samba_gpg = true;
+	}
+
 	/*
 	 * The ordering is this
 	 *
@@ -1490,9 +1645,16 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	 * Primary:Kerberos
 	 * Primary:WDigest
 	 * Primary:CLEARTEXT (optional)
+	 * Primary:SambaGPG (optional)
 	 *
 	 * And the 'Packages' package is insert before the last
 	 * other package.
+	 *
+	 * Note: it's important that Primary:SambaGPG is added as
+	 * the last element. This is the indication that it matches
+	 * the current password. When a password change happens on
+	 * a Windows DC, it will keep the old Primary:SambaGPG value,
+	 * but as the first element.
 	 */
 	if (do_newer_keys) {
 		/* Primary:Kerberos-Newer-Keys */
@@ -1504,7 +1666,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	nk = &names[num_names++];
 	pk = &packages[num_packages++];
 
-	if (!do_cleartext) {
+	if (!do_cleartext && !do_samba_gpg) {
 		/* Packages */
 		pp = &packages[num_packages++];
 	}
@@ -1514,12 +1676,23 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	pd = &packages[num_packages++];
 
 	if (do_cleartext) {
-		/* Packages */
-		pp = &packages[num_packages++];
+		if (!do_samba_gpg) {
+			/* Packages */
+			pp = &packages[num_packages++];
+		}
 
 		/* Primary:CLEARTEXT */
 		nc = &names[num_names++];
 		pc = &packages[num_packages++];
+	}
+
+	if (do_samba_gpg) {
+		/* Packages */
+		pp = &packages[num_packages++];
+
+		/* Primary:SambaGPG */
+		ng = &names[num_names++];
+		pg = &packages[num_packages++];
 	}
 
 	if (pkn) {
@@ -1637,6 +1810,36 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		pc->name	= "Primary:CLEARTEXT";
 		pc->reserved	= 1;
 		pc->data	= pcb_hexstr;
+	}
+
+	/*
+	 * setup 'Primary:SambaGPG' element
+	 */
+	if (pg) {
+		*ng		= "SambaGPG";
+
+		ret = setup_primary_samba_gpg(io, &pgb);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ndr_err = ndr_push_struct_blob(&pgb_blob, io->ac, &pgb,
+			(ndr_push_flags_fn_t)ndr_push_package_PrimarySambaGPGBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+			ldb_asprintf_errstring(ldb,
+					"setup_supplemental_field: failed to "
+					"push package_PrimarySambaGPGBlob: %s",
+					nt_errstr(status));
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		pgb_hexstr = data_blob_hex_string_upper(io->ac, &pgb_blob);
+		if (!pgb_hexstr) {
+			return ldb_oom(ldb);
+		}
+		pg->name	= "Primary:SambaGPG";
+		pg->reserved	= 1;
+		pg->data	= pgb_hexstr;
 	}
 
 	/*
@@ -2955,6 +3158,7 @@ static struct ph_context *ph_init_context(struct ldb_module *module,
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
+	struct loadparm_context *lp_ctx = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2969,6 +3173,10 @@ static struct ph_context *ph_init_context(struct ldb_module *module,
 	ac->userPassword = userPassword;
 	ac->update_password = update_password;
 	ac->update_lastset = true;
+
+	lp_ctx = talloc_get_type_abort(ldb_get_opaque(ldb, "loadparm"),
+				       struct loadparm_context);
+	ac->gpg_key_ids = lpcfg_password_hash_gpg_key_ids(lp_ctx);
 
 	return ac;
 }
@@ -3792,6 +4000,28 @@ static const struct ldb_module_ops ldb_password_hash_module_ops = {
 
 int ldb_password_hash_module_init(const char *version)
 {
+#ifdef ENABLE_GPGME
+	const char *gversion = NULL;
+#endif /* ENABLE_GPGME */
+
 	LDB_MODULE_CHECK_VERSION(version);
+
+#ifdef ENABLE_GPGME
+	/*
+	 * Note: this sets a SIGPIPE handler
+	 * if none is active already. See:
+	 * https://www.gnupg.org/documentation/manuals/gpgme/Signal-Handling.html#Signal-Handling
+	 */
+	gversion = gpgme_check_version(GPGME_VERSION);
+	if (gversion == NULL) {
+		fprintf(stderr, "%s() in %s version[%s]: "
+			"gpgme_check_version(%s) not available, "
+			"gpgme_check_version(NULL) => '%s'\n",
+			__func__, __FILE__, version,
+			GPGME_VERSION, gpgme_check_version(NULL));
+		return LDB_ERR_UNAVAILABLE;
+	}
+#endif /* ENABLE_GPGME */
+
 	return ldb_register_module(&ldb_password_hash_module_ops);
 }
