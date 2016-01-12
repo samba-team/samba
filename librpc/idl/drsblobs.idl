@@ -445,6 +445,14 @@ interface drsblobs {
 		[in] package_PrimaryWDigestBlob blob
 		);
 
+	typedef [public] struct {
+		[flag(NDR_REMAINING)] DATA_BLOB gpg_blob;
+	} package_PrimarySambaGPGBlob;
+
+	void decode_PrimarySambaGPG(
+		[in] package_PrimarySambaGPGBlob blob
+		);
+
 	typedef struct {
 		[value(0)] uint32 size;
 	} AuthInfoNone;
