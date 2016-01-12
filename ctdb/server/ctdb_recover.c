@@ -747,9 +747,18 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 	return 0;
 }
 
+struct ctdb_cluster_mutex_handle;
+typedef void (*cluster_mutex_handler_t) (
+	struct ctdb_context *ctdb,
+	char status,
+	double latency,
+	struct ctdb_cluster_mutex_handle *h,
+	void *private_data);
+
 struct ctdb_cluster_mutex_handle {
 	struct ctdb_context *ctdb;
-	struct ctdb_req_control_old *c;
+	cluster_mutex_handler_t handler;
+	void *private_data;
 	int fd[2];
 	struct tevent_timer *te;
 	struct tevent_fd *fde;
@@ -761,8 +770,14 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 				char status,
 				double latency,
 				struct ctdb_cluster_mutex_handle *h,
-				struct ctdb_req_control_old *c)
+				void *private_data)
 {
+	/* It would be good to use talloc_get_type() here.  However,
+	 * the name of the packet is manually set - not sure why.
+	 * Could use talloc_check_name() but this seems like a lot of
+	 * manual overkill. */
+	struct ctdb_req_control_old *c =
+		(struct ctdb_req_control_old *) private_data;
 	int s = 0;
 	const char *err = NULL;
 
@@ -826,7 +841,9 @@ static void cluster_mutex_timeout(struct tevent_context *ev,
 		talloc_get_type(private_data, struct ctdb_cluster_mutex_handle);
 	double latency = timeval_elapsed(&h->start_time);
 
-	set_recmode_handler(h->ctdb, '2', latency, h, h->c);
+	if (h->handler != NULL) {
+		h->handler(h->ctdb, '2', latency, h, h->private_data);
+	}
 }
 
 
@@ -865,7 +882,10 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 	/* If the child wrote status then just pass it to the handler.
 	 * If no status was written then this is an unexpected error
 	 * so pass generic error code to handler. */
-	set_recmode_handler(h->ctdb, ret == 1 ? c : '3', latency, h, h->c);
+	if (h->handler != NULL) {
+		h->handler(h->ctdb, ret == 1 ? c : '3', latency,
+			   h, h->private_data);
+	}
 }
 
 static void
@@ -1035,7 +1055,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	tevent_fd_set_auto_close(h->fde);
 
 	h->ctdb = ctdb;
-	h->c    = talloc_steal(h, c);
+	h->handler = set_recmode_handler;
+	h->private_data = talloc_steal(h, c);
 
 	*async_reply = true;
 
