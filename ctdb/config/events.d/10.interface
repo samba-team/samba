@@ -152,16 +152,19 @@ monitor_interfaces()
 
 	done
 
-	if $fail ; then
-	    if $up_interfaces_found && \
-		    [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] ; then
+	if ! $fail ; then
 		return 0
-	    else
-		return 1
-	    fi
-	else
-	    return 0
 	fi
+
+	if ! $up_interfaces_found ; then
+		return 1
+	fi
+
+	if [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" != "yes" ]; then
+		return 1
+	fi
+
+	return 0
 }
 
 # Sets: iface, ip, maskbits, family
