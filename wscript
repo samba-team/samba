@@ -39,6 +39,7 @@ def set_options(opt):
     opt.RECURSE('lib/ldb')
     opt.RECURSE('selftest')
     opt.RECURSE('source4/lib/tls')
+    opt.RECURSE('source4/dsdb/samdb/ldb_modules')
     opt.RECURSE('pidl')
     opt.RECURSE('source3')
     opt.RECURSE('lib/util')
@@ -152,6 +153,7 @@ def configure(conf):
     if conf.CONFIG_GET('KRB5_VENDOR') in (None, 'heimdal'):
         conf.RECURSE('source4/heimdal_build')
     conf.RECURSE('source4/lib/tls')
+    conf.RECURSE('source4/dsdb/samdb/ldb_modules')
     conf.RECURSE('source4/ntvfs/sysdep')
     conf.RECURSE('lib/util')
     conf.RECURSE('lib/util/charset')
