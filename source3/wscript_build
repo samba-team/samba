@@ -1152,6 +1152,13 @@ bld.SAMBA3_BINARY('smbspool',
                  libsmb
                  samba3core''')
 
+bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
+                 source='client/smbspool_krb5_wrapper.c',
+                 deps='''
+                 DYNCONFIG
+                 cups
+                 ''')
+
 bld.SAMBA3_BINARY('testparm',
                  source='utils/testparm.c',
                  deps='''
