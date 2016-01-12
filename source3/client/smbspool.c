@@ -346,8 +346,8 @@ get_exit_code(struct cli_state * cli,
 	};
 
 
-	fprintf(stderr, "DEBUG: get_exit_code(cli=%p, nt_status=%x)\n",
-		cli, NT_STATUS_V(nt_status));
+	fprintf(stderr, "DEBUG: get_exit_code(cli=%p, nt_status=%s [%x])\n",
+		cli, nt_errstr(nt_status), NT_STATUS_V(nt_status));
 
 	for (i = 0; i < ARRAY_SIZE(auth_errors); i++) {
 		if (!NT_STATUS_EQUAL(nt_status, auth_errors[i])) {
