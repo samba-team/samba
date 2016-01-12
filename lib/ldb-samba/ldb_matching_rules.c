@@ -228,7 +228,7 @@ static int ldb_eval_transitive_filter(TALLOC_CTX *mem_ctx,
 	dn_to_match = dsdb_dn_parse(mem_ctx, ldb, value_to_match, dn_oid);
 	if (dn_to_match == NULL) {
 		*matched = false;
-		return LDB_ERR_INVALID_DN_SYNTAX;
+		return LDB_SUCCESS;
 	}
 
 	return ldb_eval_transitive_filter_helper(mem_ctx, ldb, attr,
@@ -292,8 +292,9 @@ static int ldb_comparator_trans(struct ldb_context *ldb,
 	 * mailing list.
 	 */
 	if (schema_attr->linkID == 0) {
+		*matched = false;
 		talloc_free(tmp_ctx);
-		return LDB_ERR_INAPPROPRIATE_MATCHING;
+		return LDB_SUCCESS;
 	}
 
 	/* Duplicate original msg dn as the msg must not be modified */

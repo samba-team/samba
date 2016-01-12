@@ -503,9 +503,10 @@ static int ldb_match_extended(struct ldb_context *ldb,
 
 	rule = ldb_find_extended_match_rule(ldb, tree->u.extended.rule_id);
 	if (rule == NULL) {
+		*matched = false;
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb: unknown extended rule_id %s",
 			  tree->u.extended.rule_id);
-		return LDB_ERR_INAPPROPRIATE_MATCHING;
+		return LDB_SUCCESS;
 	}
 
 	return rule->callback(ldb, rule->oid, msg,
