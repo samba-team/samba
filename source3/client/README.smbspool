@@ -1,0 +1,17 @@
+smbspool
+=========
+
+smbspool is a very small print spooling program that sends a print file to an
+SMB printer. The command-line arguments are position-dependent for
+compatibility with the CUPS.
+
+For printing support with Kerberos, CUPS 1.5+ needs a wrapper for the backend
+which sets the correct location of the Kerberos credential cache.
+
+smbspool_krb5_wrapper
+======================
+
+This tool can be used to print using Kerberos credentials. To get this working
+smbspool_krb5_wrapper needs to be the smb backend of CUPS. It needs to be owned
+by root and the permissions for the binary need to be 0700. Once
+smbspool_krb5_wrapper switched to the user trying to print it executes smbspool.
