@@ -871,11 +871,8 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 	char c = '0';
 	int ret;
 
-	/* we got a response from our child process so we can abort the
-	   timeout.
-	*/
-	talloc_free(h->te);
-	h->te = NULL;
+	/* Got response from child process so abort timeout */
+	TALLOC_FREE(h->te);
 
 	ret = sys_read(h->fd[0], &c, 1);
 
@@ -902,7 +899,7 @@ ctdb_drop_all_ips_event(struct tevent_context *ev, struct tevent_timer *te,
 }
 
 static struct ctdb_cluster_mutex_handle *
-ctdb_cluster_mutex(struct ctdb_context *ctdb)
+ctdb_cluster_mutex(struct ctdb_context *ctdb, int timeout)
 {
 	struct ctdb_cluster_mutex_handle *h;
 	pid_t parent = getpid();
@@ -967,8 +964,13 @@ ctdb_cluster_mutex(struct ctdb_context *ctdb)
 
 	talloc_set_destructor(h, cluster_mutex_destructor);
 
-	h->te = tevent_add_timer(ctdb->ev, h, timeval_current_ofs(5, 0),
-				 cluster_mutex_timeout, h);
+	if (timeout != 0) {
+		h->te = tevent_add_timer(ctdb->ev, h,
+					 timeval_current_ofs(timeout, 0),
+					 cluster_mutex_timeout, h);
+	} else {
+		h->te = NULL;
+	}
 
 	h->fde = tevent_add_fd(ctdb->ev, h, h->fd[0], TEVENT_FD_READ,
 			       cluster_mutex_handler, (void *)h);
@@ -1074,7 +1076,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	h = ctdb_cluster_mutex(ctdb);
+	h = ctdb_cluster_mutex(ctdb, 5);
 	if (h == NULL) {
 		return -1;
 	}
