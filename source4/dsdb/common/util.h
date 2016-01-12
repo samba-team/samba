@@ -69,4 +69,14 @@ struct GUID;
 char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid);
 
+struct ldb_context;
+
+int dsdb_werror_at(struct ldb_context *ldb, int ldb_ecode, WERROR werr,
+		   const char *location, const char *func,
+		   const char *reason);
+
+#define dsdb_module_werror(module, ldb_ecode, werr, reason) \
+	dsdb_werror_at(ldb_module_get_ctx(module), ldb_ecode, werr, \
+		       __location__, __func__, reason)
+
 #endif /* __DSDB_COMMON_UTIL_H__ */

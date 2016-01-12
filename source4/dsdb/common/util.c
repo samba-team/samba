@@ -4867,6 +4867,17 @@ bool is_attr_in_list(const char * const * attrs, const char *attr)
 	return false;
 }
 
+int dsdb_werror_at(struct ldb_context *ldb, int ldb_ecode, WERROR werr,
+		   const char *location, const char *func,
+		   const char *reason)
+{
+	if (reason == NULL) {
+		reason = win_errstr(werr);
+	}
+	ldb_asprintf_errstring(ldb, "%08X: %s at %s:%s",
+			       W_ERROR_V(werr), reason, location, func);
+	return ldb_ecode;
+}
 
 /*
   map an ldb error code to an approximate NTSTATUS code
