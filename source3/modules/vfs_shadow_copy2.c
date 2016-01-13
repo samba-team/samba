@@ -1900,11 +1900,12 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 			char *p;
 			p = strstr(handle->conn->connectpath, mount_point);
 			if (p != handle->conn->connectpath) {
-				DEBUG(1, ("Warning: mount_point (%s) is not a "
-					  "subdirectory of the share root "
-					  "(%s). Ignoring provided value.\n",
-					  mount_point,
-					  handle->conn->connectpath));
+				DBG_WARNING("Warning: the share root (%s) is "
+					    "not a subdirectory of the "
+					    "specified mountpoint (%s). "
+					    "Ignoring provided value.\n",
+					    handle->conn->connectpath,
+					    mount_point);
 				mount_point = NULL;
 			}
 		}
