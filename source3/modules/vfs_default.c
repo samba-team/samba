@@ -1920,9 +1920,8 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		"error %d. Falling back to slow manual allocation\n", errno));
 
 	/* available disk space is enough or not? */
-	space_avail = get_dfree_info(fsp->conn,
-				     fsp->fsp_name->base_name,
-				     &bsize, &dfree, &dsize);
+	space_avail =
+	    get_dfree_info(fsp->conn, fsp->fsp_name, &bsize, &dfree, &dsize);
 	/* space_avail is 1k blocks */
 	if (space_avail == (uint64_t)-1 ||
 			((uint64_t)space_to_write/1024 > space_avail) ) {
