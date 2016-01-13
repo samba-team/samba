@@ -351,10 +351,10 @@
 		only particular subtrees of the filesystem as well.
 		</para>
 		<para>
-		Note that <command>shadow:snapdirseverywhere</command>
+		Note that <command>shadow:crossmountpoints</command>
 		depends on <command>shadow:snapdir</command> and needs it to be
 		a relative path. Setting an absolute snapdir path disables
-		<command>shadow:snapdirseverywhere</command>.
+		<command>shadow:crossmountpoints</command>.
 		</para>
 		<para>
 		Note that this option is incompatible with the
