@@ -3438,8 +3438,8 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 		{
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit;
 			data_len = 18;
-			df_ret = get_dfree_info(conn, filename, &bsize, &dfree,
-						&dsize);
+			df_ret = get_dfree_info(conn, &smb_fname, &bsize,
+						&dfree, &dsize);
 			if (df_ret == (uint64_t)-1) {
 				return map_nt_error_from_unix(errno);
 			}
@@ -3589,8 +3589,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 		{
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit;
 			data_len = 24;
-			df_ret = get_dfree_info(conn, filename, &bsize, &dfree,
-						&dsize);
+			df_ret = get_dfree_info(conn, &smb_fname, &bsize,
+						&dfree, &dsize);
 			if (df_ret == (uint64_t)-1) {
 				return map_nt_error_from_unix(errno);
 			}
@@ -3623,8 +3623,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			uint64_t dfree,dsize,bsize,block_size,sectors_per_unit;
 			data_len = 32;
-			df_ret = get_dfree_info(conn, filename, &bsize, &dfree,
-						&dsize);
+			df_ret = get_dfree_info(conn, &smb_fname, &bsize,
+						&dfree, &dsize);
 			if (df_ret == (uint64_t)-1) {
 				return map_nt_error_from_unix(errno);
 			}

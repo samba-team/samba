@@ -216,8 +216,8 @@ try to get the disk space from disk quotas (SunOS & Solaris2 version)
 Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 ****************************************************************************/
 
-bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
-		 uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
+		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	uid_t euser_id;
 	int ret;
@@ -230,14 +230,11 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 	SMB_STRUCT_STAT sbuf;
 	SMB_DEV_T devno;
 	bool found = false;
+	const char *path = fname->base_name;
 
 	euser_id = geteuid();
 
-	if (sys_stat(path, &sbuf, false) == -1) {
-		return false;
-	}
-
-	devno = sbuf.st_ex_dev ;
+	devno = fname->st.st_ex_dev;
 	DEBUG(5,("disk_quotas: looking for path \"%s\" devno=%x\n",
 		path, (unsigned int)devno));
 	if ((fd = fopen(MNTTAB, "r")) == NULL) {
@@ -362,15 +359,16 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 try to get the disk space from disk quotas - default version
 ****************************************************************************/
 
-bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
-		 uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
+		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
   int r;
   struct dqblk D;
   uid_t euser_id;
+  const char *path = fname->base_name;
 #if !defined(AIX)
   char dev_disk[256];
-  SMB_STRUCT_STAT S;
+  SMB_STRUCT_STAT S = fname->st;
 
   /* find the block device file */
 
@@ -463,8 +461,8 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 
 #else /* WITH_QUOTAS */
 
-bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
-		 uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
+		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	(*bsize) = 512; /* This value should be ignored */
 
@@ -482,8 +480,8 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 /* wrapper to the new sys_quota interface
    this file should be removed later
    */
-bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
-		 uint64_t *dfree, uint64_t *dsize)
+bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
+		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	int r;
 	SMB_DISK_QUOTA D;
@@ -496,7 +494,8 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 	 */
 	ZERO_STRUCT(D);
 	id.uid = -1;
-	r = SMB_VFS_GET_QUOTA(conn, path, SMB_USER_FS_QUOTA_TYPE, id, &D);
+	r = SMB_VFS_GET_QUOTA(conn, fname->base_name, SMB_USER_FS_QUOTA_TYPE,
+			      id, &D);
 	if (r == -1 && errno != ENOSYS) {
 		goto try_group_quota;
 	}
@@ -507,7 +506,8 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 	ZERO_STRUCT(D);
 	id.uid = geteuid();
 
-	r = SMB_VFS_GET_QUOTA(conn, path, SMB_USER_QUOTA_TYPE, id, &D);
+	r = SMB_VFS_GET_QUOTA(conn, fname->base_name, SMB_USER_QUOTA_TYPE, id,
+			      &D);
 
 	if (r == -1) {
 		goto try_group_quota;
@@ -543,7 +543,8 @@ try_group_quota:
 	 */
 	ZERO_STRUCT(D);
 	id.gid = -1;
-	r = SMB_VFS_GET_QUOTA(conn, path, SMB_GROUP_FS_QUOTA_TYPE, id, &D);
+	r = SMB_VFS_GET_QUOTA(conn, fname->base_name, SMB_GROUP_FS_QUOTA_TYPE,
+			      id, &D);
 	if (r == -1 && errno != ENOSYS) {
 		return false;
 	}
@@ -554,7 +555,8 @@ try_group_quota:
 	id.gid = getegid();
 
 	ZERO_STRUCT(D);
-	r = SMB_VFS_GET_QUOTA(conn, path, SMB_GROUP_QUOTA_TYPE, id, &D);
+	r = SMB_VFS_GET_QUOTA(conn, fname->base_name, SMB_GROUP_QUOTA_TYPE, id,
+			      &D);
 
 	if (r == -1) {
 		return False;

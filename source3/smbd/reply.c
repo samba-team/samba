@@ -1573,9 +1573,20 @@ void reply_dskattr(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	uint64_t ret;
 	uint64_t dfree,dsize,bsize;
+	struct smb_filename smb_fname;
 	START_PROFILE(SMBdskattr);
 
-	ret = get_dfree_info(conn, ".", &bsize, &dfree, &dsize);
+	ZERO_STRUCT(smb_fname);
+	smb_fname.base_name = discard_const_p(char, ".");
+
+	if (SMB_VFS_STAT(conn, &smb_fname) != 0) {
+		reply_nterror(req, map_nt_error_from_unix(errno));
+		DBG_WARNING("stat of . failed (%s)\n", strerror(errno));
+		END_PROFILE(SMBdskattr);
+		return;
+	}
+
+	ret = get_dfree_info(conn, &smb_fname, &bsize, &dfree, &dsize);
 	if (ret == (uint64_t)-1) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
 		END_PROFILE(SMBdskattr);

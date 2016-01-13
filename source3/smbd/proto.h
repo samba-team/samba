@@ -172,13 +172,10 @@ bool connections_snum_used(struct smbd_server_connection *unused, int snum);
 
 /* The following definitions come from smbd/dfree.c  */
 
-uint64_t sys_disk_free(connection_struct *conn, const char *path,
-                              uint64_t *bsize,uint64_t *dfree,uint64_t *dsize);
-uint64_t get_dfree_info(connection_struct *conn,
-			const char *path,
-			uint64_t *bsize,
-			uint64_t *dfree,
-			uint64_t *dsize);
+uint64_t sys_disk_free(connection_struct *conn, struct smb_filename *fname,
+		       uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
+uint64_t get_dfree_info(connection_struct *conn, struct smb_filename *fname,
+			uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
 
 /* The following definitions come from smbd/dir.c  */
 
@@ -855,8 +852,8 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn);
 
 /* The following definitions come from smbd/quotas.c  */
 
-bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
-		 uint64_t *dfree, uint64_t *dsize);
+bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
+		 uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
 
 /* The following definitions come from smbd/reply.c  */
 
