@@ -1775,7 +1775,7 @@ int samdb_server_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, stru
 
 	server_dn = samdb_server_dn(ldb, mem_ctx);
 	if (server_dn == NULL) {
-		return LDB_ERR_NO_SUCH_OBJECT;
+		return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 	}
 
 	ret = samdb_reference_dn(ldb, mem_ctx, server_dn, "serverReference", dn);
@@ -2988,7 +2988,7 @@ int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
 	}
 	if (res->count < 1) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_NO_SUCH_OBJECT;
+		return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 	}
 	*guid = samdb_result_guid(res->msgs[0], attribute);
 	talloc_free(tmp_ctx);
@@ -3064,12 +3064,12 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 	}
 	if (res->count < 1) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_NO_SUCH_OBJECT;
+		return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 	}
 	s = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSid");
 	if (s == NULL) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_NO_SUCH_OBJECT;
+		return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 	}
 	*sid = *s;
 	talloc_free(tmp_ctx);
@@ -3481,7 +3481,7 @@ int samdb_ntds_site_settings_options(struct ldb_context *ldb_ctx,
 failed:
 	DEBUG(1,("Failed to find our NTDS Site Settings options in ldb!\n"));
 	talloc_free(tmp_ctx);
-	return LDB_ERR_NO_SUCH_OBJECT;
+	return ldb_error(ldb_ctx, LDB_ERR_NO_SUCH_OBJECT, __func__);
 }
 
 /*
@@ -3519,7 +3519,7 @@ int samdb_ntds_options(struct ldb_context *ldb, uint32_t *options)
 failed:
 	DEBUG(1,("Failed to find our own NTDS Settings options in the ldb!\n"));
 	talloc_free(tmp_ctx);
-	return LDB_ERR_NO_SUCH_OBJECT;
+	return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 }
 
 const char* samdb_ntds_object_category(TALLOC_CTX *tmp_ctx, struct ldb_context *ldb)
@@ -3897,7 +3897,7 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
        }
 
        talloc_free(tmp_ctx);
-       return LDB_ERR_NO_SUCH_OBJECT;
+       return ldb_error(samdb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 }
 
 
@@ -3930,7 +3930,7 @@ int dsdb_tombstone_lifetime(struct ldb_context *ldb, uint32_t *lifetime)
 	struct ldb_dn *dn;
 	dn = ldb_get_config_basedn(ldb);
 	if (!dn) {
-		return LDB_ERR_NO_SUCH_OBJECT;
+		return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 	}
 	dn = ldb_dn_copy(ldb, dn);
 	if (!dn) {
@@ -4489,7 +4489,7 @@ int dsdb_search(struct ldb_context *ldb,
 		if (res->count == 0) {
 			talloc_free(tmp_ctx);
 			ldb_reset_err_string(ldb);
-			return LDB_ERR_NO_SUCH_OBJECT;
+			return ldb_error(ldb, LDB_ERR_NO_SUCH_OBJECT, __func__);
 		}
 		if (res->count != 1) {
 			talloc_free(tmp_ctx);
