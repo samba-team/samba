@@ -12,6 +12,6 @@
 	This parameter specifies the size of these pages.
 	</para>
 </description>
-<value type="default">1024</value>
+<value type="default">1000</value>
 <value type="example">512</value>
 </samba:parameter>

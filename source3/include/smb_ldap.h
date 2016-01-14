@@ -78,7 +78,7 @@ struct ldapsam_privates;
 
 #define LDAP_DEFAULT_TIMEOUT   15
 #define LDAP_CONNECTION_DEFAULT_TIMEOUT 2
-#define LDAP_PAGE_SIZE 1024
+#define LDAP_PAGE_SIZE 1000
 
 #define ADS_PAGE_CTL_OID 	"1.2.840.113556.1.4.319"
 
