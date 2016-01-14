@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    read/write to a files_struct
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 2000-2002. - write cache.
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -411,9 +411,9 @@ ssize_t write_file(struct smb_request *req,
 		wcp->file_size = pos + 1;
 		ret = SMB_VFS_FTRUNCATE(fsp, wcp->file_size);
 		if (ret == -1) {
-			DEBUG(0,("wcp_file_size_change (%s): ftruncate of size %.0f"
-				 "error %s\n", fsp_str_dbg(fsp),
-				 (double)wcp->file_size, strerror(errno)));
+			DEBUG(0, ("wcp_file_size_change (%s): ftruncate of "
+				  "size %.0f error %s\n", fsp_str_dbg(fsp),
+				  (double)wcp->file_size, strerror(errno)));
 			return -1;
 		}
 		return 1;
@@ -428,8 +428,9 @@ ssize_t write_file(struct smb_request *req,
 	if (wcp->data_size) {
 		bool cache_flush_needed = False;
 
-		if ((pos >= wcp->offset) && (pos <= wcp->offset + wcp->data_size)) {
-      
+		if ((pos >= wcp->offset) &&
+		    (pos <= wcp->offset + wcp->data_size)) {
+
 			/* ASCII art.... JRA.
 
       +--------------+-----
@@ -446,9 +447,13 @@ ssize_t write_file(struct smb_request *req,
 			 * Start of write overlaps or abutts the existing data.
 			 */
 
-			size_t data_used = MIN((wcp->alloc_size - (pos - wcp->offset)), n);
+			size_t data_used;
 
-			memcpy(wcp->data + (pos - wcp->offset), data, data_used);
+			data_used = MIN((wcp->alloc_size - (pos - wcp->offset)),
+					n);
+
+			memcpy(wcp->data + (pos - wcp->offset), data,
+			       data_used);
 
 			/*
 			 * Update the current buffer size with the new data.
@@ -492,8 +497,9 @@ ssize_t write_file(struct smb_request *req,
 
 			write_path = 1;
 
-		} else if ((pos < wcp->offset) && (pos + n > wcp->offset) && 
-					(pos + n <= wcp->offset + wcp->alloc_size)) {
+		} else if ((pos < wcp->offset) &&
+			   (pos + n > wcp->offset) &&
+			   (pos + n <= wcp->offset + wcp->alloc_size)) {
 
 			/* ASCII art.... JRA.
 
@@ -551,10 +557,10 @@ ssize_t write_file(struct smb_request *req,
 
 			write_path = 2;
 
-		} else if ( (pos >= wcp->file_size) && 
-					(wcp->offset + wcp->data_size == wcp->file_size) &&
-					(pos > wcp->offset + wcp->data_size) && 
-					(pos < wcp->offset + wcp->alloc_size) ) {
+		} else if ((pos >= wcp->file_size) &&
+			   (wcp->offset + wcp->data_size == wcp->file_size) &&
+			   (pos > wcp->offset + wcp->data_size) &&
+			   (pos < wcp->offset + wcp->alloc_size) ) {
 
 			/* ASCII art.... JRA.
 
@@ -582,7 +588,7 @@ ssize_t write_file(struct smb_request *req,
 			if(pos + n <= wcp->offset + wcp->alloc_size) {
 				data_used = n;
 			} else {
-				data_used = wcp->offset + wcp->alloc_size - pos;
+				data_used = wcp->offset+wcp->alloc_size-pos;
 			}
 
 			/*
@@ -592,7 +598,8 @@ ssize_t write_file(struct smb_request *req,
 			memset(wcp->data + wcp->data_size, '\0',
 				pos - (wcp->offset + wcp->data_size) );
 
-			memcpy(wcp->data + (pos - wcp->offset), data, data_used);
+			memcpy(wcp->data + (pos - wcp->offset), data,
+			       data_used);
 
 			/*
 			 * Update the current buffer size with the new data.
@@ -656,8 +663,9 @@ ssize_t write_file(struct smb_request *req,
                                                          | 1 Byte |
                                                          +--------+
 
-			MS-Office seems to do this a lot to determine if there's enough
-			space on the filesystem to write a new file.
+			MS-Office seems to do this a lot to determine if
+			there's enough space on the filesystem to write a new
+			file.
 
 			Change to :
 
@@ -695,9 +703,9 @@ ssize_t write_file(struct smb_request *req,
                         | Cached data   | Cache buffer  |
                         +---------------+---------------+
 
-                                                              +-------------------+
-                                                              | Data to write     |
-                                                              +-------------------+
+                                                              +---------------+
+                                                              | Data to write |
+                                                              +---------------+
 
    Case 2).
 
@@ -722,35 +730,46 @@ ssize_t write_file(struct smb_request *req,
 		  */
 
  			/*
-			 * Write is bigger than buffer, or there is no overlap on the
-			 * low or high ends.
+			 * Write is bigger than buffer, or there is no
+			 * overlap on the low or high ends.
 			 */
 
-			DEBUG(9,("write_file: non cacheable write : fd = %d, pos = %.0f, len = %u, current cache pos = %.0f \
-len = %u\n",fsp->fh->fd, (double)pos, (unsigned int)n, (double)wcp->offset, (unsigned int)wcp->data_size ));
+			DEBUG(9,("write_file: non cacheable write : fd = %d, "
+				 "pos = %.0f, len = %u, "
+				 "current cache pos = %.0f len = %u\n",
+				 fsp->fh->fd, (double)pos, (unsigned int)n,
+				 (double)wcp->offset,
+				 (unsigned int)wcp->data_size ));
 
 			/*
-			 * If write would fit in the cache, and is larger than
-			 * the data already in the cache, flush the cache and
-			 * preferentially copy the data new data into it. Otherwise
-			 * just write the data directly.
+			 * If write would fit in the cache, and is
+			 * larger than the data already in the cache,
+			 * flush the cache and preferentially copy the
+			 * data new data into it. Otherwise just write
+			 * the data directly.
 			 */
 
 			if ( n <= wcp->alloc_size && n > wcp->data_size) {
 				cache_flush_needed = True;
 			} else {
-				ssize_t ret = real_write_file(NULL,fsp, data, pos, n);
+				ssize_t ret = real_write_file(NULL, fsp, data,
+							      pos, n);
 
 				/*
-				 * If the write overlaps the entire cache, then
-				 * discard the current contents of the cache.
-				 * Fix from Rasmus Borup Hansen rbh@math.ku.dk.
+				 * If the write overlaps the entire
+				 * cache, then discard the current
+				 * contents of the cache.  Fix from
+				 * Rasmus Borup Hansen rbh@math.ku.dk.
 				 */
 
 				if ((pos <= wcp->offset) &&
-						(pos + n >= wcp->offset + wcp->data_size) ) {
-					DEBUG(9,("write_file: discarding overwritten write \
-cache: fd = %d, off=%.0f, size=%u\n", fsp->fh->fd, (double)wcp->offset, (unsigned int)wcp->data_size ));
+				    (pos + n >= wcp->offset+wcp->data_size)) {
+					DEBUG(9,("write_file: discarding "
+						 "overwritten write cache: "
+						 "fd = %d, off=%.0f, "
+						 "size=%u\n", fsp->fh->fd,
+						 (double)wcp->offset,
+						 (unsigned)wcp->data_size));
 					wcp->data_size = 0;
 				}
 
@@ -771,10 +790,14 @@ cache: fd = %d, off=%.0f, size=%u\n", fsp->fh->fd, (double)wcp->offset, (unsigne
 		}
 
 		if (cache_flush_needed) {
-			DEBUG(3,("SAMBA_WRITE_FLUSH:%d: due to noncontinuous write: fd = %d, size = %.0f, pos = %.0f, \
-n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
-				write_path, fsp->fh->fd, (double)wcp->file_size, (double)pos, (unsigned int)n,
-				(double)wcp->offset, (unsigned int)wcp->data_size ));
+			DEBUG(3, ("SAMBA_WRITE_FLUSH:%d: due to noncontinuous "
+				  "write: fd = %d, size = %.0f, pos = %.0f, "
+				  "n = %u, wcp->offset=%.0f, "
+				  "wcp->data_size=%u\n",
+				  write_path, fsp->fh->fd,
+				  (double)wcp->file_size, (double)pos,
+				  (unsigned int)n, (double)wcp->offset,
+				  (unsigned int)wcp->data_size ));
 
 			flush_write_cache(fsp, SAMBA_WRITE_FLUSH);
 		}
@@ -845,13 +868,15 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
 				return -1;
 			}
 		}
-		DEBUG(9,("wcp->offset = %.0f wcp->data_size = %u cache return %u\n",
-			(double)wcp->offset, (unsigned int)wcp->data_size, (unsigned int)n));
+		DEBUG(9, ("wcp->offset = %.0f wcp->data_size = %u cache "
+			  "return %u\n",
+			  (double)wcp->offset, (unsigned int)wcp->data_size,
+			  (unsigned int)n));
 
 		total_written += n;
 		return total_written; /* .... that's a write :) */
 	}
-  
+
 	return total_written;
 }
 
