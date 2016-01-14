@@ -231,7 +231,7 @@ NEWUSERPASS=testPaSS@911%
 testit "modify pwdLastSet" $VALGRIND $ldbmodify $ADMIN_LDBMODIFY_CONFIG $PREFIX/tmpldbmodify $PREFIX/tmpldbmodify -k yes $@ || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmppasswordchange <<EOF
-expect nettestuser@${REALM}'s Password: 
+expect nettestuser@${REALM}'s Password:
 send ${USERPASS}\n
 expect Your password will expire at
 expect Changing password
