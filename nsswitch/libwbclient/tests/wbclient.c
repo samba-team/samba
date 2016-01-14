@@ -48,6 +48,27 @@
 #define torture_assert_wbc_ok(torture_ctx,expr,cmt,cmt_arg)			\
 	torture_assert_wbc_equal(torture_ctx,expr,WBC_ERR_SUCCESS,cmt,cmt_arg)
 
+#define torture_assert_wbc_equal_goto_fail(torture_ctx, got, expected, cmt, cmt_arg)	\
+	do { wbcErr __got = got, __expected = expected; \
+	if (!WBC_ERROR_EQUAL(__got, __expected)) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %s, expected %s: " cmt, wbcErrorString(__got), wbcErrorString(__expected), cmt_arg); \
+		goto fail;						\
+	} \
+	} while (0)
+
+#define torture_assert_wbc_ok_goto_fail(torture_ctx,expr,cmt,cmt_arg)			\
+	torture_assert_wbc_equal(torture_ctx,expr,WBC_ERR_SUCCESS,cmt,cmt_arg)
+
+#define torture_assert_str_equal_goto_fail(torture_ctx,got,expected,cmt)\
+	do { const char *__got = (got), *__expected = (expected); \
+	if (strcmp(__got, __expected) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %s, expected %s: %s", \
+			__got, __expected, cmt); \
+		goto fail;;			 \
+	} \
+	} while(0)
+
 static bool test_wbc_ping(struct torture_context *tctx)
 {
 	torture_assert_wbc_ok(tctx, wbcPing(),
