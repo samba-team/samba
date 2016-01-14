@@ -397,13 +397,9 @@ bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
     public_deps='ndr ndr_nbt'
     )
 
-bld.SAMBA_LIBRARY('ndr_nbt',
+bld.SAMBA_SUBSYSTEM('ndr_nbt',
     source='gen_ndr/ndr_nbt.c ndr/ndr_nbt.c',
     public_deps='ndr NDR_NBT_BUF NDR_SECURITY',
-    public_headers='gen_ndr/nbt.h gen_ndr/ndr_nbt.h ndr/ndr_nbt.h',
-    header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')],
-    pc_files='ndr_nbt.pc',
-    vnum='0.0.1'
 )
 
 bld.SAMBA_SUBSYSTEM('NDR_BACKUPKEY',
