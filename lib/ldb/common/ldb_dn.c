@@ -1916,7 +1916,7 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 		return LDB_ERR_OTHER;
 	}
 
-	if (v.length > v.length + 1) {
+	if (val.length > val.length + 1) {
 		return LDB_ERR_OTHER;
 	}
 
