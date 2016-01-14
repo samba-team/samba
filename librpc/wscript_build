@@ -355,8 +355,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',
 bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
     source='ndr/ndr_drsblobs.c gen_ndr/ndr_drsblobs.c',
     public_deps='ndr NDR_DRSUAPI',
-    public_headers='gen_ndr/ndr_drsblobs.h gen_ndr/drsblobs.h ndr/ndr_drsblobs.h',
-    header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
+    private_headers='gen_ndr/ndr_drsblobs.h gen_ndr/drsblobs.h ndr/ndr_drsblobs.h',
     )
 
 bld.SAMBA_SUBSYSTEM('ndr-krb5pac',
