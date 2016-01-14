@@ -26,7 +26,9 @@
 #include "system/locale.h"
 
 struct sddl_transition_state {
+	const struct dom_sid *machine_sid;
 	const struct dom_sid *domain_sid;
+	const struct dom_sid *forest_sid;
 };
 
 struct flag_map {
@@ -91,7 +93,9 @@ static bool sddl_map_flags(const struct flag_map *map, const char *str,
 static const struct {
 	const char *code;
 	const char *sid;
-	uint32_t rid;
+	uint32_t machine_rid;
+	uint32_t domain_rid;
+	uint32_t forest_rid;
 } sid_codes[] = {
 	{ .code = "WD", .sid = SID_WORLD },
 
@@ -151,28 +155,28 @@ static const struct {
 	{ .code = "AS", .sid = SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY },
 	{ .code = "SS", .sid = SID_SERVICE_ASSERTED_IDENTITY },
 
-	{ .code = "RO", .rid = DOMAIN_RID_ENTERPRISE_READONLY_DCS },
+	{ .code = "RO", .forest_rid = DOMAIN_RID_ENTERPRISE_READONLY_DCS },
 
-	{ .code = "LA", .rid = DOMAIN_RID_ADMINISTRATOR },
-	{ .code = "LG", .rid = DOMAIN_RID_GUEST },
+	{ .code = "LA", .machine_rid = DOMAIN_RID_ADMINISTRATOR },
+	{ .code = "LG", .machine_rid = DOMAIN_RID_GUEST },
 
-	{ .code = "DA", .rid = DOMAIN_RID_ADMINS },
-	{ .code = "DU", .rid = DOMAIN_RID_USERS },
-	{ .code = "DG", .rid = DOMAIN_RID_GUESTS },
-	{ .code = "DC", .rid = DOMAIN_RID_DOMAIN_MEMBERS },
-	{ .code = "DD", .rid = DOMAIN_RID_DCS },
-	{ .code = "CA", .rid = DOMAIN_RID_CERT_ADMINS },
-	{ .code = "SA", .rid = DOMAIN_RID_SCHEMA_ADMINS },
-	{ .code = "EA", .rid = DOMAIN_RID_ENTERPRISE_ADMINS },
-	{ .code = "PA", .rid = DOMAIN_RID_POLICY_ADMINS },
+	{ .code = "DA", .domain_rid = DOMAIN_RID_ADMINS },
+	{ .code = "DU", .domain_rid = DOMAIN_RID_USERS },
+	{ .code = "DG", .domain_rid = DOMAIN_RID_GUESTS },
+	{ .code = "DC", .domain_rid = DOMAIN_RID_DOMAIN_MEMBERS },
+	{ .code = "DD", .domain_rid = DOMAIN_RID_DCS },
+	{ .code = "CA", .domain_rid = DOMAIN_RID_CERT_ADMINS },
+	{ .code = "SA", .forest_rid = DOMAIN_RID_SCHEMA_ADMINS },
+	{ .code = "EA", .forest_rid = DOMAIN_RID_ENTERPRISE_ADMINS },
+	{ .code = "PA", .domain_rid = DOMAIN_RID_POLICY_ADMINS },
 
-	{ .code = "CN", .rid = DOMAIN_RID_CLONEABLE_CONTROLLERS },
+	{ .code = "CN", .domain_rid = DOMAIN_RID_CLONEABLE_CONTROLLERS },
 
-	{ .code = "AP", .rid = DOMAIN_RID_PROTECTED_USERS },
-	{ .code = "KA", .rid = DOMAIN_RID_KEY_ADMINS },
-	{ .code = "EK", .rid = DOMAIN_RID_ENTERPRISE_KEY_ADMINS },
+	{ .code = "AP", .domain_rid = DOMAIN_RID_PROTECTED_USERS },
+	{ .code = "KA", .domain_rid = DOMAIN_RID_KEY_ADMINS },
+	{ .code = "EK", .forest_rid = DOMAIN_RID_ENTERPRISE_KEY_ADMINS },
 
-	{ .code = "RS", .rid = DOMAIN_RID_RAS_SERVERS }
+	{ .code = "RS", .domain_rid = DOMAIN_RID_RAS_SERVERS }
 };
 
 /*
@@ -211,8 +215,20 @@ static struct dom_sid *sddl_decode_sid(TALLOC_CTX *mem_ctx, const char **sddlp,
 
 	(*sddlp) += 2;
 
-	if (sid_codes[i].sid == NULL) {
-		return dom_sid_add_rid(mem_ctx, state->domain_sid, sid_codes[i].rid);
+
+	if (sid_codes[i].machine_rid != 0) {
+		return dom_sid_add_rid(mem_ctx, state->machine_sid,
+				       sid_codes[i].machine_rid);
+	}
+
+	if (sid_codes[i].domain_rid != 0) {
+		return dom_sid_add_rid(mem_ctx, state->domain_sid,
+				       sid_codes[i].domain_rid);
+	}
+
+	if (sid_codes[i].forest_rid != 0) {
+		return dom_sid_add_rid(mem_ctx, state->forest_sid,
+				       sid_codes[i].forest_rid);
 	}
 
 	return dom_sid_parse_talloc(mem_ctx, sid_codes[i].sid);
@@ -462,7 +478,14 @@ struct security_descriptor *sddl_decode(TALLOC_CTX *mem_ctx, const char *sddl,
 					const struct dom_sid *domain_sid)
 {
 	struct sddl_transition_state state = {
+		/*
+		 * TODO: verify .machine_rid values really belong to
+		 * to the machine_sid on a member, once
+		 * we pass machine_sid from the caller...
+		 */
+		.machine_sid = domain_sid,
 		.domain_sid = domain_sid,
+		.forest_sid = domain_sid,
 	};
 	struct security_descriptor *sd;
 	sd = talloc_zero(mem_ctx, struct security_descriptor);
@@ -556,7 +579,9 @@ failed:
 static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			     struct sddl_transition_state *state)
 {
+	bool in_machine = dom_sid_in_domain(state->machine_sid, sid);
 	bool in_domain = dom_sid_in_domain(state->domain_sid, sid);
+	bool in_forest = dom_sid_in_domain(state->forest_sid, sid);
 	struct dom_sid_buf buf;
 	const char *sidstr = dom_sid_str_buf(sid, &buf);
 	uint32_t rid = 0;
@@ -583,7 +608,13 @@ static char *sddl_encode_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			continue;
 		}
 
-		if (in_domain && sid_codes[i].rid == rid) {
+		if (in_machine && sid_codes[i].machine_rid == rid) {
+			return talloc_strdup(mem_ctx, sid_codes[i].code);
+		}
+		if (in_domain && sid_codes[i].domain_rid == rid) {
+			return talloc_strdup(mem_ctx, sid_codes[i].code);
+		}
+		if (in_forest && sid_codes[i].forest_rid == rid) {
 			return talloc_strdup(mem_ctx, sid_codes[i].code);
 		}
 	}
@@ -668,7 +699,14 @@ char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace,
 		      const struct dom_sid *domain_sid)
 {
 	struct sddl_transition_state state = {
+		/*
+		 * TODO: verify .machine_rid values really belong to
+		 * to the machine_sid on a member, once
+		 * we pass machine_sid from the caller...
+		 */
+		.machine_sid = domain_sid,
 		.domain_sid = domain_sid,
+		.forest_sid = domain_sid,
 	};
 	return sddl_transition_encode_ace(mem_ctx, ace, &state);
 }
@@ -710,7 +748,14 @@ char *sddl_encode(TALLOC_CTX *mem_ctx, const struct security_descriptor *sd,
 		  const struct dom_sid *domain_sid)
 {
 	struct sddl_transition_state state = {
+		/*
+		 * TODO: verify .machine_rid values really belong to
+		 * to the machine_sid on a member, once
+		 * we pass machine_sid from the caller...
+		 */
+		.machine_sid = domain_sid,
 		.domain_sid = domain_sid,
+		.forest_sid = domain_sid,
 	};
 	char *sddl;
 	TALLOC_CTX *tmp_ctx;
