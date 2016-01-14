@@ -27,6 +27,7 @@
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "auth/session.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "librpc/gen_ndr/auth.h"
 
 struct repsTo {
 	uint32_t count;

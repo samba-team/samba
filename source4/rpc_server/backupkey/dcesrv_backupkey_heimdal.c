@@ -39,6 +39,7 @@
 #include <der.h>
 #include "../lib/tsocket/tsocket.h"
 #include "../libcli/security/security.h"
+#include "../librpc/gen_ndr/auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/crypto/arcfour.h"
 #include "libds/common/roles.h"

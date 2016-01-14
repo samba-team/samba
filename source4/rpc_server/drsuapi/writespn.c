@@ -28,6 +28,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "libcli/security/security.h"
 #include "libcli/security/session.h"
+#include "librpc/gen_ndr/auth.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "auth/session.h"
 
