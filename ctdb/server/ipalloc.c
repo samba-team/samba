@@ -31,7 +31,7 @@
 /* The calculation part of the IP allocation algorithm. */
 bool ipalloc(struct ipalloc_state *ipalloc_state)
 {
-	bool ret;
+	bool ret = false;
 
 	switch (ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
