@@ -898,11 +898,57 @@ ctdb_drop_all_ips_event(struct tevent_context *ev, struct tevent_timer *te,
 	ctdb_release_all_ips(ctdb);
 }
 
+static char cluster_mutex_helper[PATH_MAX+1] = "";
+
+static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
+				      const char *lockfile, char ***argv)
+{
+	int nargs;
+	char **args = NULL;
+
+	/* Anticipate the size of the array.  Given that lock file is
+	 * really now some arbitrary arguments to a configuration
+	 * helper, it really needs to be parsed... but not yet. */
+	args = talloc_array(mem_ctx, char *, 3);
+	if (args == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " out of memory\n"));
+		return false;
+	}
+
+	nargs = 0;
+
+	if (!ctdb_set_helper("cluster mutex helper",
+			     cluster_mutex_helper,
+			     sizeof(cluster_mutex_helper),
+			     "CTDB_CLUSTER_MUTEX_HELPER",
+			     CTDB_HELPER_BINDIR, "ctdb_mutex_fcntl_helper")) {
+		DEBUG(DEBUG_ERR,("ctdb exiting with error: %s\n",
+				 __location__
+				 " Unable to set cluster mutex helper\n"));
+		exit(1);
+	}
+	args[nargs++] = cluster_mutex_helper;
+
+	args[nargs] = talloc_strdup(args, lockfile);
+	if (args[nargs] == NULL) {
+		talloc_free(args);
+		DEBUG(DEBUG_ERR,(__location__ " out of memory\n"));
+		return false;
+	}
+	nargs++;
+
+	/* Make sure last argument is NULL */
+	args[nargs] = NULL;
+
+	*argv = args;
+	return true;
+}
+
 static struct ctdb_cluster_mutex_handle *
 ctdb_cluster_mutex(struct ctdb_context *ctdb, int timeout)
 {
 	struct ctdb_cluster_mutex_handle *h;
-	pid_t parent = getpid();
+	char **args;
 	int ret;
 
 	h = talloc(ctdb, struct ctdb_cluster_mutex_handle);
@@ -915,15 +961,19 @@ ctdb_cluster_mutex(struct ctdb_context *ctdb, int timeout)
 	h->fd[0] = -1;
 	h->fd[1] = -1;
 
-	/* For the rest of what needs to be done, we need to do this in
-	   a child process since
-	   1, the call to ctdb_recovery_lock() can block if the cluster
-	      filesystem is in the process of recovery.
-	*/
 	ret = pipe(h->fd);
 	if (ret != 0) {
 		talloc_free(h);
 		DEBUG(DEBUG_ERR, (__location__ " Failed to open pipe\n"));
+		return NULL;
+	}
+	set_close_on_exec(h->fd[0]);
+
+	/* Create arguments for lock helper */
+	if (!cluster_mutex_helper_args(h, ctdb->recovery_lock_file, &args)) {
+		close(h->fd[0]);
+		close(h->fd[1]);
+		talloc_free(h);
 		return NULL;
 	}
 
@@ -936,25 +986,19 @@ ctdb_cluster_mutex(struct ctdb_context *ctdb, int timeout)
 	}
 
 	if (h->child == 0) {
-		char cc = '1';
-		close(h->fd[0]);
+		/* Make stdout point to the pipe */
+		close(STDOUT_FILENO);
+		dup2(h->fd[1], STDOUT_FILENO);
+		close(h->fd[1]);
 
-		prctl_set_comment("ctdb_cluster_mutex");
-		debug_extra = talloc_asprintf(NULL, "cluster_mutex:");
-		/* Daemon should not be able to get the recover lock,
-		 * as it should be held by the recovery master */
-		if (ctdb_recovery_lock(ctdb)) {
-			DEBUG(DEBUG_ERR,
-			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
-			       ctdb->recovery_lock_file));
-			ctdb_recovery_unlock(ctdb);
-			cc = '0';
-		}
+		execv(args[0], args);
 
-		sys_write(h->fd[1], &cc, 1);
-		ctdb_wait_for_process_to_exit(parent);
-		_exit(0);
+		/* Only happens on error */
+		DEBUG(DEBUG_ERR, (__location__ "execv() failed\n"));
+		_exit(1);
 	}
+
+	/* Parent */
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d\n", h->fd[0]));
 	set_close_on_exec(h->fd[0]);

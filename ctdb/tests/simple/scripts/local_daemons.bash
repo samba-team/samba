@@ -11,9 +11,11 @@ done
 if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
 	# ctdbd_wrapper is in config/ directory
 	PATH="${ctdb_dir}/bin:${ctdb_dir}/config:${PATH}"
-	export CTDB_LOCK_HELPER="${ctdb_dir}/bin/ctdb_lock_helper"
-	export CTDB_EVENT_HELPER="${ctdb_dir}/bin/ctdb_event_helper"
-	export CTDB_RECOVERY_HELPER="${ctdb_dir}/bin/ctdb_recovery_helper"
+	hdir="${ctdb_dir}/bin"
+	export CTDB_LOCK_HELPER="${hdir}/ctdb_lock_helper"
+	export CTDB_EVENT_HELPER="${hdir}/ctdb_event_helper"
+	export CTDB_RECOVERY_HELPER="${hdir}/ctdb_recovery_helper"
+	export CTDB_CLUSTER_MUTEX_HELPER="${hdir}/ctdb_mutex_fcntl_helper"
 fi
 
 export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
