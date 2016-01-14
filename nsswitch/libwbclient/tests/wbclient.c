@@ -475,27 +475,30 @@ static bool test_wbc_lookup_rids(struct torture_context *tctx)
 {
 	struct wbcDomainSid builtin;
 	uint32_t rids[2] = { 544, 545 };
-	const char *domain_name, **names;
+	const char *domain_name = NULL;
+	const char **names = NULL;
 	enum wbcSidType *types;
-	wbcErr ret;
+	wbcErr ret = false;
 
 	wbcStringToSid("S-1-5-32", &builtin);
 
 	ret = wbcLookupRids(&builtin, 2, rids, &domain_name, &names,
 			    &types);
-	torture_assert_wbc_ok(tctx, ret, "%s", "wbcLookupRids for 544 and 545 failed");
+	torture_assert_wbc_ok_goto_fail(
+		tctx, ret, "%s", "wbcLookupRids for 544 and 545 failed");
 
 	torture_assert_str_equal(
 		tctx, names[0], "Administrators",
 		"S-1-5-32-544 not mapped to 'Administrators'");
-	torture_assert_str_equal(
+	torture_assert_str_equal_goto_fail(
 		tctx, names[1], "Users", "S-1-5-32-545 not mapped to 'Users'");
 
+	ret = true;
+fail:
 	wbcFreeMemory(discard_const_p(char ,domain_name));
 	wbcFreeMemory(names);
 	wbcFreeMemory(types);
-
-	return true;
+	return ret;
 }
 
 static bool test_wbc_get_sidaliases(struct torture_context *tctx)
