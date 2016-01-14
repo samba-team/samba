@@ -359,13 +359,9 @@ bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
     header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
     )
 
-bld.SAMBA_LIBRARY('ndr-krb5pac',
+bld.SAMBA_SUBSYSTEM('ndr-krb5pac',
     source='ndr/ndr_krb5pac.c gen_ndr/ndr_krb5pac.c',
     public_deps='ndr ndr-standard NDR_SECURITY',
-    public_headers='gen_ndr/krb5pac.h gen_ndr/ndr_krb5pac.h',
-    header_path='gen_ndr',
-    pc_files='ndr_krb5pac.pc',
-    vnum='0.0.1'
     )
 
 bld.SAMBA_LIBRARY('ndr-standard',
