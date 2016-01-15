@@ -22,18 +22,6 @@ loadconfig
 	exit 0
 }
 
-mark_up ()
-{
-    up_interfaces_found=true
-    ctdb setifacelink $1 up >/dev/null 2>&1
-}
-
-mark_down ()
-{
-    fail=true
-    ctdb setifacelink $1 down >/dev/null 2>&1
-}
-
 # This sets $all_interfaces as a side-effect.
 get_all_interfaces ()
 {
@@ -61,13 +49,14 @@ monitor_interfaces()
 
 	# Note that this loop must not exit early.  It must process
 	# all interfaces so that the correct state for each interface
-	# is set in CTDB using mark_up/mark_down.  If there is a
-	# problem with an interface then set fail=true and continue.
+	# is set in CTDB using setifacelink.
 	for _iface in $all_interfaces ; do
 		if interface_monitor "$_iface" ; then
-			mark_up "$_iface"
+			up_interfaces_found=true
+			ctdb setifacelink "$_iface" up >/dev/null 2>&1
 		else
-			mark_down "$_iface"
+			fail=true
+			ctdb setifacelink "$_iface" down >/dev/null 2>&1
 		fi
 	done
 
