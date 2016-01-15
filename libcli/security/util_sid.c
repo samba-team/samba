@@ -55,6 +55,14 @@ const struct dom_sid global_sid_Authenticated_Users =	/* All authenticated rids 
 const struct dom_sid global_sid_Restriced =			/* Restriced Code */
 { 1, 1, {0,0,0,0,0,5}, {12,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #endif
+
+const struct dom_sid global_sid_Asserted_Identity =       /* Asserted Identity */
+{ 1, 0, {0,0,0,0,0,18}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const struct dom_sid global_sid_Asserted_Identity_Service =	/* Asserted Identity Service */
+{ 1, 1, {0,0,0,0,0,18}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+const struct dom_sid global_sid_Asserted_Identity_Authentication_Authority =	/* Asserted Identity Authentication Authority */
+{ 1, 1, {0,0,0,0,0,18}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+
 const struct dom_sid global_sid_Network =			/* Network rids */
 { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
