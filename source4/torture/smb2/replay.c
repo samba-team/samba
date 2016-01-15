@@ -822,9 +822,12 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 	bool ret = true;
 	uint32_t share_capabilities;
 	bool share_is_ca;
+	bool share_is_so;
 	const char *fname = BASEDIR "\\replay5.dat";
 	struct smb2_transport *transport = tree->session->transport;
 	struct smbcli_options options = tree->session->transport->options;
+	uint8_t expect_oplock = smb2_util_oplock_level("b");
+	NTSTATUS expect_status = NT_STATUS_DUPLICATE_OBJECTID;
 
 	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
 		torture_skip(tctx, "SMB 3.X Dialect family required for "
@@ -832,9 +835,16 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 	}
 
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+
 	share_is_ca = share_capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
 	if (!share_is_ca) {
 		torture_skip(tctx, "Persistent File Handles not supported");
+	}
+
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+	if (share_is_so) {
+		expect_oplock = smb2_util_oplock_level("s");
+		expect_status = NT_STATUS_FILE_NOT_AVAILABLE;
 	}
 
 	ZERO_STRUCT(break_info);
@@ -864,7 +874,7 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.oplock_level, expect_oplock);
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.durable_open_v2, true);
 	CHECK_VAL(io.out.persistent_open, true);
@@ -882,7 +892,7 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	/* a re-open of a persistent handle causes an error */
 	status = smb2_create(tree, mem_ctx, &io);
-	CHECK_STATUS(status, NT_STATUS_DUPLICATE_OBJECTID);
+	CHECK_STATUS(status, expect_status);
 
 	/* SMB2_FLAGS_REPLAY_OPERATION must be set to open the Persistent Handle */
 	smb2cli_session_start_replay(tree->session->smbXcli);
@@ -892,7 +902,7 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
 	CHECK_VAL(io.out.durable_open, false);
 	CHECK_VAL(io.out.persistent_open, true);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.oplock_level, expect_oplock);
 	_h = io.out.file.handle;
 	h = &_h;
 
