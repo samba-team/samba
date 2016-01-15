@@ -44,7 +44,7 @@ monitor_interfaces()
 {
 	get_all_interfaces
 
-	fail=false
+	down_interfaces_found=false
 	up_interfaces_found=false
 
 	# Note that this loop must not exit early.  It must process
@@ -55,12 +55,12 @@ monitor_interfaces()
 			up_interfaces_found=true
 			ctdb setifacelink "$_iface" up >/dev/null 2>&1
 		else
-			fail=true
+			down_interfaces_found=true
 			ctdb setifacelink "$_iface" down >/dev/null 2>&1
 		fi
 	done
 
-	if ! $fail ; then
+	if ! $down_interfaces_found ; then
 		return 0
 	fi
 
