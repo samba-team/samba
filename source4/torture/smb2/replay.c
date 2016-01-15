@@ -302,11 +302,16 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 	bool ret = true;
 	const char *fname = BASEDIR "\\replay2.dat";
 	struct smb2_transport *transport = tree->session->transport;
+	uint32_t share_capabilities;
+	bool share_is_so;
 
 	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
 		torture_skip(tctx, "SMB 3.X Dialect family required for "
 				   "replay tests\n");
 	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
 	ZERO_STRUCT(break_info);
 	break_info.tctx = tctx;
@@ -336,10 +341,16 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, true);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
 
 	/*
 	 * Replay Durable V2 Create on single channel
@@ -392,10 +403,13 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 	io.in.durable_open_v2 = false;
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
-	CHECK_VAL(break_info.count, 1);
-	CHECK_HANDLE(&break_info.handle, &ref1.out.file.handle);
-	CHECK_VAL(break_info.level, smb2_util_oplock_level("s"));
-	ZERO_STRUCT(break_info);
+
+	if (!share_is_so) {
+		CHECK_VAL(break_info.count, 1);
+		CHECK_HANDLE(&break_info.handle, &ref1.out.file.handle);
+		CHECK_VAL(break_info.level, smb2_util_oplock_level("s"));
+		ZERO_STRUCT(break_info);
+	}
 
 	smb2_util_close(tree, *h);
 	h = NULL;
