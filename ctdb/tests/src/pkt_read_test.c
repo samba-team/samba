@@ -39,7 +39,7 @@ static void writer(int fd)
 	for (i=0; i<1000; i++) {
 		for (j=0; j<4; j++) {
 			buflen = pkt_size[j];
-			*(uint32_t *)buf = buflen;
+			memcpy(buf, &buflen, sizeof(buflen));
 
 			ret = write(fd, buf, buflen);
 			if (ret < 0) {

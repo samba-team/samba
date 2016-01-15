@@ -157,7 +157,7 @@ static void writer(int fd)
 
 	for (i=0; i<4; i++) {
 		buflen = pkt_size[i];
-		*(uint32_t *)buf = buflen;
+		memcpy(buf, &buflen, sizeof(buflen));
 
 		req = writer_send(mem_ctx, ev, fd, buf, buflen);
 		assert(req != NULL);
