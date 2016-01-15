@@ -485,11 +485,16 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 	struct smb2_transport *transport2 = NULL;
 	struct smb2_session *session1_1 = tree1->session;
 	struct smb2_session *session1_2 = NULL;
+	uint32_t share_capabilities;
+	bool share_is_so;
 
 	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
 		torture_skip(tctx, "SMB 3.X Dialect family required for "
 				   "Replay tests\n");
 	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
 	ZERO_STRUCT(break_info);
 	break_info.tctx = tctx;
@@ -522,10 +527,16 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, true);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
 	CHECK_VAL(break_info.count, 0);
 
 	status = smb2_connect(tctx,
@@ -571,10 +582,16 @@ static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, true);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
 	CHECK_VAL(break_info.count, 0);
 
 	tree1->session = session1_1;
