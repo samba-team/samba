@@ -185,6 +185,11 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->sidcount; i++) {
+
+		if (sid_check_is_in_asserted_identity(info3->sids[i].sid)) {
+			continue;
+		}
+
 		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 				      &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
