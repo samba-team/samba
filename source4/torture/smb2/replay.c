@@ -640,11 +640,16 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	struct smb2_session *session1_1 = tree1->session;
 	struct smb2_session *session1_2 = NULL;
 	uint16_t curr_cs;
+	uint32_t share_capabilities;
+	bool share_is_so;
 
 	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
 		torture_skip(tctx, "SMB 3.X Dialect family required for "
 				   "Replay tests\n");
 	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
 
 	ZERO_STRUCT(break_info);
 	break_info.tctx = tctx;
@@ -677,10 +682,16 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	_h1 = io.out.file.handle;
 	h1 = &_h1;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
 	CHECK_VAL(io.out.durable_open, false);
-	CHECK_VAL(io.out.durable_open_v2, true);
-	CHECK_VAL(io.out.timeout, io.in.timeout);
 	CHECK_VAL(break_info.count, 0);
 
 	status = smb2_util_write(tree1, *h1, buf, 0, ARRAY_SIZE(buf));
@@ -821,7 +832,11 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	smb2_util_close(tree1, *h1);
 	h1 = NULL;
 
-	CHECK_VAL(break_info.count, 0);
+	if (share_is_so) {
+		CHECK_VAL(break_info.count, 1);
+	} else {
+		CHECK_VAL(break_info.count, 0);
+	}
 done:
 	talloc_free(tree2);
 	tree1->session = session1_1;
