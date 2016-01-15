@@ -1174,6 +1174,11 @@ bool sid_check_is_in_unix_groups(const struct dom_sid *sid);
 const char *unix_groups_domain_name(void);
 bool lookup_unix_group_name(const char *name, struct dom_sid *sid);
 
+/* The following definitions come from lib/util_specialsids.c  */
+bool sid_check_is_asserted_identity(const struct dom_sid *sid);
+bool sid_check_is_in_asserted_identity(const struct dom_sid *sid);
+const char *asserted_identity_domain_name(void);
+
 /* The following definitions come from lib/filename_util.c */
 
 NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_fname,

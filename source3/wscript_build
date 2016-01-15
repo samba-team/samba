@@ -253,6 +253,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/recvfile.c
                    lib/time.c
                    lib/util_sid.c
+                   lib/util_specialsids.c
                    lib/util_file.c
                    lib/util.c
                    lib/util_path.c
