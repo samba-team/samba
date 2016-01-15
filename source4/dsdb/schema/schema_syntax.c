@@ -2395,7 +2395,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "octetStringMatch",
 		.comment                = "Octet String",
-		.userParameters         = true
+		.userParameters         = true,
+		.ldb_syntax             = LDB_SYNTAX_SAMBA_OCTET_STRING
 	},{
 		.name			= "String(Sid)",
 		.ldap_oid		= LDB_SYNTAX_OCTET_STRING,
@@ -2449,7 +2450,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
 		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
-		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_OCTET_STRING,
 	},{
 		.name			= "String(Teletex)",
 		.ldap_oid		= "1.2.840.113556.1.4.905",
@@ -2472,7 +2473,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
 		.equality               = "caseExactIA5Match",
 		.comment                = "Printable String",
-		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_OCTET_STRING,
 	},{
 		.name			= "String(UTC-Time)",
 		.ldap_oid		= "1.3.6.1.4.1.1466.115.121.1.53",
@@ -2510,7 +2511,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		 * as Directory String (LDB_SYNTAX_DIRECTORY_STRING), but case sensitive.
 		 * But according to ms docs binary compare should do the job:
 		 * http://msdn.microsoft.com/en-us/library/cc223200(v=PROT.10).aspx */
-		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
+		.ldb_syntax		= LDB_SYNTAX_SAMBA_OCTET_STRING,
 	},{
 		.name			= "String(Unicode)",
 		.ldap_oid		= LDB_SYNTAX_DIRECTORY_STRING,
