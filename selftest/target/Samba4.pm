@@ -1883,7 +1883,7 @@ sub provision_ad_dc($$)
 				   "domain controller",
 				   "addc",
 				   "ADDOMAIN",
-				   "addc.samba.example.com",
+				   "addom.samba.example.com",
 				   "2008",
 				   "locDCpass1",
 				   undef,
