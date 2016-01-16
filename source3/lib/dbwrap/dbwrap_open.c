@@ -97,6 +97,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	if (tdb_flags & TDB_CLEAR_IF_FIRST) {
 		const char *base;
 		bool try_mutex = false;
+		bool require_mutex = false;
 
 		base = strrchr_m(name, '/');
 		if (base != NULL) {
@@ -109,6 +110,15 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		try_mutex = lp_parm_bool(-1, "dbwrap_tdb_mutexes", base, try_mutex);
 
 		if (try_mutex && tdb_runtime_check_for_robust_mutexes()) {
+			tdb_flags |= TDB_MUTEX_LOCKING;
+		}
+
+		require_mutex = lp_parm_bool(-1, "dbwrap_tdb_require_mutexes",
+					   "*", require_mutex);
+		require_mutex = lp_parm_bool(-1, "dbwrap_tdb_require_mutexes",
+					   base, require_mutex);
+
+		if (require_mutex) {
 			tdb_flags |= TDB_MUTEX_LOCKING;
 		}
 	}
