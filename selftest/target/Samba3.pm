@@ -308,10 +308,14 @@ sub setup_nt4_member($$$)
 
 	print "PROVISIONING MEMBER...";
 
+	my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
+	$require_mutexes = "" if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} eq "1");
+
 	my $member_options = "
 	security = domain
 	server signing = on
 	dbwrap_tdb_mutexes:* = yes
+	${require_mutexes}
 ";
 	my $ret = $self->provision($prefix,
 				   "LOCALNT4MEMBER3",

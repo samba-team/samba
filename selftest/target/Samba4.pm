@@ -1794,11 +1794,15 @@ sub provision_ad_dc($$)
 	my $lockdir="$prefix_abs/lockdir";
         my $conffile="$prefix_abs/etc/smb.conf";
 
+	my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
+	$require_mutexes = "" if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} eq "1");
+
 	my $extra_smbconf_options = "
         server services = -smb +s3fs
         xattr_tdb:file = $prefix_abs/statedir/xattr.tdb
 
 	dbwrap_tdb_mutexes:* = yes
+	${require_mutexes}
 
 	kernel oplocks = no
 	kernel change notify = no
