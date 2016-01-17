@@ -415,37 +415,35 @@ class TestDNSUpdates(DNSTest):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXRRSET)
 
-    def test_update_add_txt_record(self):
-        "test adding records works"
+    def make_txt_update(self, prefix, txt_array):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
         updates = []
 
         name = self.get_dns_domain()
-
         u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
         updates.append(u)
         self.finish_name_packet(p, updates)
 
         updates = []
         r = dns.res_rec()
-        r.name = "textrec.%s" % self.get_dns_domain()
+        r.name = "%s.%s" % (prefix, self.get_dns_domain())
         r.rr_type = dns.DNS_QTYPE_TXT
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"'])
+        rdata = make_txt_record(txt_array)
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
 
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        return p
 
+    def check_query_txt(self, prefix, txt_array):
+        name = "%s.%s" % (prefix, self.get_dns_domain())
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "textrec.%s" % self.get_dns_domain()
         q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
         questions.append(q)
 
@@ -453,49 +451,83 @@ class TestDNSUpdates(DNSTest):
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt.str[0], '"This is a test"')
+        self.assertEquals(response.answers[0].rdata.txt.str, txt_array)
+
+    def test_update_add_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'textrec', ['"This is a test"']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+
+    def test_update_add_null_padded_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'pad1textrec', ['"This is a test"', '', '']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+
+        prefix, txt = 'pad2textrec', ['"This is a test"', '', '', 'more text']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+
+        prefix, txt = 'pad3textrec', ['', '', '"This is a test"']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+
+    # Test is incomplete due to strlen against txt records
+    def test_update_add_null_char_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'nulltextrec', ['NULL\x00BYTE']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, ['NULL'])
+
+        prefix, txt = 'nulltextrec2', ['NULL\x00BYTE', 'NULL\x00BYTE']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, ['NULL', 'NULL'])
+
+    def test_update_add_hex_char_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'hextextrec', ['HIGH\xFFBYTE']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+
+    def test_update_add_slash_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'slashtextrec', ['Th\\=is=is a test']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
 
     def test_update_add_two_txt_records(self):
         "test adding two txt records works"
-        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-        updates = []
-
-        name = self.get_dns_domain()
-
-        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-        updates.append(u)
-        self.finish_name_packet(p, updates)
-
-        updates = []
-        r = dns.res_rec()
-        r.name = "textrec2.%s" % self.get_dns_domain()
-        r.rr_type = dns.DNS_QTYPE_TXT
-        r.rr_class = dns.DNS_QCLASS_IN
-        r.ttl = 900
-        r.length = 0xffff
-        rdata = make_txt_record(['"This is a test"',
-                                 '"and this is a test, too"'])
-        r.rdata = rdata
-        updates.append(r)
-        p.nscount = len(updates)
-        p.nsrecs = updates
-
+        prefix, txt = 'textrec2', ['"This is a test"',
+                                   '"and this is a test, too"']
+        p = self.make_txt_update(prefix, txt)
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
 
-        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
-        questions = []
-
-        name = "textrec2.%s" % self.get_dns_domain()
-        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
-        questions.append(q)
-
-        self.finish_name_packet(p, questions)
+    def test_update_add_empty_txt_records(self):
+        "test adding two txt records works"
+        prefix, txt = 'emptytextrec', []
+        p = self.make_txt_update(prefix, txt)
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt.str[0], '"This is a test"')
-        self.assertEquals(response.answers[0].rdata.txt.str[1], '"and this is a test, too"')
+        self.check_query_txt(prefix, txt)
 
     def test_delete_record(self):
         "Test if deleting records works"
