@@ -264,6 +264,7 @@ int sys_setxattr (const char *path, const char *name, const void *value, size_t 
 int sys_fsetxattr (int filedes, const char *name, const void *value, size_t size, int flags);
 uint32_t unix_dev_major(SMB_DEV_T dev);
 uint32_t unix_dev_minor(SMB_DEV_T dev);
+char *sys_realpath(const char *path);
 #if 0
 int sys_get_number_of_cores(void);
 #endif
