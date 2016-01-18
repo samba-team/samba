@@ -237,9 +237,16 @@ sub PythonStruct($$$$$$)
 		$self->pidl("static PyGetSetDef ".$getsetters."[] = {");
 		$self->indent;
 		foreach my $e (@{$d->{ELEMENTS}}) {
-			$self->pidl("{ discard_const_p(char, \"$e->{NAME}\"), py_$name\_get_$e->{NAME}, py_$name\_set_$e->{NAME} },");
+			$self->pidl("{");
+			$self->indent;
+			$self->pidl(".name = discard_const_p(char, \"$e->{NAME}\"),");
+			$self->pidl(".get = py_$name\_get_$e->{NAME},");
+			$self->pidl(".set = py_$name\_set_$e->{NAME},");
+			$self->pidl(".doc = discard_const_p(char, \"PIDL-generated element $e->{NAME}\")");
+			$self->deindent;
+			$self->pidl("},");
 		}
-		$self->pidl("{ NULL }");
+		$self->pidl("{ .name = NULL }");
 		$self->deindent;
 		$self->pidl("};");
 		$self->pidl("");
