@@ -329,6 +329,20 @@ unsigned long lp_ulong(const char *s)
 }
 
 /**
+ * convenience routine to return unsigned long long parameters.
+ */
+unsigned long long lp_ulonglong(const char *s)
+{
+
+	if (!s || !*s) {
+		DEBUG(0, ("lp_ulonglong(%s): is called with NULL!\n", s));
+		return -1;
+	}
+
+	return strtoull(s, NULL, 0);
+}
+
+/**
  * convenience routine to return unsigned long parameters.
  */
 static long lp_long(const char *s)
@@ -469,6 +483,25 @@ unsigned long lpcfg_parm_ulong(struct loadparm_context *lp_ctx,
 
 	if (value)
 		return lp_ulong(value);
+
+	return default_v;
+}
+
+/**
+ * Return parametric option from a given service.
+ * Type is a part of option before ':'
+ * Parametric option has following syntax: 'Type: option = value'
+ */
+unsigned long long lpcfg_parm_ulonglong(struct loadparm_context *lp_ctx,
+					struct loadparm_service *service,
+					const char *type, const char *option,
+					unsigned long long default_v)
+{
+	const char *value = lpcfg_get_parametric(lp_ctx, service, type, option);
+
+	if (value) {
+		return lp_ulonglong(value);
+	}
 
 	return default_v;
 }

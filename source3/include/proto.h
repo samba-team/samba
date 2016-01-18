@@ -966,6 +966,9 @@ const char *lp_parm_const_string_service(struct loadparm_service *service, const
 const char **lp_parm_string_list(int snum, const char *type, const char *option, const char **def);
 int lp_parm_int(int snum, const char *type, const char *option, int def);
 unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsigned long def);
+unsigned long long lp_parm_ulonglong(int snum, const char *type,
+				     const char *option,
+				     unsigned long long def);
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def);
 struct enum_list;
 int lp_parm_enum(int snum, const char *type, const char *option,

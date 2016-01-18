@@ -1245,6 +1245,22 @@ unsigned long lp_parm_ulong(int snum, const char *type, const char *option, unsi
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 
+unsigned long long lp_parm_ulonglong(int snum, const char *type,
+				     const char *option, unsigned long long def)
+{
+	struct parmlist_entry *data = get_parametrics(snum, type, option);
+
+	if (data && data->value && *data->value) {
+		return lp_ulonglong(data->value);
+	}
+
+	return def;
+}
+
+/* Return parametric option from a given service. Type is a part of option
+ * before ':' */
+/* Parametric option has following syntax: 'Type: option = value' */
+
 bool lp_parm_bool(int snum, const char *type, const char *option, bool def)
 {
 	struct parmlist_entry *data = get_parametrics(snum, type, option);
