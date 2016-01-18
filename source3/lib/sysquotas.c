@@ -40,35 +40,84 @@
 
 #endif /* NO_QUOTACTL_USED */
 
-#ifdef HAVE_MNTENT
+#if defined(HAVE_MNTENT) && defined(HAVE_REALPATH)
 static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char **fs)
 {
 	int ret = -1;
 	SMB_STRUCT_STAT S;
 	FILE *fp;
-	struct mntent *mnt;
+	struct mntent *mnt = NULL;
 	SMB_DEV_T devno;
+	char *stat_mntpath = NULL;
+	char *p;
 
 	/* find the block device file */
-
-	if (!path||!mntpath||!bdev||!fs)
-		smb_panic("sys_path_to_bdev: called with NULL pointer");
-
 	(*mntpath) = NULL;
 	(*bdev) = NULL;
 	(*fs) = NULL;
-	
-	if ( sys_stat(path, &S, false) == -1 )
-		return (-1);
+
+	if (sys_stat(path, &S, false) != 0) {
+		return -1;
+	}
 
 	devno = S.st_ex_dev ;
 
+	stat_mntpath = sys_realpath(path);
+	if (stat_mntpath == NULL) {
+		DBG_WARNING("realpath(%s) failed - %s\n", path,
+			    strerror(errno));
+		goto out;
+	}
+
+	if (sys_stat(stat_mntpath, &S, false) != 0) {
+		DBG_WARNING("cannot stat real path %s - %s\n", stat_mntpath,
+			    strerror(errno));
+		goto out;
+	}
+
+	if (S.st_ex_dev != devno) {
+		DBG_WARNING("device on real path has changed\n");
+		goto out;
+	}
+
+	while (true) {
+		p = strrchr(stat_mntpath, '/');
+		if (p == NULL) {
+			DBG_ERR("realpath for %s does not begin with a '/'\n",
+				path);
+			goto out;
+		}
+
+		if (p == stat_mntpath) {
+			++p;
+		}
+
+		*p = 0;
+		if (sys_stat(stat_mntpath, &S, false) != 0) {
+			DBG_WARNING("cannot stat real path component %s - %s\n",
+				    stat_mntpath, strerror(errno));
+			goto out;
+		}
+		if (S.st_ex_dev != devno) {
+			*p = '/';
+			break;
+		}
+
+		if (p <= stat_mntpath + 1) {
+			break;
+		}
+	}
+
 	fp = setmntent(MOUNTED,"r");
 	if (fp == NULL) {
-		return -1;
+		goto out;
 	}
   
 	while ((mnt = getmntent(fp))) {
+		if (!strequal(mnt->mnt_dir, stat_mntpath)) {
+			continue;
+		}
+
 		if ( sys_stat(mnt->mnt_dir, &S, false) == -1 )
 			continue ;
 
@@ -91,6 +140,8 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 
 	endmntent(fp) ;
 
+out:
+	SAFE_FREE(stat_mntpath);
 	return ret;
 }
 /* #endif HAVE_MNTENT */
