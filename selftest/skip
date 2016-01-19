@@ -94,6 +94,7 @@
 ^samba4.smb2.dir
 ^samba4.smb2.session
 ^samba4.smb2.compound
+^samba4.smb2.multichannel
 ^samba4.smb2.oplock.levelii501		# No test yet
 # SMB2 in s4 does not seem to support rename correctly
 ^samba4.smb2.rename.*\(ad_dc_ntvfs\)$
