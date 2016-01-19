@@ -27,6 +27,8 @@
 #include "torture/smb2/proto.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/ndr_ioctl.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 #define CHECK_STATUS(status, correct) do { \
 	if (!NT_STATUS_EQUAL(status, correct)) { \
@@ -36,19 +38,67 @@
 		return false; \
 	} } while (0)
 
-static bool test_session_bind(struct torture_context *tctx,
-			      struct smb2_tree *tree)
+static bool test_ioctl_network_interface_info(struct torture_context *tctx,
+					      struct smb2_tree *tree,
+					      struct fsctl_net_iface_info *info)
 {
-	/* TODO */
+	union smb_ioctl ioctl;
+	struct smb2_handle fh;
+	uint32_t caps;
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx,
+			    "server doesn't support SMB2_CAP_MULTI_CHANNEL\n");
+	}
+
+	ZERO_STRUCT(ioctl);
+
+	ioctl.smb2.level = RAW_IOCTL_SMB2;
+
+	fh.data[0] = UINT64_MAX;
+	fh.data[1] = UINT64_MAX;
+
+	ioctl.smb2.in.file.handle = fh;
+	ioctl.smb2.in.function = FSCTL_QUERY_NETWORK_INTERFACE_INFO;
+	/* Windows client sets this to 64KiB */
+	ioctl.smb2.in.max_output_response = 0x10000;
+	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
+
+	torture_assert_ntstatus_ok(tctx,
+		smb2_ioctl(tree, tctx, &ioctl.smb2),
+		"FSCTL_QUERY_NETWORK_INTERFACE_INFO failed");
+
+	torture_assert(tctx,
+		(ioctl.smb2.out.out.length != 0),
+		"no interface info returned???");
+
+	torture_assert_ndr_success(tctx,
+		ndr_pull_struct_blob(&ioctl.smb2.out.out, tctx, info,
+			(ndr_pull_flags_fn_t)ndr_pull_fsctl_net_iface_info),
+		"failed to ndr pull");
+
+	if (DEBUGLVL(1)) {
+		NDR_PRINT_DEBUG(fsctl_net_iface_info, info);
+	}
 
 	return true;
+}
+
+static bool test_multichannel_interface_info(struct torture_context *tctx,
+					     struct smb2_tree *tree)
+{
+	struct fsctl_net_iface_info info;
+
+	return test_ioctl_network_interface_info(tctx, tree, &info);
 }
 
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
 
-	torture_suite_add_1smb2_test(suite, "session-bind", test_session_bind);
+	torture_suite_add_1smb2_test(suite, "interface_info",
+				     test_multichannel_interface_info);
 
 	suite->description = talloc_strdup(suite, "SMB2 Multichannel tests");
 
