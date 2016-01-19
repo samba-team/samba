@@ -280,6 +280,8 @@ struct ctdb_daemon_data {
 	}
 
 
+struct ctdb_cluster_mutex_handle;
+
 enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
 #define NUM_DB_PRIORITIES 3
@@ -309,7 +311,7 @@ struct ctdb_context {
 	uint64_t max_persistent_check_errors;
 	const char *transport;
 	char *recovery_lock_file;
-	int recovery_lock_fd;
+	struct ctdb_cluster_mutex_handle *recovery_lock_handle;
 	uint32_t pnn; /* our own pnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;

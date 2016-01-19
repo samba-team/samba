@@ -1137,60 +1137,73 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 
 bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
 {
-	return ctdb->recovery_lock_fd != -1;
+	return (ctdb->recovery_lock_handle != NULL);
 }
 
-/*
-  try and get the recovery lock in shared storage - should only work
-  on the recovery master recovery daemon. Anywhere else is a bug
- */
+struct hold_reclock_state {
+	bool done;
+	char status;
+};
+
+static void hold_reclock_handler(struct ctdb_context *ctdb,
+				 char status,
+				 double latency,
+				 struct ctdb_cluster_mutex_handle *h,
+				 void *private_data)
+{
+	struct hold_reclock_state *s =
+		(struct hold_reclock_state *) private_data;
+
+	switch (status) {
+	case '0':
+		ctdb->recovery_lock_handle = h;
+		break;
+
+	case '1':
+		DEBUG(DEBUG_ERR,
+		      ("Unable to take recovery lock - contention\n"));
+		talloc_free(h);
+		break;
+
+	default:
+		DEBUG(DEBUG_ERR, ("ERROR: when taking recovery lock\n"));
+		talloc_free(h);
+	}
+
+	s->done = true;
+	s->status = status;
+}
+
 bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 {
-	struct flock lock;
+	struct ctdb_cluster_mutex_handle *h;
+	struct hold_reclock_state s = {
+		.done = false,
+		.status = '0',
+	};
 
-	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file,
-				      O_RDWR|O_CREAT, 0600);
-	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(DEBUG_ERR,
-		      ("ctdb_recovery_lock: Unable to open %s - (%s)\n",
-		       ctdb->recovery_lock_file, strerror(errno)));
-		return false;
+	h = ctdb_cluster_mutex(ctdb, 0);
+	if (h == NULL) {
+		return -1;
 	}
 
-	set_close_on_exec(ctdb->recovery_lock_fd);
+	h->handler = hold_reclock_handler;
+	h->private_data = &s;
 
-	lock.l_type = F_WRLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 1;
-	lock.l_pid = 0;
-
-	if (fcntl(ctdb->recovery_lock_fd, F_SETLK, &lock) != 0) {
-		int saved_errno = errno;
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
-		/* Fail silently on these errors, since they indicate
-		 * lock contention, but log an error for any other
-		 * failure. */
-		if (saved_errno != EACCES &&
-		    saved_errno != EAGAIN) {
-			DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Failed to get "
-					 "recovery lock on '%s' - (%s)\n",
-					 ctdb->recovery_lock_file,
-					 strerror(saved_errno)));
-		}
-		return false;
+	while (!s.done) {
+		tevent_loop_once(ctdb->ev);
 	}
 
-	return true;
+	h->private_data = NULL;
+
+	return (s.status == '0');
 }
 
 void ctdb_recovery_unlock(struct ctdb_context *ctdb)
 {
-	if (ctdb->recovery_lock_fd != -1) {
+	if (ctdb->recovery_lock_handle != NULL) {
 		DEBUG(DEBUG_NOTICE, ("Releasing recovery lock\n"));
-		close(ctdb->recovery_lock_fd);
-		ctdb->recovery_lock_fd = -1;
+		TALLOC_FREE(ctdb->recovery_lock_handle);
 	}
 }
 

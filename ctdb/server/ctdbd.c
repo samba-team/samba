@@ -195,7 +195,7 @@ int main(int argc, const char *argv[])
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
-	ctdb->recovery_lock_fd = -1;
+	ctdb->recovery_lock_handle = NULL;
 
 	TALLOC_FREE(ctdb->idr);
 	ret = reqid_init(ctdb, 0, &ctdb->idr);;
