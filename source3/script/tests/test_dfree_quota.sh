@@ -64,6 +64,8 @@ trygrp1:g$gid:block size = 4096:hard limit = 60:soft limit = 60:cur blocks = 55
 trygrp2:df:block size = 4096:disk free = 10:disk size = 80
 trygrp2:u$uid:block size = 4096:hard limit = 0:soft limit = 0:cur blocks = 41
 trygrp2:g$gid:block size = 4096:hard limit = 60:soft limit = 60:cur blocks = 56
+blksize:df:block size = 512:disk free = 614400:disk size = 614400
+blksize:u$uid:block size = 1024:hard limit = 512000:soft limit = 0:cur blocks = 0
 ABC
 }
 
@@ -169,6 +171,9 @@ test_smbclient_dfree "Test quota->dfree inode soft limit" "subdir1" "islimit sub
 test_smbclient_dfree "Test quota->dfree inode hard limit" "subdir1" "ihlimit subdir1" "148 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree err try group" "subdir1" "trygrp1 subdir1" "240 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree no-quota try group" "subdir1" "trygrp2 subdir1" "240 1024. 16" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+#block size different in quota and df systems
+test_smbclient_dfree "Test quota->dfree different block size" "subdir1" "blksize subdir1" "307200 1024. 307200" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 
 setup_conf
 exit $failed
