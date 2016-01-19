@@ -123,7 +123,14 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 	}
 
 	if (disk_quotas(path, &bsize_q, &dfree_q, &dsize_q)) {
-		(*bsize) = bsize_q;
+		uint64_t min_bsize = MIN(*bsize, bsize_q);
+
+		(*dfree) = (*dfree) * (*bsize) / min_bsize;
+		(*dsize) = (*dsize) * (*bsize) / min_bsize;
+		dfree_q = dfree_q * bsize_q / min_bsize;
+		dsize_q = dsize_q * bsize_q / min_bsize;
+
+		(*bsize) = min_bsize;
 		(*dfree) = MIN(*dfree,dfree_q);
 		(*dsize) = MIN(*dsize,dsize_q);
 	}
