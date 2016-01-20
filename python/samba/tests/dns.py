@@ -411,7 +411,7 @@ class TestDNSUpdates(DNSTest):
         p.answers = prereqs
 
         response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXRRSET)
 
     def test_update_prereq_nonexisting_name(self):
         "test update with a nonexisting name"
