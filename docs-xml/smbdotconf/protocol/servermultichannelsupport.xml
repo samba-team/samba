@@ -1,0 +1,21 @@
+<samba:parameter name="server multi channel support"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This boolean parameter controls whether
+    <citerefentry><refentrytitle>smbd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> will support
+    SMB3 multi-channel.
+    </para>
+    <para>This parameter has been added with version 4.4.</para>
+    <para>
+    Warning: Note that this feature is considered experimental in Samba 4.4.
+    Use it at your own risk: Even though it may seem to work well in testing,
+    it may result in data corruption under some race conditions.
+    Future 4.4.x release may improve this situation.
+    </para>
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
