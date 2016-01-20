@@ -34,7 +34,11 @@ natgw_check_config ()
 	    die "Invalid configuration: CTDB_NATGW_PUBLIC_IFACE not set"
     fi
     [ -n "$CTDB_NATGW_PRIVATE_NETWORK" ] || \
-	die "Invalid configuration: CTDB_NATGW_PRIVATE_NETWORK not set"
+	    die "Invalid configuration: CTDB_NATGW_PRIVATE_NETWORK not set"
+
+    if [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] ; then
+	    die "Invalid configuration: CTDB_PARTIALLY_ONLINE_INTERFACES=yes incompatible with NAT gateway"
+    fi
 
     # The default is to create a single default route
     [ -n "$CTDB_NATGW_STATIC_ROUTES" ] || CTDB_NATGW_STATIC_ROUTES="0.0.0.0/0"

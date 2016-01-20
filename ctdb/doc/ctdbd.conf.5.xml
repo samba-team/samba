@@ -839,6 +839,13 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	    </para>
 
 	    <para>
+	      Note that CTDB_PARTIALLY_ONLINE_INTERFACES=yes is
+	      incompatible with NAT gateway, since NAT gateway relies
+	      on the interface configured by CTDB_NATGW_PUBLIC_IFACE
+	      to be up.
+	    </para>
+
+	    <para>
 	      Default is "no".
 	    </para>
 	  </listitem>
