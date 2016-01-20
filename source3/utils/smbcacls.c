@@ -791,7 +791,7 @@ int main(int argc, char *argv[])
 	poptContext pc;
 	/* numeric is set when the user wants numeric SIDs and ACEs rather
 	   than going via LSA calls to resolve them */
-	int numeric;
+	int numeric = 0;
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
