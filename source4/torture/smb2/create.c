@@ -1666,6 +1666,69 @@ done:
 	return ret;
 }
 
+/*
+  test directory creation with an initial allocation size > 0
+*/
+static bool test_dir_alloc_size(struct torture_context *tctx,
+				struct smb2_tree *tree)
+{
+	bool ret = true;
+	const char *dname = DNAME "\\torture_alloc_size.dir";
+	NTSTATUS status;
+	struct smb2_create c;
+	struct smb2_handle h1 = {{0}}, h2;
+
+	torture_comment(tctx, "Checking initial allocation size on directories\n");
+
+	smb2_deltree(tree, dname);
+
+	status = torture_smb2_testdir(tree, DNAME, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir failed");
+
+	ZERO_STRUCT(c);
+	c.in.create_disposition = NTCREATEX_DISP_CREATE;
+	c.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	c.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	c.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	c.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	c.in.fname = dname;
+	/*
+	 * An insanely large value so we can check the value is
+	 * ignored: Samba either returns 0 (current behaviour), or,
+	 * once vfswrap_get_alloc_size() is fixed to allow retrieving
+	 * the allocated size for directories, returns
+	 * smb_roundup(..., stat.st_size) which would be 1 MB by
+	 * default.
+	 *
+	 * Windows returns 0 for emtpy directories, once directories
+	 * have a few entries it starts replying with values > 0.
+	 */
+	c.in.alloc_size = 1024*1024*1024;
+
+	status = smb2_create(tree, tctx, &c);
+	h2 = c.out.file.handle;
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"dir create with initial alloc size failed");
+
+	smb2_util_close(tree, h2);
+
+	torture_comment(tctx, "Got directory alloc size: %ju\n", (uintmax_t)c.out.alloc_size);
+
+	/*
+	 * See above for the rational for this test
+	 */
+	if (c.out.alloc_size > 1024*1024) {
+		torture_fail_goto(tctx, done, talloc_asprintf(tctx, "bad alloc size: %ju",
+							      (uintmax_t)c.out.alloc_size));
+	}
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	smb2_deltree(tree, DNAME);
+	return ret;
+}
 
 /*
    basic testing of SMB2 read
@@ -1686,6 +1749,7 @@ struct torture_suite *torture_smb2_create_init(void)
 	torture_suite_add_1smb2_test(suite, "acldir", test_create_acl_dir);
 	torture_suite_add_1smb2_test(suite, "nulldacl", test_create_null_dacl);
 	torture_suite_add_1smb2_test(suite, "mkdir-dup", test_mkdir_dup);
+	torture_suite_add_1smb2_test(suite, "dir-alloc-size", test_dir_alloc_size);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 
