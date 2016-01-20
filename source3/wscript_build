@@ -1074,6 +1074,12 @@ bld.SAMBA3_SUBSYSTEM('SPOOLSSD',
                          RPC_SOCK_HELPER
                          ''')
 
+bld.SAMBA3_SUBSYSTEM('tevent-glib-glue',
+                    source='lib/tevent_glib_glue.c',
+                    deps='glib-2.0',
+                    enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
+)
+
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',

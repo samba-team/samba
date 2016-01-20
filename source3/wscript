@@ -1637,6 +1637,16 @@ main() {
         else:
             conf.fatal('AFS headers not available, but --with-fake-kaserver was specified')
 
+    if conf.CHECK_CFG(package='glib-2.0',
+                      args='--cflags --libs',
+                      msg='Checking for glib-2.0',
+                      uselib_store="GLIB-2.0"):
+        if (conf.CHECK_HEADERS('glib.h', lib='glib-2.0') and conf.CHECK_LIB('glib-2.0', shlib=True)):
+            conf.DEFINE('HAVE_GLIB', 1)
+
+    if conf.CONFIG_SET('HAVE_GLIB'):
+        conf.DEFINE('WITH_TEVENT_GLIB_GLUE', '1')
+
     conf.env['libtracker']=''
     tracker_versions = ['2.0', '1.0', '0.16', '0.14']
 
@@ -1676,6 +1686,9 @@ main() {
 
         if not conf.CONFIG_SET('HAVE_TRACKER'):
             conf.fatal('Missing Gnome Tracker development files')
+
+        if not conf.CONFIG_SET('HAVE_GLIB'):
+            conf.fatal('Missing glib-2.0 development files')
 
         Logs.info("building with Spotlight support")
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
