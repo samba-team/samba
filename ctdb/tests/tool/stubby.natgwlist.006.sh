@@ -2,10 +2,10 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, node 0 missing NATGW capability, all stopped"
+define_test "3 nodes, node 0 is slave-only, all stopped"
 
 setup_natgw <<EOF
-192.168.20.41
+192.168.20.41	slave-only
 192.168.20.42
 192.168.20.43
 EOF
@@ -20,7 +20,7 @@ EOF
 
 simple_test <<EOF
 NODEMAP
-0       192.168.20.41   0x20	-CTDB_CAP_NATGW
+0       192.168.20.41   0x20
 1       192.168.20.42   0x20    CURRENT RECMASTER
 2       192.168.20.43   0x20
 

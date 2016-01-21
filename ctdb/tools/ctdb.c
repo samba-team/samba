@@ -1150,68 +1150,12 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	return ret;
 }
 
-static struct ctdb_node_map_old *read_natgw_nodes_file(struct ctdb_context *ctdb,
-						   TALLOC_CTX *mem_ctx)
-{
-	const char *natgw_list;
-	struct ctdb_node_map_old *natgw_nodes = NULL;
-
-	natgw_list = getenv("CTDB_NATGW_NODES");
-	if (natgw_list == NULL) {
-		natgw_list = talloc_asprintf(mem_ctx, "%s/natgw_nodes",
-					     getenv("CTDB_BASE"));
-		if (natgw_list == NULL) {
-			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
-			exit(1);
-		}
-	}
-	/* The PNNs/flags will be junk but they're not used */
-	natgw_nodes = ctdb_read_nodes_file(mem_ctx, natgw_list);
-	if (natgw_nodes == NULL) {
-		DEBUG(DEBUG_ERR,
-		      ("Failed to load natgw node list '%s'\n", natgw_list));
-	}
-	return natgw_nodes;
-}
-
-
 /* talloc off the existing nodemap... */
 static struct ctdb_node_map_old *talloc_nodemap(struct ctdb_node_map_old *nodemap)
 {
 	return talloc_zero_size(nodemap,
 				offsetof(struct ctdb_node_map_old, nodes) +
 				nodemap->num * sizeof(struct ctdb_node_and_flags));
-}
-
-static struct ctdb_node_map_old *
-filter_nodemap_by_addrs(struct ctdb_context *ctdb,
-			struct ctdb_node_map_old *nodemap,
-			struct ctdb_node_map_old *natgw_nodes)
-{
-	int i, j;
-	struct ctdb_node_map_old *ret;
-
-	ret = talloc_nodemap(nodemap);
-	CTDB_NO_MEMORY_NULL(ctdb, ret);
-
-	ret->num = 0;
-
-	for (i = 0; i < nodemap->num; i++) {
-		for(j = 0; j < natgw_nodes->num ; j++) {
-			if (nodemap->nodes[j].flags & NODE_FLAGS_DELETED) {
-				continue;
-			}
-			if (ctdb_same_ip(&natgw_nodes->nodes[j].addr,
-					 &nodemap->nodes[i].addr)) {
-
-				ret->nodes[ret->num] = nodemap->nodes[i];
-				ret->num++;
-				break;
-			}
-		}
-	}
-
-	return ret;
 }
 
 static struct ctdb_node_map_old *
@@ -1290,116 +1234,24 @@ filter_nodemap_by_flags(struct ctdb_context *ctdb,
  */
 static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	int i, ret;
-	struct ctdb_node_map_old *natgw_nodes = NULL;
-	struct ctdb_node_map_old *orig_nodemap=NULL;
-	struct ctdb_node_map_old *nodemap;
-	uint32_t mypnn, pnn;
-	const char *ip;
+	static char prog[PATH_MAX+1] = "";
 
-	/* When we have some nodes that could be the NATGW, make a
-	 * series of attempts to find the first node that doesn't have
-	 * certain status flags set.
-	 */
-	uint32_t exclude_flags[] = {
-		/* Look for a nice healthy node */
-		NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_UNHEALTHY,
-		/* If not found, an UNHEALTHY/BANNED node will do */
-		NODE_FLAGS_DISCONNECTED|NODE_FLAGS_STOPPED|NODE_FLAGS_DELETED,
-		/* If not found, a STOPPED node will do */
-		NODE_FLAGS_DISCONNECTED|NODE_FLAGS_DELETED,
-		0,
-	};
-
-	/* read the natgw nodes file into a linked list */
-	natgw_nodes = read_natgw_nodes_file(ctdb, tmp_ctx);
-	if (natgw_nodes == NULL) {
-		ret = -1;
-		goto done;
+	if (argc != 0) {
+		usage();
 	}
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE,
-				   tmp_ctx, &orig_nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node.\n"));
-		talloc_free(tmp_ctx);
-		return -1;
+	if (!ctdb_set_helper("NAT gateway helper", prog, sizeof(prog),
+			     "CTDB_NATGW_HELPER", CTDB_HELPER_BINDIR,
+			     "ctdb_natgw")) {
+		DEBUG(DEBUG_ERR, ("Unable to set NAT gateway helper\n"));
+		exit(1);
 	}
 
-	/* Get a nodemap that includes only the nodes in the NATGW
-	 * group */
-	nodemap = filter_nodemap_by_addrs(ctdb, orig_nodemap, natgw_nodes);
-	if (nodemap == NULL) {
-		ret = -1;
-		goto done;
-	}
+	execl(prog, prog, "natgwlist", NULL);
 
-	ret = 2; /* matches ENOENT */
-	pnn = -1;
-	ip = "0.0.0.0";
-	/* For each flag mask... */
-	for (i = 0; exclude_flags[i] != 0; i++) {
-		/* ... get a nodemap that excludes nodes with with
-		 * masked flags... */
-		struct ctdb_node_map_old *t =
-			filter_nodemap_by_flags(ctdb, nodemap,
-						exclude_flags[i]);
-		if (t == NULL) {
-			/* No memory */
-			ret = -1;
-			goto done;
-		}
-		if (t->num > 0) {
-			/* ... and find the first node with the NATGW
-			 * capability */
-			struct ctdb_node_map_old *n;
-			n = filter_nodemap_by_capabilities(ctdb, t,
-							   CTDB_CAP_NATGW,
-							   true);
-			if (n == NULL) {
-				/* No memory */
-				ret = -1;
-				goto done;
-			}
-			if (n->num > 0) {
-				ret = 0;
-				pnn = n->nodes[0].pnn;
-				ip = ctdb_addr_to_str(&n->nodes[0].addr);
-				break;
-			}
-		}
-		talloc_free(t);
-	}
-
-	if (options.machinereadable) {
-		printm(":Node:IP:\n");
-		printm(":%d:%s:\n", pnn, ip);
-	} else {
-		printf("%d %s\n", pnn, ip);
-	}
-
-	/* print the pruned list of nodes belonging to this natgw list */
-	mypnn = getpnn(ctdb);
-	if (options.machinereadable) {
-		control_status_header_machine();
-	} else {
-		printf("Number of nodes:%d\n", nodemap->num);
-	}
-	for(i=0;i<nodemap->num;i++){
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DELETED) {
-			continue;
-		}
-		if (options.machinereadable) {
-			control_status_1_machine(ctdb, mypnn, &(nodemap->nodes[i]));
-		} else {
-			control_status_1_human(ctdb, mypnn, &(nodemap->nodes[i]));
-		}
-	}
-
-done:
-	talloc_free(tmp_ctx);
-	return ret;
+	DEBUG(DEBUG_ERR,
+	      ("Unable to run NAT gateway helper %s\n", strerror(errno)));
+	exit(1);
 }
 
 /*
@@ -6558,7 +6410,7 @@ static const struct {
 	{ "scriptstatus",     control_scriptstatus,     true,	false, "show the status of the monitoring scripts (or all scripts)", "[all]"},
 	{ "enablescript",     control_enablescript,  true,	false, "enable an eventscript", "<script>"},
 	{ "disablescript",    control_disablescript,  true,	false, "disable an eventscript", "<script>"},
-	{ "natgwlist",        control_natgwlist,        true,	false, "show the nodes belonging to this natgw configuration"},
+	{ "natgwlist",        control_natgwlist,	false,	true, "show the nodes belonging to this natgw configuration"},
 	{ "xpnn",             control_xpnn,             false,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 	{ "getreclock",       control_getreclock,	true,	false, "Show the reclock file of a node"},
 	{ "setreclock",       control_setreclock,	true,	false, "Set/clear the reclock file of a node", "[filename]"},

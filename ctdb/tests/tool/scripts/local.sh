@@ -38,16 +38,26 @@ define_test ()
 
 setup_natgw ()
 {
-    debug "Setting up NAT gateway"
+	debug "Setting up NAT gateway"
 
-    natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
-    mkdir -p "$natgw_config_dir"
+	# Use in-tree binaries if running against local daemons.
+	# Otherwise CTDB need to be installed on all nodes.
+	if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
+		if [ -z "$CTDB_NATGW_HELPER" ] ; then
+			export CTDB_NATGW_HELPER="${ctdb_dir}/tools/ctdb_natgw"
+		fi
+		# Only want to find functions file, so this is OK
+		export CTDB_BASE="${ctdb_dir}/config"
+	fi
 
-    # These will accumulate, 1 per test... but will be cleaned up at
-    # the end.
-    export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
+	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
+	mkdir -p "$natgw_config_dir"
 
-    cat >"$CTDB_NATGW_NODES"
+	# These will accumulate, 1 per test... but will be cleaned up
+	# at the end.
+	export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
+
+	cat >"$CTDB_NATGW_NODES"
 }
 
 setup_nodes ()
