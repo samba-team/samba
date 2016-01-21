@@ -870,7 +870,6 @@ class TestInvalidQueries(DNSTest):
             if s is not None:
                 s.close()
 
-
 if __name__ == "__main__":
     import unittest
     unittest.main()
