@@ -2003,7 +2003,7 @@ static PyMethodDef py_ldb_methods[] = {
 		"S.rename(old_dn, new_dn, controls=None) -> None\n"
 		"Rename an entry." },
 	{ "search", (PyCFunction)py_ldb_search, METH_VARARGS|METH_KEYWORDS,
-		"S.search(base=None, scope=None, expression=None, attrs=None, controls=None) -> msgs\n"
+		"S.search(base=None, scope=None, expression=None, attrs=None, controls=None) -> result\n"
 		"Search in a database.\n"
 		"\n"
 		":param base: Optional base DN to search\n"
@@ -2011,7 +2011,7 @@ static PyMethodDef py_ldb_methods[] = {
 		":param expression: Optional search expression\n"
 		":param attrs: Attributes to return (defaults to all)\n"
 		":param controls: Optional list of controls\n"
-		":return: Iterator over Message objects\n"
+		":return: ldb.Result object\n"
 	},
 	{ "schema_attribute_remove", (PyCFunction)py_ldb_schema_attribute_remove, METH_VARARGS,
 		NULL },
