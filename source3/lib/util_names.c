@@ -171,3 +171,21 @@ const char *get_global_sam_name(void)
 	return lp_netbios_name();
 }
 
+
+/******************************************************************
+ Get the default domain/netbios name to be used when
+ testing authentication.
+
+ LEGACY: this function provides the legacy domain mapping used with
+	 the lp_map_untrusted_to_domain() parameter
+******************************************************************/
+
+const char *my_sam_name(void)
+{
+       /* Standalone servers can only use the local netbios name */
+       if ( lp_server_role() == ROLE_STANDALONE )
+               return lp_netbios_name();
+
+       /* Default to the DOMAIN name when not specified */
+       return lp_workgroup();
+}
