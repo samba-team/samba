@@ -712,8 +712,9 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 	} else if (D.softlimit==0 && D.hardlimit==0) {
 		goto try_group_quota;
 	} else {
-		if (D.softlimit == 0)
+		if (D.softlimit == 0) {
 			D.softlimit = D.hardlimit;
+		}
 		*dfree = D.softlimit - D.curblocks;
 		*dsize = D.softlimit;
 	}
@@ -750,8 +751,9 @@ try_group_quota:
 	} else if (D.softlimit==0 && D.hardlimit==0) {
 		return False;
 	} else {
-		if (D.softlimit == 0)
+		if (D.softlimit == 0) {
 			D.softlimit = D.hardlimit;
+		}
 		*dfree = D.softlimit - D.curblocks;
 		*dsize = D.softlimit;
 	}
