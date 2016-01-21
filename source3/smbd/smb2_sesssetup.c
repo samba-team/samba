@@ -699,6 +699,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 	NTTIME now = timeval_to_nttime(&smb2req->request_time);
 	struct tevent_req *subreq;
 	struct smbXsrv_channel_global0 *c = NULL;
+	enum security_user_level seclvl;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_session_setup_state);
@@ -719,12 +720,86 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
+		if (!smb2req->xconn->client->server_multi_channel_enabled) {
+			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (in_session_id == 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		if (smb2req->session == NULL) {
+			tevent_req_nterror(req, NT_STATUS_USER_SESSION_DELETED);
+			return tevent_req_post(req, ev);
+		}
+
+		if (!smb2req->do_signing) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		status = smbXsrv_session_find_channel(smb2req->session,
+						      smb2req->xconn,
+						      &c);
+		if (NT_STATUS_IS_OK(status)) {
+			if (c->signing_key.length == 0) {
+				goto auth;
+			}
+			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+			return tevent_req_post(req, ev);
+		}
+
 		/*
-		 * We do not support multi channel.
+		 * OLD: 3.00 NEW 3.02 => INVALID_PARAMETER
+		 * OLD: 3.02 NEW 3.00 => INVALID_PARAMETER
+		 * OLD: 2.10 NEW 3.02 => ACCESS_DENIED
+		 * OLD: 3.02 NEW 2.10 => ACCESS_DENIED
 		 */
-		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
-		return tevent_req_post(req, ev);
+		if (smb2req->session->global->connection_dialect
+		    < SMB2_DIALECT_REVISION_222)
+		{
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+		if (smb2req->xconn->smb2.server.dialect
+		    < SMB2_DIALECT_REVISION_222)
+		{
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+		if (smb2req->session->global->connection_dialect
+		    != smb2req->xconn->smb2.server.dialect)
+		{
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return tevent_req_post(req, ev);
+		}
+
+		seclvl = security_session_user_level(
+				smb2req->session->global->auth_session_info,
+				NULL);
+		if (seclvl < SECURITY_USER) {
+			tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+			return tevent_req_post(req, ev);
+		}
+
+		status = smbXsrv_session_add_channel(smb2req->session,
+						     smb2req->xconn,
+						     &c);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+
+		status = smbXsrv_session_update(smb2req->session);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
 	}
+
+auth:
 
 	if (state->in_session_id == 0) {
 		/* create a new session */
