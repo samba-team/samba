@@ -32,6 +32,27 @@
 #include "ldb_private.h"
 #include "ldb_handlers.h"
 #include "pyldb.h"
+#include "dlinklist.h"
+
+struct py_ldb_search_iterator_reply;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX *mem_ctx;
+	PyLdbObject *ldb;
+	struct {
+		struct ldb_request *req;
+		struct py_ldb_search_iterator_reply *next;
+		struct py_ldb_search_iterator_reply *result;
+		PyObject *exception;
+	} state;
+} PyLdbSearchIteratorObject;
+
+struct py_ldb_search_iterator_reply {
+	struct py_ldb_search_iterator_reply *prev, *next;
+	PyLdbSearchIteratorObject *py_iter;
+	PyObject *obj;
+};
 
 void initldb(void);
 static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg);
@@ -39,6 +60,7 @@ static PyObject *PyExc_LdbError;
 
 static PyTypeObject PyLdbControl;
 static PyTypeObject PyLdbResult;
+static PyTypeObject PyLdbSearchIterator;
 static PyTypeObject PyLdbMessage;
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 static PyTypeObject PyLdbModule;
@@ -1869,6 +1891,200 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 	return py_ret;
 }
 
+static int py_ldb_search_iterator_reply_destructor(struct py_ldb_search_iterator_reply *reply)
+{
+	if (reply->py_iter != NULL) {
+		DLIST_REMOVE(reply->py_iter->state.next, reply);
+		if (reply->py_iter->state.result == reply) {
+			reply->py_iter->state.result = NULL;
+		}
+		reply->py_iter = NULL;
+	}
+
+	if (reply->obj != NULL) {
+		Py_DECREF(reply->obj);
+		reply->obj = NULL;
+	}
+
+	return 0;
+}
+
+static int py_ldb_search_iterator_callback(struct ldb_request *req,
+					   struct ldb_reply *ares)
+{
+	PyLdbSearchIteratorObject *py_iter = (PyLdbSearchIteratorObject *)req->context;
+	struct ldb_result result = { .msgs = NULL };
+	struct py_ldb_search_iterator_reply *reply = NULL;
+
+	if (ares == NULL) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	if (ares->error != LDB_SUCCESS) {
+		int ret = ares->error;
+		TALLOC_FREE(ares);
+		return ldb_request_done(req, ret);
+	}
+
+	reply = talloc_zero(py_iter->mem_ctx,
+			    struct py_ldb_search_iterator_reply);
+	if (reply == NULL) {
+		TALLOC_FREE(ares);
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	reply->py_iter = py_iter;
+	talloc_set_destructor(reply, py_ldb_search_iterator_reply_destructor);
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+		reply->obj = PyLdbMessage_FromMessage(ares->message);
+		if (reply->obj == NULL) {
+			TALLOC_FREE(ares);
+			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+		}
+		DLIST_ADD_END(py_iter->state.next, reply);
+		TALLOC_FREE(ares);
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_REFERRAL:
+		reply->obj = PyStr_FromString(ares->referral);
+		if (reply->obj == NULL) {
+			TALLOC_FREE(ares);
+			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+		}
+		DLIST_ADD_END(py_iter->state.next, reply);
+		TALLOC_FREE(ares);
+		return LDB_SUCCESS;
+
+	case LDB_REPLY_DONE:
+		result = (struct ldb_result) { .controls = ares->controls };
+		reply->obj = PyLdbResult_FromResult(&result);
+		if (reply->obj == NULL) {
+			TALLOC_FREE(ares);
+			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+		}
+		py_iter->state.result = reply;
+		TALLOC_FREE(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
+	TALLOC_FREE(ares);
+	return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+}
+
+static PyObject *py_ldb_search_iterator(PyLdbObject *self, PyObject *args, PyObject *kwargs)
+{
+	PyObject *py_base = Py_None;
+	int scope = LDB_SCOPE_DEFAULT;
+	int timeout = 0;
+	char *expr = NULL;
+	PyObject *py_attrs = Py_None;
+	PyObject *py_controls = Py_None;
+	const char * const kwnames[] = { "base", "scope", "expression", "attrs", "controls", "timeout", NULL };
+	int ret;
+	const char **attrs;
+	struct ldb_context *ldb_ctx;
+	struct ldb_control **parsed_controls;
+	struct ldb_dn *base;
+	PyLdbSearchIteratorObject *py_iter;
+
+	/* type "int" rather than "enum" for "scope" is intentional */
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OizOOi",
+					 discard_const_p(char *, kwnames),
+					 &py_base, &scope, &expr, &py_attrs, &py_controls, &timeout))
+		return NULL;
+
+	py_iter = (PyLdbSearchIteratorObject *)PyLdbSearchIterator.tp_alloc(&PyLdbSearchIterator, 0);
+	if (py_iter == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	py_iter->ldb = self;
+	Py_INCREF(self);
+	ZERO_STRUCT(py_iter->state);
+	py_iter->mem_ctx = talloc_new(NULL);
+	if (py_iter->mem_ctx == NULL) {
+		Py_DECREF(py_iter);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ldb_ctx = pyldb_Ldb_AsLdbContext(self);
+
+	if (py_attrs == Py_None) {
+		attrs = NULL;
+	} else {
+		attrs = PyList_AsStrList(py_iter->mem_ctx, py_attrs, "attrs");
+		if (attrs == NULL) {
+			Py_DECREF(py_iter);
+			PyErr_NoMemory();
+			return NULL;
+		}
+	}
+
+	if (py_base == Py_None) {
+		base = ldb_get_default_basedn(ldb_ctx);
+	} else {
+		if (!pyldb_Object_AsDn(py_iter->mem_ctx, py_base, ldb_ctx, &base)) {
+			Py_DECREF(py_iter);
+			PyErr_NoMemory();
+			return NULL;
+		}
+	}
+
+	if (py_controls == Py_None) {
+		parsed_controls = NULL;
+	} else {
+		const char **controls = NULL;
+
+		controls = PyList_AsStrList(py_iter->mem_ctx,
+					    py_controls, "controls");
+		if (controls == NULL) {
+			Py_DECREF(py_iter);
+			PyErr_NoMemory();
+			return NULL;
+		}
+
+		parsed_controls = ldb_parse_control_strings(ldb_ctx,
+							    py_iter->mem_ctx,
+							    controls);
+		if (controls[0] != NULL && parsed_controls == NULL) {
+			Py_DECREF(py_iter);
+			PyErr_NoMemory();
+			return NULL;
+		}
+		talloc_free(controls);
+	}
+
+	ret = ldb_build_search_req(&py_iter->state.req,
+				   ldb_ctx,
+				   py_iter->mem_ctx,
+				   base,
+				   scope,
+				   expr,
+				   attrs,
+				   parsed_controls,
+				   py_iter,
+				   py_ldb_search_iterator_callback,
+				   NULL);
+	if (ret != LDB_SUCCESS) {
+		Py_DECREF(py_iter);
+		PyErr_SetLdbError(PyExc_LdbError, ret, ldb_ctx);
+		return NULL;
+	}
+
+	ldb_set_timeout(ldb_ctx, py_iter->state.req, timeout);
+
+	ret = ldb_request(ldb_ctx, py_iter->state.req);
+	if (ret != LDB_SUCCESS) {
+		Py_DECREF(py_iter);
+		PyErr_SetLdbError(PyExc_LdbError, ret, ldb_ctx);
+		return NULL;
+	}
+
+	return (PyObject *)py_iter;
+}
+
 static PyObject *py_ldb_get_opaque(PyLdbObject *self, PyObject *args)
 {
 	char *name;
@@ -2012,6 +2228,18 @@ static PyMethodDef py_ldb_methods[] = {
 		":param attrs: Attributes to return (defaults to all)\n"
 		":param controls: Optional list of controls\n"
 		":return: ldb.Result object\n"
+	},
+	{ "search_iterator", (PyCFunction)py_ldb_search_iterator, METH_VARARGS|METH_KEYWORDS,
+		"S.search_iterator(base=None, scope=None, expression=None, attrs=None, controls=None, timeout=None) -> iterator\n"
+		"Search in a database.\n"
+		"\n"
+		":param base: Optional base DN to search\n"
+		":param scope: Search scope (SCOPE_BASE, SCOPE_ONELEVEL or SCOPE_SUBTREE)\n"
+		":param expression: Optional search expression\n"
+		":param attrs: Attributes to return (defaults to all)\n"
+		":param controls: Optional list of controls\n"
+		":param timeout: Optional timeout in seconds (defaults to 300), 0 means the default, -1 no timeout\n"
+		":return: ldb.SearchIterator object that provides results when they arrive\n"
 	},
 	{ "schema_attribute_remove", (PyCFunction)py_ldb_schema_attribute_remove, METH_VARARGS,
 		NULL },
@@ -2232,6 +2460,147 @@ static PyTypeObject PyLdbResult = {
 	.tp_basicsize = sizeof(PyLdbResultObject),
 	.tp_as_sequence = &py_ldb_result_seq,
 	.tp_doc = "LDB result.",
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
+};
+
+static void py_ldb_search_iterator_dealloc(PyLdbSearchIteratorObject *self)
+{
+	Py_XDECREF(self->state.exception);
+	TALLOC_FREE(self->mem_ctx);
+	ZERO_STRUCT(self->state);
+	Py_DECREF(self->ldb);
+	Py_TYPE(self)->tp_free(self);
+}
+
+static PyObject *py_ldb_search_iterator_next(PyLdbSearchIteratorObject *self)
+{
+	PyObject *py_ret = NULL;
+
+	if (self->state.req == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.SearchIterator request already finished");
+		return NULL;
+	}
+
+	/*
+	 * TODO: do we want a non-blocking mode?
+	 * In future we may add an optional 'nonblocking'
+	 * argument to search_iterator().
+	 *
+	 * For now we keep it simple and wait for at
+	 * least one reply.
+	 */
+
+	while (self->state.next == NULL) {
+		int ret;
+
+		if (self->state.result != NULL) {
+			/*
+			 * We (already) got a final result from the server.
+			 *
+			 * We stop the iteration and let
+			 * py_ldb_search_iterator_result() will deliver
+			 * the result details.
+			 */
+			TALLOC_FREE(self->state.req);
+			PyErr_SetNone(PyExc_StopIteration);
+			return NULL;
+		}
+
+		ret = ldb_wait(self->state.req->handle, LDB_WAIT_NONE);
+		if (ret != LDB_SUCCESS) {
+			struct ldb_context *ldb_ctx;
+			TALLOC_FREE(self->state.req);
+			ldb_ctx = pyldb_Ldb_AsLdbContext(self->ldb);
+			/*
+			 * We stop the iteration and let
+			 * py_ldb_search_iterator_result() will deliver
+			 * the exception.
+			 */
+			self->state.exception = Py_BuildValue(discard_const_p(char, "(i,s)"),
+						ret, ldb_errstring(ldb_ctx));
+			PyErr_SetNone(PyExc_StopIteration);
+			return NULL;
+		}
+	}
+
+	py_ret = self->state.next->obj;
+	self->state.next->obj = NULL;
+	/* no TALLOC_FREE() as self->state.next is a list */
+	talloc_free(self->state.next);
+	return py_ret;
+}
+
+static PyObject *py_ldb_search_iterator_result(PyLdbSearchIteratorObject *self)
+{
+	PyObject *py_ret = NULL;
+
+	if (self->state.req != NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.SearchIterator request running");
+		return NULL;
+	}
+
+	if (self->state.next != NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.SearchIterator not fully consumed.");
+		return NULL;
+	}
+
+	if (self->state.exception != NULL) {
+		PyErr_SetObject(PyExc_LdbError, self->state.exception);
+		self->state.exception = NULL;
+		return NULL;
+	}
+
+	if (self->state.result == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.SearchIterator result already consumed");
+		return NULL;
+	}
+
+	py_ret = self->state.result->obj;
+	self->state.result->obj = NULL;
+	TALLOC_FREE(self->state.result);
+	return py_ret;
+}
+
+static PyObject *py_ldb_search_iterator_abandon(PyLdbSearchIteratorObject *self)
+{
+	if (self->state.req == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"ldb.SearchIterator request already finished");
+		return NULL;
+	}
+
+	Py_XDECREF(self->state.exception);
+	TALLOC_FREE(self->mem_ctx);
+	ZERO_STRUCT(self->state);
+	Py_RETURN_NONE;
+}
+
+static PyMethodDef py_ldb_search_iterator_methods[] = {
+	{ "result", (PyCFunction)py_ldb_search_iterator_result, METH_NOARGS,
+		"S.result() -> ldb.Result (without msgs and referrals)\n" },
+	{ "abandon", (PyCFunction)py_ldb_search_iterator_abandon, METH_NOARGS,
+		"S.abandon()\n" },
+	{ NULL }
+};
+
+static PyObject *py_ldb_search_iterator_repr(PyLdbSearchIteratorObject *self)
+{
+	return PyStr_FromString("<ldb search iterator>");
+}
+
+static PyTypeObject PyLdbSearchIterator = {
+	.tp_name = "ldb.SearchIterator",
+	.tp_repr = (reprfunc)py_ldb_search_iterator_repr,
+	.tp_dealloc = (destructor)py_ldb_search_iterator_dealloc,
+	.tp_iter = PyObject_SelfIter,
+	.tp_iternext = (iternextfunc)py_ldb_search_iterator_next,
+	.tp_methods = py_ldb_search_iterator_methods,
+	.tp_basicsize = sizeof(PyLdbSearchIteratorObject),
+	.tp_doc = "LDB search_iterator.",
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
 };
 
@@ -3743,6 +4112,9 @@ static PyObject* module_init(void)
 		return NULL;
 
 	if (PyType_Ready(&PyLdbResult) < 0)
+		return NULL;
+
+	if (PyType_Ready(&PyLdbSearchIterator) < 0)
 		return NULL;
 
 	if (PyType_Ready(&PyLdbControl) < 0)
