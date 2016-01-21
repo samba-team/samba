@@ -179,8 +179,9 @@ const char *get_global_sam_name(void)
 
 const char *my_sam_name(void)
 {
-	if (lp_server_role() == ROLE_STANDALONE)
+	if (lp_server_role() == ROLE_STANDALONE) {
 		return lp_netbios_name();
+	}
 
 	return lp_workgroup();
 }
