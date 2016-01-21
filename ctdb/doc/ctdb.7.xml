@@ -179,7 +179,12 @@
       <para>
         It is strongly recommended that the private addresses are
         configured on a private network that is separate from client
-        networks.
+        networks.  This is because the CTDB protocol is both
+        unauthenticated and unencrypted.  If clients share the private
+        network then steps need to be taken to stop injection of
+        packets to relevant ports on the private addresses.  It is
+        also likely that CTDB protocol traffic between nodes could
+        leak sensitive information if it can be intercepted.
       </para>
 
       <para>
