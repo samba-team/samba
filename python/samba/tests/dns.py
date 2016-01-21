@@ -35,6 +35,11 @@ def make_txt_record(records):
 
 class DNSTest(TestCase):
 
+    def get_loadparm(self):
+        lp = param.LoadParm()
+        lp.load(os.getenv("SMB_CONF_PATH"))
+        return lp
+
     def errstr(self, errcode):
         "Return a readable error code"
         string_codes = [
@@ -855,11 +860,6 @@ class TestInvalidQueries(DNSTest):
                 s.close()
 
 class TestZones(DNSTest):
-    def get_loadparm(self):
-        lp = param.LoadParm()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-        return lp
-
     def get_credentials(self, lp):
         creds = credentials.Credentials()
         creds.guess(lp)
@@ -873,7 +873,7 @@ class TestZones(DNSTest):
         self.creds = self.get_credentials(self.lp)
         self.server = os.getenv("SERVER_IP")
         self.zone = "test.lan"
-        self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s" % (self.server),
+        self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server),
                                             self.lp, self.creds)
 
     def tearDown(self):
