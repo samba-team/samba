@@ -36,6 +36,11 @@ def make_txt_record(records):
 
 class DNSTest(TestCase):
 
+    def get_loadparm(self):
+        lp = param.LoadParm()
+        lp.load(os.getenv("SMB_CONF_PATH"))
+        return lp
+
     def errstr(self, errcode):
         "Return a readable error code"
         string_codes = [
