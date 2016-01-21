@@ -963,6 +963,7 @@ class TestZones(DNSTest):
         self.finish_name_packet(p, questions)
 
         response = self.dns_transaction_udp(p)
+        # Windows returns OK while BIND logically seems to return NXDOMAIN
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 0)
