@@ -24,6 +24,9 @@ from samba import credentials, param
 from samba.tests import TestCase
 from samba.dcerpc import dns, dnsp, dnsserver
 
+# This timeout only has relevance when testing against Windows
+# Format errors tend to return patchy responses, so a timeout is needed.
+timeout = None
 
 def make_txt_record(records):
     rdata_txt = dns.txt_record()
@@ -97,7 +100,8 @@ class DNSTest(TestCase):
         "Helper to get dns domain"
         return os.getenv('REALM', 'example.com').lower()
 
-    def dns_transaction_udp(self, packet, host=os.getenv('SERVER_IP'), dump=False):
+    def dns_transaction_udp(self, packet, host=os.getenv('SERVER_IP'),
+                            dump=False, timeout=timeout):
         "send a DNS query and read the reply"
         s = None
         try:
@@ -105,6 +109,7 @@ class DNSTest(TestCase):
             if dump:
                 print self.hexdump(send_packet)
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+            s.settimeout(timeout)
             s.connect((host, 53))
             s.send(send_packet, 0)
             recv_packet = s.recv(2048, 0)
@@ -115,7 +120,8 @@ class DNSTest(TestCase):
             if s is not None:
                 s.close()
 
-    def dns_transaction_tcp(self, packet, host=os.getenv('SERVER_IP'), dump=False):
+    def dns_transaction_tcp(self, packet, host=os.getenv('SERVER_IP'),
+                            dump=False, timeout=timeout):
         "send a DNS query and read the reply"
         s = None
         try:
@@ -123,6 +129,7 @@ class DNSTest(TestCase):
             if dump:
                 print self.hexdump(send_packet)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            s.settimeout(timeout)
             s.connect((host, 53))
             tcp_packet = struct.pack('!H', len(send_packet))
             tcp_packet += send_packet
@@ -217,8 +224,15 @@ class TestSimpleQueries(DNSTest):
         questions.append(q)
 
         self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
     def test_qtype_all_query(self):
         "create a QTYPE_ALL query"
@@ -256,8 +270,15 @@ class TestSimpleQueries(DNSTest):
         questions.append(q)
 
         self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
 # Only returns an authority section entry in BIND and Win DNS
 # FIXME: Enable one Samba implements this feature
@@ -310,8 +331,15 @@ class TestDNSUpdates(DNSTest):
         updates.append(u)
 
         self.finish_name_packet(p, updates)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
     def test_update_wrong_qclass(self):
         "create update with DNS_QCLASS_NONE"
@@ -349,8 +377,15 @@ class TestDNSUpdates(DNSTest):
         p.ancount = len(prereqs)
         p.answers = prereqs
 
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
 # I'd love to test this one, but it segfaults. :)
 #    def test_update_prereq_with_non_null_length(self):
@@ -833,6 +868,7 @@ class TestInvalidQueries(DNSTest):
 
     def test_one_a_reply(self):
         "send a reply instead of a query"
+        global timeout
 
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
@@ -848,6 +884,7 @@ class TestInvalidQueries(DNSTest):
         try:
             send_packet = ndr.ndr_pack(p)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            s.settimeout(timeout)
             host=os.getenv('SERVER_IP')
             s.connect((host, 53))
             tcp_packet = struct.pack('!H', len(send_packet))
@@ -855,6 +892,12 @@ class TestInvalidQueries(DNSTest):
             s.send(tcp_packet, 0)
             recv_packet = s.recv(0xffff + 2, 0)
             self.assertEquals(0, len(recv_packet))
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
         finally:
             if s is not None:
                 s.close()
