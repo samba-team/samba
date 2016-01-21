@@ -171,7 +171,7 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 	result->value.dptr = NULL;
 
 	if (statbuf.st_ex_size != 0) {
-		NTSTATUS status;
+		ssize_t read_bytes;
 
 		result->value.dsize = statbuf.st_ex_size;
 		result->value.dptr = talloc_array(result, uint8_t,
@@ -182,11 +182,10 @@ static struct db_record *db_file_fetch_locked(struct db_context *db,
 			return NULL;
 		}
 
-		status = read_data(file->fd, (char *)result->value.dptr,
-				  result->value.dsize);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("read_data failed: %s\n",
-				  nt_errstr(status)));
+		read_bytes = read_data(file->fd, (char *)result->value.dptr,
+				       result->value.dsize);
+		if (read_bytes != result->value.dsize) {
+			DEBUG(3, ("read_data failed: %s\n", strerror(errno)));
 			TALLOC_FREE(result);
 			return NULL;
 		}
