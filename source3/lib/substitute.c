@@ -500,7 +500,9 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 		case 'G' : {
 			struct passwd *pass;
 
-			if (domain_name != NULL && domain_name[0] != '\0') {
+			if (domain_name != NULL && domain_name[0] != '\0' &&
+			    !strequal(domain_name, my_sam_name()))
+			{
 				r = talloc_asprintf(tmp_ctx,
 						    "%s%c%s",
 						    domain_name,
