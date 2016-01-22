@@ -3902,10 +3902,12 @@ void smbd_process(struct tevent_context *ev_ctx,
 	const char *remaddr = NULL;
 	int ret;
 	NTSTATUS status;
+	struct timeval tv = timeval_current();
+	NTTIME now = timeval_to_nttime(&tv);
 
-	client = talloc_zero(ev_ctx, struct smbXsrv_client);
-	if (client == NULL) {
-		DEBUG(0,("talloc_zero(struct smbXsrv_client)\n"));
+	status = smbXsrv_client_create(ev_ctx, ev_ctx, msg_ctx, now, &client);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smbXsrv_client_create(): %s\n", nt_errstr(status));
 		exit_server_cleanly("talloc_zero(struct smbXsrv_client).\n");
 	}
 
@@ -3913,9 +3915,6 @@ void smbd_process(struct tevent_context *ev_ctx,
 	 * TODO: remove this...:-)
 	 */
 	global_smbXsrv_client = client;
-
-	client->ev_ctx = ev_ctx;
-	client->msg_ctx = msg_ctx;
 
 	sconn = talloc_zero(client, struct smbd_server_connection);
 	if (sconn == NULL) {
