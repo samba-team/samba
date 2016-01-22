@@ -20,10 +20,20 @@
 import samba.getopt as options
 import ldb
 import pwd
+import os
+import sys
+import errno
+import base64
+import binascii
 from getpass import getpass
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba.dcerpc import misc
+from samba.dcerpc import security
+from samba.dcerpc import drsblobs
+from samba.ndr import ndr_unpack, ndr_pack, ndr_print
 from samba import (
+    credentials,
     dsdb,
     gensec,
     generate_random_password,
@@ -37,6 +47,113 @@ from samba.netcmd import (
     Option,
     )
 
+disabled_virtual_attributes = {
+    }
+
+virtual_attributes = {
+    "virtualClearTextUTF8": {
+        "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
+        },
+    "virtualClearTextUTF16": {
+        "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
+        },
+    }
+
+get_random_bytes_fn = None
+if get_random_bytes_fn is None:
+    try:
+        import Crypto.Random
+        get_random_bytes_fn = Crypto.Random.get_random_bytes
+    except ImportError as e:
+        pass
+if get_random_bytes_fn is None:
+    try:
+        import M2Crypto.Rand
+        get_random_bytes_fn = M2Crypto.Rand.rand_bytes
+    except ImportError as e:
+        pass
+
+def check_random():
+    if get_random_bytes_fn is not None:
+        return None
+    return "Crypto.Random or M2Crypto.Rand required"
+
+def get_random_bytes(num):
+    random_reason = check_random()
+    if random_reason is not None:
+        raise ImportError(random_reason)
+    return get_random_bytes_fn(num)
+
+def get_crypt_value(alg, utf8pw):
+    algs = {
+        "5": {"length": 43},
+        "6": {"length": 86},
+    }
+    assert alg in algs
+    salt = get_random_bytes(16)
+    # The salt needs to be in [A-Za-z0-9./]
+    # base64 is close enough and as we had 16
+    # random bytes but only need 16 characters
+    # we can ignore the possible == at the end
+    # of the base64 string
+    # we just need to replace '+' by '.'
+    b64salt = base64.b64encode(salt)
+    crypt_salt = "$%s$%s$" % (alg, b64salt[0:16].replace('+', '.'))
+    crypt_value = crypt.crypt(utf8pw, crypt_salt)
+    if crypt_value is None:
+        raise NotImplementedError("crypt.crypt(%s) returned None" % (crypt_salt))
+    expected_len = len(crypt_salt) + algs[alg]["length"]
+    if len(crypt_value) != expected_len:
+        raise NotImplementedError("crypt.crypt(%s) returned a value with length %d, expected length is %d" % (
+            crypt_salt, len(crypt_value), expected_len))
+    return crypt_value
+
+try:
+    random_reason = check_random()
+    if random_reason is not None:
+        raise ImportError(random_reason)
+    import hashlib
+    h = hashlib.sha1()
+    h = None
+    virtual_attributes["virtualSSHA"] = {
+        }
+except ImportError as e:
+    reason = "hashlib.sha1()"
+    if random_reason:
+        reason += " and " + random_reason
+    reason += " required"
+    disabled_virtual_attributes["virtualSSHA"] = {
+        "reason" : reason,
+        }
+
+for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
+    try:
+        random_reason = check_random()
+        if random_reason is not None:
+            raise ImportError(random_reason)
+        import crypt
+        v = get_crypt_value(alg, "")
+        v = None
+        virtual_attributes[attr] = {
+            }
+    except ImportError as e:
+        reason = "crypt"
+        if random_reason:
+            reason += " and " + random_reason
+        reason += " required"
+        disabled_virtual_attributes[attr] = {
+            "reason" : reason,
+            }
+    except NotImplementedError as e:
+        reason = "modern '$%s$' salt in crypt(3) required" % (alg)
+        disabled_virtual_attributes[attr] = {
+            "reason" : reason,
+            }
+
+virtual_attributes_help  = "The attributes to display (comma separated). "
+virtual_attributes_help += "Possible supported virtual attributes: %s" % ", ".join(sorted(virtual_attributes.keys()))
+if len(disabled_virtual_attributes) != 0:
+    virtual_attributes_help += "Unsupported virtual attributes: %s" % ", ".join(sorted(disabled_virtual_attributes.keys()))
 
 class cmd_user_create(Command):
     """Create a new user.
@@ -673,6 +790,296 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
                 raise CommandError("%s: %s" % (command, msg))
             self.outf.write("Changed password OK\n")
 
+class GetPasswordCommand(Command):
+
+    def __init__(self):
+        super(GetPasswordCommand, self).__init__()
+        self.lp = None
+
+    def connect_system_samdb(self, url, allow_local=False, verbose=False):
+
+        # using anonymous here, results in no authentication
+        # which means we can get system privileges via
+        # the privileged ldapi socket
+        creds = credentials.Credentials()
+        creds.set_anonymous()
+
+        if url is None and allow_local:
+            pass
+        elif url.lower().startswith("ldapi://"):
+            pass
+        elif url.lower().startswith("ldap://"):
+            raise CommandError("--url ldap:// is not supported for this command")
+        elif url.lower().startswith("ldaps://"):
+            raise CommandError("--url ldaps:// is not supported for this command")
+        elif not allow_local:
+            raise CommandError("--url requires an ldapi:// url for this command")
+
+        if verbose:
+            self.outf.write("Connecting to '%s'\n" % url)
+
+        samdb = SamDB(url=url, session_info=system_session(),
+                      credentials=creds, lp=self.lp)
+
+        try:
+            #
+            # Make sure we're connected as SYSTEM
+            #
+            res = samdb.search(base='', scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
+            assert len(res) == 1
+            sids = res[0].get("tokenGroups")
+            assert len(sids) == 1
+            sid = ndr_unpack(security.dom_sid, sids[0])
+            assert str(sid) == security.SID_NT_SYSTEM
+        except Exception as msg:
+            raise CommandError("You need to specify an URL that gives privileges as SID_NT_SYSTEM(%s)" %
+                               (security.SID_NT_SYSTEM))
+
+        # We use sort here in order to have a predictable processing order
+        # this might not be strictly needed, but also doesn't hurt here
+        for a in sorted(virtual_attributes.keys()):
+            flags = ldb.ATTR_FLAG_HIDDEN | virtual_attributes[a].get("flags", 0)
+            samdb.schema_attribute_add(a, flags, ldb.SYNTAX_OCTET_STRING)
+
+        return samdb
+
+    def get_account_attributes(self, samdb, username,
+                               basedn, filter, scope, attrs):
+
+        require_supplementalCredentials = False
+        search_attrs = attrs[:]
+        lower_attrs = [x.lower() for x in search_attrs]
+        for a in virtual_attributes.keys():
+            if a.lower() in lower_attrs:
+                require_supplementalCredentials = True
+        add_supplementalCredentials = False
+        if require_supplementalCredentials:
+            a = "supplementalCredentials"
+            if a.lower() not in lower_attrs:
+                search_attrs += [a]
+                add_supplementalCredentials = True
+        add_sAMAcountName = False
+        a = "sAMAccountName"
+        if a.lower() not in lower_attrs:
+            search_attrs += [a]
+            add_sAMAcountName = True
+
+        if scope == ldb.SCOPE_BASE:
+            search_controls = ["show_deleted:1", "show_recycled:1"]
+        else:
+            search_controls = []
+        try:
+            res = samdb.search(base=basedn, expression=filter,
+                               scope=scope, attrs=search_attrs,
+                               controls=search_controls)
+            if len(res) == 0:
+                raise Exception('Unable to find user "%s"' % (username or filter))
+            if len(res) > 1:
+                raise Exception('Matched %u multiple users with filter "%s"' % (len(res), filter))
+        except Exception as msg:
+            # FIXME: catch more specific exception
+            raise CommandError("Failed to get password for user '%s': %s" % (username or filter, msg))
+        obj = res[0]
+
+        sc = None
+        if "supplementalCredentials" in obj:
+            sc_blob = obj["supplementalCredentials"][0]
+            sc = ndr_unpack(drsblobs.supplementalCredentialsBlob, sc_blob)
+            if add_supplementalCredentials:
+                del obj["supplementalCredentials"]
+        account_name = obj["sAMAccountName"][0]
+        if add_sAMAcountName:
+            del obj["sAMAccountName"]
+
+        def get_package(name):
+            if sc is None:
+                return None
+            for p in sc.sub.packages:
+                if name != p.name:
+                    continue
+
+                return binascii.a2b_hex(p.data)
+            return None
+
+        def get_utf8(a, b, username):
+            try:
+                u = unicode(b, 'utf-16-le')
+            except UnicodeDecodeError as e:
+                self.outf.write("WARNING: '%s': CLEARTEXT is invalid UTF-16-LE unable to generate %s\n" % (
+                                username, a))
+                return None
+            u8 = u.encode('utf-8')
+            return u8
+
+        # We use sort here in order to have a predictable processing order
+        for a in sorted(virtual_attributes.keys()):
+            if not a.lower() in lower_attrs:
+                continue
+
+            if a == "virtualClearTextUTF8":
+                b = get_package("Primary:CLEARTEXT")
+                if b is None:
+                    continue
+                u8 = get_utf8(a, b, username or account_name)
+                if u8 is None:
+                    continue
+                v = u8
+            elif a == "virtualClearTextUTF16":
+                v = get_package("Primary:CLEARTEXT")
+                if v is None:
+                    continue
+            elif a == "virtualSSHA":
+                b = get_package("Primary:CLEARTEXT")
+                if b is None:
+                    continue
+                u8 = get_utf8(a, b, username or account_name)
+                if u8 is None:
+                    continue
+                salt = get_random_bytes(4)
+                h = hashlib.sha1()
+                h.update(u8)
+                h.update(salt)
+                bv = h.digest() + salt
+                v = "{SSHA}" + base64.b64encode(bv)
+            elif a == "virtualCryptSHA256":
+                b = get_package("Primary:CLEARTEXT")
+                if b is None:
+                    continue
+                u8 = get_utf8(a, b, username or account_name)
+                if u8 is None:
+                    continue
+                sv = get_crypt_value("5", u8)
+                v = "{CRYPT}" + sv
+            elif a == "virtualCryptSHA512":
+                b = get_package("Primary:CLEARTEXT")
+                if b is None:
+                    continue
+                u8 = get_utf8(a, b, username or account_name)
+                if u8 is None:
+                    continue
+                sv = get_crypt_value("6", u8)
+                v = "{CRYPT}" + sv
+            else:
+                continue
+            obj[a] = ldb.MessageElement(v, ldb.FLAG_MOD_REPLACE, a)
+        return obj
+
+    def parse_attributes(self, attributes):
+
+        if attributes is None:
+            raise CommandError("Please specify --attributes")
+        attrs = attributes.split(',')
+        password_attrs = []
+        for pa in attrs:
+            pa = pa.lstrip().rstrip()
+            for da in disabled_virtual_attributes.keys():
+                if pa.lower() == da.lower():
+                    r = disabled_virtual_attributes[da]["reason"]
+                    raise CommandError("Virtual attribute '%s' not supported: %s" % (
+                                       da, r))
+            for va in virtual_attributes.keys():
+                if pa.lower() == va.lower():
+                    # Take the real name
+                    pa = va
+                    break
+            password_attrs += [pa]
+
+        return password_attrs
+
+class cmd_user_getpassword(GetPasswordCommand):
+    """Get the password fields of a user/computer account.
+
+This command gets the logon password for a user/computer account.
+
+The username specified on the command is the sAMAccountName.
+The username may also be specified using the --filter option.
+
+The command must be run from the root user id or another authorized user id.
+The '-H' or '--URL' option only supports ldapi:// or [tdb://] and can be
+used to adjust the local path. By default tdb:// is used by default.
+
+The '--attributes' parameter takes a comma separated list of attributes,
+which will be printed or given to the script specified by '--script'. If a
+specified attribute is not available on an object it's silently omitted.
+All attributes defined in the schema (e.g. the unicodePwd attribute holds
+the NTHASH) and the following virtual attributes are possible (see --help
+for which virtual attributes are supported in your environment):
+
+   virtualClearTextUTF16: The raw cleartext as stored in the
+                          'Primary:CLEARTEXT' buffer inside of the
+                          supplementalCredentials attribute. This typically
+                          contains valid UTF-16-LE, but may contain random
+                          bytes, e.g. for computer accounts.
+
+   virtualClearTextUTF8:  As virtualClearTextUTF16, but converted to UTF-8
+                          (only from valid UTF-16-LE)
+
+   virtualSSHA:           As virtualClearTextUTF8, but a salted SHA-1
+                          checksum, useful for OpenLDAP's '{SSHA}' algorithm.
+
+   virtualCryptSHA256:    As virtualClearTextUTF8, but a salted SHA256
+                          checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
+                          with a $5$... salt, see crypt(3) on modern systems.
+
+   virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
+                          checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
+                          with a $6$... salt, see crypt(3) on modern systems.
+
+Example1:
+samba-tool user getpassword TestUser1 --attributes=pwdLastSet,virtualClearTextUTF8
+
+Example2:
+samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-KeyVersionNumber,unicodePwd,virtualClearTextUTF16
+
+"""
+    def __init__(self):
+        super(cmd_user_getpassword, self).__init__()
+
+    synopsis = "%prog (<username>|--filter <filter>) [options]"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for sam.ldb database or local ldapi server", type=str,
+               metavar="URL", dest="H"),
+        Option("--filter", help="LDAP Filter to set password on", type=str),
+        Option("--attributes", type=str,
+               help=virtual_attributes_help,
+               metavar="ATTRIBUTELIST", dest="attributes"),
+        ]
+
+    takes_args = ["username?"]
+
+    def run(self, username=None, H=None, filter=None,
+            attributes=None,
+            sambaopts=None, versionopts=None):
+        self.lp = sambaopts.get_loadparm()
+
+        if filter is None and username is None:
+            raise CommandError("Either the username or '--filter' must be specified!")
+
+        if filter is None:
+            filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
+
+        if attributes is None:
+            raise CommandError("Please specify --attributes")
+
+        password_attrs = self.parse_attributes(attributes)
+
+        samdb = self.connect_system_samdb(url=H, allow_local=True)
+
+        obj = self.get_account_attributes(samdb, username,
+                                          basedn=None,
+                                          filter=filter,
+                                          scope=ldb.SCOPE_SUBTREE,
+                                          attrs=password_attrs)
+
+        ldif = samdb.write_ldif(obj, ldb.CHANGETYPE_NONE)
+        self.outf.write("%s" % ldif)
+        self.outf.write("Got password OK\n")
 
 class cmd_user(SuperCommand):
     """User management."""
@@ -687,3 +1094,4 @@ class cmd_user(SuperCommand):
     subcommands["setexpiry"] = cmd_user_setexpiry()
     subcommands["password"] = cmd_user_password()
     subcommands["setpassword"] = cmd_user_setpassword()
+    subcommands["getpassword"] = cmd_user_getpassword()
