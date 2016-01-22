@@ -1566,10 +1566,13 @@ static int lsql_handle_request(struct ldb_module *module, struct ldb_request *re
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	tv.tv_sec = req->starttime + req->timeout;
-	ac->timeout_event = tevent_add_timer(ev, ac, tv, lsql_timeout, ac);
-	if (NULL == ac->timeout_event) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (req->timeout > 0) {
+		tv.tv_sec = req->starttime + req->timeout;
+		tv.tv_usec = 0;
+		ac->timeout_event = tevent_add_timer(ev, ac, tv, lsql_timeout, ac);
+		if (NULL == ac->timeout_event) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	return LDB_SUCCESS;

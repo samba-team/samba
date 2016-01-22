@@ -252,8 +252,11 @@ static int lldb_search(struct lldb_context *lldb_ac)
 		break;
 	}
 
-	tv.tv_sec = req->timeout;
+	tv.tv_sec = 0;
 	tv.tv_usec = 0;
+	if (req->timeout > 0) {
+		tv.tv_sec = req->timeout;
+	}
 
 	ret = ldap_search_ext(lldb->ldap, search_base, ldap_scope, 
 			      expression, 
@@ -836,12 +839,13 @@ static int lldb_handle_request(struct ldb_module *module, struct ldb_request *re
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-
-	tv.tv_sec = req->starttime + req->timeout;
-	tv.tv_usec = 0;
-	te = tevent_add_timer(ev, ac, tv, lldb_timeout, ac);
-	if (NULL == te) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (req->timeout > 0) {
+		tv.tv_sec = req->starttime + req->timeout;
+		tv.tv_usec = 0;
+		te = tevent_add_timer(ev, ac, tv, lldb_timeout, ac);
+		if (NULL == te) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	return LDB_SUCCESS;
