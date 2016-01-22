@@ -66,10 +66,12 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
 	deps='torture'
 	)
 
-if bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'):
-    torture_rpc_backupkey = 'rpc/backupkey.c'
-else:
-    torture_rpc_backupkey = 'rpc/backupkey_heimdal.c'
+torture_rpc_backupkey = ''
+if bld.AD_DC_BUILD_IS_ENABLED():
+    if bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'):
+        torture_rpc_backupkey = 'rpc/backupkey.c'
+    else:
+        torture_rpc_backupkey = 'rpc/backupkey_heimdal.c'
 
 bld.SAMBA_MODULE('torture_rpc',
                  source='''

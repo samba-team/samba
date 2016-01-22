@@ -540,7 +540,9 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "asyncbind", torture_async_bind);
 	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
 	torture_suite_add_suite(suite, torture_rpc_bind(suite));
+#ifdef AD_DC_BUILD_IS_ENABLED
 	torture_suite_add_suite(suite, torture_rpc_backupkey(suite));
+#endif
 	torture_suite_add_suite(suite, torture_rpc_fsrvp(suite));
 	torture_suite_add_suite(suite, torture_rpc_clusapi(suite));
 	torture_suite_add_suite(suite, torture_rpc_witness(suite));
