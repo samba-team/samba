@@ -112,6 +112,7 @@ interface smbXsrv
 		 * one in future.
 		 */
 		[ignore] struct smbXsrv_connection	*connections;
+		boolean8		server_multi_channel_enabled;
 	} smbXsrv_client;
 
 	/* sessions */
