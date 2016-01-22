@@ -26,6 +26,11 @@
 #include "lib/util/tsort.h"
 #include "librpc/gen_ndr/ioctl.h"
 
+#ifdef HAVE_ETHTOOL
+#include "linux/sockios.h"
+#include "linux/ethtool.h"
+#endif
+
 /****************************************************************************
  Create a struct sockaddr_storage with the netmask bits set to 1.
 ****************************************************************************/
@@ -120,6 +125,47 @@ void make_net(struct sockaddr_storage *pss_out,
 	make_bcast_or_net(pss_out, pss_in, nmask, false);
 }
 
+#ifdef HAVE_ETHTOOL
+static void query_iface_speed_from_name(const char *name, uint64_t *speed)
+{
+	int ret = 0;
+	struct ethtool_cmd ecmd;
+	struct ethtool_value edata;
+	struct ifreq ifr;
+	int fd;
+
+	fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (fd == -1) {
+		DBG_ERR("Failed to open socket.");
+		return;
+	}
+
+	strncpy(ifr.ifr_name, name, IF_NAMESIZE);
+
+	ifr.ifr_data = (void *)&edata;
+	edata.cmd = ETHTOOL_GLINK;
+	ret = ioctl(fd, SIOCETHTOOL, &ifr);
+	if (ret == -1) {
+		goto done;
+	}
+	if (edata.data == 0) {
+		/* no link detected */
+		*speed = 0;
+		goto done;
+	}
+
+	ifr.ifr_data = (void *)&ecmd;
+	ecmd.cmd = ETHTOOL_GSET;
+	ret = ioctl(fd, SIOCETHTOOL, &ifr);
+	if (ret == -1) {
+		goto done;
+	}
+	*speed = (ethtool_cmd_speed(&ecmd)) * 1000 * 1000;
+
+done:
+	(void)close(fd);
+}
+#endif
 
 /****************************************************************************
  Try the "standard" getifaddrs/freeifaddrs interfaces.
@@ -222,6 +268,9 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 				"%s\n", ifptr->ifa_name, strerror(errno));
 		}
 
+#ifdef HAVE_ETHTOOL
+		query_iface_speed_from_name(ifptr->ifa_name, &if_speed);
+#endif
 		ifaces[total].linkspeed = if_speed;
 		ifaces[total].capability = FSCTL_NET_IFACE_NONE_CAPABLE;
 
