@@ -418,11 +418,13 @@ static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	talloc_free(req->time_event);
-	req->time_event = NULL;
-	if (ac->req->timeout) {
-		req->time_event = tevent_add_timer(ac->ildb->event_ctx, ac,
-						   timeval_current_ofs(ac->req->timeout, 0),
+	TALLOC_FREE(req->time_event);
+	if (ac->req->timeout > 0) {
+		struct timeval tv = {
+			.tv_sec = ac->req->starttime + ac->req->timeout,
+		};
+
+		req->time_event = tevent_add_timer(ac->ildb->event_ctx, ac, tv,
 						   ildb_request_timeout, ac);
 	}
 
