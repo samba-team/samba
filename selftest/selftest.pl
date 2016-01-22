@@ -415,7 +415,15 @@ my $testenv_default = "none";
 # must terminate in this time, and testenv will only stay alive this
 # long
 
-my $server_maxtime = 10800;
+my $server_maxtime;
+if ($opt_testenv) {
+    # 1 year should be enough :-)
+    $server_maxtime = 365 * 24 * 60 * 60;
+} else {
+    # make test should run under 3 hours
+    $server_maxtime = 3 * 60 * 60;
+}
+
 if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
