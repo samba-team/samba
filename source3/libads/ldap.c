@@ -29,6 +29,7 @@
 #include "../libds/common/flags.h"
 #include "smbldap.h"
 #include "../libcli/security/security.h"
+#include "../librpc/gen_ndr/netlogon.h"
 #include "lib/param/loadparm.h"
 
 #ifdef HAVE_LDAP
@@ -2211,6 +2212,12 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	uint32_t acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
 	                        UF_DONT_EXPIRE_PASSWD |\
 			        UF_ACCOUNTDISABLE );
+	uint32_t func_level = 0;
+
+	ret = ads_domain_func_level(ads, &func_level);
+	if (!ADS_ERR_OK(ret)) {
+		return ret;
+	}
 
 	if (!(ctx = talloc_init("ads_add_machine_acct")))
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -2245,6 +2252,25 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
 	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
+
+	if (func_level >= DS_DOMAIN_FUNCTION_2008) {
+		uint32_t etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
+		const char *etype_list_str;
+
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+		etype_list |= ENC_HMAC_SHA1_96_AES128;
+#endif
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+		etype_list |= ENC_HMAC_SHA1_96_AES256;
+#endif
+
+		etype_list_str = talloc_asprintf(ctx, "%d", (int)etype_list);
+		if (etype_list_str == NULL) {
+			goto done;
+		}
+		ads_mod_str(ctx, &mods, "msDS-SupportedEncryptionTypes",
+			    etype_list_str);
+	}
 
 	ret = ads_gen_add(ads, new_dn, mods);
 
