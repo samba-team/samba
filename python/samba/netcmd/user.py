@@ -52,6 +52,17 @@ from samba.netcmd import (
     Option,
     )
 
+
+try:
+    import io
+    import gpgme
+    gpgme_support = True
+    decrypt_samba_gpg_help = "Decrypt the SambaGPG password as cleartext source"
+except ImportError as e:
+    gpgme_support = False
+    decrypt_samba_gpg_help = "Decrypt the SambaGPG password not supported, " + \
+            "python-gpgme required"
+
 disabled_virtual_attributes = {
     }
 
@@ -60,6 +71,9 @@ virtual_attributes = {
         "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
         },
     "virtualClearTextUTF16": {
+        "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
+        },
+    "virtualSambaGPG": {
         "flags": ldb.ATTR_FLAG_FORCE_BASE64_LDIF,
         },
     }
@@ -848,8 +862,8 @@ class GetPasswordCommand(Command):
 
         return samdb
 
-    def get_account_attributes(self, samdb, username,
-                               basedn, filter, scope, attrs):
+    def get_account_attributes(self, samdb, username, basedn, filter, scope,
+                               attrs, decrypt):
 
         require_supplementalCredentials = False
         search_attrs = attrs[:]
@@ -858,11 +872,16 @@ class GetPasswordCommand(Command):
             if a.lower() in lower_attrs:
                 require_supplementalCredentials = True
         add_supplementalCredentials = False
+        add_unicodePwd = False
         if require_supplementalCredentials:
             a = "supplementalCredentials"
             if a.lower() not in lower_attrs:
                 search_attrs += [a]
                 add_supplementalCredentials = True
+            a = "unicodePwd"
+            if a.lower() not in lower_attrs:
+                search_attrs += [a]
+                add_unicodePwd = True
         add_sAMAcountName = False
         a = "sAMAccountName"
         if a.lower() not in lower_attrs:
@@ -887,24 +906,78 @@ class GetPasswordCommand(Command):
         obj = res[0]
 
         sc = None
+        unicodePwd = None
         if "supplementalCredentials" in obj:
             sc_blob = obj["supplementalCredentials"][0]
             sc = ndr_unpack(drsblobs.supplementalCredentialsBlob, sc_blob)
             if add_supplementalCredentials:
                 del obj["supplementalCredentials"]
+        if "unicodePwd" in obj:
+            unicodePwd = obj["unicodePwd"][0]
+            if add_unicodePwd:
+                del obj["unicodePwd"]
         account_name = obj["sAMAccountName"][0]
         if add_sAMAcountName:
             del obj["sAMAccountName"]
 
-        def get_package(name):
+        calculated = {}
+        def get_package(name, min_idx=0):
+            if name in calculated:
+                return calculated[name]
             if sc is None:
                 return None
+            if min_idx < 0:
+                min_idx = len(sc.sub.packages) + min_idx
+            idx = 0
             for p in sc.sub.packages:
+                idx += 1
+                if idx <= min_idx:
+                    continue
                 if name != p.name:
                     continue
 
                 return binascii.a2b_hex(p.data)
             return None
+
+        if decrypt:
+            #
+            # Samba adds 'Primary:SambaGPG' at the end.
+            # When Windows sets the password it keeps
+            # 'Primary:SambaGPG' and rotates it to
+            # the begining. So we can only use the value,
+            # if it is the last one.
+            #
+            # In order to get more protection we verify
+            # the nthash of the decrypted utf16 password
+            # against the stored nthash in unicodePwd.
+            #
+            sgv = get_package("Primary:SambaGPG", min_idx=-1)
+            if sgv is not None and unicodePwd is not None:
+                ctx = gpgme.Context()
+                ctx.armor = True
+                cipher_io = io.BytesIO(sgv)
+                plain_io = io.BytesIO()
+                try:
+                    ctx.decrypt(cipher_io, plain_io)
+                    cv = plain_io.getvalue()
+                    #
+                    # We only use the password if it matches
+                    # the current nthash stored in the unicodePwd
+                    # attribute
+                    #
+                    tmp = credentials.Credentials()
+                    tmp.set_anonymous()
+                    tmp.set_utf16_password(cv)
+                    nthash = tmp.get_nt_hash()
+                    if nthash == unicodePwd:
+                        calculated["Primary:CLEARTEXT"] = cv
+                except gpgme.GpgmeError as (major, minor, msg):
+                    if major == gpgme.ERR_BAD_SECKEY:
+                        msg = "ERR_BAD_SECKEY: " + msg
+                    else:
+                        msg = "MAJOR:%d, MINOR:%d: %s" % (major, minor, msg)
+                    self.outf.write("WARNING: '%s': SambaGPG can't be decrypted into CLEARTEXT: %s\n" % (
+                                    username or account_name, msg))
 
         def get_utf8(a, b, username):
             try:
@@ -964,6 +1037,15 @@ class GetPasswordCommand(Command):
                     continue
                 sv = get_crypt_value("6", u8)
                 v = "{CRYPT}" + sv
+            elif a == "virtualSambaGPG":
+                # Samba adds 'Primary:SambaGPG' at the end.
+                # When Windows sets the password it keeps
+                # 'Primary:SambaGPG' and rotates it to
+                # the begining. So we can only use the value,
+                # if it is the last one.
+                v = get_package("Primary:SambaGPG", min_idx=-1)
+                if v is None:
+                    continue
             else:
                 continue
             obj[a] = ldb.MessageElement(v, ldb.FLAG_MOD_REPLACE, a)
@@ -1011,7 +1093,8 @@ the NTHASH) and the following virtual attributes are possible (see --help
 for which virtual attributes are supported in your environment):
 
    virtualClearTextUTF16: The raw cleartext as stored in the
-                          'Primary:CLEARTEXT' buffer inside of the
+                          'Primary:CLEARTEXT' (or 'Primary:SambaGPG'
+                          with '--decrypt-samba-gpg') buffer inside of the
                           supplementalCredentials attribute. This typically
                           contains valid UTF-16-LE, but may contain random
                           bytes, e.g. for computer accounts.
@@ -1029,6 +1112,20 @@ for which virtual attributes are supported in your environment):
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $6$... salt, see crypt(3) on modern systems.
+
+   virtualSambaGPG:       The raw cleartext as stored in the
+                          'Primary:SambaGPG' buffer inside of the
+                          supplementalCredentials attribute.
+                          See the 'password hash gpg key ids' option in
+                          smb.conf.
+
+The '--decrypt-samba-gpg' option triggers decryption of the
+Primary:SambaGPG buffer. Check with '--help' if this feature is available
+in your environment or not (the python-gpgme package is required).  Please
+note that you might need to set the GNUPGHOME environment variable.  If the
+decryption key has a passphrase you have to make sure that the GPG_AGENT_INFO
+environment variable has been set correctly and the passphrase is already
+known by the gpg-agent.
 
 Example1:
 samba-tool user getpassword TestUser1 --attributes=pwdLastSet,virtualClearTextUTF8
@@ -1054,14 +1151,20 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
         Option("--attributes", type=str,
                help=virtual_attributes_help,
                metavar="ATTRIBUTELIST", dest="attributes"),
+        Option("--decrypt-samba-gpg",
+               help=decrypt_samba_gpg_help,
+               action="store_true", default=False, dest="decrypt_samba_gpg"),
         ]
 
     takes_args = ["username?"]
 
     def run(self, username=None, H=None, filter=None,
-            attributes=None,
+            attributes=None, decrypt_samba_gpg=None,
             sambaopts=None, versionopts=None):
         self.lp = sambaopts.get_loadparm()
+
+        if decrypt_samba_gpg and not gpgme_support:
+            raise CommandError(decrypt_samba_gpg_help)
 
         if filter is None and username is None:
             raise CommandError("Either the username or '--filter' must be specified!")
@@ -1080,7 +1183,8 @@ samba-tool user getpassword --filter=samaccountname=TestUser3 --attributes=msDS-
                                           basedn=None,
                                           filter=filter,
                                           scope=ldb.SCOPE_SUBTREE,
-                                          attrs=password_attrs)
+                                          attrs=password_attrs,
+                                          decrypt=decrypt_samba_gpg)
 
         ldif = samdb.write_ldif(obj, ldb.CHANGETYPE_NONE)
         self.outf.write("%s" % ldif)
@@ -1092,7 +1196,8 @@ class cmd_user_syncpasswords(GetPasswordCommand):
 This syncs logon passwords for user accounts.
 
 Note that this command should run on a single domain controller only
-(typically the PDC-emulator).
+(typically the PDC-emulator). However the "password hash gpg key ids"
+option should to be configured on all domain controllers.
 
 The command must be run from the root user id or another authorized user id.
 The '-H' or '--URL' option only supports ldapi:// and can be used to adjust the
@@ -1110,7 +1215,7 @@ The first time, this command needs to be called with
 '--cache-ldb-initialize' in order to initialize its cache.
 
 The cache initialization requires '--attributes' and allows the following
-optional options: '--script', '--filter' or
+optional options: '--decrypt-samba-gpg', '--script', '--filter' or
 '-H/--URL'.
 
 The '--attributes' parameter takes a comma separated list of attributes,
@@ -1121,7 +1226,8 @@ the NTHASH) and the following virtual attributes are possible (see '--help'
 for supported virtual attributes in your environment):
 
    virtualClearTextUTF16: The raw cleartext as stored in the
-                          'Primary:CLEARTEXT' buffer inside of the
+                          'Primary:CLEARTEXT' (or 'Primary:SambaGPG'
+                          with '--decrypt-samba-gpg') buffer inside of the
                           supplementalCredentials attribute. This typically
                           contains valid UTF-16-LE, but may contain random
                           bytes, e.g. for computer accounts.
@@ -1139,6 +1245,20 @@ for supported virtual attributes in your environment):
    virtualCryptSHA512:    As virtualClearTextUTF8, but a salted SHA512
                           checksum, useful for OpenLDAP's '{CRYPT}' algorithm,
                           with a $6$... salt, see crypt(3) on modern systems.
+
+   virtualSambaGPG:       The raw cleartext as stored in the
+                          'Primary:SambaGPG' buffer inside of the
+                          supplementalCredentials attribute.
+                          See the 'password hash gpg key ids' option in
+                          smb.conf.
+
+The '--decrypt-samba-gpg' option triggers decryption of the
+Primary:SambaGPG buffer. Check with '--help' if this feature is available
+in your environment or not (the python-gpgme package is required).  Please
+note that you might need to set the GNUPGHOME environment variable.  If the
+decryption key has a passphrase you have to make sure that the GPG_AGENT_INFO
+environment variable has been set correctly and the passphrase is already
+known by the gpg-agent.
 
 The '--script' option specifies a custom script that is called whenever any
 of the dirsyncAttributes (see below) was changed. The script is called
@@ -1245,6 +1365,9 @@ samba-tool user syncpasswords --terminate \\
         Option("--attributes", type=str,
                help=virtual_attributes_help,
                metavar="ATTRIBUTELIST", dest="attributes"),
+        Option("--decrypt-samba-gpg",
+               help=decrypt_samba_gpg_help,
+               action="store_true", default=False, dest="decrypt_samba_gpg"),
         Option("--script", help="Script that is called for each password change", type=str,
                metavar="/path/to/syncpasswords.script", dest="script"),
         Option("--no-wait", help="Don't block waiting for changes",
@@ -1261,7 +1384,7 @@ samba-tool user syncpasswords --terminate \\
 
     def run(self, cache_ldb_initialize=False, cache_ldb=None,
             H=None, filter=None,
-            attributes=None,
+            attributes=None, decrypt_samba_gpg=None,
             script=None, nowait=None, logfile=None, daemon=None, terminate=None,
             sambaopts=None, versionopts=None):
 
@@ -1274,6 +1397,8 @@ samba-tool user syncpasswords --terminate \\
         if not cache_ldb_initialize:
             if attributes is not None:
                 raise CommandError("--attributes is only allowed together with --cache-ldb-initialize")
+            if decrypt_samba_gpg:
+                raise CommandError("--decrypt-samba-gpg is only allowed together with --cache-ldb-initialize")
             if script is not None:
                 raise CommandError("--script is only allowed together with --cache-ldb-initialize")
             if filter is not None:
@@ -1343,6 +1468,9 @@ samba-tool user syncpasswords --terminate \\
             if H is None:
                 H = "ldapi://%s" % os.path.abspath(self.lp.private_path("ldap_priv/ldapi"))
 
+            if decrypt_samba_gpg and not gpgme_support:
+                raise CommandError(decrypt_samba_gpg_help)
+
             password_attrs = self.parse_attributes(attributes)
             lower_attrs = [x.lower() for x in password_attrs]
             # We always return these in order to track deletions
@@ -1395,6 +1523,7 @@ samba-tool user syncpasswords --terminate \\
                 "dirsyncAttribute",
                 "dirsyncControl",
                 "passwordAttribute",
+                "decryptSambaGPG",
                 "syncCommand",
                 "currentPid",
             ]
@@ -1422,6 +1551,7 @@ samba-tool user syncpasswords --terminate \\
                 self.dirsync_attrs = dirsync_attrs
                 self.dirsync_controls = ["dirsync:1:0:0","extended_dn:1:0"];
                 self.password_attrs = password_attrs
+                self.decrypt_samba_gpg = decrypt_samba_gpg
                 self.sync_command = sync_command
                 add_ldif  = "dn: %s\n" % self.cache_dn
                 add_ldif += "objectClass: userSyncPasswords\n"
@@ -1432,6 +1562,10 @@ samba-tool user syncpasswords --terminate \\
                 add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
                 for a in self.password_attrs:
                     add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(a)
+                if self.decrypt_samba_gpg == True:
+                    add_ldif += "decryptSambaGPG: TRUE\n"
+                else:
+                    add_ldif += "decryptSambaGPG: FALSE\n"
                 if self.sync_command is not None:
                     add_ldif += "syncCommand: %s\n" % self.sync_command
                 add_ldif += "currentTime: %s\n" % ldb.timestring(int(time.time()))
@@ -1451,6 +1585,12 @@ samba-tool user syncpasswords --terminate \\
                 self.password_attrs = []
                 for a in res[0]["passwordAttribute"]:
                     self.password_attrs.append(a)
+                decrypt_string = res[0]["decryptSambaGPG"][0]
+                assert(decrypt_string in ["TRUE", "FALSE"])
+                if decrypt_string == "TRUE":
+                    self.decrypt_samba_gpg = True
+                else:
+                    self.decrypt_samba_gpg = False
                 if "syncCommand" in res[0]:
                     self.sync_command = res[0]["syncCommand"][0]
                 else:
@@ -1508,7 +1648,8 @@ samba-tool user syncpasswords --terminate \\
                                               basedn="<GUID=%s>" % guid,
                                               filter="(objectClass=user)",
                                               scope=ldb.SCOPE_BASE,
-                                              attrs=self.password_attrs)
+                                              attrs=self.password_attrs,
+                                              decrypt=self.decrypt_samba_gpg)
             ldif = self.samdb.write_ldif(obj, ldb.CHANGETYPE_NONE)
             log_msg("# Passwords[%d] %s %s\n" % (idx, guid, sid))
             if self.sync_command is None:
