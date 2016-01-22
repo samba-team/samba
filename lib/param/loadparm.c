@@ -549,7 +549,7 @@ bool lpcfg_parm_bool(struct loadparm_context *lp_ctx,
 
 
 /* this is used to prevent lots of mallocs of size 1 */
-static const char lpcfg_string_emtpy[] = "";
+static const char lpcfg_string_empty[] = "";
 
 /**
  Free a string value.
@@ -559,7 +559,7 @@ void lpcfg_string_free(char **s)
 	if (s == NULL) {
 		return;
 	}
-	if (*s == lpcfg_string_emtpy) {
+	if (*s == lpcfg_string_empty) {
 		*s = NULL;
 		return;
 	}
@@ -575,7 +575,7 @@ bool lpcfg_string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 	lpcfg_string_free(dest);
 
 	if ((src == NULL) || (*src == '\0')) {
-		*dest = discard_const_p(char, lpcfg_string_emtpy);
+		*dest = discard_const_p(char, lpcfg_string_empty);
 		return true;
 	}
 
@@ -597,7 +597,7 @@ bool lpcfg_string_set_upper(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 	lpcfg_string_free(dest);
 
 	if ((src == NULL) || (*src == '\0')) {
-		*dest = discard_const_p(char, lpcfg_string_emtpy);
+		*dest = discard_const_p(char, lpcfg_string_empty);
 		return true;
 	}
 
