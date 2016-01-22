@@ -1333,6 +1333,16 @@ bld.SAMBA3_BINARY('tevent_glib_glue_test',
                  enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
                  install=False)
 
+bld.SAMBA3_BINARY('tevent_glib_tracker',
+                 source='utils/async-tracker.c',
+                 deps='''
+                 talloc
+                 libsmb
+                 popt_samba3
+                 tevent-glib-glue ''' + bld.env['libtracker'],
+                 enabled=bld.CONFIG_SET('HAVE_TRACKER') and bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
+                 install=False)
+
 ########################## INCLUDES #################################
 
 bld.RECURSE('auth')
