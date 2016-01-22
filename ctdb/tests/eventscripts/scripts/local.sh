@@ -601,35 +601,43 @@ EOF
 
 setup_ctdb_natgw ()
 {
-    debug "Setting up NAT gateway"
+	debug "Setting up NAT gateway"
 
-    natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
-    mkdir -p "$natgw_config_dir"
+	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
+	mkdir -p "$natgw_config_dir"
 
-    # These will accumulate, 1 per test... but will be cleaned up at
-    # the end.
-    export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
+	# These will accumulate, 1 per test... but will be cleaned up at
+	# the end.
+	export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
 
-    # Read from stdin
-    while read _ip _master _dev ; do
-	echo "$_ip"
-	if [ "$_master" = "master" ] ; then
-	    export FAKE_CTDB_NATGW_MASTER="$_ip"
-	fi
-    done >"$CTDB_NATGW_NODES"
+	# Read from stdin
+	while read _ip _opts ; do
+		case "$_opts" in
+		master)
+			export FAKE_CTDB_NATGW_MASTER="$_ip"
+			echo "$_ip"
+			;;
+		slave-only)
+			printf "%s\tslave-only\n" "$_ip"
+			;;
+		*)
+			echo "$_ip"
+			;;
+		esac
+	done >"$CTDB_NATGW_NODES"
 
-    # Assume all of the nodes are on a /24 network and have IPv4
-    # addresses:
-    read _ip <"$CTDB_NATGW_NODES"
-    export CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
+	# Assume all of the nodes are on a /24 network and have IPv4
+	# addresses:
+	read _ip <"$CTDB_NATGW_NODES"
+	export CTDB_NATGW_PRIVATE_NETWORK="${_ip%.*}.0/24"
 
-    # These are fixed.  Probably don't use the same network for the
-    # private node IPs.  To unset the default gateway just set it to
-    # "".  :-)
-    export CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
-    export CTDB_NATGW_PUBLIC_IFACE="eth1"
-    export CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
-    export CTDB_NATGW_SLAVE_ONLY=""
+	# These are fixed.  Probably don't use the same network for the
+	# private node IPs.  To unset the default gateway just set it to
+	# "".  :-)
+	export CTDB_NATGW_PUBLIC_IP="10.1.1.121/24"
+	export CTDB_NATGW_PUBLIC_IFACE="eth1"
+	export CTDB_NATGW_DEFAULT_GATEWAY="10.1.1.254"
+	export CTDB_NATGW_SLAVE_ONLY=""
 }
 
 ok_natgw_master_ip_addr_show ()
