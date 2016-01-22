@@ -403,8 +403,25 @@ static void free_parameters_by_snum(int snum)
  */
 static void free_global_parameters(void)
 {
+	uint32_t i;
+	struct parm_struct *parm;
+
 	free_param_opts(&Globals.param_opt);
 	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
+
+	/* Reset references in the defaults because the context is going to be freed */
+	for (i=0; parm_table[i].label; i++) {
+		parm = &parm_table[i];
+		if ((parm->type == P_STRING) ||
+		    (parm->type == P_USTRING)) {
+			if ((parm->def.svalue != NULL) &&
+			    (*(parm->def.svalue) != '\0')) {
+				if (talloc_parent(parm->def.svalue) == Globals.ctx) {
+					parm->def.svalue = NULL;
+				}
+			}
+		}
+	}
 	TALLOC_FREE(Globals.ctx);
 }
 
