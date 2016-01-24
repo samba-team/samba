@@ -48,15 +48,15 @@ bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			const char *attrib, const char *fmt, ...);
 
 const char *tldap_errstr(TALLOC_CTX *mem_ctx, struct tldap_context *ld,
-			 int rc);
-int tldap_search_va(struct tldap_context *ld, const char *base, int scope,
-		    const char *attrs[], int num_attrs, int attrsonly,
-		    TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+			 TLDAPRC rc);
+TLDAPRC tldap_search_va(struct tldap_context *ld, const char *base, int scope,
+			const char *attrs[], int num_attrs, int attrsonly,
+			TALLOC_CTX *mem_ctx, struct tldap_message ***res,
 		    const char *fmt, va_list ap);
-int tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
-		     const char *attrs[], int num_attrs, int attrsonly,
-		     TALLOC_CTX *mem_ctx, struct tldap_message ***res,
-		     const char *fmt, ...);
+TLDAPRC tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
+			 const char *attrs[], int num_attrs, int attrsonly,
+			 TALLOC_CTX *mem_ctx, struct tldap_message ***res,
+			 const char *fmt, ...);
 bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 		       uint64_t *presult);
 bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
@@ -65,8 +65,8 @@ bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
 struct tevent_req *tldap_fetch_rootdse_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct tldap_context *ld);
-int tldap_fetch_rootdse_recv(struct tevent_req *req);
-int tldap_fetch_rootdse(struct tldap_context *ld);
+TLDAPRC tldap_fetch_rootdse_recv(struct tevent_req *req);
+TLDAPRC tldap_fetch_rootdse(struct tldap_context *ld);
 struct tldap_message *tldap_rootdse(struct tldap_context *ld);
 
 bool tldap_entry_has_attrvalue(struct tldap_message *msg,
@@ -97,8 +97,8 @@ struct tevent_req *tldap_search_paged_send(TALLOC_CTX *mem_ctx,
 					   int sizelimit,
 					   int deref,
 					   int page_size);
-int tldap_search_paged_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			    struct tldap_message **pmsg);
+TLDAPRC tldap_search_paged_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				struct tldap_message **pmsg);
 
 
 #endif

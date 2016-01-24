@@ -47,7 +47,74 @@ struct tldap_mod {
 	DATA_BLOB *values;
 };
 
-bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr);
+typedef struct { uint8_t rc; } TLDAPRC;
+#define TLDAP_RC(x) ((TLDAPRC){.rc = x})
+#define TLDAP_RC_V(x) ((x).rc)
+
+#define TLDAP_RC_EQUAL(x,y) (TLDAP_RC_V(x)==TLDAP_RC_V(y))
+#define TLDAP_RC_IS_SUCCESS(x) TLDAP_RC_EQUAL(x,TLDAP_SUCCESS)
+
+#define TLDAP_SUCCESS TLDAP_RC(0x00)
+#define TLDAP_OPERATIONS_ERROR TLDAP_RC(0x01)
+#define TLDAP_PROTOCOL_ERROR TLDAP_RC(0x02)
+#define TLDAP_TIMELIMIT_EXCEEDED TLDAP_RC(0x03)
+#define TLDAP_SIZELIMIT_EXCEEDED TLDAP_RC(0x04)
+#define TLDAP_COMPARE_FALSE TLDAP_RC(0x05)
+#define TLDAP_COMPARE_TRUE TLDAP_RC(0x06)
+#define TLDAP_STRONG_AUTH_NOT_SUPPORTED TLDAP_RC(0x07)
+#define TLDAP_STRONG_AUTH_REQUIRED TLDAP_RC(0x08)
+#define TLDAP_REFERRAL TLDAP_RC(0x0a)
+#define TLDAP_ADMINLIMIT_EXCEEDED TLDAP_RC(0x0b)
+#define TLDAP_UNAVAILABLE_CRITICAL_EXTENSION TLDAP_RC(0x0c)
+#define TLDAP_CONFIDENTIALITY_REQUIRED TLDAP_RC(0x0d)
+#define TLDAP_SASL_BIND_IN_PROGRESS TLDAP_RC(0x0e)
+#define TLDAP_NO_SUCH_ATTRIBUTE TLDAP_RC(0x10)
+#define TLDAP_UNDEFINED_TYPE TLDAP_RC(0x11)
+#define TLDAP_INAPPROPRIATE_MATCHING TLDAP_RC(0x12)
+#define TLDAP_CONSTRAINT_VIOLATION TLDAP_RC(0x13)
+#define TLDAP_TYPE_OR_VALUE_EXISTS TLDAP_RC(0x14)
+#define TLDAP_INVALID_SYNTAX TLDAP_RC(0x15)
+#define TLDAP_NO_SUCH_OBJECT TLDAP_RC(0x20)
+#define TLDAP_ALIAS_PROBLEM TLDAP_RC(0x21)
+#define TLDAP_INVALID_DN_SYNTAX TLDAP_RC(0x22)
+#define TLDAP_IS_LEAF TLDAP_RC(0x23)
+#define TLDAP_ALIAS_DEREF_PROBLEM TLDAP_RC(0x24)
+#define TLDAP_INAPPROPRIATE_AUTH TLDAP_RC(0x30)
+#define TLDAP_INVALID_CREDENTIALS TLDAP_RC(0x31)
+#define TLDAP_INSUFFICIENT_ACCESS TLDAP_RC(0x32)
+#define TLDAP_BUSY TLDAP_RC(0x33)
+#define TLDAP_UNAVAILABLE TLDAP_RC(0x34)
+#define TLDAP_UNWILLING_TO_PERFORM TLDAP_RC(0x35)
+#define TLDAP_LOOP_DETECT TLDAP_RC(0x36)
+#define TLDAP_NAMING_VIOLATION TLDAP_RC(0x40)
+#define TLDAP_OBJECT_CLASS_VIOLATION TLDAP_RC(0x41)
+#define TLDAP_NOT_ALLOWED_ON_NONLEAF TLDAP_RC(0x42)
+#define TLDAP_NOT_ALLOWED_ON_RDN TLDAP_RC(0x43)
+#define TLDAP_ALREADY_EXISTS TLDAP_RC(0x44)
+#define TLDAP_NO_OBJECT_CLASS_MODS TLDAP_RC(0x45)
+#define TLDAP_RESULTS_TOO_LARGE TLDAP_RC(0x46)
+#define TLDAP_AFFECTS_MULTIPLE_DSAS TLDAP_RC(0x47)
+#define TLDAP_OTHER TLDAP_RC(0x50)
+#define TLDAP_SERVER_DOWN TLDAP_RC(0x51)
+#define TLDAP_LOCAL_ERROR TLDAP_RC(0x52)
+#define TLDAP_ENCODING_ERROR TLDAP_RC(0x53)
+#define TLDAP_DECODING_ERROR TLDAP_RC(0x54)
+#define TLDAP_TIMEOUT TLDAP_RC(0x55)
+#define TLDAP_AUTH_UNKNOWN TLDAP_RC(0x56)
+#define TLDAP_FILTER_ERROR TLDAP_RC(0x57)
+#define TLDAP_USER_CANCELLED TLDAP_RC(0x58)
+#define TLDAP_PARAM_ERROR TLDAP_RC(0x59)
+#define TLDAP_NO_MEMORY TLDAP_RC(0x5a)
+#define TLDAP_CONNECT_ERROR TLDAP_RC(0x5b)
+#define TLDAP_NOT_SUPPORTED TLDAP_RC(0x5c)
+#define TLDAP_CONTROL_NOT_FOUND TLDAP_RC(0x5d)
+#define TLDAP_NO_RESULTS_RETURNED TLDAP_RC(0x5e)
+#define TLDAP_MORE_RESULTS_TO_RETURN TLDAP_RC(0x5f)
+#define TLDAP_CLIENT_LOOP TLDAP_RC(0x60)
+#define TLDAP_REFERRAL_LIMIT_EXCEEDED TLDAP_RC(0x61)
+
+bool tevent_req_ldap_error(struct tevent_req *req, TLDAPRC rc);
+bool tevent_req_is_ldap_error(struct tevent_req *req, TLDAPRC *perr);
 
 struct tldap_context *tldap_context_create(TALLOC_CTX *mem_ctx, int fd);
 bool tldap_connection_ok(struct tldap_context *ld);
@@ -65,27 +132,27 @@ struct tevent_req *tldap_sasl_bind_send(TALLOC_CTX *mem_ctx,
 					int num_sctrls,
 					struct tldap_control *cctrls,
 					int num_cctrls);
-int tldap_sasl_bind_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-			 DATA_BLOB *serverSaslCreds);
-int tldap_sasl_bind(struct tldap_context *ldap,
-		    const char *dn,
-		    const char *mechanism,
-		    DATA_BLOB *creds,
-		    struct tldap_control *sctrls,
-		    int num_sctrls,
-		    struct tldap_control *cctrls,
-		    int num_cctrls,
-		    TALLOC_CTX *mem_ctx,
-		    DATA_BLOB *serverSaslCreds);
+TLDAPRC tldap_sasl_bind_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			     DATA_BLOB *serverSaslCreds);
+TLDAPRC tldap_sasl_bind(struct tldap_context *ldap,
+			const char *dn,
+			const char *mechanism,
+			DATA_BLOB *creds,
+			struct tldap_control *sctrls,
+			int num_sctrls,
+			struct tldap_control *cctrls,
+			int num_cctrls,
+			TALLOC_CTX *mem_ctx,
+			DATA_BLOB *serverSaslCreds);
 
 struct tevent_req *tldap_simple_bind_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct tldap_context *ldap,
 					  const char *dn,
 					  const char *passwd);
-int tldap_simple_bind_recv(struct tevent_req *req);
-int tldap_simple_bind(struct tldap_context *ldap, const char *dn,
-		      const char *passwd);
+TLDAPRC tldap_simple_bind_recv(struct tevent_req *req);
+TLDAPRC tldap_simple_bind(struct tldap_context *ldap, const char *dn,
+			  const char *passwd);
 
 struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -102,16 +169,16 @@ struct tevent_req *tldap_search_send(TALLOC_CTX *mem_ctx,
 				     int timelimit,
 				     int sizelimit,
 				     int deref);
-int tldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-		      struct tldap_message **pmsg);
-int tldap_search(struct tldap_context *ld,
-		 const char *base, int scope, const char *filter,
-		 const char **attrs, int num_attrs, int attrsonly,
-		 struct tldap_control *sctrls, int num_sctrls,
-		 struct tldap_control *cctrls, int num_cctrls,
-		 int timelimit, int sizelimit, int deref,
-		 TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
-		 struct tldap_message ***refs);
+TLDAPRC tldap_search_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			  struct tldap_message **pmsg);
+TLDAPRC tldap_search(struct tldap_context *ld,
+		     const char *base, int scope, const char *filter,
+		     const char **attrs, int num_attrs, int attrsonly,
+		     struct tldap_control *sctrls, int num_sctrls,
+		     struct tldap_control *cctrls, int num_cctrls,
+		     int timelimit, int sizelimit, int deref,
+		     TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
+		     struct tldap_message ***refs);
 bool tldap_entry_dn(struct tldap_message *msg, char **dn);
 bool tldap_entry_attributes(struct tldap_message *msg,
 			    struct tldap_attribute **attributes,
@@ -127,11 +194,11 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 				  int num_sctrls,
 				  struct tldap_control *cctrls,
 				  int num_cctrls);
-int tldap_add_recv(struct tevent_req *req);
-int tldap_add(struct tldap_context *ld, const char *dn,
-	      struct tldap_mod *attributes, int num_attributes,
-	      struct tldap_control *sctrls, int num_sctrls,
-	      struct tldap_control *cctrls, int num_cctrls);
+TLDAPRC tldap_add_recv(struct tevent_req *req);
+TLDAPRC tldap_add(struct tldap_context *ld, const char *dn,
+		  struct tldap_mod *attributes, int num_attributes,
+		  struct tldap_control *sctrls, int num_sctrls,
+		  struct tldap_control *cctrls, int num_cctrls);
 
 struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -142,11 +209,11 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 				     int num_sctrls,
 				     struct tldap_control *cctrls,
 				     int num_cctrls);
-int tldap_modify_recv(struct tevent_req *req);
-int tldap_modify(struct tldap_context *ld, const char *dn,
-		 struct tldap_mod *mods, int num_mods,
-		 struct tldap_control *sctrls, int num_sctrls,
-		 struct tldap_control *cctrls, int num_cctrls);
+TLDAPRC tldap_modify_recv(struct tevent_req *req);
+TLDAPRC tldap_modify(struct tldap_context *ld, const char *dn,
+		     struct tldap_mod *mods, int num_mods,
+		     struct tldap_control *sctrls, int num_sctrls,
+		     struct tldap_control *cctrls, int num_cctrls);
 
 struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
@@ -156,10 +223,10 @@ struct tevent_req *tldap_delete_send(TALLOC_CTX *mem_ctx,
 				     int num_sctrls,
 				     struct tldap_control *cctrls,
 				     int num_cctrls);
-int tldap_delete_recv(struct tevent_req *req);
-int tldap_delete(struct tldap_context *ld, const char *dn,
-		 struct tldap_control *sctrls, int num_sctrls,
-		 struct tldap_control *cctrls, int num_cctrls);
+TLDAPRC tldap_delete_recv(struct tevent_req *req);
+TLDAPRC tldap_delete(struct tldap_context *ld, const char *dn,
+		     struct tldap_control *sctrls, int num_sctrls,
+		     struct tldap_control *cctrls, int num_cctrls);
 
 int tldap_msg_id(const struct tldap_message *msg);
 int tldap_msg_type(const struct tldap_message *msg);
@@ -169,7 +236,7 @@ const char *tldap_msg_referral(struct tldap_message *msg);
 void tldap_msg_sctrls(struct tldap_message *msg, int *num_sctrls,
 		      struct tldap_control **sctrls);
 struct tldap_message *tldap_ctx_lastmsg(struct tldap_context *ld);
-const char *tldap_err2string(int rc);
+const char *tldap_rc2string(TLDAPRC rc);
 
 /* DEBUG */
 enum tldap_debug_level {
@@ -212,65 +279,6 @@ void tldap_set_debug(struct tldap_context *ld,
 #define TLDAP_REQ_EXTENDED (23 + 0x60)
 #define TLDAP_RES_EXTENDED (24 + 0x60)
 #define TLDAP_RES_INTERMEDIATE (25 + 0x60)
-
-#define TLDAP_SUCCESS (0x00)
-#define TLDAP_OPERATIONS_ERROR (0x01)
-#define TLDAP_PROTOCOL_ERROR (0x02)
-#define TLDAP_TIMELIMIT_EXCEEDED (0x03)
-#define TLDAP_SIZELIMIT_EXCEEDED (0x04)
-#define TLDAP_COMPARE_FALSE (0x05)
-#define TLDAP_COMPARE_TRUE (0x06)
-#define TLDAP_STRONG_AUTH_NOT_SUPPORTED (0x07)
-#define TLDAP_STRONG_AUTH_REQUIRED (0x08)
-#define TLDAP_REFERRAL (0x0a)
-#define TLDAP_ADMINLIMIT_EXCEEDED (0x0b)
-#define TLDAP_UNAVAILABLE_CRITICAL_EXTENSION (0x0c)
-#define TLDAP_CONFIDENTIALITY_REQUIRED (0x0d)
-#define TLDAP_SASL_BIND_IN_PROGRESS (0x0e)
-#define TLDAP_NO_SUCH_ATTRIBUTE (0x10)
-#define TLDAP_UNDEFINED_TYPE (0x11)
-#define TLDAP_INAPPROPRIATE_MATCHING (0x12)
-#define TLDAP_CONSTRAINT_VIOLATION (0x13)
-#define TLDAP_TYPE_OR_VALUE_EXISTS (0x14)
-#define TLDAP_INVALID_SYNTAX (0x15)
-#define TLDAP_NO_SUCH_OBJECT (0x20)
-#define TLDAP_ALIAS_PROBLEM (0x21)
-#define TLDAP_INVALID_DN_SYNTAX (0x22)
-#define TLDAP_IS_LEAF (0x23)
-#define TLDAP_ALIAS_DEREF_PROBLEM (0x24)
-#define TLDAP_INAPPROPRIATE_AUTH (0x30)
-#define TLDAP_INVALID_CREDENTIALS (0x31)
-#define TLDAP_INSUFFICIENT_ACCESS (0x32)
-#define TLDAP_BUSY (0x33)
-#define TLDAP_UNAVAILABLE (0x34)
-#define TLDAP_UNWILLING_TO_PERFORM (0x35)
-#define TLDAP_LOOP_DETECT (0x36)
-#define TLDAP_NAMING_VIOLATION (0x40)
-#define TLDAP_OBJECT_CLASS_VIOLATION (0x41)
-#define TLDAP_NOT_ALLOWED_ON_NONLEAF (0x42)
-#define TLDAP_NOT_ALLOWED_ON_RDN (0x43)
-#define TLDAP_ALREADY_EXISTS (0x44)
-#define TLDAP_NO_OBJECT_CLASS_MODS (0x45)
-#define TLDAP_RESULTS_TOO_LARGE (0x46)
-#define TLDAP_AFFECTS_MULTIPLE_DSAS (0x47)
-#define TLDAP_OTHER (0x50)
-#define TLDAP_SERVER_DOWN (0x51)
-#define TLDAP_LOCAL_ERROR (0x52)
-#define TLDAP_ENCODING_ERROR (0x53)
-#define TLDAP_DECODING_ERROR (0x54)
-#define TLDAP_TIMEOUT (0x55)
-#define TLDAP_AUTH_UNKNOWN (0x56)
-#define TLDAP_FILTER_ERROR (0x57)
-#define TLDAP_USER_CANCELLED (0x58)
-#define TLDAP_PARAM_ERROR (0x59)
-#define TLDAP_NO_MEMORY (0x5a)
-#define TLDAP_CONNECT_ERROR (0x5b)
-#define TLDAP_NOT_SUPPORTED (0x5c)
-#define TLDAP_CONTROL_NOT_FOUND (0x5d)
-#define TLDAP_NO_RESULTS_RETURNED (0x5e)
-#define TLDAP_MORE_RESULTS_TO_RETURN (0x5f)
-#define TLDAP_CLIENT_LOOP (0x60)
-#define TLDAP_REFERRAL_LIMIT_EXCEEDED (0x61)
 
 #define TLDAP_MOD_ADD (0)
 #define TLDAP_MOD_DELETE (1)
