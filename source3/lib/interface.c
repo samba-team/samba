@@ -385,7 +385,6 @@ static void interpret_interface(char *token)
 		return;
 	}
 
-	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (p == NULL) {
 		if (!interpret_string_addr(&ss, token, 0)) {
