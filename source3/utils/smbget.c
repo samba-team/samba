@@ -21,14 +21,6 @@
 #include "popt_common.h"
 #include "libsmbclient.h"
 
-#if _FILE_OFFSET_BITS==64
-#define OFF_T_FORMAT "%lld"
-#define OFF_T_FORMAT_CAST long long
-#else
-#define OFF_T_FORMAT "%ld"
-#define OFF_T_FORMAT_CAST long
-#endif
-
 static int columns = 0;
 
 static int debuglevel, update;
@@ -53,7 +45,7 @@ static off_t total_bytes = 0;
 static const char *username = NULL, *password = NULL, *workgroup = NULL;
 static int nonprompt = 0, quiet = 0, dots = 0, keep_permissions = 0,
 	   verbose = 0, send_stdout = 0;
-static int blocksize = SMB_DEFAULT_BLOCKSIZE;
+static unsigned int blocksize = SMB_DEFAULT_BLOCKSIZE;
 
 static int smb_download_file(const char *base, const char *name, int recursive,
 			     int resume, int toplevel, char *outfile);
@@ -90,7 +82,7 @@ static void human_readable(off_t s, char *buffer, int l)
 	} else if (s > 1024) {
 		snprintf(buffer, l, "%.2fkB", 1.0 * s / 1024);
 	} else {
-		snprintf(buffer, l, OFF_T_FORMAT"b", (OFF_T_FORMAT_CAST)s);
+		snprintf(buffer, l, "%jdb", (intmax_t)s);
 	}
 }
 
@@ -486,14 +478,12 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 			    localstat.st_size - RESUME_DOWNLOAD_OFFSET;
 			offset_check = localstat.st_size - RESUME_CHECK_OFFSET;
 			if (verbose) {
-				printf("Trying to start resume of %s "
-				       "at " OFF_T_FORMAT "\n"
-				       "At the moment " OFF_T_FORMAT
-				       " of " OFF_T_FORMAT
-				       " bytes have been retrieved\n",
-				       newpath, (OFF_T_FORMAT_CAST)offset_check,
-				       (OFF_T_FORMAT_CAST)localstat.st_size,
-				       (OFF_T_FORMAT_CAST)remotestat.st_size);
+				printf("Trying to start resume of %s at %jd\n"
+				       "At the moment %jd of %jd bytes have "
+				       "been retrieved\n",
+				       newpath, (intmax_t)offset_check,
+				       (intmax_t)localstat.st_size,
+				       (intmax_t)remotestat.st_size);
 			}
 		}
 
@@ -503,10 +493,9 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 			 * offset_download */
 			off1 = lseek(localhandle, offset_check, SEEK_SET);
 			if (off1 < 0) {
-				fprintf(stderr, "Can't seek to " OFF_T_FORMAT
-						" in local file %s\n",
-					(OFF_T_FORMAT_CAST)offset_check,
-					newpath);
+				fprintf(stderr,
+					"Can't seek to %jd in local file %s\n",
+					(intmax_t)offset_check, newpath);
 				smbc_close(remotehandle);
 				close(localhandle);
 				return 1;
@@ -514,10 +503,9 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 
 			off2 = smbc_lseek(remotehandle, offset_check, SEEK_SET);
 			if (off2 < 0) {
-				fprintf(stderr, "Can't seek to " OFF_T_FORMAT
-						" in remote file %s\n",
-					(OFF_T_FORMAT_CAST)offset_check,
-					newpath);
+				fprintf(stderr,
+					"Can't seek to %jd in remote file %s\n",
+					(intmax_t)offset_check, newpath);
 				smbc_close(remotehandle);
 				close(localhandle);
 				return 1;
@@ -525,11 +513,9 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 
 			if (off1 != off2) {
 				fprintf(stderr, "Offset in local and remote "
-						"files is different "
-						"(local: " OFF_T_FORMAT
-						", remote: " OFF_T_FORMAT ")\n",
-					(OFF_T_FORMAT_CAST)off1,
-					(OFF_T_FORMAT_CAST)off2);
+					"files are different "
+					"(local: %jd, remote: %jd)\n",
+					(intmax_t)off1, (intmax_t)off2);
 				smbc_close(remotehandle);
 				close(localhandle);
 				return 1;
@@ -558,12 +544,11 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 			if (memcmp(checkbuf[0], checkbuf[1],
 				   RESUME_CHECK_SIZE) == 0) {
 				if (verbose) {
-					printf(
-					    "Current local and remote file "
-					    "appear to be the same. "
-					    "Starting download from "
-					    "offset " OFF_T_FORMAT "\n",
-					    (OFF_T_FORMAT_CAST)offset_download);
+					printf("Current local and remote file "
+					       "appear to be the same. "
+					       "Starting download from "
+					       "offset %jd\n",
+					       (intmax_t)offset_download);
 				}
 			} else {
 				fprintf(stderr, "Local and remote file appear "
@@ -595,7 +580,9 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 	     curpos += blocksize) {
 		ssize_t bytesread = smbc_read(remotehandle, readbuf, blocksize);
 		if(bytesread < 0) {
-			fprintf(stderr, "Can't read %u bytes at offset "OFF_T_FORMAT", file %s\n", (unsigned int)blocksize, (OFF_T_FORMAT_CAST)curpos, path);
+			fprintf(stderr,
+				"Can't read %u bytes at offset %jd, file %s\n",
+				blocksize, (intmax_t)curpos, path);
 			smbc_close(remotehandle);
 			if (localhandle != STDOUT_FILENO) {
 				close(localhandle);
@@ -607,7 +594,10 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 		total_bytes += bytesread;
 
 		if(write(localhandle, readbuf, bytesread) < 0) {
-			fprintf(stderr, "Can't write %u bytes to local file %s at offset "OFF_T_FORMAT"\n", (unsigned int)bytesread, path, (OFF_T_FORMAT_CAST)curpos);
+			fprintf(stderr,
+				"Can't write %zd bytes to local file %s at "
+				"offset %jd\n", bytesread, path,
+				(intmax_t)curpos);
 			free(readbuf);
 			smbc_close(remotehandle);
 			if (localhandle != STDOUT_FILENO) {
