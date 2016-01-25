@@ -501,6 +501,7 @@ struct smbXsrv_connection {
 		struct {
 			uint32_t capabilities;
 			struct GUID guid;
+			bool guid_verified;
 			uint16_t security_mode;
 			uint16_t num_dialects;
 			uint16_t *dialects;
