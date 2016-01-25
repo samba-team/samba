@@ -24,6 +24,7 @@
 #include "system/network.h"
 #include "interfaces.h"
 #include "lib/util/tsort.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 /****************************************************************************
  Create a struct sockaddr_storage with the netmask bits set to 1.
@@ -137,6 +138,7 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 	int count;
 	int total = 0;
 	size_t copy_size;
+	uint64_t if_speed = 1000 * 1000 * 1000; /* 1GBit */
 
 	if (getifaddrs(&iflist) < 0) {
 		return -1;
@@ -219,6 +221,9 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 			DBG_ERR("Failed to retrieve interface index for '%s': "
 				"%s\n", ifptr->ifa_name, strerror(errno));
 		}
+
+		ifaces[total].linkspeed = if_speed;
+		ifaces[total].capability = FSCTL_NET_IFACE_NONE_CAPABLE;
 
 		if (strlcpy(ifaces[total].name, ifptr->ifa_name,
 			sizeof(ifaces[total].name)) >=
