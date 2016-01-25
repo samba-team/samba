@@ -500,9 +500,21 @@ class cmd_user_password(Command):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
+        connect_password = ""
+
+        if len(creds.get_user_to_connect()) > 0:
+            connect_password = getpass("Password for [%s\\%s]: " % (
+                creds.get_user_to_connect_domain(),
+                creds.get_user_to_connect())
+            )
+            creds.set_password_to_connect(connect_password)
 
         # get old password now, to get the password prompts in the right order
         old_password = creds.get_password()
+
+        if len(creds.get_user_to_connect()) < 1:
+            connect_password = old_password
+        import pdb; pdb.set_trace()
 
         net = Net(creds, lp, server=credopts.ipaddress)
 

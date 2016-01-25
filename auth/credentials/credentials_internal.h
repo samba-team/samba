@@ -28,8 +28,10 @@
 struct cli_credentials {
 	enum credentials_obtained workstation_obtained;
 	enum credentials_obtained username_obtained;
+	enum credentials_obtained user_to_connect_obtained;
 	enum credentials_obtained password_obtained;
 	enum credentials_obtained domain_obtained;
+	enum credentials_obtained user_to_connect_domain_obtained;
 	enum credentials_obtained realm_obtained;
 	enum credentials_obtained ccache_obtained;
 	enum credentials_obtained client_gss_creds_obtained;
@@ -46,9 +48,12 @@ struct cli_credentials {
 
 	const char *workstation;
 	const char *username;
+	const char *user_to_connect;
+	const char *password_to_connect;
 	const char *password;
 	const char *old_password;
 	const char *domain;
+	const char *user_to_connect_domain;
 	const char *realm;
 	const char *principal;
 	char *salt_principal;
@@ -74,7 +79,9 @@ struct cli_credentials {
 	const char *(*workstation_cb) (struct cli_credentials *);
 	const char *(*password_cb) (struct cli_credentials *);
 	const char *(*username_cb) (struct cli_credentials *);
+	const char *(*user_to_connect_cb) (struct cli_credentials *);
 	const char *(*domain_cb) (struct cli_credentials *);
+	const char *(*user_to_connect_domain_cb) (struct cli_credentials *);
 	const char *(*realm_cb) (struct cli_credentials *);
 	const char *(*principal_cb) (struct cli_credentials *);
 

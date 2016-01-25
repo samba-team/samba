@@ -43,6 +43,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->workstation_obtained = CRED_UNINITIALISED;
 	cred->username_obtained = CRED_UNINITIALISED;
+	cred->user_to_connect_obtained = CRED_UNINITIALISED;
 	cred->password_obtained = CRED_UNINITIALISED;
 	cred->domain_obtained = CRED_UNINITIALISED;
 	cred->realm_obtained = CRED_UNINITIALISED;
@@ -51,15 +52,19 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->principal_obtained = CRED_UNINITIALISED;
 	cred->keytab_obtained = CRED_UNINITIALISED;
 	cred->server_gss_creds_obtained = CRED_UNINITIALISED;
+	cred->user_to_connect_domain_obtained = CRED_UNINITIALISED;
 
 	cred->ccache_threshold = CRED_UNINITIALISED;
 	cred->client_gss_creds_threshold = CRED_UNINITIALISED;
 
 	cred->workstation = NULL;
 	cred->username = NULL;
+	cred->user_to_connect = NULL;
+	cred->password_to_connect = NULL;
 	cred->password = NULL;
 	cred->old_password = NULL;
 	cred->domain = NULL;
+	cred->user_to_connect_domain = NULL;
 	cred->realm = NULL;
 	cred->principal = NULL;
 	cred->salt_principal = NULL;
@@ -85,6 +90,8 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 	cred->workstation_cb = NULL;
 	cred->password_cb = NULL;
 	cred->username_cb = NULL;
+	cred->user_to_connect_cb = NULL;
+	cred->user_to_connect_domain_cb = NULL;
 	cred->domain_cb = NULL;
 	cred->realm_cb = NULL;
 	cred->principal_cb = NULL;
@@ -218,9 +225,9 @@ _PUBLIC_ const char *cli_credentials_get_username(struct cli_credentials *cred)
 
 	if (cred->username_obtained == CRED_CALLBACK && 
 	    !cred->callback_running) {
-	    	cred->callback_running = true;
+		cred->callback_running = true;
 		cred->username = cred->username_cb(cred);
-	    	cred->callback_running = false;
+		cred->callback_running = false;
 		if (cred->username_obtained == CRED_CALLBACK) {
 			cred->username_obtained = CRED_CALLBACK_RESULT;
 			cli_credentials_invalidate_ccache(cred, cred->username_obtained);
@@ -243,12 +250,58 @@ _PUBLIC_ bool cli_credentials_set_username(struct cli_credentials *cred,
 	return false;
 }
 
+_PUBLIC_ const char *cli_credentials_get_user_to_connect(struct cli_credentials *cred)
+{
+	if (cred->machine_account_pending) {
+		cli_credentials_set_machine_account(cred,
+					cred->machine_account_pending_lp_ctx);
+	}
+
+	if (cred->user_to_connect_obtained == CRED_CALLBACK &&
+	    !cred->callback_running) {
+	    	cred->callback_running = true;
+		cred->user_to_connect = cred->user_to_connect_cb(cred);
+	    	cred->callback_running = false;
+		if (cred->user_to_connect_obtained == CRED_CALLBACK) {
+			cred->user_to_connect_obtained = CRED_CALLBACK_RESULT;
+			cli_credentials_invalidate_ccache(cred, cred->user_to_connect_obtained);
+		}
+	}
+
+	return cred->user_to_connect;
+}
+
+_PUBLIC_ bool cli_credentials_set_user_to_connect(struct cli_credentials *cred, 
+				  const char *val, enum credentials_obtained obtained)
+{
+	if (obtained >= cred->user_to_connect_obtained) {
+		cred->user_to_connect = talloc_strdup(cred, val);
+		cred->user_to_connect_obtained = obtained;
+		cli_credentials_invalidate_ccache(cred, cred->user_to_connect_obtained);
+		return true;
+	}
+
+	return false;
+}
+
 _PUBLIC_ bool cli_credentials_set_username_callback(struct cli_credentials *cred,
 				  const char *(*username_cb) (struct cli_credentials *))
 {
 	if (cred->username_obtained < CRED_CALLBACK) {
 		cred->username_cb = username_cb;
 		cred->username_obtained = CRED_CALLBACK;
+		return true;
+	}
+
+	return false;
+}
+
+_PUBLIC_ bool cli_credentials_set_user_to_connect_callback(struct cli_credentials *cred,
+				  const char *(*username_cb) (struct cli_credentials *))
+{
+	if (cred->user_to_connect_obtained < CRED_CALLBACK) {
+		cred->user_to_connect_cb = username_cb;
+		cred->user_to_connect_obtained = CRED_CALLBACK;
 		return true;
 	}
 
@@ -458,6 +511,21 @@ _PUBLIC_ bool cli_credentials_set_password_callback(struct cli_credentials *cred
 	return false;
 }
 
+_PUBLIC_ const char *cli_credentials_get_password_to_connect(struct cli_credentials *cred)
+{
+	return cred->password_to_connect;
+}
+
+_PUBLIC_ bool cli_credentials_set_password_to_connect(struct cli_credentials *cred, 
+				  const char *val, 
+				  enum credentials_obtained obtained)
+{
+	(void)val;
+	(void)obtained;
+	cred->password_to_connect = talloc_strdup(cred, val);
+	return true;
+}
+
 /**
  * Obtain the 'old' password for this credentials context (used for join accounts).
  * @param cred credentials context
@@ -566,6 +634,53 @@ _PUBLIC_ struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_creden
 	return NULL;
 }
 
+_PUBLIC_ const char *cli_credentials_get_user_to_connect_domain(struct cli_credentials *cred)
+{
+	if (cred->user_to_connect_domain_obtained == CRED_CALLBACK &&
+	    !cred->callback_running) {
+		cred->callback_running = true;
+		cred->user_to_connect_domain = cred->user_to_connect_domain_cb(cred);
+		cred->callback_running = false;
+		if (cred->user_to_connect_domain_obtained == CRED_CALLBACK) {
+			cred->user_to_connect_domain_obtained = CRED_CALLBACK_RESULT;
+		}
+	}
+	return cred->user_to_connect_domain;
+}
+
+_PUBLIC_ bool cli_credentials_set_user_to_connect_domain(struct cli_credentials *cred, 
+				const char *val, 
+				enum credentials_obtained obtained)
+{
+	if (obtained >= cred->user_to_connect_domain_obtained) {
+		/* it is important that the domain be in upper case,
+		 * particularly for the sensitive NTLMv2
+		 * calculations */
+		cred->user_to_connect_domain = strupper_talloc(cred, val);
+		cred->user_to_connect_domain_obtained = obtained;
+		/* setting domain does not mean we have to invalidate ccache 
+		 * because domain in not used for Kerberos operations.
+		 * If ccache invalidation is required, one will anyway specify
+		 * a password to kinit, and that will force invalidation of the ccache
+		 */
+		return true;
+	}
+
+	return false;
+}
+
+bool cli_credentials_set_user_to_connect_domain_callback(struct cli_credentials *cred,
+					 const char *(*domain_cb) (struct cli_credentials *))
+{
+	if (cred->user_to_connect_domain_obtained < CRED_CALLBACK) {
+		cred->user_to_connect_domain_cb = domain_cb;
+		cred->user_to_connect_domain_obtained = CRED_CALLBACK;
+		return true;
+	}
+
+	return false;
+}
+
 /**
  * Obtain the 'short' or 'NetBIOS' domain for this credentials context.
  * @param cred credentials context
@@ -579,11 +694,11 @@ _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 						    cred->machine_account_pending_lp_ctx);
 	}
 
-	if (cred->domain_obtained == CRED_CALLBACK && 
+	if (cred->domain_obtained == CRED_CALLBACK &&
 	    !cred->callback_running) {
-	    	cred->callback_running = true;
+		cred->callback_running = true;
 		cred->domain = cred->domain_cb(cred);
-	    	cred->callback_running = false;
+		cred->callback_running = false;
 		if (cred->domain_obtained == CRED_CALLBACK) {
 			cred->domain_obtained = CRED_CALLBACK_RESULT;
 			cli_credentials_invalidate_ccache(cred, cred->domain_obtained);
@@ -592,7 +707,6 @@ _PUBLIC_ const char *cli_credentials_get_domain(struct cli_credentials *cred)
 
 	return cred->domain;
 }
-
 
 _PUBLIC_ bool cli_credentials_set_domain(struct cli_credentials *cred, 
 				const char *val, 
@@ -739,9 +853,11 @@ bool cli_credentials_set_workstation_callback(struct cli_credentials *cred,
  * @param credentials Credentials structure on which to set the password
  * @param data the string containing the username, password etc
  * @param obtained This enum describes how 'specified' this password is
+ * @param user_to_connect This boolean indicates whether we're setting the user_to_connect or not
  */
 
-_PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained)
+_PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data,
+	enum credentials_obtained obtained, bool user_to_connect)
 {
 	char *uname, *p;
 
@@ -753,7 +869,10 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 	uname = talloc_strdup(credentials, data); 
 	if ((p = strchr_m(uname,'%'))) {
 		*p = 0;
-		cli_credentials_set_password(credentials, p+1, obtained);
+		if (!user_to_connect)
+			cli_credentials_set_password(credentials, p+1, obtained);
+		else
+			cli_credentials_set_password_to_connect(credentials, p+1, obtained);
 	}
 
 	if ((p = strchr_m(uname,'@'))) {
@@ -763,10 +882,18 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		return;
 	} else if ((p = strchr_m(uname,'\\')) || (p = strchr_m(uname, '/'))) {
 		*p = 0;
-		cli_credentials_set_domain(credentials, uname, obtained);
+		if (!user_to_connect) {
+			cli_credentials_set_domain(credentials, uname, obtained);
+		} else {
+			cli_credentials_set_user_to_connect_domain(credentials, uname, obtained);
+		}
 		uname = p+1;
 	}
-	cli_credentials_set_username(credentials, uname, obtained);
+	if (!user_to_connect)
+		cli_credentials_set_username(credentials, uname, obtained);
+	else {
+		cli_credentials_set_user_to_connect(credentials, uname, obtained);
+	}
 }
 
 /**
@@ -812,8 +939,10 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
 	if (lpcfg_parm_is_cmdline(lp_ctx, "workgroup")) {
 		cli_credentials_set_domain(cred, lpcfg_workgroup(lp_ctx), CRED_SPECIFIED);
+		cli_credentials_set_user_to_connect_domain(cred, lpcfg_workgroup(lp_ctx), CRED_SPECIFIED);
 	} else {
 		cli_credentials_set_domain(cred, lpcfg_workgroup(lp_ctx), CRED_UNINITIALISED);
+		cli_credentials_set_user_to_connect_domain(cred, lpcfg_workgroup(lp_ctx), CRED_UNINITIALISED);
 	}
 	if (lpcfg_parm_is_cmdline(lp_ctx, "netbios name")) {
 		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_SPECIFIED);
@@ -842,13 +971,13 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 	if (lp_ctx != NULL) {
 		cli_credentials_set_conf(cred, lp_ctx);
 	}
-	
+
 	if (getenv("LOGNAME")) {
 		cli_credentials_set_username(cred, getenv("LOGNAME"), CRED_GUESS_ENV);
 	}
 
 	if (getenv("USER")) {
-		cli_credentials_parse_string(cred, getenv("USER"), CRED_GUESS_ENV);
+		cli_credentials_parse_string(cred, getenv("USER"), CRED_GUESS_ENV, false);
 		if ((p = strchr_m(getenv("USER"),'%'))) {
 			memset(p,0,strlen(cred->password));
 		}
@@ -942,6 +1071,7 @@ _PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 {
 	cli_credentials_set_username(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_domain(cred, "", CRED_SPECIFIED);
+	cli_credentials_set_user_to_connect_domain(cred, "", CRED_SPECIFIED);
 	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_realm(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_workstation(cred, "", CRED_UNINITIALISED);
@@ -1156,4 +1286,21 @@ _PUBLIC_ bool cli_credentials_parse_password_fd(struct cli_credentials *credenti
 	return true;
 }
 
+_PUBLIC_ void switch_values(struct cli_credentials *credentials, char **values) {
+	if (credentials->user_to_connect != NULL) {
+		values[0] = credentials->username;
+		credentials->username = credentials->user_to_connect;
+		values[1] = credentials->password;
+		credentials->username = credentials->password_to_connect;
+		values[2] = credentials->domain;
+		credentials->domain = credentials->user_to_connect_domain;
+	}
+}
 
+_PUBLIC_ void switch_back_values(struct cli_credentials *credentials, char **values) {
+	if (credentials->user_to_connect != NULL) {
+		credentials->username = values[0];
+		credentials->password = values[1];
+		credentials->domain = values[2];
+	}
+}

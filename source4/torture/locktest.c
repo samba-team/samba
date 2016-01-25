@@ -605,7 +605,8 @@ int main(int argc, const char *argv[])
 				usage(pc);
 				exit(1);
 			}
-			cli_credentials_parse_string(servers[username_count], poptGetOptArg(pc), CRED_SPECIFIED);
+			cli_credentials_parse_string(servers[username_count], poptGetOptArg(pc),
+				CRED_SPECIFIED, false);
 			username_count++;
 			break;
 		}

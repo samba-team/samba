@@ -72,7 +72,7 @@ static void popt_common_credentials_callback(poptContext con,
 	{
 		char *lp;
 		
-		cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED);
+		cli_credentials_parse_string(cmdline_credentials, arg, CRED_SPECIFIED, false);
 		/* This breaks the abstraction, including the const above */
 		if ((lp=strchr_m(arg,'%'))) {
 			lp[0]='\0';

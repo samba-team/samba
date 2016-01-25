@@ -57,10 +57,10 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 						char **error_string)
 {
 	TALLOC_CTX *mem_ctx;
-	
+
 	int ldb_ret;
 	struct ldb_message *msg;
-	
+
 	const char *machine_account;
 	const char *password;
 	const char *domain;
@@ -116,19 +116,19 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		talloc_free(mem_ctx);
 		return NT_STATUS_NOT_FOUND;
 	}
-	
+
 	if (lct == secrets_tdb_last_change_time && secrets_tdb_password && strcmp(password, secrets_tdb_password) != 0) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NOT_FOUND;
 	}
-	
+
 	cli_credentials_set_password_last_changed_time(cred, lct);
-	
+
 	machine_account = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
 	if (!machine_account) {
 		machine_account = ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL);
-		
+
 		if (!machine_account) {
 			const char *ldap_bind_dn = ldb_msg_find_attr_as_string(msg, "ldapBindDn", NULL);
 			if (!ldap_bind_dn) {
@@ -153,7 +153,7 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 	if (sct) { 
 		cli_credentials_set_secure_channel_type(cred, sct);
 	}
-	
+
 	if (!password) {
 		const struct ldb_val *nt_password_hash = ldb_msg_find_ldb_val(msg, "unicodePwd");
 		struct samr_Password hash;
@@ -161,7 +161,6 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		if (nt_password_hash) {
 			memcpy(hash.hash, nt_password_hash->data, 
 			       MIN(nt_password_hash->length, sizeof(hash.hash)));
-		
 			cli_credentials_set_nt_hash(cred, &hash, CRED_SPECIFIED);
 		} else {
 			cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
@@ -170,7 +169,6 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		cli_credentials_set_password(cred, password, CRED_SPECIFIED);
 	}
 
-	
 	domain = ldb_msg_find_attr_as_string(msg, "flatname", NULL);
 	if (domain) {
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
@@ -196,7 +194,7 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		talloc_free(keytab);
 	}
 	talloc_free(mem_ctx);
-	
+
 	return NT_STATUS_OK;
 }
 
