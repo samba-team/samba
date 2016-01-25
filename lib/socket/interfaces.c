@@ -214,6 +214,12 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 			continue;
 		}
 
+		ifaces[total].if_index = if_nametoindex(ifptr->ifa_name);
+		if (ifaces[total].if_index == 0) {
+			DBG_ERR("Failed to retrieve interface index for '%s': "
+				"%s\n", ifptr->ifa_name, strerror(errno));
+		}
+
 		if (strlcpy(ifaces[total].name, ifptr->ifa_name,
 			sizeof(ifaces[total].name)) >=
 				sizeof(ifaces[total].name)) {
