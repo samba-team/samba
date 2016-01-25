@@ -181,6 +181,9 @@ struct interface {
 	struct sockaddr_storage ip;
 	struct sockaddr_storage netmask;
 	struct sockaddr_storage bcast;
+	uint32_t if_index;
+	uint64_t linkspeed;
+	uint32_t capability;
 };
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
