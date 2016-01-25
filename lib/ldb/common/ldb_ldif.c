@@ -417,7 +417,7 @@ int ldb_ldif_write(struct ldb_context *ldb,
 
   caller frees
 */
-static char *next_chunk(struct ldb_context *ldb,
+static char *next_chunk(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			int (*fgetc_fn)(void *), void *private_data)
 {
 	size_t alloc_size=0, chunk_size = 0;
@@ -429,7 +429,7 @@ static char *next_chunk(struct ldb_context *ldb,
 		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
-			c2 = talloc_realloc(ldb, chunk, char, alloc_size);
+			c2 = talloc_realloc(mem_ctx, chunk, char, alloc_size);
 			if (!c2) {
 				talloc_free(chunk);
 				errno = ENOMEM;
@@ -774,11 +774,10 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	msg->elements = NULL;
 	msg->num_elements = 0;
 
-	chunk = next_chunk(ldb, fgetc_fn, private_data);
+	chunk = next_chunk(ldb, ldif, fgetc_fn, private_data);
 	if (!chunk) {
 		goto failed;
 	}
-	talloc_steal(ldif, chunk);
 
 	s = chunk;
 
