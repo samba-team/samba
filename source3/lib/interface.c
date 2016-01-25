@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "lib/socket/interfaces.h"
+#include "librpc/gen_ndr/ioctl.h"
 
 static struct iface_struct *probed_ifaces;
 static int total_probed;
@@ -350,6 +351,45 @@ static void add_interface(const struct iface_struct *ifs)
 			&iface->netmask) ));
 }
 
+
+static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
+			     uint32_t *if_index)
+{
+	while (key != NULL && *key != '\0') {
+		char *next_key;
+		char *val;
+
+		next_key = strchr_m(key, ',');
+		if (next_key != NULL) {
+			*next_key++ = 0;
+		}
+
+		val = strchr_m(key, '=');
+		if (val != NULL) {
+			*val++ = 0;
+
+			if (strequal_m(key, "speed")) {
+				*speed = (uint64_t)strtoull(val, NULL, 0);
+			} else if (strequal_m(key, "capability")) {
+				if (strequal_m(val, "RSS")) {
+					*cap |= FSCTL_NET_IFACE_RSS_CAPABLE;
+				} else if (strequal(val, "RDMA")) {
+					*cap |= FSCTL_NET_IFACE_RDMA_CAPABLE;
+				} else {
+					DBG_WARNING("Capability unknown: "
+						    "'%s'\n", val);
+				}
+			} else if (strequal_m(key, "if_index")) {
+				*if_index = (uint32_t)strtoul(val, NULL, 0);
+			} else {
+				DBG_DEBUG("Key unknown: '%s'\n", key);
+			}
+		}
+
+		key = next_key;
+	}
+}
+
 /****************************************************************************
  Interpret a single element from a interfaces= config line.
 
@@ -360,6 +400,20 @@ static void add_interface(const struct iface_struct *ifs)
  3) IP/masklen
  4) ip/mask
  5) bcast/mask
+
+ Additional information for an interface can be specified with
+ this extended syntax:
+
+    interface[;key1=value1[,key2=value2[...]]]
+
+ where
+ - keys known: 'speed', 'capability', 'if_index'
+ - speed is in bits per second
+ - capabilites known: 'RSS', 'RDMA'
+ - if_index should be used with care, because
+   these indexes should not conicide with indexes
+   the kernel sets...
+
 ****************************************************************************/
 
 static void interpret_interface(char *token)
@@ -373,6 +427,12 @@ static void interpret_interface(char *token)
 	int i;
 	bool added=false;
 	bool goodaddr = false;
+	uint64_t speed = 0;
+	uint32_t cap = FSCTL_NET_IFACE_NONE_CAPABLE;
+	uint32_t if_index = 0;
+	bool speed_set = false;
+	bool cap_set = false;
+	bool if_index_set = false;
 
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
@@ -383,6 +443,24 @@ static void interpret_interface(char *token)
 	}
 	if (added) {
 		return;
+	}
+
+	/*
+	 * extract speed / capability information if present
+	 */
+	p = strchr_m(token, ';');
+	if (p != NULL) {
+		*p++ = 0;
+		parse_extra_info(p, &speed, &cap, &if_index);
+		if (speed != 0) {
+			speed_set = true;
+		}
+		if (cap != FSCTL_NET_IFACE_NONE_CAPABLE) {
+			cap_set = true;
+		}
+		if (if_index != 0) {
+			if_index_set = true;
+		}
 	}
 
 	p = strchr_m(token,'/');
@@ -397,6 +475,15 @@ static void interpret_interface(char *token)
 			if (sockaddr_equal((struct sockaddr *)&ss,
 				(struct sockaddr *)&probed_ifaces[i].ip))
 			{
+				if (speed_set) {
+					probed_ifaces[i].linkspeed = speed;
+				}
+				if (cap_set) {
+					probed_ifaces[i].capability = cap;
+				}
+				if (if_index_set) {
+					probed_ifaces[i].if_index = if_index;
+				}
 				add_interface(&probed_ifaces[i]);
 				return;
 			}
@@ -466,6 +553,15 @@ static void interpret_interface(char *token)
 					"config file on interface %s\n",
 					p,
 					probed_ifaces[i].name));
+				if (speed_set) {
+					probed_ifaces[i].linkspeed = speed;
+				}
+				if (cap_set) {
+					probed_ifaces[i].capability = cap;
+				}
+				if (if_index_set) {
+					probed_ifaces[i].if_index = if_index;
+				}
 				add_interface(&probed_ifaces[i]);
 				probed_ifaces[i].netmask = saved_mask;
 				return;
@@ -488,6 +584,15 @@ static void interpret_interface(char *token)
 	ifs.ip = ss;
 	ifs.netmask = ss_mask;
 	ifs.bcast = ss_bcast;
+	if (if_index_set) {
+		probed_ifaces[i].if_index = if_index;
+	}
+	if (speed_set) {
+		ifs.linkspeed = speed;
+	} else {
+		ifs.linkspeed = 1000 * 1000 * 1000;
+	}
+	ifs.capability = cap;
 	add_interface(&ifs);
 }
 
