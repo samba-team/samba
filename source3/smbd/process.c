@@ -3563,6 +3563,10 @@ NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 
 	conn->protocol = protocol;
 
+	if (conn->client->session_table != NULL) {
+		return NT_STATUS_OK;
+	}
+
 	if (protocol >= PROTOCOL_SMB2_02) {
 		status = smb2srv_session_table_init(conn);
 		if (!NT_STATUS_IS_OK(status)) {
