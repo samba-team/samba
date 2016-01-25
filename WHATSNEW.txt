@@ -44,6 +44,12 @@ smb.conf changes
 CTDB changes
 ------------
 
+* Configuration variable CTDB_NATGW_SLAVE_ONLY is no longer used.
+  Instead, nodes should be annotated with the "slave-only" option in
+  the CTDB NAT gateway nodes file.  This file must be consistent
+  across nodes in a NAT gateway group.  See ctdbd.conf(5) for more
+  details.
+
 * The CTDB tunable parameter EventScriptTimeoutCount has been renamed
   to MonitorTimeoutCount
 
