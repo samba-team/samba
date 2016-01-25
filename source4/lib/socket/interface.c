@@ -178,6 +178,15 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 		return;
 	}
 
+	p = strchr_m(token, ';');
+	if (p != NULL) {
+		/*
+		 * skip smbd-specific extra data:
+		 * link speed, capabilities, and interface index
+		 */
+		*p = 0;
+	}
+
 	/* maybe it is a DNS name */
 	p = strchr_m(token,'/');
 	if (p == NULL) {
