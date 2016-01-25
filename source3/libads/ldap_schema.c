@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "ads.h"
 #include "libads/ldap_schema.h"
+#include "libads/ldap_schema_oids.h"
 #include "../libcli/ldap/ldap_ndr.h"
 
 #ifdef HAVE_LDAP
