@@ -27,6 +27,9 @@ struct iface_struct {
 	struct sockaddr_storage ip;
 	struct sockaddr_storage netmask;
 	struct sockaddr_storage bcast;
+	uint32_t if_index;
+	uint64_t linkspeed;
+	uint32_t capability;
 };
 
 struct interface;
