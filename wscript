@@ -180,6 +180,7 @@ def configure(conf):
     conf.RECURSE('lib/texpect')
     if conf.env.with_ctdb:
         conf.RECURSE('ctdb')
+    conf.RECURSE('lib/socket')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 
