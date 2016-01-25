@@ -111,6 +111,7 @@ interface compression
 interface netinterface
 {
 	typedef [bitmap32bit] bitmap {
+		FSCTL_NET_IFACE_NONE_CAPABLE = 0x00000000,
 		FSCTL_NET_IFACE_RSS_CAPABLE = 0x00000001,
 		FSCTL_NET_IFACE_RDMA_CAPABLE = 0x00000002
 	} fsctl_net_iface_capability;
