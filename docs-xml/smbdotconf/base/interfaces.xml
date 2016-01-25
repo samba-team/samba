@@ -38,7 +38,28 @@
 	By default Samba enables all active interfaces that are broadcast capable
 	except the loopback adaptor (IP address 127.0.0.1).
 	</para>
-	
+
+	<para>
+	In order to support SMB3 multi-channel configurations, smbd understands
+	some extra data that can be appended after the actual interface with
+	this extended syntax:
+	</para>
+
+	<para>
+	interface[;key1=value1[,key2=value2[...]]]
+	</para>
+
+	<para>
+	Known keys are speed, capability, and if_index. Speed is specified in
+	bits per second. Known capabilities are RSS and RDMA. The
+	if_index should be used with care: the values must not coincide with
+	indexes used by the kernel.
+	Note that these options are mainly intended for testing and
+	development rather than for production use. At least on Linux systems,
+	these values should be auto-detected, but the settings can serve
+	as last a resort when autodetection is not working or is not available.
+	</para>
+
 	<para>
 	The example below configures three network interfaces corresponding 
 	to the eth0 device and IP addresses 192.168.2.10 and 192.168.3.10. 
