@@ -655,6 +655,18 @@ struct tevent_req *smb2_ioctl_network_fs(uint32_t ctl_code,
 		return req;
 		break;
 	case FSCTL_QUERY_NETWORK_INTERFACE_INFO:
+		if (!state->smbreq->xconn->client->server_multi_channel_enabled)
+		{
+			if (IS_IPC(state->smbreq->conn)) {
+				status = NT_STATUS_FS_DRIVER_REQUIRED;
+			} else {
+				status = NT_STATUS_INVALID_DEVICE_REQUEST;
+			}
+
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+
 		status = fsctl_network_iface_info(state, ev,
 						  state->smbreq->xconn,
 						  &state->in_input,
