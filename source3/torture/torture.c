@@ -7901,14 +7901,14 @@ static bool run_shortname_test(int dummy)
 
 static void pagedsearch_cb(struct tevent_req *req)
 {
-	int rc;
+	TLDAPRC rc;
 	struct tldap_message *msg;
 	char *dn;
 
 	rc = tldap_search_paged_recv(req, talloc_tos(), &msg);
-	if (rc != TLDAP_SUCCESS) {
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_search_paged_recv failed: %s\n",
-			 tldap_err2string(rc));
+			 tldap_rc2string(rc));
 		return;
 	}
 	if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
@@ -7926,7 +7926,8 @@ static void pagedsearch_cb(struct tevent_req *req)
 static bool run_tldap(int dummy)
 {
 	struct tldap_context *ld;
-	int fd, rc;
+	int fd;
+	TLDAPRC rc;
 	NTSTATUS status;
 	struct sockaddr_storage addr;
 	struct tevent_context *ev;
@@ -7952,7 +7953,7 @@ static bool run_tldap(int dummy)
 	}
 
 	rc = tldap_fetch_rootdse(ld);
-	if (rc != TLDAP_SUCCESS) {
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_fetch_rootdse failed: %s\n",
 			 tldap_errstr(talloc_tos(), ld, rc));
 		return false;
@@ -7993,7 +7994,7 @@ static bool run_tldap(int dummy)
 	rc = tldap_search(ld, "", TLDAP_SCOPE_BASE, filter,
 			  NULL, 0, 0, NULL, 0, NULL, 0, 0, 0, 0,
 			  talloc_tos(), NULL, NULL);
-	if (rc != TLDAP_SUCCESS) {
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_search with complex filter failed: %s\n",
 			 tldap_errstr(talloc_tos(), ld, rc));
 		return false;
