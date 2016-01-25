@@ -44,11 +44,59 @@ smb.conf changes
 CTDB changes
 ------------
 
+* CTDB now uses a newly implemented parallel database recovery scheme
+  that avoids deadlocks with smbd.
+
+  In certain circumstances CTDB and smbd could deadlock.  The new
+  recovery implementation avoid this.  It also provides improved
+  recovery performance.
+
+* All files are now installed into and referred to by the paths
+  configured at build time.  Therefore, CTDB will now work properly
+  when installed into the default location at /usr/local.
+
+* Public CTDB header files are no longer installed, since Samba and
+  CTDB are built from within the same source tree.
+
+* CTDB_DBDIR can now be set to tmpfs[:<tmpfs-options>]
+
+  This will cause volatile TDBs to be located in a tmpfs.  This can
+  help to avoid performance problems associated with contention on the
+  disk where volatile TDBs are usually stored.  See ctdbd.conf(5) for
+  more details.
+
 * Configuration variable CTDB_NATGW_SLAVE_ONLY is no longer used.
   Instead, nodes should be annotated with the "slave-only" option in
   the CTDB NAT gateway nodes file.  This file must be consistent
   across nodes in a NAT gateway group.  See ctdbd.conf(5) for more
   details.
+
+* New event script 05.system allows various system resources to be
+  monitored
+
+  This can be helpful for explaining poor performance or unexpected
+  behaviour.  New configuration variables are
+  CTDB_MONITOR_FILESYSTEM_USAGE, CTDB_MONITOR_MEMORY_USAGE and
+  CTDB_MONITOR_SWAP_USAGE.  Default values cause warnings to be
+  logged.  See the SYSTEM RESOURCE MONITORING CONFIGURATION in
+  ctdbd.conf(5) for more information.
+
+  The memory, swap and filesystem usage monitoring previously found in
+  00.ctdb and 40.fs_use is no longer available.  Therefore,
+  configuration variables CTDB_CHECK_FS_USE, CTDB_MONITOR_FREE_MEMORY,
+  CTDB_MONITOR_FREE_MEMORY_WARN and CTDB_CHECK_SWAP_IS_NOT_USED are
+  now ignored.
+
+* The 62.cnfs eventscript has been removed.  To get a similar effect
+  just do something like this:
+
+      mmaddcallback ctdb-disable-on-quorumLoss \
+        --command /usr/bin/ctdb \
+        --event quorumLoss --parms "disable"
+
+      mmaddcallback ctdb-enable-on-quorumReached \
+        --command /usr/bin/ctdb \
+        --event quorumReached --parms "enable"
 
 * The CTDB tunable parameter EventScriptTimeoutCount has been renamed
   to MonitorTimeoutCount
@@ -57,6 +105,13 @@ CTDB changes
 
   Configurations containing CTDB_SET_EventScriptTimeoutCount=<n> will
   cause CTDB to fail at startup.  Useful messages will be logged.
+
+* The commandline option "-n all" to CTDB tool has been removed.
+
+  The option was not uniformly implemented for all the commands.
+  Instead of command "ctdb ip -n all", use "ctdb ip all".
+
+* All CTDB current manual pages are now correctly installed
 
 KNOWN ISSUES
 ============
