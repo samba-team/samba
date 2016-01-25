@@ -2250,6 +2250,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		status = NT_STATUS_UNSUCCESSFUL;
 		if (errmsg != NULL) {
 			werr = W_ERROR(strtol(errmsg, &endptr, 16));
+			DBG_WARNING("%s\n", errmsg);
 		}
 		if (endptr != errmsg) {
 			if (W_ERROR_EQUAL(werr, WERR_INVALID_PASSWORD)) {
