@@ -333,6 +333,9 @@ static void add_interface(const struct iface_struct *ifs)
 	iface->ip = ifs->ip;
 	iface->netmask = ifs->netmask;
 	iface->bcast = ifs->bcast;
+	iface->linkspeed = ifs->linkspeed;
+	iface->capability = ifs->capability;
+	iface->if_index = ifs->if_index;
 
 	DLIST_ADD(local_interfaces, iface);
 
