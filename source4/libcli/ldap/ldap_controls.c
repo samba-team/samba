@@ -1256,6 +1256,7 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ LDB_CONTROL_SORT_RESP_OID, decode_server_sort_response, encode_server_sort_response },
 	{ LDB_CONTROL_ASQ_OID, decode_asq_control, encode_asq_control },
 	{ LDB_CONTROL_DIRSYNC_OID, decode_dirsync_request, encode_dirsync_request },
+	{ LDB_CONTROL_DIRSYNC_EX_OID, decode_dirsync_request, encode_dirsync_request },
 	{ LDB_CONTROL_VLV_REQ_OID, decode_vlv_request, encode_vlv_request },
 	{ LDB_CONTROL_VLV_RESP_OID, decode_vlv_response, encode_vlv_response },
 	{ LDB_CONTROL_PERMISSIVE_MODIFY_OID, decode_flag_request, encode_flag_request },
