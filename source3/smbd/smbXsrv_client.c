@@ -511,6 +511,8 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	client->ev_ctx = ev_ctx;
 	client->msg_ctx = msg_ctx;
 
+	client->server_multi_channel_enabled = lp_server_multi_channel_support();
+
 	client->table = talloc_move(client, &table);
 	table = client->table;
 
