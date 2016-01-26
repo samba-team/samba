@@ -367,6 +367,26 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		talloc_free(cookie);
 		return res;
 	}
+	if (strcmp(control->oid, LDB_CONTROL_DIRSYNC_EX_OID) == 0) {
+		char *cookie;
+		struct ldb_dirsync_control *rep_control = talloc_get_type(control->data,
+								struct ldb_dirsync_control);
+
+		cookie = ldb_base64_encode(mem_ctx, rep_control->cookie,
+				rep_control->cookie_len);
+		if (cookie == NULL) {
+			return NULL;
+		}
+		res = talloc_asprintf(mem_ctx, "%s:%d:%d:%d:%s",
+					LDB_CONTROL_DIRSYNC_EX_NAME,
+					control->critical,
+					rep_control->flags,
+					rep_control->max_attributes,
+					cookie);
+
+		talloc_free(cookie);
+		return res;
+	}
 
 	if (strcmp(control->oid, LDB_CONTROL_VERIFY_NAME_OID) == 0) {
 		struct ldb_verify_name_control *rep_control = talloc_get_type(control->data, struct ldb_verify_name_control);
@@ -510,6 +530,51 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		if (max_attrs == 0) max_attrs = 0x0FFFFFFF;
 
 		ctrl->oid = LDB_CONTROL_DIRSYNC_OID;
+		ctrl->critical = crit;
+		control = talloc(ctrl, struct ldb_dirsync_control);
+		control->flags = flags;
+		control->max_attributes = max_attrs;
+		if (*cookie) {
+			control->cookie_len = ldb_base64_decode(cookie);
+			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
+		} else {
+			control->cookie = NULL;
+			control->cookie_len = 0;
+		}
+		ctrl->data = control;
+
+		return ctrl;
+	}
+	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_DIRSYNC_EX_NAME) == 0) {
+		struct ldb_dirsync_control *control;
+		const char *p;
+		char cookie[1024];
+		int crit, max_attrs, ret;
+		uint32_t flags;
+
+		cookie[0] = '\0';
+		p = &(control_strings[sizeof(LDB_CONTROL_DIRSYNC_EX_NAME)]);
+		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
+
+		if ((ret < 3) || (crit < 0) || (crit > 1) || (max_attrs < 0)) {
+			error_string = talloc_asprintf(mem_ctx, "invalid %s control syntax\n",
+						       LDB_CONTROL_DIRSYNC_EX_NAME);
+			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n");
+			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, o = b64 binary blob");
+			ldb_set_errstring(ldb, error_string);
+			talloc_free(error_string);
+			talloc_free(ctrl);
+			return NULL;
+		}
+
+		/* w2k3 seems to ignore the parameter,
+		 * but w2k sends a wrong cookie when this value is to small
+		 * this would cause looping forever, while getting
+		 * the same data and same cookie forever
+		 */
+		if (max_attrs == 0) max_attrs = 0x0FFFFFFF;
+
+		ctrl->oid = LDB_CONTROL_DIRSYNC_EX_OID;
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_dirsync_control);
 		control->flags = flags;
