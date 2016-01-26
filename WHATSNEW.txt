@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.4.  This is *not*
+This is the first release candidate of Samba 4.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -14,32 +14,93 @@ UPGRADING
 
 Nothing special.
 
-NEW FEATURES
-============
+
+NEW FEATURES/CHANGES
+====================
+
+Asynchronous flush requests
+---------------------------
 
 Flush requests from SMB2/3 clients are handled asynchronously and do
 not block the processing of other requests. Note that 'strict sync'
 has to be set to 'yes' for Samba to honor flush requests from SMB
 clients.
 
+s3: smbd
+--------
+
+Remove '--with-aio-support' configure option. We no longer would ever prefer
+POSIX-RT aio, use pthread_aio instead.
+
+samba-tool sites
+----------------
+
+The 'samba-tool sites' subcommand can now be run against another server by
+specifying an LDB URL using the '-H' option and not against the local database
+only (which is still the default when no URL is given).
+
+samba-tool domain demote
+------------------------
+
+Add '--remove-other-dead-server' option to 'samba-tool domain demote'
+subcommand. The new version of this tool now can remove another DC that is
+itself offline.  The '--remove-other-dead-server' removes as many references
+to the DC as possible.
+
+samba-tool drs clone-dc-database
+--------------------------------
+
+Replicate an initial clone of domain, but do not join it.
+This is developed for debugging purposes, but not for setting up another DC.
+
+pdbedit
+-------
+
+Add '--set-nt-hash' option to pdbedit to update user password from nt-hash
+hexstring. 'pdbedit -vw' shows also password hashes.
+
+s4-rpc_server
+-------------
+
+Add a GnuTLS based backupkey implementation.
+
+ntlm_auth
+---------
+
+Using the '--offline-logon' enables ntlm_auth to use cached passwords when the
+DC is offline.
+
+Allow '--password' force a local password check for ntlm-server-1 mode.
+
+vfs_offline
+-----------
+
+A new VFS module called vfs_offline has been added to mark all files in the
+share as offline. It can be useful for shares mounted on top of a remote file
+system (either through a samba VFS module or via FUSE).
+
+KCC
+---
+
+The Samba KCC has been improved, but is still disabled by default.
+
+DNS
+---
+
+There were several improvements concerning the Samba DNS server.
+
+Active Directory
+----------------
+
+There were some improvements in the Active Directory area.
+
 WINS nsswitch module
-====================
+--------------------
 
 The WINS nsswitch module has been rewritten to address memory issues and to
 simplify the code. The module now uses libwbclient to do WINS queries. This
 means that winbind needs to be running in order to resolve WINS names using
 the nss_wins module. This does not affect smbd.
-
-######################################################################
-Changes
-#######
-
-smb.conf changes
-----------------
-
-  Parameter Name		Description		Default
-  --------------		-----------		-------
-  aio max threads               New                     100
 
 CTDB changes
 ------------
@@ -113,6 +174,48 @@ CTDB changes
 
 * All CTDB current manual pages are now correctly installed
 
+
+REMOVED FEATURES
+================
+
+Public headers
+--------------
+
+Several public headers are not installed any longer. They are made for internal
+use only. More public headers will very likely be removed in future releases.
+
+The following headers are not installed any longer:
+dlinklist.h, gen_ndr/epmapper.h, gen_ndr/mgmt.h, gen_ndr/ndr_atsvc_c.h,
+gen_ndr/ndr_epmapper_c.h, gen_ndr/ndr_epmapper.h, gen_ndr/ndr_mgmt_c.h,
+gen_ndr/ndr_mgmt.h,gensec.h, ldap_errors.h, ldap_message.h, ldap_ndr.h,
+ldap-util.h, pytalloc.h, read_smb.h, registry.h, roles.h, samba_util.h,
+smb2_constants.h, smb2_create_blob.h, smb2.h, smb2_lease.h, smb2_signing.h,
+smb_cli.h, smb_cliraw.h, smb_common.h, smb_composite.h, smb_constants.h,
+smb_raw.h, smb_raw_interfaces.h, smb_raw_signing.h, smb_raw_trans2.h,
+smb_request.h, smb_seal.h, smb_signing.h, smb_unix_ext.h, smb_util.h,
+torture.h, tstream_smbXcli_np.h.
+
+vfs_smb_traffic_analyzer
+------------------------
+
+The SMB traffic analyzer VFS module has been removed, because it is not
+maintained any longer and not widely used.
+
+vfs_scannedonly
+---------------
+
+The scannedonly VFS module has been removed, because it is not maintained
+any longer.
+
+smb.conf changes
+----------------
+
+  Parameter Name		Description		Default
+  --------------		-----------		-------
+  aio max threads               New                     100
+  ldap page size		Changed default		1000
+
+
 KNOWN ISSUES
 ============
 
@@ -128,7 +231,7 @@ joining the #samba-technical IRC channel on irc.freenode.net.
 If you do report problems then please try to send high quality
 feedback. If you don't provide vital information to help us track down
 the problem then you will probably be ignored.  All bug reports should
-be filed under the Samba 4.3 product in the project's Bugzilla
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
 database (https://bugzilla.samba.org/).
 
 
