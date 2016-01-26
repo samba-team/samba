@@ -657,6 +657,8 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_DIRSYNC_OID		"1.2.840.113556.1.4.841"
 #define LDB_CONTROL_DIRSYNC_NAME	"dirsync"
+#define LDB_CONTROL_DIRSYNC_EX_OID	"1.2.840.113556.1.4.2090"
+#define LDB_CONTROL_DIRSYNC_EX_NAME	"dirsync_ex"
 
 
 /**

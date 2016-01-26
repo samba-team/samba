@@ -459,6 +459,39 @@ int handle_controls_reply(struct ldb_control **reply, struct ldb_control **reque
 
 			continue;
 		}
+		if (strcmp(LDB_CONTROL_DIRSYNC_EX_OID, reply[i]->oid) == 0) {
+			struct ldb_dirsync_control *rep_control, *req_control;
+			char *cookie;
+
+			rep_control = talloc_get_type(reply[i]->data, struct ldb_dirsync_control);
+			if (rep_control->cookie_len == 0) /* we are done */
+				break;
+
+			/* more processing required */
+			/* let's fill in the request control with the new cookie */
+
+			for (j = 0; request[j]; j++) {
+				if (strcmp(LDB_CONTROL_DIRSYNC_EX_OID, request[j]->oid) == 0)
+					break;
+			}
+			/* if there's a reply control we must find a request
+			 * control matching it */
+			if (! request[j]) return -1;
+
+			req_control = talloc_get_type(request[j]->data, struct ldb_dirsync_control);
+
+			if (req_control->cookie)
+				talloc_free(req_control->cookie);
+			req_control->cookie = (char *)talloc_memdup(
+				req_control, rep_control->cookie,
+				rep_control->cookie_len);
+			req_control->cookie_len = rep_control->cookie_len;
+
+			cookie = ldb_base64_encode(req_control, rep_control->cookie, rep_control->cookie_len);
+			printf("# DIRSYNC_EX cookie returned was:\n# %s\n", cookie);
+
+			continue;
+		}
 
 		/* no controls matched, throw a warning */
 		fprintf(stderr, "Unknown reply control oid: %s\n", reply[i]->oid);
