@@ -1157,7 +1157,8 @@ bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
                  deps='''
                  DYNCONFIG
                  cups
-                 ''')
+                 ''',
+                 enabled=bld.CONFIG_SET('HAVE_CUPS'))
 
 bld.SAMBA3_BINARY('testparm',
                  source='utils/testparm.c',
