@@ -849,7 +849,7 @@ struct ldb_vlv_req_control {
 		} gtOrEq;
 	} match;
 	int ctxid_len;
-	char *contextId;
+	uint8_t *contextId;
 };
 
 struct ldb_vlv_resp_control {
@@ -857,7 +857,7 @@ struct ldb_vlv_resp_control {
 	int contentCount;
 	int vlv_result;
 	int ctxid_len;
-	char *contextId;
+	uint8_t *contextId;
 };
 
 struct ldb_verify_name_control {

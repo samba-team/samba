@@ -311,10 +311,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 								struct ldb_vlv_resp_control);
 
 		char *cookie;
-		const uint8_t *c = (uint8_t*) rep_control->contextId;
 
 		cookie = ldb_base64_encode(mem_ctx,
-					   rep_control->contextId,
+					   (char *)rep_control->contextId,
 					   rep_control->ctxid_len);
 
 		res = talloc_asprintf(mem_ctx, "%s:%d:%d:%d:%d:%s",
@@ -497,7 +496,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		}
 		if (ctxid[0]) {
 			control->ctxid_len = ldb_base64_decode(ctxid);
-			control->contextId = (char *)talloc_memdup(control, ctxid, control->ctxid_len);
+			control->contextId = talloc_memdup(control, ctxid, control->ctxid_len);
 		} else {
 			control->ctxid_len = 0;
 			control->contextId = NULL;
