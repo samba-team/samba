@@ -59,6 +59,12 @@ pdbedit
 Add '--set-nt-hash' option to pdbedit to update user password from nt-hash
 hexstring. 'pdbedit -vw' shows also password hashes.
 
+smbstatus
+---------
+
+'smbstatus' was enhanced to show the state of signing and encryption for
+sessions and shares.
+
 s4-rpc_server
 -------------
 
