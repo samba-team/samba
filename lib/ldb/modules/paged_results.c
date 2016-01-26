@@ -67,7 +67,7 @@ struct results_store {
 };
 
 struct private_data {
-	unsigned int next_free_id;
+	uint32_t next_free_id;
 	struct results_store *store;
 	
 };
@@ -96,7 +96,7 @@ static int store_destructor(struct results_store *del)
 static struct results_store *new_store(struct private_data *priv)
 {
 	struct results_store *newr;
-	unsigned int new_id = priv->next_free_id++;
+	uint32_t new_id = priv->next_free_id++;
 
 	/* TODO: we should have a limit on the number of
 	 * outstanding paged searches
