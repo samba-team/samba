@@ -310,14 +310,20 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		struct ldb_vlv_resp_control *rep_control = talloc_get_type(control->data,
 								struct ldb_vlv_resp_control);
 
-		res = talloc_asprintf(mem_ctx, "%s:%d:%d:%d:%d:%d:%s",
+		char *cookie;
+		const uint8_t *c = (uint8_t*) rep_control->contextId;
+
+		cookie = ldb_base64_encode(mem_ctx,
+					   rep_control->contextId,
+					   rep_control->ctxid_len);
+
+		res = talloc_asprintf(mem_ctx, "%s:%d:%d:%d:%d:%s",
 						LDB_CONTROL_VLV_RESP_NAME,
 						control->critical,
 						rep_control->targetPosition,
 						rep_control->contentCount,
 						rep_control->vlv_result,
-						rep_control->ctxid_len,
-						rep_control->contextId);
+				                cookie);
 
 		return res;
 	}
