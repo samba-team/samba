@@ -139,10 +139,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_string(struct ndr_pull *ndr, int ndr_fl
 
 	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &len));
 
-	ret = talloc_strdup(ndr->current_mem_ctx, "");
-	if (!ret) {
-		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string");
-	}
 	ret = talloc_zero_array(ndr->current_mem_ctx, char, len + 1);
 	if (!ret) {
 		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp_string");
