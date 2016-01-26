@@ -528,6 +528,22 @@ const char *smbXsrv_connection_dbg(const struct smbXsrv_connection *xconn);
 NTSTATUS smbXsrv_version_global_init(const struct server_id *server_id);
 uint32_t smbXsrv_version_global_current(void);
 
+struct smbXsrv_client_table;
+NTSTATUS smbXsrv_client_global_init(void);
+NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
+			       struct tevent_context *ev_ctx,
+			       struct messaging_context *msg_ctx,
+			       NTTIME now,
+			       struct smbXsrv_client **_client);
+NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client);
+NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client);
+NTSTATUS smb2srv_client_lookup_global(struct smbXsrv_client *client,
+				      struct GUID client_guid,
+				      TALLOC_CTX *mem_ctx,
+				      struct smbXsrv_client_global0 **_pass);
+NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
+					struct smbXsrv_client_global0 *global);
+
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 					enum protocol_types protocol);
 
