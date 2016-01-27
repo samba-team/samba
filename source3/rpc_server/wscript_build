@@ -150,7 +150,7 @@ bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   mdssvc/srv_mdssvc_nt.c
                   ../../librpc/gen_ndr/srv_mdssvc.c''',
                   init_function='',
-                  deps='samba-util ' + bld.env['libtracker'],
+                  deps='samba-util tevent-glib-glue ' + bld.env['libtracker'],
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_mdssvc_module'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'))
 
@@ -205,5 +205,5 @@ bld.SAMBA3_SUBSYSTEM('FSSD',
 
 bld.SAMBA3_SUBSYSTEM('MDSSD',
                     source='mdssd.c',
-                    deps='RPC_SOCK_HELPER RPC_MODULES samba-util',
+                    deps='RPC_SOCK_HELPER RPC_MODULES samba-util tevent-glib-glue',
                     enabled=bld.env.with_spotlight)

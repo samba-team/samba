@@ -96,15 +96,22 @@ struct sl_inode_path_map {
 	char              *path;
 };
 
+/* Per process state */
+struct mdssvc_ctx {
+	struct tevent_context *ev_ctx;
+	GMainContext *gmain_ctx;
+	struct tevent_glib_glue *glue;
+};
+
+/* Per tree connect state */
 struct mds_ctx {
+	struct mdssvc_ctx *mdssvc_ctx;
 	struct auth_session_info *pipe_session_info;
 	struct dom_sid sid;
 	uid_t uid;
 	const char *spath;
 	GCancellable *gcancellable;
 	TrackerSparqlConnection *tracker_con;
-	GMainContext *gcontext;
-	GMainLoop *gmainloop;
 	struct sl_query *query_list;     /* list of active queries */
 	struct db_context *ino_path_map; /* dbwrap rbt for storing inode->path mappings */
 };
