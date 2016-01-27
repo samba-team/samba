@@ -738,6 +738,16 @@ static int readrcfile(const char *name, const struct poptOption long_options[])
 			case POPT_ARG_STRING:
 				stringdata = (char **)long_options[i].arg;
 				*stringdata = SMB_STRDUP(val);
+				if (long_options[i].shortName == 'U') {
+					char *p;
+					opt.username_specified = true;
+					p = strchr(*stringdata, '%');
+					if (p != NULL) {
+						*p = '\0';
+						opt.password = p + 1;
+						opt.password_specified = true;
+					}
+				}
 				break;
 			default:
 				fprintf(stderr, "Invalid variable %s at "
