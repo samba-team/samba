@@ -216,6 +216,8 @@ verify_samba_stable() {
 
 	git tag -v "${oldtagname}" >${verify_out} 2>&1 || {
 		echo "failed to verify old tag[${oldtagname}]"
+		echo ""
+		cat "${verify_out}"
 		return 1
 	}
 
@@ -411,7 +413,9 @@ check_nopatch() {
 	echo "Verifying tagname: ${tagname}"
 
 	git tag -v "${tagname}" >${verify_out} 2>&1 || {
-		echo "failed to verify old tag[${oldtagname}]"
+		echo "failed to verify tag[${tagname}]"
+		echo ""
+		cat "${verify_out}"
 		return 1
 	}
 	grep -q "${GPG_KEYID}" "${verify_out}" || {
@@ -460,7 +464,9 @@ check_samba_stable() {
 	echo "Verifying tagname: ${tagname}"
 
 	git tag -v "${tagname}" >${verify_out} 2>&1 || {
-		echo "failed to verify old tag[${oldtagname}]"
+		echo "failed to verify tag[${tagname}]"
+		echo ""
+		cat "${verify_out}"
 		return 1
 	}
 	grep -q "${GPG_KEYID}" "${verify_out}" || {
