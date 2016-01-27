@@ -710,6 +710,40 @@ announcement_samba_rc() {
 		echo "<!-- END: ${bodyfile} -->"
 	} > announce.${tagname}.body.html
 
+	local webrepo="${TMPDIR}/webrepo"
+
+	mkdir "${webrepo}" || {
+		return 1
+	}
+	git -C "${webrepo}" init || {
+		return 1
+	}
+
+	mkdir -p "$(dirname ${webrepo}/${headlinefile})" || {
+		return 1
+	}
+	cp -a "announce.${tagname}.headline.html" "${webrepo}/${headlinefile}" || {
+		return 1
+	}
+
+	mkdir -p "$(dirname ${webrepo}/${bodyfile})" || {
+		return 1
+	}
+	cp -a "announce.${tagname}.body.html" "${webrepo}/${bodyfile}" || {
+		return 1
+	}
+
+	git -C "${webrepo}" add "${headlinefile}" "${bodyfile}" || {
+		return 1
+	}
+	git -C "${webrepo}" commit --signoff --message "NEWS[${version}]: Samba ${version} Available for Download" || {
+		return 1
+	}
+	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.patch.txt"
+	git -C "${webrepo}" format-patch --stdout -1 HEAD > announce.${tagname}.patch.txt || {
+		return 1
+	}
+
 	CLEANUP_FILES="${CLEANUP_FILES} announce.${tagname}.todo.txt"
 	{
 		ls -lart announce.${tagname}.*
