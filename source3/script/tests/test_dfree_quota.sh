@@ -128,10 +128,10 @@ test_smbcquotas() {
     shift
 	subunit_start_test "$name"
     setup_conf "$conf" "."
-	output=$($VALGRIND $smbcquotas //$SERVER/dfq $@ 2>/dev/null)
+	output=$($VALGRIND $smbcquotas //$SERVER/dfq $@ 2>/dev/null | tr '\\' '/')
 	status=$?
 	if [ "$status" = "0" ]; then
-		received=$(echo "$output" | awk "/$SERVER\\\\$user/ {printf \"%s%s%s\", \$3, \$4, \$5}")
+		received=$(echo "$output" | awk "/$SERVER\\/$user/ {printf \"%s%s%s\", \$3, \$4, \$5}")
 		if [ "$expected" = "$received" ]; then
 			subunit_pass_test "$name"
 		else
