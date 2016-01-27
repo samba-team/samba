@@ -430,6 +430,7 @@ interface smbXsrv
 		uint32					durable_timeout_msec;
 		boolean8				durable;
 		DATA_BLOB				backend_cookie;
+		hyper					channel_sequence;
 	} smbXsrv_open_global0;
 
 	typedef union {
@@ -470,6 +471,8 @@ interface smbXsrv
 		[ignore] files_struct			*compat;
 		smbXsrv_open_flags			flags;
 		uint32					create_action;
+		hyper					request_count;
+		hyper					pre_request_count;
 	} smbXsrv_open;
 
 	typedef union {
