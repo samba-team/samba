@@ -1822,6 +1822,7 @@ static gboolean gmainloop_timer(gpointer user_data)
  * Initialise a context per share handle
  **/
 struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
+			     struct tevent_context *ev,
 			     const struct auth_session_info *session_info,
 			     const char *path)
 {

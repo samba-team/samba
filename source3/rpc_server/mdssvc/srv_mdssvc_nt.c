@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "messages.h"
 #include "ntdomain.h"
 #include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_config.h"
@@ -114,7 +115,10 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(handle);
 
-	mds_ctx = mds_init_ctx(mem_ctx, p->session_info, path);
+	mds_ctx = mds_init_ctx(mem_ctx,
+			       messaging_tevent_context(p->msg_ctx),
+			       p->session_info,
+			       path);
 	if (mds_ctx == NULL) {
 		DEBUG(1, ("error in mds_init_ctx for: %s\n", path));
 		return NT_STATUS_UNSUCCESSFUL;
