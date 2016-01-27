@@ -615,15 +615,6 @@ def build(bld):
     bld.install_dir(bld.env.CTDB_RUNDIR)
     bld.install_dir(bld.env.CTDB_VARDIR)
 
-    sed_expr = 's/@PACKAGE_VERSION@/%s/g' % VERSION
-    t = bld.SAMBA_GENERATOR('ctdb-pc',
-                            source='ctdb.pc.in',
-                            target='ctdb.pc',
-                            rule='sed -e "%s" ${SRC} > ${TGT}' % sed_expr,
-                            dep_vars=['VERSION'])
-    t.env.VERSION = VERSION
-    bld.INSTALL_FILES('${LIBDIR}/pkgconfig', 'ctdb.pc')
-
     # Unit tests
     ctdb_unit_tests = [
         'db_hash_test',

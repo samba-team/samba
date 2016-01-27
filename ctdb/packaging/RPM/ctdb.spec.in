@@ -217,7 +217,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man7/ctdb.7.gz
 %{_mandir}/man7/ctdb-statistics.7.gz
 %{_mandir}/man7/ctdb-tunables.7.gz
-%{_libdir}/pkgconfig/ctdb.pc
 
 
 %package devel
