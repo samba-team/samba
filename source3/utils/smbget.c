@@ -707,7 +707,7 @@ static int readrcfile(const char *name, const struct poptOption long_options[])
 
 		found = false;
 
-		for (i = 0; long_options[i].shortName; i++) {
+		for (i = 0; long_options[i].argInfo; i++) {
 			if (!long_options[i].longName) {
 				continue;
 			}
