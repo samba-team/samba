@@ -22,8 +22,7 @@
 		<arg choice="opt">-a, --guest</arg>
 		<arg choice="opt">-r, --resume</arg>
 		<arg choice="opt">-R, --recursive</arg>
-		<arg choice="opt">-u, --username=STRING</arg>
-		<arg choice="opt">-p, --password=STRING</arg>
+		<arg choice="opt">-U, --username=STRING</arg>
 		<arg choice="opt">-w, --workgroup=STRING</arg>
 		<arg choice="opt">-n, --nonprompt</arg>
 		<arg choice="opt">-d, --debuglevel=INT</arg>
@@ -35,7 +34,7 @@
 		<arg choice="opt">-v, --verbose</arg>
 		<arg choice="opt">-b, --blocksize</arg>
 		<arg choice="opt">-O, --stdout</arg>
-		<arg choice="opt">-U, --update</arg>
+		<arg choice="opt">-u, --update</arg>
 		<arg choice="opt">-?, --help</arg>
 		<arg choice="opt">--usage</arg>
 		<arg choice="req">smb://host/share/path/to/file</arg>
@@ -78,13 +77,8 @@
 	</varlistentry>
 
 	<varlistentry>
-		<term>-u, --username=STRING</term>
-		<listitem><para>Username to use</para></listitem>
-	</varlistentry>
-
-	<varlistentry>
-		<term>-p, --password=STRING</term>
-		<listitem><para>Password to use</para></listitem>
+		<term> -U, --username=<replaceable>username[%password]</replaceable></term>
+		<listitem><para>Username (and password) to use</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
@@ -153,7 +147,7 @@
 	</varlistentry>
 
 	<varlistentry>
-		<term>-U, --update</term>
+		<term>-u, --update</term>
 		<listitem><para>Download only when remote file is newer than local file or local file is missing.</para></listitem>
 	</varlistentry>
 

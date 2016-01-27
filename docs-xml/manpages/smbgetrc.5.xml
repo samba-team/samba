@@ -53,13 +53,9 @@
 			<listitem><para>Whether directories should be downloaded recursively</para></listitem>
 		</varlistentry>
 
-		<varlistentry><term>username <replaceable>name</replaceable></term>
-			<listitem><para>Username to use when logging in to the remote server. Use an empty string for anonymous access.
+		<varlistentry><term>user <replaceable>name[%password]</replaceable></term>
+			<listitem><para>Username (and password) to use when logging in to the remote server. Use an empty string for anonymous access.
 			</para></listitem>
-		</varlistentry>
-
-		<varlistentry><term>password <replaceable>pass</replaceable></term>
-			<listitem><para>Password to use when logging in.</para></listitem>
 		</varlistentry>
 
 		<varlistentry><term>workgroup <replaceable>wg</replaceable></term>
