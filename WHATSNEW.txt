@@ -65,6 +65,13 @@ smbstatus
 'smbstatus' was enhanced to show the state of signing and encryption for
 sessions and shares.
 
+smbget
+------
+The -u and -p options for user and password were replaced by the -U option that
+accepts username[%password] as in many other tools of the Samba suite.
+Similary, smbgetrc files do not accept username and password options any more,
+only a single "user" option which also accepts user%password combinations.
+
 s4-rpc_server
 -------------
 
