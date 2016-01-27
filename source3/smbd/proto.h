@@ -857,7 +857,6 @@ bool fork_echo_handler(struct smbXsrv_connection *xconn);
 
 bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 		 uint64_t *dfree, uint64_t *dsize);
-bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize);
 
 /* The following definitions come from smbd/reply.c  */
 
