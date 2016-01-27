@@ -30,4 +30,3 @@
 ^samba4.blackbox.samba_tool_demote # flakey on sn-devel
 ^samba4.blackbox.dbcheck # flakey on sn-devel
 ^samba4.smb2.create.mkdir-dup\(ad_dc_ntvfs\) # This test (for bug 11486) involves a race, not always protected against in the NTVFS file server
-^samba3.blackbox.dfree_quota #flakey on sn-devel
