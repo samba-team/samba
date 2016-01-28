@@ -140,7 +140,7 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_ECHO
                       RPC_NDR_SVCCTL
                       RPC_NDR_NETLOGON
-                      dcerpc-atsvc
+                      RPC_NDR_ATSVC
                       RPC_NDR_DRSUAPI
                       RPC_NDR_LSA
                       RPC_NDR_EPMAPPER
@@ -286,7 +286,7 @@ bld.SAMBA_SUBSYSTEM('torturemain',
 bld.SAMBA_BINARY('smbtorture',
                  source=[],
                  manpages='man/smbtorture.1',
-                 public_headers='smbtorture.h',
+                 private_headers='smbtorture.h',
                  deps='torturemain torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
                  pyembed=True
                  )
