@@ -20,7 +20,7 @@
 
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec, Ldb, drs_utils
+from samba import gensec, Ldb, drs_utils, arcfour_encrypt, string_to_byte_array
 import ldb, samba, sys, uuid
 from samba.ndr import ndr_pack
 from samba.dcerpc import security, drsuapi, misc, nbt, lsa, drsblobs
@@ -944,19 +944,6 @@ class dc_join(object):
     def join_setup_trusts(ctx):
         """provision the local SAM."""
 
-        def arcfour_encrypt(key, data):
-            from Crypto.Cipher import ARC4
-            c = ARC4.new(key)
-            return c.encrypt(data)
-
-        def string_to_array(string):
-            blob = [0] * len(string)
-
-            for i in range(len(string)):
-                blob[i] = ord(string[i])
-
-            return blob
-
         print "Setup domain trusts with server %s" % ctx.server
         binding_options = ""  # why doesn't signing work here? w2k8r2 claims no session key
         lsaconn = lsa.lsarpc("ncacn_np:%s[%s]" % (ctx.server, binding_options),
@@ -986,7 +973,7 @@ class dc_join(object):
         except RuntimeError:
             pass
 
-        password_blob = string_to_array(ctx.trustdom_pass.encode('utf-16-le'))
+        password_blob = string_to_byte_array(ctx.trustdom_pass.encode('utf-16-le'))
 
         clear_value = drsblobs.AuthInfoClear()
         clear_value.size = len(password_blob)
@@ -1022,7 +1009,7 @@ class dc_join(object):
 
         auth_blob = lsa.DATA_BUF2()
         auth_blob.size = len(encrypted_trustpass)
-        auth_blob.data = string_to_array(encrypted_trustpass)
+        auth_blob.data = string_to_byte_array(encrypted_trustpass)
 
         auth_info = lsa.TrustDomainInfoAuthInfoInternal()
         auth_info.auth_blob = auth_blob
