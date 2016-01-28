@@ -477,12 +477,12 @@ static void set_recmode_handler(struct tevent_context *ev,
 
 	ret = sys_read(state->fd[0], &c, 1);
 	if (ret == 1) {
-		/* Child wrote status. 0 indicates that it was unable
+		/* Child wrote status. EACCES indicates that it was unable
 		 * to take the lock, which is the expected outcome.
-		 * Non-zero indicates that it was able to take the
+		 * 0 indicates that it was able to take the
 		 * lock, which is an error because the recovery daemon
 		 * should be holding the lock. */
-		if (c == 0) {
+		if (c == EACCES) {
 			status = 0;
 			err = NULL;
 
@@ -634,7 +634,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 	if (state->child == 0) {
-		char cc = 0;
+		char cc = EACCES;
 		close(state->fd[0]);
 
 		prctl_set_comment("ctdb_recmode");
@@ -646,7 +646,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
 			       ctdb->recovery_lock_file));
 			ctdb_recovery_unlock(ctdb);
-			cc = 1;
+			cc = 0;
 		}
 
 		sys_write(state->fd[1], &cc, 1);
