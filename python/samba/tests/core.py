@@ -20,6 +20,7 @@
 import ldb
 import os
 import samba
+from samba import arcfour_encrypt, string_to_byte_array
 from samba.tests import TestCase, TestCaseInTempDir
 
 class SubstituteVarTestCase(TestCase):
@@ -48,6 +49,21 @@ class SubstituteVarTestCase(TestCase):
         self.assertRaises(Exception, samba.check_all_substituted,
                 "Not subsituted: ${FOOBAR}")
 
+class ArcfourTestCase(TestCase):
+
+    def test_arcfour_direct(self):
+        key = '12345678'
+        plain = 'abcdefghi'
+        crypt_expected = '\xda\x91Z\xb0l\xd7\xb9\xcf\x99'
+        crypt_calculated = arcfour_encrypt(key, plain)
+        self.assertEquals(crypt_expected, crypt_calculated)
+
+class StringToByteArrayTestCase(TestCase):
+
+    def test_byte_array(self):
+        expected = [218, 145, 90, 176, 108, 215, 185, 207, 153]
+        calculated = string_to_byte_array('\xda\x91Z\xb0l\xd7\xb9\xcf\x99')
+        self.assertEquals(expected, calculated)
 
 class LdbExtensionTests(TestCaseInTempDir):
 
