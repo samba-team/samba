@@ -262,14 +262,19 @@ DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const ui
 		goto err;
 	}
 
+	asn1_free(data);
+	data = NULL;
+
   err:
 
-	if (asn1_has_error(data)) {
-		DEBUG(1, ("Failed to build krb5 wrapper at offset %d\n",
-			  (int)asn1_current_ofs(data)));
-	}
+	if (data != NULL) {
+		if (asn1_has_error(data)) {
+			DEBUG(1, ("Failed to build krb5 wrapper at offset %d\n",
+				  (int)asn1_current_ofs(data)));
+		}
 
-	asn1_free(data);
+		asn1_free(data);
+	}
 
 	return ret;
 }
