@@ -4496,7 +4496,7 @@ static int control_chktcpport(struct ctdb_context *ctdb, int argc, const char **
 
 	port = atoi(argv[0]);
 
-	s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		printf("Failed to open local socket\n");
 		return errno;
@@ -4508,7 +4508,7 @@ static int control_chktcpport(struct ctdb_context *ctdb, int argc, const char **
 	}
 
 	bzero(&sin, sizeof(sin));
-	sin.sin_family = PF_INET;
+	sin.sin_family = AF_INET;
 	sin.sin_port   = htons(port);
 	ret = bind(s, (struct sockaddr *)&sin, sizeof(sin));
 	close(s);
