@@ -362,6 +362,14 @@ def dn_from_dns_name(dnsdomain):
 def current_unix_time():
     return int(time.time())
 
+def string_to_byte_array(string):
+    blob = [0] * len(string)
+
+    for i in range(len(string)):
+        blob[i] = ord(string[i])
+
+    return blob
+
 import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips
