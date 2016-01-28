@@ -3766,7 +3766,7 @@ bool dsdb_dn_is_deleted_val(const struct ldb_val *val)
   return true if a ldb_val containing a DN in storage form is
   in the upgraded w2k3 linked attribute format
  */
-bool dsdb_dn_is_upgraded_link_val(struct ldb_val *val)
+bool dsdb_dn_is_upgraded_link_val(const struct ldb_val *val)
 {
 	return memmem(val->data, val->length, "<RMD_VERSION=", 13) != NULL;
 }
