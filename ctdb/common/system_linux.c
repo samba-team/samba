@@ -100,7 +100,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 	switch (addr->ip.sin_family) {
 	case AF_INET:
-		s = socket(PF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
+		s = socket(AF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 			return -1;
@@ -194,7 +194,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		close(s);
 		break;
 	case AF_INET6:
-		s = socket(PF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
+		s = socket(AF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 			return -1;
@@ -419,7 +419,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		ip6pkt.tcp.window   = htons(1234);
 		ip6pkt.tcp.check    = tcp_checksum6((uint16_t *)&ip6pkt.tcp, sizeof(ip6pkt.tcp), &ip6pkt.ip6);
 
-		s = socket(PF_INET6, SOCK_RAW, IPPROTO_RAW);
+		s = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
 		if (s == -1) {
 			DEBUG(DEBUG_CRIT, (__location__ " Failed to open sending socket\n"));
 			return -1;
@@ -581,7 +581,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 	int s;
 	struct ifreq ifr;
 
-	s = socket(PF_PACKET, SOCK_RAW, 0);
+	s = socket(AF_PACKET, SOCK_RAW, 0);
 	if (s == -1){
 		/* We don't know if the interface exists, so assume yes */
 		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
