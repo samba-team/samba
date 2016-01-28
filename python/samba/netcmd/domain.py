@@ -58,7 +58,7 @@ from samba.upgrade import upgrade_from_samba3
 from samba.drs_utils import (
                             sendDsReplicaSync, drsuapi_connect, drsException,
                             sendRemoveDsServer)
-
+from samba import arcfour_encrypt, string_to_byte_array
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -2125,24 +2125,16 @@ class cmd_domain_trust_create(DomainTrustCommand):
                     password = None
                     self.outf.write("Sorry, passwords do not match.\n")
 
-        def string_to_array(string):
-            blob = [0] * len(string)
-
-            for i in range(len(string)):
-                blob[i] = ord(string[i])
-
-            return blob
-
         incoming_secret = None
         outgoing_secret = None
         remote_policy_access = lsa.LSA_POLICY_VIEW_LOCAL_INFORMATION
         if create_location == "local":
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_INBOUND:
                 incoming_password = get_password("Incoming Trust")
-                incoming_secret = string_to_array(incoming_password.encode('utf-16-le'))
+                incoming_secret = string_to_byte_array(incoming_password.encode('utf-16-le'))
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_OUTBOUND:
                 outgoing_password = get_password("Outgoing Trust")
-                outgoing_secret = string_to_array(outgoing_password.encode('utf-16-le'))
+                outgoing_secret = string_to_byte_array(outgoing_password.encode('utf-16-le'))
 
             remote_trust_info = None
         else:
@@ -2167,7 +2159,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                     #
                     # We can remove this once our client libraries
                     # support using the correct NTHASH.
-                    return string_to_array(pw1.encode('utf-16-le'))
+                    return string_to_byte_array(pw1.encode('utf-16-le'))
 
                 # We mix characters from generate_random_password
                 # with random numbers from random.randint()
@@ -2320,11 +2312,6 @@ class cmd_domain_trust_create(DomainTrustCommand):
             except RuntimeError as error:
                 raise self.RemoteRuntimeError(self, error, "failed to get netlogon dc info")
 
-        def arcfour_encrypt(key, data):
-            from Crypto.Cipher import ARC4
-            c = ARC4.new(key)
-            return c.encrypt(data)
-
         def generate_AuthInOutBlob(secret, update_time):
             if secret is None:
                 blob = drsblobs.trustAuthInOutBlob()
@@ -2368,7 +2355,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
 
             auth_blob = lsa.DATA_BUF2()
             auth_blob.size = len(encrypted_trustpass)
-            auth_blob.data = string_to_array(encrypted_trustpass)
+            auth_blob.data = string_to_byte_array(encrypted_trustpass)
 
             auth_info = lsa.TrustDomainInfoAuthInfoInternal()
             auth_info.auth_blob = auth_blob
