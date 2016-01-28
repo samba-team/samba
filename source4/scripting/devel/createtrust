@@ -11,20 +11,8 @@ import samba
 import samba.getopt as options
 from samba.dcerpc import lsa, security, drsblobs
 from samba.ndr import ndr_pack
+from samba import arcfour_encrypt, string_to_byte_array
 import random
-
-def arcfour_encrypt(key, data):
-    from Crypto.Cipher import ARC4
-    c = ARC4.new(key)
-    return c.encrypt(data)
-
-def string_to_array(string):
-    blob = [0] * len(string)
-
-    for i in range(len(string)):
-        blob[i] = ord(string[i])
-
-    return blob
 
 ########### main code ###########
 if __name__ == "__main__":
@@ -73,7 +61,7 @@ if __name__ == "__main__":
     info.trust_type = lsa.LSA_TRUST_TYPE_UPLEVEL
     info.trust_attributes = lsa.LSA_TRUST_ATTRIBUTE_WITHIN_FOREST
 
-    password_blob = string_to_array("password".encode('utf-16-le'))
+    password_blob = string_to_byte_array("password".encode('utf-16-le'))
 
     clear_value = drsblobs.AuthInfoClear()
     clear_value.size = len(password_blob)
@@ -123,7 +111,7 @@ if __name__ == "__main__":
 
     auth_blob = lsa.DATA_BUF2()
     auth_blob.size = len(encrypted_trustpass)
-    auth_blob.data = string_to_array(encrypted_trustpass)
+    auth_blob.data = string_to_byte_array(encrypted_trustpass)
 
     auth_info = lsa.TrustDomainInfoAuthInfoInternal()
     auth_info.auth_blob = auth_blob
