@@ -12,10 +12,9 @@ bld.SAMBA_SUBSYSTEM('TDR_REGF',
 
 bld.SAMBA_LIBRARY('registry',
 	source='interface.c util.c samba.c patchfile_dotreg.c patchfile_preg.c patchfile.c regf.c hive.c local.c ldb.c rpc.c',
-	pc_files='registry.pc',
 	public_deps='dcerpc samba-util TDR_REGF ldb RPC_NDR_WINREG ldbsamba util_reg',
-	public_headers='registry.h',
-	vnum='0.0.1'
+	private_headers='registry.h',
+	private_library=True
 	)
 
 
