@@ -466,6 +466,8 @@ static void set_recmode_handler(struct tevent_context *ev,
 					     struct ctdb_set_recmode_state);
 	char c = 0;
 	int ret;
+	int status = 0;
+	const char *err = NULL;
 
 	/* we got a response from our child process so we can abort the
 	   timeout.
@@ -473,30 +475,34 @@ static void set_recmode_handler(struct tevent_context *ev,
 	talloc_free(state->te);
 	state->te = NULL;
 
-
-	/* If, as expected, the child was unable to take the recovery
-	 * lock then it will have written 0 into the pipe, so
-	 * continue.  However, any other value (e.g. 1) indicates that
-	 * it was able to take the recovery lock when it should have
-	 * been held by the recovery daemon on the recovery master.
-	*/
 	ret = sys_read(state->fd[0], &c, 1);
-	if (ret != 1 || c != 0) {
-		ctdb_request_control_reply(
-			state->ctdb, state->c, NULL, -1,
-			"Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem");
-		talloc_free(state);
-		return;
+	if (ret == 1) {
+		/* Child wrote status. 0 indicates that it was unable
+		 * to take the lock, which is the expected outcome.
+		 * Non-zero indicates that it was able to take the
+		 * lock, which is an error because the recovery daemon
+		 * should be holding the lock. */
+		if (c == 0) {
+			status = 0;
+			err = NULL;
+
+			state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+
+			/* release any deferred attach calls from clients */
+			ctdb_process_deferred_attach(state->ctdb);
+		} else {
+			status = -1;
+			err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
+		}
+	} else {
+		/* Child did not write status.  Unexpected error.
+		 * Child may have received a signal.  */
+		status = -1;
+		err = "Unexpected error when testing recovery lock";
 	}
 
-	state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
-
-	/* release any deferred attach calls from clients */
-	ctdb_process_deferred_attach(state->ctdb);
-
-	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, status, err);
 	talloc_free(state);
-	return;
 }
 
 static void
