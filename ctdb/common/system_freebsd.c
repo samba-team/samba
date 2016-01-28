@@ -164,7 +164,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		ip4pkt.tcp.th_sum   = tcp_checksum((uint16_t *)&ip4pkt.tcp, sizeof(ip4pkt.tcp), &ip4pkt.ip);
 
 		/* open a raw socket to send this segment from */
-		s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 		if (s == -1) {
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
 				 strerror(errno)));

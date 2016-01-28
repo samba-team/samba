@@ -100,7 +100,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 	switch (addr->ip.sin_family) {
 	case AF_INET:
-		s = socket(PF_PACKET, SOCK_RAW, htons(ETHERTYPE_ARP));
+		s = socket(PF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 			return -1;
@@ -194,7 +194,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		close(s);
 		break;
 	case AF_INET6:
-		s = socket(PF_PACKET, SOCK_RAW, htons(ETHERTYPE_ARP));
+		s = socket(PF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 			return -1;
@@ -370,7 +370,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		ip4pkt.tcp.check    = tcp_checksum((uint16_t *)&ip4pkt.tcp, sizeof(ip4pkt.tcp), &ip4pkt.ip);
 
 		/* open a raw socket to send this segment from */
-		s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 		if (s == -1) {
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
 				 strerror(errno)));
@@ -460,7 +460,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 	int s;
 
 	/* Open a socket to capture all traffic */
-	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+	s = socket(AF_PACKET, SOCK_RAW, ETH_P_ALL);
 	if (s == -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 		return -1;
