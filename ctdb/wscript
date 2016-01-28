@@ -308,7 +308,7 @@ def build(bld):
                                               '''ibwrapper.c ibw_ctdb.c
                                                  ibw_ctdb_init.c'''),
                             includes='include',
-                            deps='replace talloc tevent')
+                            deps='replace talloc tevent tdb')
         ib_deps = ' ctdb-ib rdmacm ibverbs'
 
     if sys.platform.startswith('linux'):
