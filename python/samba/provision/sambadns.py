@@ -42,6 +42,7 @@ from samba.dsdb import (
     DS_GUID_USERS_CONTAINER
 )
 from samba.descriptor import (
+    get_deletedobjects_descriptor,
     get_domain_descriptor,
     get_domain_delete_protected1_descriptor,
     get_domain_delete_protected2_descriptor,
@@ -256,6 +257,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
     domainzone_dn = "DC=DomainDnsZones,%s" % domaindn
     forestzone_dn = "DC=ForestDnsZones,%s" % forestdn
     descriptor = get_dns_partition_descriptor(domainsid)
+    deletedobjects_desc = get_deletedobjects_descriptor(domainsid)
 
     setup_add_ldif(samdb, setup_path("provision_dnszones_partitions.ldif"), {
         "ZONE_DN": domainzone_dn,
@@ -278,6 +280,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
         "ZONE_DNS": domainzone_dns,
         "CONFIGDN": configdn,
         "SERVERDN": serverdn,
+        "DELETEDOBJECTS_DESCRIPTOR": b64encode(deletedobjects_desc).decode('utf8'),
         "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc).decode('utf8'),
         "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc).decode('utf8'),
     })
@@ -297,6 +300,7 @@ def setup_dns_partitions(samdb, domainsid, domaindn, forestdn, configdn,
             "ZONE_DNS": forestzone_dns,
             "CONFIGDN": configdn,
             "SERVERDN": serverdn,
+            "DELETEDOBJECTS_DESCRIPTOR": b64encode(deletedobjects_desc).decode('utf8'),
             "LOSTANDFOUND_DESCRIPTOR": b64encode(protected2_desc).decode('utf8'),
             "INFRASTRUCTURE_DESCRIPTOR": b64encode(protected1_desc).decode('utf8'),
         })
