@@ -8,6 +8,7 @@ description: Deleted objects
 isDeleted: TRUE
 isCriticalSystemObject: TRUE
 systemFlags: -1946157056
+nTSecurityDescriptor:: ${DELETEDOBJECTS_DESCRIPTOR}
 
 dn: CN=LostAndFound,${ZONE_DN}
 objectClass: top
