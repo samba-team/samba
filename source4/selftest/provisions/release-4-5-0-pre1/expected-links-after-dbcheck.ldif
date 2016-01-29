@@ -1381,7 +1381,7 @@ uSNChanged: 3597
 dn: CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
-uSNChanged: 3377
+uSNChanged: 3750
 
 # record 215
 dn: CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba,DC=corp
