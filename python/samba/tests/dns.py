@@ -16,6 +16,7 @@
 #
 
 import os
+import sys
 import struct
 import random
 import socket
@@ -24,12 +25,41 @@ from samba import credentials, param
 from samba.tests import TestCase
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
+from samba.tests.subunitrun import SubunitOptions, TestProgram
+import samba.getopt as options
+import optparse
+
+parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 
 FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
 
 # This timeout only has relevance when testing against Windows
 # Format errors tend to return patchy responses, so a timeout is needed.
-timeout = None
+parser.add_option("--timeout", type="int", dest="timeout",
+                  help="Specify timeout for DNS requests")
+
+# use command line creds if available
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
+
+opts, args = parser.parse_args()
+
+lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
+timeout = opts.timeout
+
+if len(args) < 2:
+    parser.print_usage()
+    sys.exit(1)
+
+server_name = args[0]
+server_ip = args[1]
+creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
 
 def make_txt_record(records):
     rdata_txt = dns.txt_record()
@@ -41,10 +71,13 @@ def make_txt_record(records):
 
 class DNSTest(TestCase):
 
-    def get_loadparm(self):
-        lp = param.LoadParm()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-        return lp
+    def setUp(self):
+        global server, server_ip, lp, creds
+        super(DNSTest, self).setUp()
+        self.server = server_name
+        self.server_ip = server_ip
+        self.lp = lp
+        self.creds = creds
 
     def errstr(self, errcode):
         "Return a readable error code"
@@ -1180,6 +1213,4 @@ class TestRPCRoundtrip(DNSTest):
                                               0, self.server_ip, self.get_dns_domain(),
                                               name, None, add_rec_buf)
 
-if __name__ == "__main__":
-    import unittest
-    unittest.main()
+TestProgram(module=__name__, opts=subunitopts)
