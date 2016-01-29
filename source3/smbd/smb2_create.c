@@ -1281,6 +1281,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	state->out_last_write_ts = result->fsp_name->st.st_ex_mtime;
 	state->out_change_ts = get_change_timespec(smb1req->conn,
 					result, result->fsp_name);
+
+	if (lp_dos_filetime_resolution(SNUM(smb2req->tcon->compat))) {
+		dos_filetime_timespec(&state->out_creation_ts);
+		dos_filetime_timespec(&state->out_last_access_ts);
+		dos_filetime_timespec(&state->out_last_write_ts);
+		dos_filetime_timespec(&state->out_change_ts);
+	}
+
 	state->out_allocation_size =
 			SMB_VFS_GET_ALLOC_SIZE(smb1req->conn, result,
 					       &(result->fsp_name->st));
