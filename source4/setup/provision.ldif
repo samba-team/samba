@@ -34,6 +34,7 @@ isDeleted: TRUE
 isCriticalSystemObject: TRUE
 showInAdvancedViewOnly: TRUE
 systemFlags: -1946157056
+nTSecurityDescriptor:: ${DELETEDOBJECTS_DESCRIPTOR}
 
 # Computers located in "provision_computers*.ldif"
 # Users/Groups located in "provision_users*.ldif"
