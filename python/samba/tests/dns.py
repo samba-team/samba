@@ -132,9 +132,9 @@ class DNSTest(TestCase):
 
     def get_dns_domain(self):
         "Helper to get dns domain"
-        return os.getenv('REALM', 'example.com').lower()
+        return self.creds.get_realm().lower()
 
-    def dns_transaction_udp(self, packet, host=os.getenv('SERVER_IP'),
+    def dns_transaction_udp(self, packet, host=server_ip,
                             dump=False, timeout=timeout):
         "send a DNS query and read the reply"
         s = None
@@ -154,7 +154,7 @@ class DNSTest(TestCase):
             if s is not None:
                 s.close()
 
-    def dns_transaction_tcp(self, packet, host=os.getenv('SERVER_IP'),
+    def dns_transaction_tcp(self, packet, host=server_ip,
                             dump=False, timeout=timeout):
         "send a DNS query and read the reply"
         s = None
@@ -221,7 +221,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -232,14 +232,14 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
     def test_one_a_query_tcp(self):
         "create a query packet containing one query record via TCP"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -250,14 +250,14 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
     def test_one_mx_query(self):
         "create a query packet causing an empty RCODE_OK answer"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -271,7 +271,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "invalid-%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "invalid-%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -287,7 +287,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         questions.append(q)
 
@@ -311,7 +311,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -328,7 +328,7 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, num_answers)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
         if dc_ipv6 is not None:
             self.assertEquals(response.answers[1].rdata, dc_ipv6)
 
@@ -337,7 +337,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_NONE)
         questions.append(q)
 
@@ -357,7 +357,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
         questions.append(q)
 
@@ -394,7 +394,7 @@ class TestDNSUpdates(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
         updates = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         u = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         updates.append(u)
 
@@ -439,7 +439,7 @@ class TestDNSUpdates(DNSTest):
 
         prereqs = []
         r = dns.res_rec()
-        r.name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.name = "%s.%s" % (self.server, self.get_dns_domain())
         r.rr_type = dns.DNS_QTYPE_TXT
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 1
@@ -472,7 +472,7 @@ class TestDNSUpdates(DNSTest):
 
         prereqs = []
         r = dns.res_rec()
-        r.name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.name = "%s.%s" % (self.server, self.get_dns_domain())
         r.rr_type = dns.DNS_QTYPE_TXT
         r.rr_class = dns.DNS_QCLASS_ANY
         r.ttl = 0
@@ -777,7 +777,7 @@ class TestComplexQueries(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        r.rdata = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -803,7 +803,7 @@ class TestComplexQueries(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        r.rdata = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -828,10 +828,10 @@ class TestComplexQueries(DNSTest):
         self.assertEquals(response.ancount, 2)
         self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
         self.assertEquals(response.answers[0].rdata, "%s.%s" %
-                          (os.getenv('SERVER'), self.get_dns_domain()))
+                          (self.server, self.get_dns_domain()))
         self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
         self.assertEquals(response.answers[1].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
 class TestInvalidQueries(DNSTest):
 
@@ -841,7 +841,7 @@ class TestInvalidQueries(DNSTest):
         s = None
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-            s.connect((os.getenv('SERVER_IP'), 53))
+            s.connect((self.server_ip, 53))
             s.send("", 0)
         finally:
             if s is not None:
@@ -850,7 +850,7 @@ class TestInvalidQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -861,7 +861,7 @@ class TestInvalidQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
     def test_one_a_reply(self):
         "send a reply instead of a query"
@@ -882,7 +882,7 @@ class TestInvalidQueries(DNSTest):
             send_packet = ndr.ndr_pack(p)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
             s.settimeout(timeout)
-            host=os.getenv('SERVER_IP')
+            host=self.server_ip
             s.connect((host, 53))
             tcp_packet = struct.pack('!H', len(send_packet))
             tcp_packet += send_packet
@@ -900,18 +900,8 @@ class TestInvalidQueries(DNSTest):
                 s.close()
 
 class TestZones(DNSTest):
-    def get_credentials(self, lp):
-        creds = credentials.Credentials()
-        creds.guess(lp)
-        creds.set_machine_account(lp)
-        creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
-        return creds
-
     def setUp(self):
         super(TestZones, self).setUp()
-        self.lp = self.get_loadparm()
-        self.creds = self.get_credentials(self.lp)
-        self.server = os.getenv("SERVER_IP")
         self.zone = "test.lan"
         self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server_ip),
                                             self.lp, self.creds)
@@ -979,18 +969,8 @@ class TestZones(DNSTest):
         self.assertEquals(response.ancount, 0)
 
 class TestRPCRoundtrip(DNSTest):
-    def get_credentials(self, lp):
-        creds = credentials.Credentials()
-        creds.guess(lp)
-        creds.set_machine_account(lp)
-        creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
-        return creds
-
     def setUp(self):
         super(TestRPCRoundtrip, self).setUp()
-        self.lp = self.get_loadparm()
-        self.creds = self.get_credentials(self.lp)
-        self.server = os.getenv("SERVER_IP")
         self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server_ip),
                                             self.lp, self.creds)
 
