@@ -52,6 +52,16 @@ def get_empty_descriptor(domain_sid, name_map={}):
 # "get_schema_descriptor" is located in "schema.py"
 
 
+def get_deletedobjects_descriptor(domain_sid, name_map=None):
+    if name_map is None:
+        name_map = {}
+
+    sddl = "O:SYG:SYD:PAI" \
+        "(A;;RPWPCCDCLCRCWOWDSDSW;;;SY)" \
+        "(A;;RPLC;;;BA)"
+    return sddl2binary(sddl, domain_sid, name_map)
+
+
 def get_config_descriptor(domain_sid, name_map={}):
     sddl = "O:EAG:EAD:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
            "(OA;;CR;1131f6ab-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
