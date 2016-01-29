@@ -2469,7 +2469,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     continue
 
-                if self.reset_well_known_acls:
+                if dn == deleted_objects_dn or self.reset_well_known_acls:
                     try:
                         well_known_sd = self.get_wellknown_sd(dn)
                     except KeyError:
@@ -2478,7 +2478,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     current_sd = ndr_unpack(security.descriptor,
                                             obj[attrname][0])
 
-                    diff = get_diff_sds(well_known_sd, current_sd, security.dom_sid(self.samdb.get_domain_sid()))
+                    ignoreAdditionalACEs = False
+                    if not self.reset_well_known_acls:
+                        ignoreAdditionalACEs = True
+
+                    diff = get_diff_sds(well_known_sd, current_sd,
+                                        security.dom_sid(self.samdb.get_domain_sid()),
+                                        ignoreAdditionalACEs=ignoreAdditionalACEs)
                     if diff != "":
                         self.err_wrong_default_sd(dn, well_known_sd, diff)
                         error_count += 1

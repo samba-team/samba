@@ -59,6 +59,16 @@ dbcheck()
 	fi
 }
 
+dbcheck_acl_reset()
+{
+	$PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --cross-ncs --fix --yes --attrs=nTSecurityDescriptor
+}
+
+dbcheck_acl_clean()
+{
+	$PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --cross-ncs --attrs=nTSecurityDescriptor
+}
+
 dbcheck_dangling()
 {
 	dbcheck "" "1" "--selftest-check-expired-tombstones"
@@ -925,6 +935,8 @@ EOF
 remove_directory $PREFIX_ABS/${RELEASE}
 
 testit $RELEASE undump || failed=$(expr $failed + 1)
+testit_expect_failure "dbcheck_acl_reset" dbcheck_acl_reset || failed=$(expr $failed + 1)
+testit "dbcheck_acl_clean" dbcheck_acl_clean || failed=$(expr $failed + 1)
 testit "add_two_more_users" add_two_more_users || failed=$(expr $failed + 1)
 testit "add_four_more_links" add_four_more_links || failed=$(expr $failed + 1)
 testit "remove_one_link" remove_one_link || failed=$(expr $failed + 1)
