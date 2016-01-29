@@ -16,16 +16,48 @@
 #
 
 import os
+import sys
 import struct
 import random
+
+sys.path.insert(0, "bin/python")
+import samba
+samba.ensure_external_module("testtools", "testtools")
+samba.ensure_external_module("subunit", "subunit/python")
+from subunit.run import SubunitTestRunner
+import unittest
+
 from samba import socket
 import samba.ndr as ndr
 from samba import credentials, param
 from samba.tests import TestCase
 from samba.dcerpc import dns, dnsp, dnsserver
 from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
+import samba.getopt as options
+import optparse
+
+parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 
 FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
+
+# use command line creds if available
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+
+opts, args = parser.parse_args()
+
+lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
+if len(args) < 2:
+    parser.print_usage()
+    sys.exit(1)
+
+server_name = args[0]
+server_ip = args[1]
+creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
 
 def make_txt_record(records):
     rdata_txt = dns.txt_record()
@@ -37,10 +69,13 @@ def make_txt_record(records):
 
 class DNSTest(TestCase):
 
-    def get_loadparm(self):
-        lp = param.LoadParm()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-        return lp
+    def setUp(self):
+        global server, server_ip, lp, creds
+        super(DNSTest, self).setUp()
+        self.server = server_name
+        self.server_ip = server_ip
+        self.lp = lp
+        self.creds = creds
 
     def errstr(self, errcode):
         "Return a readable error code"
@@ -1136,6 +1171,19 @@ class TestRPCRoundtrip(DNSTest):
                                               0, self.server_ip, self.get_dns_domain(),
                                               name, None, add_rec_buf)
 
-if __name__ == "__main__":
-    import unittest
-    unittest.main()
+runner = SubunitTestRunner()
+rc = 0
+if not runner.run(unittest.makeSuite(DNSTest)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(TestSimpleQueries)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(TestDNSUpdates)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(TestComplexQueries)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(TestInvalidQueries)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(TestRPCRoundtrip)).wasSuccessful():
+    rc = 1
+
+sys.exit(rc)
