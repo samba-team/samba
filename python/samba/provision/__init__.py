@@ -81,6 +81,7 @@ from samba.provision.backend import (
     LDBBackend,
 )
 from samba.descriptor import (
+    get_deletedobjects_descriptor,
     get_config_descriptor,
     get_config_partitions_descriptor,
     get_config_sites_descriptor,
@@ -1450,6 +1451,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     msg["subRefs"] = ldb.MessageElement(names.configdn, ldb.FLAG_MOD_ADD,
                                         "subRefs")
 
+    deletedobjects_descr = b64encode(get_deletedobjects_descriptor(names.domainsid)).decode('utf8')
+
     samdb.invocation_id = invocationid
 
     # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
@@ -1481,6 +1484,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
                 "FOREST_FUNCTIONALITY": str(forestFunctionality),
                 "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
                 "NTDSQUOTAS_DESCRIPTOR": ntdsquotas_descr,
+                "DELETEDOBJECTS_DESCRIPTOR": deletedobjects_descr,
                 "LOSTANDFOUND_DESCRIPTOR": protected1wd_descr,
                 "SERVICES_DESCRIPTOR": protected1_descr,
                 "PHYSICALLOCATIONS_DESCRIPTOR": protected1wd_descr,
@@ -1545,6 +1549,7 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
         "RIDAVAILABLESTART": str(next_rid + 600),
         "POLICYGUID_DC": policyguid_dc,
         "INFRASTRUCTURE_DESCRIPTOR": infrastructure_desc,
+        "DELETEDOBJECTS_DESCRIPTOR": deletedobjects_descr,
         "LOSTANDFOUND_DESCRIPTOR": lostandfound_desc,
         "SYSTEM_DESCRIPTOR": system_desc,
         "BUILTIN_DESCRIPTOR": builtin_desc,
