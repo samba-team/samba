@@ -462,13 +462,25 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctxid[0] = '\0';
 		p = &(control_strings[sizeof(LDB_CONTROL_VLV_REQ_NAME)]);
 		ret = sscanf(p, "%d:%d:%d:%d:%d:%1023[^$]", &crit, &bc, &ac, &os, &cc, ctxid);
-		if (ret < 5) {
+		/* We allow 2 ways to encode the GT_EQ case, because the
+		   comparison string might contain null bytes or colons, which
+		   would break sscanf (or indeed any parsing mechanism). */
+		if (ret == 3) {
 			ret = sscanf(p, "%d:%d:%d:>=%1023[^:]:%1023[^$]", &crit, &bc, &ac, attr, ctxid);
 		}
-			
+		if (ret == 3) {
+			int len;
+			ret = sscanf(p, "%d:%d:%d:base64>=%1023[^:]:%1023[^$]", &crit, &bc, &ac, attr, ctxid);
+			len = ldb_base64_decode(attr);
+			if (len < 0) {
+				ret = -1;
+			}
+		}
+
 		if ((ret < 4) || (crit < 0) || (crit > 1)) {
 			error_string = talloc_asprintf(mem_ctx, "invalid VLV control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):bc(n):ac(n):<os(n):cc(n)|attr(s)>[:ctxid(o)]\n");
+			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):bc(n):ac(n):"
+							      "{os(n):cc(n)|>=val(s)|base64>=val(o)}[:ctxid(o)]\n");
 			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, s = string, o = b64 binary blob");
 			ldb_set_errstring(ldb, error_string);
 			talloc_free(error_string);
