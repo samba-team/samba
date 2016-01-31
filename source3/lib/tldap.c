@@ -2116,10 +2116,10 @@ static bool tldap_decode_controls(struct tldap_req_state *state)
 
  out:
 
-	if (ret == false) {
-		TALLOC_FREE(sctrls);
-	} else {
+	if (ret) {
 		msg->res_sctrls = sctrls;
+	} else {
+		TALLOC_FREE(sctrls);
 	}
 	return ret;
 }
