@@ -191,6 +191,11 @@ bool tldap_connection_ok(struct tldap_context *ld)
 	return !ld->server_down;
 }
 
+static size_t tldap_pending_reqs(struct tldap_context *ld)
+{
+	return talloc_array_length(ld->pending);
+}
+
 static struct tldap_ctx_attribute *tldap_context_findattr(
 	struct tldap_context *ld, const char *name)
 {
@@ -471,7 +476,7 @@ static void tldap_msg_unset_pending(struct tevent_req *req)
 	struct tldap_msg_state *state = tevent_req_data(
 		req, struct tldap_msg_state);
 	struct tldap_context *ld = state->ld;
-	int num_pending = talloc_array_length(ld->pending);
+	int num_pending = tldap_pending_reqs(ld);
 	int i;
 
 	tevent_req_set_cleanup_fn(req, NULL);
@@ -533,7 +538,7 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	struct tevent_req *subreq;
 
 	ld = state->ld;
-	num_pending = talloc_array_length(ld->pending);
+	num_pending = tldap_pending_reqs(ld);
 
 	pending = talloc_realloc(ld, ld->pending, struct tevent_req *,
 				 num_pending+1);
