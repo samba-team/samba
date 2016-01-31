@@ -189,8 +189,8 @@ TLDAPRC tldap_search(struct tldap_context *ld,
 		     struct tldap_control *sctrls, int num_sctrls,
 		     struct tldap_control *cctrls, int num_cctrls,
 		     int timelimit, int sizelimit, int deref,
-		     TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
-		     struct tldap_message ***refs);
+		     TALLOC_CTX *mem_ctx, struct tldap_message ***pmsgs);
+
 bool tldap_entry_dn(struct tldap_message *msg, char **dn);
 bool tldap_entry_attributes(struct tldap_message *msg,
 			    struct tldap_attribute **attributes,

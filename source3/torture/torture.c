@@ -7993,7 +7993,7 @@ static bool run_tldap(int dummy)
 
 	rc = tldap_search(ld, "", TLDAP_SCOPE_BASE, filter,
 			  NULL, 0, 0, NULL, 0, NULL, 0, 0, 0, 0,
-			  talloc_tos(), NULL, NULL);
+			  talloc_tos(), NULL);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_search with complex filter failed: %s\n",
 			 tldap_errstr(talloc_tos(), ld, rc));

@@ -1948,124 +1948,55 @@ TLDAPRC tldap_search_all_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return TLDAP_SUCCESS;
 }
 
-struct tldap_sync_search_state {
-	TALLOC_CTX *mem_ctx;
-	struct tldap_message **entries;
-	struct tldap_message **refs;
-	TLDAPRC rc;
-};
-
-static void tldap_search_cb(struct tevent_req *req)
-{
-	struct tldap_sync_search_state *state =
-		(struct tldap_sync_search_state *)
-		tevent_req_callback_data_void(req);
-	struct tldap_message *msg, **tmp;
-	int num_entries, num_refs;
-
-	state->rc = tldap_search_recv(req, talloc_tos(), &msg);
-	if (!TLDAP_RC_IS_SUCCESS(state->rc)) {
-		return;
-	}
-
-	switch (tldap_msg_type(msg)) {
-	case TLDAP_RES_SEARCH_ENTRY:
-		num_entries = talloc_array_length(state->entries);
-		tmp = talloc_realloc(state->mem_ctx, state->entries,
-				     struct tldap_message *, num_entries + 1);
-		if (tmp == NULL) {
-			state->rc = TLDAP_NO_MEMORY;
-			return;
-		}
-		state->entries = tmp;
-		state->entries[num_entries] = talloc_move(state->entries,
-							  &msg);
-		break;
-	case TLDAP_RES_SEARCH_REFERENCE:
-		num_refs = talloc_array_length(state->refs);
-		tmp = talloc_realloc(state->mem_ctx, state->refs,
-				     struct tldap_message *, num_refs + 1);
-		if (tmp == NULL) {
-			state->rc = TLDAP_NO_MEMORY;
-			return;
-		}
-		state->refs = tmp;
-		state->refs[num_refs] = talloc_move(state->refs, &msg);
-		break;
-	case TLDAP_RES_SEARCH_RESULT:
-		state->rc = TLDAP_SUCCESS;
-		break;
-	default:
-		state->rc = TLDAP_PROTOCOL_ERROR;
-		break;
-	}
-}
-
 TLDAPRC tldap_search(struct tldap_context *ld,
 		     const char *base, int scope, const char *filter,
 		     const char **attrs, int num_attrs, int attrsonly,
 		     struct tldap_control *sctrls, int num_sctrls,
 		     struct tldap_control *cctrls, int num_cctrls,
 		     int timelimit, int sizelimit, int deref,
-		     TALLOC_CTX *mem_ctx, struct tldap_message ***entries,
-		     struct tldap_message ***refs)
+		     TALLOC_CTX *mem_ctx, struct tldap_message ***pmsgs)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame;
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	struct tldap_sync_search_state state = {
-		.mem_ctx = mem_ctx, .rc = TLDAP_SUCCESS
-	};
+	TLDAPRC rc = TLDAP_NO_MEMORY;
+	struct tldap_message **msgs;
+	struct tldap_message *result;
+
+	if (tldap_pending_reqs(ld)) {
+		return TLDAP_BUSY;
+	}
+
+	frame = talloc_stackframe();
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		state.rc = TLDAP_NO_MEMORY;
 		goto fail;
 	}
-
-	req = tldap_search_send(frame, ev, ld, base, scope, filter,
-				attrs, num_attrs, attrsonly,
-				sctrls, num_sctrls, cctrls, num_cctrls,
-				timelimit, sizelimit, deref);
+	req = tldap_search_all_send(frame, ev, ld, base, scope, filter,
+				    attrs, num_attrs, attrsonly,
+				    sctrls, num_sctrls, cctrls, num_cctrls,
+				    timelimit, sizelimit, deref);
 	if (req == NULL) {
-		state.rc = TLDAP_NO_MEMORY;
 		goto fail;
 	}
-
-	tevent_req_set_callback(req, tldap_search_cb, &state);
-
-	if (!tevent_req_is_in_progress(req)) {
-		/* an error happend before sending */
-		if (tevent_req_is_ldap_error(req, &state.rc)) {
-			goto fail;
-		}
+	if (!tevent_req_poll(req, ev)) {
+		rc = TLDAP_OPERATIONS_ERROR;
+		goto fail;
+	}
+	rc = tldap_search_all_recv(req, mem_ctx, &msgs, &result);
+	TALLOC_FREE(req);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		return rc;
 	}
 
-	while (tevent_req_is_in_progress(req) &&
-	       TLDAP_RC_IS_SUCCESS(state.rc)) {
-		if (tevent_loop_once(ev) == -1) {
-			return TLDAP_OPERATIONS_ERROR;
-		}
-	}
+	TALLOC_FREE(ld->last_msg);
+	ld->last_msg = talloc_move(ld, &result);
 
-	if (!TLDAP_RC_IS_SUCCESS(state.rc)) {
-		return state.rc;
-	}
-
-	if (entries != NULL) {
-		*entries = state.entries;
-	} else {
-		TALLOC_FREE(state.entries);
-	}
-	if (refs != NULL) {
-		*refs = state.refs;
-	} else {
-		TALLOC_FREE(state.refs);
-	}
-	tldap_save_msg(ld, req);
+	*pmsgs = msgs;
 fail:
 	TALLOC_FREE(frame);
-	return state.rc;
+	return rc;
 }
 
 static bool tldap_parse_search_entry(struct tldap_message *msg)

@@ -365,7 +365,7 @@ TLDAPRC tldap_search_va(struct tldap_context *ld, const char *base, int scope,
 			  attrs, num_attrs, attrsonly,
 			  NULL /*sctrls*/, 0, NULL /*cctrls*/, 0,
 			  0 /*timelimit*/, 0 /*sizelimit*/, 0 /*deref*/,
-			  mem_ctx, res, NULL);
+			  mem_ctx, res);
 	TALLOC_FREE(filter);
 	return rc;
 }
