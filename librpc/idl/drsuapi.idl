@@ -483,6 +483,8 @@ interface drsuapi
 		DRSUAPI_ATTID_auxiliaryClass			= 0x0002015f,
 		DRSUAPI_ATTID_lDAPDisplayName			= 0x000201cc,
 		DRSUAPI_ATTID_name				= 0x00090001,
+		DRSUAPI_ATTID_objectGUID			= 0x00090002,
+		DRSUAPI_ATTID_replPropertyMetaData		= 0x00090003,
 		DRSUAPI_ATTID_userAccountControl		= 0x00090008,
 		DRSUAPI_ATTID_badPwdCount			= 0x0009000c,
 		DRSUAPI_ATTID_codePage				= 0x00090010,
