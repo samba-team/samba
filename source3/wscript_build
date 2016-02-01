@@ -1462,7 +1462,7 @@ bld.SAMBA3_PYTHON('pysmbd',
 
 bld.SAMBA3_PYTHON('pylibsmb',
                   source='libsmb/pylibsmb.c',
-                  deps='smbclient samba-credentials',
+                  deps='smbclient samba-credentials pytalloc-util',
                   realname='samba/samba3/libsmb_samba_internal.so'
                   )
 
