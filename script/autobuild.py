@@ -40,14 +40,19 @@ builddirs = {
 
 defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-ctdb", "samba-libs", "samba-static", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
-samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
+samba_configure_params = " --picky-developer ${PREFIX} ${EXTRA_PYTHON} --with-profiling-data"
 
 samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
-samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX} ${EXTRA_PYTHON}"
 samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=NONE"
 samba_libs_configure_samba = samba_libs_configure_base + " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent"
+
+if os.environ.get("AUTOBUILD_NO_EXTRA_PYTHON", "0") == "1":
+    extra_python = ""
+else:
+    extra_python = "--extra-python=/usr/bin/python3"
 
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -142,7 +147,7 @@ tasks = {
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+              ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
@@ -152,7 +157,7 @@ tasks = {
 
     "tdb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+              ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
@@ -162,7 +167,7 @@ tasks = {
 
     "talloc" : [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                 ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -182,7 +187,7 @@ tasks = {
 
     "tevent" : [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                 ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -259,6 +264,7 @@ class builder(object):
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(standard_lib=1, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
+        self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
