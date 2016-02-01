@@ -662,13 +662,48 @@ static void ldap_reconnect(struct ldap_connection *conn)
 	}
 }
 
+static void ldap_request_destructor_abandon(struct ldap_request *abandon)
+{
+	TALLOC_FREE(abandon);
+}
+
 /* destroy an open ldap request */
 static int ldap_request_destructor(struct ldap_request *req)
 {
 	if (req->state == LDAP_REQUEST_PENDING) {
+		struct ldap_message msg = {
+			.type = LDAP_TAG_AbandonRequest,
+			.r.AbandonRequest.messageid = req->messageid,
+		};
+		struct ldap_request *abandon = NULL;
+
+		DLIST_REMOVE(req->conn->pending, req);
+
+		abandon = ldap_request_send(req->conn, &msg);
+		if (abandon == NULL) {
+			ldap_error_handler(req->conn, NT_STATUS_NO_MEMORY);
+			return 0;
+		}
+		abandon->async.fn = ldap_request_destructor_abandon;
+		abandon->async.private_data = NULL;
+	}
+
+	return 0;
+}
+
+static void ldap_request_timeout_abandon(struct ldap_request *abandon)
+{
+	struct ldap_request *req =
+		talloc_get_type_abort(abandon->async.private_data,
+		struct ldap_request);
+
+	if (req->state == LDAP_REQUEST_PENDING) {
 		DLIST_REMOVE(req->conn->pending, req);
 	}
-	return 0;
+	req->state = LDAP_REQUEST_DONE;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
 }
 
 /*
@@ -683,7 +718,22 @@ static void ldap_request_timeout(struct tevent_context *ev, struct tevent_timer 
 
 	req->status = NT_STATUS_IO_TIMEOUT;
 	if (req->state == LDAP_REQUEST_PENDING) {
+		struct ldap_message msg = {
+			.type = LDAP_TAG_AbandonRequest,
+			.r.AbandonRequest.messageid = req->messageid,
+		};
+		struct ldap_request *abandon = NULL;
+
+		abandon = ldap_request_send(req->conn, &msg);
+		if (abandon == NULL) {
+			ldap_error_handler(req->conn, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		talloc_reparent(req->conn, req, abandon);
+		abandon->async.fn = ldap_request_timeout_abandon;
+		abandon->async.private_data = req;
 		DLIST_REMOVE(req->conn->pending, req);
+		return;
 	}
 	req->state = LDAP_REQUEST_DONE;
 	if (req->async.fn) {
