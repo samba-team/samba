@@ -296,6 +296,7 @@ static uint64_t vfs_gluster_disk_free(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_get_quota(struct vfs_handle_struct *handle,
+				 const char *path,
 				 enum SMB_QUOTA_TYPE qtype, unid_t id,
 				 SMB_DISK_QUOTA *qt)
 {
