@@ -1,4 +1,76 @@
                    =============================
+                   Release Notes for Samba 4.2.8
+                          February 2, 2016
+                   =============================
+
+
+This is the latest stable release of Samba 4.2.
+
+
+Changes since 4.2.7:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11647: s3:smbd: Fix a corner case of the symlink verification.
+
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11624: s3: libsmb: Correctly initialize the list head when keeping a
+     list of primary followed by DFS connections.
+   * BUG 11625: Reduce the memory footprint of empty string options.
+
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 11400: s3:smbd/oplock: Obey kernel oplock setting when releasing
+     oplocks.
+
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11065: vfs_fruit: Fix renaming directories with open files.
+   * BUG 11347: Fix MacOS finder error 36 when copying folder to Samba.
+   * BUG 11466: Fix copying files with vfs_fruit when using vfs_streams_xattr
+     without stream prefix and type suffix.
+   * BUG 11645: smbd: make "hide dot files" option work with "store dos
+     attributes = yes".
+   * BUG 11684: s3:smbd: Ignore initial allocation size for directory creation.
+
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11639: lib/async_req: Do not install async_connect_send_test.
+
+
+o  Karolin Seeger <kseeger@samba.org>
+   * BUG 11641: docs: Fix typos in man vfs_gpfs.
+
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11682: smbcacls: Fix uninitialized variable.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.2.7
                          December 16, 2015
                    =============================
@@ -142,8 +214,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.2.6
