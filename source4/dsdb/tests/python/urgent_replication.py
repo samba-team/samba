@@ -161,7 +161,7 @@ adminDescription: test attributeSchema
 oMSyntax: 64
 systemOnly: FALSE
 searchFlags: 8
-lDAPDisplayName: test attributeSchema
+lDAPDisplayName: testAttributeSchema
 name: test attributeSchema""")
 
             # urgent replication should be enabled when creating
@@ -174,7 +174,7 @@ name: test attributeSchema""")
         # urgent replication should be enabled when modifying
         m = Message()
         m.dn = Dn(self.ldb, "CN=test attributeSchema,CN=Schema,CN=Configuration," + self.base_dn)
-        m["lDAPDisplayName"] = MessageElement("updated test attributeSchema", FLAG_MOD_REPLACE,
+        m["lDAPDisplayName"] = MessageElement("updatedTestAttributeSchema", FLAG_MOD_REPLACE,
           "lDAPDisplayName")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
@@ -195,7 +195,7 @@ showInAdvancedViewOnly: TRUE
 adminDisplayName: test classSchema
 adminDescription: test classSchema
 objectClassCategory: 1
-lDAPDisplayName: test classSchema
+lDAPDisplayName: testClassSchema
 name: test classSchema
 systemOnly: FALSE
 systemPossSuperiors: dfsConfiguration
@@ -215,7 +215,7 @@ defaultHidingValue: TRUE""")
         # urgent replication should be enabled when modifying 
         m = Message()
         m.dn = Dn(self.ldb, "CN=test classSchema,CN=Schema,CN=Configuration," + self.base_dn)
-        m["lDAPDisplayName"] = MessageElement("updated test classSchema", FLAG_MOD_REPLACE,
+        m["lDAPDisplayName"] = MessageElement("updatedTestClassSchema", FLAG_MOD_REPLACE,
           "lDAPDisplayName")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
