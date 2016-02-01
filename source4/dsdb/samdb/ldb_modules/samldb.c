@@ -683,6 +683,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 	}
 
 	case SAMLDB_TYPE_CLASS: {
+		const char *lDAPDisplayName = NULL;
 		const struct ldb_val *rdn_value, *def_obj_cat_val;
 		unsigned int v = ldb_msg_find_attr_as_uint(ac->msg, "objectClassCategory", -2);
 
@@ -717,6 +718,20 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 				ldb_oom(ldb);
 				return ret;
 			}
+		}
+
+		lDAPDisplayName = ldb_msg_find_attr_as_string(ac->msg,
+							      "lDAPDisplayName",
+							      NULL);
+		ret = ldb_valid_attr_name(lDAPDisplayName);
+		if (ret != 1 ||
+		    lDAPDisplayName[0] == '*' ||
+		    lDAPDisplayName[0] == '@')
+		{
+			return dsdb_module_werror(ac->module,
+						  LDB_ERR_UNWILLING_TO_PERFORM,
+						  WERR_DS_INVALID_LDAP_DISPLAY_NAME,
+						  "lDAPDisplayName is invalid");
 		}
 
 		if (!ldb_msg_find_element(ac->msg, "schemaIDGUID")) {
@@ -780,6 +795,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 	}
 
 	case SAMLDB_TYPE_ATTRIBUTE: {
+		const char *lDAPDisplayName = NULL;
 		const struct ldb_val *rdn_value;
 		struct ldb_message_element *el;
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
@@ -795,6 +811,20 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 				ldb_oom(ldb);
 				return ret;
 			}
+		}
+
+		lDAPDisplayName = ldb_msg_find_attr_as_string(ac->msg,
+							      "lDAPDisplayName",
+							      NULL);
+		ret = ldb_valid_attr_name(lDAPDisplayName);
+		if (ret != 1 ||
+		    lDAPDisplayName[0] == '*' ||
+		    lDAPDisplayName[0] == '@')
+		{
+			return dsdb_module_werror(ac->module,
+						  LDB_ERR_UNWILLING_TO_PERFORM,
+						  WERR_DS_INVALID_LDAP_DISPLAY_NAME,
+						  "lDAPDisplayName is invalid");
 		}
 
 		/* do not allow one to mark an attributeSchema as RODC filtered if it
