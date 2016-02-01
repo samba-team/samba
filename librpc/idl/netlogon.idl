@@ -264,7 +264,7 @@ interface netlogon
 		uint32 sidcount;
 		[size_is(sidcount)] netr_SidAttr *sids;
 		lsa_String dns_domainname;
-		lsa_String principle;
+		lsa_String principal_name;
 		uint32 unknown4[20];
 	} netr_SamInfo6;
 

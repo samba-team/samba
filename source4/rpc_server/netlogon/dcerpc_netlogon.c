@@ -991,9 +991,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		sam6->sids = sam3->sids;
 
 		sam6->dns_domainname.string = lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx);
-		sam6->principle.string = talloc_asprintf(mem_ctx, "%s@%s",
-							 sam->account_name.string, sam6->dns_domainname.string);
-		NT_STATUS_HAVE_NO_MEMORY(sam6->principle.string);
+		sam6->principal_name.string = talloc_asprintf(
+			mem_ctx, "%s@%s", sam->account_name.string,
+			sam6->dns_domainname.string);
+		NT_STATUS_HAVE_NO_MEMORY(sam6->principal_name.string);
 		/* And put into the talloc tree */
 		talloc_steal(sam6, sam3);
 

@@ -173,10 +173,10 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam6->principle.string	= talloc_asprintf(sam6, "%s@%s",
-						  sam6->base.account_name.string,
-						  sam6->dns_domainname.string);
-	if (sam6->principle.string == NULL) {
+	sam6->principal_name.string = talloc_asprintf(
+		sam6, "%s@%s", sam6->base.account_name.string,
+		sam6->dns_domainname.string);
+	if (sam6->principal_name.string == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
