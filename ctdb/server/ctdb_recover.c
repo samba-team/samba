@@ -444,10 +444,6 @@ static void ctdb_set_recmode_timeout(struct tevent_context *ev,
 */
 static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 {
-	double l = timeval_elapsed(&state->start_time);
-
-	CTDB_UPDATE_RECLOCK_LATENCY(state->ctdb, "daemon reclock", reclock.ctdbd, l);
-
 	if (state->fd[0] != -1) {
 		state->fd[0] = -1;
 	}
@@ -482,6 +478,8 @@ static void set_recmode_handler(struct tevent_context *ev,
 		 * 0 indicates that it was able to take the
 		 * lock, which is an error because the recovery daemon
 		 * should be holding the lock. */
+		double l = timeval_elapsed(&state->start_time);
+
 		if (c == EACCES) {
 			status = 0;
 			err = NULL;
@@ -490,6 +488,8 @@ static void set_recmode_handler(struct tevent_context *ev,
 
 			/* release any deferred attach calls from clients */
 			ctdb_process_deferred_attach(state->ctdb);
+
+			CTDB_UPDATE_RECLOCK_LATENCY(state->ctdb, "daemon reclock", reclock.ctdbd, l);
 		} else {
 			status = -1;
 			err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
