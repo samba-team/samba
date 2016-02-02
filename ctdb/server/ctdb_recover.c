@@ -854,7 +854,7 @@ static int cluster_mutex_destructor(struct ctdb_cluster_mutex_handle *h)
 	if (h->fd[0] != -1) {
 		h->fd[0] = -1;
 	}
-	ctdb_kill(h->ctdb, h->child, SIGKILL);
+	ctdb_kill(h->ctdb, h->child, SIGTERM);
 	return 0;
 }
 
