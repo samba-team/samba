@@ -331,6 +331,7 @@ sub mk_krb5_conf($$)
  # system clock differences
  kdc_timesync = 0
 
+ fcache_strict_checking = false
 ";
 
 	if (defined($ENV{MITKRB5})) {
