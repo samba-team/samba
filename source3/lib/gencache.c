@@ -31,11 +31,7 @@
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_TDB
 
-#define TIMEOUT_LEN 12
 #define CACHE_DATA_FMT	"%12u/"
-#define READ_CACHE_DATA_FMT_TEMPLATE "%%12u/%%%us"
-#define BLOB_TYPE "DATA_BLOB"
-#define BLOB_TYPE_LEN 9
 
 static struct tdb_wrap *cache;
 static struct tdb_wrap *cache_notrans;
