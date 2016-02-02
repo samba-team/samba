@@ -586,23 +586,6 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	size_t len;
 	int ret;
 
-	ctdb_db = find_ctdb_db(ctdb, c->db_id);
-	if (!ctdb_db) {
-		ctdb_send_error(ctdb, hdr, -1,
-				"Unknown database in request. db_id==0x%08x",
-				c->db_id);
-		return;
-	}
-
-	if (hdr->generation != ctdb_db->generation) {
-		DEBUG(DEBUG_DEBUG,
-		      ("ctdb operation %u request %u from node %u to %u had an"
-		       " invalid generation:%u while our generation is:%u\n",
-		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
-		       hdr->generation, ctdb_db->generation));
-		return;
-	}
-
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 	data.dptr = c->data + c->keylen;
@@ -612,6 +595,14 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (len <= c->hdr.length) {
 		memcpy(&record_flags, &c->data[c->keylen + c->datalen],
 		       sizeof(record_flags));
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, c->db_id);
+	if (!ctdb_db) {
+		ctdb_send_error(ctdb, hdr, -1,
+				"Unknown database in request. db_id==0x%08x",
+				c->db_id);
+		return;
 	}
 
 	dmaster_defer_setup(ctdb_db, hdr, key);
@@ -642,7 +633,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (header.dmaster != hdr->srcnode) {
 		DEBUG(DEBUG_ALERT,("pnn %u dmaster request for new-dmaster %u from non-master %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u keyval=0x%08x\n",
 			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
-			 ctdb_db->db_id, hdr->generation, ctdb_db->generation,
+			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid,
 			 (key.dsize >= 4)?(*(uint32_t *)key.dptr):0));
 		if (header.rsn != 0 || header.dmaster != ctdb->pnn) {
@@ -657,7 +648,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (header.rsn > c->rsn) {
 		DEBUG(DEBUG_ALERT,("pnn %u dmaster request with older RSN new-dmaster %u from %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u\n",
 			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
-			 ctdb_db->db_id, hdr->generation, ctdb_db->generation,
+			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid));
 	}
 
@@ -902,20 +893,12 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
+
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (!ctdb_db) {
 		ctdb_send_error(ctdb, hdr, -1,
 				"Unknown database in request. db_id==0x%08x",
 				c->db_id);
-		return;
-	}
-
-	if (hdr->generation != ctdb_db->generation) {
-		DEBUG(DEBUG_DEBUG,
-		      ("ctdb operation %u request %u from node %u to %u had an"
-		       " invalid generation:%u while our generation is:%u\n",
-		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
-		       hdr->generation, ctdb_db->generation));
 		return;
 	}
 
@@ -1193,15 +1176,6 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	if (hdr->generation != state->generation) {
-		DEBUG(DEBUG_DEBUG,
-		      ("ctdb operation %u request %u from node %u to %u had an"
-		       " invalid generation:%u while our generation is:%u\n",
-		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
-		       hdr->generation, state->generation));
-		return;
-	}
-
 
 	/* read only delegation processing */
 	/* If we got a FETCH_WITH_HEADER we should check if this is a ro
@@ -1296,16 +1270,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_reply_dmaster\n", c->db_id));
 		return;
 	}
-
-	if (hdr->generation != ctdb_db->generation) {
-		DEBUG(DEBUG_DEBUG,
-		      ("ctdb operation %u request %u from node %u to %u had an"
-		       " invalid generation:%u while our generation is:%u\n",
-		       hdr->operation, hdr->reqid, hdr->srcnode, hdr->destnode,
-		       hdr->generation, ctdb_db->generation));
-		return;
-	}
-
+	
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 	data.dptr = &c->data[key.dsize];

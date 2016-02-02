@@ -225,11 +225,22 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 			goto done;
 		}
 
-		/* Push the check for generation in the handlers for these
-		 * operations.  Check database generation instead of global
-		 * generation.  Since the database context is not available
-		 * here, push the check in the operations.
-		 */
+		/* for ctdb_call inter-node operations verify that the
+		   remote node that sent us the call is running in the
+		   same generation instance as this node
+		*/
+		if (ctdb->vnn_map->generation != hdr->generation) {
+			DEBUG(DEBUG_DEBUG,(__location__ " ctdb operation %u"
+				" request %u"
+				" length %u from node %u to %u had an"
+				" invalid generation id:%u while our"
+				" generation id is:%u\n", 
+				 hdr->operation, hdr->reqid,
+				 hdr->length, 
+				 hdr->srcnode, hdr->destnode, 
+				 hdr->generation, ctdb->vnn_map->generation));
+			goto done;
+		}
 	}
 
 	switch (hdr->operation) {
