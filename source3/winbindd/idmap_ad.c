@@ -672,7 +672,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 				  const char **homedir,
 				  const char **shell,
 				  const char **gecos,
-				  uint32_t *gid )
+				  gid_t *p_gid )
 {
 	const char *attrs[] = {NULL, /* attr_homedir */
 			       NULL, /* attr_shell */
@@ -741,9 +741,18 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	*shell   = ads_pull_string(ctx->ads, mem_ctx, msg_internal, ctx->ad_schema->posix_shell_attr);
 	*gecos   = ads_pull_string(ctx->ads, mem_ctx, msg_internal, ctx->ad_schema->posix_gecos_attr);
 
-	if (gid) {
-		if (!ads_pull_uint32(ctx->ads, msg_internal, ctx->ad_schema->posix_gidnumber_attr, gid))
-			*gid = (uint32_t)-1;
+	if (p_gid != NULL) {
+		uint32_t gid = UINT32_MAX;
+		bool ok;
+
+		ok = ads_pull_uint32(ctx->ads, msg_internal,
+				     ctx->ad_schema->posix_gidnumber_attr,
+				     &gid);
+		if (ok) {
+			*p_gid = gid;
+		} else {
+			*p_gid = (gid_t)-1;
+		}
 	}
 
 	nt_status = NT_STATUS_OK;
