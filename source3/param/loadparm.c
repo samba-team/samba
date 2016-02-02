@@ -1400,7 +1400,7 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		return (-1);
 	}
 	ServicePtrs = tsp;
-	ServicePtrs[iNumServices] = talloc_zero(NULL, struct loadparm_service);
+	ServicePtrs[iNumServices] = talloc_zero(ServicePtrs, struct loadparm_service);
 	if (!ServicePtrs[iNumServices]) {
 		DEBUG(0,("add_a_service: out of memory!\n"));
 		return (-1);
