@@ -2003,7 +2003,12 @@ static bool tldap_parse_search_entry(struct tldap_message *msg)
 {
 	int num_attribs = 0;
 
-	if (!asn1_start_tag(msg->data, msg->type)) return false;
+	if (msg->type != TLDAP_RES_SEARCH_ENTRY) {
+		return false;
+	}
+	if (!asn1_start_tag(msg->data, TLDAP_RES_SEARCH_ENTRY)) {
+		return false;
+	}
 
 	/* dn */
 
