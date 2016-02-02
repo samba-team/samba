@@ -23,7 +23,7 @@
 
 struct wb_fill_pwent_state {
 	struct tevent_context *ev;
-	struct wbint_userinfo *info;
+	const struct wbint_userinfo *info;
 	struct winbindd_pw *pw;
 };
 
@@ -41,7 +41,7 @@ static void wb_fill_pwent_getgrsid_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_fill_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      struct wbint_userinfo *info,
+				      const struct wbint_userinfo *info,
 				      struct winbindd_pw *pw)
 {
 	struct tevent_req *req, *subreq;

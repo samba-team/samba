@@ -729,7 +729,7 @@ NTSTATUS wb_query_group_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 struct tevent_req *wb_fill_pwent_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      struct wbint_userinfo *info,
+				      const struct wbint_userinfo *info,
 				      struct winbindd_pw *pw);
 NTSTATUS wb_fill_pwent_recv(struct tevent_req *req);
 
