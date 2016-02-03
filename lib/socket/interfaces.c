@@ -160,7 +160,7 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 	if (ret == -1) {
 		goto done;
 	}
-	*speed = (ethtool_cmd_speed(&ecmd)) * 1000 * 1000;
+	*speed = ((uint64_t)ethtool_cmd_speed(&ecmd)) * 1000 * 1000;
 
 done:
 	(void)close(fd);
