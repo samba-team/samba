@@ -63,6 +63,9 @@ NTSTATUS smbXsrv_client_global_init(void)
 	 * This contains secret information like client keys!
 	 */
 	global_path = lock_path("smbXsrv_client_global.tdb");
+	if (global_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	db_ctx = db_open(NULL, global_path,
 			 0, /* hash_size */
