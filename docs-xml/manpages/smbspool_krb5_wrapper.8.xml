@@ -13,7 +13,7 @@
 
 <refnamediv>
 	<refname>smbspool_krb5_wrapper</refname>
-	<refpurpose>This is a CUPS printing backend which calls smbpsool</refpurpose>
+	<refpurpose>This is a CUPS printing backend which calls smbspool</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
