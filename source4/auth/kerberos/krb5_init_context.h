@@ -39,18 +39,35 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 				      struct smb_krb5_context **smb_krb5_context); 
 
 #ifdef SAMBA4_USES_HEIMDAL
-krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
+typedef krb5_error_code (*smb_krb5_send_to_realm_func)(struct smb_krb5_context *smb_krb5_context,
+						       void *,
+						       krb5_const_realm realm,
+						       time_t,
+						       const krb5_data *,
+						       krb5_data *);
+typedef krb5_error_code (*smb_krb5_send_to_kdc_func)(struct smb_krb5_context *smb_krb5_context,
+						     void *,
+						     krb5_krbhst_info *,
+						     time_t,
+						     const krb5_data *,
+						     krb5_data *);
+
+krb5_error_code smb_krb5_set_send_to_kdc_func(struct smb_krb5_context *smb_krb5_context,
+					      smb_krb5_send_to_realm_func send_to_realm,
+					      smb_krb5_send_to_kdc_func send_to_kdc,
+					      void *private_data);
+
+krb5_error_code smb_krb5_send_and_recv_func(struct smb_krb5_context *smb_krb5_context,
 					    void *data,
 					    krb5_krbhst_info *hi,
 					    time_t timeout,
 					    const krb5_data *send_buf,
 					    krb5_data *recv_buf);
-krb5_error_code smb_krb5_send_and_recv_func_forced(krb5_context context,
-						   void *data, /* struct addrinfo */
-						   krb5_krbhst_info *hi,
-						   time_t timeout,
-						   const krb5_data *send_buf,
-						   krb5_data *recv_buf);
+krb5_error_code smb_krb5_send_and_recv_func_forced_tcp(struct smb_krb5_context *smb_krb5_context,
+						       struct addrinfo *ai,
+						       time_t timeout,
+						       const krb5_data *send_buf,
+						       krb5_data *recv_buf);
 krb5_error_code smb_krb5_context_set_event_ctx(struct smb_krb5_context *smb_krb5_context,
 					       struct tevent_context *ev,
 					       struct tevent_context **previous_ev);

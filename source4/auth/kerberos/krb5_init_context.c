@@ -31,6 +31,13 @@
 #include "libcli/resolve/resolve.h"
 #include "../lib/tsocket/tsocket.h"
 #include "krb5_init_context.h"
+#ifdef SAMBA4_USES_HEIMDAL
+#include "../lib/dbwrap/dbwrap.h"
+#include "../lib/dbwrap/dbwrap_rbt.h"
+#include "../lib/util/util_tdb.h"
+#include <krb5/send_to_kdc_plugin.h>
+#endif
+
 /*
   context structure for operations on cldap packets
 */
@@ -213,11 +220,11 @@ static void smb_krb5_socket_handler(struct tevent_context *ev, struct tevent_fd 
 	}
 }
 
-static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
+static krb5_error_code smb_krb5_send_and_recv_func_int(struct smb_krb5_context *smb_krb5_context,
 						       struct tevent_context *ev,
 						       krb5_krbhst_info *hi,
 						       struct addrinfo *ai,
-						       krb5_send_to_kdc_func func,
+						       smb_krb5_send_to_kdc_func func,
 						       void *data,
 						       time_t timeout,
 						       const krb5_data *send_buf,
@@ -356,9 +363,10 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 				 * nested event has invalidated them, we put
 				 * it back before we return to the heimdal
 				 * code */
-				ret = krb5_set_send_to_kdc_func(context,
-								func,
-								data);
+				ret = smb_krb5_set_send_to_kdc_func(smb_krb5_context,
+								    NULL, /* send_to_realm */
+								    func,
+								    data);
 				if (ret != 0) {
 					TALLOC_FREE(frame);
 					return ret;
@@ -400,7 +408,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_int(krb5_context context,
 	return KRB5_KDC_UNREACH;
 }
 
-krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
+krb5_error_code smb_krb5_send_and_recv_func(struct smb_krb5_context *smb_krb5_context,
 					    void *data,
 					    krb5_krbhst_info *hi,
 					    time_t timeout,
@@ -427,27 +435,30 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		ev = talloc_get_type_abort(data, struct tevent_context);
 	}
 
-	ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
+	ret = krb5_krbhst_get_addrinfo(smb_krb5_context->krb5_context, hi, &ai);
 	if (ret) {
 		TALLOC_FREE(frame);
 		return ret;
 	}
 
-	ret = smb_krb5_send_and_recv_func_int(context, ev, hi, ai, smb_krb5_send_and_recv_func, data, timeout, send_buf, recv_buf);
+	ret = smb_krb5_send_and_recv_func_int(smb_krb5_context,
+					      ev, hi, ai,
+					      smb_krb5_send_and_recv_func,
+					      data, timeout, send_buf, recv_buf);
 	TALLOC_FREE(frame);
 	return ret;
 }
 
-krb5_error_code smb_krb5_send_and_recv_func_forced(krb5_context context,
-						   void *data, /* struct addrinfo */
-						   krb5_krbhst_info *hi,
-						   time_t timeout,
-						   const krb5_data *send_buf,
-						   krb5_data *recv_buf)
+krb5_error_code smb_krb5_send_and_recv_func_forced_tcp(struct smb_krb5_context *smb_krb5_context,
+						       struct addrinfo *ai,
+						       time_t timeout,
+						       const krb5_data *send_buf,
+						       krb5_data *recv_buf)
 {
 	krb5_error_code k5ret;
-	struct addrinfo *ai = data;
-
+	krb5_krbhst_info hi = {
+		.proto = KRB5_KRBHST_TCP,
+	};
 	struct tevent_context *ev;
 	TALLOC_CTX *frame = talloc_stackframe();
 	if (frame == NULL) {
@@ -462,11 +473,206 @@ krb5_error_code smb_krb5_send_and_recv_func_forced(krb5_context context,
 	}
 
 	/* No need to pass in send_and_recv functions, we won't nest on this private event loop */
-	k5ret = smb_krb5_send_and_recv_func_int(context, ev, hi, ai, NULL, NULL,
+	k5ret = smb_krb5_send_and_recv_func_int(smb_krb5_context, ev, &hi, ai, NULL, NULL,
 						timeout, send_buf, recv_buf);
 	TALLOC_FREE(frame);
 	return k5ret;
 }
+
+static struct db_context *smb_krb5_plugin_db;
+
+struct smb_krb5_send_to_kdc_state {
+	intptr_t key_ptr;
+	struct smb_krb5_context *smb_krb5_context;
+	smb_krb5_send_to_realm_func send_to_realm;
+	smb_krb5_send_to_kdc_func send_to_kdc;
+	void *private_data;
+};
+
+static int smb_krb5_send_to_kdc_state_destructor(struct smb_krb5_send_to_kdc_state *state)
+{
+	TDB_DATA key = make_tdb_data((uint8_t *)&state->key_ptr, sizeof(state->key_ptr));
+	struct db_record *rec = NULL;
+	NTSTATUS status;
+
+	rec = dbwrap_fetch_locked(smb_krb5_plugin_db, state, key);
+	if (rec == NULL) {
+		return 0;
+	}
+
+	status = dbwrap_record_delete(rec);
+	TALLOC_FREE(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	state->smb_krb5_context = NULL;
+	return 0;
+}
+
+krb5_error_code smb_krb5_set_send_to_kdc_func(struct smb_krb5_context *smb_krb5_context,
+					      smb_krb5_send_to_realm_func send_to_realm,
+					      smb_krb5_send_to_kdc_func send_to_kdc,
+					      void *private_data)
+{
+	intptr_t key_ptr = (intptr_t)smb_krb5_context->krb5_context;
+	TDB_DATA key = make_tdb_data((uint8_t *)&key_ptr, sizeof(key_ptr));
+	intptr_t value_ptr = (intptr_t)NULL;
+	TDB_DATA value = make_tdb_data(NULL, 0);
+	struct db_record *rec = NULL;
+	struct smb_krb5_send_to_kdc_state *state = NULL;
+	NTSTATUS status;
+
+	rec = dbwrap_fetch_locked(smb_krb5_plugin_db, smb_krb5_context, key);
+	if (rec == NULL) {
+		return ENOMEM;
+	}
+
+	value = dbwrap_record_get_value(rec);
+	if (value.dsize != 0) {
+		SMB_ASSERT(value.dsize == sizeof(value_ptr));
+		memcpy(&value_ptr, value.dptr, sizeof(value_ptr));
+		state = talloc_get_type_abort((const void *)value_ptr,
+					      struct smb_krb5_send_to_kdc_state);
+		if (send_to_realm == NULL && send_to_kdc == NULL) {
+			status = dbwrap_record_delete(rec);
+			TALLOC_FREE(rec);
+			if (!NT_STATUS_IS_OK(status)) {
+				return EINVAL;
+			}
+			return 0;
+		}
+		state->send_to_realm = send_to_realm;
+		state->send_to_kdc = send_to_kdc;
+		state->private_data = private_data;
+		TALLOC_FREE(rec);
+		return 0;
+	}
+
+	if (send_to_kdc == NULL && send_to_realm == NULL) {
+		TALLOC_FREE(rec);
+		return 0;
+	}
+
+	state = talloc_zero(smb_krb5_context,
+			    struct smb_krb5_send_to_kdc_state);
+	if (state == NULL) {
+		TALLOC_FREE(rec);
+		return ENOMEM;
+	}
+	state->key_ptr = key_ptr;
+	state->smb_krb5_context = smb_krb5_context;
+	state->send_to_realm = send_to_realm;
+	state->send_to_kdc = send_to_kdc;
+	state->private_data = private_data;
+
+	value_ptr = (intptr_t)state;
+	value = make_tdb_data((uint8_t *)&value_ptr, sizeof(value_ptr));
+
+	status = dbwrap_record_store(rec, value, TDB_INSERT);
+	TALLOC_FREE(rec);
+	if (!NT_STATUS_IS_OK(status)) {
+		return EINVAL;
+	}
+	talloc_set_destructor(state, smb_krb5_send_to_kdc_state_destructor);
+
+	return 0;
+}
+
+static krb5_error_code smb_krb5_plugin_init(krb5_context context, void **pctx)
+{
+	*pctx = NULL;
+	return 0;
+}
+
+static void smb_krb5_plugin_fini(void *ctx)
+{
+}
+
+static void smb_krb5_send_to_kdc_state_parser(TDB_DATA key, TDB_DATA value,
+					      void *private_data)
+{
+	struct smb_krb5_send_to_kdc_state **state =
+		(struct smb_krb5_send_to_kdc_state **)private_data;
+	intptr_t value_ptr;
+
+	SMB_ASSERT(value.dsize == sizeof(value_ptr));
+	memcpy(&value_ptr, value.dptr, sizeof(value_ptr));
+	*state = talloc_get_type_abort((const void *)value_ptr,
+				       struct smb_krb5_send_to_kdc_state);
+}
+
+static struct smb_krb5_send_to_kdc_state *
+smb_krb5_send_to_kdc_get_state(krb5_context context)
+{
+	intptr_t key_ptr = (intptr_t)context;
+	TDB_DATA key = make_tdb_data((uint8_t *)&key_ptr, sizeof(key_ptr));
+	struct smb_krb5_send_to_kdc_state *state = NULL;
+	NTSTATUS status;
+
+	status = dbwrap_parse_record(smb_krb5_plugin_db, key,
+				     smb_krb5_send_to_kdc_state_parser,
+				     &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	return state;
+}
+
+static krb5_error_code smb_krb5_plugin_send_to_kdc(krb5_context context,
+						   void *ctx,
+						   krb5_krbhst_info *ho,
+						   time_t timeout,
+						   const krb5_data *in,
+						   krb5_data *out)
+{
+	struct smb_krb5_send_to_kdc_state *state = NULL;
+
+	state = smb_krb5_send_to_kdc_get_state(context);
+	if (state == NULL) {
+		return KRB5_PLUGIN_NO_HANDLE;
+	}
+
+	if (state->send_to_kdc == NULL) {
+		return KRB5_PLUGIN_NO_HANDLE;
+	}
+
+	return state->send_to_kdc(state->smb_krb5_context,
+				  state->private_data,
+				  ho, timeout, in, out);
+}
+
+static krb5_error_code smb_krb5_plugin_send_to_realm(krb5_context context,
+						     void *ctx,
+						     krb5_const_realm realm,
+						     time_t timeout,
+						     const krb5_data *in,
+						     krb5_data *out)
+{
+	struct smb_krb5_send_to_kdc_state *state = NULL;
+
+	state = smb_krb5_send_to_kdc_get_state(context);
+	if (state == NULL) {
+		return KRB5_PLUGIN_NO_HANDLE;
+	}
+
+	if (state->send_to_realm == NULL) {
+		return KRB5_PLUGIN_NO_HANDLE;
+	}
+
+	return state->send_to_realm(state->smb_krb5_context,
+				    state->private_data,
+				    realm, timeout, in, out);
+}
+
+static krb5plugin_send_to_kdc_ftable smb_krb5_plugin_ftable = {
+	KRB5_PLUGIN_SEND_TO_KDC_VERSION_2,
+	smb_krb5_plugin_init,
+	smb_krb5_plugin_fini,
+	smb_krb5_plugin_send_to_kdc,
+	smb_krb5_plugin_send_to_realm
+};
 #endif
 
 krb5_error_code
@@ -528,6 +734,32 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 				 smb_get_krb5_error_message(krb5_ctx, ret, tmp_ctx)));
 			krb5_free_context(krb5_ctx);
 			return ret;
+		}
+	}
+
+	if (smb_krb5_plugin_db == NULL) {
+		/*
+		 * while krb5_plugin_register() takes a krb5_context,
+		 * plugins are registered into a global list, so
+		 * we only do that once
+		 *
+		 * We maintain a separate dispatch table for per
+		 * krb5_context state.
+		 */
+		ret = krb5_plugin_register(krb5_ctx, PLUGIN_TYPE_DATA,
+				     KRB5_PLUGIN_SEND_TO_KDC,
+				     &smb_krb5_plugin_ftable);
+		if (ret) {
+			DEBUG(1,("krb5_plugin_register(KRB5_PLUGIN_SEND_TO_KDC) failed (%s)\n",
+				 smb_get_krb5_error_message(krb5_ctx, ret, tmp_ctx)));
+			krb5_free_context(krb5_ctx);
+			return ret;
+		}
+		smb_krb5_plugin_db = db_open_rbt(NULL);
+		if (smb_krb5_plugin_db == NULL) {
+			DEBUG(1,("db_open_rbt() failed\n"));
+			krb5_free_context(krb5_ctx);
+			return ENOMEM;
 		}
 	}
 #endif
@@ -612,12 +844,13 @@ krb5_error_code smb_krb5_context_set_event_ctx(struct smb_krb5_context *smb_krb5
 	}
 
 	/* Set use of our socket lib */
-	ret = krb5_set_send_to_kdc_func(smb_krb5_context->krb5_context,
-					smb_krb5_send_and_recv_func,
-					ev);
+	ret = smb_krb5_set_send_to_kdc_func(smb_krb5_context,
+					    NULL, /* send_to_realm */
+					    smb_krb5_send_and_recv_func,
+					    ev);
 	if (ret) {
 		TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-		DEBUG(1,("krb5_set_send_recv_func failed (%s)\n",
+		DEBUG(1,("smb_krb5_set_send_recv_func failed (%s)\n",
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, tmp_ctx)));
 		talloc_free(tmp_ctx);
 		talloc_unlink(smb_krb5_context, smb_krb5_context->current_ev);
@@ -636,12 +869,13 @@ krb5_error_code smb_krb5_context_remove_event_ctx(struct smb_krb5_context *smb_k
 	/* If there was a mismatch with things happening on a stack, then don't wipe things */
 	smb_krb5_context->current_ev = previous_ev;
 	/* Set use of our socket lib */
-	ret = krb5_set_send_to_kdc_func(smb_krb5_context->krb5_context,
-					smb_krb5_send_and_recv_func,
-					previous_ev);
+	ret = smb_krb5_set_send_to_kdc_func(smb_krb5_context,
+					    NULL, /* send_to_realm */
+					    smb_krb5_send_and_recv_func,
+					    previous_ev);
 	if (ret) {
 		TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-		DEBUG(1,("krb5_set_send_recv_func failed (%s)\n",
+		DEBUG(1,("smb_krb5_set_send_recv_func failed (%s)\n",
 			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, tmp_ctx)));
 		talloc_free(tmp_ctx);
 		return ret;

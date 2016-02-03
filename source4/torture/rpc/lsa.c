@@ -2961,6 +2961,8 @@ static bool check_pw_with_ServerAuthenticate3(struct dcerpc_pipe *p,
  */
 struct check_pw_with_krb5_ctx {
 	struct addrinfo *server;
+	const char *server_nb_domain;
+	const char *server_dns_domain;
 	struct {
 		unsigned io;
 		unsigned fail;
@@ -3000,9 +3002,10 @@ struct check_pw_with_krb5_ctx {
 	EncTicketPart krbtgt_referral_enc_part;
 };
 
-static krb5_error_code check_pw_with_krb5_send_and_recv_func(krb5_context context,
+static krb5_error_code check_pw_with_krb5_send_to_realm(
+					struct smb_krb5_context *smb_krb5_context,
 					void *data, /* struct check_pw_with_krb5_ctx */
-					krb5_krbhst_info *_hi,
+					krb5_const_realm realm,
 					time_t timeout,
 					const krb5_data *send_buf,
 					krb5_data *recv_buf)
@@ -3010,18 +3013,24 @@ static krb5_error_code check_pw_with_krb5_send_and_recv_func(krb5_context contex
 	struct check_pw_with_krb5_ctx *ctx =
 		talloc_get_type_abort(data, struct check_pw_with_krb5_ctx);
 	krb5_error_code k5ret;
-	krb5_krbhst_info hi = *_hi;
 	size_t used;
 	int ret;
 
-	hi.proto = KRB5_KRBHST_TCP;
+	SMB_ASSERT(smb_krb5_context == ctx->smb_krb5_context);
+
+	if (!strequal_m(realm, ctx->server_nb_domain) &&
+	    !strequal_m(realm, ctx->server_dns_domain))
+	{
+		return KRB5_KDC_UNREACH;
+	}
 
 	krb5_free_error_contents(ctx->smb_krb5_context->krb5_context,
 				 &ctx->error);
 	ctx->counts.io++;
 
-	k5ret = smb_krb5_send_and_recv_func_forced(context, ctx->server,
-						   &hi, timeout, send_buf, recv_buf);
+	k5ret = smb_krb5_send_and_recv_func_forced_tcp(ctx->smb_krb5_context,
+						       ctx->server,
+						       timeout, send_buf, recv_buf);
 	if (k5ret != 0) {
 		ctx->counts.fail++;
 		return k5ret;
@@ -3256,15 +3265,19 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	k5ret = smb_krb5_init_context(ctx, tctx->lp_ctx, &ctx->smb_krb5_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "smb_krb5_init_context failed");
 
+	ctx->server_nb_domain = cli_credentials_get_domain(credentials);
+	ctx->server_dns_domain = cli_credentials_get_realm(credentials);
+
 	ok = interpret_string_addr_internal(&ctx->server, host, 0);
 	torture_assert(tctx, ok, "Failed to parse target server");
 	talloc_set_destructor(ctx, check_pw_with_krb5_ctx_destructor);
 
 	set_sockaddr_port(ctx->server->ai_addr, 88);
 
-	k5ret = krb5_set_send_to_kdc_func(ctx->smb_krb5_context->krb5_context,
-					  check_pw_with_krb5_send_and_recv_func,
-					  ctx);
+	k5ret = smb_krb5_set_send_to_kdc_func(ctx->smb_krb5_context,
+					      check_pw_with_krb5_send_to_realm,
+					      NULL, /* send_to_kdc */
+					      ctx);
 	torture_assert_int_equal(tctx, k5ret, 0, "krb5_set_send_to_kdc_func failed");
 
 	torture_assert_int_equal(tctx,

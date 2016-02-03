@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('KRB_INIT_CTX',
 		    source='krb5_init_context.c',
-		    deps='gssapi krb5samba'
+		    deps='gssapi krb5samba dbwrap samba-util'
 		   )
 
 bld.SAMBA_LIBRARY('authkrb5',

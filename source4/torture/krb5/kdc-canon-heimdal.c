@@ -204,21 +204,25 @@ static bool test_accept_ticket(struct torture_context *tctx,
  * side.
  *
  */
-static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context context,
-								   void *data, /* struct torture_krb5_context */
-								   krb5_krbhst_info *hi,
-								   time_t timeout,
-								   const krb5_data *send_buf,
-								   krb5_data *recv_buf)
+static krb5_error_code test_krb5_send_to_realm_canon_override(struct smb_krb5_context *smb_krb5_context,
+							      void *data, /* struct torture_krb5_context */
+							      krb5_const_realm realm,
+							      time_t timeout,
+							      const krb5_data *send_buf,
+							      krb5_data *recv_buf)
 {
 	krb5_error_code k5ret;
 
 	struct torture_krb5_context *test_context
 		= talloc_get_type_abort(data, struct torture_krb5_context);
 
-	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
-						   hi, timeout, send_buf,
-						   recv_buf);
+	SMB_ASSERT(smb_krb5_context == test_context->smb_krb5_context);
+
+	k5ret = smb_krb5_send_and_recv_func_forced_tcp(smb_krb5_context,
+						       test_context->server,
+						       timeout,
+						       send_buf,
+						       recv_buf);
 	if (k5ret != 0) {
 		return k5ret;
 	}
@@ -259,9 +263,10 @@ static bool torture_krb5_init_context_canon(struct torture_context *tctx,
 
 	set_sockaddr_port(test_context->server->ai_addr, 88);
 
-	k5ret = krb5_set_send_to_kdc_func(test_context->smb_krb5_context->krb5_context,
-					  smb_krb5_send_and_recv_func_canon_override,
-					  test_context);
+	k5ret = smb_krb5_set_send_to_kdc_func(test_context->smb_krb5_context,
+					      test_krb5_send_to_realm_canon_override,
+					      NULL, /* send_to_kdc */
+					      test_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "krb5_set_send_to_kdc_func failed");
 	*torture_krb5_context = test_context;
 	return true;
