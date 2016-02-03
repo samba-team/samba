@@ -808,7 +808,6 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	struct timeval tv_now;
 	NTTIME now;
 	NTTIME lastLogonTimestamp;
-	NTTIME lastLogon;
 
 	mem_ctx = talloc_new(msg);
 	if (mem_ctx == NULL) {
@@ -824,7 +823,6 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	}
 	lastLogonTimestamp =
 		ldb_msg_find_attr_as_int64(msg, "lastLogonTimestamp", 0);
-	lastLogon = ldb_msg_find_attr_as_int64(msg, "lastLogon", 0);
 
 	DEBUG(5, ("lastLogonTimestamp is %lld\n",
 		  (long long int)lastLogonTimestamp));
@@ -856,7 +854,7 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	tv_now = timeval_current();
 	now = timeval_to_nttime(&tv_now);
 
-	if (interactive_or_kerberos || lastLogon == 0 ||
+	if (interactive_or_kerberos ||
 	    (badPwdCount != 0 && lockoutTime == 0)) {
 		ret = samdb_msg_add_int64(sam_ctx, msg_mod, msg_mod,
 					  "lastLogon", now);
