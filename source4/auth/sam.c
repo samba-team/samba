@@ -863,6 +863,22 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
+	if (interactive_or_kerberos) {
+		int logonCount;
+
+		logonCount = ldb_msg_find_attr_as_int(msg, "logonCount", 0);
+
+		logonCount += 1;
+
+		ret = samdb_msg_add_int(sam_ctx, msg_mod, msg_mod,
+					"logonCount", logonCount);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(mem_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	status = authsam_update_lastlogon_timestamp(sam_ctx, msg_mod, domain_dn,
 						    lastLogonTimestamp, now);
 	if (!NT_STATUS_IS_OK(status)) {
