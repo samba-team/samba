@@ -1454,6 +1454,30 @@ main() {
             conf.DEFINE('HAVE_SYS_QUOTAS', '1')
             conf.DEFINE('WITH_QUOTAS', '1')
 
+        #
+        # check if Legacy quota code can be brought in
+        # if standard interfaces are not supported
+        #
+        legacy_quota_libs = ''
+        if not conf.CONFIG_SET('WITH_QUOTAS'):
+            if host_os.rfind('sunos5') > -1:
+                conf.DEFINE('SUNOS5', '1')
+                legacy_quota_libs = 'nsl'
+            conf.CHECK_CODE('''
+            #define WITH_QUOTAS 1
+            #define AUTOCONF_TEST 1
+            #include "../tests/oldquotas.c"
+            ''',
+                            cflags=conf.env['WERROR_CFLAGS'],
+                            define='WITH_QUOTAS',
+                            lib=legacy_quota_libs,
+                            msg='Checking whether legacy quota code can be used',
+                            execute=False,
+                            addmain=False)
+            if not conf.CONFIG_SET('WITH_QUOTAS'):
+                legacy_quota_libs = ''
+        conf.env['legacy_quota_libs'] = legacy_quota_libs
+
     #
     # cluster support (CTDB)
     #
