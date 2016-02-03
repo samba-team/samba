@@ -634,6 +634,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    notifyd
                    ''' +
                    bld.env['dmapi_lib'] +
+                   bld.env['legacy_quota_libs'] +
                    NOTIFY_DEPS,
                    private_library=True)
 
