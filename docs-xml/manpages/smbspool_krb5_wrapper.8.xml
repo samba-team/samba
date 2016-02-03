@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="smbspool.8">
+
+<refmeta>
+	<refentrytitle>smbspool_krb5_wrapper</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.4</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>smbspool_krb5_wrapper</refname>
+	<refpurpose>This is a CUPS printing backend which calls smbpsool</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>smbspool_krb5_wrapper</command>
+		<arg choice="req">job</arg>
+		<arg choice="req">user</arg>
+		<arg choice="req">title</arg>
+		<arg choice="req">copies</arg>
+		<arg choice="req">options</arg>
+		<arg choice="opt">filename</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>smbspool_krb5_wrapper is a tool that can be used to print using
+		Kerberos credentials. To get this working smbspool_krb5_wrapper
+		needs to be the smb backend of CUPS. It needs to be owned by
+		root and the permissions for the binary need to be 0700. Once
+		smbspool_krb5_wrapper switched to the user trying to print it
+		executes smbspool. It should not be called by a user.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para><citerefentry><refentrytitle>smbspool</refentrytitle>
+		<manvolnum>8</manvolnum></citerefentry>.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The smbspool_krb5_wrapper manpage was written by Andreas
+		Schneider.</para>
+</refsect1>
+
+</refentry>
