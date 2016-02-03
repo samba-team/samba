@@ -810,19 +810,25 @@ NTSTATUS authsam_logon_success_accounting(struct ldb_context *sam_ctx,
 	NTTIME lastLogonTimestamp;
 	NTTIME lastLogon;
 
+	mem_ctx = talloc_new(msg);
+	if (mem_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	lockoutTime = ldb_msg_find_attr_as_int64(msg, "lockoutTime", 0);
-	badPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
-	lastLogonTimestamp = \
+	if (interactive_or_kerberos) {
+		badPwdCount = ldb_msg_find_attr_as_int(msg, "badPwdCount", 0);
+	} else {
+		badPwdCount = samdb_result_effective_badPwdCount(sam_ctx, mem_ctx,
+								 domain_dn, msg);
+	}
+	lastLogonTimestamp =
 		ldb_msg_find_attr_as_int64(msg, "lastLogonTimestamp", 0);
 	lastLogon = ldb_msg_find_attr_as_int64(msg, "lastLogon", 0);
 
 	DEBUG(5, ("lastLogonTimestamp is %lld\n",
 		  (long long int)lastLogonTimestamp));
 
-	mem_ctx = talloc_new(msg);
-	if (mem_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 	msg_mod = ldb_msg_new(mem_ctx);
 	if (msg_mod == NULL) {
 		TALLOC_FREE(mem_ctx);
