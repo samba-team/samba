@@ -348,7 +348,8 @@ static void trustdom_list_done(struct tevent_req *req)
 
 	res = wb_domain_request_recv(req, state, &response, &err);
 	if ((res == -1) || (response->result != WINBINDD_OK)) {
-		DBG_WARNING("Could not receive trustdoms\n");
+		DBG_WARNING("Could not receive trusts for domain %s\n",
+			    state->domain->name);
 		TALLOC_FREE(state);
 		return;
 	}
