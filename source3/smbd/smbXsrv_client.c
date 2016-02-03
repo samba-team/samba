@@ -287,14 +287,20 @@ NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
 	NTSTATUS status;
 	struct smbXsrv_connection_pass0 pass_info0;
 	struct smbXsrv_connection_passB pass_blob;
+	ssize_t reqlen;
 	struct iovec iov;
 
 	pass_info0.initial_connect_time = global->initial_connect_time;
 	pass_info0.client_guid = global->client_guid;
-	pass_info0.negotiate_request.length = iov_buflen(smb2req->in.vector,
-							 smb2req->in.vector_count);
+
+	reqlen = iov_buflen(smb2req->in.vector, smb2req->in.vector_count);
+	if (reqlen == -1) {
+		return NT_STATUS_INVALID_BUFFER_SIZE;
+	}
+
+	pass_info0.negotiate_request.length = reqlen;
 	pass_info0.negotiate_request.data = talloc_array(talloc_tos(), uint8_t,
-					pass_info0.negotiate_request.length);
+							 reqlen);
 	if (pass_info0.negotiate_request.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
