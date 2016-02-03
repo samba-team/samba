@@ -140,6 +140,11 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 		return;
 	}
 
+	if (strlen(name) >= IF_NAMESIZE) {
+		DBG_ERR("Interface name too long.");
+		goto done;
+	}
+
 	strncpy(ifr.ifr_name, name, IF_NAMESIZE);
 
 	ifr.ifr_data = (void *)&edata;
