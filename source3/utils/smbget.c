@@ -57,7 +57,7 @@ struct opt {
 	bool update;
 	int debuglevel;
 };
-static struct opt opt;
+static struct opt opt = { .blocksize = SMB_DEFAULT_BLOCKSIZE };
 
 static bool smb_download_file(const char *base, const char *name,
 			      bool recursive, bool resume, bool toplevel,
