@@ -585,6 +585,8 @@ static bool smb_download_file(const char *base, const char *name,
 
 	readbuf = (char *)SMB_MALLOC(opt.blocksize);
 	if (!readbuf) {
+		fprintf(stderr, "Failed to allocate %zu bytes for read "
+				"buffer (%s)", opt.blocksize, strerror(errno));
 		if (localhandle != STDOUT_FILENO) {
 			close(localhandle);
 		}
