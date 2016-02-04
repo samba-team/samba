@@ -10,7 +10,7 @@
 # Copyright (C) 2015 Christof Schmitt
 
 if [ $# -lt 3 ]; then
-Usage: test_sharesec.sh SERVERCONFFILE SHARESEC SHARE
+	echo Usage: test_sharesec.sh SERVERCONFFILE SHARESEC SHARE
 exit 1
 fi
 
