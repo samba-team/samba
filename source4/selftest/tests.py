@@ -592,7 +592,12 @@ for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
         # isn't available on DCs with Windows 2000 domain function level -
         # therefore skip it in that configuration
         plantestsuite_loadlist("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", '$LOADLIST', '$LISTOPT'])
-        plantestsuite_loadlist("samba4.ldap.password_lockout.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/password_lockout.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM", '$LOADLIST', '$LISTOPT'])
+
+for env in ["ad_dc_ntvfs"]:
+    # This test takes a lot of time, so we run it against a minimum of
+    # environments, please only add new ones if there's really a
+    # difference we need to test
+    plantestsuite_loadlist("samba4.ldap.password_lockout.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/password_lockout.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM", '$LOADLIST', '$LISTOPT'])
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("ad_dc:local", "samba.tests.posixacl")
