@@ -18,9 +18,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "system/locale.h"
-#include "lib/util/tsort.h"
+#include "replace.h"
+#include "debug.h"
+#include "tsort.h"
+
+#include "util_strlist.h"
 
 #undef strcasecmp
 
