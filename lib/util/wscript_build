@@ -99,7 +99,8 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                     rbtree.c rfc1738.c become_daemon.c system.c select.c getpass.c
                     genrand_util.c fsusage.c
                     params.c util_id.c util_net.c
-                    util_strlist.c util_paths.c idtree_random.c base64.c
+                    util_strlist.c util_strlist_v3.c util_paths.c
+                    idtree_random.c base64.c
                     util_str.c util_str_common.c ms_fnmatch.c
                     server_id.c dprintf.c bitmap.c pidfile.c
                     tevent_debug.c memcache.c''',
