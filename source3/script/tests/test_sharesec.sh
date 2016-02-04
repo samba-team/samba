@@ -94,7 +94,7 @@ testit "Query ACL with three entries after removal" $CMD --view || \
 COUNT=$($CMD --view | grep ACL: | sed -e 's/^ACL://' | wc -l)
 testit "Verify ACL count after removal" test $COUNT -eq 3 || \
 	failed=$(expr $failed + 1)
-ACL="$($CMD --view | grep S-1-5-32-546')"
+ACL="$($CMD --view | grep S-1-5-32-546)"
 testit "Verify removal" test -e "$ACL" || failed=$(expr $failed + 1)
 
 testit "Set ACL as hex value" $CMD --add S-1-5-32-547:0x1/0x0/0x001F01FF || \
