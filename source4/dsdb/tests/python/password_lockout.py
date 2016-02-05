@@ -563,11 +563,25 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
-        self.creds2 = insta_creds()
-        self.ldb2 = self._readd_user(self.creds2)
-
-        self.creds3 = insta_creds(username="testuser3", userpass="thatsAcomplPASS1")
-        self.ldb3 = self._readd_user(self.creds3)
+        # (Re)adds the test user accounts
+        self.lockout1krb5_creds = insta_creds(username="lockout1krb5",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=MUST_USE_KERBEROS)
+        self.lockout1krb5_ldb = self._readd_user(self.lockout1krb5_creds)
+        self.lockout2krb5_creds = insta_creds(username="lockout2krb5",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=MUST_USE_KERBEROS)
+        self.lockout2krb5_ldb = self._readd_user(self.lockout2krb5_creds,
+                                        lockOutObservationWindow=self.lockout_observation_window)
+        self.lockout1ntlm_creds = insta_creds(username="lockout1ntlm",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=DONT_USE_KERBEROS)
+        self.lockout1ntlm_ldb = self._readd_user(self.lockout1ntlm_creds)
+        self.lockout2ntlm_creds = insta_creds(username="lockout2ntlm",
+                                              userpass="thatsAcomplPASS0",
+                                              kerberos_state=DONT_USE_KERBEROS)
+        self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
+                                        lockOutObservationWindow=self.lockout_observation_window)
 
     def _test_userPassword_lockout_with_clear_change(self, creds, other_ldb, method):
         print "Performs a password cleartext change operation on 'userPassword'"
@@ -952,19 +966,34 @@ userPassword: thatsAcomplPASS2XYZ
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-    def test_userPassword_lockout_with_clear_change_ldap_userAccountControl(self):
-        self._test_userPassword_lockout_with_clear_change(self.creds2,
-                                                          self.ldb3,
+    def test_userPassword_lockout_with_clear_change_krb5_ldap_userAccountControl(self):
+        self._test_userPassword_lockout_with_clear_change(self.lockout1krb5_creds,
+                                                          self.lockout2krb5_ldb,
                                                           "ldap_userAccountControl")
 
-    def test_userPassword_lockout_with_clear_change_ldap_lockoutTime(self):
-        self._test_userPassword_lockout_with_clear_change(self.creds2,
-                                                          self.ldb3,
+    def test_userPassword_lockout_with_clear_change_krb5_ldap_lockoutTime(self):
+        self._test_userPassword_lockout_with_clear_change(self.lockout1krb5_creds,
+                                                          self.lockout2krb5_ldb,
                                                           "ldap_lockoutTime")
 
-    def test_userPassword_lockout_with_clear_change_samr(self):
-        self._test_userPassword_lockout_with_clear_change(self.creds2,
-                                                          self.ldb3,
+    def test_userPassword_lockout_with_clear_change_krb5_samr(self):
+        self._test_userPassword_lockout_with_clear_change(self.lockout1krb5_creds,
+                                                          self.lockout2krb5_ldb,
+                                                          "samr")
+
+    def test_userPassword_lockout_with_clear_change_ntlm_ldap_userAccountControl(self):
+        self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
+                                                          self.lockout2ntlm_ldb,
+                                                          "ldap_userAccountControl")
+
+    def test_userPassword_lockout_with_clear_change_ntlm_ldap_lockoutTime(self):
+        self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
+                                                          self.lockout2ntlm_ldb,
+                                                          "ldap_lockoutTime")
+
+    def test_userPassword_lockout_with_clear_change_ntlm_samr(self):
+        self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
+                                                          self.lockout2ntlm_ldb,
                                                           "samr")
 
     def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb):
@@ -1339,14 +1368,20 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-    def test_unicodePwd_lockout_with_clear_change(self):
-        return self._test_unicodePwd_lockout_with_clear_change(self.creds2, self.ldb3)
+    def test_unicodePwd_lockout_with_clear_change_krb5(self):
+        self._test_unicodePwd_lockout_with_clear_change(self.lockout1krb5_creds,
+                                                        self.lockout2krb5_ldb)
 
-    def _test_login_lockout(self, creds, use_kerberos):
+    def test_unicodePwd_lockout_with_clear_change_ntlm(self):
+        self._test_unicodePwd_lockout_with_clear_change(self.lockout1ntlm_creds,
+                                                        self.lockout2ntlm_ldb)
+
+    def _test_login_lockout(self, creds):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
+        use_kerberos = creds.get_kerberos_state()
         # This unlocks by waiting for account_lockout_duration
         if use_kerberos == MUST_USE_KERBEROS:
             lastlogon_relation = 'greater'
@@ -1377,8 +1412,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds_lockout = insta_creds(template=creds)
-        creds_lockout.set_kerberos_state(use_kerberos)
+        creds_lockout = insta_creds(creds)
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -1650,13 +1684,14 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
+
+    def test_login_lockout_krb5(self):
+        self._test_login_lockout(self.lockout1krb5_creds)
+
     def test_login_lockout_ntlm(self):
-        self._test_login_lockout(self.creds2, DONT_USE_KERBEROS)
+        self._test_login_lockout(self.lockout1ntlm_creds)
 
-    def test_login_lockout_kerberos(self):
-        self._test_login_lockout(self.creds2, MUST_USE_KERBEROS)
-
-    def _test_multiple_logon(self, creds, use_kerberos):
+    def _test_multiple_logon(self, creds):
         # Test the happy case in which a user logs on correctly, then
         # logs on correctly again, so that the bad password and
         # lockout times are both zero the second time. The lastlogon
@@ -1667,10 +1702,8 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         # and the workstation.
         username = creds.get_username()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
-        creds2 = insta_creds(template=creds)
-        creds2.set_kerberos_state(use_kerberos)
-        self.assertEqual(creds2.get_kerberos_state(), use_kerberos)
 
+        use_kerberos = creds.get_kerberos_state()
         if use_kerberos == MUST_USE_KERBEROS:
             print "Testing multiple logon with Kerberos"
             lastlogon_relation = 'greater'
@@ -1678,7 +1711,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
             print "Testing multiple logon with NTLM"
             lastlogon_relation = 'equal'
 
-        SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
+        SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -1696,7 +1729,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         self.assertGreater(lastLogon, badPasswordTime)
 
         time.sleep(1)
-        SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
+        SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -1714,7 +1747,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
         time.sleep(1)
 
-        SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
+        SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -1725,11 +1758,12 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-    def test_multiple_logon_ntlm(self):
-        self._test_multiple_logon(self.creds2, DONT_USE_KERBEROS)
+    def test_multiple_logon_krb5(self):
+        self._test_multiple_logon(self.lockout1krb5_creds)
 
-    def test_multiple_logon_kerberos(self):
-        self._test_multiple_logon(self.creds2, MUST_USE_KERBEROS)
+    def test_multiple_logon_ntlm(self):
+        self._test_multiple_logon(self.lockout1ntlm_creds)
+
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
