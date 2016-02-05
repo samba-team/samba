@@ -131,9 +131,8 @@ do { \
 
 /*
    add to the end of a list.
-   Note that 'type' is ignored
 */
-#define DLIST_ADD_END(list, p, type)			\
+#define DLIST_ADD_END(list, p) \
 do { \
 	if (!(list)) { \
 		DLIST_ADD(list, p); \
@@ -156,7 +155,7 @@ do { \
 #define DLIST_DEMOTE(list, p, type)			\
 do { \
 	DLIST_REMOVE(list, p); \
-	DLIST_ADD_END(list, p, NULL);		\
+	DLIST_ADD_END(list, p); \
 } while (0)
 
 /*

@@ -195,7 +195,7 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 		allow_direct = false;
 	}
 
-	DLIST_ADD_END(queue->list, e, struct tevent_queue_entry *);
+	DLIST_ADD_END(queue->list, e);
 	queue->length++;
 	talloc_set_destructor(e, tevent_queue_entry_destructor);
 
