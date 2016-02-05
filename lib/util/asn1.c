@@ -593,12 +593,24 @@ static bool asn1_peek_tag_needed_size(struct asn1_data *data, uint8_t tag,
 		}
 		taglen = b;
 		while (n > 1) {
+			size_t tmp_taglen;
+
 			if (!asn1_read_uint8(data, &b)) {
 				data->ofs = start_ofs;
 				data->has_error = false;
 				return false;
 			}
-			taglen = (taglen << 8) | b;
+
+			tmp_taglen = (taglen << 8) | b;
+
+			if ((tmp_taglen >> 8) != taglen) {
+				/* overflow */
+				data->ofs = start_ofs;
+				data->has_error = false;
+				return false;
+			}
+			taglen = tmp_taglen;
+
 			n--;
 		}
 	} else {
