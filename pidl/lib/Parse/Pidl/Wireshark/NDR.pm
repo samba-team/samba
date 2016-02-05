@@ -858,6 +858,8 @@ sub RegisterInterface($$)
 	$self->pidl_code("{");
 	$self->indent;
 
+	$self->{res}->{headers} .= "void proto_register_dcerpc_$x->{NAME}(void);\n";
+
 	$self->{res}->{code}.=$self->DumpHfList()."\n";
 	$self->{res}->{code}.="\n".DumpEttList($self->{ett})."\n";
 
@@ -909,6 +911,8 @@ sub RegisterInterfaceHandoff($$)
 		$self->deindent;
 		$self->pidl_code("}");
 		$self->pidl_fn_end("proto_reg_handoff_dcerpc_$x->{NAME}");
+
+		$self->{res}->{headers} .= "void proto_reg_handoff_dcerpc_$x->{NAME}(void);\n";
 
 		$self->{hf_used}->{"hf_$x->{NAME}_opnum"} = 1;
 	}
@@ -1119,12 +1123,12 @@ sub Parse($$$$$)
 	my $h_basename = basename($h_filename);
 
 	$self->{res}->{headers} .= "#include \"$h_basename\"\n";
+
 	$self->pidl_code("");
 
 	if (defined($self->{conformance}->{ett})) {
 		register_ett($self,$_) foreach(@{$self->{conformance}->{ett}})
 	}
-
 	# Wireshark protocol registration
 
 	foreach (@$ndr) {
