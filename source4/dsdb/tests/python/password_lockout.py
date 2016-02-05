@@ -384,7 +384,7 @@ userPassword: thatsAcomplPASS1
         # and the workstation.
         creds2 = insta_creds()
 
-        self.ldb2 = SamDB(url=host_url, credentials=creds2, lp=lp)
+        ldb = SamDB(url=host_url, credentials=creds2, lp=lp)
 
         res = self._check_account("cn=testuser,cn=users," + self.base_dn,
                                   badPwdCount=0,
@@ -397,6 +397,7 @@ userPassword: thatsAcomplPASS1
 
         lastLogon = int(res[0]["lastLogon"][0])
         self.assertGreater(lastLogon, badPasswordTime)
+        return ldb
 
     def assertLoginFailure(self, url, creds, lp, errno=ERR_INVALID_CREDENTIALS):
         try:
@@ -495,7 +496,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
-        self._readd_user()
+        self.ldb2 = self._readd_user()
 
      # (Re)adds the test user "testuser3" with no password atm
         delete_force(self.ldb, "cn=testuser3,cn=users," + self.base_dn)
