@@ -277,8 +277,7 @@ userAccountControl: %d
         time.sleep(0.01)
         return res
 
-    def _readd_user(self):
-        creds = insta_creds()
+    def _readd_user(self, creds):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -500,7 +499,8 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 
-        self.ldb2 = self._readd_user()
+        self.creds2 = insta_creds()
+        self.ldb2 = self._readd_user(self.creds2)
 
      # (Re)adds the test user "testuser3" with no password atm
         delete_force(self.ldb, "cn=testuser3,cn=users," + self.base_dn)
