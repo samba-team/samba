@@ -201,7 +201,8 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 	int dstnode, numnodes;
 
 	int minnode;
-	uint32_t mindsum, dstdsum, dstimbl, minimbl;
+	uint32_t mindsum, dstdsum, dstimbl;
+	uint32_t minimbl = 0;
 	struct public_ip_list *minip;
 
 	bool should_loop = true;
