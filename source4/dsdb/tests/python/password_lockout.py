@@ -57,7 +57,28 @@ global_creds = credopts.get_credentials(lp)
 global_creds.set_gensec_features(global_creds.get_gensec_features() |
                                  gensec.FEATURE_SEAL)
 
-def insta_creds(template=global_creds, username="testuser", userpass="thatsAcomplPASS1"):
+template_creds = Credentials()
+template_creds.set_username("testuser")
+template_creds.set_password("thatsAcomplPASS1")
+template_creds.set_domain(global_creds.get_domain())
+template_creds.set_realm(global_creds.get_realm())
+template_creds.set_workstation(global_creds.get_workstation())
+template_creds.set_gensec_features(global_creds.get_gensec_features())
+template_creds.set_kerberos_state(global_creds.get_kerberos_state())
+
+def insta_creds(template=template_creds, username=None, userpass=None, kerberos_state=None):
+    if username is not None:
+        assert userpass is not None
+
+    if username is None:
+        assert userpass is None
+
+        username = template.get_username()
+        userpass = template.get_password()
+
+    if kerberos_state is None:
+        kerberos_state = template.get_kerberos_state()
+
     # get a copy of the global creds or a the passed in creds
     c = Credentials()
     c.set_username(username)
@@ -67,7 +88,7 @@ def insta_creds(template=global_creds, username="testuser", userpass="thatsAcomp
     c.set_workstation(template.get_workstation())
     c.set_gensec_features(c.get_gensec_features()
                           | gensec.FEATURE_SEAL)
-    c.set_kerberos_state(template.get_kerberos_state())
+    c.set_kerberos_state(kerberos_state)
     return c
 
 #
