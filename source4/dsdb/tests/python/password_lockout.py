@@ -332,7 +332,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         m = Message()
         m.dn = Dn(self.ldb, base_dn)
 
-        self.account_lockout_duration = 10
+        self.account_lockout_duration = 2
         account_lockout_duration_ticks = -int(self.account_lockout_duration * (1e7))
 
         m["lockoutDuration"] = MessageElement(str(account_lockout_duration_ticks),
@@ -342,7 +342,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         m["lockoutThreshold"] = MessageElement(str(account_lockout_threshold),
                                                FLAG_MOD_REPLACE, "lockoutThreshold")
 
-        self.lockout_observation_window = 5
+        self.lockout_observation_window = 2
         lockout_observation_window_ticks = -int(self.lockout_observation_window * (1e7))
 
         m["lockOutObservationWindow"] = MessageElement(str(lockout_observation_window_ticks),
