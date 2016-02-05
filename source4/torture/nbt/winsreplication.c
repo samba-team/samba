@@ -441,7 +441,7 @@ static const struct wrepl_ip addresses_A_3_4_X_3_4_OWNER_B[] = {
 	.ip	= TEST_ADDRESS_X_PREFIX".4"
 	}
 };
-
+/*
 static const struct wrepl_ip addresses_A_3_4_X_1_2[] = {
 	{
 	.owner	= TEST_OWNER_A_ADDRESS,
@@ -460,19 +460,21 @@ static const struct wrepl_ip addresses_A_3_4_X_1_2[] = {
 	.ip	= TEST_ADDRESS_X_PREFIX".2"
 	}
 };
-
+*/
 static const struct wrepl_ip addresses_B_1[] = {
 	{
 	.owner	= TEST_OWNER_B_ADDRESS,
 	.ip	= TEST_ADDRESS_B_PREFIX".1"
 	}
 };
+/*
 static const struct wrepl_ip addresses_B_2[] = {
 	{
 	.owner	= TEST_OWNER_B_ADDRESS,
 	.ip	= TEST_ADDRESS_B_PREFIX".2"
 	}
 };
+*/
 static const struct wrepl_ip addresses_B_3_4[] = {
 	{
 	.owner	= TEST_OWNER_B_ADDRESS,
@@ -520,6 +522,7 @@ static const struct wrepl_ip addresses_B_3_4_X_1_2[] = {
 	}
 };
 
+/*
 static const struct wrepl_ip addresses_X_1_2[] = {
 	{
 	.owner	= TEST_OWNER_X_ADDRESS,
@@ -530,6 +533,8 @@ static const struct wrepl_ip addresses_X_1_2[] = {
 	.ip	= TEST_ADDRESS_X_PREFIX".2"
 	}
 };
+*/
+
 static const struct wrepl_ip addresses_X_3_4[] = {
 	{
 	.owner	= TEST_OWNER_X_ADDRESS,
