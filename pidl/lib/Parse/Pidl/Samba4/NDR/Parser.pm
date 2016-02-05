@@ -702,7 +702,7 @@ sub ParseElementPushLevel
 			$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, 0, 1);
 			$self->deindent;
 			$self->pidl("}");
-		}	
+		}
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
