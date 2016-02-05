@@ -507,12 +507,10 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.creds3 = insta_creds(username="testuser3", userpass="thatsAcomplPASS1")
         self.ldb3 = self._readd_user(self.creds3)
 
-    def _test_userPassword_lockout_with_clear_change(self, method):
+    def _test_userPassword_lockout_with_clear_change(self, creds, other_ldb, method):
         print "Performs a password cleartext change operation on 'userPassword'"
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
-        creds = self.creds2
-        other_ldb = self.ldb3
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -893,19 +891,22 @@ userPassword: thatsAcomplPASS2XYZ
                                   msDSUserAccountControlComputed=0)
 
     def test_userPassword_lockout_with_clear_change_ldap_userAccountControl(self):
-        self._test_userPassword_lockout_with_clear_change("ldap_userAccountControl")
+        self._test_userPassword_lockout_with_clear_change(self.creds2,
+                                                          self.ldb3,
+                                                          "ldap_userAccountControl")
 
     def test_userPassword_lockout_with_clear_change_ldap_lockoutTime(self):
-        self._test_userPassword_lockout_with_clear_change("ldap_lockoutTime")
+        self._test_userPassword_lockout_with_clear_change(self.creds2,
+                                                          self.ldb3,
+                                                          "ldap_lockoutTime")
 
     def test_userPassword_lockout_with_clear_change_samr(self):
-        self._test_userPassword_lockout_with_clear_change("samr")
+        self._test_userPassword_lockout_with_clear_change(self.creds2,
+                                                          self.ldb3,
+                                                          "samr")
 
-
-    def test_unicodePwd_lockout_with_clear_change(self):
+    def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb):
         print "Performs a password cleartext change operation on 'unicodePwd'"
-        creds = self.creds2
-        other_ldb = self.ldb3
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -1276,8 +1277,10 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-    def _test_login_lockout(self, use_kerberos):
-        creds = self.creds2
+    def test_unicodePwd_lockout_with_clear_change(self):
+        return self._test_unicodePwd_lockout_with_clear_change(self.creds2, self.ldb3)
+
+    def _test_login_lockout(self, creds, use_kerberos):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
@@ -1586,12 +1589,12 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   msDSUserAccountControlComputed=0)
 
     def test_login_lockout_ntlm(self):
-        self._test_login_lockout(DONT_USE_KERBEROS)
+        self._test_login_lockout(self.creds2, DONT_USE_KERBEROS)
 
     def test_login_lockout_kerberos(self):
-        self._test_login_lockout(MUST_USE_KERBEROS)
+        self._test_login_lockout(self.creds2, MUST_USE_KERBEROS)
 
-    def _test_multiple_logon(self, use_kerberos):
+    def _test_multiple_logon(self, creds, use_kerberos):
         # Test the happy case in which a user logs on correctly, then
         # logs on correctly again, so that the bad password and
         # lockout times are both zero the second time. The lastlogon
@@ -1600,7 +1603,6 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds = self.creds2
         username = creds.get_username()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
         creds2 = insta_creds(template=creds)
@@ -1662,10 +1664,10 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   msDSUserAccountControlComputed=0)
 
     def test_multiple_logon_ntlm(self):
-        self._test_multiple_logon(DONT_USE_KERBEROS)
+        self._test_multiple_logon(self.creds2, DONT_USE_KERBEROS)
 
     def test_multiple_logon_kerberos(self):
-        self._test_multiple_logon(MUST_USE_KERBEROS)
+        self._test_multiple_logon(self.creds2, MUST_USE_KERBEROS)
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
