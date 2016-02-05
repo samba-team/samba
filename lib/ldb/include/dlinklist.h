@@ -164,9 +164,8 @@ do { \
 /*
    concatenate two lists - putting all elements of the 2nd list at the
    end of the first list.
-   Note that 'type' is ignored
 */
-#define DLIST_CONCATENATE(list1, list2, type)	\
+#define DLIST_CONCATENATE(list1, list2) \
 do { \
 	if (!(list1)) { \
 		(list1) = (list2); \
