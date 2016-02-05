@@ -713,7 +713,7 @@ int ldb_register_extended_match_rule(struct ldb_context *ldb,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	entry->rule = rule;
-	DLIST_ADD_END(ldb->extended_match_rules, entry, struct ldb_extended_match_entry);
+	DLIST_ADD_END(ldb->extended_match_rules, entry);
 
 	return LDB_SUCCESS;
 }
