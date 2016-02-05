@@ -289,6 +289,8 @@ userAccountControl: %d
              "objectclass": "user",
              "sAMAccountName": username})
 
+        self.addCleanup(delete_force, self.ldb, userdn)
+
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
@@ -1635,11 +1637,6 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
-        delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
-        delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
-        delete_force(self.ldb, "cn=testuser3,cn=users," + self.base_dn)
-        # Close the second LDB connection (with the user credentials)
-        self.ldb2 = None
 
 host_url = "ldap://%s" % host
 
