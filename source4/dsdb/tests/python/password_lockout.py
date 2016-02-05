@@ -57,11 +57,11 @@ global_creds = credopts.get_credentials(lp)
 global_creds.set_gensec_features(global_creds.get_gensec_features() |
                                  gensec.FEATURE_SEAL)
 
-def insta_creds(template=global_creds):
+def insta_creds(template=global_creds, username="testuser", userpass="thatsAcomplPASS1"):
     # get a copy of the global creds or a the passed in creds
     c = Credentials()
-    c.set_username("testuser")
-    c.set_password("thatsAcomplPASS1")
+    c.set_username(username)
+    c.set_password(userpass)
     c.set_domain(template.get_domain())
     c.set_realm(template.get_realm())
     c.set_workstation(template.get_workstation())
