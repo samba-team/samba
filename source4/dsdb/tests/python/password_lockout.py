@@ -211,6 +211,7 @@ userAccountControl: %d
     def _check_account(self, dn,
                        badPwdCount=None,
                        badPasswordTime=None,
+                       logonCount=None,
                        lastLogon=None,
                        lastLogonTimestamp=None,
                        lockoutTime=None,
@@ -227,6 +228,7 @@ userAccountControl: %d
            "badPasswordTime",
            "lastLogon",
            "lastLogonTimestamp",
+           "logonCount",
            "lockoutTime",
            "userAccountControl",
            "msDS-User-Account-Control-Computed"
@@ -240,6 +242,7 @@ userAccountControl: %d
         self.assertTrue(len(res) == 1)
         self._check_attribute(res, "badPwdCount", badPwdCount)
         self._check_attribute(res, "badPasswordTime", badPasswordTime)
+        self._check_attribute(res, "logonCount", logonCount)
         self._check_attribute(res, "lastLogon", lastLogon)
         self._check_attribute(res, "lastLogonTimestamp", lastLogonTimestamp)
         self._check_attribute(res, "lockoutTime", lockoutTime)
@@ -248,6 +251,7 @@ userAccountControl: %d
                               msDSUserAccountControlComputed)
 
         lastLogon = int(res[0]["lastLogon"][0])
+        logonCount = int(res[0]["logonCount"][0])
 
         samr_user = self._open_samr_user(res)
         uinfo3 = self.samr.QueryUserInfo(samr_user, 3)
@@ -277,16 +281,19 @@ userAccountControl: %d
         self.assertEquals(uinfo3.acct_flags, expected_acb_info)
         self.assertEquals(uinfo3.bad_password_count, expected_bad_password_count)
         self.assertEquals(uinfo3.last_logon, lastLogon)
+        self.assertEquals(uinfo3.logon_count, logonCount)
 
         self.assertEquals(uinfo5.acct_flags, expected_acb_info)
         self.assertEquals(uinfo5.bad_password_count, effective_bad_password_count)
         self.assertEquals(uinfo5.last_logon, lastLogon)
+        self.assertEquals(uinfo5.logon_count, logonCount)
 
         self.assertEquals(uinfo16.acct_flags, expected_acb_info)
 
         self.assertEquals(uinfo21.acct_flags, expected_acb_info)
         self.assertEquals(uinfo21.bad_password_count, effective_bad_password_count)
         self.assertEquals(uinfo21.last_logon, lastLogon)
+        self.assertEquals(uinfo21.logon_count, logonCount)
 
         # check LDAP again and make sure the samr.QueryUserInfo
         # doesn't have any impact.
@@ -305,8 +312,10 @@ userAccountControl: %d
 
         use_kerberos = creds.get_kerberos_state()
         if use_kerberos == MUST_USE_KERBEROS:
+            logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
         else:
+            logoncount_relation = 'equal'
             if lockOutObservationWindow == 0:
                 lastlogon_relation = 'greater'
             else:
@@ -323,6 +332,7 @@ userAccountControl: %d
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
+                                  logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
                                   userAccountControl=
@@ -339,6 +349,7 @@ userAccountControl: %d
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
+                                  logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
                                   userAccountControl=
@@ -369,6 +380,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", 0),
+                                  logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
                                   userAccountControl=
@@ -395,6 +407,7 @@ userPassword: """ + userpass + """
         res = self._check_account(userdn,
                                   badPwdCount=badPwdCount,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
                                   userAccountControl=
@@ -409,6 +422,7 @@ userPassword: """ + userpass + """
         res = self._check_account(userdn,
                                   badPwdCount=badPwdCount,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
                                   userAccountControl=
@@ -424,6 +438,7 @@ userPassword: """ + userpass + """
                                   badPwdCount=badPwdCount,
                                   effective_bad_password_count=effective_bad_password_count,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=0,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
                                   userAccountControl=
@@ -443,12 +458,14 @@ userPassword: """ + userpass + """
                                   badPwdCount=badPwdCount,
                                   effective_bad_password_count=effective_bad_password_count,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, 0),
                                   lastLogon=(lastlogon_relation, 0),
                                   lastLogonTimestamp=('greater', badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
         if lastlogon_relation == 'greater':
@@ -459,6 +476,7 @@ userPassword: """ + userpass + """
                                   badPwdCount=badPwdCount,
                                   effective_bad_password_count=effective_bad_password_count,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -593,9 +611,11 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         use_kerberos = creds.get_kerberos_state()
         if use_kerberos == MUST_USE_KERBEROS:
+            logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
             print "Performs a password cleartext change operation on 'userPassword' using Kerberos"
         else:
+            logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
             print "Performs a password cleartext change operation on 'userPassword' using NTLMSSP"
 
@@ -605,12 +625,14 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  logonCount=(logoncount_relation, 0),
                                   lastLogon=(lastlogon_relation, 0),
                                   lastLogonTimestamp=('greater', 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
         if lastlogon_relation == 'greater':
@@ -637,6 +659,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -657,6 +680,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -681,6 +705,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -708,6 +733,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
@@ -735,6 +761,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -760,6 +787,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -785,6 +813,7 @@ userPassword: thatsAcomplPASS2x
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -803,6 +832,7 @@ userPassword: thatsAcomplPASS2
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -828,6 +858,7 @@ userPassword: thatsAcomplPASS2x
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -847,6 +878,7 @@ userPassword: thatsAcomplPASS2x
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -873,6 +905,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -886,6 +919,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -909,6 +943,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -934,6 +969,7 @@ userPassword: thatsAcomplPASS2XYZ
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -960,6 +996,7 @@ userPassword: thatsAcomplPASS2XYZ
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -973,6 +1010,7 @@ userPassword: thatsAcomplPASS2XYZ
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1013,21 +1051,28 @@ userPassword: thatsAcomplPASS2XYZ
                                                           "samr",
                                                           initial_lastlogon_relation='greater')
 
-    def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb):
+    def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb,
+                                                   initial_logoncount_relation=None):
         print "Performs a password cleartext change operation on 'unicodePwd'"
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+        if initial_logoncount_relation is not None:
+            logoncount_relation = initial_logoncount_relation
+        else:
+            logoncount_relation = "greater"
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  logonCount=(logoncount_relation, 0),
                                   lastLogon=("greater", 0),
                                   lastLogonTimestamp=("greater", 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
         self.assertGreater(lastLogonTimestamp, badPasswordTime)
@@ -1053,6 +1098,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1079,6 +1125,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1103,6 +1150,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1118,6 +1166,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1145,6 +1194,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
@@ -1172,6 +1222,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1197,6 +1248,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1222,6 +1274,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1235,6 +1288,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1261,6 +1315,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1286,6 +1341,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1312,6 +1368,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1327,6 +1384,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1352,6 +1410,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
@@ -1366,6 +1425,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1381,6 +1441,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1394,7 +1455,8 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
     def test_unicodePwd_lockout_with_clear_change_ntlm(self):
         self._test_unicodePwd_lockout_with_clear_change(self.lockout1ntlm_creds,
-                                                        self.lockout2ntlm_ldb)
+                                                        self.lockout2ntlm_ldb,
+                                                        initial_logoncount_relation="equal")
 
     def _test_login_lockout(self, creds):
         username = creds.get_username()
@@ -1404,9 +1466,11 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         use_kerberos = creds.get_kerberos_state()
         # This unlocks by waiting for account_lockout_duration
         if use_kerberos == MUST_USE_KERBEROS:
+            logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
             print "Performs a lockout attempt against LDAP using Kerberos"
         else:
+            logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
             print "Performs a lockout attempt against LDAP using NTLM"
 
@@ -1414,12 +1478,14 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  logonCount=(logoncount_relation, 0),
                                   lastLogon=("greater", 0),
                                   lastLogonTimestamp=("greater", 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         firstLogon = lastLogon
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
@@ -1443,6 +1509,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1461,6 +1528,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
                                   lastLogon=('greater', lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1468,6 +1536,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   msDSUserAccountControlComputed=0,
                                   msg='LLTimestamp is updated to lastlogon')
 
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         self.assertGreater(lastLogon, badPasswordTime)
         self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
@@ -1480,6 +1549,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1500,6 +1570,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1522,6 +1593,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
@@ -1542,6 +1614,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1560,6 +1633,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1578,6 +1652,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
@@ -1592,6 +1667,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1611,6 +1687,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
                                   lastLogon=(lastlogon_relation, lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
@@ -1619,6 +1696,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   msDSUserAccountControlComputed=0,
                                   msg="lastLogon is way off")
 
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
 
         # The wrong password
@@ -1632,6 +1710,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1651,6 +1730,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1664,6 +1744,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=2, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1682,6 +1763,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
+                                  logonCount=logonCount,
                                   lockoutTime=0,
                                   lastLogon=lastLogon,
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1697,6 +1779,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
                                   lockoutTime=0,
                                   lastLogon=("greater", lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
@@ -1726,9 +1809,11 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         use_kerberos = creds.get_kerberos_state()
         if use_kerberos == MUST_USE_KERBEROS:
             print "Testing multiple logon with Kerberos"
+            logoncount_relation = 'greater'
             lastlogon_relation = 'greater'
         else:
             print "Testing multiple logon with NTLM"
+            logoncount_relation = 'equal'
             lastlogon_relation = 'equal'
 
         SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
@@ -1736,12 +1821,14 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
+                                  logonCount=(logoncount_relation, 0),
                                   lastLogon=("greater", 0),
                                   lastLogonTimestamp=("greater", 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
+        logonCount = int(res[0]["logonCount"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
         firstLogon = lastLogon
@@ -1755,6 +1842,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
                                   lastLogon=(lastlogon_relation, lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
@@ -1773,6 +1861,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
+                                  logonCount=(logoncount_relation, logonCount),
                                   lastLogon=(lastlogon_relation, lastLogon),
                                   lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
