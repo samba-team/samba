@@ -226,6 +226,8 @@ userAccountControl: %d
         self._check_attribute(res, "msDS-User-Account-Control-Computed",
                               msDSUserAccountControlComputed)
 
+        lastLogon = int(res[0]["lastLogon"][0])
+
         samr_user = self._open_samr_user(res)
         uinfo3 = self.samr.QueryUserInfo(samr_user, 3)
         uinfo5 = self.samr.QueryUserInfo(samr_user, 5)
@@ -253,14 +255,17 @@ userAccountControl: %d
 
         self.assertEquals(uinfo3.acct_flags, expected_acb_info)
         self.assertEquals(uinfo3.bad_password_count, expected_bad_password_count)
+        self.assertEquals(uinfo3.last_logon, lastLogon)
 
         self.assertEquals(uinfo5.acct_flags, expected_acb_info)
         self.assertEquals(uinfo5.bad_password_count, effective_bad_password_count)
+        self.assertEquals(uinfo5.last_logon, lastLogon)
 
         self.assertEquals(uinfo16.acct_flags, expected_acb_info)
 
         self.assertEquals(uinfo21.acct_flags, expected_acb_info)
         self.assertEquals(uinfo21.bad_password_count, effective_bad_password_count)
+        self.assertEquals(uinfo21.last_logon, lastLogon)
 
         # check LDAP again and make sure the samr.QueryUserInfo
         # doesn't have any impact.
