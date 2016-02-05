@@ -512,6 +512,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
         creds = self.creds2
+        other_ldb = self.ldb3
         username = creds.get_username()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
@@ -531,7 +532,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -555,7 +556,7 @@ userPassword: thatsAcomplPASS2
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # Correct old password
-        self.ldb3.modify_ldif("""
+        other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -575,7 +576,7 @@ userPassword: thatsAcomplPASS2
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -602,7 +603,7 @@ userPassword: thatsAcomplPASS2
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -629,7 +630,7 @@ userPassword: thatsAcomplPASS2
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -654,7 +655,7 @@ userPassword: thatsAcomplPASS2
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -679,7 +680,7 @@ userPassword: thatsAcomplPASS2
 
         try:
             # Correct old password
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -722,7 +723,7 @@ userPassword: thatsAcomplPASS2
 
         try:
             # Correct old password
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -767,7 +768,7 @@ userPassword: thatsAcomplPASS2x
         # This shows that setting the UF_LOCKOUT flag makes no difference
         try:
             # Correct old password
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -805,7 +806,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
 
         # The correct password after doing the unlock
 
-        self.ldb3.modify_ldif("""
+        other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -826,7 +827,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -852,7 +853,7 @@ userPassword: thatsAcomplPASS2XYZ
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
@@ -901,6 +902,7 @@ userPassword: thatsAcomplPASS2XYZ
     def test_unicodePwd_lockout_with_clear_change(self):
         print "Performs a password cleartext change operation on 'unicodePwd'"
         creds = self.creds2
+        other_ldb = self.ldb3
         username = creds.get_username()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
@@ -919,7 +921,7 @@ userPassword: thatsAcomplPASS2XYZ
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -943,7 +945,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # Correct old password
-        self.ldb3.modify_ldif("""
+        other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -963,7 +965,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1004,7 +1006,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1032,7 +1034,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1057,7 +1059,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1082,7 +1084,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         try:
             # Correct old password
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1119,7 +1121,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   msDSUserAccountControlComputed=0)
 
         # Correct old password
-        self.ldb3.modify_ldif("""
+        other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1140,7 +1142,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1166,7 +1168,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
@@ -1206,7 +1208,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Wrong old password
         try:
-            self.ldb3.modify_ldif("""
+            other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
