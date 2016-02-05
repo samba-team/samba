@@ -278,14 +278,19 @@ userAccountControl: %d
         return res
 
     def _readd_user(self):
-        # (Re)adds the test user "testuser" with no password atm
-        delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
-        self.ldb.add({
-             "dn": "cn=testuser,cn=users," + self.base_dn,
-             "objectclass": "user",
-             "sAMAccountName": "testuser"})
+        creds = insta_creds()
+        username = creds.get_username()
+        userpass = creds.get_password()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        # (Re)adds the test user "testuser" with no password atm
+        delete_force(self.ldb, userdn)
+        self.ldb.add({
+             "dn": userdn,
+             "objectclass": "user",
+             "sAMAccountName": username})
+
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
                                   lastLogon=0,
@@ -301,7 +306,7 @@ userAccountControl: %d
         # It doesn't create "lockoutTime" = 0.
         self._reset_samr(res)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=0,
                                   lastLogon=0,
@@ -317,7 +322,7 @@ userAccountControl: %d
         # wrong old password
         try:
             self.ldb.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: noPassword
@@ -331,7 +336,7 @@ userPassword: thatsAcomplPASS2
             # returns "0000056A" on longer (always wrong) previous passwords.
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", 0),
                                   lastLogon=0,
@@ -349,14 +354,14 @@ userPassword: thatsAcomplPASS2
         # only be performed by someone which has password set privileges on the
         # account (at least in s4 we do handle it like that).
         self.ldb.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 add: userPassword
-userPassword: thatsAcomplPASS1
+userPassword: """ + userpass + """
 """)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=0,
@@ -368,9 +373,9 @@ userPassword: thatsAcomplPASS1
                                   msDSUserAccountControlComputed=0)
 
         # Enables the user account
-        self.ldb.enable_account("(sAMAccountName=testuser)")
+        self.ldb.enable_account("(sAMAccountName=%s)" % username)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=0,
@@ -382,11 +387,10 @@ userPassword: thatsAcomplPASS1
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds2 = insta_creds()
 
-        ldb = SamDB(url=host_url, credentials=creds2, lp=lp)
+        ldb = SamDB(url=host_url, credentials=creds, lp=lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=('greater', 0),
