@@ -496,10 +496,24 @@ static int port_event_loop(struct port_event_context *port_ev, struct timeval *t
 		return 0;
 	}
 
-	if (ret == -1 && port_errno == ETIME && tvalp) {
-		/* we don't care about a possible delay here */
-		tevent_common_loop_timer_delay(ev);
-		return 0;
+	if (ret == -1 && port_errno == ETIME) {
+		/*
+		 * If errno is set to ETIME it is possible that we still got an event.
+		 * In that case we need to go through the processing loop so that we
+		 * reassociate the received event with the port or the association will
+		 * be lost so check the value of nget is 0 before returning.
+		 */
+		if (nget == 0) {
+			/* we don't care about a possible delay here */
+			tevent_common_loop_timer_delay(ev);
+			return 0;
+		}
+		/*
+		 * Set the return value to 0 since we do not actually have an error and we
+		 * do have events that need to be processed.  This keeps us from getting
+		 * caught in the generic error test.
+		 */
+		ret = 0;
 	}
 
 	if (ret == -1) {
