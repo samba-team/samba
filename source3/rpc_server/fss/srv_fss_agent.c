@@ -247,8 +247,7 @@ static NTSTATUS fss_prune_stale(struct messaging_context *msg_ctx,
 			while (sc_smap != NULL) {
 				struct fss_sc_smap *smap_next = sc_smap->next;
 				DLIST_REMOVE(sc->smaps, sc_smap);
-				DLIST_ADD_END(prunable_sc_smaps, sc_smap,
-					      struct fss_sc_smap *);
+				DLIST_ADD_END(prunable_sc_smaps, sc_smap);
 				sc->smaps_count--;
 				sc_smap = smap_next;
 			}
@@ -668,7 +667,7 @@ uint32_t _fss_StartShadowCopySet(struct pipes_struct *p,
 	}
 	sc_set->state = FSS_SC_STARTED;
 	sc_set->context = fss_global.cur_ctx;
-	DLIST_ADD_END(fss_global.sc_sets, sc_set, struct fss_sc_set *);
+	DLIST_ADD_END(fss_global.sc_sets, sc_set);
 	fss_global.sc_sets_count++;
 	DEBUG(6, ("%s: shadow-copy set %u added\n",
 		  sc_set->id_str, fss_global.sc_sets_count));
@@ -864,10 +863,10 @@ uint32_t _fss_AddToShadowCopySet(struct pipes_struct *p,
 	}
 
 	/* add share map to shadow-copy */
-	DLIST_ADD_END(sc->smaps, sc_smap, struct fss_sc_smap *);
+	DLIST_ADD_END(sc->smaps, sc_smap);
 	sc->smaps_count++;
 	/* add shadow-copy to shadow-copy set */
-	DLIST_ADD_END(sc_set->scs, sc, struct fss_sc *);
+	DLIST_ADD_END(sc_set->scs, sc);
 	sc_set->scs_count++;
 	DEBUG(4, ("added volume %s to shadow copy set with GUID %s\n",
 		  sc->volume_name, sc_set->id_str));

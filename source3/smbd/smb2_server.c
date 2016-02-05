@@ -1050,7 +1050,7 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	DLIST_ADD_END(xconn->smb2.requests, req, struct smbd_smb2_request *);
+	DLIST_ADD_END(xconn->smb2.requests, req);
 
 	return NT_STATUS_OK;
 }
@@ -1304,7 +1304,7 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	nreq->queue_entry.mem_ctx = nreq;
 	nreq->queue_entry.vector = nreq->out.vector;
 	nreq->queue_entry.count = nreq->out.vector_count;
-	DLIST_ADD_END(xconn->smb2.send_queue, &nreq->queue_entry, NULL);
+	DLIST_ADD_END(xconn->smb2.send_queue, &nreq->queue_entry);
 	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(xconn);
@@ -1691,7 +1691,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	state->queue_entry.mem_ctx = state;
 	state->queue_entry.vector = state->vector;
 	state->queue_entry.count = ARRAY_SIZE(state->vector);
-	DLIST_ADD_END(xconn->smb2.send_queue, &state->queue_entry, NULL);
+	DLIST_ADD_END(xconn->smb2.send_queue, &state->queue_entry);
 	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(xconn);
@@ -2762,7 +2762,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	req->queue_entry.mem_ctx = req;
 	req->queue_entry.vector = req->out.vector;
 	req->queue_entry.count = req->out.vector_count;
-	DLIST_ADD_END(xconn->smb2.send_queue, &req->queue_entry, NULL);
+	DLIST_ADD_END(xconn->smb2.send_queue, &req->queue_entry);
 	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(xconn);
@@ -3104,7 +3104,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	state->queue_entry.mem_ctx = state;
 	state->queue_entry.vector = state->vector;
 	state->queue_entry.count = ARRAY_SIZE(state->vector);
-	DLIST_ADD_END(xconn->smb2.send_queue, &state->queue_entry, NULL);
+	DLIST_ADD_END(xconn->smb2.send_queue, &state->queue_entry);
 	xconn->smb2.send_queue_len++;
 
 	status = smbd_smb2_flush_send_queue(xconn);

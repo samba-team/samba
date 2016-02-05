@@ -54,7 +54,7 @@ void remove_all_servers(struct work_record *work)
 static void add_server_to_workgroup(struct work_record *work,
                              struct server_record *servrec)
 {
-	DLIST_ADD_END(work->serverlist, servrec, struct server_record *);
+	DLIST_ADD_END(work->serverlist, servrec);
 	work->subnet->work_changed = True;
 }
 

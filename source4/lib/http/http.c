@@ -357,7 +357,7 @@ static int http_add_header_internal(TALLOC_CTX *mem_ctx,
 	h = talloc(mem_ctx, struct http_header);
 	h->key = talloc_strdup(h, key);
 	h->value = talloc_strdup(h, value);
-	DLIST_ADD_END(*headers, h, NULL);
+	DLIST_ADD_END(*headers, h);
 	tail = DLIST_TAIL(*headers);
 	if (tail != h) {
 		DEBUG(0, ("%s: Error adding header\n", __func__));

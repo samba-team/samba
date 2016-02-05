@@ -439,13 +439,13 @@ static void dcesrv_call_set_list(struct dcesrv_call_state *call,
 	case DCESRV_LIST_NONE:
 		break;
 	case DCESRV_LIST_CALL_LIST:
-		DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(call->conn->call_list, call);
 		break;
 	case DCESRV_LIST_FRAGMENTED_CALL_LIST:
-		DLIST_ADD_END(call->conn->incoming_fragmented_call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(call->conn->incoming_fragmented_call_list, call);
 		break;
 	case DCESRV_LIST_PENDING_CALL_LIST:
-		DLIST_ADD_END(call->conn->pending_call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(call->conn->pending_call_list, call);
 		break;
 	}
 }
@@ -486,7 +486,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
-	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
+	DLIST_ADD_END(call->replies, rep);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	if (call->conn->call_list && call->conn->call_list->replies) {
@@ -695,7 +695,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
-	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
+	DLIST_ADD_END(call->replies, rep);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	if (call->conn->call_list && call->conn->call_list->replies) {
@@ -860,7 +860,7 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
-	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
+	DLIST_ADD_END(call->replies, rep);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	if (call->conn->call_list && call->conn->call_list->replies) {
@@ -1393,7 +1393,7 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	if (dce_conn->terminate == NULL) {
 		dce_conn->terminate = "dcesrv: defered terminating connection - no memory";
 	}
-	DLIST_ADD_END(dce_ctx->broken_connections, dce_conn, NULL);
+	DLIST_ADD_END(dce_ctx->broken_connections, dce_conn);
 }
 
 static void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx)

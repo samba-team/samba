@@ -127,8 +127,7 @@ static void nbt_name_socket_timeout(struct tevent_context *ev, struct tevent_tim
 					   nbt_name_socket_timeout, req);
 		if (req->state != NBT_REQUEST_SEND) {
 			req->state = NBT_REQUEST_SEND;
-			DLIST_ADD_END(req->nbtsock->send_queue, req,
-				      struct nbt_name_request *);
+			DLIST_ADD_END(req->nbtsock->send_queue, req);
 		}
 		TEVENT_FD_WRITEABLE(req->nbtsock->fde);
 		return;
@@ -418,7 +417,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
-	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
+	DLIST_ADD_END(nbtsock->send_queue, req);
 
 	if (DEBUGLVL(10)) {
 		DEBUG(10,("Queueing nbt packet to %s:%d\n",
@@ -469,7 +468,7 @@ _PUBLIC_ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	DLIST_ADD_END(nbtsock->send_queue, req, struct nbt_name_request *);
+	DLIST_ADD_END(nbtsock->send_queue, req);
 
 	TEVENT_FD_WRITEABLE(nbtsock->fde);
 

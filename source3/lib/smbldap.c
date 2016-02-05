@@ -545,7 +545,7 @@ static void smbldap_store_state(LDAP *ld, struct smbldap_state *smbldap_state)
 	t = SMB_XMALLOC_P(struct smbldap_state_lookup);
 	ZERO_STRUCTP(t);
 
-	DLIST_ADD_END(smbldap_state_lookup_list, t, struct smbldap_state_lookup *);
+	DLIST_ADD_END(smbldap_state_lookup_list, t);
 	t->ld = ld;
 	t->smbldap_state = smbldap_state;
 }

@@ -122,7 +122,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 	item->do_delete = do_delete;
 	talloc_free(res);
 
-	DLIST_ADD_END(data->changed_dns, item, struct dn_list *);
+	DLIST_ADD_END(data->changed_dns, item);
 	return LDB_SUCCESS;
 }
 

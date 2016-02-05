@@ -219,7 +219,7 @@ static int la_store_op(struct la_context *ac,
 
 	/* Do deletes before adds */
 	if (op == LA_OP_ADD) {
-		DLIST_ADD_END(ac->ops, os, struct la_op_store *);
+		DLIST_ADD_END(ac->ops, os);
 	} else {
 		/* By adding to the head of the list, we do deletes before
 		 * adds when processing a replace */

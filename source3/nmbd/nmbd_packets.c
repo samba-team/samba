@@ -1033,7 +1033,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
 
 void queue_packet(struct packet_struct *packet)
 {
-	DLIST_ADD_END(packet_queue, packet, struct packet_struct *);
+	DLIST_ADD_END(packet_queue, packet);
 }
 
 /****************************************************************************

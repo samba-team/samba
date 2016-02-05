@@ -541,7 +541,7 @@ _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob
 	el = talloc(pc, struct send_element);
 	NT_STATUS_HAVE_NO_MEMORY(el);
 
-	DLIST_ADD_END(pc->send_queue, el, struct send_element *);
+	DLIST_ADD_END(pc->send_queue, el);
 	el->blob = blob;
 	el->nsent = 0;
 	el->send_callback = send_callback;

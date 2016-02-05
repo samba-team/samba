@@ -278,7 +278,7 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(pending->req);	
 	pending->info = info;
 
-	DLIST_ADD_END(f->notify_buffer->pending, pending, struct notify_pending *);
+	DLIST_ADD_END(f->notify_buffer->pending, pending);
 
 	/* if the buffer is empty then start waiting */
 	if (f->notify_buffer->num_changes == 0 && 

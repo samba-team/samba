@@ -565,7 +565,7 @@ static int dmaster_defer_add(struct ctdb_db_context *ctdb_db,
 	call->ctdb = ctdb_db->ctdb;
 	call->hdr = talloc_steal(call, hdr);
 
-	DLIST_ADD_END(ddq->deferred_calls, call, NULL);
+	DLIST_ADD_END(ddq->deferred_calls, call);
 
 	return 0;
 }
@@ -1911,7 +1911,7 @@ child_finished:
 	set_close_on_exec(rc->fd[0]);
 
 	/* This is an active revokechild child process */
-	DLIST_ADD_END(ctdb_db->revokechild_active, rc, NULL);
+	DLIST_ADD_END(ctdb_db->revokechild_active, rc);
 
 	rc->fde = tevent_add_fd(ctdb->ev, rc, rc->fd[0], TEVENT_FD_READ,
 				revokechild_handler, (void *)rc);

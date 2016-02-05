@@ -53,7 +53,7 @@ struct dnsserver_partition *dnsserver_db_enumerate_partitions(TALLOC_CTX *mem_ct
 	p->dwDpFlags = DNS_DP_AUTOCREATED | DNS_DP_DOMAIN_DEFAULT | DNS_DP_ENLISTED;
 	p->is_forest = false;
 
-	DLIST_ADD_END(partitions, p, NULL);
+	DLIST_ADD_END(partitions, p);
 
 	/* Forest Partition */
 	p = talloc_zero(mem_ctx, struct dnsserver_partition);
@@ -70,7 +70,7 @@ struct dnsserver_partition *dnsserver_db_enumerate_partitions(TALLOC_CTX *mem_ct
 	p->dwDpFlags = DNS_DP_AUTOCREATED | DNS_DP_FOREST_DEFAULT | DNS_DP_ENLISTED;
 	p->is_forest = true;
 
-	DLIST_ADD_END(partitions, p, NULL);
+	DLIST_ADD_END(partitions, p);
 
 	return partitions;
 
@@ -136,7 +136,7 @@ struct dnsserver_zone *dnsserver_db_enumerate_zones(TALLOC_CTX *mem_ctx,
 		}
 		z->zone_dn = talloc_steal(z, res->msgs[i]->dn);
 
-		DLIST_ADD_END(zones, z, NULL);
+		DLIST_ADD_END(zones, z);
 		DEBUG(2, ("dnsserver: Found DNS zone %s\n", z->name));
 	}
 

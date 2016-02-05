@@ -902,10 +902,10 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	/* Move the context from pending to current */
 	if (lock_ctx->type == LOCK_RECORD) {
 		DLIST_REMOVE(lock_ctx->ctdb_db->lock_pending, lock_ctx);
-		DLIST_ADD_END(lock_ctx->ctdb_db->lock_current, lock_ctx, NULL);
+		DLIST_ADD_END(lock_ctx->ctdb_db->lock_current, lock_ctx);
 	} else {
 		DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
-		DLIST_ADD_END(ctdb->lock_current, lock_ctx, NULL);
+		DLIST_ADD_END(ctdb->lock_current, lock_ctx);
 	}
 	CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
 	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
@@ -975,9 +975,9 @@ static struct lock_request *ctdb_lock_internal(TALLOC_CTX *mem_ctx,
 	 * immediately, so keep them at the head of the pending queue.
 	 */
 	if (lock_ctx->type == LOCK_RECORD) {
-		DLIST_ADD_END(ctdb_db->lock_pending, lock_ctx, NULL);
+		DLIST_ADD_END(ctdb_db->lock_pending, lock_ctx);
 	} else {
-		DLIST_ADD_END(ctdb->lock_pending, lock_ctx, NULL);
+		DLIST_ADD_END(ctdb->lock_pending, lock_ctx);
 	}
 	CTDB_INCREMENT_STAT(ctdb, locks.num_pending);
 	if (ctdb_db) {

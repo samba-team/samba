@@ -345,7 +345,7 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 			return ntstatus_to_werror(nt_status);
 		}
 
-		DLIST_ADD_END(s->connections, conn, struct dreplsrv_out_connection *);
+		DLIST_ADD_END(s->connections, conn);
 
 		DEBUG(4,("dreplsrv_out_connection_attach(%s): create\n", hostname));
 	} else {
@@ -425,7 +425,7 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 		}
 	}
 
-	DLIST_ADD_END(*listp, source, struct dreplsrv_partition_source_dsa *);
+	DLIST_ADD_END(*listp, source);
 	return WERR_OK;
 }
 

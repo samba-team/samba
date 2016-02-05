@@ -783,7 +783,7 @@ _PUBLIC_ struct torture_test *torture_suite_add_smb_multi_test(
 	test->fn = run;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 
@@ -834,7 +834,7 @@ _PUBLIC_ struct torture_test *torture_suite_add_2smb_test(
 	test->fn = run;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 
@@ -878,7 +878,7 @@ _PUBLIC_ struct torture_test *torture_suite_add_1smb_test(
 	test->fn = run;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }

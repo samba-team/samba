@@ -323,7 +323,7 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 	op->replica_flags = replica_flags;
 	op->schedule_time = time(NULL);
 
-	DLIST_ADD_END(service->ops.notifies, op, struct dreplsrv_notify_operation *);
+	DLIST_ADD_END(service->ops.notifies, op);
 	talloc_steal(service, op);
 	return WERR_OK;
 }

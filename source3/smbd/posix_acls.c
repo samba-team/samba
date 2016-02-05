@@ -1688,7 +1688,7 @@ static bool add_current_ace_to_acl(files_struct *fsp, struct security_ace *psa,
 		    (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 
 			canon_ace *current_dir_ace = current_ace;
-			DLIST_ADD_END(*dir_ace, current_ace, canon_ace *);
+			DLIST_ADD_END(*dir_ace, current_ace);
 
 			/*
 			 * Note if this was an allow ace. We can't process
@@ -1790,7 +1790,7 @@ static bool add_current_ace_to_acl(files_struct *fsp, struct security_ace *psa,
 	 */
 
 	if (current_ace && !(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-		DLIST_ADD_END(*file_ace, current_ace, canon_ace *);
+		DLIST_ADD_END(*file_ace, current_ace);
 
 		/*
 		 * Note if this was an allow ace. We can't process

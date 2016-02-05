@@ -246,7 +246,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	}
 
 	/* Link to domain list */
-	DLIST_ADD_END(_domain_list, domain, struct winbindd_domain *);
+	DLIST_ADD_END(_domain_list, domain);
 
 	wcache_tdc_add_domain( domain );
 

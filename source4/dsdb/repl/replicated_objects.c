@@ -138,7 +138,7 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 		}
 
 		schema_list_item->obj = cur;
-		DLIST_ADD_END(schema_list, schema_list_item, struct schema_list);
+		DLIST_ADD_END(schema_list, schema_list_item);
 	}
 
 	/* resolve objects until all are resolved and in local schema */

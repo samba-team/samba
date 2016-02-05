@@ -590,7 +590,7 @@ static int requeue_duplicate_fetch(struct ctdb_db_context *ctdb_db, struct ctdb_
 	dfc->w->ctdb = ctdb_db->ctdb;
 	dfc->w->client_id = client->client_id;
 
-	DLIST_ADD_END(dfq->deferred_calls, dfc, NULL);
+	DLIST_ADD_END(dfq->deferred_calls, dfc);
 
 	return 0;
 }

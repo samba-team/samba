@@ -199,7 +199,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	iname->registration_time = timeval_zero();
 	iname->wins_server       = NULL;
 
-	DLIST_ADD_END(iface->names, iname, struct nbtd_iface_name *);
+	DLIST_ADD_END(iface->names, iname);
 
 	if (nb_flags & NBT_NM_PERMANENT) {
 		/* permanent names are not announced and are immediately active */

@@ -468,7 +468,7 @@ static WERROR get_ncs_list(TALLOC_CTX *mem_ctx,
 		nc_list_elem = talloc_zero(mem_ctx, struct ncList);
 		W_ERROR_HAVE_NO_MEMORY(nc_list_elem);
 		nc_list_elem->dn = nc_dn;
-		DLIST_ADD_END(*nc_list, nc_list_elem, struct ncList*);
+		DLIST_ADD_END(*nc_list, nc_list_elem);
 	} else {
 		/* ncs := getNCs() from ldb database.
 		 * getNCs() must return an array containing

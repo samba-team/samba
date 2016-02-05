@@ -43,7 +43,7 @@ static bool torture_local_dlinklist_simple(struct torture_context *tctx)
 	torture_comment(tctx, "add 5 elements at end\n");
 	for (i=0; i<5; i++) {
 		el = talloc(mem_ctx, struct listel);
-		DLIST_ADD_END(l1, el, NULL);
+		DLIST_ADD_END(l1, el);
 	}
 
 	torture_comment(tctx, "delete 3 from front\n");
@@ -57,7 +57,7 @@ static bool torture_local_dlinklist_simple(struct torture_context *tctx)
 	for (i=0; i < 3; i++) {
 		el = DLIST_TAIL(l1);
 		DLIST_REMOVE(l1, el);
-		DLIST_ADD_END(l2, el, NULL);
+		DLIST_ADD_END(l2, el);
 	}
 
 	torture_comment(tctx, "count forward\n");

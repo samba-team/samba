@@ -94,7 +94,7 @@ struct torture_test *torture_suite_add_2ns_smb2_test(struct torture_suite *suite
 	test->fn = run;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }

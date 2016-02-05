@@ -1049,9 +1049,9 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	}
 
 	if (parent_change != NULL) {
-		DLIST_ADD_END(parent_change->children, c, NULL);
+		DLIST_ADD_END(parent_change->children, c);
 	} else {
-		DLIST_ADD_END(descriptor_private->changes, c, NULL);
+		DLIST_ADD_END(descriptor_private->changes, c);
 	}
 
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);

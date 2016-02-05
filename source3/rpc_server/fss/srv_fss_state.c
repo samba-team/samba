@@ -437,7 +437,7 @@ static int fss_state_retrieve_traverse(struct db_record *rec,
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
 		}
-		DLIST_ADD_END(trv_state->smaps, smap, struct fss_sc_smap *);
+		DLIST_ADD_END(trv_state->smaps, smap);
 		trv_state->smaps_count++;
 	} else if (strstr((char *)key.dptr, FSS_DB_KEY_PFX_SC) != NULL) {
 		struct fss_sc *sc;
@@ -446,7 +446,7 @@ static int fss_state_retrieve_traverse(struct db_record *rec,
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
 		}
-		DLIST_ADD_END(trv_state->scs, sc, struct fss_sc *);
+		DLIST_ADD_END(trv_state->scs, sc);
 		trv_state->scs_count++;
 	} else if (strstr((char *)key.dptr, FSS_DB_KEY_PFX_SC_SET) != NULL) {
 		struct fss_sc_set *sc_set;
@@ -455,7 +455,7 @@ static int fss_state_retrieve_traverse(struct db_record *rec,
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
 		}
-		DLIST_ADD_END(trv_state->sc_sets, sc_set, struct fss_sc_set *);
+		DLIST_ADD_END(trv_state->sc_sets, sc_set);
 		trv_state->sc_sets_count++;
 	} else {
 		/* global context and db vers */
@@ -487,7 +487,7 @@ static NTSTATUS fss_state_hierarchize_smaps(struct fss_traverse_state *trv_state
 		talloc_steal(sc, smap);
 		DLIST_REMOVE(trv_state->smaps, smap);
 		trv_state->smaps_count--;
-		DLIST_ADD_END(sc->smaps, smap, struct fss_sc_smap *);
+		DLIST_ADD_END(sc->smaps, smap);
 		smaps_moved++;
 
 		/* last component of the tdb key path is the sc share name */
@@ -527,7 +527,7 @@ static NTSTATUS fss_state_hierarchize_scs(struct fss_traverse_state *trv_state,
 		talloc_steal(sc_set, sc);
 		DLIST_REMOVE(trv_state->scs, sc);
 		trv_state->scs_count--;
-		DLIST_ADD_END(sc_set->scs, sc, struct fss_sc *);
+		DLIST_ADD_END(sc_set->scs, sc);
 		scs_moved++;
 
 		sc->sc_set = sc_set;
@@ -575,7 +575,7 @@ static NTSTATUS fss_state_hierarchize(struct fss_traverse_state *trv_state,
 		/* sc_set mem already owned by trv_state->mem_ctx */
 		DLIST_REMOVE(trv_state->sc_sets, sc_set);
 		trv_state->sc_sets_count--;
-		DLIST_ADD_END(*sc_sets, sc_set, struct fss_sc_set *);
+		DLIST_ADD_END(*sc_sets, sc_set);
 		i++;
 
 		/* last component of the tdb key path is the sc_set GUID str */

@@ -71,7 +71,7 @@ void ctdb_log_register_backend(const char *prefix, ctdb_log_setup_fn_t setup)
 	b->prefix = prefix;
 	b->setup = setup;
 
-	DLIST_ADD_END(log_state->backends, b, NULL);
+	DLIST_ADD_END(log_state->backends, b);
 }
 
 

@@ -352,7 +352,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 		TEVENT_FD_WRITEABLE(queue->fde);
 	}
 
-	DLIST_ADD_END(queue->out_queue, pkt, NULL);
+	DLIST_ADD_END(queue->out_queue, pkt);
 
 	queue->out_queue_length++;
 

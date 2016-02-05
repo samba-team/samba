@@ -1470,7 +1470,7 @@ NTSTATUS smbXsrv_session_create_auth(struct smbXsrv_session *session,
 	}
 
 	talloc_set_destructor(a, smbXsrv_session_auth0_destructor);
-	DLIST_ADD_END(session->pending_auth, a, NULL);
+	DLIST_ADD_END(session->pending_auth, a);
 
 	*_a = a;
 	return NT_STATUS_OK;

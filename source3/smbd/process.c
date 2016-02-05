@@ -750,8 +750,7 @@ static bool push_queued_message(struct smb_request *req,
 	}
 #endif
 
-	DLIST_ADD_END(req->sconn->deferred_open_queue, msg,
-		      struct pending_message_list *);
+	DLIST_ADD_END(req->sconn->deferred_open_queue, msg);
 
 	DEBUG(10,("push_message: pushed message length %u on "
 		  "deferred_open_queue\n", (unsigned int)msg_len));
@@ -3873,7 +3872,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 	}
 
 	/* for now we only have one connection */
-	DLIST_ADD_END(client->connections, xconn, NULL);
+	DLIST_ADD_END(client->connections, xconn);
 	xconn->client = client;
 	talloc_steal(client, xconn);
 

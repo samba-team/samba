@@ -237,7 +237,7 @@ static struct chat_struct *make_pw_chat(const char *p)
 
 		ZERO_STRUCTP(t);
 
-		DLIST_ADD_END(list, t, struct chat_struct*);
+		DLIST_ADD_END(list, t);
 
 		if (!next_token_talloc(frame, &p, &prompt, NULL)) {
 			break;
