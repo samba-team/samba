@@ -641,9 +641,20 @@ bool asn1_start_tag(struct asn1_data *data, uint8_t tag)
 			return false;
 		nesting->taglen = b;
 		while (n > 1) {
+			size_t taglen;
+
 			if (!asn1_read_uint8(data, &b))
 				return false;
-			nesting->taglen = (nesting->taglen << 8) | b;
+
+			taglen = (nesting->taglen << 8) | b;
+
+			if ((taglen >> 8) != nesting->taglen) {
+				/* overflow */
+				data->has_error = true;
+				return false;
+			}
+			nesting->taglen = taglen;
+
 			n--;
 		}
 	} else {
