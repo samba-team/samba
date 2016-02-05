@@ -150,9 +150,8 @@ do { \
 
 /*
    demote an element to the end of a list.
-   Note that 'type' is ignored
 */
-#define DLIST_DEMOTE(list, p, type)			\
+#define DLIST_DEMOTE(list, p) \
 do { \
 	DLIST_REMOVE(list, p); \
 	DLIST_ADD_END(list, p); \
