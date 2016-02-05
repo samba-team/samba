@@ -298,12 +298,20 @@ userAccountControl: %d
         time.sleep(0.01)
         return res
 
-    def _readd_user(self, creds):
+    def _readd_user(self, creds, lockOutObservationWindow=0):
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
-        # (Re)adds the test user "testuser" with no password atm
+        use_kerberos = creds.get_kerberos_state()
+        if use_kerberos == MUST_USE_KERBEROS:
+            lastlogon_relation = 'greater'
+        else:
+            if lockOutObservationWindow == 0:
+                lastlogon_relation = 'greater'
+            else:
+                lastlogon_relation = 'equal'
+
         delete_force(self.ldb, userdn)
         self.ldb.add({
              "dn": userdn,
@@ -369,6 +377,7 @@ userPassword: thatsAcomplPASS2
                                     dsdb.UF_PASSWD_NOTREQD,
                                   msDSUserAccountControlComputed=
                                     dsdb.UF_PASSWORD_EXPIRED)
+        badPwdCount = int(res[0]["badPwdCount"][0])
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # Sets the initial user password with a "special" password change
@@ -384,7 +393,7 @@ userPassword: """ + userpass + """
 """)
 
         res = self._check_account(userdn,
-                                  badPwdCount=1,
+                                  badPwdCount=badPwdCount,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
@@ -398,7 +407,22 @@ userPassword: """ + userpass + """
         self.ldb.enable_account("(sAMAccountName=%s)" % username)
 
         res = self._check_account(userdn,
-                                  badPwdCount=1,
+                                  badPwdCount=badPwdCount,
+                                  badPasswordTime=badPasswordTime,
+                                  lastLogon=0,
+                                  lastLogonTimestamp=('absent', None),
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
+        if lockOutObservationWindow != 0:
+            time.sleep(lockOutObservationWindow + 1)
+            effective_bad_password_count = 0
+        else:
+            effective_bad_password_count = badPwdCount
+
+        res = self._check_account(userdn,
+                                  badPwdCount=badPwdCount,
+                                  effective_bad_password_count=effective_bad_password_count,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=0,
                                   lastLogonTimestamp=('absent', None),
@@ -406,23 +430,40 @@ userPassword: """ + userpass + """
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
-        # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
-        # and the workstation.
-
         ldb = SamDB(url=host_url, credentials=creds, lp=lp)
 
+        if lockOutObservationWindow == 0:
+            badPwdCount = 0
+            effective_bad_password_count = 0
+        if use_kerberos == MUST_USE_KERBEROS:
+            badPwdCount = 0
+            effective_bad_password_count = 0
+
         res = self._check_account(userdn,
-                                  badPwdCount=0,
+                                  badPwdCount=badPwdCount,
+                                  effective_bad_password_count=effective_bad_password_count,
                                   badPasswordTime=badPasswordTime,
-                                  lastLogon=('greater', 0),
-                                  lastLogonTimestamp=('greater', 0),
+                                  lastLogon=(lastlogon_relation, 0),
+                                  lastLogonTimestamp=('greater', badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
 
         lastLogon = int(res[0]["lastLogon"][0])
-        self.assertGreater(lastLogon, badPasswordTime)
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        if lastlogon_relation == 'greater':
+            self.assertGreater(lastLogon, badPasswordTime)
+            self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
+
+        res = self._check_account(userdn,
+                                  badPwdCount=badPwdCount,
+                                  effective_bad_password_count=effective_bad_password_count,
+                                  badPasswordTime=badPasswordTime,
+                                  lastLogon=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
+                                  userAccountControl=
+                                    dsdb.UF_NORMAL_ACCOUNT,
+                                  msDSUserAccountControlComputed=0)
         return ldb
 
     def assertLoginFailure(self, url, creds, lp, errno=ERR_INVALID_CREDENTIALS):
