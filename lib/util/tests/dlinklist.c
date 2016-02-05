@@ -100,7 +100,7 @@ static bool torture_local_dlinklist_simple(struct torture_context *tctx)
 	torture_assert_int_equal(tctx, i, 6, "should have 6 elements");
 
 	torture_comment(tctx, "check DLIST_CONCATENATE\n");
-	DLIST_CONCATENATE(l1, l2, NULL);
+	DLIST_CONCATENATE(l1, l2);
 	torture_comment(tctx, "count forward\n");
 	for (i=0,el=l1; el; el=el->next) i++;
 	torture_assert_int_equal(tctx, i, 12, "should have 12 elements");
