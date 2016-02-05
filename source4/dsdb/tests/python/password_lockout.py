@@ -511,8 +511,11 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         print "Performs a password cleartext change operation on 'userPassword'"
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
+        creds = self.creds2
+        username = creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
                                   lastLogon=('greater', 0),
@@ -529,7 +532,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1x
@@ -541,7 +544,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -553,7 +556,7 @@ userPassword: thatsAcomplPASS2
 
         # Correct old password
         self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1
@@ -561,7 +564,7 @@ add: userPassword
 userPassword: thatsAcomplPASS2
 """)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -573,7 +576,7 @@ userPassword: thatsAcomplPASS2
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1x
@@ -585,7 +588,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -600,7 +603,7 @@ userPassword: thatsAcomplPASS2
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1x
@@ -612,7 +615,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -627,7 +630,7 @@ userPassword: thatsAcomplPASS2
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1x
@@ -639,7 +642,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -652,7 +655,7 @@ userPassword: thatsAcomplPASS2
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1x
@@ -664,7 +667,7 @@ userPassword: thatsAcomplPASS2
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
@@ -677,7 +680,7 @@ userPassword: thatsAcomplPASS2
         try:
             # Correct old password
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS2
@@ -689,7 +692,7 @@ userPassword: thatsAcomplPASS2x
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -701,13 +704,13 @@ userPassword: thatsAcomplPASS2x
 
         # Now reset the password, which does NOT change the lockout!
         self.ldb.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 replace: userPassword
 userPassword: thatsAcomplPASS2
 """)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -720,7 +723,7 @@ userPassword: thatsAcomplPASS2
         try:
             # Correct old password
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS2
@@ -732,7 +735,7 @@ userPassword: thatsAcomplPASS2x
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -743,7 +746,7 @@ userPassword: thatsAcomplPASS2x
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         m = Message()
-        m.dn = Dn(self.ldb, "cn=testuser,cn=users," + self.base_dn)
+        m.dn = Dn(self.ldb, userdn)
         m["userAccountControl"] = MessageElement(
           str(dsdb.UF_LOCKOUT),
           FLAG_MOD_REPLACE, "userAccountControl")
@@ -751,7 +754,7 @@ userPassword: thatsAcomplPASS2x
         self.ldb.modify(m)
 
         # This shows that setting the UF_LOCKOUT flag alone makes no difference
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -765,7 +768,7 @@ userPassword: thatsAcomplPASS2x
         try:
             # Correct old password
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
@@ -777,7 +780,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
@@ -790,7 +793,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         self._reset_by_method(res, method)
 
         # Here bad password counts are reset without logon success.
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
@@ -803,7 +806,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         # The correct password after doing the unlock
 
         self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
@@ -811,7 +814,7 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
 """)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
@@ -824,7 +827,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1xyz
@@ -836,7 +839,7 @@ userPassword: thatsAcomplPASS2XYZ
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
@@ -850,7 +853,7 @@ userPassword: thatsAcomplPASS2XYZ
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: userPassword
 userPassword: thatsAcomplPASS1xyz
@@ -862,7 +865,7 @@ userPassword: thatsAcomplPASS2XYZ
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
@@ -875,7 +878,7 @@ userPassword: thatsAcomplPASS2XYZ
 
         self._reset_ldap_lockoutTime(res)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -897,8 +900,11 @@ userPassword: thatsAcomplPASS2XYZ
 
     def test_unicodePwd_lockout_with_clear_change(self):
         print "Performs a password cleartext change operation on 'unicodePwd'"
+        creds = self.creds2
+        username = creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
                                   lastLogon=("greater", 0),
@@ -914,7 +920,7 @@ userPassword: thatsAcomplPASS2XYZ
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -926,7 +932,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -938,7 +944,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # Correct old password
         self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
@@ -946,7 +952,7 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
 """)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -958,7 +964,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
@@ -970,7 +976,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -985,7 +991,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # reset "badPwdCount" = 0.
         self._reset_samr(res)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -999,7 +1005,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -1012,7 +1018,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertTrue('00000056' in msg, msg)
 
         # this is strange, why do we have lockoutTime=badPasswordTime here?
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1027,7 +1033,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -1039,7 +1045,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1052,7 +1058,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -1064,7 +1070,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1077,7 +1083,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         try:
             # Correct old password
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
@@ -1089,7 +1095,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1102,7 +1108,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         # Now reset the lockout, by removing ACB_AUTOLOCK (which removes the lock, despite being a generated attribute)
         self._reset_samr(res);
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1114,7 +1120,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
 
         # Correct old password
         self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
@@ -1122,7 +1128,7 @@ add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
 """)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1135,7 +1141,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -1147,7 +1153,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1161,7 +1167,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -1173,7 +1179,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1188,7 +1194,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # It doesn't reset "badPwdCount" = 0.
         self._reset_samr(res)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1201,7 +1207,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Wrong old password
         try:
             self.ldb3.modify_ldif("""
-dn: cn=testuser,cn=users,""" + self.base_dn + """
+dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
@@ -1213,7 +1219,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1227,7 +1233,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         time.sleep(self.account_lockout_duration + 1)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1242,7 +1248,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # reset "badPwdCount" = 0.
         self._reset_samr(res)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
@@ -1253,6 +1259,10 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   msDSUserAccountControlComputed=0)
 
     def _test_login_lockout(self, use_kerberos):
+        creds = self.creds2
+        username = creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+
         # This unlocks by waiting for account_lockout_duration
         if use_kerberos == MUST_USE_KERBEROS:
             lastlogon_relation = 'greater'
@@ -1262,7 +1272,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
             print "Performs a lockout attempt against LDAP using NTLM"
 
         # Change password on a connection as another user
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
                                   lastLogon=("greater", 0),
@@ -1283,7 +1293,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds_lockout = insta_creds()
+        creds_lockout = insta_creds(template=creds)
         creds_lockout.set_kerberos_state(use_kerberos)
 
         # The wrong password
@@ -1291,7 +1301,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         self.assertLoginFailure(host_url, creds_lockout, lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1309,7 +1319,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # lastLogonTimestamp should not change
         # lastLogon increases if badPwdCount is non-zero (!)
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=('greater', lastLogon),
@@ -1327,7 +1337,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         self.assertLoginFailure(host_url, creds_lockout, lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1347,7 +1357,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1369,7 +1379,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
@@ -1389,7 +1399,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1407,7 +1417,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1425,7 +1435,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
@@ -1439,7 +1449,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         time.sleep(self.account_lockout_duration + 1)
         print self.account_lockout_duration + 1
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
@@ -1460,7 +1470,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         ldb_lockout = SamDB(url=host_url, credentials=creds_lockout2, lp=lp)
         time.sleep(3)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=(lastlogon_relation, lastLogon),
@@ -1481,7 +1491,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
@@ -1500,7 +1510,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
@@ -1513,7 +1523,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         time.sleep(self.lockout_observation_window + 1)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=2, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
@@ -1531,7 +1541,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         except LdbError, (num, msg):
             self.assertEquals(num, ERR_INVALID_CREDENTIALS)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lockoutTime=0,
@@ -1546,7 +1556,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         creds_lockout.set_password("thatsAcomplPASS1")
         ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=0,
@@ -1571,7 +1581,10 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
         # and the workstation.
-        creds2 = insta_creds()
+        creds = self.creds2
+        username = creds.get_username()
+        userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+        creds2 = insta_creds(template=creds)
         creds2.set_kerberos_state(use_kerberos)
         self.assertEqual(creds2.get_kerberos_state(), use_kerberos)
 
@@ -1584,7 +1597,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
                                   lastLogon=("greater", 0),
@@ -1602,7 +1615,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         time.sleep(1)
         SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=(lastlogon_relation, lastLogon),
@@ -1620,7 +1633,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         SamDB(url=host_url, credentials=insta_creds(creds2), lp=lp)
 
-        res = self._check_account("cn=testuser,cn=users," + self.base_dn,
+        res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=(lastlogon_relation, lastLogon),
