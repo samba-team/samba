@@ -721,6 +721,10 @@ int asn1_tag_remaining(struct asn1_data *data)
 		data->has_error = true;
 		return -1;
 	}
+	if (remaining < 0) {
+		data->has_error = true;
+		return -1;
+	}
 	return remaining;
 }
 
