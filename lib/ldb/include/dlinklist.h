@@ -57,10 +57,6 @@
   This allows us to find the tail of the list by using
   list_head->prev, which means we can add to the end of the list in
   O(1) time
-
-
-  Note that the 'type' arguments below are no longer needed, but
-  are kept for now to prevent an incompatible argument change
  */
 
 
