@@ -583,18 +583,29 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.lockout2ntlm_ldb = self._readd_user(self.lockout2ntlm_creds,
                                         lockOutObservationWindow=self.lockout_observation_window)
 
-    def _test_userPassword_lockout_with_clear_change(self, creds, other_ldb, method):
-        print "Performs a password cleartext change operation on 'userPassword'"
+    def _test_userPassword_lockout_with_clear_change(self, creds, other_ldb, method,
+                                                     initial_lastlogon_relation=None):
         # Notice: This works only against Windows if "dSHeuristics" has been set
         # properly
         username = creds.get_username()
         userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
+        use_kerberos = creds.get_kerberos_state()
+        if use_kerberos == MUST_USE_KERBEROS:
+            lastlogon_relation = 'greater'
+            print "Performs a password cleartext change operation on 'userPassword' using Kerberos"
+        else:
+            lastlogon_relation = 'equal'
+            print "Performs a password cleartext change operation on 'userPassword' using NTLMSSP"
+
+        if initial_lastlogon_relation is not None:
+            lastlogon_relation = initial_lastlogon_relation
+
         res = self._check_account(userdn,
                                   badPwdCount=0,
                                   badPasswordTime=("greater", 0),
-                                  lastLogon=('greater', 0),
+                                  lastLogon=(lastlogon_relation, 0),
                                   lastLogonTimestamp=('greater', 0),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -602,6 +613,9 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lastLogon = int(res[0]["lastLogon"][0])
         lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        if lastlogon_relation == 'greater':
+            self.assertGreater(lastLogon, badPasswordTime)
+            self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         # Change password on a connection as another user
 
@@ -984,17 +998,20 @@ userPassword: thatsAcomplPASS2XYZ
     def test_userPassword_lockout_with_clear_change_ntlm_ldap_userAccountControl(self):
         self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
                                                           self.lockout2ntlm_ldb,
-                                                          "ldap_userAccountControl")
+                                                          "ldap_userAccountControl",
+                                                          initial_lastlogon_relation='greater')
 
     def test_userPassword_lockout_with_clear_change_ntlm_ldap_lockoutTime(self):
         self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
                                                           self.lockout2ntlm_ldb,
-                                                          "ldap_lockoutTime")
+                                                          "ldap_lockoutTime",
+                                                          initial_lastlogon_relation='greater')
 
     def test_userPassword_lockout_with_clear_change_ntlm_samr(self):
         self._test_userPassword_lockout_with_clear_change(self.lockout1ntlm_creds,
                                                           self.lockout2ntlm_ldb,
-                                                          "samr")
+                                                          "samr",
+                                                          initial_lastlogon_relation='greater')
 
     def _test_unicodePwd_lockout_with_clear_change(self, creds, other_ldb):
         print "Performs a password cleartext change operation on 'unicodePwd'"
@@ -1012,6 +1029,9 @@ userPassword: thatsAcomplPASS2XYZ
                                   msDSUserAccountControlComputed=0)
         badPasswordTime = int(res[0]["badPasswordTime"][0])
         lastLogon = int(res[0]["lastLogon"][0])
+        lastLogonTimestamp = int(res[0]["lastLogonTimestamp"][0])
+        self.assertGreater(lastLogonTimestamp, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         # Change password on a connection as another user
 
@@ -1034,7 +1054,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1060,7 +1080,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=1,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1084,7 +1104,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1099,7 +1119,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1126,7 +1146,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1153,7 +1173,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1178,7 +1198,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1203,7 +1223,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
                                   badPwdCount=3,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1216,7 +1236,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1242,7 +1262,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1267,7 +1287,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=1,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1293,7 +1313,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=2,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1308,7 +1328,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=2,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=0,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1333,7 +1353,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=3,
                                   badPasswordTime=("greater", badPasswordTime),
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=("greater", badPasswordTime),
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1347,7 +1367,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPwdCount=3, effective_bad_password_count=0,
                                   badPasswordTime=badPasswordTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   lockoutTime=lockoutTime,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
@@ -1363,7 +1383,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   badPasswordTime=badPasswordTime,
                                   lockoutTime=lockoutTime,
                                   lastLogon=lastLogon,
-                                  lastLogonTimestamp=lastLogon,
+                                  lastLogonTimestamp=lastLogonTimestamp,
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
@@ -1408,6 +1428,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
 
         self.assertGreater(lastLogon, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         # Open a second LDB connection with the user credentials. Use the
         # command line credentials for informations like the domain, the realm
@@ -1449,6 +1470,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
 
         lastLogon = int(res[0]["lastLogon"][0])
         self.assertGreater(lastLogon, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         # The wrong password
         creds_lockout.set_password("thatsAcomplPASS1x")
@@ -1576,8 +1598,6 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
                                   userAccountControl=
                                     dsdb.UF_NORMAL_ACCOUNT,
                                   msDSUserAccountControlComputed=0)
-
-        lastLogon = int(res[0]["lastLogon"][0])
 
         # The correct password after letting the timeout expire
 
@@ -1727,6 +1747,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16) + """
         firstLogon = lastLogon
         print "last logon is %d" % lastLogon
         self.assertGreater(lastLogon, badPasswordTime)
+        self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         time.sleep(1)
         SamDB(url=host_url, credentials=insta_creds(creds), lp=lp)
