@@ -2319,7 +2319,7 @@ static void process_deny_list(connection_struct *conn, canon_ace **pp_ace_list )
 
 			curr_ace->attr = ALLOW_ACE;
 			curr_ace->perms = (mode_t)0;
-			DLIST_DEMOTE(ace_list, curr_ace, canon_ace *);
+			DLIST_DEMOTE(ace_list, curr_ace);
 			continue;
 		}
 
@@ -2344,7 +2344,7 @@ static void process_deny_list(connection_struct *conn, canon_ace **pp_ace_list )
 
 		curr_ace->attr = ALLOW_ACE;
 		curr_ace->perms = (new_perms & ~curr_ace->perms);
-		DLIST_DEMOTE(ace_list, curr_ace, canon_ace *);
+		DLIST_DEMOTE(ace_list, curr_ace);
 	}
 
 	/* Pass 3 above - deal with deny group entries. */
@@ -2391,7 +2391,7 @@ static void process_deny_list(connection_struct *conn, canon_ace **pp_ace_list )
 			curr_ace->perms = allow_everyone_p->perms & ~curr_ace->perms;
 		else
 			curr_ace->perms = (mode_t)0;
-		DLIST_DEMOTE(ace_list, curr_ace, canon_ace *);
+		DLIST_DEMOTE(ace_list, curr_ace);
 	}
 
 	/* Doing this fourth pass allows Windows semantics to be layered
@@ -2589,7 +2589,7 @@ static void arrange_posix_perms(const char *filename, canon_ace **pp_list_head)
 	}
 
 	if (other_ace) {
-		DLIST_DEMOTE(l_head, other_ace, canon_ace *);
+		DLIST_DEMOTE(l_head, other_ace);
 	}
 
 	/* We have probably changed the head of the list. */
