@@ -661,7 +661,7 @@ sub Struct($$$$)
 			}
 			my $switch_type = "g${switch_raw_type}";
 
-			push @$vars, "$switch_type $v;";
+			push @$vars, "$switch_type $v = 0;";
 			$switch_info = [ $_->{TYPE}, $v ];
 			$varswitchs->{$v} = $switch_info;
 		}
