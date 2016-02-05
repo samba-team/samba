@@ -162,7 +162,7 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn, bool 
 			talloc_free(be);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		DLIST_ADD_END(ldb_backends, be, struct backends_list_entry);
+		DLIST_ADD_END(ldb_backends, be);
 	}
 
 	be->ops->name = url_prefix;
@@ -240,7 +240,7 @@ int ldb_register_hook(ldb_hook_fn hook_fn)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	lc->hook_fn = hook_fn;
-	DLIST_ADD_END(ldb_hooks, lc, struct ldb_hooks);
+	DLIST_ADD_END(ldb_hooks, lc);
 	return LDB_SUCCESS;
 }
 
@@ -926,7 +926,7 @@ static int ldb_modules_load_path(const char *path, const char *version)
 	le->st_ino = st.st_ino;
 	le->st_dev = st.st_dev;
 
-	DLIST_ADD_END(loaded, le, struct loaded);
+	DLIST_ADD_END(loaded, le);
 
 	/* if it is a directory, recurse */
 	if (S_ISDIR(st.st_mode)) {
