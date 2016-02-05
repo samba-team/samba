@@ -514,6 +514,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         creds = self.creds2
         other_ldb = self.ldb3
         username = creds.get_username()
+        userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
         res = self._check_account(userdn,
@@ -560,7 +561,7 @@ userPassword: thatsAcomplPASS2
 dn: """ + userdn + """
 changetype: modify
 delete: userPassword
-userPassword: thatsAcomplPASS1
+userPassword: """ + userpass + """
 add: userPassword
 userPassword: thatsAcomplPASS2
 """)
@@ -814,6 +815,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 add: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
 """)
+        userpass = "thatsAcomplPASS2x"
+        creds.set_password(userpass)
 
         res = self._check_account(userdn,
                                   badPwdCount=0,
@@ -904,6 +907,7 @@ userPassword: thatsAcomplPASS2XYZ
         creds = self.creds2
         other_ldb = self.ldb3
         username = creds.get_username()
+        userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
         res = self._check_account(userdn,
@@ -945,13 +949,19 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # Correct old password
+        old_utf16 = ("\"%s\"" % userpass).encode('utf-16-le')
+        invalid_utf16 = "\"thatsAcomplPASSX\"".encode('utf-16-le')
+        userpass = "thatsAcomplPASS2"
+        creds.set_password(userpass)
+        new_utf16 = ("\"%s\"" % userpass).encode('utf-16-le')
+
         other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(old_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
 
         res = self._check_account(userdn,
@@ -969,9 +979,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(old_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1010,9 +1020,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1038,9 +1048,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1063,9 +1073,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1088,9 +1098,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1121,13 +1131,19 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
                                   msDSUserAccountControlComputed=0)
 
         # Correct old password
+        old_utf16 = ("\"%s\"" % userpass).encode('utf-16-le')
+        invalid_utf16 = "\"thatsAcomplPASSiX\"".encode('utf-16-le')
+        userpass = "thatsAcomplPASS2x"
+        creds.set_password(userpass)
+        new_utf16 = ("\"%s\"" % userpass).encode('utf-16-le')
+
         other_ldb.modify_ldif("""
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(old_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
 
         res = self._check_account(userdn,
@@ -1146,9 +1162,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1172,9 +1188,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1212,9 +1228,9 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 dn: """ + userdn + """
 changetype: modify
 delete: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1x\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(invalid_utf16) + """
 add: unicodePwd
-unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) + """
+unicodePwd:: """ + base64.b64encode(new_utf16) + """
 """)
             self.fail()
         except LdbError, (num, msg):
@@ -1263,6 +1279,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
     def _test_login_lockout(self, use_kerberos):
         creds = self.creds2
         username = creds.get_username()
+        userpass = creds.get_password()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)
 
         # This unlocks by waiting for account_lockout_duration
@@ -1315,7 +1332,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # Correct old password
-        creds_lockout.set_password("thatsAcomplPASS1")
+        creds_lockout.set_password(userpass)
 
         ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
 
@@ -1430,7 +1447,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
                                   msDSUserAccountControlComputed=dsdb.UF_LOCKOUT)
 
         # The correct password, but we are locked out
-        creds_lockout.set_password("thatsAcomplPASS1")
+        creds_lockout.set_password(userpass)
         try:
             ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
             self.fail()
@@ -1465,7 +1482,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
         # The correct password after letting the timeout expire
 
-        creds_lockout.set_password("thatsAcomplPASS1")
+        creds_lockout.set_password(userpass)
 
         creds_lockout2 = insta_creds(creds_lockout)
 
@@ -1555,7 +1572,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
         badPasswordTime = int(res[0]["badPasswordTime"][0])
 
         # The correct password without letting the timeout expire
-        creds_lockout.set_password("thatsAcomplPASS1")
+        creds_lockout.set_password(userpass)
         ldb_lockout = SamDB(url=host_url, credentials=creds_lockout, lp=lp)
 
         res = self._check_account(userdn,
