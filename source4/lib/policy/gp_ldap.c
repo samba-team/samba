@@ -45,12 +45,6 @@ static const struct gpo_stringmap gpo_flags [] = {
 	{ "GPO_FLAG_MACHINE_DISABLE", GPO_FLAG_MACHINE_DISABLE },
 	{ NULL, 0 }
 };
-static const struct gpo_stringmap gpo_inheritance [] = {
-	{ "GPO_INHERIT", GPO_INHERIT },
-	{ "GPO_BLOCK_INHERITANCE", GPO_BLOCK_INHERITANCE },
-	{ NULL, 0 }
-};
-
 
 static NTSTATUS parse_gpo(TALLOC_CTX *mem_ctx, struct ldb_message *msg, struct gp_object **ret)
 {
