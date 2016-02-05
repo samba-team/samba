@@ -87,7 +87,7 @@ static bool torture_local_dlinklist_simple(struct torture_context *tctx)
 	torture_assert(tctx, el2->next->next == el, "3rd in list");
 
 	torture_comment(tctx, "check DLIST_DEMOTE\n");
-	DLIST_DEMOTE(l1, el, NULL);
+	DLIST_DEMOTE(l1, el);
 	torture_assert(tctx, el->next == NULL, "last in list");
 	torture_assert(tctx, el2->prev == el, "backlink from head");
 

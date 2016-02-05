@@ -253,7 +253,7 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 			flags |= TEVENT_FD_WRITE;
 		}
 		if (flags & fde->flags) {
-			DLIST_DEMOTE(ev->fd_events, fde, struct tevent_fd);
+			DLIST_DEMOTE(ev->fd_events, fde);
 			fde->handler(ev, fde, flags, fde->private_data);
 			return true;
 		}
