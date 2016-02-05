@@ -341,7 +341,7 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 	}
 
 	talloc_set_destructor(opd, opd_destructor);
-	DLIST_ADD_END(open_pd_list, opd, struct aio_open_private_data *);
+	DLIST_ADD_END(open_pd_list, opd);
 	return opd;
 }
 

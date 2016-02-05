@@ -675,7 +675,7 @@ struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, cldap_search_state_queue_done, req);
 
-	DLIST_ADD_END(cldap->searches.list, state, struct cldap_search_state *);
+	DLIST_ADD_END(cldap->searches.list, state);
 
 	return req;
 

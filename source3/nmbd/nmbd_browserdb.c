@@ -120,7 +120,7 @@ struct browse_cache_record *create_browser_in_lmb_cache( const char *work_name,
   
 	browc->ip = ip;
  
-	DLIST_ADD_END(lmb_browserlist, browc, struct browse_cache_record *);
+	DLIST_ADD_END(lmb_browserlist, browc);
 
 	DEBUG(3, ("nmbd_browserdb:create_browser_in_lmb_cache()\n"));
 	DEBUGADD(3, ("  Added lmb cache entry for workgroup %s name %s IP %s "

@@ -140,7 +140,7 @@ static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_
 	rp->opnum = opnum;
 	rp->r = talloc_reference(rp, r);
 
-	DLIST_ADD_END(received_packets, rp, struct received_packet *);
+	DLIST_ADD_END(received_packets, rp);
 
 	switch (opnum) {
 	case 58: {

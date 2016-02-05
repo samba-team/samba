@@ -238,7 +238,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &req->pcd);
 	blr->req = talloc_move(blr, &req);
 
-	DLIST_ADD_END(sconn->smb1.locks.blocking_lock_queue, blr, struct blocking_lock_record *);
+	DLIST_ADD_END(sconn->smb1.locks.blocking_lock_queue, blr);
 	recalc_brl_timeout(sconn);
 
 	/* Ensure we'll receive messages when this is unlocked. */

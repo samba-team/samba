@@ -530,7 +530,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 
 		/* Don't add top to list, we will do that later */
 		if (ldb_attr_cmp("top", current->objectclass->lDAPDisplayName) != 0) {
-			DLIST_ADD_END(unsorted, current, struct class_list *);
+			DLIST_ADD_END(unsorted, current);
 		}
 	}
 
@@ -538,7 +538,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 	/* Add top here, to prevent duplicates */
 	current = talloc(tmp_mem_ctx, struct class_list);
 	current->objectclass = dsdb_class_by_lDAPDisplayName(schema, "top");
-	DLIST_ADD_END(sorted, current, struct class_list *);
+	DLIST_ADD_END(sorted, current);
 
 	/* For each object: find parent chain */
 	for (current = unsorted; current != NULL; current = current->next) {
@@ -554,7 +554,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 
 		new_parent = talloc(tmp_mem_ctx, struct class_list);
 		new_parent->objectclass = dsdb_class_by_lDAPDisplayName(schema, current->objectclass->subClassOf);
-		DLIST_ADD_END(unsorted, new_parent, struct class_list *);
+		DLIST_ADD_END(unsorted, new_parent);
 	}
 
 	/* For each object: order by hierarchy */
@@ -582,7 +582,7 @@ int dsdb_sort_objectClass_attr(struct ldb_context *ldb,
 
 		if (current_lowest != NULL) {
 			DLIST_REMOVE(unsorted,current_lowest);
-			DLIST_ADD_END(sorted,current_lowest, struct class_list *);
+			DLIST_ADD_END(sorted,current_lowest);
 		}
 	}
 

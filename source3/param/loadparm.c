@@ -466,7 +466,7 @@ bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 		return false;
 	}
 
-	DLIST_ADD_END(stored_options, entry, struct lp_stored_option);
+	DLIST_ADD_END(stored_options, entry);
 
 	return true;
 }

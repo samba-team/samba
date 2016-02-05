@@ -277,7 +277,7 @@ struct torture_test *torture_tcase_add_test_const(struct torture_tcase *tcase,
 	test->dangerous = false;
 	test->data = data;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }
@@ -296,7 +296,7 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 	tcase->fixture_persistent = true;
 	tcase->tests = NULL;
 
-	DLIST_ADD_END(suite->testcases, tcase, struct torture_tcase *);
+	DLIST_ADD_END(suite->testcases, tcase);
 
 	return true;
 }
@@ -617,7 +617,7 @@ struct torture_tcase *torture_suite_add_simple_tcase_const(
 	test->data = data;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return tcase;
 }
@@ -651,7 +651,7 @@ struct torture_tcase *torture_suite_add_simple_test(
 	test->fn = run;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return tcase;
 }
@@ -665,7 +665,7 @@ bool torture_suite_add_suite(struct torture_suite *suite,
 	if (child == NULL)
 		return false;
 
-	DLIST_ADD_END(suite->children, child, struct torture_suite *);
+	DLIST_ADD_END(suite->children, child);
 
 	/* FIXME: Check for duplicates and return false if the 
 	 * added suite already exists as a child */
@@ -716,7 +716,7 @@ struct torture_test *torture_tcase_add_simple_test_const(
 	test->data = NULL;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }
@@ -747,7 +747,7 @@ struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 	test->data = NULL;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }

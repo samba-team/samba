@@ -169,8 +169,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 				 * and not handle it as new request
 				 */
 				req->state = NBT_REQUEST_SEND;
-				DLIST_ADD_END(nbtsock->send_queue, req,
-					      struct nbt_name_request *);
+				DLIST_ADD_END(nbtsock->send_queue, req);
 				TEVENT_FD_WRITEABLE(nbtsock->fde);
 				break;
 			}

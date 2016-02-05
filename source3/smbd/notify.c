@@ -327,8 +327,7 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 	request->reply_fn = reply_fn;
 	request->backend_data = NULL;
 
-	DLIST_ADD_END(fsp->notify->requests, request,
-		      struct notify_change_request *);
+	DLIST_ADD_END(fsp->notify->requests, request);
 
 	map->mid = request->req->mid;
 	DLIST_ADD(sconn->smb1.notify_mid_maps, map);

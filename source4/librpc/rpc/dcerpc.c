@@ -1245,7 +1245,7 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	subreq->async.callback = dcerpc_bind_fail_handler;
 	subreq->p = p;
 	subreq->recv_handler = dcerpc_bind_recv_handler;
-	DLIST_ADD_END(p->conn->pending, subreq, struct rpc_request *);
+	DLIST_ADD_END(p->conn->pending, subreq);
 	talloc_set_destructor(subreq, dcerpc_req_dequeue);
 
 	status = dcerpc_send_request(p->conn, &blob, true);
@@ -1603,7 +1603,7 @@ static struct rpc_request *dcerpc_request_send(TALLOC_CTX *mem_ctx,
 	req->request_data.length = stub_data->length;
 	req->request_data.data = stub_data->data;
 
-	DLIST_ADD_END(p->conn->request_queue, req, struct rpc_request *);
+	DLIST_ADD_END(p->conn->request_queue, req);
 	talloc_set_destructor(req, dcerpc_req_dequeue);
 
 	dcerpc_schedule_io_trigger(p->conn);
@@ -2141,7 +2141,7 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	subreq->async.callback = dcerpc_alter_context_fail_handler;
 	subreq->p = p;
 	subreq->recv_handler = dcerpc_alter_context_recv_handler;
-	DLIST_ADD_END(p->conn->pending, subreq, struct rpc_request *);
+	DLIST_ADD_END(p->conn->pending, subreq);
 	talloc_set_destructor(subreq, dcerpc_req_dequeue);
 
 	status = dcerpc_send_request(p->conn, &blob, true);

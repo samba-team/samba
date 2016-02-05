@@ -5264,7 +5264,7 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(session, smbXcli_session_destructor);
 
-	DLIST_ADD_END(conn->sessions, session, struct smbXcli_session *);
+	DLIST_ADD_END(conn->sessions, session);
 	session->conn = conn;
 
 	memcpy(session->smb2_channel.preauth_sha512,
@@ -5294,7 +5294,7 @@ struct smbXcli_session *smbXcli_session_copy(TALLOC_CTX *mem_ctx,
 	session->smb2_channel = src->smb2_channel;
 	session->disconnect_expired = src->disconnect_expired;
 
-	DLIST_ADD_END(src->conn->sessions, session, struct smbXcli_session *);
+	DLIST_ADD_END(src->conn->sessions, session);
 	talloc_set_destructor(session, smbXcli_session_destructor);
 
 	return session;
@@ -5793,7 +5793,7 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 	}
 
 	talloc_set_destructor(session2, smbXcli_session_destructor);
-	DLIST_ADD_END(conn->sessions, session2, struct smbXcli_session *);
+	DLIST_ADD_END(conn->sessions, session2);
 	session2->conn = conn;
 
 	memcpy(session2->smb2_channel.preauth_sha512,

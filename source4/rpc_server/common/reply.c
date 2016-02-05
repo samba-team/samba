@@ -67,13 +67,13 @@ static void dcesrv_call_set_list(struct dcesrv_call_state *call,
 	case DCESRV_LIST_NONE:
 		break;
 	case DCESRV_LIST_CALL_LIST:
-		DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(call->conn->call_list, call);
 		break;
 	case DCESRV_LIST_FRAGMENTED_CALL_LIST:
-		DLIST_ADD_END(call->conn->incoming_fragmented_call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(call->conn->incoming_fragmented_call_list, call);
 		break;
 	case DCESRV_LIST_PENDING_CALL_LIST:
-		DLIST_ADD_END(call->conn->pending_call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(call->conn->pending_call_list, call);
 		break;
 	}
 }
@@ -130,7 +130,7 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 
 	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
-	DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
+	DLIST_ADD_END(call->replies, rep);
 	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
 
 	if (call->conn->call_list && call->conn->call_list->replies) {
@@ -238,7 +238,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 		dcerpc_set_frag_length(&rep->blob, rep->blob.length);
 
-		DLIST_ADD_END(call->replies, rep, struct data_blob_list_item *);
+		DLIST_ADD_END(call->replies, rep);
 
 		stub.data += length;
 		stub.length -= length;

@@ -37,7 +37,7 @@ static void add_response_record(struct subnet_record *subrec,
 	DEBUG(4,("add_response_record: adding response record id:%hu to subnet %s. num_records:%d\n",
 		rrec->response_id, subrec->subnet_name, num_response_packets));
 
-	DLIST_ADD_END(subrec->responselist, rrec, struct response_record *);
+	DLIST_ADD_END(subrec->responselist, rrec);
 }
 
 /***************************************************************************

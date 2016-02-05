@@ -436,7 +436,7 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 
 	for (;*text_list; text_list++) { 
 		if (load_auth_module(*auth_context, *text_list, &t)) {
-		    DLIST_ADD_END(list, t, auth_methods *);
+		    DLIST_ADD_END(list, t);
 		}
 	}
 

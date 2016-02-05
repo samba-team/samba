@@ -437,7 +437,7 @@ static void cli_pull_setup_chunks(struct tevent_req *req)
 		state->next_offset += chunk->total_size;
 		state->remaining -= chunk->total_size;
 
-		DLIST_ADD_END(state->chunks, chunk, NULL);
+		DLIST_ADD_END(state->chunks, chunk);
 		state->num_chunks++;
 		state->num_waiting++;
 
@@ -1250,7 +1250,7 @@ static void cli_push_setup_chunks(struct tevent_req *req)
 		}
 		state->next_offset += chunk->total_size;
 
-		DLIST_ADD_END(state->chunks, chunk, NULL);
+		DLIST_ADD_END(state->chunks, chunk);
 		state->num_chunks++;
 		state->num_waiting++;
 

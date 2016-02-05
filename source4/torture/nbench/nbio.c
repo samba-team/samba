@@ -521,7 +521,7 @@ static bool nb_do_createx(struct ftable *f,
 		f = talloc (NULL, struct ftable);
 		f->locks = NULL;
 		nb_set_createx_params(f, fname, create_options, create_disposition, handle);
-		DLIST_ADD_END(ftable, f, struct ftable *);
+		DLIST_ADD_END(ftable, f);
 	}
 
 	f->handle = handle;
@@ -653,7 +653,7 @@ static bool nb_do_lockx(bool relock, int handle, off_t offset, int size, NTSTATU
 		linfo = talloc (f, struct lock_info);
 		linfo->offset = offset;
 		linfo->size = size;
-		DLIST_ADD_END(f->locks, linfo, struct lock_info *);
+		DLIST_ADD_END(f->locks, linfo);
 	}
 
 	return true;

@@ -509,7 +509,7 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 			talloc_free(z);
 			continue;
 		}
-		DLIST_ADD_END(new_list, z, NULL);
+		DLIST_ADD_END(new_list, z);
 	}
 
 	*zones_ret = new_list;

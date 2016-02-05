@@ -394,7 +394,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 			  "= %u\n", (unsigned int)*pea_total_len, dos_ea_name,
 			  (unsigned int)listp->ea.value.length));
 
-		DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
+		DLIST_ADD_END(ea_list_head, listp);
 
 	}
 
@@ -749,7 +749,7 @@ static struct ea_list *read_ea_name_list(TALLOC_CTX *ctx, const char *pdata, siz
 		}
 
 		offset += (namelen + 1); /* Go past the name + terminating zero. */
-		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
+		DLIST_ADD_END(ea_list_head, eal);
 		DEBUG(10,("read_ea_name_list: read ea name %s\n", eal->ea.name));
 	}
 
@@ -773,7 +773,7 @@ static struct ea_list *read_ea_list(TALLOC_CTX *ctx, const char *pdata, size_t d
 			return NULL;
 		}
 
-		DLIST_ADD_END(ea_list_head, eal, struct ea_list *);
+		DLIST_ADD_END(ea_list_head, eal);
 		offset += bytes_used;
 	}
 

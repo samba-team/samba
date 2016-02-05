@@ -846,7 +846,7 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	}
 	tevent_fd_set_close_fn(s->fde, smbd_open_socket_close_fn);
 
-	DLIST_ADD_END(parent->sockets, s, struct smbd_open_socket *);
+	DLIST_ADD_END(parent->sockets, s);
 
 	return true;
 }

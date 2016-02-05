@@ -2856,7 +2856,7 @@ NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
 			return status;
 		}
 
-		DLIST_ADD_END(table->domains, d, NULL);
+		DLIST_ADD_END(table->domains, d);
 
 		if (d->tdo->trust_attributes & LSA_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) {
 			struct ForestTrustInfo *fti = NULL;

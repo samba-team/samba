@@ -135,7 +135,7 @@ static void add_interface(TALLOC_CTX *mem_ctx, const struct iface_struct *ifs, s
 	   this needs to be a ADD_END, as some tests (such as the
 	   spoolss notify test) depend on the interfaces ordering
 	*/
-	DLIST_ADD_END(*interfaces, iface, NULL);
+	DLIST_ADD_END(*interfaces, iface);
 }
 
 /**

@@ -192,7 +192,7 @@ NTSTATUS wreplsrv_load_partners(struct wreplsrv_service *service)
 			partner->address = address;
 			talloc_steal(partner, partner->address);
 
-			DLIST_ADD_END(service->partners, partner, struct wreplsrv_partner *);
+			DLIST_ADD_END(service->partners, partner);
 		}
 
 		partner->name			= ldb_msg_find_attr_as_string(res->msgs[i], "name", partner->address);
@@ -328,7 +328,7 @@ NTSTATUS wreplsrv_add_table(struct wreplsrv_service *service,
 
 		cur->partner		= wreplsrv_find_partner(service, wins_owner);
 
-		DLIST_ADD_END(table, cur, struct wreplsrv_owner *);
+		DLIST_ADD_END(table, cur);
 		*_table = table;
 	}
 

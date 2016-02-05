@@ -329,7 +329,7 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 
 	/* Enter into the list. */
 	if (referring_cli) {
-		DLIST_ADD_END(referring_cli, cli, struct cli_state *);
+		DLIST_ADD_END(referring_cli, cli);
 	}
 
 	if (referring_cli && referring_cli->requested_posix_capabilities) {

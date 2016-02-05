@@ -130,7 +130,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pullpush_test(
 	test->fn = check_fn;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }
@@ -226,7 +226,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 	test->fn = check_fn;
 	test->dangerous = false;
 
-	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+	DLIST_ADD_END(tcase->tests, test);
 
 	return test;
 }

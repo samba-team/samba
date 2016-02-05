@@ -75,7 +75,7 @@ bool resolve_context_add_method(struct resolve_context *ctx, resolve_name_send_f
 	method->send_fn = send_fn;
 	method->recv_fn = recv_fn;
 	method->privdata = userdata;
-	DLIST_ADD_END(ctx->methods, method, struct resolve_method *);
+	DLIST_ADD_END(ctx->methods, method);
 	return true;
 }
 

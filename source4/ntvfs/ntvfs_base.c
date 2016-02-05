@@ -190,7 +190,7 @@ NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, e
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		ntvfs->depth = i;
-		DLIST_ADD_END(ctx->modules, ntvfs, struct ntvfs_module_context *);
+		DLIST_ADD_END(ctx->modules, ntvfs);
 	}
 
 	if (!ctx->modules) {

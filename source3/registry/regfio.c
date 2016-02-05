@@ -1852,7 +1852,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 			nk->sec_desc->size      = ndr_size_security_descriptor(sec_desc, 0)
 				+ sizeof(uint32_t);
 
-			DLIST_ADD_END( file->sec_desc_list, nk->sec_desc, REGF_SK_REC *);
+			DLIST_ADD_END( file->sec_desc_list, nk->sec_desc);
 
 			/* update the offsets for us and the previous sd in the list.
 			   if this is the first record, then just set the next and prev
