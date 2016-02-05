@@ -88,7 +88,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 	im->cancel_fn		= NULL;
 	im->additional_data	= NULL;
 
-	DLIST_ADD_END(ev->immediate_events, im, struct tevent_immediate *);
+	DLIST_ADD_END(ev->immediate_events, im);
 	talloc_set_destructor(im, tevent_common_immediate_destructor);
 
 	tevent_debug(ev, TEVENT_DEBUG_TRACE,
