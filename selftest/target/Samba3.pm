@@ -606,6 +606,9 @@ sub setup_fileserver($$)
 	my $force_user_valid_users_dir = "$share_dir/force_user_valid_users";
 	push(@dirs, $force_user_valid_users_dir);
 
+	my $smbget_sharedir="$share_dir/smbget";
+	push(@dirs,$smbget_sharedir);
+
 	my $fileserver_options = "
 [lowercase]
 	path = $lower_case_share_dir
@@ -641,7 +644,12 @@ sub setup_fileserver($$)
 	force user = force_user
 	force group = everyone
 	write list = force_user
-	";
+
+[smbget]
+	path = $smbget_sharedir
+	comment = smb username is [%U]
+	guest ok = yes
+";
 
 	my $vars = $self->provision($path,
 				    "FILESERVER",
@@ -1299,6 +1307,7 @@ sub provision($$$$$$$$)
 	my ($max_uid, $max_gid);
 	my ($uid_nobody, $uid_root, $uid_pdbtest, $uid_pdbtest2, $uid_userdup);
 	my ($uid_pdbtest_wkn);
+	my ($uid_smbget);
 	my ($uid_force_user);
 	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers, $gid_domadmins);
 	my ($gid_userdup, $gid_everyone);
@@ -1317,6 +1326,7 @@ sub provision($$$$$$$$)
 	$uid_userdup = $max_uid - 5;
 	$uid_pdbtest_wkn = $max_uid - 6;
 	$uid_force_user = $max_uid - 7;
+	$uid_smbget = $max_uid - 8;
 
 	if ($unix_gids[0] < 0xffff - 8) {
 		$max_gid = 0xffff;
@@ -1697,6 +1707,7 @@ pdbtest2:x:$uid_pdbtest2:$gid_nogroup:pdbtest gecos:$prefix_abs:/bin/false
 userdup:x:$uid_userdup:$gid_userdup:userdup gecos:$prefix_abs:/bin/false
 pdbtest_wkn:x:$uid_pdbtest_wkn:$gid_everyone:pdbtest_wkn gecos:$prefix_abs:/bin/false
 force_user:x:$uid_force_user:$gid_force_user:force user gecos:$prefix_abs:/bin/false
+smbget_user:x:$uid_smbget:$gid_domusers:smbget_user gecos:$prefix_abs:/bin/false
 ";
 	if ($unix_uid != 0) {
 		print PASSWD "root:x:$uid_root:$gid_root:root gecos:$prefix_abs:/bin/false
@@ -1770,6 +1781,7 @@ force_user:x:$gid_force_user:
 
 	createuser($self, $unix_name, $password, $conffile) || die("Unable to create user");
 	createuser($self, "force_user", $password, $conffile) || die("Unable to create force_user");
+	createuser($self, "smbget_user", $password, $conffile) || die("Unable to create smbget_user");
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
