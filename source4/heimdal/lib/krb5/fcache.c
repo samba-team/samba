@@ -690,8 +690,8 @@ fcc_get_principal(krb5_context context,
 		  krb5_principal *principal)
 {
     krb5_error_code ret;
-    int fd;
-    krb5_storage *sp;
+    int fd = 0;
+    krb5_storage *sp = NULL;
 
     ret = init_fcc (context, id, &sp, &fd, NULL);
     if (ret)
