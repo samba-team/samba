@@ -402,7 +402,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 }
 
 /**
- * Fill in credentials for a particular prinicpal, from the secrets database.
+ * Fill in credentials for a particular principal, from the secrets database.
  *
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
