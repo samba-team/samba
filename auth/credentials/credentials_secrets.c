@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    User credentials handling (as regards on-disk files)
@@ -6,17 +6,17 @@
    Copyright (C) Jelmer Vernooij 2005
    Copyright (C) Tim Potter 2001
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -43,24 +43,24 @@
 
 /**
  * Fill in credentials for the machine trust account, from the secrets database.
- * 
+ *
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred, 
+static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 						struct loadparm_context *lp_ctx,
 						struct ldb_context *ldb,
 						const char *base,
-						const char *filter, 
+						const char *filter,
 						time_t secrets_tdb_last_change_time,
 						const char *secrets_tdb_password,
 						char **error_string)
 {
 	TALLOC_CTX *mem_ctx;
-	
+
 	int ldb_ret;
 	struct ldb_message *msg;
-	
+
 	const char *machine_account;
 	const char *password;
 	const char *domain;
@@ -116,23 +116,23 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		talloc_free(mem_ctx);
 		return NT_STATUS_NOT_FOUND;
 	}
-	
+
 	if (lct == secrets_tdb_last_change_time && secrets_tdb_password && strcmp(password, secrets_tdb_password) != 0) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NOT_FOUND;
 	}
-	
+
 	cli_credentials_set_password_last_changed_time(cred, lct);
-	
+
 	machine_account = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 
 	if (!machine_account) {
 		machine_account = ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL);
-		
+
 		if (!machine_account) {
 			const char *ldap_bind_dn = ldb_msg_find_attr_as_string(msg, "ldapBindDn", NULL);
 			if (!ldap_bind_dn) {
-				*error_string = talloc_asprintf(cred, 
+				*error_string = talloc_asprintf(cred,
 								"Could not find 'samAccountName', "
 								"'servicePrincipalName' or "
 								"'ldapBindDn' in secrets record: %s",
@@ -148,20 +148,20 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 
 	salt_principal = ldb_msg_find_attr_as_string(msg, "saltPrincipal", NULL);
 	cli_credentials_set_salt_principal(cred, salt_principal);
-	
+
 	sct = ldb_msg_find_attr_as_int(msg, "secureChannelType", 0);
-	if (sct) { 
+	if (sct) {
 		cli_credentials_set_secure_channel_type(cred, sct);
 	}
-	
+
 	if (!password) {
 		const struct ldb_val *nt_password_hash = ldb_msg_find_ldb_val(msg, "unicodePwd");
 		struct samr_Password hash;
 		ZERO_STRUCT(hash);
 		if (nt_password_hash) {
-			memcpy(hash.hash, nt_password_hash->data, 
+			memcpy(hash.hash, nt_password_hash->data,
 			       MIN(nt_password_hash->length, sizeof(hash.hash)));
-		
+
 			cli_credentials_set_nt_hash(cred, &hash, CRED_SPECIFIED);
 		} else {
 			cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
@@ -170,7 +170,6 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		cli_credentials_set_password(cred, password, CRED_SPECIFIED);
 	}
 
-	
 	domain = ldb_msg_find_attr_as_string(msg, "flatname", NULL);
 	if (domain) {
 		cli_credentials_set_domain(cred, domain, CRED_SPECIFIED);
@@ -196,22 +195,22 @@ static NTSTATUS cli_credentials_set_secrets_lct(struct cli_credentials *cred,
 		talloc_free(keytab);
 	}
 	talloc_free(mem_ctx);
-	
+
 	return NT_STATUS_OK;
 }
 
 
 /**
  * Fill in credentials for the machine trust account, from the secrets database.
- * 
+ *
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
-_PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
+_PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 					      struct loadparm_context *lp_ctx,
 					      struct ldb_context *ldb,
 					      const char *base,
-					      const char *filter, 
+					      const char *filter,
 					      char **error_string)
 {
 	NTSTATUS status = cli_credentials_set_secrets_lct(cred, lp_ctx, ldb, base, filter, 0, NULL, error_string);
@@ -224,7 +223,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 /**
  * Fill in credentials for the machine trust account, from the secrets database.
- * 
+ *
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
@@ -397,14 +396,14 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account_db_ctx(struct cli_credenti
 		/* set anonymous as the fallback, if the machine account won't work */
 		cli_credentials_set_anonymous(cred);
 	}
-	
+
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
 
 /**
  * Fill in credentials for a particular prinicpal, from the secrets database.
- * 
+ *
  * @param cred Credentials structure to fill in
  * @retval NTSTATUS error detailing any failure
  */
@@ -437,9 +436,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 /**
  * Ask that when required, the credentials system will be filled with
  * machine trust account, from the secrets database.
- * 
+ *
  * @param cred Credentials structure to fill in
- * @note This function is used to call the above function after, rather 
+ * @note This function is used to call the above function after, rather
  *       than during, popt processing.
  *
  */
