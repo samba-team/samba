@@ -2630,7 +2630,7 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 		handle, fsp);
 	struct fruit_config_data *config = NULL;
 	AfpInfo *ai = NULL;
-	ssize_t len;
+	ssize_t len = -1;
 	char *name = NULL;
 	char *tmp_base_name = NULL;
 	NTSTATUS status;
