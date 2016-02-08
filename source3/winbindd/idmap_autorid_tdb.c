@@ -602,7 +602,7 @@ static NTSTATUS idmap_autorid_delete_range_by_num_action(struct db_context *db,
 	struct idmap_autorid_delete_range_by_num_ctx *ctx =
 		(struct idmap_autorid_delete_range_by_num_ctx *)private_data;
 	uint32_t rangenum;
-	char *keystr;
+	char *keystr = NULL;
 	char *range_keystr;
 	TDB_DATA val;
 	NTSTATUS status;
