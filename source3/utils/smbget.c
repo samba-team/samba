@@ -163,9 +163,7 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 	}
 }
 
-/* Return 1 on error, 0 on success. */
-
-static int smb_download_dir(const char *base, const char *name, int resume)
+static bool smb_download_dir(const char *base, const char *name, int resume)
 {
 	char path[SMB_MAXPATHLEN];
 	int dirhandle;
@@ -173,7 +171,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 	const char *relname = name;
 	char *tmpname;
 	struct stat remotestat;
-	int ret = 0;
+	bool ok = false;
 
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base,
 		 (base[0] && name[0] && name[0] != '/' &&
@@ -189,7 +187,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		}
 		fprintf(stderr, "Can't open directory %s: %s\n", path,
 			strerror(errno));
-		return 1;
+		return false;
 	}
 
 	while (*relname == '/') {
@@ -206,28 +204,28 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		}
 		if (asprintf(&newname, "%s/%s", tmpname, dirent->name) == -1) {
 			free(tmpname);
-			return 1;
+			return false;
 		}
 		switch (dirent->smbc_type) {
 		case SMBC_DIR:
-			ret = smb_download_dir(base, newname, resume);
+			ok = smb_download_dir(base, newname, resume);
 			break;
 
 		case SMBC_WORKGROUP:
-			ret = smb_download_dir("smb://", dirent->name, resume);
+			ok = smb_download_dir("smb://", dirent->name, resume);
 			break;
 
 		case SMBC_SERVER:
-			ret = smb_download_dir("smb://", dirent->name, resume);
+			ok = smb_download_dir("smb://", dirent->name, resume);
 			break;
 
 		case SMBC_FILE:
-			ret = smb_download_file(base, newname, true, resume,
+			ok = smb_download_file(base, newname, true, resume,
 						false, NULL);
 			break;
 
 		case SMBC_FILE_SHARE:
-			ret = smb_download_dir(base, newname, resume);
+			ok = smb_download_dir(base, newname, resume);
 			break;
 
 		case SMBC_PRINTER_SHARE:
@@ -266,7 +264,7 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 				"Unable to get stats on %s on remote server\n",
 				path);
 			smbc_closedir(dirhandle);
-			return 1;
+			return false;
 		}
 
 		if (chmod(relname, remotestat.st_mode) < 0) {
@@ -274,12 +272,12 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 				"Unable to change mode of local dir %s to %o\n",
 				relname, (unsigned int)remotestat.st_mode);
 			smbc_closedir(dirhandle);
-			return 1;
+			return false;
 		}
 	}
 
 	smbc_closedir(dirhandle);
-	return ret;
+	return ok;
 }
 
 static char *print_time(long t)
