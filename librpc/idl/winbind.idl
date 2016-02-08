@@ -56,11 +56,6 @@ interface winbind
 	[in,out] wbint_TransIDArray *ids
 	);
 
-    NTSTATUS wbint_Uid2Sid(
-	[in] hyper uid,
-	[out] dom_sid *sid
-	);
-
     NTSTATUS wbint_Gid2Sid(
 	[in] hyper gid,
 	[out] dom_sid *sid
