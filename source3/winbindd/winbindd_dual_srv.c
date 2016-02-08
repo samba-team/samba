@@ -222,11 +222,6 @@ done:
 	return status;
 }
 
-NTSTATUS _wbint_Gid2Sid(struct pipes_struct *p, struct wbint_Gid2Sid *r)
-{
-	return idmap_gid_to_sid(r->out.sid, r->in.gid);
-}
-
 NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
 			     struct wbint_UnixIDs2Sids *r)
 {
