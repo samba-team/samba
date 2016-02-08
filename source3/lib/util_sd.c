@@ -418,14 +418,6 @@ bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 	}
 	*p = '\0';
 	p++;
-	/* Try to parse numeric form */
-
-	if (sscanf(p, "%u/%u/%u", &atype, &aflags, &amask) == 3 &&
-	    StringToSid(cli, &sid, str)) {
-		goto done;
-	}
-
-	/* Try to parse text form */
 
 	if (!StringToSid(cli, &sid, str)) {
 		printf("ACE '%s': failed to convert '%s' to SID\n",
@@ -448,6 +440,33 @@ bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 		atype = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_DENIED;
+
+	} else if (strnequal(tok, "0x", 2)) {
+		int result;
+
+		result = sscanf(tok, "%x", &atype);
+		if (result == 0 ||
+		    (atype != SEC_ACE_TYPE_ACCESS_ALLOWED &&
+		     atype != SEC_ACE_TYPE_ACCESS_DENIED)) {
+			printf("ACE '%s': bad hex value for type at '%s'\n",
+			       orig_str, tok);
+			SAFE_FREE(str);
+			TALLOC_FREE(frame);
+			return false;
+		}
+	} else if(tok[0] >= '0' && tok[0] <= '9') {
+		int result;
+
+		result = sscanf(tok, "%u", &atype);
+		if (result == 0 ||
+		    (atype != SEC_ACE_TYPE_ACCESS_ALLOWED &&
+		     atype != SEC_ACE_TYPE_ACCESS_DENIED)) {
+			printf("ACE '%s': bad integer value for type at '%s'\n",
+			       orig_str, tok);
+			SAFE_FREE(str);
+			TALLOC_FREE(frame);
+			return false;
+		}
 	} else {
 		printf("ACE '%s': missing 'ALLOWED' or 'DENIED' entry at '%s'\n",
 			orig_str, tok);
@@ -455,8 +474,6 @@ bool parse_ace(struct cli_state *cli, struct security_ace *ace,
 		TALLOC_FREE(frame);
 		return False;
 	}
-
-	/* Only numeric form accepted for flags at present */
 
 	if (!next_token_talloc(frame, &cp, &tok, "/")) {
 		printf("ACE '%s': bad flags entry at '%s'\n",
