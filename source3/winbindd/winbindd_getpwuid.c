@@ -19,10 +19,12 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libcli/security/dom_sid.h"
 
 struct winbindd_getpwuid_state {
 	struct tevent_context *ev;
-	struct dom_sid sid;
+	struct unixid xid;
+	struct dom_sid *sid;
 	struct winbindd_pw pw;
 };
 
@@ -46,7 +48,10 @@ struct tevent_req *winbindd_getpwuid_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(3, ("getpwuid %d\n", (int)request->data.uid));
 
-	subreq = wb_uid2sid_send(state, ev, request->data.uid);
+	state->xid = (struct unixid) {
+		.id = request->data.uid, .type = ID_TYPE_UID };
+
+	subreq = wb_xids2sids_send(state, ev, &state->xid, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -63,13 +68,17 @@ static void winbindd_getpwuid_uid2sid_done(struct tevent_req *subreq)
 		req, struct winbindd_getpwuid_state);
 	NTSTATUS status;
 
-	status = wb_uid2sid_recv(subreq, &state->sid);
+	status = wb_xids2sids_recv(subreq, state, &state->sid);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	if (is_null_sid(state->sid)) {
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
+		return;
+	}
 
-	subreq = wb_getpwsid_send(state, state->ev, &state->sid, &state->pw);
+	subreq = wb_getpwsid_send(state, state->ev, state->sid, &state->pw);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -99,7 +108,7 @@ NTSTATUS winbindd_getpwuid_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("Could not convert sid %s: %s\n",
-			  sid_string_dbg(&state->sid), nt_errstr(status)));
+			  sid_string_dbg(state->sid), nt_errstr(status)));
 		return status;
 	}
 	response->data.pw = state->pw;
