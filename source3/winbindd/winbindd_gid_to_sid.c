@@ -19,11 +19,12 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "libcli/security/dom_sid.h"
 
 struct winbindd_gid_to_sid_state {
 	struct tevent_context *ev;
-	gid_t gid;
-	struct dom_sid sid;
+	struct unixid xid;
+	struct dom_sid *sid;
 };
 
 static void winbindd_gid_to_sid_done(struct tevent_req *subreq);
@@ -45,7 +46,10 @@ struct tevent_req *winbindd_gid_to_sid_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(3, ("gid_to_sid %d\n", (int)request->data.gid));
 
-	subreq = wb_gid2sid_send(state, ev, request->data.gid);
+	state->xid = (struct unixid) {
+		.id = request->data.gid, .type = ID_TYPE_GID };
+
+	subreq = wb_xids2sids_send(state, ev, &state->xid, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -61,7 +65,7 @@ static void winbindd_gid_to_sid_done(struct tevent_req *subreq)
 		req, struct winbindd_gid_to_sid_state);
 	NTSTATUS status;
 
-	status = wb_gid2sid_recv(subreq, &state->sid);
+	status = wb_xids2sids_recv(subreq, state, &state->sid);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -78,10 +82,13 @@ NTSTATUS winbindd_gid_to_sid_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		DEBUG(5, ("Could not convert sid %s: %s\n",
-			  sid_string_dbg(&state->sid), nt_errstr(status)));
+			  sid_string_dbg(state->sid), nt_errstr(status)));
 		return status;
 	}
-	sid_to_fstring(response->data.sid.sid, &state->sid);
+	if (is_null_sid(state->sid)) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	sid_to_fstring(response->data.sid.sid, state->sid);
 	response->data.sid.type = SID_NAME_USER;
 	return NT_STATUS_OK;
 }
