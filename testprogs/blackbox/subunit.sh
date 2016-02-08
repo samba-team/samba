@@ -96,9 +96,7 @@ testit_expect_failure () {
 
 testok () {
 	name=`basename $1`
-	shift
 	failed=$2
-	shift
 
 	exit $failed
 }
