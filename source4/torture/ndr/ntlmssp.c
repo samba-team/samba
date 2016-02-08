@@ -48,7 +48,6 @@ static bool ntlmssp_NEGOTIATE_MESSAGE_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[0], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[1], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[2], 0x00, "Reserved");
-	torture_assert_int_equal(tctx, r->Version.version.Reserved[3], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.NTLMRevisionCurrent, NTLMSSP_REVISION_W2K3, "NTLMRevisionCurrent");
 
 	return true;
@@ -116,7 +115,6 @@ static bool ntlmssp_CHALLENGE_MESSAGE_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[0], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[1], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[2], 0x00, "Reserved");
-	torture_assert_int_equal(tctx, r->Version.version.Reserved[3], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.NTLMRevisionCurrent, NTLMSSP_REVISION_W2K3, "NTLMRevisionCurrent");
 
 	return true;
@@ -270,7 +268,6 @@ static bool ntlmssp_AUTHENTICATE_MESSAGE_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[0], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[1], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.Reserved[2], 0x00, "Reserved");
-	torture_assert_int_equal(tctx, r->Version.version.Reserved[3], 0x00, "Reserved");
 	torture_assert_int_equal(tctx, r->Version.version.NTLMRevisionCurrent, NTLMSSP_REVISION_W2K3, "NTLMRevisionCurrent");
 
 	return true;
