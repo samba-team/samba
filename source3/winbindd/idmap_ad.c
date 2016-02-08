@@ -322,7 +322,8 @@ again:
 				                 ctx->ad_schema->posix_gidnumber_attr,
 				     &id)) 
 		{
-			DEBUG(1, ("Could not get SID for unix ID %u\n", (unsigned) id));
+			DEBUG(1, ("Could not get unix ID for SID %s\n",
+				  dom_sid_string(talloc_tos(), &sid)));
 			continue;
 		}
 
