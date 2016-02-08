@@ -149,10 +149,6 @@ natgw_set_slave ()
 	_net="${_net_gw%@*}"
 	ip route add "$_net" via "$_natgwip" metric 10
     done
-
-    # Make sure winbindd does not stay bound to this address if we are
-    # no longer NATGW master
-    smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>&1
 }
 
 natgw_ensure_master ()
