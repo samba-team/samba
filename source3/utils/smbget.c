@@ -254,6 +254,12 @@ static bool smb_download_dir(const char *base, const char *name, int resume)
 				newname, dirent->smbc_type);
 			break;
 		}
+
+		if (!ok) {
+			fprintf(stderr, "Failed to download %s: %s\n",
+				newname, strerror(errno));
+			return false;
+		}
 		free(newname);
 	}
 	free(tmpname);
