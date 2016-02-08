@@ -1987,7 +1987,7 @@ TLDAPRC tldap_search(struct tldap_context *ld,
 	rc = tldap_search_all_recv(req, mem_ctx, &msgs, &result);
 	TALLOC_FREE(req);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
-		return rc;
+		goto fail;
 	}
 
 	TALLOC_FREE(ld->last_msg);
