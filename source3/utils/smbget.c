@@ -600,9 +600,10 @@ static bool smb_download_file(const char *base, const char *name,
 	/* Now, download all bytes from offset_download to the end */
 	for (curpos = offset_download; curpos < remotestat.st_size;
 	     curpos += opt.blocksize) {
-		ssize_t bytesread = smbc_read(remotehandle,
-					      readbuf,
-					      opt.blocksize);
+		ssize_t bytesread;
+		ssize_t byteswritten;
+
+		bytesread = smbc_read(remotehandle, readbuf, opt.blocksize);
 		if(bytesread < 0) {
 			fprintf(stderr,
 				"Can't read %zu bytes at offset %jd, file %s\n",
@@ -617,7 +618,8 @@ static bool smb_download_file(const char *base, const char *name,
 
 		total_bytes += bytesread;
 
-		if(write(localhandle, readbuf, bytesread) < 0) {
+		byteswritten = write(localhandle, readbuf, bytesread);
+		if (byteswritten != bytesread) {
 			fprintf(stderr,
 				"Can't write %zd bytes to local file %s at "
 				"offset %jd\n", bytesread, path,
