@@ -69,6 +69,7 @@ static int lock_record(const char *dbpath, const char *dbflags, const char *dbke
 	TDB_DATA key;
 	struct tdb_context *tdb;
 	int tdb_flags;
+	bool realtime;
 
 	/* No error checking since CTDB always passes sane values */
 	tdb_flags = strtol(dbflags, NULL, 0);
@@ -87,10 +88,20 @@ static int lock_record(const char *dbpath, const char *dbflags, const char *dbke
 		return 1;
 	}
 
+	realtime = set_scheduler();
+	if (! realtime) {
+		fprintf(stderr, "%s: Unable to set real-time scheduler priority\n",
+			progname);
+	}
+
 	if (tdb_chainlock(tdb, key) < 0) {
 		fprintf(stderr, "%s: Error getting record lock (%s)\n",
 			progname, tdb_errorstr(tdb));
 		return 1;
+	}
+
+	if (realtime) {
+		reset_scheduler();
 	}
 
 	return 0;
@@ -102,6 +113,7 @@ static int lock_db(const char *dbpath, const char *dbflags)
 {
 	struct tdb_context *tdb;
 	int tdb_flags;
+	bool realtime;
 
 	/* No error checking since CTDB always passes sane values */
 	tdb_flags = strtol(dbflags, NULL, 0);
@@ -112,10 +124,20 @@ static int lock_db(const char *dbpath, const char *dbflags)
 		return 1;
 	}
 
+	realtime = set_scheduler();
+	if (! realtime) {
+		fprintf(stderr, "%s: Unable to set real-time scheduler priority\n",
+			progname);
+	}
+
 	if (tdb_lockall(tdb) < 0) {
 		fprintf(stderr, "%s: Error getting db lock (%s)\n",
 			progname, tdb_errorstr(tdb));
 		return 1;
+	}
+
+	if (realtime) {
+		reset_scheduler();
 	}
 
 	return 0;
@@ -134,11 +156,6 @@ int main(int argc, char *argv[])
 	if (argc < 5) {
 		usage();
 		exit(1);
-	}
-
-	if (!set_scheduler()) {
-		fprintf(stderr, "%s: Unable to set real-time scheduler priority\n",
-			progname);
 	}
 
 	log_fd = atoi(argv[1]);
