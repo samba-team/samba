@@ -57,6 +57,7 @@ typedef char fstring[FSTRING_LEN];
  *     removed WINBINDD_SID_TO_UID
  *     removed WINBINDD_SID_TO_GID
  *     removed WINBINDD_GID_TO_SID
+ *     removed WINBINDD_UID_TO_SID
  */
 #define WINBIND_INTERFACE_VERSION 28
 
@@ -116,7 +117,6 @@ enum winbindd_cmd {
 
 	WINBINDD_SIDS_TO_XIDS,
 	WINBINDD_XIDS_TO_SIDS,
-	WINBINDD_UID_TO_SID,
 
 	WINBINDD_ALLOCATE_UID,
 	WINBINDD_ALLOCATE_GID,
