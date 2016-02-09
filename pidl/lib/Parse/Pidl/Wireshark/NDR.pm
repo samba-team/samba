@@ -59,6 +59,7 @@ sub field2name($)
 {
 	my($field) = shift;
 
+	$field =~ s/^(_)*//g;		# Remove any starting underscores
 	$field =~ s/_/ /g;		# Replace underscores with spaces
 	$field =~ s/(\w+)/\u\L$1/g;	# Capitalise each word
 
