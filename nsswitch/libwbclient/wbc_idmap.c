@@ -160,33 +160,30 @@ wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 
 /* Convert a Unix gid to a Windows SID, allocating a SID if needed */
 wbcErr wbcCtxGidToSid(struct wbcContext *ctx, gid_t gid,
-		      struct wbcDomainSid *sid)
+		      struct wbcDomainSid *psid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcUnixId xid;
+	struct wbcDomainSid sid;
+	struct wbcDomainSid null_sid = { 0 };
+	wbcErr wbc_status;
 
-	if (!sid) {
+	if (!psid) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	/* Initialize request */
+	xid = (struct wbcUnixId) { .type = WBC_ID_TYPE_GID, .id.gid = gid };
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbc_status = wbcCtxUnixIdsToSids(ctx, &xid, 1, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
 
-	request.data.gid = gid;
-
-	/* Make request */
-
-	wbc_status = wbcRequestResponse(ctx, WINBINDD_GID_TO_SID,
-					&request,
-					&response);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	wbc_status = wbcStringToSid(response.data.sid.sid, sid);
-	BAIL_ON_WBC_ERROR(wbc_status);
+	if (memcmp(&sid, &null_sid, sizeof(sid)) != 0) {
+		*psid = sid;
+	} else {
+		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
+	}
 
 done:
 	return wbc_status;
