@@ -250,6 +250,9 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
 	if (sid != NULL) {
 		sid_copy(&domain->sid, sid);
 	}
+	domain->domain_flags = tdc->trust_flags;
+	domain->domain_type = tdc->trust_type;
+	domain->domain_trust_attribs = tdc->trust_attribs;
 
 	/* Is this our primary domain ? */
 	if (strequal(domain_name, get_global_sam_name()) &&
@@ -265,6 +268,10 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
 			domain->active_directory = true;
 		}
 		if (lp_security() == SEC_ADS) {
+			domain->active_directory = true;
+		}
+	} else if (!domain->internal) {
+		if (domain->domain_type == LSA_TRUST_TYPE_UPLEVEL) {
 			domain->active_directory = true;
 		}
 	}
