@@ -944,7 +944,6 @@ bld.SAMBA3_BINARY('winbindd/winbindd',
                  winbindd/winbindd_lookupsid.c
                  winbindd/winbindd_lookupsids.c
                  winbindd/winbindd_lookupname.c
-                 winbindd/winbindd_sid_to_uid.c
                  winbindd/winbindd_sid_to_gid.c
                  winbindd/winbindd_uid_to_sid.c
                  winbindd/winbindd_gid_to_sid.c
