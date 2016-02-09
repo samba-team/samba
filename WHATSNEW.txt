@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.4.  This is *not*
+This is the second release candidate of Samba 4.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -233,6 +233,37 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.4.0rc1
+======================
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11715: s3:vfs:glusterfs: Fix build after quota changes.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11703: s3: smbd: Fix timestamp rounding inside SMB2 create.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 11700:  Streamline 'smbget' options with the rest of the Samba utils.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11696: ctdb: Do not provide a useless pkgconfig file for ctdb.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11699: Crypto.Cipher.ARC4 is not available on some platforms, fallback
+     to M2Crypto.RC4.RC4 then.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 11705: Sockets with htons(IPPROTO_RAW) and CVE-2015-8543.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11690: docs: Add smbspool_krb5_wrapper manpage.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11681: smbd: Show correct disk size for different quota and dfree block
+     sizes.
+
 
 #######################################
 Reporting bugs & Development Discussion
