@@ -1027,21 +1027,21 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	my $ctype_alias = "";
 	my $uint_max = "";
 	if ($actual_ctype->{TYPE} eq "ENUM") {
-	        # Importantly, ENUM values are unsigned in pidl, and
-	        # typically map to uint32
-	        $ctype_alias = enum_type_fn($actual_ctype);
+		# Importantly, ENUM values are unsigned in pidl, and
+		# typically map to uint32
+		$ctype_alias = enum_type_fn($actual_ctype);
 	} elsif ($actual_ctype->{TYPE} eq "BITMAP") {
-	        $ctype_alias = bitmap_type_fn($actual_ctype);
+		$ctype_alias = bitmap_type_fn($actual_ctype);
 	} elsif ($actual_ctype->{TYPE} eq "SCALAR") {
-	        $ctype_alias = expandAlias($actual_ctype->{NAME});
+		$ctype_alias = expandAlias($actual_ctype->{NAME});
 	}
 
 	# This is the unsigned Python Integer -> C integer validation
-	# case.  The signed case is below.
+	# case.	 The signed case is below.
 	if ($ctype_alias  =~ /^(uint[0-9]*|hyper|udlong|udlongr
-                                |NTTIME_hyper|NTTIME|NTTIME_1sec
-                                |uid_t|gid_t)$/x) {
-	        $self->pidl("{");
+				|NTTIME_hyper|NTTIME|NTTIME_1sec
+				|uid_t|gid_t)$/x) {
+		$self->pidl("{");
 		$self->indent;
 		$self->pidl("const unsigned long long uint_max = ndr_sizeof2uintmax(sizeof($target));");
 		$self->pidl("if (PyLong_Check($cvar)) {");
@@ -1092,7 +1092,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	# above, so while it looks like a duplicate, it is not
 	# actually a duplicate.
 	if ($ctype_alias  =~ /^(dlong|char|int[0-9]*|time_t)$/x) {
-	        $self->pidl("{");
+		$self->pidl("{");
 		$self->indent;
 		$self->pidl("const long long int_max = ndr_sizeof2intmax(sizeof($target));");
 		$self->pidl("const long long int_min = -int_max - 1;");

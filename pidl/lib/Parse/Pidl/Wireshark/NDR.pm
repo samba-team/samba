@@ -1143,12 +1143,12 @@ sub Parse($$$$$)
 	my $h_basename = basename($h_filename);
 
 	$self->{res}->{headers} .= "#include \"$h_basename\"\n";
-
 	$self->pidl_code("");
 
 	if (defined($self->{conformance}->{ett})) {
 		register_ett($self,$_) foreach(@{$self->{conformance}->{ett}})
 	}
+
 	# Wireshark protocol registration
 
 	foreach (@$ndr) {
@@ -1299,7 +1299,7 @@ sub DumpHfList($)
 	foreach (sort {$a->{INDEX} cmp $b->{INDEX}} values %{$self->{conformance}->{header_fields}})
 	{
 		$res .= "\t{ &$_->{INDEX},
-	  { ".make_str($_->{NAME}).", ".make_str($_->{FILTER}).", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALSSTRING}, $_->{MASK}, ".make_str_or_null($_->{BLURB}).", HFILL }},
+		{ ".make_str($_->{NAME}).", ".make_str($_->{FILTER}).", $_->{FT_TYPE}, $_->{BASE_TYPE}, $_->{VALSSTRING}, $_->{MASK}, ".make_str_or_null($_->{BLURB}).", HFILL }},
 ";
 	}
 
