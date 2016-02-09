@@ -3085,7 +3085,7 @@ static bool convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file
 	canon_ace *group_ace = NULL;
 	canon_ace *other_ace = NULL;
 
-	if (ace_count != 3) {
+	if (ace_count > 5) {
 		DEBUG(3,("convert_canon_ace_to_posix_perms: Too many ACE "
 			 "entries for file %s to convert to posix perms.\n",
 			 fsp_str_dbg(fsp)));
@@ -3105,6 +3105,43 @@ static bool convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file
 		DEBUG(3,("convert_canon_ace_to_posix_perms: Can't get "
 			 "standard entries for file %s.\n", fsp_str_dbg(fsp)));
 		return False;
+	}
+
+	/*
+	 * Ensure all ACE entries are owner, group or other.
+	 * We can't set if there are any other SIDs.
+	 */
+	for (ace_p = file_ace_list; ace_p; ace_p = ace_p->next) {
+		if (ace_p == owner_ace || ace_p == group_ace ||
+				ace_p == other_ace) {
+			continue;
+		}
+		if (ace_p->owner_type == UID_ACE) {
+			if (ace_p->unix_ug.id != owner_ace->unix_ug.id) {
+				DEBUG(3,("Invalid uid %u in ACE for file %s.\n",
+					(unsigned int)ace_p->unix_ug.id,
+					fsp_str_dbg(fsp)));
+				return false;
+			}
+		} else if (ace_p->owner_type == GID_ACE) {
+			if (ace_p->unix_ug.id != group_ace->unix_ug.id) {
+				DEBUG(3,("Invalid gid %u in ACE for file %s.\n",
+					(unsigned int)ace_p->unix_ug.id,
+					fsp_str_dbg(fsp)));
+				return false;
+			}
+		} else {
+			/*
+			 * There should be no duplicate WORLD_ACE entries.
+			 */
+
+			DEBUG(3,("Invalid type %u, uid %u in "
+				"ACE for file %s.\n",
+				(unsigned int)ace_p->owner_type,
+				(unsigned int)ace_p->unix_ug.id,
+				fsp_str_dbg(fsp)));
+			return false;
+		}
 	}
 
 	*posix_perms = (mode_t)0;
