@@ -123,32 +123,25 @@ wbcErr wbcQueryUidToSid(uid_t uid,
 wbcErr wbcCtxSidToGid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
 		      gid_t *pgid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcUnixId xid;
+	wbcErr wbc_status;
 
 	if (!sid || !pgid) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	/* Initialize request */
+	wbc_status = wbcCtxSidsToUnixIds(ctx, sid, 1, &xid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		goto done;
+	}
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-        wbcSidToStringBuf(sid, request.data.sid, sizeof(request.data.sid));
-
-	/* Make request */
-
-	wbc_status = wbcRequestResponse(ctx, WINBINDD_SID_TO_GID,
-					&request,
-					&response);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	*pgid = response.data.gid;
-
-	wbc_status = WBC_ERR_SUCCESS;
+	if ((xid.type == WBC_ID_TYPE_GID) || (xid.type == WBC_ID_TYPE_BOTH)) {
+		*pgid = xid.id.gid;
+		wbc_status = WBC_ERR_SUCCESS;
+	} else {
+		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
+	}
 
  done:
 	return wbc_status;
