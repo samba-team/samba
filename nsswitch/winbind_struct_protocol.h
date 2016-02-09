@@ -55,6 +55,7 @@ typedef char fstring[FSTRING_LEN];
  * 27: added WINBINDD_LOOKUPSIDS
  * 28: added WINBINDD_XIDS_TO_SIDS
  *     removed WINBINDD_SID_TO_UID
+ *     removed WINBINDD_SID_TO_GID
  */
 #define WINBIND_INTERFACE_VERSION 28
 
@@ -112,7 +113,6 @@ enum winbindd_cmd {
 
 	/* Lookup functions */
 
-	WINBINDD_SID_TO_GID,
 	WINBINDD_SIDS_TO_XIDS,
 	WINBINDD_XIDS_TO_SIDS,
 	WINBINDD_UID_TO_SID,

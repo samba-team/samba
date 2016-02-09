@@ -608,8 +608,6 @@ static struct winbindd_async_dispatch_table async_nonpriv_table[] = {
 	  winbindd_lookupsids_send, winbindd_lookupsids_recv },
 	{ WINBINDD_LOOKUPNAME, "LOOKUPNAME",
 	  winbindd_lookupname_send, winbindd_lookupname_recv },
-	{ WINBINDD_SID_TO_GID, "SID_TO_GID",
-	  winbindd_sid_to_gid_send, winbindd_sid_to_gid_recv },
 	{ WINBINDD_UID_TO_SID, "UID_TO_SID",
 	  winbindd_uid_to_sid_send, winbindd_uid_to_sid_recv },
 	{ WINBINDD_GID_TO_SID, "GID_TO_SID",
