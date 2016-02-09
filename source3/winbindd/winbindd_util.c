@@ -34,6 +34,10 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
+static struct winbindd_domain *
+add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
+			    struct winbindd_methods *methods);
+
 extern struct winbindd_methods cache_methods;
 
 /**
@@ -119,14 +123,40 @@ static bool is_in_internal_domain(const struct dom_sid *sid)
    If the domain already exists in the list,
    return it and don't re-initialize.  */
 
-static struct winbindd_domain *add_trusted_domain(const char *domain_name, const char *alt_name,
-						  struct winbindd_methods *methods,
-						  const struct dom_sid *sid)
+static struct winbindd_domain *
+add_trusted_domain(const char *domain_name, const char *alt_name,
+		   struct winbindd_methods *methods, const struct dom_sid *sid)
+{
+	struct winbindd_tdc_domain tdc;
+
+	ZERO_STRUCT(tdc);
+
+	tdc.domain_name = domain_name;
+	tdc.dns_name = alt_name;
+	if (sid) {
+		sid_copy(&tdc.sid, sid);
+	}
+
+	return add_trusted_domain_from_tdc(&tdc, methods);
+}
+
+/* Add a trusted domain out of a trusted domain cache
+   entry
+*/
+static struct winbindd_domain *
+add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
+			    struct winbindd_methods *methods)
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
 	const char **ignored_domains, **dom;
 	int role = lp_server_role();
+	const char *domain_name = tdc->domain_name;
+	const struct dom_sid *sid = &tdc->sid;
+
+	if (is_null_sid(sid)) {
+		sid = NULL;
+	}
 
 	ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
 	for (dom=ignored_domains; dom && *dom; dom++) {
@@ -138,8 +168,8 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 	/* use alt_name if available to allow DNS lookups */
 
-	if (alt_name && *alt_name) {
-		alternative_name = alt_name;
+	if (tdc->dns_name && *tdc->dns_name) {
+		alternative_name = tdc->dns_name;
 	}
 
 	/* We can't call domain_list() as this function is called from
@@ -151,8 +181,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 			break;
 		}
 
-		if (alternative_name && *alternative_name)
-		{
+		if (alternative_name) {
 			if (strequal(alternative_name, domain->name) ||
 			    strequal(alternative_name, domain->alt_name))
 			{
@@ -160,12 +189,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 			}
 		}
 
-		if (sid)
-		{
-			if (is_null_sid(sid)) {
-				continue;
-			}
-
+		if (sid != NULL) {
 			if (dom_sid_equal(sid, &domain->sid)) {
 				break;
 			}
@@ -219,11 +243,11 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	domain->internal = is_internal_domain(sid);
 	domain->sequence_number = DOM_SEQUENCE_NONE;
 	domain->last_seq_check = 0;
-	domain->initialized = False;
+	domain->initialized = false;
 	domain->online = is_internal_domain(sid);
 	domain->check_online_timeout = 0;
 	domain->dc_probe_pid = (pid_t)-1;
-	if (sid) {
+	if (sid != NULL) {
 		sid_copy(&domain->sid, sid);
 	}
 
@@ -252,9 +276,9 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 
 	setup_domain_child(domain);
 
-	DEBUG(2,("Added domain %s %s %s\n",
-		 domain->name, domain->alt_name,
-		 &domain->sid?sid_string_dbg(&domain->sid):""));
+	DEBUG(2,
+	      ("Added domain %s %s %s\n", domain->name, domain->alt_name,
+	       !is_null_sid(&domain->sid) ? sid_string_dbg(&domain->sid) : ""));
 
 	return domain;
 }
@@ -438,10 +462,8 @@ static void rescan_forest_root_trusts( void )
 		d = find_domain_from_name_noinit( dom_list[i].domain_name );
 
 		if ( !d ) {
-			d = add_trusted_domain( dom_list[i].domain_name,
-						dom_list[i].dns_name,
-						&cache_methods,
-						&dom_list[i].sid );
+			d = add_trusted_domain_from_tdc(&dom_list[i],
+							&cache_methods);
 		}
 
 		if (d == NULL) {
@@ -507,10 +529,8 @@ static void rescan_forest_trusts( void )
 			   about it */
 
 			if ( !d ) {
-				d = add_trusted_domain( dom_list[i].domain_name,
-							dom_list[i].dns_name,
-							&cache_methods,
-							&dom_list[i].sid );
+				d = add_trusted_domain_from_tdc(&dom_list[i],
+								&cache_methods);
 			}
 
 			if (d == NULL) {
