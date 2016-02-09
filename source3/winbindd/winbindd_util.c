@@ -343,24 +343,37 @@ static void trustdom_list_done(struct tevent_req *req)
 	struct winbindd_response *response;
 	int res, err;
 	char *p;
+	struct winbindd_tdc_domain trust_params = {0};
+	ptrdiff_t extra_len;
 
 	res = wb_domain_request_recv(req, state, &response, &err);
 	if ((res == -1) || (response->result != WINBINDD_OK)) {
-		DEBUG(1, ("Could not receive trustdoms\n"));
+		DBG_WARNING("Could not receive trustdoms\n");
 		TALLOC_FREE(state);
 		return;
 	}
 
+	if (response->length < sizeof(struct winbindd_response)) {
+		DBG_ERR("ill-formed trustdom response - short length\n");
+		TALLOC_FREE(state);
+		return;
+	}
+
+	extra_len = response->length - sizeof(struct winbindd_response);
+
 	p = (char *)response->extra_data.data;
 
-	while ((p != NULL) && (*p != '\0')) {
+	while ((p - (char *)response->extra_data.data) < extra_len) {
 		char *q, *sidstr, *alt_name;
-		struct dom_sid sid;
-		char *alternate_name = NULL;
+
+		DBG_DEBUG("parsing response line '%s'\n", p);
+
+		ZERO_STRUCT(trust_params);
+		trust_params.domain_name = p;
 
 		alt_name = strchr(p, '\\');
 		if (alt_name == NULL) {
-			DEBUG(0, ("Got invalid trustdom response\n"));
+			DBG_ERR("Got invalid trustdom response\n");
 			break;
 		}
 
@@ -369,26 +382,52 @@ static void trustdom_list_done(struct tevent_req *req)
 
 		sidstr = strchr(alt_name, '\\');
 		if (sidstr == NULL) {
-			DEBUG(0, ("Got invalid trustdom response\n"));
+			DBG_ERR("Got invalid trustdom response\n");
 			break;
 		}
 
 		*sidstr = '\0';
 		sidstr += 1;
 
-		q = strchr(sidstr, '\n');
-		if (q != NULL)
-			*q = '\0';
+		/* use the real alt_name if we have one, else pass in NULL */
+		if (!strequal(alt_name, "(null)")) {
+			trust_params.dns_name = alt_name;
+		}
 
-		if (!string_to_sid(&sid, sidstr)) {
+		q = strtok(sidstr, "\\");
+		if (q == NULL) {
+			DBG_ERR("Got invalid trustdom response\n");
+			break;
+		}
+
+		if (!string_to_sid(&trust_params.sid, sidstr)) {
 			DEBUG(0, ("Got invalid trustdom response\n"));
 			break;
 		}
 
-		/* use the real alt_name if we have one, else pass in NULL */
+		q = strtok(NULL, "\\");
+		if (q == NULL) {
+			DBG_ERR("Got invalid trustdom response\n");
+			break;
+		}
 
-		if ( !strequal( alt_name, "(null)" ) )
-			alternate_name = alt_name;
+		trust_params.trust_flags = (uint32_t)strtoul(q, NULL, 10);
+
+		q = strtok(NULL, "\\");
+		if (q == NULL) {
+			DBG_ERR("Got invalid trustdom response\n");
+			break;
+		}
+
+		trust_params.trust_type = (uint32_t)strtoul(q, NULL, 10);
+
+		q = strtok(NULL, "\n");
+		if (q == NULL) {
+			DBG_ERR("Got invalid trustdom response\n");
+			break;
+		}
+
+		trust_params.trust_attribs = (uint32_t)strtoul(q, NULL, 10);
 
 		/*
 		 * We always call add_trusted_domain() cause on an existing
@@ -396,13 +435,10 @@ static void trustdom_list_done(struct tevent_req *req)
 		 * This is important because we need the SID for sibling
 		 * domains.
 		 */
-		(void)add_trusted_domain(p, alternate_name,
-					    &cache_methods,
-					    &sid);
+		(void)add_trusted_domain_from_tdc(&trust_params,
+						  &cache_methods);
 
-		p=q;
-		if (p != NULL)
-			p += 1;
+		p = q + strlen(q) + 1;
 	}
 
 	/*

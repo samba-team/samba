@@ -181,11 +181,12 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 		}
 
 		extra_data = talloc_asprintf_append_buffer(
-			extra_data, "%s\\%s\\%s\n",
-			trusts.array[i].netbios_name,
-			trusts.array[i].dns_name,
-			sid_string_talloc(state->mem_ctx,
-					  trusts.array[i].sid));
+		    extra_data, "%s\\%s\\%s\\%u\\%u\\%u\n",
+		    trusts.array[i].netbios_name, trusts.array[i].dns_name,
+		    sid_string_talloc(state->mem_ctx, trusts.array[i].sid),
+		    trusts.array[i].trust_flags,
+		    (uint32_t)trusts.array[i].trust_type,
+		    trusts.array[i].trust_attributes);
 	}
 
 	/* add our primary domain */
