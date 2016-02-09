@@ -437,9 +437,9 @@ sub SwitchType($$;$)
 	return $switch_type
 }
 
-sub Element($$$$$)
+sub Element($$$$$$)
 {
-	my ($self,$e,$pn,$ifname,$isoruseswitch) = @_;
+	my ($self,$e,$pn,$ifname,$isoruseswitch,%switchvars) = @_;
 
 	my $dissectorname = "$ifname\_dissect\_element\_".StripPrefixes($pn, $self->{conformance}->{strip_prefixes})."\_".StripPrefixes($e->{NAME}, $self->{conformance}->{strip_prefixes});
 
@@ -449,6 +449,7 @@ sub Element($$$$$)
 		my $type = $isoruseswitch->[0];
 		my $name = $isoruseswitch->[1];
 
+		my $switch_dt =  getType($type);
 		my $switch_raw_type = SwitchType($e, $type, "uint32");
 		if (not defined($switch_raw_type)) {
 			die("Unknown type[$type]\n");
@@ -456,7 +457,22 @@ sub Element($$$$$)
 		my $switch_type = "g${switch_raw_type}";
 
 		$moreparam = ", $switch_type *".$name;
-		$param = $name;
+
+		if (($e->{PROPERTIES}->{switch_is} eq "") && ($switchvars{$name}) &&
+			#not a "native" type
+			(!($type =~ /^uint(8|16|1632|32|3264|64)/))) {
+			$param = $name;
+		} elsif ( $switch_dt->{DATA}->{TYPE} eq "ENUM") {
+			$param = $name;
+		} else {
+			$param = "*".$name;
+		}
+
+		if ($name ne "") {
+			$call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, di, drep, &$name);";
+		} else {
+			$call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, di, drep);";
+		}
 	} else {
 		$moreparam = "";
 		$call_code = "offset = $dissectorname(tvb, offset, pinfo, tree, di, drep);";
@@ -504,7 +520,9 @@ sub Element($$$$$)
 	foreach (@{$e->{LEVELS}}) {
 		if (defined $_->{SWITCH_IS}) {
 			$oldparam = $param;
-			$param = "*$param";
+			if (($param ne "0") && (!($param =~ /\*/))) {
+				$param = "*$param";
+			}
 		}
 		next if ($_->{TYPE} eq "SWITCH");
 		next if (defined($self->{conformance}->{noemit}->{"$dissectorname$add"}));
@@ -539,7 +557,7 @@ sub Function($$$)
 	my %dissectornames;
 
 	foreach (@{$fn->{ELEMENTS}}) {
-	    $dissectornames{$_->{NAME}} = $self->Element($_, $fn->{NAME}, $ifname, undef) if not defined($dissectornames{$_->{NAME}});
+	    $dissectornames{$_->{NAME}} = $self->Element($_, $fn->{NAME}, $ifname, undef, undef) if not defined($dissectornames{$_->{NAME}});
 	}
 
 	my $fn_name = $_->{NAME};
@@ -643,9 +661,11 @@ sub Struct($$$$)
 	my $varswitchs = {};
 	# will contain the switch var declaration;
 	my $vars = [];
+	my %switch_hash;
 	foreach (@{$e->{ELEMENTS}}) {
 		if (has_property($_, "switch_is")) {
 			$varswitchs->{$_->{PROPERTIES}->{switch_is}} = [];
+			$switch_hash{ $_->{PROPERTIES}->{switch_is}} =  $_->{PROPERTIES}->{switch_is};
 		}
 	}
 	foreach (@{$e->{ELEMENTS}}) {
@@ -660,7 +680,9 @@ sub Struct($$$$)
 			}
 			my $switch_type = "g${switch_raw_type}";
 
-			push @$vars, "$switch_type $v = 0;";
+			if ($switch_type ne "") {
+				push @$vars, "$switch_type $v = 0;";
+			}
 			$switch_info = [ $_->{TYPE}, $v ];
 			$varswitchs->{$v} = $switch_info;
 		}
@@ -670,7 +692,7 @@ sub Struct($$$$)
 			$switch_info = $varswitchs->{$varswitch};
 		}
 
-		$res.="\t".$self->Element($_, $name, $ifname, $switch_info)."\n\n";
+		$res.="\t".$self->Element($_, $name, $ifname, $switch_info, %switch_hash)."\n\n";
 	}
 
 	my $doalign = undef;
@@ -763,7 +785,7 @@ sub Union($$$$)
 	foreach (@{$e->{ELEMENTS}}) {
 		$res.="\n\t\t$_->{CASE}:\n";
 		if ($_->{TYPE} ne "EMPTY") {
-			$res.="\t\t\t".$self->Element($_, $name, $ifname, undef)."\n";
+			$res.="\t\t\t".$self->Element($_, $name, $ifname, undef, undef)."\n";
 		}
 		$res.="\t\tbreak;\n";
 	}
