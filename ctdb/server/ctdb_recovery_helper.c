@@ -667,7 +667,7 @@ static void recover_db_name_done(struct tevent_req *subreq)
 	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		LOG("control GET_DBNAME failed for db=0x%x\n, ret=%d",
+		LOG("control GET_DBNAME failed for db=0x%x, ret=%d\n",
 		    state->db_id, ret);
 		tevent_req_error(req, ret);
 		return;
@@ -675,7 +675,7 @@ static void recover_db_name_done(struct tevent_req *subreq)
 
 	ret = ctdb_reply_control_get_dbname(reply, state, &state->db_name);
 	if (ret != 0) {
-		LOG("control GET_DBNAME failed for db=0x%x\n, ret=%d\n",
+		LOG("control GET_DBNAME failed for db=0x%x, ret=%d\n",
 		    state->db_id, ret);
 		tevent_req_error(req, EPROTO);
 		return;
@@ -983,10 +983,10 @@ static void recover_db_transaction_committed(struct tevent_req *subreq)
 						       err_list, &pnn);
 		if (ret2 != 0) {
 			LOG("control DB_TRANSACTION_COMMIT failed for db %s"
-			    " on node %u, ret=%d", state->db_name, pnn, ret2);
+			    " on node %u, ret=%d\n", state->db_name, pnn, ret2);
 		} else {
-			LOG("control DB_TRANSACTION_COMMIT failed for db %s\n,"
-			    " ret=%d", state->db_name, ret);
+			LOG("control DB_TRANSACTION_COMMIT failed for db %s,"
+			    " ret=%d\n", state->db_name, ret);
 		}
 		tevent_req_error(req, ret);
 		return;
