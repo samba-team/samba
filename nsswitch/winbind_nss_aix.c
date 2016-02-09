@@ -609,6 +609,14 @@ static attrval_t pwd_to_sid(struct passwd *pwd)
 
 	request.data.uid = pwd->pw_uid;
 
+#if 0
+	/*
+	 * Removed because WINBINDD_UID_TO_SID is replaced by
+	 * WINBINDD_XIDS_TO_SIDS. I don't have an AIX build
+	 * environment around, so I did not convert this call. If
+	 * someone stumbles over this, please contact me:
+	 * vl@samba.org, I'll convert this.
+	 */
 	if (winbindd_request_response(NULL, WINBINDD_UID_TO_SID,
 				      &request, &response) !=
 	    NSS_STATUS_SUCCESS) {
@@ -617,6 +625,9 @@ static attrval_t pwd_to_sid(struct passwd *pwd)
 		r.attr_flag = 0;
 		r.attr_un.au_char = strdup(response.data.sid.sid);
 	}
+#else
+	r.attr_flag = ENOENT;
+#endif
 
 	return r;
 }
