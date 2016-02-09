@@ -63,19 +63,6 @@ NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid, struct group *result, char *buffer
 NSS_STATUS _nss_winbind_initgroups_dyn(char *user, gid_t group, long int *start,
 				       long int *size, gid_t **groups,
 				       long int limit, int *errnop);
-NSS_STATUS _nss_winbind_getusersids(const char *user_sid, char **group_sids,
-				    int *num_groups, char *buffer, size_t buf_size,
-				    int *errnop);
-NSS_STATUS _nss_winbind_nametosid(const char *name, char **sid, char *buffer,
-				  size_t buflen, int *errnop);
-NSS_STATUS _nss_winbind_sidtoname(const char *sid, char **name, char *buffer,
-				  size_t buflen, int *errnop);
-NSS_STATUS _nss_winbind_sidtouid(const char *sid, uid_t *uid, int *errnop);
-NSS_STATUS _nss_winbind_sidtogid(const char *sid, gid_t *gid, int *errnop);
-NSS_STATUS _nss_winbind_uidtosid(uid_t uid, char **sid, char *buffer,
-				 size_t buflen, int *errnop);
-NSS_STATUS _nss_winbind_gidtosid(gid_t gid, char **sid, char *buffer,
-				 size_t buflen, int *errnop);
 
 int
 netbsdwinbind_endgrent(void *nsrv, void *nscb, va_list ap)
