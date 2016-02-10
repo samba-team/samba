@@ -270,6 +270,8 @@ static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
 
 	ret = tdb_traverse_read(recdb->db->tdb, recdb_traverse, &state);
 	if (ret == -1 || state.failed) {
+		LOG("Failed to marshall recovery records for %s\n",
+		    recdb->db_name);
 		TALLOC_FREE(state.recbuf);
 		return NULL;
 	}
