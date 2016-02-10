@@ -217,6 +217,13 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		return NT_STATUS_OK;
 	}
 
+	if (data.dptr[data.dsize-1] != '\0') {
+		DBG_WARNING("Invalid range %"PRIu32"\n", range_number);
+		TALLOC_FREE(data.dptr);
+		map->status = ID_UNKNOWN;
+		return NT_STATUS_OK;
+	}
+
 	if (strncmp((const char *)data.dptr,
 		    ALLOC_RANGE,
 		    strlen(ALLOC_RANGE)) == 0) {
