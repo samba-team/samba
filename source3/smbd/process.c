@@ -3903,6 +3903,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	struct timeval tv = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv);
+	char *chroot_dir = NULL;
+	int rc;
 
 	status = smbXsrv_client_create(ev_ctx, ev_ctx, msg_ctx, now, &client);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4024,17 +4026,22 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("Could not open account policy tdb.\n");
 	}
 
-	if (*lp_root_directory(talloc_tos())) {
-		if (chroot(lp_root_directory(talloc_tos())) != 0) {
-			DEBUG(0,("Failed to change root to %s\n",
-				 lp_root_directory(talloc_tos())));
+	chroot_dir = lp_root_directory(talloc_tos());
+	if (chroot_dir[0] != '\0') {
+		rc = chdir(chroot_dir);
+		if (rc != 0) {
+			DBG_ERR("Failed to chdir to %s\n", chroot_dir);
+			exit_server("Failed to chdir()");
+		}
+
+		rc = chroot(chroot_dir);
+		if (rc != 0) {
+			DBG_ERR("Failed to change root to %s\n", chroot_dir);
 			exit_server("Failed to chroot()");
 		}
-		if (chdir("/") == -1) {
-			DEBUG(0,("Failed to chdir to / on chroot to %s\n", lp_root_directory(talloc_tos())));
-			exit_server("Failed to chroot()");
-		}
-		DEBUG(0,("Changed root to %s\n", lp_root_directory(talloc_tos())));
+		DBG_WARNING("Changed root to %s\n", chroot_dir);
+
+		TALLOC_FREE(chroot_dir);
 	}
 
 	if (!file_init(sconn)) {
