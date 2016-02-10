@@ -348,11 +348,9 @@ sub ElementLevel($$$$$$$$)
 			if ($self->{conformance}->{imports}->{$l->{DATA_TYPE}}) {
 				$call = $self->{conformance}->{imports}->{$l->{DATA_TYPE}}->{DATA};
 				$self->{conformance}->{imports}->{$l->{DATA_TYPE}}->{USED} = 1;
-
 			} elsif (defined($self->{conformance}->{imports}->{"$pn.$e->{NAME}"})) {
 				$call = $self->{conformance}->{imports}->{"$pn.$e->{NAME}"}->{DATA};
 				$self->{conformance}->{imports}->{"$pn.$e->{NAME}"}->{USED} = 1;
-
 			} elsif (defined($self->{conformance}->{types}->{$l->{DATA_TYPE}})) {
 				$call= $self->{conformance}->{types}->{$l->{DATA_TYPE}}->{DISSECTOR_NAME};
 				$self->{conformance}->{types}->{$l->{DATA_TYPE}}->{USED} = 1;
@@ -714,11 +712,8 @@ sub Struct($$$$)
 	if($res) {
 		$self->pidl_code("proto_tree *tree = NULL;");
 	}
-	if (defined($doalign)) {
-		$self->pidl_code("dcerpc_info *di = (dcerpc_info *)pinfo->private_data;");
-		if ($doalign == 0) {
-			$self->pidl_code("gboolean oldalign = di->no_align;");
-		}
+	if (defined($doalign) and $doalign == 0) {
+		$self->pidl_code("gboolean oldalign = di->no_align;");
 	}
 	$self->pidl_code("int old_offset;");
 	$self->pidl_code("");
