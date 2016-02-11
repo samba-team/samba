@@ -571,7 +571,7 @@ int main(int argc, const char ** argv)
 	/* Block counts. */
 	set_arg_val("count", (uint64_t)-1);
 	set_arg_val("seek", (uint64_t)0);
-	set_arg_val("seek", (uint64_t)0);
+	set_arg_val("skip", (uint64_t)0);
 	/* Files. */
 	set_arg_val("if", NULL);
 	set_arg_val("of", NULL);
