@@ -184,7 +184,6 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 	int count;
 	int total = 0;
 	size_t copy_size;
-	uint64_t if_speed = 1000 * 1000 * 1000; /* 1GBit */
 
 	if (getifaddrs(&iflist) < 0) {
 		return -1;
@@ -209,6 +208,7 @@ static int _get_interfaces(TALLOC_CTX *mem_ctx, struct iface_struct **pifaces)
 
 	/* Loop through interfaces, looking for given IP address */
 	for (ifptr = iflist; ifptr != NULL; ifptr = ifptr->ifa_next) {
+		uint64_t if_speed = 1000 * 1000 * 1000; /* 1Gbps */
 
 		if (!ifptr->ifa_addr || !ifptr->ifa_netmask) {
 			continue;
