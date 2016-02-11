@@ -772,13 +772,21 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
 	return NULL;
 }
 
-int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
+static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
+					  struct ldb_message *msg,
+					  const char *name,
+					  const char *set_value,
+					  bool *added)
 {
 	int ret;
 	struct ldb_message_element *el;
 
        	el = ldb_msg_find_element(msg, name);
 	if (el) {
+		if (added != NULL) {
+			*added = false;
+		}
+
 		return LDB_SUCCESS;
 	}
 
@@ -787,7 +795,15 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
 		return ret;
 	}
 	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+	if (added != NULL) {
+		*added = true;
+	}
 	return LDB_SUCCESS;
+}
+
+int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
+{
+	return samdb_find_or_add_attribute_ex(ldb, msg, name, set_value, NULL);
 }
 
 /*
@@ -5225,12 +5241,15 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
  * 	codePage, countryCode, lastLogoff, lastLogon
  * 	logonCount, pwdLastSet
  */
-int dsdb_user_obj_set_defaults(struct ldb_context *ldb, struct ldb_message *usr_obj)
+int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
+			       struct ldb_message *usr_obj,
+			       struct ldb_request *req)
 {
 	int i, ret;
 	const struct attribute_values {
 		const char *name;
 		const char *value;
+		const char *add_control;
 	} map[] = {
 		{
 			.name = "accountExpires",
@@ -5266,15 +5285,29 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb, struct ldb_message *usr_
 		},
 		{
 			.name = "pwdLastSet",
-			.value = "0"
+			.value = "0",
+			.add_control = DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID,
 		}
 	};
 
 	for (i = 0; i < ARRAY_SIZE(map); i++) {
-		ret = samdb_find_or_add_attribute(ldb, usr_obj,
-						  map[i].name, map[i].value);
+		bool added = false;
+
+		ret = samdb_find_or_add_attribute_ex(ldb, usr_obj,
+						     map[i].name,
+						     map[i].value,
+						     &added);
 		if (ret != LDB_SUCCESS) {
 			return ret;
+		}
+
+		if (req != NULL && added && map[i].add_control != NULL) {
+			ret = ldb_request_add_control(req,
+						      map[i].add_control,
+						      false, NULL);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 	}
 

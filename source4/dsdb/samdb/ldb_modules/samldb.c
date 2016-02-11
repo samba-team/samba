@@ -1126,7 +1126,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		bool uac_generated = false, uac_add_flags = false;
 
 		/* Step 1.2: Default values */
-		ret = dsdb_user_obj_set_defaults(ldb, ac->msg);
+		ret = dsdb_user_obj_set_defaults(ldb, ac->msg, ac->req);
 		if (ret != LDB_SUCCESS) return ret;
 
 		/* On add operations we might need to generate a

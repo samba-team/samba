@@ -239,7 +239,7 @@ static int tr_restore_attributes(struct ldb_context *ldb, struct ldb_message *cu
 		/* restoring 'user' instance attribute is heavily borrowed from samldb.c */
 
 		/* Default values */
-		ret = dsdb_user_obj_set_defaults(ldb, new_msg);
+		ret = dsdb_user_obj_set_defaults(ldb, new_msg, NULL);
 		if (ret != LDB_SUCCESS) return ret;
 
 		/* Following are set only while reanimating objects */
