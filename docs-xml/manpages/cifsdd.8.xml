@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="smbspool.8">
+
+<refmeta>
+	<refentrytitle>cifsdd</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.4</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>cifsdd</refname>
+	<refpurpose>convert and copy a file over SMB</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>cifsdd</command>
+		<arg choice="opt">OPERAND</arg>...
+	</cmdsynopsis>
+	<cmdsynopsis>
+		<command>cifsdd</command>
+		<arg choice="plain">OPTION</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>Copy a file, converting and formatting according to the operands.</para>
+
+	<variablelist>
+		<varlistentry>
+			<term>bs=BYTES</term>
+			<listitem><para>read and write up to BYTES bytes at a time (default: 4096)</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>ibs=BYTES</term>
+			<listitem><para>read up to BYTES bytes at a time (default: 4096)</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>obs=BYTES</term>
+			<listitem><para>write BYTES bytes at a time (default: 4096)</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+			<term>if=FILE</term>
+			<listitem><para>read from FILE instead of stdin</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>of=FILE</term>
+			<listitem><para>write to FILE instead of stdout</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+			<term>count=N</term>
+			<listitem><para>copy only N input blocks</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>seek=N</term>
+			<listitem><para>skip N obs-sized blocks at start of output</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>skip=N</term>
+			<listitem><para>skip N ibs-sized blocks at start of input</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+			<term>direct</term>
+			<listitem><para>use direct I/O for data</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>sync</term>
+			<listitem><para>use synchronous writes</para></listitem>
+		</varlistentry>
+		<varlistentry>
+			<term>oplock</term>
+			<listitem><para>take oplocks on the input and output files</para></listitem>
+		</varlistentry>
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The cifsdd manpage was written by Andreas
+		Schneider.</para>
+</refsect1>
+
+</refentry>
