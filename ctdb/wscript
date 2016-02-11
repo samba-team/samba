@@ -315,7 +315,7 @@ def build(bld):
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_aix.c')
     elif sys.platform.startswith('freebsd'):
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_freebsd.c')
-    elif sys.platform == 'kfreebsd':
+    elif sys.platform.startswith('gnukfreebsd'):
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_kfreebsd.c')
     elif sys.platform == 'gnu':
         CTDB_SYSTEM_SRC = bld.SUBDIR('common', 'system_gnu.c')
