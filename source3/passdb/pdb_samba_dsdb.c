@@ -366,7 +366,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 	/* If we set a plaintext password, the system will
 	 * force the pwdLastSet to now() */
 	if (need_update(sam, PDB_PASSLASTSET)) {
-		dsdb_flags = DSDB_PASSWORD_BYPASS_LAST_SET;
+		dsdb_flags |= DSDB_PASSWORD_BYPASS_LAST_SET;
 
 		ret |= pdb_samba_dsdb_add_time(msg, "pwdLastSet",
 					   pdb_get_pass_last_set_time(sam));
@@ -473,7 +473,7 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 		}
 		if (changed_lm_pw || changed_nt_pw || changed_history) {
 			/* These attributes can only be modified directly by using a special control */
-			dsdb_flags = DSDB_BYPASS_PASSWORD_HASH;
+			dsdb_flags |= DSDB_BYPASS_PASSWORD_HASH;
 		}
 	}
 
