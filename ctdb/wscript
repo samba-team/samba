@@ -181,6 +181,7 @@ def configure(conf):
     conf.env.CTDB_ETCDIR = os.path.join(conf.env.SYSCONFDIR, 'ctdb')
     conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
     conf.env.CTDB_RUNDIR = os.path.join(conf.env.LOCALSTATEDIR, 'run/ctdb')
+    conf.env.CTDB_HELPER_BINDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb')
 
     if Options.options.ctdb_logdir:
         conf.env.CTDB_LOGDIR = Options.options.ctdb_logdir
@@ -199,7 +200,7 @@ def configure(conf):
                        -DCTDB_ETCDIR=\"%s\"
                        -DCTDB_VARDIR=\"%s\"
                        -DCTDB_RUNDIR=\"%s\"''' % (
-                    conf.env.CTDB_BINDIR,
+                    conf.env.CTDB_HELPER_BINDIR,
                     conf.env.CTDB_LOGDIR,
                     conf.env.CTDB_ETCDIR,
                     conf.env.CTDB_VARDIR,
@@ -432,19 +433,19 @@ def build(bld):
                      source='server/ctdb_lock_helper.c',
                      deps='samba-util ctdb-system talloc tdb',
                      includes='include',
-                     install_path='${BINDIR}')
+                     install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_event_helper',
                      source='server/ctdb_event_helper.c',
                      includes='include',
                      deps='samba-util ctdb-system replace tdb',
-                     install_path='${BINDIR}')
+                     install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_recovery_helper',
                      source='server/ctdb_recovery_helper.c',
                      deps='''ctdb-client2 ctdb-protocol ctdb-util
                              samba-util replace tdb''',
-                     install_path='${BINDIR}')
+                     install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_GENERATOR('ctdb-smnotify-h',
                         source='utils/smnotify/smnotify.x',
@@ -468,7 +469,7 @@ def build(bld):
                                        'smnotify.c gen_smnotify.c gen_xdr.c'),
                      deps='ctdb-smnotify-h ctdb-smnotify-c ctdb-smnotify-x popt',
                      includes='utils utils/smnotify',
-                     install_path='${BINDIR}')
+                     install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ping_pong',
                      source='utils/ping_pong/ping_pong.c',
@@ -500,8 +501,10 @@ def build(bld):
     sed_expr3 = 's|/usr/local/var/log|%s|g'       % (bld.env.CTDB_LOGDIR)
     sed_expr4 = 's|/usr/local/var/run/ctdb|%s|g'  % (bld.env.CTDB_RUNDIR)
     sed_expr5 = 's|/usr/local/sbin|%s|g'          % (bld.env.SBINDIR)
-    sed_cmdline = '-e "%s" -e "%s" -e "%s" -e "%s" -e "%s"' % \
-                       (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5)
+    sed_expr6 = 's|/usr/local/libexec/ctdb|%s|g'  % (bld.env.CTDB_HELPER_BINDIR)
+    sed_cmdline = '-e "%s" -e "%s" -e "%s" -e "%s" -e "%s" -e "%s"' % \
+                       (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5,
+                        sed_expr6)
 
     for f in manpages:
         x = '%s.xml' % (f)
@@ -540,7 +543,7 @@ def build(bld):
                         source='tools/ctdb_natgw',
                         target='ctdb_natgw',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
-    bld.INSTALL_FILES('${BINDIR}', 'ctdb_natgw',
+    bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_natgw',
                       destname='ctdb_natgw', chmod=0755)
 
     bld.SAMBA_GENERATOR('ctdbd-wrapper',

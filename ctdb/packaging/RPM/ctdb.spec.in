@@ -195,15 +195,16 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/ctdbd
 %{_sbindir}/ctdbd_wrapper
 %{_bindir}/ctdb
-%{_bindir}/ctdb_lock_helper
-%{_bindir}/ctdb_event_helper
-%{_bindir}/ctdb_recovery_helper
-%{_bindir}/smnotify
 %{_bindir}/ping_pong
 %{_bindir}/ltdbtool
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
-%{_bindir}/ctdb_natgw
+%dir %{_libexecdir}/ctdb
+%{_libexecdir}/ctdb/ctdb_lock_helper
+%{_libexecdir}/ctdb/ctdb_event_helper
+%{_libexecdir}/ctdb/ctdb_recovery_helper
+%{_libexecdir}/ctdb/ctdb_natgw
+%{_libexecdir}/ctdb/smnotify
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
 %{_libdir}/libtevent-unix-util.so.0*
