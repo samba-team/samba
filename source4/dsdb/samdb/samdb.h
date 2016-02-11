@@ -158,6 +158,12 @@ struct dsdb_control_password_change {
 */
 #define DSDB_CONTROL_CHANGEREPLMETADATA_RESORT_OID "1.3.6.1.4.1.7165.4.3.25"
 
+/*
+ * pass the default state of pwdLastSet between the "samldb" and "password_hash"
+ * modules.
+ */
+#define DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID "1.3.6.1.4.1.7165.4.3.26"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
