@@ -1782,6 +1782,8 @@ static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
+	setenv("CTDB_DBDIR_STATE", rec->ctdb->db_directory_state, 1);
+
 	if (!ctdb_vfork_with_logging(state, rec->ctdb, "recovery", prog, nargs,
 				     args, NULL, NULL, &state->pid)) {
 		DEBUG(DEBUG_ERR,
