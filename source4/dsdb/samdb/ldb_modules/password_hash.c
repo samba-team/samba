@@ -1943,6 +1943,15 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 					 struct loadparm_context);
 	int ret;
 
+	ret = setup_last_set_field(io);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (!io->ac->update_password) {
+		return LDB_SUCCESS;
+	}
+
 	/* transform the old password (for password changes) */
 	ret = setup_given_passwords(io, &io->og);
 	if (ret != LDB_SUCCESS) {
@@ -1978,11 +1987,6 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 	}
 
 	ret = setup_supplemental_field(io);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	ret = setup_last_set_field(io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2102,6 +2106,10 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	int ret;
 
 	ldb = ldb_module_get_ctx(io->ac->module);
+
+	if (!io->ac->update_password) {
+		return LDB_SUCCESS;
+	}
 
 	/* First check the old password is correct, for password changes */
 	if (!io->ac->pwd_reset) {
@@ -2776,7 +2784,8 @@ static int setup_io(struct ph_context *ac,
 	/* refuse the change if someone tries to set/change the password by
 	 * the lanman hash alone and we've deactivated that mechanism. This
 	 * would end in an account without any password! */
-	if ((!io->n.cleartext_utf8) && (!io->n.cleartext_utf16)
+	if (io->ac->update_password
+	    && (!io->n.cleartext_utf8) && (!io->n.cleartext_utf16)
 	    && (!io->n.nt_hash) && (!io->n.lm_hash)) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
@@ -3199,6 +3208,7 @@ static int password_hash_needed(struct ldb_module *module,
 	struct ldb_control *bypass = NULL;
 	bool userPassword = dsdb_user_password_support(module, req, req);
 	bool update_password = false;
+	bool processing_needed = false;
 
 	*_ac = NULL;
 
@@ -3267,9 +3277,14 @@ static int password_hash_needed(struct ldb_module *module,
 
 	if (attr_cnt > 0) {
 		update_password = true;
+		processing_needed = true;
 	}
 
-	if (!update_password) {
+	if (ldb_msg_find_element(msg, "pwdLastSet")) {
+		processing_needed = true;
+	}
+
+	if (!processing_needed) {
 		return ldb_next_request(module, req);
 	}
 
@@ -3486,6 +3501,8 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 				  "Either a password change or a password set operation is allowed!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
+
+	ldb_msg_remove_attr(msg, "pwdLastSet");
 
 	/* if there was nothing else to be modified skip to next step */
 	if (msg->num_elements == 0) {
