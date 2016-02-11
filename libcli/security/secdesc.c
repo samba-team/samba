@@ -586,7 +586,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 			  " inherited as %s:%d/0x%02x/0x%08x\n",
 			  dom_sid_string(frame, &ace->trustee),
 			  ace->type, ace->flags, ace->access_mask,
-			  dom_sid_string(frame, &ace->trustee),
+			  dom_sid_string(frame, &new_ace->trustee),
 			  new_ace->type, new_ace->flags,
 			  new_ace->access_mask));
 
