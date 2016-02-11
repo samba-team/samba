@@ -35,7 +35,7 @@ from samba.netcmd.rodc import cmd_rodc
 from samba.netcmd.sites import cmd_sites
 from samba.netcmd.spn import cmd_spn
 from samba.netcmd.testparm import cmd_testparm
-from samba.netcmd.time import cmd_time
+from samba.netcmd.nettime import cmd_time
 from samba.netcmd.user import cmd_user
 from samba.netcmd.processes import cmd_processes
 
