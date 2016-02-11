@@ -168,7 +168,7 @@ natgw_set_slave ()
 
 natgw_ensure_master ()
 {
-    set -- $(ctdb_natgw master)
+    set -- $("${CTDB_HELPER_BINDIR}/ctdb_natgw" master)
     natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
     natgwip="$2"
 

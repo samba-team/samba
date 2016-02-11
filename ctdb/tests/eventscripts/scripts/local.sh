@@ -13,6 +13,7 @@ if [ -d "${TEST_SUBDIR}/stubs" ] ; then
 	/*) : ;;
 	*) EVENTSCRIPTS_PATH="${PWD}/${EVENTSCRIPTS_PATH}" ;;
     esac
+    export CTDB_HELPER_BINDIR="$EVENTSCRIPTS_PATH"
 fi
 
 export EVENTSCRIPTS_PATH

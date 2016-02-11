@@ -20,6 +20,10 @@ if [ -z "$CTDB_SYS_ETCDIR" ] ; then
     CTDB_SYS_ETCDIR="/etc"
 fi
 
+if [ -z "$CTDB_HELPER_BINDIR" ] ; then
+    CTDB_HELPER_BINDIR="/usr/local/libexec/ctdb"
+fi
+
 #######################################
 # pull in a system config file, if any
 
