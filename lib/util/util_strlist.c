@@ -552,7 +552,23 @@ char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string,
 		TALLOC_FREE(list);
 		return NULL;
 	}
-	if (!sep) sep = LIST_SEP;
+
+	/*
+	 * DON'T REPLACE THIS BY "LIST_SEP". The common version of
+	 * LIST_SEP does not contain the ;, which used to be accepted
+	 * by Samba 4.0 before param merges. It would be the far
+	 * better solution to split the _v3 version again to source3/
+	 * where it belongs, see the _v3 in its name.
+	 *
+	 * Unfortunately it is referenced in /lib/param/loadparm.c,
+	 * which depends on the version that the AD-DC mandates,
+	 * namely without the ; as part of the list separator. I am
+	 * missing the waf fu to properly work around the wrong
+	 * include paths here for this defect.
+	 */
+	if (sep == NULL) {
+		sep = " \t,;\n\r";
+	}
 
 	num = 0;
 	str = s;
