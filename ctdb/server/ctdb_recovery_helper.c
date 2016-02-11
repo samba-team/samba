@@ -80,6 +80,7 @@ static struct recdb_context *recdb_create(TALLOC_CTX *mem_ctx, uint32_t db_id,
 					  const char *db_path,
 					  uint32_t hash_size, bool persistent)
 {
+	static char *db_dir_state = NULL;
 	struct recdb_context *recdb;
 	unsigned int tdb_flags;
 
@@ -88,10 +89,16 @@ static struct recdb_context *recdb_create(TALLOC_CTX *mem_ctx, uint32_t db_id,
 		return NULL;
 	}
 
+	if (db_dir_state == NULL) {
+		db_dir_state = getenv("CTDB_DBDIR_STATE");
+	}
+
 	recdb->db_name = db_name;
 	recdb->db_id = db_id;
 	recdb->db_path = talloc_asprintf(recdb, "%s/recdb.%s",
-					 dirname(discard_const(db_path)),
+					 db_dir_state != NULL ?
+					    db_dir_state :
+					    dirname(discard_const(db_path)),
 					 db_name);
 	if (recdb->db_path == NULL) {
 		talloc_free(recdb);
