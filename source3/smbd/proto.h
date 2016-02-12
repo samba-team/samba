@@ -547,7 +547,7 @@ int inotify_watch(TALLOC_CTX *mem_ctx,
 		  void *private_data,
 		  void *handle_p);
 
-int _fam_watch(TALLOC_CTX *mem_ctx,
+int fam_watch(TALLOC_CTX *mem_ctx,
 	      struct sys_notify_context *ctx,
 	      const char *path,
 	      uint32_t *filter,

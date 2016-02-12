@@ -221,7 +221,7 @@ static int fam_watch_context_destructor(struct fam_watch_context *ctx)
   add a watch. The watch is removed when the caller calls
   talloc_free() on *handle
 */
-int _fam_watch(TALLOC_CTX *mem_ctx,
+int fam_watch(TALLOC_CTX *mem_ctx,
 	      struct sys_notify_context *ctx,
 	      const char *path,
 	      uint32_t *filter,
