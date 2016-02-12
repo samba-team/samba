@@ -55,6 +55,7 @@ struct acl_private {
 	uint64_t cached_schema_metadata_usn;
 	uint64_t cached_schema_loaded_usn;
 	const char **confidential_attrs;
+	bool userPassword_support;
 };
 
 struct acl_context {
@@ -107,6 +108,8 @@ static int acl_module_init(struct ldb_module *module)
 					NULL, "acl", "search", true);
 	ldb_module_set_private(module, data);
 
+	data->userPassword_support = dsdb_user_password_support(module, module, NULL);
+	
 	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
 		return ldb_oom(ldb);
@@ -1851,8 +1854,9 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (!ac->am_system) {
-		ac->userPassword = dsdb_user_password_support(module, ac, req);
+	data = talloc_get_type(ldb_module_get_private(ac->module), struct acl_private);
+	if (data != NULL) {
+		ac->userPassword = data->userPassword_support;
 	}
 
 	ret = acl_search_update_confidential_attrs(ac, data);
