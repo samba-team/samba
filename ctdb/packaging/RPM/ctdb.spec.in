@@ -214,6 +214,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
 %{_mandir}/man1/ctdb.1.gz
+%{_mandir}/man1/ctdb_diagnostics.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/ctdbd_wrapper.1.gz
 %{_mandir}/man1/onnode.1.gz

@@ -40,6 +40,7 @@ samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
 manpages = [
     'ctdb.1',
     'ctdb.7',
+    'ctdb_diagnostics.1',
     'ctdbd.1',
     'ctdbd.conf.5',
     'ctdbd_wrapper.1',
@@ -534,7 +535,8 @@ def build(bld):
 
     if bld.env.ctdb_generate_manpages:
         bld.MANPAGES('''onnode.1 ctdbd_wrapper.1 ctdbd.conf.5
-                        ctdb.7 ctdb-statistics.7 ctdb-tunables.7''',
+                        ctdb.7 ctdb-statistics.7 ctdb-tunables.7
+                        ctdb_diagnostics.1''',
                       True)
     else:
         for m in bld.env.ctdb_prebuilt_manpages:
