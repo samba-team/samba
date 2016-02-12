@@ -110,22 +110,26 @@ conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
 conf.SET_TARGET_TYPE('systemd', 'EMPTY')
 
 if Options.options.enable_systemd != False:
-    conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
-                   msg='Checking for libsystemd-daemon')
-    if not conf.CHECK_LIB('systemd-daemon', shlib=True):
-        conf.CHECK_LIB('systemd', shlib=True)
+    conf.check_cfg(package='libsystemd', args='--cflags --libs',
+                   msg='Checking for libsystemd', uselib_store='SYSTEMD')
+    conf.CHECK_HEADERS('systemd/sd-daemon.h systemd/sd-journal.h',
+                       lib='systemd')
+    conf.CHECK_LIB('systemd', shlib=True)
 
-if Options.options.enable_systemd != False:
-    conf.CHECK_CFG(package='libsystemd-journal', args='--cflags --libs',
-                   msg='Checking for libsystemd-journal')
-    if not conf.CHECK_LIB('systemd-journal', shlib=True):
-        conf.CHECK_LIB('systemd', shlib=True)
-
-if Options.options.enable_lttng != False:
-    conf.CHECK_CFG(package='lttng-ust', args='--cflags --libs',
-                   msg='Checking for lttng-ust', uselib_store="LTTNG-UST")
-    conf.CHECK_HEADERS('lttng/tracef.h', lib='lttng-st')
-    conf.CHECK_LIB('lttng-ust', shlib=True)
+    if conf.CONFIG_SET('HAVE_LIBSYSTEMD'):
+        conf.DEFINE('HAVE_LIBSYSTEMD_DAEMON', '1')
+        conf.DEFINE('HAVE_LIBSYSTEMD_JOURNAL', '1')
+    else:
+        conf.check_cfg(package='libsystemd-daemon', args='--cflags --libs',
+                       msg='Checking for libsystemd-daemon',
+                       uselib_store='SYSTEMD_DAEMON')
+        conf.CHECK_HEADERS('systemd/sd-daemon.h', lib='systemd-daemon')
+        conf.CHECK_LIB('systemd-daemon', shlib=True)
+        conf.check_cfg(package='libsystemd-journal', args='--cflags --libs',
+                       msg='Checking for libsystemd-journal',
+                       uselib_store='SYSTEMD_JOURNAL')
+        conf.CHECK_HEADERS('systemd/sd-journal.h', lib='systemd-journal')
+        conf.CHECK_LIB('systemd-journal', shlib=True)
 
 if (conf.CONFIG_SET('HAVE_LTTNG_TRACEF_H') and
     conf.CONFIG_SET('HAVE_LTTNG_UST')):
