@@ -204,6 +204,7 @@ main() {
 
     if samba_fam_libs is not None:
         conf.DEFINE('SAMBA_FAM_LIBS', samba_fam_libs)
+        conf.DEFINE('HAVE_FAM', 1)
     else:
         if Options.options.with_fam == True:
             conf.fatal('FAM support requested, but no suitable FAM library found')
