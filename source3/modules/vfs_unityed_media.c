@@ -1518,34 +1518,45 @@ err:
  */
 
 static NTSTATUS um_get_nt_acl(vfs_handle_struct *handle,
-			      const char *name,
+			      const struct smb_filename *smb_fname,
 			      uint32_t security_info,
 			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
 	char *client_path = NULL;
+	struct smb_filename *client_smb_fname = NULL;
 	int ret;
 
 	DEBUG(10, ("Entering um_get_nt_acl\n"));
 
-	if (!is_in_media_files(name)) {
-		return SMB_VFS_NEXT_GET_NT_ACL(handle, name,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname,
 					       security_info,
 					       mem_ctx, ppdesc);
 	}
 
 	ret = alloc_get_client_path(handle, talloc_tos(),
-				    name, &client_path);
+				    smb_fname->base_name, &client_path);
 	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, client_path,
+	client_smb_fname = synthetic_smb_fname(talloc_tos(),
+					client_path,
+					NULL,
+					NULL);
+	if (client_smb_fname == NULL) {
+		TALLOC_FREE(client_path);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, client_smb_fname,
 					 security_info,
 					 mem_ctx, ppdesc);
 err:
+	TALLOC_FREE(client_smb_fname);
 	TALLOC_FREE(client_path);
 	return status;
 }

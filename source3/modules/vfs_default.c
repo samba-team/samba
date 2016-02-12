@@ -2327,7 +2327,7 @@ static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
-				   const char *name,
+				   const struct smb_filename *smb_fname,
 				   uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc)
@@ -2335,8 +2335,11 @@ static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 	NTSTATUS result;
 
 	START_PROFILE(get_nt_acl);
-	result = posix_get_nt_acl(handle->conn, name, security_info,
-				  mem_ctx, ppdesc);
+	result = posix_get_nt_acl(handle->conn,
+				smb_fname->base_name,
+				security_info,
+				mem_ctx,
+				ppdesc);
 	END_PROFILE(get_nt_acl);
 	return result;
 }

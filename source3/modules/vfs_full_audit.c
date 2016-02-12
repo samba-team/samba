@@ -1897,18 +1897,18 @@ static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_stru
 }
 
 static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle,
-					  const char *name,
+					  const struct smb_filename *smb_fname,
 					  uint32_t security_info,
 					  TALLOC_CTX *mem_ctx,
 					  struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+	result = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
 					 mem_ctx, ppdesc);
 
 	do_log(SMB_VFS_OP_GET_NT_ACL, NT_STATUS_IS_OK(result), handle,
-	       "%s", name);
+	       "%s", smb_fname_str_do_log(smb_fname));
 
 	return result;
 }

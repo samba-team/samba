@@ -366,7 +366,7 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 
 static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    const char *name,
+				    const struct smb_filename *smb_fname,
 				    uint32_t security_info,
 				    TALLOC_CTX *mem_ctx,
 				    struct security_descriptor **ppdesc)
@@ -381,14 +381,17 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	uint8_t sys_acl_hash_tmp[XATTR_SD_HASH_SIZE];
 	struct security_descriptor *psd = NULL;
 	struct security_descriptor *pdesc_next = NULL;
+	const char *name = NULL;
 	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
 						ACL_MODULE_NAME,
 						"ignore system acls",
 						false);
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (fsp && name == NULL) {
+	if (fsp && smb_fname == NULL) {
 		name = fsp->fsp_name->base_name;
+	} else {
+		name = smb_fname->base_name;
 	}
 
 	DEBUG(10, ("get_nt_acl_internal: name=%s\n", name));
@@ -509,7 +512,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							  &pdesc_next);
 		} else {
 			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-							 name,
+							 smb_fname,
 							 HASH_SECURITY_INFO,
 							 mem_ctx,
 							 &pdesc_next);
@@ -575,7 +578,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							  &pdesc_next);
 		} else {
 			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-							 name,
+							 smb_fname,
 							 security_info,
 							 mem_ctx,
 							 &pdesc_next);
@@ -728,13 +731,17 @@ static NTSTATUS fget_nt_acl_common(vfs_handle_struct *handle,
 *********************************************************************/
 
 static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
-				  const char *name,
+				  const struct smb_filename *smb_fname,
 				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
-	return get_nt_acl_internal(handle, NULL,
-				   name, security_info, mem_ctx, ppdesc);
+	return get_nt_acl_internal(handle,
+				NULL,
+				smb_fname,
+				security_info,
+				mem_ctx,
+				ppdesc);
 }
 
 /*********************************************************************

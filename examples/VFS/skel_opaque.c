@@ -667,7 +667,8 @@ static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
-				const char *name, uint32_t security_info,
+				const struct smb_filename *smb_fname,
+				uint32_t security_info,
 				TALLOC_CTX *mem_ctx,
 				struct security_descriptor **ppdesc)
 {

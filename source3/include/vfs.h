@@ -170,8 +170,11 @@
 /* Bump to version 34 - Samba 4.4 will ship with that */
 /* Version 34 - Remove bool posix_open, add uint64_t posix_flags */
 /* Version 34 - Added bool posix_pathnames to struct smb_request */
+/* Bump to version 35 - Samba 4.5 will ship with that */
+/* Version 35 - Change get_nt_acl_fn from const char *, to
+		const struct smb_filename * */
 
-#define SMB_VFS_INTERFACE_VERSION 34
+#define SMB_VFS_INTERFACE_VERSION 35
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -745,7 +748,7 @@ struct vfs_fn_pointers {
 				   TALLOC_CTX *mem_ctx,
 				   struct security_descriptor **ppdesc);
 	NTSTATUS (*get_nt_acl_fn)(struct vfs_handle_struct *handle,
-				  const char *name,
+				  const struct smb_filename *smb_fname,
 				  uint32_t security_info,
 				   TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
@@ -1188,7 +1191,7 @@ NTSTATUS smb_vfs_call_fget_nt_acl(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc);
 NTSTATUS smb_vfs_call_get_nt_acl(struct vfs_handle_struct *handle,
-				 const char *name,
+				 const struct smb_filename *smb_fname,
 				 uint32_t security_info,
 				 TALLOC_CTX *mem_ctx,
 				 struct security_descriptor **ppdesc);

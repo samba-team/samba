@@ -1466,6 +1466,7 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 	char *stripped;
 	NTSTATUS status;
 	char *conv;
+	struct smb_filename *smb_fname = NULL;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
 					 fsp->fsp_name->base_name,
@@ -1482,14 +1483,24 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info,
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
 					 mem_ctx, ppdesc);
 	TALLOC_FREE(conv);
+	TALLOC_FREE(smb_fname);
 	return status;
 }
 
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
-					const char *fname,
+					const struct smb_filename *smb_fname,
 					uint32_t security_info,
 					TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
@@ -1498,13 +1509,17 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 	char *stripped;
 	NTSTATUS status;
 	char *conv;
+	struct smb_filename *conv_smb_fname = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
-					 &timestamp, &stripped)) {
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+					handle,
+					smb_fname->base_name,
+					&timestamp,
+					&stripped)) {
 		return map_nt_error_from_unix(errno);
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_GET_NT_ACL(handle, fname, security_info,
+		return SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
 					       mem_ctx, ppdesc);
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
@@ -1512,9 +1527,18 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info,
+	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv_smb_fname, security_info,
 					 mem_ctx, ppdesc);
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 	return status;
 }
 

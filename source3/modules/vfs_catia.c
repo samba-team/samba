@@ -778,12 +778,14 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 
 static NTSTATUS
 catia_get_nt_acl(struct vfs_handle_struct *handle,
-		 const char *path,
+		 const struct smb_filename *smb_fname,
 		 uint32_t security_info,
 		 TALLOC_CTX *mem_ctx,
 		 struct security_descriptor **ppdesc)
 {
 	char *mapped_name = NULL;
+	const char *path = smb_fname->base_name;
+	struct smb_filename *mapped_smb_fname = NULL;
 	NTSTATUS status;
 
 	status = catia_string_replace_allocate(handle->conn,
@@ -792,9 +794,19 @@ catia_get_nt_acl(struct vfs_handle_struct *handle,
 		errno = map_errno_from_nt_status(status);
 		return status;
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, mapped_name,
+	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					NULL);
+	if (mapped_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, mapped_smb_fname,
 					 security_info, mem_ctx, ppdesc);
 	TALLOC_FREE(mapped_name);
+	TALLOC_FREE(mapped_smb_fname);
 
 	return status;
 }

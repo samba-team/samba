@@ -1386,7 +1386,7 @@ static bool user_can_read_file(connection_struct *conn,
         }
 
 	status = SMB_VFS_GET_NT_ACL(conn,
-			smb_fname->base_name,
+			smb_fname,
 			(SECINFO_OWNER |
 			 SECINFO_GROUP |
 			 SECINFO_DACL),

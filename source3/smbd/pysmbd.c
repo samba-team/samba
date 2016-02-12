@@ -195,8 +195,22 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 				struct security_descriptor **sd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status = SMB_VFS_GET_NT_ACL( conn, fname, security_info_wanted,
-				     mem_ctx, sd);
+	NTSTATUS status;
+	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
+						fname,
+						NULL,
+						NULL);
+
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_GET_NT_ACL(conn,
+				smb_fname,
+				security_info_wanted,
+				mem_ctx,
+				sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("get_nt_acl_conn: get_nt_acl returned %s.\n", nt_errstr(status)));
 	}

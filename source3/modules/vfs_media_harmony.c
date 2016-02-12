@@ -2016,19 +2016,20 @@ out:
  * In this case, "name" is a path.
  */
 static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
-			      const char *name,
+			      const struct smb_filename *smb_fname,
 			      uint32_t security_info,
 			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc)
 {
 	NTSTATUS status;
 	char *clientPath;
+	struct smb_filename *client_smb_fname = NULL;
 	TALLOC_CTX *ctx;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_get_nt_acl\n"));
-	if (!is_in_media_files(name))
+	if (!is_in_media_files(smb_fname->base_name))
 	{
-		status = SMB_VFS_NEXT_GET_NT_ACL(handle, name,
+		status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname,
 						 security_info,
 						 mem_ctx, ppdesc);
 		goto out;
@@ -2038,18 +2039,28 @@ static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 	ctx = talloc_tos();
 
 	if (alloc_get_client_path(handle, ctx,
-				name,
+				smb_fname->base_name,
 				&clientPath))
 	{
 		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, clientPath,
+	client_smb_fname = synthetic_smb_fname(talloc_tos(),
+					clientPath,
+					NULL,
+					NULL);
+	if (client_smb_fname == NULL) {
+		TALLOC_FREE(clientPath);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, client_smb_fname,
 					 security_info,
 					 mem_ctx, ppdesc);
 err:
 	TALLOC_FREE(clientPath);
+	TALLOC_FREE(client_smb_fname);
 out:
 	return status;
 }

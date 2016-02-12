@@ -541,12 +541,14 @@ static NTSTATUS nfs4acl_xattr_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32_t security_info,
+				  const struct smb_filename *smb_fname,
+				  uint32_t security_info,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor **ppdesc)
 {
 	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
+	const char *name = smb_fname->base_name;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	status = nfs4_get_nfs4_acl(handle, frame, name, &pacl);

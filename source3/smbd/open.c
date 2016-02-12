@@ -119,7 +119,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
+	status = SMB_VFS_GET_NT_ACL(conn, smb_fname,
 			(SECINFO_OWNER |
 			SECINFO_GROUP |
 			 SECINFO_DACL), talloc_tos(), &sd);
@@ -243,11 +243,20 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 	char *parent_dir = NULL;
 	struct security_descriptor *parent_sd = NULL;
 	uint32_t access_granted = 0;
+	struct smb_filename *parent_smb_fname = NULL;
 
 	if (!parent_dirname(talloc_tos(),
 				smb_fname->base_name,
 				&parent_dir,
 				NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	parent_smb_fname = synthetic_smb_fname(talloc_tos(),
+				parent_dir,
+				NULL,
+				NULL);
+	if (parent_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -261,7 +270,7 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 	}
 
 	status = SMB_VFS_GET_NT_ACL(conn,
-				parent_dir,
+				parent_smb_fname,
 				SECINFO_DACL,
 				    talloc_tos(),
 				&parent_sd);
@@ -2171,7 +2180,7 @@ static NTSTATUS smbd_calculate_maximum_allowed_access(
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn, smb_fname->base_name,
+	status = SMB_VFS_GET_NT_ACL(conn, smb_fname,
 				    (SECINFO_OWNER |
 				     SECINFO_GROUP |
 				     SECINFO_DACL),
@@ -3977,14 +3986,24 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	const struct dom_sid *SY_U_sid = NULL;
 	const struct dom_sid *SY_G_sid = NULL;
 	size_t size = 0;
+	struct smb_filename *parent_smb_fname = NULL;
 
 	if (!parent_dirname(frame, fsp->fsp_name->base_name, &parent_name, NULL)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
+	parent_smb_fname = synthetic_smb_fname(talloc_tos(),
+						parent_name,
+						NULL,
+						NULL);
+
+	if (parent_smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = SMB_VFS_GET_NT_ACL(fsp->conn,
-				    parent_name,
+				    parent_smb_fname,
 				    (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL),
 				    frame,
 				    &parent_desc);

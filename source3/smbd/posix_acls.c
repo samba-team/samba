@@ -4629,6 +4629,15 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 	TALLOC_CTX *frame = talloc_stackframe();
 	connection_struct *conn;
 	NTSTATUS status = NT_STATUS_OK;
+	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
+						fname,
+						NULL,
+						NULL);
+
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (!posix_locking_init(false)) {
 		TALLOC_FREE(frame);
@@ -4650,7 +4659,11 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 		return status;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(conn, fname, security_info_wanted, ctx, sd);
+	status = SMB_VFS_GET_NT_ACL(conn,
+				smb_fname,
+				security_info_wanted,
+				ctx,
+				sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("get_nt_acl_no_snum: SMB_VFS_GET_NT_ACL returned %s.\n",
 			  nt_errstr(status)));

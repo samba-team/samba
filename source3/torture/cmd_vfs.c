@@ -1380,13 +1380,23 @@ static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct security_descriptor *sd;
+	struct smb_filename *smb_fname = NULL;
 
 	if (argc != 2) {
 		printf("Usage: get_nt_acl <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	status = SMB_VFS_GET_NT_ACL(vfs->conn, argv[1],
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					argv[1],
+					NULL,
+					NULL);
+
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_GET_NT_ACL(vfs->conn, smb_fname,
 				    SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
 				    talloc_tos(), &sd);
 	if (!NT_STATUS_IS_OK(status)) {

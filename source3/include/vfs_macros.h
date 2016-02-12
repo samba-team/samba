@@ -437,10 +437,10 @@
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, mem_ctx, ppdesc) \
 	smb_vfs_call_fget_nt_acl((handle)->next, (fsp), (security_info), (mem_ctx), (ppdesc))
 
-#define SMB_VFS_GET_NT_ACL(conn, name, security_info, mem_ctx, ppdesc)	\
-	smb_vfs_call_get_nt_acl((conn)->vfs_handles, (name), (security_info), (mem_ctx), (ppdesc))
-#define SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, mem_ctx, ppdesc) \
-	smb_vfs_call_get_nt_acl((handle)->next, (name), (security_info), (mem_ctx), (ppdesc))
+#define SMB_VFS_GET_NT_ACL(conn, smb_fname, security_info, mem_ctx, ppdesc)	\
+	smb_vfs_call_get_nt_acl((conn)->vfs_handles, (smb_fname), (security_info), (mem_ctx), (ppdesc))
+#define SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info, mem_ctx, ppdesc) \
+	smb_vfs_call_get_nt_acl((handle)->next, (smb_fname), (security_info), (mem_ctx), (ppdesc))
 
 #define SMB_VFS_AUDIT_FILE(conn, name, sacl, access_requested, access_denied) \
 	smb_vfs_call_audit_file((conn)->vfs_handles, (name), (sacl), (access_requested), (access_denied))
