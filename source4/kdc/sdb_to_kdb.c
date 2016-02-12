@@ -36,20 +36,27 @@ static int SDBFlags_to_kflags(const struct SDBFlags *s,
 	if (s->initial) {
 		*k |= KRB5_KDB_DISALLOW_TGT_BASED;
 	}
-	if (!s->forwardable) {
-		*k |= KRB5_KDB_DISALLOW_FORWARDABLE;
+	/*
+	 * Do not set any disallow rules for forwardable, proxiable,
+	 * renewable, postdate and server.
+	 *
+	 * The KDC will take care setting the flags based on the incoming
+	 * ticket.
+	 */
+	if (s->forwardable) {
+		;
 	}
-	if (!s->proxiable) {
-		*k |= KRB5_KDB_DISALLOW_PROXIABLE;
+	if (s->proxiable) {
+		;
 	}
-	if (!s->renewable) {
-		*k |= KRB5_KDB_DISALLOW_RENEWABLE;
+	if (s->renewable) {
+		;
 	}
-	if (!s->postdate) {
-		*k |= KRB5_KDB_DISALLOW_POSTDATED;
+	if (s->postdate) {
+		;
 	}
-	if (!s->server) {
-		*k |= KRB5_KDB_DISALLOW_SVR;
+	if (s->server) {
+		;
 	}
 	if (s->client) {
 		;
