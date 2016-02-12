@@ -1687,6 +1687,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 static int setup_last_set_field(struct setup_password_fields_io *io)
 {
 	const struct ldb_message *msg = NULL;
+	struct timeval tv = { .tv_sec = 0 };
 
 	switch (io->ac->req->operation) {
 	case LDB_ADD:
@@ -1717,7 +1718,8 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 	}
 
 	/* set it as now */
-	unix_to_nt_time(&io->g.last_set, time(NULL));
+	GetTimeOfDay(&tv);
+	io->g.last_set = timeval_to_nttime(&tv);
 
 	return LDB_SUCCESS;
 }
