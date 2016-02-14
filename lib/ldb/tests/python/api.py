@@ -670,13 +670,13 @@ class DnTests(TestCase):
     def test_add_child_str(self):
         x = ldb.Dn(self.ldb, "dc=foo22,bar=bloe")
         self.assertTrue(x.add_child("bla=bloe"))
-        self.assertEquals("bla=bloe,dc=foo22,bar=bloe", x.__str__())
+        self.assertEqual("bla=bloe,dc=foo22,bar=bloe", x.__str__())
 
     def test_add_base_str(self):
         x = ldb.Dn(self.ldb, "dc=foo23,bar=bloe")
         base = "bla=bloe"
         self.assertTrue(x.add_base(base))
-        self.assertEquals("dc=foo23,bar=bloe,bla=bloe", x.__str__())
+        self.assertEqual("dc=foo23,bar=bloe,bla=bloe", x.__str__())
 
     def test_add(self):
         x = ldb.Dn(self.ldb, "dc=foo24")
@@ -851,10 +851,10 @@ class LdbMsgTests(TestCase):
                 "Message({'dc': MessageElement([b'foo']), 'dn': Dn('dc=foo29')}).text",
             ])
         else:
-            self.assertEquals(
+            self.assertEqual(
                 repr(self.msg),
                 "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})")
-            self.assertEquals(
+            self.assertEqual(
                 repr(self.msg.text),
                 "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])}).text")
 
