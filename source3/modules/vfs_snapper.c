@@ -2415,6 +2415,7 @@ static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,
 	char *stripped;
 	NTSTATUS status;
 	char *conv;
+	struct smb_filename *smb_fname = NULL;
 
 	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
 					fsp->fsp_name->base_name,
@@ -2431,14 +2432,24 @@ static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info,
-					 mem_ctx, ppdesc);
+
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
 	TALLOC_FREE(conv);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
+					 mem_ctx, ppdesc);
+	TALLOC_FREE(smb_fname);
 	return status;
 }
 
 static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
-				       const char *fname,
+				       const struct smb_filename *fname,
 				       uint32_t security_info,
 				       TALLOC_CTX *mem_ctx,
 				       struct security_descriptor **ppdesc)
@@ -2447,8 +2458,9 @@ static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 	char *stripped;
 	NTSTATUS status;
 	char *conv;
+	struct smb_filename *smb_fname = NULL;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname,
+	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname->base_name,
 					&timestamp, &stripped)) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -2461,9 +2473,18 @@ static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
-	status = SMB_VFS_NEXT_GET_NT_ACL(handle, conv, security_info,
-					 mem_ctx, ppdesc);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
 	TALLOC_FREE(conv);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname, security_info,
+					 mem_ctx, ppdesc);
+	TALLOC_FREE(smb_fname);
 	return status;
 }
 
