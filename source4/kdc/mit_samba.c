@@ -220,7 +220,12 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		ret = KRB5_KDB_NOENTRY;
 		goto done;
 	case SDB_ERR_WRONG_REALM:
-		ret = KRB5KDC_ERR_WRONG_REALM;
+		/*
+		 * If we have a wrong realm e.g. if we try get a cross forest
+		 * ticket, we return a ticket with the correct realm. The KDC
+		 * will detect this an return the appropriate return code.
+		 */
+		ret = 0;
 		break;
 	case SDB_ERR_NOT_FOUND_HERE:
 		/* FIXME: RODC support */
