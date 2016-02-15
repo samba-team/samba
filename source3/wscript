@@ -1638,36 +1638,47 @@ main() {
             conf.fatal('AFS headers not available, but --with-fake-kaserver was specified')
 
     conf.env['libtracker']=''
+    tracker_versions = ['2.0', '1.0', '0.16', '0.14']
+
+    for version in tracker_versions:
+        testlib = 'tracker-sparql-' + version
+        if conf.CHECK_CFG(package=testlib,
+                          args='--cflags --libs',
+                          mandatory=False):
+            conf.SET_TARGET_TYPE(testlib, 'SYSLIB')
+            conf.env['libtracker'] = testlib
+            conf.DEFINE('HAVE_TRACKER', '1')
+            break
+
+    Logs.info("Checking for bison")
+    bison.configure(conf)
+    conf.CHECK_COMMAND('%s --version  | head -n1' % conf.env['BISON'],
+                       msg='Using bison version',
+                       define=None,
+                       on_target=False)
+
+    Logs.info("Checking for flex")
+    conf.find_program('flex', var='FLEX')
+    conf.env.FLEXFLAGS = ['-t']
+    conf.CHECK_COMMAND('%s --version' % conf.env['FLEX'],
+                       msg='Using flex version',
+                       define=None,
+                       on_target=False)
+
     conf.env.with_spotlight = False
     if Options.options.with_spotlight:
-
-        Logs.info("Requested Spotlight support, checking for bison")
-        bison.configure(conf)
         if not conf.env['BISON']:
             conf.fatal("Spotlight support requested but bison missing")
-        conf.CHECK_COMMAND('%s --version | head -n1' % conf.env['BISON'], msg='Using bison version', define=None, on_target=False)
-        Logs.info("Requested Spotlight support, checking for flex")
-        conf.find_program('flex', var='FLEX')
-        conf.env.FLEXFLAGS = ['-t']
         if not conf.env['FLEX']:
             conf.fatal("Spotlight support requested but flex missing")
-        conf.CHECK_COMMAND('%s --version' % conf.env['FLEX'], msg='Using flex version', define=None, on_target=False)
-        versions = ['2.0', '1.0', '0.16', '0.14']
-        for version in versions:
-            testlib = 'tracker-sparql-' + version
-            if conf.CHECK_CFG(package=testlib,
-                              args='--cflags --libs',
-                              mandatory=False):
-                conf.SET_TARGET_TYPE(testlib, 'SYSLIB')
-                conf.env['libtracker'] = testlib
-                conf.env.with_spotlight = True
-                conf.DEFINE('WITH_SPOTLIGHT', '1')
-                break
 
-        if not conf.env.with_spotlight:
-            conf.fatal("Spotlight support requested but tracker-sparql library missing")
+        if not conf.CONFIG_SET('HAVE_TRACKER'):
+            conf.fatal('Missing Gnome Tracker development files')
+
         Logs.info("building with Spotlight support")
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
+        conf.DEFINE('WITH_SPOTLIGHT', '1')
+        conf.env.with_spotlight = True
 
     conf.CHECK_HEADERS('rpc/xdr.h', lib='tirpc')
 
