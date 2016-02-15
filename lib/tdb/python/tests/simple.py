@@ -43,7 +43,7 @@ class InternalTdbTests(TestCase):
         self.tdb = tdb.Tdb()
 
         # repr used to crash on internal db
-        self.assertEquals(repr(self.tdb), "Tdb(<internal>)")
+        self.assertEqual(repr(self.tdb), "Tdb(<internal>)")
 
 
 class CommonTdbTests(TestCase):
@@ -111,12 +111,12 @@ class SimpleTdbTests(TestCase):
 
     def test_store(self):
         self.tdb.store(b"bar", b"bla")
-        self.assertEquals(b"bla", self.tdb.get(b"bar"))
+        self.assertEqual(b"bla", self.tdb.get(b"bar"))
 
     def test_getitem(self):
         self.tdb[b"bar"] = b"foo"
         self.tdb.reopen()
-        self.assertEquals(b"foo", self.tdb[b"bar"])
+        self.assertEqual(b"foo", self.tdb[b"bar"])
 
     def test_delete(self):
         self.tdb[b"bar"] = b"foo"
@@ -139,21 +139,21 @@ class SimpleTdbTests(TestCase):
         self.tdb[b"brainslug"] = b"2"
         l = list(self.tdb)
         l.sort()
-        self.assertEquals([b"bla", b"brainslug"], l)
+        self.assertEqual([b"bla", b"brainslug"], l)
 
     def test_transaction_cancel(self):
         self.tdb[b"bloe"] = b"2"
         self.tdb.transaction_start()
         self.tdb[b"bloe"] = b"1"
         self.tdb.transaction_cancel()
-        self.assertEquals(b"2", self.tdb[b"bloe"])
+        self.assertEqual(b"2", self.tdb[b"bloe"])
 
     def test_transaction_commit(self):
         self.tdb[b"bloe"] = b"2"
         self.tdb.transaction_start()
         self.tdb[b"bloe"] = b"1"
         self.tdb.transaction_commit()
-        self.assertEquals(b"1", self.tdb[b"bloe"])
+        self.assertEqual(b"1", self.tdb[b"bloe"])
 
     def test_transaction_prepare_commit(self):
         self.tdb[b"bloe"] = b"2"
@@ -161,7 +161,7 @@ class SimpleTdbTests(TestCase):
         self.tdb[b"bloe"] = b"1"
         self.tdb.transaction_prepare_commit()
         self.tdb.transaction_commit()
-        self.assertEquals(b"1", self.tdb[b"bloe"])
+        self.assertEqual(b"1", self.tdb[b"bloe"])
 
     def test_iterkeys(self):
         self.tdb[b"bloe"] = b"2"
@@ -170,14 +170,14 @@ class SimpleTdbTests(TestCase):
             i = self.tdb.keys()
         else:
             i = self.tdb.iterkeys()
-        self.assertEquals(set([b"bloe", b"bla"]), set([next(i), next(i)]))
+        self.assertEqual(set([b"bloe", b"bla"]), set([next(i), next(i)]))
 
     def test_clear(self):
         self.tdb[b"bloe"] = b"2"
         self.tdb[b"bla"] = b"25"
-        self.assertEquals(2, len(list(self.tdb)))
+        self.assertEqual(2, len(list(self.tdb)))
         self.tdb.clear()
-        self.assertEquals(0, len(list(self.tdb)))
+        self.assertEqual(0, len(list(self.tdb)))
 
     def test_repack(self):
         self.tdb[b"foo"] = b"abc"
@@ -190,12 +190,12 @@ class SimpleTdbTests(TestCase):
         seq1 = self.tdb.seqnum
         self.tdb.increment_seqnum_nonblock()
         seq2 = self.tdb.seqnum
-        self.assertEquals(seq2-seq1, 1)
+        self.assertEqual(seq2-seq1, 1)
 
     def test_len(self):
-        self.assertEquals(0, len(list(self.tdb)))
+        self.assertEqual(0, len(list(self.tdb)))
         self.tdb[b"entry"] = b"value"
-        self.assertEquals(1, len(list(self.tdb)))
+        self.assertEqual(1, len(list(self.tdb)))
 
 
 class TdbTextTests(TestCase):
@@ -211,12 +211,12 @@ class TdbTextTests(TestCase):
 
     def test_store(self):
         self.tdb.text.store("bar", "bla")
-        self.assertEquals("bla", self.tdb.text.get("bar"))
+        self.assertEqual("bla", self.tdb.text.get("bar"))
 
     def test_getitem(self):
         self.tdb.text["bar"] = "foo"
         self.tdb.reopen()
-        self.assertEquals("foo", self.tdb.text["bar"])
+        self.assertEqual("foo", self.tdb.text["bar"])
 
     def test_delete(self):
         self.tdb.text["bar"] = "foo"
@@ -239,21 +239,21 @@ class TdbTextTests(TestCase):
         self.tdb.text["brainslug"] = "2"
         l = list(self.tdb.text)
         l.sort()
-        self.assertEquals(["bla", "brainslug"], l)
+        self.assertEqual(["bla", "brainslug"], l)
 
     def test_transaction_cancel(self):
         self.tdb.text["bloe"] = "2"
         self.tdb.transaction_start()
         self.tdb.text["bloe"] = "1"
         self.tdb.transaction_cancel()
-        self.assertEquals("2", self.tdb.text["bloe"])
+        self.assertEqual("2", self.tdb.text["bloe"])
 
     def test_transaction_commit(self):
         self.tdb.text["bloe"] = "2"
         self.tdb.transaction_start()
         self.tdb.text["bloe"] = "1"
         self.tdb.transaction_commit()
-        self.assertEquals("1", self.tdb.text["bloe"])
+        self.assertEqual("1", self.tdb.text["bloe"])
 
     def test_transaction_prepare_commit(self):
         self.tdb.text["bloe"] = "2"
@@ -261,7 +261,7 @@ class TdbTextTests(TestCase):
         self.tdb.text["bloe"] = "1"
         self.tdb.transaction_prepare_commit()
         self.tdb.transaction_commit()
-        self.assertEquals("1", self.tdb.text["bloe"])
+        self.assertEqual("1", self.tdb.text["bloe"])
 
     def test_iterkeys(self):
         self.tdb.text["bloe"] = "2"
@@ -270,14 +270,14 @@ class TdbTextTests(TestCase):
             i = self.tdb.text.keys()
         else:
             i = self.tdb.text.iterkeys()
-        self.assertEquals(set(["bloe", "bla"]), set([next(i), next(i)]))
+        self.assertEqual(set(["bloe", "bla"]), set([next(i), next(i)]))
 
     def test_clear(self):
         self.tdb.text["bloe"] = "2"
         self.tdb.text["bla"] = "25"
-        self.assertEquals(2, len(list(self.tdb)))
+        self.assertEqual(2, len(list(self.tdb)))
         self.tdb.clear()
-        self.assertEquals(0, len(list(self.tdb)))
+        self.assertEqual(0, len(list(self.tdb)))
 
     def test_repack(self):
         self.tdb.text["foo"] = "abc"
@@ -286,17 +286,17 @@ class TdbTextTests(TestCase):
         self.tdb.repack()
 
     def test_len(self):
-        self.assertEquals(0, len(list(self.tdb.text)))
+        self.assertEqual(0, len(list(self.tdb.text)))
         self.tdb.text["entry"] = "value"
-        self.assertEquals(1, len(list(self.tdb.text)))
+        self.assertEqual(1, len(list(self.tdb.text)))
 
     def test_text_and_binary(self):
         text = u'\xfa\u0148\xef\xe7\xf8\xf0\xea'
         bytestr = text.encode('utf-8')
         self.tdb[b"entry"] = bytestr
         self.tdb.text[u"entry2"] = text
-        self.assertEquals(self.tdb.text["entry"], text)
-        self.assertEquals(self.tdb[b"entry2"], bytestr)
+        self.assertEqual(self.tdb.text["entry"], text)
+        self.assertEqual(self.tdb[b"entry2"], bytestr)
         assert self.tdb.text.raw == self.tdb
 
 
