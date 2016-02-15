@@ -117,6 +117,7 @@ conf.CHECK_FUNCS('''
        krb5_keyblock_init krb5_principal_set_realm krb5_principal_get_type
        krb5_principal_set_type
        krb5_warnx
+       krb5_get_prompt_types
        ''',
      lib='krb5 k5crypto')
 conf.CHECK_DECLS('''krb5_get_credentials_for_user
