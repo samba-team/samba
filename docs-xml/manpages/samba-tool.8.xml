@@ -587,6 +587,11 @@
 	<para>Sets or resets the password of an user account.</para>
 </refsect3>
 
+<refsect3>
+	<title>user getpassword <replaceable>username</replaceable> [options]</title>
+	<para>Gets the password of an user account.</para>
+</refsect3>
+
 <refsect2>
 	<title>vampire [options] <replaceable>domain</replaceable></title>
 	<para>Join and synchronise a remote AD domain to the local server.
