@@ -42,7 +42,7 @@ struct db_context;
 enum credentials_obtained { 
 	CRED_UNINITIALISED = 0,  /* We don't even have a guess yet */
 	CRED_CALLBACK, 		 /* Callback should be used to obtain value */
-	CRED_GUESS_ENV,	         /* Current value should be used, which was guessed */
+	CRED_GUESS_ENV,		 /* Current value should be used, which was guessed */
 	CRED_GUESS_FILE,	 /* A guess from a file (or file pointed at in env variable) */
 	CRED_CALLBACK_RESULT,    /* Value was obtained from a callback */
 	CRED_SPECIFIED		 /* Was explicitly specified on the command-line */
@@ -75,6 +75,7 @@ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx);
 void cli_credentials_set_anonymous(struct cli_credentials *cred);
 bool cli_credentials_wrong_password(struct cli_credentials *cred);
 const char *cli_credentials_get_password(struct cli_credentials *cred);
+const char *cli_credentials_get_password_to_connect(struct cli_credentials *cred);
 void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					      const char **username, 
 					      const char **domain);
@@ -85,6 +86,7 @@ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_
 					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key);
 const char *cli_credentials_get_realm(struct cli_credentials *cred);
 const char *cli_credentials_get_username(struct cli_credentials *cred);
+const char *cli_credentials_get_user_to_connect(struct cli_credentials *cred);
 int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context);
@@ -104,6 +106,7 @@ bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred,
 int cli_credentials_get_keytab(struct cli_credentials *cred, 
 			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc);
+const char *cli_credentials_get_user_to_connect_domain(struct cli_credentials *cred);
 const char *cli_credentials_get_domain(struct cli_credentials *cred);
 struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
 void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
@@ -125,6 +128,11 @@ void cli_credentials_set_kerberos_state(struct cli_credentials *creds,
 					enum credentials_use_kerberos use_kerberos);
 void cli_credentials_set_krb_forwardable(struct cli_credentials *creds,
 					 enum credentials_krb_forwardable krb_forwardable);
+bool cli_credentials_set_user_to_connect_domain(struct cli_credentials *cred, 
+				const char *val, 
+				enum credentials_obtained obtained);
+bool cli_credentials_set_user_to_connect_domain_callback(struct cli_credentials *cred,
+				const char *(*domain_cb) (struct cli_credentials *));
 bool cli_credentials_set_domain(struct cli_credentials *cred, 
 				const char *val, 
 				enum credentials_obtained obtained);
@@ -134,6 +142,10 @@ bool cli_credentials_set_username(struct cli_credentials *cred,
 				  const char *val, enum credentials_obtained obtained);
 bool cli_credentials_set_username_callback(struct cli_credentials *cred,
 				  const char *(*username_cb) (struct cli_credentials *));
+bool cli_credentials_set_user_to_connect(struct cli_credentials *cred, 
+				  const char *val, enum credentials_obtained obtained);
+bool cli_credentials_set_user_to_connect_callback(struct cli_credentials *cred,
+				  const char *(*username_cb) (struct cli_credentials *));
 bool cli_credentials_set_principal(struct cli_credentials *cred, 
 				   const char *val, 
 				   enum credentials_obtained obtained);
@@ -142,8 +154,12 @@ bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
 bool cli_credentials_set_password(struct cli_credentials *cred, 
 				  const char *val, 
 				  enum credentials_obtained obtained);
+bool cli_credentials_set_password_to_connect(struct cli_credentials *cred, 
+				  const char *val, 
+				  enum credentials_obtained obtained);
 struct cli_credentials *cli_credentials_init_anon(TALLOC_CTX *mem_ctx);
-void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data, enum credentials_obtained obtained);
+void cli_credentials_parse_string(struct cli_credentials *credentials, const char *data,
+	enum credentials_obtained obtained, bool user_to_connect);
 struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred,
 						  TALLOC_CTX *mem_ctx);
 struct samr_Password *cli_credentials_get_old_nt_hash(struct cli_credentials *cred,
@@ -188,6 +204,8 @@ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred);
 bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained);
 const char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx);
 bool cli_credentials_set_password_callback(struct cli_credentials *cred,
+					   const char *(*password_cb) (struct cli_credentials *));
+bool cli_credentials_set_password_to_connect_callback(struct cli_credentials *cred,
 					   const char *(*password_cb) (struct cli_credentials *));
 enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred);
 time_t cli_credentials_get_password_last_changed_time(struct cli_credentials *cred);
@@ -290,5 +308,8 @@ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ctx,
  * Return attached NETLOGON credentials 
  */
 struct netlogon_creds_CredentialState *cli_credentials_get_netlogon_creds(struct cli_credentials *cred);
+
+void switch_values(struct cli_credentials *credentials, char **values);
+void switch_back_values(struct cli_credentials *credentials, char **values);
 
 #endif /* __CREDENTIALS_H__ */

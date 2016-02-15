@@ -144,6 +144,9 @@ class CredentialsOptions(optparse.OptionGroup):
         self._add_option("-U", "--username", metavar="USERNAME",
                         action="callback", type=str,
                         help="Username", callback=self._parse_username)
+        self._add_option("-C", "--user_to_connect", metavar="USER_TO_CONNECT",
+                        action="callback", type=str,
+                        help="UserToConnect", callback=self._parse_user_to_connect)
         self._add_option("-W", "--workgroup", metavar="WORKGROUP",
                         action="callback", type=str,
                         help="Workgroup", callback=self._parse_workgroup)
@@ -178,8 +181,13 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.parse_string(arg)
         self.machine_pass = False
 
+    def _parse_user_to_connect(self, option, opt_str, arg, parser):
+        self.creds.parse_string_to_connect(arg)
+        self.machine_pass = False
+
     def _parse_workgroup(self, option, opt_str, arg, parser):
         self.creds.set_domain(arg)
+        self.creds.set_user_to_connect_domain(arg)
 
     def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)

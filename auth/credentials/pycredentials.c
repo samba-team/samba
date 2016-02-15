@@ -70,6 +70,25 @@ static PyObject *py_creds_set_username(pytalloc_Object *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_username(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
+static PyObject *py_creds_get_user_to_connect(pytalloc_Object *self)
+{
+	return PyString_FromStringOrNULL(cli_credentials_get_user_to_connect(PyCredentials_AsCliCredentials(self)));
+}
+
+static PyObject *py_creds_set_user_to_connect(pytalloc_Object *self, PyObject *args)
+{
+	char *newval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	return PyBool_FromLong(cli_credentials_set_user_to_connect(PyCredentials_AsCliCredentials(self), newval, obt));
+}
+
 static PyObject *py_creds_get_password(pytalloc_Object *self)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_password(PyCredentials_AsCliCredentials(self)));
@@ -88,6 +107,45 @@ static PyObject *py_creds_set_password(pytalloc_Object *self, PyObject *args)
 	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_password(PyCredentials_AsCliCredentials(self), newval, obt));
+}
+
+static PyObject *py_creds_get_password_to_connect(pytalloc_Object *self)
+{
+	return PyString_FromStringOrNULL(cli_credentials_get_password_to_connect(PyCredentials_AsCliCredentials(self)));
+}
+
+
+static PyObject *py_creds_set_password_to_connect(pytalloc_Object *self, PyObject *args)
+{
+	char *newval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	return PyBool_FromLong(cli_credentials_set_password_to_connect(PyCredentials_AsCliCredentials(self), newval, obt));
+}
+
+static PyObject *py_creds_get_user_to_connect_domain(pytalloc_Object *self)
+{
+	return PyString_FromStringOrNULL(cli_credentials_get_user_to_connect_domain(PyCredentials_AsCliCredentials(self)));
+}
+
+static PyObject *py_creds_set_user_to_connect_domain(pytalloc_Object *self, PyObject *args)
+{
+	char *newval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	return PyBool_FromLong(cli_credentials_set_user_to_connect_domain(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
 static PyObject *py_creds_get_domain(pytalloc_Object *self)
@@ -184,10 +242,10 @@ static PyObject *py_creds_wrong_password(pytalloc_Object *self)
 
 static PyObject *py_creds_set_cmdline_callbacks(pytalloc_Object *self)
 {
-        return PyBool_FromLong(cli_credentials_set_cmdline_callbacks(PyCredentials_AsCliCredentials(self)));
+	return PyBool_FromLong(cli_credentials_set_cmdline_callbacks(PyCredentials_AsCliCredentials(self)));
 }
 
-static PyObject *py_creds_parse_string(pytalloc_Object *self, PyObject *args)
+PyObject *parse_string(pytalloc_Object *self, PyObject *args, bool user_to_connect)
 {
 	char *newval;
 	enum credentials_obtained obt = CRED_SPECIFIED;
@@ -198,8 +256,18 @@ static PyObject *py_creds_parse_string(pytalloc_Object *self, PyObject *args)
 	}
 	obt = _obt;
 
-	cli_credentials_parse_string(PyCredentials_AsCliCredentials(self), newval, obt);
+	cli_credentials_parse_string(PyCredentials_AsCliCredentials(self), newval, obt, user_to_connect);
 	Py_RETURN_NONE;
+}
+
+static PyObject *py_creds_parse_string(pytalloc_Object *self, PyObject *args)
+{
+	return parse_string(self, args, false);
+}
+
+static PyObject *py_creds_parse_string_to_connect(pytalloc_Object *self, PyObject *args)
+{
+	return parse_string(self, args, true);
 }
 
 static PyObject *py_creds_get_nt_hash(pytalloc_Object *self)
@@ -412,12 +480,30 @@ static PyMethodDef py_creds_methods[] = {
 	{ "set_username", (PyCFunction)py_creds_set_username, METH_VARARGS,
 		"S.set_username(name, obtained=CRED_SPECIFIED) -> None\n"
 		"Change username." },
+	{ "get_user_to_connect", (PyCFunction)py_creds_get_user_to_connect, METH_NOARGS,
+		"S.get_user_to_connect() -> username\n"
+		"Obtain user to connect." },
+	{ "set_user_to_connect", (PyCFunction)py_creds_set_user_to_connect, METH_VARARGS,
+		"S.set_user_to_connect(name, obtained=CRED_SPECIFIED) -> None\n"
+		"Change user to connect." },
 	{ "get_password", (PyCFunction)py_creds_get_password, METH_NOARGS,
 		"S.get_password() -> password\n"
 		"Obtain password." },
 	{ "set_password", (PyCFunction)py_creds_set_password, METH_VARARGS,
 		"S.set_password(password, obtained=CRED_SPECIFIED) -> None\n"
 		"Change password." },
+	{ "get_password_to_connect", (PyCFunction)py_creds_get_password_to_connect, METH_NOARGS,
+		"S.get_password_to_connect() -> password\n"
+		"Obtain password to connect." },
+	{ "set_password_to_connect", (PyCFunction)py_creds_set_password_to_connect, METH_VARARGS,
+		"S.set_password_to_connect(password, obtained=CRED_SPECIFIED) -> None\n"
+		"Change password to connect." },
+	{ "get_user_to_connect_domain", (PyCFunction)py_creds_get_user_to_connect_domain, METH_NOARGS,
+		"S.get_user_to_connect_domain() -> domain\n"
+		"Obtain domain name." },
+	{ "set_user_to_connect_domain", (PyCFunction)py_creds_set_user_to_connect_domain, METH_VARARGS,
+		"S.set_user_to_connect_domain(domain, obtained=CRED_SPECIFIED) -> None\n"
+		"Change domain name." },
 	{ "get_domain", (PyCFunction)py_creds_get_domain, METH_NOARGS,
 		"S.get_domain() -> domain\n"
 		"Obtain domain name." },
@@ -439,7 +525,7 @@ static PyMethodDef py_creds_methods[] = {
 	{ "is_anonymous", (PyCFunction)py_creds_is_anonymous, METH_NOARGS,
 		NULL },
 	{ "set_anonymous", (PyCFunction)py_creds_set_anonymous, METH_NOARGS,
-        	"S.set_anonymous() -> None\n"
+		"S.set_anonymous() -> None\n"
 		"Use anonymous credentials." },
 	{ "get_workstation", (PyCFunction)py_creds_get_workstation, METH_NOARGS,
 		NULL },
@@ -455,6 +541,9 @@ static PyMethodDef py_creds_methods[] = {
 		"Use command-line to obtain credentials not explicitly set." },
 	{ "parse_string", (PyCFunction)py_creds_parse_string, METH_VARARGS,
 		"S.parse_string(text, obtained=CRED_SPECIFIED) -> None\n"
+		"Parse credentials string." },
+	{ "parse_string_to_connect", (PyCFunction)py_creds_parse_string_to_connect, METH_VARARGS,
+		"S.parse_string_to_connect(text, obtained=CRED_SPECIFIED) -> None\n"
 		"Parse credentials string." },
 	{ "get_nt_hash", (PyCFunction)py_creds_get_nt_hash, METH_NOARGS,
 		NULL },

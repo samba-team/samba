@@ -255,7 +255,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mode, 
 					 struct loadparm_context *lp_ctx,
 					 char *buf, int length, void **private1,
-					 unsigned int mux_id, void **password)  
+					 unsigned int mux_id, void **password)
 {
 	DATA_BLOB in;
 	if (strlen(buf) < 2) {

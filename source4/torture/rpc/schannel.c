@@ -931,12 +931,12 @@ bool torture_rpc_schannel_bench1(struct torture_context *torture)
 	s->user1_creds = cli_credentials_shallow_copy(s, cmdline_credentials);
 	tmp = torture_setting_string(s->tctx, "extra_user1", NULL);
 	if (tmp) {
-		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
+		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED, false);
 	}
 	s->user2_creds = cli_credentials_shallow_copy(s, cmdline_credentials);
 	tmp = torture_setting_string(s->tctx, "extra_user2", NULL);
 	if (tmp) {
-		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED);
+		cli_credentials_parse_string(s->user1_creds, tmp, CRED_SPECIFIED, false);
 	}
 
 	s->join_ctx1 = torture_join_domain(s->tctx, talloc_asprintf(s, "%sb", TEST_MACHINE_NAME),

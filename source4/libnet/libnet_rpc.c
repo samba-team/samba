@@ -54,7 +54,7 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 							   struct libnet_RpcConnect *r,
 							   void (*monitor)(struct monitor_msg*))
 {
-	struct composite_context *c;	
+	struct composite_context *c;
 	struct rpc_connect_srv_state *s;
 	struct dcerpc_binding *b;
 	struct composite_context *pipe_connect_req;
@@ -165,7 +165,7 @@ static void continue_pipe_connect(struct composite_context *ctx)
 		s->monitor_fn(&msg);
 	}
 
-	composite_done(c);	
+	composite_done(c);
 }
 
 
@@ -305,7 +305,7 @@ static void continue_lookup_dc(struct tevent_req *req)
 
 	c = tevent_req_callback_data(req, struct composite_context);
 	s = talloc_get_type_abort(c->private_data, struct rpc_connect_dc_state);
-	
+
 	/* receive result of domain controller lookup */
 	c->status = libnet_LookupDCs_recv(req, c, &s->f);
 	if (!composite_is_ok(c)) return;
@@ -327,13 +327,13 @@ static void continue_lookup_dc(struct tevent_req *req)
 	}
 
 	/* ok, pdc has been found so do attempt to rpc connect */
-	s->r2.level	       = LIBNET_RPC_CONNECT_SERVER_ADDRESS;
+	s->r2.level            = LIBNET_RPC_CONNECT_SERVER_ADDRESS;
 
 	/* this will cause yet another name resolution, but at least
 	 * we pass the right name down the stack now */
 	s->r2.in.name          = talloc_strdup(s, s->connect_name);
 	s->r2.in.address       = talloc_steal(s, s->f.out.dcs[0].address);
-	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;	
+	s->r2.in.dcerpc_iface  = s->r.in.dcerpc_iface;
 	s->r2.in.dcerpc_flags  = s->r.in.dcerpc_flags;
 
 	/* send rpc connect request to the server */
@@ -414,7 +414,7 @@ static NTSTATUS libnet_RpcConnectDC_recv(struct composite_context *c,
 		   the original parent is well nigh impossible at this
 		   point in the code (yes, I tried).
 		 */
-		r->out.dcerpc_pipe = talloc_reparent(talloc_parent(s->r.out.dcerpc_pipe), 
+		r->out.dcerpc_pipe = talloc_reparent(talloc_parent(s->r.out.dcerpc_pipe),
 						     mem_ctx, s->r.out.dcerpc_pipe);
 
 		/* reference created pipe structure to long-term libnet_context
@@ -516,7 +516,7 @@ static struct composite_context* libnet_RpcConnectDCInfo_send(struct libnet_cont
 
 	/* we need to query information on lsarpc interface first */
 	s->rpc_conn.in.dcerpc_iface    = &ndr_table_lsarpc;
-	
+
 	/* request connection to the lsa pipe on the pdc */
 	conn_req = libnet_RpcConnect_send(ctx, c, &s->rpc_conn, s->monitor_fn);
 	if (composite_nomem(c, conn_req)) return c;
@@ -565,7 +565,7 @@ static void continue_dci_rpc_connect(struct composite_context *ctx)
 
 	/* prepare to open a policy handle on lsa pipe */
 	s->lsa_pipe = s->ctx->lsa.pipe;
-	
+
 	s->qos.len                 = 0;
 	s->qos.impersonation_level = 2;
 	s->qos.context_mode        = 1;
@@ -663,7 +663,7 @@ static void continue_lsa_policy(struct tevent_req *subreq)
   may result in failure) and query lsa info for domain name and sid.
 */
 static void continue_lsa_query_info2(struct tevent_req *subreq)
-{	
+{
 	struct composite_context *c;
 	struct rpc_connect_dci_state *s;
 
@@ -672,7 +672,7 @@ static void continue_lsa_query_info2(struct tevent_req *subreq)
 
 	c->status = dcerpc_lsa_QueryInfoPolicy2_r_recv(subreq, s);
 	TALLOC_FREE(subreq);
-	
+
 	/* In case of error just null the realm and guid and proceed
 	   to the next step. After all, it doesn't have to be AD domain
 	   controller we talking to - NT-style PDC also counts */
@@ -854,7 +854,7 @@ static void continue_secondary_conn(struct composite_context *ctx)
 		s->r.out.error_string = talloc_asprintf(c,
 							"secondary connection failed: %s",
 							nt_errstr(c->status));
-		
+
 		composite_error(c, c->status);
 		return;
 	}
@@ -1025,7 +1025,10 @@ NTSTATUS libnet_RpcConnect(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			   struct libnet_RpcConnect *r)
 {
 	struct composite_context *c;
-	
+	const char **values = {NULL, NULL, NULL};
+
+	switch_values(ctx->cred, values);
 	c = libnet_RpcConnect_send(ctx, mem_ctx, r, NULL);
+	switch_back_values(ctx->cred, values);
 	return libnet_RpcConnect_recv(c, ctx, mem_ctx, r);
 }

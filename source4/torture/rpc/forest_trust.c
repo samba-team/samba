@@ -798,7 +798,7 @@ static bool testcase_ForestTrusts(struct torture_context *tctx,
 	torture_assert(tctx, dom2_credentials != NULL, "cli_credentials_init()");
 
 	cli_credentials_parse_string(dom2_credentials, dom2_cred_string,
-				     CRED_SPECIFIED);
+				     CRED_SPECIFIED, false);
 	cli_credentials_set_workstation(dom2_credentials,
 					TEST_MACHINE_NAME, CRED_SPECIFIED);
 

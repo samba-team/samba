@@ -67,7 +67,7 @@ static bool test_parse_string(struct torture_context *tctx)
 	struct cli_credentials *creds = cli_credentials_init_anon(tctx);
 
 	/* anonymous */
-	cli_credentials_parse_string(creds, "%", CRED_SPECIFIED);
+	cli_credentials_parse_string(creds, "%", CRED_SPECIFIED, false);
 
 	torture_assert_str_equal(tctx, cli_credentials_get_domain(creds),
 				 "", "domain");
@@ -80,7 +80,7 @@ static bool test_parse_string(struct torture_context *tctx)
 
 	/* username + password */
 	cli_credentials_parse_string(creds, "somebody%secret", 
-				     CRED_SPECIFIED);
+				     CRED_SPECIFIED, false);
 
 	torture_assert_str_equal(tctx, cli_credentials_get_domain(creds),
 				 "", "domain");
@@ -93,7 +93,7 @@ static bool test_parse_string(struct torture_context *tctx)
 
 	/* principal */
 	cli_credentials_parse_string(creds, "prin@styx", 
-				     CRED_SPECIFIED);
+				     CRED_SPECIFIED, false);
 
 	torture_assert_str_equal(tctx, cli_credentials_get_realm(creds),
 				 "STYX", "realm");

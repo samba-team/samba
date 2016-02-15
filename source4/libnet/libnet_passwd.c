@@ -34,7 +34,7 @@
  */
 static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, union libnet_ChangePassword *r)
 {
-        NTSTATUS status;
+	NTSTATUS status;
 	struct libnet_RpcConnect c;
 #if 0
 	struct policy_handle user_handle;
@@ -58,7 +58,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	/* prepare connect to the SAMR pipe of the users domain PDC */
 	c.level                    = LIBNET_RPC_CONNECT_PDC;
 	c.in.name                  = r->samr.in.domain_name;
-	c.in.dcerpc_iface     	   = &ndr_table_samr;
+	c.in.dcerpc_iface          = &ndr_table_samr;
 	c.in.dcerpc_flags          = DCERPC_ANON_FALLBACK;
 
 	/* 1. connect to the SAMR pipe of users domain PDC (maybe a standalone server or workstation) */
@@ -85,7 +85,7 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
-	encode_pw_buffer(nt_pass.data,  r->samr.in.newpassword, STR_UNICODE);
+	encode_pw_buffer(nt_pass.data, r->samr.in.newpassword, STR_UNICODE);
 	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
