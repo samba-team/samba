@@ -374,6 +374,7 @@ it's also easier to use the "step" command within gdb.
 Good Example:
 
 	char *name = NULL;
+	int ret;
 
 	name = get_some_name();
 	if (name == NULL) {
