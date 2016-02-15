@@ -272,12 +272,19 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 	/* fail_auth_count */
 	/* n_tl_data */
 
-	ret = sdb_event_to_kmod(context,
-				s->modified_by ? s->modified_by : &s->created_by,
-				k);
-	if (ret) {
-		free_krb5_db_entry(context, k);
-		return ret;
+	/*
+	 * If we leave early when looking up the realm, we do not have all
+	 * information about a principal. We need to construct a db entry
+	 * with minimal information, so skip this part.
+	 */
+	if (s->created_by.time != 0) {
+		ret = sdb_event_to_kmod(context,
+					s->modified_by ? s->modified_by : &s->created_by,
+					k);
+		if (ret) {
+			free_krb5_db_entry(context, k);
+			return ret;
+		}
 	}
 
 	/* FIXME: TODO HDB Extensions */
