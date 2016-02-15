@@ -282,24 +282,24 @@ static int sdb_entry_ex_to_krb5_db_entry(krb5_context context,
 
 	/* FIXME: TODO HDB Extensions */
 
-
-	k->key_data = malloc(s->keys.len * sizeof(krb5_key_data));
-	if (k->key_data == NULL) {
-		free_krb5_db_entry(context, k);
-		return ret;
-	}
-
-	for (i=0; i < s->keys.len; i++) {
-
-		ret = sdb_key_to_krb5_key_data(&s->keys.val[i],
-					       s->kvno,
-					       &k->key_data[i]);
-		if (ret) {
+	if (s->keys.len > 0) {
+		k->key_data = malloc(s->keys.len * sizeof(krb5_key_data));
+		if (k->key_data == NULL) {
 			free_krb5_db_entry(context, k);
 			return ret;
 		}
 
-		k->n_key_data++;
+		for (i=0; i < s->keys.len; i++) {
+			ret = sdb_key_to_krb5_key_data(&s->keys.val[i],
+						       s->kvno,
+						       &k->key_data[i]);
+			if (ret) {
+				free_krb5_db_entry(context, k);
+				return ret;
+			}
+
+			k->n_key_data++;
+		}
 	}
 
 	return 0;
