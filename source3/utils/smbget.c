@@ -51,7 +51,6 @@ struct opt {
 	bool nonprompt;
 	bool quiet;
 	bool dots;
-	bool keep_permissions;
 	bool verbose;
 	bool send_stdout;
 	bool update;
@@ -170,7 +169,6 @@ static bool smb_download_dir(const char *base, const char *name, int resume)
 	struct smbc_dirent *dirent;
 	const char *relname = name;
 	char *tmpname;
-	struct stat remotestat;
 	bool ok = false;
 
 	snprintf(path, SMB_MAXPATHLEN-1, "%s%s%s", base,
@@ -263,24 +261,6 @@ static bool smb_download_dir(const char *base, const char *name, int resume)
 		free(newname);
 	}
 	free(tmpname);
-
-	if (opt.keep_permissions) {
-		if (smbc_fstat(dirhandle, &remotestat) < 0) {
-			fprintf(stderr,
-				"Unable to get stats on %s on remote server\n",
-				path);
-			smbc_closedir(dirhandle);
-			return false;
-		}
-
-		if (chmod(relname, remotestat.st_mode) < 0) {
-			fprintf(stderr,
-				"Unable to change mode of local dir %s to %o\n",
-				relname, (unsigned int)remotestat.st_mode);
-			smbc_closedir(dirhandle);
-			return false;
-		}
-	}
 
 	smbc_closedir(dirhandle);
 	return ok;
@@ -657,17 +637,6 @@ static bool smb_download_file(const char *base, const char *name,
 		fputc('\n', stderr);
 	}
 
-	if (opt.keep_permissions && !opt.send_stdout) {
-		if (fchmod(localhandle, remotestat.st_mode) < 0) {
-			fprintf(stderr, "Unable to change mode of local "
-				"file %s to %o\n",
-				path, (unsigned int)remotestat.st_mode);
-			smbc_close(remotehandle);
-			close(localhandle);
-			return false;
-		}
-	}
-
 	smbc_close(remotehandle);
 	if (localhandle != STDOUT_FILENO) {
 		close(localhandle);
@@ -802,7 +771,6 @@ int main(int argc, char **argv)
 		{"resume",     'r', POPT_ARG_NONE,   &resume,           0,  "Automatically resume aborted files" },
 		{"update",     'u', POPT_ARG_NONE,   &opt.update,       0,  "Download only when remote file is newer than local file or local file is missing"},
 		{"recursive",  'R', POPT_ARG_NONE,   &recursive,        0,  "Recursively download files" },
-		{"keep-permissions", 'P', POPT_ARG_NONE, &opt.keep_permissions, 'P', "Keep permissions" },
 		{"blocksize",  'b', POPT_ARG_INT,    &opt.blocksize,   'b', "Change number of bytes in a block"},
 
 		{"outputfile", 'o', POPT_ARG_STRING, &opt.outputfile,  'o', "Write downloaded data to specified file" },
