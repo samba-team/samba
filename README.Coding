@@ -312,6 +312,17 @@ lib/replace/, new code should adhere to the following conventions:
   * Boolean values are "true" and "false" (not True or False)
   * Exact width integers are of type [u]int[8|16|32|64]_t
 
+Most of the time a good name for a boolean variable is 'ok'. Here is an
+example we often use:
+
+	bool ok;
+
+	ok = foo();
+	if (!ok) {
+		/* do something */
+	}
+
+It makes the code more readable and is easy to debug.
 
 Typedefs
 --------
