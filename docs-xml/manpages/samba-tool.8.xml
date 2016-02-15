@@ -592,6 +592,13 @@
 	<para>Gets the password of an user account.</para>
 </refsect3>
 
+<refsect3>
+	<title>user syncpasswords <replaceable>--cache-ldb-initialize</replaceable> [options]</title>
+	<para>Syncs the passwords of all user accounts, using an optional script.</para>
+	<para>Note that this command should run on a single domain controller only
+	(typically the PDC-emulator).</para>
+</refsect3>
+
 <refsect2>
 	<title>vampire [options] <replaceable>domain</replaceable></title>
 	<para>Join and synchronise a remote AD domain to the local server.
