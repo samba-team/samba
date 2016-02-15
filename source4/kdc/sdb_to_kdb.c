@@ -331,11 +331,14 @@ int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 
 	ZERO_STRUCTP(k);
 
-	skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
+	if (s->ctx != NULL) {
+		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
 
-	k->e_data	= (void *)skdc_entry;
+		k->e_data	= (void *)skdc_entry;
 
-	talloc_set_destructor(skdc_entry, samba_kdc_kdb_entry_destructor);
+		talloc_set_destructor(skdc_entry,
+				      samba_kdc_kdb_entry_destructor);
+	}
 
 	return sdb_entry_ex_to_krb5_db_entry(context, &s->entry, k);
 }
