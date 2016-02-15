@@ -269,6 +269,7 @@ int kerberos_kinit_password_ext(const char *principal,
 	krb5_error_code code = 0;
 	krb5_ccache cc = NULL;
 	krb5_principal me = NULL;
+	krb5_principal canon_princ = NULL;
 	krb5_creds my_creds;
 	krb5_get_init_creds_opt *opt = NULL;
 	smb_krb5_addresses *addr = NULL;
@@ -302,6 +303,11 @@ int kerberos_kinit_password_ext(const char *principal,
 
 	krb5_get_init_creds_opt_set_renew_life(opt, renewable_time);
 	krb5_get_init_creds_opt_set_forwardable(opt, True);
+
+	/* Turn on canonicalization for lower case realm support */
+#ifndef SAMBA4_USES_HEIMDAL /* MIT */
+	krb5_get_init_creds_opt_set_canonicalize(opt, true);
+#endif /* MIT */
 #if 0
 	/* insane testing */
 	krb5_get_init_creds_opt_set_tkt_life(opt, 60);
@@ -328,7 +334,12 @@ int kerberos_kinit_password_ext(const char *principal,
 		goto out;
 	}
 
-	if ((code = krb5_cc_initialize(ctx, cc, me))) {
+	canon_princ = me;
+#ifndef SAMBA4_USES_HEIMDAL /* MIT */
+	canon_princ = my_creds.client;
+#endif /* MIT */
+
+	if ((code = krb5_cc_initialize(ctx, cc, canon_princ))) {
 		goto out;
 	}
 
