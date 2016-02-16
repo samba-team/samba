@@ -449,17 +449,6 @@ bool sid_check_is_builtin(const struct dom_sid *sid);
 bool sid_check_is_in_builtin(const struct dom_sid *sid);
 bool sid_check_is_wellknown_builtin(const struct dom_sid *sid);
 
-/* The following definitions come from lib/util_file.c  */
-
-struct tevent_req *file_pload_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   const char *syscmd, size_t maxsize);
-int file_pload_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-		    uint8_t **buf);
-
-char **file_lines_pload(TALLOC_CTX *mem_ctx, const char *syscmd,
-			int *numlines);
-
 /* The following definitions come from lib/util_nscd.c  */
 
 void smb_nscd_flush_user_cache(void);

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
+#include "lib/util_file.h"
 
 /****************************************************************************
  Normalise for DOS usage.

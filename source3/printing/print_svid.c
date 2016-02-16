@@ -33,6 +33,7 @@
 
 #include "includes.h"
 #include "printing/pcap.h"
+#include "lib/util_file.h"
 
 #if defined(SYSV) || defined(HPUX)
 bool sysv_cache_reload(struct pcap_cache **_pcache)

@@ -19,6 +19,7 @@
 
 
 #include "includes.h"
+#include "lib/util_file.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_QUOTA
