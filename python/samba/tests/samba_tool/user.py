@@ -17,9 +17,11 @@
 
 import os
 import time
+import base64
 import ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba import (
+        credentials,
         nttime2unix,
         dsdb
         )
@@ -114,12 +116,32 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         for user in self.users:
             newpasswd = self.randomPass()
+            creds = credentials.Credentials()
+            creds.set_anonymous()
+            creds.set_password(newpasswd)
+            nthash = creds.get_nt_hash()
+            attributes = "sAMAccountName,unicodePwd,supplementalCredentials"
+            unicodePwd = base64.b64encode(creds.get_nt_hash())
+
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
                                                 "--newpassword=%s" % newpasswd)
-            # self.assertCmdSuccess(result, "Ensure setpassword runs")
+            self.assertCmdSuccess(result, "Ensure setpassword runs")
             self.assertEquals(err,"","setpassword without url")
             self.assertMatch(out, "Changed password OK", "setpassword without url")
+
+            (result, out, err) = self.runsubcmd("user", "getpassword",
+                                                user["name"],
+                                                "--attributes=%s" % attributes)
+            self.assertCmdSuccess(result, "Ensure getpassword runs")
+            self.assertEqual(err,"","getpassword without url")
+            self.assertMatch(out, "Got password OK", "getpassword without url")
+            self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
+                    "getpassword: 'sAMAccountName': %s out[%s]" % (user["name"], out))
+            self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
+                    "getpassword unicodePwd: out[%s]" % out)
+            self.assertMatch(out, "supplementalCredentials:: ",
+                    "getpassword supplementalCredentials: out[%s]" % out)
 
         for user in self.users:
             newpasswd = self.randomPass()
