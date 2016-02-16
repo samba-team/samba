@@ -15,11 +15,6 @@
 #include <errno.h>
 #include <pthread.h>
 
-static int sys_waitpid(pid_t pid,int *status,int options)
-{
-  return waitpid(pid,status,options);
-}
-
 #define DATA "conftest.fcntl"
 
 #define SEEK_SET 0

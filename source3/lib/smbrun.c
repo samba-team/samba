@@ -116,7 +116,7 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 
 		
 		/* the parent just waits for the child to exit */
-		while((wpid = sys_waitpid(pid,&status,0)) < 0) {
+		while((wpid = waitpid(pid,&status,0)) < 0) {
 			if(errno == EINTR) {
 				errno = 0;
 				continue;
@@ -287,7 +287,7 @@ int smbrunsecret(const char *cmd, const char *secret)
 		close(ifd[1]);
 
 		/* the parent just waits for the child to exit */
-		while((wpid = sys_waitpid(pid, &status, 0)) < 0) {
+		while((wpid = waitpid(pid, &status, 0)) < 0) {
 			if(errno == EINTR) {
 				errno = 0;
 				continue;

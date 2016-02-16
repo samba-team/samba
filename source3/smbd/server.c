@@ -630,7 +630,7 @@ static void smbd_sig_chld_handler(struct tevent_context *ev,
 		talloc_get_type_abort(private_data,
 		struct smbd_parent_context);
 
-	while ((pid = sys_waitpid(-1, &status, WNOHANG)) > 0) {
+	while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
 		bool unclean_shutdown = False;
 
 		/* If the child terminated normally, assume

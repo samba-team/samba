@@ -135,7 +135,7 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 		(unsigned int)child_pid));
 
 	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
-	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
+	while  ((wait_pid = waitpid(child_pid, &child_status, 0)) < 0) {
 		if (errno == EINTR) {
 			DEBUG(10, ("tdb_validate: got signal during waitpid, "
 				   "retrying\n"));

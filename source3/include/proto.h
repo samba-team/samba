@@ -243,7 +243,6 @@ int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len);
 void kernel_flock(int fd, uint32_t share_mode, uint32_t access_mask);
 DIR *sys_fdopendir(int fd);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
-int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(void);
 void set_effective_capability(enum smbd_capability capability);
 void drop_effective_capability(enum smbd_capability capability);

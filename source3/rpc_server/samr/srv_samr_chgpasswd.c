@@ -430,7 +430,7 @@ static bool chat_with_program(char *passwordprogram, const struct passwd *pass,
 			kill(pid, SIGKILL);	/* be sure to end this process */
 		}
 
-		while ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
+		while ((wpid = waitpid(pid, &wstat, 0)) < 0) {
 			if (errno == EINTR) {
 				errno = 0;
 				continue;

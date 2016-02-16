@@ -269,7 +269,7 @@ static void bq_sig_chld_handler(struct tevent_context *ev_ctx,
 	int status;
 	pid_t pid;
 
-	pid = sys_waitpid(-1, &status, WNOHANG);
+	pid = waitpid(-1, &status, WNOHANG);
 	if (WIFEXITED(status)) {
 		DEBUG(6, ("Bq child process %d terminated with %d\n",
 			  (int)pid, WEXITSTATUS(status)));

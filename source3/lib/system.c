@@ -572,19 +572,6 @@ int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
 }
 
 /*******************************************************************
-The wait() calls vary between systems
-********************************************************************/
-
-int sys_waitpid(pid_t pid,int *status,int options)
-{
-#ifdef HAVE_WAITPID
-	return waitpid(pid,status,options);
-#else /* HAVE_WAITPID */
-	return wait4(pid, status, options, NULL);
-#endif /* HAVE_WAITPID */
-}
-
-/*******************************************************************
  System wrapper for getwd. Always returns MALLOC'ed memory, or NULL
  on error (malloc fail usually).
 ********************************************************************/
@@ -1200,7 +1187,7 @@ int sys_pclose(int fd)
 	 */
 
 	do {
-		wait_pid = sys_waitpid (entry->child_pid, &wstatus, 0);
+		wait_pid = waitpid (entry->child_pid, &wstatus, 0);
 	} while (wait_pid == -1 && errno == EINTR);
 
 	SAFE_FREE(entry);

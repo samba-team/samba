@@ -478,7 +478,7 @@ static void check_updater_child(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	pid = sys_waitpid(background_lpq_updater_pid, &status, WNOHANG);
+	pid = waitpid(background_lpq_updater_pid, &status, WNOHANG);
 	if (pid > 0) {
 		DEBUG(2, ("The background queue child died... Restarting!\n"));
 		pid = start_background_queue(ev_ctx, msg_ctx, bq_logfile);

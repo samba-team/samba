@@ -432,7 +432,7 @@ static void winbindd_sig_chld_handler(struct tevent_context *ev,
 {
 	pid_t pid;
 
-	while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
+	while ((pid = waitpid(-1, NULL, WNOHANG)) > 0) {
 		winbind_child_died(pid);
 	}
 }

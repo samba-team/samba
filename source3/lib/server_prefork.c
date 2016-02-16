@@ -329,7 +329,7 @@ static void prefork_cleanup_loop(struct prefork_pool *pfp)
 			continue;
 		}
 
-		pid = sys_waitpid(pfp->pool[i].pid, &status, WNOHANG);
+		pid = waitpid(pfp->pool[i].pid, &status, WNOHANG);
 		if (pid > 0) {
 
 			if (pfp->pool[i].status != PF_WORKER_EXITING) {
