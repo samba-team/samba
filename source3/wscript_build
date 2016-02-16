@@ -261,6 +261,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                    lib/util_sock.c
                    lib/util_tsock.c
                    lib/util_transfer_file.c
+                   lib/sys_popen.c
                    lib/sock_exec.c''',
                    deps='ndr LIBTSOCKET samba-security NDR_SECURITY samba-util util_tdb sys_rw iov_buf')
 

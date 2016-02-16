@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/util/sys_rw.h"
+#include "lib/sys_popen.h"
 
 /**
  Load from a pipe into memory.
