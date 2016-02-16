@@ -65,12 +65,11 @@ static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 	if (ipalloc_state->noiphost[pnn]) {
 		return false;
 	}
-
-	public_ips = &ipalloc_state->available_public_ips[pnn];
-
-	if (public_ips == NULL) {
+	if (ipalloc_state->available_public_ips == NULL) {
 		return false;
 	}
+
+	public_ips = &ipalloc_state->available_public_ips[pnn];
 
 	for (i=0; i<public_ips->num; i++) {
 		if (ctdb_same_ip(&ip->addr, &public_ips->ip[i].addr)) {
