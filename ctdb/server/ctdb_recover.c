@@ -32,6 +32,8 @@
 #include "lib/util/debug.h"
 #include "lib/util/time.h"
 #include "lib/util/util_process.h"
+#include "lib/util/strv.h"
+#include "lib/util/strv_util.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -901,15 +903,23 @@ ctdb_drop_all_ips_event(struct tevent_context *ev, struct tevent_timer *te,
 static char cluster_mutex_helper[PATH_MAX+1] = "";
 
 static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
-				      const char *lockfile, char ***argv)
+				      const char *argstring, char ***argv)
 {
-	int nargs;
+	int nargs, i, ret, n;
 	char **args = NULL;
+	char *strv = NULL;
+	char *t = NULL;
 
-	/* Anticipate the size of the array.  Given that lock file is
-	 * really now some arbitrary arguments to a configuration
-	 * helper, it really needs to be parsed... but not yet. */
-	args = talloc_array(mem_ctx, char *, 3);
+	ret = strv_split(mem_ctx, &strv, argstring, " \t");
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Unable to parse mutex helper string \"%s\" (%s)\n",
+		       argstring, strerror(ret)));
+		return false;
+	}
+	n = strv_count(strv);
+
+	args = talloc_array(mem_ctx, char *, n + 2);
 	if (args == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " out of memory\n"));
 		return false;
@@ -929,13 +939,12 @@ static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
 	}
 	args[nargs++] = cluster_mutex_helper;
 
-	args[nargs] = talloc_strdup(args, lockfile);
-	if (args[nargs] == NULL) {
-		talloc_free(args);
-		DEBUG(DEBUG_ERR,(__location__ " out of memory\n"));
-		return false;
+	t = NULL;
+	for (i = 0; i < n; i++) {
+		/* Don't copy, just keep cmd_args around */
+		t = strv_next(strv, t);
+		args[nargs++] = t;
 	}
-	nargs++;
 
 	/* Make sure last argument is NULL */
 	args[nargs] = NULL;
