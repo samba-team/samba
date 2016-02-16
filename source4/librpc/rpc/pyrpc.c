@@ -342,7 +342,6 @@ static PyObject *py_transfer_syntax_ndr_new(PyTypeObject *type, PyObject *args, 
 static PyTypeObject py_transfer_syntax_ndr_SyntaxType = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "base.transfer_syntax_ndr",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_doc = "transfer_syntax_ndr()\n",
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_new = py_transfer_syntax_ndr_new,
@@ -356,7 +355,6 @@ static PyObject *py_transfer_syntax_ndr64_new(PyTypeObject *type, PyObject *args
 static PyTypeObject py_transfer_syntax_ndr64_SyntaxType = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "base.transfer_syntax_ndr64",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_doc = "transfer_syntax_ndr64()\n",
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_new = py_transfer_syntax_ndr64_new,
@@ -395,7 +393,6 @@ static PyObject *py_bind_time_features_syntax_new(PyTypeObject *type, PyObject *
 static PyTypeObject py_bind_time_features_syntax_SyntaxType = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "base.bind_time_features_syntax",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_doc = "bind_time_features_syntax(features)\n",
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_new = py_bind_time_features_syntax_new,
@@ -415,8 +412,11 @@ void initbase(void)
 		return;
 
 	py_transfer_syntax_ndr_SyntaxType.tp_base = ndr_syntax_id_Type;
+	py_transfer_syntax_ndr_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
 	py_transfer_syntax_ndr64_SyntaxType.tp_base = ndr_syntax_id_Type;
+	py_transfer_syntax_ndr64_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
 	py_bind_time_features_syntax_SyntaxType.tp_base = ndr_syntax_id_Type;
+	py_bind_time_features_syntax_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
 
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
 		return;
