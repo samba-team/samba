@@ -25,6 +25,8 @@ from samba import (
         nttime2unix,
         dsdb
         )
+from samba.ndr import ndr_unpack
+from samba.dcerpc import drsblobs
 
 class UserCmdTestCase(SambaToolCmdTest):
     """Tests for samba-tool user subcommands"""
@@ -100,7 +102,79 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertEquals("%s" % found.get("cn"), "%(name)s" % user)
             self.assertEquals("%s" % found.get("name"), "%(name)s" % user)
 
+    def _verify_supplementalCredentials(self, ldif,
+                                        min_packages=3,
+                                        max_packages=5):
+        msgs = self.samdb.parse_ldif(ldif)
+        (changetype, obj) = next(msgs)
 
+        self.assertIn("supplementalCredentials", obj, "supplementalCredentials attribute required")
+        sc_blob = obj["supplementalCredentials"][0]
+        sc = ndr_unpack(drsblobs.supplementalCredentialsBlob, sc_blob)
+
+        self.assertGreaterEqual(sc.sub.num_packages,
+                                min_packages, "min_packages check")
+        self.assertLessEqual(sc.sub.num_packages,
+                             max_packages, "max_packages check")
+
+        if max_packages == 0:
+            return
+
+        def find_package(packages, name, start_idx=0):
+            for i in xrange(start_idx, len(packages)):
+                if packages[i].name == name:
+                    return (i, packages[i])
+            return (None, None)
+
+        # The ordering is this
+        #
+        # Primary:Kerberos-Newer-Keys (optional)
+        # Primary:Kerberos
+        # Primary:WDigest
+        # Primary:CLEARTEXT (optional)
+        #
+        # And the 'Packages' package is insert before the last
+        # other package.
+
+        nidx = 0
+        (pidx, pp) = find_package(sc.sub.packages, "Packages", start_idx=nidx)
+        self.assertIsNotNone(pp, "Packages required")
+        self.assertEqual(pidx + 1, sc.sub.num_packages - 1,
+                         "Packages needs to be at num_packages - 1")
+
+        (knidx, knp) = find_package(sc.sub.packages, "Primary:Kerberos-Newer-Keys",
+                                    start_idx=nidx)
+        if knidx is not None:
+            self.assertEqual(knidx, nidx, "Primary:Kerberos-Newer-Keys at wrong position")
+            nidx = nidx + 1
+            if nidx == pidx:
+                nidx = nidx + 1
+
+        (kidx, kp) = find_package(sc.sub.packages, "Primary:Kerberos",
+                                    start_idx=nidx)
+        self.assertIsNotNone(pp, "Primary:Kerberos required")
+        self.assertEqual(kidx, nidx, "Primary:Kerberos at wrong position")
+        nidx = nidx + 1
+        if nidx == pidx:
+            nidx = nidx + 1
+
+        (widx, wp) = find_package(sc.sub.packages, "Primary:WDigest",
+                                  start_idx=nidx)
+        self.assertIsNotNone(pp, "Primary:WDigest required")
+        self.assertEqual(widx, nidx, "Primary:WDigest at wrong position")
+        nidx = nidx + 1
+        if nidx == pidx:
+            nidx = nidx + 1
+
+        (cidx, cp) = find_package(sc.sub.packages, "Primary:CLEARTEXT",
+                                    start_idx=nidx)
+        if cidx is not None:
+            self.assertEqual(cidx, nidx, "Primary:CLEARTEXT at wrong position")
+            nidx = nidx + 1
+            if nidx == pidx:
+                nidx = nidx + 1
+
+        self.assertEqual(nidx, sc.sub.num_packages, "Unknown packages found")
 
     def test_setpassword(self):
         for user in self.users:
@@ -142,6 +216,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                     "getpassword unicodePwd: out[%s]" % out)
             self.assertMatch(out, "supplementalCredentials:: ",
                     "getpassword supplementalCredentials: out[%s]" % out)
+            self._verify_supplementalCredentials(out.replace("\nGot password OK\n", ""))
 
         for user in self.users:
             newpasswd = self.randomPass()
