@@ -51,25 +51,27 @@ class TallocTests(samba.tests.TestCase):
         '''get a list of attributes for RODC replication'''
         partial_attribute_set = drsuapi.DsPartialAttributeSet()
 
-        # we expect one block for the object, and one for the structure
-        self.check_blocks(partial_attribute_set, 2)
+        # we expect one block for the object
+        self.check_blocks(partial_attribute_set, 1)
 
         attids = [1, 2, 3]
         partial_attribute_set.version = 1
         partial_attribute_set.attids     = attids
         partial_attribute_set.num_attids = len(attids)
 
-        # we expect one block object, a structure, an ARRAY, and a
+        # we expect one block for the object, a structure, and a
         # reference to the array
-        self.check_blocks(partial_attribute_set, 3)
+        self.check_blocks(partial_attribute_set, 2)
 
         return partial_attribute_set
 
     def pas_test(self):
         pas = self.get_rodc_partial_attribute_set()
-        self.check_blocks(pas, 3)
+        self.check_blocks(pas, 2)
         req8 = drsuapi.DsGetNCChangesRequest8()
-        self.check_blocks(req8, 2)
+        self.check_blocks(req8, 1)
+
+        # We expect the pas and req8, plus one block for each python object
         self.check_blocks(None, 5)
         req8.partial_attribute_set = pas
         if req8.partial_attribute_set.attids[1] != 2:
