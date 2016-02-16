@@ -188,13 +188,41 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertEquals(err,"","setpassword with url")
             self.assertMatch(out, "Changed password OK", "setpassword with url")
 
+        attributes = "sAMAccountName,unicodePwd,supplementalCredentials"
+        (result, out, err) = self.runsubcmd("user", "syncpasswords",
+                                            "--cache-ldb-initialize",
+                                            "--attributes=%s" % attributes)
+        self.assertCmdSuccess(result, "Ensure syncpasswords --cache-ldb-initialize runs")
+        self.assertEqual(err,"","getpassword without url")
+        cache_attrs = {
+            "objectClass": { "value": "userSyncPasswords" },
+            "samdbUrl": { },
+            "dirsyncFilter": { },
+            "dirsyncAttribute": { },
+            "dirsyncControl": { "value": "dirsync:1:0:0"},
+            "passwordAttribute": { },
+            "currentTime": { },
+        }
+        for a in cache_attrs.keys():
+            v = cache_attrs[a].get("value", "")
+            self.assertMatch(out, "%s: %s" % (a, v),
+                "syncpasswords --cache-ldb-initialize: %s: %s out[%s]" % (a, v, out))
+
+        (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
+        self.assertCmdSuccess(result, "Ensure syncpasswords --no-wait runs")
+        self.assertEqual(err,"","syncpasswords --no-wait")
+        self.assertMatch(out, "dirsync_loop(): results 0",
+            "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
+        for user in self.users:
+            self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
+                "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
+
         for user in self.users:
             newpasswd = self.randomPass()
             creds = credentials.Credentials()
             creds.set_anonymous()
             creds.set_password(newpasswd)
             nthash = creds.get_nt_hash()
-            attributes = "sAMAccountName,unicodePwd,supplementalCredentials"
             unicodePwd = base64.b64encode(creds.get_nt_hash())
 
             (result, out, err) = self.runsubcmd("user", "setpassword",
@@ -203,6 +231,22 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, "Ensure setpassword runs")
             self.assertEquals(err,"","setpassword without url")
             self.assertMatch(out, "Changed password OK", "setpassword without url")
+
+            (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
+            self.assertCmdSuccess(result, "Ensure syncpasswords --no-wait runs")
+            self.assertEqual(err,"","syncpasswords --no-wait")
+            self.assertMatch(out, "dirsync_loop(): results 0",
+                "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
+            self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
+                "syncpasswords --no-wait: 'sAMAccountName': %s out[%s]" % (user["name"], out))
+            self.assertMatch(out, "# unicodePwd::: REDACTED SECRET ATTRIBUTE",
+                    "getpassword '# unicodePwd::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
+            self.assertMatch(out, "unicodePwd:: %s" % unicodePwd,
+                    "getpassword unicodePwd: out[%s]" % out)
+            self.assertMatch(out, "# supplementalCredentials::: REDACTED SECRET ATTRIBUTE",
+                    "getpassword '# supplementalCredentials::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
+            self.assertMatch(out, "supplementalCredentials:: ",
+                    "getpassword supplementalCredentials: out[%s]" % out)
 
             (result, out, err) = self.runsubcmd("user", "getpassword",
                                                 user["name"],
