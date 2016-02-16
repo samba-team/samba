@@ -96,8 +96,11 @@ static struct smbconf_csn conf_last_csn;
 static int config_backend = CONFIG_BACKEND_FILE;
 
 /* some helpful bits */
-#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
-#define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
+#define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && \
+                       (ServicePtrs != NULL) && \
+		       (ServicePtrs[(i)] != NULL) && ServicePtrs[(i)]->valid)
+#define VALID(i) ((ServicePtrs != NULL) && (ServicePtrs[i]!= NULL) && \
+                  ServicePtrs[i]->valid)
 
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
@@ -1259,7 +1262,7 @@ static void free_service_byindex(int idx)
 	}
 
 	free_service(ServicePtrs[idx]);
-	talloc_free_children(ServicePtrs[idx]);
+	TALLOC_FREE(ServicePtrs[idx]);
 }
 
 /***************************************************************************
@@ -1281,20 +1284,30 @@ static int add_a_service(const struct loadparm_service *pservice, const char *na
 		}
 	}
 
-	/* if not, then create one */
-	i = iNumServices;
-	tsp = talloc_realloc(NULL, ServicePtrs, struct loadparm_service *, num_to_alloc);
-	if (tsp == NULL) {
-		DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
-		return (-1);
+	/* Re use empty slots if any before allocating new one.*/
+	for (i=0; i < iNumServices; i++) {
+		if (ServicePtrs[i] == NULL) {
+			break;
+		}
 	}
-	ServicePtrs = tsp;
-	ServicePtrs[iNumServices] = talloc_zero(ServicePtrs, struct loadparm_service);
-	if (!ServicePtrs[iNumServices]) {
+	if (i == iNumServices) {
+		/* if not, then create one */
+		tsp = talloc_realloc(NULL, ServicePtrs,
+				     struct loadparm_service *,
+				     num_to_alloc);
+		if (tsp == NULL) {
+			DEBUG(0, ("add_a_service: failed to enlarge "
+				  "ServicePtrs!\n"));
+			return (-1);
+		}
+		ServicePtrs = tsp;
+		iNumServices++;
+	}
+	ServicePtrs[i] = talloc_zero(ServicePtrs, struct loadparm_service);
+	if (!ServicePtrs[i]) {
 		DEBUG(0,("add_a_service: out of memory!\n"));
 		return (-1);
 	}
-	iNumServices++;
 
 	ServicePtrs[i]->valid = true;
 
@@ -1460,6 +1473,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->guest_ok = guest_ok;
 	ServicePtrs[i]->printable = false;
 	ServicePtrs[i]->browseable = sDefault.browseable;
+	ServicePtrs[i]->autoloaded = true;
 
 	DEBUG(3, ("adding IPC service\n"));
 
