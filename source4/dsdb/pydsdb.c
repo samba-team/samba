@@ -550,6 +550,11 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 					"list of strings or ldb MessageElement object required");
 			return NULL;
 		}
+		/*
+		 * NOTE:
+		 * el may not be a valid talloc context, it
+		 * could be part of an array
+		 */
 		el = pyldb_MessageElement_AsMessageElement(el_list);
 	} else {
 		el = talloc_zero(tmp_ctx, struct ldb_message_element);
@@ -604,17 +609,20 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
  */
 static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 {
-	PyObject *py_ldb, *el_list, *ret;
+	PyObject *py_ldb, *el_list, *py_ret;
 	struct ldb_context *ldb;
 	char *ldap_display_name;
 	const struct dsdb_attribute *a;
 	struct dsdb_schema *schema;
 	struct dsdb_syntax_ctx syntax_ctx;
-	struct ldb_message_element *el;
+	struct ldb_message_element *el, *new_el;
 	struct drsuapi_DsReplicaAttribute *attr;
+	PyLdbMessageElementObject *ret;
 	TALLOC_CTX *tmp_ctx;
 	WERROR werr;
 	Py_ssize_t i;
+	PyTypeObject *py_type = NULL;
+	PyObject *module = NULL;
 
 	if (!PyArg_ParseTuple(args, "OsO", &py_ldb, &ldap_display_name, &el_list)) {
 		return NULL;
@@ -649,6 +657,11 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 					"list of strings or ldb MessageElement object required");
 			return NULL;
 		}
+		/*
+		 * NOTE:
+		 * el may not be a valid talloc context, it
+		 * could be part of an array
+		 */
 		el = pyldb_MessageElement_AsMessageElement(el_list);
 	} else {
 		el = talloc_zero(tmp_ctx, struct ldb_message_element);
@@ -680,10 +693,17 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 		}
 	}
 
+	new_el = talloc_zero(tmp_ctx, struct ldb_message_element);
+	if (new_el == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
 	/* Normalise "objectClass" attribute if needed */
 	if (ldb_attr_cmp(a->lDAPDisplayName, "objectClass") == 0) {
 		int iret;
-		iret = dsdb_sort_objectClass_attr(ldb, schema, el, tmp_ctx, el);
+		iret = dsdb_sort_objectClass_attr(ldb, schema, el, new_el, new_el);
 		if (iret != LDB_SUCCESS) {
 			PyErr_SetString(PyExc_RuntimeError, ldb_errstring(ldb));
 			talloc_free(tmp_ctx);
@@ -706,14 +726,31 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 	PyErr_WERROR_NOT_OK_RAISE(werr);
 
 	/* now convert back again */
-	werr = a->syntax->drsuapi_to_ldb(&syntax_ctx, a, attr, el, el);
+	werr = a->syntax->drsuapi_to_ldb(&syntax_ctx, a, attr, new_el, new_el);
 	PyErr_WERROR_NOT_OK_RAISE(werr);
 
-	ret = py_return_ndr_struct("ldb", "MessageElement", el, el);
+	module = PyImport_ImportModule("ldb");
+	if (module == NULL) {
+		return NULL;
+	}
+
+	py_type = (PyTypeObject *)PyObject_GetAttrString(module, "MessageElement");
+	if (py_type == NULL) {
+		return NULL;
+	}
+	py_ret = py_type->tp_alloc(py_type, 0);
+	ret = (PyLdbMessageElementObject *)py_ret;
+
+	ret->mem_ctx = talloc_new(NULL);
+	if (talloc_reference(ret->mem_ctx, new_el) == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	ret->el = new_el;
 
 	talloc_free(tmp_ctx);
 
-	return ret;
+	return py_ret;
 }
 
 
