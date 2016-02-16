@@ -969,7 +969,9 @@ static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
 }
 
 static struct ctdb_cluster_mutex_handle *
-ctdb_cluster_mutex(struct ctdb_context *ctdb, int timeout)
+ctdb_cluster_mutex(struct ctdb_context *ctdb,
+		   const char *argstring,
+		   int timeout)
 {
 	struct ctdb_cluster_mutex_handle *h;
 	char **args;
@@ -994,7 +996,7 @@ ctdb_cluster_mutex(struct ctdb_context *ctdb, int timeout)
 	set_close_on_exec(h->fd[0]);
 
 	/* Create arguments for lock helper */
-	if (!cluster_mutex_helper_args(h, ctdb->recovery_lock_file, &args)) {
+	if (!cluster_mutex_helper_args(h, argstring, &args)) {
 		close(h->fd[0]);
 		close(h->fd[1]);
 		talloc_free(h);
@@ -1144,7 +1146,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	h = ctdb_cluster_mutex(ctdb, 5);
+	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock_file, 5);
 	if (h == NULL) {
 		return -1;
 	}
@@ -1206,7 +1208,7 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 		.status = '0',
 	};
 
-	h = ctdb_cluster_mutex(ctdb, 0);
+	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock_file, 0);
 	if (h == NULL) {
 		return -1;
 	}
