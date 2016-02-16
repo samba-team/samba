@@ -123,7 +123,7 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	struct dns_process_state *state;
 	enum ndr_err_code ndr_err;
 	WERROR ret;
-	const char *forwarder = lpcfg_dns_forwarder(dns->task->lp_ctx);
+	const char **forwarder = lpcfg_dns_forwarder(dns->task->lp_ctx);
 	req = tevent_req_create(mem_ctx, &state, struct dns_process_state);
 	if (req == NULL) {
 		return NULL;
@@ -169,8 +169,8 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	state->state.flags = state->in_packet.operation;
 	state->state.flags |= DNS_FLAG_REPLY;
 
-	
-	if (forwarder && *forwarder) {
+
+	if (forwarder && *forwarder && **forwarder) {
 		state->state.flags |= DNS_FLAG_RECURSION_AVAIL;
 	}
 

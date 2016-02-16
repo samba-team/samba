@@ -1,10 +1,9 @@
 <samba:parameter name="dns forwarder"
                  context="G"
-                 type="string"
-                 constant="1"
+                 type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>This option specifies the DNS server that DNS requests will be 
+	<para>This option specifies the list of DNS servers that DNS requests will be
 		forwarded to if they can not be handled by Samba itself.
 	</para>
 

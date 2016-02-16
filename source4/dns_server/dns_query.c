@@ -31,6 +31,7 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 #include "libcli/dns/libdns.h"
+#include "lib/util/dlinklist.h"
 #include "lib/util/util_net.h"
 #include "lib/util/tevent_werror.h"
 #include "auth/auth.h"
@@ -39,6 +40,11 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DNS
+
+struct forwarder_string {
+	const char *forwarder;
+	struct forwarder_string *prev, *next;
+};
 
 static WERROR add_response_rr(const char *name,
 			      const struct dnsp_DnssrvRpcRecord *rec,
@@ -912,12 +918,17 @@ static WERROR handle_tkey(struct dns_server *dns,
 }
 
 struct dns_server_process_query_state {
+	struct tevent_context *ev;
+	struct dns_server *dns;
+	struct dns_name_question *question;
+
 	struct dns_res_rec *answers;
 	uint16_t ancount;
 	struct dns_res_rec *nsrecs;
 	uint16_t nscount;
 	struct dns_res_rec *additional;
 	uint16_t arcount;
+	struct forwarder_string *forwarders;
 };
 
 static void dns_server_process_query_got_auth(struct tevent_req *subreq);
@@ -930,6 +941,8 @@ struct tevent_req *dns_server_process_query_send(
 {
 	struct tevent_req *req, *subreq;
 	struct dns_server_process_query_state *state;
+	const char **forwarders = NULL;
+	unsigned int i;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dns_server_process_query_state);
@@ -959,6 +972,18 @@ struct tevent_req *dns_server_process_query_send(
 		return tevent_req_post(req, ev);
 	}
 
+	state->dns = dns;
+	state->ev = ev;
+	state->question = &in->questions[0];
+
+	forwarders = lpcfg_dns_forwarder(dns->task->lp_ctx);
+	for (i = 0; forwarders != NULL && forwarders[i] != NULL; i++) {
+		struct forwarder_string *f = talloc_zero(state,
+							 struct forwarder_string);
+		f->forwarder = forwarders[i];
+		DLIST_ADD_END(state->forwarders, f);
+	}
+
 	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
 
 		req_state->flags |= DNS_FLAG_AUTHORITATIVE;
@@ -978,7 +1003,7 @@ struct tevent_req *dns_server_process_query_send(
 		}
 
 		subreq = handle_authoritative_send(
-			state, ev, dns, lpcfg_dns_forwarder(dns->task->lp_ctx),
+			state, ev, dns, (forwarders == NULL ? NULL : forwarders[0]),
 			&in->questions[0], &state->answers, &state->nsrecs);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -993,9 +1018,9 @@ struct tevent_req *dns_server_process_query_send(
 		DEBUG(2, ("Not authoritative for '%s', forwarding\n",
 			  in->questions[0].name));
 
-		subreq = ask_forwarder_send(
-			state, ev, dns, lpcfg_dns_forwarder(dns->task->lp_ctx),
-			&in->questions[0]);
+		subreq = ask_forwarder_send(state, ev, dns,
+					    (forwarders == NULL ? NULL : forwarders[0]),
+					    &in->questions[0]);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -1014,16 +1039,42 @@ static void dns_server_process_query_got_response(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct dns_server_process_query_state *state = tevent_req_data(
 		req, struct dns_server_process_query_state);
-	WERROR err;
+	WERROR werr;
 
-	err = ask_forwarder_recv(subreq, state,
-				 &state->answers, &state->ancount,
-				 &state->nsrecs, &state->nscount,
-				 &state->additional, &state->arcount);
+	werr = ask_forwarder_recv(subreq, state,
+				  &state->answers, &state->ancount,
+				  &state->nsrecs, &state->nscount,
+				  &state->additional, &state->arcount);
 	TALLOC_FREE(subreq);
-	if (tevent_req_werror(req, err)) {
+
+	/* If you get an error, attempt a different forwarder */
+	if (!W_ERROR_IS_OK(werr)) {
+		if (state->forwarders != NULL) {
+			DLIST_REMOVE(state->forwarders, state->forwarders);
+		}
+
+		/* If you have run out of forwarders, simply finish */
+		if (state->forwarders == NULL) {
+			tevent_req_werror(req, werr);
+			return;
+		}
+
+		DEBUG(5, ("DNS query returned %s, trying another forwarder.\n",
+			  win_errstr(werr)));
+		subreq = ask_forwarder_send(state, state->ev, state->dns,
+					    state->forwarders->forwarder,
+					    state->question);
+
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+
+		tevent_req_set_callback(subreq,
+					dns_server_process_query_got_response,
+					req);
 		return;
 	}
+
 	tevent_req_done(req);
 }
 
@@ -1037,9 +1088,36 @@ static void dns_server_process_query_got_auth(struct tevent_req *subreq)
 
 	werr = handle_authoritative_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (tevent_req_werror(req, werr)) {
+
+	/* If you get an error, attempt a different forwarder */
+	if (!W_ERROR_IS_OK(werr)) {
+		if (state->forwarders != NULL) {
+			DLIST_REMOVE(state->forwarders, state->forwarders);
+		}
+
+		/* If you have run out of forwarders, simply finish */
+		if (state->forwarders == NULL) {
+			tevent_req_werror(req, werr);
+			return;
+		}
+
+		DEBUG(5, ("Error: %s, trying a different forwarder.\n",
+			  win_errstr(werr)));
+		subreq = handle_authoritative_send(state, state->ev, state->dns,
+						   state->forwarders->forwarder,
+						   state->question, &state->answers,
+						   &state->nsrecs);
+
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+
+		tevent_req_set_callback(subreq,
+					dns_server_process_query_got_auth,
+					req);
 		return;
 	}
+
 	state->ancount = talloc_array_length(state->answers);
 	state->nscount = talloc_array_length(state->nsrecs);
 	state->arcount = talloc_array_length(state->additional);
