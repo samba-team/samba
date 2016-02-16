@@ -72,7 +72,7 @@ ABC
 setup_1_conf() {
     conf_name="$1"
     subdir="$2"
-    absdir=`realpath $WORKDIR/$subdir`
+    absdir=`readlink -f $WORKDIR/$subdir`
     conf_lines | sed -rn "s/^$conf_name:(.*)/\1/p" | tr ":" "\n" | \
     awk  -F '=' -v atdir=$absdir 'NF==1 {section=$1} NF==2 {sub(/\s*$/, "", $1); printf "\tfake_dfq:%s/%s/%s =%s\n", section, $1, atdir, $2}'
 }
