@@ -30,7 +30,7 @@
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
-#include "lib/util/samba_util.h"
+#include "lib/util/time.h"
 #include "lib/util/util_process.h"
 
 #include "ctdb_private.h"
