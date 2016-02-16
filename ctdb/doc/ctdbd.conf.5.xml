@@ -379,10 +379,14 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_RECOVERY_LOCK=<parameter>FILENAME</parameter></term>
+	<term>CTDB_RECOVERY_LOCK=<parameter>LOCK</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to
+	    LOCK specifies the cluster-wide mutex used to detect and
+	    prevent a partitioned cluster (or "split brain").
+	  </para>
+	  <para>
+	    No default, but the default configuration file specifies
 	    <filename>/some/place/on/shared/storage</filename>, which
 	    should be change to a useful value.  Corresponds to
 	    <option>--reclock</option>.

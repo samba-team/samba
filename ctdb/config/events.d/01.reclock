@@ -7,6 +7,12 @@
 . $CTDB_BASE/functions
 loadconfig
 
+# If CTDB_RECOVERY_LOCK specifies a helper then exit because this
+# script can't do anything useful.
+case "$CTDB_RECOVERY_LOCK" in
+!*) exit 0 ;;
+esac
+
 case "$1" in
     init)
 	ctdb_counter_init

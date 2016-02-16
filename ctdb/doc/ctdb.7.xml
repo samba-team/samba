@@ -98,12 +98,24 @@
     </para>
 
     <para>
-      The recovery lock is implemented using a file residing in shared
-      storage (usually) on a cluster filesystem.  To support a
-      recovery lock the cluster filesystem must support lock
-      coherence.  See
+      By default, the recovery lock is implemented using a file
+      (specified by <parameter>CTDB_RECOVERY_LOCK</parameter>)
+      residing in shared storage (usually) on a cluster filesystem.
+      To support a recovery lock the cluster filesystem must support
+      lock coherence.  See
       <citerefentry><refentrytitle>ping_pong</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry> for more details.
+    </para>
+
+    <para>
+      The recovery lock can also be implemented using an arbitrary
+      cluster mutex call-out by using an exclamation point ('!') as
+      the first character of
+      <parameter>CTDB_RECOVERY_LOCK</parameter>.  For example, a value
+      of <command>!/usr/local/bin/myhelper recovery</command> would
+      run the given helper with the specified arguments.  See the
+      source code relating to cluster mutexes for clues about writing
+      call-outs.
     </para>
 
     <para>

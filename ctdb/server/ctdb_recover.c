@@ -906,11 +906,21 @@ static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
 				      const char *argstring, char ***argv)
 {
 	int nargs, i, ret, n;
+	bool is_command = false;
 	char **args = NULL;
 	char *strv = NULL;
 	char *t = NULL;
 
-	ret = strv_split(mem_ctx, &strv, argstring, " \t");
+	if (argstring != NULL && argstring[0] == '!') {
+		/* This is actually a full command */
+		is_command = true;
+		t = discard_const(&argstring[1]);
+	} else {
+		is_command = false;
+		t = discard_const(argstring);
+	}
+
+	ret = strv_split(mem_ctx, &strv, t, " \t");
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Unable to parse mutex helper string \"%s\" (%s)\n",
@@ -919,7 +929,8 @@ static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
 	}
 	n = strv_count(strv);
 
-	args = talloc_array(mem_ctx, char *, n + 2);
+	args = talloc_array(mem_ctx, char *, n + (is_command ? 1 : 2));
+
 	if (args == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " out of memory\n"));
 		return false;
@@ -927,17 +938,21 @@ static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
 
 	nargs = 0;
 
-	if (!ctdb_set_helper("cluster mutex helper",
-			     cluster_mutex_helper,
-			     sizeof(cluster_mutex_helper),
-			     "CTDB_CLUSTER_MUTEX_HELPER",
-			     CTDB_HELPER_BINDIR, "ctdb_mutex_fcntl_helper")) {
-		DEBUG(DEBUG_ERR,("ctdb exiting with error: %s\n",
-				 __location__
-				 " Unable to set cluster mutex helper\n"));
-		exit(1);
+	if (! is_command) {
+		if (!ctdb_set_helper("cluster mutex helper",
+				     cluster_mutex_helper,
+				     sizeof(cluster_mutex_helper),
+				     "CTDB_CLUSTER_MUTEX_HELPER",
+				     CTDB_HELPER_BINDIR,
+				     "ctdb_mutex_fcntl_helper")) {
+			DEBUG(DEBUG_ERR,("ctdb exiting with error: %s\n",
+					 __location__
+					 " Unable to set cluster mutex helper\n"));
+			exit(1);
+		}
+
+		args[nargs++] = cluster_mutex_helper;
 	}
-	args[nargs++] = cluster_mutex_helper;
 
 	t = NULL;
 	for (i = 0; i < n; i++) {

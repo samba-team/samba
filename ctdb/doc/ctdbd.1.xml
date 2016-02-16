@@ -365,12 +365,11 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--reclock=<parameter>FILE</parameter></term>
+	<term>--reclock=<parameter>LOCK</parameter></term>
 	<listitem>
 	  <para>
-	    FILE is the name of the recovery lock file, stored in
-	    <emphasis>shared storage</emphasis>, that CTDB uses to
-	    prevent split brains.
+	    LOCK specifies the cluster-wide mutex used to detect and
+	    prevent a partitioned cluster (or "split brain").
 	  </para>
 	  <para>
 	    For information about the recovery lock please see the
