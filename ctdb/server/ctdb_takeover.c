@@ -1340,16 +1340,17 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 	ctdb->ip_tree = trbt_create(ctdb, 0);
 
 	for (i=0; i < ctdb->num_nodes; i++) {
-		public_ips = &ipalloc_state->known_public_ips[i];
 
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
 
 		/* there were no public ips for this node */
-		if (public_ips == NULL) {
+		if (ipalloc_state->known_public_ips == NULL) {
 			continue;
 		}
+
+		public_ips = &ipalloc_state->known_public_ips[i];
 
 		for (j=0; j < public_ips->num; j++) {
 			struct public_ip_list *tmp_ip;
