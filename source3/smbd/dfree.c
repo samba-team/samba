@@ -83,7 +83,7 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path,
 
 		DEBUG (3, ("disk_free: Running command '%s'\n", syscmd));
 
-		lines = file_lines_pload(syscmd, NULL);
+		lines = file_lines_pload(talloc_tos(), syscmd, NULL);
 		if (lines != NULL) {
 			char *line = lines[0];
 

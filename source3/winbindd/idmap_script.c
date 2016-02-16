@@ -81,7 +81,7 @@ static NTSTATUS idmap_script_script(struct idmap_script_context *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	lines = file_lines_pload(cmd, &numlines);
+	lines = file_lines_pload(talloc_tos(), cmd, &numlines);
 	talloc_free(cmd);
 	if (!lines) {
 		return NT_STATUS_NONE_MAPPED;

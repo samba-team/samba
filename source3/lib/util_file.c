@@ -74,7 +74,8 @@ static char *file_pload(const char *syscmd, size_t *size)
  must be freed with TALLOC_FREE.
 **/
 
-char **file_lines_pload(const char *syscmd, int *numlines)
+char **file_lines_pload(TALLOC_CTX *mem_ctx, const char *syscmd,
+			int *numlines)
 {
 	char *p;
 	size_t size;
@@ -84,5 +85,5 @@ char **file_lines_pload(const char *syscmd, int *numlines)
 		return NULL;
 	}
 
-	return file_lines_parse(p, size, numlines, NULL);
+	return file_lines_parse(p, size, numlines, mem_ctx);
 }

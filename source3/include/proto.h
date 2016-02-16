@@ -451,7 +451,8 @@ bool sid_check_is_wellknown_builtin(const struct dom_sid *sid);
 
 /* The following definitions come from lib/util_file.c  */
 
-char **file_lines_pload(const char *syscmd, int *numlines);
+char **file_lines_pload(TALLOC_CTX *mem_ctx, const char *syscmd,
+			int *numlines);
 
 /* The following definitions come from lib/util_nscd.c  */
 
