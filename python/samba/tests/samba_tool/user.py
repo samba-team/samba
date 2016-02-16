@@ -104,7 +104,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
     def _verify_supplementalCredentials(self, ldif,
                                         min_packages=3,
-                                        max_packages=5):
+                                        max_packages=6):
         msgs = self.samdb.parse_ldif(ldif)
         (changetype, obj) = next(msgs)
 
@@ -132,6 +132,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         # Primary:Kerberos
         # Primary:WDigest
         # Primary:CLEARTEXT (optional)
+        # Primary:SambaGPG (optional)
         #
         # And the 'Packages' package is insert before the last
         # other package.
@@ -174,6 +175,14 @@ class UserCmdTestCase(SambaToolCmdTest):
             if nidx == pidx:
                 nidx = nidx + 1
 
+        (gidx, gp) = find_package(sc.sub.packages, "Primary:SambaGPG",
+                                  start_idx=nidx)
+        if gidx is not None:
+            self.assertEqual(gidx, nidx, "Primary:SambaGPG at wrong position")
+            nidx = nidx + 1
+            if nidx == pidx:
+                nidx = nidx + 1
+
         self.assertEqual(nidx, sc.sub.num_packages, "Unknown packages found")
 
     def test_setpassword(self):
@@ -188,10 +197,11 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertEquals(err,"","setpassword with url")
             self.assertMatch(out, "Changed password OK", "setpassword with url")
 
-        attributes = "sAMAccountName,unicodePwd,supplementalCredentials"
+        attributes = "sAMAccountName,unicodePwd,supplementalCredentials,virtualClearTextUTF8,virtualClearTextUTF16,virtualSSHA,virtualSambaGPG"
         (result, out, err) = self.runsubcmd("user", "syncpasswords",
                                             "--cache-ldb-initialize",
-                                            "--attributes=%s" % attributes)
+                                            "--attributes=%s" % attributes,
+                                            "--decrypt-samba-gpg")
         self.assertCmdSuccess(result, "Ensure syncpasswords --cache-ldb-initialize runs")
         self.assertEqual(err,"","getpassword without url")
         cache_attrs = {
@@ -201,6 +211,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             "dirsyncAttribute": { },
             "dirsyncControl": { "value": "dirsync:1:0:0"},
             "passwordAttribute": { },
+            "decryptSambaGPG": { },
             "currentTime": { },
         }
         for a in cache_attrs.keys():
@@ -224,6 +235,8 @@ class UserCmdTestCase(SambaToolCmdTest):
             creds.set_password(newpasswd)
             nthash = creds.get_nt_hash()
             unicodePwd = base64.b64encode(creds.get_nt_hash())
+            virtualClearTextUTF8 = base64.b64encode(newpasswd)
+            virtualClearTextUTF16 = base64.b64encode(unicode(newpasswd, 'utf-8').encode('utf-16-le'))
 
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
@@ -247,10 +260,18 @@ class UserCmdTestCase(SambaToolCmdTest):
                     "getpassword '# supplementalCredentials::: REDACTED SECRET ATTRIBUTE': out[%s]" % out)
             self.assertMatch(out, "supplementalCredentials:: ",
                     "getpassword supplementalCredentials: out[%s]" % out)
+            if "virtualSambaGPG:: " in out:
+                self.assertMatch(out, "virtualClearTextUTF8:: %s" % virtualClearTextUTF8,
+                    "getpassword virtualClearTextUTF8: out[%s]" % out)
+                self.assertMatch(out, "virtualClearTextUTF16:: %s" % virtualClearTextUTF16,
+                    "getpassword virtualClearTextUTF16: out[%s]" % out)
+                self.assertMatch(out, "virtualSSHA: ",
+                    "getpassword virtualSSHA: out[%s]" % out)
 
             (result, out, err) = self.runsubcmd("user", "getpassword",
                                                 user["name"],
-                                                "--attributes=%s" % attributes)
+                                                "--attributes=%s" % attributes,
+                                                "--decrypt-samba-gpg")
             self.assertCmdSuccess(result, "Ensure getpassword runs")
             self.assertEqual(err,"","getpassword without url")
             self.assertMatch(out, "Got password OK", "getpassword without url")
@@ -261,6 +282,13 @@ class UserCmdTestCase(SambaToolCmdTest):
             self.assertMatch(out, "supplementalCredentials:: ",
                     "getpassword supplementalCredentials: out[%s]" % out)
             self._verify_supplementalCredentials(out.replace("\nGot password OK\n", ""))
+            if "virtualSambaGPG:: " in out:
+                self.assertMatch(out, "virtualClearTextUTF8:: %s" % virtualClearTextUTF8,
+                    "getpassword virtualClearTextUTF8: out[%s]" % out)
+                self.assertMatch(out, "virtualClearTextUTF16:: %s" % virtualClearTextUTF16,
+                    "getpassword virtualClearTextUTF16: out[%s]" % out)
+                self.assertMatch(out, "virtualSSHA: ",
+                    "getpassword virtualSSHA: out[%s]" % out)
 
         for user in self.users:
             newpasswd = self.randomPass()
