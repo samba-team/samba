@@ -18,6 +18,14 @@ Nothing special.
 NEW FEATURES/CHANGES
 ====================
 
+Support for LDAP_SERVER_NOTIFICATION_OID
+----------------------------------------
+
+The ldap server has support for the LDAP_SERVER_NOTIFICATION_OID
+control. This can be used to monitor the active directory database
+for changes.
+
+
 REMOVED FEATURES
 ================
 
