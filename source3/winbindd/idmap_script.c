@@ -36,6 +36,7 @@
 #include "idmap_rw.h"
 #include "../libcli/security/dom_sid.h"
 #include "lib/util_file.h"
+#include "lib/util/tevent_unix.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -60,273 +61,518 @@ struct idmap_script_context {
 
   TODO: Needs more validation ... like that we got a UID when we asked for one.
  */
-static NTSTATUS idmap_script_script(struct idmap_script_context *ctx,
-				    struct id_map *map, const char *fmt, ...)
+
+struct idmap_script_xid2sid_state {
+	const char *syscmd;
+	size_t idx;
+	uint8_t *out;
+};
+
+static void idmap_script_xid2sid_done(struct tevent_req *subreq);
+
+static struct tevent_req *idmap_script_xid2sid_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct unixid xid, const char *script, size_t idx)
 {
-	va_list ap;
-	char *cmd, **lines;
-	int numlines = 0;
-	unsigned long v;
+	struct tevent_req *req, *subreq;
+	struct idmap_script_xid2sid_state *state;
+	char key;
 
-	cmd = talloc_asprintf(ctx, "%s ", ctx->script);
-	if (!cmd) {
-		DEBUG(10, ("Unable to allocate memory for the script command!\n"));
-		return NT_STATUS_NO_MEMORY;
+	req = tevent_req_create(mem_ctx, &state,
+				struct idmap_script_xid2sid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->idx = idx;
+
+	switch (xid.type) {
+	    case ID_TYPE_UID:
+		    key = 'U';
+		    break;
+	    case ID_TYPE_GID:
+		    key = 'G';
+		    break;
+	    case ID_TYPE_BOTH:
+		    key = 'X';
+		    break;
+	    default:
+		    DBG_WARNING("INVALID unix ID type: 0x02%x\n", xid.type);
+		    tevent_req_error(req, EINVAL);
+		    return tevent_req_post(req, ev);
 	}
 
-	va_start(ap, fmt);
-	cmd = talloc_vasprintf_append(cmd, fmt, ap);
-	va_end(ap);
-	if (!cmd) {
-		DEBUG(10, ("Unable to allocate memory for the script command!\n"));
-		return NT_STATUS_NO_MEMORY;
+	state->syscmd = talloc_asprintf(state, "%s %cID %lu", script, key,
+					(unsigned long)xid.id);
+	if (tevent_req_nomem(state->syscmd, req)) {
+		return tevent_req_post(req, ev);
 	}
 
-	lines = file_lines_pload(talloc_tos(), cmd, &numlines);
-	talloc_free(cmd);
-	if (!lines) {
-		return NT_STATUS_NONE_MAPPED;
+	subreq = file_pload_send(state, ev, state->syscmd, 1024);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, idmap_script_xid2sid_done, req);
+	return req;
+}
+
+static void idmap_script_xid2sid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct idmap_script_xid2sid_state *state = tevent_req_data(
+		req, struct idmap_script_xid2sid_state);
+	int ret;
+
+	ret = file_pload_recv(subreq, state, &state->out);
+	TALLOC_FREE(subreq);
+	if (tevent_req_error(req, ret)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static int idmap_script_xid2sid_recv(struct tevent_req *req, size_t *idx,
+				     enum id_mapping *status,
+				     struct dom_sid *sid)
+{
+	struct idmap_script_xid2sid_state *state = tevent_req_data(
+		req, struct idmap_script_xid2sid_state);
+	char *out = (char *)state->out;
+	size_t out_size = talloc_get_size(out);
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		return err;
 	}
 
-	DEBUG(10,("idmap script gave %d lines, first: %s\n", numlines,
-		lines[0]));
+	if (out_size == 0) {
+		goto unmapped;
+	}
+	if (state->out[out_size-1] != '\0') {
+		goto unmapped;
+	}
 
-	if (sscanf(lines[0], "XID:%lu", &v) == 1) {
-		map->xid.id   = v;
-		map->xid.type = ID_TYPE_BOTH;
-	} else if (sscanf(lines[0], "UID:%lu", &v) == 1) {
-		map->xid.id   = v;
-		map->xid.type = ID_TYPE_UID;
-	} else if (sscanf(lines[0], "GID:%lu", &v) == 1) {
-		map->xid.id   = v;
-		map->xid.type = ID_TYPE_GID;
-	} else if (strncmp(lines[0], "SID:S-", 6) == 0) {
-		if (!string_to_sid(map->sid, &lines[0][4])) {
-			DEBUG(0,("Bad SID in '%s' from idmap script %s\n",
-				 lines[0], ctx->script));
-			talloc_free(lines);
-			return NT_STATUS_NONE_MAPPED;
+	*idx = state->idx;
+
+	if ((strncmp(out, "SID:S-", 6) != 0) ||
+	    !dom_sid_parse(out+4, sid)) {
+		DBG_WARNING("Bad sid from script: %s\n", out);
+		goto unmapped;
+	}
+
+	*status = ID_MAPPED;
+	return 0;
+
+unmapped:
+	*sid = (struct dom_sid) {0};
+	*status = ID_UNMAPPED;
+	return 0;
+}
+
+struct idmap_script_xids2sids_state {
+	struct id_map **ids;
+	size_t num_ids;
+	size_t num_done;
+};
+
+static void idmap_script_xids2sids_done(struct tevent_req *subreq);
+
+static struct tevent_req *idmap_script_xids2sids_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct id_map **ids, size_t num_ids, const char *script)
+{
+	struct tevent_req *req;
+	struct idmap_script_xids2sids_state *state;
+	size_t i;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct idmap_script_xids2sids_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ids = ids;
+	state->num_ids = num_ids;
+
+	if (state->num_ids == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	for (i=0; i<num_ids; i++) {
+		struct tevent_req *subreq;
+
+		subreq = idmap_script_xid2sid_send(
+			state, ev, ids[i]->xid, script, i);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
 		}
-	} else {
-		DEBUG(0,("Bad reply '%s' from idmap script %s\n",
-			 lines[0], ctx->script));
-		talloc_free(lines);
-		return NT_STATUS_NONE_MAPPED;
+		tevent_req_set_callback(subreq, idmap_script_xids2sids_done,
+					req);
 	}
 
-	talloc_free(lines);
-	return NT_STATUS_OK;
+	return req;
 }
 
-/*
-  Single id to sid lookup function.
-*/
-static NTSTATUS idmap_script_id_to_sid(struct idmap_domain *dom,
-				       struct id_map *map)
+static void idmap_script_xids2sids_done(struct tevent_req *subreq)
 {
-	NTSTATUS ret;
-	char *keystr;
-	char *sidstr;
-	struct idmap_script_context *ctx = dom->private_data;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct idmap_script_xids2sids_state *state = tevent_req_data(
+		req, struct idmap_script_xids2sids_state);
+	size_t idx = 0;
+	enum id_mapping status = ID_UNKNOWN;
+	struct dom_sid sid = {0};
+	int ret;
 
-	if (!dom || !map) {
-		return NT_STATUS_INVALID_PARAMETER;
+	ret = idmap_script_xid2sid_recv(subreq, &idx, &status, &sid);
+	TALLOC_FREE(subreq);
+	if (tevent_req_error(req, ret)) {
+		return;
 	}
 
-	/* apply filters before checking */
-	if (!idmap_unix_id_is_in_range(map->xid.id, dom)) {
-		DEBUG(5, ("Requested id (%u) out of range (%u - %u). Filtered!\n",
-				map->xid.id, dom->low_id, dom->high_id));
-		return NT_STATUS_NONE_MAPPED;
+	if (idx >= state->num_ids) {
+		tevent_req_error(req, EINVAL);
+		return;
 	}
 
-	switch (map->xid.type) {
+	state->ids[idx]->status = status;
 
-	case ID_TYPE_UID:
-		keystr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
-		break;
-
-	case ID_TYPE_GID:
-		keystr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
-		break;
-
-	case ID_TYPE_BOTH:
-		keystr = talloc_asprintf(ctx, "XID %lu", (unsigned long)map->xid.id);
-		break;
-
-	default:
-		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
-		return NT_STATUS_INVALID_PARAMETER;
+	state->ids[idx]->sid = dom_sid_dup(state->ids, &sid);
+	if (tevent_req_nomem(state->ids[idx]->sid, req)) {
+		return;
 	}
 
-	if (keystr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
+	state->num_done += 1;
+
+	if (state->num_done >= state->num_ids) {
+		tevent_req_done(req);
 	}
-
-	DEBUG(10,("Running script to fetch mapping %s\n", keystr));
-
-	ret = idmap_script_script(ctx, map, "IDTOSID %s", keystr);
-	if (!NT_STATUS_IS_OK(ret)) {
-		goto done;
-	}
-
-	sidstr = sid_string_talloc(keystr, map->sid);
-	if (!sidstr) {
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	DEBUG(10,("Found id %s:%d -> %s\n", keystr, map->xid.id,
-		  (const char *)sidstr));
-	ret = NT_STATUS_OK;
-
-done:
-	talloc_free(keystr);
-	return ret;
 }
 
-/*
- Single sid to id lookup function.
-*/
-static NTSTATUS idmap_script_sid_to_id(struct idmap_domain *dom,
-				       struct id_map *map)
+static int idmap_script_xids2sids_recv(struct tevent_req *req)
 {
-	NTSTATUS ret;
-	char *keystr;
-	struct idmap_script_context *ctx = dom->private_data;
-	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	return tevent_req_simple_recv_unix(req);
+}
 
-	keystr = sid_string_talloc(tmp_ctx, map->sid);
-	if (keystr == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
+static int idmap_script_xids2sids(struct id_map **ids, size_t num_ids,
+				  const char *script)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	int ret = ENOMEM;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
-
-	DEBUG(10,("Fetching record %s\n", keystr));
-
-	if (ctx->script == NULL) {
-		ret = NT_STATUS_NONE_MAPPED;
-		goto done;
+	req = idmap_script_xids2sids_send(frame, ev, ids, num_ids, script);
+	if (req == NULL) {
+		goto fail;
 	}
-
-	ret = idmap_script_script(ctx, map, "SIDTOID %s", keystr);
-	if (!NT_STATUS_IS_OK(ret)) {
-		goto done;
+	if (!tevent_req_poll(req, ev)) {
+		ret = errno;
+		goto fail;
 	}
-
-	/* apply filters before returning result */
-	if (!idmap_unix_id_is_in_range(map->xid.id, dom)) {
-		DEBUG(5, ("Script returned id (%u) out of range (%u - %u)."
-			  " Filtered!\n",
-			  map->xid.id, dom->low_id, dom->high_id));
-		ret = NT_STATUS_NONE_MAPPED;
-		goto done;
-	}
-
-done:
-	talloc_free(tmp_ctx);
+	ret = idmap_script_xids2sids_recv(req);
+fail:
+	TALLOC_FREE(frame);
 	return ret;
 }
 
 static NTSTATUS idmap_script_unixids_to_sids(struct idmap_domain *dom,
-				      struct id_map **ids)
+					     struct id_map **ids)
 {
-	NTSTATUS ret;
-	int i, num_mapped = 0;
+	struct idmap_script_context *ctx = talloc_get_type_abort(
+		dom->private_data, struct idmap_script_context);
+	int ret;
+	size_t i, num_ids, num_mapped;
 
 	DEBUG(10, ("%s called ...\n", __func__));
 	/* Init status to avoid surprise ... */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
+	num_ids = i;
+
+	ret = idmap_script_xids2sids(ids, num_ids, ctx->script);
+	if (ret != 0) {
+		DBG_DEBUG("idmap_script_xids2sids returned %s\n",
+			  strerror(ret));
+		return map_nt_error_from_unix(ret);
+	}
+
+	num_mapped = 0;
 
 	for (i = 0; ids[i]; i++) {
-		ret = idmap_script_id_to_sid(dom, ids[i]);
-		if (!NT_STATUS_IS_OK(ret)) {
-			if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
-				ids[i]->status = ID_UNMAPPED;
-				continue;
-			}
-
-			/*
-			 * We cannot keep going if it is other than mapping
-			 * failed.
-			 */
-			goto done;
-		}
-
-		ids[i]->status = ID_MAPPED;
-		num_mapped++;
-	}
-
-	ret = NT_STATUS_OK;
-
-done:
-	if (NT_STATUS_IS_OK(ret)) {
-		if (i == 0 || num_mapped == 0) {
-			ret = NT_STATUS_NONE_MAPPED;
-		}
-		else if (num_mapped < i) {
-			ret = STATUS_SOME_UNMAPPED;
-		} else {
-			DEBUG(10, ("Returning NT_STATUS_OK\n"));
-			ret = NT_STATUS_OK;
+		if (ids[i]->status == ID_MAPPED) {
+			num_mapped += 1;
 		}
 	}
 
+	if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (num_mapped < num_ids) {
+		return STATUS_SOME_UNMAPPED;
+	}
+	return NT_STATUS_OK;
+}
+
+struct idmap_script_sid2xid_state {
+	const char *syscmd;
+	size_t idx;
+	uint8_t *out;
+};
+
+static void idmap_script_sid2xid_done(struct tevent_req *subreq);
+
+static struct tevent_req *idmap_script_sid2xid_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	const struct dom_sid *sid, const char *script, size_t idx)
+{
+	struct tevent_req *req, *subreq;
+	struct idmap_script_sid2xid_state *state;
+	char sidbuf[DOM_SID_STR_BUFLEN];
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct idmap_script_sid2xid_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->idx = idx;
+
+	dom_sid_string_buf(sid, sidbuf, sizeof(sidbuf));
+
+	state->syscmd = talloc_asprintf(state, "%s SIDTOID %s",
+					script, sidbuf);
+	if (tevent_req_nomem(state->syscmd, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = file_pload_send(state, ev, state->syscmd, 1024);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, idmap_script_sid2xid_done, req);
+	return req;
+}
+
+static void idmap_script_sid2xid_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct idmap_script_sid2xid_state *state = tevent_req_data(
+		req, struct idmap_script_sid2xid_state);
+	int ret;
+
+	ret = file_pload_recv(subreq, state, &state->out);
+	TALLOC_FREE(subreq);
+	if (tevent_req_error(req, ret)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static int idmap_script_sid2xid_recv(struct tevent_req *req,
+				     size_t *idx, enum id_mapping *status,
+				     struct unixid *xid)
+{
+	struct idmap_script_sid2xid_state *state = tevent_req_data(
+		req, struct idmap_script_sid2xid_state);
+	char *out = (char *)state->out;
+	size_t out_size = talloc_get_size(out);
+	unsigned long v;
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		return err;
+	}
+
+	if (out_size == 0) {
+		goto unmapped;
+	}
+	if (state->out[out_size-1] != '\0') {
+		goto unmapped;
+	}
+
+	*idx = state->idx;
+
+	if (sscanf(out, "XID:%lu\n", &v) == 1) {
+		*xid = (struct unixid) { .id = v, .type = ID_TYPE_BOTH };
+	} else if (sscanf(out, "UID:%lu\n", &v) == 1) {
+		*xid = (struct unixid) { .id = v, .type = ID_TYPE_UID };
+	} else if (sscanf(out, "GID:%lu\n", &v) == 1) {
+		*xid = (struct unixid) { .id = v, .type = ID_TYPE_GID };
+	} else {
+		goto unmapped;
+	}
+
+	*status = ID_MAPPED;
+	return 0;
+
+unmapped:
+	*xid = (struct unixid) { .id = UINT32_MAX,
+				 .type = ID_TYPE_NOT_SPECIFIED };
+	*status = ID_UNMAPPED;
+	return 0;
+}
+
+struct idmap_script_sids2xids_state {
+	struct id_map **ids;
+	size_t num_ids;
+	size_t num_done;
+};
+
+static void idmap_script_sids2xids_done(struct tevent_req *subreq);
+
+static struct tevent_req *idmap_script_sids2xids_send(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+	struct id_map **ids, size_t num_ids, const char *script)
+{
+	struct tevent_req *req;
+	struct idmap_script_sids2xids_state *state;
+	size_t i;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct idmap_script_sids2xids_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ids = ids;
+	state->num_ids = num_ids;
+
+	if (state->num_ids == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	for (i=0; i<num_ids; i++) {
+		struct tevent_req *subreq;
+
+		subreq = idmap_script_sid2xid_send(
+			state, ev, ids[i]->sid, script, i);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, idmap_script_sids2xids_done,
+					req);
+	}
+
+	return req;
+}
+
+static void idmap_script_sids2xids_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct idmap_script_sids2xids_state *state = tevent_req_data(
+		req, struct idmap_script_sids2xids_state);
+	size_t idx = 0;
+	enum id_mapping status = ID_UNKNOWN;
+	struct unixid xid = { .id = UINT32_MAX,
+			      .type = ID_TYPE_NOT_SPECIFIED };
+	int ret;
+
+	ret = idmap_script_sid2xid_recv(subreq, &idx, &status, &xid);
+	TALLOC_FREE(subreq);
+	if (tevent_req_error(req, ret)) {
+		return;
+	}
+
+	if (idx >= state->num_ids) {
+		tevent_req_error(req, EINVAL);
+		return;
+	}
+
+	state->ids[idx]->status = status;
+	state->ids[idx]->xid = xid;
+
+	state->num_done += 1;
+
+	if (state->num_done >= state->num_ids) {
+		tevent_req_done(req);
+	}
+}
+
+static int idmap_script_sids2xids_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_unix(req);
+}
+
+static int idmap_script_sids2xids(struct id_map **ids, size_t num_ids,
+				  const char *script)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	int ret = ENOMEM;
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = idmap_script_sids2xids_send(frame, ev, ids, num_ids, script);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll(req, ev)) {
+		ret = errno;
+		goto fail;
+	}
+	ret = idmap_script_sids2xids_recv(req);
+fail:
+	TALLOC_FREE(frame);
 	return ret;
 }
 
 static NTSTATUS idmap_script_sids_to_unixids(struct idmap_domain *dom,
-				      struct id_map **ids)
+					     struct id_map **ids)
 {
-	NTSTATUS ret;
-	int i, num_mapped = 0;
+	struct idmap_script_context *ctx = talloc_get_type_abort(
+		dom->private_data, struct idmap_script_context);
+	int ret;
+	size_t i, num_ids, num_mapped;
 
 	DEBUG(10, ("%s called ...\n", __func__));
 	/* Init status to avoid surprise ... */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
+	num_ids = i;
 
-	for (i = 0; ids[i]; i++) {
-		ret = idmap_script_sid_to_id(dom, ids[i]);
-		if (!NT_STATUS_IS_OK(ret)) {
-			if (NT_STATUS_EQUAL(ret, NT_STATUS_NONE_MAPPED)) {
-				ids[i]->status = ID_UNMAPPED;
-				continue;
-			}
-
-			/*
-			 * We cannot keep going if it is other than mapping
-			 * failed.
-			 */
-			goto done;
-		}
-
-		ids[i]->status = ID_MAPPED;
-		num_mapped++;
+	ret = idmap_script_sids2xids(ids, num_ids, ctx->script);
+	if (ret != 0) {
+		DBG_DEBUG("idmap_script_sids2xids returned %s\n",
+			  strerror(ret));
+		return map_nt_error_from_unix(ret);
 	}
 
-	ret = NT_STATUS_OK;
+	num_mapped = 0;
 
-done:
-	if (NT_STATUS_IS_OK(ret)) {
-		if (i == 0 || num_mapped == 0) {
-			ret = NT_STATUS_NONE_MAPPED;
+	for (i=0; i<num_ids; i++) {
+		struct id_map *map = ids[i];
+
+		if ((map->status == ID_MAPPED) &&
+		    !idmap_unix_id_is_in_range(map->xid.id, dom)) {
+			DBG_INFO("Script returned id (%u) out of range "
+				 "(%u - %u). Filtered!\n",
+				 map->xid.id, dom->low_id, dom->high_id);
+			map->status = ID_UNMAPPED;
 		}
-		else if (num_mapped < i) {
-			ret = STATUS_SOME_UNMAPPED;
-		} else {
-			DEBUG(10, ("Returning NT_STATUS_OK\n"));
-			ret = NT_STATUS_OK;
+
+		if (map->status == ID_MAPPED) {
+			num_mapped += 1;
 		}
 	}
 
-	return ret;
+	if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (num_mapped < num_ids) {
+		return STATUS_SOME_UNMAPPED;
+	}
+	return NT_STATUS_OK;
 }
 
 /*
