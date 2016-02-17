@@ -204,7 +204,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	} else if (ks_is_tgs_principal(ctx, principal)) {
 		sflags |= SDB_F_GET_KRBTGT;
 	} else {
-		sflags |= SDB_F_GET_ANY;
+		sflags |= SDB_F_GET_SERVER|SDB_F_FOR_TGS_REQ;
 	}
 
 	/* always set this or the created_by data will not be populated by samba's
