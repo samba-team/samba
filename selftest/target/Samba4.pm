@@ -2121,7 +2121,7 @@ sub setup_s4member($$$)
 	my $env = $self->provision_s4member($path, $dc_vars);
 
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
@@ -2138,7 +2138,7 @@ sub setup_rpc_proxy($$$)
 	my $env = $self->provision_rpc_proxy($path, $dc_vars);
 
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
@@ -2169,7 +2169,7 @@ sub setup_chgdcpass($$)
 
 	my $env = $self->provision_chgdcpass($path);
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
@@ -2184,7 +2184,7 @@ sub setup_fl2000dc($$)
 
 	my $env = $self->provision_fl2000dc($path);
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
@@ -2201,7 +2201,7 @@ sub setup_fl2003dc($$$)
 	my $env = $self->provision_fl2003dc($path);
 
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
@@ -2219,7 +2219,7 @@ sub setup_fl2008r2dc($$$)
 	my $env = $self->provision_fl2008r2dc($path);
 
 	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
 		        return undef;
 		}
 
