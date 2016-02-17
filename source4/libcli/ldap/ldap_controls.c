@@ -20,6 +20,9 @@
 */
 
 #include "includes.h"
+
+#include <ldb.h>
+
 #include "../lib/util/asn1.h"
 #include "libcli/ldap/libcli_ldap.h"
 #include "libcli/ldap/ldap_proto.h"
