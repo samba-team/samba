@@ -27,7 +27,6 @@
 		<arg choice="opt">-n, --nonprompt</arg>
 		<arg choice="opt">-d, --debuglevel=INT</arg>
 		<arg choice="opt">-D, --dots</arg>
-		<arg choice="opt">-P, --keep-permissions</arg>
 		<arg choice="opt">-o, --outputfile</arg>
 		<arg choice="opt">-f, --rcfile</arg>
 		<arg choice="opt">-q, --quiet</arg>
@@ -99,11 +98,6 @@
 	<varlistentry>
 		<term>-D, --dots</term>
 		<listitem><para>Show dots as progress indication</para></listitem>
-	</varlistentry>
-
-	<varlistentry>
-		<term>-P, --keep-permissions</term>
-		<listitem><para>Set same permissions on local file as are set on remote file.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
