@@ -889,10 +889,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 TDB_DATA indata, bool *async_reply,
 				 const char **errormsg);
 
-bool ctdb_recovery_have_lock(struct ctdb_context *ctdb);
-bool ctdb_recovery_lock(struct ctdb_context *ctdb);
-void ctdb_recovery_unlock(struct ctdb_context *ctdb);
-
 int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 				 struct ctdb_req_control_old *c,
 				 bool *async_reply);

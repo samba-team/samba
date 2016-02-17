@@ -42,6 +42,7 @@
 #include "common/common.h"
 #include "common/logging.h"
 
+#include "ctdb_cluster_mutex.h"
 
 /* List of SRVID requests that need to be processed */
 struct srvid_list {
@@ -1533,6 +1534,78 @@ static int recover_database(struct ctdb_recoverd *rec,
 	talloc_free(recdb);
 
 	return 0;
+}
+
+static bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
+{
+	return (ctdb->recovery_lock_handle != NULL);
+}
+
+struct hold_reclock_state {
+	bool done;
+	char status;
+};
+
+static void hold_reclock_handler(struct ctdb_context *ctdb,
+				 char status,
+				 double latency,
+				 struct ctdb_cluster_mutex_handle *h,
+				 void *private_data)
+{
+	struct hold_reclock_state *s =
+		(struct hold_reclock_state *) private_data;
+
+	switch (status) {
+	case '0':
+		ctdb->recovery_lock_handle = h;
+		break;
+
+	case '1':
+		DEBUG(DEBUG_ERR,
+		      ("Unable to take recovery lock - contention\n"));
+		talloc_free(h);
+		break;
+
+	default:
+		DEBUG(DEBUG_ERR, ("ERROR: when taking recovery lock\n"));
+		talloc_free(h);
+	}
+
+	s->done = true;
+	s->status = status;
+}
+
+static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
+{
+	struct ctdb_cluster_mutex_handle *h;
+	struct hold_reclock_state s = {
+		.done = false,
+		.status = '0',
+	};
+
+	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock_file, 0);
+	if (h == NULL) {
+		return -1;
+	}
+
+	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, &s);
+
+	while (!s.done) {
+		tevent_loop_once(ctdb->ev);
+	}
+
+	/* Ensure no attempts to access to s after function return */
+	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, NULL);
+
+	return (s.status == '0');
+}
+
+static void ctdb_recovery_unlock(struct ctdb_context *ctdb)
+{
+	if (ctdb->recovery_lock_handle != NULL) {
+		DEBUG(DEBUG_NOTICE, ("Releasing recovery lock\n"));
+		TALLOC_FREE(ctdb->recovery_lock_handle);
+	}
 }
 
 /* when we start a recovery, make sure all nodes use the same reclock file
