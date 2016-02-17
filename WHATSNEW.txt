@@ -158,6 +158,20 @@ descriptors having file locks are opened onto the same file. An internal
 tunable "smbd:force process locks = true" may be used to turn off OFD
 locks if there appear to be problems with them.
 
+Password sync as active directory domain controller
+---------------------------------------------------
+
+The new commands 'samba-tool user getpassword'
+and 'samba-tool user syncpasswords' provide
+access and syncing of various password fields.
+
+If compiled with GPGME support (--with-gpgme) it's
+possible to store cleartext passwords in a PGP/OpenGPG
+encrypted form by configuring the new "password hash gpg key ids"
+option. This requires gpgme devel and python packages to be installed
+(e.g. libgpgme11-dev and python-gpgme on debian/ubuntu).
+
+
 REMOVED FEATURES
 ================
 
@@ -166,16 +180,19 @@ only user and username parameters
 These two parameters have long been deprecated and superseded by
 "valid users" and "invalid users".
 
-smb.conf changes
-----------------
 
-  Parameter Name		Description		Default
-  --------------		-----------		-------
-  ntlm auth			Changed default 	no
-  only user			Removed
-  username			Removed
-  kccsrv:samba_kcc		Changed default		true
-  smb2 leases			Changed default		yes
+smb.conf changes
+================
+
+  Parameter Name                Description             Default
+  --------------                -----------             -------
+  kccsrv:samba_kcc              Changed default         yes
+  ntlm auth                     Changed default         no
+  only user                     Removed
+  password hash gpg key ids     New
+  smb2 leases                   Changed default         yes
+  username                      Removed
+
 
 KNOWN ISSUES
 ============
