@@ -768,6 +768,14 @@ struct ctdb_cluster_mutex_handle {
 	struct timeval start_time;
 };
 
+static void ctdb_cluster_mutex_set_handler(struct ctdb_cluster_mutex_handle *h,
+					   cluster_mutex_handler_t handler,
+					   void *private_data)
+{
+	h->handler = handler;
+	h->private_data = private_data;
+}
+
 static void set_recmode_handler(struct ctdb_context *ctdb,
 				char status,
 				double latency,
@@ -1152,9 +1160,9 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 	/* set_recmode_handler() frees h */
-	h->handler = set_recmode_handler;
-	h->private_data = talloc_steal(h, c);
-
+	ctdb_cluster_mutex_set_handler(h,
+				       set_recmode_handler,
+				       talloc_steal(h, c));
 	*async_reply = true;
 
 	return 0;
@@ -1213,14 +1221,14 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	h->handler = hold_reclock_handler;
-	h->private_data = &s;
+	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, &s);
 
 	while (!s.done) {
 		tevent_loop_once(ctdb->ev);
 	}
 
-	h->private_data = NULL;
+	/* Ensure no attempts to access to s after function return */
+	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, NULL);
 
 	return (s.status == '0');
 }
