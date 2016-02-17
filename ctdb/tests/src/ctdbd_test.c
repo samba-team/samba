@@ -64,6 +64,7 @@ bool fast_start;
 #include "server/ctdb_takeover.c"
 #include "server/ctdb_persistent.c"
 #include "server/ctdb_keepalive.c"
+#include "server/ctdb_cluster_mutex.c"
 #include "server/ctdb_logging.c"
 #include "server/ctdb_logging_syslog.c"
 #include "server/ctdb_logging_file.c"
