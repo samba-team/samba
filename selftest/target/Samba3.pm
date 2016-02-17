@@ -1061,6 +1061,22 @@ sub check_or_start($$$$$) {
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
 }
 
+sub createuser($$$$)
+{
+	my ($self, $username, $password, $conffile) = @_;
+	my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $username > /dev/null";
+	unless (open(PWD, "|$cmd")) {
+	    warn("Unable to set password for $username account\n$cmd");
+	    return undef;
+	}
+	print PWD "$password\n$password\n";
+	unless (close(PWD)) {
+	    warn("Unable to set password for $username account\n$cmd");
+	    return undef;
+	}
+	print "DONE\n";
+}
+
 sub provision($$$$$$$$)
 {
 	my ($self, $prefix, $server, $password, $extra_options, $dc_server_ip, $dc_server_ipv6, $no_delete_prefix) = @_;
@@ -1752,29 +1768,8 @@ force_user:x:$gid_force_user:
 		$ENV{RESOLV_WRAPPER_HOSTS} = $dns_host_file;
 	}
 
-        my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a $unix_name > /dev/null";
-	unless (open(PWD, "|$cmd")) {
-             warn("Unable to set password for test account\n$cmd");
-             return undef;
-        }
-	print PWD "$password\n$password\n";
-	unless (close(PWD)) {
-             warn("Unable to set password for test account\n$cmd");
-             return undef; 
-        }
-
-	# Add another user named: force_user
-        my $cmd = "UID_WRAPPER_ROOT=1 " . Samba::bindir_path($self, "smbpasswd")." -c $conffile -L -s -a force_user > /dev/null";
-	unless (open(PWD, "|$cmd")) {
-             warn("Unable to set password for test account force_user\n$cmd");
-             return undef;
-        }
-	print PWD "$password\n$password\n";
-	unless (close(PWD)) {
-             warn("Unable to set password for test account force_user\n$cmd");
-             return undef;
-        }
-	print "DONE\n";
+	createuser($self, $unix_name, $password, $conffile) || die("Unable to create user");
+	createuser($self, "force_user", $password, $conffile) || die("Unable to create force_user");
 
 	open(DNS_UPDATE_LIST, ">$prefix/dns_update_list") or die("Unable to open $$prefix/dns_update_list");
 	print DNS_UPDATE_LIST "A $server. $server_ip\n";
