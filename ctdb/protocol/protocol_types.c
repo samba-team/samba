@@ -473,6 +473,34 @@ int ctdb_pulldb_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+size_t ctdb_pulldb_ext_len(struct ctdb_pulldb_ext *pulldb)
+{
+	return sizeof(struct ctdb_pulldb_ext);
+}
+
+void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *pulldb, uint8_t *buf)
+{
+	memcpy(buf, pulldb, sizeof(struct ctdb_pulldb_ext));
+}
+
+int ctdb_pulldb_ext_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+			 struct ctdb_pulldb_ext **out)
+{
+	struct ctdb_pulldb_ext *pulldb;
+
+	if (buflen < sizeof(struct ctdb_pulldb_ext)) {
+		return EMSGSIZE;
+	}
+
+	pulldb = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_pulldb_ext));
+	if (pulldb == NULL) {
+		return ENOMEM;
+	}
+
+	*out = pulldb;
+	return 0;
+}
+
 size_t ctdb_ltdb_header_len(struct ctdb_ltdb_header *header)
 {
 	return sizeof(struct ctdb_ltdb_header);
