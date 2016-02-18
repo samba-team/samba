@@ -457,6 +457,12 @@ struct ctdb_pulldb {
 	uint32_t lmaster;
 };
 
+struct ctdb_pulldb_ext {
+	uint32_t db_id;
+	uint32_t lmaster;
+	uint64_t srvid;
+};
+
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
 
