@@ -2468,3 +2468,73 @@ int ctdb_reply_control_db_transaction_cancel(struct ctdb_reply_control *reply)
 {
 	return ctdb_reply_control_generic(reply);
 }
+
+/* CTDB_CONTROL_DB_PULL */
+
+void ctdb_req_control_db_pull(struct ctdb_req_control *request,
+			      struct ctdb_pulldb_ext *pulldb_ext)
+{
+	request->opcode = CTDB_CONTROL_DB_PULL;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_PULL;
+	request->rdata.data.pulldb_ext = pulldb_ext;
+}
+
+int ctdb_reply_control_db_pull(struct ctdb_reply_control *reply,
+			       uint32_t *num_records)
+{
+	if (reply->status == 0 &&
+	    reply->rdata.opcode == CTDB_CONTROL_DB_PULL) {
+		*num_records = reply->rdata.data.num_records;
+	}
+	return reply->status;
+}
+
+/* CTDB_CONTROL_DB_PUSH_START */
+
+void ctdb_req_control_db_push_start(struct ctdb_req_control *request,
+				    struct ctdb_pulldb_ext *pulldb_ext)
+{
+	request->opcode = CTDB_CONTROL_DB_PUSH_START;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_PUSH_START;
+	request->rdata.data.pulldb_ext = pulldb_ext;
+}
+
+int ctdb_reply_control_db_push_start(struct ctdb_reply_control *reply)
+{
+	return ctdb_reply_control_generic(reply);
+}
+
+/* CTDB_CONTROL_DB_PUSH_CONFIRM */
+
+void ctdb_req_control_db_push_confirm(struct ctdb_req_control *request,
+				      uint32_t db_id)
+{
+	request->opcode = CTDB_CONTROL_DB_PUSH_CONFIRM;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_PUSH_CONFIRM;
+	request->rdata.data.db_id = db_id;
+}
+
+int ctdb_reply_control_db_push_confirm(struct ctdb_reply_control *reply,
+				       uint32_t *num_records)
+{
+	if (reply->status == 0 &&
+	    reply->rdata.opcode == CTDB_CONTROL_DB_PUSH_CONFIRM) {
+		*num_records = reply->rdata.data.num_records;
+	}
+	return reply->status;
+}

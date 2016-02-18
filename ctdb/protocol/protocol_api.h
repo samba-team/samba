@@ -634,6 +634,20 @@ void ctdb_req_control_db_transaction_cancel(struct ctdb_req_control *request,
 					    uint32_t db_id);
 int ctdb_reply_control_db_transaction_cancel(struct ctdb_reply_control *reply);
 
+void ctdb_req_control_db_pull(struct ctdb_req_control *request,
+			      struct ctdb_pulldb_ext *pulldb_ext);
+int ctdb_reply_control_db_pull(struct ctdb_reply_control *reply,
+			       uint32_t *num_records);
+
+void ctdb_req_control_db_push_start(struct ctdb_req_control *request,
+				    struct ctdb_pulldb_ext *pulldb_ext);
+int ctdb_reply_control_db_push_start(struct ctdb_reply_control *reply);
+
+void ctdb_req_control_db_push_confirm(struct ctdb_req_control *request,
+				      uint32_t db_id);
+int ctdb_reply_control_db_push_confirm(struct ctdb_reply_control *reply,
+				       uint32_t *num_records);
+
 /* From protocol/protocol_message.c */
 
 int ctdb_req_message_push(struct ctdb_req_header *h,

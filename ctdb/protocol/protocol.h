@@ -355,6 +355,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_DB_TRANSACTION_START    = 143,
 		    CTDB_CONTROL_DB_TRANSACTION_COMMIT   = 144,
 		    CTDB_CONTROL_DB_TRANSACTION_CANCEL	 = 145,
+		    CTDB_CONTROL_DB_PULL                 = 146,
+		    CTDB_CONTROL_DB_PUSH_START           = 147,
+		    CTDB_CONTROL_DB_PUSH_CONFIRM         = 148,
 };
 
 #define CTDB_MONITORING_ACTIVE		0
@@ -862,6 +865,7 @@ struct ctdb_req_control_data {
 		struct ctdb_vnn_map *vnnmap;
 		uint32_t loglevel;
 		struct ctdb_pulldb *pulldb;
+		struct ctdb_pulldb_ext *pulldb_ext;
 		struct ctdb_rec_buffer *recbuf;
 		uint32_t recmode;
 		const char *db_name;
@@ -930,6 +934,7 @@ struct ctdb_reply_control_data {
 		struct ctdb_uint8_array *u8_array;
 		struct ctdb_db_statistics *dbstats;
 		enum ctdb_runstate runstate;
+		uint32_t num_records;
 	} data;
 };
 

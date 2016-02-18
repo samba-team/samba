@@ -182,6 +182,22 @@ static void verify_ctdb_pulldb(struct ctdb_pulldb *p1, struct ctdb_pulldb *p2)
 	assert(p1->lmaster == p2->lmaster);
 }
 
+static void fill_ctdb_pulldb_ext(TALLOC_CTX *mem_ctx,
+				 struct ctdb_pulldb_ext *p)
+{
+	p->db_id = rand32();
+	p->lmaster = rand32();
+	p->srvid = rand64();
+}
+
+static void verify_ctdb_pulldb_ext(struct ctdb_pulldb_ext *p1,
+				   struct ctdb_pulldb_ext *p2)
+{
+	assert(p1->db_id == p2->db_id);
+	assert(p1->lmaster == p2->lmaster);
+	assert(p1->srvid == p2->srvid);
+}
+
 static void fill_ctdb_ltdb_header(TALLOC_CTX *mem_ctx,
 				  struct ctdb_ltdb_header *p)
 {
@@ -1177,6 +1193,7 @@ DEFINE_TEST(struct ctdb_statistics, ctdb_statistics);
 DEFINE_TEST(struct ctdb_vnn_map, ctdb_vnn_map);
 DEFINE_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 DEFINE_TEST(struct ctdb_pulldb, ctdb_pulldb);
+DEFINE_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
 DEFINE_TEST(struct ctdb_rec_data, ctdb_rec_data);
 DEFINE_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
 DEFINE_TEST(struct ctdb_traverse_start, ctdb_traverse_start);
@@ -1240,6 +1257,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_vnn_map)();
 	TEST_FUNC(ctdb_dbid_map)();
 	TEST_FUNC(ctdb_pulldb)();
+	TEST_FUNC(ctdb_pulldb_ext)();
 	TEST_FUNC(ctdb_rec_data)();
 	TEST_FUNC(ctdb_rec_buffer)();
 	TEST_FUNC(ctdb_traverse_start)();

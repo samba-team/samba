@@ -656,6 +656,23 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
 		cd->data.db_id = rand32();
 		break;
+
+	case CTDB_CONTROL_DB_PULL:
+		cd->data.pulldb_ext = talloc(mem_ctx, struct ctdb_pulldb_ext);
+		assert(cd->data.pulldb_ext != NULL);
+		fill_ctdb_pulldb_ext(mem_ctx, cd->data.pulldb_ext);
+		break;
+
+	case CTDB_CONTROL_DB_PUSH_START:
+		cd->data.pulldb_ext = talloc(mem_ctx, struct ctdb_pulldb_ext);
+		assert(cd->data.pulldb_ext != NULL);
+		fill_ctdb_pulldb_ext(mem_ctx, cd->data.pulldb_ext);
+		break;
+
+	case CTDB_CONTROL_DB_PUSH_CONFIRM:
+		cd->data.db_id = rand32();
+		break;
+
 	}
 }
 
@@ -1103,6 +1120,21 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 	case CTDB_CONTROL_DB_TRANSACTION_CANCEL:
 		assert(cd->data.db_id == cd2->data.db_id);
 		break;
+
+	case CTDB_CONTROL_DB_PULL:
+		verify_ctdb_pulldb_ext(cd->data.pulldb_ext,
+				       cd2->data.pulldb_ext);
+		break;
+
+	case CTDB_CONTROL_DB_PUSH_START:
+		verify_ctdb_pulldb_ext(cd->data.pulldb_ext,
+				       cd2->data.pulldb_ext);
+		break;
+
+	case CTDB_CONTROL_DB_PUSH_CONFIRM:
+		assert(cd->data.db_id == cd2->data.db_id);
+		break;
+
 	}
 }
 
@@ -1559,6 +1591,14 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_node_map(mem_ctx, cd->data.nodemap);
 		break;
 
+	case CTDB_CONTROL_DB_PULL:
+		cd->data.num_records = rand32();
+		break;
+
+	case CTDB_CONTROL_DB_PUSH_CONFIRM:
+		cd->data.num_records = rand32();
+		break;
+
 	}
 }
 
@@ -1940,6 +1980,14 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_GET_NODES_FILE:
 		verify_ctdb_node_map(cd->data.nodemap, cd2->data.nodemap);
+		break;
+
+	case CTDB_CONTROL_DB_PULL:
+		assert(cd->data.num_records == cd2->data.num_records);
+		break;
+
+	case CTDB_CONTROL_DB_PUSH_CONFIRM:
+		assert(cd->data.num_records == cd2->data.num_records);
 		break;
 
 	}
