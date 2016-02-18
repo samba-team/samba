@@ -1369,7 +1369,7 @@ bool tevent_wakeup_recv(struct tevent_req *req);
 /* @} */
 
 /**
- * @defgroup tevent_helpers The tevent helper functiions
+ * @defgroup tevent_helpers The tevent helper functions
  * @ingroup tevent
  *
  * @todo description
