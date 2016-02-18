@@ -189,7 +189,7 @@ static int dsdb_notification_filter_search(struct ldb_module *module,
 	down_tree->operation = LDB_OP_GREATER;
 	down_tree->u.equality.attr = "uSNChanged";
 	down_tree->u.equality.value = data_blob_string_const(filter_usn);
-	talloc_move(down_req, &filter_usn);
+	(void)talloc_move(down_req, &filter_usn);
 
 	ret = ldb_build_search_req_ex(&down_req, ldb, req,
 				      req->op.search.base,
