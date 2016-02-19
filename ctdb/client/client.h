@@ -737,6 +737,21 @@ int ctdb_ctrl_db_transaction_cancel(TALLOC_CTX *mem_ctx,
 				    int destnode, struct timeval timeout,
 				    uint32_t db_id);
 
+int ctdb_ctrl_db_pull(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		      struct ctdb_client_context *client,
+		      int destnode, struct timeval timeout,
+		      struct ctdb_pulldb_ext *pulldb, uint32_t *num_records);
+
+int ctdb_ctrl_db_push_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			    struct ctdb_client_context *client,
+			    int destnode, struct timeval timeout,
+			    struct ctdb_pulldb_ext *pulldb);
+
+int ctdb_ctrl_db_push_confirm(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      uint32_t db_id, uint32_t *num_records);
+
 /* from client/client_db.c */
 
 struct tevent_req *ctdb_attach_send(TALLOC_CTX *mem_ctx,

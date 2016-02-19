@@ -3117,3 +3117,89 @@ int ctdb_ctrl_db_transaction_cancel(TALLOC_CTX *mem_ctx,
 
 	return 0;
 }
+
+int ctdb_ctrl_db_pull(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+		      struct ctdb_client_context *client,
+		      int destnode, struct timeval timeout,
+		      struct ctdb_pulldb_ext *pulldb, uint32_t *num_records)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_pull(&request, pulldb);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_PULL failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_pull(reply, num_records);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Control DB_PULL failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_db_push_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			    struct ctdb_client_context *client,
+			    int destnode, struct timeval timeout,
+			    struct ctdb_pulldb_ext *pulldb)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_push_start(&request, pulldb);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_PUSH failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_push_start(reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_PUSH failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
+
+int ctdb_ctrl_db_push_confirm(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      int destnode, struct timeval timeout,
+			      uint32_t db_id, uint32_t *num_records)
+{
+	struct ctdb_req_control request;
+	struct ctdb_reply_control *reply;
+	int ret;
+
+	ctdb_req_control_db_push_confirm(&request, db_id);
+	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
+				  &request, &reply);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_PUSH failed to node %u, ret=%d\n",
+		       destnode, ret));
+		return ret;
+	}
+
+	ret = ctdb_reply_control_db_push_confirm(reply, num_records);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Control DB_PUSH failed, ret=%d\n", ret));
+		return ret;
+	}
+
+	return 0;
+}
