@@ -31,6 +31,30 @@ static int int_cmp(int a, int b)
 	return a - b;
 }
 
+static bool test_binsearch_v(struct torture_context *tctx)
+{
+	int array[] = { -11, -7, 0, 1, 723, 1000000};
+	int misses[] = { -121, 17, -10, 10, -1, -723, 1000002};
+	int i;
+	int *result = NULL;
+
+	for (i = 0; i < ARRAY_SIZE(misses); i++) {
+		BINARY_ARRAY_SEARCH_V(array, ARRAY_SIZE(array),
+				      misses[i], int_cmp, result);
+		torture_comment(tctx, "looking for misses[%d] == %d\n", i, misses[i]);
+		torture_assert(tctx, result == NULL, "failed to miss");
+	}
+
+	for (i = 0; i < ARRAY_SIZE(array); i++) {
+		BINARY_ARRAY_SEARCH_V(array, ARRAY_SIZE(array),
+				      array[i], int_cmp, result);
+		torture_comment(tctx, "looking for array[%d] == %d, %p; got %p\n",
+				i, array[i], &array[i], result);
+		torture_assert(tctx, result == &array[i],
+			       "failed to find element");
+	}
+	return true;
+}
 
 static bool test_binsearch_gte(struct torture_context *tctx)
 {
