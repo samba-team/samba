@@ -437,6 +437,9 @@ struct ctdb_db_context {
 	bool freeze_transaction_started;
 	uint32_t freeze_transaction_id;
 	uint32_t generation;
+
+	bool push_started;
+	void *push_state;
 };
 
 
@@ -872,6 +875,14 @@ int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata,
 			     TDB_DATA *outdata);
 int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata);
+
+int32_t ctdb_control_db_pull(struct ctdb_context *ctdb,
+			     struct ctdb_req_control_old *c,
+			     TDB_DATA indata, TDB_DATA *outdata);
+int32_t ctdb_control_db_push_start(struct ctdb_context *ctdb,
+				   TDB_DATA indata);
+int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
+				     TDB_DATA indata, TDB_DATA *outdata);
 
 int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
 

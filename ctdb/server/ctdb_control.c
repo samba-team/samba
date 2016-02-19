@@ -715,6 +715,18 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		return ctdb_control_db_transaction_cancel(ctdb, indata);
 
+	case CTDB_CONTROL_DB_PULL:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_pulldb_ext));
+		return ctdb_control_db_pull(ctdb, c, indata, outdata);
+
+	case CTDB_CONTROL_DB_PUSH_START:
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_pulldb_ext));
+		return ctdb_control_db_push_start(ctdb, indata);
+
+	case CTDB_CONTROL_DB_PUSH_CONFIRM:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_db_push_confirm(ctdb, indata, outdata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
