@@ -40,11 +40,6 @@ typedef struct datablob {
 	size_t length;
 } DATA_BLOB;
 
-struct data_blob_list_item {
-	struct data_blob_list_item *prev,*next;
-	DATA_BLOB blob;
-};
-
 /* by making struct ldb_val and DATA_BLOB the same, we can simplify
    a fair bit of code */
 #define ldb_val datablob

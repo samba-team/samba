@@ -76,6 +76,11 @@ enum dcesrv_call_list {
 	DCESRV_LIST_PENDING_CALL_LIST
 };
 
+struct data_blob_list_item {
+	struct data_blob_list_item *prev,*next;
+	DATA_BLOB blob;
+};
+
 /* the state of an ongoing dcerpc call */
 struct dcesrv_call_state {
 	struct dcesrv_call_state *next, *prev;
