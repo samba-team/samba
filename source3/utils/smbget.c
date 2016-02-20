@@ -764,20 +764,20 @@ int main(int argc, char **argv)
 		{"user",       'U', POPT_ARG_STRING, &opt.username,    'U', "Username to use" },
 		{"guest",      'a', POPT_ARG_NONE,   NULL,             'a', "Work as user guest" },
 
-		{"nonprompt",  'n', POPT_ARG_NONE,   &opt.nonprompt,   'n', "Don't ask anything (non-interactive)" },
+		{"nonprompt",  'n', POPT_ARG_NONE,   NULL,             'n',  "Don't ask anything (non-interactive)" },
 		{"debuglevel", 'd', POPT_ARG_INT,    &opt.debuglevel,  'd', "Debuglevel to use" },
 
 		{"encrypt",    'e', POPT_ARG_NONE,   NULL,             'e', "Encrypt SMB transport" },
-		{"resume",     'r', POPT_ARG_NONE,   &resume,           0,  "Automatically resume aborted files" },
-		{"update",     'u', POPT_ARG_NONE,   &opt.update,       0,  "Download only when remote file is newer than local file or local file is missing"},
-		{"recursive",  'R', POPT_ARG_NONE,   &recursive,        0,  "Recursively download files" },
+		{"resume",     'r', POPT_ARG_NONE,   NULL,             'r',  "Automatically resume aborted files" },
+		{"update",     'u', POPT_ARG_NONE,   NULL,             'u',  "Download only when remote file is newer than local file or local file is missing"},
+		{"recursive",  'R', POPT_ARG_NONE,   NULL,             'R',  "Recursively download files" },
 		{"blocksize",  'b', POPT_ARG_INT,    &opt.blocksize,   'b', "Change number of bytes in a block"},
 
 		{"outputfile", 'o', POPT_ARG_STRING, &opt.outputfile,  'o', "Write downloaded data to specified file" },
-		{"stdout",     'O', POPT_ARG_NONE,   &opt.send_stdout, 'O', "Write data to stdout" },
-		{"dots",       'D', POPT_ARG_NONE,   &opt.dots,        'D', "Show dots as progress indication" },
-		{"quiet",      'q', POPT_ARG_NONE,   &opt.quiet,       'q', "Be quiet" },
-		{"verbose",    'v', POPT_ARG_NONE,   &opt.verbose,     'v', "Be verbose" },
+		{"stdout",     'O', POPT_ARG_NONE,   NULL,             'O',  "Write data to stdout" },
+		{"dots",       'D', POPT_ARG_NONE,   NULL,             'D',  "Show dots as progress indication" },
+		{"quiet",      'q', POPT_ARG_NONE,   NULL,             'q',  "Be quiet" },
+		{"verbose",    'v', POPT_ARG_NONE,   NULL,             'v',  "Be verbose" },
 		{"rcfile",     'f', POPT_ARG_STRING, NULL,             'f', "Use specified rc file"},
 
 		POPT_TABLEEND
@@ -803,7 +803,7 @@ int main(int argc, char **argv)
 
 	pc = poptGetContext(argv[0], argc, argv_const, long_options, 0);
 
-	while ((c = poptGetNextOpt(pc)) >= 0) {
+	while ((c = poptGetNextOpt(pc)) > 0) {
 		switch (c) {
 		case 'f':
 			readrcfile(poptGetOptArg(pc), long_options);
@@ -827,7 +827,38 @@ int main(int argc, char **argv)
 				opt.password_specified = true;
 			}
 			break;
+		case 'n':
+			opt.nonprompt = true;
+			break;
+		case 'r':
+			resume = true;
+			break;
+		case 'u':
+			opt.update = true;
+			break;
+		case 'R':
+			recursive = true;
+			break;
+		case 'O':
+			opt.send_stdout = true;
+			break;
+		case 'D':
+			opt.dots = true;
+			break;
+		case 'q':
+			opt.quiet = true;
+			break;
+		case 'v':
+			opt.verbose = true;
+			break;
 		}
+	}
+
+	if (c < -1) {
+		fprintf(stderr, "%s: %s\n",
+			poptBadOption(pc, POPT_BADOPTION_NOALIAS),
+			poptStrerror(c));
+		return 1;
 	}
 
 	if ((opt.send_stdout || resume || opt.outputfile) && opt.update) {
