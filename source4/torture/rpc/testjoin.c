@@ -51,7 +51,8 @@ struct test_join {
 };
 
 
-static NTSTATUS DeleteUser_byname(struct dcerpc_binding_handle *b,
+static NTSTATUS DeleteUser_byname(struct torture_context *tctx,
+				  struct dcerpc_binding_handle *b,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *handle, const char *name)
 {
@@ -89,11 +90,11 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_binding_handle *b,
 
 	status = dcerpc_samr_OpenUser_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenUser(%s) failed - %s\n", name, nt_errstr(status));
+		torture_comment(tctx, "OpenUser(%s) failed - %s\n", name, nt_errstr(status));
 		return status;
 	}
 	if (!NT_STATUS_IS_OK(r.out.result)) {
-		printf("OpenUser(%s) failed - %s\n", name, nt_errstr(r.out.result));
+		torture_comment(tctx, "OpenUser(%s) failed - %s\n", name, nt_errstr(r.out.result));
 		return r.out.result;
 	}
 
@@ -116,7 +117,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_binding_handle *b,
   when finished
 */
 
-struct test_join *torture_create_testuser_max_pwlen(struct torture_context *torture,
+struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tctx,
 						    const char *username,
 						    const char *domain,
 						    uint16_t acct_type,
@@ -142,7 +143,7 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
-	const char *dc_binding = torture_setting_string(torture, "dc_binding", NULL);
+	const char *dc_binding = torture_setting_string(tctx, "dc_binding", NULL);
 	struct dcerpc_binding_handle *b = NULL;
 
 	join = talloc(NULL, struct test_join);
@@ -152,17 +153,17 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 
 	ZERO_STRUCTP(join);
 
-	printf("Connecting to SAMR\n");
+	torture_comment(tctx, "Connecting to SAMR\n");
 	
 	if (dc_binding) {
 		status = dcerpc_pipe_connect(join,
 					     &join->p,
 					     dc_binding,
 					     &ndr_table_samr,
-					     cmdline_credentials, NULL, torture->lp_ctx);
+					     cmdline_credentials, NULL, tctx->lp_ctx);
 					     
 	} else {
-		status = torture_rpc_connection(torture, 
+		status = torture_rpc_connection(tctx,
 						&join->p, 
 						&ndr_table_samr);
 	}
@@ -178,17 +179,17 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 	status = dcerpc_samr_Connect_r(b, join, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
-		printf("samr_Connect failed - %s\n", errstr);
+		torture_comment(tctx, "samr_Connect failed - %s\n", errstr);
 		return NULL;
 	}
 	if (!NT_STATUS_IS_OK(c.out.result)) {
 		const char *errstr = nt_errstr(c.out.result);
-		printf("samr_Connect failed - %s\n", errstr);
+		torture_comment(tctx, "samr_Connect failed - %s\n", errstr);
 		return NULL;
 	}
 
 	if (domain) {
-		printf("Opening domain %s\n", domain);
+		torture_comment(tctx, "Opening domain %s\n", domain);
 
 		name.string = domain;
 		l.in.connect_handle = &handle;
@@ -197,11 +198,11 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 
 		status = dcerpc_samr_LookupDomain_r(b, join, &l);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("LookupDomain failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
 			goto failed;
 		}
 		if (!NT_STATUS_IS_OK(l.out.result)) {
-			printf("LookupDomain failed - %s\n", nt_errstr(l.out.result));
+			torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(l.out.result));
 			goto failed;
 		}
 	} else {
@@ -219,15 +220,15 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 
 		status = dcerpc_samr_EnumDomains_r(b, join, &e);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("EnumDomains failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "EnumDomains failed - %s\n", nt_errstr(status));
 			goto failed;
 		}
 		if (!NT_STATUS_IS_OK(e.out.result)) {
-			printf("EnumDomains failed - %s\n", nt_errstr(e.out.result));
+			torture_comment(tctx, "EnumDomains failed - %s\n", nt_errstr(e.out.result));
 			goto failed;
 		}
 		if ((num_entries != 2) || (sam && sam->count != 2)) {
-			printf("unexpected number of domains\n");
+			torture_comment(tctx, "unexpected number of domains\n");
 			goto failed;
 		}
 		for (i=0; i < 2; i++) {
@@ -237,7 +238,7 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 			}
 		}
 		if (domain) {
-			printf("Opening domain %s\n", domain);
+			torture_comment(tctx, "Opening domain %s\n", domain);
 
 			name.string = domain;
 			l.in.connect_handle = &handle;
@@ -246,15 +247,15 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 
 			status = dcerpc_samr_LookupDomain_r(b, join, &l);
 			if (!NT_STATUS_IS_OK(status)) {
-				printf("LookupDomain failed - %s\n", nt_errstr(status));
+				torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(status));
 				goto failed;
 			}
 			if (!NT_STATUS_IS_OK(l.out.result)) {
-				printf("LookupDomain failed - %s\n", nt_errstr(l.out.result));
+				torture_comment(tctx, "LookupDomain failed - %s\n", nt_errstr(l.out.result));
 				goto failed;
 			}
 		} else {
-			printf("cannot proceed without domain name\n");
+			torture_comment(tctx, "cannot proceed without domain name\n");
 			goto failed;
 		}
 	}
@@ -271,15 +272,15 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tort
 
 	status = dcerpc_samr_OpenDomain_r(b, join, &o);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(status));
 		goto failed;
 	}
 	if (!NT_STATUS_IS_OK(o.out.result)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(o.out.result));
+		torture_comment(tctx, "OpenDomain failed - %s\n", nt_errstr(o.out.result));
 		goto failed;
 	}
 
-	printf("Creating account %s\n", username);
+	torture_comment(tctx, "Creating account %s\n", username);
 
 again:
 	name.string = username;
@@ -293,19 +294,19 @@ again:
 
 	status = dcerpc_samr_CreateUser2_r(b, join, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("CreateUser2 failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "CreateUser2 failed - %s\n", nt_errstr(status));
 		goto failed;
 	}
 
 	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_USER_EXISTS)) {
-		status = DeleteUser_byname(b, join, &join->domain_handle, name.string);
+		status = DeleteUser_byname(tctx, b, join, &join->domain_handle, name.string);
 		if (NT_STATUS_IS_OK(status)) {
 			goto again;
 		}
 	}
 
 	if (!NT_STATUS_IS_OK(r.out.result)) {
-		printf("CreateUser2 failed - %s\n", nt_errstr(r.out.result));
+		torture_comment(tctx, "CreateUser2 failed - %s\n", nt_errstr(r.out.result));
 		goto failed;
 	}
 
@@ -321,7 +322,7 @@ again:
 
 	random_pw = generate_random_password(join, MAX(8, policy_min_pw_len), max_pw_len);
 
-	printf("Setting account password '%s'\n", random_pw);
+	torture_comment(tctx, "Setting account password '%s'\n", random_pw);
 
 	ZERO_STRUCT(u);
 	s.in.user_handle = &join->user_handle;
@@ -333,9 +334,9 @@ again:
 
 	status = dcerpc_fetch_session_key(join->p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo level %u - no session key - %s\n",
+		torture_comment(tctx, "SetUserInfo level %u - no session key - %s\n",
 		       s.in.level, nt_errstr(status));
-		torture_leave_domain(torture, join);
+		torture_leave_domain(tctx, join);
 		goto failed;
 	}
 
@@ -343,11 +344,11 @@ again:
 
 	status = dcerpc_samr_SetUserInfo_r(b, join, &s);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "SetUserInfo failed - %s\n", nt_errstr(status));
 		goto failed;
 	}
 	if (!NT_STATUS_IS_OK(s.out.result)) {
-		printf("SetUserInfo failed - %s\n", nt_errstr(s.out.result));
+		torture_comment(tctx, "SetUserInfo failed - %s\n", nt_errstr(s.out.result));
 		goto failed;
 	}
 
@@ -369,18 +370,18 @@ again:
 	
 	u.info21.description.string = talloc_asprintf(join, 
 					 "Samba4 torture account created by host %s: %s", 
-					 lpcfg_netbios_name(torture->lp_ctx),
+					 lpcfg_netbios_name(tctx->lp_ctx),
 					 timestring(join, time(NULL)));
 
-	printf("Resetting ACB flags, force pw change time\n");
+	torture_comment(tctx, "Resetting ACB flags, force pw change time\n");
 
 	status = dcerpc_samr_SetUserInfo_r(b, join, &s);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "SetUserInfo failed - %s\n", nt_errstr(status));
 		goto failed;
 	}
 	if (!NT_STATUS_IS_OK(s.out.result)) {
-		printf("SetUserInfo failed - %s\n", nt_errstr(s.out.result));
+		torture_comment(tctx, "SetUserInfo failed - %s\n", nt_errstr(s.out.result));
 		goto failed;
 	}
 
@@ -391,7 +392,7 @@ again:
 	return join;
 
 failed:
-	torture_leave_domain(torture, join);
+	torture_leave_domain(tctx, join);
 	return NULL;
 }
 
@@ -484,7 +485,8 @@ NTSTATUS torture_delete_testuser(struct torture_context *torture,
 {
 	NTSTATUS status;
 
-	status = DeleteUser_byname(join->p->binding_handle,
+	status = DeleteUser_byname(torture,
+				   join->p->binding_handle,
 				   torture,
 				   &join->domain_handle,
 				   username);
@@ -608,10 +610,10 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 
 	status = dcerpc_samr_SetUserInfo_r(tj->p->binding_handle, tj, &s);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("SetUserInfo (non-critical) failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "SetUserInfo (non-critical) failed - %s\n", nt_errstr(status));
 	}
 	if (!NT_STATUS_IS_OK(s.out.result)) {
-		printf("SetUserInfo (non-critical) failed - %s\n", nt_errstr(s.out.result));
+		torture_comment(tctx, "SetUserInfo (non-critical) failed - %s\n", nt_errstr(s.out.result));
 	}
 
 	*machine_credentials = cli_credentials_init(tj);
@@ -722,7 +724,7 @@ static NTSTATUS torture_leave_ads_domain(struct torture_context *torture,
   leave the domain, deleting the machine acct
 */
 
-_PUBLIC_ void torture_leave_domain(struct torture_context *torture, struct test_join *join)
+_PUBLIC_ void torture_leave_domain(struct torture_context *tctx, struct test_join *join)
 {
 	struct samr_DeleteUser d;
 	NTSTATUS status;
@@ -736,17 +738,17 @@ _PUBLIC_ void torture_leave_domain(struct torture_context *torture, struct test_
 	/* Delete machine account */
 	status = dcerpc_samr_DeleteUser_r(join->p->binding_handle, join, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteUser failed\n");
+		torture_comment(tctx, "DeleteUser failed\n");
 	} else if (!NT_STATUS_IS_OK(d.out.result)) {
-		printf("Delete of machine account %s failed\n",
+		torture_comment(tctx, "Delete of machine account %s failed\n",
 		       join->netbios_name);
 	} else {
-		printf("Delete of machine account %s was successful.\n",
+		torture_comment(tctx, "Delete of machine account %s was successful.\n",
 		       join->netbios_name);
 	}
 
 	if (join->libnet_r) {
-		status = torture_leave_ads_domain(torture, join, join->libnet_r);
+		status = torture_leave_ads_domain(tctx, join, join->libnet_r);
 	}
 	
 	talloc_free(join);
