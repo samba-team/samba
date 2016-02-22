@@ -796,7 +796,11 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 		out_blob.length = *r->out.data_out_len;
 		ndr_err = ndr_pull_struct_blob(&out_blob, tctx, &resp, (ndr_pull_flags_fn_t)ndr_pull_bkrp_client_side_unwrapped);
 		torture_assert_int_equal(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), 0, "Unable to unmarshall bkrp_client_side_unwrapped");
-		torture_assert_werr_equal(tctx, r->out.result, WERR_INVALID_PARAM, "Wrong error code");
+		if (!W_ERROR_EQUAL(r->out.result, WERR_INVALID_PARAM)) {
+			torture_assert_werr_equal(tctx, r->out.result,
+						  WERR_INVALID_DATA,
+						  "Wrong error code");
+		}
 	} else {
 		struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 		torture_assert_ntstatus_equal(tctx, dcerpc_bkrp_BackupKey_r(b, tctx, r),
