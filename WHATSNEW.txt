@@ -1,4 +1,91 @@
                    =============================
+                   Release Notes for Samba 4.3.5
+                         February 23, 2016
+                   =============================
+
+
+This is the latest stable release of Samba 4.3.
+
+
+Changes since 4.3.4:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 10489: s3: smbd: posix_acls: Fix check for setting u:g:o entry on a
+     filesystem with no ACL support.
+   * BUG 11703: s3: smbd: Fix timestamp rounding inside SMB2 create.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 6482: s3:utils/smbget: Fix recursive download.
+   * BUG 11400: s3:smbd/oplock: Obey kernel oplock setting when releasing
+     oplocks.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 11693: s3-parm: Clean up defaults when removing global parameters.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11684: s3:smbd: Ignore initial allocation size for directory creation.
+   * BUG 11714: lib/tsocket: Work around sockets not supporting FIONREAD.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 11705: ctdb: Remove error messages after kernel security update
+     (CVE-2015-8543).
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 11732: param: Fix str_list_v3 to accept ";" again.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11699: Use M2Crypto.RC4.RC4 on platforms without Crypto.Cipher.ARC4.
+
+o  Jose A. Rivera <jarrpa@samba.org>
+   * BUG 11727: s3:smbd:open: Skip redundant call to file_set_dosmode when
+     creating a new file.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 11670: winbindd: Handle expired sessions correctly.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11690: s3-client: Add a KRB5 wrapper for smbspool.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11580: vfs_shadow_copy2: Fix case where snapshots are outside the
+     share.
+   * BUG 11662: smbclient: Query disk usage relative to current directory.
+   * BUG 11681: smbd: Show correct disk size for different quota and dfree block
+     sizes.
+   * BUG 11682: smbcacls: Fix uninitialized variable.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 11719: ctdb-scripts: Drop use of "smbcontrol winbindd ip-dropped ...".
+
+o  Hemanth Thummala <hemanth.thummala@nutanix.com>
+   * BUG 11708: loadparm: Fix memory leak issue.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Older release notes to follow:
+------------------------------
+
+                   =============================
                    Release Notes for Samba 4.3.4
                          January 12, 2016
                    =============================
@@ -68,8 +155,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Older release notes to follow:
-------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.3.3
