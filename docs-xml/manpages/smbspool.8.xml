@@ -50,6 +50,7 @@
 		<listitem><para>smb://server[:port]/printer</para></listitem>
 		<listitem><para>smb://workgroup/server[:port]/printer</para></listitem>
 		<listitem><para>smb://username:password@server[:port]/printer</para></listitem>
+		<listitem><para>smb://domain\username:password@server[:port]/printer</para></listitem>
 		<listitem><para>smb://username:password@workgroup/server[:port]/printer</para></listitem>
 	</itemizedlist>
 
@@ -62,6 +63,10 @@
 	pass the URI in argv[0], while shell scripts must set the 
 	<envar>DEVICE_URI</envar> environment variable prior to
 	running smbspool.</para>
+
+	<para>smbspool will accept URI escaped characters.  This allows setting
+	a domain in the username, or space in the printer name. For example
+	smb://domain%5Cusername/printer%20name</para>
 </refsect1>
 
 <refsect1>
