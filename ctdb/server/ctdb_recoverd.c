@@ -1558,6 +1558,8 @@ static void hold_reclock_handler(struct ctdb_context *ctdb,
 	switch (status) {
 	case '0':
 		ctdb->recovery_lock_handle = h;
+		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(),
+						   latency);
 		break;
 
 	case '1':
@@ -2069,7 +2071,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	struct ctdb_context *ctdb = rec->ctdb;
 	int i, ret;
 	struct ctdb_dbid_map_old *dbmap;
-	struct timeval start_time;
 	bool self_ban;
 	bool par_recovery;
 
@@ -2108,7 +2109,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		if (ctdb_recovery_have_lock(ctdb)) {
 			DEBUG(DEBUG_NOTICE, ("Already holding recovery lock\n"));
 		} else {
-			start_time = timeval_current();
 			DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock (%s)\n",
 					     ctdb->recovery_lock_file));
 			if (!ctdb_recovery_lock(ctdb)) {
@@ -2128,9 +2128,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 				ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
 				goto fail;
 			}
-			ctdb_ctrl_report_recd_lock_latency(ctdb,
-							   CONTROL_TIMEOUT(),
-							   timeval_elapsed(&start_time));
 			DEBUG(DEBUG_NOTICE,
 			      ("Recovery lock taken successfully by recovery daemon\n"));
 		}
