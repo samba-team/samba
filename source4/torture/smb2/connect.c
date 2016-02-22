@@ -90,7 +90,7 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("write failed - %s\n", nt_errstr(status));
+		printf("write 1 failed - %s\n", nt_errstr(status));
 		return status;
 	}
 
@@ -98,7 +98,7 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("write failed - %s\n", nt_errstr(status));
+		printf("write 2 failed - %s\n", nt_errstr(status));
 		return status;
 	}
 
