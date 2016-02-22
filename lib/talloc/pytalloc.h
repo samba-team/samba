@@ -37,10 +37,8 @@ int pytalloc_Check(PyObject *);
 
 /* Retrieve the pointer for a pytalloc_object. Like talloc_get_type() 
  * but for pytalloc_Objects. */
-
-/* FIXME: Call PyErr_SetString(PyExc_TypeError, "expected " __STR(type) ") 
- * when talloc_get_type() returns NULL. */
-#define pytalloc_get_type(py_obj, type) (talloc_get_type(pytalloc_get_ptr(py_obj), type))
+void *_pytalloc_get_type(PyObject *py_obj, const char *type_name);
+#define pytalloc_get_type(py_obj, type) ((type *)_pytalloc_get_type((PyObject *)(py_obj), #type))
 
 void *_pytalloc_get_ptr(PyObject *py_obj);
 #define pytalloc_get_ptr(py_obj) _pytalloc_get_ptr((PyObject *)(py_obj))

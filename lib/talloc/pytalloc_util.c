@@ -121,6 +121,21 @@ _PUBLIC_ int pytalloc_Check(PyObject *obj)
 	return PyObject_TypeCheck(obj, tp);
 }
 
+_PUBLIC_ void *_pytalloc_get_type(PyObject *py_obj, const char *type_name)
+{
+	void *ptr = _pytalloc_get_ptr(py_obj);
+	void *type_obj = talloc_check_name(ptr, type_name);
+
+	if (type_obj == NULL) {
+		const char *name = talloc_get_name(ptr);
+		PyErr_Format(PyExc_TypeError, "pytalloc: expected %s, got %s",
+			     type_name, name);
+		return NULL;
+	}
+
+	return ptr;
+}
+
 _PUBLIC_ void *_pytalloc_get_ptr(PyObject *py_obj)
 {
 	return ((pytalloc_Object *)py_obj)->ptr;
