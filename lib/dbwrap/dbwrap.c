@@ -19,7 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
+#include "lib/util/talloc_stack.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
 #include "lib/util/util_tdb.h"
