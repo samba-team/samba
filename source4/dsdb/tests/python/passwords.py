@@ -912,6 +912,95 @@ userPassword: thatsAcomplPASS4
         # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
         self.ldb.set_dsheuristics("000000001")
 
+    def test_modify_dsheuristics_userPassword(self):
+        print "Performs testing about reading userPassword between dsHeuristic modifies"
+
+        # Make sure userPassword cannot be read
+        self.ldb.set_dsheuristics("000000000")
+
+        # Open a new connection (with dsHeuristic=000000000)
+        ldb1 = SamDB(url=host, session_info=system_session(lp),
+                     credentials=creds, lp=lp)
+
+        # Set userPassword to be read
+        # This setting only affects newer connections (ldb2)
+        ldb1.set_dsheuristics("000000001")
+        time.sleep(1)
+
+        m = Message()
+        m.dn = Dn(ldb1, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement("thatsAcomplPASS1", FLAG_MOD_REPLACE,
+          "userPassword")
+        ldb1.modify(m)
+
+        res = ldb1.search("cn=testuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["userPassword"])
+
+        # userPassword cannot be read, despite the dsHeuristic setting
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("userPassword" in res[0])
+
+        # Open another new connection (with dsHeuristic=000000001)
+        ldb2 = SamDB(url=host, session_info=system_session(lp),
+                     credentials=creds, lp=lp)
+
+        # Set userPassword to be unreadable
+        # This setting does not affect this connection
+        ldb2.set_dsheuristics("000000000")
+        time.sleep(1)
+
+        res = ldb2.search("cn=testuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["userPassword"])
+
+        # Check that userPassword was not stored from ldb1
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("userPassword" in res[0])
+
+        m = Message()
+        m.dn = Dn(ldb2, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement("thatsAcomplPASS2", FLAG_MOD_REPLACE,
+          "userPassword")
+        ldb2.modify(m)
+
+        res = ldb2.search("cn=testuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["userPassword"])
+
+        # userPassword can be read in this connection
+        # This is regardless of the current dsHeuristics setting
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("userPassword" in res[0])
+        self.assertEquals(res[0]["userPassword"][0], "thatsAcomplPASS2")
+
+        # Only password from ldb1 is the user's password
+        creds2 = Credentials()
+        creds2.set_username("testuser")
+        creds2.set_password("thatsAcomplPASS1")
+        creds2.set_domain(creds.get_domain())
+        creds2.set_realm(creds.get_realm())
+        creds2.set_workstation(creds.get_workstation())
+        creds2.set_gensec_features(creds2.get_gensec_features()
+                                   | gensec.FEATURE_SEAL)
+
+        try:
+            SamDB(url=host, credentials=creds2, lp=lp)
+        except:
+            self.fail("testuser used the wrong password")
+
+        ldb3 = SamDB(url=host, session_info=system_session(lp),
+                     credentials=creds, lp=lp)
+
+        # Check that userPassword was stored from ldb2
+        res = ldb3.search("cn=testuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["userPassword"])
+
+        # userPassword can be read
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("userPassword" in res[0])
+        self.assertEquals(res[0]["userPassword"][0], "thatsAcomplPASS2")
+
+        # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
+        self.ldb.set_dsheuristics("000000001")
+
     def test_zero_length(self):
         # Get the old "minPwdLength"
         minPwdLength = self.ldb.get_minPwdLength()
