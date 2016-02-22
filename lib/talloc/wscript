@@ -133,7 +133,7 @@ def build(bld):
                 vnum=VERSION,
                 hide_symbols=True,
                 abi_directory='ABI',
-                abi_match='pytalloc_*',
+                abi_match='pytalloc_* _pytalloc_*',
                 private_library=private_library,
                 public_headers=('' if private_library else 'pytalloc.h'),
                 pc_files='pytalloc-util.pc'
