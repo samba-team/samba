@@ -102,7 +102,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 
 #define RECREATE_FILE(fname) do { \
 	smb2_util_close(tree, handle); \
-	status = smb2_create_complex_file(tree, fname, &handle); \
+	status = smb2_create_complex_file(tctx, tree, fname, &handle); \
 	if (!NT_STATUS_IS_OK(status)) { \
 		torture_result(tctx, TORTURE_FAIL, "(%s) ERROR: open of %s failed (%s)\n", \
 		       __location__, fname, nt_errstr(status)); \
@@ -147,7 +147,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 		torture_result(tctx, TORTURE_FAIL, "(%s) %s - %s/%s should be 0x%x - 0x%x\n", __location__, \
 		       call_name, #stype, #field, \
 		       (unsigned int)value, (unsigned int)finfo2.stype.out.field); \
-		torture_smb2_all_info(tree, handle); \
+		torture_smb2_all_info(tctx, tree, handle); \
 		ret = false; \
 		goto done; \
 	}} while (0)
@@ -161,7 +161,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 			(unsigned int)nt_time_to_unix(finfo2.stype.out.field)); \
 		torture_warning(tctx, "\t%s", timestring(tctx, value)); \
 		torture_warning(tctx, "\t%s\n", nt_time_string(tctx, finfo2.stype.out.field)); \
-		torture_smb2_all_info(tree, handle); \
+		torture_smb2_all_info(tctx, tree, handle); \
 		ret = false; \
 		goto done; \
 	}} while (0)
@@ -174,7 +174,7 @@ bool torture_smb2_setinfo(struct torture_context *tctx)
 		goto done; \
 	}} while (0)
 
-	torture_smb2_all_info(tree, handle);
+	torture_smb2_all_info(tctx, tree, handle);
 	
 	torture_comment(tctx, "Test basic_information level\n");
 	basetime += 86400;

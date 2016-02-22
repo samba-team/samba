@@ -441,7 +441,7 @@ static bool test_one_file(struct torture_context *tctx,
 	status = torture_smb2_testdir(tree, DNAME, &h);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
-	status = smb2_create_complex_file(tree, DNAME "\\torture_search.txt",
+	status = smb2_create_complex_file(tctx, tree, DNAME "\\torture_search.txt",
 					  &h2);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
@@ -1012,7 +1012,7 @@ static bool test_modify_search(struct torture_context *tctx,
 	smb2_util_close(tree, create.out.file.handle);
 
 	files[num_files + 2].name = talloc_asprintf(mem_ctx, "T013-13.txt.3");
-	status = smb2_create_complex_file(tree, DNAME "\\T013-13.txt.3", &h);
+	status = smb2_create_complex_file(tctx, tree, DNAME "\\T013-13.txt.3", &h);
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "");
 
 	smb2_util_unlink(tree, DNAME "\\T014-14.txt");

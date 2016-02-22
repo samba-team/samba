@@ -49,22 +49,22 @@ static bool torture_smb2_getinfo_scan(struct torture_context *tctx)
 		return false;
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(tctx, tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to setup complex file '%s': %s\n",
 		       FNAME, nt_errstr(status));
 		return false;
 	}
-	torture_setup_complex_file(tree, FNAME2);
+	torture_setup_complex_file(tctx, tree, FNAME2);
 
-	status = torture_setup_complex_dir(tree, DNAME);
+	status = torture_setup_complex_dir(tctx, tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to setup complex dir '%s': %s\n",
 		       DNAME, nt_errstr(status));
 		smb2_util_unlink(tree, FNAME);
 		return false;
 	}
-	torture_setup_complex_file(tree, DNAME2);
+	torture_setup_complex_file(tctx, tree, DNAME2);
 
 	torture_smb2_testfile(tree, FNAME, &fhandle);
 	torture_smb2_testdir(tree, DNAME, &dhandle);
@@ -123,13 +123,13 @@ static bool torture_smb2_setinfo_scan(struct torture_context *tctx)
 		return false;
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(tctx, tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_comment(tctx, "Failed to setup complex file '%s': %s\n",
 		       FNAME, nt_errstr(status));
 		return false;
 	}
-	torture_setup_complex_file(tree, FNAME2);
+	torture_setup_complex_file(tctx, tree, FNAME2);
 
 	torture_smb2_testfile(tree, FNAME, &handle);
 

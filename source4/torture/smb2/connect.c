@@ -96,7 +96,7 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 		return status;
 	}
 
-	torture_smb2_all_info(tree, handle);
+	torture_smb2_all_info(tctx, tree, handle);
 
 	status = smb2_write(tree, &w);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -104,7 +104,7 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 		return status;
 	}
 
-	torture_smb2_all_info(tree, handle);
+	torture_smb2_all_info(tctx, tree, handle);
 
 	ZERO_STRUCT(f);
 	f.in.file.handle = handle;

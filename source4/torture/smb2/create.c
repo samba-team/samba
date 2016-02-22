@@ -808,7 +808,7 @@ static bool test_smb2_open(struct torture_context *tctx,
 	smb2_util_close(tree, h1);
 	smb2_util_unlink(tree, fname);
 
-	status = smb2_create_complex_file(tree, fname, &h1);
+	status = smb2_create_complex_file(tctx, tree, fname, &h1);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	smb2_util_close(tree, h1);

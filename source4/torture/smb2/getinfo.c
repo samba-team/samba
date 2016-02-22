@@ -95,8 +95,8 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 				   DNAME "\n");
 
 	torture_comment(tctx, "Testing file info levels\n");
-	torture_smb2_all_info(tree, hfile);
-	torture_smb2_all_info(tree, hdir);
+	torture_smb2_all_info(tctx, tree, hfile);
+	torture_smb2_all_info(tctx, tree, hdir);
 
 	for (i=0;i<ARRAY_SIZE(file_levels);i++) {
 		if (file_levels[i].level == RAW_FILEINFO_SEC_DESC) {
@@ -441,35 +441,35 @@ static bool torture_smb2_qsec_buffercheck(struct torture_context *tctx)
 
 /* basic testing of all SMB2 getinfo levels
 */
-static bool torture_smb2_getinfo(struct torture_context *torture)
+static bool torture_smb2_getinfo(struct torture_context *tctx)
 {
 	struct smb2_tree *tree;
 	bool ret = true;
 	NTSTATUS status;
 
-	ret = torture_smb2_connection(torture, &tree);
-	torture_assert(torture, ret, "connection failed");
+	ret = torture_smb2_connection(tctx, &tree);
+	torture_assert(tctx, ret, "connection failed");
 
 	smb2_deltree(tree, FNAME);
 	smb2_deltree(tree, DNAME);
 
-	status = torture_setup_complex_file(tree, FNAME);
-	torture_assert_ntstatus_ok(torture, status,
+	status = torture_setup_complex_file(tctx, tree, FNAME);
+	torture_assert_ntstatus_ok(tctx, status,
 				   "setup complex file " FNAME);
 
-	status = torture_setup_complex_file(tree, FNAME ":streamtwo");
-	torture_assert_ntstatus_ok(torture, status,
+	status = torture_setup_complex_file(tctx, tree, FNAME ":streamtwo");
+	torture_assert_ntstatus_ok(tctx, status,
 				   "setup complex file " FNAME ":streamtwo");
 
-	status = torture_setup_complex_dir(tree, DNAME);
-	torture_assert_ntstatus_ok(torture, status,
+	status = torture_setup_complex_dir(tctx, tree, DNAME);
+	torture_assert_ntstatus_ok(tctx, status,
 				   "setup complex dir " DNAME);
 
-	status = torture_setup_complex_file(tree, DNAME ":streamtwo");
-	torture_assert_ntstatus_ok(torture, status,
+	status = torture_setup_complex_file(tctx, tree, DNAME ":streamtwo");
+	torture_assert_ntstatus_ok(tctx, status,
 				   "setup complex dir " DNAME ":streamtwo");
 
-	ret &= torture_smb2_fileinfo(torture, tree);
+	ret &= torture_smb2_fileinfo(tctx, tree);
 
 	return ret;
 }

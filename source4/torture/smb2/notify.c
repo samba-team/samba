@@ -114,7 +114,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -136,7 +136,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -155,7 +155,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -187,7 +187,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -201,7 +201,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(tree, FNAME);
+	status = torture_setup_complex_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -1066,7 +1066,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	        sinfo.basic_info.in.create_time = 0;
 		torture_comment(torture, "Testing set file create time\n");
 		NOTIFY_MASK_TEST("Testing set file create time",
-			smb2_create_complex_file(tree2,
+			smb2_create_complex_file(torture, tree2,
 			BASEDIR "\\tname1", &h2);,
 			smb2_setinfo_file(tree2, &sinfo);,
 			(smb2_util_close(tree2, h2),
@@ -1081,7 +1081,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	sinfo.basic_info.in.access_time = 0;
 	torture_comment(torture, "Testing set file access time\n");
 	NOTIFY_MASK_TEST("Testing set file access time",
-		smb2_create_complex_file(tree2, BASEDIR "\\tname1", &h2);,
+		smb2_create_complex_file(torture, tree2, BASEDIR "\\tname1", &h2);,
 		smb2_setinfo_file(tree2, &sinfo);,
 		(smb2_util_close(tree2, h2),
 		smb2_util_unlink(tree2, BASEDIR "\\tname1"));,
@@ -1094,7 +1094,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	sinfo.basic_info.in.change_time = 0;
 	torture_comment(torture, "Testing set file change time\n");
 	NOTIFY_MASK_TEST("Testing set file change time",
-		smb2_create_complex_file(tree2, BASEDIR "\\tname1", &h2);,
+		smb2_create_complex_file(torture, tree2, BASEDIR "\\tname1", &h2);,
 		smb2_setinfo_file(tree2, &sinfo);,
 		(smb2_util_close(tree2, h2),
 		smb2_util_unlink(tree2, BASEDIR "\\tname1"));,
@@ -1104,7 +1104,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 
 	torture_comment(torture, "Testing write\n");
 	NOTIFY_MASK_TEST("Testing write",
-		smb2_create_complex_file(tree2, BASEDIR "\\tname1", &h2);,
+		smb2_create_complex_file(torture, tree2, BASEDIR "\\tname1", &h2);,
 		smb2_util_write(tree2, h2, &c, 10000, 1);,
 		(smb2_util_close(tree2, h2),
 		smb2_util_unlink(tree2, BASEDIR "\\tname1"));,
