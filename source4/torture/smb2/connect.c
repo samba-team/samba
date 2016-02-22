@@ -137,8 +137,9 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 /*
   send a create
 */
-static struct smb2_handle torture_smb2_createfile(struct smb2_tree *tree, 
-					      const char *fname)
+static NTSTATUS torture_smb2_createfile(struct smb2_tree *tree,
+					const char *fname,
+					struct smb2_handle *handle)
 {
 	struct smb2_create io;
 	NTSTATUS status;
@@ -158,8 +159,7 @@ static struct smb2_handle torture_smb2_createfile(struct smb2_tree *tree,
 
 	status = smb2_create(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("create1 failed - %s\n", nt_errstr(status));
-		return io.out.file.handle;
+		return status;
 	}
 
 	if (DEBUGLVL(1)) {
@@ -179,8 +179,10 @@ static struct smb2_handle torture_smb2_createfile(struct smb2_tree *tree,
 	}
 
 	talloc_free(tmp_ctx);
-	
-	return io.out.file.handle;
+
+	*handle = io.out.file.handle;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -201,8 +203,11 @@ bool torture_smb2_connect(struct torture_context *torture)
 
 	smb2_util_unlink(tree, "test9.dat");
 
-	h1 = torture_smb2_createfile(tree, "test9.dat");
-	h2 = torture_smb2_createfile(tree, "test9.dat");
+	status = torture_smb2_createfile(tree, "test9.dat", &h1);
+	torture_assert_ntstatus_ok(torture, status, "create failed");
+
+	status = torture_smb2_createfile(tree, "test9.dat", &h2);
+	torture_assert_ntstatus_ok(torture, status, "create failed");
 
 	status = torture_smb2_write(torture, tree, h1);
 	torture_assert_ntstatus_ok(torture, status, "write failed");
