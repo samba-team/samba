@@ -88,7 +88,6 @@ static bool trust_is_transitive(struct winbindd_tdc_domain *domain)
 void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 {
 	struct winbindd_tdc_domain *dom_list = NULL;
-	struct winbindd_tdc_domain *d = NULL;
 	size_t num_domains = 0;
 	int extra_data_len = 0;
 	char *extra_data = NULL;
@@ -111,6 +110,7 @@ void winbindd_list_trusted_domains(struct winbindd_cli_state *state)
 	for ( i = 0; i < num_domains; i++ ) {
 		struct winbindd_domain *domain;
 		bool is_online = true;		
+		struct winbindd_tdc_domain *d = NULL;
 
 		d = &dom_list[i];
 		domain = find_domain_from_name_noinit(d->domain_name);
