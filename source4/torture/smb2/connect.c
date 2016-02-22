@@ -159,6 +159,7 @@ static NTSTATUS torture_smb2_createfile(struct smb2_tree *tree,
 
 	status = smb2_create(tree, tmp_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
 		return status;
 	}
 
