@@ -42,8 +42,10 @@ int pytalloc_Check(PyObject *);
  * when talloc_get_type() returns NULL. */
 #define pytalloc_get_type(py_obj, type) (talloc_get_type(pytalloc_get_ptr(py_obj), type))
 
-#define pytalloc_get_ptr(py_obj) (((pytalloc_Object *)py_obj)->ptr)
-#define pytalloc_get_mem_ctx(py_obj)  ((pytalloc_Object *)py_obj)->talloc_ctx
+void *_pytalloc_get_ptr(PyObject *py_obj);
+#define pytalloc_get_ptr(py_obj) _pytalloc_get_ptr((PyObject *)(py_obj))
+TALLOC_CTX *_pytalloc_get_mem_ctx(PyObject *py_obj);
+#define pytalloc_get_mem_ctx(py_obj) _pytalloc_get_mem_ctx((PyObject *)(py_obj))
 
 PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
 PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr);

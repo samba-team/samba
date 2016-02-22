@@ -120,3 +120,13 @@ _PUBLIC_ int pytalloc_Check(PyObject *obj)
 
 	return PyObject_TypeCheck(obj, tp);
 }
+
+_PUBLIC_ void *_pytalloc_get_ptr(PyObject *py_obj)
+{
+	return ((pytalloc_Object *)py_obj)->ptr;
+}
+
+_PUBLIC_ TALLOC_CTX *_pytalloc_get_mem_ctx(PyObject *py_obj)
+{
+	return ((pytalloc_Object *)py_obj)->talloc_ctx;
+}

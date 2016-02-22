@@ -43,13 +43,13 @@ static PyObject *testpytalloc_get_object_type(PyObject *mod) {
 }
 
 static PyObject *testpytalloc_reference(PyObject *mod, PyObject *args) {
-	pytalloc_Object *source = NULL;
+	PyObject *source = NULL;
 	void *ptr;
 
 	if (!PyArg_ParseTuple(args, "O!", pytalloc_GetObjectType(), &source))
 		return NULL;
 
-	ptr = source->ptr;
+	ptr = pytalloc_get_ptr(source);
 	return pytalloc_reference_ex(pytalloc_GetObjectType(), ptr, ptr);
 }
 
