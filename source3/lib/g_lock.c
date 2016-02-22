@@ -99,7 +99,7 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 	struct g_lock_rec *locks;
 
 	if ((data.dsize % sizeof(struct g_lock_rec)) != 0) {
-		DEBUG(1, ("invalid lock record length %d\n", (int)data.dsize));
+		DEBUG(1, ("invalid lock record length %zu\n", data.dsize));
 		return false;
 	}
 	num_locks = data.dsize / sizeof(struct g_lock_rec);
