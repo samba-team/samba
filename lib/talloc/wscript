@@ -158,10 +158,11 @@ def test(ctx):
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
+    magic_helper_cmd = os.path.join(Utils.g_module.blddir, 'talloc_test_magic_differs_helper')
     magic_cmd = os.path.join(srcdir, 'lib', 'talloc',
                              'test_magic_differs.sh')
 
-    magic_ret = samba_utils.RUN_COMMAND(magic_cmd)
+    magic_ret = samba_utils.RUN_COMMAND(magic_cmd + " " +  magic_helper_cmd)
     print("magic differs test returned %d" % magic_ret)
     pyret = samba_utils.RUN_PYTHON_TESTS(['test_pytalloc.py'])
     print("python testsuite returned %d" % pyret)
