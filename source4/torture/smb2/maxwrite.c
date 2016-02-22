@@ -57,20 +57,20 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx,
 			w.in.data.data[i] = i % 256;
 		}
 
-		printf("trying to write %d bytes (min=%d max=%d)\n", 
+		torture_comment(tctx, "trying to write %d bytes (min=%d max=%d)\n",
 		       len, min, max);
 
 		status = smb2_write(tree, &w);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("write failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "write failed - %s\n", nt_errstr(status));
 			max = len-1;
 			status = smb2_util_close(tree, handle);
 			if (!NT_STATUS_IS_OK(status)) {
 				/* vista bug */
-				printf("coping with server disconnect\n");
+				torture_comment(tctx, "coping with server disconnect\n");
 				talloc_free(tree);
-				if (!torture_smb2_connection(torture, &tree)) {
-					printf("failed to reconnect\n");
+				if (!torture_smb2_connection(tctx, &tree)) {
+					torture_comment(tctx, "failed to reconnect\n");
 					return NT_STATUS_NET_WRITE_FAULT;
 				}
 			}
@@ -86,20 +86,20 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx,
 		r.in.length      = len;
 		r.in.offset      = 0;
 		
-		printf("reading %d bytes\n", len);
+		torture_comment(tctx, "reading %d bytes\n", len);
 
 		status = smb2_read(tree, tmp_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("read failed - %s\n", nt_errstr(status));
+			torture_comment(tctx, "read failed - %s\n", nt_errstr(status));
 		} else if (w.in.data.length != r.out.data.length ||
 		    memcmp(w.in.data.data, r.out.data.data, len) != 0) {
-			printf("read data mismatch\n");
+			torture_comment(tctx, "read data mismatch\n");
 		}
 
 		talloc_free(tmp_ctx);
 	}
 
-	printf("converged: len=%d\n", max);
+	torture_comment(tctx, "converged: len=%d\n", max);
 	smb2_util_close(tree, handle);
 	smb2_util_unlink(tree, FNAME);
 
@@ -111,22 +111,22 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx,
 /* 
    basic testing of SMB2 connection calls
 */
-bool torture_smb2_maxwrite(struct torture_context *torture)
+bool torture_smb2_maxwrite(struct torture_context *tctx)
 {
 	struct smb2_tree *tree;
 	struct smb2_handle h1;
-	NTSTATUS status;
 
-	if (!torture_smb2_connection(torture, &tree)) {
+	if (!torture_smb2_connection(tctx, &tree)) {
 		return false;
 	}
 
-	h1 = torture_smb2_create(tree, FNAME);
-	status = torture_smb2_write(torture, tree, h1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Write failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		torture_smb2_createfile(tctx, tree, FNAME, &h1),
+		"failed to create file handle");
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_smb2_write(tctx, tree, h1),
+		"Write failed");
 
 	return true;
 }
