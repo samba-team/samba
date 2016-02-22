@@ -42,6 +42,18 @@ static PyObject *testpytalloc_get_object_type(PyObject *mod) {
 	return type;
 }
 
+static PyObject *testpytalloc_base_new(PyTypeObject *mod)
+{
+	char *obj = talloc_strdup(NULL, "This is a test string for a BaseObject");;
+	return pytalloc_steal(pytalloc_GetBaseObjectType(), obj);
+}
+
+static PyObject *testpytalloc_base_get_object_type(PyObject *mod) {
+	PyObject *type = (PyObject *)pytalloc_GetBaseObjectType();
+	Py_INCREF(type);
+	return type;
+}
+
 static PyObject *testpytalloc_reference(PyObject *mod, PyObject *args) {
 	PyObject *source = NULL;
 	void *ptr;
@@ -53,12 +65,29 @@ static PyObject *testpytalloc_reference(PyObject *mod, PyObject *args) {
 	return pytalloc_reference_ex(pytalloc_GetObjectType(), ptr, ptr);
 }
 
+static PyObject *testpytalloc_base_reference(PyObject *mod, PyObject *args) {
+	PyObject *source = NULL;
+	void *mem_ctx;
+
+	if (!PyArg_ParseTuple(args, "O!", pytalloc_GetBaseObjectType(), &source)) {
+		return NULL;
+	}
+	mem_ctx = pytalloc_get_mem_ctx(source);
+	return pytalloc_reference_ex(pytalloc_GetBaseObjectType(), mem_ctx, mem_ctx);
+}
+
 static PyMethodDef test_talloc_methods[] = {
 	{ "new", (PyCFunction)testpytalloc_new, METH_NOARGS,
 		"create a talloc Object with a testing string"},
 	{ "get_object_type", (PyCFunction)testpytalloc_get_object_type, METH_NOARGS,
 		"call pytalloc_GetObjectType"},
+	{ "base_new", (PyCFunction)testpytalloc_base_new, METH_NOARGS,
+		"create a talloc BaseObject with a testing string"},
+	{ "base_get_object_type", (PyCFunction)testpytalloc_base_get_object_type, METH_NOARGS,
+		"call pytalloc_GetBaseObjectType"},
 	{ "reference", (PyCFunction)testpytalloc_reference, METH_VARARGS,
+		"call pytalloc_reference_ex"},
+	{ "base_reference", (PyCFunction)testpytalloc_base_reference, METH_VARARGS,
 		"call pytalloc_reference_ex"},
 	{ NULL }
 };
@@ -104,6 +133,46 @@ static PyTypeObject DObject_Type = {
 	.tp_doc = "test talloc object that calls a function when underlying data is freed\n",
 };
 
+static PyTypeObject DBaseObject_Type;
+
+static int d_base_object_destructor(void *ptr)
+{
+	PyObject *destructor_func = *talloc_get_type(ptr, PyObject*);
+	PyObject *ret;
+	ret = PyObject_CallObject(destructor_func, NULL);
+	Py_DECREF(destructor_func);
+	if (ret == NULL) {
+		PyErr_Print();
+	} else {
+		Py_DECREF(ret);
+	}
+	return 0;
+}
+
+static PyObject *d_base_object_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	PyObject *destructor_func = NULL;
+	PyObject **obj;
+
+	if (!PyArg_ParseTuple(args, "O", &destructor_func))
+		return NULL;
+	Py_INCREF(destructor_func);
+
+	obj = talloc(NULL, PyObject*);
+	*obj = destructor_func;
+
+	talloc_set_destructor((void*)obj, d_base_object_destructor);
+	return pytalloc_steal(&DBaseObject_Type, obj);
+}
+
+static PyTypeObject DBaseObject_Type = {
+	.tp_name = "_test_pytalloc.DBaseObject",
+	.tp_methods = NULL,
+	.tp_new = d_base_object_new,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_doc = "test talloc object that calls a function when underlying data is freed\n",
+};
+
 #define MODULE_DOC PyDoc_STR("Test utility module for pytalloc")
 
 #if PY_MAJOR_VERSION >= 3
@@ -126,6 +195,12 @@ static PyObject *module_init(void)
 		return NULL;
 	}
 
+	DBaseObject_Type.tp_basicsize = pytalloc_BaseObject_size();
+	DBaseObject_Type.tp_base = pytalloc_GetBaseObjectType();
+	if (PyType_Ready(&DBaseObject_Type) < 0) {
+		return NULL;
+	}
+
 #if PY_MAJOR_VERSION >= 3
 	m = PyModule_Create(&moduledef);
 #else
@@ -139,6 +214,10 @@ static PyObject *module_init(void)
 	Py_INCREF(&DObject_Type);
 	Py_INCREF(DObject_Type.tp_base);
 	PyModule_AddObject(m, "DObject", (PyObject *)&DObject_Type);
+
+	Py_INCREF(&DBaseObject_Type);
+	Py_INCREF(DBaseObject_Type.tp_base);
+	PyModule_AddObject(m, "DBaseObject", (PyObject *)&DBaseObject_Type);
 
 	return m;
 }

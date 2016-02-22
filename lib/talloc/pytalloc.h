@@ -26,14 +26,19 @@
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *talloc_ctx;
-	void *ptr;
+	void *ptr; /* eg the array element */
 } pytalloc_Object;
 
 /* Return the PyTypeObject for pytalloc_Object. Returns a new reference. */
 PyTypeObject *pytalloc_GetObjectType(void);
 
+/* Return the PyTypeObject for pytalloc_BaseObject. Returns a new reference. */
+PyTypeObject *pytalloc_GetBaseObjectType(void);
+
 /* Check whether a specific object is a talloc Object. */
 int pytalloc_Check(PyObject *);
+
+int pytalloc_BaseObject_check(PyObject *);
 
 /* Retrieve the pointer for a pytalloc_object. Like talloc_get_type() 
  * but for pytalloc_Objects. */
@@ -55,5 +60,8 @@ PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void
 #if PY_MAJOR_VERSION < 3
 PyObject *pytalloc_CObject_FromTallocPtr(void *);
 #endif
+
+size_t pytalloc_BaseObject_size(void);
+
 
 #endif /* _PYTALLOC_H_ */

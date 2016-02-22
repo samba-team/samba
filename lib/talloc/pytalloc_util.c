@@ -22,6 +22,7 @@
 #include <talloc.h>
 #include "pytalloc.h"
 #include <assert.h>
+#include "pytalloc_private.h"
 
 _PUBLIC_ PyTypeObject *pytalloc_GetObjectType(void)
 {
@@ -43,23 +44,82 @@ _PUBLIC_ PyTypeObject *pytalloc_GetObjectType(void)
 	return type;
 }
 
+_PUBLIC_ PyTypeObject *pytalloc_GetBaseObjectType(void)
+{
+	static PyTypeObject *type = NULL;
+	PyObject *mod;
+
+	if (type != NULL) {
+		return type;
+	}
+
+	mod = PyImport_ImportModule("talloc");
+	if (mod == NULL) {
+		return NULL;
+	}
+
+	type = (PyTypeObject *)PyObject_GetAttrString(mod, "BaseObject");
+	Py_DECREF(mod);
+
+	return type;
+}
+
 /**
  * Import an existing talloc pointer into a Python object.
  */
 _PUBLIC_ PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
-						   void *ptr)
+				     void *ptr)
 {
-	pytalloc_Object *ret = (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
-	ret->talloc_ctx = talloc_new(NULL);
-	if (ret->talloc_ctx == NULL) {
+	PyTypeObject *BaseObjectType = pytalloc_GetBaseObjectType();
+	PyTypeObject *ObjectType = pytalloc_GetObjectType();
+
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	if (PyType_IsSubtype(py_type, BaseObjectType)) {
+		pytalloc_BaseObject *ret
+			= (pytalloc_BaseObject *)py_type->tp_alloc(py_type, 0);
+
+		ret->talloc_ctx = talloc_new(NULL);
+		if (ret->talloc_ctx == NULL) {
+			return NULL;
+		}
+
+		/*
+		 * This allows us to keep multiple references to this object -
+		 * we only reference this context, which is per ptr, not the
+		 * talloc_ctx, which is per pytalloc_Object
+		 */
+		if (talloc_steal(ret->talloc_ctx, mem_ctx) == NULL) {
+			return NULL;
+		}
+		ret->talloc_ptr_ctx = mem_ctx;
+		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
+		ret->ptr = ptr;
+		return (PyObject *)ret;
+
+	} else if (PyType_IsSubtype(py_type, ObjectType)) {
+		pytalloc_Object *ret
+			= (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
+
+		ret->talloc_ctx = talloc_new(NULL);
+		if (ret->talloc_ctx == NULL) {
+			return NULL;
+		}
+
+		if (talloc_steal(ret->talloc_ctx, mem_ctx) == NULL) {
+			return NULL;
+		}
+		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
+		ret->ptr = ptr;
+		return (PyObject *)ret;
+	} else {
+		PyErr_SetString(PyExc_RuntimeError,
+				"pytalloc_steal_ex() called for object type "
+				"not based on talloc");
 		return NULL;
 	}
-	if (talloc_steal(ret->talloc_ctx, mem_ctx) == NULL) {
-		return NULL;
-	}
-	talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
-	ret->ptr = ptr;
-	return (PyObject *)ret;
 }
 
 /**
@@ -74,27 +134,57 @@ _PUBLIC_ PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr)
 /**
  * Import an existing talloc pointer into a Python object, leaving the
  * original parent, and creating a reference to the object in the python
- * object
+ * object.
+ *
+ * We remember the object we hold the reference to (a
+ * possibly-non-talloc pointer), the existing parent (typically the
+ * start of the array) and the new referenced parent.  That way we can
+ * cope with the fact that we will have multiple parents, one per time
+ * python sees the object.
  */
-_PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr)
+_PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type,
+					 TALLOC_CTX *mem_ctx, void *ptr)
 {
-	pytalloc_Object *ret;
+	PyTypeObject *BaseObjectType = pytalloc_GetBaseObjectType();
+	PyTypeObject *ObjectType = pytalloc_GetObjectType();
 
-	if (ptr == NULL) {
-		Py_RETURN_NONE;
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
 	}
 
-	ret = (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
-	ret->talloc_ctx = talloc_new(NULL);
-	if (ret->talloc_ctx == NULL) {
+	if (PyType_IsSubtype(py_type, BaseObjectType)) {
+		pytalloc_BaseObject *ret
+			= (pytalloc_BaseObject *)py_type->tp_alloc(py_type, 0);
+		ret->talloc_ctx = talloc_new(NULL);
+		if (ret->talloc_ctx == NULL) {
+			return NULL;
+		}
+		if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
+			return NULL;
+		}
+		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
+		ret->talloc_ptr_ctx = mem_ctx;
+		ret->ptr = ptr;
+		return (PyObject *)ret;
+	} else if (PyType_IsSubtype(py_type, ObjectType)) {
+		pytalloc_Object *ret
+			= (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
+		ret->talloc_ctx = talloc_new(NULL);
+		if (ret->talloc_ctx == NULL) {
+			return NULL;
+		}
+		if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
+			return NULL;
+		}
+		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
+		ret->ptr = ptr;
+		return (PyObject *)ret;
+	} else {
+		PyErr_SetString(PyExc_RuntimeError,
+				"pytalloc_reference_ex() called for object type "
+				"not based on talloc");
 		return NULL;
 	}
-	if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
-		return NULL;
-	}
-	talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
-	ret->ptr = ptr;
-	return (PyObject *)ret;
 }
 
 #if PY_MAJOR_VERSION < 3
@@ -121,6 +211,18 @@ _PUBLIC_ int pytalloc_Check(PyObject *obj)
 	return PyObject_TypeCheck(obj, tp);
 }
 
+_PUBLIC_ int pytalloc_BaseObject_check(PyObject *obj)
+{
+	PyTypeObject *tp = pytalloc_GetBaseObjectType();
+
+	return PyObject_TypeCheck(obj, tp);
+}
+
+_PUBLIC_ size_t pytalloc_BaseObject_size(void)
+{
+	return sizeof(pytalloc_BaseObject);
+}
+
 _PUBLIC_ void *_pytalloc_get_type(PyObject *py_obj, const char *type_name)
 {
 	void *ptr = _pytalloc_get_ptr(py_obj);
@@ -138,10 +240,22 @@ _PUBLIC_ void *_pytalloc_get_type(PyObject *py_obj, const char *type_name)
 
 _PUBLIC_ void *_pytalloc_get_ptr(PyObject *py_obj)
 {
-	return ((pytalloc_Object *)py_obj)->ptr;
+	if (pytalloc_BaseObject_check(py_obj)) {
+		return ((pytalloc_BaseObject *)py_obj)->ptr;
+	}
+	if (pytalloc_Check(py_obj)) {
+		return ((pytalloc_Object *)py_obj)->ptr;
+	}
+	return NULL;
 }
 
 _PUBLIC_ TALLOC_CTX *_pytalloc_get_mem_ctx(PyObject *py_obj)
 {
-	return ((pytalloc_Object *)py_obj)->talloc_ctx;
+	if (pytalloc_BaseObject_check(py_obj)) {
+		return ((pytalloc_BaseObject *)py_obj)->talloc_ptr_ctx;
+	}
+	if (pytalloc_Check(py_obj)) {
+		return ((pytalloc_Object *)py_obj)->talloc_ctx;
+	}
+	return NULL;
 }
