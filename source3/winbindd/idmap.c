@@ -70,13 +70,71 @@ static struct idmap_domain *idmap_init_domain(TALLOC_CTX *mem_ctx,
 					      const char *domainname,
 					      const char *modulename,
 					      bool check_range);
-static bool idmap_found_domain_backend(
+
+struct lp_scan_idmap_domains_state {
+	bool (*fn)(const char *domname, void *private_data);
+	void *private_data;
+};
+
+static bool lp_scan_idmap_found_domain(
 	const char *string, regmatch_t matches[], void *private_data);
+
+bool lp_scan_idmap_domains(bool (*fn)(const char *domname,
+				      void *private_data),
+			   void *private_data)
+{
+	struct lp_scan_idmap_domains_state state = {
+		.fn = fn, .private_data = private_data };
+	int ret;
+
+	ret = lp_wi_scan_global_parametrics(
+		"idmapconfig\\(.*\\):backend", 2,
+		lp_scan_idmap_found_domain, &state);
+	if (ret != 0) {
+		DBG_WARNING("wi_scan_global_parametrics returned %d\n", ret);
+		return false;
+	}
+
+	return true;
+}
+
+static bool lp_scan_idmap_found_domain(
+	const char *string, regmatch_t matches[], void *private_data)
+{
+	bool ok;
+
+	if (matches[1].rm_so == -1) {
+		DBG_WARNING("Found match, but no name??\n");
+		return false;
+	}
+	if (matches[1].rm_eo <= matches[1].rm_so) {
+		DBG_WARNING("Invalid match\n");
+		return false;
+	}
+
+	{
+		struct lp_scan_idmap_domains_state *state = private_data;
+		regoff_t len = matches[1].rm_eo - matches[1].rm_so;
+		char domname[len+1];
+
+		memcpy(domname, string + matches[1].rm_so, len);
+		domname[len] = '\0';
+
+		DBG_DEBUG("Found idmap domain \"%s\"\n", domname);
+
+		ok = state->fn(domname, state->private_data);
+	}
+
+	return ok;
+}
+
+static bool idmap_found_domain_backend(const char *domname,
+				       void *private_data);
 
 static bool idmap_init(void)
 {
 	static bool initialized;
-	int ret;
+	bool ok;
 
 	if (initialized) {
 		return true;
@@ -109,11 +167,9 @@ static bool idmap_init(void)
 		return false;
 	}
 
-	ret = lp_wi_scan_global_parametrics(
-		"idmapconfig\\(.*\\):backend", 2,
-		idmap_found_domain_backend, NULL);
-	if (ret != 0) {
-		DBG_WARNING("wi_scan_global_parametrics returned %d\n", ret);
+	ok = lp_scan_idmap_domains(idmap_found_domain_backend, NULL);
+	if (!ok) {
+		DBG_WARNING("lp_scan_idmap_domains failed\n");
 		return false;
 	}
 
@@ -161,46 +217,33 @@ bool domain_has_idmap_config(const char *domname)
 	return false;
 }
 
-static bool idmap_found_domain_backend(
-	const char *string, regmatch_t matches[], void *private_data)
+static bool idmap_found_domain_backend(const char *domname,
+				       void *private_data)
 {
-	if (matches[1].rm_so == -1) {
-		DBG_WARNING("Found match, but no name??\n");
+	struct idmap_domain *dom, **tmp;
+
+	DBG_DEBUG("Found idmap domain \"%s\"\n", domname);
+
+	if (strcmp(domname, "*") == 0) {
 		return false;
 	}
 
-	{
-		struct idmap_domain *dom, **tmp;
-		regoff_t len = matches[1].rm_eo - matches[1].rm_so;
-		char domname[len+1];
-
-		memcpy(domname, string + matches[1].rm_so, len);
-		domname[len] = '\0';
-
-		DBG_DEBUG("Found idmap domain \"%s\"\n", domname);
-
-		if (strcmp(domname, "*") == 0) {
-			return false;
-		}
-
-		dom = idmap_init_named_domain(idmap_domains, domname);
-		if (dom == NULL) {
-			DBG_NOTICE("Could not init idmap domain %s\n",
-				   domname);
-			return false;
-		}
-
-		tmp = talloc_realloc(idmap_domains, idmap_domains,
-				     struct idmap_domain *, num_domains + 1);
-		if (tmp == NULL) {
-			DBG_WARNING("talloc_realloc failed\n");
-			TALLOC_FREE(dom);
-			return false;
-		}
-		idmap_domains = tmp;
-		idmap_domains[num_domains] = dom;
-		num_domains += 1;
+	dom = idmap_init_named_domain(idmap_domains, domname);
+	if (dom == NULL) {
+		DBG_NOTICE("Could not init idmap domain %s\n", domname);
+		return false;
 	}
+
+	tmp = talloc_realloc(idmap_domains, idmap_domains,
+			     struct idmap_domain *, num_domains + 1);
+	if (tmp == NULL) {
+		DBG_WARNING("talloc_realloc failed\n");
+		TALLOC_FREE(dom);
+		return false;
+	}
+	idmap_domains = tmp;
+	idmap_domains[num_domains] = dom;
+	num_domains += 1;
 
 	return false;
 }

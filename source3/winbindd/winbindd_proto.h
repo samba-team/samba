@@ -331,6 +331,9 @@ struct winbindd_child *idmap_child(void);
 struct idmap_domain *idmap_find_domain_with_sid(const char *domname,
 						const struct dom_sid *sid);
 bool domain_has_idmap_config(const char *domname);
+bool lp_scan_idmap_domains(bool (*fn)(const char *domname,
+				      void *private_data),
+			   void *private_data);
 
 /* The following definitions come from winbindd/winbindd_locator.c  */
 
