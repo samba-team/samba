@@ -32,7 +32,7 @@
 /* 
    scan for valid SMB2 getinfo levels
 */
-static bool torture_smb2_getinfo_scan(struct torture_context *torture)
+static bool torture_smb2_getinfo_scan(struct torture_context *tctx)
 {
 	struct smb2_tree *tree;
 	NTSTATUS status;
@@ -45,13 +45,13 @@ static bool torture_smb2_getinfo_scan(struct torture_context *torture)
 	static const char *DNAME  = "scan-getinfo.dir";
 	static const char *DNAME2 = "scan-getinfo.dir:2ndstream";
 
-	if (!torture_smb2_connection(torture, &tree)) {
+	if (!torture_smb2_connection(tctx, &tree)) {
 		return false;
 	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup complex file '%s': %s\n",
+		torture_comment(tctx, "Failed to setup complex file '%s': %s\n",
 		       FNAME, nt_errstr(status));
 		return false;
 	}
@@ -59,7 +59,7 @@ static bool torture_smb2_getinfo_scan(struct torture_context *torture)
 
 	status = torture_setup_complex_dir(tree, DNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup complex dir '%s': %s\n",
+		torture_comment(tctx, "Failed to setup complex dir '%s': %s\n",
 		       DNAME, nt_errstr(status));
 		smb2_util_unlink(tree, FNAME);
 		return false;
@@ -79,9 +79,9 @@ static bool torture_smb2_getinfo_scan(struct torture_context *torture)
 			io.in.info_class = i;
 
 			io.in.file.handle = fhandle;
-			status = smb2_getinfo(tree, torture, &io);
+			status = smb2_getinfo(tree, tctx, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
-				printf("file level 0x%02x:%02x %u is %ld bytes - %s\n", 
+				torture_comment(tctx, "file level 0x%02x:%02x %u is %ld bytes - %s\n",
 				       io.in.info_type, io.in.info_class, 
 				       (unsigned)io.in.info_class, 
 				       (long)io.out.blob.length, nt_errstr(status));
@@ -89,9 +89,9 @@ static bool torture_smb2_getinfo_scan(struct torture_context *torture)
 			}
 
 			io.in.file.handle = dhandle;
-			status = smb2_getinfo(tree, torture, &io);
+			status = smb2_getinfo(tree, tctx, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
-				printf("dir  level 0x%02x:%02x %u is %ld bytes - %s\n", 
+				torture_comment(tctx, "dir  level 0x%02x:%02x %u is %ld bytes - %s\n",
 				       io.in.info_type, io.in.info_class,
 				       (unsigned)io.in.info_class, 
 				       (long)io.out.blob.length, nt_errstr(status));
@@ -108,7 +108,7 @@ static bool torture_smb2_getinfo_scan(struct torture_context *torture)
 /* 
    scan for valid SMB2 setinfo levels
 */
-static bool torture_smb2_setinfo_scan(struct torture_context *torture)
+static bool torture_smb2_setinfo_scan(struct torture_context *tctx)
 {
 	static const char *FNAME  = "scan-setinfo.dat";
 	static const char *FNAME2 = "scan-setinfo.dat:2ndstream";
@@ -119,13 +119,13 @@ static bool torture_smb2_setinfo_scan(struct torture_context *torture)
 	struct smb2_handle handle;
 	int c, i;
 
-	if (!torture_smb2_connection(torture, &tree)) {
+	if (!torture_smb2_connection(tctx, &tree)) {
 		return false;
 	}
 
 	status = torture_setup_complex_file(tree, FNAME);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to setup complex file '%s': %s\n",
+		torture_comment(tctx, "Failed to setup complex file '%s': %s\n",
 		       FNAME, nt_errstr(status));
 		return false;
 	}
@@ -134,7 +134,7 @@ static bool torture_smb2_setinfo_scan(struct torture_context *torture)
 	torture_smb2_testfile(tree, FNAME, &handle);
 
 	ZERO_STRUCT(io);
-	io.in.blob = data_blob_talloc_zero(torture, 1024);
+	io.in.blob = data_blob_talloc_zero(tctx, 1024);
 
 	for (c=1;c<5;c++) {
 		for (i=0;i<0x100;i++) {
@@ -142,7 +142,7 @@ static bool torture_smb2_setinfo_scan(struct torture_context *torture)
 			io.in.file.handle = handle;
 			status = smb2_setinfo(tree, &io);
 			if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
-				printf("file level 0x%04x - %s\n", 
+				torture_comment(tctx, "file level 0x%04x - %s\n",
 				       io.in.level, nt_errstr(status));
 			}
 		}
@@ -156,7 +156,7 @@ static bool torture_smb2_setinfo_scan(struct torture_context *torture)
 /* 
    scan for valid SMB2 scan levels
 */
-static bool torture_smb2_find_scan(struct torture_context *torture)
+static bool torture_smb2_find_scan(struct torture_context *tctx)
 {
 	struct smb2_tree *tree;
 	NTSTATUS status;
@@ -164,15 +164,13 @@ static bool torture_smb2_find_scan(struct torture_context *torture)
 	struct smb2_handle handle;
 	int i;
 
-	if (!torture_smb2_connection(torture, &tree)) {
+	if (!torture_smb2_connection(tctx, &tree)) {
 		return false;
 	}
 
-	status = smb2_util_roothandle(tree, &handle);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to open roothandle - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx,
+		smb2_util_roothandle(tree, &handle),
+		"Failed to open roothandle");
 
 	ZERO_STRUCT(io);
 	io.in.file.handle	= handle;
@@ -184,11 +182,11 @@ static bool torture_smb2_find_scan(struct torture_context *torture)
 		io.in.level = i;
 
 		io.in.file.handle = handle;
-		status = smb2_find(tree, torture, &io);
+		status = smb2_find(tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
-			printf("find level 0x%04x is %ld bytes - %s\n", 
+			torture_comment(tctx, "find level 0x%04x is %ld bytes - %s\n",
 			       io.in.level, (long)io.out.blob.length, nt_errstr(status));
 			dump_data(1, io.out.blob.data, io.out.blob.length);
 		}
@@ -200,31 +198,28 @@ static bool torture_smb2_find_scan(struct torture_context *torture)
 /* 
    scan for valid SMB2 opcodes
 */
-static bool torture_smb2_scan(struct torture_context *torture)
+static bool torture_smb2_scan(struct torture_context *tctx)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct smb2_tree *tree;
-	const char *host = torture_setting_string(torture, "host", NULL);
-	const char *share = torture_setting_string(torture, "share", NULL);
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
 	struct cli_credentials *credentials = cmdline_credentials;
 	NTSTATUS status;
 	int opcode;
 	struct smb2_request *req;
 	struct smbcli_options options;
 
-	lpcfg_smbcli_options(torture->lp_ctx, &options);
+	lpcfg_smbcli_options(tctx->lp_ctx, &options);
 
-	status = smb2_connect(mem_ctx, host, 
-						  lpcfg_smb_ports(torture->lp_ctx),
-						  share, 
-						  lpcfg_resolve_context(torture->lp_ctx),
-						  credentials, &tree, torture->ev, &options,
-						  lpcfg_socket_options(torture->lp_ctx),
-						  lpcfg_gensec_settings(torture, torture->lp_ctx));
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connection failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	status = smb2_connect(mem_ctx, host,
+			      lpcfg_smb_ports(tctx->lp_ctx),
+			      share,
+			      lpcfg_resolve_context(tctx->lp_ctx),
+			      credentials, &tree, tctx->ev, &options,
+			      lpcfg_socket_options(tctx->lp_ctx),
+			      lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "Connection failed");
 
 	tree->session->transport->options.request_timeout = 3;
 
@@ -234,21 +229,18 @@ static bool torture_smb2_scan(struct torture_context *torture)
 		smb2_transport_send(req);
 		if (!smb2_request_receive(req)) {
 			talloc_free(tree);
-			status = smb2_connect(mem_ctx, host, 
-								  lpcfg_smb_ports(torture->lp_ctx),
-								  share, 
-								  lpcfg_resolve_context(torture->lp_ctx),
-								  credentials, &tree, torture->ev, &options,
-								  lpcfg_socket_options(torture->lp_ctx),
-								  lpcfg_gensec_settings(mem_ctx, torture->lp_ctx));
-			if (!NT_STATUS_IS_OK(status)) {
-				printf("Connection failed - %s\n", nt_errstr(status));
-				return false;
-			}
+			status = smb2_connect(mem_ctx, host,
+					      lpcfg_smb_ports(tctx->lp_ctx),
+					      share,
+					      lpcfg_resolve_context(tctx->lp_ctx),
+					      credentials, &tree, tctx->ev, &options,
+					      lpcfg_socket_options(tctx->lp_ctx),
+					      lpcfg_gensec_settings(mem_ctx, tctx->lp_ctx));
+			torture_assert_ntstatus_ok(tctx, status, "Connection failed");
 			tree->session->transport->options.request_timeout = 3;
 		} else {
 			status = smb2_request_destroy(req);
-			printf("active opcode %4d gave status %s\n", opcode, nt_errstr(status));
+			torture_comment(tctx, "active opcode %4d gave status %s\n", opcode, nt_errstr(status));
 		}
 	}
 
