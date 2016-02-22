@@ -94,7 +94,7 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 	torture_assert_ntstatus_ok(tctx, status, "Unable to create test dir "
 				   DNAME "\n");
 
-	printf("Testing file info levels\n");
+	torture_comment(tctx, "Testing file info levels\n");
 	torture_smb2_all_info(tree, hfile);
 	torture_smb2_all_info(tree, hdir);
 
@@ -181,7 +181,7 @@ static bool torture_smb2_fsinfo(struct torture_context *tctx)
 	NTSTATUS status;
 	struct smb2_handle handle;
 
-	printf("Testing fsinfo levels\n");
+	torture_comment(tctx, "Testing fsinfo levels\n");
 
 	ret = torture_smb2_connection(tctx, &tree);
 	torture_assert(tctx, ret, "connection failed");
@@ -267,7 +267,7 @@ static bool torture_smb2_qfs_buffercheck(struct torture_context *tctx)
 		{ 11, 28 },
 	};
 
-	printf("Testing SMB2_GETINFO_FS buffer sizes\n");
+	torture_comment(tctx, "Testing SMB2_GETINFO_FS buffer sizes\n");
 
 	ret = torture_smb2_connection(tctx, &tree);
 	torture_assert(tctx, ret, "connection failed");
@@ -331,7 +331,7 @@ static bool torture_smb2_qfile_buffercheck(struct torture_context *tctx)
 		{ 35, 8 },
 	};
 
-	printf("Testing SMB2_GETINFO_FILE buffer sizes\n");
+	torture_comment(tctx, "Testing SMB2_GETINFO_FILE buffer sizes\n");
 
 	ret = torture_smb2_connection(tctx, &tree);
 	torture_assert(tctx, ret, "connection failed");
@@ -397,7 +397,7 @@ static bool torture_smb2_qsec_buffercheck(struct torture_context *tctx)
 	NTSTATUS status;
 	struct smb2_handle handle;
 
-	printf("Testing SMB2_GETINFO_SECURITY buffer sizes\n");
+	torture_comment(tctx, "Testing SMB2_GETINFO_SECURITY buffer sizes\n");
 
 	ret = torture_smb2_connection(tctx, &tree);
 	torture_assert(tctx, ret, "connection failed");
