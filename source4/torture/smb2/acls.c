@@ -1887,8 +1887,8 @@ static bool torture_smb2_con_share(struct torture_context *tctx,
                                   lpcfg_gensec_settings(tctx, tctx->lp_ctx)
                                   );
         if (!NT_STATUS_IS_OK(status)) {
-                printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
-                       host, share, nt_errstr(status));
+		torture_comment(tctx, "Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
+			host, share, nt_errstr(status));
                 return false;
         }
         return true;
