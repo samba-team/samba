@@ -79,13 +79,21 @@ int rep_utimes(const char *filename, const struct timeval tv[2]);
 typedef int clockid_t;
 int rep_clock_gettime(clockid_t clk_id, struct timespec *tp);
 #endif
-/* make sure we have a best effort CUSTOM_CLOCK_MONOTONIC we can rely on */
+/* make sure we have a best effort CUSTOM_CLOCK_MONOTONIC we can rely on.
+ *
+ * on AIX the values of CLOCK_* are cast expressions, not integer constants,
+ * this prevents them from being compared against in a preprocessor directive.
+ * The following ...IS_* macros can be used to check which clock is in use.
+ */
 #if defined(CLOCK_MONOTONIC)
 #define CUSTOM_CLOCK_MONOTONIC CLOCK_MONOTONIC
+#define CUSTOM_CLOCK_MONOTONIC_IS_MONOTONIC
 #elif defined(CLOCK_HIGHRES)
 #define CUSTOM_CLOCK_MONOTONIC CLOCK_HIGHRES
+#define CUSTOM_CLOCK_MONOTONIC_IS_HIGHRES
 #else
 #define CUSTOM_CLOCK_MONOTONIC CLOCK_REALTIME
+#define CUSTOM_CLOCK_MONOTONIC_IS_REALTIME
 #endif
 
 #endif
