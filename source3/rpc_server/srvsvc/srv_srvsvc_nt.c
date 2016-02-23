@@ -477,12 +477,19 @@ static bool is_hidden_share(int snum)
 static bool is_enumeration_allowed(struct pipes_struct *p,
                                    int snum)
 {
-    if (!lp_access_based_share_enum(snum))
-        return true;
+	if (!lp_access_based_share_enum(snum)) {
+		return true;
+	}
 
-    return share_access_check(p->session_info->security_token,
-			      lp_servicename(talloc_tos(), snum),
-			      FILE_READ_DATA, NULL);
+	if (!user_ok_token(p->session_info->unix_info->unix_name,
+			   p->session_info->info->domain_name,
+			   p->session_info->security_token, snum)) {
+		return false;
+	}
+
+	return share_access_check(p->session_info->security_token,
+				  lp_servicename(talloc_tos(), snum),
+				  FILE_READ_DATA, NULL);
 }
 
 /****************************************************************************
