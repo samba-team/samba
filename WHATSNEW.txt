@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.4.  This is *not*
+This is the third release candidate of Samba 4.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -235,6 +235,54 @@ KNOWN ISSUES
 Currently none.
 
 
+CHANGES SINCE 4.4.0rc2
+======================
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11723: lib:socket: Fix CID 1350010: Integer OVERFLOW_BEFORE_WIDEN.
+   * BUG 11735: lib:socket: Fix CID 1350009: Fix illegal memory accesses
+     (BUFFER_SIZE_WARNING).
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 10489: s3: smbd: posix_acls: Fix check for setting u:g:o entry on a
+     filesystem with no ACL support.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 11700: s3:utils/smbget: Set default blocksize.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 11734: lib/socket: Fix improper use of default interface speed.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11714: lib/tsocket: Work around sockets not supporting FIONREAD.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 11724: smbd: Fix CID 1351215 Improper use of negative value.
+   * BUG 11725: smbd: Fix CID 1351216 Dereference null return value.
+   * BUG 11732: param: Fix str_list_v3 to accept ; again.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 11738: libcli: Fix debug message, print sid string for new_ace trustee.
+
+o  Jose A. Rivera <jarrpa@samba.org>
+   * BUG 11727: s3:smbd:open: Skip redundant call to file_set_dosmode when
+     creating a new file.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11730: docs: Add manpage for cifsdd.
+   * BUG 11739: Fix installation path of Samba helper binaries.
+
+o  Berend De Schouwer <berend.de.schouwer@gmail.com>
+   * BUG 11643: docs: Add example for domain logins to smbspool man page.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 11719: ctdb-scripts: Drop use of "smbcontrol winbindd ip-dropped ..."
+
+o  Hemanth Thummala <hemanth.thummala@nutanix.com>
+   * BUG 11708: loadparm: Fix memory leak issue.
+   * BUG 11740: Fix memory leak in loadparm.
+
+
 CHANGES SINCE 4.4.0rc1
 ======================
 
@@ -245,7 +293,7 @@ o  Jeremy Allison <jra@samba.org>
    * BUG 11703: s3: smbd: Fix timestamp rounding inside SMB2 create.
 
 o  Christian Ambach <ambi@samba.org>
-   * BUG 11700:  Streamline 'smbget' options with the rest of the Samba utils.
+   * BUG 11700: Streamline 'smbget' options with the rest of the Samba utils.
 
 o  Günther Deschner <gd@samba.org>
    * BUG 11696: ctdb: Do not provide a useless pkgconfig file for ctdb.
