@@ -2489,14 +2489,16 @@ static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static int snapper_gmt_mkdir(vfs_handle_struct *handle,
-			     const char *fname, mode_t mode)
+				const struct smb_filename *fname,
+				mode_t mode)
 {
 	time_t timestamp;
 	char *stripped;
 	int ret, saved_errno;
 	char *conv;
+	struct smb_filename *smb_fname = NULL;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname,
+	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname->base_name,
 					&timestamp, &stripped)) {
 		return -1;
 	}
@@ -2508,9 +2510,19 @@ static int snapper_gmt_mkdir(vfs_handle_struct *handle,
 	if (conv == NULL) {
 		return -1;
 	}
-	ret = SMB_VFS_NEXT_MKDIR(handle, conv, mode);
-	saved_errno = errno;
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
 	TALLOC_FREE(conv);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
+	saved_errno = errno;
+	TALLOC_FREE(smb_fname);
 	errno = saved_errno;
 	return ret;
 }

@@ -292,12 +292,25 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 		if (recycle_directory_exist(handle, new_dir))
 			DEBUG(10, ("recycle: dir %s already exists\n", new_dir));
 		else {
+			struct smb_filename *smb_fname = NULL;
+
 			DEBUG(5, ("recycle: creating new dir %s\n", new_dir));
-			if (SMB_VFS_NEXT_MKDIR(handle, new_dir, mode) != 0) {
+
+			smb_fname = synthetic_smb_fname(talloc_tos(),
+						new_dir,
+						NULL,
+						NULL);
+			if (smb_fname == NULL) {
+				goto done;
+			}
+
+			if (SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode) != 0) {
 				DEBUG(1,("recycle: mkdir failed for %s with error: %s\n", new_dir, strerror(errno)));
+				TALLOC_FREE(smb_fname);
 				ret = False;
 				goto done;
 			}
+			TALLOC_FREE(smb_fname);
 		}
 		if (strlcat(new_dir, "/", len+1) >= len+1) {
 			goto done;

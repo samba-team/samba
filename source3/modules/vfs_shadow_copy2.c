@@ -1543,28 +1543,42 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_mkdir(vfs_handle_struct *handle,
-			      const char *fname, mode_t mode)
+				const struct smb_filename *smb_fname,
+				mode_t mode)
 {
 	time_t timestamp;
 	char *stripped;
 	int ret, saved_errno;
 	char *conv;
+	struct smb_filename *conv_smb_fname = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
-					 &timestamp, &stripped)) {
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+					handle,
+					smb_fname->base_name,
+					&timestamp,
+					&stripped)) {
 		return -1;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_MKDIR(handle, fname, mode);
+		return SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
 		return -1;
 	}
-	ret = SMB_VFS_NEXT_MKDIR(handle, conv, mode);
+	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		return -1;
+	}
+	ret = SMB_VFS_NEXT_MKDIR(handle, conv_smb_fname, mode);
 	saved_errno = errno;
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 	errno = saved_errno;
 	return ret;
 }

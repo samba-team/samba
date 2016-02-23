@@ -22,22 +22,27 @@
 #include "system/filesys.h"
 #include "smbd/smbd.h"
 
-static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
 {
 	struct smb_filename fname = { 0, };
 	int mkdir_res;
 	int res;
 
-	DEBUG(10, ("Calling linux_xfs_sgid_mkdir(%s)\n", path));
+	DEBUG(10, ("Calling linux_xfs_sgid_mkdir(%s)\n", smb_fname->base_name));
 
-	mkdir_res = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+	mkdir_res = SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
 	if (mkdir_res == -1) {
 		DEBUG(10, ("SMB_VFS_NEXT_MKDIR returned error: %s\n",
 			   strerror(errno)));
 		return mkdir_res;
 	}
 
-	if (!parent_dirname(talloc_tos(), path, &fname.base_name, NULL)) {
+	if (!parent_dirname(talloc_tos(),
+			smb_fname->base_name,
+			&fname.base_name,
+			NULL)) {
 		DEBUG(1, ("parent_dirname failed\n"));
 		/* return success, we did the mkdir */
 		return mkdir_res;
@@ -57,12 +62,13 @@ static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,  const char *path, mo
 		return mkdir_res;
 	}
 
-	fname.base_name = discard_const_p(char, path);
+	fname.base_name = discard_const_p(char, smb_fname->base_name);
 
 	res = SMB_VFS_NEXT_STAT(handle, &fname);
 	if (res == -1) {
-		DEBUG(2, ("Could not stat just created dir %s: %s\n", path,
-			  strerror(errno)));
+		DEBUG(2, ("Could not stat just created dir %s: %s\n",
+			smb_fname->base_name,
+			strerror(errno)));
 		/* return success, we did the mkdir */
 		return mkdir_res;
 	}
@@ -75,11 +81,13 @@ static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,  const char *path, mo
 	 * return success. What can you do...
 	 */
 	become_root();
-	res = SMB_VFS_NEXT_CHMOD(handle, path, fname.st.st_ex_mode);
+	res = SMB_VFS_NEXT_CHMOD(handle,
+			smb_fname->base_name,
+			fname.st.st_ex_mode);
 	unbecome_root();
 
 	if (res == -1) {
-		DEBUG(2, ("CHMOD(%s, %o) failed: %s\n", path,
+		DEBUG(2, ("CHMOD(%s, %o) failed: %s\n", smb_fname->base_name,
 			  (int)fname.st.st_ex_mode, strerror(errno)));
 		/* return success, we did the mkdir */
 		return mkdir_res;

@@ -766,32 +766,30 @@ static void um_rewinddir(vfs_handle_struct *handle,
 }
 
 static int um_mkdir(vfs_handle_struct *handle,
-		    const char *path,
+		    const struct smb_filename *smb_fname,
 		    mode_t mode)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
-
+	const char *path = smb_fname->base_name;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering with path '%s'\n", path));
 
 	if (!is_in_media_files(path) || !is_in_media_dir(path)) {
-		return SMB_VFS_NEXT_MKDIR(handle, path, mode);
+		return SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-					    path,
-					    &clientPath))) {
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_MKDIR(handle, clientPath, mode);
+	status = SMB_VFS_NEXT_MKDIR(handle, client_fname, mode);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(client_fname);
 	DEBUG(10, ("Leaving with path '%s'\n", path));
 	return status;
 }

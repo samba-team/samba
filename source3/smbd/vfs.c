@@ -1497,11 +1497,12 @@ void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 	handle->fns->rewind_dir_fn(handle, dirp);
 }
 
-int smb_vfs_call_mkdir(struct vfs_handle_struct *handle, const char *path,
-		       mode_t mode)
+int smb_vfs_call_mkdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	VFS_FIND(mkdir);
-	return handle->fns->mkdir_fn(handle, path, mode);
+	return handle->fns->mkdir_fn(handle, smb_fname, mode);
 }
 
 int smb_vfs_call_rmdir(struct vfs_handle_struct *handle, const char *path)

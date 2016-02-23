@@ -3302,7 +3302,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return status;
 	}
 
-	if (SMB_VFS_MKDIR(conn, smb_dname->base_name, mode) != 0) {
+	if (SMB_VFS_MKDIR(conn, smb_dname, mode) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 

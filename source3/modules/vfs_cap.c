@@ -97,15 +97,29 @@ static struct dirent *cap_readdir(vfs_handle_struct *handle,
 	return newdirent;
 }
 
-static int cap_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int cap_mkdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *cap_smb_fname = NULL;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_MKDIR(handle, cappath, mode);
+
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	return SMB_VFS_NEXT_MKDIR(handle, cap_smb_fname, mode);
 }
 
 static int cap_rmdir(vfs_handle_struct *handle, const char *path)

@@ -157,7 +157,9 @@ static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 	;
 }
 
-static int skel_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int skel_mkdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;

@@ -124,6 +124,8 @@ static char *stream_dir(vfs_handle_struct *handle,
 	uint8_t id_buf[16];
 	bool check_valid;
 	const char *rootdir;
+	struct smb_filename *rootdir_fname = NULL;
+	struct smb_filename *tmp_fname = NULL;
 
 	check_valid = lp_parm_bool(SNUM(handle->conn),
 		      "streams_depot", "check_valid", true);
@@ -138,6 +140,15 @@ static char *stream_dir(vfs_handle_struct *handle,
 	rootdir = lp_parm_const_string(
 		SNUM(handle->conn), "streams_depot", "directory",
 		tmp);
+
+	rootdir_fname = synthetic_smb_fname(talloc_tos(),
+					rootdir,
+					NULL,
+					NULL);
+	if (rootdir_fname == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
 
 	/* Stat the base file if it hasn't already been done. */
 	if (base_sbuf == NULL) {
@@ -261,7 +272,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, rootdir, 0755) != 0)
+	if ((SMB_VFS_NEXT_MKDIR(handle, rootdir_fname, 0755) != 0)
 	    && (errno != EEXIST)) {
 		goto fail;
 	}
@@ -272,12 +283,19 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, tmp, 0755) != 0)
+	tmp_fname = synthetic_smb_fname(talloc_tos(), tmp, NULL, NULL);
+	if (tmp_fname == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	if ((SMB_VFS_NEXT_MKDIR(handle, tmp_fname, 0755) != 0)
 	    && (errno != EEXIST)) {
 		goto fail;
 	}
 
 	TALLOC_FREE(tmp);
+	TALLOC_FREE(tmp_fname);
 
 	tmp = talloc_asprintf(result, "%s/%2.2X/%2.2X", rootdir, first,
 			      second);
@@ -286,14 +304,22 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, tmp, 0755) != 0)
+	tmp_fname = synthetic_smb_fname(talloc_tos(), tmp, NULL, NULL);
+	if (tmp_fname == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	if ((SMB_VFS_NEXT_MKDIR(handle, tmp_fname, 0755) != 0)
 	    && (errno != EEXIST)) {
 		goto fail;
 	}
 
 	TALLOC_FREE(tmp);
+	TALLOC_FREE(tmp_fname);
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, result, 0755) != 0)
+	/* smb_fname_hash is the struct smb_filename version of 'result' */
+	if ((SMB_VFS_NEXT_MKDIR(handle, smb_fname_hash, 0755) != 0)
 	    && (errno != EEXIST)) {
 		goto fail;
 	}
@@ -302,10 +328,14 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
+	TALLOC_FREE(rootdir_fname);
+	TALLOC_FREE(tmp_fname);
 	TALLOC_FREE(smb_fname_hash);
 	return result;
 
  fail:
+	TALLOC_FREE(rootdir_fname);
+	TALLOC_FREE(tmp_fname);
 	TALLOC_FREE(smb_fname_hash);
 	TALLOC_FREE(result);
 	return NULL;

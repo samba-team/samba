@@ -109,10 +109,10 @@
 #define SMB_VFS_NEXT_REWINDDIR(handle, dirp) \
 	smb_vfs_call_rewind_dir((handle)->next, (dirp))
 
-#define SMB_VFS_MKDIR(conn, path, mode) \
-	smb_vfs_call_mkdir((conn)->vfs_handles,(path), (mode))
-#define SMB_VFS_NEXT_MKDIR(handle, path, mode) \
-	smb_vfs_call_mkdir((handle)->next,(path), (mode))
+#define SMB_VFS_MKDIR(conn, smb_fname, mode) \
+	smb_vfs_call_mkdir((conn)->vfs_handles,(smb_fname), (mode))
+#define SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode) \
+	smb_vfs_call_mkdir((handle)->next,(smb_fname), (mode))
 
 #define SMB_VFS_RMDIR(conn, path) \
 	smb_vfs_call_rmdir((conn)->vfs_handles, (path))

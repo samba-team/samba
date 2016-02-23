@@ -844,13 +844,14 @@ static void smb_full_audit_rewinddir(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_mkdir(vfs_handle_struct *handle,
-		       const char *path, mode_t mode)
+		       const struct smb_filename *smb_fname, mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
+	result = SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
 	
-	do_log(SMB_VFS_OP_MKDIR, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_MKDIR, (result >= 0), handle, "%s",
+		smb_fname->base_name);
 
 	return result;
 }
