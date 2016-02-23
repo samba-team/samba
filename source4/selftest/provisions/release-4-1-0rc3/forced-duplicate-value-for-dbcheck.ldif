@@ -1,0 +1,9 @@
+dn: cn=administrator,cn=users,dc=release-4-1-0rc3,dc=samba,dc=corp
+changetype: modify
+add: otherHomePhone
+otherHomePhone: 1
+otherHomePhone: 2
+otherHomePhone: 1
+otherHomePhone: 3
+otherHomePhone: 2
+-
