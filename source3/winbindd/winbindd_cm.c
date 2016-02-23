@@ -2853,7 +2853,7 @@ retry:
 	/* Finally fall back to anonymous. */
 	if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
 		status = NT_STATUS_DOWNGRADE_DETECTED;
-		DEBUG(1, ("Unwilling to make SAMR connection to domain %s"
+		DEBUG(1, ("Unwilling to make SAMR connection to domain %s "
 			  "without connection level security, "
 			  "must set 'winbind sealed pipes = false' and "
 			  "'require strong key = false' to proceed: %s\n",
