@@ -480,8 +480,13 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
     if (!lp_access_based_share_enum(snum))
         return true;
 
+    if (!user_ok_token(p->session_info->unix_info->unix_name,
+                       p->session_info->info->domain_name,
+                       p->session_info->security_token, snum))
+        return false;
+
     return share_access_check(p->session_info->security_token,
-			      lp_servicename(talloc_tos(), snum),
+                              lp_servicename(talloc_tos(), snum),
 			      FILE_READ_DATA, NULL);
 }
 
