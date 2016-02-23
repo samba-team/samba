@@ -49,6 +49,7 @@ class dbcheck(object):
         self.remove_all_unknown_attributes = False
         self.remove_all_empty_attributes = False
         self.fix_all_normalisation = False
+        self.fix_all_duplicates = False
         self.fix_all_DN_GUIDs = False
         self.fix_all_binary_dn = False
         self.remove_all_deleted_DN_links = False
@@ -291,6 +292,23 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to normalise attribute %s" % attrname,
                           validate=False):
             self.report("Normalised attribute %s" % attrname)
+
+    def err_duplicate_values(self, dn, attrname, dup_values, values):
+        '''fix attribute normalisation errors'''
+        self.report("ERROR: Duplicate values for attribute '%s' in '%s'" % (attrname, dn))
+        self.report("Values contain a duplicate: [%s]/[%s]!" % (','.join(dup_values), ','.join(values)))
+        if not self.confirm_all("Fix duplicates for '%s' from '%s'?" % (attrname, dn), 'fix_all_duplicates'):
+            self.report("Not fixing attribute '%s'" % attrname)
+            return
+
+        m = ldb.Message()
+        m.dn = dn
+        m[attrname] = ldb.MessageElement(values, ldb.FLAG_MOD_REPLACE, attrname)
+
+        if self.do_modify(m, ["relax:0", "show_recycled:1"],
+                          "Failed to remove duplicate value on attribute %s" % attrname,
+                          validate=False):
+            self.report("Removed duplicate value on attribute %s" % attrname)
 
     def is_deleted_objects_dn(self, dsdb_dn):
         '''see if a dsdb_Dn is the special Deleted Objects DN'''
@@ -1447,13 +1465,21 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 # it's some form of DN, do specialised checking on those
                 error_count += self.check_dn(obj, attrname, syntax_oid)
 
+            values = set()
             # check for incorrectly normalised attributes
             for val in obj[attrname]:
+                values.add(str(val))
+
                 normalised = self.samdb.dsdb_normalise_attributes(self.samdb_schema, attrname, [val])
                 if len(normalised) != 1 or normalised[0] != val:
                     self.err_normalise_mismatch(dn, attrname, obj[attrname])
                     error_count += 1
                     break
+
+            if len(obj[attrname]) != len(values):
+                   self.err_duplicate_values(dn, attrname, obj[attrname], list(values))
+                   error_count += 1
+                   break
 
             if str(attrname).lower() == "instancetype":
                 calculated_instancetype = self.calculate_instancetype(dn)

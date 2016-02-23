@@ -1,0 +1,9 @@
+
+# 0 referrals
+# 1 entries
+dn: CN=Administrator,CN=Users,DC=release-4-1-0rc3,DC=samba,DC=corp
+otherHomePhone: 1
+otherHomePhone: 2
+otherHomePhone: 3
+# record 1
+# returned 1 records

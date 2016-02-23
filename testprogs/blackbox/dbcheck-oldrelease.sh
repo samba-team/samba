@@ -207,6 +207,39 @@ check_expected_after_values() {
     return 0
 }
 
+check_forced_duplicate_values() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	ldif=$release_dir/forced-duplicate-value-for-dbcheck.ldif
+	TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-1-0RC3,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    else
+	return 0
+    fi
+}
+
+# This should 'fail', because it returns the number of modified records
+dbcheck_after_dup() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+    else
+	return 1
+    fi
+}
+
+check_expected_after_dup_values() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-otherphone-after-dbcheck.ldif.tmp
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator -s base -b cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp otherHomePhone --sorted --show-binary | sort > $tmpldif
+	diff $tmpldif $release_dir/expected-otherphone-after-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    fi
+    return 0
+}
+
 # But having fixed it all up, this should pass
 dbcheck_clean() {
        $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
@@ -269,6 +302,9 @@ if [ -d $release_dir ]; then
     testit "check_expected_before_values" check_expected_before_values
     testit_expect_failure "dbcheck" dbcheck
     testit "check_expected_after_values" check_expected_after_values
+    testit "check_forced_duplicate_values" check_forced_duplicate_values
+    testit_expect_failure "dbcheck_after_dup" dbcheck_after_dup
+    testit "check_expected_after_dup_values" check_expected_after_dup_values
     testit "dbcheck_clean" dbcheck_clean
     testit_expect_failure "dbcheck_acl_reset" dbcheck_acl_reset
     testit "dbcheck_acl_reset_clean" dbcheck_acl_reset_clean
