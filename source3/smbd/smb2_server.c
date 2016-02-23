@@ -2676,6 +2676,40 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	return return_value;
 }
 
+static void smbd_smb2_request_reply_update_counts(struct smbd_smb2_request *req)
+{
+	struct smbXsrv_connection *xconn = req->xconn;
+	const uint8_t *inhdr;
+	uint16_t channel_sequence;
+	struct smbXsrv_open *op;
+
+	if (!req->request_counters_updated) {
+		return;
+	}
+
+	if (xconn->protocol < PROTOCOL_SMB2_22) {
+		return;
+	}
+
+	if (req->compat_chain_fsp == NULL) {
+		return;
+	}
+
+	op = req->compat_chain_fsp->op;
+	if (op == NULL) {
+		return;
+	}
+
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
+	channel_sequence = SVAL(inhdr, SMB2_HDR_CHANNEL_SEQUENCE);
+
+	if (op->global->channel_sequence == channel_sequence) {
+		op->request_count -= 1;
+	} else {
+		op->pre_request_count -= 1;
+	}
+}
+
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
@@ -2688,6 +2722,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	req->subreq = NULL;
 	TALLOC_FREE(req->async_te);
+
+	/* MS-SMB2: 3.3.4.1 Sending Any Outgoing Message */
+	smbd_smb2_request_reply_update_counts(req);
 
 	if (req->do_encryption &&
 	    (firsttf->iov_len == 0) &&
