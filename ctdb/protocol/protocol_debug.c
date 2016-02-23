@@ -279,6 +279,9 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 
 	if (srvid == CTDB_SRVID_ALL) {
 		fprintf(fp, "ALL");
+	} else if ((srvid & prefix) == CTDB_SRVID_RECOVERY) {
+		srvid = srvid & ~CTDB_SRVID_RECOVERY;
+		fprintf(fp, "RECOVERY-%"PRIx64"", srvid);
 	} else if (srvid == CTDB_SRVID_ELECTION) {
 		fprintf(fp, "ELECTION");
 	} else if (srvid == CTDB_SRVID_RECONFIGURE) {

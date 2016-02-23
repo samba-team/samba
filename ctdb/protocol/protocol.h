@@ -121,6 +121,9 @@ struct ctdb_call {
 /* SRVID prefix used by CTDB */
 #define CTDB_SRVID_PREFIX	0xF000000000000000LL
 
+/* SRVID prefix used during recovery for pulling and pushing databases */
+#define CTDB_SRVID_RECOVERY	0xF001000000000000LL
+
 /* SRVID to inform of election data */
 #define CTDB_SRVID_ELECTION	0xF100000000000000LL
 
