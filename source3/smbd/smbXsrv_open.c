@@ -34,6 +34,7 @@
 struct smbXsrv_open_table {
 	struct {
 		struct db_context *db_ctx;
+		struct db_context *replay_cache_db_ctx;
 		uint32_t lowest_id;
 		uint32_t highest_id;
 		uint32_t max_opens;
@@ -222,6 +223,11 @@ static NTSTATUS smbXsrv_open_table_init(struct smbXsrv_connection *conn,
 
 	table->local.db_ctx = db_open_rbt(table);
 	if (table->local.db_ctx == NULL) {
+		TALLOC_FREE(table);
+		return NT_STATUS_NO_MEMORY;
+	}
+	table->local.replay_cache_db_ctx = db_open_rbt(table);
+	if (table->local.replay_cache_db_ctx == NULL) {
 		TALLOC_FREE(table);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -928,6 +934,79 @@ uint32_t smbXsrv_open_hash(struct smbXsrv_open *_open)
 	return ret;
 }
 
+static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
+{
+	struct GUID *create_guid;
+	struct GUID_txt_buf buf;
+	char *guid_string;
+	struct db_context *db = op->table->local.replay_cache_db_ctx;
+	NTSTATUS status;
+
+	if (!(op->flags & SMBXSRV_OPEN_NEED_REPLAY_CACHE)) {
+		return NT_STATUS_OK;
+	}
+
+	if (op->flags & SMBXSRV_OPEN_HAVE_REPLAY_CACHE) {
+		return NT_STATUS_OK;
+	}
+
+	create_guid = &op->global->create_guid;
+	if (GUID_all_zero(create_guid)) {
+		return NT_STATUS_OK;
+	}
+
+	guid_string = GUID_buf_string(create_guid, &buf);
+	if (guid_string == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dbwrap_store_uint32_bystring(db, guid_string, op->local_id);
+
+	if (NT_STATUS_IS_OK(status)) {
+		op->flags |= SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
+		op->flags &= ~SMBXSRV_OPEN_NEED_REPLAY_CACHE;
+	}
+
+	return status;
+}
+
+static NTSTATUS smbXsrv_open_clear_replay_cache(struct smbXsrv_open *op)
+{
+	struct GUID *create_guid;
+	struct GUID_txt_buf buf;
+	char *guid_string;
+	struct db_context *db;
+	NTSTATUS status;
+
+	if (op->table == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	db = op->table->local.replay_cache_db_ctx;
+
+	if (!(op->flags & SMBXSRV_OPEN_HAVE_REPLAY_CACHE)) {
+		return NT_STATUS_OK;
+	}
+
+	create_guid = &op->global->create_guid;
+	if (GUID_all_zero(create_guid)) {
+		return NT_STATUS_OK;
+	}
+
+	guid_string = GUID_buf_string(create_guid, &buf);
+	if (guid_string == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dbwrap_purge_bystring(db, guid_string);
+
+	if (NT_STATUS_IS_OK(status)) {
+		op->flags &= ~SMBXSRV_OPEN_HAVE_REPLAY_CACHE;
+	}
+
+	return status;
+}
+
 NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 {
 	struct smbXsrv_open_table *table = op->table;
@@ -957,6 +1036,13 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 		return status;
 	}
 
+	status = smbXsrv_open_set_replay_cache(op);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smbXsrv_open_set_replay_cache failed: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
 	if (CHECK_DEBUGLVL(10)) {
 		struct smbXsrv_openB open_blob;
 
@@ -980,8 +1066,14 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 	NTSTATUS status;
 	NTSTATUS error = NT_STATUS_OK;
 
+	error = smbXsrv_open_clear_replay_cache(op);
+	if (!NT_STATUS_IS_OK(error)) {
+		DBG_ERR("smbXsrv_open_clear_replay_cache failed: %s\n",
+			nt_errstr(error));
+	}
+
 	if (op->table == NULL) {
-		return NT_STATUS_OK;
+		return error;
 	}
 
 	table = op->table;
@@ -1157,6 +1249,7 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 	uint64_t local_zeros = volatile_id & 0xFFFFFFFF00000000LLU;
 	uint32_t global_id = persistent_id & UINT32_MAX;
 	uint64_t global_zeros = persistent_id & 0xFFFFFFFF00000000LLU;
+	NTSTATUS status;
 
 	if (local_zeros != 0) {
 		return NT_STATUS_FILE_CLOSED;
@@ -1170,7 +1263,24 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 		return NT_STATUS_FILE_CLOSED;
 	}
 
-	return smbXsrv_open_local_lookup(table, local_id, global_id, now, _open);
+	status = smbXsrv_open_local_lookup(table, local_id, global_id, now,
+					   _open);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Clear the replay cache for this create_guid if it exists:
+	 * This is based on the assumption that this lookup will be
+	 * triggered by a client request using the file-id for lookup.
+	 * Hence the client has proven that it has in fact seen the
+	 * reply to its initial create call. So subsequent create replays
+	 * should be treated as invalid. Hence the index for create_guid
+	 * lookup needs to be removed.
+	 */
+	status = smbXsrv_open_clear_replay_cache(*_open);
+
+	return status;
 }
 
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
