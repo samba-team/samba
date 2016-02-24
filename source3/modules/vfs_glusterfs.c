@@ -429,10 +429,11 @@ static void vfs_gluster_init_search_op(struct vfs_handle_struct *handle,
 	return;
 }
 
-static int vfs_gluster_mkdir(struct vfs_handle_struct *handle, const char *path,
+static int vfs_gluster_mkdir(struct vfs_handle_struct *handle,
+			     const struct smb_filename *smb_fname,
 			     mode_t mode)
 {
-	return glfs_mkdir(handle->data, path, mode);
+	return glfs_mkdir(handle->data, smb_fname->base_name, mode);
 }
 
 static int vfs_gluster_rmdir(struct vfs_handle_struct *handle, const char *path)
