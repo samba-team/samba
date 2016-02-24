@@ -1530,6 +1530,7 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 	struct ldb_message **res;
 	uint32_t i;
 	int count = 0;
+	char membersidstr[DOM_SID_STR_BUFLEN];
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1545,19 +1546,11 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 	}
 
 	for (i=0; i<r->in.sids->num_sids; i++) {
-		const char *memberdn;
+		dom_sid_string_buf(r->in.sids->sids[i].sid,
+				   membersidstr, sizeof(membersidstr));
 
-		memberdn = samdb_search_string(d_state->sam_ctx, mem_ctx, NULL,
-					       "distinguishedName",
-					       "(objectSid=%s)",
-					       ldap_encode_ndr_dom_sid(mem_ctx,
-								       r->in.sids->sids[i].sid));
-		if (memberdn == NULL) {
-			continue;
-		}
-
-		filter = talloc_asprintf(mem_ctx, "%s(member=%s)", filter,
-					 memberdn);
+		filter = talloc_asprintf(mem_ctx, "%s(member=<SID=%s>)",
+					 filter, membersidstr);
 		if (filter == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
