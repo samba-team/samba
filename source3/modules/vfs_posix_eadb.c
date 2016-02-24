@@ -343,11 +343,13 @@ out:
 /*
  * On rmdir we need to delete the tdb record
  */
-static int posix_eadb_rmdir(vfs_handle_struct *handle, const char *path)
+static int posix_eadb_rmdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
 	struct tdb_wrap *ea_tdb;
 	int ret;
+	const char *path = smb_fname->base_name;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, ea_tdb, struct tdb_wrap, return -1);
 
@@ -360,7 +362,7 @@ static int posix_eadb_rmdir(vfs_handle_struct *handle, const char *path)
 		tdb_transaction_cancel(ea_tdb->tdb);
 	}
 
-	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 
 	if (ret == -1) {
 		tdb_transaction_cancel(ea_tdb->tdb);

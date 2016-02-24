@@ -795,31 +795,29 @@ err:
 }
 
 static int um_rmdir(vfs_handle_struct *handle,
-		    const char *path)
+		    const struct smb_filename *smb_fname)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
-
+	const char *path = smb_fname->base_name;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering with path '%s'\n", path));
 
 	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_RMDIR(handle, path);
+		return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-					    path,
-					    &clientPath))) {
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_RMDIR(handle, clientPath);
+	status = SMB_VFS_NEXT_RMDIR(handle, client_fname);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(client_fname);
 	DEBUG(10, ("Leaving with path '%s'\n", path));
 	return status;
 }

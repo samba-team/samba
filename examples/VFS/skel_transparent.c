@@ -164,9 +164,10 @@ static int skel_mkdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
 }
 
-static int skel_rmdir(vfs_handle_struct *handle, const char *path)
+static int skel_rmdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_RMDIR(handle, path);
+	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
 
 static int skel_closedir(vfs_handle_struct *handle, DIR *dir)

@@ -275,19 +275,20 @@ static int unlink_acl_tdb(vfs_handle_struct *handle,
  On rmdir we need to delete the tdb record (if using tdb).
 *********************************************************************/
 
-static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
+static int rmdir_acl_tdb(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname)
 {
 
 	SMB_STRUCT_STAT sbuf;
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	ret = vfs_stat_smb_basename(handle->conn, path, &sbuf);
+	ret = vfs_stat_smb_basename(handle->conn, smb_fname->base_name, &sbuf);
 	if (ret == -1) {
 		return -1;
 	}
 
-	ret = rmdir_acl_common(handle, path);
+	ret = rmdir_acl_common(handle, smb_fname);
 	if (ret == -1) {
 		return -1;
 	}

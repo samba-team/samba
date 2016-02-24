@@ -857,13 +857,14 @@ static int smb_full_audit_mkdir(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_rmdir(vfs_handle_struct *handle,
-		       const char *path)
+		       const struct smb_filename *smb_fname)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_RMDIR(handle, path);
+	result = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_RMDIR, (result >= 0), handle, "%s", path);
+	do_log(SMB_VFS_OP_RMDIR, (result >= 0), handle, "%s",
+		smb_fname->base_name);
 
 	return result;
 }

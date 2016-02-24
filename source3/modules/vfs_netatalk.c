@@ -223,10 +223,12 @@ static DIR *atalk_fdopendir(struct vfs_handle_struct *handle, files_struct *fsp,
 	return ret;
 }
 
-static int atalk_rmdir(struct vfs_handle_struct *handle, const char *path)
+static int atalk_rmdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	bool add = False;
 	TALLOC_CTX *ctx = 0;
+	const char *path = smb_fname->base_name;
 	char *dpath;
 
 	if (!handle->conn->cwd || !path) goto exit_rmdir;
@@ -248,7 +250,7 @@ static int atalk_rmdir(struct vfs_handle_struct *handle, const char *path)
 
 exit_rmdir:
 	talloc_destroy(ctx);
-	return SMB_VFS_NEXT_RMDIR(handle, path);
+	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
 
 /* File operations */

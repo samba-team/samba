@@ -1007,7 +1007,7 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 
 	become_root();
 	if (is_directory) {
-		ret = SMB_VFS_NEXT_RMDIR(handle, final_component);
+		ret = SMB_VFS_NEXT_RMDIR(handle, &local_fname);
 	} else {
 		ret = SMB_VFS_NEXT_UNLINK(handle, &local_fname);
 	}
@@ -1031,12 +1031,12 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 }
 
 static int rmdir_acl_common(struct vfs_handle_struct *handle,
-				const char *path)
+				const struct smb_filename *smb_fname)
 {
 	int ret;
 
 	/* Try the normal rmdir first. */
-	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 	if (ret == 0) {
 		return 0;
 	}
@@ -1044,12 +1044,12 @@ static int rmdir_acl_common(struct vfs_handle_struct *handle,
 		/* Failed due to access denied,
 		   see if we need to root override. */
 		return acl_common_remove_object(handle,
-						path,
+						smb_fname->base_name,
 						true);
 	}
 
 	DEBUG(10,("rmdir_acl_common: unlink of %s failed %s\n",
-		path,
+		smb_fname->base_name,
 		strerror(errno) ));
 	return -1;
 }

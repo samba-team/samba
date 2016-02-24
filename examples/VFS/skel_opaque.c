@@ -165,7 +165,8 @@ static int skel_mkdir(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_rmdir(vfs_handle_struct *handle, const char *path)
+static int skel_rmdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname)
 {
 	errno = ENOSYS;
 	return -1;

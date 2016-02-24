@@ -1069,34 +1069,31 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_rmdir(vfs_handle_struct *handle,
-		const char *path)
+		const struct smb_filename *smb_fname)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
-
+	struct smb_filename *clientFname = NULL;
+	const char *path = smb_fname->base_name;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
 
 	if (!is_in_media_files(path))
 	{
-		status = SMB_VFS_NEXT_RMDIR(handle, path);
+		status = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_RMDIR(handle, clientPath);
+	status = SMB_VFS_NEXT_RMDIR(handle, clientFname);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	DEBUG(MH_INFO_DEBUG, ("Leaving with path '%s'\n", path));
 	return status;

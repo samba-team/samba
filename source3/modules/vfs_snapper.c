@@ -2527,14 +2527,16 @@ static int snapper_gmt_mkdir(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int snapper_gmt_rmdir(vfs_handle_struct *handle, const char *fname)
+static int snapper_gmt_rmdir(vfs_handle_struct *handle,
+				const struct smb_filename *fname)
 {
 	time_t timestamp;
 	char *stripped;
 	int ret, saved_errno;
 	char *conv;
+	struct smb_filename *smb_fname = NULL;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname,
+	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname->base_name,
 					&timestamp, &stripped)) {
 		return -1;
 	}
@@ -2546,9 +2548,18 @@ static int snapper_gmt_rmdir(vfs_handle_struct *handle, const char *fname)
 	if (conv == NULL) {
 		return -1;
 	}
-	ret = SMB_VFS_NEXT_RMDIR(handle, conv);
-	saved_errno = errno;
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
 	TALLOC_FREE(conv);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
+	saved_errno = errno;
+	TALLOC_FREE(smb_fname);
 	errno = saved_errno;
 	return ret;
 }

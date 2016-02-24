@@ -399,6 +399,7 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *smb_fname = NULL;
 	int ret = -1;
 
 	if (argc != 2) {
@@ -406,16 +407,19 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 		return NT_STATUS_OK;
 	}
 
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					argv[1],
+					NULL,
+					NULL);
+
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (strcmp("rmdir", argv[0]) == 0 ) {
-		ret = SMB_VFS_RMDIR(vfs->conn, argv[1]);
+		ret = SMB_VFS_RMDIR(vfs->conn, smb_fname);
+		TALLOC_FREE(smb_fname);
 	} else if (strcmp("unlink", argv[0]) == 0 ) {
-		struct smb_filename *smb_fname;
-
-		smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1], NULL);
-		if (smb_fname == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
 		ret = SMB_VFS_UNLINK(vfs->conn, smb_fname);
 		TALLOC_FREE(smb_fname);
 	} else if (strcmp("chdir", argv[0]) == 0 ) {

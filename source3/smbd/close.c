@@ -845,8 +845,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			if(!recursive_rmdir(ctx, conn, smb_dname_full)) {
 				goto err_break;
 			}
-			if(SMB_VFS_RMDIR(conn,
-					 smb_dname_full->base_name) != 0) {
+			if(SMB_VFS_RMDIR(conn, smb_dname_full) != 0) {
 				goto err_break;
 			}
 		} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
@@ -896,7 +895,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		}
 		ret = SMB_VFS_UNLINK(conn, smb_dname);
 	} else {
-		ret = SMB_VFS_RMDIR(conn, smb_dname->base_name);
+		ret = SMB_VFS_RMDIR(conn, smb_dname);
 	}
 	if (ret == 0) {
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
@@ -998,7 +997,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 					goto err_break;
 				}
 				if(SMB_VFS_RMDIR(conn,
-					smb_dname_full->base_name) != 0) {
+					smb_dname_full) != 0) {
 					goto err_break;
 				}
 			} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
@@ -1017,7 +1016,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		}
 		TALLOC_FREE(dir_hnd);
 		/* Retry the rmdir */
-		ret = SMB_VFS_RMDIR(conn, smb_dname->base_name);
+		ret = SMB_VFS_RMDIR(conn, smb_dname);
 	}
 
   err:

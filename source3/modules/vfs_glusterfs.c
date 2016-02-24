@@ -436,9 +436,10 @@ static int vfs_gluster_mkdir(struct vfs_handle_struct *handle,
 	return glfs_mkdir(handle->data, smb_fname->base_name, mode);
 }
 
-static int vfs_gluster_rmdir(struct vfs_handle_struct *handle, const char *path)
+static int vfs_gluster_rmdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
-	return glfs_rmdir(handle->data, path);
+	return glfs_rmdir(handle->data, smb_fname->base_name);
 }
 
 static int vfs_gluster_open(struct vfs_handle_struct *handle,

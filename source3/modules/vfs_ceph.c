@@ -367,12 +367,13 @@ static int cephwrap_mkdir(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static int cephwrap_rmdir(struct vfs_handle_struct *handle,  const char *path)
+static int cephwrap_rmdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int result;
 
-	DEBUG(10, ("[CEPH] rmdir(%p, %s)\n", handle, path));
-	result = ceph_rmdir(handle->data, path);
+	DEBUG(10, ("[CEPH] rmdir(%p, %s)\n", handle, smb_fname->base_name));
+	result = ceph_rmdir(handle->data, smb_fname->base_name);
 	DEBUG(10, ("[CEPH] rmdir(...) = %d\n", result));
 	WRAP_RETURN(result);
 }

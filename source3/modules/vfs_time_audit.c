@@ -482,19 +482,21 @@ static int smb_time_audit_mkdir(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_rmdir(vfs_handle_struct *handle,
-				const char *path)
+				const struct smb_filename *smb_fname)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_RMDIR(handle, path);
+	result = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("rmdir", timediff, path);
+		smb_time_audit_log_smb_fname("rmdir",
+			timediff,
+			smb_fname);
 	}
 
 	return result;

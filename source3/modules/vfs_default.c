@@ -503,12 +503,13 @@ static int vfswrap_mkdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_rmdir(vfs_handle_struct *handle, const char *path)
+static int vfswrap_rmdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	int result;
 
 	START_PROFILE(syscall_rmdir);
-	result = rmdir(path);
+	result = rmdir(smb_fname->base_name);
 	END_PROFILE(syscall_rmdir);
 	return result;
 }

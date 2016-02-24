@@ -233,7 +233,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 			      smb_fname_hash->base_name));
 			recursive_rmdir(talloc_tos(), handle->conn,
 					smb_fname_hash);
-			SMB_VFS_NEXT_RMDIR(handle, smb_fname_hash->base_name);
+			SMB_VFS_NEXT_RMDIR(handle, smb_fname_hash);
 		} else {
 			newname = talloc_asprintf(talloc_tos(), "lost-%lu",
 						  random());
@@ -682,7 +682,19 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 					   &smb_fname_base->st, false);
 
 		if (dirname != NULL) {
-			SMB_VFS_NEXT_RMDIR(handle, dirname);
+			struct smb_filename *smb_fname_dir =
+				synthetic_smb_fname(talloc_tos(),
+						dirname,
+						NULL,
+						NULL);
+			if (smb_fname_dir == NULL) {
+				TALLOC_FREE(smb_fname_base);
+				TALLOC_FREE(dirname);
+				errno = ENOMEM;
+				return -1;
+			}
+			SMB_VFS_NEXT_RMDIR(handle, smb_fname_dir);
+			TALLOC_FREE(smb_fname_dir);
 		}
 		TALLOC_FREE(dirname);
 	}
@@ -691,18 +703,23 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
+static int streams_depot_rmdir(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_base = NULL;
 	int ret = -1;
 
-	DEBUG(10, ("streams_depot_rmdir called for %s\n", path));
+	DEBUG(10, ("streams_depot_rmdir called for %s\n",
+		smb_fname->base_name));
 
 	/*
 	 * We potentially need to delete the per-inode streams directory
 	 */
 
-	smb_fname_base = synthetic_smb_fname(talloc_tos(), path, NULL, NULL);
+	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+				smb_fname->base_name,
+				NULL,
+				NULL);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -719,13 +736,25 @@ static int streams_depot_rmdir(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname_base);
 	if (ret == 0) {
 		char *dirname = stream_dir(handle, smb_fname_base,
 					   &smb_fname_base->st, false);
 
 		if (dirname != NULL) {
-			SMB_VFS_NEXT_RMDIR(handle, dirname);
+			struct smb_filename *smb_fname_dir =
+				synthetic_smb_fname(talloc_tos(),
+						dirname,
+						NULL,
+						NULL);
+			if (smb_fname_dir == NULL) {
+				TALLOC_FREE(smb_fname_base);
+				TALLOC_FREE(dirname);
+				errno = ENOMEM;
+				return -1;
+			}
+			SMB_VFS_NEXT_RMDIR(handle, smb_fname_dir);
+			TALLOC_FREE(smb_fname_dir);
 		}
 		TALLOC_FREE(dirname);
 	}

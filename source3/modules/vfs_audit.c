@@ -136,14 +136,15 @@ static int audit_mkdir(vfs_handle_struct *handle,
 	return result;
 }
 
-static int audit_rmdir(vfs_handle_struct *handle, const char *path)
+static int audit_rmdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_RMDIR(handle, path);
+	result = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 
 	syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
-	       path, 
+	       smb_fname->base_name,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
 

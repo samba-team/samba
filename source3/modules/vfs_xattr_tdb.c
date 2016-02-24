@@ -400,12 +400,14 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle,
 /*
  * On rmdir we need to delete the tdb record
  */
-static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
+static int xattr_tdb_rmdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
 	struct db_context *db;
 	int ret;
+	const char *path = smb_fname->base_name;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
@@ -419,7 +421,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 
 	if (ret == -1) {
 		TALLOC_FREE(frame);

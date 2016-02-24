@@ -175,6 +175,8 @@
 		const struct smb_filename * */
 /* Version 35 - Change mkdir from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Change rmdir from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -559,7 +561,8 @@ struct vfs_fn_pointers {
 	int (*mkdir_fn)(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
-	int (*rmdir_fn)(struct vfs_handle_struct *handle, const char *path);
+	int (*rmdir_fn)(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname);
 	int (*closedir_fn)(struct vfs_handle_struct *handle, DIR *dir);
 	void (*init_search_op_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 
@@ -978,7 +981,8 @@ void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 int smb_vfs_call_mkdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
-int smb_vfs_call_rmdir(struct vfs_handle_struct *handle, const char *path);
+int smb_vfs_call_rmdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname);
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 			  DIR *dir);
 void smb_vfs_call_init_search_op(struct vfs_handle_struct *handle,

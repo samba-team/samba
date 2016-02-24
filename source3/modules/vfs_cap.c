@@ -122,15 +122,28 @@ static int cap_mkdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKDIR(handle, cap_smb_fname, mode);
 }
 
-static int cap_rmdir(vfs_handle_struct *handle, const char *path)
+static int cap_rmdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *cap_smb_fname = NULL;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_RMDIR(handle, cappath);
+
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	return SMB_VFS_NEXT_RMDIR(handle, cap_smb_fname);
 }
 
 static int cap_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,

@@ -2576,11 +2576,13 @@ static int fruit_chown(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_rmdir(struct vfs_handle_struct *handle, const char *path)
+static int fruit_rmdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
 {
 	DIR *dh = NULL;
 	struct dirent *de;
 	struct fruit_config_data *config;
+	const char *path = smb_fname->base_name;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
@@ -2618,7 +2620,7 @@ exit_rmdir:
 	if (dh) {
 		closedir(dh);
 	}
-	return SMB_VFS_NEXT_RMDIR(handle, path);
+	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
 
 static ssize_t fruit_pread(vfs_handle_struct *handle,
