@@ -1547,7 +1547,7 @@ sub Parse($$$$$)
 #include \"$ndr_hdr\"
 
 /*
- * These functions are here to ensure they can be optomised out by
+ * These functions are here to ensure they can be optimized out by
  * the compiler based on the constant input values
  */
 
