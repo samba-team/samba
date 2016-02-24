@@ -46,6 +46,7 @@ static const struct smbd_smb2_dispatch_table {
 	bool as_root;
 	uint16_t fileid_ofs;
 	bool allow_invalid_fileid;
+	bool modify;
 } smbd_smb2_table[] = {
 #define _OP(o) .opcode = o, .name = #o
 	{
@@ -98,6 +99,7 @@ static const struct smbd_smb2_dispatch_table {
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x10,
+		.modify = true,
 	},{
 		_OP(SMB2_OP_LOCK),
 		.need_session = true,
@@ -109,6 +111,7 @@ static const struct smbd_smb2_dispatch_table {
 		.need_tcon = true,
 		.fileid_ofs = 0x08,
 		.allow_invalid_fileid = true,
+		.modify = true,
 	},{
 		_OP(SMB2_OP_CANCEL),
 		.as_root = true,
@@ -135,6 +138,7 @@ static const struct smbd_smb2_dispatch_table {
 		.need_session = true,
 		.need_tcon = true,
 		.fileid_ofs = 0x10,
+		.modify = true,
 	},{
 		_OP(SMB2_OP_BREAK),
 		.need_session = true,
