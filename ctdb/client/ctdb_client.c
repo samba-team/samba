@@ -24,8 +24,6 @@
 #include "system/locale.h"
 
 #include <talloc.h>
-/* Allow use of deprecated function tevent_loop_allow_nesting() */
-#define TEVENT_DEPRECATED
 #include <tevent.h>
 #include <tdb.h>
 

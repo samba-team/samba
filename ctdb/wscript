@@ -78,9 +78,6 @@ def set_options(opt):
 
 def configure(conf):
 
-    # CTDB relies on nested event loops
-    conf.env.TEVENT_DEPRECATED = 1
-
     # No need to build python bindings for talloc/tevent/tdb
     if conf.IN_LAUNCH_DIR():
         conf.env.standalone_ctdb = True
