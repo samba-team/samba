@@ -1,4 +1,87 @@
                    =============================
+                   Release Notes for Samba 4.3.6
+                           March 8, 2016
+                   =============================
+
+
+This is a security release in order to address the following CVEs:
+
+o  CVE-2015-7560 (Incorrect ACL get/set allowed on symlink path)
+o  CVE-2016-0771 (Out-of-bounds read in internal DNS server)
+
+=======
+Details
+=======
+
+o  CVE-2015-7560:
+   All versions of Samba from 3.2.0 to 4.4.0rc3 inclusive are vulnerable to
+   a malicious client overwriting the ownership of ACLs using symlinks.
+
+   An authenticated malicious client can use SMB1 UNIX extensions to
+   create a symlink to a file or directory, and then use non-UNIX SMB1
+   calls to overwrite the contents of the ACL on the file or directory
+   linked to.
+
+o  CVE-2016-0771:
+   All versions of Samba from 4.0.0 to 4.4.0rc3 inclusive, when deployed as
+   an AD DC and choose to run the internal DNS server, are vulnerable to an
+   out-of-bounds read issue during DNS TXT record handling caused by users
+   with permission to modify DNS records.
+
+   A malicious client can upload a specially constructed DNS TXT record,
+   resulting in a remote denial-of-service attack. As long as the affected
+   TXT record remains undisturbed in the Samba database, a targeted DNS
+   query may continue to trigger this exploit.
+
+   While unlikely, the out-of-bounds read may bypass safety checks and
+   allow leakage of memory from the server in the form of a DNS TXT reply.
+
+   By default only authenticated accounts can upload DNS records,
+   as "allow dns updates = secure only" is the default.
+   Any other value would allow anonymous clients to trigger this
+   bug, which is a much higher risk.
+
+
+Changes since 4.3.5:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11648: CVE-2015-7560: Getting and setting Windows ACLs on symlinks can
+     change permissions on link target.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUGs 11128, 11686: CVE-2016-0771: Read of uninitialized memory DNS TXT
+     handling.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUGs 11128, 11686: CVE-2016-0771: Read of uninitialized memory DNS TXT
+     handling.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Older release notes to follow:
+------------------------------
+
+                   =============================
                    Release Notes for Samba 4.3.5
                          February 23, 2016
                    =============================
@@ -82,8 +165,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Older release notes to follow:
-------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.3.4
