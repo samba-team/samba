@@ -326,11 +326,14 @@ static void cephwrap_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 	ceph_rewinddir(handle->data, (struct ceph_dir_result *) dirp);
 }
 
-static int cephwrap_mkdir(struct vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int cephwrap_mkdir(struct vfs_handle_struct *handle,
+			  const struct smb_filename *smb_fname,
+			  mode_t mode)
 {
 	int result;
 	bool has_dacl = False;
 	char *parent = NULL;
+	const char *path = smb_fname->base_name;
 
 	DEBUG(10, ("[CEPH] mkdir(%p, %s)\n", handle, path));
 
