@@ -966,12 +966,7 @@ static WERROR regdb_delete_key_with_prefix(struct db_context *db,
 		goto done;
 	}
 
-	werr = ntstatus_to_werror(dbwrap_delete_bystring(db, path));
-
-	/* treat "not found" as ok */
-	if (W_ERROR_EQUAL(werr, WERR_NOT_FOUND)) {
-		werr = WERR_OK;
-	}
+	werr = ntstatus_to_werror(dbwrap_purge_bystring(db, path));
 
 done:
 	talloc_free(mem_ctx);
