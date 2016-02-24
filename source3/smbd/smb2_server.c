@@ -2225,6 +2225,9 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	if (opcode == SMB2_OP_CANCEL) {
 		allowed_flags |= SMB2_HDR_FLAG_ASYNC;
 	}
+	if (xconn->protocol >= PROTOCOL_SMB2_22) {
+		allowed_flags |= SMB2_HDR_FLAG_REPLAY_OPERATION;
+	}
 	if ((flags & ~allowed_flags) != 0) {
 		return smbd_smb2_request_error(req, NT_STATUS_INVALID_PARAMETER);
 	}
