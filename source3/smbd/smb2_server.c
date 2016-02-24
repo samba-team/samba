@@ -2111,6 +2111,121 @@ bool smbXsrv_is_partially_signed(uint8_t signing_flags)
 		(signing_flags & SMBXSRV_PROCESSED_SIGNED_PACKET));
 }
 
+static NTSTATUS smbd_smb2_request_dispatch_update_counts(
+				struct smbd_smb2_request *req,
+				bool modify_call)
+{
+	struct smbXsrv_connection *xconn = req->xconn;
+	const uint8_t *inhdr;
+	uint16_t channel_sequence;
+	uint32_t flags;
+	int cmp;
+	struct smbXsrv_open *op;
+	bool update_open = false;
+	NTSTATUS status = NT_STATUS_OK;
+
+	req->request_counters_updated = false;
+
+	if (xconn->protocol < PROTOCOL_SMB2_22) {
+		return NT_STATUS_OK;
+	}
+
+	if (req->compat_chain_fsp == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	op = req->compat_chain_fsp->op;
+	if (op == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	inhdr = SMBD_SMB2_IN_HDR_PTR(req);
+	flags = IVAL(inhdr, SMB2_HDR_FLAGS);
+	channel_sequence = SVAL(inhdr, SMB2_HDR_CHANNEL_SEQUENCE);
+
+	cmp = channel_sequence - op->global->channel_sequence;
+
+	if (abs(cmp) > INT16_MAX) {
+		/*
+		 * [MS-SMB2] 3.3.5.2.10 - Verifying the Channel Sequence Number:
+		 *
+		 * If the channel sequence number of the request and the one
+		 * known to the server are not equal, the channel sequence
+		 * number and outstanding request counts are only updated
+		 * "... if the unsigned difference using 16-bit arithmetic
+		 * between ChannelSequence and Open.ChannelSequence is less than
+		 * or equal to 0x7FFF ...".
+		 * Otherwise, an error is returned for the modifying
+		 * calls write, set_info, and ioctl.
+		 *
+		 * There are currently two issues with the description:
+		 *
+		 * * For the other calls, the document seems to imply
+		 *   that processing continues without adapting the
+		 *   counters (if the sequence numbers are not equal).
+		 *
+		 *   TODO: This needs clarification!
+		 *
+		 * * Also, the behaviour if the difference is larger
+		 *   than 0x7FFF is not clear. The document seems to
+		 *   imply that if such a difference is reached,
+		 *   the server starts to ignore the counters or
+		 *   in the case of the modifying calls, return errors.
+		 *
+		 *   TODO: This needs clarification!
+		 *
+		 * At this point Samba tries to be a little more
+		 * clever than the description in the MS-SMB2 document
+		 * by heuristically detecting and properly treating
+		 * a 16 bit overflow of the client-submitted sequence
+		 * number:
+		 *
+		 * If the stored channel squence number is more than
+		 * 0x7FFF larger than the one from the request, then
+		 * the client-provided sequence number has likely
+		 * overflown. We treat this case as valid instead
+		 * of as failure.
+		 *
+		 * The MS-SMB2 behaviour would be setting cmp = -1.
+		 */
+		cmp *= -1;
+	}
+
+	if (!(flags & SMB2_HDR_FLAG_REPLAY_OPERATION)) {
+		if (cmp == 0) {
+			op->request_count += 1;
+			req->request_counters_updated = true;
+		} else if (cmp > 0) {
+			op->pre_request_count += op->request_count;
+			op->request_count = 1;
+			op->global->channel_sequence = channel_sequence;
+			update_open = true;
+			req->request_counters_updated = true;
+		} else if (modify_call) {
+			return NT_STATUS_FILE_NOT_AVAILABLE;
+		}
+	} else {
+		if (cmp == 0 && op->pre_request_count == 0) {
+			op->request_count += 1;
+			req->request_counters_updated = true;
+		} else if (cmp > 0 && op->pre_request_count == 0) {
+			op->pre_request_count += op->request_count;
+			op->request_count = 1;
+			op->global->channel_sequence = channel_sequence;
+			update_open = true;
+			req->request_counters_updated = true;
+		} else if (modify_call) {
+			return NT_STATUS_FILE_NOT_AVAILABLE;
+		}
+	}
+
+	if (update_open) {
+		status = smbXsrv_open_update(op);
+	}
+
+	return status;
+}
+
 NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
@@ -2406,6 +2521,11 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 						NT_STATUS_FILE_CLOSED);
 			}
 		}
+	}
+
+	status = smbd_smb2_request_dispatch_update_counts(req, call->modify);
+	if (!NT_STATUS_IS_OK(status)) {
+		return smbd_smb2_request_error(req, status);
 	}
 
 	if (call->as_root) {
