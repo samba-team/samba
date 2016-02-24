@@ -94,6 +94,8 @@ const char *dbwrap_name(struct db_context *db);
 
 /* The following definitions come from lib/dbwrap_util.c  */
 
+NTSTATUS dbwrap_purge(struct db_context *db, TDB_DATA key);
+NTSTATUS dbwrap_purge_bystring(struct db_context *db, const char *key);
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 			       TDB_DATA data, int flags);

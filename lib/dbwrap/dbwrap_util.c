@@ -528,6 +528,23 @@ NTSTATUS dbwrap_trans_traverse(struct db_context *db,
 	return dbwrap_trans_do(db, dbwrap_trans_traverse_action, &ctx);
 }
 
+NTSTATUS dbwrap_purge(struct db_context *db, TDB_DATA key)
+{
+	NTSTATUS status;
+
+	status = dbwrap_delete(db, key);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		status = NT_STATUS_OK;
+	}
+
+	return status;
+}
+
+NTSTATUS dbwrap_purge_bystring(struct db_context *db, const char *key)
+{
+	return dbwrap_purge(db, string_term_tdb_data(key));
+}
+
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
 {
 	return dbwrap_delete(db, string_term_tdb_data(key));
