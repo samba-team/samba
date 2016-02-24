@@ -153,13 +153,14 @@ class Command(object):
         # Check for a min a max number of allowed arguments, whenever possible
         # The suffix "?" means zero or one occurence
         # The suffix "+" means at least one occurence
+        # The suffix "*" means zero or more occurences
         min_args = 0
         max_args = 0
         undetermined_max_args = False
         for i, arg in enumerate(self.takes_args):
-            if arg[-1] != "?":
+            if arg[-1] != "?" and arg[-1] != "*":
                min_args += 1
-            if arg[-1] == "+":
+            if arg[-1] == "+" or arg[-1] == "*":
                undetermined_max_args = True
             else:
                max_args += 1
