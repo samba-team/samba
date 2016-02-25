@@ -304,6 +304,7 @@ struct collect_highseqnum_db_state {
 	struct ctdb_client_context *client;
 	uint32_t *pnn_list;
 	int count;
+	uint32_t *caps;
 	uint32_t db_id;
 	struct recdb_context *recdb;
 	uint32_t max_pnn;
@@ -316,7 +317,7 @@ static struct tevent_req *collect_highseqnum_db_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct ctdb_client_context *client,
-			uint32_t *pnn_list, int count,
+			uint32_t *pnn_list, int count, uint32_t *caps,
 			uint32_t db_id, struct recdb_context *recdb)
 {
 	struct tevent_req *req, *subreq;
@@ -333,6 +334,7 @@ static struct tevent_req *collect_highseqnum_db_send(
 	state->client = client;
 	state->pnn_list = pnn_list;
 	state->count = count;
+	state->caps = caps;
 	state->db_id = db_id;
 	state->recdb = recdb;
 
@@ -469,6 +471,7 @@ struct collect_all_db_state {
 	struct ctdb_client_context *client;
 	uint32_t *pnn_list;
 	int count;
+	uint32_t *caps;
 	uint32_t db_id;
 	struct recdb_context *recdb;
 	struct ctdb_pulldb pulldb;
@@ -481,7 +484,7 @@ static struct tevent_req *collect_all_db_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct ctdb_client_context *client,
-			uint32_t *pnn_list, int count,
+			uint32_t *pnn_list, int count, uint32_t *caps,
 			uint32_t db_id, struct recdb_context *recdb)
 {
 	struct tevent_req *req, *subreq;
@@ -598,6 +601,7 @@ struct recover_db_state {
 	struct ctdb_tunable_list *tun_list;
 	uint32_t *pnn_list;
 	int count;
+	uint32_t *caps;
 	uint32_t db_id;
 	bool persistent;
 
@@ -625,6 +629,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 					  struct ctdb_client_context *client,
 					  struct ctdb_tunable_list *tun_list,
 					  uint32_t *pnn_list, int count,
+					  uint32_t *caps,
 					  uint32_t generation,
 					  uint32_t db_id, bool persistent)
 {
@@ -642,6 +647,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 	state->tun_list = tun_list;
 	state->pnn_list = pnn_list;
 	state->count = count;
+	state->caps = caps;
 	state->db_id = db_id;
 	state->persistent = persistent;
 
@@ -826,12 +832,12 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 	if (state->persistent && state->tun_list->recover_pdb_by_seqnum != 0) {
 		subreq = collect_highseqnum_db_send(
 				state, state->ev, state->client,
-				state->pnn_list, state->count,
+				state->pnn_list, state->count, state->caps,
 				state->db_id, state->recdb);
 	} else {
 		subreq = collect_all_db_send(
 				state, state->ev, state->client,
-				state->pnn_list, state->count,
+				state->pnn_list, state->count, state->caps,
 				state->db_id, state->recdb);
 	}
 	if (tevent_req_nomem(subreq, req)) {
@@ -1070,6 +1076,7 @@ struct db_recovery_one_state {
 	struct ctdb_tunable_list *tun_list;
 	uint32_t *pnn_list;
 	int count;
+	uint32_t *caps;
 	uint32_t generation;
 	uint32_t db_id;
 	bool persistent;
@@ -1084,6 +1091,7 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 					   struct ctdb_dbid_map *dbmap,
 					   struct ctdb_tunable_list *tun_list,
 					   uint32_t *pnn_list, int count,
+					   uint32_t *caps,
 					   uint32_t generation)
 {
 	struct tevent_req *req, *subreq;
@@ -1119,14 +1127,15 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 		substate->tun_list = tun_list;
 		substate->pnn_list = pnn_list;
 		substate->count = count;
+		substate->caps = caps;
 		substate->generation = generation;
 		substate->db_id = dbmap->dbs[i].db_id;
 		substate->persistent = dbmap->dbs[i].flags &
 				       CTDB_DB_FLAGS_PERSISTENT;
 
 		subreq = recover_db_send(state, ev, client, tun_list,
-					 pnn_list, count, generation,
-					 substate->db_id,
+					 pnn_list, count, caps,
+					 generation, substate->db_id,
 					 substate->persistent);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -1161,6 +1170,7 @@ static void db_recovery_one_done(struct tevent_req *subreq)
 		subreq = recover_db_send(state, state->ev, substate->client,
 					 substate->tun_list,
 					 substate->pnn_list, substate->count,
+					 substate->caps,
 					 substate->generation, substate->db_id,
 					 substate->persistent);
 		if (tevent_req_nomem(subreq, req)) {
@@ -1678,7 +1688,7 @@ static void recovery_vnnmap_update_done(struct tevent_req *subreq)
 	subreq = db_recovery_send(state, state->ev, state->client,
 				  state->dbmap, state->tun_list,
 				  state->pnn_list, state->count,
-				  state->vnnmap->generation);
+				  state->caps, state->vnnmap->generation);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
