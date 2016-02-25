@@ -1031,11 +1031,8 @@ struct tevent_req *netlogon_creds_cli_auth_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	status = dbwrap_delete(state->context->db.ctx,
-			       state->context->db.key_data);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		status = NT_STATUS_OK;
-	}
+	status = dbwrap_purge(state->context->db.ctx,
+			      state->context->db.key_data);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1065,11 +1062,8 @@ static void netlogon_creds_cli_auth_locked(struct tevent_req *subreq)
 	}
 	state->locked_state->is_glocked = true;
 
-	status = dbwrap_delete(state->context->db.ctx,
-			       state->context->db.key_data);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		status = NT_STATUS_OK;
-	}
+	status = dbwrap_purge(state->context->db.ctx,
+			      state->context->db.key_data);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
