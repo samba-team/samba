@@ -531,7 +531,7 @@ static NTSTATUS btrfs_snap_create(struct vfs_handle_struct *handle,
 	ioctl_arg.fd = src_fd;
 	ioctl_arg.transid = 0;
 	ioctl_arg.flags = (rw == false) ? BTRFS_SUBVOL_RDONLY : 0;
-	memset(ioctl_arg.unused, 0, ARRAY_SIZE(ioctl_arg.unused));
+	memset(ioctl_arg.unused, 0, sizeof(ioctl_arg.unused));
 	len = strlcpy(ioctl_arg.name, dest_subvolume,
 		      ARRAY_SIZE(ioctl_arg.name));
 	if (len >= ARRAY_SIZE(ioctl_arg.name)) {
