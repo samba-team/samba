@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include "../pthreadpool/pthreadpool.h"
+#include "lib/util/time.h"
 
 struct asys_pwrite_args {
 	int fildes;
@@ -52,6 +53,8 @@ struct asys_job {
 	int err;
 	char busy;
 	char canceled;
+	struct timespec start_time;
+	struct timespec end_time;
 };
 
 struct asys_context {
@@ -189,7 +192,10 @@ static void asys_pwrite_do(void *private_data)
 	struct asys_job *job = (struct asys_job *)private_data;
 	struct asys_pwrite_args *args = &job->args.pwrite_args;
 
+	clock_gettime_mono(&job->start_time);
 	job->ret = pwrite(args->fildes, args->buf, args->nbyte, args->offset);
+	clock_gettime_mono(&job->end_time);
+
 	if (job->ret == -1) {
 		job->err = errno;
 	}
@@ -231,7 +237,10 @@ static void asys_pread_do(void *private_data)
 	struct asys_job *job = (struct asys_job *)private_data;
 	struct asys_pread_args *args = &job->args.pread_args;
 
+	clock_gettime_mono(&job->start_time);
 	job->ret = pread(args->fildes, args->buf, args->nbyte, args->offset);
+	clock_gettime_mono(&job->end_time);
+
 	if (job->ret == -1) {
 		job->err = errno;
 	}
@@ -269,7 +278,10 @@ static void asys_fsync_do(void *private_data)
 	struct asys_job *job = (struct asys_job *)private_data;
 	struct asys_fsync_args *args = &job->args.fsync_args;
 
+	clock_gettime_mono(&job->start_time);
 	job->ret = fsync(args->fildes);
+	clock_gettime_mono(&job->end_time);
+
 	if (job->ret == -1) {
 		job->err = errno;
 	}
@@ -320,6 +332,7 @@ int asys_results(struct asys_context *ctx, struct asys_result *results,
 			result->err = job->err;
 		}
 		result->private_data = job->private_data;
+		result->duration = nsec_time_diff(&job->end_time, &job->start_time);
 
 		job->busy = 0;
 	}

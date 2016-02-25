@@ -2,7 +2,7 @@
 
 bld.SAMBA3_SUBSYSTEM('LIBASYS',
 		     source='asys.c',
-		     deps='PTHREADPOOL')
+		     deps='PTHREADPOOL samba-util')
 
 bld.SAMBA3_BINARY('asystest',
 		  source='tests.c',

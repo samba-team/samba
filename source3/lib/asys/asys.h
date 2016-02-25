@@ -108,6 +108,7 @@ struct asys_result {
 	ssize_t ret;
 	int err;
 	void *private_data;
+	uint64_t duration;	/* nanoseconds */
 };
 
 /**
