@@ -412,7 +412,8 @@ static NTSTATUS dbwrap_delete_action(struct db_context * db, void *private_data)
 
 	status = dbwrap_record_delete(rec);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("delete_rec returned %s\n", nt_errstr(status)));
+		DBG_INFO("dbwrap_record_delete returned %s\n",
+			 nt_errstr(status));
 	}
 
 	talloc_free(rec);
