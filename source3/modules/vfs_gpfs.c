@@ -585,9 +585,10 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
-	const char *name,
-	uint32_t security_info,
-	TALLOC_CTX *mem_ctx, struct security_descriptor **ppdesc)
+				   const struct smb_filename *smb_fname,
+				   uint32_t security_info,
+				   TALLOC_CTX *mem_ctx,
+				   struct security_descriptor **ppdesc)
 {
 	struct SMB4ACL_T *pacl = NULL;
 	int	result;
@@ -602,25 +603,27 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 				return NT_STATUS_INTERNAL_ERROR);
 
 	if (!config->acl) {
-		status = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info,
+		status = SMB_VFS_NEXT_GET_NT_ACL(handle, smb_fname,
+						 security_info,
 						 mem_ctx, ppdesc);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	result = gpfs_get_nfs4_acl(frame, name, &pacl);
+	result = gpfs_get_nfs4_acl(frame, smb_fname->base_name, &pacl);
 
 	if (result == 0) {
-		status = smb_get_nt_acl_nfs4(handle->conn, name, security_info,
-					   mem_ctx, ppdesc, pacl);
+		status = smb_get_nt_acl_nfs4(handle->conn, smb_fname->base_name,
+					     security_info, mem_ctx, ppdesc,
+					     pacl);
 		TALLOC_FREE(frame);
 		return status;
 	}
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		status =  posix_get_nt_acl(handle->conn, name, security_info,
-					   mem_ctx, ppdesc);
+		status = posix_get_nt_acl(handle->conn, smb_fname->base_name,
+					  security_info, mem_ctx, ppdesc);
 		TALLOC_FREE(frame);
 		return status;
 	}
