@@ -571,22 +571,6 @@ static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
 				    const struct smb2_create_blobs *in_context_blobs,
 				    struct smb2_create_blobs *out_context_blobs)
 {
-	struct smb2_create_blob *svhdx = NULL;
-
-	/*
-	 * It might be empty ... and smb2_create_blob_find does not handle that
-	 */
-	if (in_context_blobs) {
-		svhdx = smb2_create_blob_find(in_context_blobs,
-					      SVHDX_OPEN_DEVICE_CONTEXT);
-	}
-
-	if (svhdx != NULL) {
-		/* SharedVHD is not yet supported */
-		DEBUG(10, ("Shared VHD not yet supported, INVALID_DEVICE_REQUEST\n"));
-		return NT_STATUS_INVALID_DEVICE_REQUEST;
-	}
-
 	return create_file_default(handle->conn, req, root_dir_fid, smb_fname,
 				   access_mask, share_access,
 				   create_disposition, create_options,
