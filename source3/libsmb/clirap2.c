@@ -331,7 +331,7 @@ int cli_NetGroupAdd(struct cli_state *cli, struct rap_group_info_1 *grinfo)
 
 	if (cli_api(cli,
 	      param, sizeof(param), 1024, /* Param, length, maxlen */
-	      data, soffset, sizeof(data), /* data, length, maxlen */
+	      data, soffset, data_size, /* data, length, maxlen */
 	      &rparam, &rprcnt,   /* return params, length */
 	      &rdata, &rdrcnt))   /* return data, length */
 	{
