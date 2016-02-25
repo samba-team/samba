@@ -66,14 +66,10 @@ _PUBLIC_ const char *tmpdir(void)
 **/
 int create_unlink_tmp(const char *dir)
 {
-	size_t len = strlen(dir);
+	size_t len = strlen(dir ? dir : (dir = tmpdir()));
 	char fname[len+25];
 	int fd;
 	mode_t mask;
-
-	if (!dir) {
-		dir = tmpdir();
-	}
 
 	len = snprintf(fname, sizeof(fname), "%s/listenerlock_XXXXXX", dir);
 	if (len >= sizeof(fname)) {
