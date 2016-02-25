@@ -289,7 +289,7 @@ static void *_idr_find(struct idr_context *idp, int id)
 	 * present.  If so, tain't one of ours!
 	 */
 	if (n + IDR_BITS < 31 &&
-	    ((id & ~(~0 << MAX_ID_SHIFT)) >> (n + IDR_BITS))) {
+	    ((id & ~(~0U << MAX_ID_SHIFT)) >> (n + IDR_BITS))) {
 		return NULL;
 	}
 
