@@ -244,7 +244,7 @@ static NET_API_STATUS test_netusermodals(struct libnetapi_ctx *ctx,
 		return status;
 	}
 
-	if (memcmp(u0, _u0, sizeof(u0) != 0)) {
+	if (memcmp(u0, _u0, sizeof(*u0)) != 0) {
 		printf("USER_MODALS_INFO_0 struct has changed!!!!\n");
 		return -1;
 	}
