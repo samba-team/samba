@@ -97,23 +97,21 @@ daemons_start_1 ()
     local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
     local public_addresses_mine="${TEST_VAR_DIR}/public_addresses.${pnn}"
     local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
+    local public_addresses
 
     local no_public_ips=-1
     [ -r $no_public_addresses ] && read no_public_ips <$no_public_addresses
 
     if  [ "$no_public_ips" = $pnn ] ; then
-	echo "Node $no_public_ips will have no public IPs."
+	    echo "Node $no_public_ips will have no public IPs."
+	    public_addresses="/dev/null"
+    else
+	    cp "$public_addresses_all" "$public_addresses_mine"
+	    public_addresses="$public_addresses_mine"
     fi
 
     local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
-    local ctdb_options="--sloppy-start --reclock=${TEST_VAR_DIR}/rec.lock --nlist $CTDB_NODES --nopublicipcheck --listen=${node_ip} --event-script-dir=${TEST_VAR_DIR}/events.d --logging=file:${TEST_VAR_DIR}/daemon.${pnn}.log -d 3 --dbdir=${TEST_VAR_DIR}/test.db --dbdir-persistent=${TEST_VAR_DIR}/test.db/persistent --dbdir-state=${TEST_VAR_DIR}/test.db/state --nosetsched"
-
-    if [ $pnn -eq $no_public_ips ] ; then
-	ctdb_options="$ctdb_options --public-addresses=/dev/null"
-    else
-	cp "$public_addresses_all" "$public_addresses_mine"
-	ctdb_options="$ctdb_options --public-addresses=$public_addresses_mine"
-    fi
+    local ctdb_options="--sloppy-start --reclock=${TEST_VAR_DIR}/rec.lock --nlist $CTDB_NODES --nopublicipcheck --listen=${node_ip} --event-script-dir=${TEST_VAR_DIR}/events.d --logging=file:${TEST_VAR_DIR}/daemon.${pnn}.log -d 3 --dbdir=${TEST_VAR_DIR}/test.db --dbdir-persistent=${TEST_VAR_DIR}/test.db/persistent --dbdir-state=${TEST_VAR_DIR}/test.db/state --nosetsched --public-addresses=${public_addresses}"
 
     # We'll use "pkill -f" to kill the daemons with
     # "--socket=.* --nlist .* --nopublicipcheck" as context.
