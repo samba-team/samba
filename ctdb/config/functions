@@ -76,7 +76,7 @@ _loadconfig() {
     fi
 
     if [ "$1" = "ctdb" ] ; then
-	_config="${CTDB_BASE}/ctdbd.conf"
+	_config="${CTDBD_CONF:-${CTDB_BASE}/ctdbd.conf}"
 	if [ -r "$_config" ] ; then
 	    . "$_config"
 	fi
