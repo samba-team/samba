@@ -419,7 +419,10 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 
 	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+		DEBUG(3,("samr: failed to get session key: %s "
+			 "=> NT_STATUS_WRONG_PASSWORD\n",
+			nt_errstr(nt_status)));
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	arcfour_crypt_blob(pwbuf->data, 516, &session_key);
@@ -458,7 +461,10 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 
 	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+		DEBUG(3,("samr: failed to get session key: %s "
+			 "=> NT_STATUS_WRONG_PASSWORD\n",
+			nt_errstr(nt_status)));
+		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	co_session_key = data_blob_talloc(mem_ctx, NULL, 16);
@@ -500,11 +506,26 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 				   const uint8_t *nt_pwd_hash)
 {
 	struct samr_Password *d_lm_pwd_hash = NULL, *d_nt_pwd_hash = NULL;
+	uint8_t random_session_key[16] = { 0, };
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB in, out;
 	NTSTATUS nt_status = NT_STATUS_OK;
 
 	nt_status = dcesrv_fetch_session_key(dce_call->conn, &session_key);
+	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_USER_SESSION_KEY)) {
+		DEBUG(3,("samr: failed to get session key: %s "
+			 "=> use a random session key\n",
+			 nt_errstr(nt_status)));
+
+		/*
+		 * Windows just uses a random key
+		 */
+		generate_random_buffer(random_session_key,
+				       sizeof(random_session_key));
+		session_key = data_blob_const(random_session_key,
+					      sizeof(random_session_key));
+		nt_status = NT_STATUS_OK;
+	}
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
