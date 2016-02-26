@@ -1,10 +1,34 @@
 #!/usr/bin/env python
 
 bld.SAMBA_MODULE('TORTURE_SMB2',
-	source='''connect.c scan.c util.c getinfo.c setinfo.c lock.c notify.c
-	smb2.c durable_open.c durable_v2_open.c oplock.c dir.c lease.c create.c
-	acls.c read.c compound.c streams.c ioctl.c rename.c maxfid.c
-	session.c delete-on-close.c replay.c notify_disabled.c dosmode.c''',
+	source='''
+        acls.c
+        compound.c
+        connect.c
+        create.c
+        delete-on-close.c
+        dir.c
+        dosmode.c
+        durable_open.c
+        durable_v2_open.c
+        getinfo.c
+        ioctl.c
+        lease.c
+        lock.c
+        maxfid.c
+        notify.c
+        notify_disabled.c
+        oplock.c
+        read.c
+        rename.c
+        replay.c
+        scan.c
+        session.c
+        setinfo.c
+        smb2.c
+        streams.c
+        util.c
+        ''',
 	subsystem='smbtorture',
 	deps='LIBCLI_SMB2 POPT_CREDENTIALS torture NDR_IOCTL',
 	internal_module=True,
