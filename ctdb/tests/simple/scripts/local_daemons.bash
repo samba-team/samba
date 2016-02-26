@@ -9,10 +9,11 @@ done
 # Use in-tree binaries if running against local daemons.
 # Otherwise CTDB need to be installed on all nodes.
 if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
-    PATH="${ctdb_dir}/bin:${PATH}"
-    export CTDB_LOCK_HELPER="${ctdb_dir}/bin/ctdb_lock_helper"
-    export CTDB_EVENT_HELPER="${ctdb_dir}/bin/ctdb_event_helper"
-    export CTDB_RECOVERY_HELPER="${ctdb_dir}/bin/ctdb_recovery_helper"
+	# ctdbd_wrapper is in config/ directory
+	PATH="${ctdb_dir}/bin:${ctdb_dir}/config:${PATH}"
+	export CTDB_LOCK_HELPER="${ctdb_dir}/bin/ctdb_lock_helper"
+	export CTDB_EVENT_HELPER="${ctdb_dir}/bin/ctdb_event_helper"
+	export CTDB_RECOVERY_HELPER="${ctdb_dir}/bin/ctdb_recovery_helper"
 fi
 
 export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
@@ -27,7 +28,7 @@ daemons_stop ()
     echo "Sleeping for a while..."
     sleep_for 1
 
-    local pat="ctdbd --socket=${TEST_VAR_DIR}/.* --nlist .* --nopublicipcheck"
+    local pat="ctdbd --sloppy-start --nopublicipcheck --nosetsched"
     if pgrep -f "$pat" >/dev/null ; then
 	echo "Killing remaining daemons..."
 	pkill -f "$pat"
@@ -111,11 +112,28 @@ daemons_start_1 ()
     fi
 
     local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
-    local ctdb_options="--sloppy-start --reclock=${TEST_VAR_DIR}/rec.lock --nlist $CTDB_NODES --nopublicipcheck --listen=${node_ip} --event-script-dir=${TEST_VAR_DIR}/events.d --logging=file:${TEST_VAR_DIR}/daemon.${pnn}.log -d 3 --dbdir=${TEST_VAR_DIR}/test.db --dbdir-persistent=${TEST_VAR_DIR}/test.db/persistent --dbdir-state=${TEST_VAR_DIR}/test.db/state --nosetsched --public-addresses=${public_addresses}"
+
+    local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
+    local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+    cat >"$conf" <<EOF
+CTDB_RECOVERY_LOCK="${TEST_VAR_DIR}/rec.lock"
+CTDB_NODES="$CTDB_NODES"
+CTDB_NODE_ADDRESS="${node_ip}"
+CTDB_EVENT_SCRIPT_DIR="${TEST_VAR_DIR}/events.d"
+CTDB_LOGGING="file:${TEST_VAR_DIR}/daemon.${pnn}.log"
+CTDB_DEBUGLEVEL=3
+CTDB_DBDIR="${TEST_VAR_DIR}/test.db"
+CTDB_DBDIR_PERSISTENT="${TEST_VAR_DIR}/test.db/persistent"
+CTDB_DBDIR_STATE="${TEST_VAR_DIR}/test.db/state"
+CTDB_PUBLIC_ADDRESSES="${public_addresses}"
+CTDB_SOCKET="${TEST_VAR_DIR}/sock.$pnn"
+EOF
 
     # We'll use "pkill -f" to kill the daemons with
-    # "--socket=.* --nlist .* --nopublicipcheck" as context.
-    $VALGRIND ctdbd --socket="${TEST_VAR_DIR}/sock.$pnn" $ctdb_options "$@" ||return 1
+    # "ctdbd --sloppy-start --nopublicipcheck --nosetsched" as context.
+    CTDBD="ctdbd --sloppy-start --nopublicipcheck --nosetsched" \
+	 CTDBD_CONF="$conf" \
+	 ctdbd_wrapper "$pidfile" start
 }
 
 daemons_start ()
