@@ -893,6 +893,7 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 		SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 		state->ret = result->ret;
 		state->vfs_aio_state.error = result->err;
+		state->vfs_aio_state.duration = result->duration;
 		tevent_req_defer_callback(req, ev);
 		tevent_req_done(req);
 	}
