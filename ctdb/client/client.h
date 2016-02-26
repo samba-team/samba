@@ -78,6 +78,16 @@ struct tevent_req *ctdb_client_message_send(TALLOC_CTX *mem_ctx,
 
 bool ctdb_client_message_recv(struct tevent_req *req, int *perr);
 
+struct tevent_req *ctdb_client_message_multi_send(
+				TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct ctdb_client_context *client,
+				uint32_t *pnn_list, int count,
+				struct ctdb_req_message *message);
+
+bool ctdb_client_message_multi_recv(struct tevent_req *req, int *perr,
+				    TALLOC_CTX *mem_ctx, int **perr_list);
+
 int ctdb_client_message(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			uint32_t destnode, struct ctdb_req_message *message);
