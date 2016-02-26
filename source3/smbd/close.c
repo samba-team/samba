@@ -800,7 +800,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
-	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname->base_name, NULL, 0);
+	dir_hnd = OpenDir(talloc_tos(), conn, smb_dname, NULL, 0);
 	if(dir_hnd == NULL)
 		return False;
 
@@ -916,7 +916,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		char *talloced = NULL;
 		long dirpos = 0;
 		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
-						  smb_dname->base_name, NULL,
+						  smb_dname, NULL,
 						  0);
 
 		if(dir_hnd == NULL) {

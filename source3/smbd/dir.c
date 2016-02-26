@@ -163,16 +163,33 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 	for(dptr = sconn->searches.dirptrs; dptr; dptr = dptr->next) {
 		if(dptr->dnum == key) {
 			if (!forclose && !dptr->dir_hnd) {
+				struct smb_filename *smb_dname = NULL;
+
 				if (sconn->searches.dirhandles_open >= MAX_OPEN_DIRECTORIES)
 					dptr_idleoldest(sconn);
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
-				if (!(dptr->dir_hnd = OpenDir(
-					      NULL, dptr->conn, dptr->path,
-					      dptr->wcard, dptr->attr))) {
-					DEBUG(4,("dptr_get: Failed to open %s (%s)\n",dptr->path,
-						strerror(errno)));
+
+				smb_dname = synthetic_smb_fname(talloc_tos(),
+					dptr->path,
+					NULL,
+					NULL);
+				if (smb_dname == NULL) {
 					return NULL;
 				}
+
+				if (!(dptr->dir_hnd = OpenDir(NULL,
+							dptr->conn,
+							smb_dname,
+							dptr->wcard,
+							dptr->attr))) {
+					DEBUG(4,("dptr_get: Failed to "
+						"open %s (%s)\n",
+						dptr->path,
+						strerror(errno)));
+					TALLOC_FREE(smb_dname);
+					return NULL;
+				}
+				TALLOC_FREE(smb_dname);
 			}
 			DLIST_PROMOTE(sconn->searches.dirptrs,dptr);
 			return dptr;
@@ -424,7 +441,7 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 		goto out;
 	}
 
-	dir_hnd = OpenDir(NULL, conn, ".", wcard, attr);
+	dir_hnd = OpenDir(NULL, conn, smb_fname_cwd, wcard, attr);
 
   out:
 
@@ -510,7 +527,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 						wcard,
 						attr);
 		} else {
-			dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
+			dir_hnd = OpenDir(NULL, conn, smb_dname, wcard, attr);
 		}
 	}
 
@@ -1589,7 +1606,7 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 ********************************************************************/
 
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
-			const char *name,
+			const struct smb_filename *smb_dname,
 			const char *mask,
 			uint32_t attr)
 {
@@ -1603,10 +1620,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	dirp->conn = conn;
 	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
-	dirp->dir_smb_fname = synthetic_smb_fname(dirp,
-					name,
-					NULL,
-					NULL);
+	dirp->dir_smb_fname = cp_smb_filename(dirp, smb_dname);
 	if (!dirp->dir_smb_fname) {
 		errno = ENOMEM;
 		goto fail;

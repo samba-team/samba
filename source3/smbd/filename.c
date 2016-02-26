@@ -1156,6 +1156,7 @@ static int get_real_filename_full_scan(connection_struct *conn,
 	char *talloced = NULL;
 	char *unmangled_name = NULL;
 	long curpos;
+	struct smb_filename *smb_fname = NULL;
 
 	/* handle null paths */
 	if ((path == NULL) || (*path == 0)) {
@@ -1196,12 +1197,24 @@ static int get_real_filename_full_scan(connection_struct *conn,
 		}
 	}
 
-	/* open the directory */
-	if (!(cur_dir = OpenDir(talloc_tos(), conn, path, NULL, 0))) {
-		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					path,
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
 		TALLOC_FREE(unmangled_name);
 		return -1;
 	}
+
+	/* open the directory */
+	if (!(cur_dir = OpenDir(talloc_tos(), conn, smb_fname, NULL, 0))) {
+		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
+		TALLOC_FREE(unmangled_name);
+		TALLOC_FREE(smb_fname);
+		return -1;
+	}
+
+	TALLOC_FREE(smb_fname);
 
 	/* now scan for matching names */
 	curpos = 0;

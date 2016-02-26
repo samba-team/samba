@@ -2977,6 +2977,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	char *fname_mask = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
+	struct smb_filename *smb_fname_dir = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* Split up the directory from the filename/mask. */
@@ -3071,7 +3072,16 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			goto out;
 		}
 
-		dir_hnd = OpenDir(talloc_tos(), conn, fname_dir, fname_mask,
+		smb_fname_dir = synthetic_smb_fname(talloc_tos(),
+					fname_dir,
+					NULL,
+					NULL);
+		if (smb_fname_dir == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		dir_hnd = OpenDir(talloc_tos(), conn, smb_fname_dir, fname_mask,
 				  dirtype);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
@@ -3161,6 +3171,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	}
 
  out:
+	TALLOC_FREE(smb_fname_dir);
 	TALLOC_FREE(fname_dir);
 	TALLOC_FREE(fname_mask);
 	return status;
@@ -6847,6 +6858,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			uint32_t access_mask)
 {
 	char *fname_src_dir = NULL;
+	struct smb_filename *smb_fname_src_dir = NULL;
 	char *fname_src_mask = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
@@ -7019,7 +7031,16 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	dir_hnd = OpenDir(talloc_tos(), conn, fname_src_dir, fname_src_mask,
+	smb_fname_src_dir = synthetic_smb_fname(talloc_tos(),
+				fname_src_dir,
+				NULL,
+				NULL);
+	if (smb_fname_src_dir == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	dir_hnd = OpenDir(talloc_tos(), conn, smb_fname_src_dir, fname_src_mask,
 			  attrs);
 	if (dir_hnd == NULL) {
 		status = map_nt_error_from_unix(errno);
@@ -7175,6 +7196,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 
  out:
 	TALLOC_FREE(talloced);
+	TALLOC_FREE(smb_fname_src_dir);
 	TALLOC_FREE(fname_src_dir);
 	TALLOC_FREE(fname_src_mask);
 	return status;
@@ -7498,6 +7520,7 @@ void reply_copy(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	struct smb_filename *smb_fname_src = NULL;
+	struct smb_filename *smb_fname_src_dir = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
 	char *fname_src = NULL;
 	char *fname_dst = NULL;
@@ -7723,7 +7746,20 @@ void reply_copy(struct smb_request *req)
 			goto out;
 		}
 
-		dir_hnd = OpenDir(ctx, conn, fname_src_dir, fname_src_mask, 0);
+		smb_fname_src_dir = synthetic_smb_fname(talloc_tos(),
+					fname_src_dir,
+					NULL,
+					NULL);
+		if (smb_fname_src_dir == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+
+		dir_hnd = OpenDir(ctx,
+				conn,
+				smb_fname_src_dir,
+				fname_src_mask,
+				0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
@@ -7833,6 +7869,7 @@ void reply_copy(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv0,count);
  out:
 	TALLOC_FREE(smb_fname_src);
+	TALLOC_FREE(smb_fname_src_dir);
 	TALLOC_FREE(smb_fname_dst);
 	TALLOC_FREE(fname_src);
 	TALLOC_FREE(fname_dst);
