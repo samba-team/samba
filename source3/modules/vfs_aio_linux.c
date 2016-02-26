@@ -140,6 +140,7 @@ struct aio_linux_state {
 	struct iocb event_iocb;
 	ssize_t ret;
 	struct vfs_aio_state vfs_aio_state;
+	struct timespec start;
 };
 
 static struct tevent_req *aio_linux_pread_send(
@@ -167,6 +168,7 @@ static struct tevent_req *aio_linux_pread_send(
 
 	piocb = &state->event_iocb;
 
+	clock_gettime_mono(&state->start);
 	ret = io_submit(io_ctx, 1, &piocb);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
@@ -203,6 +205,7 @@ static struct tevent_req *aio_linux_pwrite_send(
 
 	piocb = &state->event_iocb;
 
+	clock_gettime_mono(&state->start);
 	ret = io_submit(io_ctx, 1, &piocb);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
@@ -237,6 +240,7 @@ static struct tevent_req *aio_linux_fsync_send(
 
 	piocb = &state->event_iocb;
 
+	clock_gettime_mono(&state->start);
 	ret = io_submit(io_ctx, 1, &piocb);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
@@ -252,9 +256,12 @@ static void aio_linux_done(struct tevent_context *event_ctx,
 			   uint16_t flags, void *private_data)
 {
 	uint64_t num_events = 0;
+	struct timespec end;
 
 	DEBUG(10, ("aio_linux_done called with flags=%d\n",
 		   (int)flags));
+
+	clock_gettime_mono(&end);
 
 	/* Read the number of events available. */
 	if (sys_read(event_fd, &num_events, sizeof(num_events)) !=
@@ -293,6 +300,7 @@ static void aio_linux_done(struct tevent_context *event_ctx,
 		} else {
 			state->ret = finished.res;
 		}
+		state->vfs_aio_state.duration = nsec_time_diff(&end, &state->start);
 		tevent_req_done(req);
 		num_events -= 1;
 	}
