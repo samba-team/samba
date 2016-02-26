@@ -65,6 +65,20 @@ static ssize_t sys_write(int fd, const void *buf, size_t count)
         return ret;
 }
 
+static bool generic_recv(struct tevent_req *req, int *perr)
+{
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * Recovery database functions
  */
@@ -443,16 +457,7 @@ static void collect_highseqnum_db_pulldb_done(struct tevent_req *subreq)
 
 static bool collect_highseqnum_db_recv(struct tevent_req *req, int *perr)
 {
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		if (perr != NULL) {
-			*perr = err;
-		}
-		return false;
-	}
-
-	return true;
+	return generic_recv(req, perr);
 }
 
 /*
@@ -570,16 +575,7 @@ static void collect_all_db_pulldb_done(struct tevent_req *subreq)
 
 static bool collect_all_db_recv(struct tevent_req *req, int *perr)
 {
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		if (perr != NULL) {
-			*perr = err;
-		}
-		return false;
-	}
-
-	return true;
+	return generic_recv(req, perr);
 }
 
 
@@ -1050,13 +1046,7 @@ static void recover_db_thaw_done(struct tevent_req *subreq)
 
 static bool recover_db_recv(struct tevent_req *req)
 {
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		return false;
-	}
-
-	return true;
+	return generic_recv(req, NULL);
 }
 
 
@@ -1808,14 +1798,7 @@ static void recovery_end_recovery_done(struct tevent_req *subreq)
 
 static void recovery_recv(struct tevent_req *req, int *perr)
 {
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		if (perr != NULL) {
-			*perr = err;
-		}
-		return;
-	}
+	generic_recv(req, perr);
 }
 
 static void usage(const char *progname)
