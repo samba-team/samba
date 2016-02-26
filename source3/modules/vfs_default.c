@@ -745,7 +745,7 @@ struct vfswrap_asys_state {
 	struct asys_context *asys_ctx;
 	struct tevent_req *req;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 	SMBPROFILE_BASIC_ASYNC_STATE(profile_basic);
 	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
 };
@@ -892,33 +892,35 @@ static void vfswrap_asys_finished(struct tevent_context *ev,
 		SMBPROFILE_BASIC_ASYNC_END(state->profile_basic);
 		SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 		state->ret = result->ret;
-		state->err = result->err;
+		state->vfs_aio_state.error = result->err;
 		tevent_req_defer_callback(req, ev);
 		tevent_req_done(req);
 	}
 }
 
-static ssize_t vfswrap_asys_ssize_t_recv(struct tevent_req *req, int *err)
+static ssize_t vfswrap_asys_ssize_t_recv(struct tevent_req *req,
+					 struct vfs_aio_state *vfs_aio_state)
 {
 	struct vfswrap_asys_state *state = tevent_req_data(
 		req, struct vfswrap_asys_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
-static int vfswrap_asys_int_recv(struct tevent_req *req, int *err)
+static int vfswrap_asys_int_recv(struct tevent_req *req,
+				 struct vfs_aio_state *vfs_aio_state)
 {
 	struct vfswrap_asys_state *state = tevent_req_data(
 		req, struct vfswrap_asys_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

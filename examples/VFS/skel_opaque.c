@@ -243,9 +243,10 @@ static struct tevent_req *skel_pread_send(struct vfs_handle_struct *handle,
 	return NULL;
 }
 
-static ssize_t skel_pread_recv(struct tevent_req *req, int *err)
+static ssize_t skel_pread_recv(struct tevent_req *req,
+			       struct vfs_aio_state *vfs_aio_state)
 {
-	*err = ENOSYS;
+	vfs_aio_state->error = ENOSYS;
 	return -1;
 }
 
@@ -273,9 +274,10 @@ static struct tevent_req *skel_pwrite_send(struct vfs_handle_struct *handle,
 	return NULL;
 }
 
-static ssize_t skel_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t skel_pwrite_recv(struct tevent_req *req,
+				struct vfs_aio_state *vfs_aio_state)
 {
-	*err = ENOSYS;
+	vfs_aio_state->error = ENOSYS;
 	return -1;
 }
 
@@ -323,9 +325,10 @@ static struct tevent_req *skel_fsync_send(struct vfs_handle_struct *handle,
 	return NULL;
 }
 
-static int skel_fsync_recv(struct tevent_req *req, int *err)
+static int skel_fsync_recv(struct tevent_req *req,
+			   struct vfs_aio_state *vfs_aio_state)
 {
-	*err = ENOSYS;
+	vfs_aio_state->error = ENOSYS;
 	return -1;
 }
 

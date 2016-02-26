@@ -498,9 +498,9 @@ struct glusterfs_aio_wrapper {
 
 struct glusterfs_aio_state {
 	ssize_t ret;
-	int err;
 	struct tevent_req *req;
 	bool cancelled;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static int aio_wrapper_destructor(struct glusterfs_aio_wrapper *wrap)
@@ -524,10 +524,9 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 
 	if (ret < 0) {
 		state->ret = -1;
-		state->err = errno;
+		state->vfs_aio_state.error = errno;
 	} else {
 		state->ret = ret;
-		state->err = 0;
 	}
 
 	/*
@@ -648,7 +647,7 @@ static struct glusterfs_aio_state *aio_state_create(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	state = talloc(NULL, struct glusterfs_aio_state);
+	state = talloc_zero(NULL, struct glusterfs_aio_state);
 
 	if (state == NULL) {
 		TALLOC_FREE(req);
@@ -657,8 +656,6 @@ static struct glusterfs_aio_state *aio_state_create(TALLOC_CTX *mem_ctx)
 
 	talloc_set_destructor(wrapper, aio_wrapper_destructor);
 	state->cancelled = false;
-	state->ret = 0;
-	state->err = 0;
 	state->req = req;
 
 	wrapper->state = state;
@@ -736,7 +733,8 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 	return req;
 }
 
-static ssize_t vfs_gluster_recv(struct tevent_req *req, int *err)
+static ssize_t vfs_gluster_recv(struct tevent_req *req,
+				struct vfs_aio_state *vfs_aio_state)
 {
 	struct glusterfs_aio_state *state = NULL;
 	struct glusterfs_aio_wrapper *wrapper = NULL;
@@ -754,13 +752,11 @@ static ssize_t vfs_gluster_recv(struct tevent_req *req, int *err)
 		return -1;
 	}
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	if (state->ret == -1) {
-		*err = state->err;
-	}
 
+	*vfs_aio_state = state->vfs_aio_state;
 	ret = state->ret;
 
 	/* Clean up the state, it is in a NULL context. */
@@ -850,12 +846,13 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 	return req;
 }
 
-static int vfs_gluster_fsync_recv(struct tevent_req *req, int *err)
+static int vfs_gluster_fsync_recv(struct tevent_req *req,
+				  struct vfs_aio_state *vfs_aio_state)
 {
 	/*
 	 * Use implicit conversion ssize_t->int
 	 */
-	return vfs_gluster_recv(req, err);
+	return vfs_gluster_recv(req, vfs_aio_state);
 }
 
 static int vfs_gluster_stat(struct vfs_handle_struct *handle,

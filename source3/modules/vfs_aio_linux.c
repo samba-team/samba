@@ -139,7 +139,7 @@ static bool init_aio_linux(struct vfs_handle_struct *handle)
 struct aio_linux_state {
 	struct iocb event_iocb;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static struct tevent_req *aio_linux_pread_send(
@@ -289,36 +289,35 @@ static void aio_linux_done(struct tevent_context *event_ctx,
 
 		if (finished.res < 0) {
 			state->ret = -1;
-			state->err = -finished.res;
+			state->vfs_aio_state.error = -finished.res;
 		} else {
 			state->ret = finished.res;
-			state->err = 0;
 		}
 		tevent_req_done(req);
 		num_events -= 1;
 	}
 }
 
-static ssize_t aio_linux_recv(struct tevent_req *req, int *err)
+static ssize_t aio_linux_recv(struct tevent_req *req,
+			      struct vfs_aio_state *vfs_aio_state)
 {
 	struct aio_linux_state *state = tevent_req_data(
 		req, struct aio_linux_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	if (state->ret == -1) {
-		*err = state->err;
-	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
-static int aio_linux_int_recv(struct tevent_req *req, int *err)
+static int aio_linux_int_recv(struct tevent_req *req,
+			      struct vfs_aio_state *vfs_aio_state)
 {
 	/*
 	 * Use implicit conversion ssize_t->int
 	 */
-	return aio_linux_recv(req, err);
+	return aio_linux_recv(req, vfs_aio_state);
 }
 
 static struct vfs_fn_pointers vfs_aio_linux_fns = {

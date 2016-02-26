@@ -274,13 +274,13 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	char *outbuf = (char *)aio_ex->outbuf.data;
 	char *data = smb_buf(outbuf) + 1 /* padding byte */;
 	ssize_t nread;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 
-	nread = SMB_VFS_PREAD_RECV(req, &err);
+	nread = SMB_VFS_PREAD_RECV(req, &vfs_aio_state);
 	TALLOC_FREE(req);
 
 	DEBUG(10, ("pread_recv returned %d, err = %s\n", (int)nread,
-		   (nread == -1) ? strerror(err) : "no error"));
+		   (nread == -1) ? strerror(vfs_aio_state.error) : "no error"));
 
 	if (fsp == NULL) {
 		DEBUG( 3, ("aio_pread_smb1_done: file closed whilst "
@@ -296,9 +296,9 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	if (nread < 0) {
 		DEBUG( 3, ("handle_aio_read_complete: file %s nread == %d. "
 			   "Error = %s\n", fsp_str_dbg(fsp), (int)nread,
-			   strerror(err)));
+			   strerror(vfs_aio_state.error)));
 
-		ERROR_NT(map_nt_error_from_unix(err));
+		ERROR_NT(map_nt_error_from_unix(vfs_aio_state.error));
 		outsize = srv_set_message(outbuf,0,0,true);
 	} else {
 		outsize = srv_set_message(outbuf, 12,
@@ -377,13 +377,13 @@ static void pwrite_fsync_write_done(struct tevent_req *subreq)
 	struct pwrite_fsync_state *state = tevent_req_data(
 		req, struct pwrite_fsync_state);
 	connection_struct *conn = state->fsp->conn;
-	int err;
 	bool do_sync;
+	struct vfs_aio_state vfs_aio_state;
 
-	state->nwritten = SMB_VFS_PWRITE_RECV(subreq, &err);
+	state->nwritten = SMB_VFS_PWRITE_RECV(subreq, &vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (state->nwritten == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, vfs_aio_state.error);
 		return;
 	}
 
@@ -405,12 +405,13 @@ static void pwrite_fsync_sync_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	int ret, err;
+	int ret;
+	struct vfs_aio_state vfs_aio_state;
 
-	ret = SMB_VFS_FSYNC_RECV(subreq, &err);
+	ret = SMB_VFS_FSYNC_RECV(subreq, &vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, vfs_aio_state.error);
 		return;
 	}
 	tevent_req_done(req);
@@ -775,13 +776,13 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 	files_struct *fsp = aio_ex->fsp;
 	NTSTATUS status;
 	ssize_t nread;
-	int err = 0;
+	struct vfs_aio_state vfs_aio_state = { 0 };
 
-	nread = SMB_VFS_PREAD_RECV(req, &err);
+	nread = SMB_VFS_PREAD_RECV(req, &vfs_aio_state);
 	TALLOC_FREE(req);
 
 	DEBUG(10, ("pread_recv returned %d, err = %s\n", (int)nread,
-		   (nread == -1) ? strerror(err) : "no error"));
+		   (nread == -1) ? strerror(vfs_aio_state.error) : "no error"));
 
 	if (fsp == NULL) {
 		DEBUG(3, ("%s: request cancelled (mid[%ju])\n",
@@ -797,7 +798,7 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 	/* Common error or success code processing for async or sync
 	   read returns. */
 
-	status = smb2_read_complete(subreq, nread, err);
+	status = smb2_read_complete(subreq, nread, vfs_aio_state.error);
 
 	if (nread > 0) {
 		fsp->fh->pos = aio_ex->offset + nread;
@@ -810,7 +811,7 @@ static void aio_pread_smb2_done(struct tevent_req *req)
 		   fsp_str_dbg(aio_ex->fsp),
 		   (double)aio_ex->offset,
 		   (unsigned int)nread,
-		   err, nt_errstr(status)));
+		   vfs_aio_state.error, nt_errstr(status)));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(subreq, status);

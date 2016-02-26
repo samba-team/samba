@@ -2317,8 +2317,8 @@ static ssize_t vfs_gpfs_pread(vfs_handle_struct *handle, files_struct *fsp,
 struct vfs_gpfs_pread_state {
 	struct files_struct *fsp;
 	ssize_t ret;
-	int err;
 	bool was_offline;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void vfs_gpfs_pread_done(struct tevent_req *subreq);
@@ -2355,21 +2355,22 @@ static void vfs_gpfs_pread_done(struct tevent_req *subreq)
 	struct vfs_gpfs_pread_state *state = tevent_req_data(
 		req, struct vfs_gpfs_pread_state);
 
-	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t vfs_gpfs_pread_recv(struct tevent_req *req, int *err)
+static ssize_t vfs_gpfs_pread_recv(struct tevent_req *req,
+				   struct vfs_aio_state *vfs_aio_state)
 {
 	struct vfs_gpfs_pread_state *state = tevent_req_data(
 		req, struct vfs_gpfs_pread_state);
 	struct files_struct *fsp = state->fsp;
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 
 	if ((state->ret != -1) && state->was_offline) {
 		DEBUG(10, ("sending notify\n"));
@@ -2403,8 +2404,8 @@ static ssize_t vfs_gpfs_pwrite(vfs_handle_struct *handle, files_struct *fsp,
 struct vfs_gpfs_pwrite_state {
 	struct files_struct *fsp;
 	ssize_t ret;
-	int err;
 	bool was_offline;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void vfs_gpfs_pwrite_done(struct tevent_req *subreq);
@@ -2442,21 +2443,22 @@ static void vfs_gpfs_pwrite_done(struct tevent_req *subreq)
 	struct vfs_gpfs_pwrite_state *state = tevent_req_data(
 		req, struct vfs_gpfs_pwrite_state);
 
-	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t vfs_gpfs_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t vfs_gpfs_pwrite_recv(struct tevent_req *req,
+				    struct vfs_aio_state *vfs_aio_state)
 {
 	struct vfs_gpfs_pwrite_state *state = tevent_req_data(
 		req, struct vfs_gpfs_pwrite_state);
 	struct files_struct *fsp = state->fsp;
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 
 	if ((state->ret != -1) && state->was_offline) {
 		DEBUG(10, ("sending notify\n"));

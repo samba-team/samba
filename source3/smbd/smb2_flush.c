@@ -190,14 +190,15 @@ static void smbd_smb2_flush_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	int ret, err;
+	int ret;
+	struct vfs_aio_state vfs_aio_state;
 
 	decrement_outstanding_aio_calls();
 
-	ret = SMB_VFS_FSYNC_RECV(subreq, &err);
+	ret = SMB_VFS_FSYNC_RECV(subreq, &vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, vfs_aio_state.error);
 		return;
 	}
 	tevent_req_done(req);

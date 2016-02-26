@@ -289,7 +289,7 @@ struct commit_pwrite_state {
 	struct vfs_handle_struct *handle;
 	struct files_struct *fsp;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void commit_pwrite_written(struct tevent_req *subreq);
@@ -328,7 +328,7 @@ static void commit_pwrite_written(struct tevent_req *subreq)
 		req, struct commit_pwrite_state);
 	int commit_ret;
 
-	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 
 	if (state->ret <= 0) {
@@ -350,15 +350,16 @@ static void commit_pwrite_written(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static ssize_t commit_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t commit_pwrite_recv(struct tevent_req *req,
+				  struct vfs_aio_state *vfs_aio_state)
 {
 	struct commit_pwrite_state *state =
 		tevent_req_data(req, struct commit_pwrite_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

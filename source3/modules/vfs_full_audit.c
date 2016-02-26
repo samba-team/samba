@@ -1023,7 +1023,7 @@ struct smb_full_audit_pread_state {
 	vfs_handle_struct *handle;
 	files_struct *fsp;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_full_audit_pread_done(struct tevent_req *subreq);
@@ -1066,17 +1066,18 @@ static void smb_full_audit_pread_done(struct tevent_req *subreq)
 	struct smb_full_audit_pread_state *state = tevent_req_data(
 		req, struct smb_full_audit_pread_state);
 
-	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t smb_full_audit_pread_recv(struct tevent_req *req, int *err)
+static ssize_t smb_full_audit_pread_recv(struct tevent_req *req,
+					 struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_full_audit_pread_state *state = tevent_req_data(
 		req, struct smb_full_audit_pread_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		do_log(SMB_VFS_OP_PREAD_RECV, false, state->handle, "%s",
 		       fsp_str_do_log(state->fsp));
 		return -1;
@@ -1085,7 +1086,7 @@ static ssize_t smb_full_audit_pread_recv(struct tevent_req *req, int *err)
 	do_log(SMB_VFS_OP_PREAD_RECV, (state->ret >= 0), state->handle, "%s",
 	       fsp_str_do_log(state->fsp));
 
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
@@ -1120,7 +1121,7 @@ struct smb_full_audit_pwrite_state {
 	vfs_handle_struct *handle;
 	files_struct *fsp;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_full_audit_pwrite_done(struct tevent_req *subreq);
@@ -1164,17 +1165,18 @@ static void smb_full_audit_pwrite_done(struct tevent_req *subreq)
 	struct smb_full_audit_pwrite_state *state = tevent_req_data(
 		req, struct smb_full_audit_pwrite_state);
 
-	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t smb_full_audit_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t smb_full_audit_pwrite_recv(struct tevent_req *req,
+					  struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_full_audit_pwrite_state *state = tevent_req_data(
 		req, struct smb_full_audit_pwrite_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		do_log(SMB_VFS_OP_PWRITE_RECV, false, state->handle, "%s",
 		       fsp_str_do_log(state->fsp));
 		return -1;
@@ -1183,7 +1185,7 @@ static ssize_t smb_full_audit_pwrite_recv(struct tevent_req *req, int *err)
 	do_log(SMB_VFS_OP_PWRITE_RECV, (state->ret >= 0), state->handle, "%s",
 	       fsp_str_do_log(state->fsp));
 
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
@@ -1261,7 +1263,7 @@ struct smb_full_audit_fsync_state {
 	vfs_handle_struct *handle;
 	files_struct *fsp;
 	int ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_full_audit_fsync_done(struct tevent_req *subreq);
@@ -1302,17 +1304,18 @@ static void smb_full_audit_fsync_done(struct tevent_req *subreq)
 	struct smb_full_audit_fsync_state *state = tevent_req_data(
 		req, struct smb_full_audit_fsync_state);
 
-	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static int smb_full_audit_fsync_recv(struct tevent_req *req, int *err)
+static int smb_full_audit_fsync_recv(struct tevent_req *req,
+				     struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_full_audit_fsync_state *state = tevent_req_data(
 		req, struct smb_full_audit_fsync_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		do_log(SMB_VFS_OP_FSYNC_RECV, false, state->handle, "%s",
 		       fsp_str_do_log(state->fsp));
 		return -1;
@@ -1321,7 +1324,7 @@ static int smb_full_audit_fsync_recv(struct tevent_req *req, int *err)
 	do_log(SMB_VFS_OP_FSYNC_RECV, (state->ret >= 0), state->handle, "%s",
 	       fsp_str_do_log(state->fsp));
 
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

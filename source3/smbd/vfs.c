@@ -1587,8 +1587,9 @@ ssize_t smb_vfs_call_pread(struct vfs_handle_struct *handle,
 }
 
 struct smb_vfs_call_pread_state {
-	ssize_t (*recv_fn)(struct tevent_req *req, int *err);
+	ssize_t (*recv_fn)(struct tevent_req *req, struct vfs_aio_state *vfs_aio_state);
 	ssize_t retval;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_vfs_call_pread_done(struct tevent_req *subreq);
@@ -1626,27 +1627,26 @@ static void smb_vfs_call_pread_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct smb_vfs_call_pread_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pread_state);
-	int err;
 
-	state->retval = state->recv_fn(subreq, &err);
+	state->retval = state->recv_fn(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (state->retval == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, state->vfs_aio_state.error);
 		return;
 	}
 	tevent_req_done(req);
 }
 
-ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req, int *perrno)
+ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req,
+			   struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_vfs_call_pread_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pread_state);
-	int err;
 
-	if (tevent_req_is_unix_error(req, &err)) {
-		*perrno = err;
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->retval;
 }
 
@@ -1667,8 +1667,9 @@ ssize_t smb_vfs_call_pwrite(struct vfs_handle_struct *handle,
 }
 
 struct smb_vfs_call_pwrite_state {
-	ssize_t (*recv_fn)(struct tevent_req *req, int *err);
+	ssize_t (*recv_fn)(struct tevent_req *req, struct vfs_aio_state *vfs_aio_state);
 	ssize_t retval;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_vfs_call_pwrite_done(struct tevent_req *subreq);
@@ -1706,27 +1707,26 @@ static void smb_vfs_call_pwrite_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct smb_vfs_call_pwrite_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pwrite_state);
-	int err;
 
-	state->retval = state->recv_fn(subreq, &err);
+	state->retval = state->recv_fn(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (state->retval == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, state->vfs_aio_state.error);
 		return;
 	}
 	tevent_req_done(req);
 }
 
-ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req, int *perrno)
+ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req,
+			    struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_vfs_call_pwrite_state *state = tevent_req_data(
 		req, struct smb_vfs_call_pwrite_state);
-	int err;
 
-	if (tevent_req_is_unix_error(req, &err)) {
-		*perrno = err;
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->retval;
 }
 
@@ -1771,8 +1771,9 @@ int smb_vfs_call_fsync(struct vfs_handle_struct *handle,
 }
 
 struct smb_vfs_call_fsync_state {
-	int (*recv_fn)(struct tevent_req *req, int *err);
+	int (*recv_fn)(struct tevent_req *req, struct vfs_aio_state *vfs_aio_state);
 	int retval;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_vfs_call_fsync_done(struct tevent_req *subreq);
@@ -1807,27 +1808,25 @@ static void smb_vfs_call_fsync_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct smb_vfs_call_fsync_state *state = tevent_req_data(
 		req, struct smb_vfs_call_fsync_state);
-	int err;
 
-	state->retval = state->recv_fn(subreq, &err);
+	state->retval = state->recv_fn(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	if (state->retval == -1) {
-		tevent_req_error(req, err);
+		tevent_req_error(req, state->vfs_aio_state.error);
 		return;
 	}
 	tevent_req_done(req);
 }
 
-int SMB_VFS_FSYNC_RECV(struct tevent_req *req, int *perrno)
+int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_vfs_call_fsync_state *state = tevent_req_data(
 		req, struct smb_vfs_call_fsync_state);
-	int err;
 
-	if (tevent_req_is_unix_error(req, &err)) {
-		*perrno = err;
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->retval;
 }
 

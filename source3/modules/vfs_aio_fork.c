@@ -534,7 +534,7 @@ static int get_idle_child(struct vfs_handle_struct *handle,
 struct aio_fork_pread_state {
 	struct aio_child *child;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void aio_fork_pread_done(struct tevent_req *subreq);
@@ -632,28 +632,27 @@ static void aio_fork_pread_done(struct tevent_req *subreq)
 
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
-	state->err = retbuf->ret_errno;
+	state->vfs_aio_state.error = retbuf->ret_errno;
 	tevent_req_done(req);
 }
 
-static ssize_t aio_fork_pread_recv(struct tevent_req *req, int *err)
+static ssize_t aio_fork_pread_recv(struct tevent_req *req,
+				   struct vfs_aio_state *vfs_aio_state)
 {
 	struct aio_fork_pread_state *state = tevent_req_data(
 		req, struct aio_fork_pread_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	if (state->ret == -1) {
-		*err = state->err;
-	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
 struct aio_fork_pwrite_state {
 	struct aio_child *child;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void aio_fork_pwrite_done(struct tevent_req *subreq);
@@ -748,28 +747,27 @@ static void aio_fork_pwrite_done(struct tevent_req *subreq)
 
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
-	state->err = retbuf->ret_errno;
+	state->vfs_aio_state.error = retbuf->ret_errno;
 	tevent_req_done(req);
 }
 
-static ssize_t aio_fork_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t aio_fork_pwrite_recv(struct tevent_req *req,
+				    struct vfs_aio_state *vfs_aio_state)
 {
 	struct aio_fork_pwrite_state *state = tevent_req_data(
 		req, struct aio_fork_pwrite_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	if (state->ret == -1) {
-		*err = state->err;
-	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
 struct aio_fork_fsync_state {
 	struct aio_child *child;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void aio_fork_fsync_done(struct tevent_req *subreq);
@@ -856,21 +854,20 @@ static void aio_fork_fsync_done(struct tevent_req *subreq)
 
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
-	state->err = retbuf->ret_errno;
+	state->vfs_aio_state.error = retbuf->ret_errno;
 	tevent_req_done(req);
 }
 
-static int aio_fork_fsync_recv(struct tevent_req *req, int *err)
+static int aio_fork_fsync_recv(struct tevent_req *req,
+			       struct vfs_aio_state *vfs_aio_state)
 {
 	struct aio_fork_fsync_state *state = tevent_req_data(
 		req, struct aio_fork_fsync_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	if (state->ret == -1) {
-		*err = state->err;
-	}
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

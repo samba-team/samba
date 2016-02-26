@@ -243,7 +243,7 @@ static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp,
 
 struct skel_pread_state {
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void skel_pread_done(struct tevent_req *subreq);
@@ -277,20 +277,21 @@ static void skel_pread_done(struct tevent_req *subreq)
 	struct skel_pread_state *state =
 	    tevent_req_data(req, struct skel_pread_state);
 
-	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t skel_pread_recv(struct tevent_req *req, int *err)
+static ssize_t skel_pread_recv(struct tevent_req *req,
+			       struct vfs_aio_state *vfs_aio_state)
 {
 	struct skel_pread_state *state =
 	    tevent_req_data(req, struct skel_pread_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
@@ -308,7 +309,7 @@ static ssize_t skel_pwrite(vfs_handle_struct *handle, files_struct *fsp,
 
 struct skel_pwrite_state {
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void skel_pwrite_done(struct tevent_req *subreq);
@@ -343,20 +344,21 @@ static void skel_pwrite_done(struct tevent_req *subreq)
 	struct skel_pwrite_state *state =
 	    tevent_req_data(req, struct skel_pwrite_state);
 
-	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t skel_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t skel_pwrite_recv(struct tevent_req *req,
+				struct vfs_aio_state *vfs_aio_state)
 {
 	struct skel_pwrite_state *state =
 	    tevent_req_data(req, struct skel_pwrite_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
@@ -393,7 +395,7 @@ static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
 
 struct skel_fsync_state {
 	int ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void skel_fsync_done(struct tevent_req *subreq);
@@ -425,20 +427,21 @@ static void skel_fsync_done(struct tevent_req *subreq)
 	struct skel_fsync_state *state =
 	    tevent_req_data(req, struct skel_fsync_state);
 
-	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static int skel_fsync_recv(struct tevent_req *req, int *err)
+static int skel_fsync_recv(struct tevent_req *req,
+			   struct vfs_aio_state *vfs_aio_state)
 {
 	struct skel_fsync_state *state =
 	    tevent_req_data(req, struct skel_fsync_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

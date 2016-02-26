@@ -678,7 +678,7 @@ struct smb_time_audit_pread_state {
 	struct files_struct *fsp;
 	struct timespec ts1;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_time_audit_pread_done(struct tevent_req *subreq);
@@ -715,12 +715,13 @@ static void smb_time_audit_pread_done(struct tevent_req *subreq)
 	struct smb_time_audit_pread_state *state = tevent_req_data(
 		req, struct smb_time_audit_pread_state);
 
-	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t smb_time_audit_pread_recv(struct tevent_req *req, int *err)
+static ssize_t smb_time_audit_pread_recv(struct tevent_req *req,
+					 struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_time_audit_pread_state *state = tevent_req_data(
 		req, struct smb_time_audit_pread_state);
@@ -734,10 +735,10 @@ static ssize_t smb_time_audit_pread_recv(struct tevent_req *req, int *err)
 		smb_time_audit_log_fsp("pread", timediff, state->fsp);
 	}
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
@@ -786,7 +787,7 @@ struct smb_time_audit_pwrite_state {
 	struct files_struct *fsp;
 	struct timespec ts1;
 	ssize_t ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_time_audit_pwrite_done(struct tevent_req *subreq);
@@ -823,12 +824,13 @@ static void smb_time_audit_pwrite_done(struct tevent_req *subreq)
 	struct smb_time_audit_pwrite_state *state = tevent_req_data(
 		req, struct smb_time_audit_pwrite_state);
 
-	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t smb_time_audit_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t smb_time_audit_pwrite_recv(struct tevent_req *req,
+					  struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_time_audit_pwrite_state *state = tevent_req_data(
 		req, struct smb_time_audit_pwrite_state);
@@ -842,10 +844,10 @@ static ssize_t smb_time_audit_pwrite_recv(struct tevent_req *req, int *err)
 		smb_time_audit_log_fsp("pwrite", timediff, state->fsp);
 	}
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
@@ -953,7 +955,7 @@ struct smb_time_audit_fsync_state {
 	struct files_struct *fsp;
 	struct timespec ts1;
 	int ret;
-	int err;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void smb_time_audit_fsync_done(struct tevent_req *subreq);
@@ -988,12 +990,13 @@ static void smb_time_audit_fsync_done(struct tevent_req *subreq)
 	struct smb_time_audit_fsync_state *state = tevent_req_data(
 		req, struct smb_time_audit_fsync_state);
 
-	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_FSYNC_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static int smb_time_audit_fsync_recv(struct tevent_req *req, int *err)
+static int smb_time_audit_fsync_recv(struct tevent_req *req,
+				     struct vfs_aio_state *vfs_aio_state)
 {
 	struct smb_time_audit_fsync_state *state = tevent_req_data(
 		req, struct smb_time_audit_fsync_state);
@@ -1007,10 +1010,10 @@ static int smb_time_audit_fsync_recv(struct tevent_req *req, int *err)
 		smb_time_audit_log_fsp("fsync", timediff, state->fsp);
 	}
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

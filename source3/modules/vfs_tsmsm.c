@@ -289,8 +289,8 @@ static bool tsmsm_aio_force(struct vfs_handle_struct *handle, struct files_struc
 struct tsmsm_pread_state {
 	struct files_struct *fsp;
 	ssize_t ret;
-	int err;
 	bool was_offline;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void tsmsm_pread_done(struct tevent_req *subreq);
@@ -326,17 +326,18 @@ static void tsmsm_pread_done(struct tevent_req *subreq)
 	struct tsmsm_pread_state *state = tevent_req_data(
 		req, struct tsmsm_pread_state);
 
-	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PREAD_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t tsmsm_pread_recv(struct tevent_req *req, int *err)
+static ssize_t tsmsm_pread_recv(struct tevent_req *req,
+				struct vfs_aio_state *vfs_aio_state)
 {
 	struct tsmsm_pread_state *state = tevent_req_data(
 		req, struct tsmsm_pread_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
 	if (state->ret >= 0 && state->was_offline) {
@@ -345,15 +346,15 @@ static ssize_t tsmsm_pread_recv(struct tevent_req *req, int *err)
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name->base_name);
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 
 struct tsmsm_pwrite_state {
 	struct files_struct *fsp;
 	ssize_t ret;
-	int err;
 	bool was_offline;
+	struct vfs_aio_state vfs_aio_state;
 };
 
 static void tsmsm_pwrite_done(struct tevent_req *subreq);
@@ -390,17 +391,18 @@ static void tsmsm_pwrite_done(struct tevent_req *subreq)
 	struct tsmsm_pwrite_state *state = tevent_req_data(
 		req, struct tsmsm_pwrite_state);
 
-	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->err);
+	state->ret = SMB_VFS_PWRITE_RECV(subreq, &state->vfs_aio_state);
 	TALLOC_FREE(subreq);
 	tevent_req_done(req);
 }
 
-static ssize_t tsmsm_pwrite_recv(struct tevent_req *req, int *err)
+static ssize_t tsmsm_pwrite_recv(struct tevent_req *req,
+				 struct vfs_aio_state *vfs_aio_state)
 {
 	struct tsmsm_pwrite_state *state = tevent_req_data(
 		req, struct tsmsm_pwrite_state);
 
-	if (tevent_req_is_unix_error(req, err)) {
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
 		return -1;
 	}
 	if (state->ret >= 0 && state->was_offline) {
@@ -409,7 +411,7 @@ static ssize_t tsmsm_pwrite_recv(struct tevent_req *req, int *err)
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name->base_name);
 	}
-	*err = state->err;
+	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
 

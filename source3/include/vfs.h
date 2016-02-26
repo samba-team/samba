@@ -179,6 +179,7 @@
 		const struct smb_filename * */
 /* Version 35 - Change opendir from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Wrap aio async funtions args in a struct vfs_aio_state */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -520,6 +521,10 @@ enum vfs_fallocate_flags {
 	VFS_FALLOCATE_FL_PUNCH_HOLE		= 0x0002,
 };
 
+struct vfs_aio_state {
+	int error;
+};
+
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
     (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
@@ -604,7 +609,7 @@ struct vfs_fn_pointers {
 					    struct files_struct *fsp,
 					    void *data,
 					    size_t n, off_t offset);
-	ssize_t (*pread_recv_fn)(struct tevent_req *req, int *err);
+	ssize_t (*pread_recv_fn)(struct tevent_req *req, struct vfs_aio_state *state);
 	ssize_t (*write_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
 	ssize_t (*pwrite_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, off_t offset);
 	struct tevent_req *(*pwrite_send_fn)(struct vfs_handle_struct *handle,
@@ -613,7 +618,7 @@ struct vfs_fn_pointers {
 					     struct files_struct *fsp,
 					     const void *data,
 					     size_t n, off_t offset);
-	ssize_t (*pwrite_recv_fn)(struct tevent_req *req, int *err);
+	ssize_t (*pwrite_recv_fn)(struct tevent_req *req, struct vfs_aio_state *state);
 	off_t (*lseek_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset, int whence);
 	ssize_t (*sendfile_fn)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, off_t offset, size_t count);
 	ssize_t (*recvfile_fn)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, off_t offset, size_t count);
@@ -625,7 +630,7 @@ struct vfs_fn_pointers {
 					    TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct files_struct *fsp);
-	int (*fsync_recv_fn)(struct tevent_req *req, int *err);
+	int (*fsync_recv_fn)(struct tevent_req *req, struct vfs_aio_state *state);
 	int (*stat_fn)(struct vfs_handle_struct *handle, struct smb_filename *smb_fname);
 	int (*fstat_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 	int (*lstat_fn)(struct vfs_handle_struct *handle, struct smb_filename *smb_filename);
@@ -1028,7 +1033,7 @@ struct tevent_req *smb_vfs_call_pread_send(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
 					   void *data,
 					   size_t n, off_t offset);
-ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req, int *perrno);
+ssize_t SMB_VFS_PREAD_RECV(struct tevent_req *req, struct vfs_aio_state *state);
 
 ssize_t smb_vfs_call_write(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const void *data,
@@ -1042,7 +1047,7 @@ struct tevent_req *smb_vfs_call_pwrite_send(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    const void *data,
 					    size_t n, off_t offset);
-ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req, int *perrno);
+ssize_t SMB_VFS_PWRITE_RECV(struct tevent_req *req, struct vfs_aio_state *state);
 
 off_t smb_vfs_call_lseek(struct vfs_handle_struct *handle,
 			     struct files_struct *fsp, off_t offset,
@@ -1063,7 +1068,7 @@ struct tevent_req *smb_vfs_call_fsync_send(struct vfs_handle_struct *handle,
 					   TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct files_struct *fsp);
-int SMB_VFS_FSYNC_RECV(struct tevent_req *req, int *perrno);
+int SMB_VFS_FSYNC_RECV(struct tevent_req *req, struct vfs_aio_state *state);
 
 int smb_vfs_call_stat(struct vfs_handle_struct *handle,
 		      struct smb_filename *smb_fname);
