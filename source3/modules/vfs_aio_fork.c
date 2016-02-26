@@ -128,6 +128,7 @@ struct rw_cmd {
 struct rw_ret {
 	ssize_t size;
 	int ret_errno;
+	uint64_t duration;
 };
 
 struct aio_child_list;
@@ -310,6 +311,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 		ssize_t ret;
 		struct rw_cmd cmd_struct;
 		struct rw_ret ret_struct;
+		struct timespec start, end;
 
 		ret = read_fd(sockfd, &cmd_struct, sizeof(cmd_struct), &fd);
 		if (ret != sizeof(cmd_struct)) {
@@ -341,6 +343,8 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 
 		ZERO_STRUCT(ret_struct);
 
+		clock_gettime_mono(&start);
+
 		switch (cmd_struct.cmd) {
 		case READ_CMD:
 			ret_struct.size = sys_pread(
@@ -366,6 +370,8 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			errno = EINVAL;
 		}
 
+		clock_gettime_mono(&end);
+		ret_struct.duration = nsec_time_diff(&end, &start);
 		DEBUG(10, ("aio_child_loop: syscall returned %d\n",
 			   (int)ret_struct.size));
 
@@ -633,6 +639,7 @@ static void aio_fork_pread_done(struct tevent_req *subreq)
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
 	state->vfs_aio_state.error = retbuf->ret_errno;
+	state->vfs_aio_state.duration = retbuf->duration;
 	tevent_req_done(req);
 }
 
@@ -748,6 +755,7 @@ static void aio_fork_pwrite_done(struct tevent_req *subreq)
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
 	state->vfs_aio_state.error = retbuf->ret_errno;
+	state->vfs_aio_state.duration = retbuf->duration;
 	tevent_req_done(req);
 }
 
@@ -855,6 +863,7 @@ static void aio_fork_fsync_done(struct tevent_req *subreq)
 	retbuf = (struct rw_ret *)buf;
 	state->ret = retbuf->size;
 	state->vfs_aio_state.error = retbuf->ret_errno;
+	state->vfs_aio_state.duration = retbuf->duration;
 	tevent_req_done(req);
 }
 
