@@ -880,6 +880,12 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
 	const struct GUID *our_invocation_id;
+
+	/*
+	 * The use of a time_t here seems odd, but as the NTTIME
+	 * elements are actually declared as NTTIME_1sec in the IDL,
+	 * getting a higher resolution timestamp is not required.
+	 */
 	time_t t = time(NULL);
 	NTTIME now;
 	char *time_str;
