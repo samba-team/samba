@@ -17,6 +17,7 @@ TORTURE_LOCAL_SOURCE = '''../../../lib/util/charset/tests/iconv.c
 	dbspeed.c torture.c ../ldb/ldb.c ../../dsdb/common/tests/dsdb_dn.c
 	../../dsdb/schema/tests/schema_syntax.c
 	../../../lib/util/tests/anonymous_shared.c
+	../../../lib/util/tests/strv.c
 	verif_trailer.c
 	nss_tests.c
 	fsrvp_state.c'''
