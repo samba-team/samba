@@ -139,10 +139,10 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx, struct smb2_tre
 /*
   send a create
 */
-static NTSTATUS torture_smb2_createfile(struct torture_context *tctx,
-					struct smb2_tree *tree,
-					const char *fname,
-					struct smb2_handle *handle)
+NTSTATUS torture_smb2_createfile(struct torture_context *tctx,
+				 struct smb2_tree *tree,
+				 const char *fname,
+				 struct smb2_handle *handle)
 {
 	struct smb2_create io;
 	NTSTATUS status;

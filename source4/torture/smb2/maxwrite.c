@@ -74,7 +74,12 @@ static NTSTATUS torture_smb2_write(struct torture_context *tctx,
 					return NT_STATUS_NET_WRITE_FAULT;
 				}
 			}
-			handle = torture_smb2_create(tree, FNAME);
+			status = torture_smb2_createfile(tctx, tree, FNAME, &handle);
+			if (!NT_STATUS_IS_OK(status)) {
+				torture_comment(tctx, "failed to create file handle\n");
+				talloc_free(tmp_ctx);
+				return status;
+			}
 			continue;
 		} else {
 			min = len;
