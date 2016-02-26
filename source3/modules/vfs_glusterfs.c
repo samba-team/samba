@@ -501,6 +501,7 @@ struct glusterfs_aio_state {
 	struct tevent_req *req;
 	bool cancelled;
 	struct vfs_aio_state vfs_aio_state;
+	struct timespec start;
 };
 
 static int aio_wrapper_destructor(struct glusterfs_aio_wrapper *wrap)
@@ -519,8 +520,11 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 {
 	struct glusterfs_aio_state *state = NULL;
 	int sts = 0;
+	struct timespec end;
 
 	state = (struct glusterfs_aio_state *)data;
+
+	clock_gettime_mono(&end);
 
 	if (ret < 0) {
 		state->ret = -1;
@@ -528,6 +532,7 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 	} else {
 		state->ret = ret;
 	}
+	state->vfs_aio_state.duration = nsec_time_diff(&end, &state->start);
 
 	/*
 	 * Write the state pointer to glusterfs_aio_state to the
@@ -687,6 +692,7 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 		return tevent_req_post(req, ev);
 	}
 
+	clock_gettime_mono(&state->start);
 	ret = glfs_pread_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), data, n, offset, 0, aio_glusterfs_done,
 				state);
@@ -722,6 +728,7 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 		return tevent_req_post(req, ev);
 	}
 
+	clock_gettime_mono(&state->start);
 	ret = glfs_pwrite_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), data, n, offset, 0, aio_glusterfs_done,
 				state);
@@ -837,6 +844,8 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 		tevent_req_error(req, EIO);
 		return tevent_req_post(req, ev);
 	}
+
+	clock_gettime_mono(&state->start);
 	ret = glfs_fsync_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), aio_glusterfs_done, req);
 	if (ret < 0) {
