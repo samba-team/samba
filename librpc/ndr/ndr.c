@@ -954,15 +954,13 @@ _PUBLIC_ enum ndr_err_code ndr_token_retrieve(struct ndr_token_list **list, cons
 */
 _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list **list, const void *key)
 {
-	enum ndr_err_code status;
-	uint32_t v;
-
-	status = ndr_token_retrieve_cmp_fn(list, key, &v, NULL, false);
-	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-		return 0;
+	struct ndr_token_list *tok;
+	for (tok = *list; tok; tok = tok->next) {
+		if (tok->key == key) {
+			return tok->value;
+		}
 	}
-
-	return v;
+	return 0;
 }
 
 /*
