@@ -203,7 +203,7 @@ static bool recdb_add(struct recdb_context *recdb, int mypnn,
 
 struct recdb_traverse_state {
 	struct ctdb_rec_buffer *recbuf;
-	uint32_t pnn;
+	uint32_t dmaster;
 	uint32_t reqid;
 	bool persistent;
 	bool failed;
@@ -255,7 +255,7 @@ static int recdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	/* update the dmaster field to point to us */
 	header = (struct ctdb_ltdb_header *)data.dptr;
 	if (!state->persistent) {
-		header->dmaster = state->pnn;
+		header->dmaster = state->dmaster;
 		header->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	}
 
@@ -270,7 +270,8 @@ static int recdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 }
 
 static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
-					     TALLOC_CTX *mem_ctx, uint32_t pnn)
+					     TALLOC_CTX *mem_ctx,
+					     uint32_t dmaster)
 {
 	struct recdb_traverse_state state;
 	int ret;
@@ -279,7 +280,7 @@ static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
 	if (state.recbuf == NULL) {
 		return NULL;
 	}
-	state.pnn = pnn;
+	state.dmaster = dmaster;
 	state.reqid = 0;
 	state.persistent = recdb->persistent;
 	state.failed = false;
