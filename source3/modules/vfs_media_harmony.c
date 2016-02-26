@@ -760,15 +760,16 @@ err:
  * Failure: set errno, return NULL
  */
 static DIR *mh_opendir(vfs_handle_struct *handle,
-		const char *fname,
+		const struct smb_filename *smb_fname,
 		const char *mask,
 		uint32_t attr)
 {
 	struct mh_dirinfo_struct *dirInfo;
 
-	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n", fname));
+	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n",
+		smb_fname->base_name));
 
-	if (alloc_set_client_dirinfo(handle, fname, &dirInfo))
+	if (alloc_set_client_dirinfo(handle, smb_fname->base_name, &dirInfo))
 	{
 		goto err;
 	}
@@ -776,10 +777,20 @@ static DIR *mh_opendir(vfs_handle_struct *handle,
 	if (!dirInfo->isInMediaFiles)
 	{
 		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(handle,
-			fname, mask, attr);
+			smb_fname, mask, attr);
 	} else {
+		struct smb_filename *smb_fname_clientpath =
+				synthetic_smb_fname(talloc_tos(),
+					dirInfo->clientPath,
+					NULL,
+					NULL);
+		if (smb_fname_clientpath == NULL) {
+			goto err;
+		}
+
 		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(handle,
-			dirInfo->clientPath, mask, attr);
+			smb_fname_clientpath, mask, attr);
+		TALLOC_FREE(smb_fname_clientpath);
 	}
 
 	if (dirInfo->dirstream == NULL) {
@@ -794,7 +805,8 @@ static DIR *mh_opendir(vfs_handle_struct *handle,
 	return (DIR*)dirInfo;
 err:
 	/* Failure is freed here. */
-	DEBUG(MH_ERR_DEBUG, ("Failing with fname '%s'\n", fname));
+	DEBUG(MH_ERR_DEBUG, ("Failing with fname '%s'\n",
+		smb_fname->base_name));
 	TALLOC_FREE(dirInfo);
 	return NULL;
 }

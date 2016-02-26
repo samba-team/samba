@@ -1385,6 +1385,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	connection_struct *conn;
 	NTSTATUS status;
 	char *cwd;
+	struct smb_filename *smb_fname = NULL;
 
 	if(*connect_path == '\0') {
 		return 0;
@@ -1413,8 +1414,16 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 		goto out;
 	}
 
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					".",
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		goto out;
+	}
+
 	/* Now enumerate all dfs links */
-	dirp = SMB_VFS_OPENDIR(conn, ".", NULL, 0);
+	dirp = SMB_VFS_OPENDIR(conn, smb_fname, NULL, 0);
 	if(!dirp) {
 		goto out;
 	}
@@ -1432,6 +1441,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	SMB_VFS_CLOSEDIR(conn,dirp);
 
 out:
+	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd);
 	SMB_VFS_DISCONNECT(conn);
 	conn_free(conn);
@@ -1456,6 +1466,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	connection_struct *conn;
 	struct referral *ref = NULL;
 	char *cwd;
+	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
 	if (jn_remain == 0) {
@@ -1520,8 +1531,16 @@ static int form_junctions(TALLOC_CTX *ctx,
 		goto out;
 	}
 
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					".",
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		goto out;
+	}
+
 	/* Now enumerate all dfs links */
-	dirp = SMB_VFS_OPENDIR(conn, ".", NULL, 0);
+	dirp = SMB_VFS_OPENDIR(conn, smb_fname, NULL, 0);
 	if(!dirp) {
 		goto out;
 	}
@@ -1567,6 +1586,7 @@ out:
 		SMB_VFS_CLOSEDIR(conn,dirp);
 	}
 
+	TALLOC_FREE(smb_fname);
 	vfs_ChDir(conn, cwd);
 	conn_free(conn);
 	return cnt;

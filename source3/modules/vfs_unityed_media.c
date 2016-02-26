@@ -551,24 +551,35 @@ err:
  * Failure: set errno, return NULL
  */
 static DIR *um_opendir(vfs_handle_struct *handle,
-		       const char *fname,
+		       const struct smb_filename *smb_fname,
 		       const char *mask,
 		       uint32_t attr)
 {
 	struct um_dirinfo_struct *dirInfo;
 
-	DEBUG(10, ("Entering with fname '%s'\n", fname));
+	DEBUG(10, ("Entering with fname '%s'\n", smb_fname->base_name));
 
-	if (alloc_set_client_dirinfo(handle, fname, &dirInfo)) {
+	if (alloc_set_client_dirinfo(handle, smb_fname->base_name, &dirInfo)) {
 		goto err;
 	}
 
 	if (!dirInfo->isInMediaFiles) {
 		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(
-			handle, fname, mask, attr);
+			handle, smb_fname, mask, attr);
 	} else {
+		struct smb_filename *client_smb_fname =
+			synthetic_smb_fname(talloc_tos(),
+					dirInfo->clientPath,
+					NULL,
+					NULL);
+		if (client_smb_fname == NULL) {
+			goto err;
+		}
+
 		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(
-			handle, dirInfo->clientPath, mask, attr);
+			handle, client_smb_fname, mask, attr);
+
+		TALLOC_FREE(client_smb_fname);
 	}
 
 	if (dirInfo->dirstream == NULL) {
@@ -582,7 +593,7 @@ static DIR *um_opendir(vfs_handle_struct *handle,
 	return (DIR*)dirInfo;
 
 err:
-	DEBUG(1, ("Failing with fname '%s'\n", fname));
+	DEBUG(1, ("Failing with fname '%s'\n", smb_fname->base_name));
 	TALLOC_FREE(dirInfo);
 	return NULL;
 }

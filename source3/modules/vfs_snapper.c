@@ -1943,7 +1943,7 @@ err_out:
 }
 
 static DIR *snapper_gmt_opendir(vfs_handle_struct *handle,
-				const char *fname,
+				const struct smb_filename *smb_fname,
 				const char *mask,
 				uint32_t attr)
 {
@@ -1952,22 +1952,37 @@ static DIR *snapper_gmt_opendir(vfs_handle_struct *handle,
 	DIR *ret;
 	int saved_errno;
 	char *conv;
+	struct smb_filename *conv_smb_fname = NULL;
 
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname,
-					&timestamp, &stripped)) {
+	if (!snapper_gmt_strip_snapshot(talloc_tos(),
+			handle,
+			smb_fname->base_name,
+			&timestamp,
+			&stripped)) {
 		return NULL;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+		return SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 	}
 	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
 		return NULL;
 	}
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conv, mask, attr);
+	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	ret = SMB_VFS_NEXT_OPENDIR(handle, conv_smb_fname, mask, attr);
 	saved_errno = errno;
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 	errno = saved_errno;
 	return ret;
 }

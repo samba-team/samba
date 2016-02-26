@@ -79,10 +79,10 @@
 	smb_vfs_call_get_dfs_referrals((handle)->next, (r))
 
 /* Directory operations */
-#define SMB_VFS_OPENDIR(conn, fname, mask, attr) \
-	smb_vfs_call_opendir((conn)->vfs_handles, (fname), (mask), (attr))
-#define SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr) \
-	smb_vfs_call_opendir((handle)->next, (fname), (mask), (attr))
+#define SMB_VFS_OPENDIR(conn, smb_fname, mask, attr) \
+	smb_vfs_call_opendir((conn)->vfs_handles, (smb_fname), (mask), (attr))
+#define SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr) \
+	smb_vfs_call_opendir((handle)->next, (smb_fname), (mask), (attr))
 
 #define SMB_VFS_FDOPENDIR(fsp, mask, attr) \
 	smb_vfs_call_fdopendir((fsp)->conn->vfs_handles, (fsp), (mask), (attr))

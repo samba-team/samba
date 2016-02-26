@@ -129,17 +129,29 @@ static NTSTATUS cmd_disk_free(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *smb_fname = NULL;
+
 	if (argc != 2) {
 		printf("Usage: opendir <fname>\n");
 		return NT_STATUS_OK;
 	}
 
-	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, argv[1], NULL, 0);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					argv[1],
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, smb_fname, NULL, 0);
 	if (vfs->currentdir == NULL) {
 		printf("opendir error=%d (%s)\n", errno, strerror(errno));
+		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	TALLOC_FREE(smb_fname);
 	printf("opendir: ok\n");
 	return NT_STATUS_OK;
 }
@@ -1729,6 +1741,7 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	SMB_STRUCT_STAT st;
 	bool found = false;
 	char *translated = NULL;
+	struct smb_filename *smb_fname = NULL;
 	NTSTATUS status;
 
 	if (argc != 2) {
@@ -1736,10 +1749,19 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, ".", NULL, 0);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					".",
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, smb_fname, NULL, 0);
 	if (vfs->currentdir == NULL) {
 		DEBUG(0, ("cmd_translate_name: opendir error=%d (%s)\n",
 			  errno, strerror(errno)));
+		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1775,9 +1797,11 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	DEBUG(0, ("cmd_translate_name: file '%s' --> '%s'\n", 
 		  argv[1], translated));
 
+	TALLOC_FREE(smb_fname);
 	TALLOC_FREE(translated);
 
 cleanup:
+	TALLOC_FREE(smb_fname);
 	ret = SMB_VFS_CLOSEDIR(vfs->conn, vfs->currentdir);
 	if (ret == -1) {
 		DEBUG(0, ("cmd_translate_name: closedir failure: %s\n",

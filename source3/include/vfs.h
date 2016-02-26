@@ -177,6 +177,8 @@
 		const struct smb_filename * */
 /* Version 35 - Change rmdir from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Change opendir from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -550,7 +552,10 @@ struct vfs_fn_pointers {
 
 	/* Directory operations */
 
-	DIR *(*opendir_fn)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attributes);
+	DIR *(*opendir_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					const char *mask,
+					uint32_t attributes);
 	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
 					 DIR *dirp,
@@ -963,8 +968,9 @@ uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 					struct dfs_GetDFSReferral *r);
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
-				     const char *fname, const char *mask,
-				     uint32_t attributes);
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attributes);
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,

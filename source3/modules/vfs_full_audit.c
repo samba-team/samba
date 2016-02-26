@@ -776,13 +776,16 @@ static NTSTATUS smb_full_audit_snap_delete(struct vfs_handle_struct *handle,
 }
 
 static DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
-			  const char *fname, const char *mask, uint32_t attr)
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attr)
 {
 	DIR *result;
 
-	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 
-	do_log(SMB_VFS_OP_OPENDIR, (result != NULL), handle, "%s", fname);
+	do_log(SMB_VFS_OP_OPENDIR, (result != NULL), handle, "%s",
+		smb_fname->base_name);
 
 	return result;
 }

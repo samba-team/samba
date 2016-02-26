@@ -113,8 +113,9 @@ static bool open_and_sort_dir(vfs_handle_struct *handle,
 }
 
 static DIR *dirsort_opendir(vfs_handle_struct *handle,
-				       const char *fname, const char *mask,
-				       uint32_t attr)
+				const struct smb_filename *smb_fname,
+				const char *mask,
+				uint32_t attr)
 {
 	struct dirsort_privates *list_head = NULL;
 	struct dirsort_privates *data = NULL;
@@ -131,14 +132,14 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	data->smb_fname = synthetic_smb_fname(data, fname, NULL, NULL);
+	data->smb_fname = cp_smb_filename(data, smb_fname);
 	if (data->smb_fname == NULL) {
 		TALLOC_FREE(data);
 		return NULL;
 	}
 
 	/* Open the underlying directory and count the number of entries */
-	data->source_directory = SMB_VFS_NEXT_OPENDIR(handle, fname, mask,
+	data->source_directory = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask,
 						      attr);
 
 	if (data->source_directory == NULL) {

@@ -420,6 +420,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 			     void *private_data)
 {
 	char *dirname;
+	struct smb_filename *dir_smb_fname = NULL;
 	DIR *dirhandle = NULL;
 	const char *dirent = NULL;
 	char *talloced = NULL;
@@ -439,7 +440,18 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 
 	DEBUG(10, ("walk_streams: dirname=%s\n", dirname));
 
-	dirhandle = SMB_VFS_NEXT_OPENDIR(handle, dirname, NULL, 0);
+	dir_smb_fname = synthetic_smb_fname(talloc_tos(),
+					dirname,
+					NULL,
+					NULL);
+	if (dir_smb_fname == NULL) {
+		TALLOC_FREE(dirname);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dirhandle = SMB_VFS_NEXT_OPENDIR(handle, dir_smb_fname, NULL, 0);
+
+	TALLOC_FREE(dir_smb_fname);
 
 	if (dirhandle == NULL) {
 		TALLOC_FREE(dirname);

@@ -1595,6 +1595,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 {
 	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
+	struct smb_filename *smb_fname = NULL;
 
 	if (!dirp) {
 		return NULL;
@@ -1614,7 +1615,19 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
-	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					dirp->dir_path,
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	dirp->dir = SMB_VFS_OPENDIR(conn, smb_fname, mask, attr);
+
+	TALLOC_FREE(smb_fname);
+
 	if (!dirp->dir) {
 		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path,
 			 strerror(errno) ));
@@ -1675,7 +1688,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 	if (dirp->dir == NULL) {
 		/* FDOPENDIR didn't work. Use OPENDIR instead. */
-		dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
+		dirp->dir = SMB_VFS_OPENDIR(conn, fsp->fsp_name, mask, attr);
 	}
 
 	if (!dirp->dir) {

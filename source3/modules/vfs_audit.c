@@ -106,14 +106,17 @@ static void audit_disconnect(vfs_handle_struct *handle)
 	return;
 }
 
-static DIR *audit_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
+static DIR *audit_opendir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attr)
 {
 	DIR *result;
 	
-	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 
 	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
-	       fname,
+	       smb_fname->base_name,
 	       (result == NULL) ? "failed: " : "",
 	       (result == NULL) ? strerror(errno) : "");
 

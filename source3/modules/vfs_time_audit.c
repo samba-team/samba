@@ -347,7 +347,7 @@ static NTSTATUS smb_time_audit_snap_delete(struct vfs_handle_struct *handle,
 }
 
 static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
-				   const char *fname,
+				   const struct smb_filename *smb_fname,
 				   const char *mask, uint32_t attr)
 {
 	DIR *result;
@@ -355,12 +355,12 @@ static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("opendir", timediff, fname);
+		smb_time_audit_log_smb_fname("opendir", timediff, smb_fname);
 	}
 
 	return result;

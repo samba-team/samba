@@ -95,10 +95,12 @@ static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_GET_DFS_REFERRALS(handle, r);
 }
 
-static DIR *skel_opendir(vfs_handle_struct *handle, const char *fname,
-			 const char *mask, uint32_t attr)
+static DIR *skel_opendir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attr)
 {
-	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+	return SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 }
 
 static NTSTATUS skel_snap_check_path(struct vfs_handle_struct *handle,

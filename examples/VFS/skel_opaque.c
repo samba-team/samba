@@ -97,8 +97,10 @@ static NTSTATUS skel_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static DIR *skel_opendir(vfs_handle_struct *handle, const char *fname,
-			 const char *mask, uint32_t attr)
+static DIR *skel_opendir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attr)
 {
 	return NULL;
 }

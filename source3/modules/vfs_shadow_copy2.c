@@ -690,31 +690,44 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 }
 
 static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
-					    const char *fname,
-					    const char *mask,
-					    uint32_t attr)
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attr)
 {
 	time_t timestamp;
 	char *stripped;
 	DIR *ret;
 	int saved_errno;
 	char *conv;
+	struct smb_filename *conv_smb_fname = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
-					 &timestamp, &stripped)) {
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+				handle,
+				smb_fname->base_name,
+				&timestamp,
+				&stripped)) {
 		return NULL;
 	}
 	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
+		return SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 	}
 	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
 	TALLOC_FREE(stripped);
 	if (conv == NULL) {
 		return NULL;
 	}
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conv, mask, attr);
+	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
+					conv,
+					NULL,
+					NULL);
+	if (conv_smb_fname == NULL) {
+		TALLOC_FREE(conv);
+		return NULL;
+	}
+	ret = SMB_VFS_NEXT_OPENDIR(handle, conv_smb_fname, mask, attr);
 	saved_errno = errno;
 	TALLOC_FREE(conv);
+	TALLOC_FREE(conv_smb_fname);
 	errno = saved_errno;
 	return ret;
 }
@@ -1372,6 +1385,7 @@ static int shadow_copy2_get_shadow_copy_data(
 {
 	DIR *p;
 	const char *snapdir;
+	struct smb_filename *snapdir_smb_fname = NULL;
 	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	bool ret;
@@ -1392,7 +1406,17 @@ static int shadow_copy2_get_shadow_copy_data(
 		return -1;
 	}
 
-	p = SMB_VFS_NEXT_OPENDIR(handle, snapdir, NULL, 0);
+	snapdir_smb_fname = synthetic_smb_fname(talloc_tos(),
+					snapdir,
+					NULL,
+					NULL);
+	if (snapdir_smb_fname == NULL) {
+		errno = ENOMEM;
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	p = SMB_VFS_NEXT_OPENDIR(handle, snapdir_smb_fname, NULL, 0);
 
 	if (!p) {
 		DEBUG(2,("shadow_copy2: SMB_VFS_NEXT_OPENDIR() failed for '%s'"

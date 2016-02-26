@@ -1452,11 +1452,12 @@ NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 }
 
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
-				     const char *fname, const char *mask,
-				     uint32_t attributes)
+					const struct smb_filename *smb_fname,
+					const char *mask,
+					uint32_t attributes)
 {
 	VFS_FIND(opendir);
-	return handle->fns->opendir_fn(handle, fname, mask, attributes);
+	return handle->fns->opendir_fn(handle, smb_fname, mask, attributes);
 }
 
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,

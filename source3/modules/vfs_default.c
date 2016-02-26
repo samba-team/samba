@@ -375,12 +375,15 @@ static NTSTATUS vfswrap_snap_delete(struct vfs_handle_struct *handle,
 
 /* Directory operations */
 
-static DIR *vfswrap_opendir(vfs_handle_struct *handle, const char *fname, const char *mask, uint32_t attr)
+static DIR *vfswrap_opendir(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				const char *mask,
+				uint32_t attr)
 {
 	DIR *result;
 
 	START_PROFILE(syscall_opendir);
-	result = opendir(fname);
+	result = opendir(smb_fname->base_name);
 	END_PROFILE(syscall_opendir);
 	return result;
 }

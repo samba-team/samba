@@ -269,23 +269,38 @@ static NTSTATUS catia_string_replace_allocate(connection_struct *conn,
 }
 
 static DIR *catia_opendir(vfs_handle_struct *handle,
-				     const char *fname,
-				     const char *mask,
-				     uint32_t attr)
+			const struct smb_filename *smb_fname,
+			const char *mask,
+			uint32_t attr)
 {
 	char *name_mapped = NULL;
 	NTSTATUS status;
 	DIR *ret;
+	struct smb_filename *mapped_smb_fname = NULL;
 
-	status = catia_string_replace_allocate(handle->conn, fname,
-					&name_mapped, vfs_translate_to_unix);
+	status = catia_string_replace_allocate(handle->conn,
+				smb_fname->base_name,
+				&name_mapped,
+				vfs_translate_to_unix);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return NULL;
 	}
 
-	ret = SMB_VFS_NEXT_OPENDIR(handle, name_mapped, mask, attr);
+	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+				name_mapped,
+				NULL,
+				NULL);
+	if (mapped_smb_fname == NULL) {
+		TALLOC_FREE(mapped_smb_fname);
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	ret = SMB_VFS_NEXT_OPENDIR(handle, mapped_smb_fname, mask, attr);
+
 	TALLOC_FREE(name_mapped);
+	TALLOC_FREE(mapped_smb_fname);
 
 	return ret;
 }
