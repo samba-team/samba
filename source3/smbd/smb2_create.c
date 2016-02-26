@@ -668,6 +668,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		struct smb2_lease lease;
 		struct smb2_lease *lease_ptr = NULL;
 		ssize_t lease_len = -1;
+		bool need_replay_cache = false;
 #if 0
 		struct smb2_create_blob *svhdx = NULL;
 #endif
@@ -802,6 +803,12 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			 * we need to store the create_guid later
 			 */
 			update_open = true;
+
+			/*
+			 * And we need to create a cache for replaying the
+			 * create.
+			 */
+			need_replay_cache = true;
 
 			/*
 			 * durable handle v2 request processed below
@@ -1154,6 +1161,9 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		if (update_open) {
 			op->global->create_guid = _create_guid;
+			if (need_replay_cache) {
+				op->flags |= SMBXSRV_OPEN_NEED_REPLAY_CACHE;
+			}
 
 			status = smbXsrv_open_update(op);
 			DEBUG(10, ("smb2_create_send: smbXsrv_open_update "
