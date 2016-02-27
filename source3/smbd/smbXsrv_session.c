@@ -161,6 +161,27 @@ static NTSTATUS smbXsrv_session_local_key_to_id(TDB_DATA key, uint32_t *id)
 	return NT_STATUS_OK;
 }
 
+static struct db_record *smbXsrv_session_global_fetch_locked(
+			struct db_context *db,
+			uint32_t id,
+			TALLOC_CTX *mem_ctx)
+{
+	TDB_DATA key;
+	uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
+	struct db_record *rec = NULL;
+
+	key = smbXsrv_session_global_id_to_key(id, key_buf);
+
+	rec = dbwrap_fetch_locked(db, mem_ctx, key);
+
+	if (rec == NULL) {
+		DBG_DEBUG("Failed to lock global id 0x%08x, key '%s'\n", id,
+			  hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+	}
+
+	return rec;
+}
+
 static void smbXsrv_session_close_loop(struct tevent_req *subreq);
 
 static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
@@ -693,8 +714,6 @@ static NTSTATUS smbXsrv_session_global_allocate(struct db_context *db,
 		bool is_free = false;
 		bool was_free = false;
 		uint32_t id;
-		uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
-		TDB_DATA key;
 
 		if (i >= min_tries && last_free != 0) {
 			id = last_free;
@@ -708,9 +727,8 @@ static NTSTATUS smbXsrv_session_global_allocate(struct db_context *db,
 			id--;
 		}
 
-		key = smbXsrv_session_global_id_to_key(id, key_buf);
-
-		global->db_rec = dbwrap_fetch_locked(db, mem_ctx, key);
+		global->db_rec = smbXsrv_session_global_fetch_locked(db, id,
+								     mem_ctx);
 		if (global->db_rec == NULL) {
 			talloc_free(global);
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -931,8 +949,6 @@ struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 	uint64_t global_zeros = previous_session_id & 0xFFFFFFFF00000000LLU;
 	struct smbXsrv_session_table *table = conn->client->session_table;
 	struct security_token *current_token = NULL;
-	uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
-	TDB_DATA key;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smb2srv_session_close_previous_state);
@@ -969,10 +985,10 @@ struct tevent_req *smb2srv_session_close_previous_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	key = smbXsrv_session_global_id_to_key(global_id, key_buf);
-
-	state->db_rec = dbwrap_fetch_locked(table->global.db_ctx,
-					    state, key);
+	state->db_rec = smbXsrv_session_global_fetch_locked(
+							table->global.db_ctx,
+							global_id,
+							state /* TALLOC_CTX */);
 	if (state->db_rec == NULL) {
 		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
 		return tevent_req_post(req, ev);
@@ -1336,8 +1352,6 @@ NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session)
 {
 	struct smbXsrv_session_table *table = session->table;
 	NTSTATUS status;
-	uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
-	TDB_DATA key;
 
 	if (session->global->db_rec != NULL) {
 		DEBUG(0, ("smbXsrv_session_update(0x%08x): "
@@ -1346,18 +1360,11 @@ NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session)
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	key = smbXsrv_session_global_id_to_key(
+	session->global->db_rec = smbXsrv_session_global_fetch_locked(
+					table->global.db_ctx,
 					session->global->session_global_id,
-					key_buf);
-
-	session->global->db_rec = dbwrap_fetch_locked(table->global.db_ctx,
-						      session->global, key);
+					session->global /* TALLOC_CTX */);
 	if (session->global->db_rec == NULL) {
-		DEBUG(0, ("smbXsrv_session_update(0x%08x): "
-			  "Failed to lock global key '%s'\n",
-			  session->global->session_global_id,
-			  hex_encode_talloc(talloc_tos(), key.dptr,
-					    key.dsize)));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -1621,21 +1628,11 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	global_rec = session->global->db_rec;
 	session->global->db_rec = NULL;
 	if (global_rec == NULL) {
-		uint8_t key_buf[SMBXSRV_SESSION_GLOBAL_TDB_KEY_SIZE];
-		TDB_DATA key;
-
-		key = smbXsrv_session_global_id_to_key(
+		global_rec = smbXsrv_session_global_fetch_locked(
+					table->global.db_ctx,
 					session->global->session_global_id,
-					key_buf);
-
-		global_rec = dbwrap_fetch_locked(table->global.db_ctx,
-						 session->global, key);
+					session->global /* TALLOC_CTX */);
 		if (global_rec == NULL) {
-			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
-				  "Failed to lock global key '%s'\n",
-				  session->global->session_global_id,
-				  hex_encode_talloc(global_rec, key.dptr,
-						    key.dsize)));
 			error = NT_STATUS_INTERNAL_ERROR;
 		}
 	}
