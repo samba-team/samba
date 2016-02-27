@@ -4439,15 +4439,6 @@ int lp_client_max_protocol(void)
 	return client_max_protocol;
 }
 
-int lp_winbindd_max_protocol(void)
-{
-	int client_max_protocol = lp__client_max_protocol();
-	if (client_max_protocol == PROTOCOL_DEFAULT) {
-		return PROTOCOL_LATEST;
-	}
-	return client_max_protocol;
-}
-
 int lp_client_ipc_min_protocol(void)
 {
 	int client_ipc_min_protocol = lp__client_ipc_min_protocol();
