@@ -2614,6 +2614,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "SMB3");
 	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
 	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "default");
+	lpcfg_do_global_parameter(lp_ctx, "client ipc min protocol", "default");
+	lpcfg_do_global_parameter(lp_ctx, "client ipc max protocol", "default");
 	lpcfg_do_global_parameter(lp_ctx, "security", "AUTO");
 	lpcfg_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
 	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
@@ -3317,6 +3319,30 @@ int lpcfg_client_max_protocol(struct loadparm_context *lp_ctx)
 		return PROTOCOL_NT1;
 	}
 	return client_max_protocol;
+}
+
+int lpcfg_client_ipc_min_protocol(struct loadparm_context *lp_ctx)
+{
+	int client_ipc_min_protocol = lpcfg__client_ipc_min_protocol(lp_ctx);
+	if (client_ipc_min_protocol == PROTOCOL_DEFAULT) {
+		client_ipc_min_protocol = lpcfg_client_min_protocol(lp_ctx);
+	}
+	if (client_ipc_min_protocol < PROTOCOL_NT1) {
+		return PROTOCOL_NT1;
+	}
+	return client_ipc_min_protocol;
+}
+
+int lpcfg_client_ipc_max_protocol(struct loadparm_context *lp_ctx)
+{
+	int client_ipc_max_protocol = lpcfg__client_ipc_max_protocol(lp_ctx);
+	if (client_ipc_max_protocol == PROTOCOL_DEFAULT) {
+		return PROTOCOL_LATEST;
+	}
+	if (client_ipc_max_protocol < PROTOCOL_NT1) {
+		return PROTOCOL_NT1;
+	}
+	return client_ipc_max_protocol;
 }
 
 bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandatory)
