@@ -2536,6 +2536,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%D/%U");
 
 	lpcfg_do_global_parameter(lp_ctx, "client signing", "default");
+	lpcfg_do_global_parameter(lp_ctx, "client ipc signing", "default");
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "default");
 
 	lpcfg_do_global_parameter(lp_ctx, "use spnego", "True");
@@ -3205,6 +3206,19 @@ int lpcfg_client_ipc_max_protocol(struct loadparm_context *lp_ctx)
 		return PROTOCOL_NT1;
 	}
 	return client_ipc_max_protocol;
+}
+
+int lpcfg_client_ipc_signing(struct loadparm_context *lp_ctx)
+{
+	int client_ipc_signing = lpcfg__client_ipc_signing(lp_ctx);
+	if (client_ipc_signing == SMB_SIGNING_DEFAULT) {
+		int ipc_min_protocol = lpcfg_client_ipc_min_protocol(lp_ctx);
+		if (ipc_min_protocol >= PROTOCOL_SMB2_02) {
+			return SMB_SIGNING_REQUIRED;
+		}
+		return lpcfg_client_signing(lp_ctx);
+	}
+	return client_ipc_signing;
 }
 
 bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandatory)
