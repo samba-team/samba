@@ -944,7 +944,6 @@ const char *lp_idmap_backend(const char *domain_name);
 const char *lp_idmap_default_backend (void);
 int lp_security(void);
 int lp_client_max_protocol(void);
-int lp_winbindd_max_protocol(void);
 int lp_client_ipc_min_protocol(void);
 int lp_client_ipc_max_protocol(void);
 int lp_client_ipc_signing(void);
