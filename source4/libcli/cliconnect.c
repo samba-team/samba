@@ -77,7 +77,7 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	return smb_raw_negotiate(cli->transport, unicode, maxprotocol);
+	return smb_raw_negotiate(cli->transport, unicode, PROTOCOL_CORE, maxprotocol);
 }
 
 /* wrapper around smb_raw_sesssetup() */
