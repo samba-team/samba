@@ -51,6 +51,10 @@ struct tevent_req *smb_raw_negotiate_send(TALLOC_CTX *mem_ctx,
 	}
 	state->transport = transport;
 
+	if (maxprotocol > PROTOCOL_NT1) {
+		maxprotocol = PROTOCOL_NT1;
+	}
+
 	subreq = smbXcli_negprot_send(state, ev,
 				      transport->conn,
 				      timeout_msec,
