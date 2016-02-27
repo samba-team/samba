@@ -182,6 +182,27 @@ static struct db_record *smbXsrv_session_global_fetch_locked(
 	return rec;
 }
 
+static struct db_record *smbXsrv_session_local_fetch_locked(
+			struct db_context *db,
+			uint32_t id,
+			TALLOC_CTX *mem_ctx)
+{
+	TDB_DATA key;
+	uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
+	struct db_record *rec = NULL;
+
+	key = smbXsrv_session_local_id_to_key(id, key_buf);
+
+	rec = dbwrap_fetch_locked(db, mem_ctx, key);
+
+	if (rec == NULL) {
+		DBG_DEBUG("Failed to lock local id 0x%08x, key '%s'\n", id,
+			  hex_encode_talloc(talloc_tos(), key.dptr, key.dsize));
+	}
+
+	return rec;
+}
+
 static void smbXsrv_session_close_loop(struct tevent_req *subreq);
 
 static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
@@ -483,8 +504,6 @@ static NTSTATUS smb1srv_session_local_allocate_id(struct db_context *db,
 
 	for (i = 0; i < (range / 2); i++) {
 		uint32_t id;
-		uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
-		TDB_DATA key;
 		TDB_DATA val;
 		struct db_record *rec = NULL;
 
@@ -498,9 +517,7 @@ static NTSTATUS smb1srv_session_local_allocate_id(struct db_context *db,
 			id = highest_id;
 		}
 
-		key = smbXsrv_session_local_id_to_key(id, key_buf);
-
-		rec = dbwrap_fetch_locked(db, mem_ctx, key);
+		rec = smbXsrv_session_local_fetch_locked(db, id, mem_ctx);
 		if (rec == NULL) {
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
 		}
@@ -550,16 +567,12 @@ static NTSTATUS smb1srv_session_local_allocate_id(struct db_context *db,
 
 	if (NT_STATUS_IS_OK(state.status)) {
 		uint32_t id;
-		uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
-		TDB_DATA key;
 		TDB_DATA val;
 		struct db_record *rec = NULL;
 
 		id = state.useable_id;
 
-		key = smbXsrv_session_local_id_to_key(id, key_buf);
-
-		rec = dbwrap_fetch_locked(db, mem_ctx, key);
+		rec = smbXsrv_session_local_fetch_locked(db, id, mem_ctx);
 		if (rec == NULL) {
 			return NT_STATUS_INSUFFICIENT_RESOURCES;
 		}
@@ -1206,8 +1219,6 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 
 	if (conn->protocol >= PROTOCOL_SMB2_02) {
 		uint64_t id = global->session_global_id;
-		uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
-		TDB_DATA key;
 
 		global->connection_dialect = conn->smb2.server.dialect;
 
@@ -1221,10 +1232,10 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 
 		session->local_id = global->session_global_id;
 
-		key = smbXsrv_session_local_id_to_key(session->local_id, key_buf);
-
-		local_rec = dbwrap_fetch_locked(table->local.db_ctx,
-						session, key);
+		local_rec = smbXsrv_session_local_fetch_locked(
+						table->local.db_ctx,
+						session->local_id,
+						session /* TALLOC_CTX */);
 		if (local_rec == NULL) {
 			TALLOC_FREE(session);
 			return NT_STATUS_NO_MEMORY;
@@ -1655,20 +1666,11 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 
 	local_rec = session->db_rec;
 	if (local_rec == NULL) {
-		uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
-		TDB_DATA key;
-
-		key = smbXsrv_session_local_id_to_key(session->local_id,
-						      key_buf);
-
-		local_rec = dbwrap_fetch_locked(table->local.db_ctx,
-						session, key);
+		local_rec = smbXsrv_session_local_fetch_locked(
+						table->local.db_ctx,
+						session->local_id,
+						session /* TALLOC_CTX */);
 		if (local_rec == NULL) {
-			DEBUG(0, ("smbXsrv_session_logoff(0x%08x): "
-				  "Failed to lock local key '%s'\n",
-				  session->global->session_global_id,
-				  hex_encode_talloc(local_rec, key.dptr,
-						    key.dsize)));
 			error = NT_STATUS_INTERNAL_ERROR;
 		}
 	}
