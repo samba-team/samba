@@ -824,6 +824,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.client_use_spnego = true;
 
 	Globals.client_signing = SMB_SIGNING_DEFAULT;
+	Globals._client_ipc_signing = SMB_SIGNING_DEFAULT;
 	Globals.server_signing = SMB_SIGNING_DEFAULT;
 
 	Globals.defer_sharing_violations = true;
@@ -4468,6 +4469,19 @@ int lp_client_ipc_max_protocol(void)
 		return PROTOCOL_NT1;
 	}
 	return client_ipc_max_protocol;
+}
+
+int lp_client_ipc_signing(void)
+{
+	int client_ipc_signing = lp__client_ipc_signing();
+	if (client_ipc_signing == SMB_SIGNING_DEFAULT) {
+		int ipc_min_protocol = lp_client_ipc_min_protocol();
+		if (ipc_min_protocol >= PROTOCOL_SMB2_02) {
+			return SMB_SIGNING_REQUIRED;
+		}
+		return lp_client_signing();
+	}
+	return client_ipc_signing;
 }
 
 struct loadparm_global * get_globals(void)
