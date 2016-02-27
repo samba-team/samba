@@ -1283,6 +1283,47 @@ NTSTATUS smb2srv_open_lookup(struct smbXsrv_connection *conn,
 	return status;
 }
 
+NTSTATUS smb2srv_open_lookup_replay_cache(struct smbXsrv_connection *conn,
+					  const struct GUID *create_guid,
+					  NTTIME now, /* TODO: needed ? */
+					  struct smbXsrv_open **_open)
+{
+	NTSTATUS status;
+	char *guid_string;
+	struct GUID_txt_buf buf;
+	uint32_t local_id = 0;
+	struct smbXsrv_open_table *table = conn->client->open_table;
+	struct db_context *db = table->local.replay_cache_db_ctx;
+
+	if (GUID_all_zero(create_guid)) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	guid_string = GUID_buf_string(create_guid, &buf);
+	if (guid_string == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dbwrap_fetch_uint32_bystring(db, guid_string, &local_id);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("failed to fetch local_id from replay cache: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	status = smbXsrv_open_local_lookup(table, local_id, 0, /* global_id */
+					   now, _open);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("smbXsrv_open_local_lookup failed for local_id %u\n",
+			(unsigned)local_id);
+	}
+
+	return status;
+}
+
 NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 			       struct auth_session_info *session_info,
 			       uint64_t persistent_id,
