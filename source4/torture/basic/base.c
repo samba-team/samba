@@ -371,6 +371,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 		struct tevent_req *req;
 		req = smb_raw_negotiate_send(cli, tctx->ev,
 					     cli->transport,
+					     PROTOCOL_CORE,
 					     PROTOCOL_NT1);
 		tevent_loop_once(tctx->ev);
 		if (!tevent_req_is_in_progress(req)) {

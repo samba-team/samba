@@ -297,6 +297,7 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 	state->subreq = smb_raw_negotiate_send(state,
 					       state->transport->ev,
 					       state->transport,
+					       state->transport->options.min_protocol,
 					       state->transport->options.max_protocol);
 	NT_STATUS_HAVE_NO_MEMORY(state->subreq);
 	tevent_req_set_callback(state->subreq, subreq_handler, c);
