@@ -1,0 +1,29 @@
+<samba:parameter name="client ipc max protocol"
+                 context="G"
+                 type="enum"
+                 function="_client_ipc_max_protocol"
+                 enumlist="enum_protocol"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>The value of the parameter (a string) is the highest
+    protocol level that will be supported for IPC$ connections as DCERPC transport.</para>
+
+    <para>Normally this option should not be set as the automatic
+    negotiation phase in the SMB protocol takes care of choosing
+    the appropriate protocol.</para>
+
+    <para>The value <constant>default</constant> refers to the latest
+    supported protocol, currently <constant>SMB3_11</constant>.</para>
+
+    <para>See <smbconfoption name="client max protocol"/> for a full list
+    of available protocols. The values CORE, COREPLUS, LANMAN1, LANMAN2
+    are silently upgraded to NT1.</para>
+</description>
+
+<related>client ipc min protocol</related>
+<related>client min protocol</related>
+<related>client max protocol</related>
+
+<value type="default">default</value>
+<value type="example">SMB2_10</value>
+</samba:parameter>

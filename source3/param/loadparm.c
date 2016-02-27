@@ -640,6 +640,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.server_min_protocol = PROTOCOL_LANMAN1;
 	Globals._client_max_protocol = PROTOCOL_DEFAULT;
 	Globals.client_min_protocol = PROTOCOL_CORE;
+	Globals._client_ipc_max_protocol = PROTOCOL_DEFAULT;
+	Globals._client_ipc_min_protocol = PROTOCOL_DEFAULT;
 	Globals._security = SEC_AUTO;
 	Globals.encrypt_passwords = true;
 	Globals.client_schannel = Auto;
@@ -4440,6 +4442,30 @@ int lp_winbindd_max_protocol(void)
 		return PROTOCOL_LATEST;
 	}
 	return client_max_protocol;
+}
+
+int lp_client_ipc_min_protocol(void)
+{
+	int client_ipc_min_protocol = lp__client_ipc_min_protocol();
+	if (client_ipc_min_protocol == PROTOCOL_DEFAULT) {
+		client_ipc_min_protocol = lp_client_min_protocol();
+	}
+	if (client_ipc_min_protocol < PROTOCOL_NT1) {
+		return PROTOCOL_NT1;
+	}
+	return client_ipc_min_protocol;
+}
+
+int lp_client_ipc_max_protocol(void)
+{
+	int client_ipc_max_protocol = lp__client_ipc_max_protocol();
+	if (client_ipc_max_protocol == PROTOCOL_DEFAULT) {
+		return PROTOCOL_LATEST;
+	}
+	if (client_ipc_max_protocol < PROTOCOL_NT1) {
+		return PROTOCOL_NT1;
+	}
+	return client_ipc_max_protocol;
 }
 
 struct loadparm_global * get_globals(void)
