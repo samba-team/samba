@@ -2491,7 +2491,6 @@ static void call_trans2findfirst(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
-	TALLOC_CTX *ctx = talloc_tos();
 	struct dptr_struct *dirptr = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP |
@@ -2554,7 +2553,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	}
 
 	if (req->posix_pathnames) {
-		srvstr_get_path_wcard_posix(ctx,
+		srvstr_get_path_wcard_posix(talloc_tos(),
 				params,
 				req->flags2,
 				&directory,
@@ -2564,7 +2563,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				&ntstatus,
 				&mask_contains_wcard);
 	} else {
-		srvstr_get_path_wcard(ctx,
+		srvstr_get_path_wcard(talloc_tos(),
 				params,
 				req->flags2,
 				&directory,
@@ -2582,7 +2581,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	if (backup_priv) {
 		become_root();
 		as_root = true;
-		ntstatus = filename_convert_with_privilege(ctx,
+		ntstatus = filename_convert_with_privilege(talloc_tos(),
 				conn,
 				req,
 				directory,
@@ -2590,7 +2589,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 				&mask_contains_wcard,
 				&smb_dname);
 	} else {
-		ntstatus = filename_convert(ctx, conn,
+		ntstatus = filename_convert(talloc_tos(), conn,
 				    req->flags2 & FLAGS2_DFS_PATHNAMES,
 				    directory,
 				    ucf_flags,
@@ -2616,7 +2615,7 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 	if(p == NULL) {
 		/* Windows and OS/2 systems treat search on the root '\' as if it were '\*' */
 		if((directory[0] == '.') && (directory[1] == '\0')) {
-			mask = talloc_strdup(ctx,"*");
+			mask = talloc_strdup(talloc_tos(),"*");
 			if (!mask) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				goto out;
@@ -2660,7 +2659,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		}
 
 		/* Pull out the list of names. */
-		ea_list = read_ea_name_list(ctx, pdata + 4, ea_size - 4);
+		ea_list = read_ea_name_list(talloc_tos(), pdata + 4, ea_size - 4);
 		if (!ea_list) {
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			goto out;
@@ -2729,9 +2728,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		 directory,lp_dont_descend(ctx, SNUM(conn))));
-	if (in_list(directory,lp_dont_descend(ctx, SNUM(conn)),conn->case_sensitive))
+		 directory,lp_dont_descend(talloc_tos(), SNUM(conn))));
+	if (in_list(directory,
+			lp_dont_descend(talloc_tos(), SNUM(conn)),
+			conn->case_sensitive)) {
 		dont_descend = True;
+	}
 
 	p = pdata;
 	space_remaining = max_data_bytes;
@@ -2746,7 +2748,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			ntstatus = get_lanman2_dir_entry(ctx,
+			ntstatus = get_lanman2_dir_entry(talloc_tos(),
 					conn,
 					dirptr,
 					req->flags2,
