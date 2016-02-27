@@ -1783,6 +1783,7 @@ void reply_search(struct smb_request *req)
 	/* dirtype &= ~FILE_ATTRIBUTE_DIRECTORY; */
 
 	if (status_len == 0) {
+		struct smb_filename *smb_dname = NULL;
 		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
 		nt_status = filename_convert(ctx, conn,
@@ -1821,10 +1822,19 @@ void reply_search(struct smb_request *req)
 		memset((char *)status,'\0',21);
 		SCVAL(status,0,(dirtype & 0x1F));
 
+		smb_dname = synthetic_smb_fname(talloc_tos(),
+					directory,
+					NULL,
+					NULL);
+		if (smb_dname == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
+
 		nt_status = dptr_create(conn,
 					NULL, /* req */
 					NULL, /* fsp */
-					directory,
+					smb_dname,
 					True,
 					expect_close,
 					req->smbpid,
@@ -1832,6 +1842,9 @@ void reply_search(struct smb_request *req)
 					mask_contains_wcard,
 					dirtype,
 					&dirptr);
+
+		TALLOC_FREE(smb_dname);
+
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			reply_nterror(req, nt_status);
 			goto out;

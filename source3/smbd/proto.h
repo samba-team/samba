@@ -193,8 +193,14 @@ void dptr_closepath(struct smbd_server_connection *sconn,
 NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
-		const char *path, bool old_handle, bool expect_close,uint16_t spid,
-		const char *wcard, bool wcard_has_wild, uint32_t attr, struct dptr_struct **dptr_ret);
+		const struct smb_filename *smb_dname,
+		bool old_handle,
+		bool expect_close,
+		uint16_t spid,
+		const char *wcard,
+		bool wcard_has_wild,
+		uint32_t attr,
+		struct dptr_struct **dptr_ret);
 void dptr_CloseDir(files_struct *fsp);
 void dptr_SeekDir(struct dptr_struct *dptr, long offset);
 long dptr_TellDir(struct dptr_struct *dptr);

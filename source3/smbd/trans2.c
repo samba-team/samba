@@ -2633,6 +2633,8 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
+		/* Ensure smb_dname->base_name matches. */
+		smb_dname->base_name = directory;
 	}
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
@@ -2698,7 +2700,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	ntstatus = dptr_create(conn,
 				req,
 				NULL, /* fsp */
-				directory,
+				smb_dname,
 				False,
 				True,
 				req->smbpid,

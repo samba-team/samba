@@ -376,7 +376,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		status = dptr_create(conn,
 				     NULL, /* req */
 				     fsp,
-				     fsp->fsp_name->base_name,
+				     fsp->fsp_name,
 				     false, /* old_handle */
 				     false, /* expect_close */
 				     0, /* spid */
