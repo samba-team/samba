@@ -906,6 +906,7 @@ int lp_client_max_protocol(void);
 int lp_winbindd_max_protocol(void);
 int lp_client_ipc_min_protocol(void);
 int lp_client_ipc_max_protocol(void);
+int lp_client_ipc_signing(void);
 int lp_smb2_max_credits(void);
 int lp_cups_encrypt(void);
 bool lp_widelinks(int );
