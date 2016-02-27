@@ -8,14 +8,16 @@
     and <emphasis>disabled</emphasis>. 
     </para>
 
-    <para>When set to auto or default, SMB signing is offered, but not
-    enforced, except in winbindd, where it is enforced to Active
-    Directory Domain Controllers. </para>
+    <para>When set to auto or default, SMB signing is offered, but not enforced.</para>
 
     <para>When set to mandatory, SMB signing is required and if set
-	to disabled, SMB signing is not offered either.
-</para>
+    to disabled, SMB signing is not offered either.</para>
+
+    <para>IPC$ connections for DCERPC e.g. in winbindd, are handled by the
+    <smbconfoption name="client ipc signing"/> option.</para>
 </description>
+
+<related>client ipc signing</related>
 
 <value type="default">default</value>
 </samba:parameter>
