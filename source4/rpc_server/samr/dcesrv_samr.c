@@ -4321,8 +4321,17 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 	NTSTATUS status;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	if (transport != NCACN_IP_TCP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
+
+	if (dce_call->conn->auth_state.auth_info != NULL) {
+		auth_level = dce_call->conn->auth_state.auth_info->auth_level;
+	}
+
+	if (auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
