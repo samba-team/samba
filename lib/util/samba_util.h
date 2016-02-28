@@ -722,8 +722,11 @@ void server_id_set_disconnected(struct server_id *id);
  */
 bool server_id_is_disconnected(const struct server_id *id);
 
-void server_id_put(uint8_t buf[24], const struct server_id id);
-void server_id_get(struct server_id *id, const uint8_t buf[24]);
+#define SERVER_ID_BUF_LENGTH 24
+void server_id_put(uint8_t buf[SERVER_ID_BUF_LENGTH],
+		   const struct server_id id);
+void server_id_get(struct server_id *id,
+		   const uint8_t buf[SERVER_ID_BUF_LENGTH]);
 
 /*
  * Samba code should use samba_tevent_context_init() instead of

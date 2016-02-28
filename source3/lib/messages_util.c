@@ -27,8 +27,8 @@ void message_hdr_put(uint8_t buf[MESSAGE_HDR_LENGTH], uint32_t msg_type,
 		     struct server_id src, struct server_id dst)
 {
 	server_id_put(buf, dst);
-	server_id_put(buf + 24, src);
-	SIVAL(buf, 48, msg_type);
+	server_id_put(buf + SERVER_ID_BUF_LENGTH, src);
+	SIVAL(buf, 2 * SERVER_ID_BUF_LENGTH, msg_type);
 }
 
 void message_hdr_get(uint32_t *msg_type, struct server_id *src,
@@ -36,6 +36,6 @@ void message_hdr_get(uint32_t *msg_type, struct server_id *src,
 		     const uint8_t buf[MESSAGE_HDR_LENGTH])
 {
 	server_id_get(dst, buf);
-	server_id_get(src, buf + 24);
-	*msg_type = IVAL(buf, 48);
+	server_id_get(src, buf + SERVER_ID_BUF_LENGTH);
+	*msg_type = IVAL(buf, 2 * SERVER_ID_BUF_LENGTH);
 }
