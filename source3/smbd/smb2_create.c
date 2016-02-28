@@ -555,10 +555,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 * (Note that the cases of an additional dh2q or dh2c blob
 		 *  which require a different error code, have been treated
 		 *  above.)
-		 *
-		 * TODO:
-		 * This is only true for the oplock case:
-		 * For leases, lease request is required additionally.
 		 */
 
 		if (dhnq) {
@@ -595,10 +591,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		 * (Note that the cases of an additional dhnq, dhnc or dh2q
 		 *  blob which require a different error code, have been
 		 *  treated above.)
-		 *
-		 * TODO:
-		 * This is only true for the oplock case:
-		 * For leases, lease request is required additionally!
 		 */
 
 		num_blobs_allowed = 1;
