@@ -459,7 +459,6 @@ static PyMethodDef py_creds_methods[] = {
 
 PyTypeObject PyCredentials = {
 	.tp_name = "credentials.Credentials",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_new = py_creds_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_creds_methods,
@@ -468,23 +467,16 @@ PyTypeObject PyCredentials = {
 
 PyTypeObject PyCredentialCacheContainer = {
 	.tp_name = "credentials.CredentialCacheContainer",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 void initcredentials(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = pytalloc_GetObjectType();
-	if (talloc_type == NULL)
+	if (pytalloc_BaseObject_PyType_Ready(&PyCredentials) < 0)
 		return;
 
-	PyCredentials.tp_base = PyCredentialCacheContainer.tp_base = talloc_type;
-
-	if (PyType_Ready(&PyCredentials) < 0)
-		return;
-
-	if (PyType_Ready(&PyCredentialCacheContainer) < 0)
+	if (pytalloc_BaseObject_PyType_Ready(&PyCredentialCacheContainer) < 0)
 		return;
 
 	m = Py_InitModule3("credentials", NULL, "Credentials management.");
