@@ -64,9 +64,10 @@ bld.SAMBA_LIBRARY('talloc_report',
 bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''xfile.c data_blob.c util_file.c time.c
                               signal.c util.c idtree.c fault.c
-                              substitute.c util_process.c util_strlist.c ''',
+                              substitute.c util_process.c util_strlist.c
+                              strv_util.c''',
                     deps='''time-basic samba-debug socket-blocking talloc
-                            tevent execinfo pthread''',
+                            tevent execinfo pthread strv''',
                     local_include=False)
 
 bld.SAMBA_LIBRARY('tevent-unix-util',

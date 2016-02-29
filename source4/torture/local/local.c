@@ -42,6 +42,7 @@
 	torture_local_util_asn1,
 	torture_local_util_anonymous_shared,
 	torture_local_util_strv,
+	torture_local_util_strv_util,
 	torture_local_idtree, 
 	torture_local_dlinklist,
 	torture_local_genrand, 
