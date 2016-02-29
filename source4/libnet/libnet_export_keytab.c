@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2009
+   Copyright (C) Andreas Schneider <asn@samba.org> 2016
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,59 +25,184 @@
 #include "kdc/samba_kdc.h"
 #include "libnet/libnet_export_keytab.h"
 
+#include "kdc/db-glue.h"
+#include "kdc/sdb.h"
+
+static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
+			    krb5_context context,
+			    struct samba_kdc_db_context *db_ctx,
+			    const char *keytab_name,
+			    const char *principal,
+			    const char **error_string)
+{
+	struct sdb_entry_ex sentry = {
+		.free_entry = NULL,
+	};
+	krb5_keytab keytab;
+	krb5_error_code code = 0;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *entry_principal = NULL;
+	bool copy_one_principal = (principal != NULL);
+	krb5_data password;
+
+	code = smb_krb5_open_keytab_relative(context,
+					     keytab_name,
+					     true, /* write_access */
+					     &keytab);
+	if (code != 0) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Failed to open keytab: %s",
+						keytab_name);
+		status = NT_STATUS_NO_SUCH_FILE;
+		goto done;
+	}
+
+	for (code = samba_kdc_firstkey(context, db_ctx, &sentry);
+	     code == 0;
+	     code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
+		bool principal_found = false;
+		int i;
+
+		code = krb5_unparse_name(context,
+					 sentry.entry.principal,
+					 &entry_principal);
+		if (code != 0) {
+			*error_string = smb_get_krb5_error_message(context,
+								   code,
+								   mem_ctx);
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		if (principal != NULL) {
+			int cmp;
+
+			cmp = strcmp(principal, entry_principal);
+			if (cmp == 0) {
+				principal_found = true;
+			}
+		}
+
+		if (sentry.entry.keys.len == 0 ||
+		    (copy_one_principal && !principal_found)) {
+			SAFE_FREE(entry_principal);
+			sdb_free_entry(&sentry);
+			sentry = (struct sdb_entry_ex) {
+				.free_entry = NULL,
+			};
+
+			continue;
+		}
+
+		for (i = 0; i < sentry.entry.keys.len; i++) {
+			struct sdb_key *s = &(sentry.entry.keys.val[i]);
+			krb5_enctype enctype;
+
+			enctype = KRB5_KEY_TYPE(&(s->key));
+			password.length = KRB5_KEY_LENGTH(&s->key);
+			password.data = (char *)KRB5_KEY_DATA(&s->key);
+
+			DBG_INFO("smb_krb5_kt_add_entry for enctype=0x%04x\n",
+				  (int)enctype);
+			code = smb_krb5_kt_add_entry(context,
+						     keytab,
+						     sentry.entry.kvno,
+						     entry_principal,
+						     NULL,
+						     enctype,
+						     &password,
+						     true,    /* no_salt */
+						     false);  /* keeyp_old_entries */
+			if (code != 0) {
+				status = NT_STATUS_UNSUCCESSFUL;
+				*error_string = smb_get_krb5_error_message(context,
+									   code,
+									   mem_ctx);
+				DEBUG(0, ("smb_krb5_kt_add_entry failed code=%d, error = %s\n",
+					  code, *error_string));
+				goto done;
+			}
+		}
+
+		if (principal_found) {
+			break;
+		}
+
+		SAFE_FREE(entry_principal);
+		sdb_free_entry(&sentry);
+		sentry = (struct sdb_entry_ex) {
+			.free_entry = NULL,
+		};
+	}
+
+	if (code != 0 && code != SDB_ERR_NOENTRY) {
+		*error_string = smb_get_krb5_error_message(context,
+							   code,
+							   mem_ctx);
+		status = NT_STATUS_NO_SUCH_USER;
+		goto done;
+	}
+
+	status = NT_STATUS_OK;
+done:
+	SAFE_FREE(entry_principal);
+	sdb_free_entry(&sentry);
+
+	return status;
+}
+
 NTSTATUS libnet_export_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct libnet_export_keytab *r)
 {
 	krb5_error_code ret;
 	struct smb_krb5_context *smb_krb5_context;
-	const char *from_keytab;
-
-	/* Register hdb-samba4 hooks for use as a keytab */
-
-	struct samba_kdc_base_context *base_ctx = talloc_zero(mem_ctx, struct samba_kdc_base_context);
-	if (!base_ctx) {
-		return NT_STATUS_NO_MEMORY; 
-	}
-
-	base_ctx->ev_ctx = ctx->event_ctx;
-	base_ctx->lp_ctx = ctx->lp_ctx;
-
-	from_keytab = talloc_asprintf(base_ctx, "HDB:samba4&%p", base_ctx);
-	if (!from_keytab) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	struct samba_kdc_base_context *base_ctx;
+	struct samba_kdc_db_context *db_ctx = NULL;
+	const char *error_string = NULL;
+	NTSTATUS status;
 
 	ret = smb_krb5_init_context(ctx, ctx->lp_ctx, &smb_krb5_context);
 	if (ret) {
 		return NT_STATUS_NO_MEMORY; 
 	}
 
-	ret = krb5_plugin_register(smb_krb5_context->krb5_context, 
-				   PLUGIN_TYPE_DATA, "hdb",
-				   &hdb_samba4_interface);
-	if(ret) {
+	base_ctx = talloc_zero(mem_ctx, struct samba_kdc_base_context);
+	if (base_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = krb5_kt_register(smb_krb5_context->krb5_context, &hdb_kt_ops);
-	if(ret) {
-		return NT_STATUS_NO_MEMORY;
+	base_ctx->ev_ctx = ctx->event_ctx;
+	base_ctx->lp_ctx = ctx->lp_ctx;
+
+	status = samba_kdc_setup_db_ctx(mem_ctx, base_ctx, &db_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (r->in.principal) {
-		ret = kt_copy_one_principal(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name, r->in.principal, 0, samba_all_enctypes());
+	if (r->in.principal != NULL) {
+		DEBUG(0, ("Export one principal to %s\n", r->in.keytab_name));
+		status = sdb_kt_copy(mem_ctx,
+				     smb_krb5_context->krb5_context,
+				     db_ctx,
+				     r->in.keytab_name,
+				     r->in.principal,
+				     &error_string);
 	} else {
 		unlink(r->in.keytab_name);
-		ret = kt_copy(smb_krb5_context->krb5_context, from_keytab, r->in.keytab_name);
+		DEBUG(0, ("Export complete keytab to %s\n", r->in.keytab_name));
+		status = sdb_kt_copy(mem_ctx,
+				     smb_krb5_context->krb5_context,
+				     db_ctx,
+				     r->in.keytab_name,
+				     NULL,
+				     &error_string);
 	}
 
-	if(ret) {
-		r->out.error_string = smb_get_krb5_error_message(smb_krb5_context->krb5_context,
-								 ret, mem_ctx);
-		if (ret == KRB5_KT_NOTFOUND) {
-			return NT_STATUS_NO_SUCH_USER;
-		} else {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	talloc_free(db_ctx);
+	talloc_free(base_ctx);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		r->out.error_string = error_string;
 	}
-	return NT_STATUS_OK;
+
+	return status;
 }
