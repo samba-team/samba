@@ -897,6 +897,157 @@ done:
 }
 
 /**
+ * Test durablity v2 create replay detection on single channel.
+ * Variant with leases instead of oplocks, where the
+ * replay does not specify the original lease level but
+ * just a "R" lease. This still gives the upgraded lease
+ * level in the reply.
+ * - open a file with a rh lease
+ * - upgrade to a rwh lease with a second create
+ * - replay the first create.
+ *   ==> it gets back the upgraded lease level
+ */
+static bool test_replay_dhv2_lease2(struct torture_context *tctx,
+				    struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h1;
+	struct smb2_handle *h1 = NULL;
+	struct smb2_handle _h2;
+	struct smb2_handle *h2 = NULL;
+	struct smb2_create io1, io2, ref1;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	const char *fname = BASEDIR "\\replay2_lease2.dat";
+	struct smb2_transport *transport = tree->session->transport;
+	uint32_t share_capabilities;
+	bool share_is_so;
+	uint32_t server_capabilities;
+	struct smb2_lease ls1, ls2;
+	uint64_t lease_key;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport->conn);
+	if (!(server_capabilities & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
+	ZERO_STRUCT(break_info);
+	break_info.tctx = tctx;
+	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	torture_comment(tctx, "Replay of DurableHandleReqV2 with Lease "
+			      "on Single Channel\n");
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testdir(tree, BASEDIR, &_h1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, _h1);
+	CHECK_VAL(break_info.count, 0);
+
+	lease_key = random();
+
+	smb2_lease_create(&io1, &ls1, false /* dir */, fname,
+			lease_key, smb2_util_lease_state("RH"));
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid;
+	io1.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(io1.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
+	CHECK_VAL(io1.out.lease_response.lease_key.data[0], lease_key);
+	CHECK_VAL(io1.out.lease_response.lease_key.data[1], ~lease_key);
+	if (share_is_so) {
+		CHECK_VAL(io1.out.lease_response.lease_state,
+			  smb2_util_lease_state("R"));
+		CHECK_VAL(io1.out.durable_open_v2, false);
+		CHECK_VAL(io1.out.timeout, 0);
+	} else {
+		CHECK_VAL(io1.out.lease_response.lease_state,
+			  smb2_util_lease_state("RH"));
+		CHECK_VAL(io1.out.durable_open_v2, true);
+		CHECK_VAL(io1.out.timeout, io1.in.timeout);
+	}
+	ref1 = io1;
+	_h1 = io1.out.file.handle;
+	h1 = &_h1;
+
+	/*
+	 * Upgrade the lease to RWH
+	 */
+	smb2_lease_create(&io2, &ls2, false /* dir */, fname,
+			lease_key, smb2_util_lease_state("RHW"));
+	io2.in.durable_open = false;
+	io2.in.durable_open_v2 = true;
+	io2.in.persistent_open = false;
+	io2.in.create_guid = GUID_random(); /* new guid... */
+	io2.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h2 = io2.out.file.handle;
+	h2 = &_h2;
+
+	/*
+	 * Replay Durable V2 Create on single channel.
+	 * Changing the requested lease level to "R"
+	 * does not change the response:
+	 * We get the reply from open #1 but with the
+	 * upgraded lease.
+	 */
+
+	/* adapt the expected response */
+	if (!share_is_so) {
+		ref1.out.lease_response.lease_state =
+					smb2_util_lease_state("RHW");
+	}
+
+	smb2_lease_create(&io1, &ls1, false /* dir */, fname,
+			lease_key, smb2_util_lease_state("R"));
+	io1.in.durable_open = false;
+	io1.in.durable_open_v2 = true;
+	io1.in.persistent_open = false;
+	io1.in.create_guid = create_guid;
+	io1.in.timeout = UINT32_MAX;
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, mem_ctx, &io1);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATE_OUT(&io1, &ref1);
+	CHECK_VAL(break_info.count, 0);
+
+done:
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+
+	if (h1 != NULL) {
+		smb2_util_close(tree, *h1);
+	}
+	if (h2 != NULL) {
+		smb2_util_close(tree, *h2);
+	}
+	smb2_deltree(tree, BASEDIR);
+
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
  * Test Durablity V2 Create Replay Detection on Multi Channel
  */
 static bool test_replay3(struct torture_context *tctx, struct smb2_tree *tree1)
@@ -1435,6 +1586,7 @@ struct torture_suite *torture_smb2_replay_init(void)
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock2", test_replay_dhv2_oplock2);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock3", test_replay_dhv2_oplock3);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease1",  test_replay_dhv2_lease1);
+	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease2",  test_replay_dhv2_lease2);
 	torture_suite_add_1smb2_test(suite, "replay3", test_replay3);
 	torture_suite_add_1smb2_test(suite, "replay4", test_replay4);
 	torture_suite_add_1smb2_test(suite, "replay5", test_replay5);
