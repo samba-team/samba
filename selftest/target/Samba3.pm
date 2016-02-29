@@ -1512,6 +1512,7 @@ sub provision($$$$$$$$)
 [valid-users-tmp]
 	path = $shrdir
 	valid users = $unix_name
+	access based share enum = yes
 [msdfs-share]
 	path = $msdfs_shrdir
 	msdfs root = yes
