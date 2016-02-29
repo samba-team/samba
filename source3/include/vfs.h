@@ -523,6 +523,7 @@ enum vfs_fallocate_flags {
 
 struct vfs_aio_state {
 	int error;
+	uint64_t duration;
 };
 
 /*
