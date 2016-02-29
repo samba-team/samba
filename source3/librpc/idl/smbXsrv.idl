@@ -469,6 +469,7 @@ interface smbXsrv
 		NTTIME					idle_time;
 		[ignore] files_struct			*compat;
 		smbXsrv_open_flags			flags;
+		uint32					create_action;
 	} smbXsrv_open;
 
 	typedef union {
