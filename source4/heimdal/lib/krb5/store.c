@@ -270,6 +270,8 @@ krb5_storage_get_eof_code(krb5_storage *sp)
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_storage_free(krb5_storage *sp)
 {
+    if (sp == NULL)
+        return 0;
     if(sp->free)
 	(*sp->free)(sp);
     free(sp->data);
