@@ -22,6 +22,7 @@
 #include "secrets.h"
 #include "gse_krb5.h"
 #include "lib/param/loadparm.h"
+#include "libads/kerberos_proto.h"
 
 #ifdef HAVE_KRB5
 
@@ -131,15 +132,44 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 
 	for (i = 0; enctypes[i]; i++) {
 		krb5_keyblock *key = NULL;
+		krb5_principal salt_princ = NULL;
+		char *salt_princ_s;
+		char *princ_s;
+		int rc;
 
 		if (!(key = SMB_MALLOC_P(krb5_keyblock))) {
 			ret = ENOMEM;
 			goto out;
 		}
 
-		if (create_kerberos_key_from_string(krbctx, princ,
-						    password, key,
-						    enctypes[i], false)) {
+		ret = krb5_unparse_name(krbctx, princ, &princ_s);
+		if (ret != 0) {
+			continue;
+		}
+
+		salt_princ_s = kerberos_fetch_salt_princ_for_host_princ(krbctx,
+									princ_s,
+									enctypes[i]);
+		SAFE_FREE(princ_s);
+		if (salt_princ_s == NULL) {
+			continue;
+		}
+
+		ret = krb5_parse_name(krbctx, salt_princ_s, &salt_princ);
+		SAFE_FREE(salt_princ_s);
+		if (ret != 0) {
+			continue;
+		}
+
+		rc = create_kerberos_key_from_string(krbctx,
+						     princ,
+						     salt_princ,
+						     password,
+						     key,
+						     enctypes[i],
+						     false);
+		krb5_free_principal(krbctx, salt_princ);
+		if (rc != 0) {
 			DEBUG(10, ("Failed to create key for enctype %d "
 				   "(error: %s)\n",
 				   enctypes[i], error_message(ret)));

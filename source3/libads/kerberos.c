@@ -467,47 +467,36 @@ char* kerberos_secrets_fetch_des_salt( void )
  to look for the older tdb keys.  Caller must free if return is not null.
  ************************************************************************/
 
-static
-krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
-							krb5_principal host_princ,
-							int enctype)
+char *kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
+					       const char *host_princ_s,
+					       int enctype)
 {
-	char *unparsed_name = NULL, *salt_princ_s = NULL;
-	krb5_principal ret_princ = NULL;
-
+	char *salt_princ_s;
 	/* lookup new key first */
 
-	if ( (salt_princ_s = kerberos_secrets_fetch_des_salt()) == NULL ) {
+	salt_princ_s = kerberos_secrets_fetch_des_salt();
+	if (salt_princ_s == NULL) {
 
 		/* look under the old key.  If this fails, just use the standard key */
-
-		if (smb_krb5_unparse_name(talloc_tos(), context, host_princ, &unparsed_name) != 0) {
-			return (krb5_principal)NULL;
-		}
-		if ((salt_princ_s = kerberos_secrets_fetch_salting_principal(unparsed_name, enctype)) == NULL) {
+		salt_princ_s = kerberos_secrets_fetch_salting_principal(host_princ_s,
+									enctype);
+		if (salt_princ_s == NULL) {
 			/* fall back to host/machine.realm@REALM */
 			salt_princ_s = kerberos_standard_des_salt();
 		}
 	}
 
-	if (smb_krb5_parse_name(context, salt_princ_s, &ret_princ) != 0) {
-		ret_princ = NULL;
-	}
-
-	TALLOC_FREE(unparsed_name);
-	SAFE_FREE(salt_princ_s);
-
-	return ret_princ;
+	return salt_princ_s;
 }
 
 int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
+					krb5_principal salt_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
 					krb5_enctype enctype,
 					bool no_salt)
 {
-	krb5_principal salt_princ = NULL;
 	int ret;
 	/*
 	 * Check if we've determined that the KDC is salting keys for this
@@ -524,16 +513,12 @@ int create_kerberos_key_from_string(krb5_context context,
 		KRB5_KEY_TYPE(key) = enctype;
 		return 0;
 	}
-	salt_princ = kerberos_fetch_salt_princ_for_host_princ(context, host_princ, enctype);
 	ret = smb_krb5_create_key_from_string(context,
 					      salt_princ ? salt_princ : host_princ,
 					      NULL,
 					      password,
 					      enctype,
 					      key);
-	if (salt_princ) {
-		krb5_free_principal(context, salt_princ);
-	}
 	return ret;
 }
 

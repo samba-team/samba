@@ -58,6 +58,9 @@ int kerberos_kinit_password_ext(const char *principal,
 int ads_kdestroy(const char *cc_name);
 char* kerberos_standard_des_salt( void );
 bool kerberos_secrets_store_des_salt( const char* salt );
+char *kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
+					       const char *host_princ_s,
+					       int enctype);
 
 bool kerberos_secrets_store_salting_principal(const char *service,
 					      int enctype,
@@ -99,6 +102,7 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 #ifdef HAVE_KRB5
 int create_kerberos_key_from_string(krb5_context context,
 					krb5_principal host_princ,
+					krb5_principal salt_princ,
 					krb5_data *password,
 					krb5_keyblock *key,
 					krb5_enctype enctype,

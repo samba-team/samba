@@ -214,6 +214,8 @@ static krb5_error_code libnet_keytab_add_entry(krb5_context context,
 	krb5_keyblock *keyp;
 	krb5_keytab_entry kt_entry;
 	krb5_error_code ret;
+	krb5_principal salt_princ = NULL;
+	char *salt_princ_s;
 
 	/* remove duplicates first ... */
 	ret = libnet_keytab_remove_entries(context, keytab, princ_s, kvno,
@@ -236,9 +238,30 @@ static krb5_error_code libnet_keytab_add_entry(krb5_context context,
 
 	keyp = KRB5_KT_KEY(&kt_entry);
 
-	if (create_kerberos_key_from_string(context, kt_entry.principal,
-					    &password, keyp, enctype, true))
-	{
+	salt_princ_s = kerberos_fetch_salt_princ_for_host_princ(context,
+								princ_s,
+								enctype);
+	if (salt_princ_s == NULL) {
+		ret = KRB5KRB_ERR_GENERIC;
+		goto done;
+	}
+
+	ret = krb5_parse_name(context, salt_princ_s, &salt_princ);
+	SAFE_FREE(salt_princ_s);
+	if (ret != 0) {
+		ret = KRB5KRB_ERR_GENERIC;
+		goto done;
+	}
+
+	ret = create_kerberos_key_from_string(context,
+					      kt_entry.principal,
+					      salt_princ,
+					      &password,
+					      keyp,
+					      enctype,
+					      true);
+	krb5_free_principal(context, salt_princ);
+	if (ret != 0) {
 		ret = KRB5KRB_ERR_GENERIC;
 		goto done;
 	}

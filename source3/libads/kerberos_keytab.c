@@ -187,7 +187,8 @@ static int smb_krb5_kt_add_entry(krb5_context context,
 				 krb5_keytab keytab,
 				 krb5_kvno kvno,
 				 const char *princ_s,
-				 krb5_enctype *enctypes,
+				 const char *salt_principal,
+				 krb5_enctype enctype,
 				 krb5_data password,
 				 bool no_salt,
 				 bool keep_old_entries)
@@ -195,7 +196,9 @@ static int smb_krb5_kt_add_entry(krb5_context context,
 	krb5_error_code ret;
 	krb5_keytab_entry kt_entry;
 	krb5_principal princ = NULL;
-	int i;
+	krb5_keyblock *keyp;
+	krb5_principal salt_princ = NULL;
+	int rc;
 
 	ZERO_STRUCT(kt_entry);
 
@@ -218,31 +221,40 @@ static int smb_krb5_kt_add_entry(krb5_context context,
 	 * not equal to the current kvno-1. */
 
 	/* Now add keytab entries for all encryption types */
-	for (i = 0; enctypes[i]; i++) {
-		krb5_keyblock *keyp;
+	ret = smb_krb5_parse_name(context, salt_principal, &salt_princ);
+	if (ret) {
+		DBG_WARNING("krb5_parse_name(%s) failed (%s)\n",
+			    salt_principal, error_message(ret));
+		goto out;
+	}
 
-		keyp = KRB5_KT_KEY(&kt_entry);
+	keyp = KRB5_KT_KEY(&kt_entry);
 
-		if (create_kerberos_key_from_string(context, princ,
-						    &password, keyp,
-						    enctypes[i], no_salt)) {
-			continue;
-		}
+	rc = create_kerberos_key_from_string(context,
+					     princ,
+					     salt_princ,
+					     &password,
+					     keyp,
+					     enctype,
+					     no_salt);
+	krb5_free_principal(context, salt_princ);
+	if (rc != 0) {
+		goto out;
+	}
 
-		kt_entry.principal = princ;
-		kt_entry.vno       = kvno;
+	kt_entry.principal = princ;
+	kt_entry.vno       = kvno;
 
-		DEBUG(3, (__location__ ": adding keytab entry for (%s) with "
-			  "encryption type (%d) and version (%d)\n",
-			  princ_s, enctypes[i], kt_entry.vno));
-		ret = krb5_kt_add_entry(context, keytab, &kt_entry);
-		krb5_free_keyblock_contents(context, keyp);
-		ZERO_STRUCT(kt_entry);
-		if (ret) {
-			DEBUG(1, (__location__ ": adding entry to keytab "
-				  "failed (%s)\n", error_message(ret)));
-			goto out;
-		}
+	DEBUG(3, (__location__ ": adding keytab entry for (%s) with "
+		  "encryption type (%d) and version (%d)\n",
+		  princ_s, enctype, kt_entry.vno));
+	ret = krb5_kt_add_entry(context, keytab, &kt_entry);
+	krb5_free_keyblock_contents(context, keyp);
+	ZERO_STRUCT(kt_entry);
+	if (ret) {
+		DEBUG(1, (__location__ ": adding entry to keytab "
+			  "failed (%s)\n", error_message(ret)));
+		goto out;
 	}
 
 out:
@@ -280,11 +292,13 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 	};
 	char *princ_s = NULL;
 	char *short_princ_s = NULL;
+	char *salt_princ_s = NULL;
 	char *password_s = NULL;
 	char *my_fqdn;
 	TALLOC_CTX *tmpctx = NULL;
 	char *machine_name;
 	ADS_STATUS aderr;
+	int i;
 
 	initialize_krb5_error_table();
 	ret = krb5_init_context(&context);
@@ -407,25 +421,46 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		goto out;
 	}
 
-	/* add the fqdn principal to the keytab */
-	ret = smb_krb5_kt_add_entry(context, keytab, kvno,
-				    princ_s, enctypes, password,
-				    false, false);
-	if (ret) {
-		DEBUG(1, (__location__ ": Failed to add entry to keytab\n"));
-		goto out;
-	}
+	for (i = 0; enctypes[i]; i++) {
+		salt_princ_s = kerberos_fetch_salt_princ_for_host_princ(context,
+									princ_s,
+									enctypes[i]);
 
-	/* add the short principal name if we have one */
-	if (short_princ_s) {
-		ret = smb_krb5_kt_add_entry(context, keytab, kvno,
-					    short_princ_s, enctypes, password,
-					    false, false);
+		/* add the fqdn principal to the keytab */
+		ret = smb_krb5_kt_add_entry(context,
+					    keytab,
+					    kvno,
+					    princ_s,
+					    salt_princ_s,
+					    enctypes[i],
+					    password,
+					    false,
+					    false);
 		if (ret) {
-			DEBUG(1, (__location__
-				  ": Failed to add short entry to keytab\n"));
+			DEBUG(1, (__location__ ": Failed to add entry to keytab\n"));
+			SAFE_FREE(salt_princ_s);
 			goto out;
 		}
+
+		/* add the short principal name if we have one */
+		if (short_princ_s) {
+			ret = smb_krb5_kt_add_entry(context,
+						    keytab,
+						    kvno,
+						    short_princ_s,
+						    salt_princ_s,
+						    enctypes[i],
+						    password,
+						    false,
+						    false);
+			if (ret) {
+				DEBUG(1, (__location__
+					  ": Failed to add short entry to keytab\n"));
+				SAFE_FREE(salt_princ_s);
+				goto out;
+			}
+		}
+		SAFE_FREE(salt_princ_s);
 	}
 
 out:
