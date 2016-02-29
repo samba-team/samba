@@ -160,7 +160,6 @@ PyTypeObject PyRegistry = {
 	.tp_name = "Registry",
 	.tp_methods = registry_methods,
 	.tp_new = registry_new,
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
@@ -300,13 +299,11 @@ PyTypeObject PyHiveKey = {
 	.tp_name = "HiveKey",
 	.tp_methods = hive_key_methods,
 	.tp_new = hive_new,
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 PyTypeObject PyRegistryKey = {
 	.tp_name = "RegistryKey",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
@@ -444,22 +441,14 @@ static PyMethodDef py_registry_methods[] = {
 void initregistry(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = pytalloc_GetObjectType();
 
-	if (talloc_type == NULL)
+	if (pytalloc_BaseObject_PyType_Ready(&PyHiveKey) < 0)
 		return;
 
-	PyHiveKey.tp_base = talloc_type;
-	PyRegistry.tp_base = talloc_type;
-	PyRegistryKey.tp_base = talloc_type;
-
-	if (PyType_Ready(&PyHiveKey) < 0)
+	if (pytalloc_BaseObject_PyType_Ready(&PyRegistry) < 0)
 		return;
 
-	if (PyType_Ready(&PyRegistry) < 0)
-		return;
-
-	if (PyType_Ready(&PyRegistryKey) < 0)
+	if (pytalloc_BaseObject_PyType_Ready(&PyRegistryKey) < 0)
 		return;
 
 	m = Py_InitModule3("registry", py_registry_methods, "Registry");
