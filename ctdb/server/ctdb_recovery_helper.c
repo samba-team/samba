@@ -135,9 +135,29 @@ static struct recdb_context *recdb_create(TALLOC_CTX *mem_ctx, uint32_t db_id,
 	return recdb;
 }
 
+static uint32_t recdb_id(struct recdb_context *recdb)
+{
+	return recdb->db_id;
+}
+
 static const char *recdb_name(struct recdb_context *recdb)
 {
 	return recdb->db_name;
+}
+
+static const char *recdb_path(struct recdb_context *recdb)
+{
+	return recdb->db_path;
+}
+
+static struct tdb_context *recdb_tdb(struct recdb_context *recdb)
+{
+	return recdb->db->tdb;
+}
+
+static bool recdb_persistent(struct recdb_context *recdb)
+{
+	return recdb->persistent;
 }
 
 struct recdb_add_traverse_state {
@@ -163,7 +183,7 @@ static int recdb_add_traverse(uint32_t reqid, struct ctdb_ltdb_header *header,
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 
 	/* fetch the existing record, if any */
-	prev_data = tdb_fetch(state->recdb->db->tdb, key);
+	prev_data = tdb_fetch(recdb_tdb(state->recdb), key);
 
 	if (prev_data.dptr != NULL) {
 		struct ctdb_ltdb_header prev_hdr;
@@ -177,7 +197,7 @@ static int recdb_add_traverse(uint32_t reqid, struct ctdb_ltdb_header *header,
 		}
 	}
 
-	ret = tdb_store(state->recdb->db->tdb, key, data, TDB_REPLACE);
+	ret = tdb_store(recdb_tdb(state->recdb), key, data, TDB_REPLACE);
 	if (ret != 0) {
 		return -1;
 	}
@@ -276,19 +296,19 @@ static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
 	struct recdb_traverse_state state;
 	int ret;
 
-	state.recbuf = ctdb_rec_buffer_init(mem_ctx, recdb->db_id);
+	state.recbuf = ctdb_rec_buffer_init(mem_ctx, recdb_id(recdb));
 	if (state.recbuf == NULL) {
 		return NULL;
 	}
 	state.dmaster = dmaster;
 	state.reqid = 0;
-	state.persistent = recdb->persistent;
+	state.persistent = recdb_persistent(recdb);
 	state.failed = false;
 
-	ret = tdb_traverse_read(recdb->db->tdb, recdb_traverse, &state);
+	ret = tdb_traverse_read(recdb_tdb(recdb), recdb_traverse, &state);
 	if (ret == -1 || state.failed) {
 		LOG("Failed to marshall recovery records for %s\n",
-		    recdb->db_name);
+		    recdb_name(recdb));
 		TALLOC_FREE(state.recbuf);
 		return NULL;
 	}
