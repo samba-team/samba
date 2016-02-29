@@ -877,6 +877,7 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 	uint32_t share_capabilities;
 	bool share_is_ca;
 	bool share_is_so;
+	uint32_t server_capabilities;
 	const char *fname = BASEDIR "\\replay5.dat";
 	struct smb2_transport *transport = tree->session->transport;
 	struct smbcli_options options = tree->session->transport->options;
@@ -886,6 +887,13 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
 		torture_skip(tctx, "SMB 3.X Dialect family required for "
 				"Replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(
+					tree->session->transport->conn);
+	if (!(server_capabilities & SMB2_CAP_PERSISTENT_HANDLES)) {
+		torture_skip(tctx,
+			     "Server does not support persistent handles.");
 	}
 
 	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
