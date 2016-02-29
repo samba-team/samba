@@ -85,11 +85,11 @@ static bool test_strv_single(struct torture_context *tctx)
 
 static bool test_strv_multi(struct torture_context *tctx)
 {
-	const char *data[5] = { "foo", "bar", "", "samba", "x"};
+	const char *data[] = { "foo", "bar", "", "samba", "x"};
 	char *strv = NULL;
 	char *t;
 	int i, ret;
-	const int num = sizeof(data) / sizeof(data[0]);
+	const int num = ARRAY_SIZE(data);
 
 	/* Add items */
 	for (i = 0; i < num; i++) {
@@ -157,6 +157,37 @@ static bool test_strv_multi(struct torture_context *tctx)
 	return true;
 }
 
+/* Similar to above but only add/check first 2 chars of each string */
+static bool test_strv_addn(struct torture_context *tctx)
+{
+	const char *data[] = { "foo", "bar", "samba" };
+	char *strv = NULL;
+	char *t;
+	int i, ret;
+	const int num = ARRAY_SIZE(data);
+
+	/* Add first 2 chars of each item */
+	for (i = 0; i < num; i++) {
+		ret = strv_addn(tctx, &strv, data[i], 2);
+		torture_assert(tctx, ret == 0, "strv_add() failed");
+	}
+
+	torture_assert_int_equal(tctx,
+				 strv_count(strv), num,
+				 "strv_count() failed");
+
+	/* Check that strv_next() finds the expected values */
+	t = NULL;
+	for (i = 0; i < num; i++) {
+		t = strv_next(strv, t);
+		torture_assert(tctx,
+			       strncmp(t, data[i], 2) == 0,
+			       "strv_next() failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_local_util_strv(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "strv");
@@ -164,6 +195,7 @@ struct torture_suite *torture_local_util_strv(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "strv_empty",  test_strv_empty);
 	torture_suite_add_simple_test(suite, "strv_single", test_strv_single);
 	torture_suite_add_simple_test(suite, "strv_multi",  test_strv_multi);
+	torture_suite_add_simple_test(suite, "strv_addn",   test_strv_addn);
 
 	return suite;
 }
