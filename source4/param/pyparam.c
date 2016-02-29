@@ -142,7 +142,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 
 }
 
-static PyObject *py_lp_ctx_load(pytalloc_Object *self, PyObject *args)
+static PyObject *py_lp_ctx_load(PyObject *self, PyObject *args)
 {
 	char *filename;
 	bool ret;
@@ -158,7 +158,7 @@ static PyObject *py_lp_ctx_load(pytalloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_lp_ctx_load_default(pytalloc_Object *self)
+static PyObject *py_lp_ctx_load_default(PyObject *self, PyObject *unused)
 {
 	bool ret;
         ret = lpcfg_load_default(PyLoadparmContext_AsLoadparmContext(self));
@@ -170,7 +170,7 @@ static PyObject *py_lp_ctx_load_default(pytalloc_Object *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_lp_ctx_get(pytalloc_Object *self, PyObject *args)
+static PyObject *py_lp_ctx_get(PyObject *self, PyObject *args)
 {
 	char *param_name;
 	char *section_name = NULL;
@@ -184,7 +184,7 @@ static PyObject *py_lp_ctx_get(pytalloc_Object *self, PyObject *args)
 	return ret;
 }
 
-static PyObject *py_lp_ctx_is_myname(pytalloc_Object *self, PyObject *args)
+static PyObject *py_lp_ctx_is_myname(PyObject *self, PyObject *args)
 {
 	char *name;
 	if (!PyArg_ParseTuple(args, "s", &name))
@@ -193,7 +193,7 @@ static PyObject *py_lp_ctx_is_myname(pytalloc_Object *self, PyObject *args)
 	return PyBool_FromLong(lpcfg_is_myname(PyLoadparmContext_AsLoadparmContext(self), name));
 }
 
-static PyObject *py_lp_ctx_is_mydomain(pytalloc_Object *self, PyObject *args)
+static PyObject *py_lp_ctx_is_mydomain(PyObject *self, PyObject *args)
 {
 	char *name;
 	if (!PyArg_ParseTuple(args, "s", &name))
@@ -202,7 +202,7 @@ static PyObject *py_lp_ctx_is_mydomain(pytalloc_Object *self, PyObject *args)
 	return PyBool_FromLong(lpcfg_is_mydomain(PyLoadparmContext_AsLoadparmContext(self), name));
 }
 
-static PyObject *py_lp_ctx_set(pytalloc_Object *self, PyObject *args)
+static PyObject *py_lp_ctx_set(PyObject *self, PyObject *args)
 {
 	char *name, *value;
 	bool ret;
@@ -218,7 +218,7 @@ static PyObject *py_lp_ctx_set(pytalloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_lp_ctx_private_path(pytalloc_Object *self, PyObject *args)
+static PyObject *py_lp_ctx_private_path(PyObject *self, PyObject *args)
 {
 	char *name, *path;
 	PyObject *ret;
@@ -232,7 +232,7 @@ static PyObject *py_lp_ctx_private_path(pytalloc_Object *self, PyObject *args)
 	return ret;
 }
 
-static PyObject *py_lp_ctx_services(pytalloc_Object *self)
+static PyObject *py_lp_ctx_services(PyObject *self, PyObject *unused)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
 	PyObject *ret;
@@ -247,7 +247,7 @@ static PyObject *py_lp_ctx_services(pytalloc_Object *self)
 	return ret;
 }
 
-static PyObject *py_lp_ctx_server_role(pytalloc_Object *self)
+static PyObject *py_lp_ctx_server_role(PyObject *self, PyObject *unused)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
 	uint32_t role;
@@ -322,7 +322,7 @@ static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 
 }
 
-static PyObject *py_samdb_url(PyObject *self)
+static PyObject *py_samdb_url(PyObject *self, PyObject *unused)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
 	return PyString_FromFormat("tdb://%s/sam.ldb", lpcfg_private_dir(lp_ctx));
@@ -330,47 +330,47 @@ static PyObject *py_samdb_url(PyObject *self)
 
 
 static PyMethodDef py_lp_ctx_methods[] = {
-	{ "load", (PyCFunction)py_lp_ctx_load, METH_VARARGS, 
+	{ "load", py_lp_ctx_load, METH_VARARGS,
 		"S.load(filename) -> None\n"
 		"Load specified file." },
-	{ "load_default", (PyCFunction)py_lp_ctx_load_default, METH_NOARGS,
+	{ "load_default", py_lp_ctx_load_default, METH_NOARGS,
         	"S.load_default() -> None\n"
 		"Load default smb.conf file." },
-	{ "is_myname", (PyCFunction)py_lp_ctx_is_myname, METH_VARARGS,
+	{ "is_myname", py_lp_ctx_is_myname, METH_VARARGS,
 		"S.is_myname(name) -> bool\n"
 		"Check whether the specified name matches one of our netbios names." },
-	{ "is_mydomain", (PyCFunction)py_lp_ctx_is_mydomain, METH_VARARGS,
+	{ "is_mydomain", py_lp_ctx_is_mydomain, METH_VARARGS,
 		"S.is_mydomain(name) -> bool\n"
 		"Check whether the specified name matches our domain name." },
-	{ "get", (PyCFunction)py_lp_ctx_get, METH_VARARGS,
+	{ "get", py_lp_ctx_get, METH_VARARGS,
         	"S.get(name, service_name) -> value\n"
 		"Find specified parameter." },
-	{ "set", (PyCFunction)py_lp_ctx_set, METH_VARARGS,
+	{ "set", py_lp_ctx_set, METH_VARARGS,
 		"S.set(name, value) -> bool\n"
 		"Change a parameter." },
-	{ "private_path", (PyCFunction)py_lp_ctx_private_path, METH_VARARGS,
+	{ "private_path", py_lp_ctx_private_path, METH_VARARGS,
 		"S.private_path(name) -> path\n" },
-	{ "services", (PyCFunction)py_lp_ctx_services, METH_NOARGS,
+	{ "services", py_lp_ctx_services, METH_NOARGS,
 		"S.services() -> list" },
-	{ "server_role", (PyCFunction)py_lp_ctx_server_role, METH_NOARGS,
+	{ "server_role", py_lp_ctx_server_role, METH_NOARGS,
 		"S.server_role() -> value\n"
 		"Get the server role." },
-	{ "dump", (PyCFunction)py_lp_dump, METH_VARARGS, 
+	{ "dump", py_lp_dump, METH_VARARGS,
 		"S.dump(stream, show_defaults=False)" },
-	{ "dump_a_parameter", (PyCFunction)py_lp_dump_a_parameter, METH_VARARGS,
+	{ "dump_a_parameter", py_lp_dump_a_parameter, METH_VARARGS,
 		"S.dump_a_parameter(stream, name, service_name)" },
-	{ "samdb_url", (PyCFunction)py_samdb_url, METH_NOARGS,
+	{ "samdb_url", py_samdb_url, METH_NOARGS,
 	        "S.samdb_url() -> string\n"
 	        "Returns the current URL for sam.ldb." },
 	{ NULL }
 };
 
-static PyObject *py_lp_ctx_default_service(pytalloc_Object *self, void *closure)
+static PyObject *py_lp_ctx_default_service(PyObject *self, void *closure)
 {
 	return PyLoadparmService_FromService(lpcfg_default_service(PyLoadparmContext_AsLoadparmContext(self)));
 }
 
-static PyObject *py_lp_ctx_config_file(pytalloc_Object *self, void *closure)
+static PyObject *py_lp_ctx_config_file(PyObject *self, void *closure)
 {
 	const char *configfile = lpcfg_configfile(PyLoadparmContext_AsLoadparmContext(self));
 	if (configfile == NULL)
@@ -388,30 +388,15 @@ static PyGetSetDef py_lp_ctx_getset[] = {
 
 static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	pytalloc_Object *ret = (pytalloc_Object *)type->tp_alloc(type, 0);
-	if (ret == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	ret->talloc_ctx = talloc_new(NULL);
-	if (ret->talloc_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	ret->ptr = loadparm_init_global(false);
-	if (ret->ptr == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	return (PyObject *)ret;
+	return pytalloc_reference(type, loadparm_init_global(false));
 }
 
-static Py_ssize_t py_lp_ctx_len(pytalloc_Object *self)
+static Py_ssize_t py_lp_ctx_len(PyObject *self)
 {
 	return lpcfg_numservices(PyLoadparmContext_AsLoadparmContext(self));
 }
 
-static PyObject *py_lp_ctx_getitem(pytalloc_Object *self, PyObject *name)
+static PyObject *py_lp_ctx_getitem(PyObject *self, PyObject *name)
 {
 	struct loadparm_service *service;
 	if (!PyString_Check(name)) {
