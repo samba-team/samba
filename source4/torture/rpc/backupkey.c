@@ -1545,8 +1545,10 @@ static bool test_ServerWrap_encrypt_decrypt_manual(struct torture_context *tctx,
 						   struct bkrp_server_side_wrapped *server_side_wrapped,
 						   enum test_wrong wrong)
 {
-        struct dcerpc_pipe *lsa_p;
-	struct dcerpc_binding_handle *lsa_b;
+	char *lsa_binding_string = NULL;
+	struct dcerpc_binding *lsa_binding = NULL;
+	struct dcerpc_pipe *lsa_p = NULL;
+	struct dcerpc_binding_handle *lsa_b = NULL;
 	struct lsa_OpenSecret r_secret;
 	struct lsa_QuerySecret r_query_secret;
 	struct policy_handle *handle, sec_handle;
@@ -1571,9 +1573,20 @@ static bool test_ServerWrap_encrypt_decrypt_manual(struct torture_context *tctx,
 	ZERO_STRUCT(r_query_secret);
 
 	/* Now read BCKUPKEY_P and prove we can do a matching decrypt and encrypt */
-	
+
+	/* lsa_OpenSecret only works with ncacn_np and AUTH_LEVEL_NONE */
+	lsa_binding_string = talloc_asprintf(tctx, "ncacn_np:%s",
+				torture_setting_string(tctx, "host", NULL));
+	torture_assert(tctx, lsa_binding_string != NULL, "lsa_binding_string");
+
 	torture_assert_ntstatus_ok(tctx,
-				   torture_rpc_connection(tctx, &lsa_p, &ndr_table_lsarpc),
+		dcerpc_parse_binding(tctx, lsa_binding_string, &lsa_binding),
+		"Failed to parse dcerpc binding");
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_pipe_connect_b(tctx, &lsa_p,
+					lsa_binding, &ndr_table_lsarpc,
+					cmdline_credentials, tctx->ev, tctx->lp_ctx),
 				   "Opening LSA pipe");
 	lsa_b = lsa_p->binding_handle;
 
