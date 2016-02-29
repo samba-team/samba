@@ -1106,6 +1106,20 @@ _PUBLIC_ uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *
 	return ndr_token_peek(&ndr->switch_list, p);
 }
 
+/* retrieve a switch value and remove it from the list */
+_PUBLIC_ uint32_t ndr_pull_steal_switch_value(struct ndr_pull *ndr, const void *p)
+{
+	enum ndr_err_code status;
+	uint32_t v;
+
+	status = ndr_token_retrieve(&ndr->switch_list, p, &v);
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
+		return 0;
+	}
+
+	return v;
+}
+
 /*
   pull a struct from a blob using NDR
 */

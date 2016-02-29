@@ -547,6 +547,7 @@ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *
 uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p);
 uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p);
 uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p);
+uint32_t ndr_pull_steal_switch_value(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, ndr_pull_flags_fn_t fn);
 enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, ndr_pull_flags_fn_t fn);
 enum ndr_err_code ndr_pull_union_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, uint32_t level, ndr_pull_flags_fn_t fn);
