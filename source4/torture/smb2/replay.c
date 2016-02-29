@@ -85,6 +85,11 @@
 		__IO_OUT_VAL(__io1, __io2, persistent_open);	\
 		__IO_OUT_VAL(__io1, __io2, timeout);		\
 		__IO_OUT_VAL(__io1, __io2, blobs.num_blobs);	\
+		if ((__io1)->out.oplock_level == SMB2_OPLOCK_LEVEL_LEASE) { \
+			__IO_OUT_VAL(__io1, __io2, lease_response.lease_state);\
+			__IO_OUT_VAL(__io1, __io2, lease_response.lease_key.data[0]);\
+			__IO_OUT_VAL(__io1, __io2, lease_response.lease_key.data[1]);\
+		} \
 	} while(0)
 
 #define BASEDIR "replaytestdir"
