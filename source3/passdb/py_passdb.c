@@ -1320,7 +1320,7 @@ static PyTypeObject PyGroupmap = {
 };
 
 
-static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_domain_info(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -1368,7 +1368,7 @@ static PyObject *py_pdb_domain_info(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_getsampwnam(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_getsampwnam(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1407,7 +1407,7 @@ static PyObject *py_pdb_getsampwnam(pytalloc_Object *self, PyObject *args)
 	return py_sam_acct;
 }
 
-static PyObject *py_pdb_getsampwsid(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_getsampwsid(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1445,7 +1445,7 @@ static PyObject *py_pdb_getsampwsid(pytalloc_Object *self, PyObject *args)
 	return py_sam_acct;
 }
 
-static PyObject *py_pdb_create_user(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_create_user(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1475,7 +1475,7 @@ static PyObject *py_pdb_create_user(pytalloc_Object *self, PyObject *args)
 	return PyInt_FromLong(rid);
 }
 
-static PyObject *py_pdb_delete_user(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_delete_user(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1505,7 +1505,7 @@ static PyObject *py_pdb_delete_user(pytalloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_pdb_add_sam_account(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_add_sam_account(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1536,7 +1536,7 @@ static PyObject *py_pdb_add_sam_account(pytalloc_Object *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_pdb_update_sam_account(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_update_sam_account(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1566,7 +1566,7 @@ static PyObject *py_pdb_update_sam_account(pytalloc_Object *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_pdb_delete_sam_account(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_delete_sam_account(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1596,7 +1596,7 @@ static PyObject *py_pdb_delete_sam_account(pytalloc_Object *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_pdb_rename_sam_account(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_rename_sam_account(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1629,7 +1629,7 @@ static PyObject *py_pdb_rename_sam_account(pytalloc_Object *self, PyObject *args
 }
 
 
-static PyObject *py_pdb_getgrsid(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_getgrsid(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1670,7 +1670,7 @@ static PyObject *py_pdb_getgrsid(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_getgrgid(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_getgrgid(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1709,7 +1709,7 @@ static PyObject *py_pdb_getgrgid(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_getgrnam(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_getgrnam(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1748,7 +1748,7 @@ static PyObject *py_pdb_getgrnam(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_create_dom_group(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_create_dom_group(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1778,7 +1778,7 @@ static PyObject *py_pdb_create_dom_group(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_delete_dom_group(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_delete_dom_group(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1807,7 +1807,7 @@ static PyObject *py_pdb_delete_dom_group(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_add_group_mapping_entry(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_add_group_mapping_entry(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1838,7 +1838,7 @@ static PyObject *py_pdb_add_group_mapping_entry(pytalloc_Object *self, PyObject 
 }
 
 
-static PyObject *py_pdb_update_group_mapping_entry(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_update_group_mapping_entry(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1869,7 +1869,7 @@ static PyObject *py_pdb_update_group_mapping_entry(pytalloc_Object *self, PyObje
 }
 
 
-static PyObject *py_pdb_delete_group_mapping_entry(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_delete_group_mapping_entry(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1900,7 +1900,7 @@ static PyObject *py_pdb_delete_group_mapping_entry(pytalloc_Object *self, PyObje
 }
 
 
-static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_enum_group_mapping(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -1969,7 +1969,7 @@ static PyObject *py_pdb_enum_group_mapping(pytalloc_Object *self, PyObject *args
 }
 
 
-static PyObject *py_pdb_enum_group_members(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_enum_group_members(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2020,7 +2020,7 @@ static PyObject *py_pdb_enum_group_members(pytalloc_Object *self, PyObject *args
 }
 
 
-static PyObject *py_pdb_enum_group_memberships(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_enum_group_memberships(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2069,7 +2069,7 @@ static PyObject *py_pdb_enum_group_memberships(pytalloc_Object *self, PyObject *
 }
 
 
-static PyObject *py_pdb_add_groupmem(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_add_groupmem(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2097,7 +2097,7 @@ static PyObject *py_pdb_add_groupmem(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_del_groupmem(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_del_groupmem(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2125,7 +2125,7 @@ static PyObject *py_pdb_del_groupmem(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_create_alias(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_create_alias(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2155,7 +2155,7 @@ static PyObject *py_pdb_create_alias(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_delete_alias(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_delete_alias(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2186,7 +2186,7 @@ static PyObject *py_pdb_delete_alias(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_get_aliasinfo(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_get_aliasinfo(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2240,7 +2240,7 @@ static PyObject *py_pdb_get_aliasinfo(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_set_aliasinfo(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_set_aliasinfo(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2286,7 +2286,7 @@ static PyObject *py_pdb_set_aliasinfo(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_add_aliasmem(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_add_aliasmem(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2319,7 +2319,7 @@ static PyObject *py_pdb_add_aliasmem(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_del_aliasmem(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_del_aliasmem(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2352,7 +2352,7 @@ static PyObject *py_pdb_del_aliasmem(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_enum_aliasmem(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_enum_aliasmem(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2405,7 +2405,7 @@ static PyObject *py_pdb_enum_aliasmem(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_get_account_policy(pytalloc_Object *self)
+static PyObject *py_pdb_get_account_policy(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2439,7 +2439,7 @@ static PyObject *py_pdb_get_account_policy(pytalloc_Object *self)
 }
 
 
-static PyObject *py_pdb_set_account_policy(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_set_account_policy(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2474,7 +2474,7 @@ static PyObject *py_pdb_set_account_policy(pytalloc_Object *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_pdb_search_users(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_search_users(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2538,7 +2538,7 @@ static PyObject *py_pdb_search_users(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_search_groups(pytalloc_Object *self)
+static PyObject *py_pdb_search_groups(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2596,7 +2596,7 @@ static PyObject *py_pdb_search_groups(pytalloc_Object *self)
 }
 
 
-static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_search_aliases(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2668,7 +2668,7 @@ static PyObject *py_pdb_search_aliases(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_uid_to_sid(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_uid_to_sid(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2707,7 +2707,7 @@ static PyObject *py_pdb_uid_to_sid(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_gid_to_sid(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_gid_to_sid(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2746,7 +2746,7 @@ static PyObject *py_pdb_gid_to_sid(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_sid_to_id(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_sid_to_id(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2774,7 +2774,7 @@ static PyObject *py_pdb_sid_to_id(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_new_rid(pytalloc_Object *self)
+static PyObject *py_pdb_new_rid(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2793,7 +2793,7 @@ static PyObject *py_pdb_new_rid(pytalloc_Object *self)
 }
 
 
-static PyObject *py_pdb_get_trusteddom_pw(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_get_trusteddom_pw(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2847,7 +2847,7 @@ static PyObject *py_pdb_get_trusteddom_pw(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_set_trusteddom_pw(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_set_trusteddom_pw(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2877,7 +2877,7 @@ static PyObject *py_pdb_set_trusteddom_pw(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_del_trusteddom_pw(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_del_trusteddom_pw(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct pdb_methods *methods;
@@ -2901,7 +2901,7 @@ static PyObject *py_pdb_del_trusteddom_pw(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_enum_trusteddoms(pytalloc_Object *self)
+static PyObject *py_pdb_enum_trusteddoms(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -2946,7 +2946,7 @@ static PyObject *py_pdb_enum_trusteddoms(pytalloc_Object *self)
 }
 
 
-static PyObject *py_pdb_get_trusted_domain(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_get_trusted_domain(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3005,7 +3005,7 @@ static PyObject *py_pdb_get_trusted_domain(pytalloc_Object *self, PyObject *args
 }
 
 
-static PyObject *py_pdb_get_trusted_domain_by_sid(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_get_trusted_domain_by_sid(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3067,7 +3067,7 @@ static PyObject *py_pdb_get_trusted_domain_by_sid(pytalloc_Object *self, PyObjec
 }
 
 
-static PyObject *py_pdb_set_trusted_domain(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_set_trusted_domain(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3129,7 +3129,7 @@ static PyObject *py_pdb_set_trusted_domain(pytalloc_Object *self, PyObject *args
 }
 
 
-static PyObject *py_pdb_del_trusted_domain(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_del_trusted_domain(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3157,7 +3157,7 @@ static PyObject *py_pdb_del_trusted_domain(pytalloc_Object *self, PyObject *args
 }
 
 
-static PyObject *py_pdb_enum_trusted_domains(pytalloc_Object *self)
+static PyObject *py_pdb_enum_trusted_domains(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3226,7 +3226,7 @@ static PyObject *py_pdb_enum_trusted_domains(pytalloc_Object *self)
 }
 
 
-static PyObject *py_pdb_get_secret(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_get_secret(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3291,7 +3291,7 @@ static PyObject *py_pdb_get_secret(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_set_secret(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_set_secret(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3339,7 +3339,7 @@ static PyObject *py_pdb_set_secret(pytalloc_Object *self, PyObject *args)
 }
 
 
-static PyObject *py_pdb_delete_secret(pytalloc_Object *self, PyObject *args)
+static PyObject *py_pdb_delete_secret(PyObject *self, PyObject *args)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
@@ -3368,164 +3368,164 @@ static PyObject *py_pdb_delete_secret(pytalloc_Object *self, PyObject *args)
 }
 
 static PyMethodDef py_pdb_methods[] = {
-	{ "domain_info", (PyCFunction)py_pdb_domain_info, METH_NOARGS,
+	{ "domain_info", py_pdb_domain_info, METH_NOARGS,
 		"domain_info() -> str\n\n \
 		Get domain information for the database." },
-	{ "getsampwnam", (PyCFunction)py_pdb_getsampwnam, METH_VARARGS,
+	{ "getsampwnam", py_pdb_getsampwnam, METH_VARARGS,
 		"getsampwnam(username) -> samu object\n\n \
 		Get user information by name." },
-	{ "getsampwsid", (PyCFunction)py_pdb_getsampwsid, METH_VARARGS,
+	{ "getsampwsid", py_pdb_getsampwsid, METH_VARARGS,
 		"getsampwsid(user_sid) -> samu object\n\n \
 		Get user information by sid (dcerpc.security.dom_sid object)." },
-	{ "create_user", (PyCFunction)py_pdb_create_user, METH_VARARGS,
+	{ "create_user", py_pdb_create_user, METH_VARARGS,
 		"create_user(username, acct_flags) -> rid\n\n \
 		Create user. acct_flags are samr account control flags." },
-	{ "delete_user", (PyCFunction)py_pdb_delete_user, METH_VARARGS,
+	{ "delete_user", py_pdb_delete_user, METH_VARARGS,
 		"delete_user(samu object) -> None\n\n \
 		Delete user." },
-	{ "add_sam_account", (PyCFunction)py_pdb_add_sam_account, METH_VARARGS,
+	{ "add_sam_account", py_pdb_add_sam_account, METH_VARARGS,
 		"add_sam_account(samu object) -> None\n\n \
 		Add SAM account." },
-	{ "update_sam_account", (PyCFunction)py_pdb_update_sam_account, METH_VARARGS,
+	{ "update_sam_account", py_pdb_update_sam_account, METH_VARARGS,
 		"update_sam_account(samu object) -> None\n\n \
 		Update SAM account." },
-	{ "delete_sam_account", (PyCFunction)py_pdb_delete_sam_account, METH_VARARGS,
+	{ "delete_sam_account", py_pdb_delete_sam_account, METH_VARARGS,
 		"delete_sam_account(samu object) -> None\n\n \
 		Delete SAM account." },
-	{ "rename_sam_account", (PyCFunction)py_pdb_rename_sam_account, METH_VARARGS,
+	{ "rename_sam_account", py_pdb_rename_sam_account, METH_VARARGS,
 		"rename_sam_account(samu object1, new_username) -> None\n\n \
 		Rename SAM account." },
 	/* update_login_attempts */
-	{ "getgrsid", (PyCFunction)py_pdb_getgrsid, METH_VARARGS,
+	{ "getgrsid", py_pdb_getgrsid, METH_VARARGS,
 		"getgrsid(group_sid) -> groupmap object\n\n \
 		Get group information by sid (dcerpc.security.dom_sid object)." },
-	{ "getgrgid", (PyCFunction)py_pdb_getgrgid, METH_VARARGS,
+	{ "getgrgid", py_pdb_getgrgid, METH_VARARGS,
 		"getgrsid(gid) -> groupmap object\n\n \
 		Get group information by gid." },
-	{ "getgrnam", (PyCFunction)py_pdb_getgrnam, METH_VARARGS,
+	{ "getgrnam", py_pdb_getgrnam, METH_VARARGS,
 		"getgrsid(groupname) -> groupmap object\n\n \
 		Get group information by name." },
-	{ "create_dom_group", (PyCFunction)py_pdb_create_dom_group, METH_VARARGS,
+	{ "create_dom_group", py_pdb_create_dom_group, METH_VARARGS,
 		"create_dom_group(groupname) -> group_rid\n\n \
 		Create new domain group by name." },
-	{ "delete_dom_group", (PyCFunction)py_pdb_delete_dom_group, METH_VARARGS,
+	{ "delete_dom_group", py_pdb_delete_dom_group, METH_VARARGS,
 		"delete_dom_group(group_rid) -> None\n\n \
 		Delete domain group identified by rid" },
-	{ "add_group_mapping_entry", (PyCFunction)py_pdb_add_group_mapping_entry, METH_VARARGS,
+	{ "add_group_mapping_entry", py_pdb_add_group_mapping_entry, METH_VARARGS,
 		"add_group_mapping_entry(groupmap) -> None\n \
 		Add group mapping entry for groupmap object." },
-	{ "update_group_mapping_entry", (PyCFunction)py_pdb_update_group_mapping_entry, METH_VARARGS,
+	{ "update_group_mapping_entry", py_pdb_update_group_mapping_entry, METH_VARARGS,
 		"update_group_mapping_entry(groupmap) -> None\n\n \
 		Update group mapping entry for groupmap object." },
-	{ "delete_group_mapping_entry", (PyCFunction)py_pdb_delete_group_mapping_entry, METH_VARARGS,
+	{ "delete_group_mapping_entry", py_pdb_delete_group_mapping_entry, METH_VARARGS,
 		"delete_group_mapping_entry(groupmap) -> None\n\n \
 		Delete group mapping entry for groupmap object." },
-	{ "enum_group_mapping", (PyCFunction)py_pdb_enum_group_mapping, METH_VARARGS,
+	{ "enum_group_mapping", py_pdb_enum_group_mapping, METH_VARARGS,
 		"enum_group_mapping([domain_sid, [type, [unix_only]]]) -> List\n\n \
 		Return list of group mappings as groupmap objects. Optional arguments are domain_sid object, type of group, unix only flag." },
-	{ "enum_group_members", (PyCFunction)py_pdb_enum_group_members, METH_VARARGS,
+	{ "enum_group_members", py_pdb_enum_group_members, METH_VARARGS,
 		"enum_group_members(group_sid) -> List\n\n \
 		Return list of users (dom_sid object) in group." },
-	{ "enum_group_memberships", (PyCFunction)py_pdb_enum_group_memberships, METH_VARARGS,
+	{ "enum_group_memberships", py_pdb_enum_group_memberships, METH_VARARGS,
 		"enum_group_memberships(samu object) -> List\n\n \
 		Return list of groups (dom_sid object) this user is part of." },
 	/* set_unix_primary_group */
-	{ "add_groupmem", (PyCFunction)py_pdb_add_groupmem, METH_VARARGS,
+	{ "add_groupmem", py_pdb_add_groupmem, METH_VARARGS,
 		"add_groupmem(group_rid, member_rid) -> None\n\n \
 		Add user to group." },
-	{ "del_groupmem", (PyCFunction)py_pdb_del_groupmem, METH_VARARGS,
+	{ "del_groupmem", py_pdb_del_groupmem, METH_VARARGS,
 		"del_groupmem(group_rid, member_rid) -> None\n\n \
 		Remove user from from group." },
-	{ "create_alias", (PyCFunction)py_pdb_create_alias, METH_VARARGS,
+	{ "create_alias", py_pdb_create_alias, METH_VARARGS,
 		"create_alias(alias_name) -> alias_rid\n\n \
 		Create alias entry." },
-	{ "delete_alias", (PyCFunction)py_pdb_delete_alias, METH_VARARGS,
+	{ "delete_alias", py_pdb_delete_alias, METH_VARARGS,
 		"delete_alias(alias_sid) -> None\n\n \
 		Delete alias entry." },
-	{ "get_aliasinfo", (PyCFunction)py_pdb_get_aliasinfo, METH_VARARGS,
+	{ "get_aliasinfo", py_pdb_get_aliasinfo, METH_VARARGS,
 		"get_aliasinfo(alias_sid) -> Mapping\n\n \
 		Get alias information as a dictionary with keys - acct_name, acct_desc, rid." },
-	{ "set_aliasinfo", (PyCFunction)py_pdb_set_aliasinfo, METH_VARARGS,
+	{ "set_aliasinfo", py_pdb_set_aliasinfo, METH_VARARGS,
 		"set_alias_info(alias_sid, Mapping) -> None\n\n \
 		Set alias information from a dictionary with keys - acct_name, acct_desc." },
-	{ "add_aliasmem", (PyCFunction)py_pdb_add_aliasmem, METH_VARARGS,
+	{ "add_aliasmem", py_pdb_add_aliasmem, METH_VARARGS,
 		"add_aliasmem(alias_sid, member_sid) -> None\n\n \
 		Add user to alias entry." },
-	{ "del_aliasmem", (PyCFunction)py_pdb_del_aliasmem, METH_VARARGS,
+	{ "del_aliasmem", py_pdb_del_aliasmem, METH_VARARGS,
 		"del_aliasmem(alias_sid, member_sid) -> None\n\n \
 		Remove a user from alias entry." },
-	{ "enum_aliasmem", (PyCFunction)py_pdb_enum_aliasmem, METH_VARARGS,
+	{ "enum_aliasmem", py_pdb_enum_aliasmem, METH_VARARGS,
 		"enum_aliasmem(alias_sid) -> List\n\n \
 		Return a list of members (dom_sid object) for alias entry." },
 	/* enum_alias_memberships */
 	/* lookup_rids */
 	/* lookup_names */
-	{ "get_account_policy", (PyCFunction)py_pdb_get_account_policy, METH_NOARGS,
+	{ "get_account_policy", py_pdb_get_account_policy, METH_NOARGS,
 		"get_account_policy() -> Mapping\n\n \
 		Get account policy information as a dictionary." },
-	{ "set_account_policy", (PyCFunction)py_pdb_set_account_policy, METH_VARARGS,
+	{ "set_account_policy", py_pdb_set_account_policy, METH_VARARGS,
 		"get_account_policy(Mapping) -> None\n\n \
 		Set account policy settings from a dicionary." },
 	/* get_seq_num */
-	{ "search_users", (PyCFunction)py_pdb_search_users, METH_VARARGS,
+	{ "search_users", py_pdb_search_users, METH_VARARGS,
 		"search_users(acct_flags) -> List\n\n \
 		Search users. acct_flags are samr account control flags.\n \
 		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
-	{ "search_groups", (PyCFunction)py_pdb_search_groups, METH_NOARGS,
+	{ "search_groups", py_pdb_search_groups, METH_NOARGS,
 		"search_groups() -> List\n\n \
 		Search unix only groups. \n \
 		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
-	{ "search_aliases", (PyCFunction)py_pdb_search_aliases, METH_VARARGS,
+	{ "search_aliases", py_pdb_search_aliases, METH_VARARGS,
 		"search_aliases([domain_sid]) -> List\n\n \
 		Search aliases. domain_sid is dcerpc.security.dom_sid object.\n \
 		Each list entry is dictionary with keys - idx, rid, acct_flags, account_name, fullname, description." },
-	{ "uid_to_sid", (PyCFunction)py_pdb_uid_to_sid, METH_VARARGS,
+	{ "uid_to_sid", py_pdb_uid_to_sid, METH_VARARGS,
 		"uid_to_sid(uid) -> sid\n\n \
 		Return sid for given user id." },
-	{ "gid_to_sid", (PyCFunction)py_pdb_gid_to_sid, METH_VARARGS,
+	{ "gid_to_sid", py_pdb_gid_to_sid, METH_VARARGS,
 		"gid_to_sid(gid) -> sid\n\n \
 		Return sid for given group id." },
-	{ "sid_to_id", (PyCFunction)py_pdb_sid_to_id, METH_VARARGS,
+	{ "sid_to_id", py_pdb_sid_to_id, METH_VARARGS,
 		"sid_to_id(sid) -> Tuple\n\n \
 		Return id and type for given sid." },
 	/* capabilities */
-	{ "new_rid", (PyCFunction)py_pdb_new_rid, METH_NOARGS,
+	{ "new_rid", py_pdb_new_rid, METH_NOARGS,
 		"new_rid() -> rid\n\n \
 		Get a new rid." },
-	{ "get_trusteddom_pw", (PyCFunction)py_pdb_get_trusteddom_pw, METH_VARARGS,
+	{ "get_trusteddom_pw", py_pdb_get_trusteddom_pw, METH_VARARGS,
 		"get_trusteddom_pw(domain) -> Mapping\n\n \
 		Get trusted domain password, sid and last set time in a dictionary." },
-	{ "set_trusteddom_pw", (PyCFunction)py_pdb_set_trusteddom_pw, METH_VARARGS,
+	{ "set_trusteddom_pw", py_pdb_set_trusteddom_pw, METH_VARARGS,
 		"set_trusteddom_pw(domain, pwd, sid) -> None\n\n \
 		Set trusted domain password." },
-	{ "del_trusteddom_pw", (PyCFunction)py_pdb_del_trusteddom_pw, METH_VARARGS,
+	{ "del_trusteddom_pw", py_pdb_del_trusteddom_pw, METH_VARARGS,
 		"del_trusteddom_pw(domain) -> None\n\n \
 		Delete trusted domain password." },
-	{ "enum_trusteddoms", (PyCFunction)py_pdb_enum_trusteddoms, METH_NOARGS,
+	{ "enum_trusteddoms", py_pdb_enum_trusteddoms, METH_NOARGS,
 		"enum_trusteddoms() -> List\n\n \
 		Get list of trusted domains. Each item is a dictionary with name and sid keys" },
-	{ "get_trusted_domain", (PyCFunction)py_pdb_get_trusted_domain, METH_VARARGS,
+	{ "get_trusted_domain", py_pdb_get_trusted_domain, METH_VARARGS,
 		"get_trusted_domain(domain) -> Mapping\n\n \
 		Get trusted domain information by name. Information is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info." },
-	{ "get_trusted_domain_by_sid", (PyCFunction)py_pdb_get_trusted_domain_by_sid, METH_VARARGS,
+	{ "get_trusted_domain_by_sid", py_pdb_get_trusted_domain_by_sid, METH_VARARGS,
 		"get_trusted_domain_by_sid(domain_sid) -> Mapping\n\n \
 		Get trusted domain information by sid. Information is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info" },
-	{ "set_trusted_domain", (PyCFunction)py_pdb_set_trusted_domain, METH_VARARGS,
+	{ "set_trusted_domain", py_pdb_set_trusted_domain, METH_VARARGS,
 		"set_trusted_domain(domain, Mapping) -> None\n\n \
 		Set trusted domain information for domain. Mapping is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info." },
-	{ "del_trusted_domain", (PyCFunction)py_pdb_del_trusted_domain, METH_VARARGS,
+	{ "del_trusted_domain", py_pdb_del_trusted_domain, METH_VARARGS,
 		"del_trusted_domain(domain) -> None\n\n \
 		Delete trusted domain." },
-	{ "enum_trusted_domains", (PyCFunction)py_pdb_enum_trusted_domains, METH_VARARGS,
+	{ "enum_trusted_domains", py_pdb_enum_trusted_domains, METH_VARARGS,
 		"enum_trusted_domains() -> List\n\n \
 		Get list of trusted domains. Each entry is a dictionary with keys - domain_name, netbios_name, security_identifier, trust_auth_incoming, trust_auth_outgoing, trust_direction, trust_type, trust_attributes, trust_forest_trust_info." },
-	{ "get_secret", (PyCFunction)py_pdb_get_secret, METH_VARARGS,
+	{ "get_secret", py_pdb_get_secret, METH_VARARGS,
 		"get_secret(secret_name) -> Mapping\n\n \
 		Get secret information for secret_name. Information is a dictionary with keys - secret_current, secret_current_lastchange, secret_old, secret_old_lastchange, sd." },
-	{ "set_secret", (PyCFunction)py_pdb_set_secret, METH_VARARGS,
+	{ "set_secret", py_pdb_set_secret, METH_VARARGS,
 		"set_secret(secret_name, Mapping) -> None\n\n \
 		Set secret information for secret_name using dictionary with keys - secret_current, sd." },
-	{ "delete_secret", (PyCFunction)py_pdb_delete_secret, METH_VARARGS,
+	{ "delete_secret", py_pdb_delete_secret, METH_VARARGS,
 		"delete_secret(secret_name) -> None\n\n \
 		Delete secret information for secret_name." },
 	{ NULL },
@@ -3580,7 +3580,7 @@ static PyTypeObject PyPDB = {
 /*
  * Return a list of passdb backends
  */
-static PyObject *py_passdb_backends(PyObject *self)
+static PyObject *py_passdb_backends(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	PyObject *py_blist;
@@ -3666,7 +3666,7 @@ static PyObject *py_reload_static_pdb(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_get_global_sam_sid(PyObject *self)
+static PyObject *py_get_global_sam_sid(PyObject *self, PyObject *unused)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct dom_sid *domain_sid, *domain_sid_copy;
@@ -3689,19 +3689,19 @@ static PyObject *py_get_global_sam_sid(PyObject *self)
 
 
 static PyMethodDef py_passdb_methods[] = {
-	{ "get_backends", (PyCFunction)py_passdb_backends, METH_NOARGS,
+	{ "get_backends", py_passdb_backends, METH_NOARGS,
 		"get_backends() -> list\n\n \
 		Get a list of password database backends supported." },
-	{ "set_smb_config", (PyCFunction)py_set_smb_config, METH_VARARGS,
+	{ "set_smb_config", py_set_smb_config, METH_VARARGS,
 		"set_smb_config(path) -> None\n\n \
 		Set path to smb.conf file to load configuration parameters." },
-	{ "set_secrets_dir", (PyCFunction)py_set_secrets_dir, METH_VARARGS,
+	{ "set_secrets_dir", py_set_secrets_dir, METH_VARARGS,
 		"set_secrets_dir(private_dir) -> None\n\n \
 		Set path to private directory to load secrets database from non-default location." },
-	{ "get_global_sam_sid", (PyCFunction)py_get_global_sam_sid, METH_NOARGS,
+	{ "get_global_sam_sid", py_get_global_sam_sid, METH_NOARGS,
 		"get_global_sam_sid() -> dom_sid\n\n \
 		Return domain SID." },
-	{ "reload_static_pdb", (PyCFunction)py_reload_static_pdb, METH_NOARGS,
+	{ "reload_static_pdb", py_reload_static_pdb, METH_NOARGS,
 		"reload_static_pdb() -> None\n\n \
 		Re-initalise the static pdb used internally.  Needed if 'passdb backend' is changed." },
 	{ NULL },
