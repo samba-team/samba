@@ -1108,7 +1108,6 @@ static PyObject *py_samu_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 
 static PyTypeObject PySamu = {
 	.tp_name = "passdb.Samu",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_getset = py_samu_getsetters,
 	.tp_methods = NULL,
 	.tp_new = py_samu_new,
@@ -1311,7 +1310,6 @@ static PyObject *py_groupmap_new(PyTypeObject *type, PyObject *args, PyObject *k
 
 static PyTypeObject PyGroupmap = {
 	.tp_name = "passdb.Groupmap",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_getset = py_groupmap_getsetters,
 	.tp_methods = NULL,
 	.tp_new = py_groupmap_new,
@@ -3569,7 +3567,6 @@ static PyObject *py_pdb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 
 static PyTypeObject PyPDB = {
 	.tp_name = "passdb.PDB",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_new = py_pdb_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_pdb_methods,
@@ -3713,26 +3710,17 @@ void initpassdb(void)
 	PyObject *m, *mod;
 	char exception_name[] = "passdb.error";
 
-	PyTypeObject *talloc_type = pytalloc_GetObjectType();
-	if (talloc_type == NULL) {
+	if (pytalloc_BaseObject_PyType_Ready(&PyPDB) < 0) {
 		talloc_free(frame);
 		return;
 	}
 
-	PyPDB.tp_base = talloc_type;
-	if (PyType_Ready(&PyPDB) < 0) {
+	if (pytalloc_BaseObject_PyType_Ready(&PySamu) < 0) {
 		talloc_free(frame);
 		return;
 	}
 
-	PySamu.tp_base = talloc_type;
-	if (PyType_Ready(&PySamu) < 0) {
-		talloc_free(frame);
-		return;
-	}
-
-	PyGroupmap.tp_base = talloc_type;
-	if (PyType_Ready(&PyGroupmap) < 0) {
+	if (pytalloc_BaseObject_PyType_Ready(&PyGroupmap) < 0) {
 		talloc_free(frame);
 		return;
 	}
