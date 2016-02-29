@@ -23,6 +23,7 @@
 #include "talloc.h"
 
 int strv_add(TALLOC_CTX *mem_ctx, char **strv, const char *string);
+int strv_addn(TALLOC_CTX *mem_ctx, char **strv, const char *src, size_t srclen);
 int strv_append(TALLOC_CTX *mem_ctx, char **strv, const char *src);
 char *strv_next(char *strv, const char *entry);
 char *strv_find(char *strv, const char *entry);
