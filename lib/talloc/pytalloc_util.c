@@ -259,3 +259,17 @@ _PUBLIC_ TALLOC_CTX *_pytalloc_get_mem_ctx(PyObject *py_obj)
 	}
 	return NULL;
 }
+
+_PUBLIC_ int pytalloc_BaseObject_PyType_Ready(PyTypeObject *type)
+{
+	PyTypeObject *talloc_type = pytalloc_GetBaseObjectType();
+	if (talloc_type == NULL) {
+		PyErr_Format(PyExc_TypeError, "pytalloc: unable to get talloc.BaseObject type");
+		return -1;
+	}
+
+	type->tp_base = talloc_type;
+	type->tp_basicsize = pytalloc_BaseObject_size();
+
+	return PyType_Ready(type);
+}
