@@ -64,7 +64,7 @@ static krb5_error_code seek_and_delete_old_entries(krb5_context context,
 
 	DEBUG(3, (__location__ ": Will try to delete old keytab entries\n"));
 	while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
-		bool name_ok = False;
+		bool name_ok = false;
 
 		if (!flush && (princ_s != NULL)) {
 			ret = smb_krb5_unparse_name(talloc_tos(), context,
