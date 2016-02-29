@@ -1501,8 +1501,8 @@ static PyObject *py_pdb_delete_user(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_pdb_add_sam_account(pytalloc_Object *self, PyObject *args)
@@ -1532,8 +1532,8 @@ static PyObject *py_pdb_add_sam_account(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_pdb_update_sam_account(pytalloc_Object *self, PyObject *args)
@@ -1562,8 +1562,8 @@ static PyObject *py_pdb_update_sam_account(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_pdb_delete_sam_account(pytalloc_Object *self, PyObject *args)
@@ -1592,8 +1592,8 @@ static PyObject *py_pdb_delete_sam_account(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_pdb_rename_sam_account(pytalloc_Object *self, PyObject *args)
@@ -1624,8 +1624,8 @@ static PyObject *py_pdb_rename_sam_account(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -1802,8 +1802,8 @@ static PyObject *py_pdb_delete_dom_group(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -1833,8 +1833,8 @@ static PyObject *py_pdb_add_group_mapping_entry(pytalloc_Object *self, PyObject 
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -1864,8 +1864,8 @@ static PyObject *py_pdb_update_group_mapping_entry(pytalloc_Object *self, PyObje
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -1895,8 +1895,8 @@ static PyObject *py_pdb_delete_group_mapping_entry(pytalloc_Object *self, PyObje
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2092,8 +2092,8 @@ static PyObject *py_pdb_add_groupmem(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2120,8 +2120,8 @@ static PyObject *py_pdb_del_groupmem(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2181,8 +2181,8 @@ static PyObject *py_pdb_delete_alias(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2281,8 +2281,8 @@ static PyObject *py_pdb_set_aliasinfo(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2314,8 +2314,8 @@ static PyObject *py_pdb_add_aliasmem(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2347,8 +2347,8 @@ static PyObject *py_pdb_del_aliasmem(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2470,8 +2470,8 @@ static PyObject *py_pdb_set_account_policy(pytalloc_Object *self, PyObject *args
 		}
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_pdb_search_users(pytalloc_Object *self, PyObject *args)
@@ -2872,8 +2872,8 @@ static PyObject *py_pdb_set_trusteddom_pw(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -2896,8 +2896,8 @@ static PyObject *py_pdb_del_trusteddom_pw(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -3124,8 +3124,8 @@ static PyObject *py_pdb_set_trusted_domain(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -3152,8 +3152,8 @@ static PyObject *py_pdb_del_trusted_domain(pytalloc_Object *self, PyObject *args
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -3334,8 +3334,8 @@ static PyObject *py_pdb_set_secret(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
@@ -3363,8 +3363,8 @@ static PyObject *py_pdb_delete_secret(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef py_pdb_methods[] = {
@@ -3624,8 +3624,8 @@ static PyObject *py_set_smb_config(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	Py_RETURN_NONE;
 	talloc_free(frame);
+	Py_RETURN_NONE;
 }
 
 
