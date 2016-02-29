@@ -1,6 +1,7 @@
 _pytalloc_get_mem_ctx: TALLOC_CTX *(PyObject *)
 _pytalloc_get_ptr: void *(PyObject *)
 _pytalloc_get_type: void *(PyObject *, const char *)
+pytalloc_BaseObject_PyType_Ready: int (PyTypeObject *)
 pytalloc_BaseObject_check: int (PyObject *)
 pytalloc_BaseObject_size: size_t (void)
 pytalloc_CObject_FromTallocPtr: PyObject *(void *)

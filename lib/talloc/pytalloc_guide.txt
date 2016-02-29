@@ -71,6 +71,12 @@ Obtain a reference to the PyTypeObject for `pytalloc_Object`. The reference
 counter for the object will be incremented, so the caller will have to
 decrement it when it no longer needs it (using `Py_DECREF`).
 
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+int pytalloc_BaseObject_PyType_Ready(PyTypeObject *type);
+
+Wrapper for PyType_Ready() that will set the correct values into
+the PyTypeObject to create a BaseObject
+
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-=-=-=-=-=-=-
 int pytalloc_Check(PyObject *)
 

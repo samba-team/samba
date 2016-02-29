@@ -63,5 +63,6 @@ PyObject *pytalloc_CObject_FromTallocPtr(void *);
 
 size_t pytalloc_BaseObject_size(void);
 
+int pytalloc_BaseObject_PyType_Ready(PyTypeObject *type);
 
 #endif /* _PYTALLOC_H_ */
