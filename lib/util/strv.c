@@ -22,7 +22,8 @@
 #include "talloc.h"
 #include <string.h>
 
-int strv_addn(TALLOC_CTX *mem_ctx, char **dst, const char *src, size_t srclen)
+static int _strv_append(TALLOC_CTX *mem_ctx, char **dst, const char *src,
+			size_t srclen)
 {
 	size_t dstlen = talloc_array_length(*dst);
 	size_t newlen = dstlen + srclen;
@@ -44,12 +45,12 @@ int strv_addn(TALLOC_CTX *mem_ctx, char **dst, const char *src, size_t srclen)
 
 int strv_add(TALLOC_CTX *mem_ctx, char **strv, const char *string)
 {
-	return strv_addn(mem_ctx, strv, string, strlen(string)+1);
+	return _strv_append(mem_ctx, strv, string, strlen(string)+1);
 }
 
 int strv_append(TALLOC_CTX *mem_ctx, char **strv, const char *src)
 {
-	return strv_addn(mem_ctx, strv, src, talloc_array_length(src));
+	return _strv_append(mem_ctx, strv, src, talloc_array_length(src));
 }
 
 static bool strv_valid_entry(const char *strv, const char *entry,
