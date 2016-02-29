@@ -418,7 +418,6 @@ static PyMappingMethods py_lp_ctx_mapping = {
 
 PyTypeObject PyLoadparmContext = {
 	.tp_name = "param.LoadParm",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_getset = py_lp_ctx_getset,
 	.tp_methods = py_lp_ctx_methods,
 	.tp_new = py_lp_ctx_new,
@@ -464,7 +463,6 @@ static PyMethodDef py_lp_service_methods[] = {
 
 PyTypeObject PyLoadparmService = {
 	.tp_name = "param.LoadparmService",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_methods = py_lp_service_methods,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
@@ -511,17 +509,11 @@ static PyMethodDef pyparam_methods[] = {
 void initparam(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = pytalloc_GetObjectType();
-	if (talloc_type == NULL)
+
+	if (pytalloc_BaseObject_PyType_Ready(&PyLoadparmContext) < 0)
 		return;
 
-	PyLoadparmContext.tp_base = talloc_type;
-	PyLoadparmService.tp_base = talloc_type;
-
-	if (PyType_Ready(&PyLoadparmContext) < 0)
-		return;
-
-	if (PyType_Ready(&PyLoadparmService) < 0)
+	if (pytalloc_BaseObject_PyType_Ready(&PyLoadparmService) < 0)
 		return;
 
 	m = Py_InitModule3("param", pyparam_methods, "Parsing and writing Samba configuration files.");
