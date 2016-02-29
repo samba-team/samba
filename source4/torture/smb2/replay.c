@@ -900,7 +900,7 @@ static bool test_replay5(struct torture_context *tctx, struct smb2_tree *tree)
 
 	share_is_ca = share_capabilities & SMB2_SHARE_CAP_CONTINUOUS_AVAILABILITY;
 	if (!share_is_ca) {
-		torture_skip(tctx, "Persistent File Handles not supported");
+		torture_skip(tctx, "Share is not continuously available.");
 	}
 
 	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
