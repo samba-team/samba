@@ -574,7 +574,6 @@ static PyTypeObject Py_Security = {
 	.tp_name = "gensec.Security",
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_gensec_security_methods,
-	.tp_basicsize = sizeof(pytalloc_Object),
 };
 
 void initgensec(void);
@@ -582,11 +581,7 @@ void initgensec(void)
 {
 	PyObject *m;
 
-	Py_Security.tp_base = pytalloc_GetObjectType();
-	if (Py_Security.tp_base == NULL)
-		return;
-
-	if (PyType_Ready(&Py_Security) < 0)
+	if (pytalloc_BaseObject_PyType_Ready(&Py_Security) < 0)
 		return;
 
 	m = Py_InitModule3("gensec", NULL, "Generic Security Interface.");
