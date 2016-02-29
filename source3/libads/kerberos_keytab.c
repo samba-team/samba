@@ -189,7 +189,7 @@ static int smb_krb5_kt_add_entry(krb5_context context,
 				 const char *princ_s,
 				 const char *salt_principal,
 				 krb5_enctype enctype,
-				 krb5_data password,
+				 krb5_data *password,
 				 bool no_salt,
 				 bool keep_old_entries)
 {
@@ -197,8 +197,6 @@ static int smb_krb5_kt_add_entry(krb5_context context,
 	krb5_keytab_entry kt_entry;
 	krb5_principal princ = NULL;
 	krb5_keyblock *keyp;
-	krb5_principal salt_princ = NULL;
-	int rc;
 
 	ZERO_STRUCT(kt_entry);
 
@@ -220,26 +218,37 @@ static int smb_krb5_kt_add_entry(krb5_context context,
 	/* If we get here, we have deleted all the old entries with kvno's
 	 * not equal to the current kvno-1. */
 
-	/* Now add keytab entries for all encryption types */
-	ret = smb_krb5_parse_name(context, salt_principal, &salt_princ);
-	if (ret) {
-		DBG_WARNING("krb5_parse_name(%s) failed (%s)\n",
-			    salt_principal, error_message(ret));
-		goto out;
-	}
-
 	keyp = KRB5_KT_KEY(&kt_entry);
 
-	rc = create_kerberos_key_from_string(context,
-					     princ,
-					     salt_princ,
-					     &password,
-					     keyp,
-					     enctype,
-					     no_salt);
-	krb5_free_principal(context, salt_princ);
-	if (rc != 0) {
-		goto out;
+	if (no_salt) {
+		KRB5_KEY_DATA(keyp) = (KRB5_KEY_DATA_CAST *)SMB_MALLOC(password->length);
+		if (KRB5_KEY_DATA(keyp) == NULL) {
+			ret = ENOMEM;
+			goto out;
+		}
+		memcpy(KRB5_KEY_DATA(keyp), password->data, password->length);
+		KRB5_KEY_LENGTH(keyp) = password->length;
+		KRB5_KEY_TYPE(keyp) = enctype;
+	} else {
+		krb5_principal salt_princ = NULL;
+
+		ret = smb_krb5_parse_name(context, salt_principal, &salt_princ);
+		if (ret) {
+			DBG_WARNING("krb5_parse_name(%s) failed (%s)\n",
+				    salt_principal, error_message(ret));
+			goto out;
+		}
+
+		ret = smb_krb5_create_key_from_string(context,
+						      salt_princ,
+						      NULL,
+						      password,
+						      enctype,
+						      keyp);
+		krb5_free_principal(context, salt_princ);
+		if (ret != 0) {
+			goto out;
+		}
 	}
 
 	kt_entry.principal = princ;
@@ -433,7 +442,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 					    princ_s,
 					    salt_princ_s,
 					    enctypes[i],
-					    password,
+					    &password,
 					    false,
 					    false);
 		if (ret) {
@@ -450,7 +459,7 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 						    short_princ_s,
 						    salt_princ_s,
 						    enctypes[i],
-						    password,
+						    &password,
 						    false,
 						    false);
 			if (ret) {
