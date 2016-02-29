@@ -315,20 +315,7 @@ static PyObject *py_creds_set_machine_account(PyObject *self, PyObject *args)
 
 static PyObject *PyCredentialCacheContainer_from_ccache_container(struct ccache_container *ccc)
 {
-	PyCredentialCacheContainerObject *py_ret;
-
-	if (ccc == NULL) {
-		Py_RETURN_NONE;
-	}
-
-	py_ret = (PyCredentialCacheContainerObject *)PyCredentialCacheContainer.tp_alloc(&PyCredentialCacheContainer, 0);
-	if (py_ret == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	py_ret->mem_ctx = talloc_new(NULL);
-	py_ret->ccc = talloc_reference(py_ret->mem_ctx, ccc);
-	return (PyObject *)py_ret;
+	return pytalloc_reference(&PyCredentialCacheContainer, ccc);
 }
 
 
