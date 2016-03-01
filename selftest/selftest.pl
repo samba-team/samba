@@ -420,8 +420,8 @@ if ($opt_testenv) {
     # 1 year should be enough :-)
     $server_maxtime = 365 * 24 * 60 * 60;
 } else {
-    # make test should run under 3 hours
-    $server_maxtime = 3 * 60 * 60;
+    # make test should run under 4 hours
+    $server_maxtime = 4 * 60 * 60;
 }
 
 if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
