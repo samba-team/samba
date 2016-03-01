@@ -161,7 +161,7 @@ static bool torture_oplock_ack_handler(struct smb2_transport *transport,
  * Test what happens when SMB2_FLAGS_REPLAY_OPERATION is enabled for various
  * commands. We want to verify if the server returns an error code or not.
  */
-static bool test_replay1(struct torture_context *tctx, struct smb2_tree *tree)
+static bool test_replay_commands(struct torture_context *tctx, struct smb2_tree *tree)
 {
 	bool ret = true;
 	NTSTATUS status;
@@ -175,7 +175,7 @@ static bool test_replay1(struct torture_context *tctx, struct smb2_tree *tree)
 	struct smb2_lock_element el[2];
 	struct smb2_flush f;
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
-	const char *fname = BASEDIR "\\replay1.dat";
+	const char *fname = BASEDIR "\\replay_commands.dat";
 	struct smb2_transport *transport = tree->session->transport;
 
 	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
@@ -997,7 +997,7 @@ struct torture_suite *torture_smb2_replay_init(void)
 	struct torture_suite *suite =
 		torture_suite_create(talloc_autofree_context(), "replay");
 
-	torture_suite_add_1smb2_test(suite, "replay1", test_replay1);
+	torture_suite_add_1smb2_test(suite, "replay-commands", test_replay_commands);
 	torture_suite_add_1smb2_test(suite, "replay2", test_replay2);
 	torture_suite_add_1smb2_test(suite, "replay3", test_replay3);
 	torture_suite_add_1smb2_test(suite, "replay4", test_replay4);
