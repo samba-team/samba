@@ -287,20 +287,136 @@ done:
 }
 
 /**
- * Test Durablity V2 Create Replay Detection on Single Channel. Also verify that
- * regular creates can not be replayed.
+ * Test replay detection without create GUID on single channel.
+ * Regular creates can not be replayed.
+ * The return code is unaffected of the REPLAY_OPERATION flag.
  */
-static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
+static bool test_replay_regular(struct torture_context *tctx,
+				struct smb2_tree *tree)
 {
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
-	struct smb2_create io, ref1, ref2;
-	struct GUID create_guid = GUID_random();
+	struct smb2_create io;
 	uint32_t perms = 0;
 	bool ret = true;
-	const char *fname = BASEDIR "\\replay2.dat";
+	const char *fname = BASEDIR "\\replay_regular.dat";
+	struct smb2_transport *transport = tree->session->transport;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	ZERO_STRUCT(break_info);
+	break_info.tctx = tctx;
+	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testdir(tree, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, _h);
+	CHECK_VAL(break_info.count, 0);
+
+	torture_comment(tctx, "No replay detection for regular create\n");
+
+	perms = SEC_STD_SYNCHRONIZE | SEC_STD_READ_CONTROL | SEC_STD_DELETE |
+		SEC_DIR_WRITE_ATTRIBUTE | SEC_DIR_READ_ATTRIBUTE |
+		SEC_DIR_WRITE_EA | SEC_FILE_APPEND_DATA |
+		SEC_FILE_WRITE_DATA;
+
+	io = (struct smb2_create) {
+		.in.desired_access  = perms,
+		.in.file_attributes = 0,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.share_access    = NTCREATEX_SHARE_ACCESS_DELETE,
+		.in.create_options  = 0x0,
+		.in.fname   = fname
+	};
+
+	status = smb2_create(tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tctx, &io);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_util_close(tree, *h);
+	h = NULL;
+	smb2_util_unlink(tree, fname);
+
+	/*
+	 * Same experiment with different create disposition.
+	 */
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	status = smb2_create(tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tctx, &io);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_util_close(tree, *h);
+	h = NULL;
+	smb2_util_unlink(tree, fname);
+
+	/*
+	 * Now with more generous share mode.
+	 */
+	io.in.share_access = smb2_util_share_access("RWD");
+	status = smb2_create(tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, tctx, &io);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_VAL(break_info.count, 0);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	smb2_deltree(tree, BASEDIR);
+
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * Test Durablity V2 Create Replay Detection on Single Channel.
+ */
+static bool test_replay_dhv2_oplock1(struct torture_context *tctx,
+				     struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io, ref1;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	const char *fname = BASEDIR "\\replay_dhv2_oplock1.dat";
 	struct smb2_transport *transport = tree->session->transport;
 	uint32_t share_capabilities;
 	bool share_is_so;
@@ -362,14 +478,98 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 	CHECK_CREATE_OUT(&io, &ref1);
 	CHECK_VAL(break_info.count, 0);
 
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	smb2_deltree(tree, BASEDIR);
+
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Hand in a different oplock level in the replay.
+ * Server responds with the handed in oplock level and
+ * corresponding durable status, but does not change the
+ * oplock level or durable status of the opened file.
+ */
+static bool test_replay_dhv2_oplock2(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io, ref1, ref2;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	const char *fname = BASEDIR "\\replay_dhv2_oplock2.dat";
+	struct smb2_transport *transport = tree->session->transport;
+	uint32_t share_capabilities;
+	bool share_is_so;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
+	ZERO_STRUCT(break_info);
+	break_info.tctx = tctx;
+	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	torture_comment(tctx, "Replay of DurableHandleReqV2 on Single "
+			      "Channel\n");
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testdir(tree, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, _h);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access(""),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	ref1 = io;
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
+
 	/*
-	 * See how server behaves if we change some of the Create params while
-	 * Replaying. Change Share Access and Oplock Level. It seems the server
-	 * does not care for change in these parameters. The server seems to
-	 * only care for the File Name and GUID
+	 * Replay durable v2 create on single channel:
+	 *
+	 * Replay the create with a different oplock (none).
+	 * The server replies with the requested oplock level
+	 * and also only replies with durable handle based
+	 * on whether it could have been granted based on
+	 * the requested oplock type.
 	 */
 	smb2_oplock_create_share(&io, fname,
-			smb2_util_share_access("RWD"),
+			smb2_util_share_access(""),
 			smb2_util_oplock_level(""));
 	io.in.durable_open = false;
 	io.in.durable_open_v2 = true;
@@ -378,9 +578,7 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 	io.in.timeout = UINT32_MAX;
 
 	/*
-	 * The output will just react on the
-	 * input, but it doesn't change the oplock
-	 * or share access values on the existing open
+	 * Adapt the response to the exepected values
 	 */
 	ref2 = ref1;
 	ref2.out.oplock_level = smb2_util_oplock_level("");
@@ -396,11 +594,17 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 	CHECK_VAL(break_info.count, 0);
 
 	/*
-	 * This is a normal open, which triggers an oplock
-	 * break and still gets NT_STATUS_SHARING_VIOLATION
+	 * Prove that the open file still has a batch oplock
+	 * by breaking it with another open.
 	 */
-	io = ref1;
-	io.in.durable_open_v2 = false;
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access(""),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = GUID_random();
+	io.in.timeout = UINT32_MAX;
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
@@ -411,48 +615,133 @@ static bool test_replay2(struct torture_context *tctx, struct smb2_tree *tree)
 		ZERO_STRUCT(break_info);
 	}
 
-	smb2_util_close(tree, *h);
-	h = NULL;
-	status = smb2_util_unlink(tree, fname);
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	smb2_deltree(tree, BASEDIR);
+
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
+ * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Replay with a different share mode. The share mode of
+ * the opened file is not changed by this.
+ */
+static bool test_replay_dhv2_oplock3(struct torture_context *tctx,
+				     struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io, ref1;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	const char *fname = BASEDIR "\\replay_dhv2_oplock3.dat";
+	struct smb2_transport *transport = tree->session->transport;
+	uint32_t share_capabilities;
+	bool share_is_so;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
+	ZERO_STRUCT(break_info);
+	break_info.tctx = tctx;
+	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	torture_comment(tctx, "Replay of DurableHandleReqV2 on Single "
+			      "Channel\n");
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testdir(tree, BASEDIR, &_h);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, _h);
 	CHECK_VAL(break_info.count, 0);
 
-	/*
-	 * No Replay detection for regular Creates
-	 */
-	perms = SEC_STD_SYNCHRONIZE | SEC_STD_READ_CONTROL | SEC_STD_DELETE |
-		SEC_DIR_WRITE_ATTRIBUTE | SEC_DIR_READ_ATTRIBUTE |
-		SEC_DIR_WRITE_EA | SEC_FILE_APPEND_DATA |
-		SEC_FILE_WRITE_DATA;
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access(""),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
 
-	io = (struct smb2_create) {
-		.in.desired_access  = perms,
-		.in.file_attributes = 0,
-		.in.create_disposition = NTCREATEX_DISP_CREATE,
-		.in.share_access    = NTCREATEX_SHARE_ACCESS_DELETE,
-		.in.create_options  = 0x0,
-		.in.fname   = fname
-	};
-
-	status = smb2_create(tree, tctx, &io);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_VAL(break_info.count, 0);
+	ref1 = io;
 	_h = io.out.file.handle;
 	h = &_h;
 	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
 
-	torture_comment(tctx, "No Replay Detection for regular Create\n");
 	/*
-	 * Now replay the same create
+	 * Replay durable v2 create on single channel:
+	 *
+	 * Replay the create with a different share mode.
+	 * The server replies with the requested share
+	 * mode instead of that which is associated to
+	 * the handle.
 	 */
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
 	smb2cli_session_start_replay(tree->session->smbXcli);
-	status = smb2_create(tree, tctx, &io);
-	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+	status = smb2_create(tree, mem_ctx, &io);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATE_OUT(&io, &ref1);
 	CHECK_VAL(break_info.count, 0);
 
-done:
-	smb2cli_session_stop_replay(tree->session->smbXcli);
+	/*
+	 * In order to prove that the different share mode in the
+	 * replayed create had no effect on the open file handle,
+	 * show that a new create yields NT_STATUS_SHARING_VIOLATION.
+	 */
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access(""),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = GUID_random();
+	io.in.timeout = UINT32_MAX;
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
+	if (!share_is_so) {
+		CHECK_VAL(break_info.count, 1);
+		CHECK_HANDLE(&break_info.handle, &ref1.out.file.handle);
+		CHECK_VAL(break_info.level, smb2_util_oplock_level("s"));
+		ZERO_STRUCT(break_info);
+	}
+
+done:
 	if (h != NULL) {
 		smb2_util_close(tree, *h);
 	}
@@ -998,7 +1287,10 @@ struct torture_suite *torture_smb2_replay_init(void)
 		torture_suite_create(talloc_autofree_context(), "replay");
 
 	torture_suite_add_1smb2_test(suite, "replay-commands", test_replay_commands);
-	torture_suite_add_1smb2_test(suite, "replay2", test_replay2);
+	torture_suite_add_1smb2_test(suite, "replay-regular", test_replay_regular);
+	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock1", test_replay_dhv2_oplock1);
+	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock2", test_replay_dhv2_oplock2);
+	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock3", test_replay_dhv2_oplock3);
 	torture_suite_add_1smb2_test(suite, "replay3", test_replay3);
 	torture_suite_add_1smb2_test(suite, "replay4", test_replay4);
 	torture_suite_add_1smb2_test(suite, "replay5", test_replay5);
