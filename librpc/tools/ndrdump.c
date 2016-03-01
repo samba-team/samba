@@ -184,6 +184,12 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	return NT_STATUS_OK;
 }
 
+static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
+{
+	/* This is here so that you can turn ndr printing off for the purposes
+	   of benchmarking ndr parsing. */
+}
+
  int main(int argc, const char *argv[])
 {
 	const struct ndr_interface_table *p = NULL;
@@ -206,8 +212,9 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	bool validate = false;
 	bool dumpdata = false;
 	bool assume_ndr64 = false;
+	bool quiet = false;
 	int opt;
-	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO, OPT_NDR64};
+	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO, OPT_NDR64, OPT_QUIET};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
@@ -215,6 +222,7 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMP_DATA, "dump the hex data", NULL },	
 		{"load-dso", 'l', POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
 		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
+		{"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "Don't actually dump anything", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -254,6 +262,9 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 			break;
 		case OPT_NDR64:
 			assume_ndr64 = true;
+			break;
+		case OPT_QUIET:
+			quiet = true;
 			break;
 		}
 	}
@@ -399,7 +410,11 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 	}
 
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-	ndr_print->print = ndr_print_printf_helper;
+	if (quiet) {
+		ndr_print->print = ndr_print_dummy;
+	} else {
+		ndr_print->print = ndr_print_printf_helper;
+	}
 	ndr_print->depth = 1;
 
 	ndr_err = ndr_pop_dcerpc_sec_verification_trailer(ndr_pull, mem_ctx, &sec_vt);
