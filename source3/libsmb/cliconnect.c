@@ -1420,7 +1420,11 @@ struct cli_session_setup_ntlmssp_state {
 	struct auth_generic_state *auth_generic;
 	bool is_anonymous;
 	DATA_BLOB blob_in;
+	uint8_t *inbuf;
+	struct iovec *recv_iov;
 	DATA_BLOB blob_out;
+	bool local_ready;
+	bool remote_ready;
 	DATA_BLOB session_key;
 };
 
@@ -1432,13 +1436,17 @@ static int cli_session_setup_ntlmssp_state_destructor(
 	return 0;
 }
 
-static void cli_session_setup_ntlmssp_done(struct tevent_req *req);
+static void cli_session_setup_ntlmssp_local_next(struct tevent_req *req);
+static void cli_session_setup_ntlmssp_local_done(struct tevent_req *subreq);
+static void cli_session_setup_ntlmssp_remote_next(struct tevent_req *req);
+static void cli_session_setup_ntlmssp_remote_done(struct tevent_req *subreq);
+static void cli_session_setup_ntlmssp_ready(struct tevent_req *req);
 
 static struct tevent_req *cli_session_setup_ntlmssp_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
 	const char *user, const char *pass, const char *domain)
 {
-	struct tevent_req *req, *subreq;
+	struct tevent_req *req;
 	struct cli_session_setup_ntlmssp_state *state;
 	NTSTATUS status;
 
@@ -1521,13 +1529,6 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 		return tevent_req_post(req, ev);
 	}
 
-	status = gensec_update(state->auth_generic->gensec_security,
-			       state, state->blob_in, &state->blob_out);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
-
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->cli->smb2.session = smbXcli_session_create(cli,
 								  cli->conn);
@@ -1536,125 +1537,223 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 		}
 	}
 
-	subreq = cli_sesssetup_blob_send(state, ev, cli, state->blob_out);
-	if (tevent_req_nomem(subreq, req)) {
+	cli_session_setup_ntlmssp_local_next(req);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_done, req);
+
 	return req;
 }
 
-static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
+static void cli_session_setup_ntlmssp_local_next(struct tevent_req *req)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
-		req, struct cli_session_setup_ntlmssp_state);
-	uint8_t *inbuf = NULL;
-	struct iovec *recv_iov = NULL;
+	struct cli_session_setup_ntlmssp_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_ntlmssp_state);
+	struct tevent_req *subreq = NULL;
+
+	if (state->local_ready) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	subreq = gensec_update_send(state, state->ev,
+			state->auth_generic->gensec_security,
+			state->blob_in);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_local_done, req);
+}
+
+static void cli_session_setup_ntlmssp_local_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_session_setup_ntlmssp_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_ntlmssp_state);
 	NTSTATUS status;
 
-	status = cli_sesssetup_blob_recv(subreq, state, &state->blob_in,
-					 &inbuf, &recv_iov);
+	status = gensec_update_recv(subreq, state, &state->blob_out);
 	TALLOC_FREE(subreq);
-	data_blob_free(&state->blob_out);
+	state->blob_in = data_blob_null;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		tevent_req_nterror(req, status);
+		return;
+	}
 
 	if (NT_STATUS_IS_OK(status)) {
-		const char *server_domain = NULL;
+		state->local_ready = true;
+	}
 
-		server_domain = gensec_ntlmssp_server_domain(
+	if (state->local_ready && state->remote_ready) {
+		cli_session_setup_ntlmssp_ready(req);
+		return;
+	}
+
+	cli_session_setup_ntlmssp_remote_next(req);
+}
+
+static void cli_session_setup_ntlmssp_remote_next(struct tevent_req *req)
+{
+	struct cli_session_setup_ntlmssp_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_ntlmssp_state);
+	struct tevent_req *subreq = NULL;
+
+	if (state->remote_ready) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	subreq = cli_sesssetup_blob_send(state, state->ev,
+					 state->cli, state->blob_out);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				cli_session_setup_ntlmssp_remote_done,
+				req);
+}
+
+static void cli_session_setup_ntlmssp_remote_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_session_setup_ntlmssp_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_ntlmssp_state);
+	NTSTATUS status;
+
+	TALLOC_FREE(state->inbuf);
+	TALLOC_FREE(state->recv_iov);
+
+	status = cli_sesssetup_blob_recv(subreq, state, &state->blob_in,
+					 &state->inbuf, &state->recv_iov);
+	TALLOC_FREE(subreq);
+	data_blob_free(&state->blob_out);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		state->remote_ready = true;
+	}
+
+	if (state->local_ready && state->remote_ready) {
+		cli_session_setup_ntlmssp_ready(req);
+		return;
+	}
+
+	cli_session_setup_ntlmssp_local_next(req);
+}
+
+static void cli_session_setup_ntlmssp_ready(struct tevent_req *req)
+{
+	struct cli_session_setup_ntlmssp_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_ntlmssp_state);
+	const char *server_domain = NULL;
+	NTSTATUS status;
+
+	if (state->blob_in.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (state->blob_out.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	/*
+	 * We can remove this later
+	 * and leave the server domain empty for SMB2 and above
+	 * in future releases.
+	 */
+	server_domain = gensec_ntlmssp_server_domain(
 				state->auth_generic->gensec_security);
 
-		if (state->cli->server_domain[0] == '\0' && server_domain != NULL) {
-			TALLOC_FREE(state->cli->server_domain);
-			state->cli->server_domain = talloc_strdup(state->cli,
-						server_domain);
-			if (state->cli->server_domain == NULL) {
-				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
+	if (state->cli->server_domain[0] == '\0' && server_domain != NULL) {
+		TALLOC_FREE(state->cli->server_domain);
+		state->cli->server_domain = talloc_strdup(state->cli,
+					server_domain);
+		if (state->cli->server_domain == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+	}
+
+	status = gensec_session_key(state->auth_generic->gensec_security,
+				    state, &state->session_key);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		struct smbXcli_session *session = state->cli->smb2.session;
+
+		if (state->is_anonymous) {
+			/*
+			 * Windows server does not set the
+			 * SMB2_SESSION_FLAG_IS_GUEST nor
+			 * SMB2_SESSION_FLAG_IS_NULL flag.
+			 *
+			 * This fix makes sure we do not try
+			 * to verify a signature on the final
+			 * session setup response.
+			 */
+			tevent_req_done(req);
+			return;
 		}
 
-		status = gensec_session_key(state->auth_generic->gensec_security,
-					    state, &state->session_key);
+		status = smb2cli_session_set_session_key(session,
+							 state->session_key,
+							 state->recv_iov);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	} else {
+		struct smbXcli_session *session = state->cli->smb1.session;
+		bool active;
+
+		status = smb1cli_session_set_session_key(session,
+							 state->session_key);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
 
-		if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-			struct smbXcli_session *session = state->cli->smb2.session;
+		active = smb1cli_conn_activate_signing(state->cli->conn,
+						       state->session_key,
+						       data_blob_null);
+		if (active) {
+			bool ok;
 
-			if (state->is_anonymous) {
-				/*
-				 * Windows server does not set the
-				 * SMB2_SESSION_FLAG_IS_GUEST nor
-				 * SMB2_SESSION_FLAG_IS_NULL flag.
-				 *
-				 * This fix makes sure we do not try
-				 * to verify a signature on the final
-				 * session setup response.
-				 */
-				tevent_req_done(req);
-				return;
-			}
-
-			status = smb2cli_session_set_session_key(session,
-						state->session_key,
-						recv_iov);
-			if (tevent_req_nterror(req, status)) {
-				return;
-			}
-		} else {
-			struct smbXcli_session *session = state->cli->smb1.session;
-
-			status = smb1cli_session_set_session_key(session,
-					state->session_key);
-			if (tevent_req_nterror(req, status)) {
-				return;
-			}
-
-			if (smb1cli_conn_activate_signing(
-				    state->cli->conn, state->session_key,
-				    data_blob_null)
-			    && !smb1cli_conn_check_signing(state->cli->conn, inbuf, 1)) {
+			ok = smb1cli_conn_check_signing(state->cli->conn,
+							state->inbuf, 1);
+			if (!ok) {
 				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 				return;
 			}
 		}
-		tevent_req_done(req);
-		return;
-	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
-		return;
 	}
 
-	if (state->blob_in.length == 0) {
-		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
-		return;
-	}
-
-	status = gensec_update(state->auth_generic->gensec_security,
-			       state, state->blob_in, &state->blob_out);
-	data_blob_free(&state->blob_in);
-	if (!NT_STATUS_IS_OK(status)
-	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	subreq = cli_sesssetup_blob_send(state, state->ev, state->cli,
-					 state->blob_out);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_done, req);
+	tevent_req_done(req);
 }
 
 static NTSTATUS cli_session_setup_ntlmssp_recv(struct tevent_req *req)
 {
-	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
-		req, struct cli_session_setup_ntlmssp_state);
+	struct cli_session_setup_ntlmssp_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_ntlmssp_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
