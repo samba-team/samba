@@ -1416,7 +1416,7 @@ static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
  Do a spnego/NTLMSSP encrypted session setup.
 ****************************************************************************/
 
-struct cli_session_setup_ntlmssp_state {
+struct cli_session_setup_gensec_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
 	struct auth_generic_state *auth_generic;
@@ -1430,30 +1430,35 @@ struct cli_session_setup_ntlmssp_state {
 	DATA_BLOB session_key;
 };
 
-static int cli_session_setup_ntlmssp_state_destructor(
-	struct cli_session_setup_ntlmssp_state *state)
+static int cli_session_setup_gensec_state_destructor(
+	struct cli_session_setup_gensec_state *state)
 {
 	TALLOC_FREE(state->auth_generic);
 	data_blob_clear_free(&state->session_key);
 	return 0;
 }
 
-static void cli_session_setup_ntlmssp_local_next(struct tevent_req *req);
-static void cli_session_setup_ntlmssp_local_done(struct tevent_req *subreq);
-static void cli_session_setup_ntlmssp_remote_next(struct tevent_req *req);
-static void cli_session_setup_ntlmssp_remote_done(struct tevent_req *subreq);
-static void cli_session_setup_ntlmssp_ready(struct tevent_req *req);
+static void cli_session_setup_gensec_local_next(struct tevent_req *req);
+static void cli_session_setup_gensec_local_done(struct tevent_req *subreq);
+static void cli_session_setup_gensec_remote_next(struct tevent_req *req);
+static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq);
+static void cli_session_setup_gensec_ready(struct tevent_req *req);
 
-static struct tevent_req *cli_session_setup_ntlmssp_send(
+static struct tevent_req *cli_session_setup_gensec_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *user, const char *pass, const char *domain)
+	const char *user, const char *pass, const char *domain,
+	enum credentials_use_kerberos krb5_state,
+	const char *target_service,
+	const char *target_hostname,
+	const char *target_principal)
 {
 	struct tevent_req *req;
-	struct cli_session_setup_ntlmssp_state *state;
+	struct cli_session_setup_gensec_state *state;
 	NTSTATUS status;
+	bool use_spnego_principal = lp_client_use_spnego_principal();
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct cli_session_setup_ntlmssp_state);
+				struct cli_session_setup_gensec_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -1461,7 +1466,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	state->cli = cli;
 
 	talloc_set_destructor(
-		state, cli_session_setup_ntlmssp_state_destructor);
+		state, cli_session_setup_gensec_state_destructor);
 
 	status = auth_generic_client_prepare(state, &state->auth_generic);
 	if (tevent_req_nterror(req, status)) {
@@ -1521,7 +1526,49 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	}
 
 	cli_credentials_set_kerberos_state(state->auth_generic->credentials,
-					   CRED_DONT_USE_KERBEROS);
+					   krb5_state);
+
+	if (krb5_state == CRED_DONT_USE_KERBEROS) {
+		use_spnego_principal = false;
+	}
+
+	if (target_service != NULL) {
+		status = gensec_set_target_service(
+				state->auth_generic->gensec_security,
+				target_service);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (target_hostname != NULL) {
+		status = gensec_set_target_hostname(
+				state->auth_generic->gensec_security,
+				target_hostname);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (target_principal != NULL) {
+		status = gensec_set_target_principal(
+				state->auth_generic->gensec_security,
+				target_principal);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		use_spnego_principal = false;
+	} else if (target_service != NULL && target_hostname != NULL) {
+		use_spnego_principal = false;
+	}
+
+	if (use_spnego_principal) {
+		const DATA_BLOB *b;
+		b = smbXcli_conn_server_gss_blob(cli->conn);
+		if (b != NULL) {
+			state->blob_in = *b;
+		}
+	}
 
 	state->is_anonymous = cli_credentials_is_anonymous(state->auth_generic->credentials);
 
@@ -1539,7 +1586,7 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 		}
 	}
 
-	cli_session_setup_ntlmssp_local_next(req);
+	cli_session_setup_gensec_local_next(req);
 	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1547,11 +1594,11 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 	return req;
 }
 
-static void cli_session_setup_ntlmssp_local_next(struct tevent_req *req)
+static void cli_session_setup_gensec_local_next(struct tevent_req *req)
 {
-	struct cli_session_setup_ntlmssp_state *state =
+	struct cli_session_setup_gensec_state *state =
 		tevent_req_data(req,
-		struct cli_session_setup_ntlmssp_state);
+		struct cli_session_setup_gensec_state);
 	struct tevent_req *subreq = NULL;
 
 	if (state->local_ready) {
@@ -1565,17 +1612,17 @@ static void cli_session_setup_ntlmssp_local_next(struct tevent_req *req)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_local_done, req);
+	tevent_req_set_callback(subreq, cli_session_setup_gensec_local_done, req);
 }
 
-static void cli_session_setup_ntlmssp_local_done(struct tevent_req *subreq)
+static void cli_session_setup_gensec_local_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct cli_session_setup_ntlmssp_state *state =
+	struct cli_session_setup_gensec_state *state =
 		tevent_req_data(req,
-		struct cli_session_setup_ntlmssp_state);
+		struct cli_session_setup_gensec_state);
 	NTSTATUS status;
 
 	status = gensec_update_recv(subreq, state, &state->blob_out);
@@ -1593,18 +1640,18 @@ static void cli_session_setup_ntlmssp_local_done(struct tevent_req *subreq)
 	}
 
 	if (state->local_ready && state->remote_ready) {
-		cli_session_setup_ntlmssp_ready(req);
+		cli_session_setup_gensec_ready(req);
 		return;
 	}
 
-	cli_session_setup_ntlmssp_remote_next(req);
+	cli_session_setup_gensec_remote_next(req);
 }
 
-static void cli_session_setup_ntlmssp_remote_next(struct tevent_req *req)
+static void cli_session_setup_gensec_remote_next(struct tevent_req *req)
 {
-	struct cli_session_setup_ntlmssp_state *state =
+	struct cli_session_setup_gensec_state *state =
 		tevent_req_data(req,
-		struct cli_session_setup_ntlmssp_state);
+		struct cli_session_setup_gensec_state);
 	struct tevent_req *subreq = NULL;
 
 	if (state->remote_ready) {
@@ -1618,18 +1665,18 @@ static void cli_session_setup_ntlmssp_remote_next(struct tevent_req *req)
 		return;
 	}
 	tevent_req_set_callback(subreq,
-				cli_session_setup_ntlmssp_remote_done,
+				cli_session_setup_gensec_remote_done,
 				req);
 }
 
-static void cli_session_setup_ntlmssp_remote_done(struct tevent_req *subreq)
+static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq,
 		struct tevent_req);
-	struct cli_session_setup_ntlmssp_state *state =
+	struct cli_session_setup_gensec_state *state =
 		tevent_req_data(req,
-		struct cli_session_setup_ntlmssp_state);
+		struct cli_session_setup_gensec_state);
 	NTSTATUS status;
 
 	TALLOC_FREE(state->inbuf);
@@ -1651,18 +1698,18 @@ static void cli_session_setup_ntlmssp_remote_done(struct tevent_req *subreq)
 	}
 
 	if (state->local_ready && state->remote_ready) {
-		cli_session_setup_ntlmssp_ready(req);
+		cli_session_setup_gensec_ready(req);
 		return;
 	}
 
-	cli_session_setup_ntlmssp_local_next(req);
+	cli_session_setup_gensec_local_next(req);
 }
 
-static void cli_session_setup_ntlmssp_ready(struct tevent_req *req)
+static void cli_session_setup_gensec_ready(struct tevent_req *req)
 {
-	struct cli_session_setup_ntlmssp_state *state =
+	struct cli_session_setup_gensec_state *state =
 		tevent_req_data(req,
-		struct cli_session_setup_ntlmssp_state);
+		struct cli_session_setup_gensec_state);
 	const char *server_domain = NULL;
 	NTSTATUS status;
 
@@ -1677,6 +1724,9 @@ static void cli_session_setup_ntlmssp_ready(struct tevent_req *req)
 	}
 
 	/*
+	 * gensec_ntlmssp_server_domain() returns NULL
+	 * if NTLMSSP is not used.
+	 *
 	 * We can remove this later
 	 * and leave the server domain empty for SMB2 and above
 	 * in future releases.
@@ -1751,11 +1801,11 @@ static void cli_session_setup_ntlmssp_ready(struct tevent_req *req)
 	tevent_req_done(req);
 }
 
-static NTSTATUS cli_session_setup_ntlmssp_recv(struct tevent_req *req)
+static NTSTATUS cli_session_setup_gensec_recv(struct tevent_req *req)
 {
-	struct cli_session_setup_ntlmssp_state *state =
+	struct cli_session_setup_gensec_state *state =
 		tevent_req_data(req,
-		struct cli_session_setup_ntlmssp_state);
+		struct cli_session_setup_gensec_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1835,6 +1885,7 @@ static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
 struct cli_session_setup_spnego_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
+	const char *target_hostname;
 	const char *user;
 	const char *account;
 	const char *pass;
@@ -1879,6 +1930,7 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		return tevent_req_post(req, ev);
 	}
 
+	state->target_hostname = smbXcli_conn_remote_name(cli->conn);
 	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n",
@@ -1933,12 +1985,10 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	 * and do not store results */
 
 	if (user && *user && cli->got_kerberos_mechanism && cli->use_kerberos) {
-		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
 		char *tmp;
 
-
 		tmp = cli_session_setup_get_principal(
-			talloc_tos(), principal, remote_name, dest_realm);
+			talloc_tos(), principal, state->target_hostname, dest_realm);
 		TALLOC_FREE(principal);
 		principal = tmp;
 
@@ -1974,8 +2024,11 @@ static struct tevent_req *cli_session_setup_spnego_send(
 #endif
 
 ntlmssp:
-	subreq = cli_session_setup_ntlmssp_send(
-		state, ev, cli, state->account, pass, user_domain);
+	subreq = cli_session_setup_gensec_send(
+		state, state->ev, state->cli,
+		state->account, state->pass, state->user_domain,
+		CRED_DONT_USE_KERBEROS,
+		"cifs", state->target_hostname, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -2001,9 +2054,11 @@ static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_session_setup_ntlmssp_send(
-		state, state->ev, state->cli, state->account, state->pass,
-		state->user_domain);
+	subreq = cli_session_setup_gensec_send(
+		state, state->ev, state->cli,
+		state->account, state->pass, state->user_domain,
+		CRED_DONT_USE_KERBEROS,
+		"cifs", state->target_hostname, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2020,7 +2075,7 @@ static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq)
 		req, struct cli_session_setup_spnego_state);
 	NTSTATUS status;
 
-	status = cli_session_setup_ntlmssp_recv(subreq);
+	status = cli_session_setup_gensec_recv(subreq);
 	TALLOC_FREE(subreq);
 	state->result = ADS_ERROR_NT(status);
 	tevent_req_done(req);
