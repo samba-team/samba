@@ -603,6 +603,9 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
+		do_sign = true;
+	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		do_sign = true;
 	}
@@ -903,17 +906,14 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
 
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
+	}
 	if (feature & GENSEC_FEATURE_SIGN) {
 		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
 		return gse_ctx->gss_got_flags & GSS_C_CONF_FLAG;
-	}
-	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-		/* Only for GSE/Krb5 */
-		if (smb_gss_oid_equal(gse_ctx->ret_mech, gss_mech_krb5)) {
-			return true;
-		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return gse_ctx->gss_got_flags & GSS_C_DCE_STYLE;
