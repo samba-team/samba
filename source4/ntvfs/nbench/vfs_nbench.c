@@ -46,10 +46,15 @@ static void nbench_log(struct ntvfs_request *req,
 	struct nbench_private *nprivates = req->async_states->ntvfs->private_data;
 	va_list ap;
 	char *s = NULL;
+	int ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return;
+	}
 
 	write(nprivates->log_fd, s, strlen(s));
 	free(s);
