@@ -650,10 +650,18 @@ static bool test_replay4(struct torture_context *tctx, struct smb2_tree *tree1)
 	uint16_t curr_cs;
 	uint32_t share_capabilities;
 	bool share_is_so;
+	uint32_t server_capabilities;
 
 	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
 		torture_skip(tctx, "SMB 3.X Dialect family required for "
 				   "Replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(
+					tree1->session->transport->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip(tctx,
+			     "Server does not support multi-channel.");
 	}
 
 	share_capabilities = smb2cli_tcon_capabilities(tree1->smbXcli);
