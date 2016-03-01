@@ -355,15 +355,16 @@ static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 }
 
 static DIR *vfs_gluster_opendir(struct vfs_handle_struct *handle,
-				const char *path, const char *mask,
+				const struct smb_filename *smb_fname,
+				const char *mask,
 				uint32_t attributes)
 {
 	glfs_fd_t *fd;
 
-	fd = glfs_opendir(handle->data, path);
+	fd = glfs_opendir(handle->data, smb_fname->base_name);
 	if (fd == NULL) {
 		DEBUG(0, ("glfs_opendir(%s) failed: %s\n",
-			  path, strerror(errno)));
+			  smb_fname->base_name, strerror(errno)));
 	}
 
 	return (DIR *) fd;
