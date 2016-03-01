@@ -98,7 +98,7 @@ static NTSTATUS do_smb_connect(TALLOC_CTX *mem_ctx, struct smb_private_data *spd
 /*
  * Read SMB file and return the contents of the file as python string
  */
-static PyObject * py_smb_loadfile(pytalloc_Object *self, PyObject *args)
+static PyObject * py_smb_loadfile(PyObject *self, PyObject *args)
 {
 	struct smb_composite_loadfile io;
 	const char *filename;
@@ -123,7 +123,7 @@ static PyObject * py_smb_loadfile(pytalloc_Object *self, PyObject *args)
 /*
  * Create a SMB file with given string as the contents
  */
-static PyObject * py_smb_savefile(pytalloc_Object *self, PyObject *args)
+static PyObject * py_smb_savefile(PyObject *self, PyObject *args)
 {
 	struct smb_composite_savefile io;
 	const char *filename;
@@ -180,7 +180,7 @@ static void py_smb_list_callback(struct clilist_file_info *f, const char *mask, 
 /*
  * List the directory contents for specified directory (Ignore '.' and '..' dirs)
  */
-static PyObject *py_smb_list(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_smb_list(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	struct smb_private_data *spdata;
 	PyObject *py_dirlist;
@@ -221,7 +221,7 @@ static PyObject *py_smb_list(pytalloc_Object *self, PyObject *args, PyObject *kw
 /*
  * Create a directory
  */
-static PyObject *py_smb_mkdir(pytalloc_Object *self, PyObject *args)
+static PyObject *py_smb_mkdir(PyObject *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *dirname;
@@ -241,7 +241,7 @@ static PyObject *py_smb_mkdir(pytalloc_Object *self, PyObject *args)
 /*
  * Remove a directory
  */
-static PyObject *py_smb_rmdir(pytalloc_Object *self, PyObject *args)
+static PyObject *py_smb_rmdir(PyObject *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *dirname;
@@ -261,7 +261,7 @@ static PyObject *py_smb_rmdir(pytalloc_Object *self, PyObject *args)
 /*
  * Remove a directory and all its contents
  */
-static PyObject *py_smb_deltree(pytalloc_Object *self, PyObject *args)
+static PyObject *py_smb_deltree(PyObject *self, PyObject *args)
 {
 	int status;
 	const char *dirname;
@@ -283,7 +283,7 @@ static PyObject *py_smb_deltree(pytalloc_Object *self, PyObject *args)
 /*
  * Check existence of a path
  */
-static PyObject *py_smb_chkpath(pytalloc_Object *self, PyObject *args)
+static PyObject *py_smb_chkpath(PyObject *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *path;
@@ -306,7 +306,7 @@ static PyObject *py_smb_chkpath(pytalloc_Object *self, PyObject *args)
 /*
  * Read ACL on a given file/directory as a security descriptor object
  */
-static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_smb_getacl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -372,7 +372,7 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 /*
  * Set ACL on file/directory using given security descriptor object
  */
-static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_smb_setacl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -450,7 +450,7 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 /*
  * Open the file with the parameters passed in and return an object if OK
  */
-static PyObject *py_open_file(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_open_file(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -505,7 +505,7 @@ static PyObject *py_open_file(pytalloc_Object *self, PyObject *args, PyObject *k
 /*
  * Close the file based on the fnum passed in
  */
-static PyObject *py_close_file(pytalloc_Object *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_close_file(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	struct smb_private_data *spdata;
 	int fnum;
@@ -525,10 +525,10 @@ static PyObject *py_close_file(pytalloc_Object *self, PyObject *args, PyObject *
 }
 
 static PyMethodDef py_smb_methods[] = {
-	{ "loadfile", (PyCFunction)py_smb_loadfile, METH_VARARGS,
+	{ "loadfile", py_smb_loadfile, METH_VARARGS,
 		"loadfile(path) -> file contents as a string\n\n \
 		Read contents of a file." },
-	{ "savefile", (PyCFunction)py_smb_savefile, METH_VARARGS,
+	{ "savefile", py_smb_savefile, METH_VARARGS,
 		"savefile(path, str) -> None\n\n \
 		Write string str to file." },
 	{ "list", (PyCFunction)py_smb_list, METH_VARARGS|METH_KEYWORDS,
@@ -539,16 +539,16 @@ static PyMethodDef py_smb_methods[] = {
 		\tsize: File size in bytes\n \
 		\tattrib: Attributes\n \
 		\tmtime: Modification time\n" },
-	{ "mkdir", (PyCFunction)py_smb_mkdir, METH_VARARGS,
+	{ "mkdir", py_smb_mkdir, METH_VARARGS,
 		"mkdir(path) -> None\n\n \
 		Create a directory." },
-	{ "rmdir", (PyCFunction)py_smb_rmdir, METH_VARARGS,
+	{ "rmdir", py_smb_rmdir, METH_VARARGS,
 		"rmdir(path) -> None\n\n \
 		Delete a directory." },
-	{ "deltree", (PyCFunction)py_smb_deltree, METH_VARARGS,
+	{ "deltree", py_smb_deltree, METH_VARARGS,
 		"deltree(path) -> None\n\n \
 		Delete a directory and all its contents." },
-	{ "chkpath", (PyCFunction)py_smb_chkpath, METH_VARARGS,
+	{ "chkpath", py_smb_chkpath, METH_VARARGS,
 		"chkpath(path) -> True or False\n\n \
 		Return true if path exists, false otherwise." },
 	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
