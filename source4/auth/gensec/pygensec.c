@@ -79,43 +79,37 @@ static struct gensec_settings *settings_from_object(TALLOC_CTX *mem_ctx, PyObjec
 static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
-	pytalloc_Object *self;
+	PyObject *self;
 	struct gensec_settings *settings;
 	const char *kwnames[] = { "settings", NULL };
 	PyObject *py_settings = Py_None;
 	struct gensec_security *gensec;
+	TALLOC_CTX *frame;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", discard_const_p(char *, kwnames), &py_settings))
 		return NULL;
 
-	self = (pytalloc_Object*)type->tp_alloc(type, 0);
-	if (self == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	self->talloc_ctx = talloc_new(NULL);
-	if (self->talloc_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	frame = talloc_stackframe();
 
 	if (py_settings != Py_None) {
-		settings = settings_from_object(self->talloc_ctx, py_settings);
+		settings = settings_from_object(frame, py_settings);
 		if (settings == NULL) {
-			PyObject_DEL(self);
+			PyErr_NoMemory();
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 	} else {
-		settings = talloc_zero(self->talloc_ctx, struct gensec_settings);
+		settings = talloc_zero(frame, struct gensec_settings);
 		if (settings == NULL) {
-			PyObject_DEL(self);
+			PyErr_NoMemory();
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 
 		settings->lp_ctx = loadparm_init_global(true);
 		if (settings->lp_ctx == NULL) {
 			PyErr_NoMemory();
-			PyObject_DEL(self);
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 	}
@@ -123,18 +117,19 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
-		PyObject_DEL(self);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	status = gensec_client_start(self->talloc_ctx, &gensec, settings);
+	status = gensec_client_start(frame, &gensec, settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
-		PyObject_DEL(self);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	self->ptr = gensec;
+	self = pytalloc_steal(type, gensec);
+	TALLOC_FREE(frame);
 
 	return (PyObject *)self;
 }
@@ -142,45 +137,39 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	NTSTATUS status;
-	pytalloc_Object *self;
+	PyObject *self;
 	struct gensec_settings *settings = NULL;
 	const char *kwnames[] = { "settings", "auth_context", NULL };
 	PyObject *py_settings = Py_None;
 	PyObject *py_auth_context = Py_None;
 	struct gensec_security *gensec;
 	struct auth4_context *auth_context = NULL;
+	TALLOC_CTX *frame;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", discard_const_p(char *, kwnames), &py_settings, &py_auth_context))
 		return NULL;
 
-	self = (pytalloc_Object*)type->tp_alloc(type, 0);
-	if (self == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	self->talloc_ctx = talloc_new(NULL);
-	if (self->talloc_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	frame = talloc_stackframe();
 
 	if (py_settings != Py_None) {
-		settings = settings_from_object(self->talloc_ctx, py_settings);
+		settings = settings_from_object(frame, py_settings);
 		if (settings == NULL) {
-			PyObject_DEL(self);
+			PyErr_NoMemory();
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 	} else {
-		settings = talloc_zero(self->talloc_ctx, struct gensec_settings);
+		settings = talloc_zero(frame, struct gensec_settings);
 		if (settings == NULL) {
-			PyObject_DEL(self);
+			PyErr_NoMemory();
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 
 		settings->lp_ctx = loadparm_init_global(true);
 		if (settings->lp_ctx == NULL) {
 			PyErr_NoMemory();
-			PyObject_DEL(self);
+			TALLOC_FREE(frame);
 			return NULL;
 		}
 	}
@@ -198,20 +187,21 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 	status = gensec_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
-		PyObject_DEL(self);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	status = gensec_server_start(self->talloc_ctx, settings, auth_context, &gensec);
+	status = gensec_server_start(frame, settings, auth_context, &gensec);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
-		PyObject_DEL(self);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	self->ptr = gensec;
+	self = pytalloc_steal(type, gensec);
+	TALLOC_FREE(frame);
 
-	return (PyObject *)self;
+	return self;
 }
 
 static PyObject *py_gensec_set_target_hostname(PyObject *self, PyObject *args)
