@@ -428,7 +428,6 @@ static NTSTATUS smbXsrv_client_global_store(struct smbXsrv_client_global0 *globa
 
 static NTSTATUS smbXsrv_client_global_remove(struct smbXsrv_client_global0 *global)
 {
-	struct smbXsrv_client_globalB global_blob;
 	TDB_DATA key;
 	NTSTATUS status;
 
@@ -453,11 +452,8 @@ static NTSTATUS smbXsrv_client_global_remove(struct smbXsrv_client_global0 *glob
 		return status;
 	}
 	global->stored = false;
-	if (DEBUGLVL(DBGLVL_DEBUG)) {
-		DBG_DEBUG("key '%s' delete\n",
-			hex_encode_talloc(global->db_rec, key.dptr, key.dsize));
-		NDR_PRINT_DEBUG(smbXsrv_client_globalB, &global_blob);
-	}
+	DBG_DEBUG("key '%s' delete\n",
+		  hex_encode_talloc(global->db_rec, key.dptr, key.dsize));
 
 	TALLOC_FREE(global->db_rec);
 
