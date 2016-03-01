@@ -113,7 +113,7 @@ static PyObject * py_smb_loadfile(pytalloc_Object *self, PyObject *args)
 
 	io.in.fname = filename;
 
-	spdata = self->ptr;
+	spdata = pytalloc_get_ptr(self);
 	status = smb_composite_loadfile(spdata->tree, self->talloc_ctx, &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
@@ -139,7 +139,7 @@ static PyObject * py_smb_savefile(pytalloc_Object *self, PyObject *args)
 	io.in.data = (unsigned char *)data;
 	io.in.size = strlen(data);
 
-	spdata = self->ptr;
+	spdata = pytalloc_get_ptr(self);
 	status = smb_composite_savefile(spdata->tree, &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
@@ -204,7 +204,7 @@ static PyObject *py_smb_list(pytalloc_Object *self, PyObject *args, PyObject *kw
 	}
 	dos_format(mask);
 
-	spdata = self->ptr;
+	spdata = pytalloc_get_ptr(self);
 
 	if((py_dirlist = PyList_New(0)) == NULL) {
 		PyErr_NoMemory();
@@ -231,7 +231,7 @@ static PyObject *py_smb_mkdir(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 	status = smbcli_mkdir(spdata->tree, dirname);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
@@ -251,7 +251,7 @@ static PyObject *py_smb_rmdir(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 	status = smbcli_rmdir(spdata->tree, dirname);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
@@ -271,7 +271,7 @@ static PyObject *py_smb_deltree(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	spdata = self->ptr;
+	spdata = pytalloc_get_ptr(self);
 	status = smbcli_deltree(spdata->tree, dirname);
 	if (status <= 0) {
 		return NULL;
@@ -293,7 +293,7 @@ static PyObject *py_smb_chkpath(pytalloc_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 	status = smbcli_chkpath(spdata->tree, path);
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -323,7 +323,7 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 
 	ZERO_STRUCT(io);
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -388,7 +388,7 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	spdata = self->ptr;
+	spdata = pytalloc_get_ptr(self);
 
 	sd = pytalloc_get_type(py_sd, struct security_descriptor);
 	if (!sd) {
@@ -400,7 +400,7 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 
 	ZERO_STRUCT(io);
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
@@ -475,7 +475,7 @@ static PyObject *py_open_file(pytalloc_Object *self, PyObject *args, PyObject *k
 
 	ZERO_STRUCT(io);
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 
 	mem_ctx = talloc_new(NULL);
 
@@ -514,7 +514,7 @@ static PyObject *py_close_file(pytalloc_Object *self, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	spdata = self->ptr;	
+	spdata = pytalloc_get_ptr(self);
 
 	/*
 	 * Should check the status ...
