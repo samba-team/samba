@@ -190,3 +190,26 @@ NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS auth_generic_client_start_by_sasl(struct auth_generic_state *ans,
+					   const char **sasl_list)
+{
+	NTSTATUS status;
+
+	/* Transfer the credentials to gensec */
+	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	talloc_unlink(ans, ans->credentials);
+	ans->credentials = NULL;
+
+	status = gensec_start_mech_by_sasl_list(ans->gensec_security, sasl_list);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
