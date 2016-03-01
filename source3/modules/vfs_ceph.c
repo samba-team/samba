@@ -252,14 +252,16 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,  const char *path,
 
 /* Directory operations */
 
-static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,  const char *fname, const char *mask, uint32_t attr)
+static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,
+			     const struct smb_filename *smb_fname,
+			     const char *mask, uint32_t attr)
 {
 	int ret = 0;
 	struct ceph_dir_result *result;
-	DEBUG(10, ("[CEPH] opendir(%p, %s)\n", handle, fname));
+	DEBUG(10, ("[CEPH] opendir(%p, %s)\n", handle, smb_fname->base_name));
 
 	/* Returns NULL if it does not exist or there are problems ? */
-	ret = ceph_opendir(handle->data, fname, &result);
+	ret = ceph_opendir(handle->data, smb_fname->base_name, &result);
 	if (ret < 0) {
 		result = NULL;
 		errno = -ret; /* We return result which is NULL in this case */
