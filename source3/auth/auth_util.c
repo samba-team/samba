@@ -34,6 +34,7 @@
 #include "../auth/auth_sam_reply.h"
 #include "../librpc/gen_ndr/idmap.h"
 #include "lib/param/loadparm.h"
+#include "../lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -353,6 +354,20 @@ NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
 				      const struct tsocket_address *remote_address,
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
 {
+	bool allow_raw = lp_raw_ntlmv2_auth();
+
+	if (!allow_raw && nt_resp.length >= 48) {
+		/*
+		 * NTLMv2_RESPONSE has at least 48 bytes
+		 * and should only be supported via NTLMSSP.
+		 */
+		DEBUG(2,("Rejecting raw NTLMv2 authentication with "
+			 "user [%s\\%s] from[%s]\n",
+			 client_domain, smb_name,
+			 tsocket_address_string(remote_address, mem_ctx)));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	return make_user_info(mem_ctx,
 			      user_info, smb_name, smb_name,
 			      client_domain, client_domain, 
