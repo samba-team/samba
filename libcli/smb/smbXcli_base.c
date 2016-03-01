@@ -5522,6 +5522,11 @@ uint16_t smb2cli_session_reset_channel_sequence(struct smbXcli_session *session,
 	return prev_cs;
 }
 
+uint16_t smb2cli_session_current_channel_sequence(struct smbXcli_session *session)
+{
+	return session->smb2->channel_sequence;
+}
+
 void smb2cli_session_start_replay(struct smbXcli_session *session)
 {
 	session->smb2->replay_active = true;

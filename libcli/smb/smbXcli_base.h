@@ -413,6 +413,7 @@ void smb2cli_session_set_id_and_flags(struct smbXcli_session *session,
 void smb2cli_session_increment_channel_sequence(struct smbXcli_session *session);
 uint16_t smb2cli_session_reset_channel_sequence(struct smbXcli_session *session,
 						uint16_t channel_sequence);
+uint16_t smb2cli_session_current_channel_sequence(struct smbXcli_session *session);
 void smb2cli_session_start_replay(struct smbXcli_session *session);
 void smb2cli_session_stop_replay(struct smbXcli_session *session);
 NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
