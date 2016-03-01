@@ -2093,7 +2093,7 @@ sub ParseUnionPull($$$$)
 {
 	my ($self,$e,$ndr,$varname) = @_;
 	my $switch_type = $e->{SWITCH_TYPE};
-
+        my $needs_deferred_switch = is_deferred_switch_non_empty($e);
 	$self->pidl("uint32_t level;");
 	if (defined($switch_type)) {
 		if (Parse::Pidl::Typelist::typeIs($switch_type, "ENUM")) {
@@ -2117,18 +2117,24 @@ sub ParseUnionPull($$$$)
 	$self->pidl("NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
-        $self->pidl("level = ndr_pull_get_switch_value($ndr, $varname);");
+	if (! $needs_deferred_switch) {
+		$self->pidl("/* This token is not used again */");
+		$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
+	} else {
+		$self->pidl("level = ndr_pull_get_switch_value($ndr, $varname);");
+	}
 	$self->ParseUnionPullPrimitives($e,$ndr,$varname,$switch_type);
 	$self->deindent;
 	$self->pidl("}");
-        if (is_deferred_switch_non_empty($e)) {
-                $self->pidl("if (ndr_flags & NDR_BUFFERS) {");
-                $self->indent;
-                $self->pidl("level = ndr_pull_get_switch_value($ndr, $varname);");
-                $self->ParseUnionPullDeferred($e,$ndr,$varname);
-                $self->deindent;
-                $self->pidl("}");
-        }
+	if ($needs_deferred_switch) {
+		$self->pidl("if (ndr_flags & NDR_BUFFERS) {");
+		$self->indent;
+		$self->pidl("/* The token is not needed after this. */");
+		$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
+		$self->ParseUnionPullDeferred($e,$ndr,$varname);
+		$self->deindent;
+		$self->pidl("}");
+	}
 	$self->add_deferred();
 
 	$self->end_flags($e, $ndr);
