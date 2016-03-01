@@ -4229,30 +4229,6 @@ static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **
 }
 
 /*
-  set the reclock file of a node
- */
-static int control_setreclock(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	const char *reclock = NULL;
-
-	if (argc == 0) {
-		reclock = NULL;
-	} else if (argc == 1) {
-		reclock = argv[0];
-	} else {
-		usage();
-	}
-
-	ret = ctdb_ctrl_setreclock(ctdb, TIMELIMIT(), options.pnn, reclock);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
-		return ret;
-	}
-	return 0;
-}
-
-/*
   set the lmaster role on/off
  */
 static int control_setlmasterrole(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5824,7 +5800,6 @@ static const struct {
 	{ "disablescript",    control_disablescript,  true,	false, "disable an eventscript", "<script>"},
 	{ "natgw",            control_natgw,		false,	true, "show NAT gateway configuration ", "[master|list|status]"},
 	{ "getreclock",       control_getreclock,	true,	false, "Show the reclock file of a node"},
-	{ "setreclock",       control_setreclock,	true,	false, "Set/clear the reclock file of a node", "[filename]"},
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
 	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbname|dbid> <prio:1-3>"},

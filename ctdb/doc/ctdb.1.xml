@@ -968,43 +968,6 @@ DB Statistics: locking.tdb
     </refsect2>
 
     <refsect2>
-      <title>
-	setreclock <optional><parameter>FILE</parameter></optional>
-      </title>
-
-      <para>
-	FILE specifies the name of the recovery lock file.  If the
-	recovery lock file is changed at run-time then this will cause
-	a recovery, which in turn causes the recovery lock to be
-	retaken.
-      </para>
-
-      <para>
-	If no FILE is specified then a recovery lock file will no
-	longer be used.
-      </para>
-
-      <para>
-	This command only affects the run-time setting of a single
-	CTDB node.  This setting <emphasis>must</emphasis> be changed
-	on all nodes simultaneously.  For information about configuring
-	the recovery lock file please see the
-	<citetitle>CTDB_RECOVERY_LOCK</citetitle> entry in
-	<citerefentry><refentrytitle>ctdbd.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry> and the
-	<citetitle>--reclock</citetitle> entry in
-	<citerefentry><refentrytitle>ctdbd</refentrytitle>
-	<manvolnum>1</manvolnum></citerefentry>.  For information
-	about the recovery lock please see the <citetitle>RECOVERY
-	LOCK</citetitle> section in
-	<citerefentry><refentrytitle>ctdb</refentrytitle>
-	<manvolnum>7</manvolnum></citerefentry>.
-      </para>
-    </refsect2>
-
-
-
-    <refsect2>
       <title>getdebug</title>
       <para>
 	Get the current debug level for the node. the debug level controls what information is written to the log file.
