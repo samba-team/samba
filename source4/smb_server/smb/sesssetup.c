@@ -263,6 +263,7 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	const char *remote_machine = NULL;
 	struct tevent_req *subreq;
 	struct sesssetup_context *state;
+	bool allow_raw = lpcfg_raw_ntlmv2_auth(req->smb_conn->lp_ctx);
 
 	sess->nt1.out.vuid = 0;
 	sess->nt1.out.action = 0;
@@ -337,6 +338,15 @@ static void sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *sess)
 	user_info->password.response.lanman.data = talloc_steal(user_info, sess->nt1.in.password1.data);
 	user_info->password.response.nt = sess->nt1.in.password2;
 	user_info->password.response.nt.data = talloc_steal(user_info, sess->nt1.in.password2.data);
+
+	if (!allow_raw && user_info->password.response.nt.length >= 48) {
+		/*
+		 * NTLMv2_RESPONSE has at least 48 bytes
+		 * and should only be supported via NTLMSSP.
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto failed;
+	}
 
 	subreq = auth_check_password_send(state,
 					  req->smb_conn->connection->event.ctx,
