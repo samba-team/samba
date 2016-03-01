@@ -114,7 +114,7 @@ static PyObject * py_smb_loadfile(pytalloc_Object *self, PyObject *args)
 	io.in.fname = filename;
 
 	spdata = pytalloc_get_ptr(self);
-	status = smb_composite_loadfile(spdata->tree, self->talloc_ctx, &io);
+	status = smb_composite_loadfile(spdata->tree, pytalloc_get_mem_ctx(self), &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	return Py_BuildValue("s#", io.out.data, io.out.size);
@@ -198,9 +198,9 @@ static PyObject *py_smb_list(pytalloc_Object *self, PyObject *args, PyObject *kw
 	}
 
 	if (user_mask == NULL) {
-		mask = talloc_asprintf(self->talloc_ctx, "%s\\*", base_dir);
+		mask = talloc_asprintf(pytalloc_get_mem_ctx(self), "%s\\*", base_dir);
 	} else {
-		mask = talloc_asprintf(self->talloc_ctx, "%s\\%s", base_dir, user_mask);
+		mask = talloc_asprintf(pytalloc_get_mem_ctx(self), "%s\\%s", base_dir, user_mask);
 	}
 	dos_format(mask);
 
@@ -339,7 +339,7 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = filename;
 	
-	status = smb_raw_open(spdata->tree, self->talloc_ctx, &io);
+	status = smb_raw_open(spdata->tree, pytalloc_get_mem_ctx(self), &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	fnum = io.ntcreatex.out.file.fnum;
@@ -360,13 +360,13 @@ static PyObject *py_smb_getacl(pytalloc_Object *self, PyObject *args, PyObject *
 						SECINFO_PROTECTED_SACL |
 						SECINFO_UNPROTECTED_SACL;
 
-	status = smb_raw_query_secdesc(spdata->tree, self->talloc_ctx, &fio);
+	status = smb_raw_query_secdesc(spdata->tree, pytalloc_get_mem_ctx(self), &fio);
 	smbcli_close(spdata->tree, fnum);
 
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	return py_return_ndr_struct("samba.dcerpc.security", "descriptor",
-				self->talloc_ctx, fio.query_secdesc.out.sd);
+				pytalloc_get_mem_ctx(self), fio.query_secdesc.out.sd);
 }
 
 /*
@@ -416,7 +416,7 @@ static PyObject *py_smb_setacl(pytalloc_Object *self, PyObject *args, PyObject *
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = filename;
 	
-	status = smb_raw_open(spdata->tree, self->talloc_ctx, &io);
+	status = smb_raw_open(spdata->tree, pytalloc_get_mem_ctx(self), &io);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	fnum = io.ntcreatex.out.file.fnum;
