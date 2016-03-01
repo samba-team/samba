@@ -620,7 +620,6 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 
 static PyTypeObject PySMB = {
 	.tp_name = "smb.SMB",
-	.tp_basicsize = sizeof(pytalloc_Object),
 	.tp_new = py_smb_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_smb_methods,
@@ -631,14 +630,8 @@ static PyTypeObject PySMB = {
 void initsmb(void)
 {
 	PyObject *m;
-	PyTypeObject *talloc_type = pytalloc_GetObjectType();
-	if (talloc_type == NULL) {
-		return;
-	}
 
-	PySMB.tp_base = talloc_type;
-
-	if (PyType_Ready(&PySMB) < 0) {
+	if (pytalloc_BaseObject_PyType_Ready(&PySMB) < 0) {
 		return;
 	}
 
