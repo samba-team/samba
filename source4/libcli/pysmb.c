@@ -573,9 +573,10 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	const char *kwnames[] = { "hostname", "service", "creds", "lp", NULL };
 	const char *hostname = NULL;
 	const char *service = NULL;
-	pytalloc_Object *smb;
+	PyObject *smb;
 	struct smb_private_data *spdata;
 	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OO",
 					discard_const_p(char *, kwnames),
@@ -583,46 +584,38 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	smb = (pytalloc_Object *)type->tp_alloc(type, 0);
-	if (smb == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	smb->talloc_ctx = talloc_new(NULL);
-	if (smb->talloc_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	frame = talloc_stackframe();
 
-	spdata = talloc_zero(smb->talloc_ctx, struct smb_private_data);
+	spdata = talloc_zero(frame, struct smb_private_data);
 	if (spdata == NULL) {
 		PyErr_NoMemory();
-		Py_DECREF(smb);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	spdata->lp_ctx = lpcfg_from_py_object(smb->talloc_ctx, py_lp);
+	spdata->lp_ctx = lpcfg_from_py_object(spdata, py_lp);
 	if (spdata->lp_ctx == NULL) {
-		Py_DECREF(smb);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 	spdata->creds = PyCredentials_AsCliCredentials(py_creds);
-	spdata->ev_ctx = s4_event_context_init(smb->talloc_ctx);
+	spdata->ev_ctx = s4_event_context_init(spdata);
 	if (spdata->ev_ctx == NULL) {
 		PyErr_NoMemory();
-		Py_DECREF(smb);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	status = do_smb_connect(smb->talloc_ctx, spdata, hostname, service, &spdata->tree);
+	status = do_smb_connect(spdata, spdata, hostname, service, &spdata->tree);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 	if (spdata->tree == NULL) {
-		Py_DECREF(smb);
+		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	smb->ptr = spdata;
-	return (PyObject *)smb;
+	smb = pytalloc_steal(type, spdata);
+	TALLOC_FREE(frame);
+	return smb;
 }
 
 static PyTypeObject PySMB = {
