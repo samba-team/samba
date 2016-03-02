@@ -46,7 +46,8 @@ static void print_tree(unsigned int level, struct registry_key *p,
 	unsigned int i;
 	TALLOC_CTX *mem_ctx;
 
-	for(i = 0; i < level; i++) putchar(' '); puts(name);
+	for(i = 0; i < level; i++) putchar(' ');
+	puts(name);
 
 	mem_ctx = talloc_init("print_tree");
 	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(mem_ctx,
