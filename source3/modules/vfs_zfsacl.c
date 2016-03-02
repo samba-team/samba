@@ -215,23 +215,29 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32_t security_info,
-				  TALLOC_CTX *mem_ctx,
-				  struct security_descriptor **ppdesc)
+				const struct smb_filename *smb_fname,
+				uint32_t security_info,
+				TALLOC_CTX *mem_ctx,
+				struct security_descriptor **ppdesc)
 {
 	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(frame, name, &pacl);
+	status = zfs_get_nt_acl_common(frame,
+					smb_fname->base_name,
+					&pacl);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	status = smb_get_nt_acl_nfs4(handle->conn, name, security_info,
-				     mem_ctx, ppdesc,
-				     pacl);
+	status = smb_get_nt_acl_nfs4(handle->conn,
+					smb_fname->base_name,
+					security_info,
+					mem_ctx,
+					ppdesc,
+					pacl);
 	TALLOC_FREE(frame);
 	return status;
 }
