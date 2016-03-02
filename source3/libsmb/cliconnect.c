@@ -1902,14 +1902,14 @@ static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq);
 
 static struct tevent_req *cli_session_setup_spnego_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *user, const char *pass, const char *user_domain,
-	const char *dest_realm)
+	const char *user, const char *pass, const char *user_domain)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_spnego_state *state;
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
+	const char *dest_realm = cli_state_remote_realm(cli);
 	const DATA_BLOB *server_blob;
 	NTSTATUS status;
 
@@ -2189,10 +2189,8 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		const char *remote_realm = cli_state_remote_realm(cli);
-
 		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup, remote_realm);
+			state, ev, cli, user, pass, workgroup);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -2252,10 +2250,8 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	/* if the server supports extended security then use SPNEGO */
 
 	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
-		const char *remote_realm = cli_state_remote_realm(cli);
-
 		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup, remote_realm);
+			state, ev, cli, user, pass, workgroup);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
