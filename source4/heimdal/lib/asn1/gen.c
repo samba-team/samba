@@ -290,9 +290,10 @@ close_generate (void)
         fclose (privheaderfile);
     if (templatefile)
         fclose (templatefile);
-    if (logfile)
+    if (logfile) {
         fprintf (logfile, "\n");
         fclose (logfile);
+    }
 }
 
 void
