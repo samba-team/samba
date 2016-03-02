@@ -2884,7 +2884,10 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	 */
 	if (killtcp == NULL) {
 		killtcp = talloc_zero(vnn, struct ctdb_kill_tcp);
-		CTDB_NO_MEMORY(ctdb, killtcp);
+		if (killtcp == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+			return -1;
+		}
 
 		killtcp->vnn         = vnn;
 		killtcp->ctdb        = ctdb;
@@ -2901,7 +2904,10 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   RST and store it in killtcp->connections
 	*/
 	con = talloc(killtcp, struct ctdb_killtcp_con);
-	CTDB_NO_MEMORY(ctdb, con);
+	if (con == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
 	con->src_addr = src;
 	con->dst_addr = dst;
 	con->count    = 0;
