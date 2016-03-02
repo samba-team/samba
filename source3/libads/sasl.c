@@ -464,280 +464,6 @@ static const struct ads_saslwrap_ops ads_sasl_gssapi_ops = {
 	.disconnect	= ads_sasl_gssapi_disconnect
 };
 
-/* 
-   perform a LDAP/SASL/SPNEGO/GSSKRB5 bind
-*/
-static ADS_STATUS ads_sasl_spnego_gsskrb5_bind(ADS_STRUCT *ads, const gss_name_t serv_name)
-{
-	ADS_STATUS status;
-	bool ok;
-	uint32_t minor_status;
-	int gss_rc, rc;
-	gss_cred_id_t gss_cred = GSS_C_NO_CREDENTIAL;
-	gss_OID_desc krb5_mech_type =
-	{9, discard_const_p(char, "\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
-	gss_OID mech_type = &krb5_mech_type;
-	gss_OID actual_mech_type = GSS_C_NULL_OID;
-	const char *spnego_mechs[] = {OID_KERBEROS5_OLD, OID_KERBEROS5, OID_NTLMSSP, NULL};
-	gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
-	gss_buffer_desc input_token, output_token;
-	uint32_t req_flags, ret_flags;
-	uint32_t req_tmp, ret_tmp;
-	DATA_BLOB unwrapped;
-	DATA_BLOB wrapped;
-	struct berval cred, *scred = NULL;
-	uint32_t context_validity = 0;
-	time_t context_endtime = 0;
-
-	status = ads_init_gssapi_cred(ads, &gss_cred);
-	if (!ADS_ERR_OK(status)) {
-		goto failed;
-	}
-
-	input_token.value = NULL;
-	input_token.length = 0;
-
-	req_flags = GSS_C_MUTUAL_FLAG | GSS_C_REPLAY_FLAG;
-	switch (ads->ldap.wrap_type) {
-	case ADS_SASLWRAP_TYPE_SEAL:
-		req_flags |= GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG;
-		break;
-	case ADS_SASLWRAP_TYPE_SIGN:
-		req_flags |= GSS_C_INTEG_FLAG;
-		break;
-	case ADS_SASLWRAP_TYPE_PLAIN:
-		break;
-	}
-
-	/* Note: here we explicit ask for the krb5 mech_type */
-	gss_rc = gss_init_sec_context(&minor_status,
-				      gss_cred,
-				      &context_handle,
-				      serv_name,
-				      mech_type,
-				      req_flags,
-				      0,
-				      NULL,
-				      &input_token,
-				      &actual_mech_type,
-				      &output_token,
-				      &ret_flags,
-				      NULL);
-	if (gss_rc && gss_rc != GSS_S_CONTINUE_NEEDED) {
-		status = ADS_ERROR_GSS(gss_rc, minor_status);
-		goto failed;
-	}
-
-	/*
-	 * As some gssapi krb5 mech implementations
-	 * automaticly add GSS_C_INTEG_FLAG and GSS_C_CONF_FLAG
-	 * to req_flags internaly, it's not possible to
-	 * use plain or signing only connection via
-	 * the gssapi interface.
-	 *
-	 * Because of this we need to check it the ret_flags
-	 * has more flags as req_flags and correct the value
-	 * of ads->ldap.wrap_type.
-	 *
-	 * I ads->auth.flags has ADS_AUTH_SASL_FORCE
-	 * we need to give an error.
-	 */
-	req_tmp = req_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
-	ret_tmp = ret_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
-
-	if (req_tmp == ret_tmp) {
-		/* everythings fine... */
-
-	} else if (req_flags & GSS_C_CONF_FLAG) {
-		/*
-		 * here we wanted sealing but didn't got it
-		 * from the gssapi library
-		 */
-		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-		goto failed;
-
-	} else if ((req_flags & GSS_C_INTEG_FLAG) &&
-		   !(ret_flags & GSS_C_INTEG_FLAG)) {
-		/*
-		 * here we wanted siging but didn't got it
-		 * from the gssapi library
-		 */
-		status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-		goto failed;
-
-	} else if (ret_flags & GSS_C_CONF_FLAG) {
-		/*
-		 * here we didn't want sealing
-		 * but the gssapi library forces it
-		 * so correct the needed wrap_type if
-		 * the caller didn't forced siging only
-		 */
-		if (ads->auth.flags & ADS_AUTH_SASL_FORCE) {
-			status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-			goto failed;
-		}
-
-		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SEAL;
-		req_flags = ret_flags;
-
-	} else if (ret_flags & GSS_C_INTEG_FLAG) {
-		/*
-		 * here we didn't want signing
-		 * but the gssapi library forces it
-		 * so correct the needed wrap_type if
-		 * the caller didn't forced plain
-		 */
-		if (ads->auth.flags & ADS_AUTH_SASL_FORCE) {
-			status = ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-			goto failed;
-		}
-
-		ads->ldap.wrap_type = ADS_SASLWRAP_TYPE_SIGN;
-		req_flags = ret_flags;
-	} else {
-		/*
-		 * This could (should?) not happen
-		 */
-		status = ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
-		goto failed;
-	
-	}
-
-	/* and wrap that in a shiny SPNEGO wrapper */
-	unwrapped = data_blob_const(output_token.value, output_token.length);
-	wrapped = spnego_gen_negTokenInit(talloc_tos(),
-			spnego_mechs, &unwrapped, NULL);
-	gss_release_buffer(&minor_status, &output_token);
-	if (unwrapped.length > wrapped.length) {
-		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-		goto failed;
-	}
-
-	cred.bv_val = (char *)wrapped.data;
-	cred.bv_len = wrapped.length;
-
-	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, 
-			      &scred);
-	data_blob_free(&wrapped);
-	if (rc != LDAP_SUCCESS) {
-		status = ADS_ERROR(rc);
-		goto failed;
-	}
-
-	if (scred) {
-		wrapped = data_blob_const(scred->bv_val, scred->bv_len);
-	} else {
-		wrapped = data_blob_null;
-	}
-
-	ok = spnego_parse_auth_response(talloc_tos(), wrapped, NT_STATUS_OK,
-					OID_KERBEROS5_OLD,
-					&unwrapped);
-	if (scred) ber_bvfree(scred);
-	if (!ok) {
-		status = ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
-		goto failed;
-	}
-
-	input_token.value	= unwrapped.data;
-	input_token.length	= unwrapped.length;
-
-	/* 
-	 * As we asked for mutal authentication
-	 * we need to pass the servers response
-	 * to gssapi
-	 */
-	gss_rc = gss_init_sec_context(&minor_status,
-				      gss_cred,
-				      &context_handle,
-				      serv_name,
-				      mech_type,
-				      req_flags,
-				      0,
-				      NULL,
-				      &input_token,
-				      &actual_mech_type,
-				      &output_token,
-				      &ret_flags,
-				      NULL);
-	data_blob_free(&unwrapped);
-	if (gss_rc) {
-		status = ADS_ERROR_GSS(gss_rc, minor_status);
-		goto failed;
-	}
-
-	gss_release_buffer(&minor_status, &output_token);
-
-	/*
-	 * If we the sign and seal options
-	 * doesn't match after getting the response
-	 * from the server, we don't want to use the connection
-	 */
-	req_tmp = req_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
-	ret_tmp = ret_flags & (GSS_C_INTEG_FLAG | GSS_C_CONF_FLAG);
-
-	if (req_tmp != ret_tmp) {
-		/* everythings fine... */
-		status = ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
-		goto failed;
-	}
-
-	gss_rc =
-	    gss_context_time(&minor_status, context_handle, &context_validity);
-	if (gss_rc == GSS_S_COMPLETE) {
-		if (context_validity != 0) {
-			context_endtime = time(NULL) + context_validity;
-			DEBUG(10, ("context (service ticket) valid for "
-				"%u seconds\n",
-				context_validity));
-		} else {
-			DEBUG(10, ("context (service ticket) expired\n"));
-		}
-	} else {
-		DEBUG(1, ("gss_context_time failed (%d,%u) -"
-			" this will be a one-time context\n",
-			gss_rc, minor_status));
-		if (gss_rc == GSS_S_CONTEXT_EXPIRED) {
-			DEBUG(10, ("context (service ticket) expired\n"));
-		}
-	}
-
-	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		uint32_t max_msg_size = ADS_SASL_WRAPPING_OUT_MAX_WRAPPED;
-
-		gss_rc = gss_wrap_size_limit(&minor_status, context_handle,
-					     (ads->ldap.wrap_type == ADS_SASLWRAP_TYPE_SEAL),
-					     GSS_C_QOP_DEFAULT,
-					     max_msg_size, &ads->ldap.out.max_unwrapped);
-		if (gss_rc) {
-			status = ADS_ERROR_GSS(gss_rc, minor_status);
-			goto failed;
-		}
-
-		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max_unwrapped;
-		ads->ldap.in.min_wrapped = 0x2C; /* taken from a capture with LDAP unbind */
-		ads->ldap.in.max_wrapped = max_msg_size;
-		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
-		if (!ADS_ERR_OK(status)) {
-			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
-				ads_errstr(status)));
-			goto failed;
-		}
-		/* make sure we don't free context_handle */
-		context_handle = GSS_C_NO_CONTEXT;
-	}
-
-	ads->auth.tgs_expire = context_endtime;
-	status = ADS_SUCCESS;
-
-failed:
-	if (gss_cred != GSS_C_NO_CREDENTIAL)
-		gss_release_cred(&minor_status, &gss_cred);
-	if (context_handle != GSS_C_NO_CONTEXT)
-		gss_delete_sec_context(&minor_status, &context_handle, GSS_C_NO_BUFFER);
-	return status;
-}
-
 #endif /* HAVE_KRB5 */
 
 #ifdef HAVE_KRB5
@@ -912,63 +638,6 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 	return ADS_SUCCESS;
 }
 
-/* 
-   perform a LDAP/SASL/SPNEGO/KRB5 bind
-*/
-static ADS_STATUS ads_sasl_spnego_rawkrb5_bind(ADS_STRUCT *ads, const char *principal)
-{
-	DATA_BLOB blob = data_blob_null;
-	struct berval cred, *scred = NULL;
-	DATA_BLOB session_key = data_blob_null;
-	int rc;
-
-	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
-	}
-
-	rc = spnego_gen_krb5_negTokenInit(talloc_tos(), principal,
-				     ads->auth.time_offset, &blob, &session_key, 0,
-				     ads->auth.ccache_name,
-				     &ads->auth.tgs_expire);
-
-	if (rc) {
-		return ADS_ERROR_KRB5(rc);
-	}
-
-	/* now send the auth packet and we should be done */
-	cred.bv_val = (char *)blob.data;
-	cred.bv_len = blob.length;
-
-	rc = ldap_sasl_bind_s(ads->ldap.ld, NULL, "GSS-SPNEGO", &cred, NULL, NULL, &scred);
-
-	data_blob_free(&blob);
-	data_blob_free(&session_key);
-	if(scred)
-		ber_bvfree(scred);
-
-	return ADS_ERROR(rc);
-}
-
-static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads,
-					    struct ads_service_principal *p)
-{
-#ifdef HAVE_KRB5
-	/*
-	 * we only use the gsskrb5 based implementation
-	 * when sasl sign or seal is requested.
-	 *
-	 * This has the following reasons:
-	 * - it's likely that the gssapi krb5 mech implementation
-	 *   doesn't support to negotiate plain connections
-	 * - the ads_sasl_spnego_rawkrb5_bind is more robust
-	 *   against clock skew errors
-	 */
-	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
-		return ads_sasl_spnego_gsskrb5_bind(ads, p->name);
-	}
-#endif
-	return ads_sasl_spnego_rawkrb5_bind(ads, p->string);
-}
 #endif /* HAVE_KRB5 */
 
 /* 
@@ -976,6 +645,8 @@ static ADS_STATUS ads_sasl_spnego_krb5_bind(ADS_STRUCT *ads,
 */
 static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ads_service_principal p;
 	struct berval *scred=NULL;
 	int rc, i;
 	ADS_STATUS status;
@@ -990,7 +661,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 	if (rc != LDAP_SASL_BIND_IN_PROGRESS) {
 		status = ADS_ERROR(rc);
-		goto failed;
+		goto done;
 	}
 
 	blob = data_blob(scred->bv_val, scred->bv_len);
@@ -1005,11 +676,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	   reply */
 	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &given_principal, NULL) ||
 			OIDs[0] == NULL) {
-		data_blob_free(&blob);
 		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
-		goto failed;
+		goto done;
 	}
-	data_blob_free(&blob);
 	TALLOC_FREE(given_principal);
 
 	/* make sure the server understands kerberos */
@@ -1024,43 +693,45 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		talloc_free(OIDs[i]);
 	}
 
+	status = ads_generate_service_principal(ads, &p);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
+	}
+
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
 	    got_kerberos_mechanism) 
 	{
-		struct ads_service_principal p;
-
-		status = ads_generate_service_principal(ads, &p);
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
-
-		status = ads_sasl_spnego_krb5_bind(ads, &p);
+		status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+						     CRED_MUST_USE_KERBEROS,
+						     p.service, p.hostname,
+						     blob);
 		if (ADS_ERR_OK(status)) {
 			ads_free_service_principal(&p);
-			return status;
+			goto done;
 		}
 
-		DEBUG(10,("ads_sasl_spnego_krb5_bind failed with: %s, "
+		DEBUG(10,("ads_sasl_spnego_gensec_bind(KRB5) failed with: %s, "
 			  "calling kinit\n", ads_errstr(status)));
 
 		status = ADS_ERROR_KRB5(ads_kinit_password(ads)); 
 
 		if (ADS_ERR_OK(status)) {
-			status = ads_sasl_spnego_krb5_bind(ads, &p);
+			status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+							CRED_MUST_USE_KERBEROS,
+							p.service, p.hostname,
+							blob);
 			if (!ADS_ERR_OK(status)) {
 				DEBUG(0,("kinit succeeded but "
-					"ads_sasl_spnego_krb5_bind failed: %s\n",
+					"ads_sasl_spnego_gensec_bind(KRB5) failed: %s\n",
 					ads_errstr(status)));
 			}
 		}
 
-		ads_free_service_principal(&p);
-
 		/* only fallback to NTLMSSP if allowed */
 		if (ADS_ERR_OK(status) || 
 		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
-			return status;
+			goto done;
 		}
 	}
 #endif
@@ -1068,12 +739,13 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	/* lets do NTLMSSP ... this has the big advantage that we don't need
 	   to sync clocks, and we don't rely on special versions of the krb5 
 	   library for HMAC_MD4 encryption */
-	return ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
-					   CRED_DONT_USE_KERBEROS,
-					   NULL, NULL,
-					   data_blob_null);
-
-failed:
+	status = ads_sasl_spnego_gensec_bind(ads, "GSS-SPNEGO",
+					     CRED_DONT_USE_KERBEROS,
+					     p.service, p.hostname,
+					     data_blob_null);
+done:
+	ads_free_service_principal(&p);
+	TALLOC_FREE(frame);
 	return status;
 }
 
