@@ -362,8 +362,10 @@ static int cephwrap_mkdir(struct vfs_handle_struct *handle,
 		 * mess up any inherited ACL bits that were set. JRA.
 		 */
 		int saved_errno = errno; /* We may get ENOSYS */
-		if ((SMB_VFS_CHMOD_ACL(handle->conn, path, mode) == -1) && (errno == ENOSYS))
+		if ((SMB_VFS_CHMOD_ACL(handle->conn, smb_fname, mode) == -1) &&
+				(errno == ENOSYS)) {
 			errno = saved_errno;
+		}
 	}
 
 	return result;
@@ -650,7 +652,7 @@ static int cephwrap_chmod(struct vfs_handle_struct *handle,
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
 		result = SMB_VFS_CHMOD_ACL(handle->conn,
-					smb_fname->base_name,
+					smb_fname,
 					mode);
 		if (result == 0) {
 			return result;

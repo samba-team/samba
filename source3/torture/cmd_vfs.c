@@ -896,6 +896,7 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 
 static NTSTATUS cmd_chmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *smb_fname = NULL;
 	mode_t mode;
 	if (argc != 3) {
 		printf("Usage: chmod_acl <path> <mode>\n");
@@ -903,7 +904,16 @@ static NTSTATUS cmd_chmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 	}
 
 	mode = atoi(argv[2]);
-	if (SMB_VFS_CHMOD_ACL(vfs->conn, argv[1], mode) == -1) {
+
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					argv[1],
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (SMB_VFS_CHMOD_ACL(vfs->conn, smb_fname, mode) == -1) {
 		printf("chmod_acl: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

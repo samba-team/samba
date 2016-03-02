@@ -692,8 +692,9 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static int skel_chmod_acl(vfs_handle_struct *handle, const char *name,
-			  mode_t mode)
+static int skel_chmod_acl(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;

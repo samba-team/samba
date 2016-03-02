@@ -182,6 +182,8 @@
 /* Version 35 - Wrap aio async funtions args in a struct vfs_aio_state */
 /* Version 35 - Change chmod from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Change chmod_acl from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -787,7 +789,9 @@ struct vfs_fn_pointers {
 
 	/* POSIX ACL operations. */
 
-	int (*chmod_acl_fn)(struct vfs_handle_struct *handle, const char *name, mode_t mode);
+	int (*chmod_acl_fn)(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					mode_t mode);
 	int (*fchmod_acl_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 
 	SMB_ACL_T (*sys_acl_get_file_fn)(struct vfs_handle_struct *handle,
@@ -1230,8 +1234,9 @@ NTSTATUS smb_vfs_call_audit_file(struct vfs_handle_struct *handle,
 				 struct security_acl *sacl,
 				 uint32_t access_requested,
 				 uint32_t access_denied);
-int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle, const char *name,
-			   mode_t mode);
+int smb_vfs_call_chmod_acl(struct vfs_handle_struct *handle,
+				const struct smb_filename *file,
+				mode_t mode);
 int smb_vfs_call_fchmod_acl(struct vfs_handle_struct *handle,
 			    struct files_struct *fsp, mode_t mode);
 SMB_ACL_T smb_vfs_call_sys_acl_get_file(struct vfs_handle_struct *handle,

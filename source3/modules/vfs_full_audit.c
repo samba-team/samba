@@ -1951,14 +1951,15 @@ static NTSTATUS smb_full_audit_fset_nt_acl(vfs_handle_struct *handle, files_stru
 }
 
 static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
-			   const char *path, mode_t mode)
+				const struct smb_filename *smb_fname,
+				mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_CHMOD_ACL(handle, path, mode);
+	result = SMB_VFS_NEXT_CHMOD_ACL(handle, smb_fname, mode);
 
 	do_log(SMB_VFS_OP_CHMOD_ACL, (result >= 0), handle,
-	       "%s|%o", path, mode);
+	       "%s|%o", smb_fname->base_name, mode);
 
 	return result;
 }

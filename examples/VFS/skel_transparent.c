@@ -823,10 +823,11 @@ static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 }
 
-static int skel_chmod_acl(vfs_handle_struct *handle, const char *name,
-			  mode_t mode)
+static int skel_chmod_acl(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
-	return SMB_VFS_NEXT_CHMOD_ACL(handle, name, mode);
+	return SMB_VFS_NEXT_CHMOD_ACL(handle, smb_fname, mode);
 }
 
 static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,

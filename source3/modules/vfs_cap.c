@@ -461,16 +461,36 @@ static char *cap_realpath(vfs_handle_struct *handle, const char *path)
 	return SMB_VFS_NEXT_REALPATH(handle, cappath);
 }
 
-static int cap_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int cap_chmod_acl(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	int ret;
+	int saved_errno;
 
 	/* If the underlying VFS doesn't have ACL support... */
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_CHMOD_ACL(handle, cappath, mode);
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_CHMOD_ACL(handle, cap_smb_fname, mode);
+	saved_errno = errno;
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	errno = saved_errno;
+	return ret;
 }
 
 static SMB_ACL_T cap_sys_acl_get_file(vfs_handle_struct *handle,
