@@ -258,8 +258,15 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		}
 	}
 
-	if (get_remote_arch() != RA_SAMBA) {
+	switch (get_remote_arch()) {
+	case RA_VISTA:
+	case RA_SAMBA:
+	case RA_CIFSFS:
+	case RA_OSX:
+		break;
+	default:
 		set_remote_arch(RA_VISTA);
+		break;
 	}
 
 	fstr_sprintf(remote_proto, "SMB%X_%02X",

@@ -467,16 +467,34 @@ protocol [LANMAN2.1]
   *  Win2K added by matty 17/7/99
   */
 
-#define ARCH_WFWG     0x3      /* This is a fudge because WfWg is like Win95 */
-#define ARCH_WIN95    0x2
-#define ARCH_WINNT    0x4
-#define ARCH_WIN2K    0xC      /* Win2K is like NT */
-#define ARCH_OS2      0x14     /* Again OS/2 is like NT */
-#define ARCH_SAMBA    0x20
-#define ARCH_CIFSFS   0x40
-#define ARCH_VISTA    0x8C     /* Vista is like XP/2K */
+#define PROT_PC_NETWORK_PROGRAM_1_0		0x0001
+#define PROT_XENIX_CORE				0x0002
+#define PROT_MICROSOFT_NETWORKS_3_0		0x0004
+#define PROT_DOS_LM1_2X002			0x0008
+#define PROT_MICROSOFT_NETWORKS_1_03		0x0010
+#define PROT_DOS_LANMAN2_1			0x0020
+#define PROT_LANMAN1_0				0x0040
+#define PROT_WFWG				0x0080
+#define PROT_LM1_2X002				0x0100
+#define PROT_LANMAN2_1				0x0200
+#define PROT_NT_LM_0_12				0x0400
+#define PROT_SMB_2_001				0x0800
+#define PROT_SMB_2_002				0x1000
+#define PROT_SMB_2_FF				0x2000
+#define PROT_SAMBA				0x4000
+#define PROT_POSIX_2				0x8000
 
-#define ARCH_ALL      0x7F
+#define ARCH_WFWG     ( PROT_PC_NETWORK_PROGRAM_1_0 | PROT_MICROSOFT_NETWORKS_3_0 | \
+			PROT_DOS_LM1_2X002 | PROT_DOS_LANMAN2_1 | PROT_WFWG )
+#define ARCH_WIN95    ( ARCH_WFWG | PROT_NT_LM_0_12 )
+#define ARCH_WINNT    ( PROT_PC_NETWORK_PROGRAM_1_0 | PROT_XENIX_CORE | \
+			PROT_MICROSOFT_NETWORKS_1_03 | PROT_LANMAN1_0 | PROT_WFWG | \
+			PROT_LM1_2X002 | PROT_LANMAN2_1 | PROT_NT_LM_0_12 )
+#define ARCH_WIN2K    ( ARCH_WINNT & ~(PROT_XENIX_CORE | PROT_MICROSOFT_NETWORKS_1_03) )
+#define ARCH_OS2      ( ARCH_WINNT & ~(PROT_MICROSOFT_NETWORKS_1_03 | PROT_WFWG) )
+#define ARCH_VISTA    ( ARCH_WIN2K | PROT_SMB_2_001 )
+#define ARCH_SAMBA    ( PROT_SAMBA )
+#define ARCH_CIFSFS   ( PROT_POSIX_2 )
 
 /* List of supported protocols, most desired first */
 static const struct {
@@ -510,7 +528,7 @@ void reply_negprot(struct smb_request *req)
 	int chosen_level = -1;
 	int protocol;
 	const char *p;
-	int arch = ARCH_ALL;
+	int protocols = 0;
 	int num_cliprotos;
 	char **cliprotos;
 	int i;
@@ -578,41 +596,46 @@ void reply_negprot(struct smb_request *req)
 	}
 
 	for (i=0; i<num_cliprotos; i++) {
-		if (strcsequal(cliprotos[i], "Windows for Workgroups 3.1a"))
-			arch &= ( ARCH_WFWG | ARCH_WIN95 | ARCH_WINNT
-				  | ARCH_WIN2K );
-		else if (strcsequal(cliprotos[i], "DOS LM1.2X002"))
-			arch &= ( ARCH_WFWG | ARCH_WIN95 );
-		else if (strcsequal(cliprotos[i], "DOS LANMAN2.1"))
-			arch &= ( ARCH_WFWG | ARCH_WIN95 );
-		else if (strcsequal(cliprotos[i], "NT LM 0.12"))
-			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K
-				  | ARCH_CIFSFS);
-		else if (strcsequal(cliprotos[i], "SMB 2.001"))
-			arch = ARCH_VISTA;		
-		else if (strcsequal(cliprotos[i], "LANMAN2.1"))
-			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-		else if (strcsequal(cliprotos[i], "LM1.2X002"))
-			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
-		else if (strcsequal(cliprotos[i], "MICROSOFT NETWORKS 1.03"))
-			arch &= ARCH_WINNT;
-		else if (strcsequal(cliprotos[i], "XENIX CORE"))
-			arch &= ( ARCH_WINNT | ARCH_OS2 );
-		else if (strcsequal(cliprotos[i], "Samba")) {
-			arch = ARCH_SAMBA;
+		if (strcsequal(cliprotos[i], "Windows for Workgroups 3.1a")) {
+			protocols |= PROT_WFWG;
+		} else if (strcsequal(cliprotos[i], "DOS LM1.2X002")) {
+			protocols |= PROT_DOS_LM1_2X002;
+		} else if (strcsequal(cliprotos[i], "DOS LANMAN2.1")) {
+			protocols |= PROT_DOS_LANMAN2_1;
+		} else if (strcsequal(cliprotos[i], "LANMAN1.0")) {
+			protocols |= PROT_LANMAN1_0;
+		} else if (strcsequal(cliprotos[i], "NT LM 0.12")) {
+			protocols |= PROT_NT_LM_0_12;
+		} else if (strcsequal(cliprotos[i], "SMB 2.001")) {
+			protocols |= PROT_SMB_2_001;
+		} else if (strcsequal(cliprotos[i], "SMB 2.002")) {
+			protocols |= PROT_SMB_2_002;
+		} else if (strcsequal(cliprotos[i], "SMB 2.???")) {
+			protocols |= PROT_SMB_2_FF;
+		} else if (strcsequal(cliprotos[i], "LANMAN2.1")) {
+			protocols |= PROT_LANMAN2_1;
+		} else if (strcsequal(cliprotos[i], "LM1.2X002")) {
+			protocols |= PROT_LM1_2X002;
+		} else if (strcsequal(cliprotos[i], "MICROSOFT NETWORKS 1.03")) {
+			protocols |= PROT_MICROSOFT_NETWORKS_1_03;
+		} else if (strcsequal(cliprotos[i], "MICROSOFT NETWORKS 3.0")) {
+			protocols |= PROT_MICROSOFT_NETWORKS_3_0;
+		} else if (strcsequal(cliprotos[i], "PC NETWORK PROGRAM 1.0")) {
+			protocols |= PROT_PC_NETWORK_PROGRAM_1_0;
+		} else if (strcsequal(cliprotos[i], "XENIX CORE")) {
+			protocols |= PROT_XENIX_CORE;
+		} else if (strcsequal(cliprotos[i], "Samba")) {
+			protocols = PROT_SAMBA;
 			break;
 		} else if (strcsequal(cliprotos[i], "POSIX 2")) {
-			arch = ARCH_CIFSFS;
+			protocols = PROT_POSIX_2;
 			break;
 		}
 	}
 
-	/* CIFSFS can send one arch only, NT LM 0.12. */
-	if (i == 1 && (arch & ARCH_CIFSFS)) {
-		arch = ARCH_CIFSFS;
-	}
-
-	switch ( arch ) {
+	switch ( protocols ) {
+		/* Old CIFSFS can send one arch only, NT LM 0.12. */
+		case PROT_NT_LM_0_12:
 		case ARCH_CIFSFS:
 			set_remote_arch(RA_CIFSFS);
 			break;
@@ -626,16 +649,10 @@ void reply_negprot(struct smb_request *req)
 			set_remote_arch(RA_WIN95);
 			break;
 		case ARCH_WINNT:
-			if(req->flags2 == FLAGS2_WIN2K_SIGNATURE)
-				set_remote_arch(RA_WIN2K);
-			else
-				set_remote_arch(RA_WINNT);
+			set_remote_arch(RA_WINNT);
 			break;
 		case ARCH_WIN2K:
-			/* Vista may have been set in the negprot so don't 
-			   override it here */
-			if ( get_remote_arch() != RA_VISTA )
-				set_remote_arch(RA_WIN2K);
+			set_remote_arch(RA_WIN2K);
 			break;
 		case ARCH_VISTA:
 			set_remote_arch(RA_VISTA);
