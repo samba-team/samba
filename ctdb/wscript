@@ -680,7 +680,7 @@ def build(bld):
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='''replace popt tdb tevent talloc ctdb-system
                              samba-util tdb-wrap talloc_report
-                             ctdb-protocol''' +
+                             ctdb-protocol ctdb-util''' +
                           ib_deps,
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')
@@ -688,14 +688,14 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb_functest',
                      source='tests/src/ctdb_functest.c',
                      deps='''replace tdb tevent talloc popt ctdb-system
-                             samba-util tdb-wrap''',
+                             samba-util tdb-wrap ctdb-util''',
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('ctdb_stubtest',
                      source='tests/src/ctdb_test.c',
                      deps='''replace tdb tevent talloc popt ctdb-system
-                             samba-util tdb-wrap''',
+                             samba-util tdb-wrap ctdb-util''',
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')
 
