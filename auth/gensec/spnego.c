@@ -1260,6 +1260,9 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 				      &spnego_state->out_frag);
 	data_blob_free(&spnego_state->in_frag);
 	spnego_state->in_needed = 0;
+	if (NT_STATUS_IS_OK(status)) {
+		gensec_security->child_security = spnego_state->sub_sec_security;
+	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return status;
