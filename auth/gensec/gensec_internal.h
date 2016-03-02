@@ -110,6 +110,8 @@ struct gensec_security {
 	 * NTLM authentication backend, and user lookup (such as if no
 	 * PAC is found) */
 	struct auth4_context *auth_context;
+
+	struct gensec_security *child_security;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
