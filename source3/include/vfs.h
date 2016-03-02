@@ -258,7 +258,7 @@ typedef struct files_struct {
 	bool write_time_forced;
 
 	int oplock_type;
-	struct fsp_lease *lease; /* Not yet used. Placeholder for leases. */
+	struct fsp_lease *lease;
 	int sent_oplock_break;
 	struct tevent_timer *oplock_timeout;
 	struct lock_struct last_lock_failure;
