@@ -858,7 +858,6 @@ out:
 }
 
 static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
-						 const char *given_principal,
 						 struct ads_service_principal *p)
 {
 	ADS_STATUS status;
@@ -873,27 +872,9 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 
 	ZERO_STRUCTP(p);
 
-	/* I've seen a child Windows 2000 domain not send
-	   the principal name back in the first round of
-	   the SASL bind reply.  So we guess based on server
-	   name and realm.  --jerry  */
-	/* Also try best guess when we get the w2k8 ignore principal
-	   back, or when we are configured to ignore it - gd,
-	   abartlet */
-
-	if (!lp_client_use_spnego_principal() ||
-	    !given_principal ||
-	    strequal(given_principal, ADS_IGNORE_PRINCIPAL)) {
-
-		status = ads_guess_service_principal(ads, &p->string);
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
-	} else {
-		p->string = SMB_STRDUP(given_principal);
-		if (!p->string) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
-		}
+	status = ads_guess_service_principal(ads, &p->string);
+	if (!ADS_ERR_OK(status)) {
+		return status;
 	}
 
 #ifdef HAVE_KRB5
@@ -1008,6 +989,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		goto failed;
 	}
 	data_blob_free(&blob);
+	TALLOC_FREE(given_principal);
 
 	/* make sure the server understands kerberos */
 	for (i=0;OIDs[i];i++) {
@@ -1020,7 +1002,6 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 #endif
 		talloc_free(OIDs[i]);
 	}
-	DEBUG(3,("ads_sasl_spnego_bind: got server principal name = %s\n", given_principal));
 
 #ifdef HAVE_KRB5
 	if (!(ads->auth.flags & ADS_AUTH_DISABLE_KERBEROS) &&
@@ -1028,8 +1009,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	{
 		struct ads_service_principal p;
 
-		status = ads_generate_service_principal(ads, given_principal, &p);
-		TALLOC_FREE(given_principal);
+		status = ads_generate_service_principal(ads, &p);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
@@ -1061,11 +1041,8 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 		    !(ads->auth.flags & ADS_AUTH_ALLOW_NTLMSSP)) {
 			return status;
 		}
-	} else
-#endif
-	{
-		TALLOC_FREE(given_principal);
 	}
+#endif
 
 	/* lets do NTLMSSP ... this has the big advantage that we don't need
 	   to sync clocks, and we don't rely on special versions of the krb5 
@@ -1297,7 +1274,7 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	struct ads_service_principal p;
 
-	status = ads_generate_service_principal(ads, NULL, &p);
+	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
