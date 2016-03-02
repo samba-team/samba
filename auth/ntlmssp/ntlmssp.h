@@ -132,3 +132,4 @@ bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);
 NTSTATUS gensec_ntlmssp_init(void);
 
 uint32_t gensec_ntlmssp_neg_flags(struct gensec_security *gensec_security);
+const char *gensec_ntlmssp_server_domain(struct gensec_security *gensec_security);
