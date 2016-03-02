@@ -2631,12 +2631,11 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
    that the ctdb daemon is to kill
 */
 struct ctdb_kill_tcp {
-	struct ctdb_vnn *vnn;
-	struct ctdb_context *ctdb;
 	int capture_fd;
 	struct tevent_fd *fde;
 	trbt_tree_t *connections;
 	void *private_data;
+	void *destructor_data;
 };
 
 /*
@@ -2806,13 +2805,21 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 /*
   destroy the killtcp structure
  */
+struct ctdb_killtcp_destructor_data {
+	struct ctdb_vnn *vnn;
+	struct ctdb_context *ctdb;
+};
+
 static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 {
+	struct ctdb_killtcp_destructor_data *dd =
+		talloc_get_type_abort(killtcp->destructor_data,
+				      struct ctdb_killtcp_destructor_data);
 	struct ctdb_vnn *tmpvnn;
 
 	/* verify that this vnn is still active */
-	for (tmpvnn = killtcp->ctdb->vnn; tmpvnn; tmpvnn = tmpvnn->next) {
-		if (tmpvnn == killtcp->vnn) {
+	for (tmpvnn = dd->ctdb->vnn; tmpvnn; tmpvnn = tmpvnn->next) {
+		if (tmpvnn == dd->vnn) {
 			break;
 		}
 	}
@@ -2821,11 +2828,11 @@ static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
 		return 0;
 	}
 
-	if (killtcp->vnn->killtcp != killtcp) {
+	if (dd->vnn->killtcp != killtcp) {
 		return 0;
 	}
 
-	killtcp->vnn->killtcp = NULL;
+	dd->vnn->killtcp = NULL;
 
 	return 0;
 }
@@ -2855,6 +2862,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	struct ctdb_killtcp_con *con;
 	struct ctdb_vnn *vnn;
 	const char *iface;
+	struct ctdb_killtcp_destructor_data *dd;
 
 	ctdb_canonicalize_ip(s, &src);
 	ctdb_canonicalize_ip(d, &dst);
@@ -2889,13 +2897,10 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		killtcp->vnn         = vnn;
-		killtcp->ctdb        = ctdb;
 		killtcp->capture_fd  = -1;
 		killtcp->connections = trbt_create(killtcp, 0);
 
 		vnn->killtcp         = killtcp;
-		talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
 	}
 
 
@@ -2951,6 +2956,17 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		&con->dst_addr,
 		&con->src_addr,
 		0, 0, 0);
+
+	dd = talloc(killtcp, struct ctdb_killtcp_destructor_data);
+	if (dd == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		goto failed;
+	}
+
+	dd->vnn = vnn;
+	dd->ctdb = ctdb;
+	killtcp->destructor_data = dd;
+	talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
 
 	return 0;
 
