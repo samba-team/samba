@@ -866,11 +866,23 @@ bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
 	bool ret = false;
 
 	if (remote) {
+#ifdef HAVE_KRB5_AUTH_CON_GETRECVSUBKEY
+		err = krb5_auth_con_getrecvsubkey(context,
+						  auth_context,
+						  &skey);
+#else /* HAVE_KRB5_AUTH_CON_GETRECVSUBKEY */
 		err = krb5_auth_con_getremotesubkey(context,
 						    auth_context, &skey);
+#endif /* HAVE_KRB5_AUTH_CON_GETRECVSUBKEY */
 	} else {
+#ifdef HAVE_KRB5_AUTH_CON_GETSENDSUBKEY
+		err = krb5_auth_con_getsendsubkey(context,
+						  auth_context,
+						  &skey);
+#else /* HAVE_KRB5_AUTH_CON_GETSENDSUBKEY */
 		err = krb5_auth_con_getlocalsubkey(context,
 						   auth_context, &skey);
+#endif /* HAVE_KRB5_AUTH_CON_GETSENDSUBKEY */
 	}
 
 	if (err || skey == NULL) {

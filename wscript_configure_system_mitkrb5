@@ -89,6 +89,8 @@ conf.CHECK_FUNCS_IN('''
        ''', 'gssapi gssapi_krb5')
 conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
 conf.CHECK_FUNCS('''
+       krb5_auth_con_getrecvsubkey
+       krb5_auth_con_getsendsubkey
        krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
        krb5_set_default_tgs_ktypes krb5_principal2salt
        krb5_c_string_to_key krb5_get_pw_salt krb5_string_to_key_salt krb5_auth_con_setkey
