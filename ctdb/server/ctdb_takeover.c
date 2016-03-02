@@ -2798,7 +2798,7 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 
 	/* try tickling them again in a seconds time
 	 */
-	tevent_add_timer(killtcp->ctdb->ev, killtcp,
+	tevent_add_timer(ev, killtcp,
 			 timeval_current_ofs(1, 0),
 			 ctdb_tickle_sentenced_connections, killtcp);
 }
