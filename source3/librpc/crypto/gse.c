@@ -258,7 +258,8 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				   &gse_ctx->creds,
 				   NULL, NULL);
 	if (gss_maj) {
-		DEBUG(0, ("gss_acquire_creds failed for GSS_C_NO_NAME with [%s]\n",
+		DEBUG(5, ("gss_acquire_creds failed for GSS_C_NO_NAME with [%s] -"
+			  "the caller may retry after a kinit.\n",
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
