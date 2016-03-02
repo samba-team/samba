@@ -244,7 +244,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 	/* TODO: parse struct_blob and fill in the rest */
 	ntlmssp_state->server.netbios_name = "";
-	ntlmssp_state->server.netbios_domain = server_domain;
+	ntlmssp_state->server.netbios_domain = talloc_move(ntlmssp_state, &server_domain);
 	ntlmssp_state->server.dns_name = "";
 	ntlmssp_state->server.dns_domain = "";
 
