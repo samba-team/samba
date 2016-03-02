@@ -729,13 +729,6 @@ bool wins_server_tag_ips(const char *tag, TALLOC_CTX *mem_ctx,
 			 struct in_addr **pservers, int *pnum_servers);
 unsigned wins_srv_count_tag(const char *tag);
 
-/* The following definitions come from libsmb/clispnego.c  */
-
-DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
-				  const char *OIDs[],
-				  DATA_BLOB *psecblob,
-				  const char *principal);
-
 #ifndef ASN1_MAX_OIDS
 #define ASN1_MAX_OIDS 20
 #endif
@@ -745,18 +738,6 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       char **principal,
 			       DATA_BLOB *secblob);
 DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8_t tok_id[2]);
-int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
-			    const char *principal, int time_offset,
-			    DATA_BLOB *targ,
-			    DATA_BLOB *session_key_krb5, uint32_t extra_ap_opts,
-			    const char *ccname, time_t *expire_time);
-bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
-			    DATA_BLOB *chal1, DATA_BLOB *chal2);
-DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob);
-bool spnego_parse_auth_response(TALLOC_CTX *ctx,
-				DATA_BLOB blob, NTSTATUS nt_status,
-				const char *mechOID,
-				DATA_BLOB *auth);
 
 /* The following definitions come from libsmb/conncache.c  */
 
