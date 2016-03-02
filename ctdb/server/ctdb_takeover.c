@@ -2850,19 +2850,111 @@ static void *add_killtcp_callback(void *parm, void *data)
 	return parm;
 }
 
+/* Add a TCP socket to the list of connections we want to RST.  The
+ * list is attached to *killtcp_arg.  If this is NULL then allocate
+ * the structure.  */
+static int ctdb_killtcp(struct tevent_context *ev,
+			TALLOC_CTX *mem_ctx,
+			const char *iface,
+			const ctdb_sock_addr *src,
+			const ctdb_sock_addr *dst,
+			struct ctdb_kill_tcp **killtcp_arg)
+{
+	struct ctdb_kill_tcp *killtcp;
+	struct ctdb_killtcp_con *con;
+
+	if (killtcp_arg == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " killtcp_arg is NULL!\n"));
+		return -1;
+	}
+
+	killtcp = *killtcp_arg;
+
+	/* Allocate a new structure if necessary.  The structure is
+	 * only freed when mem_ctx is freed. */
+	if (killtcp == NULL) {
+		killtcp = talloc_zero(mem_ctx, struct ctdb_kill_tcp);
+		if (killtcp == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+			return -1;
+		}
+
+		killtcp->capture_fd  = -1;
+		killtcp->connections = trbt_create(killtcp, 0);
+		*killtcp_arg = killtcp;
+	}
+
+	/* create a structure that describes this connection we want to
+	   RST and store it in killtcp->connections
+	*/
+	con = talloc(killtcp, struct ctdb_killtcp_con);
+	if (con == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
+	con->src_addr = *src;
+	con->dst_addr = *dst;
+	con->count    = 0;
+	con->killtcp  = killtcp;
+
+
+	trbt_insertarray32_callback(killtcp->connections,
+				    KILLTCP_KEYLEN,
+				    killtcp_key(&con->dst_addr,
+						&con->src_addr),
+				    add_killtcp_callback, con);
+
+	/*
+	   If we don't have a socket to listen on yet we must create it
+	 */
+	if (killtcp->capture_fd == -1) {
+		killtcp->capture_fd =
+			ctdb_sys_open_capture_socket(iface,
+						     &killtcp->private_data);
+		if (killtcp->capture_fd == -1) {
+			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing "
+					  "socket on iface '%s' for killtcp (%s)\n",
+					  iface, strerror(errno)));
+			return -1;
+		}
+	}
+
+
+	if (killtcp->fde == NULL) {
+		killtcp->fde = tevent_add_fd(ev, killtcp,
+					     killtcp->capture_fd,
+					     TEVENT_FD_READ,
+					     capture_tcp_handler, killtcp);
+		tevent_fd_set_auto_close(killtcp->fde);
+
+		/* We also need to set up some events to tickle all these connections
+		   until they are all reset
+		*/
+		tevent_add_timer(ev, killtcp, timeval_current_ofs(1, 0),
+				 ctdb_tickle_sentenced_connections, killtcp);
+	}
+
+	/* tickle him once now */
+	ctdb_sys_send_tcp(
+		&con->dst_addr,
+		&con->src_addr,
+		0, 0, 0);
+
+	return 0;
+}
+
 /*
   add a tcp socket to the list of connections we want to RST
  */
-static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb, 
+static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 				       ctdb_sock_addr *s,
 				       ctdb_sock_addr *d)
 {
 	ctdb_sock_addr src, dst;
-	struct ctdb_kill_tcp *killtcp;
-	struct ctdb_killtcp_con *con;
 	struct ctdb_vnn *vnn;
 	const char *iface;
 	struct ctdb_killtcp_destructor_data *dd;
+	int ret;
 
 	ctdb_canonicalize_ip(s, &src);
 	ctdb_canonicalize_ip(d, &dst);
@@ -2880,100 +2972,30 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		}
 	}
 	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Could not killtcp, not a public address\n")); 
+		DEBUG(DEBUG_ERR,(__location__ " Could not killtcp, not a public address\n"));
 		return -1;
 	}
 
 	iface = ctdb_vnn_iface_string(vnn);
-	killtcp = vnn->killtcp;
 
-	/* If this is the first connection to kill we must allocate
-	   a new structure
-	 */
-	if (killtcp == NULL) {
-		killtcp = talloc_zero(vnn, struct ctdb_kill_tcp);
-		if (killtcp == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-			return -1;
-		}
-
-		killtcp->capture_fd  = -1;
-		killtcp->connections = trbt_create(killtcp, 0);
-
-		vnn->killtcp         = killtcp;
-	}
-
-
-
-	/* create a structure that describes this connection we want to
-	   RST and store it in killtcp->connections
-	*/
-	con = talloc(killtcp, struct ctdb_killtcp_con);
-	if (con == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+	ret = ctdb_killtcp(ctdb->ev, vnn, iface, &src, &dst, &vnn->killtcp);
+	if (ret != 0) {
 		return -1;
 	}
-	con->src_addr = src;
-	con->dst_addr = dst;
-	con->count    = 0;
-	con->killtcp  = killtcp;
 
-
-	trbt_insertarray32_callback(killtcp->connections,
-			KILLTCP_KEYLEN, killtcp_key(&con->dst_addr, &con->src_addr),
-			add_killtcp_callback, con);
-
-	/* 
-	   If we don't have a socket to listen on yet we must create it
-	 */
-	if (killtcp->capture_fd == -1) {
-		killtcp->capture_fd = ctdb_sys_open_capture_socket(iface, &killtcp->private_data);
-		if (killtcp->capture_fd == -1) {
-			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing "
-					  "socket on iface '%s' for killtcp (%s)\n",
-					  iface, strerror(errno)));
-			goto failed;
-		}
-	}
-
-
-	if (killtcp->fde == NULL) {
-		killtcp->fde = tevent_add_fd(ctdb->ev, killtcp,
-					     killtcp->capture_fd,
-					     TEVENT_FD_READ,
-					     capture_tcp_handler, killtcp);
-		tevent_fd_set_auto_close(killtcp->fde);
-
-		/* We also need to set up some events to tickle all these connections
-		   until they are all reset
-		*/
-		tevent_add_timer(ctdb->ev, killtcp, timeval_current_ofs(1, 0),
-				 ctdb_tickle_sentenced_connections, killtcp);
-	}
-
-	/* tickle him once now */
-	ctdb_sys_send_tcp(
-		&con->dst_addr,
-		&con->src_addr,
-		0, 0, 0);
-
-	dd = talloc(killtcp, struct ctdb_killtcp_destructor_data);
+	dd = talloc(vnn->killtcp, struct ctdb_killtcp_destructor_data);
 	if (dd == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		goto failed;
+		TALLOC_FREE(vnn->killtcp);
+		return -1;
 	}
 
 	dd->vnn = vnn;
 	dd->ctdb = ctdb;
-	killtcp->destructor_data = dd;
-	talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
+	vnn->killtcp->destructor_data = dd;
+	talloc_set_destructor(vnn->killtcp, ctdb_killtcp_destructor);
 
 	return 0;
-
-failed:
-	talloc_free(vnn->killtcp);
-	vnn->killtcp = NULL;
-	return -1;
 }
 
 /*
