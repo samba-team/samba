@@ -742,14 +742,18 @@ failed:
 
 #ifdef HAVE_KRB5
 struct ads_service_principal {
-	 char *string;
+	char *service;
+	char *hostname;
+	char *string;
 #ifdef HAVE_KRB5
-	 gss_name_t name;
+	gss_name_t name;
 #endif
 };
 
 static void ads_free_service_principal(struct ads_service_principal *p)
 {
+	SAFE_FREE(p->service);
+	SAFE_FREE(p->hostname);
 	SAFE_FREE(p->string);
 
 #ifdef HAVE_KRB5
@@ -761,9 +765,10 @@ static void ads_free_service_principal(struct ads_service_principal *p)
 	ZERO_STRUCTP(p);
 }
 
-
-static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
-					      char **returned_principal)
+static ADS_STATUS ads_guess_target(ADS_STRUCT *ads,
+				   char **service,
+				   char **hostname,
+				   char **principal)
 {
 	ADS_STATUS status = ADS_ERROR(LDAP_NO_MEMORY);
 	char *princ = NULL;
@@ -843,13 +848,26 @@ static ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
 		goto out;
 	}
 
+	*service = SMB_STRDUP("ldap");
+	if (*service == NULL) {
+		status = ADS_ERROR(LDAP_PARAM_ERROR);
+		goto out;
+	}
+	*hostname = SMB_STRDUP(server);
+	if (*hostname == NULL) {
+		SAFE_FREE(*service);
+		status = ADS_ERROR(LDAP_PARAM_ERROR);
+		goto out;
+	}
 	rc = asprintf(&princ, "ldap/%s@%s", server, realm);
 	if (rc == -1 || princ == NULL) {
+		SAFE_FREE(*service);
+		SAFE_FREE(*hostname);
 		status = ADS_ERROR(LDAP_PARAM_ERROR);
 		goto out;
 	}
 
-	*returned_principal = princ;
+	*principal = princ;
 
 	status = ADS_SUCCESS;
 out:
@@ -872,7 +890,10 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 
 	ZERO_STRUCTP(p);
 
-	status = ads_guess_service_principal(ads, &p->string);
+	status = ads_guess_target(ads,
+				  &p->service,
+				  &p->hostname,
+				  &p->string);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
