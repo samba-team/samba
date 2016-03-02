@@ -420,6 +420,12 @@ def build(bld):
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
 
+    bld.SAMBA_BINARY('ctdb_killtcp',
+                     source='tools/ctdb_killtcp.c server/killtcp.c',
+                     deps='''ctdb-protocol ctdb-util ctdb-system
+                             samba-util replace''',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ltdbtool',
                      source='tools/ltdbtool.c',
                      includes='include',
