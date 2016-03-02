@@ -209,13 +209,48 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 	return ret;
 }
 
+static struct gensec_security *gensec_find_child_by_ops(struct gensec_security *gensec_security,
+							const struct gensec_security_ops *ops)
+{
+	struct gensec_security *current = gensec_security;
+
+	while (current != NULL) {
+		if (current->ops == ops) {
+			return current;
+		}
+
+		current = current->child_security;
+	}
+
+	return NULL;
+}
+
 uint32_t gensec_ntlmssp_neg_flags(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	if (gensec_security->ops != &gensec_ntlmssp_security_ops) {
+
+	gensec_security = gensec_find_child_by_ops(gensec_security,
+					&gensec_ntlmssp_security_ops);
+	if (gensec_security == NULL) {
 		return 0;
 	}
+
 	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
 					       struct gensec_ntlmssp_context);
 	return gensec_ntlmssp->ntlmssp_state->neg_flags;
+}
+
+const char *gensec_ntlmssp_server_domain(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp;
+
+	gensec_security = gensec_find_child_by_ops(gensec_security,
+					&gensec_ntlmssp_security_ops);
+	if (gensec_security == NULL) {
+		return NULL;
+	}
+
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
+					       struct gensec_ntlmssp_context);
+	return gensec_ntlmssp->ntlmssp_state->server.netbios_domain;
 }
