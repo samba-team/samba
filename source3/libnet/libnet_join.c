@@ -42,6 +42,7 @@
 #include "lib/param/loadparm.h"
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "auth/credentials/credentials.h"
+#include "krb5_env.h"
 
 /****************************************************************
 ****************************************************************/
@@ -118,6 +119,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 				     const char *dc_name,
 				     const char *user_name,
 				     const char *password,
+				     const char *ccname,
 				     ADS_STRUCT **ads)
 {
 	ADS_STATUS status;
@@ -150,6 +152,12 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		my_ads->auth.password = SMB_STRDUP(password);
 	}
 
+	if (ccname != NULL) {
+		SAFE_FREE(my_ads->auth.ccache_name);
+		my_ads->auth.ccache_name = SMB_STRDUP(ccname);
+		setenv(KRB5_ENV_CCNAME, my_ads->auth.ccache_name, 1);
+	}
+
 	status = ads_connect_user_creds(my_ads);
 	if (!ADS_ERR_OK(status)) {
 		ads_destroy(&my_ads);
@@ -164,15 +172,51 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 ****************************************************************/
 
 static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
-					  struct libnet_JoinCtx *r)
+					  struct libnet_JoinCtx *r,
+					  bool use_machine_creds)
 {
 	ADS_STATUS status;
+	const char *username;
+	const char *password;
+	const char *ccname = NULL;
+
+	if (use_machine_creds) {
+		if (r->in.machine_name == NULL ||
+		    r->in.machine_password == NULL) {
+			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+		username = talloc_strdup(mem_ctx, r->in.machine_name);
+		if (username == NULL) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+		if (username[strlen(username)] != '$') {
+			username = talloc_asprintf(username, "%s$", username);
+			if (username == NULL) {
+				return ADS_ERROR(LDAP_NO_MEMORY);
+			}
+		}
+		password = r->in.machine_password;
+		ccname = "MEMORY:libnet_join_machine_creds";
+	} else {
+		username = r->in.admin_account;
+		password = r->in.admin_password;
+
+		/*
+		 * when r->in.use_kerberos is set to allow "net ads join -k" we
+		 * may not override the provided credential cache - gd
+		 */
+
+		if (!r->in.use_kerberos) {
+			ccname = "MEMORY:libnet_join_user_creds";
+		}
+	}
 
 	status = libnet_connect_ads(r->out.dns_domain_name,
 				    r->out.netbios_domain_name,
 				    r->in.dc_name,
-				    r->in.admin_account,
-				    r->in.admin_password,
+				    username,
+				    password,
+				    ccname,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -201,6 +245,24 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static ADS_STATUS libnet_join_connect_ads_user(TALLOC_CTX *mem_ctx,
+					       struct libnet_JoinCtx *r)
+{
+	return libnet_join_connect_ads(mem_ctx, r, false);
+}
+
+/****************************************************************
+****************************************************************/
+#if 0
+static ADS_STATUS libnet_join_connect_ads_machine(TALLOC_CTX *mem_ctx,
+						  struct libnet_JoinCtx *r)
+{
+	return libnet_join_connect_ads(mem_ctx, r, true);
+}
+#endif
+/****************************************************************
+****************************************************************/
+
 static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 					    struct libnet_UnjoinCtx *r)
 {
@@ -211,6 +273,7 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 				    r->in.dc_name,
 				    r->in.admin_account,
 				    r->in.admin_password,
+				    NULL,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
@@ -738,7 +801,7 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 	ADS_STATUS status;
 
 	if (!r->in.ads) {
-		status = libnet_join_connect_ads(mem_ctx, r);
+		status = libnet_join_connect_ads_user(mem_ctx, r);
 		if (!ADS_ERR_OK(status)) {
 			return status;
 		}
@@ -2311,7 +2374,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	if (r->out.domain_is_ad && r->in.account_ou &&
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
 
-		ads_status = libnet_join_connect_ads(mem_ctx, r);
+		ads_status = libnet_join_connect_ads_user(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
 			return WERR_DEFAULT_JOIN_REQUIRED;
 		}
