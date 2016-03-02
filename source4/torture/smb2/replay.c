@@ -759,6 +759,110 @@ done:
 }
 
 /**
+ * Test Durablity V2 Create Replay Detection on Single Channel.
+ * Create with an oplock, and replay with a lease.
+ */
+static bool test_replay_dhv2_oplock_lease(struct torture_context *tctx,
+					  struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	bool ret = true;
+	const char *fname = BASEDIR "\\replay_dhv2_oplock1.dat";
+	struct smb2_transport *transport = tree->session->transport;
+	uint32_t share_capabilities;
+	bool share_is_so;
+	uint32_t server_capabilities;
+	struct smb2_lease ls;
+	uint64_t lease_key;
+
+	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB3_00) {
+		torture_skip(tctx, "SMB 3.X Dialect family required for "
+				   "replay tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(transport->conn);
+	if (!(server_capabilities & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	share_capabilities = smb2cli_tcon_capabilities(tree->smbXcli);
+	share_is_so = share_capabilities & SMB2_SHARE_CAP_SCALEOUT;
+
+	ZERO_STRUCT(break_info);
+	break_info.tctx = tctx;
+	tree->session->transport->oplock.handler = torture_oplock_ack_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	torture_comment(tctx, "Replay of DurableHandleReqV2 on Single "
+			      "Channel\n");
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testdir(tree, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, _h);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_oplock_create_share(&io, fname,
+			smb2_util_share_access(""),
+			smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, false);
+	if (share_is_so) {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("s"));
+		CHECK_VAL(io.out.durable_open_v2, false);
+		CHECK_VAL(io.out.timeout, 0);
+	} else {
+		CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+		CHECK_VAL(io.out.durable_open_v2, true);
+		CHECK_VAL(io.out.timeout, io.in.timeout);
+	}
+
+	/*
+	 * Replay Durable V2 Create on single channel
+	 * but replay it with a lease instead of an oplock.
+	 */
+	lease_key = random();
+	smb2_lease_create(&io, &ls, false /* dir */, fname,
+			lease_key, smb2_util_lease_state("RH"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = UINT32_MAX;
+
+	smb2cli_session_start_replay(tree->session->smbXcli);
+	status = smb2_create(tree, mem_ctx, &io);
+	smb2cli_session_stop_replay(tree->session->smbXcli);
+	CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+	smb2_deltree(tree, BASEDIR);
+
+	talloc_free(tree);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+/**
  * Test durablity v2 create replay detection on single channel.
  * Variant with leases instead of oplocks:
  * - open a file with a rh lease
@@ -1729,6 +1833,7 @@ struct torture_suite *torture_smb2_replay_init(void)
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock1", test_replay_dhv2_oplock1);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock2", test_replay_dhv2_oplock2);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock3", test_replay_dhv2_oplock3);
+	torture_suite_add_1smb2_test(suite, "replay-dhv2-oplock-lease", test_replay_dhv2_oplock_lease);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease1",  test_replay_dhv2_lease1);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease2",  test_replay_dhv2_lease2);
 	torture_suite_add_1smb2_test(suite, "replay-dhv2-lease-oplock",  test_replay_dhv2_lease_oplock);

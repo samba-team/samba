@@ -209,6 +209,7 @@
 ^samba3.smb2.replay.replay-dhv2-oplock1
 ^samba3.smb2.replay.replay-dhv2-oplock2
 ^samba3.smb2.replay.replay-dhv2-oplock3
+^samba3.smb2.replay.replay-dhv2-oplock-lease
 ^samba3.smb2.replay.replay-dhv2-lease1
 ^samba3.smb2.replay.replay-dhv2-lease2
 ^samba3.smb2.replay.replay-dhv2-lease-oplock
