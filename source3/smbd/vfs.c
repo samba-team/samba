@@ -1867,11 +1867,12 @@ int smb_vfs_call_unlink(struct vfs_handle_struct *handle,
 	return handle->fns->unlink_fn(handle, smb_fname);
 }
 
-int smb_vfs_call_chmod(struct vfs_handle_struct *handle, const char *path,
-		       mode_t mode)
+int smb_vfs_call_chmod(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	VFS_FIND(chmod);
-	return handle->fns->chmod_fn(handle, path, mode);
+	return handle->fns->chmod_fn(handle, smb_fname, mode);
 }
 
 int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,

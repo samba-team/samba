@@ -1547,33 +1547,30 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_chmod(vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		mode_t mode)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chmod\n"));
-	if (!is_in_media_files(path))
+	if (!is_in_media_files(smb_fname->base_name))
 	{
-		status = SMB_VFS_NEXT_CHMOD(handle, path, mode);
+		status = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_CHMOD(handle, clientPath, mode);
+	status = SMB_VFS_NEXT_CHMOD(handle, clientFname, mode);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

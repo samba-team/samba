@@ -3344,7 +3344,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		 */
 		if ((mode & ~(S_IRWXU|S_IRWXG|S_IRWXO)) &&
 		    (mode & ~smb_dname->st.st_ex_mode)) {
-			SMB_VFS_CHMOD(conn, smb_dname->base_name,
+			SMB_VFS_CHMOD(conn, smb_dname,
 				      (smb_dname->st.st_ex_mode |
 					  (mode & ~smb_dname->st.st_ex_mode)));
 			need_re_stat = true;

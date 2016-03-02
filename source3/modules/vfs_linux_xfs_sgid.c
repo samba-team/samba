@@ -82,7 +82,7 @@ static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,
 	 */
 	become_root();
 	res = SMB_VFS_NEXT_CHMOD(handle,
-			smb_fname->base_name,
+			smb_fname,
 			fname.st.st_ex_mode);
 	unbecome_root();
 

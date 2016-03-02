@@ -7514,7 +7514,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		if (fsp && fsp->fh->fd != -1) {
 			ret = SMB_VFS_FCHMOD(fsp, unixmode);
 		} else {
-			ret = SMB_VFS_CHMOD(conn, smb_fname->base_name, unixmode);
+			ret = SMB_VFS_CHMOD(conn, smb_fname, unixmode);
 		}
 		if (ret != 0) {
 			return map_nt_error_from_unix(errno);

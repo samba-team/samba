@@ -2489,15 +2489,17 @@ static int fruit_unlink(vfs_handle_struct *handle,
 }
 
 static int fruit_chmod(vfs_handle_struct *handle,
-		       const char *path,
+		       const struct smb_filename *smb_fname,
 		       mode_t mode)
 {
 	int rc = -1;
 	char *adp = NULL;
 	struct fruit_config_data *config = NULL;
 	SMB_STRUCT_STAT sb;
+	const char *path = smb_fname->base_name;
+	struct smb_filename *smb_fname_adp = NULL;
 
-	rc = SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	rc = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 	if (rc != 0) {
 		return rc;
 	}
@@ -2522,11 +2524,22 @@ static int fruit_chmod(vfs_handle_struct *handle,
 
 	DEBUG(10, ("fruit_chmod: %s\n", adp));
 
-	rc = SMB_VFS_NEXT_CHMOD(handle, adp, mode);
+	smb_fname_adp = synthetic_smb_fname(talloc_tos(),
+					adp,
+					NULL,
+					NULL);
+	if (smb_fname_adp == NULL) {
+		TALLOC_FREE(adp);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	rc = SMB_VFS_NEXT_CHMOD(handle, smb_fname_adp, mode);
 	if (errno == ENOENT) {
 		rc = 0;
 	}
 
+	TALLOC_FREE(smb_fname_adp);
 	TALLOC_FREE(adp);
 	return rc;
 }
@@ -3644,7 +3657,7 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 			result = SMB_VFS_FCHMOD(fsp, ms_nfs_mode);
 		} else {
 			result = SMB_VFS_CHMOD(fsp->conn,
-					       fsp->fsp_name->base_name,
+					       fsp->fsp_name,
 					       ms_nfs_mode);
 		}
 

@@ -766,7 +766,7 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		return -1;
 	}
 
-	ret = SMB_VFS_CHMOD(conn, smb_fname->base_name, unixmode);
+	ret = SMB_VFS_CHMOD(conn, smb_fname, unixmode);
 	if (ret == 0) {
 		if(!newfile || (lret != -1)) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,

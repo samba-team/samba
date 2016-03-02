@@ -3972,7 +3972,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 			if (set_acl_as_root) {
 				become_root();
 			}
-			sret = SMB_VFS_CHMOD(conn, fsp->fsp_name->base_name,
+			sret = SMB_VFS_CHMOD(conn, fsp->fsp_name,
 					     posix_perms);
 			if (set_acl_as_root) {
 				unbecome_root();
@@ -3987,7 +3987,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 
 					become_root();
 					sret = SMB_VFS_CHMOD(conn,
-					    fsp->fsp_name->base_name,
+					    fsp->fsp_name,
 					    posix_perms);
 					unbecome_root();
 				}

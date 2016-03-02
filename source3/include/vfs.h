@@ -180,6 +180,8 @@
 /* Version 35 - Change opendir from const char *, to
 		const struct smb_filename * */
 /* Version 35 - Wrap aio async funtions args in a struct vfs_aio_state */
+/* Version 35 - Change chmod from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -638,7 +640,9 @@ struct vfs_fn_pointers {
 	uint64_t (*get_alloc_size_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 	int (*unlink_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname);
-	int (*chmod_fn)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
+	int (*chmod_fn)(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode);
 	int (*fchmod_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 	int (*chown_fn)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 	int (*fchown_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
@@ -1082,8 +1086,9 @@ uint64_t smb_vfs_call_get_alloc_size(struct vfs_handle_struct *handle,
 				     const SMB_STRUCT_STAT *sbuf);
 int smb_vfs_call_unlink(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
-int smb_vfs_call_chmod(struct vfs_handle_struct *handle, const char *path,
-		       mode_t mode);
+int smb_vfs_call_chmod(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode);
 int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, mode_t mode);
 int smb_vfs_call_chown(struct vfs_handle_struct *handle, const char *path,

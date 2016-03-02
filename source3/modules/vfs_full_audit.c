@@ -1394,13 +1394,16 @@ static int smb_full_audit_unlink(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_chmod(vfs_handle_struct *handle,
-		       const char *path, mode_t mode)
+				const struct smb_filename *smb_fname,
+				mode_t mode)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	result = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 
-	do_log(SMB_VFS_OP_CHMOD, (result >= 0), handle, "%s|%o", path, mode);
+	do_log(SMB_VFS_OP_CHMOD, (result >= 0), handle, "%s|%o",
+		smb_fname->base_name,
+		mode);
 
 	return result;
 }

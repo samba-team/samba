@@ -1396,29 +1396,35 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 	return 0; /* ok for [f]chmod */
 }
 
-static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int vfs_gpfs_chmod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	struct smb_filename *smb_fname_cpath;
 	int rc;
 
-	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), path, NULL, NULL);
+	smb_fname_cpath = cp_smb_fname(talloc_tos(), smb_fname);
 	if (smb_fname_cpath == NULL) {
 		errno = ENOMEM;
 		return -1;
 	}
 
 	if (SMB_VFS_NEXT_STAT(handle, smb_fname_cpath) != 0) {
+		TALLOC_FREE(smb_fname_cpath);
 		return -1;
 	}
 
 	/* avoid chmod() if possible, to preserve acls */
 	if ((smb_fname_cpath->st.st_ex_mode & ~S_IFMT) == mode) {
+		TALLOC_FREE(smb_fname_cpath);
 		return 0;
 	}
 
-	rc = gpfsacl_emu_chmod(handle, path, mode);
+	rc = gpfsacl_emu_chmod(handle, smb_fname->base_name, mode);
 	if (rc == 1)
-		return SMB_VFS_NEXT_CHMOD(handle, path, mode);
+		return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
+
+	TALLOC_FREE(smb_fname_cpath);
 	return rc;
 }
 

@@ -1179,28 +1179,30 @@ err:
 }
 
 static int um_chmod(vfs_handle_struct *handle,
-		    const char *path,
-		    mode_t mode)
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	int status;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_chmod\n"));
 
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_CHMOD(handle, client_path, mode);
+	status = SMB_VFS_NEXT_CHMOD(handle, client_fname, mode);
 
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

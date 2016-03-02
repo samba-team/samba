@@ -270,20 +270,22 @@ static int audit_unlink(vfs_handle_struct *handle,
 	return result;
 }
 
-static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int audit_chmod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	result = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 
 	if (lp_syslog() > 0) {
 		syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
-		       path, mode,
+		       smb_fname->base_name, mode,
 		       (result < 0) ? "failed: " : "",
 		       (result < 0) ? strerror(errno) : "");
 	}
 	DEBUG(1, ("vfs_extd_audit: chmod %s mode 0x%x %s %s\n",
-	       path, (unsigned int)mode,
+	       smb_fname->base_name, (unsigned int)mode,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 

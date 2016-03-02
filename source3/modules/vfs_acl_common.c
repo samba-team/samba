@@ -1084,11 +1084,12 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 }
 
 static int chmod_acl_module_common(struct vfs_handle_struct *handle,
-			const char *path, mode_t mode)
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	if (lp_posix_pathnames()) {
 		/* Only allow this on POSIX pathnames. */
-		return SMB_VFS_NEXT_CHMOD(handle, path, mode);
+		return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 	}
 	return 0;
 }

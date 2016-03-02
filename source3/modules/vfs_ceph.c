@@ -629,11 +629,16 @@ static int cephwrap_unlink(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_chmod(struct vfs_handle_struct *handle,  const char *path, mode_t mode)
+static int cephwrap_chmod(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	int result;
 
-	DEBUG(10, ("[CEPH] chmod(%p, %s, %d)\n", handle, path, mode));
+	DEBUG(10, ("[CEPH] chmod(%p, %s, %d)\n",
+		handle,
+		smb_fname->base_name,
+		mode));
 
 	/*
 	 * We need to do this due to the fact that the default POSIX ACL
@@ -644,14 +649,17 @@ static int cephwrap_chmod(struct vfs_handle_struct *handle,  const char *path, m
 
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
-		if ((result = SMB_VFS_CHMOD_ACL(handle->conn, path, mode)) == 0) {
+		result = SMB_VFS_CHMOD_ACL(handle->conn,
+					smb_fname->base_name,
+					mode);
+		if (result == 0) {
 			return result;
 		}
 		/* Error - return the old errno. */
 		errno = saved_errno;
 	}
 
-	result = ceph_chmod(handle->data, path, mode);
+	result = ceph_chmod(handle->data, smb_fname->base_name, mode);
 	DEBUG(10, ("[CEPH] chmod(...) = %d\n", result));
 	WRAP_RETURN(result);
 }

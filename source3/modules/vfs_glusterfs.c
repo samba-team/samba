@@ -930,9 +930,10 @@ static int vfs_gluster_unlink(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_chmod(struct vfs_handle_struct *handle,
-			     const char *path, mode_t mode)
+				const struct smb_filename *smb_fname,
+				mode_t mode)
 {
-	return glfs_chmod(handle->data, path, mode);
+	return glfs_chmod(handle->data, smb_fname->base_name, mode);
 }
 
 static int vfs_gluster_fchmod(struct vfs_handle_struct *handle,

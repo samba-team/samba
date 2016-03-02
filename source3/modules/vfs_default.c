@@ -1676,7 +1676,9 @@ static int vfswrap_unlink(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int vfswrap_chmod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	int result;
 
@@ -1691,7 +1693,10 @@ static int vfswrap_chmod(vfs_handle_struct *handle, const char *path, mode_t mod
 
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
-		if ((result = SMB_VFS_CHMOD_ACL(handle->conn, path, mode)) == 0) {
+		result = SMB_VFS_CHMOD_ACL(handle->conn,
+				smb_fname->base_name,
+				mode);
+		if (result == 0) {
 			END_PROFILE(syscall_chmod);
 			return result;
 		}
@@ -1699,7 +1704,7 @@ static int vfswrap_chmod(vfs_handle_struct *handle, const char *path, mode_t mod
 		errno = saved_errno;
 	}
 
-	result = chmod(path, mode);
+	result = chmod(smb_fname->base_name, mode);
 	END_PROFILE(syscall_chmod);
 	return result;
 }

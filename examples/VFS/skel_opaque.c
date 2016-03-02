@@ -367,7 +367,9 @@ static int skel_unlink(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int skel_chmod(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	errno = ENOSYS;
 	return -1;

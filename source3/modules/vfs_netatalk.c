@@ -357,25 +357,33 @@ exit_unlink:
 	return ret;
 }
 
-static int atalk_chmod(struct vfs_handle_struct *handle, const char *path, mode_t mode)
+static int atalk_chmod(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	int ret = 0;
+	int ret1 = 0;
 	char *adbl_path = 0;
 	char *orig_path = 0;
 	SMB_STRUCT_STAT adbl_info;
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_CHMOD(handle, path, mode);
-
-	if (!path) return ret;
+	ret = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 
 	if (!(ctx = talloc_init("chmod_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->cwd, path, &adbl_path,
-			      &orig_path, &adbl_info, &orig_info) != 0)
+	ret1 = atalk_build_paths(ctx,
+			handle->conn->cwd,
+			smb_fname->base_name,
+			&adbl_path,
+			&orig_path,
+			&adbl_info,
+			&orig_info);
+	if (ret1 != 0) {
 		goto exit_chmod;
+	}
 
 	if (!S_ISDIR(orig_info.st_ex_mode) && !S_ISREG(orig_info.st_ex_mode)) {
 		DEBUG(3, ("ATALK: %s has passed..\n", orig_path));		

@@ -1102,19 +1102,22 @@ static int smb_time_audit_unlink(vfs_handle_struct *handle,
 }
 
 static int smb_time_audit_chmod(vfs_handle_struct *handle,
-				const char *path, mode_t mode)
+			const struct smb_filename *smb_fname,
+			mode_t mode)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
+	result = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("chmod", timediff, path);
+		smb_time_audit_log_fname("chmod",
+			timediff,
+			smb_fname->base_name);
 	}
 
 	return result;
