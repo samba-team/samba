@@ -2854,6 +2854,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	struct ctdb_kill_tcp *killtcp;
 	struct ctdb_killtcp_con *con;
 	struct ctdb_vnn *vnn;
+	const char *iface;
 
 	ctdb_canonicalize_ip(s, &src);
 	ctdb_canonicalize_ip(d, &dst);
@@ -2875,8 +2876,9 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	iface = ctdb_vnn_iface_string(vnn);
 	killtcp = vnn->killtcp;
-	
+
 	/* If this is the first connection to kill we must allocate
 	   a new structure
 	 */
@@ -2914,7 +2916,6 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	   If we don't have a socket to listen on yet we must create it
 	 */
 	if (killtcp->capture_fd == -1) {
-		const char *iface = ctdb_vnn_iface_string(vnn);
 		killtcp->capture_fd = ctdb_sys_open_capture_socket(iface, &killtcp->private_data);
 		if (killtcp->capture_fd == -1) {
 			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing "
