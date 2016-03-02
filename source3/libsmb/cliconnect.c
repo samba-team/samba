@@ -1270,7 +1270,7 @@ static void use_in_memory_ccache(void) {
 /****************************************************************************
  Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
-
+#if 0
 struct cli_session_setup_kerberos_state {
 	struct cli_state *cli;
 	DATA_BLOB negTokenTarg;
@@ -1407,7 +1407,7 @@ static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
 	tevent_req_received(req);
 	return ADS_SUCCESS;
 }
-
+#endif
 #endif	/* HAVE_KRB5 */
 
 /****************************************************************************
@@ -2000,8 +2000,11 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		}
 
 		if (principal) {
-			subreq = cli_session_setup_kerberos_send(
-				state, ev, cli, principal);
+			subreq = cli_session_setup_gensec_send(
+				state, ev, cli,
+				state->account, pass, user_domain,
+				CRED_MUST_USE_KERBEROS,
+				"cifs", state->target_hostname, principal);
 			if (tevent_req_nomem(subreq, req)) {
 				return tevent_req_post(req, ev);
 			}
@@ -2034,9 +2037,11 @@ static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_session_setup_spnego_state *state = tevent_req_data(
 		req, struct cli_session_setup_spnego_state);
+	NTSTATUS status;
 
-	state->result = cli_session_setup_kerberos_recv(subreq);
+	status = cli_session_setup_gensec_recv(subreq);
 	TALLOC_FREE(subreq);
+	state->result = ADS_ERROR_NT(status);
 
 	if (ADS_ERR_OK(state->result) ||
 	    !state->cli->fallback_after_kerberos) {
