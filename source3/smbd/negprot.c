@@ -442,26 +442,33 @@ protocol [XENIX CORE]
 protocol [LANMAN1.0]
 protocol [LM1.2X002]
 protocol [LANMAN2.1]
+
+OSX:
+protocol [NT LM 0.12]
+protocol [SMB 2.002]
+protocol [SMB 2.???]
 */
 
 /*
   * Modified to recognize the architecture of the remote machine better.
   *
   * This appears to be the matrix of which protocol is used by which
-  * MS product.
-       Protocol                       WfWg    Win95   WinNT  Win2K  OS/2 Vista
-       PC NETWORK PROGRAM 1.0          1       1       1      1      1     1
-       XENIX CORE                                      2             2
-       MICROSOFT NETWORKS 3.0          2       2       
-       DOS LM1.2X002                   3       3       
-       MICROSOFT NETWORKS 1.03                         3
-       DOS LANMAN2.1                   4       4       
-       LANMAN1.0                                       4      2      3     2
-       Windows for Workgroups 3.1a     5       5       5      3            3
-       LM1.2X002                                       6      4      4     4
-       LANMAN2.1                                       7      5      5     5
-       NT LM 0.12                              6       8      6            6
-       SMB 2.001                                                           7
+  * product.
+       Protocol                       WfWg Win95 WinNT Win2K OS/2 Vista OSX
+       PC NETWORK PROGRAM 1.0          1     1     1     1     1    1
+       XENIX CORE                                  2           2
+       MICROSOFT NETWORKS 3.0          2     2
+       DOS LM1.2X002                   3     3
+       MICROSOFT NETWORKS 1.03                     3
+       DOS LANMAN2.1                   4     4
+       LANMAN1.0                                   4     2     3    2
+       Windows for Workgroups 3.1a     5     5     5     3          3
+       LM1.2X002                                   6     4     4    4
+       LANMAN2.1                                   7     5     5    5
+       NT LM 0.12                            6     8     6     6    6    1
+       SMB 2.001                                                    7
+       SMB 2.002                                                         2
+       SMB 2.???                                                         3
   *
   *  tim@fsg.com 09/29/95
   *  Win2K added by matty 17/7/99
@@ -495,6 +502,7 @@ protocol [LANMAN2.1]
 #define ARCH_VISTA    ( ARCH_WIN2K | PROT_SMB_2_001 )
 #define ARCH_SAMBA    ( PROT_SAMBA )
 #define ARCH_CIFSFS   ( PROT_POSIX_2 )
+#define ARCH_OSX      ( PROT_NT_LM_0_12 | PROT_SMB_2_002 | PROT_SMB_2_FF )
 
 /* List of supported protocols, most desired first */
 static const struct {
@@ -659,6 +667,9 @@ void reply_negprot(struct smb_request *req)
 			break;
 		case ARCH_OS2:
 			set_remote_arch(RA_OS2);
+			break;
+		case ARCH_OSX:
+			set_remote_arch(RA_OSX);
 			break;
 		default:
 			set_remote_arch(RA_UNKNOWN);
