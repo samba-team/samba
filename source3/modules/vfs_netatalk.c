@@ -441,7 +441,7 @@ static int atalk_lchown(struct vfs_handle_struct *handle, const char *path, uid_
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
+	ret = SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid);
 
 	if (!path) return ret;
 
