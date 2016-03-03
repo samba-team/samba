@@ -93,7 +93,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 
 	switch (addr->ip.sin_family) {
 	case AF_INET:
-		s = socket(AF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
+		s = socket(AF_PACKET, SOCK_RAW, 0);
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 			return -1;
@@ -187,7 +187,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		close(s);
 		break;
 	case AF_INET6:
-		s = socket(AF_PACKET, SOCK_RAW, ETHERTYPE_ARP);
+		s = socket(AF_PACKET, SOCK_RAW, 0);
 		if (s == -1){
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 			return -1;
@@ -447,7 +447,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 	int s;
 
 	/* Open a socket to capture all traffic */
-	s = socket(AF_PACKET, SOCK_RAW, ETH_P_ALL);
+	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 	if (s == -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 		return -1;
