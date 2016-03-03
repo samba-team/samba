@@ -894,6 +894,11 @@ static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
 	}
 	endptr += 1;
 
+	if (timeout == 0) {
+		/* delete marker */
+		goto done;
+	}
+
 	if (fnmatch(state->pattern, keystr, 0) != 0) {
 		goto done;
 	}
