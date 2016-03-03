@@ -474,7 +474,6 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 	struct smb2_create_blob *dhnq = NULL;
 	struct smb2_create_blob *dh2q = NULL;
 	struct smb2_create_blob *rqls = NULL;
-	struct smbXsrv_open *op = NULL;
 	bool replay_operation = false;
 
 	if(lp_fake_oplocks(SNUM(smb2req->tcon->compat))) {
@@ -670,6 +669,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 		struct smb2_lease *lease_ptr = NULL;
 		ssize_t lease_len = -1;
 		bool need_replay_cache = false;
+		struct smbXsrv_open *op = NULL;
 #if 0
 		struct smb2_create_blob *svhdx = NULL;
 #endif
