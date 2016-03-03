@@ -2157,6 +2157,17 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 #ifdef HAVE_ADS
 	ADS_STATUS ads_status;
 #endif /* HAVE_ADS */
+	const char *pre_connect_realm = NULL;
+	const char *numeric_dcip = NULL;
+	const char *sitename = NULL;
+
+	/* Before contacting a DC, we can securely know
+	 * the realm only if the user specifies it.
+	 */
+	if (r->in.use_kerberos &&
+	    r->in.domain_name_type == JoinDomNameTypeDNS) {
+		pre_connect_realm = r->in.domain_name;
+	}
 
 	if (!r->in.dc_name) {
 		struct netr_DsRGetDCNameInfo *info;
@@ -2189,6 +2200,47 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		dc = strip_hostname(info->dc_unc);
 		r->in.dc_name = talloc_strdup(mem_ctx, dc);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+
+		if (info->dc_address == NULL || info->dc_address[0] != '\\' ||
+		    info->dc_address[1] != '\\') {
+			DBG_ERR("ill-formed DC address '%s'\n",
+				info->dc_address);
+			return WERR_DCNOTFOUND;
+		}
+
+		numeric_dcip = info->dc_address + 2;
+		sitename = info->dc_site_name;
+		/* info goes out of scope but the memory stays
+		   allocated on the talloc context */
+	}
+
+	if (pre_connect_realm != NULL) {
+		struct sockaddr_storage ss = {0};
+
+		if (numeric_dcip != NULL) {
+			if (!interpret_string_addr(&ss, numeric_dcip,
+						   AI_NUMERICHOST)) {
+				DBG_ERR(
+				    "cannot parse IP address '%s' of DC '%s'\n",
+				    numeric_dcip, r->in.dc_name);
+				return WERR_DCNOTFOUND;
+			}
+		} else {
+			if (!interpret_string_addr(&ss, r->in.dc_name, 0)) {
+				DBG_WARNING(
+				    "cannot resolve IP address of DC '%s'\n",
+				    r->in.dc_name);
+				return WERR_DCNOTFOUND;
+			}
+		}
+
+		/* The domain parameter is only used as modifier
+		 * to krb5.conf file name. .JOIN is is not a valid
+		 * NetBIOS name so it cannot clash with another domain
+		 * -- Uri.
+		 */
+		create_local_private_krb5_conf_for_domain(
+		    pre_connect_realm, ".JOIN", sitename, &ss);
 	}
 
 	status = libnet_join_lookup_dc_rpc(mem_ctx, r, &cli);
