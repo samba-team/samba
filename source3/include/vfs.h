@@ -186,6 +186,8 @@
 		const struct smb_filename * */
 /* Version 35 - Change chown from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Change lchown from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -653,7 +655,10 @@ struct vfs_fn_pointers {
 			uid_t uid,
 			gid_t gid);
 	int (*fchown_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
-	int (*lchown_fn)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
+	int (*lchown_fn)(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid);
 	int (*chdir_fn)(struct vfs_handle_struct *handle, const char *path);
 	char *(*getwd_fn)(struct vfs_handle_struct *handle);
 	int (*ntimes_fn)(struct vfs_handle_struct *handle,
@@ -1106,8 +1111,10 @@ int smb_vfs_call_chown(struct vfs_handle_struct *handle,
 			gid_t gid);
 int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, uid_t uid, gid_t gid);
-int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,
-			uid_t uid, gid_t gid);
+int smb_vfs_call_lchown(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid);
 int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path);
 char *smb_vfs_call_getwd(struct vfs_handle_struct *handle);
 int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,

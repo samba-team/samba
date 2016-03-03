@@ -1772,12 +1772,15 @@ static int vfswrap_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t ui
 #endif
 }
 
-static int vfswrap_lchown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+static int vfswrap_lchown(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	int result;
 
 	START_PROFILE(syscall_lchown);
-	result = lchown(path, uid, gid);
+	result = lchown(smb_fname->base_name, uid, gid);
 	END_PROFILE(syscall_lchown);
 	return result;
 }

@@ -1185,19 +1185,23 @@ static int smb_time_audit_fchown(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int smb_time_audit_lchown(vfs_handle_struct *handle,
-				 const char *path, uid_t uid, gid_t gid)
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid);
+	result = SMB_VFS_NEXT_LCHOWN(handle, smb_fname, uid, gid);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("lchown", timediff, path);
+		smb_time_audit_log_fname("lchown",
+			timediff,
+			smb_fname->base_name);
 	}
 
 	return result;

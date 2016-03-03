@@ -729,12 +729,18 @@ static int cephwrap_fchown(struct vfs_handle_struct *handle, files_struct *fsp, 
 	return result;
 }
 
-static int cephwrap_lchown(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+static int cephwrap_lchown(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	int result;
-
-	DEBUG(10, ("[CEPH] lchown(%p, %s, %d, %d)\n", handle, path, uid, gid));
-	result = ceph_lchown(handle->data, path, uid, gid);
+	DEBUG(10, ("[CEPH] lchown(%p, %s, %d, %d)\n",
+		handle,
+		smb_fname->base_name,
+		uid,
+		gid));
+	result = ceph_lchown(handle->data, smb_fname->base_name, uid, gid);
 	DEBUG(10, ("[CEPH] lchown(...) = %d\n", result));
 	WRAP_RETURN(result);
 }

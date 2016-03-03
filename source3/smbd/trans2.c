@@ -7541,7 +7541,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			 * UNIX extensions calls must always operate
 			 * on symlinks.
 			 */
-			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name,
+			ret = SMB_VFS_LCHOWN(conn, smb_fname,
 					     set_owner, (gid_t)-1);
 		}
 
@@ -7573,7 +7573,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 			 * UNIX extensions calls must always operate
 			 * on symlinks.
 			 */
-			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, (uid_t)-1,
+			ret = SMB_VFS_LCHOWN(conn, smb_fname, (uid_t)-1,
 				  set_grp);
 		}
 		if (ret != 0) {

@@ -369,15 +369,37 @@ static int cap_chown(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int cap_lchown(vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+static int cap_lchown(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
-	char *cappath = capencode(talloc_tos(), path);
+	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	int ret;
+	int saved_errno;
 
 	if (!cappath) {
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_LCHOWN(handle, cappath, uid, gid);
+
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_LCHOWN(handle, cap_smb_fname, uid, gid);
+	saved_errno = errno;
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	errno = saved_errno;
+	return ret;
 }
 
 static int cap_chdir(vfs_handle_struct *handle, const char *path)

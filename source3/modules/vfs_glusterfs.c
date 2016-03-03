@@ -956,9 +956,11 @@ static int vfs_gluster_fchown(struct vfs_handle_struct *handle,
 }
 
 static int vfs_gluster_lchown(struct vfs_handle_struct *handle,
-			      const char *path, uid_t uid, gid_t gid)
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
-	return glfs_lchown(handle->data, path, uid, gid);
+	return glfs_lchown(handle->data, smb_fname->base_name, uid, gid);
 }
 
 static int vfs_gluster_chdir(struct vfs_handle_struct *handle, const char *path)

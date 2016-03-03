@@ -1236,28 +1236,30 @@ err:
 }
 
 static int um_lchown(vfs_handle_struct *handle,
-		     const char *path,
-		     uid_t uid,
-		     gid_t gid)
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	int status;
-	char *client_path = NULL;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_lchown\n"));
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_LCHOWN(handle, smb_fname, uid, gid);
 	}
 
-	status = alloc_get_client_path(handle, talloc_tos(),
-				       path, &client_path);
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_LCHOWN(handle, client_path, uid, gid);
+	status = SMB_VFS_NEXT_LCHOWN(handle, client_fname, uid, gid);
 
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

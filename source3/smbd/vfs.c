@@ -1898,21 +1898,23 @@ int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
 	return handle->fns->fchown_fn(handle, fsp, uid, gid);
 }
 
-int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,
-			uid_t uid, gid_t gid)
+int smb_vfs_call_lchown(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	VFS_FIND(lchown);
-	return handle->fns->lchown_fn(handle, path, uid, gid);
+	return handle->fns->lchown_fn(handle, smb_fname, uid, gid);
 }
 
 NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int ret;
 	bool as_root = false;
-	const char *path;
 	char *saved_dir = NULL;
 	char *parent_dir = NULL;
 	NTSTATUS status;
+	struct smb_filename *local_smb_fname = NULL;
 
 	if (fsp->fh->fd != -1) {
 		/* Try fchown. */
@@ -1927,6 +1929,13 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 
 	as_root = (geteuid() == 0);
 
+	/*
+	 * FIXME. The logic around as_root and FSP_POSIX_FLAGS_OPEN
+	 * is way too complex and is a security issue waiting to
+	 * happen. This should be simplified into separate if
+	 * blocks. JRA.
+	 */
+
 	if (as_root) {
 		/*
 		 * We are being asked to chown as root. Make
@@ -1935,7 +1944,6 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		 * don't deref any symbolic links.
 		 */
 		const char *final_component = NULL;
-		struct smb_filename local_fname;
 
 		saved_dir = vfs_GetWd(talloc_tos(),fsp->conn);
 		if (!saved_dir) {
@@ -1959,29 +1967,35 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 			return map_nt_error_from_unix(errno);
 		}
 
-		ZERO_STRUCT(local_fname);
-		local_fname.base_name = discard_const_p(char, final_component);
+		local_smb_fname = synthetic_smb_fname(talloc_tos(),
+					final_component,
+					NULL,
+					NULL);
+		if (local_smb_fname == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 
 		/* Must use lstat here. */
-		ret = SMB_VFS_LSTAT(fsp->conn, &local_fname);
+		ret = SMB_VFS_LSTAT(fsp->conn, local_smb_fname);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
 
 		/* Ensure it matches the fsp stat. */
-		if (!check_same_stat(&local_fname.st, &fsp->fsp_name->st)) {
+		if (!check_same_stat(&local_smb_fname->st,
+				&fsp->fsp_name->st)) {
                         status = NT_STATUS_ACCESS_DENIED;
 			goto out;
                 }
-                path = final_component;
         } else {
-                path = fsp->fsp_name->base_name;
-        }
+		local_smb_fname = fsp->fsp_name;
+	}
 
 	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) || as_root) {
 		ret = SMB_VFS_LCHOWN(fsp->conn,
-			path,
+			local_smb_fname,
 			uid, gid);
 	} else {
 		ret = SMB_VFS_CHOWN(fsp->conn,
@@ -1999,6 +2013,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 
 	if (as_root) {
 		vfs_ChDir(fsp->conn,saved_dir);
+		TALLOC_FREE(local_smb_fname);
 		TALLOC_FREE(saved_dir);
 		TALLOC_FREE(parent_dir);
 	}

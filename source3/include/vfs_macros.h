@@ -261,10 +261,10 @@
 #define SMB_VFS_NEXT_FCHOWN(handle, fsp, uid, gid) \
 	smb_vfs_call_fchown((handle)->next, (fsp), (uid), (gid))
 
-#define SMB_VFS_LCHOWN(conn, path, uid, gid) \
-	smb_vfs_call_lchown((conn)->vfs_handles, (path), (uid), (gid))
-#define SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid) \
-	smb_vfs_call_lchown((handle)->next, (path), (uid), (gid))
+#define SMB_VFS_LCHOWN(conn, smb_fname, uid, gid) \
+	smb_vfs_call_lchown((conn)->vfs_handles, (smb_fname), (uid), (gid))
+#define SMB_VFS_NEXT_LCHOWN(handle, smb_fname, uid, gid) \
+	smb_vfs_call_lchown((handle)->next, (smb_fname), (uid), (gid))
 
 #define SMB_VFS_CHDIR(conn, path) \
 	smb_vfs_call_chdir((conn)->vfs_handles, (path))
