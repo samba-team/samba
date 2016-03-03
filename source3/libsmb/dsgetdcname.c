@@ -284,7 +284,7 @@ static uint32_t get_cldap_reply_server_flags(struct netlogon_samlogon_response *
 static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 					     uint32_t req_flags)
 {
-	if (ret_flags == 0) {
+	if (req_flags == 0) {
 		return true;
 	}
 
