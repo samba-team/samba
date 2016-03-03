@@ -251,21 +251,6 @@ void dump_core_setup(const char *progname, const char *log_file)
 		goto out;
 	}
 
-
-#ifdef HAVE_GETRLIMIT
-#ifdef RLIMIT_CORE
-	{
-		struct rlimit rlp;
-		getrlimit(RLIMIT_CORE, &rlp);
-		rlp.rlim_cur = MAX(16*1024*1024,rlp.rlim_cur);
-		setrlimit(RLIMIT_CORE, &rlp);
-		getrlimit(RLIMIT_CORE, &rlp);
-		DEBUG(3,("Maximum core file size limits now %d(soft) %d(hard)\n",
-			 (int)rlp.rlim_cur,(int)rlp.rlim_max));
-	}
-#endif
-#endif
-
 	/* FIXME: if we have a core-plus-pid facility, configurably set
 	 * this up here.
 	 */
