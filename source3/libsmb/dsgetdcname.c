@@ -792,14 +792,14 @@ static NTSTATUS make_dc_info_from_cldap_reply(TALLOC_CTX *mem_ctx,
 		print_sockaddr(addr, sizeof(addr), ss);
 		dc_address = addr;
 		dc_address_type = DS_ADDRESS_TYPE_INET;
-	}
-
-	if (!ss && r->sockaddr.pdc_ip) {
-		dc_address	= r->sockaddr.pdc_ip;
-		dc_address_type	= DS_ADDRESS_TYPE_INET;
 	} else {
-		dc_address      = r->pdc_name;
-		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
+		if (r->sockaddr.pdc_ip) {
+			dc_address	= r->sockaddr.pdc_ip;
+			dc_address_type	= DS_ADDRESS_TYPE_INET;
+		} else {
+			dc_address      = r->pdc_name;
+			dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
+		}
 	}
 
 	map_dc_and_domain_names(flags,
