@@ -450,6 +450,7 @@ static bool gencache_pull_timeout(uint8_t *val, time_t *pres, char **payload)
 struct gencache_parse_state {
 	void (*parser)(time_t timeout, DATA_BLOB blob, void *private_data);
 	void *private_data;
+	bool copy_to_notrans;
 };
 
 static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
@@ -471,6 +472,10 @@ static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
 	blob = data_blob_const(
 		payload, data.dsize - PTR_DIFF(payload, data.dptr));
 	state->parser(t, blob, state->private_data);
+
+	if (state->copy_to_notrans) {
+		tdb_store(cache_notrans->tdb, key, data, 0);
+	}
 
 	return 0;
 }
@@ -496,13 +501,35 @@ bool gencache_parse(const char *keystr,
 
 	state.parser = parser;
 	state.private_data = private_data;
+	state.copy_to_notrans = false;
+
+	ret = tdb_chainlock(cache_notrans->tdb, key);
+	if (ret != 0) {
+		return false;
+	}
 
 	ret = tdb_parse_record(cache_notrans->tdb, key,
 			       gencache_parse_fn, &state);
 	if (ret == 0) {
+		tdb_chainunlock(cache_notrans->tdb, key);
 		return true;
 	}
+
+	state.copy_to_notrans = true;
+
 	ret = tdb_parse_record(cache->tdb, key, gencache_parse_fn, &state);
+
+	if ((ret == -1) && (tdb_error(cache->tdb) == TDB_ERR_NOEXIST)) {
+		/*
+		 * The record does not exist. Set a delete-marker in
+		 * gencache_notrans, so that we don't have to look at
+		 * the fcntl-based cache again.
+		 */
+		gencache_set(keystr, "", 0);
+	}
+
+	tdb_chainunlock(cache_notrans->tdb, key);
+
 	return (ret == 0);
 }
 
