@@ -296,7 +296,7 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		return false;
 	}
 
-	if (gencache_have_val(keystr, blob, timeout)) {
+	if ((timeout != 0) && gencache_have_val(keystr, blob, timeout)) {
 		DEBUG(10, ("Did not store value for %s, we already got it\n",
 			   keystr));
 		return true;
