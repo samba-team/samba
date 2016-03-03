@@ -1911,10 +1911,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int ret;
 	bool as_root = false;
-	char *saved_dir = NULL;
-	char *parent_dir = NULL;
 	NTSTATUS status;
-	struct smb_filename *local_smb_fname = NULL;
 
 	if (fsp->fh->fd != -1) {
 		/* Try fchown. */
@@ -1929,13 +1926,6 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 
 	as_root = (geteuid() == 0);
 
-	/*
-	 * FIXME. The logic around as_root and FSP_POSIX_FLAGS_OPEN
-	 * is way too complex and is a security issue waiting to
-	 * happen. This should be simplified into separate if
-	 * blocks. JRA.
-	 */
-
 	if (as_root) {
 		/*
 		 * We are being asked to chown as root. Make
@@ -1943,7 +1933,10 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		 * and always act using lchown to ensure we
 		 * don't deref any symbolic links.
 		 */
+		char *saved_dir = NULL;
+		char *parent_dir = NULL;
 		const char *final_component = NULL;
+		struct smb_filename *local_smb_fname = NULL;
 
 		saved_dir = vfs_GetWd(talloc_tos(),fsp->conn);
 		if (!saved_dir) {
@@ -1989,13 +1982,30 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
                         status = NT_STATUS_ACCESS_DENIED;
 			goto out;
                 }
-        } else {
-		local_smb_fname = fsp->fsp_name;
-	}
 
-	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) || as_root) {
 		ret = SMB_VFS_LCHOWN(fsp->conn,
 			local_smb_fname,
+			uid, gid);
+
+		if (ret == 0) {
+			status = NT_STATUS_OK;
+		} else {
+			status = map_nt_error_from_unix(errno);
+		}
+
+  out:
+
+		vfs_ChDir(fsp->conn,saved_dir);
+		TALLOC_FREE(local_smb_fname);
+		TALLOC_FREE(saved_dir);
+		TALLOC_FREE(parent_dir);
+
+		return status;
+	}
+
+	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+		ret = SMB_VFS_LCHOWN(fsp->conn,
+			fsp->fsp_name,
 			uid, gid);
 	} else {
 		ret = SMB_VFS_CHOWN(fsp->conn,
@@ -2007,15 +2017,6 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		status = NT_STATUS_OK;
 	} else {
 		status = map_nt_error_from_unix(errno);
-	}
-
-  out:
-
-	if (as_root) {
-		vfs_ChDir(fsp->conn,saved_dir);
-		TALLOC_FREE(local_smb_fname);
-		TALLOC_FREE(saved_dir);
-		TALLOC_FREE(parent_dir);
 	}
 	return status;
 }
