@@ -370,6 +370,15 @@ done:
 	return ret == 0;
 }
 
+static void gencache_del_parser(time_t timeout, DATA_BLOB blob,
+				void *private_data)
+{
+	if (timeout != 0) {
+		bool *exists = private_data;
+		*exists = true;
+	}
+}
+
 /**
  * Delete one entry from the cache file.
  *
@@ -381,9 +390,10 @@ done:
 
 bool gencache_del(const char *keystr)
 {
-	bool exists, was_expired;
-	bool ret = false;
-	DATA_BLOB value;
+	TDB_DATA key = string_term_tdb_data(keystr);
+	bool exists = false;
+	bool result = false;
+	int ret;
 
 	if (keystr == NULL) {
 		return false;
@@ -395,28 +405,25 @@ bool gencache_del(const char *keystr)
 
 	DEBUG(10, ("Deleting cache entry (key=[%s])\n", keystr));
 
-	/*
-	 * We delete an element by setting its timeout to 0. This way we don't
-	 * have to do a transaction on gencache.tdb every time we delete an
-	 * element.
-	 */
-
-	exists = gencache_get_data_blob(keystr, NULL, &value, NULL,
-					&was_expired);
-
-	if (!exists && was_expired) {
-		/*
-		 * gencache_get_data_blob has implicitly deleted this
-		 * entry, so we have to return success here.
-		 */
-		return true;
+	ret = tdb_chainlock(cache_notrans->tdb, key);
+	if (ret == -1) {
+		return false;
 	}
+
+	gencache_parse(keystr, gencache_del_parser, &exists);
 
 	if (exists) {
-		data_blob_free(&value);
-		ret = gencache_set(keystr, "", 0);
+		/*
+		 * We delete an element by setting its timeout to
+		 * 0. This way we don't have to do a transaction on
+		 * gencache.tdb every time we delete an element.
+		 */
+		result = gencache_set(keystr, "", 0);
 	}
-	return ret;
+
+	tdb_chainunlock(cache_notrans->tdb, key);
+
+	return result;
 }
 
 static bool gencache_pull_timeout(char *val, time_t *pres, char **pendptr)
