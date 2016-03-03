@@ -1403,7 +1403,7 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname_cpath;
 	int rc;
 
-	smb_fname_cpath = cp_smb_fname(talloc_tos(), smb_fname);
+	smb_fname_cpath = cp_smb_filename(talloc_tos(), smb_fname);
 	if (smb_fname_cpath == NULL) {
 		errno = ENOMEM;
 		return -1;
