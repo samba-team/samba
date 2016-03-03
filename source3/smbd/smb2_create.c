@@ -836,7 +836,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			hdr = SMBD_SMB2_IN_HDR_PTR(smb2req);
 			flags = IVAL(hdr, SMB2_HDR_FLAGS);
 			replay_operation =
-				!!(flags & SMB2_HDR_FLAG_REPLAY_OPERATION);
+				flags & SMB2_HDR_FLAG_REPLAY_OPERATION;
 
 			status = smb2srv_open_lookup_replay_cache(
 					smb2req->xconn, create_guid,
