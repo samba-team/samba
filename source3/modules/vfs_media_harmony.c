@@ -1580,34 +1580,31 @@ out:
  * Failure: set errno, return -1
  */
 static int mh_chown(vfs_handle_struct *handle,
-		const char *path,
+		const struct smb_filename *smb_fname,
 		uid_t uid,
 		gid_t gid)
 {
 	int status;
-	char *clientPath;
-	TALLOC_CTX *ctx;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_chown\n"));
-	if (!is_in_media_files(path))
+	if (!is_in_media_files(smb_fname->base_name))
 	{
-		status = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
+		status = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
 		goto out;
 	}
 
-	clientPath = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_path(handle, ctx,
-				path,
-				&clientPath)))
-	{
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
 		goto err;
 	}
 
-	status = SMB_VFS_NEXT_CHOWN(handle, clientPath, uid, gid);
+	status = SMB_VFS_NEXT_CHOWN(handle, clientFname, uid, gid);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

@@ -1882,11 +1882,13 @@ int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
 	return handle->fns->fchmod_fn(handle, fsp, mode);
 }
 
-int smb_vfs_call_chown(struct vfs_handle_struct *handle, const char *path,
-		       uid_t uid, gid_t gid)
+int smb_vfs_call_chown(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	VFS_FIND(chown);
-	return handle->fns->chown_fn(handle, path, uid, gid);
+	return handle->fns->chown_fn(handle, smb_fname, uid, gid);
 }
 
 int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
@@ -1983,7 +1985,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 			uid, gid);
 	} else {
 		ret = SMB_VFS_CHOWN(fsp->conn,
-			path,
+			fsp->fsp_name,
 			uid, gid);
 	}
 

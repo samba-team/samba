@@ -184,6 +184,8 @@
 		const struct smb_filename * */
 /* Version 35 - Change chmod_acl from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Change chown from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -646,7 +648,10 @@ struct vfs_fn_pointers {
 			const struct smb_filename *smb_fname,
 			mode_t mode);
 	int (*fchmod_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
-	int (*chown_fn)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
+	int (*chown_fn)(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid);
 	int (*fchown_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
 	int (*lchown_fn)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 	int (*chdir_fn)(struct vfs_handle_struct *handle, const char *path);
@@ -1095,8 +1100,10 @@ int smb_vfs_call_chmod(struct vfs_handle_struct *handle,
 			mode_t mode);
 int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, mode_t mode);
-int smb_vfs_call_chown(struct vfs_handle_struct *handle, const char *path,
-		       uid_t uid, gid_t gid);
+int smb_vfs_call_chown(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid);
 int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, uid_t uid, gid_t gid);
 int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,

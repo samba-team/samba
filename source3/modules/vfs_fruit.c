@@ -2545,16 +2545,17 @@ static int fruit_chmod(vfs_handle_struct *handle,
 }
 
 static int fruit_chown(vfs_handle_struct *handle,
-		       const char *path,
+		       const struct smb_filename *smb_fname,
 		       uid_t uid,
 		       gid_t gid)
 {
 	int rc = -1;
 	char *adp = NULL;
 	struct fruit_config_data *config = NULL;
+	struct smb_filename *adp_smb_fname = NULL;
 	SMB_STRUCT_STAT sb;
 
-	rc = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
+	rc = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
 	if (rc != 0) {
 		return rc;
 	}
@@ -2566,26 +2567,37 @@ static int fruit_chown(vfs_handle_struct *handle,
 		return rc;
 	}
 
-	/* FIXME: direct sys_lstat(), missing smb_fname */
-	rc = sys_lstat(path, &sb, false);
+	/* FIXME: direct sys_lstat(), need non-const smb_fname */
+	rc = sys_lstat(smb_fname->base_name, &sb, false);
 	if (rc != 0 || !S_ISREG(sb.st_ex_mode)) {
 		return rc;
 	}
 
-	rc = adouble_path(talloc_tos(), path, &adp);
+	rc = adouble_path(talloc_tos(), smb_fname->base_name, &adp);
 	if (rc != 0) {
 		goto done;
 	}
 
 	DEBUG(10, ("fruit_chown: %s\n", adp));
 
-	rc = SMB_VFS_NEXT_CHOWN(handle, adp, uid, gid);
+	adp_smb_fname = synthetic_smb_fname(talloc_tos(),
+					adp,
+					NULL,
+					NULL);
+	if (adp_smb_fname == NULL) {
+		errno = ENOMEM;
+		rc = -1;
+		goto done;
+	}
+
+	rc = SMB_VFS_NEXT_CHOWN(handle, adp_smb_fname, uid, gid);
 	if (errno == ENOENT) {
 		rc = 0;
 	}
 
  done:
 	TALLOC_FREE(adp);
+	TALLOC_FREE(adp_smb_fname);
 	return rc;
 }
 

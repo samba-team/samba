@@ -375,6 +375,7 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	int uid, gid;
 	TALLOC_CTX *frame;
 	mode_t saved_umask;
+	struct smb_filename *smb_fname = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sii|z",
 					 discard_const_p(char *, kwnames),
@@ -392,7 +393,18 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	   so set our umask to 0 */
 	saved_umask = umask(0);
 
-	ret = SMB_VFS_CHOWN( conn, fname, uid, gid);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					fname,
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		umask(saved_umask);
+		TALLOC_FREE(frame);
+		errno = ENOMEM;
+		return PyErr_SetFromErrno(PyExc_OSError);
+	}
+
+	ret = SMB_VFS_CHOWN(conn, smb_fname, uid, gid);
 	if (ret != 0) {
 		umask(saved_umask);
 		TALLOC_FREE(frame);

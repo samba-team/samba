@@ -955,6 +955,7 @@ static NTSTATUS cmd_fchmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 
 static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	struct smb_filename *smb_fname = NULL;
 	uid_t uid;
 	gid_t gid;
 	if (argc != 4) {
@@ -964,7 +965,16 @@ static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 	uid = atoi(argv[2]);
 	gid = atoi(argv[3]);
-	if (SMB_VFS_CHOWN(vfs->conn, argv[1], uid, gid) == -1) {
+
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					argv[1],
+					NULL,
+					NULL);
+	if (smb_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (SMB_VFS_CHOWN(vfs->conn, smb_fname, uid, gid) == -1) {
 		printf("chown: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

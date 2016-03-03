@@ -382,8 +382,10 @@ static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 	return -1;
 }
 
-static int skel_chown(vfs_handle_struct *handle, const char *path,
-		      uid_t uid, gid_t gid)
+static int skel_chown(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	errno = ENOSYS;
 	return -1;

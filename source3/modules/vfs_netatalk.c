@@ -397,7 +397,10 @@ exit_chmod:
 	return ret;
 }
 
-static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid)
+static int atalk_chown(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			uid_t uid,
+			gid_t gid)
 {
 	int ret = 0;
 	char *adbl_path = 0;
@@ -406,14 +409,12 @@ static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t
 	SMB_STRUCT_STAT orig_info;
 	TALLOC_CTX *ctx;
 
-	ret = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
-
-	if (!path) return ret;
+	ret = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
 
 	if (!(ctx = talloc_init("chown_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->cwd, path,
+	if (atalk_build_paths(ctx, handle->conn->cwd, smb_fname->base_name,
 			      &adbl_path, &orig_path,
 			      &adbl_info, &orig_info) != 0)
 		goto exit_chown;
