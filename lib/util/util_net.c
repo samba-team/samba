@@ -41,6 +41,115 @@ void zero_sockaddr(struct sockaddr_storage *pss)
 	pss->ss_family = AF_INET;
 }
 
+static char *normalize_ipv6_literal(const char *str, char *buf, size_t *_len)
+{
+#define IPv6_LITERAL_NET ".ipv6-literal.net"
+	static const size_t llen = sizeof(IPv6_LITERAL_NET) - 1;
+	size_t len = *_len;
+	int cmp;
+	size_t i;
+	size_t idx_chars = 0;
+	size_t cnt_delimiter = 0;
+	size_t cnt_chars = 0;
+
+	if (len <= llen) {
+		return false;
+	}
+
+	/* ignore a trailing '.' */
+	if (str[len - 1] == '.') {
+		len -= 1;
+	}
+
+	len -= llen;
+	if (len >= INET6_ADDRSTRLEN) {
+		return NULL;
+	}
+	if (len < 2) {
+		return NULL;
+	}
+
+	cmp = strncasecmp(&str[len], IPv6_LITERAL_NET, llen);
+	if (cmp != 0) {
+		return NULL;
+	}
+
+	for (i = 0; i < len; i++) {
+		if (idx_chars != 0) {
+			break;
+		}
+
+		switch (str[i]) {
+		case '-':
+			buf[i] = ':';
+			cnt_chars = 0;
+			cnt_delimiter += 1;
+			break;
+		case 's':
+			buf[i] = '%';
+			idx_chars += 1;
+			break;
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case 'a':
+		case 'A':
+		case 'b':
+		case 'B':
+		case 'c':
+		case 'C':
+		case 'd':
+		case 'D':
+		case 'e':
+		case 'E':
+		case 'f':
+		case 'F':
+			buf[i] = str[i];
+			cnt_chars += 1;
+			break;
+		default:
+			return NULL;
+		}
+		if (cnt_chars > 4) {
+			return NULL;
+		}
+		if (cnt_delimiter > 7) {
+			return NULL;
+		}
+	}
+
+	if (cnt_delimiter < 2) {
+		return NULL;
+	}
+
+	for (; idx_chars != 0 && i < len; i++) {
+		switch (str[i]) {
+		case '%':
+		case ':':
+			return NULL;
+		default:
+			buf[i] = str[i];
+			idx_chars += 1;
+			break;
+		}
+	}
+
+	if (idx_chars == 1) {
+		return NULL;
+	}
+
+	buf[i] = '\0';
+	*_len = len;
+	return buf;
+}
+
 /**
  * Wrap getaddrinfo...
  */
@@ -50,8 +159,9 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	int ret;
 	struct addrinfo hints;
 #if defined(HAVE_IPV6)
-	char addr[INET6_ADDRSTRLEN] = { 0, };
+	char addr[INET6_ADDRSTRLEN*2] = { 0, };
 	unsigned int scope_id = 0;
+	size_t len = strlen(str);
 #endif
 
 	ZERO_STRUCT(hints);
@@ -64,6 +174,16 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
 
 #if defined(HAVE_IPV6)
+	if (len < sizeof(addr)) {
+		char *p = NULL;
+
+		p = normalize_ipv6_literal(str, addr, &len);
+		if (p != NULL) {
+			hints.ai_family = AF_INET6;
+			str = p;
+		}
+	}
+
 	if (strchr_m(str, ':')) {
 		char *p = strchr_m(str, '%');
 
@@ -76,13 +196,15 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 			/* Length of string we want to copy.
 			   This is IP:v6:addr (removing the %ifname).
 			 */
-			size_t len = PTR_DIFF(p,str);
+			len = PTR_DIFF(p,str);
 
 			if (len+1 > sizeof(addr)) {
 				/* string+nul too long for array. */
 				return false;
 			}
-			memcpy(addr, str, len);
+			if (str != addr) {
+				memcpy(addr, str, len);
+			}
 			addr[len] = '\0';
 
 			str = addr;
@@ -337,6 +459,28 @@ bool is_ipaddress_v4(const char *str)
 	return false;
 }
 
+bool is_ipv6_literal(const char *str)
+{
+#if defined(HAVE_IPV6)
+	char buf[INET6_ADDRSTRLEN*2] = { 0, };
+	size_t len = strlen(str);
+	char *p = NULL;
+
+	if (len >= sizeof(buf)) {
+		return false;
+	}
+
+	p = normalize_ipv6_literal(str, buf, &len);
+	if (p == NULL) {
+		return false;
+	}
+
+	return true;
+#else
+	return false;
+#endif
+}
+
 /**
  * Return true if a string could be a IPv6 address.
  */
@@ -345,16 +489,20 @@ bool is_ipaddress_v6(const char *str)
 {
 #if defined(HAVE_IPV6)
 	int ret = -1;
+	char *p = NULL;
 
-	if (strchr_m(str, ':')) {
+	p = strchr_m(str, ':');
+	if (p == NULL) {
+		return is_ipv6_literal(str);
+	} else {
 		char buf[INET6_ADDRSTRLEN] = { 0, };
 		size_t len;
 		const char *addr = str;
 		const char *idxs = NULL;
 		unsigned int idx = 0;
 		struct in6_addr ip6;
-		char *p = strchr_m(str, '%');
 
+		p = strchr_m(str, '%');
 		if (p && (p > str)) {
 			len = PTR_DIFF(p, str);
 			idxs = p + 1;
