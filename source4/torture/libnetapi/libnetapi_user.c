@@ -249,7 +249,7 @@ static NET_API_STATUS test_netusermodals(struct torture_context *tctx,
 		return status;
 	}
 
-	if (memcmp(u0, _u0, sizeof(u0) != 0)) {
+	if (memcmp(u0, _u0, sizeof(*u0)) != 0) {
 		torture_comment(tctx, "USER_MODALS_INFO_0 struct has changed!!!!\n");
 		return -1;
 	}
