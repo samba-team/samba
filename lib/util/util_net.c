@@ -49,6 +49,10 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 {
 	int ret;
 	struct addrinfo hints;
+#if defined(HAVE_IPV6)
+	char addr[INET6_ADDRSTRLEN] = { 0, };
+	unsigned int scope_id = 0;
+#endif
 
 	ZERO_STRUCT(hints);
 
@@ -58,8 +62,60 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	/* always try as a numeric host first. This prevents unnecessary name
 	 * lookups, and also ensures we accept IPv6 addresses */
 	hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST;
+
+#if defined(HAVE_IPV6)
+	if (strchr_m(str, ':')) {
+		char *p = strchr_m(str, '%');
+
+		/*
+		 * Cope with link-local.
+		 * This is IP:v6:addr%ifname.
+		 */
+
+		if (p && (p > str) && ((scope_id = if_nametoindex(p+1)) != 0)) {
+			/* Length of string we want to copy.
+			   This is IP:v6:addr (removing the %ifname).
+			 */
+			size_t len = PTR_DIFF(p,str);
+
+			if (len+1 > sizeof(addr)) {
+				/* string+nul too long for array. */
+				return false;
+			}
+			memcpy(addr, str, len);
+			addr[len] = '\0';
+
+			str = addr;
+		}
+	}
+#endif
+
 	ret = getaddrinfo(str, NULL, &hints, ppres);
 	if (ret == 0) {
+#if defined(HAVE_IPV6)
+		struct sockaddr_in6 *ps6 = NULL;
+
+		if (scope_id == 0) {
+			return true;
+		}
+		if (ppres == NULL) {
+			return true;
+		}
+		if ((*ppres) == NULL) {
+			return true;
+		}
+		if ((*ppres)->ai_addr->sa_family != AF_INET6) {
+			return true;
+		}
+
+		ps6 = (struct sockaddr_in6 *)(*ppres)->ai_addr;
+
+		if (IN6_IS_ADDR_LINKLOCAL(&ps6->sin6_addr) &&
+				ps6->sin6_scope_id == 0) {
+			ps6->sin6_scope_id = scope_id;
+		}
+#endif
+
 		return true;
 	}
 
@@ -94,35 +150,6 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 {
 	struct addrinfo *res = NULL;
 	int int_flags;
-#if defined(HAVE_IPV6)
-	char addr[INET6_ADDRSTRLEN];
-	unsigned int scope_id = 0;
-
-	if (strchr_m(str, ':')) {
-		char *p = strchr_m(str, '%');
-
-		/*
-		 * Cope with link-local.
-		 * This is IP:v6:addr%ifname.
-		 */
-
-		if (p && (p > str) && ((scope_id = if_nametoindex(p+1)) != 0)) {
-			/* Length of string we want to copy.
-			   This is IP:v6:addr (removing the %ifname).
-			 */
-			size_t len = PTR_DIFF(p,str);
-
-			if (len+1 > sizeof(addr)) {
-				/* string+nul too long for array. */
-				return false;
-			}
-			memcpy(addr, str, len);
-			addr[len] = '\0';
-
-			str = addr;
-		}
-	}
-#endif
 
 	zero_sockaddr(pss);
 
@@ -156,16 +183,6 @@ static bool interpret_string_addr_pref(struct sockaddr_storage *pss,
 		/* Copy the first sockaddr. */
 		memcpy(pss, res->ai_addr, res->ai_addrlen);
 	}
-
-#if defined(HAVE_IPV6)
-	if (pss->ss_family == AF_INET6 && scope_id) {
-		struct sockaddr_in6 *ps6 = (struct sockaddr_in6 *)pss;
-		if (IN6_IS_ADDR_LINKLOCAL(&ps6->sin6_addr) &&
-				ps6->sin6_scope_id == 0) {
-			ps6->sin6_scope_id = scope_id;
-		}
-	}
-#endif
 
 	freeaddrinfo(res);
 	return true;
