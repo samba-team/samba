@@ -3850,7 +3850,7 @@ void msg_file_was_renamed(struct messaging_context *msg,
  */
 
 static NTSTATUS open_streams_for_delete(connection_struct *conn,
-					const char *fname)
+					const struct smb_filename *smb_fname)
 {
 	struct stream_struct *stream_info = NULL;
 	files_struct **streams = NULL;
@@ -3859,7 +3859,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
-	status = vfs_streaminfo(conn, NULL, fname, talloc_tos(),
+	status = vfs_streaminfo(conn, NULL, smb_fname->base_name, talloc_tos(),
 				&num_streams, &stream_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
@@ -3891,30 +3891,32 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	}
 
 	for (i=0; i<num_streams; i++) {
-		struct smb_filename *smb_fname;
+		struct smb_filename *smb_fname_cp;
 
 		if (strequal(stream_info[i].name, "::$DATA")) {
 			streams[i] = NULL;
 			continue;
 		}
 
-		smb_fname = synthetic_smb_fname(
-			talloc_tos(), fname, stream_info[i].name, NULL);
-		if (smb_fname == NULL) {
+		smb_fname_cp = synthetic_smb_fname(talloc_tos(),
+					smb_fname->base_name,
+					stream_info[i].name,
+					NULL);
+		if (smb_fname_cp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
-		if (SMB_VFS_STAT(conn, smb_fname) == -1) {
+		if (SMB_VFS_STAT(conn, smb_fname_cp) == -1) {
 			DEBUG(10, ("Unable to stat stream: %s\n",
-				   smb_fname_str_dbg(smb_fname)));
+				   smb_fname_str_dbg(smb_fname_cp)));
 		}
 
 		status = SMB_VFS_CREATE_FILE(
 			 conn,			/* conn */
 			 NULL,			/* req */
 			 0,			/* root_dir_fid */
-			 smb_fname,		/* fname */
+			 smb_fname_cp,		/* fname */
 			 DELETE_ACCESS,		/* access_mask */
 			 (FILE_SHARE_READ |	/* share_access */
 			     FILE_SHARE_WRITE | FILE_SHARE_DELETE),
@@ -3933,13 +3935,13 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("Could not open stream %s: %s\n",
-				   smb_fname_str_dbg(smb_fname),
+				   smb_fname_str_dbg(smb_fname_cp),
 				   nt_errstr(status)));
 
-			TALLOC_FREE(smb_fname);
+			TALLOC_FREE(smb_fname_cp);
 			break;
 		}
-		TALLOC_FREE(smb_fname);
+		TALLOC_FREE(smb_fname_cp);
 	}
 
 	/*
@@ -4513,7 +4515,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * We can't open a file with DELETE access if any of the
 		 * streams is open without FILE_SHARE_DELETE
 		 */
-		status = open_streams_for_delete(conn, smb_fname->base_name);
+		status = open_streams_for_delete(conn, smb_fname);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
