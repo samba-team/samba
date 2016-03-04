@@ -3060,7 +3060,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* Delete streams if create_disposition requires it */
 	if (!new_file_created && clear_ads(create_disposition) &&
 	    !is_ntfs_stream_smb_fname(smb_fname)) {
-		status = delete_all_streams(conn, smb_fname->base_name);
+		status = delete_all_streams(conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(lck);
 			fd_close(fsp);

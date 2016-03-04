@@ -161,7 +161,8 @@ static NTSTATUS close_filestruct(files_struct *fsp)
  Delete all streams
 ****************************************************************************/
 
-NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
+NTSTATUS delete_all_streams(connection_struct *conn,
+			const struct smb_filename *smb_fname)
 {
 	struct stream_struct *stream_info = NULL;
 	int i;
@@ -169,7 +170,7 @@ NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
-	status = vfs_streaminfo(conn, NULL, fname, talloc_tos(),
+	status = vfs_streaminfo(conn, NULL, smb_fname->base_name, talloc_tos(),
 				&num_streams, &stream_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
@@ -200,8 +201,10 @@ NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
 			continue;
 		}
 
-		smb_fname_stream = synthetic_smb_fname(
-			talloc_tos(), fname, stream_info[i].name, NULL);
+		smb_fname_stream = synthetic_smb_fname(talloc_tos(),
+					smb_fname->base_name,
+					stream_info[i].name,
+					NULL);
 
 		if (smb_fname_stream == NULL) {
 			DEBUG(0, ("talloc_aprintf failed\n"));
@@ -427,7 +430,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 
-		status = delete_all_streams(conn, fsp->fsp_name->base_name);
+		status = delete_all_streams(conn, fsp->fsp_name);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("delete_all_streams failed: %s\n",
@@ -1145,7 +1148,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		if ((fsp->conn->fs_capabilities & FILE_NAMED_STREAMS)
 		    && !is_ntfs_stream_smb_fname(fsp->fsp_name)) {
 
-			status = delete_all_streams(fsp->conn, fsp->fsp_name->base_name);
+			status = delete_all_streams(fsp->conn, fsp->fsp_name);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(5, ("delete_all_streams failed: %s\n",
 					  nt_errstr(status)));

@@ -144,7 +144,8 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		    uint32_t msg_type,
 		    struct server_id server_id,
 		    DATA_BLOB *data);
-NTSTATUS delete_all_streams(connection_struct *conn, const char *fname);
+NTSTATUS delete_all_streams(connection_struct *conn,
+			const struct smb_filename *smb_fname);
 bool recursive_rmdir(TALLOC_CTX *ctx,
 		     connection_struct *conn,
 		     struct smb_filename *smb_dname);
