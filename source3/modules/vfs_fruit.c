@@ -3791,7 +3791,7 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	 * streams, because we're in vfs_fruit. We don't do this async
 	 * because streams are few and small.
 	 */
-	status = vfs_streaminfo(state->handle->conn, NULL,
+	status = vfs_streaminfo(state->handle->conn, state->src_fsp,
 				state->src_fsp->fsp_name->base_name,
 				req, &num_streams, &streams);
 	if (tevent_req_nterror(req, status)) {
