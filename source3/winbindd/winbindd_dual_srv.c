@@ -208,29 +208,31 @@ done:
 NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
 			     struct wbint_UnixIDs2Sids *r)
 {
+	struct id_map **maps;
+	NTSTATUS status;
 	uint32_t i;
 
-	for (i=0; i<r->in.num_ids; i++) {
-		struct unixid *xid = &r->in.xids[i];
-		struct dom_sid *sid = &r->out.sids[i];
-		NTSTATUS status;
-
-		switch (xid->type) {
-		    case ID_TYPE_UID:
-			    status = idmap_uid_to_sid(sid, xid->id);
-			    break;
-		    case ID_TYPE_GID:
-			    status = idmap_gid_to_sid(sid, xid->id);
-			    break;
-		    default:
-			    status = NT_STATUS_NONE_MAPPED;
-			    break;
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			*sid = (struct dom_sid) {0};
-		}
+	maps = id_map_ptrs_init(talloc_tos(), r->in.num_ids);
+	if (maps == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
+
+	for (i=0; i<r->in.num_ids; i++) {
+		maps[i]->status = ID_UNKNOWN;
+		maps[i]->xid = r->in.xids[i];
+	}
+
+	status = idmap_backend_unixids_to_sids(maps, r->in.domain_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(maps);
+		return status;
+	}
+
+	for (i=0; i<r->in.num_ids; i++) {
+		sid_copy(&r->out.sids[i], maps[i]->sid);
+	}
+
+	TALLOC_FREE(maps);
 
 	return NT_STATUS_OK;
 }
