@@ -507,7 +507,9 @@ struct glusterfs_aio_state {
 
 static int aio_wrapper_destructor(struct glusterfs_aio_wrapper *wrap)
 {
-	wrap->state->cancelled = true;
+	if (wrap->state != NULL) {
+		wrap->state->cancelled = true;
+	}
 
 	return 0;
 }
@@ -744,7 +746,6 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 static ssize_t vfs_gluster_recv(struct tevent_req *req,
 				struct vfs_aio_state *vfs_aio_state)
 {
-	struct glusterfs_aio_state *state = NULL;
 	struct glusterfs_aio_wrapper *wrapper = NULL;
 	int ret = 0;
 
@@ -754,9 +755,7 @@ static ssize_t vfs_gluster_recv(struct tevent_req *req,
 		return -1;
 	}
 
-	state = wrapper->state;
-
-	if (state == NULL) {
+	if (wrapper->state == NULL) {
 		return -1;
 	}
 
@@ -764,12 +763,12 @@ static ssize_t vfs_gluster_recv(struct tevent_req *req,
 		return -1;
 	}
 
-	*vfs_aio_state = state->vfs_aio_state;
-	ret = state->ret;
+	*vfs_aio_state = wrapper->state->vfs_aio_state;
+	ret = wrapper->state->ret;
 
 	/* Clean up the state, it is in a NULL context. */
 
-	TALLOC_FREE(state);
+	TALLOC_FREE(wrapper->state);
 
 	return ret;
 }
