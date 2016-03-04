@@ -117,9 +117,9 @@ static bool decode_server_sort_request(void *mem_ctx, DATA_BLOB in, void *_out)
 		if (!lssc [num]->attributeName) {
 			return false;
 		}
-	
-		if (asn1_peek_tag(data, ASN1_OCTET_STRING)) {
-			if (!asn1_read_OctetString(data, mem_ctx, &rule)) {
+
+		if (asn1_peek_tag(data, ASN1_CONTEXT_SIMPLE(0))) {
+			if (!asn1_read_ContextSimple(data, mem_ctx, 0, &rule)) {
 				return false;
 			}
 			lssc[num]->orderingRule = talloc_strndup(lssc[num], (const char *)rule.data, rule.length);
@@ -557,12 +557,8 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 	if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
 
 		lvrc->type = 0;
-		
-		if (!asn1_start_tag(data, ASN1_CONTEXT(0))) {
-			return false;
-		}
 
-		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+		if (!asn1_start_tag(data, ASN1_CONTEXT(0))) {
 			return false;
 		}
 
@@ -574,10 +570,6 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 			return false;
 		}
 
-		if (!asn1_end_tag(data)) { /*SEQUENCE*/
-			return false;
-		}
-
 		if (!asn1_end_tag(data)) { /*CONTEXT*/
 			return false;
 		}
@@ -586,13 +578,10 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 
 		lvrc->type = 1;
 
-		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(1))) {
+		if (!asn1_read_ContextSimple(data, mem_ctx, 1, &assertion_value)){
 			return false;
 		}
 
-		if (!asn1_read_OctetString(data, mem_ctx, &assertion_value)) {
-			return false;
-		}
 		lvrc->match.gtOrEq.value_len = assertion_value.length;
 		if (lvrc->match.gtOrEq.value_len) {
 			lvrc->match.gtOrEq.value = talloc_memdup(lvrc, assertion_value.data, assertion_value.length);
@@ -602,10 +591,6 @@ static bool decode_vlv_request(void *mem_ctx, DATA_BLOB in, void *_out)
 			}
 		} else {
 			lvrc->match.gtOrEq.value = NULL;
-		}
-
-		if (!asn1_end_tag(data)) { /*CONTEXT*/
-			return false;
 		}
 	}
 
