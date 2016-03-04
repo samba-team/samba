@@ -3849,7 +3849,7 @@ void msg_file_was_renamed(struct messaging_context *msg,
  * If that works, delete them all by setting the delete on close and close.
  */
 
-NTSTATUS open_streams_for_delete(connection_struct *conn,
+static NTSTATUS open_streams_for_delete(connection_struct *conn,
 					const char *fname)
 {
 	struct stream_struct *stream_info = NULL;
