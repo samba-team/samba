@@ -25,6 +25,7 @@
 #include "winbindd.h"
 #include "idmap.h"
 #include "lib/util_sid_passdb.h"
+#include "libcli/security/dom_sid.h"
 #include "passdb.h"
 
 #undef DBGC_CLASS
@@ -585,6 +586,36 @@ NTSTATUS idmap_allocate_gid(struct unixid *id)
 {
 	id->type = ID_TYPE_GID;
 	return idmap_allocate_unixid(id);
+}
+
+NTSTATUS idmap_backend_unixids_to_sids(struct id_map **maps,
+				       const char *domain_name)
+{
+	struct idmap_domain *dom = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	ok = idmap_init();
+	if (!ok) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	if (strequal(domain_name, get_global_sam_name())) {
+		dom = passdb_idmap_domain;
+	}
+	if (dom == NULL) {
+		dom = idmap_find_domain(domain_name);
+	}
+	if (dom == NULL) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	status = dom->methods->unixids_to_sids(dom, maps);
+
+	DBG_DEBUG("unixid_to_sids for domain %s returned %s\n",
+		  domain_name, nt_errstr(status));
+
+	return status;
 }
 
 NTSTATUS idmap_backends_unixid_to_sid(struct id_map *id)
