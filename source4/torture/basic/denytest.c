@@ -80,7 +80,7 @@ static const char *resultstr(enum deny_result res)
 		{A_W, "W"},
 		{A_RW,"RW"}};
 	int i;
-	for (i=0;ARRAY_SIZE(results);i++) {
+	for (i=0;i<ARRAY_SIZE(results);i++) {
 		if (results[i].res == res) return results[i].name;
 	}
 	return "*";
