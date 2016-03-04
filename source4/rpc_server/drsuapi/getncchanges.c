@@ -4,8 +4,9 @@
    implement the DSGetNCChanges call
 
    Copyright (C) Anatoliy Atanasov 2009
-   Copyright (C) Andrew Tridgell 2009
-   
+   Copyright (C) Andrew Tridgell 2009-2010
+   Copyright (C) Andrew Bartlett 2010-2016
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -742,9 +743,10 @@ static int site_res_cmp_usn_order(struct drsuapi_changed_objects *m1,
 static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 				     TALLOC_CTX *mem_ctx,
 				     struct drsuapi_DsGetNCChangesRequest10 *req10,
-				     struct drsuapi_DsGetNCChangesCtr6 *ctr6)
+				     struct drsuapi_DsGetNCChangesCtr6 *ctr6,
+				     struct ldb_dn **rid_manager_dn)
 {
-	struct ldb_dn *rid_manager_dn, *req_dn;
+	struct ldb_dn *req_dn;
 	int ret;
 	struct ldb_context *ldb = b_state->sam_ctx;
 	struct ldb_result *ext_res;
@@ -757,8 +759,8 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	    - verify that we are the RID Manager
 	 */
 
-	/* work out who is the RID Manager */
-	ret = samdb_rid_manager_dn(ldb, mem_ctx, &rid_manager_dn);
+	/* work out who is the RID Manager, also return to caller */
+	ret = samdb_rid_manager_dn(ldb, mem_ctx, rid_manager_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, (__location__ ": Failed to find RID Manager object - %s\n", ldb_errstring(ldb)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
@@ -766,7 +768,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 
 	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
 	if (!ldb_dn_validate(req_dn) ||
-	    ldb_dn_compare(req_dn, rid_manager_dn) != 0) {
+	    ldb_dn_compare(req_dn, *rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
 		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
 			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
@@ -775,7 +777,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	}
 
 	/* find the DN of the RID Manager */
-	ret = samdb_reference_dn_is_our_ntdsa(ldb, rid_manager_dn, "fSMORoleOwner", &is_us);
+	ret = samdb_reference_dn_is_our_ntdsa(ldb, *rid_manager_dn, "fSMORoleOwner", &is_us);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to find fSMORoleOwner in RID Manager object\n"));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER;
@@ -801,15 +803,6 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 			 ldb_errstring(ldb)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
-
-	/*
-	 * FIXME (kim): this is a temp hack to return just few object,
-	 * but not the whole domain NC.
-	 * We should remove this hack and implement a 'scope'
-	 * building function to return just the set of object
-	 * documented for DRSUAPI_EXOP_FSMO_RID_ALLOC extended_op
-	 */
-	ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &req10->highwatermark.highest_usn);
 
 	ret = ldb_extended(ldb, DSDB_EXTENDED_ALLOCATE_RID_POOL, exop, &ext_res);
 	if (ret != LDB_SUCCESS) {
@@ -1382,6 +1375,9 @@ getncchanges_map_req8(TALLOC_CTX *mem_ctx,
 	return req10;
 }
 
+static const char *collect_objects_attrs[] = { "uSNChanged",
+					       "objectGUID" ,
+					       NULL };
 
 /**
  * Collects object for normal replication cycle.
@@ -1398,9 +1394,6 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	//const char *extra_filter;
 	struct drsuapi_getncchanges_state *getnc_state = b_state->getncchanges_state;
-	const char *attrs[] = { "uSNChanged",
-				"objectGUID" ,
-				NULL };
 
 	if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
 	    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
@@ -1437,7 +1430,8 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 	DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
 		 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
 	ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, getnc_state, search_res,
-					      search_dn, scope, attrs,
+					      search_dn, scope,
+					      collect_objects_attrs,
 					      search_filter);
 	if (ret != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
@@ -1462,10 +1456,156 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		return WERR_OK;
 	}
 
-	/* TODO: implement extended op specific collection
-	 * of objects. Right now we just normal procedure
-	 * for collecting objects */
-	return getncchanges_collect_objects(b_state, mem_ctx, req10, search_dn, extra_filter, search_res);
+	switch (req10->extended_op) {
+	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
+	{
+		int ret;
+		struct ldb_dn *ntds_dn = NULL;
+		struct ldb_dn *server_dn = NULL;
+		struct ldb_dn *machine_dn = NULL;
+		struct ldb_dn *rid_set_dn = NULL;
+		struct ldb_result *search_res2 = NULL;
+		struct ldb_result *search_res3 = NULL;
+		TALLOC_CTX *frame = talloc_stackframe();
+		/* get RID manager, RID set and server DN (in that order) */
+
+		/* This first search will get the RID Manager */
+		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, mem_ctx,
+						      search_res,
+						      search_dn, LDB_SCOPE_BASE,
+						      collect_objects_attrs,
+						      NULL);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Manager object %s - %s",
+				  ldb_dn_get_linearized(search_dn),
+				  ldb_errstring(b_state->sam_ctx)));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		if ((*search_res)->count != 1) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Manager object %s - %u objects returned",
+				  ldb_dn_get_linearized(search_dn),
+				  (*search_res)->count));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		/* Now extend it to the RID set */
+
+		/* Find the computer account DN for the destination
+		 * dsa GUID specified */
+
+		ret = dsdb_find_dn_by_guid(b_state->sam_ctx, frame,
+					   &req10->destination_dsa_guid, 0,
+					   &ntds_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Unable to find NTDS object for guid %s - %s\n",
+				  GUID_string(frame,
+					      &req10->destination_dsa_guid),
+				  ldb_errstring(b_state->sam_ctx)));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		server_dn = ldb_dn_get_parent(frame, ntds_dn);
+		if (!server_dn) {
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = samdb_reference_dn(b_state->sam_ctx, frame, server_dn,
+					 "serverReference", &machine_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to find serverReference in %s - %s",
+				  ldb_dn_get_linearized(server_dn),
+				  ldb_errstring(b_state->sam_ctx)));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = samdb_reference_dn(b_state->sam_ctx, frame, machine_dn,
+					 "rIDSetReferences", &rid_set_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to find rIDSetReferences in %s - %s",
+				  ldb_dn_get_linearized(server_dn),
+				  ldb_errstring(b_state->sam_ctx)));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+
+		/* This first search will get the RID Manager, now get the RID set */
+		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, frame,
+						      &search_res2,
+						      rid_set_dn, LDB_SCOPE_BASE,
+						      collect_objects_attrs,
+						      NULL);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Set object %s - %s",
+				  ldb_dn_get_linearized(rid_set_dn),
+				  ldb_errstring(b_state->sam_ctx)));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		if (search_res2->count != 1) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get RID Set object %s - %u objects returned",
+				  ldb_dn_get_linearized(rid_set_dn),
+				  search_res2->count));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		/* Finally get the server DN */
+		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, frame,
+						      &search_res3,
+						      machine_dn, LDB_SCOPE_BASE,
+						      collect_objects_attrs,
+						      NULL);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get server object %s - %s",
+				  ldb_dn_get_linearized(server_dn),
+				  ldb_errstring(b_state->sam_ctx)));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		if (search_res3->count != 1) {
+			DEBUG(1, ("DRSUAPI_EXOP_FSMO_RID_ALLOC: Failed to get server object %s - %u objects returned",
+				  ldb_dn_get_linearized(server_dn),
+				  search_res3->count));
+			TALLOC_FREE(frame);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		/* Now extend the original search_res with this answer */
+		(*search_res)->count = 3;
+
+		(*search_res)->msgs = talloc_realloc((*search_res)->msgs, mem_ctx,
+						     struct ldb_message *,
+						     (*search_res)->count);
+		if ((*search_res)->msgs == NULL) {
+			TALLOC_FREE(frame);
+			return WERR_NOMEM;
+		}
+
+
+		/* Now extend the original search_res with this answer */
+		(*search_res)->msgs[1] =
+			talloc_steal((*search_res)->msgs, search_res2->msgs[0]);
+		(*search_res)->msgs[2] =
+			talloc_steal((*search_res)->msgs, search_res3->msgs[0]);
+
+		TALLOC_FREE(frame);
+		return WERR_OK;
+	}
+	default:
+		/* TODO: implement extended op specific collection
+		 * of objects. Right now we just normal procedure
+		 * for collecting objects */
+		return getncchanges_collect_objects(b_state, mem_ctx, req10, search_dn, extra_filter, search_res);
+	}
 }
 
 /* 
@@ -1701,9 +1841,8 @@ allowed:
 		case DRSUAPI_EXOP_NONE:
 			break;
 		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
-			werr = getncchanges_rid_alloc(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
+			werr = getncchanges_rid_alloc(b_state, mem_ctx, req10, &r->out.ctr->ctr6, &search_dn);
 			W_ERROR_NOT_OK_RETURN(werr);
-			search_dn = ldb_get_default_basedn(sam_ctx);
 			break;
 		case DRSUAPI_EXOP_REPL_SECRET:
 			werr = getncchanges_repl_secret(b_state, mem_ctx, req10,
@@ -1809,7 +1948,10 @@ allowed:
 			}
 		}
 
-		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
+		/* RID_ALLOC returns 3 objects in a fixed order */
+		if (req10->extended_op == DRSUAPI_EXOP_FSMO_RID_ALLOC) {
+			/* Do nothing */
+		} else if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
 			LDB_TYPESAFE_QSORT(changes,
 					   getnc_state->num_records,
 					   getnc_state,
@@ -1877,12 +2019,19 @@ allowed:
 	r->out.ctr->ctr6.first_object = NULL;
 	currentObject = &r->out.ctr->ctr6.first_object;
 
-	/* use this to force single objects at a time, which is useful
-	 * for working out what object is giving problems
-	 */
 	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
-	if (req10->max_object_count < max_objects) {
-		max_objects = req10->max_object_count;
+	/*
+	 * The client control here only applies in normal replication, not extended
+	 * operations, which return a fixed set, even if the caller
+	 * sets max_object_count == 0
+	 */
+	if (req10->extended_op == DRSUAPI_EXOP_NONE) {
+		/* use this to force single objects at a time, which is useful
+		 * for working out what object is giving problems
+		 */
+		if (req10->max_object_count < max_objects) {
+			max_objects = req10->max_object_count;
+		}
 	}
 	/*
 	 * TODO: work out how the maximum should be calculated
