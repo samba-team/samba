@@ -5291,10 +5291,10 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	}
 
 	init_okay = init_ldap_from_sam(ldap_state, entry, &mods, user, pdb_element_is_set_or_changed);
-	smbldap_talloc_autofree_ldapmod(tmp_ctx, mods);
 
 	if (!init_okay) {
 		DEBUG(1,("ldapsam_create_user: Unable to fill user structs\n"));
+		ldap_mods_free(mods, true);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -5312,12 +5312,14 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		if (!sid_compose(&group_sid, get_global_sam_sid(), DOMAIN_RID_USERS) ||
 		    !sid_to_gid(&group_sid, &gid)) {
 			DEBUG (0, ("ldapsam_create_user: Unable to get the Domain Users gid: bailing out!\n"));
+			ldap_mods_free(mods, true);
 			return NT_STATUS_INVALID_PRIMARY_GROUP;
 		}
 
 		/* lets allocate a new userid for this user */
 		if (!winbind_allocate_uid(&uid)) {
 			DEBUG (0, ("ldapsam_create_user: Unable to allocate a new user id: bailing out!\n"));
+			ldap_mods_free(mods, true);
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
@@ -5354,6 +5356,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 		escape_name = escape_rdn_val_string_alloc(name);
 		if (!escape_name) {
 			DEBUG (0, ("ldapsam_create_user: Out of memory!\n"));
+			ldap_mods_free(mods, true);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -5367,6 +5370,7 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 
 		if (!homedir || !shell || !uidstr || !gidstr || !dn) {
 			DEBUG (0, ("ldapsam_create_user: Out of memory!\n"));
+			ldap_mods_free(mods, true);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -5384,6 +5388,8 @@ static NTSTATUS ldapsam_create_user(struct pdb_methods *my_methods,
 	} else {
 		rc = smbldap_modify(ldap_state->smbldap_state, dn, mods);
 	}	
+
+	ldap_mods_free(mods, true);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("ldapsam_create_user: failed to create a new user [%s] (dn = %s)\n", name ,dn));
