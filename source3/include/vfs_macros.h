@@ -346,10 +346,10 @@
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf) \
 	smb_vfs_call_file_id_create((handle)->next, (sbuf))
 
-#define SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) \
-	smb_vfs_call_streaminfo((conn)->vfs_handles, (fsp), (fname), (mem_ctx), (num_streams), (streams))
-#define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) \
-	smb_vfs_call_streaminfo((handle)->next, (fsp), (fname), (mem_ctx), (num_streams), (streams))
+#define SMB_VFS_STREAMINFO(conn, fsp, smb_fname, mem_ctx, num_streams, streams) \
+	smb_vfs_call_streaminfo((conn)->vfs_handles, (fsp), (smb_fname), (mem_ctx), (num_streams), (streams))
+#define SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx, num_streams, streams) \
+	smb_vfs_call_streaminfo((handle)->next, (fsp), (smb_fname), (mem_ctx), (num_streams), (streams))
 
 #define SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) \
 	smb_vfs_call_get_real_filename((conn)->vfs_handles, (path), (name), (mem_ctx), (found_name))

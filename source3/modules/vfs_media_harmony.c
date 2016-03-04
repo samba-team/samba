@@ -1962,43 +1962,42 @@ out:
  */
 static NTSTATUS mh_streaminfo(struct vfs_handle_struct *handle,
 		struct files_struct *fsp,
-		const char *fname,
+		const struct smb_filename *smb_fname,
 		TALLOC_CTX *ctx,
 		unsigned int *num_streams,
 		struct stream_struct **streams)
 {
 	NTSTATUS status;
-	char *clientPath;
-	TALLOC_CTX *mem_ctx;
+	int ret;
+	struct smb_filename *clientFname = NULL;
 
 	DEBUG(MH_INFO_DEBUG, ("Entering mh_streaminfo\n"));
-	if (!is_in_media_files(fname))
-	{
-		status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname,
-				ctx, num_streams, streams);
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_STREAMINFO(handle,
+				fsp,
+				smb_fname,
+				ctx,
+				num_streams,
+				streams);
 		goto out;
 	}
 
-	clientPath = NULL;
-	mem_ctx = talloc_tos();
-
-	if (alloc_get_client_path(handle, mem_ctx,
-				fname,
-				&clientPath))
-	{
-		status = map_nt_error_from_unix(errno);
+	ret = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (ret != 0) {
+		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
 
 	/* This only works on files, so we don't have to worry about
 	 * our fake directory stat'ing here.
 	 */
-	// But what does this function do, exactly?  Does it need
-	// extra modifications for the Avid stuff?
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, clientPath,
+	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, clientFname,
 				ctx, num_streams, streams);
 err:
-	TALLOC_FREE(clientPath);
+	TALLOC_FREE(clientFname);
 out:
 	return status;
 }

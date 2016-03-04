@@ -911,17 +911,20 @@ static bool collect_one_stream(const char *dirname,
 
 static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 					 struct files_struct *fsp,
-					 const char *fname,
+					 const struct smb_filename *smb_fname,
 					 TALLOC_CTX *mem_ctx,
 					 unsigned int *pnum_streams,
 					 struct stream_struct **pstreams)
 {
-	struct smb_filename *smb_fname_base;
+	struct smb_filename *smb_fname_base = NULL;
 	int ret;
 	NTSTATUS status;
 	struct streaminfo_state state;
 
-	smb_fname_base = synthetic_smb_fname(talloc_tos(), fname, NULL, NULL);
+	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+					smb_fname->base_name,
+					NULL,
+					NULL);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -975,7 +978,12 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 
 	*pnum_streams = state.num_streams;
 	*pstreams = state.streams;
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, pnum_streams, pstreams);
+	status = SMB_VFS_NEXT_STREAMINFO(handle,
+				fsp,
+				smb_fname_base,
+				mem_ctx,
+				pnum_streams,
+				pstreams);
 
  out:
 	TALLOC_FREE(smb_fname_base);

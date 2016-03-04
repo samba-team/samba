@@ -1489,26 +1489,27 @@ err:
 
 static NTSTATUS um_streaminfo(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
-			      const char *fname,
+			      const struct smb_filename *smb_fname,
 			      TALLOC_CTX *ctx,
 			      unsigned int *num_streams,
 			      struct stream_struct **streams)
 {
 	NTSTATUS status;
-	char *client_path = NULL;
 	int ret;
+	struct smb_filename *client_fname = NULL;
 
 	DEBUG(10, ("Entering um_streaminfo\n"));
 
-	if (!is_in_media_files(fname)) {
-		return SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname,
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname,
 					       ctx, num_streams, streams);
 	}
 
-	ret = alloc_get_client_path(handle, talloc_tos(),
-				    fname, &client_path);
+	ret = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&client_fname);
 	if (ret != 0) {
-		status = map_nt_error_from_unix(errno);
 		goto err;
 	}
 
@@ -1518,10 +1519,10 @@ static NTSTATUS um_streaminfo(struct vfs_handle_struct *handle,
 	 * function do, exactly?  Does it need extra modifications for
 	 * the Avid stuff?
 	 */
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, client_path,
+	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, client_fname,
 					 ctx, num_streams, streams);
 err:
-	TALLOC_FREE(client_path);
+	TALLOC_FREE(client_fname);
 	return status;
 }
 

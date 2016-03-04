@@ -3168,24 +3168,18 @@ exit:
 
 static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 				 struct files_struct *fsp,
-				 const char *fname,
+				 const struct smb_filename *smb_fname,
 				 TALLOC_CTX *mem_ctx,
 				 unsigned int *pnum_streams,
 				 struct stream_struct **pstreams)
 {
 	struct fruit_config_data *config = NULL;
-	struct smb_filename *smb_fname = NULL;
 	struct adouble *ad = NULL;
 	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
-	DEBUG(10, ("fruit_streaminfo called for %s\n", fname));
-
-	smb_fname = synthetic_smb_fname(talloc_tos(), fname, NULL, NULL);
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(10, ("fruit_streaminfo called for %s\n", smb_fname->base_name));
 
 	if (config->meta == FRUIT_META_NETATALK) {
 		ad = ad_get(talloc_tos(), handle,
@@ -3197,7 +3191,6 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 				    smb_roundup(handle->conn,
 						AFP_INFO_SIZE))) {
 				TALLOC_FREE(ad);
-				TALLOC_FREE(smb_fname);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
@@ -3216,16 +3209,13 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 						ad_getentrylen(
 							ad, ADEID_RFORK)))) {
 				TALLOC_FREE(ad);
-				TALLOC_FREE(smb_fname);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
 		TALLOC_FREE(ad);
 	}
 
-	TALLOC_FREE(smb_fname);
-
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
+	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
 					 pnum_streams, pstreams);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -3236,7 +3226,6 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 		if (!del_fruit_stream(mem_ctx, pnum_streams, pstreams,
 				      ":" NETATALK_META_XATTR ":$DATA")) {
 				TALLOC_FREE(ad);
-				TALLOC_FREE(smb_fname);
 				return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -3792,7 +3781,7 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	 * because streams are few and small.
 	 */
 	status = vfs_streaminfo(state->handle->conn, state->src_fsp,
-				state->src_fsp->fsp_name->base_name,
+				state->src_fsp->fsp_name,
 				req, &num_streams, &streams);
 	if (tevent_req_nterror(req, status)) {
 		return;

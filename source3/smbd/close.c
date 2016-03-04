@@ -170,7 +170,7 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
-	status = vfs_streaminfo(conn, NULL, smb_fname->base_name, talloc_tos(),
+	status = vfs_streaminfo(conn, NULL, smb_fname, talloc_tos(),
 				&num_streams, &stream_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {

@@ -792,7 +792,7 @@ static int catia_chflags(struct vfs_handle_struct *handle,
 static NTSTATUS
 catia_streaminfo(struct vfs_handle_struct *handle,
 		 struct files_struct *fsp,
-		 const char *path,
+		 const struct smb_filename *smb_fname,
 		 TALLOC_CTX *mem_ctx,
 		 unsigned int *_num_streams,
 		 struct stream_struct **_streams)
@@ -800,22 +800,35 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 	char *mapped_name = NULL;
 	NTSTATUS status;
 	int i;
+	struct smb_filename *catia_smb_fname = NULL;
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
 
 	*_num_streams = 0;
 	*_streams = NULL;
 
-	status = catia_string_replace_allocate(handle->conn, path,
-				        &mapped_name, vfs_translate_to_unix);
+	status = catia_string_replace_allocate(handle->conn,
+				smb_fname->base_name,
+				&mapped_name,
+				vfs_translate_to_unix);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
 		return status;
 	}
 
-	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, mapped_name,
+	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					NULL);
+	if (catia_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, catia_smb_fname,
 					 mem_ctx, &num_streams, &streams);
 	TALLOC_FREE(mapped_name);
+	TALLOC_FREE(catia_smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

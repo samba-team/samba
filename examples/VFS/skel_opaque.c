@@ -579,7 +579,7 @@ static NTSTATUS skel_set_compression(struct vfs_handle_struct *handle,
 
 static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
-				const char *fname,
+				const struct smb_filename *smb_fname,
 				TALLOC_CTX *mem_ctx,
 				unsigned int *num_streams,
 				struct stream_struct **streams)

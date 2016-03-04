@@ -699,14 +699,17 @@ static NTSTATUS skel_set_compression(struct vfs_handle_struct *handle,
 
 static NTSTATUS skel_streaminfo(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
-				const char *fname,
+				const struct smb_filename *smb_fname,
 				TALLOC_CTX *mem_ctx,
 				unsigned int *num_streams,
 				struct stream_struct **streams)
 {
 	return SMB_VFS_NEXT_STREAMINFO(handle,
-				       fsp,
-				       fname, mem_ctx, num_streams, streams);
+				fsp,
+				smb_fname,
+				mem_ctx,
+				num_streams,
+				streams);
 }
 
 static int skel_get_real_filename(struct vfs_handle_struct *handle,

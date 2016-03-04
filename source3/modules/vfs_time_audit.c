@@ -1533,7 +1533,7 @@ static struct file_id smb_time_audit_file_id_create(struct vfs_handle_struct *ha
 
 static NTSTATUS smb_time_audit_streaminfo(vfs_handle_struct *handle,
 					  struct files_struct *fsp,
-					  const char *fname,
+					  const struct smb_filename *smb_fname,
 					  TALLOC_CTX *mem_ctx,
 					  unsigned int *pnum_streams,
 					  struct stream_struct **pstreams)
@@ -1543,7 +1543,7 @@ static NTSTATUS smb_time_audit_streaminfo(vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
+	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
 					 pnum_streams, pstreams);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;

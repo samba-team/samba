@@ -1365,14 +1365,19 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
  */
 NTSTATUS vfs_streaminfo(connection_struct *conn,
 			struct files_struct *fsp,
-			const char *fname,
+			const struct smb_filename *smb_fname,
 			TALLOC_CTX *mem_ctx,
 			unsigned int *num_streams,
 			struct stream_struct **streams)
 {
 	*num_streams = 0;
 	*streams = NULL;
-	return SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams);
+	return SMB_VFS_STREAMINFO(conn,
+			fsp,
+			smb_fname,
+			mem_ctx,
+			num_streams,
+			streams);
 }
 
 /*
@@ -2124,13 +2129,13 @@ struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 
 NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
-				 const char *fname,
+				 const struct smb_filename *smb_fname,
 				 TALLOC_CTX *mem_ctx,
 				 unsigned int *num_streams,
 				 struct stream_struct **streams)
 {
 	VFS_FIND(streaminfo);
-	return handle->fns->streaminfo_fn(handle, fsp, fname, mem_ctx,
+	return handle->fns->streaminfo_fn(handle, fsp, smb_fname, mem_ctx,
 					  num_streams, streams);
 }
 

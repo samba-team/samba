@@ -2186,7 +2186,7 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle,
 
 static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   const char *fname,
+				   const struct smb_filename *smb_fname,
 				   TALLOC_CTX *mem_ctx,
 				   unsigned int *pnum_streams,
 				   struct stream_struct **pstreams)
@@ -2206,17 +2206,18 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		struct smb_filename smb_fname;
+		struct smb_filename smb_fname_cp;
 
-		ZERO_STRUCT(smb_fname);
-		smb_fname.base_name = discard_const_p(char, fname);
+		ZERO_STRUCT(smb_fname_cp);
+		smb_fname_cp.base_name = discard_const_p(char,
+					smb_fname->base_name);
 
 		if (lp_posix_pathnames()) {
-			ret = SMB_VFS_LSTAT(handle->conn, &smb_fname);
+			ret = SMB_VFS_LSTAT(handle->conn, &smb_fname_cp);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn, &smb_fname);
+			ret = SMB_VFS_STAT(handle->conn, &smb_fname_cp);
 		}
-		sbuf = smb_fname.st;
+		sbuf = smb_fname_cp.st;
 	}
 
 	if (ret == -1) {

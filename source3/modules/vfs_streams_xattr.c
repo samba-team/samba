@@ -811,7 +811,7 @@ static bool collect_one_stream(struct ea_struct *ea, void *private_data)
 
 static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 					 struct files_struct *fsp,
-					 const char *fname,
+					 const struct smb_filename *smb_fname,
 					 TALLOC_CTX *mem_ctx,
 					 unsigned int *pnum_streams,
 					 struct stream_struct **pstreams)
@@ -825,19 +825,21 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
-		struct smb_filename *smb_fname = NULL;
-		smb_fname = synthetic_smb_fname(talloc_tos(), fname, NULL,
-						NULL);
-		if (smb_fname == NULL) {
+		struct smb_filename *smb_fname_base = NULL;
+		smb_fname_base = synthetic_smb_fname(talloc_tos(),
+					smb_fname->base_name,
+					NULL,
+					NULL);
+		if (smb_fname_base == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		if (lp_posix_pathnames()) {
-			ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
+			ret = SMB_VFS_LSTAT(handle->conn, smb_fname_base);
 		} else {
-			ret = SMB_VFS_STAT(handle->conn, smb_fname);
+			ret = SMB_VFS_STAT(handle->conn, smb_fname_base);
 		}
-		sbuf = smb_fname->st;
-		TALLOC_FREE(smb_fname);
+		sbuf = smb_fname_base->st;
+		TALLOC_FREE(smb_fname_base);
 	}
 
 	if (ret == -1) {
@@ -860,7 +862,7 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		 */
 		status = NT_STATUS_OK;
 	} else {
-		status = walk_xattr_streams(handle, fsp, fname,
+		status = walk_xattr_streams(handle, fsp, smb_fname->base_name,
 				    collect_one_stream, &state);
 	}
 
@@ -877,7 +879,12 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 	*pnum_streams = state.num_streams;
 	*pstreams = state.streams;
 
-	return SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, pnum_streams, pstreams);
+	return SMB_VFS_NEXT_STREAMINFO(handle,
+			fsp,
+			smb_fname,
+			mem_ctx,
+			pnum_streams,
+			pstreams);
 }
 
 static uint32_t streams_xattr_fs_capabilities(struct vfs_handle_struct *handle,

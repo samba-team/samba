@@ -698,7 +698,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		if (NT_STATUS_IS_OK(status) && num_names) {
 			file_status &= ~NO_EAS;
 		}
-		status = vfs_streaminfo(conn, NULL, smb_fname->base_name, ctx,
+		status = vfs_streaminfo(conn, NULL, smb_fname, ctx,
 			&num_streams, &streams);
 		/* There is always one stream, ::$DATA. */
 		if (NT_STATUS_IS_OK(status) && num_streams > 1) {
@@ -1337,7 +1337,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		if (NT_STATUS_IS_OK(status) && num_names) {
 			file_status &= ~NO_EAS;
 		}
-		status = vfs_streaminfo(conn, NULL, smb_fname->base_name, ctx,
+		status = vfs_streaminfo(conn, NULL, smb_fname, ctx,
 			&num_streams, &streams);
 		/* There is always one stream, ::$DATA. */
 		if (NT_STATUS_IS_OK(status) && num_streams > 1) {

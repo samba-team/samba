@@ -188,6 +188,8 @@
 		const struct smb_filename * */
 /* Version 35 - Change lchown from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Change streaminfo from const char *, to
+		const struct smb_filename * */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -721,7 +723,7 @@ struct vfs_fn_pointers {
 
 	NTSTATUS (*streaminfo_fn)(struct vfs_handle_struct *handle,
 				  struct files_struct *fsp,
-				  const char *fname,
+				  const struct smb_filename *smb_fname,
 				  TALLOC_CTX *mem_ctx,
 				  unsigned int *num_streams,
 				  struct stream_struct **streams);
@@ -1153,7 +1155,7 @@ struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 					   const SMB_STRUCT_STAT *sbuf);
 NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
-				 const char *fname,
+				 const struct smb_filename *smb_fname,
 				 TALLOC_CTX *mem_ctx,
 				 unsigned int *num_streams,
 				 struct stream_struct **streams);

@@ -1674,18 +1674,18 @@ static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *ha
 
 static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 					  struct files_struct *fsp,
-					  const char *fname,
+					  const struct smb_filename *smb_fname,
 					  TALLOC_CTX *mem_ctx,
 					  unsigned int *pnum_streams,
 					  struct stream_struct **pstreams)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
+	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
 					 pnum_streams, pstreams);
 
 	do_log(SMB_VFS_OP_STREAMINFO, NT_STATUS_IS_OK(result), handle,
-	       "%s", fname);
+	       "%s", smb_fname->base_name);
 
 	return result;
 }
