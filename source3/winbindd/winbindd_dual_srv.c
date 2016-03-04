@@ -127,9 +127,7 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 	struct wbint_TransID *ids;
 	uint32_t num_ids;
 
-	struct id_map *id_maps = NULL;
 	struct id_map **id_map_ptrs = NULL;
-	struct dom_sid *sids = NULL;
 	struct idmap_domain *dom;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
@@ -157,16 +155,8 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 		return NT_STATUS_OK;
 	}
 
-	id_maps = talloc_array(talloc_tos(), struct id_map, num_ids);
-	if (id_maps == NULL) {
-		goto nomem;
-	}
-	id_map_ptrs = talloc_array(talloc_tos(), struct id_map *, num_ids+1);
+	id_map_ptrs = id_map_ptrs_init(talloc_tos(), num_ids);
 	if (id_map_ptrs == NULL) {
-		goto nomem;
-	}
-	sids = talloc_array(talloc_tos(), struct dom_sid, num_ids);
-	if (sids == NULL) {
 		goto nomem;
 	}
 
@@ -177,18 +167,12 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 	 */
 
 	for (i=0; i<num_ids; i++) {
+		struct id_map *m = id_map_ptrs[i];
 
-		sid_compose(&sids[i], d->sid, ids[i].rid);
-
-		id_maps[i] = (struct id_map) {
-			.sid = &sids[i],
-			.xid.type = ids[i].type,
-			.status = ID_UNKNOWN
-		};
-
-		id_map_ptrs[i] = &id_maps[i];
+		sid_compose(m->sid, d->sid, ids[i].rid);
+		m->status = ID_UNKNOWN;
+		m->xid = (struct unixid) { .type = ids[i].type };
 	}
-	id_map_ptrs[num_ids] = NULL;
 
 	status = dom->methods->sids_to_unixids(dom, id_map_ptrs);
 
@@ -203,9 +187,10 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 	 */
 
 	for (i=0; i<num_ids; i++) {
+		struct id_map *m = id_map_ptrs[i];
 
-		if (id_maps[i].status == ID_MAPPED) {
-			ids[i].xid = id_maps[i].xid;
+		if (m->status == ID_MAPPED) {
+			ids[i].xid = m->xid;
 		} else {
 			ids[i].xid.id = UINT32_MAX;
 			ids[i].xid.type = ID_TYPE_NOT_SPECIFIED;
@@ -216,9 +201,7 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 nomem:
 	status = NT_STATUS_NO_MEMORY;
 done:
-	TALLOC_FREE(id_maps);
 	TALLOC_FREE(id_map_ptrs);
-	TALLOC_FREE(sids);
 	return status;
 }
 

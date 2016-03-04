@@ -238,3 +238,34 @@ char *idmap_fetch_secret(const char *backend, const char *domain,
 
 	return ret;
 }
+
+struct id_map **id_map_ptrs_init(TALLOC_CTX *mem_ctx, size_t num_ids)
+{
+	struct id_map **ptrs;
+	struct id_map *maps;
+	struct dom_sid *sids;
+	size_t i;
+
+	ptrs = talloc_array(mem_ctx, struct id_map *, num_ids+1);
+	if (ptrs == NULL) {
+		return NULL;
+	}
+	maps = talloc_array(ptrs, struct id_map, num_ids);
+	if (maps == NULL) {
+		TALLOC_FREE(ptrs);
+		return NULL;
+	}
+	sids = talloc_zero_array(ptrs, struct dom_sid, num_ids);
+	if (sids == NULL) {
+		TALLOC_FREE(ptrs);
+		return NULL;
+	}
+
+	for (i=0; i<num_ids; i++) {
+		maps[i] = (struct id_map) { .sid = &sids[i] };
+		ptrs[i] = &maps[i];
+	}
+	ptrs[num_ids] = NULL;
+
+	return ptrs;
+}

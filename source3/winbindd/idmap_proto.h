@@ -59,6 +59,8 @@ struct id_map *idmap_find_map_by_sid(struct id_map **maps, struct dom_sid *sid);
 char *idmap_fetch_secret(const char *backend, const char *domain,
 			 const char *identity);
 
+struct id_map **id_map_ptrs_init(TALLOC_CTX *mem_ctx, size_t num_ids);
+
 /* max number of ids requested per LDAP batch query */
 #define IDMAP_LDAP_MAX_IDS 30
 
