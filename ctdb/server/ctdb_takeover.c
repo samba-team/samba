@@ -815,44 +815,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	return 0;
 }
 
-/*
-  kill any clients that are registered with a IP that is being released
- */
-static void release_kill_clients(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
-{
-	struct ctdb_client_ip *ip;
-
-	DEBUG(DEBUG_INFO,("release_kill_clients for ip %s\n",
-		ctdb_addr_to_str(addr)));
-
-	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
-		ctdb_sock_addr tmp_addr;
-
-		tmp_addr = ip->addr;
-		DEBUG(DEBUG_INFO,("checking for client %u with IP %s\n", 
-			ip->client_id,
-			ctdb_addr_to_str(&ip->addr)));
-
-		if (ctdb_same_ip(&tmp_addr, addr)) {
-			struct ctdb_client *client = reqid_find(ctdb->idr,
-								ip->client_id,
-								struct ctdb_client);
-			DEBUG(DEBUG_INFO,("matched client %u with IP %s and pid %u\n", 
-				ip->client_id,
-				ctdb_addr_to_str(&ip->addr),
-				client->pid));
-
-			if (client->pid != 0) {
-				DEBUG(DEBUG_INFO,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
-					(unsigned)client->pid,
-					ctdb_addr_to_str(addr),
-					ip->client_id));
-				kill(client->pid, SIGKILL);
-			}
-		}
-	}
-}
-
 static void do_delete_ip(struct ctdb_context *ctdb, struct ctdb_vnn *vnn)
 {
 	DLIST_REMOVE(ctdb->vnn, vnn);
@@ -897,9 +859,6 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	DEBUG(DEBUG_INFO,(__location__ " sending RELEASE_IP for '%s'\n", data.dptr));
 
 	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
-
-	/* kill clients that have registered with this IP */
-	release_kill_clients(ctdb, state->addr);
 
 	ctdb_vnn_unassign_iface(ctdb, state->vnn);
 
@@ -2431,7 +2390,6 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 				  ctdb_vnn_iface_string(vnn),
 				  ctdb_addr_to_str(&vnn->public_address),
 				  vnn->public_netmask_bits);
-		release_kill_clients(ctdb, &vnn->public_address);
 		ctdb_vnn_unassign_iface(ctdb, vnn);
 		vnn->update_in_flight = false;
 		count++;
