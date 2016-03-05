@@ -45,6 +45,7 @@ struct gse_context {
 	gss_name_t server_name;
 	gss_name_t client_name;
 	OM_uint32 gss_want_flags, gss_got_flags;
+	size_t max_wrap_buf_size;
 	size_t sig_size;
 
 	gss_cred_id_t delegated_cred_handle;
@@ -136,6 +137,7 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor((TALLOC_CTX *)gse_ctx, gse_context_destructor);
 
 	gse_ctx->expire_time = GENSEC_EXPIRE_TIME_INFINITY;
+	gse_ctx->max_wrap_buf_size = UINT16_MAX;
 
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
@@ -1062,6 +1064,40 @@ static NTSTATUS gensec_gse_session_info(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+static size_t gensec_gse_max_input_size(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	OM_uint32 maj_stat, min_stat;
+	OM_uint32 max_input_size;
+
+	maj_stat = gss_wrap_size_limit(&min_stat,
+				       gse_ctx->gssapi_context,
+				       gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
+				       GSS_C_QOP_DEFAULT,
+				       gse_ctx->max_wrap_buf_size,
+				       &max_input_size);
+	if (GSS_ERROR(maj_stat)) {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
+		DEBUG(1, ("gensec_gssapi_max_input_size: determining signature size with gss_wrap_size_limit failed: %s\n",
+			  gse_errstr(mem_ctx, maj_stat, min_stat)));
+		talloc_free(mem_ctx);
+		return 0;
+	}
+
+	return max_input_size;
+}
+
+/* Find out the maximum output size negotiated on this connection */
+static size_t gensec_gse_max_wrapped_size(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	return gse_ctx->max_wrap_buf_size;
+}
+
 static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
 				  size_t data_size)
 {
@@ -1101,6 +1137,8 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.check_packet	= gensec_gse_check_packet,
 	.seal_packet	= gensec_gse_seal_packet,
 	.unseal_packet	= gensec_gse_unseal_packet,
+	.max_input_size	  = gensec_gse_max_input_size,
+	.max_wrapped_size = gensec_gse_max_wrapped_size,
 	.wrap           = gensec_gse_wrap,
 	.unwrap         = gensec_gse_unwrap,
 	.have_feature   = gensec_gse_have_feature,
