@@ -46,6 +46,7 @@ static ADS_STATUS ads_sasl_ntlmssp_wrap(ADS_STRUCT *ads, uint8_t *buf, uint32_t 
 	}
 
 	if ((ads->ldap.out.size - 4) < wrapped.length) {
+		TALLOC_FREE(frame);
 		return ADS_ERROR_NT(NT_STATUS_INTERNAL_ERROR);
 	}
 
