@@ -2353,6 +2353,7 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 {
 	struct ctdb_vnn *vnn;
 	int count = 0;
+	TDB_DATA data;
 
 	if (ctdb->tunable.disable_ip_failover == 1) {
 		return;
@@ -2390,6 +2391,16 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 				  ctdb_vnn_iface_string(vnn),
 				  ctdb_addr_to_str(&vnn->public_address),
 				  vnn->public_netmask_bits);
+
+		data.dptr = (uint8_t *)talloc_strdup(
+				vnn, ctdb_addr_to_str(&vnn->public_address));
+		if (data.dptr != NULL) {
+			data.dsize = strlen((char *)data.dptr) + 1;
+			ctdb_daemon_send_message(ctdb, ctdb->pnn,
+						 CTDB_SRVID_RELEASE_IP, data);
+			talloc_free(data.dptr);
+		}
+
 		ctdb_vnn_unassign_iface(ctdb, vnn);
 		vnn->update_in_flight = false;
 		count++;
