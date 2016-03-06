@@ -807,7 +807,7 @@ static int wipe_fn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA val,
  * @param timeout pointer to a time_t that is filled with entry's
  *        timeout
  *
- * @retval true when entry is successfuly fetched
+ * @retval true when entry is successfully fetched
  * @retval false for failure
  **/
 
