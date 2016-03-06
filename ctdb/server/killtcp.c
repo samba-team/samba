@@ -23,7 +23,6 @@
 #include "system/network.h"
 
 #include "lib/util/debug.h"
-#include "lib/util/time.h"
 
 #include "ctdb_private.h"
 
@@ -192,7 +191,7 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 	/* try tickling them again in a seconds time
 	 */
 	tevent_add_timer(ev, killtcp,
-			 timeval_current_ofs(1, 0),
+			 tevent_timeval_current_ofs(1, 0),
 			 ctdb_tickle_sentenced_connections, killtcp);
 }
 
@@ -288,7 +287,7 @@ int ctdb_killtcp(struct tevent_context *ev,
 		/* We also need to set up some events to tickle all these connections
 		   until they are all reset
 		*/
-		tevent_add_timer(ev, killtcp, timeval_current_ofs(1, 0),
+		tevent_add_timer(ev, killtcp, tevent_timeval_current_ofs(1, 0),
 				 ctdb_tickle_sentenced_connections, killtcp);
 	}
 
