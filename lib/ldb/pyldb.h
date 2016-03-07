@@ -60,11 +60,18 @@ typedef struct {
 } PyLdbModuleObject;
 #define pyldb_Module_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
+/*
+ * NOTE: el (and so the return value of
+ * pyldb_MessageElement_AsMessageElement()) may not be a valid talloc
+ * context, it could be part of an array
+ */
+
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message_element *el;
 } PyLdbMessageElementObject;
+
 #define pyldb_MessageElement_AsMessageElement(pyobj) ((PyLdbMessageElementObject *)pyobj)->el
 
 typedef struct {
