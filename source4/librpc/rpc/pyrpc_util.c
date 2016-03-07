@@ -351,7 +351,7 @@ void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
   the resulting python object
 
   This MUST only be used by objects that are based on pytalloc_Object
-  otherwise it will cause crazy segfaults.
+  otherwise the pytalloc_reference_ex() will fail.
  */
 PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 			       TALLOC_CTX *r_ctx, void *r)
