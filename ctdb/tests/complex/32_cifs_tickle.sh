@@ -7,7 +7,8 @@ Verify that CIFS connections are monitored and that CIFS tickles are sent.
 
 We create a connection to the CIFS server on a node and confirm that
 this connection is registered by CTDB.  Then disable the relevant CIFS
-server node and ensure that it send an appropriate reset packet.
+server node and ensure that the takeover node sends an appropriate
+reset packet.
 
 Prerequisites:
 
@@ -20,21 +21,10 @@ Prerequisites:
 
 * Clustered Samba must be listening on TCP port 445.
 
-Steps:
-
-1. Verify that the cluster is healthy.
-2. Connect from the current host (test client) to TCP port 445 using
-   the public address of a cluster node.
-3. Determine the source socket used for the connection.
-4. Using the "ctdb gettickle" command, ensure that CTDB records the
-   connection details.
-5. Disable the node that the connection has been made to.
-6. Verify that a TCP tickle (a reset packet) is sent to the test client.
-
 Expected results:
 
-* CTDB should correctly record the connection and should send a reset
-  packet when the node is disabled.
+* CTDB should correctly record the connection and the takeover node
+  should send a reset packet.
 EOF
 }
 
@@ -72,7 +62,7 @@ echo "Source socket is $src_socket"
 
 # This should happen as soon as connection is up... but unless we wait
 # we sometimes beat the registration.
-echo "Checking if CIFS connection is tracked by CTDB..."
+echo "Checking if CIFS connection is tracked by CTDB on test node..."
 wait_until 10 check_tickles $test_node $test_ip $test_port $src_socket
 echo "$out"
 
@@ -83,11 +73,15 @@ else
     testfailures=1
 fi
 
+# This is almost immediate.  However, it is sent between nodes
+# asynchonously, so it is worth checking...
+echo "Wait until CIFS connection is tracked by CTDB on all nodes..."
+try_command_on_node $test_node "$CTDB listnodes | wc -l"
+numnodes="$out"
+wait_until 5 \
+    check_tickles_all $numnodes  $test_ip $test_port $src_socket
 tcptickle_sniff_start $src_socket "${test_ip}:${test_port}"
 
-# The test node is only being disabled so the tickling is done from
-# the test node.  We don't need to wait until the tickles are
-# transferred to another node.
 echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node
 wait_until_node_has_status $test_node disabled
