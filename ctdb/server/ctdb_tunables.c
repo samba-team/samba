@@ -58,7 +58,7 @@ static const struct {
 	{ "EnableBans",           1,  offsetof(struct ctdb_tunable_list, enable_bans), false },
 	{ "DeterministicIPs",     0,  offsetof(struct ctdb_tunable_list, deterministic_public_ips), false },
 	{ "LCP2PublicIPs",        1,  offsetof(struct ctdb_tunable_list, lcp2_public_ip_assignment), false },
-	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable_list,  reclock_ping_period), false },
+	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable_list,  reclock_ping_period), true },
 	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable_list, no_ip_failback), false },
 	{ "DisableIPFailover",    0,  offsetof(struct ctdb_tunable_list, disable_ip_failover), false },
 	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable_list, verbose_memory_names), false },
