@@ -35,7 +35,7 @@ static const struct {
 	size_t offset;
 	bool obsolete;
 } tunable_map[] = {
-	{ "MaxRedirectCount",     3,  offsetof(struct ctdb_tunable_list, max_redirect_count), false },
+	{ "MaxRedirectCount",     3,  offsetof(struct ctdb_tunable_list, max_redirect_count), true },
 	{ "SeqnumInterval",      1000,  offsetof(struct ctdb_tunable_list, seqnum_interval), false },
 	{ "ControlTimeout",      60, offsetof(struct ctdb_tunable_list, control_timeout), false },
 	{ "TraverseTimeout",     20, offsetof(struct ctdb_tunable_list, traverse_timeout), false },

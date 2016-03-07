@@ -282,25 +282,6 @@
     </refsect2>
 
     <refsect2>
-      <title>MaxRedirectCount</title>
-      <para>Default: 3</para>
-      <para>
-	If we are not the DMASTER and need to fetch a record across the
-	network we first send the request to the LMASTER after which the
-	record is passed onto the current DMASTER. If the DMASTER changes
-	before the request has reached that node, the request will be
-	passed onto the "next" DMASTER. For very hot records that migrate
-	rapidly across the cluster this can cause a request to "chase"
-	the record for many hops before it catches up with the record.
-      </para>
-      <para>
-	When chasing a record, this is how many hops we will chase
-	the record for before going back to the LMASTER to ask for
-	new guidance.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>MonitorInterval</title>
       <para>Default: 15</para>
       <para>
