@@ -7,8 +7,8 @@ Verify that NFS connections are monitored and that NFS tickles are sent.
 
 We create a connection to the NFS server on a node and confirm that
 this connection is registered in the nfs-tickles/ subdirectory in
-shared storage.  Then disable the relevant NFS server node and ensure
-that it send an appropriate reset packet.
+shared storage.  Then kill ctdbd on the relevant NFS server node and
+ensure that the takeover node sends an appropriate reset packet.
 
 Prerequisites:
 
@@ -21,21 +21,10 @@ Prerequisites:
 
 * Cluster nodes must be listening on the NFS TCP port (2049).
 
-Steps:
-
-1. Verify that the cluster is healthy.
-2. Connect from the current host (test client) to TCP port 2049 using
-   the public address of a cluster node.
-3. Determine the source socket used for the connection.
-4. Ensure that CTDB records the source socket details in the nfs-tickles
-   directory on shared storage.
-5. Disable the node that the connection has been made to.
-6. Verify that a TCP tickle (a reset packet) is sent to the test client.
-
 Expected results:
 
-* CTDB should correctly record the socket and should send a reset
-  packet when the node is disabled.
+* CTDB should correctly record the socket and on failover the takeover
+  node should send a reset packet.
 EOF
 }
 
