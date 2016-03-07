@@ -126,8 +126,23 @@ tcpdump_wait ()
 
 	tcpdump_check ()
 	{
-		local found=$(tcpdump -n -r $tcpdump_filename \
-				      "$filter" 2>/dev/null | wc -l)
+		# It would be much nicer to add "ether src
+		# $releasing_mac" to the filter.  However, tcpdump
+		# does not allow MAC filtering unless an ethernet
+		# interface is specified with -i.  It doesn't work
+		# with "-i any" and it doesn't work when reading from
+		# a file.  :-(
+		local found
+		if [ -n "$releasing_mac" ] ; then
+			found=$(tcpdump -n -e -r "$tcpdump_filename" \
+					"$filter" 2>/dev/null |
+					       grep -c "In ${releasing_mac}")
+		else
+			found=$(tcpdump -n -e -r "$tcpdump_filename" \
+					"$filter" 2>/dev/null |
+					       wc -l)
+		fi
+
 		[ $found -ge $count ]
 	}
 
@@ -196,6 +211,8 @@ tcptickle_sniff_start ()
 
 tcptickle_sniff_wait_show ()
 {
+	local releasing_mac="$1"  # optional, used by tcpdump_wait()
+
 	tcpdump_wait 1 "$tcptickle_reset"
 
 	echo "GOOD: here are some TCP tickle packets:"
