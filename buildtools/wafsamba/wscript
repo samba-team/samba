@@ -402,6 +402,22 @@ def configure(conf):
             addmain=False,
             msg='Checking for library destructor support')
 
+    conf.CHECK_CODE('''
+            void test_attribute(void) __attribute__ (());
+
+            void test_attribute(void)
+            {
+                return;
+            }
+
+            int main(void) {
+                return 0;
+            }
+            ''',
+            'HAVE___ATTRIBUTE__',
+            addmain=False,
+            msg='Checking for __attribute__')
+
     if sys.platform.startswith('aix'):
         conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)
         # Might not be needed if ALL_SOURCE is defined
