@@ -2425,24 +2425,6 @@ static void reload_nodes_handler(uint64_t srvid, TDB_DATA data,
 }
 
 
-static void ctdb_rebalance_timeout(struct tevent_context *ev,
-				   struct tevent_timer *te,
-				   struct timeval t, void *p)
-{
-	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
-
-	if (rec->force_rebalance_nodes == NULL) {
-		DEBUG(DEBUG_ERR,
-		      ("Rebalance timeout occurred - no nodes to rebalance\n"));
-		return;
-	}
-
-	DEBUG(DEBUG_NOTICE,
-	      ("Rebalance timeout occurred - trigger takeover run\n"));
-	rec->need_takeover_run = true;
-}
-
-
 static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 					void *private_data)
 {
@@ -2452,7 +2434,6 @@ static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 	uint32_t pnn;
 	uint32_t *t;
 	int len;
-	uint32_t deferred_rebalance;
 
 	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
 		return;
@@ -2491,19 +2472,6 @@ static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 	talloc_free(rec->force_rebalance_nodes);
 
 	rec->force_rebalance_nodes = t;
-
-	/* If configured, setup a deferred takeover run to make sure
-	 * that certain nodes get IPs rebalanced to them.  This will
-	 * be cancelled if a successful takeover run happens before
-	 * the timeout.  Assign tunable value to variable for
-	 * readability.
-	 */
-	deferred_rebalance = ctdb->tunable.deferred_rebalance_on_node_add;
-	if (deferred_rebalance != 0) {
-		tevent_add_timer(ctdb->ev, rec->force_rebalance_nodes,
-				 timeval_current_ofs(deferred_rebalance, 0),
-				 ctdb_rebalance_timeout, rec);
-	}
 }
 
 
