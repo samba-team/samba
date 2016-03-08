@@ -52,6 +52,10 @@ int ctdb_rec_buffer_traverse(struct ctdb_rec_buffer *recbuf,
 			     ctdb_rec_parser_func_t func,
 			     void *private_data);
 
+int ctdb_rec_buffer_write(struct ctdb_rec_buffer *recbuf, int fd);
+int ctdb_rec_buffer_read(int fd, TALLOC_CTX *mem_ctx,
+			 struct ctdb_rec_buffer **out);
+
 size_t ctdb_server_id_len(struct ctdb_server_id *sid);
 void ctdb_server_id_push(struct ctdb_server_id *sid, uint8_t *buf);
 int ctdb_server_id_pull(uint8_t *buf, size_t buflen,
