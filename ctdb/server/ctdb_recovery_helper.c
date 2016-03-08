@@ -34,7 +34,9 @@
 #include "protocol/protocol_api.h"
 #include "client/client.h"
 
-#define TIMEOUT()	timeval_current_ofs(10, 0)
+static int recover_timeout = 120;
+
+#define TIMEOUT()	timeval_current_ofs(recover_timeout, 0)
 
 static void LOG(const char *fmt, ...)
 {
@@ -1215,10 +1217,10 @@ static bool db_recovery_recv(struct tevent_req *req, int *count)
 /*
  * Run the parallel database recovery
  *
+ * - Get tunables
  * - Get nodemap
  * - Get vnnmap
  * - Get capabilities from all nodes
- * - Get tunables from all nodes
  * - Get dbmap
  * - Set RECOVERY_ACTIVE
  * - Send START_RECOVERY
@@ -1242,10 +1244,10 @@ struct recovery_state {
 	struct ctdb_dbid_map *dbmap;
 };
 
+static void recovery_tunables_done(struct tevent_req *subreq);
 static void recovery_nodemap_done(struct tevent_req *subreq);
 static void recovery_vnnmap_done(struct tevent_req *subreq);
 static void recovery_capabilities_done(struct tevent_req *subreq);
-static void recovery_tunables_done(struct tevent_req *subreq);
 static void recovery_dbmap_done(struct tevent_req *subreq);
 static void recovery_active_done(struct tevent_req *subreq);
 static void recovery_start_recovery_done(struct tevent_req *subreq);
@@ -1273,15 +1275,57 @@ static struct tevent_req *recovery_send(TALLOC_CTX *mem_ctx,
 	state->generation = generation;
 	state->destnode = ctdb_client_pnn(client);
 
-	ctdb_req_control_get_nodemap(&request);
-	subreq = ctdb_client_control_send(mem_ctx, ev, client, state->destnode,
-					  TIMEOUT(), &request);
+	ctdb_req_control_get_all_tunables(&request);
+	subreq = ctdb_client_control_send(state, state->ev, state->client,
+					  state->destnode, TIMEOUT(),
+					  &request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, recovery_nodemap_done, req);
+	tevent_req_set_callback(subreq, recovery_tunables_done, req);
 
 	return req;
+}
+
+static void recovery_tunables_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct recovery_state *state = tevent_req_data(
+		req, struct recovery_state);
+	struct ctdb_reply_control *reply;
+	struct ctdb_req_control request;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		LOG("control GET_ALL_TUNABLES failed, ret=%d\n", ret);
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_get_all_tunables(reply, state,
+						  &state->tun_list);
+	if (ret != 0) {
+		LOG("control GET_ALL_TUNABLES failed, ret=%d\n", ret);
+		tevent_req_error(req, EPROTO);
+		return;
+	}
+
+	talloc_free(reply);
+
+	recover_timeout = state->tun_list->recover_timeout;
+
+	ctdb_req_control_get_nodemap(&request);
+	subreq = ctdb_client_control_send(state, state->ev, state->client,
+					  state->destnode, TIMEOUT(),
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, recovery_nodemap_done, req);
 }
 
 static void recovery_nodemap_done(struct tevent_req *subreq)
@@ -1416,45 +1460,6 @@ static void recovery_capabilities_done(struct tevent_req *subreq)
 			tevent_req_error(req, EPROTO);
 			return;
 		}
-	}
-
-	talloc_free(reply);
-
-	ctdb_req_control_get_all_tunables(&request);
-	subreq = ctdb_client_control_send(state, state->ev, state->client,
-					  state->destnode, TIMEOUT(),
-					  &request);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, recovery_tunables_done, req);
-}
-
-static void recovery_tunables_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct recovery_state *state = tevent_req_data(
-		req, struct recovery_state);
-	struct ctdb_reply_control *reply;
-	struct ctdb_req_control request;
-	int ret;
-	bool status;
-
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		LOG("control GET_ALL_TUNABLES failed, ret=%d\n", ret);
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	ret = ctdb_reply_control_get_all_tunables(reply, state,
-						  &state->tun_list);
-	if (ret != 0) {
-		LOG("control GET_ALL_TUNABLES failed, ret=%d\n", ret);
-		tevent_req_error(req, EPROTO);
-		return;
 	}
 
 	talloc_free(reply);
