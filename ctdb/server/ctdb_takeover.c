@@ -908,7 +908,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	talloc_free(vnn->takeover_ctx);
 	vnn->takeover_ctx = NULL;
 
-	/* Some ctdb tool commands (e.g. moveip, rebalanceip) send
+	/* Some ctdb tool commands (e.g. moveip) send
 	 * lazy multicast to drop an IP from any node that isn't the
 	 * intended new node.  The following causes makes ctdbd ignore
 	 * a release for any address it doesn't host.
