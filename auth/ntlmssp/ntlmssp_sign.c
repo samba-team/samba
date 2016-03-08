@@ -479,57 +479,18 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_state,
 					     &sig);
 
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-		NTSTATUS status;
-		struct ntlmssp_crypt_direction save_direction;
-
 		if (in->length < NTLMSSP_SIG_SIZE) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		sig.data = in->data;
 		sig.length = NTLMSSP_SIG_SIZE;
+
 		*out = data_blob_talloc(out_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
 
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-			save_direction = ntlmssp_state->crypt->ntlm2.receiving;
-		} else {
-			save_direction = ntlmssp_state->crypt->ntlm;
-		}
-
-		status = ntlmssp_check_packet(ntlmssp_state,
-					      out->data, out->length,
-					      out->data, out->length,
-					      &sig);
-		if (!NT_STATUS_IS_OK(status)) {
-			NTSTATUS check_status = status;
-			/*
-			 * The Windows LDAP libraries seems to have a bug
-			 * and always use sealing even if only signing was
-			 * negotiated. So we need to fallback.
-			 */
-
-			if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-				ntlmssp_state->crypt->ntlm2.receiving = save_direction;
-			} else {
-				ntlmssp_state->crypt->ntlm = save_direction;
-			}
-
-			status = ntlmssp_unseal_packet(ntlmssp_state,
-						       out->data,
-						       out->length,
-						       out->data,
-						       out->length,
-						       &sig);
-			if (NT_STATUS_IS_OK(status)) {
-				ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
-			} else {
-				status = check_status;
-			}
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("NTLMSSP packet check for unwrap failed due to invalid signature\n"));
-		}
-		return status;
+		return ntlmssp_check_packet(ntlmssp_state,
+					    out->data, out->length,
+					    out->data, out->length,
+					    &sig);
 	} else {
 		*out = data_blob_talloc(out_mem_ctx, in->data, in->length);
 		if (!out->data) {
