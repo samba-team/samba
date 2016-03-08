@@ -1706,19 +1706,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     </refsect2>
 
     <refsect2>
-      <title>
-	rebalancenode
-	<optional><parameter>PNN-LIST</parameter></optional>
-      </title>
-      <para>
-	This command marks the given nodes as rebalance targets in the
-	LCP2 IP allocation algorithm.  The
-	<command>reloadips</command> command will do this as necessary
-	so this command should not be needed.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>check_srvids <parameter>SRVID</parameter> ...</title>
       <para>
 	This command checks whether a set of srvid message ports are

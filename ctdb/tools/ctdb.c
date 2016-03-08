@@ -1813,41 +1813,6 @@ static int rebalance_node(struct ctdb_context *ctdb, uint32_t pnn)
 }
 
 
-/*
-  rebalance a node by setting it to allow failback and triggering a
-  takeover run
- */
-static int control_rebalancenode(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	uint32_t *nodes;
-	uint32_t pnn_mode;
-	int i, ret;
-
-	assert_single_node_only();
-
-	if (argc > 1) {
-		usage();
-	}
-
-	/* Determine the nodes where IPs need to be reloaded */
-	if (!parse_nodestring(ctdb, tmp_ctx, argc == 1 ? argv[0] : NULL,
-			      options.pnn, true, &nodes, &pnn_mode)) {
-		ret = -1;
-		goto done;
-	}
-
-	for (i = 0; i < talloc_array_length(nodes); i++) {
-		if (!rebalance_node(ctdb, nodes[i])) {
-			ret = -1;
-		}
-	}
-
-done:
-	talloc_free(tmp_ctx);
-	return ret;
-}
-
 static int getips_store_callback(void *param, void *data)
 {
 	struct ctdb_public_ip *node_ip = (struct ctdb_public_ip *)data;
@@ -6321,7 +6286,6 @@ static const struct {
 	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<dbname|dbid> <key>" },
 	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<dbname|dbid> <key> <value>" },
 	{ "checktcpport",    control_chktcpport,      	false,	true,  "check if a service is bound to a specific tcp port or not", "<port>" },
-	{ "rebalancenode",     control_rebalancenode,	false,	false, "mark nodes as forced IP rebalancing targets", "[<pnn-list>]"},
 	{ "getdbseqnum",     control_getdbseqnum,       false,	false, "get the sequence number off a database", "<dbname|dbid>" },
 	{ "nodestatus",      control_nodestatus,        true,   false,  "show and return node status", "[<pnn-list>]" },
 	{ "dbstatistics",    control_dbstatistics,      false,	false, "show db statistics", "<dbname|dbid>" },
