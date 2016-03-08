@@ -637,20 +637,19 @@ OUTPUT:ERROR: Samba tcp port 445 is not responding
 	<title>Example</title>
 	<screen>
 # ctdb listvars
-MaxRedirectCount        = 3
 SeqnumInterval          = 1000
 ControlTimeout          = 60
 TraverseTimeout         = 20
 KeepaliveInterval       = 5
 KeepaliveLimit          = 5
-RecoverTimeout          = 20
+RecoverTimeout          = 120
 RecoverInterval         = 1
 ElectionTimeout         = 3
 TakeoverTimeout         = 9
 MonitorInterval         = 15
 TickleUpdateInterval    = 20
 EventScriptTimeout      = 30
-MonitorTimeoutCount     = 1
+MonitorTimeoutCount     = 20
 RecoveryGracePeriod     = 120
 RecoveryBanPeriod       = 300
 DatabaseHashSize        = 100001
@@ -659,7 +658,6 @@ RerecoveryTimeout       = 10
 EnableBans              = 1
 DeterministicIPs        = 0
 LCP2PublicIPs           = 1
-ReclockPingPeriod       = 60
 NoIPFailback            = 0
 DisableIPFailover       = 0
 VerboseMemoryNames      = 0
@@ -669,17 +667,30 @@ LogLatencyMs            = 0
 RecLockLatencyMs        = 1000
 RecoveryDropAllIPs      = 120
 VacuumInterval          = 10
-VacuumMaxRunTime        = 30
+VacuumMaxRunTime        = 120
 RepackLimit             = 10000
 VacuumLimit             = 5000
 VacuumFastPathCount     = 60
 MaxQueueDropMsg         = 1000000
-UseStatusEvents         = 0
 AllowUnhealthyDBRead    = 0
 StatHistoryInterval     = 1
 DeferredAttachTO        = 120
 AllowClientDBAttach     = 1
-RecoverPDBBySeqNum      = 0
+RecoverPDBBySeqNum      = 1
+DeferredRebalanceOnNodeAdd = 300
+FetchCollapse           = 1
+HopcountMakeSticky      = 50
+StickyDuration          = 600
+StickyPindown           = 200
+NoIPTakeover            = 0
+DBRecordCountWarn       = 100000
+DBRecordSizeWarn        = 10000000
+DBSizeWarn              = 100000000
+PullDBPreallocation     = 10485760
+NoIPHostOnAllDisabled   = 0
+Samba3AvoidDeadlocks    = 0
+TDBMutexEnabled         = 0
+LockProcessesPerDB      = 200
 	</screen>
       </refsect3>
     </refsect2>
@@ -692,8 +703,8 @@ RecoverPDBBySeqNum      = 0
       <refsect3>
 	<title>Example</title>
 	<screen>
-# ctdb getvar MaxRedirectCount
-MaxRedirectCount    = 3
+# ctdb getvar MonitorInterval
+MonitorInterval         = 15
 	</screen>
       </refsect3>
     </refsect2>
@@ -703,9 +714,12 @@ MaxRedirectCount    = 3
       <para>
 	Set the runtime value of a tuneable variable.
       </para>
-      <para>
-	Example: ctdb setvar MaxRedirectCount 5
-      </para>
+      <refsect3>
+	<title>Example</title>
+	<screen>
+# ctdb setvar MonitorInterval 20
+	</screen>
+      </refsect3>
     </refsect2>
 
     <refsect2>
