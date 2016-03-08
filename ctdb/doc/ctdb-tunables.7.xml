@@ -394,6 +394,16 @@
     </refsect2>
 
     <refsect2>
+      <title>RecBufferSizeLimit</title>
+      <para>Default: 1000000</para>
+      <para>
+        This is the limit on the size of the record buffer to be sent
+        in various controls.  This limit is used by new controls used
+        for recovery and controls used in vacuuming.
+      </para>
+    </refsect2>
+
+    <refsect2>
       <title>RecdFailCount</title>
       <para>Default: 10</para>
       <para>
