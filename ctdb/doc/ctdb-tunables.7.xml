@@ -45,6 +45,16 @@
     </refsect2>
 
     <refsect2>
+      <title>AllowUnhealthyDBRead</title>
+      <para>Default: 0</para>
+      <para>
+	When set to 1, ctdb allows database traverses to read unhealthy
+	databases.  By default, ctdb does not allow reading records from
+	unhealthy databases.
+      </para>
+    </refsect2>
+
+    <refsect2>
       <title>ControlTimeout</title>
       <para>Default: 60</para>
       <para>
@@ -268,6 +278,17 @@
     </refsect2>
 
     <refsect2>
+      <title>LockProcessesPerDB</title>
+      <para>Default: 200</para>
+      <para>
+	This is the maximum number of lock helper processes ctdb will
+	create for obtaining record locks.  When ctdb cannot get a record
+	lock without blocking, it creates a helper process that waits
+	for the lock to be obtained.
+      </para>
+    </refsect2>
+
+    <refsect2>
       <title>LogLatencyMs</title>
       <para>Default: 0</para>
       <para>
@@ -276,6 +297,16 @@
 	These operations include "process a record request from client",
 	"take a record or database lock", "update a persistent database
 	record" and "vaccum a database".
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>MaxQueueDropMsg</title>
+      <para>Default: 1000000</para>
+      <para>
+	This is the maximum number of messages to be queued up for
+	a client before ctdb will treat the client as hung and will
+	terminate the client connection.
       </para>
     </refsect2>
 
@@ -346,6 +377,19 @@
 	over onto this node. Any IP addresses that the node currently
 	hosts will remain on the node but no new IP addresses can be
 	failed over to the node.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>PullDBPreallocation</title>
+      <para>Default: 10*1024*1024</para>
+      <para>
+	This is the size of a record buffer to pre-allocate for sending
+	reply to PULLDB control. Usually record buffer starts with size
+	of the first record and gets reallocated every time a new record
+	is added to the record buffer. For a large number of records,
+	this can be very inefficient to grow the record buffer one record
+	at a time.
       </para>
     </refsect2>
 
@@ -548,6 +592,17 @@
       <para>
 	This is the duration in seconds in which ctdb tries to complete IP
 	failover.
+      </para>
+    </refsect2>
+
+    <refsect2>
+      <title>TDBMutexEnabled</title>
+      <para>Default: 0</para>
+      <para>
+	This paramter enables TDB_MUTEX_LOCKING feature on volatile
+	databases if the robust mutexes are supported. This optimizes the
+	record locking using robust mutexes and is much more efficient
+	that using posix locks.
       </para>
     </refsect2>
 
