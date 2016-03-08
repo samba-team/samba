@@ -266,6 +266,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "lazy_commit",
 					     "dirsync",
 					     "paged_results",
+					     "vlv",
 					     "ranged_results",
 					     "anr",
 					     "server_sort",

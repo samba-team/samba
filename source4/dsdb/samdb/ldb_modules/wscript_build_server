@@ -391,3 +391,12 @@ bld.SAMBA_MODULE('tombstone_reanimate',
 	internal_module=False,
 	deps='talloc samba-util DSDB_MODULE_HELPERS'
 	)
+
+bld.SAMBA_MODULE('ldb_vlv',
+	'vlv_pagination.c',
+	init_function='ldb_vlv_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='samdb-common',
+	subsystem='ldb'
+	)
