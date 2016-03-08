@@ -121,25 +121,28 @@ tcpdump_start ()
 # By default, wait for 1 matching packet.
 tcpdump_wait ()
 {
-    local count="${1:-1}"
-    local filter="${2:-${tcpdump_filter}}"
+	local count="${1:-1}"
+	local filter="${2:-${tcpdump_filter}}"
 
-    tcpdump_check ()
-    {
-	local found=$(tcpdump -n -r $tcpdump_filename "$filter" 2>/dev/null | wc -l)
-	[ $found -ge $count ]
-    }
+	tcpdump_check ()
+	{
+		local found=$(tcpdump -n -r $tcpdump_filename \
+				      "$filter" 2>/dev/null | wc -l)
+		[ $found -ge $count ]
+	}
 
-    echo "Waiting for tcpdump to capture some packets..."
-    if ! wait_until 30 tcpdump_check ; then
-	echo "DEBUG AT $(date '+%F %T'):"
-	local i
-	for i in "onnode -q 0 $CTDB status" "netstat -tanp" "tcpdump -n -e -r $tcpdump_filename" ; do
-	    echo "$i"
-	    $i || true
-	done
-	return 1
-    fi
+	echo "Waiting for tcpdump to capture some packets..."
+	if ! wait_until 30 tcpdump_check ; then
+		echo "DEBUG AT $(date '+%F %T'):"
+		local i
+		for i in "onnode -q 0 $CTDB status" \
+				 "netstat -tanp" \
+				 "tcpdump -n -e -r $tcpdump_filename" ; do
+			echo "$i"
+			$i || true
+		done
+		return 1
+	fi
 }
 
 tcpdump_show ()
@@ -193,10 +196,10 @@ tcptickle_sniff_start ()
 
 tcptickle_sniff_wait_show ()
 {
-    tcpdump_wait 1 "$tcptickle_reset"
+	tcpdump_wait 1 "$tcptickle_reset"
 
-    echo "GOOD: here are some TCP tickle packets:"
-    tcpdump_show
+	echo "GOOD: here are some TCP tickle packets:"
+	tcpdump_show
 }
 
 gratarp4_sniff_start ()
