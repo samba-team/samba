@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.4.  This is *not*
+This is the fourth release candidate of Samba 4.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -234,6 +234,39 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.4.0rc3
+======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11648: CVE-2015-7560: Getting and setting Windows ACLs on symlinks can
+     change permissions on link target.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 11767: s3:utils/smbget: Fix option parsing.
+
+o  Alberto Maria Fiaschi <alberto.fiaschi@estar.toscana.it>
+   * BUG 8093: Access based share enum: handle permission set in configuration
+     files.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11702: s3:clispnego: Fix confusing warning in spnego_gen_krb5_wrap().
+   * BUG 11742: tevent: version 0.9.28: Fix memory leak when old signal action
+     restored.
+   * BUG 11755: s3:libads: setup the msDS-SupportedEncryptionTypes attribute on
+     ldap_add.
+   * BUGs 11128, 11686: CVE-2016-0771: Read of uninitialized memory DNS TXT
+     handling.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUGs 11128, 11686: CVE-2016-0771: Read of uninitialized memory DNS TXT
+     handling.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11691: winbindd: Return trust parameters when listing trusts.
+   * BUG 11753: smbd: Ignore SVHDX create context.
+   * BUG 11763: passdb: Add linefeed to debug message.
 
 
 CHANGES SINCE 4.4.0rc2
