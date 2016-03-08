@@ -93,6 +93,7 @@ static const struct {
 	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable_list, samba3_hack), false },
 	{ "TDBMutexEnabled", 0, offsetof(struct ctdb_tunable_list, mutex_enabled), false },
 	{ "LockProcessesPerDB", 200, offsetof(struct ctdb_tunable_list, lock_processes_per_db), false },
+	{ "RecBufferSizeLimit", 1000000, offsetof(struct ctdb_tunable_list, rec_buffer_size_limit), false },
 };
 
 /*

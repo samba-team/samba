@@ -619,6 +619,7 @@ struct ctdb_tunable_list {
 	uint32_t samba3_hack;
 	uint32_t mutex_enabled;
 	uint32_t lock_processes_per_db;
+	uint32_t rec_buffer_size_limit;
 };
 
 struct ctdb_tickle_list {
