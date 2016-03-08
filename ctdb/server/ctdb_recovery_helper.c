@@ -332,6 +332,95 @@ static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
 	return state.recbuf;
 }
 
+struct recdb_file_traverse_state {
+	struct ctdb_rec_buffer *recbuf;
+	struct recdb_context *recdb;
+	TALLOC_CTX *mem_ctx;
+	uint32_t dmaster;
+	uint32_t reqid;
+	bool persistent;
+	bool failed;
+	int fd;
+	int max_size;
+	int num_buffers;
+};
+
+static int recdb_file_traverse(struct tdb_context *tdb,
+			       TDB_DATA key, TDB_DATA data,
+			       void *private_data)
+{
+	struct recdb_file_traverse_state *state =
+		(struct recdb_file_traverse_state *)private_data;
+	int ret;
+
+	ret = recbuf_filter_add(state->recbuf, state->persistent,
+				state->reqid, state->dmaster, key, data);
+	if (ret != 0) {
+		state->failed = true;
+		return ret;
+	}
+
+	if (ctdb_rec_buffer_len(state->recbuf) > state->max_size) {
+		ret = ctdb_rec_buffer_write(state->recbuf, state->fd);
+		if (ret != 0) {
+			LOG("Failed to collect recovery records for %s\n",
+			    recdb_name(state->recdb));
+			state->failed = true;
+			return ret;
+		}
+
+		state->num_buffers += 1;
+
+		TALLOC_FREE(state->recbuf);
+		state->recbuf = ctdb_rec_buffer_init(state->mem_ctx,
+						     recdb_id(state->recdb));
+		if (state->recbuf == NULL) {
+			state->failed = true;
+			return ENOMEM;
+		}
+	}
+
+	return 0;
+}
+
+static int recdb_file(struct recdb_context *recdb, TALLOC_CTX *mem_ctx,
+		      uint32_t dmaster, int fd, int max_size)
+{
+	struct recdb_file_traverse_state state;
+	int ret;
+
+	state.recbuf = ctdb_rec_buffer_init(mem_ctx, recdb_id(recdb));
+	if (state.recbuf == NULL) {
+		return -1;
+	}
+	state.recdb = recdb;
+	state.mem_ctx = mem_ctx;
+	state.dmaster = dmaster;
+	state.reqid = 0;
+	state.persistent = recdb_persistent(recdb);
+	state.failed = false;
+	state.fd = fd;
+	state.max_size = max_size;
+	state.num_buffers = 0;
+
+	ret = tdb_traverse_read(recdb_tdb(recdb), recdb_file_traverse, &state);
+	if (ret == -1 || state.failed) {
+		TALLOC_FREE(state.recbuf);
+		return -1;
+	}
+
+	ret = ctdb_rec_buffer_write(state.recbuf, fd);
+	if (ret != 0) {
+		LOG("Failed to collect recovery records for %s\n",
+		    recdb_name(recdb));
+		TALLOC_FREE(state.recbuf);
+		return -1;
+	}
+	state.num_buffers += 1;
+
+	return state.num_buffers;
+}
+
 /*
  * Collect databases using highest sequence number
  */
