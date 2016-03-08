@@ -160,7 +160,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %attr(755,root,root) %{_sysconfdir}/ctdb/notify.d
 
-%doc README COPYING NEWS
+%doc README COPYING
 %doc README.eventscripts README.notify.d
 %doc doc/recovery-process.txt
 %doc doc/*.html
