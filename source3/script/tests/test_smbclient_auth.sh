@@ -21,6 +21,17 @@ ADDARGS="$*"
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 
+echo "${SERVER_IP}" | grep -q ':.*:' && {
+	# If we have an ipv6 address e.g.
+	# fd00:0000:0000:0000:0000:0000:5357:5f03
+	# we also try
+	# fd00-0000-0000-0000-0000-0000-5357-5f03.ipv6-literal.net
+	IPV6LITERAL=$(echo "${SERVER_IP}.ipv6-literal.net" | sed -e 's!:!-!g' -e 's!%!s!')
+	testit "smbclient //${IPV6LITERAL}/tmpguest" $SMBCLIENT //${IPV6LITERAL}/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -c quit $ADDARGS
+	testit "smbclient //${IPV6LITERAL}./tmpguest" $SMBCLIENT //${IPV6LITERAL}./tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -c quit $ADDARGS
+}
+testit "smbclient //${SERVER_IP}/tmpguest" $SMBCLIENT //${SERVER_IP}/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -p 139 -c quit $ADDARGS
+
 testit "smbclient //$SERVER/guestonly" $SMBCLIENT //$SERVER/guestonly $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
 testit "smbclient //$SERVER/guestonly as anon" $SMBCLIENT //$SERVER/guestonly $CONFIGURATION -U% -I $SERVER_IP -p 139 -c quit $ADDARGS
 testit "smbclient //$SERVER/tmpguest" $SMBCLIENT //$SERVER/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
