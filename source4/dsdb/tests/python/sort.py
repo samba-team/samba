@@ -273,9 +273,62 @@ class BaseSortTests(samba.tests.TestCase):
 
                     self.assertEquals(expected_order, received_order)
 
+    def _test_server_sort_different_attr(self):
+
+        def cmp_locale(a, b):
+            return locale.strcoll(a[0], b[0])
+
+        def cmp_binary(a, b):
+            return cmp(a[0], b[0])
+
+        def cmp_numeric(a, b):
+            return cmp(int(a[0]), int(b[0]))
+
+        # For testing simplicity, the attributes in here need to be
+        # unique for each user. Otherwise there are multiple possible
+        # valid answers.
+        sort_functions = {'cn': cmp_binary,
+                          "employeeNumber": cmp_locale,
+                          "accountExpires": cmp_numeric,
+                          "msTSExpireDate4":cmp_binary}
+        attrs = sort_functions.keys()
+        attr_pairs = zip(attrs, attrs[1:] + attrs[:1])
+
+        for sort_attr, result_attr in attr_pairs:
+            forward = sorted(((norm(x[sort_attr]), norm(x[result_attr]))
+                             for x in self.users),
+                             cmp=sort_functions[sort_attr])
+            reverse = list(reversed(forward))
+
+            for rev in (0, 1):
+                res = self.ldb.search(self.ou,
+                                      scope=ldb.SCOPE_ONELEVEL,
+                                      attrs=[result_attr],
+                                      controls=["server_sort:1:%d:%s" %
+                                                (rev, sort_attr)])
+                self.assertEqual(len(res), len(self.users))
+
+                expected_order = [x[1] for x in (forward, reverse)[rev]]
+                received_order = [norm(x[result_attr][0]) for x in res]
+
+                if expected_order != received_order:
+                    print sort_attr, result_attr, ['forward', 'reverse'][rev]
+                    print "expected", expected_order
+                    print "recieved", received_order
+                    print "unnormalised:", [x[result_attr][0] for x in res]
+                    print "unnormalised: «%s»" % '»  «'.join(x[result_attr][0]
+                                                             for x in res)
+                self.assertEquals(expected_order, received_order)
+                for x in res:
+                    if sort_attr in x:
+                        self.fail('the search for %s should not return %s' %
+                                  (result_attr, sort_attr))
+
 
 class SimpleSortTests(BaseSortTests):
     avoid_tricky_sort = True
+    def test_server_sort_different_attr(self):
+        self._test_server_sort_different_attr()
 
     def test_server_sort_default(self):
         self._test_server_sort_default()
@@ -295,6 +348,9 @@ class UnicodeSortTests(BaseSortTests):
 
     def test_server_sort_us_english(self):
         self._test_server_sort_us_english()
+
+    def test_server_sort_different_attr(self):
+        self._test_server_sort_different_attr()
 
 
 if "://" not in host:

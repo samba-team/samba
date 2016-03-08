@@ -56,6 +56,7 @@ struct sort_context {
 	char **referrals;
 	unsigned int num_msgs;
 	unsigned int num_refs;
+	const char *extra_sort_key;
 
 	const struct ldb_schema_attribute *a;
 	int sort_result;
@@ -162,7 +163,9 @@ static int server_sort_results(struct sort_context *ac)
 
 		ares->type = LDB_REPLY_ENTRY;
 		ares->message = talloc_move(ares, &ac->msgs[i]);
-
+		if (ac->extra_sort_key) {
+			ldb_msg_remove_attr(ares->message, ac->extra_sort_key);
+		}
 		ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -256,6 +259,9 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	struct sort_context *ac;
 	struct ldb_context *ldb;
 	int ret;
+	const char * const *attrs;
+	size_t n_attrs, i;
+	const char *sort_attr;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -303,6 +309,40 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		}
 	}
 
+	/* We are asked to sort on an attribute, and if that attribute is not
+	   already in the search attributes we need to add it (and later
+	   remove it on the return journey).
+	*/
+	sort_attr = sort_ctrls[0]->attributeName;
+	if (req->op.search.attrs == NULL) {
+		/* This means all non-operational attributes, which means
+		   there's nothing to add. */
+		attrs = NULL;
+	} else {
+		n_attrs = 0;
+		while (req->op.search.attrs[n_attrs] != NULL) {
+			if (sort_attr &&
+			    strcmp(req->op.search.attrs[n_attrs], sort_attr) == 0) {
+				sort_attr = NULL;
+			}
+			n_attrs++;
+		}
+
+		if (sort_attr == NULL) {
+			attrs = req->op.search.attrs;
+		} else {
+			const char **tmp = talloc_array(ac, const char *, n_attrs + 2);
+
+			for (i = 0; i < n_attrs; i++) {
+				tmp[i] = req->op.search.attrs[i];
+			}
+			ac->extra_sort_key = sort_attr;
+			tmp[n_attrs] = sort_attr;
+			tmp[n_attrs + 1] = NULL;
+			attrs = tmp;
+		}
+	}
+
 	ac->attributeName = sort_ctrls[0]->attributeName;
 	ac->orderingRule = sort_ctrls[0]->orderingRule;
 	ac->reverse = sort_ctrls[0]->reverse;
@@ -311,7 +351,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,
-					req->op.search.attrs,
+				        attrs,
 					req->controls,
 					ac,
 					server_sort_search_callback,
