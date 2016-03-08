@@ -73,7 +73,7 @@ import "misc.idl", "dnsp.idl";
 
 	typedef [public,gensize] struct {
 		[value(strlen(str))] uint8 len;
-		[charset(UTF8)] uint8 str[len];
+		[charset(UNIX)] uint8 str[len];
 	}
 	DNS_RPC_NAME;
 

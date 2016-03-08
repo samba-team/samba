@@ -285,7 +285,8 @@ for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
         planperltestsuite("pidl.%s" % f[:-3], os.path.normpath(os.path.join(samba4srcdir, "../pidl/tests", f)))
 
 # DNS tests
-planpythontestsuite("fl2003dc", "samba.tests.dns")
+plantestsuite_loadlist("samba.tests.dns", "fl2003dc:local", [python, os.path.join(srcdir(), "python/samba/tests/dns.py"), '$SERVER', '$SERVER_IP', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
 for t in smbtorture4_testsuites("dns_internal."):
     plansmbtorture4testsuite(t, "dc:local", '//$SERVER/whavever')
 
