@@ -1301,10 +1301,10 @@ krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 #define MAX_KEYTAB_NAME_LEN 1100
 #endif
 
-krb5_error_code smb_krb5_open_keytab(krb5_context context,
-				     const char *keytab_name_req,
-				     bool write_access,
-				     krb5_keytab *keytab)
+krb5_error_code smb_krb5_open_keytab_relative(krb5_context context,
+					      const char *keytab_name_req,
+					      bool write_access,
+					      krb5_keytab *keytab)
 {
 	krb5_error_code ret = 0;
 	TALLOC_CTX *mem_ctx;
@@ -1341,11 +1341,6 @@ krb5_error_code smb_krb5_open_keytab(krb5_context context,
 		    (strncmp(keytab_name_req, "FILE:/", 6) == 0)) {
 		    	tmp = keytab_name_req;
 			goto resolve;
-		}
-
-		if (keytab_name_req[0] != '/') {
-			ret = KRB5_KT_BADNAME;
-			goto out;
 		}
 
 		tmp = talloc_asprintf(mem_ctx, "%s:%s", pragma, keytab_name_req);
@@ -1424,6 +1419,23 @@ krb5_error_code smb_krb5_open_keytab(krb5_context context,
  out:
  	TALLOC_FREE(mem_ctx);
  	return ret;
+}
+
+krb5_error_code smb_krb5_open_keytab(krb5_context context,
+				     const char *keytab_name_req,
+				     bool write_access,
+				     krb5_keytab *keytab)
+{
+	if (keytab_name_req != NULL) {
+		if (keytab_name_req[0] != '/') {
+			return KRB5_KT_BADNAME;
+		}
+	}
+
+	return smb_krb5_open_keytab_relative(context,
+					     keytab_name_req,
+					     write_access,
+					     keytab);
 }
 
 krb5_error_code smb_krb5_keytab_name(TALLOC_CTX *mem_ctx,
