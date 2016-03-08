@@ -60,16 +60,18 @@ in the way needed by PIDL.
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 PyTypeObject *pytalloc_GetObjectType(void)
 
-Obtain a reference to the PyTypeObject for `pytalloc_Object`. The reference
-counter for the object will be incremented, so the caller will have to
-decrement it when it no longer needs it (using `Py_DECREF`).
+Obtain a pointer to the PyTypeObject for `pytalloc_Object`. The
+reference counter for the object will be NOT incremented, so the
+caller MUST NOT decrement it when it no longer needs it (eg by using
+`Py_DECREF`).
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 PyTypeObject *pytalloc_GetBaseObjectType(void)
 
-Obtain a reference to the PyTypeObject for `pytalloc_Object`. The reference
-counter for the object will be incremented, so the caller will have to
-decrement it when it no longer needs it (using `Py_DECREF`).
+Obtain a pointer to the PyTypeObject for `pytalloc_BaseObject`. The
+reference counter for the object will be NOT incremented, so the
+caller MUST NOT decrement it when it no longer needs it (eg by using
+`Py_DECREF`).
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 int pytalloc_BaseObject_PyType_Ready(PyTypeObject *type);
