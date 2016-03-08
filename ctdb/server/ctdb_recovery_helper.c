@@ -221,19 +221,11 @@ static bool recdb_add(struct recdb_context *recdb, int mypnn,
 	return true;
 }
 
-struct recdb_traverse_state {
-	struct ctdb_rec_buffer *recbuf;
-	uint32_t dmaster;
-	uint32_t reqid;
-	bool persistent;
-	bool failed;
-};
-
-static int recdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
-			  void *private_data)
+/* This function decides which records from recdb are retained */
+static int recbuf_filter_add(struct ctdb_rec_buffer *recbuf, bool persistent,
+			     uint32_t reqid, uint32_t dmaster,
+			     TDB_DATA key, TDB_DATA data)
 {
-	struct recdb_traverse_state *state =
-		(struct recdb_traverse_state *)private_data;
 	struct ctdb_ltdb_header *header;
 	int ret;
 
@@ -267,20 +259,43 @@ static int recdb_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	 * On databases like Samba's registry, this can damage the higher-level
 	 * data structures built from the various tdb-level records.
 	 */
-	if (!state->persistent &&
-	    data.dsize <= sizeof(struct ctdb_ltdb_header)) {
+	if (!persistent && data.dsize <= sizeof(struct ctdb_ltdb_header)) {
 		return 0;
 	}
 
 	/* update the dmaster field to point to us */
 	header = (struct ctdb_ltdb_header *)data.dptr;
-	if (!state->persistent) {
-		header->dmaster = state->dmaster;
+	if (!persistent) {
+		header->dmaster = dmaster;
 		header->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	}
 
-	ret = ctdb_rec_buffer_add(state->recbuf, state->recbuf, state->reqid,
-				  NULL, key, data);
+	ret = ctdb_rec_buffer_add(recbuf, recbuf, reqid, NULL, key, data);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
+
+struct recdb_records_traverse_state {
+	struct ctdb_rec_buffer *recbuf;
+	uint32_t dmaster;
+	uint32_t reqid;
+	bool persistent;
+	bool failed;
+};
+
+static int recdb_records_traverse(struct tdb_context *tdb,
+				  TDB_DATA key, TDB_DATA data,
+				  void *private_data)
+{
+	struct recdb_records_traverse_state *state =
+		(struct recdb_records_traverse_state *)private_data;
+	int ret;
+
+	ret = recbuf_filter_add(state->recbuf, state->persistent,
+				state->reqid, state->dmaster, key, data);
 	if (ret != 0) {
 		state->failed = true;
 		return ret;
@@ -293,7 +308,7 @@ static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
 					     TALLOC_CTX *mem_ctx,
 					     uint32_t dmaster)
 {
-	struct recdb_traverse_state state;
+	struct recdb_records_traverse_state state;
 	int ret;
 
 	state.recbuf = ctdb_rec_buffer_init(mem_ctx, recdb_id(recdb));
@@ -305,7 +320,8 @@ static struct ctdb_rec_buffer *recdb_records(struct recdb_context *recdb,
 	state.persistent = recdb_persistent(recdb);
 	state.failed = false;
 
-	ret = tdb_traverse_read(recdb_tdb(recdb), recdb_traverse, &state);
+	ret = tdb_traverse_read(recdb_tdb(recdb), recdb_records_traverse,
+				&state);
 	if (ret == -1 || state.failed) {
 		LOG("Failed to marshall recovery records for %s\n",
 		    recdb_name(recdb));
