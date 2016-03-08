@@ -587,25 +587,25 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 }
 
 /****************************************************************************
- Do a POSIX getfacl (UNIX extensions).
+ Do a POSIX getacl - pathname based ACL get (UNIX extensions).
 ****************************************************************************/
 
-struct getfacl_state {
+struct getacl_state {
 	uint32_t num_data;
 	uint8_t *data;
 };
 
-static void cli_posix_getfacl_done(struct tevent_req *subreq);
+static void cli_posix_getacl_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *cli_posix_getacl_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct getfacl_state *state = NULL;
+	struct getacl_state *state = NULL;
 
-	req = tevent_req_create(mem_ctx, &state, struct getfacl_state);
+	req = tevent_req_create(mem_ctx, &state, struct getacl_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -614,16 +614,16 @@ struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_posix_getfacl_done, req);
+	tevent_req_set_callback(subreq, cli_posix_getacl_done, req);
 	return req;
 }
 
-static void cli_posix_getfacl_done(struct tevent_req *subreq)
+static void cli_posix_getacl_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct getfacl_state *state = tevent_req_data(
-		req, struct getfacl_state);
+	struct getacl_state *state = tevent_req_data(
+		req, struct getacl_state);
 	NTSTATUS status;
 
 	status = cli_qpathinfo_recv(subreq, state, &state->data,
@@ -635,12 +635,12 @@ static void cli_posix_getfacl_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_posix_getfacl_recv(struct tevent_req *req,
+NTSTATUS cli_posix_getacl_recv(struct tevent_req *req,
 				TALLOC_CTX *mem_ctx,
 				size_t *prb_size,
 				char **retbuf)
 {
-	struct getfacl_state *state = tevent_req_data(req, struct getfacl_state);
+	struct getacl_state *state = tevent_req_data(req, struct getacl_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -651,7 +651,7 @@ NTSTATUS cli_posix_getfacl_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_posix_getfacl(struct cli_state *cli,
+NTSTATUS cli_posix_getacl(struct cli_state *cli,
 			const char *fname,
 			TALLOC_CTX *mem_ctx,
 			size_t *prb_size,
@@ -676,7 +676,7 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 		goto fail;
 	}
 
-	req = cli_posix_getfacl_send(frame,
+	req = cli_posix_getacl_send(frame,
 				ev,
 				cli,
 				fname);
@@ -689,7 +689,107 @@ NTSTATUS cli_posix_getfacl(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_posix_getfacl_recv(req, mem_ctx, prb_size, retbuf);
+	status = cli_posix_getacl_recv(req, mem_ctx, prb_size, retbuf);
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/****************************************************************************
+ Do a POSIX setacl - pathname based ACL set (UNIX extensions).
+****************************************************************************/
+
+struct setacl_state {
+	uint8_t *data;
+};
+
+static void cli_posix_setacl_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_posix_setacl_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					const void *data,
+					size_t num_data)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct setacl_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct setacl_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->data = talloc_memdup(state, data, num_data);
+	if (tevent_req_nomem(state->data, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_setpathinfo_send(state,
+				ev,
+				cli,
+				SMB_SET_POSIX_ACL,
+				fname,
+				state->data,
+				num_data);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_setacl_done, req);
+	return req;
+}
+
+static void cli_posix_setacl_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setpathinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_posix_setacl_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_posix_setacl(struct cli_state *cli,
+			const char *fname,
+			const void *acl_buf,
+			size_t acl_buf_size)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_OK;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_posix_setacl_send(frame,
+				ev,
+				cli,
+				fname,
+				acl_buf,
+				acl_buf_size);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+
+	status = cli_posix_setacl_recv(req);
 
  fail:
 	TALLOC_FREE(frame);

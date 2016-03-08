@@ -27,12 +27,12 @@ bld.SAMBA_SUBSYSTEM('NDR_NAMED_PIPE_AUTH',
 
 bld.SAMBA_SUBSYSTEM('NDR_DNSSERVER',
     source='gen_ndr/ndr_dnsserver.c ndr/ndr_dnsserver.c',
-    public_deps='ndr'
+    public_deps='ndr NDR_DNSP'
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_DNS',
     source='gen_ndr/ndr_dns.c ndr/ndr_dns.c',
-    public_deps='ndr'
+    public_deps='ndr NDR_DNSP'
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_DSBACKUP',
@@ -371,7 +371,7 @@ bld.SAMBA_LIBRARY('ndr-standard',
     pc_files='ndr_standard.pc',
     deps='''NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS
     NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG
-    NDR_ECHO security NDR_DNS NDR_ATSVC NDR_SPOOLSS NDR_DSSETUP
+    NDR_ECHO security NDR_DNS NDR_DNSP NDR_ATSVC NDR_SPOOLSS NDR_DSSETUP
     NDR_SERVER_ID NDR_NOTIFY''',
     public_deps='ndr',
     public_headers='gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/lsa.h gen_ndr/netlogon.h gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h',
@@ -451,11 +451,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_ATSVC',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_AUDIOSRV',
     source='gen_ndr/ndr_audiosrv_c.c',
     public_deps='NDR_AUDIOSRV dcerpc-binding'
-    )
-
-bld.SAMBA_SUBSYSTEM('RPC_NDR_DNS',
-    source='gen_ndr/ndr_dns_c.c',
-    public_deps='dcerpc-binding NDR_DNS'
     )
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ECHO',
@@ -640,11 +635,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_BACKUPKEY',
     public_deps='dcerpc-binding NDR_BACKUPKEY'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSP',
-    source='gen_ndr/ndr_dnsp_c.c',
-    public_deps='dcerpc-binding NDR_DNSP'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSSERVER',
     source='gen_ndr/ndr_dnsserver_c.c',
     public_deps='dcerpc-binding ndr-standard'
@@ -679,7 +669,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_MDSSVC',
 bld.SAMBA_LIBRARY('ndr-samba',
     source=[],
     deps='''NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT
-    NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
+    NDR_DNSSERVER NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM
     NDR_NTPRINTING NDR_FSRVP NDR_WITNESS NDR_MDSSVC NDR_OPEN_FILES NDR_SMBXSRV''',
     private_library=True,
     grouping_library=True
@@ -691,7 +681,7 @@ bld.SAMBA_LIBRARY('dcerpc-samba',
     deps='''RPC_NDR_LSA RPC_NDR_SAMR RPC_NDR_NETLOGON RPC_NDR_EVENTLOG
     RPC_NDR_DFS RPC_NDR_NTSVCS RPC_NDR_SVCCTL RPC_NDR_INITSHUTDOWN
     RPC_NDR_WKSSVC RPC_NDR_SRVSVC RPC_NDR_WINREG RPC_NDR_ECHO RPC_NDR_EPMAPPER
-    RPC_NDR_ATSVC RPC_NDR_SPOOLSS RPC_NDR_DNS''',
+    RPC_NDR_ATSVC RPC_NDR_SPOOLSS RPC_NDR_DNSSERVER''',
     public_deps='ndr-standard',
     private_library=True,
     grouping_library=True

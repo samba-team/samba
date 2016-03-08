@@ -16,6 +16,8 @@
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).UID-REGRESSION-TEST # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).SHORTNAME-TEST # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-APPEND # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-SYMLINK-ACL # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-SYMLINK-EA # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).NTTRANS-FSCTL # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).SMB2-NEGPROT # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).BAD-NBT-SESSION # Fails against the s4 ntvfs server

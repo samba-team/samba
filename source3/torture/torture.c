@@ -5816,6 +5816,380 @@ static bool run_simple_posix_open_test(int dummy)
 	return correct;
 }
 
+/*
+  Test POSIX and Windows ACLs are rejected on symlinks.
+ */
+static bool run_acl_symlink_test(int dummy)
+{
+	static struct cli_state *cli;
+	const char *fname = "posix_file";
+	const char *sname = "posix_symlink";
+	uint16_t fnum = (uint16_t)-1;
+	bool correct = false;
+	NTSTATUS status;
+	char *posix_acl = NULL;
+	size_t posix_acl_len = 0;
+	char *posix_acl_sym = NULL;
+	size_t posix_acl_len_sym = 0;
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *sd_sym = NULL;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("Starting acl symlink test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+	cli_setatr(cli, sname, 0, 0);
+	cli_posix_unlink(cli, sname);
+
+	status = cli_ntcreate(cli,
+			fname,
+			0,
+			READ_CONTROL_ACCESS,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_CREATE,
+			0x0,
+			0x0,
+			&fnum,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Get the Windows ACL on the file. */
+	status = cli_query_secdesc(cli,
+				fnum,
+				frame,
+				&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_query_secdesc failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Get the POSIX ACL on the file. */
+	status = cli_posix_getacl(cli,
+				fname,
+				frame,
+				&posix_acl_len,
+				&posix_acl);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_getacl failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed (%s)\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Now create a symlink. */
+	status = cli_posix_symlink(cli, fname, sname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed (%s)\n",
+			sname,
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Open a handle on the symlink. */
+	status = cli_ntcreate(cli,
+			sname,
+			0,
+			READ_CONTROL_ACCESS|SEC_STD_WRITE_DAC,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OPEN,
+			0x0,
+			0x0,
+			&fnum,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed (%s)\n",
+			sname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Get the Windows ACL on the symlink handle. Should fail */
+	status = cli_query_secdesc(cli,
+				fnum,
+				frame,
+				&sd_sym);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("cli_query_secdesc on a symlink gave %s. "
+			"Should be NT_STATUS_ACCESS_DENIED.\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Get the POSIX ACL on the symlink pathname. Should fail. */
+	status = cli_posix_getacl(cli,
+				sname,
+				frame,
+				&posix_acl_len_sym,
+				&posix_acl_sym);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("cli_posix_getacl on a symlink gave %s. "
+			"Should be NT_STATUS_ACCESS_DENIED.\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Set the Windows ACL on the symlink handle. Should fail */
+	status = cli_set_security_descriptor(cli,
+				fnum,
+				SECINFO_DACL,
+				sd);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("cli_query_secdesc on a symlink gave %s. "
+			"Should be NT_STATUS_ACCESS_DENIED.\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Set the POSIX ACL on the symlink pathname. Should fail. */
+	status = cli_posix_setacl(cli,
+				sname,
+				posix_acl,
+				posix_acl_len);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("cli_posix_getacl on a symlink gave %s. "
+			"Should be NT_STATUS_ACCESS_DENIED.\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	printf("ACL symlink test passed\n");
+	correct = true;
+
+  out:
+
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli, fnum);
+		fnum = (uint16_t)-1;
+	}
+
+	cli_setatr(cli, sname, 0, 0);
+	cli_posix_unlink(cli, sname);
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
+/*
+  Test setting EA's are rejected on symlinks.
+ */
+static bool run_ea_symlink_test(int dummy)
+{
+	static struct cli_state *cli;
+	const char *fname = "posix_file_ea";
+	const char *sname = "posix_symlink_ea";
+	const char *ea_name = "testea_name";
+	const char *ea_value = "testea_value";
+	uint16_t fnum = (uint16_t)-1;
+	bool correct = false;
+	NTSTATUS status;
+	size_t i, num_eas;
+	struct ea_struct *eas = NULL;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("Starting EA symlink test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+	cli_setatr(cli, sname, 0, 0);
+	cli_posix_unlink(cli, sname);
+
+	status = cli_ntcreate(cli,
+			fname,
+			0,
+			READ_CONTROL_ACCESS,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_CREATE,
+			0x0,
+			0x0,
+			&fnum,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Set an EA on the path. */
+	status = cli_set_ea_path(cli,
+				fname,
+				ea_name,
+				ea_value,
+				strlen(ea_value)+1);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_set_ea_path failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Now create a symlink. */
+	status = cli_posix_symlink(cli, fname, sname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_symlink of %s -> %s failed (%s)\n",
+			sname,
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Get the EA list on the path. Should return value set. */
+	status = cli_get_ea_list_path(cli,
+				fname,
+				frame,
+				&num_eas,
+				&eas);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_get_ea_list_path failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Ensure the EA we set is there. */
+	for (i=0; i<num_eas; i++) {
+		if (strcmp(eas[i].name, ea_name) == 0 &&
+				eas[i].value.length == strlen(ea_value)+1 &&
+				memcmp(eas[i].value.data,
+					ea_value,
+					eas[i].value.length) == 0) {
+			break;
+		}
+	}
+
+	if (i == num_eas) {
+		printf("Didn't find EA on pathname %s\n",
+			fname);
+		goto out;
+	}
+
+	num_eas = 0;
+	TALLOC_FREE(eas);
+
+	/* Get the EA list on the symlink. Should return empty list. */
+	status = cli_get_ea_list_path(cli,
+				sname,
+				frame,
+				&num_eas,
+				&eas);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_get_ea_list_path failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (num_eas != 0) {
+		printf("cli_get_ea_list_path failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Set an EA on the symlink. Should fail. */
+	status = cli_set_ea_path(cli,
+				sname,
+				ea_name,
+				ea_value,
+				strlen(ea_value)+1);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("cli_set_ea_path on a symlink gave %s. "
+			"Should be NT_STATUS_ACCESS_DENIED.\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	printf("EA symlink test passed\n");
+	correct = true;
+
+  out:
+
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli, fnum);
+		fnum = (uint16_t)-1;
+	}
+
+	cli_setatr(cli, sname, 0, 0);
+	cli_posix_unlink(cli, sname);
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
 
 static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
@@ -9643,6 +10017,8 @@ static struct {
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
 	{"POSIX-APPEND", run_posix_append, 0},
+	{"POSIX-SYMLINK-ACL", run_acl_symlink_test, 0},
+	{"POSIX-SYMLINK-EA", run_ea_symlink_test, 0},
 	{"CASE-INSENSITIVE-CREATE", run_case_insensitive_create, 0},
 	{"ASYNC-ECHO", run_async_echo, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},

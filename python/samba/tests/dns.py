@@ -16,17 +16,66 @@
 #
 
 import os
+import sys
 import struct
 import random
 import socket
 import samba.ndr as ndr
-import samba.dcerpc.dns as dns
 from samba import credentials, param
 from samba.tests import TestCase
-from samba.dcerpc import dnsp, dnsserver
+from samba.dcerpc import dns, dnsp, dnsserver
+from samba.netcmd.dns import TXTRecord, dns_record_match, data_to_dns_record
+from samba.tests.subunitrun import SubunitOptions, TestProgram
+import samba.getopt as options
+import optparse
 
+parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+
+# This timeout only has relevance when testing against Windows
+# Format errors tend to return patchy responses, so a timeout is needed.
+parser.add_option("--timeout", type="int", dest="timeout",
+                  help="Specify timeout for DNS requests")
+
+# use command line creds if available
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+subunitopts = SubunitOptions(parser)
+parser.add_option_group(subunitopts)
+
+opts, args = parser.parse_args()
+
+lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
+timeout = opts.timeout
+
+if len(args) < 2:
+    parser.print_usage()
+    sys.exit(1)
+
+server_name = args[0]
+server_ip = args[1]
+creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
+
+def make_txt_record(records):
+    rdata_txt = dns.txt_record()
+    s_list = dnsp.string_list()
+    s_list.count = len(records)
+    s_list.str = records
+    rdata_txt.txt = s_list
+    return rdata_txt
 
 class DNSTest(TestCase):
+
+    def setUp(self):
+        global server, server_ip, lp, creds
+        super(DNSTest, self).setUp()
+        self.server = server_name
+        self.server_ip = server_ip
+        self.lp = lp
+        self.creds = creds
 
     def errstr(self, errcode):
         "Return a readable error code"
@@ -83,9 +132,10 @@ class DNSTest(TestCase):
 
     def get_dns_domain(self):
         "Helper to get dns domain"
-        return os.getenv('REALM', 'example.com').lower()
+        return self.creds.get_realm().lower()
 
-    def dns_transaction_udp(self, packet, host=os.getenv('SERVER_IP'), dump=False):
+    def dns_transaction_udp(self, packet, host=server_ip,
+                            dump=False, timeout=timeout):
         "send a DNS query and read the reply"
         s = None
         try:
@@ -93,6 +143,7 @@ class DNSTest(TestCase):
             if dump:
                 print self.hexdump(send_packet)
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+            s.settimeout(timeout)
             s.connect((host, 53))
             s.send(send_packet, 0)
             recv_packet = s.recv(2048, 0)
@@ -103,7 +154,8 @@ class DNSTest(TestCase):
             if s is not None:
                 s.close()
 
-    def dns_transaction_tcp(self, packet, host=os.getenv('SERVER_IP'), dump=False):
+    def dns_transaction_tcp(self, packet, host=server_ip,
+                            dump=False, timeout=timeout):
         "send a DNS query and read the reply"
         s = None
         try:
@@ -111,6 +163,7 @@ class DNSTest(TestCase):
             if dump:
                 print self.hexdump(send_packet)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
+            s.settimeout(timeout)
             s.connect((host, 53))
             tcp_packet = struct.pack('!H', len(send_packet))
             tcp_packet += send_packet
@@ -123,6 +176,44 @@ class DNSTest(TestCase):
                 if s is not None:
                     s.close()
 
+    def make_txt_update(self, prefix, txt_array):
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        updates = []
+        r = dns.res_rec()
+        r.name = "%s.%s" % (prefix, self.get_dns_domain())
+        r.rr_type = dns.DNS_QTYPE_TXT
+        r.rr_class = dns.DNS_QCLASS_IN
+        r.ttl = 900
+        r.length = 0xffff
+        rdata = make_txt_record(txt_array)
+        r.rdata = rdata
+        updates.append(r)
+        p.nscount = len(updates)
+        p.nsrecs = updates
+
+        return p
+
+    def check_query_txt(self, prefix, txt_array):
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assertEquals(response.ancount, 1)
+        self.assertEquals(response.answers[0].rdata.txt.str, txt_array)
+
 class TestSimpleQueries(DNSTest):
 
     def test_one_a_query(self):
@@ -130,7 +221,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -141,14 +232,14 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
     def test_one_a_query_tcp(self):
         "create a query packet containing one query record via TCP"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -159,14 +250,14 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
     def test_one_mx_query(self):
         "create a query packet causing an empty RCODE_OK answer"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -180,7 +271,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "invalid-%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "invalid-%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_MX, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -196,7 +287,7 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         questions.append(q)
 
@@ -205,15 +296,22 @@ class TestSimpleQueries(DNSTest):
         questions.append(q)
 
         self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
     def test_qtype_all_query(self):
         "create a QTYPE_ALL query"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -230,7 +328,7 @@ class TestSimpleQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, num_answers)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
         if dc_ipv6 is not None:
             self.assertEquals(response.answers[1].rdata, dc_ipv6)
 
@@ -239,13 +337,20 @@ class TestSimpleQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_ALL, dns.DNS_QCLASS_NONE)
         questions.append(q)
 
         self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTIMP)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
 # Only returns an authority section entry in BIND and Win DNS
 # FIXME: Enable one Samba implements this feature
@@ -289,7 +394,7 @@ class TestDNSUpdates(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
         updates = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         u = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         updates.append(u)
 
@@ -298,8 +403,15 @@ class TestDNSUpdates(DNSTest):
         updates.append(u)
 
         self.finish_name_packet(p, updates)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
     def test_update_wrong_qclass(self):
         "create update with DNS_QCLASS_NONE"
@@ -327,7 +439,7 @@ class TestDNSUpdates(DNSTest):
 
         prereqs = []
         r = dns.res_rec()
-        r.name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.name = "%s.%s" % (self.server, self.get_dns_domain())
         r.rr_type = dns.DNS_QTYPE_TXT
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 1
@@ -337,35 +449,41 @@ class TestDNSUpdates(DNSTest):
         p.ancount = len(prereqs)
         p.answers = prereqs
 
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        try:
+            response = self.dns_transaction_udp(p)
+            self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
 
-# I'd love to test this one, but it segfaults. :)
-#    def test_update_prereq_with_non_null_length(self):
-#        "test update with a non-null length"
-#        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-#        updates = []
-#
-#        name = self.get_dns_domain()
-#
-#        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-#        updates.append(u)
-#        self.finish_name_packet(p, updates)
-#
-#        prereqs = []
-#        r = dns.res_rec()
-#        r.name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
-#        r.rr_type = dns.DNS_QTYPE_TXT
-#        r.rr_class = dns.DNS_QCLASS_ANY
-#        r.ttl = 0
-#        r.length = 1
-#        prereqs.append(r)
-#
-#        p.ancount = len(prereqs)
-#        p.answers = prereqs
-#
-#        response = self.dns_transaction_udp(p)
-#        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_FORMERR)
+    def test_update_prereq_with_non_null_length(self):
+        "test update with a non-null length"
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        updates = []
+
+        name = self.get_dns_domain()
+
+        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        updates.append(u)
+        self.finish_name_packet(p, updates)
+
+        prereqs = []
+        r = dns.res_rec()
+        r.name = "%s.%s" % (self.server, self.get_dns_domain())
+        r.rr_type = dns.DNS_QTYPE_TXT
+        r.rr_class = dns.DNS_QCLASS_ANY
+        r.ttl = 0
+        r.length = 1
+        prereqs.append(r)
+
+        p.ancount = len(prereqs)
+        p.answers = prereqs
+
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXRRSET)
 
     def test_update_prereq_nonexisting_name(self):
         "test update with a nonexisting name"
@@ -395,85 +513,11 @@ class TestDNSUpdates(DNSTest):
 
     def test_update_add_txt_record(self):
         "test adding records works"
-        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-        updates = []
-
-        name = self.get_dns_domain()
-
-        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-        updates.append(u)
-        self.finish_name_packet(p, updates)
-
-        updates = []
-        r = dns.res_rec()
-        r.name = "textrec.%s" % self.get_dns_domain()
-        r.rr_type = dns.DNS_QTYPE_TXT
-        r.rr_class = dns.DNS_QCLASS_IN
-        r.ttl = 900
-        r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
-        r.rdata = rdata
-        updates.append(r)
-        p.nscount = len(updates)
-        p.nsrecs = updates
-
+        prefix, txt = 'textrec', ['"This is a test"']
+        p = self.make_txt_update(prefix, txt)
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-
-        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
-        questions = []
-
-        name = "textrec.%s" % self.get_dns_domain()
-        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
-        questions.append(q)
-
-        self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt, '"This is a test"')
-
-    def test_update_add_two_txt_records(self):
-        "test adding two txt records works"
-        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-        updates = []
-
-        name = self.get_dns_domain()
-
-        u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-        updates.append(u)
-        self.finish_name_packet(p, updates)
-
-        updates = []
-        r = dns.res_rec()
-        r.name = "textrec2.%s" % self.get_dns_domain()
-        r.rr_type = dns.DNS_QTYPE_TXT
-        r.rr_class = dns.DNS_QCLASS_IN
-        r.ttl = 900
-        r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test" "and this is a test, too"'
-        r.rdata = rdata
-        updates.append(r)
-        p.nscount = len(updates)
-        p.nsrecs = updates
-
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-
-        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
-        questions = []
-
-        name = "textrec2.%s" % self.get_dns_domain()
-        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
-        questions.append(q)
-
-        self.finish_name_packet(p, questions)
-        response = self.dns_transaction_udp(p)
-        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt, '"This is a test" "and this is a test, too"')
+        self.check_query_txt(prefix, txt)
 
     def test_delete_record(self):
         "Test if deleting records works"
@@ -497,8 +541,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -534,8 +577,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -577,8 +619,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -614,8 +655,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -652,8 +692,7 @@ class TestDNSUpdates(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        rdata = dns.txt_record()
-        rdata.txt = '"This is a test"'
+        rdata = make_txt_record(['"This is a test"'])
         r.rdata = rdata
         updates.append(r)
         p.nscount = len(updates)
@@ -738,7 +777,7 @@ class TestComplexQueries(DNSTest):
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        r.rdata = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -764,7 +803,7 @@ class TestComplexQueries(DNSTest):
         r.rr_class = dns.DNS_QCLASS_NONE
         r.ttl = 0
         r.length = 0xffff
-        r.rdata = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
         updates.append(r)
         p.nscount = len(updates)
         p.nsrecs = updates
@@ -789,10 +828,10 @@ class TestComplexQueries(DNSTest):
         self.assertEquals(response.ancount, 2)
         self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
         self.assertEquals(response.answers[0].rdata, "%s.%s" %
-                          (os.getenv('SERVER'), self.get_dns_domain()))
+                          (self.server, self.get_dns_domain()))
         self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
         self.assertEquals(response.answers[1].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
 class TestInvalidQueries(DNSTest):
 
@@ -802,7 +841,7 @@ class TestInvalidQueries(DNSTest):
         s = None
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-            s.connect((os.getenv('SERVER_IP'), 53))
+            s.connect((self.server_ip, 53))
             s.send("", 0)
         finally:
             if s is not None:
@@ -811,7 +850,7 @@ class TestInvalidQueries(DNSTest):
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
 
-        name = "%s.%s" % (os.getenv('SERVER'), self.get_dns_domain())
+        name = "%s.%s" % (self.server, self.get_dns_domain())
         q = self.make_name_question(name, dns.DNS_QTYPE_A, dns.DNS_QCLASS_IN)
         print "asking for ", q.name
         questions.append(q)
@@ -822,10 +861,11 @@ class TestInvalidQueries(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 1)
         self.assertEquals(response.answers[0].rdata,
-                          os.getenv('SERVER_IP'))
+                          self.server_ip)
 
     def test_one_a_reply(self):
         "send a reply instead of a query"
+        global timeout
 
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
         questions = []
@@ -841,37 +881,29 @@ class TestInvalidQueries(DNSTest):
         try:
             send_packet = ndr.ndr_pack(p)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
-            host=os.getenv('SERVER_IP')
+            s.settimeout(timeout)
+            host=self.server_ip
             s.connect((host, 53))
             tcp_packet = struct.pack('!H', len(send_packet))
             tcp_packet += send_packet
             s.send(tcp_packet, 0)
             recv_packet = s.recv(0xffff + 2, 0)
             self.assertEquals(0, len(recv_packet))
+        except socket.timeout:
+            # Windows chooses not to respond to incorrectly formatted queries.
+            # Although this appears to be non-deterministic even for the same
+            # request twice, it also appears to be based on a how poorly the
+            # request is formatted.
+            pass
         finally:
             if s is not None:
                 s.close()
 
 class TestZones(DNSTest):
-    def get_loadparm(self):
-        lp = param.LoadParm()
-        lp.load(os.getenv("SMB_CONF_PATH"))
-        return lp
-
-    def get_credentials(self, lp):
-        creds = credentials.Credentials()
-        creds.guess(lp)
-        creds.set_machine_account(lp)
-        creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
-        return creds
-
     def setUp(self):
         super(TestZones, self).setUp()
-        self.lp = self.get_loadparm()
-        self.creds = self.get_credentials(self.lp)
-        self.server = os.getenv("SERVER_IP")
         self.zone = "test.lan"
-        self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s" % (self.server),
+        self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server_ip),
                                             self.lp, self.creds)
 
     def tearDown(self):
@@ -891,7 +923,7 @@ class TestZones(DNSTest):
         zone_create.dwDpFlags = dnsserver.DNS_DP_DOMAIN_DEFAULT
         self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                        0,
-                                       self.server,
+                                       self.server_ip,
                                        None,
                                        0,
                                        'ZoneCreate',
@@ -901,7 +933,7 @@ class TestZones(DNSTest):
     def delete_zone(self, zone):
         self.rpc_conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                        0,
-                                       self.server,
+                                       self.server_ip,
                                        zone,
                                        0,
                                        'DeleteZoneFromDs',
@@ -918,6 +950,7 @@ class TestZones(DNSTest):
         self.finish_name_packet(p, questions)
 
         response = self.dns_transaction_udp(p)
+        # Windows returns OK while BIND logically seems to return NXDOMAIN
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 0)
@@ -935,8 +968,293 @@ class TestZones(DNSTest):
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
         self.assertEquals(response.ancount, 0)
 
+class TestRPCRoundtrip(DNSTest):
+    def setUp(self):
+        super(TestRPCRoundtrip, self).setUp()
+        self.rpc_conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server_ip),
+                                            self.lp, self.creds)
 
+    def tearDown(self):
+        super(TestRPCRoundtrip, self).tearDown()
 
-if __name__ == "__main__":
-    import unittest
-    unittest.main()
+    def test_update_add_txt_rpc_to_dns(self):
+        prefix, txt = 'rpctextrec', ['"This is a test"']
+
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"\\"This is a test\\""')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+    def test_update_add_null_padded_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'pad1textrec', ['"This is a test"', '', '']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"\\"This is a test\\"" "" ""'))
+
+        prefix, txt = 'pad2textrec', ['"This is a test"', '', '', 'more text']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"\\"This is a test\\"" "" "" "more text"'))
+
+        prefix, txt = 'pad3textrec', ['', '', '"This is a test"']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"" "" "\\"This is a test\\""'))
+
+    def test_update_add_padding_rpc_to_dns(self):
+        prefix, txt = 'pad1textrec', ['"This is a test"', '', '']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"\\"This is a test\\"" "" ""')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+        prefix, txt = 'pad2textrec', ['"This is a test"', '', '', 'more text']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"\\"This is a test\\"" "" "" "more text"')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+        prefix, txt = 'pad3textrec', ['', '', '"This is a test"']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"" "" "\\"This is a test\\""')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+    # Test is incomplete due to strlen against txt records
+    def test_update_add_null_char_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'nulltextrec', ['NULL\x00BYTE']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, ['NULL'])
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"NULL"'))
+
+        prefix, txt = 'nulltextrec2', ['NULL\x00BYTE', 'NULL\x00BYTE']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, ['NULL', 'NULL'])
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"NULL" "NULL"'))
+
+    def test_update_add_null_char_rpc_to_dns(self):
+        prefix, txt = 'nulltextrec', ['NULL\x00BYTE']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"NULL"')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, ['NULL'])
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+    def test_update_add_hex_char_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'hextextrec', ['HIGH\xFFBYTE']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"HIGH\xFFBYTE"'))
+
+    def test_update_add_hex_rpc_to_dns(self):
+        prefix, txt = 'hextextrec', ['HIGH\xFFBYTE']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"HIGH\xFFBYTE"')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+    def test_update_add_slash_txt_record(self):
+        "test adding records works"
+        prefix, txt = 'slashtextrec', ['Th\\=is=is a test']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"Th\\\\=is=is a test"'))
+
+    # This test fails against Windows as it eliminates slashes in RPC
+    # One typical use for a slash is in records like 'var=value' to
+    # escape '=' characters.
+    def test_update_add_slash_rpc_to_dns(self):
+        prefix, txt = 'slashtextrec', ['Th\\=is=is a test']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '"Th\\\\=is=is a test"')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+    def test_update_add_two_txt_records(self):
+        "test adding two txt records works"
+        prefix, txt = 'textrec2', ['"This is a test"',
+                                   '"and this is a test, too"']
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, '"\\"This is a test\\""' +
+                             ' "\\"and this is a test, too\\""'))
+
+    def test_update_add_two_rpc_to_dns(self):
+        prefix, txt = 'textrec2', ['"This is a test"',
+                                   '"and this is a test, too"']
+        prefix = 'rpc' + prefix
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT,
+                                '"\\"This is a test\\""' +
+                                ' "\\"and this is a test, too\\""')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+    def test_update_add_empty_txt_records(self):
+        "test adding two txt records works"
+        prefix, txt = 'emptytextrec', []
+        p = self.make_txt_update(prefix, txt)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.check_query_txt(prefix, txt)
+        self.assertIsNotNone(dns_record_match(self.rpc_conn, self.server_ip,
+                             self.get_dns_domain(),
+                             "%s.%s" % (prefix, self.get_dns_domain()),
+                             dnsp.DNS_TYPE_TXT, ''))
+
+    def test_update_add_empty_rpc_to_dns(self):
+        prefix, txt = 'rpcemptytextrec', []
+
+        name = "%s.%s" % (prefix, self.get_dns_domain())
+
+        rec = data_to_dns_record(dnsp.DNS_TYPE_TXT, '')
+        add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
+        add_rec_buf.rec = rec
+        try:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                     0, self.server_ip, self.get_dns_domain(),
+                                     name, add_rec_buf, None)
+
+            self.check_query_txt(prefix, txt)
+        finally:
+            self.rpc_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                              0, self.server_ip, self.get_dns_domain(),
+                                              name, None, add_rec_buf)
+
+TestProgram(module=__name__, opts=subunitopts)

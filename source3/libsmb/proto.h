@@ -252,19 +252,30 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 			const char *newname);
 uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
-struct tevent_req *cli_posix_getfacl_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *cli_posix_getacl_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname);
-NTSTATUS cli_posix_getfacl_recv(struct tevent_req *req,
+NTSTATUS cli_posix_getacl_recv(struct tevent_req *req,
 				TALLOC_CTX *mem_ctx,
 				size_t *prb_size,
 				char **retbuf);
-NTSTATUS cli_posix_getfacl(struct cli_state *cli,
+NTSTATUS cli_posix_getacl(struct cli_state *cli,
 			const char *fname,
 			TALLOC_CTX *mem_ctx,
 			size_t *prb_size,
 			char **retbuf);
+struct tevent_req *cli_posix_setacl_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					const char *fname,
+					const void *acl_buf,
+					size_t acl_buf_size);
+NTSTATUS cli_posix_setacl_recv(struct tevent_req *req);
+NTSTATUS cli_posix_setacl(struct cli_state *cli,
+			const char *fname,
+			const void *acl_buf,
+			size_t acl_buf_size);
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,

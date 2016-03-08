@@ -222,3 +222,27 @@ enum ndr_err_code ndr_push_dnsp_string_list(struct ndr_push *ndr, int ndr_flags,
 	}
 	return NDR_ERR_SUCCESS;
 }
+
+enum ndr_err_code ndr_dnsp_string_list_copy(TALLOC_CTX *mem_ctx,
+					    const struct dnsp_string_list *src,
+					    struct dnsp_string_list *dst)
+{
+	size_t i;
+
+	dst->count = 0;
+	dst->str = talloc_zero_array(mem_ctx, const char *, src->count);
+	if (dst->str == NULL) {
+		return NDR_ERR_ALLOC;
+	}
+
+	for (i = 0; i < src->count; i++) {
+		dst->str[i] = talloc_strdup(dst->str, src->str[i]);
+		if (dst->str[i] == NULL) {
+			TALLOC_FREE(dst->str);
+			return NDR_ERR_ALLOC;
+		}
+	}
+
+	dst->count = src->count;
+	return NDR_ERR_SUCCESS;
+}
