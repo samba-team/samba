@@ -294,3 +294,8 @@
 # we can watch for set methods on.
 #
 ^samba.tests.dcerpc.integer.samba.tests.dcerpc.integer.IntegerTests.test_.*_into_uint8_list
+#
+# Samba sort takes a primative approach to unicode sort. These tests
+# match Windows 2012R2 behaviour.
+#
+^samba4.ldap.sort.python.+UnicodeSortTests
