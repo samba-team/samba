@@ -8,7 +8,7 @@
    encoding if it doesn't work out
 */
 
-import "misc.idl";
+import "misc.idl", "dnsp.idl";
 [
 	helper("librpc/ndr/ndr_dns.h"),
 	helpstring("DNS records"),
@@ -152,20 +152,12 @@ interface dns
 	} dns_soa_record;
 
 	typedef [public] struct {
-		[value(strlen(cpu))] uint8 cpu_length;
-		[charset(DOS)] uint8 cpu[cpu_length];
-		[value(strlen(os))] uint8 os_length;
-		[charset(DOS)] uint8 os[os_length];
-	} dns_hinfo_record;
-
-	typedef [public] struct {
 		uint16     preference;
 		dns_string exchange;
 	} dns_mx_record;
 
-	typedef [public] struct {
-		[value(strlen(txt))] uint8 length;
-		[charset(DOS)] uint8 txt[length];
+	typedef [public,nopull] struct {
+		dnsp_string_list txt;
 	} dns_txt_record;
 
 	typedef [public] struct {
@@ -232,7 +224,7 @@ interface dns
 		[case(DNS_QTYPE_CNAME)] dns_string       cname_record;
 		[case(DNS_QTYPE_SOA)]   dns_soa_record   soa_record;
 		[case(DNS_QTYPE_PTR)]   dns_string       ptr_record;
-		[case(DNS_QTYPE_HINFO)] dns_hinfo_record  hinfo_record;
+		[case(DNS_QTYPE_HINFO)] dnsp_hinfo       hinfo_record;
 		[case(DNS_QTYPE_MX)]    dns_mx_record    mx_record;
 		[case(DNS_QTYPE_TXT)]	dns_txt_record   txt_record;
 		[case(DNS_QTYPE_RP)]	dns_rp_record    rp_record;
@@ -270,7 +262,7 @@ interface dns
         /*
 	   this is a convenience hook for ndrdump
 	*/
-	void decode_dns_name_packet(
+	[nopython] void decode_dns_name_packet(
 				    [in] dns_name_packet packet
 				   );
 }
