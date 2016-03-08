@@ -801,40 +801,55 @@ LVS: NO
 	<screen>
 # ctdb statistics
 CTDB version 1
-num_clients                        3
-frozen                             0
-recovering                         0
-client_packets_sent           360489
-client_packets_recv           360466
-node_packets_sent             480931
-node_packets_recv             240120
-keepalive_packets_sent             4
-keepalive_packets_recv             3
-node
-req_call                       2
-reply_call                     2
-req_dmaster                    0
-reply_dmaster                  0
-reply_error                    0
-req_message                   42
-req_control               120408
-reply_control             360439
-client
-req_call                       2
-req_message                   24
-req_control               360440
-timeouts
-call                           0
-control                        0
-traverse                       0
-total_calls                        2
-pending_calls                      0
-lockwait_calls                     0
-pending_lockwait_calls             0
-memory_used                     5040
-max_hop_count                      0
-max_call_latency                   4.948321 sec
-max_lockwait_latency               0.000000 sec
+Current time of statistics  :                Tue Mar  8 15:18:51 2016
+Statistics collected since  : (003 21:31:32) Fri Mar  4 17:47:19 2016
+ num_clients                        9
+ frozen                             0
+ recovering                         0
+ num_recoveries                     2
+ client_packets_sent          8170534
+ client_packets_recv          7166132
+ node_packets_sent           16549998
+ node_packets_recv            5244418
+ keepalive_packets_sent        201969
+ keepalive_packets_recv        201969
+ node
+     req_call                      26
+     reply_call                     0
+     req_dmaster                    9
+     reply_dmaster                 12
+     reply_error                    0
+     req_message              1339231
+     req_control              8177506
+     reply_control            6831284
+ client
+     req_call                      15
+     req_message               334809
+     req_control              6831308
+ timeouts
+     call                           0
+     control                        0
+     traverse                       0
+ locks
+     num_calls                      8
+     num_current                    0
+     num_pending                    0
+     num_failed                     0
+ total_calls                       15
+ pending_calls                      0
+ childwrite_calls                   0
+ pending_childwrite_calls             0
+ memory_used                   394879
+ max_hop_count                      1
+ total_ro_delegations               0
+ total_ro_revokes                   0
+ hop_count_buckets: 8 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+ lock_buckets: 0 0 8 0 0 0 0 0 0 0 0 0 0 0 0 0
+ locks_latency      MIN/AVG/MAX     0.010005/0.010418/0.011010 sec out of 8
+ reclock_ctdbd      MIN/AVG/MAX     0.002538/0.002538/0.002538 sec out of 1
+ reclock_recd       MIN/AVG/MAX     0.000000/0.000000/0.000000 sec out of 0
+ call_latency       MIN/AVG/MAX     0.000044/0.002142/0.011702 sec out of 15
+ childwrite_latency MIN/AVG/MAX     0.000000/0.000000/0.000000 sec out of 0
 	</screen>
       </refsect3>
     </refsect2>
@@ -872,6 +887,7 @@ DB Statistics: locking.tdb
  hop_count_buckets: 28087 2 1 0 0 0 0 0 0 0 0 0 0 0 0 0
  lock_buckets: 0 14188 38 76 32 19 3 0 0 0 0 0 0 0 0 0
  locks_latency      MIN/AVG/MAX     0.001066/0.012686/4.202292 sec out of 14356
+ vacuum_latency     MIN/AVG/MAX     0.000472/0.002207/15.243570 sec out of 224530
  Num Hot Keys:     1
      Count:8 Key:ff5bd7cb3ee3822edc1f0000000000000000000000000000
 	</screen>
