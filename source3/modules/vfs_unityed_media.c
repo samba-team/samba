@@ -1510,6 +1510,7 @@ static NTSTATUS um_streaminfo(struct vfs_handle_struct *handle,
 				smb_fname,
 				&client_fname);
 	if (ret != 0) {
+		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
 
