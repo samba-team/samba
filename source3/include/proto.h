@@ -1152,6 +1152,10 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_invalid_windows_ea_name(const char *name);
 bool ea_list_has_invalid_name(struct ea_list *ea_list);
+bool split_stream_filename(TALLOC_CTX *ctx,
+			const char *filename_in,
+			char **filename_out,
+			char **streamname_out);
 
 /* The following definitions come from lib/dummyroot.c */
 

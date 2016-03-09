@@ -280,3 +280,45 @@ bool ea_list_has_invalid_name(struct ea_list *ea_list)
 	}
 	return false;
 }
+
+/****************************************************************************
+ Split an incoming name into tallocd filename and stream components.
+ Returns true on success, false on out of memory.
+****************************************************************************/
+
+bool split_stream_filename(TALLOC_CTX *ctx,
+				const char *filename_in,
+				char **filename_out,
+				char **streamname_out)
+{
+	const char *stream_name = NULL;
+	char *stream_out = NULL;
+	char *file_out = NULL;
+
+	stream_name = strchr_m(filename_in, ':');
+
+	if (stream_name) {
+		stream_out = talloc_strdup(ctx, stream_name);
+		if (stream_out == NULL) {
+			return false;
+		}
+		file_out = talloc_strndup(ctx,
+					filename_in,
+					PTR_DIFF(stream_name, filename_in));
+	} else {
+		file_out = talloc_strdup(ctx, filename_in);
+	}
+
+	if (file_out == NULL) {
+		TALLOC_FREE(stream_out);
+		return false;
+	}
+
+	if (filename_out) {
+		*filename_out = file_out;
+	}
+	if (streamname_out) {
+		*streamname_out = stream_out;
+	}
+	return true;
+}
