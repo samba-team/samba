@@ -764,7 +764,7 @@ build_logon_name(krb5_context context,
 
 	s2_len = (ucs2_len + 1) * 2;
 	s2 = malloc(s2_len);
-	if (ucs2 == NULL) {
+	if (s2 == NULL) {
 	    free(ucs2);
 	    return krb5_enomem(context);
 	}
