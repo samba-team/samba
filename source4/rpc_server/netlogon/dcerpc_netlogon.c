@@ -128,6 +128,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(dce_call->conn->dce_ctx->lp_ctx);
 	bool reject_des_client = !allow_nt4_crypto;
 	bool reject_md5_client = lpcfg_reject_md5_clients(dce_call->conn->dce_ctx->lp_ctx);
+	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
+	bool reject_none_rpc = (schannel == true);
 
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
@@ -200,6 +202,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
 
+	if (negotiate_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
+		reject_none_rpc = false;
+	}
+
 	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		reject_des_client = false;
 	}
@@ -235,6 +241,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	 * call fails with access denied!
 	 */
 	*r->out.negotiate_flags = negotiate_flags;
+
+	if (reject_none_rpc) {
+		/* schannel must be used, but client did not offer it. */
+		DEBUG(0,("%s: schannel required but client failed "
+			"to offer it. Client was %s\n",
+			__func__, r->in.account_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_WKSTA:
@@ -551,7 +565,8 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 {
 	NTSTATUS nt_status;
 	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
-	bool schannel_global_required = false; /* Should be lpcfg_schannel_server() == true */
+	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
+	bool schannel_global_required = (schannel == true);
 
 	if (schannel_global_required) {
 		nt_status = schannel_check_required(auth_info,
