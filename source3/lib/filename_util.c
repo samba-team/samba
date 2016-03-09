@@ -70,35 +70,33 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * XXX: This is temporary and there should be no callers of this once
- * smb_filename is plumbed through all path based operations.
+ * There are a few legitimate users of this.
  */
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 					       const char *fname,
 					       const SMB_STRUCT_STAT *psbuf)
 {
-	const char *stream_name = NULL;
+	char *stream_name = NULL;
 	char *base_name = NULL;
 	struct smb_filename *ret;
+	bool ok;
 
-	if (!lp_posix_pathnames()) {
-		stream_name = strchr_m(fname, ':');
+	if (lp_posix_pathnames()) {
+		/* No stream name looked for. */
+		return synthetic_smb_fname(ctx, fname, NULL, psbuf);
 	}
 
-	/* Setup the base_name/stream_name. */
-	if (stream_name) {
-		base_name = talloc_strndup(ctx, fname,
-					   PTR_DIFF(stream_name, fname));
-	} else {
-		base_name = talloc_strdup(ctx, fname);
-	}
-
-	if (!base_name) {
+	ok = split_stream_filename(ctx,
+				fname,
+				&base_name,
+				&stream_name);
+	if (!ok) {
 		return NULL;
 	}
 
 	ret = synthetic_smb_fname(ctx, base_name, stream_name, psbuf);
 	TALLOC_FREE(base_name);
+	TALLOC_FREE(stream_name);
 	return ret;
 }
 
