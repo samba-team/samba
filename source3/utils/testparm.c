@@ -345,7 +345,11 @@ static void do_per_share_checks(int s)
 {
 	const char **deny_list = lp_hosts_deny(s);
 	const char **allow_list = lp_hosts_allow(s);
+	const char **vfs_objects = NULL;
 	int i;
+	static bool uses_fruit;
+	static bool doesnt_use_fruit;
+	static bool fruit_mix_warned;
 
 	if(deny_list) {
 		for (i=0; deny_list[i]; i++) {
@@ -425,6 +429,26 @@ static void do_per_share_checks(int s)
 			"Warning: Service %s defines a print command, but "
 			"parameter is ignored when using CUPS libraries.\n\n",
 			lp_servicename(talloc_tos(), s));
+	}
+
+	vfs_objects = lp_vfs_objects(s);
+	if (vfs_objects && str_list_check(vfs_objects, "fruit")) {
+		uses_fruit = true;
+		if (!lp_ea_support(s) && !lp_ea_support(-1)) {
+			fprintf(stderr,
+				"ERROR: Service \"%s\" uses vfs_fruit, but "
+				"that requires \"ea support = yes\".\n\n",
+				lp_servicename(talloc_tos(), s));
+		}
+	} else {
+		doesnt_use_fruit = true;
+	}
+
+	if (uses_fruit && doesnt_use_fruit && !fruit_mix_warned) {
+		fruit_mix_warned = true;
+		fprintf(stderr,
+			"WARNING: some services use vfs_fruit, others don't. Mounting them "
+			"in conjunction on OS X clients results in undefined behaviour.\n\n");
 	}
 }
 
