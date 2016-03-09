@@ -468,7 +468,8 @@ static NTSTATUS smbXsrv_open_local_lookup(struct smbXsrv_open_table *table,
 				     &state);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		return NT_STATUS_FILE_CLOSED;
-	} else if (!NT_STATUS_IS_OK(status)) {
+	}
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	if (!NT_STATUS_IS_OK(state.status)) {
