@@ -606,7 +606,7 @@ int main(int argc, const char ** argv)
 	gensec_init();
 	dump_args();
 
-	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("ibs") == 0) {
+	if (check_arg_numeric("ibs") == 0 || check_arg_numeric("obs") == 0) {
 		fprintf(stderr, "%s: block sizes must be greater that zero\n",
 				PROGNAME);
 		exit(SYNTAX_EXIT_CODE);
