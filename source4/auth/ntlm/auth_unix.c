@@ -329,7 +329,7 @@ static NTSTATUS smb_pam_auth(pam_handle_t *pamh, bool allow_null_passwords, cons
 	
 	DEBUG(4,("smb_pam_auth: PAM: Authenticate User: %s\n", user));
 
-	pam_error = pam_authenticate(pamh, PAM_SILENT | allow_null_passwords ? 0 : PAM_DISALLOW_NULL_AUTHTOK);
+	pam_error = pam_authenticate(pamh, PAM_SILENT | (allow_null_passwords ? 0 : PAM_DISALLOW_NULL_AUTHTOK));
 	switch( pam_error ){
 		case PAM_AUTH_ERR:
 			DEBUG(2, ("smb_pam_auth: PAM: Authentication Error for user %s\n", user));
