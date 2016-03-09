@@ -555,7 +555,7 @@ uid_t get_uid_from_request(struct winbindd_request *request)
 
 	uid = request->data.auth.uid;
 
-	if (uid < 0) {
+	if (uid == (uid_t)-1) {
 		DEBUG(1,("invalid uid: '%u'\n", (unsigned int)uid));
 		return -1;
 	}
@@ -2311,7 +2311,7 @@ enum winbindd_result winbindd_dual_pam_logoff(struct winbindd_domain *domain,
 
 #ifdef HAVE_KRB5
 
-	if (state->request->data.logoff.uid < 0) {
+	if (state->request->data.logoff.uid == (uid_t)-1) {
 		DEBUG(0,("winbindd_pam_logoff: invalid uid\n"));
 		goto process_result;
 	}

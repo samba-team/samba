@@ -503,7 +503,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 	NTSTATUS ntret;
 
 	if ((username == NULL && princ_name == NULL) ||
-	    ccname == NULL || uid < 0) {
+	    ccname == NULL || uid == (uid_t)-1) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
