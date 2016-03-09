@@ -165,9 +165,13 @@ nfs_check_thread_count ()
     # nfsd should be running the configured number of threads.  If
     # there are a different number of threads then tell nfsd the
     # correct number.
-    read _running_threads <"$_threads_file"
+    read _running_threads <"$_threads_file" || {
+	    echo "WARNING: Reading \"${_threads_file}\" unexpectedly failed"
+	    exit 0
+    }
+
     # Intentionally not arithmetic comparison - avoids extra errors
-    # when above fails...
+    # when above read fails in an unexpected way...
     if [ "$_running_threads" != "$_configured_threads" ] ; then
 	echo "Attempting to correct number of nfsd threads from ${_running_threads} to ${_configured_threads}"
 	echo "$_configured_threads" >"$_threads_file"
