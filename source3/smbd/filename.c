@@ -1423,11 +1423,11 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		ZERO_STRUCT(st);
 		st.st_ex_nlink = 1;
 		*pp_smb_fname = synthetic_smb_fname_split(ctx,
-							  name_in,
-							  &st);
+							  name_in);
 		if (*pp_smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		(*pp_smb_fname)->st = st;
 		return NT_STATUS_OK;
 	}
 

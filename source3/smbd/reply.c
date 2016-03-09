@@ -6645,7 +6645,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 * component of the destination.
 		 */
 		smb_fname_orig_lcomp = synthetic_smb_fname_split(
-			ctx, smb_fname_dst->original_lcomp, NULL);
+			ctx, smb_fname_dst->original_lcomp);
 		if (smb_fname_orig_lcomp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			TALLOC_FREE(fname_dst_lcomp_base_mod);
