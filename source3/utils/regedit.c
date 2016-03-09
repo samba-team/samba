@@ -748,7 +748,7 @@ static void display_window(TALLOC_CTX *mem_ctx, struct registry_context *ctx)
 		handle_main_input(regedit, key);
 		update_panels();
 		doupdate();
-	} while (key != 'q' || key == 'Q');
+	} while (key != 'q' && key != 'Q');
 
 	endwin();
 }
