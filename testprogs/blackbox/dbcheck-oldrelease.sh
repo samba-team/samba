@@ -231,7 +231,7 @@ dbcheck_after_dup() {
 check_expected_after_dup_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-otherphone-after-dbcheck.ldif.tmp
-	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator -s base -b cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp otherHomePhone --sorted --show-binary | sort > $tmpldif
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator -s base -b cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp otherHomePhone --sorted --show-binary | grep -v \# | sort > $tmpldif
 	diff $tmpldif $release_dir/expected-otherphone-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
