@@ -136,7 +136,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	struct security_descriptor **ppdesc, struct SMB4ACL_T *theacl);
 
 NTSTATUS smb_get_nt_acl_nfs4(connection_struct *conn,
-	const char *name,
+	const struct smb_filename *smb_fname,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc, struct SMB4ACL_T *theacl);

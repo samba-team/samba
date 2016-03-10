@@ -213,7 +213,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 		return NT_STATUS_ACCESS_DENIED;
 
 	return smb_get_nt_acl_nfs4(handle->conn,
-				smb_fname->base_name,
+				smb_fname,
 				security_info,
 				mem_ctx,
 				ppdesc,

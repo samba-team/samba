@@ -557,7 +557,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 }
 
 NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
-			     const char *name,
+			     const struct smb_filename *smb_fname,
 			     uint32_t security_info,
 			     TALLOC_CTX *mem_ctx,
 			     struct security_descriptor **ppdesc,
@@ -566,9 +566,10 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 	SMB_STRUCT_STAT sbuf;
 	smbacl4_vfs_params params;
 
-	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n", name));
+	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n",
+		smb_fname->base_name));
 
-	if (smbacl4_GetFileOwner(conn, name, &sbuf)) {
+	if (smbacl4_GetFileOwner(conn, smb_fname->base_name, &sbuf)) {
 		return map_nt_error_from_unix(errno);
 	}
 

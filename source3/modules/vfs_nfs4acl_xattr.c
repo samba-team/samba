@@ -560,7 +560,7 @@ static NTSTATUS nfs4acl_xattr_get_nt_acl(struct vfs_handle_struct *handle,
 		return status;
 	}
 
-	status = smb_get_nt_acl_nfs4(handle->conn, name, security_info,
+	status = smb_get_nt_acl_nfs4(handle->conn, smb_fname, security_info,
 				     mem_ctx, ppdesc,
 				     pacl);
 	TALLOC_FREE(frame);
