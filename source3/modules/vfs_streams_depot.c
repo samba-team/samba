@@ -123,7 +123,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	struct file_id id;
 	uint8_t id_buf[16];
 	bool check_valid;
-	const char *rootdir;
+	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
 
@@ -137,9 +137,13 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	rootdir = lp_parm_const_string(
+	rootdir = lp_parm_talloc_string(talloc_tos(),
 		SNUM(handle->conn), "streams_depot", "directory",
 		tmp);
+	if (rootdir == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
 
 	rootdir_fname = synthetic_smb_fname(talloc_tos(),
 					rootdir,
@@ -329,12 +333,14 @@ static char *stream_dir(vfs_handle_struct *handle,
 	}
 
 	TALLOC_FREE(rootdir_fname);
+	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
 	TALLOC_FREE(smb_fname_hash);
 	return result;
 
  fail:
 	TALLOC_FREE(rootdir_fname);
+	TALLOC_FREE(rootdir);
 	TALLOC_FREE(tmp_fname);
 	TALLOC_FREE(smb_fname_hash);
 	TALLOC_FREE(result);
