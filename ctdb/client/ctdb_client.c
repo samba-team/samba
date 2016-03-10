@@ -4320,7 +4320,7 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 	}
 
 again:
-	timeout = timeval_current_ofs(3,0);
+	timeout = timeval_current_ofs(30,0);
 	ret = ctdb_control(h->ctdb_db->ctdb, CTDB_CURRENT_NODE,
 			   h->ctdb_db->db_id,
 			   CTDB_CONTROL_TRANS3_COMMIT, 0,
