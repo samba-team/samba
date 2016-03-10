@@ -1101,8 +1101,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	struct ndr_pull *pull;
 	NTSTATUS status;
 	struct dcesrv_connection_context *context;
-	uint32_t auth_type = DCERPC_AUTH_TYPE_NONE;
-	uint32_t auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	/* if authenticated, and the mech we use can't do async replies, don't use them... */
 	if (call->conn->auth_state.gensec_security && 
@@ -1115,12 +1113,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
 	}
 
-	if (call->conn->auth_state.auth_info != NULL) {
-		auth_type = call->conn->auth_state.auth_info->auth_type;
-		auth_level = call->conn->auth_state.auth_info->auth_level;
-	}
-
-	switch (auth_level) {
+	switch (call->conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -1136,7 +1129,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 				  "to [%s] with auth[type=0x%x,level=0x%x] "
 				  "on [%s] from [%s]\n",
 				  __func__, context->iface->name,
-				  auth_type, auth_level,
+				  call->conn->auth_state.auth_type,
+				  call->conn->auth_state.auth_level,
 				  derpc_transport_string_by_transport(transport),
 				  addr));
 			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
@@ -1144,7 +1138,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		break;
 	}
 
-	if (auth_level < context->min_auth_level) {
+	if (call->conn->auth_state.auth_level < context->min_auth_level) {
 		char *addr;
 
 		addr = tsocket_address_string(call->conn->remote_address, call);
@@ -1155,7 +1149,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			  __func__,
 			  context->min_auth_level,
 			  context->iface->name,
-			  auth_type, auth_level,
+			  call->conn->auth_state.auth_type,
+			  call->conn->auth_state.auth_level,
 			  derpc_transport_string_by_transport(transport),
 			  addr));
 		return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
