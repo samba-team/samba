@@ -2371,8 +2371,17 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		r->out.dns_domain_name, r->out.netbios_domain_name,
 		NULL, smbXcli_conn_remote_sockaddr(cli->conn));
 
-	if (r->out.domain_is_ad && r->in.account_ou &&
+	if (r->out.domain_is_ad &&
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
+
+		const char *initial_account_ou = r->in.account_ou;
+
+		/*
+		 * we want to create the msDS-SupportedEncryptionTypes attribute
+		 * as early as possible so always try an LDAP create as the user
+		 * first. We copy r->in.account_ou because it may be changed
+		 * during the machine pre-creation.
+		 */
 
 		ads_status = libnet_join_connect_ads_user(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
@@ -2380,7 +2389,18 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		}
 
 		ads_status = libnet_join_precreate_machine_acct(mem_ctx, r);
-		if (!ADS_ERR_OK(ads_status)) {
+		if (ADS_ERR_OK(ads_status)) {
+
+			/*
+			 * LDAP object create succeeded, now go to the rpc
+			 * password set routines
+			 */
+
+			r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
+			goto rpc_join;
+		}
+
+		if (initial_account_ou != NULL) {
 			libnet_join_set_error_string(mem_ctx, r,
 				"failed to precreate account in ou %s: %s",
 				r->in.account_ou,
@@ -2388,10 +2408,12 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 			return WERR_DEFAULT_JOIN_REQUIRED;
 		}
 
-		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
+		DEBUG(5, ("failed to precreate account in ou %s: %s",
+			r->in.account_ou, ads_errstr(ads_status)));
 	}
 #endif /* HAVE_ADS */
 
+ rpc_join:
 	if ((r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) &&
 	    (r->in.join_flags & WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED)) {
 		status = libnet_join_joindomain_rpc_unsecure(mem_ctx, r, cli);
