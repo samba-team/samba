@@ -833,6 +833,10 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 			 hex_encode_talloc(frame, key.dptr, key.dsize),
 			 nt_errstr(status)));
 		TALLOC_FREE(frame);
+		*is_free = true;
+		if (was_free) {
+			*was_free = true;
+		}
 		return;
 	}
 
@@ -848,6 +852,10 @@ static void smbXsrv_session_global_verify_record(struct db_record *db_rec,
 			 global_blob.version));
 		NDR_PRINT_DEBUG(smbXsrv_session_globalB, &global_blob);
 		TALLOC_FREE(frame);
+		*is_free = true;
+		if (was_free) {
+			*was_free = true;
+		}
 		return;
 	}
 
