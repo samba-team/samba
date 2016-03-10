@@ -6624,7 +6624,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name)) {
 		char *fname_dst_parent = NULL;
 		const char *fname_dst_lcomp = NULL;
-		struct smb_filename *smb_fname_orig_lcomp = NULL;
+		char *orig_lcomp_path = NULL;
+		char *orig_lcomp_stream = NULL;
+		bool ok = true;
 
 		/*
 		 * Split off the last component of the processed
@@ -6640,22 +6642,36 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		}
 
 		/*
-		 * Create an smb_filename struct using the original last
-		 * component of the destination.
+		 * The original_lcomp component contains
+		 * the last_component of the path + stream
+		 * name (if a stream exists).
+		 *
+		 * Split off the stream name so we
+		 * can check them separately.
 		 */
-		smb_fname_orig_lcomp = synthetic_smb_fname_split(
-			ctx,
-			smb_fname_dst->original_lcomp,
-			lp_posix_pathnames());
-		if (smb_fname_orig_lcomp == NULL) {
-			status = NT_STATUS_NO_MEMORY;
+
+		if (fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) {
+			/* POSIX - no stream component. */
+			orig_lcomp_path = talloc_strdup(ctx,
+						smb_fname_dst->original_lcomp);
+			if (orig_lcomp_path == NULL) {
+				ok = false;
+			}
+		} else {
+			ok = split_stream_filename(ctx,
+					smb_fname_dst->original_lcomp,
+					&orig_lcomp_path,
+					&orig_lcomp_stream);
+		}
+
+		if (!ok) {
 			TALLOC_FREE(fname_dst_parent);
+			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
 		/* If the base names only differ by case, use original. */
-		if(!strcsequal(fname_dst_lcomp,
-			       smb_fname_orig_lcomp->base_name)) {
+		if(!strcsequal(fname_dst_lcomp, orig_lcomp_path)) {
 			char *tmp;
 			/*
 			 * Replace the modified last component with the
@@ -6665,15 +6681,16 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 				tmp = talloc_asprintf(smb_fname_dst,
 					"%s/%s",
 					fname_dst_parent,
-					smb_fname_orig_lcomp->base_name);
+					orig_lcomp_path);
 			} else {
 				tmp = talloc_strdup(smb_fname_dst,
-					smb_fname_orig_lcomp->base_name);
+					orig_lcomp_path);
 			}
 			if (tmp == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				TALLOC_FREE(fname_dst_parent);
-				TALLOC_FREE(smb_fname_orig_lcomp);
+				TALLOC_FREE(orig_lcomp_path);
+				TALLOC_FREE(orig_lcomp_stream);
 				goto out;
 			}
 			TALLOC_FREE(smb_fname_dst->base_name);
@@ -6682,22 +6699,23 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 		/* If the stream_names only differ by case, use original. */
 		if(!strcsequal(smb_fname_dst->stream_name,
-			       smb_fname_orig_lcomp->stream_name)) {
-			char *tmp = NULL;
+			       orig_lcomp_stream)) {
 			/* Use the original stream. */
-			tmp = talloc_strdup(smb_fname_dst,
-					    smb_fname_orig_lcomp->stream_name);
+			char *tmp = talloc_strdup(smb_fname_dst,
+					    orig_lcomp_stream);
 			if (tmp == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				TALLOC_FREE(fname_dst_parent);
-				TALLOC_FREE(smb_fname_orig_lcomp);
+				TALLOC_FREE(orig_lcomp_path);
+				TALLOC_FREE(orig_lcomp_stream);
 				goto out;
 			}
 			TALLOC_FREE(smb_fname_dst->stream_name);
 			smb_fname_dst->stream_name = tmp;
 		}
 		TALLOC_FREE(fname_dst_parent);
-		TALLOC_FREE(smb_fname_orig_lcomp);
+		TALLOC_FREE(orig_lcomp_path);
+		TALLOC_FREE(orig_lcomp_stream);
 	}
 
 	/*
