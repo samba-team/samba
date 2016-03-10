@@ -19,11 +19,9 @@
 	E.g. the drsuapi and backupkey protocols require DCERPC_AUTH_LEVEL_PRIVACY.
 	The dnsserver protocol requires DCERPC_AUTH_LEVEL_INTEGRITY.
 	</para>
-
-	<para>Note the default will very likely change to <constant>no</constant> for Samba 4.5.</para>
 </description>
 
-<value type="default">yes</value>
-<value type="example">no</value>
+<value type="default">no</value>
+<value type="example">yes</value>
 
 </samba:parameter>
