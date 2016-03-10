@@ -3257,7 +3257,8 @@ static bool setup_schannel_netlogon_pipe(struct torture_context *tctx,
 	 * with INTERNAL_ERROR */
 
 	status = dcerpc_binding_set_flags(b,
-					  DCERPC_SCHANNEL | DCERPC_SIGN |
+					  DCERPC_SCHANNEL |
+					  DCERPC_SIGN | DCERPC_SEAL |
 					  DCERPC_SCHANNEL_AUTO,
 					  DCERPC_AUTH_OPTIONS);
 	torture_assert_ntstatus_ok(tctx, status, "set flags");
