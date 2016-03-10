@@ -6808,7 +6808,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			  smb_fname_str_dbg(smb_fname_dst)));
 
 		if (!fsp->is_directory &&
-		    !lp_posix_pathnames() &&
+		    !(fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) &&
 		    (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn)))) {
 			/* We must set the archive bit on the newly
