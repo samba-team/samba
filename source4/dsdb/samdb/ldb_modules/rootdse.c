@@ -701,11 +701,20 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 			continue;
 		}
 
-		/* If the control is DIRSYNC control then we keep the critical
-		 * flag as the dirsync module will need to act upon it
+		/*
+		 * If the control is DIRSYNC, SORT or VLV then we keep the
+		 * critical flag as the modules will need to act upon it.
+		 *
+		 * These modules have to unset the critical flag after the
+		 * request has been seen by the correct module.
 		 */
-		if (is_registered && strcmp(req->controls[i]->oid,
-					LDB_CONTROL_DIRSYNC_OID)!= 0) {
+		if (is_registered &&
+		    strcmp(req->controls[i]->oid,
+			   LDB_CONTROL_DIRSYNC_OID) != 0 &&
+		    strcmp(req->controls[i]->oid,
+			   LDB_CONTROL_VLV_REQ_OID) != 0 &&
+		    strcmp(req->controls[i]->oid,
+			   LDB_CONTROL_SERVER_SORT_OID) != 0) {
 			req->controls[i]->critical = 0;
 		}
 	}

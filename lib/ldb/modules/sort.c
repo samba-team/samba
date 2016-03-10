@@ -309,6 +309,8 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 		}
 	}
 
+	control->critical = 0;
+
 	/* We are asked to sort on an attribute, and if that attribute is not
 	   already in the search attributes we need to add it (and later
 	   remove it on the return journey).
