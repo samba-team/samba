@@ -237,7 +237,8 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	subreq = dbwrap_record_watch_send(state, state->ev, rec,
-					  state->ctx->msg);
+					  state->ctx->msg,
+					  (struct server_id){0});
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -262,7 +263,8 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	struct db_record *rec;
 	NTSTATUS status;
 
-	status = dbwrap_record_watch_recv(subreq, talloc_tos(), &rec);
+	status = dbwrap_record_watch_recv(subreq, talloc_tos(), &rec, NULL,
+					  NULL);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
@@ -291,7 +293,8 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 		return;
 	}
 	subreq = dbwrap_record_watch_send(state, state->ev, rec,
-					  state->ctx->msg);
+					  state->ctx->msg,
+					  (struct server_id){0});
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

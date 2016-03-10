@@ -1954,7 +1954,7 @@ static void defer_open(struct share_mode_lock *lck,
 
 		watch_req = dbwrap_record_watch_send(
 			watch_state, req->sconn->ev_ctx, lck->data->record,
-			req->sconn->msg_ctx);
+			req->sconn->msg_ctx, (struct server_id){0});
 		if (watch_req == NULL) {
 			exit_server("Could not watch share mode record");
 		}
@@ -1981,7 +1981,8 @@ static void defer_open_done(struct tevent_req *req)
 	NTSTATUS status;
 	bool ret;
 
-	status = dbwrap_record_watch_recv(req, talloc_tos(), NULL);
+	status = dbwrap_record_watch_recv(req, talloc_tos(), NULL, NULL,
+					  NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",

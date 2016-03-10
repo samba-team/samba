@@ -29,10 +29,13 @@ void dbwrap_watch_db(struct db_context *db, struct messaging_context *msg);
 struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct db_record *rec,
-					    struct messaging_context *msg);
+					    struct messaging_context *msg,
+					    struct server_id blocker);
 NTSTATUS dbwrap_record_watch_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
-				  struct db_record **prec);
+				  struct db_record **prec,
+				  bool *blockerdead,
+				  struct server_id *blocker);
 
 void dbwrap_watchers_traverse_read(
 	int (*fn)(const uint8_t *db_id, size_t db_id_len, const TDB_DATA key,

@@ -24,6 +24,7 @@
 #include "dbwrap_open.h"
 #include "lib/util/util_tdb.h"
 #include "lib/util/tevent_ntstatus.h"
+#include "server_id_watch.h"
 
 static struct db_context *dbwrap_record_watchers_db(void)
 {
@@ -199,18 +200,22 @@ struct dbwrap_record_watch_state {
 	struct tevent_req *req;
 	struct messaging_context *msg;
 	TDB_DATA w_key;
+	bool blockerdead;
+	struct server_id blocker;
 };
 
 static bool dbwrap_record_watch_filter(struct messaging_rec *rec,
 				       void *private_data);
 static void dbwrap_record_watch_done(struct tevent_req *subreq);
+static void dbwrap_record_watch_blocker_died(struct tevent_req *subreq);
 static int dbwrap_record_watch_state_destructor(
 	struct dbwrap_record_watch_state *state);
 
 struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct db_record *rec,
-					    struct messaging_context *msg)
+					    struct messaging_context *msg,
+					    struct server_id blocker)
 {
 	struct tevent_req *req, *subreq;
 	struct dbwrap_record_watch_state *state;
@@ -226,6 +231,7 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->req = req;
 	state->msg = msg;
+	state->blocker = blocker;
 
 	watchers_db = dbwrap_record_watchers_db();
 	if (watchers_db == NULL) {
@@ -249,6 +255,15 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, dbwrap_record_watch_done, req);
+
+	if (blocker.pid != 0) {
+		subreq = server_id_watch_send(state, ev, msg, blocker);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			subreq, dbwrap_record_watch_blocker_died, req);
+	}
 
 	status = dbwrap_record_add_watcher(
 		state->w_key, messaging_server_id(state->msg));
@@ -371,9 +386,29 @@ static void dbwrap_record_watch_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void dbwrap_record_watch_blocker_died(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct dbwrap_record_watch_state *state = tevent_req_data(
+		req, struct dbwrap_record_watch_state);
+	int ret;
+
+	ret = server_id_watch_recv(subreq, NULL);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		tevent_req_nterror(req, map_nt_error_from_unix(ret));
+		return;
+	}
+	state->blockerdead = true;
+	tevent_req_done(req);
+}
+
 NTSTATUS dbwrap_record_watch_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
-				  struct db_record **prec)
+				  struct db_record **prec,
+				  bool *blockerdead,
+				  struct server_id *blocker)
 {
 	struct dbwrap_record_watch_state *state = tevent_req_data(
 		req, struct dbwrap_record_watch_state);
@@ -384,6 +419,12 @@ NTSTATUS dbwrap_record_watch_recv(struct tevent_req *req,
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
+	}
+	if (blockerdead != NULL) {
+		*blockerdead = state->blockerdead;
+	}
+	if (blocker != NULL) {
+		*blocker = state->blocker;
 	}
 	if (prec == NULL) {
 		return NT_STATUS_OK;

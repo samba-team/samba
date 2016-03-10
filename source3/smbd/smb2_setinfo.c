@@ -252,7 +252,8 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 				rename_state,
 				ev,
 				lck->data->record,
-				fsp->conn->sconn->msg_ctx);
+				fsp->conn->sconn->msg_ctx,
+				(struct server_id){0});
 
 	if (subreq == NULL) {
 		exit_server("Could not watch share mode record for rename\n");
@@ -279,7 +280,8 @@ static void defer_rename_done(struct tevent_req *subreq)
 	int ret_size = 0;
 	bool ok;
 
-	status = dbwrap_record_watch_recv(subreq, state->req, NULL);
+	status = dbwrap_record_watch_recv(subreq, state->req, NULL, NULL,
+					  NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",

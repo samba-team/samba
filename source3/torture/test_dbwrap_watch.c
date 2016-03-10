@@ -60,7 +60,8 @@ bool run_dbwrap_watch1(int dummy)
 		fprintf(stderr, "dbwrap_fetch_locked failed\n");
 		goto fail;
 	}
-	req = dbwrap_record_watch_send(talloc_tos(), ev, rec, msg);
+	req = dbwrap_record_watch_send(talloc_tos(), ev, rec, msg,
+				       (struct server_id){0});
 	if (req == NULL) {
 		fprintf(stderr, "dbwrap_record_watch_send failed\n");
 		goto fail;
@@ -86,7 +87,8 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 
-	status = dbwrap_record_watch_recv(req, talloc_tos(), &rec);
+	status = dbwrap_record_watch_recv(req, talloc_tos(), &rec, NULL,
+					  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "dbwrap_record_watch_recv failed: %s\n",
 			nt_errstr(status));

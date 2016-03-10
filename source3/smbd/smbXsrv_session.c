@@ -1066,7 +1066,8 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 	}
 
 	subreq = dbwrap_record_watch_send(state, state->ev,
-					  state->db_rec, conn->msg_ctx);
+					  state->db_rec, conn->msg_ctx,
+					  (struct server_id){0});
 	if (tevent_req_nomem(subreq, req)) {
 		TALLOC_FREE(state->db_rec);
 		return;
@@ -1120,7 +1121,8 @@ static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
 		struct smb2srv_session_close_previous_state);
 	NTSTATUS status;
 
-	status = dbwrap_record_watch_recv(subreq, state, &state->db_rec);
+	status = dbwrap_record_watch_recv(subreq, state, &state->db_rec, NULL,
+					  NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
