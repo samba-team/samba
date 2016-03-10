@@ -123,6 +123,9 @@ static bool idmap_init(void)
 bool domain_has_idmap_config(const char *domname)
 {
 	int i;
+	char *config_option;
+	const char *range = NULL;
+	const char *backend = NULL;
 
 	idmap_init();
 
@@ -132,6 +135,25 @@ bool domain_has_idmap_config(const char *domname)
 		}
 	}
 
+	/* fallback: also check loadparm */
+
+	config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
+					domname);
+	if (config_option == NULL) {
+		DEBUG(0, ("out of memory\n"));
+		return false;
+	}
+
+	range = lp_parm_const_string(-1, config_option, "range", NULL);
+	backend = lp_parm_const_string(-1, config_option, "backend", NULL);
+	if (range != NULL && backend != NULL) {
+		DEBUG(5, ("idmap configuration specified for domain '%s'\n",
+			domname));
+		TALLOC_FREE(config_option);
+		return true;
+	}
+
+	TALLOC_FREE(config_option);
 	return false;
 }
 
