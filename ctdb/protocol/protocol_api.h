@@ -630,6 +630,10 @@ void ctdb_req_control_db_transaction_cancel(struct ctdb_req_control *request,
 					    uint32_t db_id);
 int ctdb_reply_control_db_transaction_cancel(struct ctdb_reply_control *reply);
 
+/* From protocol/protocol_debug.c */
+
+void ctdb_packet_print(uint8_t *buf, size_t buflen, FILE *fp);
+
 /* From protocol/protocol_message.c */
 
 int ctdb_req_message_push(struct ctdb_req_header *h,

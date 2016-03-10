@@ -350,6 +350,7 @@ def build(bld):
                                              protocol_message.c
                                              protocol_control.c
                                              protocol_client.c
+                                             protocol_debug.c
                                              protocol_util.c'''),
                         includes='include',
                         deps='replace talloc tdb')
