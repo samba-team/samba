@@ -1957,7 +1957,9 @@ int ctdb_req_control_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	request->opcode = wire->opcode;
 	request->pad = wire->pad;
@@ -2046,7 +2048,9 @@ int ctdb_reply_control_pull(uint8_t *pkt, size_t pkt_len, uint32_t opcode,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	reply->status = wire->status;
 

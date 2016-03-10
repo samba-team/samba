@@ -319,7 +319,9 @@ int ctdb_req_message_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	message->srvid = wire->srvid;
 	ret = ctdb_message_data_pull(wire->data, wire->datalen, wire->srvid,
@@ -379,7 +381,9 @@ int ctdb_req_message_data_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	message->srvid = wire->srvid;
 	message->data.dsize = wire->datalen;

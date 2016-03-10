@@ -132,7 +132,9 @@ int ctdb_req_call_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	c->flags = wire->flags;
 	c->db_id = wire->db_id;
@@ -207,7 +209,9 @@ int ctdb_reply_call_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	c->status = wire->status;
 	c->data.dsize = wire->datalen;
@@ -272,7 +276,9 @@ int ctdb_reply_error_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	c->status = wire->status;
 	c->msg.dsize = wire->msglen;
@@ -343,7 +349,9 @@ int ctdb_req_dmaster_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	c->db_id = wire->db_id;
 	c->rsn = wire->rsn;
@@ -423,7 +431,9 @@ int ctdb_reply_dmaster_pull(uint8_t *pkt, size_t pkt_len,
 		return EMSGSIZE;
 	}
 
-	memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	if (h != NULL) {
+		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+	}
 
 	c->db_id = wire->db_id;
 	c->rsn = wire->rsn;
