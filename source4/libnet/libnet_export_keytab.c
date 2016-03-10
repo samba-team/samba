@@ -21,7 +21,6 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include <hdb.h>
 #include "kdc/samba_kdc.h"
 #include "libnet/libnet_export_keytab.h"
 

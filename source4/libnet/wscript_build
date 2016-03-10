@@ -16,7 +16,7 @@ bld.SAMBA_PYTHON('python_net',
 
 bld.SAMBA_PYTHON('python_dckeytab',
 	source='py_net_dckeytab.c libnet_export_keytab.c',
-	deps='pyrpc_util HDB_SAMBA4 com_err',
+	deps='pyrpc_util db-glue krb5 com_err',
 	realname='samba/dckeytab.so',
-        enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL') and bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED')
+        enabled=bld.CONFIG_SET('AD_DC_BUILD_IS_ENABLED')
 	)
