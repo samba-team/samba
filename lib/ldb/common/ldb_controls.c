@@ -315,6 +315,9 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 		cookie = ldb_base64_encode(mem_ctx,
 					   (char *)rep_control->contextId,
 					   rep_control->ctxid_len);
+		if (cookie == NULL) {
+			return NULL;
+		}
 
 		res = talloc_asprintf(mem_ctx, "%s:%d:%d:%d:%d:%s",
 						LDB_CONTROL_VLV_RESP_NAME,
