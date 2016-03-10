@@ -120,6 +120,21 @@ static bool idmap_init(void)
 	return true;
 }
 
+bool domain_has_idmap_config(const char *domname)
+{
+	int i;
+
+	idmap_init();
+
+	for (i=0; i<num_domains; i++) {
+		if (strequal(idmap_domains[i]->name, domname)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static bool idmap_found_domain_backend(
 	const char *string, regmatch_t matches[], void *private_data)
 {
