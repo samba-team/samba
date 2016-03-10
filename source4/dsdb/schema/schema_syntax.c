@@ -2701,7 +2701,8 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 				     const struct dsdb_schema_prefixmap *pfm_remote,
 				     const struct drsuapi_DsReplicaAttribute *in,
 				     TALLOC_CTX *mem_ctx,
-				     struct ldb_message_element *out)
+				     struct ldb_message_element *out,
+				     enum drsuapi_DsAttributeId *local_attid_as_enum)
 {
 	const struct dsdb_attribute *sa;
 	struct dsdb_syntax_ctx syntax_ctx;
@@ -2735,6 +2736,15 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 	if (!sa) {
 		DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", in->attid));
 		return WERR_DS_ATT_NOT_DEF_IN_SCHEMA;
+	}
+
+	/*
+	 * We return the same class of attid as we were given.  That
+	 * is, we trust the remote server not to use an
+	 * msDS-IntId value in the schema partition
+	 */
+	if (local_attid_as_enum != NULL) {
+		*local_attid_as_enum = (enum drsuapi_DsAttributeId)attid_local;
 	}
 
 	return sa->syntax->drsuapi_to_ldb(&syntax_ctx, sa, in, mem_ctx, out);

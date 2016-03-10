@@ -455,7 +455,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		}
 		if (W_ERROR_EQUAL(status, WERR_TOO_MANY_SECRETS)) {
 			WERROR get_name_status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, pfm_remote,
-									       a, msg->elements, e);
+									       a, msg->elements, e, NULL);
 			if (W_ERROR_IS_OK(get_name_status)) {
 				DEBUG(0, ("Unxpectedly got secret value %s on %s from DRS server\n",
 					  e->name, ldb_dn_get_linearized(msg->dn)));
@@ -467,11 +467,21 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			return status;
 		}
 
+		/*
+		 * This function also fills in the local attid value,
+		 * based on comparing the remote and local prefixMap
+		 * tables.  If we don't convert the value, then we can
+		 * have invalid values in the replPropertyMetaData we
+		 * store on disk, as the prefixMap is per host, not
+		 * per-domain.  This may be why Microsoft added the
+		 * msDS-IntID feature, however this is not used for
+		 * extra attributes in the schema partition itself.
+		 */
 		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, pfm_remote,
-						       a, msg->elements, e);
+						       a, msg->elements, e,
+						       &m->attid);
 		W_ERROR_NOT_OK_RETURN(status);
 
-		m->attid			= a->attid;
 		m->version			= d->version;
 		m->originating_change_time	= d->originating_change_time;
 		m->originating_invocation_id	= d->originating_invocation_id;
@@ -1038,7 +1048,7 @@ static WERROR dsdb_origin_object_convert(struct ldb_context *ldb,
 		e = &msg->elements[i];
 
 		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, schema->prefixmap,
-						       a, msg->elements, e);
+						       a, msg->elements, e, NULL);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 
