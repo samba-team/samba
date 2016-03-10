@@ -2534,6 +2534,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "RawNTLMv2Auth", "False");
 	lpcfg_do_global_parameter(lp_ctx, "client use spnego principal", "False");
 
+	lpcfg_do_global_parameter(lp_ctx, "allow dcerpc auth level connect", "True");
+
 	lpcfg_do_global_parameter(lp_ctx, "UnixExtensions", "True");
 
 	lpcfg_do_global_parameter(lp_ctx, "PreferredMaster", "Auto");
