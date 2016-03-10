@@ -512,9 +512,29 @@ static int dcesrv_connection_context_destructor(struct dcesrv_connection_context
 
 static void dcesrv_prepare_context_auth(struct dcesrv_call_state *dce_call)
 {
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const struct dcesrv_endpoint *endpoint = dce_call->conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct dcesrv_connection_context *context = dce_call->context;
+	const struct dcesrv_interface *iface = context->iface;
 
 	context->min_auth_level = DCERPC_AUTH_LEVEL_NONE;
+
+	if (transport == NCALRPC) {
+		context->allow_connect = true;
+		return;
+	}
+
+	/*
+	 * allow overwrite per interface
+	 * allow dcerpc auth level connect:<interface>
+	 */
+	context->allow_connect = lpcfg_allow_dcerpc_auth_level_connect(lp_ctx);
+	context->allow_connect = lpcfg_parm_bool(lp_ctx, NULL,
+					"allow dcerpc auth level connect",
+					iface->name,
+					context->allow_connect);
 }
 
 NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
@@ -536,6 +556,66 @@ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_cal
 	}
 
 	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_call_state *dce_call,
+						       const struct dcesrv_interface *iface)
+{
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const struct dcesrv_endpoint *endpoint = dce_call->conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
+	struct dcesrv_connection_context *context = dce_call->context;
+
+	if (context == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (transport == NCALRPC) {
+		context->allow_connect = true;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * allow overwrite per interface
+	 * allow dcerpc auth level connect:<interface>
+	 */
+	context->allow_connect = false;
+	context->allow_connect = lpcfg_parm_bool(lp_ctx, NULL,
+					"allow dcerpc auth level connect",
+					iface->name,
+					context->allow_connect);
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *dce_call,
+						      const struct dcesrv_interface *iface)
+{
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const struct dcesrv_endpoint *endpoint = dce_call->conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
+	struct dcesrv_connection_context *context = dce_call->context;
+
+	if (context == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (transport == NCALRPC) {
+		context->allow_connect = true;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * allow overwrite per interface
+	 * allow dcerpc auth level connect:<interface>
+	 */
+	context->allow_connect = true;
+	context->allow_connect = lpcfg_parm_bool(lp_ctx, NULL,
+					"allow dcerpc auth level connect",
+					iface->name,
+					context->allow_connect);
 	return NT_STATUS_OK;
 }
 
@@ -1038,6 +1118,30 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	if (call->conn->auth_state.auth_info != NULL) {
 		auth_type = call->conn->auth_state.auth_info->auth_type;
 		auth_level = call->conn->auth_state.auth_info->auth_level;
+	}
+
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		break;
+	default:
+		if (!context->allow_connect) {
+			char *addr;
+
+			addr = tsocket_address_string(call->conn->remote_address,
+						      call);
+
+			DEBUG(2, ("%s: restrict auth_level_connect access "
+				  "to [%s] with auth[type=0x%x,level=0x%x] "
+				  "on [%s] from [%s]\n",
+				  __func__, context->iface->name,
+				  auth_type, auth_level,
+				  derpc_transport_string_by_transport(transport),
+				  addr));
+			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+		}
+		break;
 	}
 
 	if (auth_level < context->min_auth_level) {
