@@ -124,7 +124,9 @@ static NTSTATUS set_nt_acl_conn(const char *fname,
 	   so set our umask to 0 */
 	saved_umask = umask(0);
 
-	smb_fname = synthetic_smb_fname_split(fsp, fname);
+	smb_fname = synthetic_smb_fname_split(fsp,
+					fname,
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		umask(saved_umask);
@@ -446,7 +448,9 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 		return NULL;
 	}
 
-	smb_fname = synthetic_smb_fname_split(frame, fname);
+	smb_fname = synthetic_smb_fname_split(frame,
+					fname,
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		return PyErr_NoMemory();

@@ -73,14 +73,15 @@ struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
  * There are a few legitimate users of this.
  */
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
-					       const char *fname)
+						const char *fname,
+						bool posix_path)
 {
 	char *stream_name = NULL;
 	char *base_name = NULL;
 	struct smb_filename *ret;
 	bool ok;
 
-	if (lp_posix_pathnames()) {
+	if (posix_path) {
 		/* No stream name looked for. */
 		return synthetic_smb_fname(ctx, fname, NULL, NULL);
 	}

@@ -354,7 +354,9 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	fsp->conn = vfs->conn;
 
-	smb_fname = synthetic_smb_fname_split(NULL, argv[1]);
+	smb_fname = synthetic_smb_fname_split(NULL,
+					argv[1],
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;
@@ -584,12 +586,16 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname_src = synthetic_smb_fname_split(mem_ctx, argv[1]);
+	smb_fname_src = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
 	if (smb_fname_src == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	smb_fname_dst = synthetic_smb_fname_split(mem_ctx, argv[2]);
+	smb_fname_dst = synthetic_smb_fname_split(mem_ctx,
+					argv[2],
+					lp_posix_pathnames());
 	if (smb_fname_dst == NULL) {
 		TALLOC_FREE(smb_fname_src);
 		return NT_STATUS_NO_MEMORY;
@@ -644,7 +650,9 @@ static NTSTATUS cmd_stat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1]);
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -783,7 +791,9 @@ static NTSTATUS cmd_lstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1]);
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1043,7 +1053,9 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	ft.atime = convert_time_t_to_timespec(atoi(argv[2]));
 	ft.mtime = convert_time_t_to_timespec(atoi(argv[3]));
 
-	smb_fname = synthetic_smb_fname_split(mem_ctx, argv[1]);
+	smb_fname = synthetic_smb_fname_split(mem_ctx,
+					argv[1],
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1530,7 +1542,9 @@ static NTSTATUS cmd_set_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	}
 	fsp->conn = vfs->conn;
 
-	smb_fname = synthetic_smb_fname_split(NULL, argv[1]);
+	smb_fname = synthetic_smb_fname_split(NULL,
+					argv[1],
+					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		TALLOC_FREE(fsp);
 		return NT_STATUS_NO_MEMORY;

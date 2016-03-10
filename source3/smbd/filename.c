@@ -1423,7 +1423,8 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 		ZERO_STRUCT(st);
 		st.st_ex_nlink = 1;
 		*pp_smb_fname = synthetic_smb_fname_split(ctx,
-							  name_in);
+					name_in,
+					(ucf_flags & UCF_POSIX_PATHNAMES));
 		if (*pp_smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
