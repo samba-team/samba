@@ -137,6 +137,19 @@ static NTSTATUS be_init(struct idmap_domain *dom)
 
 		if (is_null_sid(&dom_list[i].sid))
 			continue;
+
+		/*
+		 * Check if the domain from the list is not already configured
+		 * to use another idmap backend. Not checking this makes the
+		 * idmap_hash module map IDs for *all* domains implicitly.  This
+		 * is quite dangerous in setups that use multiple idmap
+		 * configurations.
+		 */
+
+		if (domain_has_idmap_config(dom_list[i].domain_name)) {
+			continue;
+		}
+
 		if ((hash = hash_domain_sid(&dom_list[i].sid)) == 0)
 			continue;
 
