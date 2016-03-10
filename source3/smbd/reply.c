@@ -6622,20 +6622,19 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	if (!conn->case_sensitive && conn->case_preserve &&
 	    strequal(fsp->fsp_name->base_name, smb_fname_dst->base_name) &&
 	    strequal(fsp->fsp_name->stream_name, smb_fname_dst->stream_name)) {
-		char *last_slash;
-		char *fname_dst_lcomp_base_mod = NULL;
+		char *fname_dst_parent = NULL;
+		const char *fname_dst_lcomp = NULL;
 		struct smb_filename *smb_fname_orig_lcomp = NULL;
 
 		/*
-		 * Get the last component of the destination name.
+		 * Split off the last component of the processed
+		 * destination name. We will compare this to
+		 * the split components of smb_fname_dst->original_lcomp.
 		 */
-		last_slash = strrchr_m(smb_fname_dst->base_name, '/');
-		if (last_slash) {
-			fname_dst_lcomp_base_mod = talloc_strdup(ctx, last_slash + 1);
-		} else {
-			fname_dst_lcomp_base_mod = talloc_strdup(ctx, smb_fname_dst->base_name);
-		}
-		if (!fname_dst_lcomp_base_mod) {
+		if (!parent_dirname(ctx,
+				smb_fname_dst->base_name,
+				&fname_dst_parent,
+				&fname_dst_lcomp)) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
@@ -6650,32 +6649,30 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			lp_posix_pathnames());
 		if (smb_fname_orig_lcomp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
-			TALLOC_FREE(fname_dst_lcomp_base_mod);
+			TALLOC_FREE(fname_dst_parent);
 			goto out;
 		}
 
 		/* If the base names only differ by case, use original. */
-		if(!strcsequal(fname_dst_lcomp_base_mod,
+		if(!strcsequal(fname_dst_lcomp,
 			       smb_fname_orig_lcomp->base_name)) {
 			char *tmp;
 			/*
 			 * Replace the modified last component with the
 			 * original.
 			 */
-			if (last_slash) {
-				*last_slash = '\0'; /* Truncate at the '/' */
+			if (!ISDOT(fname_dst_parent)) {
 				tmp = talloc_asprintf(smb_fname_dst,
 					"%s/%s",
-					smb_fname_dst->base_name,
+					fname_dst_parent,
 					smb_fname_orig_lcomp->base_name);
 			} else {
-				tmp = talloc_asprintf(smb_fname_dst,
-					"%s",
+				tmp = talloc_strdup(smb_fname_dst,
 					smb_fname_orig_lcomp->base_name);
 			}
 			if (tmp == NULL) {
 				status = NT_STATUS_NO_MEMORY;
-				TALLOC_FREE(fname_dst_lcomp_base_mod);
+				TALLOC_FREE(fname_dst_parent);
 				TALLOC_FREE(smb_fname_orig_lcomp);
 				goto out;
 			}
@@ -6692,14 +6689,14 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 					    smb_fname_orig_lcomp->stream_name);
 			if (tmp == NULL) {
 				status = NT_STATUS_NO_MEMORY;
-				TALLOC_FREE(fname_dst_lcomp_base_mod);
+				TALLOC_FREE(fname_dst_parent);
 				TALLOC_FREE(smb_fname_orig_lcomp);
 				goto out;
 			}
 			TALLOC_FREE(smb_fname_dst->stream_name);
 			smb_fname_dst->stream_name = tmp;
 		}
-		TALLOC_FREE(fname_dst_lcomp_base_mod);
+		TALLOC_FREE(fname_dst_parent);
 		TALLOC_FREE(smb_fname_orig_lcomp);
 	}
 
