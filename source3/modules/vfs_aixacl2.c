@@ -186,7 +186,7 @@ static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
 }
 
 static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
-	const char *name,
+	const struct smb_filename *smb_fname,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc)
@@ -196,19 +196,28 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	bool	retryPosix = False;
 
 	*ppdesc = NULL;
-	result = aixjfs2_get_nfs4_acl(mem_ctx, name, &pacl, &retryPosix);
+	result = aixjfs2_get_nfs4_acl(mem_ctx,
+			smb_fname->base_name,
+			&pacl,
+			&retryPosix);
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return posix_get_nt_acl(handle->conn, name, security_info,
-					mem_ctx, ppdesc);
+		return posix_get_nt_acl(handle->conn,
+				smb_fname->base_name,
+				security_info,
+				mem_ctx,
+				ppdesc);
 	}
 	if (result==False)
 		return NT_STATUS_ACCESS_DENIED;
 
-	return smb_get_nt_acl_nfs4(handle->conn, name, security_info,
-				   mem_ctx, ppdesc,
-				   pacl);
+	return smb_get_nt_acl_nfs4(handle->conn,
+				smb_fname->base_name,
+				security_info,
+				mem_ctx,
+				ppdesc,
+				pacl);
 }
 
 static int aixjfs2_sys_acl_blob_get_file(vfs_handle_struct *handle, const char *path_p, TALLOC_CTX *mem_ctx, char **blob_description, DATA_BLOB *blob)
