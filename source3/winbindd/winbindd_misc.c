@@ -214,7 +214,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 		extra_data[extra_data_len-1] = '\0';
 
 		state->response->extra_data.data = extra_data;
-		state->response->length += extra_data_len+1;
+		state->response->length += extra_data_len;
 	}
 
 	return WINBINDD_OK;
