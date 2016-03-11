@@ -34,7 +34,7 @@ import samba.tests
 from samba.dcerpc import security
 from ldb import SCOPE_SUBTREE
 
-parser = optparse.OptionParser(__file__ + " [options] <host>")
+parser = optparse.OptionParser("sites.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

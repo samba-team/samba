@@ -33,7 +33,7 @@ from samba.tests import delete_force
 from samba.dcerpc import security, samr
 from samba.ndr import ndr_unpack
 
-parser = optparse.OptionParser("passwords.py [options] <host>")
+parser = optparse.OptionParser("password_lockout.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

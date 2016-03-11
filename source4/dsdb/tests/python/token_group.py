@@ -27,7 +27,7 @@ from samba.tests import delete_force
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 
 
-parser = optparse.OptionParser("ldap.py [options] <host>")
+parser = optparse.OptionParser("token_group.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

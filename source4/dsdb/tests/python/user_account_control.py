@@ -42,7 +42,7 @@ from samba.dsdb import UF_SCRIPT, UF_ACCOUNTDISABLE, UF_00000004, UF_HOMEDIR_REQ
     UF_PARTIAL_SECRETS_ACCOUNT, UF_USE_AES_KEYS
 
 
-parser = optparse.OptionParser("machine_account_privilege.py [options] <host>")
+parser = optparse.OptionParser("user_account_control.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

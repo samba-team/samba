@@ -20,7 +20,7 @@ from samba.samdb import SamDB
 
 import time
 
-parser = optparse.OptionParser("sam.py [options] <host>")
+parser = optparse.OptionParser("vlv.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

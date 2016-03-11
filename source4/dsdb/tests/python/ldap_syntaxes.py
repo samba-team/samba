@@ -23,7 +23,7 @@ from ldb import ERR_ENTRY_ALREADY_EXISTS
 
 import samba.tests
 
-parser = optparse.OptionParser("ldap [options] <host>")
+parser = optparse.OptionParser("ldap_syntaxes.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
