@@ -3516,7 +3516,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 
 	/* can it happen that fsp_name == NULL ? */
 	if (fsp->is_directory ||  fsp->fh->fd == -1) {
-		status = posix_get_nt_acl(fsp->conn, fsp->fsp_name->base_name,
+		status = posix_get_nt_acl(fsp->conn, fsp->fsp_name,
 					  security_info, mem_ctx, ppdesc);
 		TALLOC_FREE(frame);
 		return status;
@@ -3540,31 +3540,36 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	return status;
 }
 
-NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
-			  uint32_t security_info,
-			  TALLOC_CTX *mem_ctx,
-			  struct security_descriptor **ppdesc)
+NTSTATUS posix_get_nt_acl(struct connection_struct *conn,
+			const struct smb_filename *smb_fname_in,
+			uint32_t security_info,
+			TALLOC_CTX *mem_ctx,
+			struct security_descriptor **ppdesc)
 {
 	SMB_ACL_T posix_acl = NULL;
 	SMB_ACL_T def_acl = NULL;
 	struct pai_val *pal;
-	struct smb_filename smb_fname;
+	struct smb_filename *smb_fname = NULL;
 	int ret;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
 	*ppdesc = NULL;
 
-	DEBUG(10,("posix_get_nt_acl: called for file %s\n", name ));
+	DEBUG(10,("posix_get_nt_acl: called for file %s\n",
+		smb_fname_in->base_name ));
 
-	ZERO_STRUCT(smb_fname);
-	smb_fname.base_name = discard_const_p(char, name);
+	smb_fname = cp_smb_filename(talloc_tos(), smb_fname_in);
+	if (smb_fname == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Get the stat struct for the owner info. */
 	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(conn, &smb_fname);
+		ret = SMB_VFS_LSTAT(conn, smb_fname);
 	} else {
-		ret = SMB_VFS_STAT(conn, &smb_fname);
+		ret = SMB_VFS_STAT(conn, smb_fname);
 	}
 
 	if (ret == -1) {
@@ -3573,22 +3578,27 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 	}
 
 	/* Get the ACL from the path. */
-	posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, name,
+	posix_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname->base_name,
 					     SMB_ACL_TYPE_ACCESS, frame);
 
 	/* If it's a directory get the default POSIX ACL. */
-	if(S_ISDIR(smb_fname.st.st_ex_mode)) {
-		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, name,
+	if(S_ISDIR(smb_fname->st.st_ex_mode)) {
+		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname->base_name,
 						   SMB_ACL_TYPE_DEFAULT, frame);
 		def_acl = free_empty_sys_acl(conn, def_acl);
 	}
 
-	pal = load_inherited_info(conn, name);
+	pal = load_inherited_info(conn, smb_fname->base_name);
 
-	status = posix_get_nt_acl_common(conn, name, &smb_fname.st, pal,
-					 posix_acl, def_acl, security_info,
-					 mem_ctx,
-					 ppdesc);
+	status = posix_get_nt_acl_common(conn,
+					smb_fname->base_name,
+					&smb_fname->st,
+					pal,
+					posix_acl,
+					def_acl,
+					security_info,
+					mem_ctx,
+					ppdesc);
 	TALLOC_FREE(frame);
 	return status;
 }

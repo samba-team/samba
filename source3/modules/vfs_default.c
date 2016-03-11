@@ -2344,7 +2344,7 @@ static NTSTATUS vfswrap_get_nt_acl(vfs_handle_struct *handle,
 
 	START_PROFILE(get_nt_acl);
 	result = posix_get_nt_acl(handle->conn,
-				smb_fname->base_name,
+				smb_fname,
 				security_info,
 				mem_ctx,
 				ppdesc);

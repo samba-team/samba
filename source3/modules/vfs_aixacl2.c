@@ -204,7 +204,7 @@ static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
 		return posix_get_nt_acl(handle->conn,
-				smb_fname->base_name,
+				smb_fname,
 				security_info,
 				mem_ctx,
 				ppdesc);

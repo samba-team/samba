@@ -622,7 +622,7 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 
 	if (result > 0) {
 		DEBUG(10, ("retrying with posix acl...\n"));
-		status = posix_get_nt_acl(handle->conn, smb_fname->base_name,
+		status = posix_get_nt_acl(handle->conn, smb_fname,
 					  security_info, mem_ctx, ppdesc);
 		TALLOC_FREE(frame);
 		return status;
