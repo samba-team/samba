@@ -658,7 +658,6 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		const struct smb_filename *smb_fname, struct ea_list *ea_list)
 {
 	NTSTATUS status;
-	char *fname = NULL;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
@@ -688,8 +687,6 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return STATUS_INVALID_EA_NAME;
 	}
 
-	fname = smb_fname->base_name;
-
 	for (;ea_list; ea_list = ea_list->next) {
 		int ret;
 		fstring unix_ea_name;
@@ -697,7 +694,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		fstrcpy(unix_ea_name, "user."); /* All EA's must start with user. */
 		fstrcat(unix_ea_name, ea_list->ea.name);
 
-		canonicalize_ea_name(conn, fsp, fname, unix_ea_name);
+		canonicalize_ea_name(conn,
+				fsp,
+				smb_fname->base_name,
+				unix_ea_name);
 
 		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, (unsigned int)ea_list->ea.value.length));
 
@@ -715,8 +715,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 				ret = SMB_VFS_FREMOVEXATTR(fsp, unix_ea_name);
 			} else {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
-					unix_ea_name, fname));
-				ret = SMB_VFS_REMOVEXATTR(conn, fname, unix_ea_name);
+					unix_ea_name, smb_fname->base_name));
+				ret = SMB_VFS_REMOVEXATTR(conn,
+						smb_fname->base_name,
+						unix_ea_name);
 			}
 #ifdef ENOATTR
 			/* Removing a non existent attribute always succeeds. */
@@ -735,9 +737,13 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 							ea_list->ea.value.data, ea_list->ea.value.length, 0);
 			} else {
 				DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
-					unix_ea_name, fname));
-				ret = SMB_VFS_SETXATTR(conn, fname, unix_ea_name,
-							ea_list->ea.value.data, ea_list->ea.value.length, 0);
+					unix_ea_name, smb_fname->base_name));
+				ret = SMB_VFS_SETXATTR(conn,
+						smb_fname->base_name,
+						unix_ea_name,
+						ea_list->ea.value.data,
+						ea_list->ea.value.length,
+						0);
 			}
 		}
 
