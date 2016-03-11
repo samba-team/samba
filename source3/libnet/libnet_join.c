@@ -417,6 +417,11 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	if (!ads_pull_uint32(r->in.ads, res, "msDS-SupportedEncryptionTypes",
+			     &r->out.set_encryption_types)) {
+		r->out.set_encryption_types = 0;
+	}
+
  done:
 	ads_msgfree(r->in.ads, res);
 	TALLOC_FREE(dn);
@@ -700,6 +705,10 @@ static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
+	if (r->in.desired_encryption_types == r->out.set_encryption_types) {
+		return ADS_SUCCESS;
+	}
+
 	/* now do the mods */
 
 	mods = ads_init_mods(mem_ctx);
@@ -713,7 +722,14 @@ static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+	status = ads_gen_mod(r->in.ads, r->out.dn, mods);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	r->out.set_encryption_types = r->in.desired_encryption_types;
+
+	return ADS_SUCCESS;
 }
 #endif
 /****************************************************************
