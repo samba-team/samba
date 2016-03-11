@@ -823,23 +823,10 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 
 	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
-	}
-	else {
-		struct smb_filename *smb_fname_base = NULL;
-		smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					smb_fname->base_name,
-					NULL,
-					NULL);
-		if (smb_fname_base == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		if (lp_posix_pathnames()) {
-			ret = SMB_VFS_LSTAT(handle->conn, smb_fname_base);
-		} else {
-			ret = SMB_VFS_STAT(handle->conn, smb_fname_base);
-		}
-		sbuf = smb_fname_base->st;
-		TALLOC_FREE(smb_fname_base);
+	} else {
+		ret = vfs_stat_smb_basename(handle->conn,
+				smb_fname->base_name,
+				&sbuf);
 	}
 
 	if (ret == -1) {
