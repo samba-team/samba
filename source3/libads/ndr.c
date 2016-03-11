@@ -37,6 +37,7 @@ static void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, ui
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SASL_SIGN", ADS_AUTH_SASL_SIGN, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SASL_SEAL", ADS_AUTH_SASL_SEAL, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SASL_FORCE", ADS_AUTH_SASL_FORCE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_USER_CREDS", ADS_AUTH_USER_CREDS, r);
 	ndr->depth--;
 }
 
