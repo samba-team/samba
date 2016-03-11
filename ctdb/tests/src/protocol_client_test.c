@@ -308,12 +308,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		break;
 
-	case CTDB_CONTROL_KILL_TCP:
-		cd->data.conn = talloc(mem_ctx, struct ctdb_connection);
-		assert(cd->data.conn != NULL);
-		fill_ctdb_connection(mem_ctx, cd->data.conn);
-		break;
-
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		cd->data.addr = talloc(mem_ctx, ctdb_sock_addr);
 		assert(cd->data.addr != NULL);
@@ -828,10 +822,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		break;
 
-	case CTDB_CONTROL_KILL_TCP:
-		verify_ctdb_connection(cd->data.conn, cd2->data.conn);
-		break;
-
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		verify_ctdb_sock_addr(cd->data.addr, cd2->data.addr);
 		break;
@@ -1315,9 +1305,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_tunable_list(mem_ctx, cd->data.tun_list);
 		break;
 
-	case CTDB_CONTROL_KILL_TCP:
-		break;
-
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		cd->data.tickles = talloc(mem_ctx, struct ctdb_tickle_list);
 		assert(cd->data.tickles != NULL);
@@ -1734,9 +1721,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		verify_ctdb_tunable_list(cd->data.tun_list, cd2->data.tun_list);
-		break;
-
-	case CTDB_CONTROL_KILL_TCP:
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:

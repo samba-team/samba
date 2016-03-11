@@ -898,26 +898,6 @@ int ctdb_reply_control_get_all_tunables(struct ctdb_reply_control *reply,
 	return reply->status;
 }
 
-/* CTDB_CONTROL_KILL_TCP */
-
-void ctdb_req_control_kill_tcp(struct ctdb_req_control *request,
-			       struct ctdb_connection *conn)
-{
-	request->opcode = CTDB_CONTROL_KILL_TCP;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_KILL_TCP;
-	request->rdata.data.conn = conn;
-}
-
-int ctdb_reply_control_kill_tcp(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply);
-}
-
 /* CTDB_CONTROL_GET_TCP_TICKLE_LIST */
 
 void ctdb_req_control_get_tcp_tickle_list(struct ctdb_req_control *request,

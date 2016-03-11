@@ -203,10 +203,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		break;
 
-	case CTDB_CONTROL_KILL_TCP:
-		len = ctdb_connection_len(cd->data.conn);
-		break;
-
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		len = ctdb_sock_addr_len(cd->data.addr);
 		break;
@@ -587,10 +583,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		ctdb_node_flag_change_push(cd->data.flag_change, buf);
 		break;
 
-	case CTDB_CONTROL_KILL_TCP:
-		ctdb_connection_push(cd->data.conn, buf);
-		break;
-
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		ctdb_sock_addr_push(cd->data.addr, buf);
 		break;
@@ -927,11 +919,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_MODIFY_FLAGS:
 		ret = ctdb_node_flag_change_pull(buf, buflen, mem_ctx,
 						 &cd->data.flag_change);
-		break;
-
-	case CTDB_CONTROL_KILL_TCP:
-		ret = ctdb_connection_pull(buf, buflen, mem_ctx,
-					   &cd->data.conn);
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
@@ -1353,9 +1340,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
 		len = ctdb_tunable_list_len(cd->data.tun_list);
-		break;
-
-	case CTDB_CONTROL_KILL_TCP:
 		break;
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:

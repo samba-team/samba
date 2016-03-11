@@ -323,10 +323,6 @@ int ctdb_reply_control_get_all_tunables(struct ctdb_reply_control *reply,
 					TALLOC_CTX *mem_ctx,
 					struct ctdb_tunable_list **tun_list);
 
-void ctdb_req_control_kill_tcp(struct ctdb_req_control *request,
-			       struct ctdb_connection *conn);
-int ctdb_reply_control_kill_tcp(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_get_tcp_tickle_list(struct ctdb_req_control *request,
 					  ctdb_sock_addr *addr);
 int ctdb_reply_control_get_tcp_tickle_list(struct ctdb_reply_control *reply,
