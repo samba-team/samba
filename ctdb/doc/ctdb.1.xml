@@ -1333,26 +1333,6 @@ dbid:0xb775fff6 name:secrets.tdb path:/usr/local/var/lib/ctdb/persistent/secrets
     </refsect2>
 
     <refsect2>
-      <title>killtcp</title>
-      <para>
-	Read a list of TCP connections, one per line, from standard
-	input and terminate each connection.  A connection is
-	specified as:
-      </para>
-      <synopsis>
-	<parameter>SRC-IPADDR</parameter>:<parameter>SRC-PORT</parameter> <parameter>DST-IPADDR</parameter>:<parameter>DST-PORT</parameter>
-      </synopsis>
-      <para>
-	Each connection is terminated by issuing a TCP RST to the
-	SRC-IPADDR:SRC-PORT endpoint.
-      </para>
-      <para>
-	A single connection can be specified on the command-line
-	rather than on standard input.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>
 	pdelete <parameter>DB</parameter> <parameter>KEY</parameter>
       </title>
