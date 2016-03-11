@@ -4079,10 +4079,16 @@ ADS_STATUS ads_check_ou_dn(TALLOC_CTX *mem_ctx,
 	const char *name;
 	char *ou_string;
 
-	exploded_dn = ldap_explode_dn(*account_ou, 0);
-	if (exploded_dn) {
-		ldap_value_free(exploded_dn);
-		return ADS_SUCCESS;
+	if (account_ou == NULL) {
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+	}
+
+	if (*account_ou != NULL) {
+		exploded_dn = ldap_explode_dn(*account_ou, 0);
+		if (exploded_dn) {
+			ldap_value_free(exploded_dn);
+			return ADS_SUCCESS;
+		}
 	}
 
 	ou_string = ads_ou_string(ads, *account_ou);
