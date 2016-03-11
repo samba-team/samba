@@ -630,12 +630,20 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
  Ensure the EA name is case insensitive by matching any existing EA name.
 ****************************************************************************/
 
-static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, const char *fname, fstring unix_ea_name)
+static void canonicalize_ea_name(connection_struct *conn,
+			files_struct *fsp,
+			const struct smb_filename *smb_fname,
+			fstring unix_ea_name)
 {
 	size_t total_ea_len;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	struct ea_list *ea_list;
-	NTSTATUS status = get_ea_list_from_file_path(mem_ctx, conn, fsp, fname, &total_ea_len, &ea_list);
+	NTSTATUS status = get_ea_list_from_file_path(mem_ctx,
+					conn,
+					fsp,
+					smb_fname->base_name,
+					&total_ea_len,
+					&ea_list);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
 	}
@@ -696,7 +704,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 
 		canonicalize_ea_name(conn,
 				fsp,
-				smb_fname->base_name,
+				smb_fname,
 				unix_ea_name);
 
 		DEBUG(10,("set_ea: ea_name %s ealen = %u\n", unix_ea_name, (unsigned int)ea_list->ea.value.length));
