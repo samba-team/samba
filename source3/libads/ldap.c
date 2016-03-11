@@ -2077,8 +2077,10 @@ ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_n
  * @return 0 upon success, or non-zero otherwise
 **/
 
-ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name, 
-                                   const char *org_unit)
+ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
+				   const char *machine_name,
+				   const char *org_unit,
+				   uint32_t etype_list)
 {
 	ADS_STATUS ret;
 	char *samAccountName, *controlstr;
@@ -2130,15 +2132,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
 
 	if (func_level >= DS_DOMAIN_FUNCTION_2008) {
-		uint32_t etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
 		const char *etype_list_str;
-
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-		etype_list |= ENC_HMAC_SHA1_96_AES128;
-#endif
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-		etype_list |= ENC_HMAC_SHA1_96_AES256;
-#endif
 
 		etype_list_str = talloc_asprintf(ctx, "%d", (int)etype_list);
 		if (etype_list_str == NULL) {

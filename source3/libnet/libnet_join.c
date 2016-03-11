@@ -318,7 +318,8 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 
 	status = ads_create_machine_acct(r->in.ads,
 					 r->in.machine_name,
-					 r->in.account_ou);
+					 r->in.account_ou,
+					 r->in.desired_encryption_types);
 
 	if (ADS_ERR_OK(status)) {
 		DEBUG(1,("machine account creation created\n"));
@@ -684,17 +685,10 @@ static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 {
 	ADS_STATUS status;
 	ADS_MODLIST mods;
-	uint32_t etype_list = ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
 	const char *etype_list_str;
 
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-	etype_list |= ENC_HMAC_SHA1_96_AES128;
-#endif
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-	etype_list |= ENC_HMAC_SHA1_96_AES256;
-#endif
-
-	etype_list_str = talloc_asprintf(mem_ctx, "%d", etype_list);
+	etype_list_str = talloc_asprintf(mem_ctx, "%d",
+					 r->in.desired_encryption_types);
 	if (!etype_list_str) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
@@ -2134,6 +2128,16 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	ctx->in.secure_channel_type = SEC_CHAN_WKSTA;
+
+	ctx->in.desired_encryption_types = ENC_CRC32 |
+					   ENC_RSA_MD5 |
+					   ENC_RC4_HMAC_MD5;
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+	ctx->in.desired_encryption_types |= ENC_HMAC_SHA1_96_AES128;
+#endif
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+	ctx->in.desired_encryption_types |= ENC_HMAC_SHA1_96_AES256;
+#endif
 
 	*r = ctx;
 
