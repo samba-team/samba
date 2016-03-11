@@ -249,22 +249,24 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 	}
 
 	/*
-	 * if the file is a directory, there is extra work to do:
-	 * since the hpux acl call stores both the access acl and 
-	 * the default acl as provided, we have to get the acl part 
-	 * that has _not_ been specified in "type" from the file first 
-	 * and concatenate it with the acl provided.
+	 * We can directly use SMB_VFS_STAT here, as if this was a
+	 * POSIX call on a symlink, we've already refused it.
+	 * For a Windows acl mapped call on a symlink, we want to follow
+	 * it.
 	 */
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(handle->conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(handle->conn, smb_fname);
-	}
+	ret = SMB_VFS_STAT(handle->conn, smb_fname);
 	if (ret != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		/*
+		 * if the file is a directory, there is extra work to do:
+		 * since the hpux acl call stores both the access acl and
+		 * the default acl as provided, we have to get the acl part
+		 * that has _not_ been specified in "type" from the file first
+		 * and concatenate it with the acl provided.
+		 */
 		HPUX_ACL_T other_acl; 
 		int other_count;
 		SMB_ACL_TYPE_T other_type;
