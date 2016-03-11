@@ -355,8 +355,12 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
  Return a linked list of the total EA's. Plus the total size
 ****************************************************************************/
 
-static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
-				      const char *fname, size_t *pea_total_len, struct ea_list **ea_list)
+static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
+				connection_struct *conn,
+				files_struct *fsp,
+				const struct smb_filename *smb_fname,
+				size_t *pea_total_len,
+				struct ea_list **ea_list)
 {
 	/* Get a list of all xattrs. Max namesize is 64k. */
 	size_t i, num_names;
@@ -367,8 +371,12 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 	*pea_total_len = 0;
 	*ea_list = NULL;
 
-	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
-					&names, &num_names);
+	status = get_ea_names_from_file(talloc_tos(),
+				conn,
+				fsp,
+				smb_fname->base_name,
+				&names,
+				&num_names);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -401,9 +409,12 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx, connection_struc
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = get_ea_value(listp, conn, fsp,
-				      fname, names[i],
-				      &listp->ea);
+		status = get_ea_value(listp,
+					conn,
+					fsp,
+					smb_fname->base_name,
+					names[i],
+					&listp->ea);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(listp);
@@ -458,7 +469,12 @@ static NTSTATUS get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_struct *co
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return get_ea_list_from_file_path(mem_ctx, conn, fsp, smb_fname->base_name, pea_total_len, ea_list);
+	return get_ea_list_from_file_path(mem_ctx,
+				conn,
+				fsp,
+				smb_fname,
+				pea_total_len,
+				ea_list);
 }
 
 /****************************************************************************
@@ -601,7 +617,12 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 	if (is_ntfs_stream_smb_fname(smb_fname)) {
 		fsp = NULL;
 	}
-	(void)get_ea_list_from_file_path(mem_ctx, conn, fsp, smb_fname->base_name, &total_ea_len, &ea_list);
+	(void)get_ea_list_from_file_path(mem_ctx,
+				conn,
+				fsp,
+				smb_fname,
+				&total_ea_len,
+				&ea_list);
 	if(conn->sconn->using_smb2) {
 		NTSTATUS status;
 		unsigned int ret_data_size;
@@ -641,7 +662,7 @@ static void canonicalize_ea_name(connection_struct *conn,
 	NTSTATUS status = get_ea_list_from_file_path(mem_ctx,
 					conn,
 					fsp,
-					smb_fname->base_name,
+					smb_fname,
 					&total_ea_len,
 					&ea_list);
 	if (!NT_STATUS_IS_OK(status)) {
