@@ -98,8 +98,10 @@ ADS_STATUS ads_get_service_principal_names(TALLOC_CTX *mem_ctx,
 ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machine_name);
 ADS_STATUS ads_add_service_principal_name(ADS_STRUCT *ads, const char *machine_name,
                                           const char *my_fqdn, const char *spn);
-ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads, const char *machine_name,
-                                   const char *org_unit);
+ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
+				   const char *machine_name,
+				   const char *org_unit,
+				   uint32_t etype_list);
 ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
                                  const char *org_unit, bool *moved);
 int ads_count_replies(ADS_STRUCT *ads, void *res);
