@@ -20,6 +20,8 @@
 #ifndef __CTDB_SYSTEM_H__
 #define __CTDB_SYSTEM_H__
 
+#include <talloc.h>
+
 /* From system_common.c */
 
 uint32_t uint16_checksum(uint16_t *data, size_t n);
@@ -63,5 +65,8 @@ ssize_t sys_read(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
 
 void ctdb_wait_for_process_to_exit(pid_t pid);
+
+int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
+			   int *num_conn, struct ctdb_connection **out);
 
 #endif /* __CTDB_SYSTEM_H__ */

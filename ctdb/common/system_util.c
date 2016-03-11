@@ -23,6 +23,7 @@
 #include "system/shmem.h"
 #include "system/network.h"
 
+#include <talloc.h>
 #include <libgen.h>
 
 #include "lib/util/debug.h"
@@ -426,4 +427,58 @@ void ctdb_wait_for_process_to_exit(pid_t pid)
 	while (kill(pid, 0) == 0 || errno != ESRCH) {
 		sleep(5);
 	}
+}
+
+int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
+			   int *num_conn, struct ctdb_connection **out)
+{
+	struct ctdb_connection *conn = NULL;
+	char line[128], src[128], dst[128]; /* long enough for IPv6 */
+	int line_num, ret;
+	int num = 0, max = 0;
+
+	line_num = 0;
+	while (! feof(fp)) {
+		if (fgets(line, sizeof(line), fp) == NULL) {
+			break;
+		}
+		line_num += 1;
+
+		/* Skip empty lines */
+		if (line[0] == '\n') {
+			continue;
+		}
+
+		ret = sscanf(line, "%s %s\n", src, dst);
+		if (ret != 2) {
+			DEBUG(DEBUG_ERR, ("Bad line [%d]: %s\n",
+					  line_num, line));
+			return EINVAL;
+		}
+
+		if (num >= max) {
+			max += 1024;
+			conn = talloc_realloc(mem_ctx, conn,
+					      struct ctdb_connection, max);
+			if (conn == NULL) {
+				return ENOMEM;
+			}
+		}
+
+		if (! parse_ip_port(src, &conn[num].src)) {
+			DEBUG(DEBUG_ERR, ("Invalid IP address %s\n", src));
+			return EINVAL;
+		}
+
+		if (! parse_ip_port(dst, &conn[num].dst)) {
+			DEBUG(DEBUG_ERR, ("Invalid IP address %s\n", dst));
+			return EINVAL;
+		}
+
+		num += 1;
+	}
+
+	*num_conn = num;
+	*out = conn;
+	return 0;
 }
