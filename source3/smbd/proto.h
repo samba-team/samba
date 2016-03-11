@@ -1119,9 +1119,12 @@ bool samba_private_attr_name(const char *unix_ea_name);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);
-NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
-				files_struct *fsp, const char *fname,
-				char ***pnames, size_t *pnum_names);
+NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
+			files_struct *fsp,
+			const struct smb_filename *smb_fname,
+			char ***pnames,
+			size_t *pnum_names);
 NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		const struct smb_filename *smb_fname, struct ea_list *ea_list);
 struct ea_list *read_ea_list_entry(TALLOC_CTX *ctx, const char *pdata, size_t data_size, size_t *pbytes_used);

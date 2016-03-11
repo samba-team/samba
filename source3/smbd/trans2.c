@@ -230,9 +230,12 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
-				files_struct *fsp, const char *fname,
-				char ***pnames, size_t *pnum_names)
+NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
+				connection_struct *conn,
+				files_struct *fsp,
+				const struct smb_filename *smb_fname,
+				char ***pnames,
+				size_t *pnum_names)
 {
 	/* Get a list of all xattrs. Max namesize is 64k. */
 	size_t ea_namelist_size = 1024;
@@ -253,7 +256,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = refuse_symlink(conn, fsp, fname);
+	status = refuse_symlink(conn, fsp, smb_fname->base_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Just return no EA's on a symlink.
@@ -285,8 +288,10 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
 						     ea_namelist_size);
 		} else {
-			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist,
-						    ea_namelist_size);
+			sizeret = SMB_VFS_LISTXATTR(conn,
+					smb_fname->base_name,
+					ea_namelist,
+					ea_namelist_size);
 		}
 
 		if ((sizeret == -1) && (errno == ERANGE)) {
@@ -374,7 +379,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	status = get_ea_names_from_file(talloc_tos(),
 				conn,
 				fsp,
-				smb_fname->base_name,
+				smb_fname,
 				&names,
 				&num_names);
 

@@ -694,7 +694,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 
 		/* Do we have any EA's ? */
 		status = get_ea_names_from_file(ctx, conn, fsp,
-				smb_fname->base_name, NULL, &num_names);
+				smb_fname, NULL, &num_names);
 		if (NT_STATUS_IS_OK(status) && num_names) {
 			file_status &= ~NO_EAS;
 		}
@@ -1339,7 +1339,7 @@ static void call_nt_transact_create(connection_struct *conn,
 
 		/* Do we have any EA's ? */
 		status = get_ea_names_from_file(ctx, conn, fsp,
-				smb_fname->base_name, NULL, &num_names);
+				smb_fname, NULL, &num_names);
 		if (NT_STATUS_IS_OK(status) && num_names) {
 			file_status &= ~NO_EAS;
 		}
