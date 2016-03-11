@@ -44,7 +44,8 @@ case "$1" in
 	# kill off any tcp connections
 	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
-	kill_tcp_connections_local_only $CTDB_LVS_PUBLIC_IP
+	kill_tcp_connections_local_only \
+		"$CTDB_PUBLIC_INTERFACE" "$CTDB_LVS_PUBLIC_IP"
 
 	ctdb_get_pnn
 	LVSMASTER=`ctdb lvsmaster | sed -e "s/.*Node //" -e "s/ .*//"`

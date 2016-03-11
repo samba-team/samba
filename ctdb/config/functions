@@ -430,10 +430,11 @@ ctdb_check_command ()
 ################################################
 kill_tcp_connections ()
 {
-    _ip="$1"
+    _iface="$1"
+    _ip="$2"
 
     _oneway=false
-    if [ "$2" = "oneway" ] ; then
+    if [ "$3" = "oneway" ] ; then
 	_oneway=true
     fi
 
@@ -494,7 +495,7 @@ kill_tcp_connections ()
 ##################################################################
 kill_tcp_connections_local_only ()
 {
-    kill_tcp_connections "$1" "oneway"
+    kill_tcp_connections "$@" "oneway"
 }
 
 ##################################################################

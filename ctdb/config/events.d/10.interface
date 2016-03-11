@@ -161,7 +161,7 @@ case "$1" in
 	# we do an extra delete to cope with the script being killed
 	iptables_wrapper $family -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 	iptables_wrapper $family -I INPUT -i $iface -d $ip -j DROP
-	kill_tcp_connections $ip
+	kill_tcp_connections "$iface" "$ip"
 
 	delete_ip_from_iface $iface $ip $maskbits || {
 	    iptables_wrapper $family \
