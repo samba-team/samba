@@ -683,11 +683,12 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	return ret;
 }
 
-static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle, files_struct *fsp,
-				   const char *fname,
-				   bool (*fn)(struct ea_struct *ea,
-					      void *private_data),
-				   void *private_data)
+static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
+				files_struct *fsp,
+				const struct smb_filename *smb_fname,
+				bool (*fn)(struct ea_struct *ea,
+					void *private_data),
+				void *private_data)
 {
 	NTSTATUS status;
 	char **names;
@@ -697,8 +698,12 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle, files_struct *fsp,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct streams_xattr_config,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	status = get_ea_names_from_file(talloc_tos(), handle->conn, fsp, fname,
-					&names, &num_names);
+	status = get_ea_names_from_file(talloc_tos(),
+				handle->conn,
+				fsp,
+				smb_fname->base_name,
+				&names,
+				&num_names);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -729,11 +734,17 @@ static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle, files_struct *fsp,
 			continue;
 		}
 
-		status = get_ea_value(names, handle->conn, fsp, fname,
-				      names[i], &ea);
+		status = get_ea_value(names,
+					handle->conn,
+					fsp,
+					smb_fname->base_name,
+					names[i],
+					&ea);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("Could not get ea %s for file %s: %s\n",
-				   names[i], fname, nt_errstr(status)));
+				names[i],
+				smb_fname->base_name,
+				nt_errstr(status)));
 			continue;
 		}
 
@@ -849,7 +860,7 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		 */
 		status = NT_STATUS_OK;
 	} else {
-		status = walk_xattr_streams(handle, fsp, smb_fname->base_name,
+		status = walk_xattr_streams(handle, fsp, smb_fname,
 				    collect_one_stream, &state);
 	}
 
