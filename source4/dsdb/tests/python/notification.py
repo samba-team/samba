@@ -168,6 +168,8 @@ delete: otherLoginWorkstations
                                                    attrs=["name"],
                                                    controls=["notification:1"],
                                                    timeout=1)
+        num_admin_limit = 0
+        num_time_limit = 0
         for i in xrange(0, max_notifications + 1):
             try:
                 for msg in notifies[i]:
@@ -175,10 +177,15 @@ delete: otherLoginWorkstations
                 res = notifies[i].result()
                 self.fail()
             except LdbError, (num, _):
-                if i >= max_notifications:
-                    self.assertEquals(num, ERR_ADMIN_LIMIT_EXCEEDED)
-                else:
-                    self.assertEquals(num, ERR_TIME_LIMIT_EXCEEDED)
+                if num == ERR_ADMIN_LIMIT_EXCEEDED:
+                    num_admin_limit += 1
+                    continue
+                if num == ERR_TIME_LIMIT_EXCEEDED:
+                    num_time_limit += 1
+                    continue
+                raise
+        self.assertEqual(num_admin_limit, 1)
+        self.assertEqual(num_time_limit, max_notifications)
 
     def test_invalid_filter(self):
         """Testing invalid filters for notifications"""
