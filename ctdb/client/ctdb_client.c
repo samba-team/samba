@@ -3104,31 +3104,6 @@ int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
 }
 
 /*
-  kill a tcp connection
- */
-int ctdb_ctrl_killtcp(struct ctdb_context *ctdb, 
-		      struct timeval timeout, 
-		      uint32_t destnode,
-		      struct ctdb_connection *killtcp)
-{
-	TDB_DATA data;
-	int32_t res;
-	int ret;
-
-	data.dsize = sizeof(struct ctdb_connection);
-	data.dptr  = (unsigned char *)killtcp;
-
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_KILL_TCP, 0, data, NULL,
-			   NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for killtcp failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
   send a gratious arp
  */
 int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,

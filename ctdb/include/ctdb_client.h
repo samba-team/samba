@@ -406,10 +406,6 @@ int ctdb_ctrl_del_public_ip(struct ctdb_context *ctdb,
 			    struct timeval timeout, uint32_t destnode,
 			    struct ctdb_addr_info_old *pub);
 
-int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
-		      struct timeval timeout, uint32_t destnode,
-		      struct ctdb_connection *killtcp);
-
 int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 			   struct timeval timeout, uint32_t destnode,
 			   ctdb_sock_addr *addr, const char *ifname);

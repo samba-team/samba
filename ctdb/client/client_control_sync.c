@@ -1084,35 +1084,6 @@ int ctdb_ctrl_get_all_tunables(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_kill_tcp(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		       struct ctdb_client_context *client,
-		       int destnode, struct timeval timeout,
-		       struct ctdb_connection *conn)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_kill_tcp(&request, conn);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control KILL_TCP failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_kill_tcp(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control KILL_TCP failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_get_tcp_tickle_list(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
 				  struct ctdb_client_context *client,

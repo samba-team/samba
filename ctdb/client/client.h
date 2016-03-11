@@ -384,11 +384,6 @@ int ctdb_ctrl_get_all_tunables(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int destnode, struct timeval timeout,
 			       struct ctdb_tunable_list **tun_list);
 
-int ctdb_ctrl_kill_tcp(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		       struct ctdb_client_context *client,
-		       int destnode, struct timeval timeout,
-		       struct ctdb_connection *conn);
-
 int ctdb_ctrl_get_tcp_tickle_list(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
 				  struct ctdb_client_context *client,
