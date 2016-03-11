@@ -253,13 +253,13 @@ static ADS_STATUS libnet_join_connect_ads_user(TALLOC_CTX *mem_ctx,
 
 /****************************************************************
 ****************************************************************/
-#if 0
+
 static ADS_STATUS libnet_join_connect_ads_machine(TALLOC_CTX *mem_ctx,
 						  struct libnet_JoinCtx *r)
 {
 	return libnet_join_connect_ads(mem_ctx, r, true);
 }
-#endif
+
 /****************************************************************
 ****************************************************************/
 
@@ -684,7 +684,7 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 
 /****************************************************************
 ****************************************************************/
-#if 0
+
 static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 					 struct libnet_JoinCtx *r)
 {
@@ -731,7 +731,7 @@ static ADS_STATUS libnet_join_set_etypes(TALLOC_CTX *mem_ctx,
 
 	return ADS_SUCCESS;
 }
-#endif
+
 /****************************************************************
 ****************************************************************/
 
@@ -809,6 +809,7 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 						  struct libnet_JoinCtx *r)
 {
 	ADS_STATUS status;
+	bool need_etype_update = false;
 
 	if (!r->in.ads) {
 		status = libnet_join_connect_ads_user(mem_ctx, r);
@@ -841,6 +842,56 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 			"failed to set machine upn: %s",
 			ads_errstr(status));
 		return status;
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (r->in.desired_encryption_types != r->out.set_encryption_types) {
+		uint32_t func_level = 0;
+
+		status = ads_domain_func_level(r->in.ads, &func_level);
+		if (!ADS_ERR_OK(status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to query domain controller functional level: %s",
+				ads_errstr(status));
+			return status;
+		}
+
+		if (func_level >= DS_DOMAIN_FUNCTION_2008) {
+			need_etype_update = true;
+		}
+	}
+
+	if (need_etype_update) {
+		/*
+		 * We need to reconnect as machine account in order
+		 * to update msDS-SupportedEncryptionTypes reliable
+		 */
+
+		if (r->in.ads->auth.ccache_name != NULL) {
+			ads_kdestroy(r->in.ads->auth.ccache_name);
+		}
+
+		ads_destroy(&r->in.ads);
+
+		status = libnet_join_connect_ads_machine(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"Failed to connect as machine account: %s",
+				ads_errstr(status));
+			return status;
+		}
+
+		status = libnet_join_set_etypes(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to set machine kerberos encryption types: %s",
+				ads_errstr(status));
+			return status;
+		}
 	}
 
 	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
