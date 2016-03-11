@@ -5,7 +5,6 @@ from unicodedata import normalize
 import locale
 locale.setlocale(locale.LC_ALL, ('en_US', 'UTF-8'))
 
-from collections import Counter
 import optparse
 import sys
 import os
@@ -191,7 +190,13 @@ class BaseSortTests(samba.tests.TestCase):
                 self.expected_results[k] = (fixed, list(reversed(fixed)))
         for k in ('streetAddress', 'postalAddress'):
             if k in self.expected_results:
-                c = Counter([u[k] for u in self.users])
+                c = {}
+                for u in self.users:
+                    x = u[k]
+                    if x in c:
+                        c[x] += 1
+                        continue
+                    c[x] = 1
                 fixed = []
                 for x in FIENDISH_TESTS:
                     fixed += [norm(x)] * c[x]
