@@ -407,9 +407,8 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_node_flag_change));
 		return ctdb_control_modflags(ctdb, indata);
 
-	case CTDB_CONTROL_KILL_TCP: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_connection));
-		return ctdb_control_kill_tcp(ctdb, indata);
+	case CTDB_CONTROL_KILL_TCP:
+		return control_not_implemented("KILL_TCP", NULL);
 
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		CHECK_CONTROL_DATA_SIZE(sizeof(ctdb_sock_addr));

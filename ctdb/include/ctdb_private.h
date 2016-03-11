@@ -94,8 +94,6 @@ struct ctdb_vnn {
 	/* a context to hang sending gratious arp events off */
 	TALLOC_CTX *takeover_ctx;
 
-	struct ctdb_kill_tcp *killtcp;
-
 	/* Set to true any time an update to this VNN is in flight.
 	   This helps to avoid races. */
 	bool update_in_flight;
@@ -1011,7 +1009,6 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
 				    struct ctdb_req_control_old *c,
 				    TDB_DATA indata);
 
-int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb,
 					 TDB_DATA indata);
 int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb,

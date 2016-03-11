@@ -40,7 +40,6 @@
 #include "common/system.h"
 #include "common/common.h"
 #include "common/logging.h"
-#include "killtcp.h"
 
 #include "server/ipalloc.h"
 
@@ -2626,106 +2625,6 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
 	return 0;
 }
 
-
-/*
-  destroy the killtcp structure
- */
-struct ctdb_killtcp_destructor_data {
-	struct ctdb_vnn *vnn;
-	struct ctdb_context *ctdb;
-};
-
-static int ctdb_killtcp_destructor(struct ctdb_kill_tcp *killtcp)
-{
-	struct ctdb_killtcp_destructor_data *dd =
-		talloc_get_type_abort(killtcp->destructor_data,
-				      struct ctdb_killtcp_destructor_data);
-	struct ctdb_vnn *tmpvnn;
-
-	/* verify that this vnn is still active */
-	for (tmpvnn = dd->ctdb->vnn; tmpvnn; tmpvnn = tmpvnn->next) {
-		if (tmpvnn == dd->vnn) {
-			break;
-		}
-	}
-
-	if (tmpvnn == NULL) {
-		return 0;
-	}
-
-	if (dd->vnn->killtcp != killtcp) {
-		return 0;
-	}
-
-	dd->vnn->killtcp = NULL;
-
-	return 0;
-}
-
-/*
-  add a tcp socket to the list of connections we want to RST
- */
-static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
-				       ctdb_sock_addr *s,
-				       ctdb_sock_addr *d)
-{
-	ctdb_sock_addr src, dst;
-	struct ctdb_vnn *vnn;
-	const char *iface;
-	struct ctdb_killtcp_destructor_data *dd;
-	int ret;
-
-	ctdb_canonicalize_ip(s, &src);
-	ctdb_canonicalize_ip(d, &dst);
-
-	vnn = find_public_ip_vnn(ctdb, &dst);
-	if (vnn == NULL) {
-		vnn = find_public_ip_vnn(ctdb, &src);
-	}
-	if (vnn == NULL) {
-		/* if it is not a public ip   it could be our 'single ip' */
-		if (ctdb->single_ip_vnn) {
-			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, &dst)) {
-				vnn = ctdb->single_ip_vnn;
-			}
-		}
-	}
-	if (vnn == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Could not killtcp, not a public address\n"));
-		return -1;
-	}
-
-	iface = ctdb_vnn_iface_string(vnn);
-
-	ret = ctdb_killtcp(ctdb->ev, vnn, iface, &src, &dst, &vnn->killtcp);
-	if (ret != 0) {
-		return -1;
-	}
-
-	dd = talloc(vnn->killtcp, struct ctdb_killtcp_destructor_data);
-	if (dd == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		TALLOC_FREE(vnn->killtcp);
-		return -1;
-	}
-
-	dd->vnn = vnn;
-	dd->ctdb = ctdb;
-	vnn->killtcp->destructor_data = dd;
-	talloc_set_destructor(vnn->killtcp, ctdb_killtcp_destructor);
-
-	return 0;
-}
-
-/*
-  kill a TCP connection.
- */
-int32_t ctdb_control_kill_tcp(struct ctdb_context *ctdb, TDB_DATA indata)
-{
-	struct ctdb_connection *killtcp = (struct ctdb_connection *)indata.dptr;
-
-	return ctdb_killtcp_add_connection(ctdb, &killtcp->src, &killtcp->dst);
-}
 
 /*
   called by a daemon to inform us of the entire list of TCP tickles for

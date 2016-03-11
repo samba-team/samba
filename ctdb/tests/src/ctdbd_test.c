@@ -75,7 +75,6 @@ bool fast_start;
 #include "server/ctdb_update_record.c"
 #include "server/ctdb_lock.c"
 #include "server/ctdb_fork.c"
-#include "server/killtcp.c"
 
 /* CTDB_CLIENT_OBJ */
 #include "client/ctdb_client.c"
