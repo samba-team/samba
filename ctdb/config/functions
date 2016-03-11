@@ -464,29 +464,21 @@ kill_tcp_connections ()
 	    return
 	fi
 
-	echo "$_connections" | ctdb killtcp || {
-	    echo "Failed to send killtcp control"
-	    return
+	echo "$_connections" | \
+		"${CTDB_HELPER_BINDIR}/ctdb_killtcp" "$_iface" || {
+		echo "Failed to kill TCP connections"
+		return
 	}
 
-	_count=0
-	while : ; do
-	    _remaining=$(get_tcp_connections_for_ip $_ip | wc -l)
+	_remaining=$(get_tcp_connections_for_ip $_ip | wc -l)
 
-	    if [ $_remaining -eq 0 ] ; then
+	if [ $_remaining -eq 0 ] ; then
 		echo "Killed $_killcount TCP connections to released IP $_ip"
 		return
-	    fi
+	fi
 
-	    _count=$(($_count + 1))
-	    if [ $_count -gt 3 ] ; then
-		echo "Timed out killing tcp connections for IP $_ip ($_remaining remaining)"
-		return
-	    fi
-
-	    echo "Waiting for $_remaining connections to be killed for IP $_ip"
-	    sleep 1
-	done
+	_t="${_remaining}/${_killcount}"
+	echo "Failed to kill TCP connections for IP $_ip (${_t} remaining)"
     }
 }
 
