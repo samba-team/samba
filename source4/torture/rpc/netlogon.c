@@ -3973,7 +3973,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	int i;
 
 	if (p->conn->transport.transport != NCACN_NP) {
-		return true;
+		torture_skip(tctx, "test_ManyGetDCName works only with NCACN_NP");
 	}
 
 	torture_comment(tctx, "Torturing GetDCName\n");
