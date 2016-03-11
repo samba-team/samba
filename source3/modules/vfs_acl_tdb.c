@@ -143,7 +143,7 @@ static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
 			files_struct *fsp,
-			const char *name,
+			const struct smb_filename *smb_fname,
 			DATA_BLOB *pblob)
 {
 	uint8_t id_buf[16];
@@ -159,7 +159,9 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 		status = vfs_stat_fsp(fsp);
 		sbuf = fsp->fsp_name->st;
 	} else {
-		int ret = vfs_stat_smb_basename(handle->conn, name, &sbuf);
+		int ret = vfs_stat_smb_basename(handle->conn,
+				smb_fname->base_name,
+				&sbuf);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 		}
@@ -186,7 +188,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	pblob->length = data.dsize;
 
 	DEBUG(10,("get_acl_blob: returned %u bytes from file %s\n",
-		(unsigned int)data.dsize, name ));
+		(unsigned int)data.dsize, smb_fname->base_name ));
 
 	if (pblob->length == 0 || pblob->data == NULL) {
 		return NT_STATUS_NOT_FOUND;

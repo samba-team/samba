@@ -40,7 +40,7 @@
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
 			files_struct *fsp,
-			const char *name,
+			const struct smb_filename *smb_fname,
 			DATA_BLOB *pblob)
 {
 	size_t size = 1024;
@@ -64,7 +64,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	if (fsp && fsp->fh->fd != -1) {
 		sizeret = SMB_VFS_FGETXATTR(fsp, XATTR_NTACL_NAME, val, size);
 	} else {
-		sizeret = SMB_VFS_GETXATTR(handle->conn, name,
+		sizeret = SMB_VFS_GETXATTR(handle->conn, smb_fname->base_name,
 					XATTR_NTACL_NAME, val, size);
 	}
 	if (sizeret == -1) {

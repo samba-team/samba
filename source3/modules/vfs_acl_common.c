@@ -33,7 +33,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
 			files_struct *fsp,
-			const char *name,
+			const struct smb_filename *smb_fname,
 			DATA_BLOB *pblob);
 
 static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
@@ -366,7 +366,7 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 
 static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				    files_struct *fsp,
-				    const struct smb_filename *smb_fname,
+				    const struct smb_filename *smb_fname_in,
 				    uint32_t security_info,
 				    TALLOC_CTX *mem_ctx,
 				    struct security_descriptor **ppdesc)
@@ -381,22 +381,22 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	uint8_t sys_acl_hash_tmp[XATTR_SD_HASH_SIZE];
 	struct security_descriptor *psd = NULL;
 	struct security_descriptor *pdesc_next = NULL;
-	const char *name = NULL;
+	const struct smb_filename *smb_fname = NULL;
 	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
 						ACL_MODULE_NAME,
 						"ignore system acls",
 						false);
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (fsp && smb_fname == NULL) {
-		name = fsp->fsp_name->base_name;
+	if (fsp && smb_fname_in == NULL) {
+		smb_fname = fsp->fsp_name;
 	} else {
-		name = smb_fname->base_name;
+		smb_fname = smb_fname_in;
 	}
 
-	DEBUG(10, ("get_nt_acl_internal: name=%s\n", name));
+	DEBUG(10, ("get_nt_acl_internal: name=%s\n", smb_fname->base_name));
 
-	status = get_acl_blob(frame, handle, fsp, name, &blob);
+	status = get_acl_blob(frame, handle, fsp, smb_fname, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_nt_acl_internal: get_acl_blob returned %s\n",
 			nt_errstr(status)));
@@ -440,7 +440,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		DEBUG(10, ("get_nt_acl_internal: ACL blob revision "
 			   "mismatch (%u) for file %s\n",
 			   (unsigned int)hash_type,
-			   name));
+			   smb_fname->base_name));
 		TALLOC_FREE(psd);
 		psd = NULL;
 		goto out;
@@ -451,7 +451,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		DEBUG(10, ("get_nt_acl_internal: ACL blob hash type "
 			   "(%u) unexpected for file %s\n",
 			   (unsigned int)hash_type,
-			   name));
+			   smb_fname->base_name));
 		TALLOC_FREE(psd);
 		psd = NULL;
 		goto out;
@@ -474,10 +474,10 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		} else {
 			/* Get the full underlying sd, then hash. */
 			ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle,
-								 name,
-								 frame,
-								 &sys_acl_blob_description,
-								 &sys_acl_blob);
+						 smb_fname->base_name,
+						 frame,
+						 &sys_acl_blob_description,
+						 &sys_acl_blob);
 		}
 
 		/* If we fail to get the ACL blob (for some reason) then this
@@ -494,7 +494,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				/* Hash matches, return blob sd. */
 				DEBUG(10, ("get_nt_acl_internal: blob hash "
 					   "matches for file %s\n",
-					   name ));
+					   smb_fname->base_name ));
 				goto out;
 			}
 		}
@@ -521,7 +521,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
 				   "returned %s\n",
-				   name,
+				   smb_fname->base_name,
 				   nt_errstr(status)));
 			TALLOC_FREE(frame);
 			return status;
@@ -545,7 +545,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			/* Hash matches, return blob sd. */
 			DEBUG(10, ("get_nt_acl_internal: blob hash "
 				   "matches for file %s\n",
-				   name ));
+				   smb_fname->base_name ));
 			goto out;
 		}
 
@@ -553,11 +553,11 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		DEBUG(10, ("get_nt_acl_internal: blob hash "
 			   "does not match for file %s - returning "
 			   "file system SD mapping.\n",
-			   name ));
+			   smb_fname->base_name ));
 
 		if (DEBUGLEVEL >= 10) {
 			DEBUG(10,("get_nt_acl_internal: acl for blob hash for %s is:\n",
-				  name ));
+				  smb_fname->base_name ));
 			NDR_PRINT_DEBUG(security_descriptor, pdesc_next);
 		}
 
@@ -587,7 +587,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
 				   "returned %s\n",
-				   name,
+				   smb_fname->base_name,
 				   nt_errstr(status)));
 			TALLOC_FREE(frame);
 			return status;
@@ -641,7 +641,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			 * is fully plumbed through the VFS.
 			 */
 			int ret = vfs_stat_smb_basename(handle->conn,
-						name,
+						smb_fname->base_name,
 						&sbuf);
 			if (ret == -1) {
 				TALLOC_FREE(frame);
@@ -653,7 +653,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		if (ignore_file_system_acl) {
 			TALLOC_FREE(pdesc_next);
 			status = make_default_filesystem_acl(mem_ctx,
-						name,
+						smb_fname->base_name,
 						psbuf,
 						&psd);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -666,7 +666,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							true)) {
 				status = add_directory_inheritable_components(
 							handle,
-							name,
+							smb_fname->base_name,
 							psbuf,
 							psd);
 				if (!NT_STATUS_IS_OK(status)) {
@@ -701,7 +701,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("get_nt_acl_internal: returning acl for %s is:\n",
-			name ));
+			smb_fname->base_name ));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
