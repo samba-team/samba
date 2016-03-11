@@ -60,7 +60,7 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 
 static NTSTATUS refuse_symlink(connection_struct *conn,
 			const files_struct *fsp,
-			const char *name)
+			const struct smb_filename *smb_fname)
 {
 	SMB_STRUCT_STAT sbuf;
 	const SMB_STRUCT_STAT *pst = NULL;
@@ -69,7 +69,7 @@ static NTSTATUS refuse_symlink(connection_struct *conn,
 		pst = &fsp->fsp_name->st;
 	} else {
 		int ret = vfs_stat_smb_basename(conn,
-				name,
+				smb_fname->base_name,
 				&sbuf);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
@@ -256,7 +256,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	status = refuse_symlink(conn, fsp, smb_fname->base_name);
+	status = refuse_symlink(conn, fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
 		 * Just return no EA's on a symlink.
@@ -697,7 +697,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
-	status = refuse_symlink(conn, fsp, smb_fname->base_name);
+	status = refuse_symlink(conn, fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -5399,7 +5399,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 				status = refuse_symlink(conn,
 						fsp,
-						smb_fname->base_name);
+						smb_fname);
 				if (!NT_STATUS_IS_OK(status)) {
 					return status;
 				}
@@ -7018,7 +7018,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = refuse_symlink(conn, fsp, smb_fname->base_name);
+	status = refuse_symlink(conn, fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
