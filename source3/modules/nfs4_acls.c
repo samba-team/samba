@@ -268,13 +268,13 @@ bool smbacl4_set_controlflags(struct SMB4ACL_T *acl, uint16_t controlflags)
 }
 
 static int smbacl4_GetFileOwner(struct connection_struct *conn,
-				const char *filename,
+				const struct smb_filename *smb_fname,
 				SMB_STRUCT_STAT *psbuf)
 {
 	ZERO_STRUCTP(psbuf);
 
 	/* Get the stat struct for the owner info. */
-	if (vfs_stat_smb_basename(conn, filename, psbuf) != 0)
+	if (vfs_stat_smb_basename(conn, smb_fname->base_name, psbuf) != 0)
 	{
 		DEBUG(8, ("vfs_stat_smb_basename failed with error %s\n",
 			strerror(errno)));
@@ -290,7 +290,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 
 	if (fsp->fh->fd == -1) {
 		return smbacl4_GetFileOwner(fsp->conn,
-					    fsp->fsp_name->base_name, psbuf);
+					    fsp->fsp_name, psbuf);
 	}
 	if (SMB_VFS_FSTAT(fsp, psbuf) != 0)
 	{
@@ -569,7 +569,7 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n",
 		smb_fname->base_name));
 
-	if (smbacl4_GetFileOwner(conn, smb_fname->base_name, &sbuf)) {
+	if (smbacl4_GetFileOwner(conn, smb_fname, &sbuf)) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -968,7 +968,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 				  fsp_str_dbg(fsp), (unsigned int)newUID,
 				  (unsigned int)newGID));
 			if (smbacl4_GetFileOwner(fsp->conn,
-						 fsp->fsp_name->base_name,
+						 fsp->fsp_name,
 						 &sbuf)){
 				TALLOC_FREE(frame);
 				return map_nt_error_from_unix(errno);
