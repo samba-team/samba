@@ -407,7 +407,6 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle,
 	struct file_id id;
 	struct db_context *db;
 	int ret;
-	const char *path = smb_fname->base_name;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
@@ -416,7 +415,9 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle,
 					TALLOC_FREE(frame); return -1;
 				});
 
-	if (vfs_stat_smb_basename(handle->conn, path, &sbuf) == -1) {
+	if (vfs_stat_smb_basename(handle->conn,
+				smb_fname->base_name,
+				&sbuf) == -1) {
 		TALLOC_FREE(frame);
 		return -1;
 	}
