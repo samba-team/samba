@@ -139,10 +139,12 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 				SMB_ACL_T theacl)
 {
 	int ret = -1;
-	struct stat_ex s;
 	SOLARIS_ACL_T solaris_acl = NULL;
 	int count;
-	
+	struct smb_filename smb_fname = {
+		.base_name = discard_const_p(char, name)
+	};
+
 	DEBUG(10, ("solarisacl_sys_acl_set_file called for file '%s'\n",
 		   name));
 
@@ -166,12 +168,18 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 	 * the default acl as provided, we have to get the acl part 
 	 * that has not been specified in "type" from the file first 
 	 * and concatenate it with the acl provided.
+	 *
+	 * We can directly use SMB_VFS_STAT here, as if this was a
+	 * POSIX call on a symlink, we've already refused it.
+	 * For a Windows acl mapped call on a symlink, we want to follow
+	 * it.
 	 */
-	if (vfs_stat_smb_basename(handle->conn, name, &s) != 0) {
+	ret = SMB_VFS_STAT(conn, &smb_fname);
+	if (ret != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
 	}
-	if (S_ISDIR(s.st_ex_mode)) {
+	if (S_ISDIR(smb_fname.st.st_ex_mode)) {
 		SOLARIS_ACL_T other_acl = NULL;
 		int other_count;
 		SMB_ACL_TYPE_T other_type;
