@@ -12,27 +12,13 @@
 
 #ifdef WITH_QUOTAS
 
-#if defined(VXFS_QUOTA) /* Veritas VxFS for Solaris 2 */
-
-bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize,
-		      uint64_t *dfree, uint64_t *dsize);
-
-#endif /* VXFS_QUOTA */
-
-#if defined(SUNOS5) || defined(SUNOS4)
+#if defined(SUNOS5) /* Solaris */
 
 #include <fcntl.h>
 #include <sys/param.h>
-#if defined(SUNOS5) /* Solaris */
 #include <sys/fs/ufs_quota.h>
 #include <sys/mnttab.h>
 #include <sys/mntent.h>
-#else /* SunOS4 */
-#include <ufs/quota.h>
-#include <mntent.h>
-#endif /* Solaris */
-
-#if defined(SUNOS5) /* Solaris */
 
 /****************************************************************************
  Allows querying of remote hosts for quotas on NFS mounted shares.
@@ -53,7 +39,6 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize,
 	clnt = clnt_create("host", RQUOTAPROG, RQUOTAVERS, "udp");
 	return true;
 }
-#endif /* Solaris */
 
 /****************************************************************************
 try to get the disk space from disk quotas (SunOS & Solaris2 version)
@@ -64,25 +49,14 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree,
 		 uint64_t *dsize)
 {
 	int ret;
-#if defined(SUNOS5) /* Solaris */
 	struct quotctl command;
-#else /* SunOS4 */
-	struct mntent *mnt;
-#endif /* Solaris */
-#if defined(SUNOS5) /* Solaris */
 	nfs_quotas("", 0, bsize, dfree, dsize);
 
 	command.op = Q_GETQUOTA;
 	command.uid = 0;
 	command.addr = NULL;
 	ret = ioctl(1, Q_QUOTACTL, &command);
-#else /* SunOS4 */
-	ret = quotactl(Q_GETQUOTA, "", 0, NULL);
-#endif /* Solaris */
 
-#if defined(SUNOS5) && defined(VXFS_QUOTA) /* Solaris 2 VxFS */
-	disk_quotas_vxfs("", path, bsize, dfree, dsize);
-#endif /* Solaris 2 VxFS */
 	return true;
 }
 
@@ -125,39 +99,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree,
 }
 
 #endif /* SunOS / Solaris */
-
-#if defined(VXFS_QUOTA) /* Veritas for Solaris 2 */
-
-#if defined(SUNOS5)
-
-#include <sys/fs/vx_solaris.h>
-#include <sys/fs/vx_machdep.h>
-#include <sys/fs/vx_layout.h>
-#include <sys/fs/vx_quota.h>
-#include <sys/fs/vx_aioctl.h>
-#include <sys/fs/vx_ioctl.h>
-
-bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize,
-		      uint64_t *dfree, uint64_t *dsize)
-{
-	struct vx_dqblk D;
-	struct vx_quotctl quotabuf;
-	struct vx_genioctl genbuf;
-
-	genbuf.ioc_cmd = VX_QUOTACTL;
-	genbuf.ioc_up = (void *)&quotabuf;
-
-	quotabuf.cmd = VX_GETQUOTA;
-	quotabuf.uid = 0;
-	quotabuf.addr = (caddr_t)&D;
-	ret = ioctl(1, VX_ADMIN_IOCTL, &genbuf);
-
-	return true;
-}
-
-#endif /* SUNOS5 */
-
-#endif /* VXFS_QUOTA */
 
 #else /* WITH_QUOTAS */
 
