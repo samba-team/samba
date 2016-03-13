@@ -746,7 +746,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 				     struct drsuapi_DsGetNCChangesCtr6 *ctr6,
 				     struct ldb_dn **rid_manager_dn)
 {
-	struct ldb_dn *req_dn;
+	struct ldb_dn *req_dn, *ntds_dn = NULL;
 	int ret;
 	struct ldb_context *ldb = b_state->sam_ctx;
 	struct ldb_result *ext_res;
@@ -773,6 +773,15 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
 			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
+		return WERR_OK;
+	}
+
+	/* TODO: make sure ntds_dn is a valid nTDSDSA object */
+	ret = dsdb_find_dn_by_guid(ldb, mem_ctx, &req10->destination_dsa_guid, 0, &ntds_dn);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0, (__location__ ": Unable to find NTDS object for guid %s - %s\n",
+			  GUID_string(mem_ctx, &req10->destination_dsa_guid), ldb_errstring(ldb)));
+		ctr6->extended_ret = DRSUAPI_EXOP_ERR_UNKNOWN_CALLER;
 		return WERR_OK;
 	}
 
@@ -1843,6 +1852,9 @@ allowed:
 		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 			werr = getncchanges_rid_alloc(b_state, mem_ctx, req10, &r->out.ctr->ctr6, &search_dn);
 			W_ERROR_NOT_OK_RETURN(werr);
+			if (r->out.ctr->ctr6.extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+				return WERR_OK;
+			}
 			break;
 		case DRSUAPI_EXOP_REPL_SECRET:
 			werr = getncchanges_repl_secret(b_state, mem_ctx, req10,
@@ -1855,14 +1867,23 @@ allowed:
 		case DRSUAPI_EXOP_FSMO_REQ_ROLE:
 			werr = getncchanges_change_master(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
+			if (r->out.ctr->ctr6.extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+				return WERR_OK;
+			}
 			break;
 		case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
 			werr = getncchanges_change_master(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
+			if (r->out.ctr->ctr6.extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+				return WERR_OK;
+			}
 			break;
 		case DRSUAPI_EXOP_FSMO_REQ_PDC:
 			werr = getncchanges_change_master(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
+			if (r->out.ctr->ctr6.extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+				return WERR_OK;
+			}
 			break;
 		case DRSUAPI_EXOP_REPL_OBJ:
 			werr = getncchanges_repl_obj(b_state, mem_ctx, req10, user_sid, &r->out.ctr->ctr6);
