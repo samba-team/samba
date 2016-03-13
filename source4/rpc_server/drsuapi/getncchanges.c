@@ -1479,7 +1479,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		/* get RID manager, RID set and server DN (in that order) */
 
 		/* This first search will get the RID Manager */
-		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, mem_ctx,
+		ret = drsuapi_search_with_extended_dn(b_state->sam_ctx, frame,
 						      search_res,
 						      search_dn, LDB_SCOPE_BASE,
 						      collect_objects_attrs,
@@ -1588,10 +1588,10 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
-		/* Now extend the original search_res with this answer */
+		/* Now extend the original search_res with these answers */
 		(*search_res)->count = 3;
 
-		(*search_res)->msgs = talloc_realloc((*search_res)->msgs, mem_ctx,
+		(*search_res)->msgs = talloc_realloc(frame, (*search_res)->msgs,
 						     struct ldb_message *,
 						     (*search_res)->count);
 		if ((*search_res)->msgs == NULL) {
@@ -1600,7 +1600,7 @@ static WERROR getncchanges_collect_objects_exop(struct drsuapi_bind_state *b_sta
 		}
 
 
-		/* Now extend the original search_res with this answer */
+		talloc_steal(mem_ctx, *search_res);
 		(*search_res)->msgs[1] =
 			talloc_steal((*search_res)->msgs, search_res2->msgs[0]);
 		(*search_res)->msgs[2] =
