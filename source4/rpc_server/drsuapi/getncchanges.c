@@ -1657,6 +1657,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	bool max_wait_reached = false;
 	bool has_get_all_changes = false;
 	struct GUID invocation_id;
+	static const struct drsuapi_DsReplicaLinkedAttribute no_linked_attr;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1668,12 +1669,15 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	*r->out.level_out = 6;
 	/* TODO: linked attributes*/
 	r->out.ctr->ctr6.linked_attributes_count = 0;
-	r->out.ctr->ctr6.linked_attributes = NULL;
+	r->out.ctr->ctr6.linked_attributes = discard_const_p(struct drsuapi_DsReplicaLinkedAttribute, &no_linked_attr);
 
 	r->out.ctr->ctr6.object_count = 0;
 	r->out.ctr->ctr6.nc_object_count = 0;
 	r->out.ctr->ctr6.more_data = false;
 	r->out.ctr->ctr6.uptodateness_vector = NULL;
+	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(sam_ctx));
+	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
+	r->out.ctr->ctr6.first_object = NULL;
 
 	/* a RODC doesn't allow for any replication */
 	ret = samdb_rodc(sam_ctx, &am_rodc);
@@ -2037,7 +2041,6 @@ allowed:
 	r->out.ctr->ctr6.old_highwatermark = req10->highwatermark;
 	r->out.ctr->ctr6.new_highwatermark = req10->highwatermark;
 
-	r->out.ctr->ctr6.first_object = NULL;
 	currentObject = &r->out.ctr->ctr6.first_object;
 
 	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
