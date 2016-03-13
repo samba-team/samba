@@ -8,11 +8,11 @@
 /* just a quick hack because sysquotas.h is included before linux/quota.h */
 #ifdef QUOTABLOCK_SIZE
 #undef QUOTABLOCK_SIZE
-#endif
+#endif /* defined(QUOTABLOCK_SIZE) */
 
 #ifdef WITH_QUOTAS
 
-#if defined(VXFS_QUOTA)
+#if defined(VXFS_QUOTA) /* Veritas VxFS for Solaris 2 */
 
 bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize,
 		      uint64_t *dfree, uint64_t *dsize);
@@ -23,16 +23,16 @@ bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize,
 
 #include <fcntl.h>
 #include <sys/param.h>
-#if defined(SUNOS5)
+#if defined(SUNOS5) /* Solaris */
 #include <sys/fs/ufs_quota.h>
 #include <sys/mnttab.h>
 #include <sys/mntent.h>
-#else /* defined(SUNOS4) */
+#else /* SunOS4 */
 #include <ufs/quota.h>
 #include <mntent.h>
-#endif
+#endif /* Solaris */
 
-#if defined(SUNOS5)
+#if defined(SUNOS5) /* Solaris */
 
 /****************************************************************************
  Allows querying of remote hosts for quotas on NFS mounted shares.
@@ -53,7 +53,7 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize,
 	clnt = clnt_create("host", RQUOTAPROG, RQUOTAVERS, "udp");
 	return true;
 }
-#endif
+#endif /* Solaris */
 
 /****************************************************************************
 try to get the disk space from disk quotas (SunOS & Solaris2 version)
@@ -64,29 +64,29 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree,
 		 uint64_t *dsize)
 {
 	int ret;
-#if defined(SUNOS5)
+#if defined(SUNOS5) /* Solaris */
 	struct quotctl command;
 #else /* SunOS4 */
 	struct mntent *mnt;
-#endif
-#if defined(SUNOS5)
+#endif /* Solaris */
+#if defined(SUNOS5) /* Solaris */
 	nfs_quotas("", 0, bsize, dfree, dsize);
 
 	command.op = Q_GETQUOTA;
 	command.uid = 0;
 	command.addr = NULL;
 	ret = ioctl(1, Q_QUOTACTL, &command);
-#else
+#else /* SunOS4 */
 	ret = quotactl(Q_GETQUOTA, "", 0, NULL);
-#endif
+#endif /* Solaris */
 
-#if defined(SUNOS5) && defined(VXFS_QUOTA)
+#if defined(SUNOS5) && defined(VXFS_QUOTA) /* Solaris 2 VxFS */
 	disk_quotas_vxfs("", path, bsize, dfree, dsize);
-#endif
+#endif /* Solaris 2 VxFS */
 	return true;
 }
 
-#else
+#else /* not SunOS / Solaris */
 
 #if AIX
 /* AIX quota patch from Ole Holm Nielsen <ohnielse@fysik.dtu.dk> */
@@ -99,10 +99,10 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree,
 #include <sys/statfs.h>
 #include <sys/vmount.h>
 #endif /* AIX 5.3 */
-#else  /* !AIX */
+#else  /* !AIX - HP-UX */
 #include <sys/quota.h>
 #include <devnm.h>
-#endif
+#endif /* AIX */
 
 /****************************************************************************
 try to get the disk space from disk quotas - default version
@@ -124,9 +124,9 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree,
 	return (true);
 }
 
-#endif
+#endif /* SunOS / Solaris */
 
-#if defined(VXFS_QUOTA)
+#if defined(VXFS_QUOTA) /* Veritas for Solaris 2 */
 
 #if defined(SUNOS5)
 
@@ -155,7 +155,7 @@ bool disk_quotas_vxfs(const char *name, char *path, uint64_t *bsize,
 	return true;
 }
 
-#endif /* SUNOS5 || ... */
+#endif /* SUNOS5 */
 
 #endif /* VXFS_QUOTA */
 
