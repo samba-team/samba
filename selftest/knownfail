@@ -302,3 +302,5 @@
 ^samba.blackbox.wbinfo\(s3member:local\).wbinfo -G check for sane mapping\(s3member:local\)
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth against winbindd with failed require-membership-of
 ^samba.ntlm_auth.\(dc:local\).ntlm_auth with NTLMSSP gss-spnego-client and gss-spnego server against winbind with failed require-membership-of
+^samba.ntlm_auth.\(dc:local\).wbinfo store cached credentials
+^samba.ntlm_auth.\(dc:local\).ntlm_auth ccached credentials with NTLMSSP client and gss-spnego server
