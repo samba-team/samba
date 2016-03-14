@@ -104,7 +104,7 @@ static void separate_hashes(uint32_t id,
 /*********************************************************************
  ********************************************************************/
 
-static NTSTATUS be_init(struct idmap_domain *dom)
+static NTSTATUS idmap_hash_initialize(struct idmap_domain *dom)
 {
 	struct sid_hash_table *hashed_domains;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -153,10 +153,10 @@ static NTSTATUS be_init(struct idmap_domain *dom)
 		if ((hash = hash_domain_sid(&dom_list[i].sid)) == 0)
 			continue;
 
-		DEBUG(5,("hash:be_init() Adding %s (%s) -> %d\n",
+		DBG_INFO("Adding %s (%s) -> %d\n",
 			 dom_list[i].domain_name,
 			 sid_string_dbg(&dom_list[i].sid),
-			 hash));
+			 hash);
 
 		hashed_domains[hash].sid = talloc(hashed_domains, struct dom_sid);
 		sid_copy(hashed_domains[hash].sid, &dom_list[i].sid);
@@ -189,7 +189,7 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	nt_status = be_init(dom);
+	nt_status = idmap_hash_initialize(dom);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	for (i=0; ids[i]; i++) {
@@ -239,7 +239,7 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 		ids[i]->status = ID_UNKNOWN;
 	}
 
-	nt_status = be_init(dom);
+	nt_status = idmap_hash_initialize(dom);
 	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	for (i=0; ids[i]; i++) {
@@ -360,7 +360,7 @@ static NTSTATUS nss_hash_close(void)
 ********************************************************************/
 
 static struct idmap_methods hash_idmap_methods = {
-	.init            = be_init,
+	.init            = idmap_hash_initialize,
 	.unixids_to_sids = unixids_to_sids,
 	.sids_to_unixids = sids_to_unixids,
 };
