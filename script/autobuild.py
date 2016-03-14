@@ -566,7 +566,7 @@ def send_email(subject, text, log_tar):
     s.quit()
 
 def email_failure(status, failed_task, failed_stage, failed_tag, errstr,
-                  elapsed_time, log_base=None):
+                  elapsed_time, log_base=None, add_log_tail=True):
     '''send an email to options.email about the failure'''
     elapsed_minutes = elapsed_time / 60.0
     user = os.getenv("USER")
@@ -603,6 +603,23 @@ The top commit for the tree that was built was:
 %s
 
 ''' % (log_base, failed_tag, log_base, failed_tag, log_base, top_commit_msg)
+
+    if add_log_tail:
+        f = open("%s/%s.stdout" % (gitroot, failed_tag), 'r')
+        lines = f.readlines()
+        log_tail = "".join(lines[-50:])
+        num_lines = len(lines)
+        if num_lines < 50:
+            # Also include stderr (compile failures) if < 50 lines of stdout
+            f = open("%s/%s.stderr" % (gitroot, failed_tag), 'r')
+            log_tail += "".join(f.readlines()[-(50-num_lines):])
+
+        text += '''
+The last 50 lines of log messages:
+
+%s
+    ''' % log_tail
+        f.close()
 
     logs = os.path.join(gitroot, 'logs.tar.gz')
     send_email('autobuild failure on %s for task %s during %s'
