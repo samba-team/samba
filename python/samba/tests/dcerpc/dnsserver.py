@@ -27,7 +27,7 @@ class DnsserverTests(RpcInterfaceTestCase):
         super(DnsserverTests, self).setUp()
         self.server = env_get_var_value("SERVER_IP")
         self.zone = env_get_var_value("REALM").lower()
-        self.conn = dnsserver.dnsserver("ncacn_ip_tcp:%s" % (self.server),
+        self.conn = dnsserver.dnsserver("ncacn_ip_tcp:%s[sign]" % (self.server),
                                         self.get_loadparm(),
                                         self.get_credentials())
 
