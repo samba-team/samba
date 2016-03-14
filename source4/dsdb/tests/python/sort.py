@@ -295,7 +295,7 @@ class BaseSortTests(samba.tests.TestCase):
         sort_functions = {'cn': cmp_binary,
                           "employeeNumber": cmp_locale,
                           "accountExpires": cmp_numeric,
-                          "msTSExpireDate4":cmp_binary}
+                          "msTSExpireDate4": cmp_binary}
         attrs = sort_functions.keys()
         attr_pairs = zip(attrs, attrs[1:] + attrs[:1])
 
@@ -312,8 +312,9 @@ class BaseSortTests(samba.tests.TestCase):
                                       controls=["server_sort:1:%d:%s" %
                                                 (rev, sort_attr)])
                 self.assertEqual(len(res), len(self.users))
+                pairs = (forward, reverse)[rev]
 
-                expected_order = [x[1] for x in (forward, reverse)[rev]]
+                expected_order = [x[1] for x in pairs]
                 received_order = [norm(x[result_attr][0]) for x in res]
 
                 if expected_order != received_order:
@@ -323,6 +324,17 @@ class BaseSortTests(samba.tests.TestCase):
                     print "unnormalised:", [x[result_attr][0] for x in res]
                     print "unnormalised: «%s»" % '»  «'.join(x[result_attr][0]
                                                              for x in res)
+                    print "pairs:", pairs
+                    # There are bugs in Windows that we don't want (or
+                    # know how) to replicate regarding timestamp sorting.
+                    # Let's remind ourselves.
+                    if result_attr == "msTSExpireDate4":
+                        print '-' * 72
+                        print ("This test fails against Windows with the "
+                               "default number of elements (33).")
+                        print "Try with --elements=27 (or similar)."
+                        print '-' * 72
+
                 self.assertEquals(expected_order, received_order)
                 for x in res:
                     if sort_attr in x:
