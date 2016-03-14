@@ -112,6 +112,13 @@ static NTSTATUS idmap_hash_initialize(struct idmap_domain *dom)
 	size_t num_domains = 0;
 	int i;
 
+	if (!strequal(dom->name, "*")) {
+		DBG_ERR("Error: idmap_hash configured for domain '%s'. "
+			"But the hash module can only be used for the default "
+			"idmap configuration.\n", dom->name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* If the domain SID hash table has been initialized, assume
 	   that we completed this function previously */
 
