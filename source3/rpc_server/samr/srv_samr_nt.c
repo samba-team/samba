@@ -2617,21 +2617,14 @@ static NTSTATUS get_user_info_18(struct pipes_struct *p,
 
 	ZERO_STRUCTP(r);
 
-	if (security_token_is_system(p->session_info->security_token)) {
-		goto query;
+	if (p->transport != NCALRPC) {
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if ((p->auth.auth_type != DCERPC_AUTH_TYPE_NTLMSSP) ||
-	    (p->auth.auth_type != DCERPC_AUTH_TYPE_KRB5) ||
-	    (p->auth.auth_type != DCERPC_AUTH_TYPE_SPNEGO)) {
+	if (!security_token_is_system(p->session_info->security_token)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->auth.auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
- query:
 	/*
 	 * Do *NOT* do become_root()/unbecome_root() here ! JRA.
 	 */
