@@ -4875,15 +4875,49 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 		if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING ||
 		    !md_remote || !md_local ||
 		    replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
-			ret = replmd_replicated_apply_search_for_parent(ar);
-		} else {
+			struct GUID_txt_buf p_guid_local;
+			struct GUID_txt_buf p_guid_remote;
 			msg = ar->objs->objects[ar->index_current].msg;
 
 			/* Otherwise, just merge on the existing object, force no rename */
-			DEBUG(4,(__location__ ": Keeping object %s and rejecting older rename to %s\n",
-				 ldb_dn_get_linearized(ar->search_msg->dn),
-				 ldb_dn_get_linearized(msg->dn)));
 
+			DEBUG(4,(__location__ ": Looking for new parent for object %s currently under %s "
+				 "as incoming object changing to %s under %s\n",
+				 ldb_dn_get_linearized(ar->search_msg->dn),
+				 GUID_buf_string(&ar->local_parent_guid, &p_guid_local),
+				 ldb_dn_get_linearized(msg->dn),
+				 GUID_buf_string(ar->objs->objects[ar->index_current].parent_guid,
+						 &p_guid_remote)));
+			ret = replmd_replicated_apply_search_for_parent(ar);
+		} else {
+			struct GUID_txt_buf p_guid_local;
+			struct GUID_txt_buf p_guid_remote;
+			msg = ar->objs->objects[ar->index_current].msg;
+
+			/* Otherwise, just merge on the existing object, force no rename */
+
+			if (strcmp(ldb_dn_get_linearized(ar->search_msg->dn),
+				   ldb_dn_get_linearized(msg->dn)) == 0) {
+				if (ar->objs->objects[ar->index_current].parent_guid != NULL &&
+				    GUID_equal(&ar->local_parent_guid,
+					       ar->objs->objects[ar->index_current].parent_guid)
+				    == false) {
+					DEBUG(4,(__location__ ": Keeping object %s at under %s "
+						 "despite incoming object changing parent to %s\n",
+						 ldb_dn_get_linearized(ar->search_msg->dn),
+						 GUID_buf_string(&ar->local_parent_guid, &p_guid_local),
+						 GUID_buf_string(ar->objs->objects[ar->index_current].parent_guid,
+								 &p_guid_remote)));
+				}
+			} else {
+				DEBUG(4,(__location__ ": Keeping object %s at under %s "
+					 " and rejecting older rename to %s under %s\n",
+					 ldb_dn_get_linearized(ar->search_msg->dn),
+					 GUID_buf_string(&ar->local_parent_guid, &p_guid_local),
+					 ldb_dn_get_linearized(msg->dn),
+					 GUID_buf_string(ar->objs->objects[ar->index_current].parent_guid,
+							 &p_guid_remote)));
+			}
 			/*
 			 * This assignment ensures that the strcmp()
 			 * and GUID_equal() calls in
