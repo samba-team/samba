@@ -1628,12 +1628,9 @@ out:
 	if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
 		smb_krb5_kt_free_entry(context, &kt_entry);
 	}
-	if (keytab) {
-		if (memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);
-		}
+	if (memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) {
+		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
-
 	return ret;
 }
 
