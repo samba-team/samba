@@ -644,6 +644,8 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
 
+	TALLOC_FREE(tree);
+
 	/*
 	 * but a durable reconnect on the new session succeeds:
 	 */
@@ -664,13 +666,19 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	h = &_h;
 
 done:
-	if (h != NULL) {
-		smb2_util_close(tree, *h);
+	if (tree == NULL) {
+		tree = tree2;
 	}
 
-	smb2_util_unlink(tree, fname);
+	if (tree != NULL) {
+		if (h != NULL) {
+			smb2_util_close(tree, *h);
+		}
 
-	talloc_free(tree);
+		smb2_util_unlink(tree, fname);
+
+		talloc_free(tree);
+	}
 
 	talloc_free(mem_ctx);
 
