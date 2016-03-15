@@ -1361,6 +1361,11 @@ static struct tevent_req *cli_session_setup_gensec_send(
 		size_t converted;
 		bool ok;
 
+		if (pass == NULL) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return tevent_req_post(req, ev);
+		}
+
 		converted = strhex_to_str((char *)nt_hash.hash,
 					  sizeof(nt_hash.hash),
 					  pass, strlen(pass));
