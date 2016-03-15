@@ -4802,6 +4802,7 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 		const struct ldb_val *omd_value;
 		struct replPropertyMetaDataBlob *rmd;
 		struct ldb_message *msg;
+		int instanceType;
 		ar->objs->objects[ar->index_current].local_parent_dn = NULL;
 		ar->objs->objects[ar->index_current].last_known_parent = NULL;
 
@@ -4846,11 +4847,26 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 
 		ar->local_parent_guid = samdb_result_guid(ar->search_msg, "parentGUID");
 
+		instanceType = ldb_msg_find_attr_as_int(ar->search_msg, "instanceType", 0);
+		if (((instanceType & INSTANCE_TYPE_IS_NC_HEAD) == 0)
+		    && GUID_all_zero(&ar->local_parent_guid)) {
+			DEBUG(0, ("Refusing to replicate new version of %s "
+				  "as local object has an all-zero parentGUID attribute, "
+				  "despite not being an NC root\n",
+				  ldb_dn_get_linearized(ar->search_msg->dn)));
+			return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+		}
+
 		/*
 		 * now we need to check for double renames. We could have a
 		 * local rename pending which our replication partner hasn't
 		 * received yet. We choose which one wins by looking at the
-		 * attribute stamps on the two objects, the newer one wins
+		 * attribute stamps on the two objects, the newer one wins.
+		 *
+		 * This also simply applies the correct algorithms for
+		 * determining if a change was made to name at all, or
+		 * if the object has just been renamed under the same
+		 * parent.
 		 */
 		md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTID_name);
 		md_local  = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTID_name);
