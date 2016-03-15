@@ -561,7 +561,8 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	instanceType = ldb_msg_find_attr_as_int(msg, "instanceType", 0);
 
-	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD && partition_dn) {
+	if ((instanceType & INSTANCE_TYPE_IS_NC_HEAD)
+	    && partition_dn != NULL) {
 		int partition_dn_cmp = ldb_dn_compare(partition_dn, msg->dn);
 		if (partition_dn_cmp != 0) {
 			DEBUG(4, ("Remote server advised us of a new partition %s while processing %s, ignoring\n",
