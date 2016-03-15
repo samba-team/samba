@@ -199,18 +199,20 @@ int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	int i;
 	struct ctdb_control_list_tunable *t;
 
+	list = talloc_strdup(outdata, ":");
+	CTDB_NO_MEMORY(ctdb, list);
+
 	for (i=0; i<ARRAY_SIZE(tunable_map); i++) {
 		if (tunable_map[i].obsolete) {
 			continue;
 		}
-		if (list == NULL) {
-			list = talloc_strdup(outdata, tunable_map[i].name);
-		} else {
-			list = talloc_asprintf_append(list, ":%s",
-						      tunable_map[i].name);
-		}
+		list = talloc_asprintf_append(list, "%s:",
+					      tunable_map[i].name);
 		CTDB_NO_MEMORY(ctdb, list);
 	}
+
+	/* cut the last ':' */
+	list[strlen(list)-1] = '\0';
 
 	outdata->dsize = offsetof(struct ctdb_control_list_tunable, data) +
 		strlen(list) + 1;
