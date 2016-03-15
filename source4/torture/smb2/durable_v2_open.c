@@ -592,10 +592,13 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	struct GUID create_guid = GUID_random();
 	bool ret = true;
 	struct smb2_tree *tree2 = NULL;
+	struct smb2_tree *tree3 = NULL;
 	uint64_t previous_session_id;
 	struct smbcli_options options;
+	struct GUID orig_client_guid;
 
 	options = tree->session->transport->options;
+	orig_client_guid = options.client_guid;
 
 	/* Choose a random name in case the state is left a little funky. */
 	snprintf(fname, 256, "durable_v2_open_reopen1a_%s.dat",
@@ -628,6 +631,9 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	 */
 
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* for oplocks, the client guid can be different: */
+	options.client_guid = GUID_random();
 
 	ret = torture_smb2_connection_ext(tctx, previous_session_id,
 					  &options, &tree2);
@@ -665,9 +671,57 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	_h = io.out.file.handle;
 	h = &_h;
 
+	/*
+	 * a session reconnect on a second tcp connection
+	 */
+
+	previous_session_id = smb2cli_session_current_id(tree2->session->smbXcli);
+
+	/* it works the same with the original guid */
+	options.client_guid = orig_client_guid;
+
+	ret = torture_smb2_connection_ext(tctx, previous_session_id,
+					  &options, &tree3);
+	torture_assert_goto(tctx, ret, ret, done, "couldn't reconnect");
+
+	/*
+	 * check that this has deleted the old session
+	 */
+
+	ZERO_STRUCT(io);
+	io.in.fname = "";
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree2, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
+	TALLOC_FREE(tree2);
+
+	/*
+	 * but a durable reconnect on the new session succeeds:
+	 */
+
+	ZERO_STRUCT(io);
+	io.in.fname = "";
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree3, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, io.in.timeout);
+	_h = io.out.file.handle;
+	h = &_h;
+
 done:
 	if (tree == NULL) {
 		tree = tree2;
+	}
+
+	if (tree == NULL) {
+		tree = tree3;
 	}
 
 	if (tree != NULL) {
