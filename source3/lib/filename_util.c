@@ -267,10 +267,6 @@ bool is_invalid_windows_ea_name(const char *name)
 
 bool ea_list_has_invalid_name(struct ea_list *ea_list)
 {
-	if (lp_posix_pathnames()) {
-		return false;
-	}
-
 	for (;ea_list; ea_list = ea_list->next) {
 		if (is_invalid_windows_ea_name(ea_list->ea.name)) {
 			return true;

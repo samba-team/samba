@@ -716,7 +716,8 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
-			if (ea_list_has_invalid_name(ea_list)) {
+			if (!lp_posix_pathnames() &&
+					ea_list_has_invalid_name(ea_list)) {
 				tevent_req_nterror(req, STATUS_INVALID_EA_NAME);
 				return tevent_req_post(req, ev);
 			}

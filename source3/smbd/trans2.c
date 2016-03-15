@@ -717,7 +717,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 	 * we set *any* of them.
 	 */
 
-	if (ea_list_has_invalid_name(ea_list)) {
+	if (!lp_posix_pathnames() && ea_list_has_invalid_name(ea_list)) {
 		return STATUS_INVALID_EA_NAME;
 	}
 
@@ -1297,7 +1297,8 @@ static void call_trans2open(connection_struct *conn,
 			goto out;
 		}
 
-		if (ea_list_has_invalid_name(ea_list)) {
+		if (!lp_posix_pathnames() &&
+				ea_list_has_invalid_name(ea_list)) {
 			int param_len = 30;
 			*pparams = (char *)SMB_REALLOC(*pparams, param_len);
 			if(*pparams == NULL ) {

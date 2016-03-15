@@ -1178,7 +1178,8 @@ static void call_nt_transact_create(connection_struct *conn,
 			goto out;
 		}
 
-		if (ea_list_has_invalid_name(ea_list)) {
+		if (!lp_posix_pathnames() &&
+				ea_list_has_invalid_name(ea_list)) {
 			/* Realloc the size of parameters and data we will return */
 			if (flags & EXTENDED_RESPONSE_REQUIRED) {
 				/* Extended response is 32 more byyes. */
