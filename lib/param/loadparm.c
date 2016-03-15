@@ -3247,11 +3247,7 @@ int lpcfg_client_ipc_signing(struct loadparm_context *lp_ctx)
 {
 	int client_ipc_signing = lpcfg__client_ipc_signing(lp_ctx);
 	if (client_ipc_signing == SMB_SIGNING_DEFAULT) {
-		int ipc_min_protocol = lpcfg_client_ipc_min_protocol(lp_ctx);
-		if (ipc_min_protocol >= PROTOCOL_SMB2_02) {
-			return SMB_SIGNING_REQUIRED;
-		}
-		return lpcfg_client_signing(lp_ctx);
+		return SMB_SIGNING_REQUIRED;
 	}
 	return client_ipc_signing;
 }
