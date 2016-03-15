@@ -616,6 +616,11 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	if (in->parent_object_guid == NULL) {
 		out->parent_guid = NULL;
+		if ((instanceType & INSTANCE_TYPE_IS_NC_HEAD) == 0) {
+			DEBUG(0, ("Refusing to replicate %s from a server that did not provide a parentGUID!\n",
+				  ldb_dn_get_linearized(msg->dn)));
+			return WERR_DS_DRA_INCONSISTENT_DIT;
+		}
 	} else {
 		out->parent_guid = talloc(mem_ctx, struct GUID);
 		W_ERROR_HAVE_NO_MEMORY(out->parent_guid);
