@@ -144,6 +144,7 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 
 		ret = krb5_unparse_name(krbctx, princ, &princ_s);
 		if (ret != 0) {
+			SAFE_FREE(key);
 			continue;
 		}
 
@@ -152,12 +153,14 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 									enctypes[i]);
 		SAFE_FREE(princ_s);
 		if (salt_princ_s == NULL) {
+			SAFE_FREE(key);
 			continue;
 		}
 
 		ret = krb5_parse_name(krbctx, salt_princ_s, &salt_princ);
 		SAFE_FREE(salt_princ_s);
 		if (ret != 0) {
+			SAFE_FREE(key);
 			continue;
 		}
 
