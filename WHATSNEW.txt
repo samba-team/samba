@@ -189,6 +189,53 @@ CTDB changes
 * All CTDB current manual pages are now correctly installed
 
 
+EXPERIMENTAL FEATURES
+=====================
+
+SMB3 Multi-Channel
+------------------
+
+Samba 4.4.0 adds *experimental* support for SMB3 Multi-Channel.
+Multi-Channel is an SMB3 protocol feature that allows the client
+to bind multiple transport connections into one authenticated
+SMB session. This allows for increased fault tolerance and
+throughput. The client chooses transport connections as reported
+by the server and also chooses over which of the bound transport
+connections to send traffic. I/O operations for a given file
+handle can span multiple network connections this way.
+An SMB multi-channel session will be valid as long as at least
+one of its channels are up.
+
+In Samba, multi-channel can be enabled by setting the new
+smb.conf option "server multi channel support" to "yes".
+It is disabled by default.
+
+Samba has to report interface speeds and some capabilities to
+the client. On Linux, Samba can auto-detect the speed of an
+interface. But to support other platforms, and in order to be
+able to manually override the detected values, the "interfaces"
+smb.conf option has been given an extended syntax, by which an
+interface specification can additionally carry speed and
+capability information. The extended syntax looks like this
+for setting the speed to 1 gigabit per second:
+
+    interfaces = 192.168.1.42;speed=1000000000
+
+This extension should be used with care and are mainly intended
+for testing. See the smb.conf manual page for details.
+
+CAVEAT: While this should be working without problems mostly,
+there are still corner cases in the treatment of channel failures
+that may result in DATA CORRUPTION when these race conditions hit.
+It is hence
+
+    NOT RECOMMENDED TO USE MULTI-CHANNEL IN PRODUCTION
+
+at this stage. This situation can be expected to improve during
+the life-time of the 4.4 release. Feed-back from test-setups is
+highly welcome.
+
+
 REMOVED FEATURES
 ================
 
@@ -228,6 +275,8 @@ smb.conf changes
   --------------		-----------		-------
   aio max threads               New                     100
   ldap page size		Changed default		1000
+  server multi channel support	New			No
+  interfaces			Extended syntax
 
 
 KNOWN ISSUES
