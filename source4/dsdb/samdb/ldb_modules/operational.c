@@ -352,7 +352,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	if (parent_dn == NULL) {
 		DEBUG(4,(__location__ ": Failed to find parent for dn %s\n",
 					 ldb_dn_get_linearized(msg->dn)));
-		return LDB_SUCCESS;
+		return LDB_ERR_OTHER;
 	}
 	ret = dsdb_module_search_dn(module, msg, &parent_res, parent_dn, attrs2,
 	                            DSDB_FLAG_NEXT_MODULE |
@@ -372,7 +372,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	parent_guid = ldb_msg_find_ldb_val(parent_res->msgs[0], "objectGUID");
 	if (!parent_guid) {
 		talloc_free(parent_res);
-		return LDB_SUCCESS;
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	}
 
 	v = data_blob_dup_talloc(parent_res, *parent_guid);
