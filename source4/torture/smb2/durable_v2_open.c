@@ -629,13 +629,9 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
 
-	if (!torture_smb2_connection_ext(tctx, previous_session_id,
-					 &options, &tree2))
-	{
-		torture_warning(tctx, "couldn't reconnect, bailing\n");
-		ret = false;
-		goto done;
-	}
+	ret = torture_smb2_connection_ext(tctx, previous_session_id,
+					  &options, &tree2);
+	torture_assert_goto(tctx, ret, ret, done, "couldn't reconnect");
 
 	/*
 	 * check that this has deleted the old session
