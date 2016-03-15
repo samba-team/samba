@@ -20,7 +20,7 @@ bld.SAMBA_SUBSYSTEM('ldbwrap',
 
 
 bld.SAMBA_PYTHON('python_samba__ldb', 'pyldb.c',
-                 deps='ldbsamba pyparam_util ldbwrap pyldb-util',
+                 deps='ldbsamba pyparam_util ldbwrap pyldb-util pyauth',
                  realname='samba/_ldb.so')
 
 bld.SAMBA_MODULE('ldbsamba_extensions',
