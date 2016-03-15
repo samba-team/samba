@@ -666,12 +666,14 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 {
 	int ret;
 
+	/*
+	 * We can directly use SMB_VFS_STAT here, as if this was a
+	 * POSIX call on a symlink, we've already refused it.
+	 * For a Windows acl mapped call on a symlink, we want to follow
+	 * it.
+	 */
 	/* Get the stat struct for the owner info. */
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
+	ret = SMB_VFS_STAT(conn, smb_fname);
 	if (ret == -1) {
 		return 0;
 	}
