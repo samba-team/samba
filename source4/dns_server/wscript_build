@@ -57,5 +57,5 @@ bld.SAMBA_LIBRARY('dlz_bind9_for_torture',
 
 bld.SAMBA_PYTHON('python_dsdb_dns',
 	         source='pydns.c',
-	         deps='samdb pyldb-util pyrpc_util dnsserver_common',
+	         deps='samdb pyldb-util pyrpc_util dnsserver_common pytalloc-util',
 	         realname='samba/dsdb_dns.so')
