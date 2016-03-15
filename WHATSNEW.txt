@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the fourth release candidate of Samba 4.4.  This is *not*
+This is the fifth release candidate of Samba 4.4.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -234,6 +234,37 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.4.0rc4
+======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 11780: mkdir can return ACCESS_DENIED incorrectly on create race.
+   * BUG 11783: Mismatch between local and remote attribute ids lets
+     replication fail with custom schema.
+   * BUG 11789: Talloc: Version 2.1.6.
+
+o  Ira Cooper <ira@samba.org>
+   * BUG 11774: vfs_glusterfs: Fix use after free in AIO callback.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11755: Fix net join.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 11770: Reset TCP Connections during IP failover.
+
+o  Justin Maggard <jmaggard10@gmail.com>
+   * BUG 11773: s3:smbd: Add negprot remote arch detection for OSX.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11772: ldb: Version 1.1.26.
+   * BUG 11782: "trustdom_list_done: Got invalid trustdom response" message
+     should be avoided.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11769: libnet: Make Kerberos domain join site-aware.
+   * BUG 11788: Quota is not supported on Solaris 10.
 
 
 CHANGES SINCE 4.4.0rc3
