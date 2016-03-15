@@ -728,6 +728,14 @@ struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "raw NTLMv2 auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(raw_ntlmv2_auth),
+		.special	= NULL,
+		.enum_list	= NULL,
+	},
+	{
 		.label		= "client NTLMv2 auth",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
