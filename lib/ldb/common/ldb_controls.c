@@ -859,16 +859,18 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 	if (LDB_CONTROL_CMP(control_strings, LDB_CONTROL_PAGED_RESULTS_NAME) == 0) {
 		struct ldb_paged_control *control;
 		const char *p;
+		char cookie[1024];
 		int crit, size, ret;
-		
+
+		cookie[0] = '\0';
 		p = &(control_strings[sizeof(LDB_CONTROL_PAGED_RESULTS_NAME)]);
-		ret = sscanf(p, "%d:%d", &crit, &size);
-		if ((ret != 2) || (crit < 0) || (crit > 1) || (size < 0)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid paged_results control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):size(n)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+		ret = sscanf(p, "%d:%d:%1023[^$]", &crit, &size, cookie);
+		if ((ret < 2) || (ret > 3) || (crit < 0) || (crit > 1) ||
+		    (size < 0)) {
+			ldb_set_errstring(ldb,
+				"invalid paged_results control syntax\n"
+				" syntax: crit(b):size(n)[:cookie(base64)]\n"
+				"   note: b = boolean, n = number");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -877,8 +879,25 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ctrl->critical = crit;
 		control = talloc(ctrl, struct ldb_paged_control);
 		control->size = size;
-		control->cookie = NULL;
-		control->cookie_len = 0;
+		if (cookie[0] != '\0') {
+			int len = ldb_base64_decode(cookie);
+			if (len < 0) {
+				ldb_set_errstring(ldb,
+						  "invalid paged_results cookie"
+						  " (probably too long)\n");
+				talloc_free(ctrl);
+				return NULL;
+			}
+			control->cookie_len = len;
+			control->cookie = talloc_memdup(control, cookie, control->cookie_len);
+			if (control->cookie == NULL) {
+				ldb_oom(ldb);
+				return NULL;
+			}
+		} else {
+			control->cookie = NULL;
+			control->cookie_len = 0;
+		}
 		ctrl->data = control;
 
 		return ctrl;
