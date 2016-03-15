@@ -39,6 +39,7 @@
 struct subtree_rename_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
+	bool base_renamed;
 };
 
 static struct subtree_rename_context *subren_ctx_init(struct ldb_module *module,
@@ -54,48 +55,15 @@ static struct subtree_rename_context *subren_ctx_init(struct ldb_module *module,
 
 	ac->module = module;
 	ac->req = req;
+	ac->base_renamed = false;
 
 	return ac;
-}
-
-static int subtree_rename_callback(struct ldb_request *req,
-				   struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct subtree_rename_context *ac;
-
-	ac = talloc_get_type(req->context, struct subtree_rename_context);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		return ldb_module_send_referral(ac->req, ares->referral);
-	}
-
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	if (ares->type != LDB_REPLY_DONE) {
-		ldb_asprintf_errstring(ldb, "Invalid LDB reply type %d", ares->type);
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	talloc_free(ares);
-	return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
 }
 
 static int subtree_rename_search_onelevel_callback(struct ldb_request *req,
 						   struct ldb_reply *ares)
 {
 	struct subtree_rename_context *ac;
-	struct ldb_request *rename_req;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct subtree_rename_context);
@@ -109,11 +77,26 @@ static int subtree_rename_search_onelevel_callback(struct ldb_request *req,
 					ares->response, ares->error);
 	}
 
+	if (ac->base_renamed == false) {
+		ac->base_renamed = true;
+
+		ret = dsdb_module_rename(ac->module,
+					 ac->req->op.rename.olddn,
+					 ac->req->op.rename.newdn,
+					 DSDB_FLAG_NEXT_MODULE, req);
+		if (ret != LDB_SUCCESS) {
+			return ldb_module_done(ac->req, NULL, NULL, ret);
+		}
+	}
+
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 	{
-		struct ldb_dn *old_dn = ares->message->dn;
-		struct ldb_dn *new_dn = ldb_dn_copy(ares, old_dn);
+		struct ldb_dn *old_dn = NULL;
+		struct ldb_dn *new_dn = NULL;
+
+		old_dn = ares->message->dn;
+		new_dn = ldb_dn_copy(ares, old_dn);
 		if (!new_dn) {
 			return ldb_module_oom(ac->module);
 		}
@@ -130,7 +113,7 @@ static int subtree_rename_search_onelevel_callback(struct ldb_request *req,
 		}
 		ret = dsdb_module_rename(ac->module, old_dn, new_dn, DSDB_FLAG_OWN_MODULE, req);
 		if (ret != LDB_SUCCESS) {
-			return ret;
+			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 
 		talloc_free(ares);
@@ -140,22 +123,17 @@ static int subtree_rename_search_onelevel_callback(struct ldb_request *req,
 	case LDB_REPLY_REFERRAL:
 		/* ignore */
 		break;
-
 	case LDB_REPLY_DONE:
-
-		ret = ldb_build_rename_req(&rename_req, ldb_module_get_ctx(ac->module), ac,
-					   ac->req->op.rename.olddn,
-					   ac->req->op.rename.newdn,
-					   ac->req->controls,
-					   ac, subtree_rename_callback,
-					   ac->req);
-		LDB_REQ_SET_LOCATION(req);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
 		talloc_free(ares);
-		return ldb_next_request(ac->module, rename_req);
+		return ldb_module_done(ac->req, NULL, NULL, LDB_SUCCESS);
+	default:
+	{
+		struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+
+		ldb_asprintf_errstring(ldb, "Invalid LDB reply type %d", ares->type);
+		return ldb_module_done(ac->req, NULL, NULL,
+					LDB_ERR_OPERATIONS_ERROR);
+	}
 	}
 
 	return LDB_SUCCESS;
