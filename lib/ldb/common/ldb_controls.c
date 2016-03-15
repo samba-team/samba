@@ -507,8 +507,16 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->match.byOffset.contentCount = cc;
 		}
 		if (ctxid[0]) {
-			control->ctxid_len = ldb_base64_decode(ctxid);
-			control->contextId = talloc_memdup(control, ctxid, control->ctxid_len);
+			int len = ldb_base64_decode(ctxid);
+			if (len < 0) {
+				ldb_set_errstring(ldb,
+						  "invalid VLV context_id\n");
+				talloc_free(ctrl);
+				return NULL;
+			}
+			control->ctxid_len = len;
+			control->contextId = talloc_memdup(control, ctxid,
+							   control->ctxid_len);
 		} else {
 			control->ctxid_len = 0;
 			control->contextId = NULL;
@@ -552,7 +560,14 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		control->flags = flags;
 		control->max_attributes = max_attrs;
 		if (*cookie) {
-			control->cookie_len = ldb_base64_decode(cookie);
+			int len = ldb_base64_decode(cookie);
+			if (len < 0) {
+				ldb_set_errstring(ldb,
+						  "invalid dirsync cookie\n");
+				talloc_free(ctrl);
+				return NULL;
+			}
+			control->cookie_len = len;
 			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
 		} else {
 			control->cookie = NULL;
@@ -597,7 +612,15 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		control->flags = flags;
 		control->max_attributes = max_attrs;
 		if (*cookie) {
-			control->cookie_len = ldb_base64_decode(cookie);
+			int len = ldb_base64_decode(cookie);
+			if (len < 0) {
+				ldb_set_errstring(ldb,
+						  "invalid dirsync_ex cookie"
+						  " (probably too long)\n");
+				talloc_free(ctrl);
+				return NULL;
+			}
+			control->cookie_len = len;
 			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
 		} else {
 			control->cookie = NULL;
