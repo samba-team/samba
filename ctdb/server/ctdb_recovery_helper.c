@@ -1218,6 +1218,7 @@ struct collect_highseqnum_db_state {
 	uint32_t *pnn_list;
 	int count;
 	uint32_t *caps;
+	uint32_t *ban_credits;
 	uint32_t db_id;
 	struct recdb_context *recdb;
 	uint32_t max_pnn;
@@ -1231,7 +1232,8 @@ static struct tevent_req *collect_highseqnum_db_send(
 			struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			uint32_t *pnn_list, int count, uint32_t *caps,
-			uint32_t db_id, struct recdb_context *recdb)
+			uint32_t *ban_credits, uint32_t db_id,
+			struct recdb_context *recdb)
 {
 	struct tevent_req *req, *subreq;
 	struct collect_highseqnum_db_state *state;
@@ -1248,6 +1250,7 @@ static struct tevent_req *collect_highseqnum_db_send(
 	state->pnn_list = pnn_list;
 	state->count = count;
 	state->caps = caps;
+	state->ban_credits = ban_credits;
 	state->db_id = db_id;
 	state->recdb = recdb;
 
@@ -1332,12 +1335,15 @@ static void collect_highseqnum_db_pulldb_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct collect_highseqnum_db_state *state = tevent_req_data(
+		req, struct collect_highseqnum_db_state);
 	int ret;
 	bool status;
 
 	status = pull_database_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
 	if (! status) {
+		state->ban_credits[state->max_pnn] += 1;
 		tevent_req_error(req, ret);
 		return;
 	}
@@ -1360,6 +1366,7 @@ struct collect_all_db_state {
 	uint32_t *pnn_list;
 	int count;
 	uint32_t *caps;
+	uint32_t *ban_credits;
 	uint32_t db_id;
 	struct recdb_context *recdb;
 	struct ctdb_pulldb pulldb;
@@ -1373,7 +1380,8 @@ static struct tevent_req *collect_all_db_send(
 			struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			uint32_t *pnn_list, int count, uint32_t *caps,
-			uint32_t db_id, struct recdb_context *recdb)
+			uint32_t *ban_credits, uint32_t db_id,
+			struct recdb_context *recdb)
 {
 	struct tevent_req *req, *subreq;
 	struct collect_all_db_state *state;
@@ -1418,6 +1426,8 @@ static void collect_all_db_pulldb_done(struct tevent_req *subreq)
 	status = pull_database_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
 	if (! status) {
+		pnn = state->pnn_list[state->index];
+		state->ban_credits[pnn] += 1;
 		tevent_req_error(req, ret);
 		return;
 	}
@@ -1463,6 +1473,7 @@ struct recover_db_state {
 	uint32_t *pnn_list;
 	int count;
 	uint32_t *caps;
+	uint32_t *ban_credits;
 	uint32_t db_id;
 	bool persistent;
 
@@ -1489,6 +1500,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 					  struct ctdb_tunable_list *tun_list,
 					  uint32_t *pnn_list, int count,
 					  uint32_t *caps,
+					  uint32_t *ban_credits,
 					  uint32_t generation,
 					  uint32_t db_id, bool persistent)
 {
@@ -1507,6 +1519,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 	state->pnn_list = pnn_list;
 	state->count = count;
 	state->caps = caps;
+	state->ban_credits = ban_credits;
 	state->db_id = db_id;
 	state->persistent = persistent;
 
@@ -1692,12 +1705,14 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 		subreq = collect_highseqnum_db_send(
 				state, state->ev, state->client,
 				state->pnn_list, state->count, state->caps,
-				state->db_id, state->recdb);
+				state->ban_credits, state->db_id,
+				state->recdb);
 	} else {
 		subreq = collect_all_db_send(
 				state, state->ev, state->client,
 				state->pnn_list, state->count, state->caps,
-				state->db_id, state->recdb);
+				state->ban_credits, state->db_id,
+				state->recdb);
 	}
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -1912,6 +1927,7 @@ struct db_recovery_one_state {
 	uint32_t *pnn_list;
 	int count;
 	uint32_t *caps;
+	uint32_t *ban_credits;
 	uint32_t generation;
 	uint32_t db_id;
 	bool persistent;
@@ -1927,6 +1943,7 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 					   struct ctdb_tunable_list *tun_list,
 					   uint32_t *pnn_list, int count,
 					   uint32_t *caps,
+					   uint32_t *ban_credits,
 					   uint32_t generation)
 {
 	struct tevent_req *req, *subreq;
@@ -1963,13 +1980,14 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 		substate->pnn_list = pnn_list;
 		substate->count = count;
 		substate->caps = caps;
+		substate->ban_credits = ban_credits;
 		substate->generation = generation;
 		substate->db_id = dbmap->dbs[i].db_id;
 		substate->persistent = dbmap->dbs[i].flags &
 				       CTDB_DB_FLAGS_PERSISTENT;
 
 		subreq = recover_db_send(state, ev, client, tun_list,
-					 pnn_list, count, caps,
+					 pnn_list, count, caps, ban_credits,
 					 generation, substate->db_id,
 					 substate->persistent);
 		if (tevent_req_nomem(subreq, req)) {
@@ -2005,7 +2023,7 @@ static void db_recovery_one_done(struct tevent_req *subreq)
 		subreq = recover_db_send(state, state->ev, substate->client,
 					 substate->tun_list,
 					 substate->pnn_list, substate->count,
-					 substate->caps,
+					 substate->caps, substate->ban_credits,
 					 substate->generation, substate->db_id,
 					 substate->persistent);
 		if (tevent_req_nomem(subreq, req)) {
@@ -2074,6 +2092,7 @@ struct recovery_state {
 	uint32_t destnode;
 	struct ctdb_node_map *nodemap;
 	uint32_t *caps;
+	uint32_t *ban_credits;
 	struct ctdb_tunable_list *tun_list;
 	struct ctdb_vnn_map *vnnmap;
 	struct ctdb_dbid_map *dbmap;
@@ -2088,6 +2107,7 @@ static void recovery_active_done(struct tevent_req *subreq);
 static void recovery_start_recovery_done(struct tevent_req *subreq);
 static void recovery_vnnmap_update_done(struct tevent_req *subreq);
 static void recovery_db_recovery_done(struct tevent_req *subreq);
+static void recovery_failed_done(struct tevent_req *subreq);
 static void recovery_normal_done(struct tevent_req *subreq);
 static void recovery_end_recovery_done(struct tevent_req *subreq);
 
@@ -2194,6 +2214,12 @@ static void recovery_nodemap_done(struct tevent_req *subreq)
 					    state, &state->pnn_list);
 	if (state->count <= 0) {
 		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
+	state->ban_credits = talloc_zero_array(state, uint32_t,
+					       state->nodemap->num);
+	if (tevent_req_nomem(state->ban_credits, req)) {
 		return;
 	}
 
@@ -2523,7 +2549,8 @@ static void recovery_vnnmap_update_done(struct tevent_req *subreq)
 	subreq = db_recovery_send(state, state->ev, state->client,
 				  state->dbmap, state->tun_list,
 				  state->pnn_list, state->count,
-				  state->caps, state->vnnmap->generation);
+				  state->caps, state->ban_credits,
+				  state->vnnmap->generation);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2546,7 +2573,43 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 	LOG("%d of %d databases recovered\n", count, state->dbmap->num);
 
 	if (! status) {
-		tevent_req_error(req, EIO);
+		uint32_t max_pnn = CTDB_UNKNOWN_PNN, max_credits = 0;
+		int i;
+
+		/* Bans are not enabled */
+		if (state->tun_list->enable_bans == 0) {
+			tevent_req_error(req, EIO);
+			return;
+		}
+
+		for (i=0; i<state->count; i++) {
+			uint32_t pnn;
+			pnn = state->pnn_list[i];
+			if (state->ban_credits[pnn] > max_credits) {
+				max_pnn = pnn;
+				max_credits = state->ban_credits[pnn];
+			}
+		}
+
+		/* If pulling database fails multiple times */
+		if (max_credits >= NUM_RETRIES) {
+			struct ctdb_req_message message;
+
+			LOG("Assigning banning credits to node %u\n", max_pnn);
+
+			message.srvid = CTDB_SRVID_BANNING;
+			message.data.pnn = max_pnn;
+
+			subreq = ctdb_client_message_send(
+					state, state->ev, state->client,
+					ctdb_client_pnn(state->client),
+					&message);
+			if (tevent_req_nomem(subreq, req)) {
+				return;
+			}
+			tevent_req_set_callback(subreq, recovery_failed_done,
+						req);
+		}
 		return;
 	}
 
@@ -2559,6 +2622,22 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, recovery_normal_done, req);
+}
+
+static void recovery_failed_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	int ret;
+	bool status;
+
+	status = ctdb_client_message_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		LOG("failed to assign banning credits, ret=%d\n", ret);
+	}
+
+	tevent_req_error(req, EIO);
 }
 
 static void recovery_normal_done(struct tevent_req *subreq)
