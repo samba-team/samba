@@ -512,6 +512,7 @@ static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_request *search_req;
 	struct ldb_dn *base_dn;
 	int ret;
+	static const char *attrs[] = {"nTSecurityDescriptor", "*", NULL};
 
 	ac = talloc_get_type(req->context, struct oc_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -544,7 +545,7 @@ static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 		: ac->req->op.mod.message->dn;
 	ret = ldb_build_search_req(&search_req, ldb, ac, base_dn,
 				   LDB_SCOPE_BASE, "(objectClass=*)",
-				   NULL, NULL, ac,
+				   attrs, NULL, ac,
 				   get_search_callback, ac->req);
 	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {

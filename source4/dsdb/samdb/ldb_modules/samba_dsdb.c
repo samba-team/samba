@@ -280,7 +280,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "aclread",
 					     "samldb",
 					     "password_hash",
-					     "operational",
 					     "instancetype",
 					     "objectclass_attrs",
 					     NULL };
@@ -294,6 +293,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 		"rdn_name",
 		"subtree_delete",
 		"repl_meta_data",
+		"operational",
 		"subtree_rename",
 		"linked_attributes",
 		NULL};

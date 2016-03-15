@@ -4836,6 +4836,9 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	char *tmp_str;
 	char *filter;
 	struct ldb_request *search_req;
+	static const char *attrs[] = { "*", "instanceType",
+				       "replPropertyMetaData", "nTSecurityDescriptor",
+				       NULL };
 
 	if (ar->index_current >= ar->objs->num_objects) {
 		/* done with it, go to next stage */
@@ -4859,7 +4862,7 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   ar->objs->partition_dn,
 				   LDB_SCOPE_SUBTREE,
 				   filter,
-				   NULL,
+				   attrs,
 				   NULL,
 				   ar,
 				   replmd_replicated_apply_search_callback,
