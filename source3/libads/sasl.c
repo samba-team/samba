@@ -646,7 +646,7 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct ads_service_principal p;
+	struct ads_service_principal p = {0};
 	struct berval *scred=NULL;
 	int rc, i;
 	ADS_STATUS status;
