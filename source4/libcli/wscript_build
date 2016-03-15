@@ -33,7 +33,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
 
 bld.SAMBA_PYTHON('pysmb',
     source='pysmb.c',
-    deps='LIBCLI_SMB_COMPOSITE LIBCLI_SMB2 tevent-util pyparam_util',
+    deps='LIBCLI_SMB_COMPOSITE LIBCLI_SMB2 tevent-util pyparam_util pytalloc-util',
 	public_deps='cli_composite samba-credentials gensec LIBCLI_RESOLVE tevent param_options',
     realname='samba/smb.so'
     )

@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('MESSAGING',
 
 bld.SAMBA_PYTHON('python_messaging',
 	source='pymessaging.c',
-	deps='MESSAGING events pyparam_util',
+	deps='MESSAGING events pyparam_util pytalloc-util',
 	realname='samba/messaging.so'
 	)
 
