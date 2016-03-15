@@ -11,16 +11,7 @@
     and <emphasis>disabled</emphasis>.
     </para>
 
-    <para>The default value is the same as the effective value of
-    <smbconfoption name="client signing"/> if the effective value of
-    <smbconfoption name="client ipc min protocol"/> is
-    <constant>NT1</constant>. In any other case the default value is
-    <constant>mandatory</constant>.</para>
-
-    <para>Note that the default value will be changed to <constant>mandatory</constant>
-    in all cases for Samba 4.5</para>
-
-    <para>When the effective value of this option is <constant>mandatory</constant>, SMB signing is required.</para>
+    <para>When set to mandatory or default, SMB signing is required.</para>
 
     <para>When set to auto, SMB signing is offered, but not enforced and if set
     to disabled, SMB signing is not offered either.</para>
