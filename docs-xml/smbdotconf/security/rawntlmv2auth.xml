@@ -11,10 +11,9 @@
     and <command moreinfo="none">ntlm auth</command> are all disabled,
     then only clients with SPNEGO support will be permitted.
     That means NTLMv2 is only supported within NTLMSSP.</para>
-
-    <para>Note that the default will change to "no" with Samba 4.5.</para>
 </description>
 
-<value type="default">yes</value>
-<value type="example">no</value>
+<related>lanman auth</related>
+<related>ntlm auth</related>
+<value type="default">no</value>
 </samba:parameter>
