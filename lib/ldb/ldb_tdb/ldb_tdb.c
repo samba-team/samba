@@ -1054,7 +1054,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 			talloc_free(tdb_key.dptr);
 			ldb_asprintf_errstring(ldb_module_get_ctx(module),
 					       "Entry %s already exists",
-					       ldb_dn_get_linearized(msg->dn));
+					       ldb_dn_get_linearized(req->op.rename.newdn));
 			/* finding the new record already in the DB is an error */
 			talloc_free(msg);
 			return LDB_ERR_ENTRY_ALREADY_EXISTS;
