@@ -156,7 +156,7 @@ static void uwrap_log(enum uwrap_dbglvl_e dbglvl, const char *function, const ch
 	va_end(va);
 
 	if (lvl >= dbglvl) {
-		const char *prefix;
+		const char *prefix = "UWRAP";
 		switch (dbglvl) {
 			case UWRAP_LOG_ERROR:
 				prefix = "UWRAP_ERROR";
