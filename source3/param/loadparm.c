@@ -868,7 +868,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.dcerpc_endpoint_servers = str_list_make_v3_const(NULL, "epmapper wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi dssetup unixinfo browser eventlog6 backupkey dnsserver", NULL);
 
 	Globals.tls_enabled = true;
-	Globals.tls_verify_peer = TLS_VERIFY_PEER_NO_CHECK;
+	Globals.tls_verify_peer = TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE;
 
 	lpcfg_string_set(Globals.ctx, &Globals._tls_keyfile, "tls/key.pem");
 	lpcfg_string_set(Globals.ctx, &Globals._tls_certfile, "tls/cert.pem");

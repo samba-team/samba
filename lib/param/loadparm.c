@@ -2574,7 +2574,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "min wins ttl", "21600");
 
 	lpcfg_do_global_parameter(lp_ctx, "tls enabled", "True");
-	lpcfg_do_global_parameter(lp_ctx, "tls verify peer", "no_check");
+	lpcfg_do_global_parameter(lp_ctx, "tls verify peer", "as_strict_as_possible");
 	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
