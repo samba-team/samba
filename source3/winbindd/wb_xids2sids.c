@@ -199,7 +199,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 
 	child = idmap_child();
 	subreq = dcerpc_wbint_UnixIDs2Sids_send(
-		state, ev, child->binding_handle,
+		state, ev, child->binding_handle, dom_map->name,
 		state->num_dom_xids, state->dom_xids, state->dom_sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
