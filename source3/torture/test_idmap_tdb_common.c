@@ -62,11 +62,6 @@ bool idmap_is_online(void)
 	return true;
 }
 
-NTSTATUS idmap_backends_unixid_to_sid(struct id_map *id)
-{
-	return NT_STATUS_OK;
-}
-
 static bool open_db(struct idmap_tdb_common_context *ctx)
 {
 	NTSTATUS status;
