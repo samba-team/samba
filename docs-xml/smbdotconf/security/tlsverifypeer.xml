@@ -41,11 +41,7 @@
 	<smbconfoption name="tls crl file"/> needs to be configured.
 	Future versions of Samba may implement additional checks.
 	</para>
-
-	<para>Note that the default is likely to change from
-	<constant>no_check</constant> to <constant>as_strict_as_possible</constant>
-	with Samba 4.5.</para>
 </description>
 
-<value type="default">no_check</value>
+<value type="default">as_strict_as_possible</value>
 </samba:parameter>
