@@ -67,6 +67,33 @@ if have_tls_support:
         plantestsuite("samba4.ldb.ldaps with options %s(dc)" % options, "dc",
                 "%s/test_ldb.sh ldaps $SERVER_IP %s" % (bbdir, options))
 
+    creds_options = [
+        '--simple-bind-dn=$USERNAME@$REALM --password=$PASSWORD',
+    ]
+    peer_options = {
+        'SERVER_IP': '$SERVER_IP',
+        'SERVER_NAME': '$SERVER',
+        'SERVER.REALM': '$SERVER.$REALM',
+    }
+    tls_verify_options = [
+        '--option="tlsverifypeer=no_check"',
+        '--option="tlsverifypeer=ca_only"',
+        '--option="tlsverifypeer=ca_and_name_if_available"',
+        '--option="tlsverifypeer=ca_and_name"',
+        '--option="tlsverifypeer=as_strict_as_possible"',
+    ]
+
+    # we use :local for fl2008r2dc because of the self-signed certificate
+    for env in ["ad_dc_ntvfs", "fl2008r2dc:local"]:
+        for peer_key in peer_options.keys():
+            peer_val = peer_options[peer_key]
+            for creds in creds_options:
+                for tls_verify in tls_verify_options:
+                    options = creds + ' ' + tls_verify
+                    plantestsuite("samba4.ldb.simple.ldaps with options %s %s(%s)" % (
+                                  peer_key, options, env), env,
+                                  "%s/test_ldb_simple.sh ldaps %s %s" % (bbdir, peer_val, options))
+
 # test all "ldap server require strong auth" combinations
 for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
     options = '--simple-bind-dn="$USERNAME@$REALM" --password="$PASSWORD"'
