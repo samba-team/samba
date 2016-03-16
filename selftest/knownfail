@@ -307,3 +307,13 @@
 ^samba4.ldb.simple.ldap with SIMPLE-BIND.*ad_dc_ntvfs # ldap server require strong auth = allow_sasl_over_tls
 ^samba4.ldb.simple.ldap with SIMPLE-BIND.*fl2003dc    # ldap server require strong auth = yes
 ^samba4.ldb.simple.ldaps with SASL-BIND.*fl2003dc     # ldap server require strong auth = yes
+# These are supposed to fail as we want to verify the "tls verify peer"
+# restrictions. Note that fl2008r2dc uses a self-signed certificate
+# with does not have a crl file.
+#
+^samba4.ldb.simple.ldaps.*SERVER_NAME.*tlsverifypeer=ca_and_name_if_available\(
+^samba4.ldb.simple.ldaps.*SERVER_NAME.*tlsverifypeer=ca_and_name\(
+^samba4.ldb.simple.ldaps.*SERVER_NAME.*tlsverifypeer=as_strict_as_possible\(
+^samba4.ldb.simple.ldaps.*SERVER_IP.*tlsverifypeer=ca_and_name\(
+^samba4.ldb.simple.ldaps.*SERVER_IP.*tlsverifypeer=as_strict_as_possible\(
+^samba4.ldb.simple.ldaps.*SERVER.REALM.*tlsverifypeer=as_strict_as_possible.*fl2008r2dc
