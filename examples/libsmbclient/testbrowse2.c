@@ -68,16 +68,18 @@ static smbitem* get_smbitem_list(SMBCCTX *ctx, char *smb_path){
     if ((fd = smbc_getFunctionOpendir(ctx)(ctx, smb_path)) == NULL)
         return NULL;
     while((dirent = smbc_getFunctionReaddir(ctx)(ctx, fd)) != NULL){
+	size_t slen;
 	if (strcmp(dirent->name, "") == 0) continue;
 	if (strcmp(dirent->name, ".") == 0) continue;
 	if (strcmp(dirent->name, "..") == 0) continue;
 	
-	if ((item = malloc(sizeof(smbitem) + strlen(dirent->name))) == NULL)
+	slen = strlen(dirent->name)+1;
+	if ((item = malloc(sizeof(smbitem) + slen)) == NULL)
 	    continue;
 	
 	item->next = list;
 	item->type = dirent->smbc_type;
-	strcpy(item->name, dirent->name);
+	memcpy(item->name, dirent->name, slen);
 	list = item;
     }
     smbc_getFunctionClose(ctx)(ctx, fd);
@@ -113,7 +115,8 @@ static void recurse(SMBCCTX *ctx, const char *smb_group, char *smb_path, int max
 		else print_smb_path(smb_group, list->name);
 		
 		if (maxlen < 7 + strlen(list->name)) break;
-		strcpy(smb_path + 6, list->name);
+		strncpy(smb_path + 6, list->name, maxlen - 6);
+		smb_path[maxlen-1] = '\0';
 		if ((ctx1 = create_smbctx()) != NULL){
 		    recurse(ctx1, smb_group, smb_path, maxlen);
 		    delete_smbctx(ctx1);
@@ -128,7 +131,8 @@ static void recurse(SMBCCTX *ctx, const char *smb_group, char *smb_path, int max
 		if (maxlen < len + strlen(list->name) + 2) break;
 		
 		smb_path[len] = '/';
-		strcpy(smb_path + len + 1, list->name);
+		strncpy(smb_path + len + 1, list->name, maxlen - len - 1);
+		smb_path[maxlen-1] = '\0';
 		print_smb_path(smb_group, smb_path + 6);
 		if (list->type != SMBC_FILE){
 		    recurse(ctx, smb_group, smb_path, maxlen);

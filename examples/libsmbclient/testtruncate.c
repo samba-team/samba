@@ -32,7 +32,7 @@ int main(int argc, char * argv[])
         return 1;
     }
 
-    strcpy(buffer, "Hello world.\nThis is a test.\n");
+    snprintf(buffer, sizeof(buffer), "%s", "Hello world.\nThis is a test.\n");
 
     ret = smbc_write(fd, buffer, strlen(buffer));
     savedErrno = errno;

@@ -139,7 +139,8 @@ int main(int argc, const char *argv[])
         return 1;
     }
     
-    strcpy(path, poptGetArg(pc));
+    strncpy(path, poptGetArg(pc), sizeof(path));
+    path[sizeof(path)-1] = '\0';
     
     if (smbc_init(get_auth_data_fn, debug) != 0)
     {

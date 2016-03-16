@@ -47,7 +47,7 @@ int main(int argc, char * argv[])
             continue;
         }
 
-        strcpy(buffer, "Hello world\n");
+        snprintf(buffer, sizeof(buffer), "%s", "Hello world\n");
 
         ret = smbc_write(fd, buffer, strlen(buffer));
         savedErrno = errno;
