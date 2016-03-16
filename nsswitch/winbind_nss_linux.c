@@ -190,29 +190,33 @@ static NSS_STATUS fill_pwent(struct passwd *result,
 				  struct winbindd_pw *pw,
 				  char **buffer, size_t *buflen)
 {
+	size_t len;
+
 	/* User name */
+	len = strlen(pw->pw_name) + 1;
 
 	if ((result->pw_name =
-	     get_static(buffer, buflen, strlen(pw->pw_name) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->pw_name, pw->pw_name);
+	memcpy(result->pw_name, pw->pw_name, len);
 
 	/* Password */
+	len = strlen(pw->pw_passwd) + 1;
 
 	if ((result->pw_passwd =
-	     get_static(buffer, buflen, strlen(pw->pw_passwd) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->pw_passwd, pw->pw_passwd);
+	memcpy(result->pw_passwd, pw->pw_passwd, len);
 
 	/* [ug]id */
 
@@ -220,40 +224,43 @@ static NSS_STATUS fill_pwent(struct passwd *result,
 	result->pw_gid = pw->pw_gid;
 
 	/* GECOS */
+	len = strlen(pw->pw_gecos) + 1;
 
 	if ((result->pw_gecos =
-	     get_static(buffer, buflen, strlen(pw->pw_gecos) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->pw_gecos, pw->pw_gecos);
+	memcpy(result->pw_gecos, pw->pw_gecos, len);
 
 	/* Home directory */
+	len = strlen(pw->pw_dir) + 1;
 
 	if ((result->pw_dir =
-	     get_static(buffer, buflen, strlen(pw->pw_dir) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->pw_dir, pw->pw_dir);
+	memcpy(result->pw_dir, pw->pw_dir, len);
 
 	/* Logon shell */
+	len = strlen(pw->pw_shell) + 1;
 
 	if ((result->pw_shell =
-	     get_static(buffer, buflen, strlen(pw->pw_shell) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->pw_shell, pw->pw_shell);
+	memcpy(result->pw_shell, pw->pw_shell, len);
 
 	/* The struct passwd for Solaris has some extra fields which must
 	   be initialised or nscd crashes. */
@@ -279,29 +286,32 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 	char *name;
 	int i;
 	char *tst;
+	size_t len;
 
 	/* Group name */
+	len = strlen(gr->gr_name) + 1;
 
 	if ((result->gr_name =
-	     get_static(buffer, buflen, strlen(gr->gr_name) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->gr_name, gr->gr_name);
+	memcpy(result->gr_name, gr->gr_name, len);
 
 	/* Password */
+	len = strlen(gr->gr_passwd) + 1;
 
 	if ((result->gr_passwd =
-	     get_static(buffer, buflen, strlen(gr->gr_passwd) + 1)) == NULL) {
+	     get_static(buffer, buflen, len)) == NULL) {
 
 		/* Out of memory */
 		return NSS_STATUS_TRYAGAIN;
 	}
 
-	strcpy(result->gr_passwd, gr->gr_passwd);
+	memcpy(result->gr_passwd, gr->gr_passwd, len);
 
 	/* gid */
 
@@ -342,13 +352,15 @@ static NSS_STATUS fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	while(next_token_alloc((const char **)&gr_mem, &name, ",")) {
 		/* Allocate space for member */
+		len = strlen(name) + 1;
+
 		if (((result->gr_mem)[i] =
-		     get_static(buffer, buflen, strlen(name) + 1)) == NULL) {
+		     get_static(buffer, buflen, len)) == NULL) {
 			free(name);
 			/* Out of memory */
 			return NSS_STATUS_TRYAGAIN;
 		}
-		strcpy((result->gr_mem)[i], name);
+		memcpy((result->gr_mem)[i], name, len);
 		free(name);
 		i++;
 	}
