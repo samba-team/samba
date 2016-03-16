@@ -85,13 +85,15 @@ static void logit(const char *format, ...)
 #define STRCPY_RET(dest, src) \
 do { \
 	if (strlen(src)+1 > sizeof(dest)) { errno = EINVAL; return -1; } \
-	strcpy(dest, src); \
+	strncpy(dest, src, sizeof(dest)); \
+	dest[sizeof(dest)-1] = '\0'; \
 } while (0)
 
 #define STRCPY_RETNULL(dest, src) \
 do { \
 	if (strlen(src)+1 > sizeof(dest)) { errno = EINVAL; return NULL; } \
-	strcpy(dest, src); \
+	strncpy(dest, src, sizeof(dest)); \
+	dest[sizeof(dest)-1] = '\0'; \
 } while (0)
 
 
@@ -578,18 +580,21 @@ static attrval_t pwd_to_groupsids(struct passwd *pwd)
 {
 	attrval_t r;
 	char *s, *p;
+	size_t mlen;
 
 	if ( (s = wb_aix_getgrset(pwd->pw_name)) == NULL ) {
 		r.attr_flag = EINVAL;
 		return r;
 	}
 
-	if ( (p = malloc(strlen(s)+2)) == NULL ) {
+	mlen = strlen(s)+2;
+	if ( (p = malloc(mlen)) == NULL ) {
 		r.attr_flag = ENOMEM;
 		return r;
 	}
 
-	strcpy(p, s);
+	strncpy(p, s, mlen);
+	p[mlen-1] = '\0';
 	replace_commas(p);
 	free(s);
 
@@ -855,7 +860,8 @@ static int wb_aix_normalize(char *longname, char *shortname)
 	/* automatically cope with AIX 5.3 with longer usernames
 	   when it comes out */
 	if (S_NAMELEN > strlen(longname)) {
-		strcpy(shortname, longname);
+		strncpy(shortname, longname, S_NAMELEN);
+		shortname[S_NAMELEN-1] = '\0';
 		return 1;
 	}
 
