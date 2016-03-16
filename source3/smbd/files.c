@@ -478,6 +478,10 @@ void fsp_free(files_struct *fsp)
 {
 	struct smbd_server_connection *sconn = fsp->conn->sconn;
 
+	if (fsp == sconn->fsp_fi_cache.fsp) {
+		ZERO_STRUCT(sconn->fsp_fi_cache);
+	}
+
 	DLIST_REMOVE(sconn->files, fsp);
 	SMB_ASSERT(sconn->num_files > 0);
 	sconn->num_files--;
@@ -538,11 +542,6 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	 */
 	if (req != NULL && req->smb2req) {
 		remove_smb2_chained_fsp(fsp);
-	}
-
-	/* Closing a file can invalidate the positive cache. */
-	if (fsp == sconn->fsp_fi_cache.fsp) {
-		ZERO_STRUCT(sconn->fsp_fi_cache);
 	}
 
 	/* Drop all remaining extensions. */
