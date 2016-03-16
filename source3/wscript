@@ -1375,6 +1375,7 @@ main() {
     conf.CHECK_FUNCS_IN('getspnam', 'security')
     conf.CHECK_FUNCS_IN('getspnam', 'sec')
 
+    legacy_quota_libs = ''
     if Options.options.with_quotas:
         # For quotas on Veritas VxFS filesystems
         conf.CHECK_HEADERS('sys/fs/vx_quota.h')
@@ -1459,7 +1460,6 @@ main() {
         # check if Legacy quota code can be brought in
         # if standard interfaces are not supported
         #
-        legacy_quota_libs = ''
         if not conf.CONFIG_SET('WITH_QUOTAS'):
             if host_os.rfind('sunos5') > -1:
                 conf.DEFINE('SUNOS5', '1')
@@ -1477,7 +1477,7 @@ main() {
                             addmain=False)
             if not conf.CONFIG_SET('WITH_QUOTAS'):
                 legacy_quota_libs = ''
-        conf.env['legacy_quota_libs'] = legacy_quota_libs
+    conf.env['legacy_quota_libs'] = legacy_quota_libs
 
     #
     # cluster support (CTDB)
