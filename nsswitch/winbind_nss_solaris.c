@@ -77,17 +77,6 @@ struct nss_groupsbymem {
 
 #endif /* HPUX */
 
-#define make_pwent_str(dest, src) 					\
-{									\
-  if((dest = get_static(buffer, buflen, strlen(src)+1)) == NULL)	\
-    {									\
-      *errnop = ERANGE;							\
-      NSS_DEBUG("ERANGE error");					\
-      return NSS_STATUS_TRYAGAIN; 		       			\
-    }									\
-  strcpy(dest, src);							\
-}
-
 static NSS_STATUS _nss_winbind_setpwent_solwrap (nss_backend_t* be, void* args)
 {
 	NSS_DEBUG("_nss_winbind_setpwent_solwrap");
