@@ -40,6 +40,10 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 	size_t len = 0;
 
 	switch (srvid) {
+	case CTDB_SRVID_BANNING:
+		len = ctdb_uint32_len(mdata->pnn);
+		break;
+
 	case CTDB_SRVID_ELECTION:
 		len = ctdb_election_message_len(mdata->election);
 		break;
@@ -114,6 +118,10 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 				   uint64_t srvid, uint8_t *buf)
 {
 	switch (srvid) {
+	case CTDB_SRVID_BANNING:
+		ctdb_uint32_push(mdata->pnn, buf);
+		break;
+
 	case CTDB_SRVID_ELECTION:
 		ctdb_election_message_push(mdata->election, buf);
 		break;
@@ -189,6 +197,10 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 	int ret = 0;
 
 	switch (srvid) {
+	case CTDB_SRVID_BANNING:
+		ret = ctdb_uint32_pull(buf, buflen, mem_ctx, &mdata->pnn);
+		break;
+
 	case CTDB_SRVID_ELECTION:
 		ret = ctdb_election_message_pull(buf, buflen, mem_ctx,
 						 &mdata->election);
