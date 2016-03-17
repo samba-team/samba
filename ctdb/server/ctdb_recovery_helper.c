@@ -36,6 +36,8 @@
 
 static int recover_timeout = 120;
 
+#define NUM_RETRIES	5
+
 #define TIMEOUT()	timeval_current_ofs(recover_timeout, 0)
 
 static void LOG(const char *fmt, ...)
@@ -1999,7 +2001,7 @@ static void db_recovery_one_done(struct tevent_req *subreq)
 	}
 
 	substate->num_fails += 1;
-	if (substate->num_fails < 5) {
+	if (substate->num_fails < NUM_RETRIES) {
 		subreq = recover_db_send(state, state->ev, substate->client,
 					 substate->tun_list,
 					 substate->pnn_list, substate->count,
