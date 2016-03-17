@@ -771,6 +771,11 @@ struct tevent_req *wb_dsgetdcname_send(TALLOC_CTX *mem_ctx,
 				       uint32_t flags);
 NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			     struct netr_DsRGetDCNameInfo **pdcinfo);
+NTSTATUS wb_dsgetdcname_gencache_set(const char *domname,
+				     struct netr_DsRGetDCNameInfo *dcinfo);
+NTSTATUS wb_dsgetdcname_gencache_get(TALLOC_CTX *mem_ctx,
+				     const char *domname,
+				     struct netr_DsRGetDCNameInfo **dcinfo);
 
 struct tevent_req *winbindd_getdcname_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct wb_dsgetdcname_state {
 	struct netr_DsRGetDCNameInfo *dcinfo;
@@ -121,5 +122,111 @@ NTSTATUS wb_dsgetdcname_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	*pdcinfo = talloc_move(mem_ctx, &state->dcinfo);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS wb_dsgetdcname_gencache_set(const char *domname,
+				     struct netr_DsRGetDCNameInfo *dcinfo)
+{
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	char *key;
+	bool ok;
+
+	key = talloc_asprintf_strupper_m(talloc_tos(), "DCINFO/%s", domname);
+	if (key == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netr_DsRGetDCNameInfo, dcinfo);
+	}
+
+	ndr_err = ndr_push_struct_blob(
+		&blob, key, dcinfo,
+		(ndr_push_flags_fn_t)ndr_push_netr_DsRGetDCNameInfo);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		DBG_WARNING("ndr_push_struct_blob failed: %s\n",
+			    ndr_errstr(ndr_err));
+		TALLOC_FREE(key);
+		return status;
+	}
+
+	ok = gencache_set_data_blob(key, &blob, time(NULL)+3600);
+
+	if (!ok) {
+		DBG_WARNING("gencache_set_data_blob for key %s failed\n", key);
+		TALLOC_FREE(key);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	TALLOC_FREE(key);
+	return NT_STATUS_OK;
+}
+
+struct dcinfo_parser_state {
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	struct netr_DsRGetDCNameInfo *dcinfo;
+};
+
+static void dcinfo_parser(time_t timeout, DATA_BLOB blob, void *private_data)
+{
+	struct dcinfo_parser_state *state = private_data;
+	enum ndr_err_code ndr_err;
+
+	state->dcinfo = talloc(state->mem_ctx, struct netr_DsRGetDCNameInfo);
+	if (state->dcinfo == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+
+	ndr_err = ndr_pull_struct_blob_all(
+		&blob, state->dcinfo, state->dcinfo,
+		(ndr_pull_flags_fn_t)ndr_pull_netr_DsRGetDCNameInfo);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_ERR("ndr_pull_struct_blob failed\n");
+		state->status = ndr_map_error2ntstatus(ndr_err);
+		return;
+	}
+
+	state->status = NT_STATUS_OK;
+}
+
+NTSTATUS wb_dsgetdcname_gencache_get(TALLOC_CTX *mem_ctx,
+				     const char *domname,
+				     struct netr_DsRGetDCNameInfo **dcinfo)
+{
+	struct dcinfo_parser_state state;
+	char *key;
+	bool ok;
+
+	key = talloc_asprintf_strupper_m(mem_ctx, "DCINFO/%s", domname);
+	if (key == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state = (struct dcinfo_parser_state) {
+		.status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND,
+		.mem_ctx = mem_ctx,
+	};
+
+	ok = gencache_parse(key, dcinfo_parser, &state);
+	TALLOC_FREE(key);
+	if (!ok) {
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	}
+
+	if (!NT_STATUS_IS_OK(state.status)) {
+		return state.status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netr_DsRGetDCNameInfo, state.dcinfo);
+	}
+
+	*dcinfo = state.dcinfo;
 	return NT_STATUS_OK;
 }
