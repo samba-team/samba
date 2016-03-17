@@ -588,7 +588,7 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	char fname[256];
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
-	struct smb2_create io, io2;
+	struct smb2_create io;
 	struct GUID create_guid = GUID_random();
 	bool ret = true;
 	struct smb2_tree *tree2 = NULL;
@@ -650,19 +650,19 @@ bool test_durable_v2_open_reopen1a(struct torture_context *tctx,
 	 * but a durable reconnect on the new session succeeds:
 	 */
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = "";
-	io2.in.durable_handle_v2 = h;
-	io2.in.create_guid = create_guid;
-	status = smb2_create(tree2, mem_ctx, &io2);
+	ZERO_STRUCT(io);
+	io.in.fname = "";
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	status = smb2_create(tree2, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
-	CHECK_VAL(io2.out.durable_open, false);
-	CHECK_VAL(io2.out.durable_open_v2, false); /* no dh2q response blob */
-	CHECK_VAL(io2.out.persistent_open, false);
-	CHECK_VAL(io2.out.timeout, io.in.timeout);
-	_h = io2.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open, false);
+	CHECK_VAL(io.out.durable_open_v2, false); /* no dh2q response blob */
+	CHECK_VAL(io.out.persistent_open, false);
+	CHECK_VAL(io.out.timeout, io.in.timeout);
+	_h = io.out.file.handle;
 	h = &_h;
 
 done:
