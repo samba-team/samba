@@ -1031,31 +1031,24 @@ static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 }
 
 static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				  const char *name, uint32_t security_info,
-				  TALLOC_CTX *mem_ctx,
-				  struct security_descriptor **ppdesc)
+				const struct smb_filename *smb_fname,
+				uint32_t security_info,
+				TALLOC_CTX *mem_ctx,
+				struct security_descriptor **ppdesc)
 {
 	struct afs_acl acl;
 	size_t sd_size;
-	struct smb_filename *smb_fname = NULL;
 
-	DEBUG(5, ("afsacl_get_nt_acl: %s\n", name));
+	DEBUG(5, ("afsacl_get_nt_acl: %s\n", smb_fname->base_name));
 
 	sidpts = lp_parm_bool(SNUM(handle->conn), "afsacl", "sidpts", false);
 
-	if (!afs_get_afs_acl(name, &acl)) {
+	if (!afs_get_afs_acl(smb_fname->base_name, &acl)) {
 		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	smb_fname = synthetic_smb_fname(talloc_tos(), name, NULL, NULL);
-	if (smb_fname == NULL) {
-		free_afs_acl(&acl);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	sd_size = afs_to_nt_acl(&acl, handle->conn, smb_fname, security_info,
 				mem_ctx, ppdesc);
-	TALLOC_FREE(smb_fname);
 
 	free_afs_acl(&acl);
 
