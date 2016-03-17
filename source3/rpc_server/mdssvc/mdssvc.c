@@ -1783,10 +1783,13 @@ done:
 }
 
 /**
- * Init callbacks at startup, nothing to do here really
+ * Init callbacks at startup
  **/
 bool mds_init(struct messaging_context *msg_ctx)
 {
+#if (GLIB_MAJOR_VERSION < 3) && (GLIB_MINOR_VERSION < 36)
+	g_type_init();
+#endif
 	return true;
 }
 
