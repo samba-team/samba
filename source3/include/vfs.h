@@ -190,6 +190,7 @@
 		const struct smb_filename * */
 /* Version 35 - Change streaminfo from const char *, to
 		const struct smb_filename * */
+/* Version 35 - Add uint32_t flags to struct smb_filename */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -514,8 +515,16 @@ struct smb_filename {
 	char *base_name;
 	char *stream_name;
 	char *original_lcomp;
+	uint32_t flags;
 	SMB_STRUCT_STAT st;
 };
+
+/*
+ * smb_filename flags. Define in terms of the FSP_POSIX_FLAGS_XX
+ * to keep the numeric values consistent.
+ */
+
+#define SMB_FILENAME_POSIX_PATH		FSP_POSIX_FLAGS_PATHNAMES
 
 #define VFS_FIND(__fn__) while (handle->fns->__fn__##_fn==NULL) { \
 				handle = handle->next; \

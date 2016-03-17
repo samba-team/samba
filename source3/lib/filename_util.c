@@ -212,6 +212,7 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 		talloc_set_name_const(out->original_lcomp,
 				      out->original_lcomp);
 	}
+	out->flags = in->flags;
 	out->st = in->st;
 	return out;
 }

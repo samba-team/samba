@@ -273,6 +273,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		goto done;
 	}
 
+	smb_fname->flags = posix_pathnames ? SMB_FILENAME_POSIX_PATH : 0;
+
 	DEBUG(5, ("unix_convert called on file \"%s\"\n", orig_path));
 
 	/*
