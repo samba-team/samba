@@ -24,11 +24,11 @@
 
 #include "lib/util/debug.h"
 
-#include "ctdb_private.h"
+#include "protocol/protocol.h"
+#include "protocol/protocol_api.h"
 
 #include "common/rb_tree.h"
 #include "common/system.h"
-#include "common/common.h"
 #include "common/logging.h"
 
 #include "killtcp.h"
@@ -127,10 +127,11 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	/* This one has been tickled !
 	   now reset him and remove him from the list.
 	 */
-	DEBUG(DEBUG_INFO, ("sending a tcp reset to kill connection :%d -> %s:%d\n",
-		ntohs(con->dst_addr.ip.sin_port),
-		ctdb_addr_to_str(&con->src_addr),
-		ntohs(con->src_addr.ip.sin_port)));
+	DEBUG(DEBUG_INFO,
+	      ("sending a tcp reset to kill connection :%d -> %s:%d\n",
+	       ntohs(con->dst_addr.ip.sin_port),
+	       ctdb_sock_addr_to_string(con, &con->src_addr),
+	       ntohs(con->src_addr.ip.sin_port)));
 
 	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, ack_seq, seq, 1);
 	talloc_free(con);
