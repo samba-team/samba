@@ -431,7 +431,7 @@ static bool test_durable_open_reopen1a(struct torture_context *tctx,
 	char fname[256];
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
-	struct smb2_create io1, io2;
+	struct smb2_create io;
 	bool ret = true;
 	struct smb2_tree *tree2 = NULL;
 	uint64_t previous_session_id;
@@ -445,18 +445,18 @@ static bool test_durable_open_reopen1a(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	smb2_oplock_create_share(&io1, fname,
+	smb2_oplock_create_share(&io, fname,
 				 smb2_util_share_access(""),
 				 smb2_util_oplock_level("b"));
-	io1.in.durable_open = true;
+	io.in.durable_open = true;
 
-	status = smb2_create(tree, mem_ctx, &io1);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	_h = io1.out.file.handle;
+	_h = io.out.file.handle;
 	h = &_h;
-	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io1.out.durable_open, true);
-	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_CREATED(&io, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.durable_open, true);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
 
 	/*
 	 * a session reconnect on a second tcp connection
@@ -472,11 +472,11 @@ static bool test_durable_open_reopen1a(struct torture_context *tctx,
 	 * check that this has deleted the old session
 	 */
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = fname;
-	io2.in.durable_handle = h;
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
 
-	status = smb2_create(tree, mem_ctx, &io2);
+	status = smb2_create(tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_USER_SESSION_DELETED);
 
 	TALLOC_FREE(tree);
@@ -485,15 +485,15 @@ static bool test_durable_open_reopen1a(struct torture_context *tctx,
 	 * but a durable reconnect on the new session succeeds:
 	 */
 
-	ZERO_STRUCT(io2);
-	io2.in.fname = fname;
-	io2.in.durable_handle = h;
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_handle = h;
 
-	status = smb2_create(tree2, mem_ctx, &io2);
+	status = smb2_create(tree2, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
-	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
-	_h = io2.out.file.handle;
+	CHECK_CREATED(&io, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	_h = io.out.file.handle;
 	h = &_h;
 
 done:
