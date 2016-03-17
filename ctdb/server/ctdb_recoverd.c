@@ -2661,6 +2661,30 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	srvid_requests_reply(ctdb, &current, result);
 }
 
+/*
+ * handler for assigning banning credits
+ */
+static void banning_handler(uint64_t srvid, TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(
+		private_data, struct ctdb_recoverd);
+	uint32_t ban_pnn;
+
+	/* Ignore if we are not recmaster */
+	if (rec->ctdb->pnn != rec->recmaster) {
+		return;
+	}
+
+	if (data.dsize != sizeof(uint32_t)) {
+		DEBUG(DEBUG_ERR, (__location__ "invalid data size %zu\n",
+				  data.dsize));
+		return;
+	}
+
+	ban_pnn = *(uint32_t *)data.dptr;
+
+	ctdb_set_culprit_count(rec, ban_pnn, rec->nodemap->num);
+}
 
 /*
   handler for recovery master elections
@@ -3898,6 +3922,10 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for sending memory dumps */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
+
+	/* when a node is assigned banning credits */
+	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_BANNING,
+					banning_handler, rec);
 
 	/* register a message port for recovery elections */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_ELECTION, election_handler, rec);
