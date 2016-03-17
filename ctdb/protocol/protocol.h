@@ -124,6 +124,9 @@ struct ctdb_call {
 /* SRVID prefix used during recovery for pulling and pushing databases */
 #define CTDB_SRVID_RECOVERY	0xF001000000000000LL
 
+/* SRVID to assign of banning credits */
+#define CTDB_SRVID_BANNING	0xF002000000000000LL
+
 /* SRVID to inform of election data */
 #define CTDB_SRVID_ELECTION	0xF100000000000000LL
 
@@ -992,7 +995,7 @@ union ctdb_message_data {
 	uint32_t db_id;
 	/* SRVID_MEM_DUMP, SRVID_TAKEOVER_RUN */
 	struct ctdb_srvid_message *msg;
-	/* SRVID_REBALANCE_NODE */
+	/* SRVID_BANNING, SRVID_REBALANCE_NODE */
 	uint32_t pnn;
 	/* SRVID_DISABLE_TAKEOVER_RUNS, SRVID_DISABLE_RECOVERIES */
 	struct ctdb_disable_message *disable;
