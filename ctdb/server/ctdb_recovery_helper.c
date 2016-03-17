@@ -2541,7 +2541,7 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 	status = db_recovery_recv(subreq, &count);
 	TALLOC_FREE(subreq);
 
-	LOG("%d databases recovered\n", count);
+	LOG("%d of %d databases recovered\n", count, state->dbmap->num);
 
 	if (! status) {
 		tevent_req_error(req, EIO);
