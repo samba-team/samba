@@ -1412,9 +1412,12 @@ sub provision_fl2000dc($$)
 sub provision_fl2003dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
+	my $swiface1 = Samba::get_interface("fakednsforwarder1");
+	my $swiface2 = Samba::get_interface("fakednsforwarder2");
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2003...";
-        my $extra_conf_options = "allow dns updates = nonsecure and secure";
+	my $extra_conf_options = "allow dns updates = nonsecure and secure
+	dns forwarder = 127.0.0.$swiface1 127.0.0.$swiface2";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc6",
@@ -1438,6 +1441,8 @@ sub provision_fl2003dc($$$)
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+	$ret->{DNS_FORWARDER1} = "127.0.0.$swiface1";
+	$ret->{DNS_FORWARDER2} = "127.0.0.$swiface2";
 
 	my @samba_tool_options;
 	push (@samba_tool_options, Samba::bindir_path($self, "samba-tool"));

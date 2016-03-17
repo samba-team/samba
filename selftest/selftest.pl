@@ -833,6 +833,8 @@ my @exported_envvars = (
 	"WINBINDD_PRIV_PIPE_DIR",
 	"NMBD_SOCKET_DIR",
 	"LOCAL_PATH",
+	"DNS_FORWARDER1",
+	"DNS_FORWARDER2",
 
 	# nss_wrapper
 	"NSS_WRAPPER_PASSWD",
