@@ -94,6 +94,10 @@ struct pipe_rpc_fns {
 	uint32_t context_id;
 	struct ndr_syntax_id syntax;
 
+	/*
+	 * shall we allow "connect" auth level for this interface ?
+	 */
+	bool allow_connect;
 };
 
 /*

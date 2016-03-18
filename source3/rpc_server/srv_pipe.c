@@ -44,6 +44,7 @@
 #include "librpc/ndr/ndr_table.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/ndr/ndr_dcerpc.h"
+#include "lib/tsocket/tsocket.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -338,6 +339,7 @@ static bool check_bind_req(struct pipes_struct *p,
 {
 	struct pipe_rpc_fns *context_fns;
 	bool ok;
+	const char *interface_name = NULL;
 
 	DEBUG(3,("check_bind_req for %s\n",
 		 ndr_interface_name(&abstract->uuid,
@@ -359,17 +361,33 @@ static bool check_bind_req(struct pipes_struct *p,
 		return false;
 	}
 
-	context_fns = talloc(p, struct pipe_rpc_fns);
+	context_fns = talloc_zero(p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DEBUG(0,("check_bind_req: talloc() failed!\n"));
 		return false;
 	}
+
+	interface_name = ndr_interface_name(&abstract->uuid,
+					    abstract->if_version);
+	SMB_ASSERT(interface_name != NULL);
 
 	context_fns->next = context_fns->prev = NULL;
 	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(abstract);
 	context_fns->cmds = rpc_srv_get_pipe_cmds(abstract);
 	context_fns->context_id = context_id;
 	context_fns->syntax = *abstract;
+
+	context_fns->allow_connect = lp_allow_dcerpc_auth_level_connect();
+	/*
+	 * every interface can be modified to allow "connect" auth_level by
+	 * using a parametric option like:
+	 * allow dcerpc auth level connect:<interface>
+	 * e.g.
+	 * allow dcerpc auth level connect:samr = yes
+	 */
+	context_fns->allow_connect = lp_parm_bool(-1,
+		"allow dcerpc auth level connect",
+		interface_name, context_fns->allow_connect);
 
 	/* add to the list of open contexts */
 
@@ -1174,6 +1192,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = False;
 	struct pipe_rpc_fns *pipe_fns;
+	const char *interface_name = NULL;
 
 	if (!p->pipe_bound) {
 		DEBUG(1, ("Pipe not bound!\n"));
@@ -1194,6 +1213,37 @@ static bool api_pipe_request(struct pipes_struct *p,
 		return false;
 	}
 
+	interface_name = ndr_interface_name(&pipe_fns->syntax.uuid,
+					    pipe_fns->syntax.if_version);
+	SMB_ASSERT(interface_name != NULL);
+
+	switch (p->auth.auth_level) {
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		break;
+	default:
+		if (!pipe_fns->allow_connect) {
+			char *addr;
+
+			addr = tsocket_address_string(p->remote_address, frame);
+
+			DEBUG(1, ("%s: restrict auth_level_connect access "
+				  "to [%s] with auth[type=0x%x,level=0x%x] "
+				  "on [%s] from [%s]\n",
+				  __func__, interface_name,
+				  p->auth.auth_type,
+				  p->auth.auth_level,
+				  derpc_transport_string_by_transport(p->transport),
+				  addr));
+
+			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_ACCESS_DENIED));
+			TALLOC_FREE(frame);
+			return true;
+		}
+		break;
+	}
+
 	if (!srv_pipe_check_verification_trailer(p, pkt, pipe_fns)) {
 		DEBUG(1, ("srv_pipe_check_verification_trailer: failed\n"));
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_ACCESS_DENIED));
@@ -1209,9 +1259,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 		return false;
 	}
 
-	DEBUG(5, ("Requested %s rpc service\n",
-		  ndr_interface_name(&pipe_fns->syntax.uuid,
-				     pipe_fns->syntax.if_version)));
+	DEBUG(5, ("Requested %s rpc service\n", interface_name));
 
 	ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
 			 &pipe_fns->syntax);
