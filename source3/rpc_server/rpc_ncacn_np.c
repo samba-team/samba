@@ -224,7 +224,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	context_fns = talloc(p, struct pipe_rpc_fns);
+	context_fns = talloc_zero(p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DEBUG(0,("talloc() failed!\n"));
 		TALLOC_FREE(p);
