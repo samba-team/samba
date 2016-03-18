@@ -1564,6 +1564,14 @@ struct parm_struct parm_table[] = {
 		.enum_list	= enum_ldap_sasl_wrapping,
 	},
 	{
+		.label		= "ldap server require strong auth",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(ldap_server_require_strong_auth),
+		.special	= NULL,
+		.enum_list	= enum_ldap_server_require_strong_auth_vals
+	},
+	{
 		.label		= "enable asu support",
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
