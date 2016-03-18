@@ -2516,7 +2516,9 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 		if (vnn->iface == cur) {
 			info->active_idx = i;
 		}
-		strncpy(info->ifaces[i].name, cur->name, sizeof(info->ifaces[i].name)-1);
+		strncpy(info->ifaces[i].name, cur->name,
+			sizeof(info->ifaces[i].name));
+		info->ifaces[i].name[sizeof(info->ifaces[i].name)-1] = '\0';
 		info->ifaces[i].link_state = cur->link_up;
 		info->ifaces[i].references = cur->references;
 	}
@@ -2551,7 +2553,9 @@ int32_t ctdb_control_get_ifaces(struct ctdb_context *ctdb,
 
 	i = 0;
 	for (cur=ctdb->ifaces;cur;cur=cur->next) {
-		strcpy(ifaces->ifaces[i].name, cur->name);
+		strncpy(ifaces->ifaces[i].name, cur->name,
+			sizeof(ifaces->ifaces[i].name));
+		ifaces->ifaces[i].name[sizeof(ifaces->ifaces[i].name)-1] = '\0';
 		ifaces->ifaces[i].link_state = cur->link_up;
 		ifaces->ifaces[i].references = cur->references;
 		i++;
