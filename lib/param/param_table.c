@@ -4492,6 +4492,22 @@ struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= enum_tls_verify_peer_vals,
 	},
+	{
+		.label		= "client ipc max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(_client_ipc_max_protocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+	},
+	{
+		.label		= "client ipc min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(_client_ipc_min_protocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
