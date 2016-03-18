@@ -4508,6 +4508,14 @@ struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= enum_protocol,
 	},
+	{
+		.label		= "client ipc signing",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(_client_ipc_signing),
+		.special	= NULL,
+		.enum_list	= enum_smb_signing_vals,
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
