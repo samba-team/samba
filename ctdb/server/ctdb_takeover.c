@@ -68,6 +68,11 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 {
 	struct ctdb_interface *i;
 
+	if (strlen(iface) > CTDB_IFACE_SIZE) {
+		DEBUG(DEBUG_ERR, ("Interface name too long \"%s\"\n", iface));
+		return -1;
+	}
+
 	/* Verify that we don't have an entry for this ip yet */
 	for (i=ctdb->ifaces;i;i=i->next) {
 		if (strcmp(i->name, iface) == 0) {
