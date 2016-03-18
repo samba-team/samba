@@ -4516,6 +4516,14 @@ struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= enum_smb_signing_vals,
 	},
+	{
+		.label		= "allow dcerpc auth level connect",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(allow_dcerpc_auth_level_connect),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
 
 	{NULL,  P_BOOL,  P_NONE,  0,  NULL,  NULL,  0}
 };
