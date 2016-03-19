@@ -53,13 +53,15 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx,
 struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const char *base_name,
 					 const char *stream_name,
-					 const SMB_STRUCT_STAT *psbuf)
+					 const SMB_STRUCT_STAT *psbuf,
+					 uint32_t flags)
 {
 	struct smb_filename smb_fname_loc = { 0, };
 
 	/* Setup the base_name/stream_name. */
 	smb_fname_loc.base_name = discard_const_p(char, base_name);
 	smb_fname_loc.stream_name = discard_const_p(char, stream_name);
+	smb_fname_loc.flags = flags;
 
 	/* Copy the psbuf if one was given. */
 	if (psbuf)
@@ -83,7 +85,11 @@ struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 
 	if (posix_path) {
 		/* No stream name looked for. */
-		return synthetic_smb_fname(ctx, fname, NULL, NULL);
+		return synthetic_smb_fname(ctx,
+				fname,
+				NULL,
+				NULL,
+				SMB_FILENAME_POSIX_PATH);
 	}
 
 	ok = split_stream_filename(ctx,
@@ -94,7 +100,7 @@ struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	ret = synthetic_smb_fname(ctx, base_name, stream_name, NULL);
+	ret = synthetic_smb_fname(ctx, base_name, stream_name, NULL, 0);
 	TALLOC_FREE(base_name);
 	TALLOC_FREE(stream_name);
 	return ret;

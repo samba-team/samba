@@ -783,7 +783,8 @@ static DIR *mh_opendir(vfs_handle_struct *handle,
 				synthetic_smb_fname(talloc_tos(),
 					dirInfo->clientPath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 		if (smb_fname_clientpath == NULL) {
 			goto err;
 		}
@@ -2045,7 +2046,8 @@ static NTSTATUS mh_get_nt_acl(vfs_handle_struct *handle,
 	client_smb_fname = synthetic_smb_fname(talloc_tos(),
 					clientPath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (client_smb_fname == NULL) {
 		TALLOC_FREE(clientPath);
 		return NT_STATUS_NO_MEMORY;

@@ -571,7 +571,8 @@ static DIR *um_opendir(vfs_handle_struct *handle,
 			synthetic_smb_fname(talloc_tos(),
 					dirInfo->clientPath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 		if (client_smb_fname == NULL) {
 			goto err;
 		}
@@ -1561,7 +1562,8 @@ static NTSTATUS um_get_nt_acl(vfs_handle_struct *handle,
 	client_smb_fname = synthetic_smb_fname(talloc_tos(),
 					client_path,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (client_smb_fname == NULL) {
 		TALLOC_FREE(client_path);
 		return NT_STATUS_NO_MEMORY;

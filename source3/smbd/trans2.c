@@ -5764,8 +5764,11 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 			/* Create an smb_filename with stream_name == NULL. */
 			smb_fname_base = synthetic_smb_fname(
-				talloc_tos(), smb_fname->base_name,
-				NULL, NULL);
+						talloc_tos(),
+						smb_fname->base_name,
+						NULL,
+						NULL,
+						smb_fname->flags);
 			if (smb_fname_base == NULL) {
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				return;
@@ -6163,8 +6166,11 @@ static NTSTATUS smb_set_file_dosmode(connection_struct *conn,
 	}
 
 	/* Always operate on the base_name, even if a stream was passed in. */
-	smb_fname_base = synthetic_smb_fname(
-		talloc_tos(), smb_fname->base_name, NULL, &smb_fname->st);
+	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+					smb_fname->base_name,
+					NULL,
+					&smb_fname->st,
+					smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6666,9 +6672,11 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		}
 
 		/* Create an smb_fname to call rename_internals_fsp() with. */
-		smb_fname_dst = synthetic_smb_fname(
-			talloc_tos(), fsp->base_fsp->fsp_name->base_name,
-			newname, NULL);
+		smb_fname_dst = synthetic_smb_fname(talloc_tos(),
+					fsp->base_fsp->fsp_name->base_name,
+					newname,
+					NULL,
+					fsp->base_fsp->fsp_name->flags);
 		if (smb_fname_dst == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -6872,9 +6880,11 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		}
 
 		/* Create an smb_fname to call rename_internals_fsp() with. */
-		smb_fname_dst = synthetic_smb_fname(
-			talloc_tos(), fsp->base_fsp->fsp_name->base_name,
-			newname, NULL);
+		smb_fname_dst = synthetic_smb_fname(talloc_tos(),
+					fsp->base_fsp->fsp_name->base_name,
+					newname,
+					NULL,
+					fsp->base_fsp->fsp_name->flags);
 		if (smb_fname_dst == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -6944,8 +6954,11 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 				goto out;
 			}
 			/* Create an smb_fname to call rename_internals_fsp() */
-			smb_fname_dst = synthetic_smb_fname(
-				ctx, base_name, NULL, NULL);
+			smb_fname_dst = synthetic_smb_fname(ctx,
+						base_name,
+						NULL,
+						NULL,
+						smb_fname_src->flags);
 			if (smb_fname_dst == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				goto out;

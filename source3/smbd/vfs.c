@@ -876,7 +876,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		goto nocache;
 	}
 
-	smb_fname_dot = synthetic_smb_fname(ctx, ".", NULL, NULL);
+	smb_fname_dot = synthetic_smb_fname(ctx, ".", NULL, NULL, 0);
 	if (smb_fname_dot == NULL) {
 		errno = ENOMEM;
 		goto out;
@@ -904,7 +904,7 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 		   && (cache_value.data[cache_value.length-1] == '\0'));
 
 	smb_fname_full = synthetic_smb_fname(ctx, (char *)cache_value.data,
-					     NULL, NULL);
+					     NULL, NULL, 0);
 	if (smb_fname_full == NULL) {
 		errno = ENOMEM;
 		goto out;
@@ -1044,7 +1044,7 @@ NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 		resolved_name));
 
 	/* Now check the stat value is the same. */
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL);
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL, 0);
 	if (smb_fname_cwd == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
@@ -1968,7 +1968,8 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 		local_smb_fname = synthetic_smb_fname(talloc_tos(),
 					final_component,
 					NULL,
-					NULL);
+					NULL,
+					fsp->fsp_name->flags);
 		if (local_smb_fname == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;

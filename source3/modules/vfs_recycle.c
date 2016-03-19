@@ -299,7 +299,8 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 			smb_fname = synthetic_smb_fname(talloc_tos(),
 						new_dir,
 						NULL,
-						NULL);
+						NULL,
+						0);
 			if (smb_fname == NULL) {
 				goto done;
 			}
@@ -587,8 +588,11 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	}
 
 	/* Create smb_fname with final base name and orig stream name. */
-	smb_fname_final = synthetic_smb_fname(talloc_tos(), final_name,
-					      smb_fname->stream_name, NULL);
+	smb_fname_final = synthetic_smb_fname(talloc_tos(),
+					final_name,
+					smb_fname->stream_name,
+					NULL,
+					smb_fname->flags);
 	if (smb_fname_final == NULL) {
 		rc = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 		goto done;

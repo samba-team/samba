@@ -133,7 +133,7 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 	 * use when setting a timestamp. */
 
 	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), conn->connectpath,
-					      NULL, NULL);
+					      NULL, NULL, 0);
 	if (smb_fname_cpath == NULL) {
 		return caps;
 	}

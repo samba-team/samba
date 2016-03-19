@@ -413,8 +413,11 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 	}
 
 	/* Now check the stat value is the same. */
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(), ".", NULL, NULL);
-
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
+					".",
+					NULL,
+					NULL,
+					smb_dname->flags);
 	if (smb_fname_cwd == NULL) {
 		goto out;
 	}
@@ -1545,8 +1548,11 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 		}
 
 		/* Create an smb_filename with stream_name == NULL. */
-		smb_fname_base = synthetic_smb_fname(talloc_tos(), entry, NULL,
-						     pst);
+		smb_fname_base = synthetic_smb_fname(talloc_tos(),
+						entry,
+						NULL,
+						pst,
+						0);
 		if (smb_fname_base == NULL) {
 			ret = false;
 			goto out;

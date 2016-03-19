@@ -204,7 +204,8 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 		smb_fname_stream = synthetic_smb_fname(talloc_tos(),
 					smb_fname->base_name,
 					stream_info[i].name,
-					NULL);
+					NULL,
+					smb_fname->flags);
 
 		if (smb_fname_stream == NULL) {
 			DEBUG(0, ("talloc_aprintf failed\n"));
@@ -833,8 +834,11 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			goto err_break;
 		}
 
-		smb_dname_full = synthetic_smb_fname(talloc_tos(), fullname,
-						     NULL, NULL);
+		smb_dname_full = synthetic_smb_fname(talloc_tos(),
+						fullname,
+						NULL,
+						NULL,
+						smb_dname->flags);
 		if (smb_dname_full == NULL) {
 			errno = ENOMEM;
 			goto err_break;
@@ -984,8 +988,11 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				goto err_break;
 			}
 
-			smb_dname_full = synthetic_smb_fname(
-				talloc_tos(), fullname, NULL, NULL);
+			smb_dname_full = synthetic_smb_fname(talloc_tos(),
+							fullname,
+							NULL,
+							NULL,
+							smb_dname->flags);
 			if (smb_dname_full == NULL) {
 				errno = ENOMEM;
 				goto err_break;

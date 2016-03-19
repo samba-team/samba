@@ -199,9 +199,11 @@ static NTSTATUS get_nt_acl_conn(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
-						fname,
-						NULL,
-						NULL);
+					fname,
+					NULL,
+					NULL,
+					lp_posix_pathnames() ?
+						SMB_FILENAME_POSIX_PATH : 0);
 
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
@@ -398,7 +400,9 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					fname,
 					NULL,
-					NULL);
+					NULL,
+					lp_posix_pathnames() ?
+						SMB_FILENAME_POSIX_PATH : 0);
 	if (smb_fname == NULL) {
 		umask(saved_umask);
 		TALLOC_FREE(frame);

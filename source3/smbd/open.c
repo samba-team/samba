@@ -255,7 +255,8 @@ static NTSTATUS check_parent_access(struct connection_struct *conn,
 	parent_smb_fname = synthetic_smb_fname(talloc_tos(),
 				parent_dir,
 				NULL,
-				NULL);
+				NULL,
+				smb_fname->flags);
 	if (parent_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -457,8 +458,11 @@ void change_file_owner_to_parent(connection_struct *conn,
 	struct smb_filename *smb_fname_parent;
 	int ret;
 
-	smb_fname_parent = synthetic_smb_fname(talloc_tos(), inherit_from_dir,
-					       NULL, NULL);
+	smb_fname_parent = synthetic_smb_fname(talloc_tos(),
+					inherit_from_dir,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname_parent == NULL) {
 		return;
 	}
@@ -515,8 +519,11 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
-	smb_fname_parent = synthetic_smb_fname(ctx, inherit_from_dir,
-					       NULL, NULL);
+	smb_fname_parent = synthetic_smb_fname(ctx,
+					inherit_from_dir,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname_parent == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -556,7 +563,7 @@ NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		goto chdir;
 	}
 
-	smb_fname_cwd = synthetic_smb_fname(ctx, ".", NULL, NULL);
+	smb_fname_cwd = synthetic_smb_fname(ctx, ".", NULL, NULL, 0);
 	if (smb_fname_cwd == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto chdir;
@@ -3812,8 +3819,11 @@ void msg_file_was_renamed(struct messaging_context *msg,
 		stream_name = NULL;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(), base_name,
-					stream_name, NULL);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					base_name,
+					stream_name,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		return;
 	}
@@ -3911,7 +3921,8 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		smb_fname_cp = synthetic_smb_fname(talloc_tos(),
 					smb_fname->base_name,
 					stream_info[i].name,
-					NULL);
+					NULL,
+					smb_fname->flags);
 		if (smb_fname_cp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
@@ -4009,7 +4020,8 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	parent_smb_fname = synthetic_smb_fname(talloc_tos(),
 						parent_name,
 						NULL,
-						NULL);
+						NULL,
+						fsp->fsp_name->flags);
 
 	if (parent_smb_fname == NULL) {
 		TALLOC_FREE(frame);
@@ -4564,8 +4576,10 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		/* Create an smb_filename with stream_name == NULL. */
 		smb_fname_base = synthetic_smb_fname(talloc_tos(),
-						     smb_fname->base_name,
-						     NULL, NULL);
+						smb_fname->base_name,
+						NULL,
+						NULL,
+						smb_fname->flags);
 		if (smb_fname_base == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;

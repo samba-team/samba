@@ -69,7 +69,8 @@ static DIR *cap_opendir(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					capname,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(capname);
 		errno = ENOMEM;
@@ -125,7 +126,8 @@ static int cap_mkdir(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					cappath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
@@ -149,7 +151,8 @@ static int cap_rmdir(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					cappath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
@@ -321,7 +324,8 @@ static int cap_chmod(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					cappath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
@@ -354,7 +358,8 @@ static int cap_chown(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					cappath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
@@ -387,7 +392,8 @@ static int cap_lchown(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					cappath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;
@@ -522,7 +528,8 @@ static int cap_chmod_acl(vfs_handle_struct *handle,
 	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
 					cappath,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (cap_smb_fname == NULL) {
 		TALLOC_FREE(cappath);
 		errno = ENOMEM;

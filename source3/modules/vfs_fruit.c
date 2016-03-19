@@ -2132,7 +2132,10 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					     smb_fname->base_name, NULL, NULL);
+					smb_fname->base_name,
+					NULL,
+					NULL,
+					smb_fname->flags);
 
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
@@ -2281,7 +2284,10 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
-					     adpath, NULL, NULL);
+					adpath,
+					NULL,
+					NULL,
+					smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
 		rc = -1;
@@ -2527,7 +2533,8 @@ static int fruit_chmod(vfs_handle_struct *handle,
 	smb_fname_adp = synthetic_smb_fname(talloc_tos(),
 					adp,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (smb_fname_adp == NULL) {
 		TALLOC_FREE(adp);
 		errno = ENOMEM;
@@ -2583,7 +2590,8 @@ static int fruit_chown(vfs_handle_struct *handle,
 	adp_smb_fname = synthetic_smb_fname(talloc_tos(),
 					adp,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (adp_smb_fname == NULL) {
 		errno = ENOMEM;
 		rc = -1;
@@ -3802,7 +3810,8 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 			req,
 			state->src_fsp->fsp_name->base_name,
 			streams[i].name,
-			NULL);
+			NULL,
+			state->src_fsp->fsp_name->flags);
 		if (tevent_req_nomem(src_fname_tmp, req)) {
 			return;
 		}
@@ -3816,7 +3825,8 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 			req,
 			state->dst_fsp->fsp_name->base_name,
 			streams[i].name,
-			NULL);
+			NULL,
+			state->dst_fsp->fsp_name->flags);
 		if (tevent_req_nomem(dst_fname_tmp, req)) {
 			TALLOC_FREE(src_fname_tmp);
 			return;

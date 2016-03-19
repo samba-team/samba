@@ -421,7 +421,7 @@ static bool vxfs_compare(connection_struct *conn, char *name, SMB_ACL_T the_acl,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(mem_ctx, name, NULL, NULL);
+	smb_fname = synthetic_smb_fname(mem_ctx, name, NULL, NULL, 0);
 	if (smb_fname == NULL) {
 		DEBUG(10, ("vfs_vxfs: Failed to create smb_fname\n"));
 		goto out;

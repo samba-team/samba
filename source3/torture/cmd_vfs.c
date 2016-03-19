@@ -30,6 +30,11 @@
 
 static const char *null_string = "";
 
+static uint32_t ssf_flags(void)
+{
+	return lp_posix_pathnames() ? SMB_FILENAME_POSIX_PATH : 0;
+}
+
 static NTSTATUS cmd_load_module(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	int i;
@@ -139,7 +144,8 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -222,7 +228,8 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -424,7 +431,8 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -859,7 +867,8 @@ static NTSTATUS cmd_chmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -918,7 +927,8 @@ static NTSTATUS cmd_chmod_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -979,7 +989,8 @@ static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1459,7 +1470,8 @@ static NTSTATUS cmd_get_nt_acl(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					argv[1],
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -1796,7 +1808,8 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					".",
 					NULL,
-					NULL);
+					NULL,
+					ssf_flags());
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

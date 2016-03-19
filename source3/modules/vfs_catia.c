@@ -290,7 +290,8 @@ static DIR *catia_opendir(vfs_handle_struct *handle,
 	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
 				name_mapped,
 				NULL,
-				NULL);
+				NULL,
+				smb_fname->flags);
 	if (mapped_smb_fname == NULL) {
 		TALLOC_FREE(mapped_smb_fname);
 		errno = ENOMEM;
@@ -543,7 +544,8 @@ static int catia_chown(vfs_handle_struct *handle,
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
 					name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (catia_smb_fname == NULL) {
 		TALLOC_FREE(name);
 		errno = ENOMEM;
@@ -580,7 +582,8 @@ static int catia_lchown(vfs_handle_struct *handle,
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
 					name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (catia_smb_fname == NULL) {
 		TALLOC_FREE(name);
 		errno = ENOMEM;
@@ -616,7 +619,8 @@ static int catia_chmod(vfs_handle_struct *handle,
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
 					name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (catia_smb_fname == NULL) {
 		TALLOC_FREE(name);
 		errno = ENOMEM;
@@ -650,7 +654,8 @@ static int catia_rmdir(vfs_handle_struct *handle,
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
 					name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (catia_smb_fname == NULL) {
 		TALLOC_FREE(name);
 		errno = ENOMEM;
@@ -684,7 +689,8 @@ static int catia_mkdir(vfs_handle_struct *handle,
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
 					name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (catia_smb_fname == NULL) {
 		TALLOC_FREE(name);
 		errno = ENOMEM;
@@ -819,7 +825,8 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
 					mapped_name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (catia_smb_fname == NULL) {
 		TALLOC_FREE(mapped_name);
 		return NT_STATUS_NO_MEMORY;
@@ -898,7 +905,8 @@ catia_get_nt_acl(struct vfs_handle_struct *handle,
 	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
 					mapped_name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (mapped_smb_fname == NULL) {
 		TALLOC_FREE(mapped_name);
 		return NT_STATUS_NO_MEMORY;
@@ -935,7 +943,8 @@ catia_chmod_acl(vfs_handle_struct *handle,
 	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
 					mapped_name,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (mapped_smb_fname == NULL) {
 		TALLOC_FREE(mapped_name);
 		errno = ENOMEM;

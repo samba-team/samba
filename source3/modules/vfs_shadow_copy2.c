@@ -719,7 +719,8 @@ static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		return NULL;
@@ -998,7 +999,8 @@ static int shadow_copy2_chmod(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;
@@ -1042,7 +1044,8 @@ static int shadow_copy2_chown(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;
@@ -1442,7 +1445,8 @@ static int shadow_copy2_get_shadow_copy_data(
 	snapdir_smb_fname = synthetic_smb_fname(talloc_tos(),
 					snapdir,
 					NULL,
-					NULL);
+					NULL,
+					fsp->fsp_name->flags);
 	if (snapdir_smb_fname == NULL) {
 		errno = ENOMEM;
 		talloc_free(tmp_ctx);
@@ -1543,7 +1547,8 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					fsp->fsp_name->flags);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		return NT_STATUS_NO_MEMORY;
@@ -1587,7 +1592,8 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		return NT_STATUS_NO_MEMORY;
@@ -1627,7 +1633,8 @@ static int shadow_copy2_mkdir(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		return -1;
@@ -1667,7 +1674,8 @@ static int shadow_copy2_rmdir(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		return -1;
@@ -1853,7 +1861,8 @@ static int shadow_copy2_chmod_acl(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;

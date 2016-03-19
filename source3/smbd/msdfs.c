@@ -1311,8 +1311,11 @@ bool create_msdfs_link(const struct junction_map *jucn)
 		if (errno == EEXIST) {
 			struct smb_filename *smb_fname;
 
-			smb_fname = synthetic_smb_fname(talloc_tos(), path,
-							NULL, NULL);
+			smb_fname = synthetic_smb_fname(talloc_tos(),
+						path,
+						NULL,
+						NULL,
+						0);
 			if (smb_fname == NULL) {
 				errno = ENOMEM;
 				goto out;
@@ -1353,7 +1356,11 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 		return false;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(), path, NULL, NULL);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					path,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;
 		return false;
@@ -1417,7 +1424,8 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					".",
 					NULL,
-					NULL);
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		goto out;
 	}
@@ -1534,7 +1542,8 @@ static int form_junctions(TALLOC_CTX *ctx,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					".",
 					NULL,
-					NULL);
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		goto out;
 	}

@@ -1202,7 +1202,8 @@ static int get_real_filename_full_scan(connection_struct *conn,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					path,
 					NULL,
-					NULL);
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(unmangled_name);
 		return -1;

@@ -4642,7 +4642,8 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
 						fname,
 						NULL,
-						NULL);
+						NULL,
+						0);
 
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
@@ -4809,7 +4810,7 @@ int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
 	};
 	struct smb_filename *smb_fname;
 
-	smb_fname = synthetic_smb_fname(frame, path_p, NULL, NULL);
+	smb_fname = synthetic_smb_fname(frame, path_p, NULL, NULL, 0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;

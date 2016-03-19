@@ -1380,7 +1380,7 @@ static int gpfsacl_emu_chmod(vfs_handle_struct *handle,
 
 	/* don't add complementary DENY ACEs here */
 	fake_fsp.fsp_name = synthetic_smb_fname(
-		frame, path, NULL, NULL);
+		frame, path, NULL, NULL, 0);
 	if (fake_fsp.fsp_name == NULL) {
 		errno = ENOMEM;
 		TALLOC_FREE(frame);

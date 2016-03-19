@@ -135,8 +135,11 @@ mode_t unix_mode(connection_struct *conn, int dosmode,
 			  smb_fname_str_dbg(smb_fname),
 			  inherit_from_dir));
 
-		smb_fname_parent = synthetic_smb_fname(
-			talloc_tos(), inherit_from_dir, NULL, NULL);
+		smb_fname_parent = synthetic_smb_fname(talloc_tos(),
+					inherit_from_dir,
+					NULL,
+					NULL,
+					smb_fname->flags);
 		if (smb_fname_parent == NULL) {
 			DEBUG(1,("unix_mode(%s) failed, [dir %s]: No memory\n",
 				 smb_fname_str_dbg(smb_fname),
@@ -1022,8 +1025,11 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(), psmb_fname->base_name,
-					NULL, &psmb_fname->st);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					psmb_fname->base_name,
+					NULL,
+					&psmb_fname->st,
+					psmb_fname->flags);
 
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;

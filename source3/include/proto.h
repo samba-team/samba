@@ -1139,7 +1139,8 @@ NTSTATUS get_full_smb_filename(TALLOC_CTX *ctx, const struct smb_filename *smb_f
 struct smb_filename *synthetic_smb_fname(TALLOC_CTX *mem_ctx,
 					 const char *base_name,
 					 const char *stream_name,
-					 const SMB_STRUCT_STAT *psbuf);
+					 const SMB_STRUCT_STAT *psbuf,
+					 uint32_t flags);
 struct smb_filename *synthetic_smb_fname_split(TALLOC_CTX *ctx,
 						const char *fname,
 						bool posix_path);

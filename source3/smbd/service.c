@@ -814,8 +814,11 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		set_namearray( &conn->aio_write_behind_list,
 				lp_aio_write_behind(talloc_tos(), snum));
 	}
-	smb_fname_cpath = synthetic_smb_fname(talloc_tos(), conn->connectpath,
-					      NULL, NULL);
+	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
+					conn->connectpath,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname_cpath == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err_root_exit;

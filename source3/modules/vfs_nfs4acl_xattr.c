@@ -417,7 +417,7 @@ static struct SMB4ACL_T *nfs4acls_inheritacl(vfs_handle_struct *handle,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	DEBUG(10, ("nfs4acls_inheritacl invoked for %s\n", path));
-	smb_fname = synthetic_smb_fname(frame, path, NULL, NULL);
+	smb_fname = synthetic_smb_fname(frame, path, NULL, NULL, 0);
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
 		errno = ENOMEM;

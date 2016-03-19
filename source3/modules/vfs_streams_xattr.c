@@ -242,8 +242,11 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(talloc_tos(), io->base,
-					     NULL, NULL);
+	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+					io->base,
+					NULL,
+					NULL,
+					fsp->fsp_name->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
 		return -1;
@@ -427,8 +430,11 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 	}
 
 	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname_base = synthetic_smb_fname(
-		talloc_tos(), smb_fname->base_name, NULL, NULL);
+	smb_fname_base = synthetic_smb_fname(talloc_tos(),
+				smb_fname->base_name,
+				NULL,
+				NULL,
+				smb_fname->flags);
 	if (smb_fname_base == NULL) {
 		errno = ENOMEM;
 		goto fail;

@@ -1825,7 +1825,8 @@ void reply_search(struct smb_request *req)
 		smb_dname = synthetic_smb_fname(talloc_tos(),
 					directory,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 		if (smb_dname == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
@@ -3088,7 +3089,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		smb_fname_dir = synthetic_smb_fname(talloc_tos(),
 					fname_dir,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 		if (smb_fname_dir == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -7064,7 +7066,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	smb_fname_src_dir = synthetic_smb_fname(talloc_tos(),
 				fname_src_dir,
 				NULL,
-				NULL);
+				NULL,
+				smb_fname_src->flags);
 	if (smb_fname_src_dir == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
@@ -7779,7 +7782,8 @@ void reply_copy(struct smb_request *req)
 		smb_fname_src_dir = synthetic_smb_fname(talloc_tos(),
 					fname_src_dir,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname_src->flags);
 		if (smb_fname_src_dir == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;

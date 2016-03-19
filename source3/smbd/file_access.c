@@ -54,7 +54,11 @@ bool can_delete_file_in_directory(connection_struct *conn,
 		return False;
 	}
 
-	smb_fname_parent = synthetic_smb_fname(ctx, dname, NULL, NULL);
+	smb_fname_parent = synthetic_smb_fname(ctx,
+				dname,
+				NULL,
+				NULL,
+				smb_fname->flags);
 	if (smb_fname_parent == NULL) {
 		ret = false;
 		goto out;
@@ -155,7 +159,8 @@ bool directory_has_default_acl(connection_struct *conn, const char *fname)
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
 						fname,
 						NULL,
-						NULL);
+						NULL,
+						0);
 
 	if (smb_fname == NULL) {
 		return false;

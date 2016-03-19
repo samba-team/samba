@@ -1585,7 +1585,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
 		goto err_out;
 	}
 
-	smb_fname = synthetic_smb_fname(tmp_ctx, print_dlr_path, NULL, NULL);
+	smb_fname = synthetic_smb_fname(tmp_ctx, print_dlr_path, NULL, NULL, 0);
 	if (smb_fname == NULL) {
 		goto err_out;
 	}

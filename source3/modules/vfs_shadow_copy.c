@@ -230,7 +230,8 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
 						fsp->conn->connectpath,
 						NULL,
-						NULL);
+						NULL,
+						0);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;
 		return -1;

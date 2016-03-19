@@ -1972,7 +1972,8 @@ static DIR *snapper_gmt_opendir(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;
@@ -2244,7 +2245,8 @@ static int snapper_gmt_chmod(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;
@@ -2289,7 +2291,8 @@ static int snapper_gmt_chown(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;
@@ -2485,7 +2488,8 @@ static NTSTATUS snapper_gmt_fget_nt_acl(vfs_handle_struct *handle,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					fsp->fsp_name->flags);
 	TALLOC_FREE(conv);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -2525,7 +2529,8 @@ static NTSTATUS snapper_gmt_get_nt_acl(vfs_handle_struct *handle,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					fname->flags);
 	TALLOC_FREE(conv);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -2562,7 +2567,8 @@ static int snapper_gmt_mkdir(vfs_handle_struct *handle,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					fname->flags);
 	TALLOC_FREE(conv);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;
@@ -2600,7 +2606,8 @@ static int snapper_gmt_rmdir(vfs_handle_struct *handle,
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					fname->flags);
 	TALLOC_FREE(conv);
 	if (smb_fname == NULL) {
 		errno = ENOMEM;
@@ -2786,7 +2793,8 @@ static int snapper_gmt_chmod_acl(vfs_handle_struct *handle,
 	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
 					conv,
 					NULL,
-					NULL);
+					NULL,
+					smb_fname->flags);
 	if (conv_smb_fname == NULL) {
 		TALLOC_FREE(conv);
 		errno = ENOMEM;

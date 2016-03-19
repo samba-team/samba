@@ -598,8 +598,11 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	}
 
 	/* Create an smb_filename with stream_name == NULL. */
-	smb_fname = synthetic_smb_fname(talloc_tos(), cookie.base_name,
-					NULL, NULL);
+	smb_fname = synthetic_smb_fname(talloc_tos(),
+					cookie.base_name,
+					NULL,
+					NULL,
+					0);
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

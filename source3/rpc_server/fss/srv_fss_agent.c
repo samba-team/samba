@@ -173,7 +173,7 @@ static bool snap_path_exists(TALLOC_CTX *ctx, struct messaging_context *msg_ctx,
 		goto out;
 	}
 
-	smb_fname = synthetic_smb_fname(service, sc->sc_path, NULL, NULL);
+	smb_fname = synthetic_smb_fname(service, sc->sc_path, NULL, NULL, 0);
 	if (smb_fname == NULL) {
 		goto out;
 	}
