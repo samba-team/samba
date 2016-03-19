@@ -1213,7 +1213,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname);
 NTSTATUS check_reduced_name_with_privilege(connection_struct *conn,
 			const char *fname,
 			struct smb_request *smbreq);
-int vfs_stat_smb_basename(struct connection_struct *conn, const char *fname,
+int vfs_stat_smb_basename(struct connection_struct *conn,
+			const struct smb_filename *smb_fname_in,
 			SMB_STRUCT_STAT *psbuf);
 NTSTATUS vfs_stat_fsp(files_struct *fsp);
 NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid);

@@ -1315,15 +1315,17 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
  *
  * Called when we know stream name parsing has already been done.
  */
-int vfs_stat_smb_basename(struct connection_struct *conn, const char *fname,
-		       SMB_STRUCT_STAT *psbuf)
+int vfs_stat_smb_basename(struct connection_struct *conn,
+			const struct smb_filename *smb_fname_in,
+			SMB_STRUCT_STAT *psbuf)
 {
 	struct smb_filename smb_fname = {
-			.base_name = discard_const_p(char, fname)
+		.base_name = discard_const_p(char, smb_fname_in->base_name),
+		.flags = smb_fname_in->flags
 	};
 	int ret;
 
-	if (lp_posix_pathnames()) {
+	if (smb_fname.flags & SMB_FILENAME_POSIX_PATH) {
 		ret = SMB_VFS_LSTAT(conn, &smb_fname);
 	} else {
 		ret = SMB_VFS_STAT(conn, &smb_fname);

@@ -69,7 +69,7 @@ static NTSTATUS refuse_symlink(connection_struct *conn,
 		pst = &fsp->fsp_name->st;
 	} else {
 		int ret = vfs_stat_smb_basename(conn,
-				smb_fname->base_name,
+				smb_fname,
 				&sbuf);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);

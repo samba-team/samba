@@ -274,7 +274,7 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 	ZERO_STRUCTP(psbuf);
 
 	/* Get the stat struct for the owner info. */
-	if (vfs_stat_smb_basename(conn, smb_fname->base_name, psbuf) != 0)
+	if (vfs_stat_smb_basename(conn, smb_fname, psbuf) != 0)
 	{
 		DEBUG(8, ("vfs_stat_smb_basename failed with error %s\n",
 			strerror(errno)));

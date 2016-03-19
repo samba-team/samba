@@ -416,7 +416,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle,
 				});
 
 	if (vfs_stat_smb_basename(handle->conn,
-				smb_fname->base_name,
+				smb_fname,
 				&sbuf) == -1) {
 		TALLOC_FREE(frame);
 		return -1;

@@ -842,7 +842,7 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	} else {
 		ret = vfs_stat_smb_basename(handle->conn,
-				smb_fname->base_name,
+				smb_fname,
 				&sbuf);
 	}
 

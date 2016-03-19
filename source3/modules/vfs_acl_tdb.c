@@ -160,7 +160,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 		sbuf = fsp->fsp_name->st;
 	} else {
 		int ret = vfs_stat_smb_basename(handle->conn,
-				smb_fname->base_name,
+				smb_fname,
 				&sbuf);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
@@ -285,7 +285,7 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle,
 	struct db_context *db = acl_db;
 	int ret = -1;
 
-	ret = vfs_stat_smb_basename(handle->conn, smb_fname->base_name, &sbuf);
+	ret = vfs_stat_smb_basename(handle->conn, smb_fname, &sbuf);
 	if (ret == -1) {
 		return -1;
 	}

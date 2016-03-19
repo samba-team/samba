@@ -641,7 +641,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			 * is fully plumbed through the VFS.
 			 */
 			int ret = vfs_stat_smb_basename(handle->conn,
-						smb_fname->base_name,
+						smb_fname,
 						&sbuf);
 			if (ret == -1) {
 				TALLOC_FREE(frame);
