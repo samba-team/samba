@@ -186,10 +186,12 @@ static mode_t recycle_subdir_mode(vfs_handle_struct *handle)
 
 static bool recycle_directory_exist(vfs_handle_struct *handle, const char *dname)
 {
-	SMB_STRUCT_STAT st;
+	struct smb_filename smb_fname = {
+			.base_name = discard_const_p(char, dname)
+	};
 
-	if (vfs_stat_smb_basename(handle->conn, dname, &st) == 0) {
-		if (S_ISDIR(st.st_ex_mode)) {
+	if (SMB_VFS_STAT(handle->conn, &smb_fname) == 0) {
+		if (S_ISDIR(smb_fname.st.st_ex_mode)) {
 			return True;
 		}
 	}
