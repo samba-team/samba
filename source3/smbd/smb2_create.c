@@ -716,8 +716,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				return tevent_req_post(req, ev);
 			}
 
-			if (!lp_posix_pathnames() &&
-					ea_list_has_invalid_name(ea_list)) {
+			/*
+			 * NB. When SMB2+ unix extensions are added,
+			 * we need to relax this check in invalid
+			 * names - we used to not do this if
+			 * lp_posix_pathnames() was false.
+			 */
+			if (ea_list_has_invalid_name(ea_list)) {
 				tevent_req_nterror(req, STATUS_INVALID_EA_NAME);
 				return tevent_req_post(req, ev);
 			}
