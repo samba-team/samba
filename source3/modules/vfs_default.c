@@ -419,13 +419,20 @@ static struct dirent *vfswrap_readdir(vfs_handle_struct *handle,
 		if (result != NULL) {
 			/* See if we can efficiently return this. */
 			struct stat st;
-			int flags = (lp_posix_pathnames() ?
-				AT_SYMLINK_NOFOLLOW : 0);
+			int flags = AT_SYMLINK_NOFOLLOW;
 			int ret = fstatat(dirfd(dirp),
 					result->d_name,
 					&st,
 					flags);
-			if (ret == 0) {
+			/*
+			 * As this is an optimization,
+			 * ignore it if we stat'ed a
+			 * symlink. Make the caller
+			 * do it again as we don't
+			 * know if they wanted the link
+			 * info, or its target info.
+			 */
+			if ((ret == 0) && (!S_ISLNK(st.st_mode))) {
 				init_stat_ex_from_stat(sbuf,
 					&st,
 					lp_fake_directory_create_times(
