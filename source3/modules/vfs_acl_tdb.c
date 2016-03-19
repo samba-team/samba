@@ -341,11 +341,13 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
                               SMB_ACL_TYPE_T type,
                               SMB_ACL_T theacl)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct db_context *db = acl_db;
 	int ret = -1;
+	struct smb_filename smb_fname = {
+		.base_name = discard_const_p(char, path)
+	};
 
-	ret = vfs_stat_smb_basename(handle->conn, path, &sbuf);
+	ret = SMB_VFS_STAT(handle->conn, &smb_fname);
 	if (ret == -1) {
 		return -1;
 	}
@@ -358,7 +360,7 @@ static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	acl_tdb_delete(handle, db, &sbuf);
+	acl_tdb_delete(handle, db, &smb_fname.st);
 	return 0;
 }
 
