@@ -296,7 +296,7 @@ static int posix_eadb_unlink(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_tmp);
 	} else {
 		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_tmp);

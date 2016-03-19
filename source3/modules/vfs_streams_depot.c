@@ -714,7 +714,7 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (smb_fname_base->flags & SMB_FILENAME_POSIX_PATH) {
 		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
 	} else {
 		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
@@ -776,7 +776,7 @@ static int streams_depot_rmdir(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (smb_fname_base->flags & SMB_FILENAME_POSIX_PATH) {
 		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
 	} else {
 		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);
@@ -974,7 +974,7 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 		ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &smb_fname_base->st);
 	}
 	else {
-		if (lp_posix_pathnames()) {
+		if (smb_fname_base->flags & SMB_FILENAME_POSIX_PATH) {
 			ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_base);
 		} else {
 			ret = SMB_VFS_NEXT_STAT(handle, smb_fname_base);

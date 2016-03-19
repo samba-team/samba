@@ -371,10 +371,18 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 	size_t i, num_names;
 	char **names;
 	struct ea_list *ea_list_head = NULL;
+	bool posix_pathnames = false;
 	NTSTATUS status;
 
 	*pea_total_len = 0;
 	*ea_list = NULL;
+
+	if (fsp) {
+		posix_pathnames =
+			(fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
+	} else {
+		posix_pathnames = (smb_fname->flags & SMB_FILENAME_POSIX_PATH);
+	}
 
 	status = get_ea_names_from_file(talloc_tos(),
 				conn,
@@ -404,7 +412,7 @@ static NTSTATUS get_ea_list_from_file_path(TALLOC_CTX *mem_ctx,
 		 * Filter out any underlying POSIX EA names
 		 * that a Windows client can't handle.
 		 */
-		if (!lp_posix_pathnames() &&
+		if (!posix_pathnames &&
 				is_invalid_windows_ea_name(names[i])) {
 			continue;
 		}
@@ -692,9 +700,17 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		const struct smb_filename *smb_fname, struct ea_list *ea_list)
 {
 	NTSTATUS status;
+	bool posix_pathnames = false;
 
 	if (!lp_ea_support(SNUM(conn))) {
 		return NT_STATUS_EAS_NOT_SUPPORTED;
+	}
+
+	if (fsp) {
+		posix_pathnames =
+			(fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH);
+	} else {
+		posix_pathnames = (smb_fname->flags & SMB_FILENAME_POSIX_PATH);
 	}
 
 	status = refuse_symlink(conn, fsp, smb_fname);
@@ -717,7 +733,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 	 * we set *any* of them.
 	 */
 
-	if (!lp_posix_pathnames() && ea_list_has_invalid_name(ea_list)) {
+	if (!posix_pathnames && ea_list_has_invalid_name(ea_list)) {
 		return STATUS_INVALID_EA_NAME;
 	}
 
@@ -1297,7 +1313,7 @@ static void call_trans2open(connection_struct *conn,
 			goto out;
 		}
 
-		if (!lp_posix_pathnames() &&
+		if (!req->posix_pathnames &&
 				ea_list_has_invalid_name(ea_list)) {
 			int param_len = 30;
 			*pparams = (char *)SMB_REALLOC(*pparams, param_len);

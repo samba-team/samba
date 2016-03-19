@@ -252,7 +252,7 @@ static int unlink_acl_tdb(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	if (lp_posix_pathnames()) {
+	if (smb_fname_tmp->flags & SMB_FILENAME_POSIX_PATH) {
 		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
 	} else {
 		ret = SMB_VFS_STAT(handle->conn, smb_fname_tmp);

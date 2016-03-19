@@ -2220,7 +2220,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 					smb_fname->base_name);
 		smb_fname_cp.flags = smb_fname->flags;
 
-		if (lp_posix_pathnames()) {
+		if (smb_fname_cp.flags & SMB_FILENAME_POSIX_PATH) {
 			ret = SMB_VFS_LSTAT(handle->conn, &smb_fname_cp);
 		} else {
 			ret = SMB_VFS_STAT(handle->conn, &smb_fname_cp);
