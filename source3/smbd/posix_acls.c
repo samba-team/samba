@@ -3566,11 +3566,13 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn,
 	}
 
 	/* Get the stat struct for the owner info. */
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
+	/*
+	 * We can directly use SMB_VFS_STAT here, as if this was a
+	 * POSIX call on a symlink, we've already refused it.
+	 * For a Windows acl mapped call on a symlink, we want to follow
+	 * it.
+	 */
+	ret = SMB_VFS_STAT(conn, smb_fname);
 
 	if (ret == -1) {
 		TALLOC_FREE(frame);
