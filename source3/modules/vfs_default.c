@@ -1427,6 +1427,34 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
+					   struct smb_filename *smb_fname,
+					   uint32_t *dosmode)
+{
+	return get_ea_dos_attribute(handle->conn, smb_fname, dosmode);
+}
+
+static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
+					    struct files_struct *fsp,
+					    uint32_t *dosmode)
+{
+	return get_ea_dos_attribute(handle->conn, fsp->fsp_name, dosmode);
+}
+
+static NTSTATUS vfswrap_set_dos_attributes(struct vfs_handle_struct *handle,
+					   const struct smb_filename *smb_fname,
+					   uint32_t dosmode)
+{
+	return set_ea_dos_attribute(handle->conn, smb_fname, dosmode);
+}
+
+static NTSTATUS vfswrap_fset_dos_attributes(struct vfs_handle_struct *handle,
+					    struct files_struct *fsp,
+					    uint32_t dosmode)
+{
+	return set_ea_dos_attribute(handle->conn, fsp->fsp_name, dosmode);
+}
+
 struct vfs_cc_state {
 	off_t copied;
 	uint8_t *buf;
@@ -2649,6 +2677,10 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.strict_unlock_fn = vfswrap_strict_unlock,
 	.translate_name_fn = vfswrap_translate_name,
 	.fsctl_fn = vfswrap_fsctl,
+	.set_dos_attributes_fn = vfswrap_set_dos_attributes,
+	.fset_dos_attributes_fn = vfswrap_fset_dos_attributes,
+	.get_dos_attributes_fn = vfswrap_get_dos_attributes,
+	.fget_dos_attributes_fn = vfswrap_fget_dos_attributes,
 	.copy_chunk_send_fn = vfswrap_copy_chunk_send,
 	.copy_chunk_recv_fn = vfswrap_copy_chunk_recv,
 	.get_compression_fn = vfswrap_get_compression,

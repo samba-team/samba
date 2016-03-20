@@ -191,6 +191,7 @@
 /* Version 35 - Change streaminfo from const char *, to
 		const struct smb_filename * */
 /* Version 35 - Add uint32_t flags to struct smb_filename */
+/* Version 35 - Add get/set/fget/fset dos attribute functions. */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -785,6 +786,22 @@ struct vfs_fn_pointers {
 			     uint32_t max_out_len,
 			     uint32_t *out_len); 
 
+	NTSTATUS (*get_dos_attributes_fn)(struct vfs_handle_struct *handle,
+					  struct smb_filename *smb_fname,
+					  uint32_t *dosmode);
+
+	NTSTATUS (*fget_dos_attributes_fn)(struct vfs_handle_struct *handle,
+					   struct files_struct *fsp,
+					   uint32_t *dosmode);
+
+	NTSTATUS (*set_dos_attributes_fn)(struct vfs_handle_struct *handle,
+					  const struct smb_filename *smb_fname,
+					  uint32_t dosmode);
+
+	NTSTATUS (*fset_dos_attributes_fn)(struct vfs_handle_struct *hande,
+					   struct files_struct *fsp,
+					   uint32_t dosmode);
+
 	/* NT ACL operations. */
 
 	NTSTATUS (*fget_nt_acl_fn)(struct vfs_handle_struct *handle,
@@ -1205,6 +1222,18 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 			    uint8_t **_out_data,
 			    uint32_t max_out_len,
 			    uint32_t *out_len);
+NTSTATUS smb_vfs_call_get_dos_attributes(struct vfs_handle_struct *handle,
+					 struct smb_filename *smb_fname,
+					 uint32_t *dosmode);
+NTSTATUS smb_vfs_call_fget_dos_attributes(struct vfs_handle_struct *handle,
+					  struct files_struct *fsp,
+					  uint32_t *dosmode);
+NTSTATUS smb_vfs_call_set_dos_attributes(struct vfs_handle_struct *handle,
+					 const struct smb_filename *smb_fname,
+					 uint32_t dosmode);
+NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
+					  struct files_struct *fsp,
+					  uint32_t dosmode);
 struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
 						TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,

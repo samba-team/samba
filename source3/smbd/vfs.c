@@ -2202,6 +2202,38 @@ NTSTATUS smb_vfs_call_fsctl(struct vfs_handle_struct *handle,
 				     out_len);
 }
 
+NTSTATUS smb_vfs_call_get_dos_attributes(struct vfs_handle_struct *handle,
+					 struct smb_filename *smb_fname,
+					 uint32_t *dosmode)
+{
+	VFS_FIND(get_dos_attributes);
+	return handle->fns->get_dos_attributes_fn(handle, smb_fname, dosmode);
+}
+
+NTSTATUS smb_vfs_call_fget_dos_attributes(struct vfs_handle_struct *handle,
+					  struct files_struct *fsp,
+					  uint32_t *dosmode)
+{
+	VFS_FIND(fget_dos_attributes);
+	return handle->fns->fget_dos_attributes_fn(handle, fsp, dosmode);
+}
+
+NTSTATUS smb_vfs_call_set_dos_attributes(struct vfs_handle_struct *handle,
+					 const struct smb_filename *smb_fname,
+					 uint32_t dosmode)
+{
+	VFS_FIND(set_dos_attributes);
+	return handle->fns->set_dos_attributes_fn(handle, smb_fname, dosmode);
+}
+
+NTSTATUS smb_vfs_call_fset_dos_attributes(struct vfs_handle_struct *handle,
+					  struct files_struct *fsp,
+					  uint32_t dosmode)
+{
+	VFS_FIND(set_dos_attributes);
+	return handle->fns->fset_dos_attributes_fn(handle, fsp, dosmode);
+}
+
 struct tevent_req *smb_vfs_call_copy_chunk_send(struct vfs_handle_struct *handle,
 						TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,

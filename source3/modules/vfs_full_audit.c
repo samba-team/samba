@@ -175,6 +175,12 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SET_COMPRESSION,
 	SMB_VFS_OP_READDIR_ATTR,
 
+	/* DOS attribute operations. */
+	SMB_VFS_OP_GET_DOS_ATTRIBUTES,
+	SMB_VFS_OP_FGET_DOS_ATTRIBUTES,
+	SMB_VFS_OP_SET_DOS_ATTRIBUTES,
+	SMB_VFS_OP_FSET_DOS_ATTRIBUTES,
+
 	/* NT ACL operations. */
 
 	SMB_VFS_OP_FGET_NT_ACL,
@@ -301,6 +307,10 @@ static struct {
 	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
 	{ SMB_VFS_OP_SET_COMPRESSION,	"set_compression" },
 	{ SMB_VFS_OP_READDIR_ATTR,      "readdir_attr" },
+	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES, "get_dos_attributes" },
+	{ SMB_VFS_OP_FGET_DOS_ATTRIBUTES, "fget_dos_attributes" },
+	{ SMB_VFS_OP_SET_DOS_ATTRIBUTES, "set_dos_attributes" },
+	{ SMB_VFS_OP_FSET_DOS_ATTRIBUTES, "fset_dos_attributes" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -1895,6 +1905,86 @@ static NTSTATUS smb_full_audit_readdir_attr(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS smb_full_audit_get_dos_attributes(
+				struct vfs_handle_struct *handle,
+				struct smb_filename *smb_fname,
+				uint32_t *dosmode)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
+				smb_fname,
+				dosmode);
+
+	do_log(SMB_VFS_OP_GET_DOS_ATTRIBUTES,
+		NT_STATUS_IS_OK(status),
+		handle,
+		"%s",
+		smb_fname_str_do_log(smb_fname));
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_fget_dos_attributes(
+				struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				uint32_t *dosmode)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle,
+				fsp,
+				dosmode);
+
+	do_log(SMB_VFS_OP_FGET_DOS_ATTRIBUTES,
+		NT_STATUS_IS_OK(status),
+		handle,
+		"%s",
+		fsp_str_do_log(fsp));
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_set_dos_attributes(
+				struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint32_t dosmode)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
+				smb_fname,
+				dosmode);
+
+	do_log(SMB_VFS_OP_SET_DOS_ATTRIBUTES,
+		NT_STATUS_IS_OK(status),
+		handle,
+		"%s",
+		smb_fname_str_do_log(smb_fname));
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_fset_dos_attributes(
+				struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				uint32_t dosmode)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle,
+				fsp,
+				dosmode);
+
+	do_log(SMB_VFS_OP_FSET_DOS_ATTRIBUTES,
+		NT_STATUS_IS_OK(status),
+		handle,
+		"%s",
+		fsp_str_do_log(fsp));
+
+	return status;
+}
+
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 					   uint32_t security_info,
 					   TALLOC_CTX *mem_ctx,
@@ -2314,6 +2404,10 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_compression_fn = smb_full_audit_get_compression,
 	.set_compression_fn = smb_full_audit_set_compression,
 	.readdir_attr_fn = smb_full_audit_readdir_attr,
+	.get_dos_attributes_fn = smb_full_audit_get_dos_attributes,
+	.fget_dos_attributes_fn = smb_full_audit_fget_dos_attributes,
+	.set_dos_attributes_fn = smb_full_audit_set_dos_attributes,
+	.fset_dos_attributes_fn = smb_full_audit_fset_dos_attributes,
 	.fget_nt_acl_fn = smb_full_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_full_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,

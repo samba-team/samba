@@ -278,6 +278,13 @@ bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime);
 bool set_sticky_write_time_fsp(struct files_struct *fsp,
 			       struct timespec mtime);
 
+NTSTATUS get_ea_dos_attribute(connection_struct *conn,
+			      struct smb_filename *smb_fname,
+			      uint32_t *pattr);
+NTSTATUS set_ea_dos_attribute(connection_struct *conn,
+			      const struct smb_filename *smb_fname,
+			      uint32_t dosmode);
+
 NTSTATUS set_create_timespec_ea(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				struct timespec create_time);

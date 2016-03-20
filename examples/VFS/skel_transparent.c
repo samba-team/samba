@@ -801,6 +801,42 @@ static NTSTATUS skel_readdir_attr(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
 }
 
+static NTSTATUS skel_get_dos_attributes(struct vfs_handle_struct *handle,
+				struct smb_filename *smb_fname,
+				uint32_t *dosmode)
+{
+	return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
+				smb_fname,
+				dosmode);
+}
+
+static NTSTATUS skel_fget_dos_attributes(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				uint32_t *dosmode)
+{
+	return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle,
+				fsp,
+				dosmode);
+}
+
+static NTSTATUS skel_set_dos_attributes(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				uint32_t dosmode)
+{
+	return SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
+				smb_fname,
+				dosmode);
+}
+
+static NTSTATUS skel_fset_dos_attributes(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				uint32_t dosmode)
+{
+	return SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle,
+				fsp,
+				dosmode);
+}
+
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				 uint32_t security_info,
 				 TALLOC_CTX *mem_ctx,
@@ -1055,6 +1091,12 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.translate_name_fn = skel_translate_name,
 	.fsctl_fn = skel_fsctl,
 	.readdir_attr_fn = skel_readdir_attr,
+
+	/* DOS attributes. */
+	.get_dos_attributes_fn = skel_get_dos_attributes,
+	.fget_dos_attributes_fn = skel_fget_dos_attributes,
+	.set_dos_attributes_fn = skel_set_dos_attributes,
+	.fset_dos_attributes_fn = skel_fset_dos_attributes,
 
 	/* NT ACL operations. */
 

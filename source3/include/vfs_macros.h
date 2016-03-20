@@ -397,6 +397,24 @@
 #define SMB_VFS_NEXT_FSCTL(handle, fsp, ctx, function, req_flags, in_data, in_len, out_data, max_out_len, out_len) \
 	smb_vfs_call_fsctl((handle)->next, (fsp), (ctx), (function), (req_flags), (in_data), (in_len), (out_data), (max_out_len), (out_len))
 
+#define SMB_VFS_GET_DOS_ATTRIBUTES(conn, smb_fname, attributes) \
+	smb_vfs_call_get_dos_attributes((conn)->vfs_handles, (smb_fname), (attributes))
+#define SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle, smb_fname, attributes) \
+	smb_vfs_call_get_dos_attributes((handle)->next, (smb_fname), (attributes))
+#define SMB_VFS_FGET_DOS_ATTRIBUTES(conn, fsp, attributes) \
+	smb_vfs_call_fget_dos_attributes((conn)->vfs_handles, (fsp), (attributes))
+#define SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, attributes) \
+	smb_vfs_call_fget_dos_attributes((handle)->next, (fsp), (attributes))
+
+#define SMB_VFS_SET_DOS_ATTRIBUTES(conn, smb_fname, attributes) \
+	smb_vfs_call_set_dos_attributes((conn)->vfs_handles, (smb_fname), (attributes))
+#define SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle, smb_fname, attributes) \
+	smb_vfs_call_set_dos_attributes((handle)->next, (smb_fname), (attributes))
+#define SMB_VFS_FSET_DOS_ATTRIBUTES(conn, fsp, attributes) \
+	smb_vfs_call_fset_dos_attributes((conn)->vfs_handles, (fsp), (attributes))
+#define SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, attributes) \
+	smb_vfs_call_fset_dos_attributes((handle)->next, (fsp), (attributes))
+
 #define SMB_VFS_COPY_CHUNK_SEND(conn, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num) \
 	smb_vfs_call_copy_chunk_send((conn)->vfs_handles, (mem_ctx), (ev), (src_fsp), (src_off), (dest_fsp), (dest_off), (num))
 #define SMB_VFS_NEXT_COPY_CHUNK_SEND(handle, mem_ctx, ev, src_fsp, src_off, dest_fsp, dest_off, num) \
