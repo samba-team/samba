@@ -9158,7 +9158,7 @@ static NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 
 	sname = strchr_m(fname, ':');
 
-	if (lp_posix_pathnames() || (sname == NULL)) {
+	if (sname == NULL) {
 		if (pbase != NULL) {
 			base = talloc_strdup(mem_ctx, fname);
 			NT_STATUS_HAVE_NO_MEMORY(base);
