@@ -82,9 +82,19 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	eos_ptr = &pathname_local[strlen(pathname_local)];
 	p = temp = pathname_local;
 
-	pdp->posix_path = (lp_posix_pathnames() && *pathname == '/');
+	/*
+	 * Non-broken DFS paths *must* start with the
+	 * path separator. For Windows this is always '\\',
+	 * for posix paths this is always '/'.
+	 */
 
-	sepchar = pdp->posix_path ? '/' : '\\';
+	if (*pathname == '/') {
+		pdp->posix_path = true;
+		sepchar = '/';
+	} else {
+		pdp->posix_path = false;
+		sepchar = '\\';
+	}
 
 	if (allow_broken_path && (*pathname != sepchar)) {
 		DEBUG(10,("parse_dfs_path: path %s doesn't start with %c\n",
@@ -92,6 +102,8 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 		/*
 		 * Possibly client sent a local path by mistake.
 		 * Try and convert to a local path.
+		 * Note that this is an SMB1-only fallback
+		 * to cope with known broken SMB1 clients.
 		 */
 
 		pdp->hostname = eos_ptr; /* "" */
