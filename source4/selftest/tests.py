@@ -600,6 +600,11 @@ for env in ["ad_dc_ntvfs"]:
     # environments, please only add new ones if there's really a
     # difference we need to test
     plantestsuite_loadlist("samba4.ldap.password_lockout.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/password_lockout.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM", '$LOADLIST', '$LISTOPT'])
+    planoldpythontestsuite(env, "tombstone_reanimation",
+                           name="samba4.tombstone_reanimation.python",
+                           environ={'TEST_SERVER': '$SERVER', 'TEST_USERNAME': '$USERNAME', 'TEST_PASSWORD': '$PASSWORD'},
+                           extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')]
+                           )
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("ad_dc:local", "samba.tests.posixacl")

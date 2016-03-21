@@ -421,13 +421,5 @@ static const struct ldb_module_ops ldb_reanimate_module_ops = {
 int ldb_tombstone_reanimate_module_init(const char *version)
 {
 	LDB_MODULE_CHECK_VERSION(version);
-	/*
-	 * Skip module registration for now.
-	 * In order to enable the module again, it should be
-	 * included in samba_dsdb.c between "objectclass" and
-	 * "descriptor" modules.
 	return ldb_register_module(&ldb_reanimate_module_ops);
-	*/
-	DEBUG(5,("Module 'tombstone_reanimate' is disabled. Skip registration."));
-	return LDB_SUCCESS;
 }
