@@ -649,6 +649,10 @@ sub setup_fileserver($$)
 	path = $smbget_sharedir
 	comment = smb username is [%U]
 	guest ok = yes
+[ign_sysacls]
+	path = $share_dir
+	comment = ignore system acls
+	acl_xattr:ignore system acls = yes
 ";
 
 	my $vars = $self->provision($path,
