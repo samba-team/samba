@@ -738,6 +738,81 @@ static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
 }
 
 /*********************************************************************
+ Set the underlying ACL (e.g. POSIX ACLS, POSIX owner, etc)
+*********************************************************************/
+static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
+				   struct security_descriptor *psd,
+				   uint32_t security_info_sent,
+				   bool chown_needed)
+{
+	NTSTATUS status =
+	    SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		return status;
+	}
+
+	/* We got access denied here. If we're already root,
+	   or we didn't need to do a chown, or the fsp isn't
+	   open with WRITE_OWNER access, just return. */
+	if (get_current_uid(handle->conn) == 0 || chown_needed == false ||
+	    !(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	DEBUG(10, ("fset_nt_acl_common: overriding chown on file %s "
+		   "for sid %s\n",
+		   fsp_str_dbg(fsp), sid_string_tos(psd->owner_sid)));
+
+	/* Ok, we failed to chown and we have
+	   SEC_STD_WRITE_OWNER access - override. */
+	become_root();
+	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	unbecome_root();
+
+	return status;
+}
+
+/*********************************************************************
+ Store a v3 security descriptor
+*********************************************************************/
+static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
+			      struct security_descriptor *psd,
+			      struct security_descriptor *pdesc_next,
+			      uint8_t hash[XATTR_SD_HASH_SIZE])
+{
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10, ("fset_nt_acl_xattr: storing xattr sd for file %s\n",
+			   fsp_str_dbg(fsp)));
+		NDR_PRINT_DEBUG(
+		    security_descriptor,
+		    discard_const_p(struct security_descriptor, psd));
+
+		if (pdesc_next != NULL) {
+			DEBUG(10, ("fset_nt_acl_xattr: storing has in xattr sd "
+				   "based on \n"));
+			NDR_PRINT_DEBUG(
+			    security_descriptor,
+			    discard_const_p(struct security_descriptor,
+					    pdesc_next));
+		} else {
+			DEBUG(10,
+			      ("fset_nt_acl_xattr: ignoring underlying sd\n"));
+		}
+	}
+	status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("fset_nt_acl_xattr: create_acl_blob failed\n"));
+		return status;
+	}
+
+	status = store_acl_blob_fsp(handle, fsp, &blob);
+	return status;
+}
+
+/*********************************************************************
  Store a security descriptor given an fsp.
 *********************************************************************/
 
@@ -754,6 +829,8 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	bool chown_needed = false;
 	char *sys_acl_description;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ignore_file_system_acl = lp_parm_bool(
+	    SNUM(handle->conn), ACL_MODULE_NAME, "ignore system acls", false);
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
@@ -809,38 +886,29 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		psd->type |= SEC_DESC_SACL_PRESENT;
 	}
 
-	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
+	if (ignore_file_system_acl) {
+		if (chown_needed) {
+			/* send only ownership stuff to lower layer */
+			security_info_sent &= (SECINFO_OWNER | SECINFO_GROUP);
+			status = set_underlying_acl(handle, fsp, psd,
+						    security_info_sent, true);
+			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(frame);
+				return status;
+			}
+		}
+		ZERO_ARRAY(hash);
+		status = store_v3_blob(handle, fsp, psd, NULL, hash);
+
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	status = set_underlying_acl(handle, fsp, psd, security_info_sent,
+				    chown_needed);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-			TALLOC_FREE(frame);
-			return status;
-		}
-		/* We got access denied here. If we're already root,
-		   or we didn't need to do a chown, or the fsp isn't
-		   open with WRITE_OWNER access, just return. */
-		if (get_current_uid(handle->conn) == 0 ||
-				chown_needed == false ||
-				!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		DEBUG(10,("fset_nt_acl_common: overriding chown on file %s "
-			"for sid %s\n",
-			fsp_str_dbg(fsp),
-			sid_string_tos(psd->owner_sid)
-			));
-
-		/* Ok, we failed to chown and we have
-		   SEC_STD_WRITE_OWNER access - override. */
-		become_root();
-		status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp,
-				security_info_sent, psd);
-		unbecome_root();
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(frame);
-			return status;
-		}
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	/* Get the full underlying sd, then hash. */
@@ -871,24 +939,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	/* If we fail to get the ACL blob (for some reason) then this
 	 * is not fatal, we just work based on the NT ACL only */
 	if (ret != 0) {
-		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s\n",
-				  fsp_str_dbg(fsp)));
-			NDR_PRINT_DEBUG(security_descriptor,
-					discard_const_p(struct security_descriptor, psd));
-
-			DEBUG(10,("fset_nt_acl_xattr: storing has in xattr sd based on \n"));
-			NDR_PRINT_DEBUG(security_descriptor,
-					discard_const_p(struct security_descriptor, pdesc_next));
-		}
-		status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("fset_nt_acl_xattr: create_acl_blob failed\n"));
-			TALLOC_FREE(frame);
-			return status;
-		}
-
-		status = store_acl_blob_fsp(handle, fsp, &blob);
+		status = store_v3_blob(handle, fsp, psd, pdesc_next, hash);
 
 		TALLOC_FREE(frame);
 		return status;
