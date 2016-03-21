@@ -228,13 +228,25 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 
 static const char *get_password(struct cli_credentials *credentials)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	char *password = NULL;
+	struct ntlm_auth_state *state;
+
+	state = talloc_zero(frame, struct ntlm_auth_state);
+	if (state == NULL) {
+		DEBUG(0, ("squid_stream: Failed to talloc ntlm_auth_state\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		exit(1);
+	}
+
+	state->mem_ctx = state;
 
 	/* Ask for a password */
 	x_fprintf(x_stdout, "PW\n");
 
-	manage_squid_request(NUM_HELPER_MODES /* bogus */, NULL, NULL, manage_gensec_get_pw_request, (void **)&password);
+	manage_squid_request(NUM_HELPER_MODES /* bogus */, NULL, state, manage_gensec_get_pw_request, (void **)&password);
 	talloc_steal(credentials, password);
+	TALLOC_FREE(frame);
 	return password;
 }
 
