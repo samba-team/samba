@@ -124,6 +124,18 @@ static void capture_tcp_handler(struct tevent_context *ev,
 		return;
 	}
 
+	if (window == htons(1234) && (rst || seq == 0)) {
+		/* Ignore packets that we sent! */
+		DEBUG(DEBUG_DEBUG,
+		      ("Ignoring packet with dst=%s:%d, src=%s:%d, seq=%"PRIu32", ack_seq=%"PRIu32", rst=%d, window=%"PRIu16"\n",
+		       ctdb_sock_addr_to_string(killtcp, &dst),
+		       ntohs(dst.ip.sin_port),
+		       ctdb_sock_addr_to_string(killtcp, &src),
+		       ntohs(src.ip.sin_port),
+		       seq, ack_seq, rst, ntohs(window)));
+		return;
+	}
+
 	/* check if we have this guy in our list of connections
 	   to kill
 	*/
