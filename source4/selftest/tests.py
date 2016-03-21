@@ -80,6 +80,7 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
     plantestsuite("samba4.ldb.simple.ldap with SIMPLE-BIND %s(%s)" % (options, env),
                   env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
     if have_tls_support:
+        options += ' --option="tlsverifypeer=no_check"'
         plantestsuite("samba4.ldb.simple.ldaps with SIMPLE-BIND %s(%s)" % (options, env),
                       env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
 
@@ -94,7 +95,7 @@ for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
         plantestsuite("samba4.ldb.simple.ldap with SASL-BIND %s(%s)" % (options, env),
                       env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
     if have_tls_support:
-        options = '-U"$USERNAME%$PASSWORD"'
+        options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check"'
         plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
                       env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
 
