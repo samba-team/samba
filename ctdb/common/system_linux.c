@@ -488,9 +488,10 @@ int ctdb_sys_close_capture_socket(void *private_data)
 /*
   called when the raw socket becomes readable
  */
-int ctdb_sys_read_tcp_packet(int s, void *private_data, 
-			ctdb_sock_addr *src, ctdb_sock_addr *dst,
-			uint32_t *ack_seq, uint32_t *seq)
+int ctdb_sys_read_tcp_packet(int s, void *private_data,
+			     ctdb_sock_addr *src, ctdb_sock_addr *dst,
+			     uint32_t *ack_seq, uint32_t *seq,
+			     int *rst, uint16_t *window)
 {
 	int ret;
 #define RCVPKTSIZE 100
@@ -543,6 +544,12 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 		dst->ip.sin_port        = tcp->dest;
 		*ack_seq                = tcp->ack_seq;
 		*seq                    = tcp->seq;
+		if (window != NULL) {
+			*window = tcp->window;
+		}
+		if (rst != NULL) {
+			*rst = tcp->rst;
+		}
 
 		return 0;
 	} else if (ntohs(eth->ether_type) == ETHERTYPE_IP6) {
@@ -568,6 +575,12 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 
 		*ack_seq             = tcp->ack_seq;
 		*seq                 = tcp->seq;
+		if (window != NULL) {
+			*window = tcp->window;
+		}
+		if (rst != NULL) {
+			*rst = tcp->rst;
+		}
 
 		return 0;
 	}

@@ -113,11 +113,13 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	struct ctdb_killtcp_con *con;
 	ctdb_sock_addr src, dst;
 	uint32_t ack_seq, seq;
+	int rst;
+	uint16_t window;
 
 	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
-				killtcp->private_data,
-				&src, &dst,
-				&ack_seq, &seq) != 0) {
+				     killtcp->private_data,
+				     &src, &dst,
+				     &ack_seq, &seq, &rst, &window) != 0) {
 		/* probably a non-tcp ACK packet */
 		return;
 	}
