@@ -1,12 +1,7 @@
 Release Announcements
 =====================
 
-This is the fifth release candidate of Samba 4.4.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.4 will be the next version of the Samba suite.
+This is the first stable release of the Samba 4.4 release series.
 
 
 UPGRADING
@@ -283,6 +278,20 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.4.0rc5
+======================
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11796: smbd: Enable multi-channel if 'server multi channel support =
+     yes' in the config.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11802: lib/socket/interfaces: Fix some uninitialied bytes.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11798: build: Fix build when '--without-quota' specified.
 
 
 CHANGES SINCE 4.4.0rc4
