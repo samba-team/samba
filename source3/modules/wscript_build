@@ -4,6 +4,10 @@ bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
                     source='nfs4_acls.c',
                     deps='samba-util tdb')
 
+bld.SAMBA3_SUBSYSTEM('POSIXACL_XATTR',
+                 source='posixacl_xattr.c',
+                 deps='acl attr')
+
 bld.SAMBA3_LIBRARY('non_posix_acls',
                    source='non_posix_acls.c',
                    deps='samba-util vfs',
@@ -456,7 +460,7 @@ bld.SAMBA3_MODULE('vfs_ceph',
 bld.SAMBA3_MODULE('vfs_glusterfs',
                   subsystem='vfs',
                   source='vfs_glusterfs.c',
-                  deps='samba-util gfapi',
+                  deps='POSIXACL_XATTR samba-util gfapi',
                   init_function='',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_glusterfs'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_glusterfs'))
