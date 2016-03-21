@@ -4074,8 +4074,12 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	}
 
 	if (DEBUGLVL(4)) {
+		struct GUID_txt_buf guid_txt;
+
 		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_ADD, msg);
-		DEBUG(4, ("DRS replication add message:\n%s\n", s));
+		DEBUG(4, ("DRS replication add message of %s:\n%s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
+			  s));
 		talloc_free(s);
 	}
 
@@ -4880,8 +4884,12 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	}
 
 	if (DEBUGLVL(4)) {
+		struct GUID_txt_buf guid_txt;
+
 		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
-		DEBUG(4, ("DRS replication modify message:\n%s\n", s));
+		DEBUG(4, ("DRS replication modify message of %s:\n%s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
+			  s));
 		talloc_free(s);
 	}
 
