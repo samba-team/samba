@@ -3760,7 +3760,7 @@ static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_re
 }
 
 /*
-  callback for replmd_replicated_apply_add() and replmd_replicated_handle_rename()
+  callback for replmd_replicated_apply_add()
   This copes with the creation of conflict records in the case where
   the DN exists, but with a different objectGUID
  */
@@ -3981,16 +3981,6 @@ static int replmd_op_add_callback(struct ldb_request *req, struct ldb_reply *are
 	}
 
 	return replmd_op_possible_conflict_callback(req, ares, replmd_op_callback);
-}
-
-/*
-  callback for replmd_replicated_handle_rename()
-  This copes with the creation of conflict records in the case where
-  the DN exists, but with a different objectGUID
- */
-static int replmd_op_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
-{
-	return replmd_op_possible_conflict_callback(req, ares, ldb_modify_default_callback);
 }
 
 /*
@@ -4354,49 +4344,202 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
  */
 static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 					   struct ldb_message *msg,
-					   struct ldb_request *parent)
+					   struct ldb_request *parent,
+					   bool *renamed)
 {
-	struct ldb_request *req;
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	struct ldb_result *res;
+	struct ldb_dn *conflict_dn;
+	const char *attrs[] = { "replPropertyMetaData", "objectGUID", NULL };
+	const struct ldb_val *omd_value;
+	struct replPropertyMetaDataBlob omd, *rmd;
+	enum ndr_err_code ndr_err;
+	bool rename_incoming_record, rodc;
+	struct replPropertyMetaData1 *rmd_name, *omd_name;
+	struct ldb_dn *new_dn;
+	struct GUID guid;
 
 	DEBUG(4,("replmd_replicated_request rename %s => %s\n",
 		 ldb_dn_get_linearized(ar->search_msg->dn),
 		 ldb_dn_get_linearized(msg->dn)));
 
 
-	res = talloc_zero(tmp_ctx, struct ldb_result);
-	if (!res) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb_module_get_ctx(ar->module));
-	}
+	ret = dsdb_module_rename(ar->module, ar->search_msg->dn, msg->dn,
+				 DSDB_FLAG_NEXT_MODULE, ar->req);
 
-	/* pass rename to the next module
-	 * so it doesn't appear as an originating update */
-	ret = ldb_build_rename_req(&req, ldb_module_get_ctx(ar->module), tmp_ctx,
-				   ar->search_msg->dn, msg->dn,
-				   NULL,
-				   ar,
-				   replmd_op_rename_callback,
-				   parent);
-	LDB_REQ_SET_LOCATION(req);
-	if (ret != LDB_SUCCESS) {
+	if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		talloc_free(tmp_ctx);
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), "Failed to locally apply remote rename from %s to %s: %s",
+				       ldb_dn_get_linearized(ar->search_msg->dn),
+				       ldb_dn_get_linearized(msg->dn),
+				       ldb_errstring(ldb_module_get_ctx(ar->module)));
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(req, DSDB_MODIFY_RELAX);
+	ret = samdb_rodc(ldb_module_get_ctx(ar->module), &rodc);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(tmp_ctx);
-		return ret;
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+				       "Failed to determine if we are an RODC when attempting to form conflict DN: %s",
+				       ldb_errstring(ldb_module_get_ctx(ar->module)));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/*
+	 * we have a conflict, and need to decide if we will keep the
+	 * new record or the old record
+	 */
+
+	conflict_dn = msg->dn;
+
+	if (rodc) {
+		/*
+		 * We are on an RODC, or were a GC for this
+		 * partition, so we have to fail this until
+		 * someone who owns the partition sorts it
+		 * out
+		 */
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+				       "Conflict adding object '%s' from incoming replication but we are read only for the partition.  \n"
+				       " - We must fail the operation until a master for this partition resolves the conflict",
+				       ldb_dn_get_linearized(conflict_dn));
+		goto failed;
 	}
 
-	ret = ldb_next_request(ar->module, req);
-
-	if (ret == LDB_SUCCESS) {
-		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	/*
+	 * first we need the replPropertyMetaData attribute from the
+	 * old record
+	 */
+	ret = dsdb_module_search_dn(ar->module, tmp_ctx, &res, conflict_dn,
+				    attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DELETED |
+				    DSDB_SEARCH_SHOW_RECYCLED, ar->req);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Unable to find object for conflicting record '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
 	}
+
+	omd_value = ldb_msg_find_ldb_val(res->msgs[0], "replPropertyMetaData");
+	if (omd_value == NULL) {
+		DEBUG(0,(__location__ ": Unable to find replPropertyMetaData for conflicting record '%s'\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	ndr_err = ndr_pull_struct_blob(omd_value, res->msgs[0], &omd,
+				       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,(__location__ ": Failed to parse old replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	rmd = ar->objs->objects[ar->index_current].meta_data;
+
+	/* we decide which is newer based on the RPMD on the name
+	   attribute.  See [MS-DRSR] ResolveNameConflict */
+	rmd_name = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTID_name);
+	omd_name = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTID_name);
+	if (!rmd_name || !omd_name) {
+		DEBUG(0,(__location__ ": Failed to find name attribute in replPropertyMetaData for %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	rename_incoming_record = !(ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING) &&
+		!replmd_replPropertyMetaData1_is_newer(omd_name, rmd_name);
+
+	if (rename_incoming_record) {
+
+		new_dn = replmd_conflict_dn(msg, msg->dn,
+					    &ar->objs->objects[ar->index_current].object_guid);
+		if (new_dn == NULL) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+								  "Failed to form conflict DN for %s\n",
+								  ldb_dn_get_linearized(msg->dn));
+
+			return replmd_replicated_request_werror(ar, WERR_NOMEM);
+		}
+
+		ret = dsdb_module_rename(ar->module, ar->search_msg->dn, new_dn,
+					 DSDB_FLAG_NEXT_MODULE, ar->req);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
+					       "Failed to rename incoming conflicting dn '%s' (was '%s') to '%s' - %s\n",
+					       ldb_dn_get_linearized(conflict_dn),
+					       ldb_dn_get_linearized(ar->search_msg->dn),
+					       ldb_dn_get_linearized(new_dn),
+					       ldb_errstring(ldb_module_get_ctx(ar->module)));
+			return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
+		}
+
+		msg->dn = new_dn;
+		*renamed = true;
+		return LDB_SUCCESS;
+	}
+
+	/* we are renaming the existing record */
+
+	guid = samdb_result_guid(res->msgs[0], "objectGUID");
+	if (GUID_all_zero(&guid)) {
+		DEBUG(0,(__location__ ": Failed to find objectGUID for existing conflict record %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	new_dn = replmd_conflict_dn(tmp_ctx, conflict_dn, &guid);
+	if (new_dn == NULL) {
+		DEBUG(0,(__location__ ": Failed to form conflict DN for %s\n",
+			 ldb_dn_get_linearized(conflict_dn)));
+		goto failed;
+	}
+
+	DEBUG(2,(__location__ ": Resolving conflict record via existing-record rename '%s' -> '%s'\n",
+		 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
+
+	ret = dsdb_module_rename(ar->module, conflict_dn, new_dn,
+				 DSDB_FLAG_OWN_MODULE, ar->req);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to rename conflict dn '%s' to '%s' - %s\n",
+			 ldb_dn_get_linearized(conflict_dn),
+			 ldb_dn_get_linearized(new_dn),
+			 ldb_errstring(ldb_module_get_ctx(ar->module))));
+		goto failed;
+	}
+
+	/*
+	 * now we need to ensure that the rename is seen as an
+	 * originating update. We do that with a modify.
+	 */
+	ret = replmd_name_modify(ar, ar->req, new_dn);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	DEBUG(2,(__location__ ": With conflicting record renamed, re-apply replicated rename '%s' -> '%s'\n",
+		 ldb_dn_get_linearized(ar->search_msg->dn),
+		 ldb_dn_get_linearized(msg->dn)));
+
+
+	ret = dsdb_module_rename(ar->module, ar->search_msg->dn, msg->dn,
+				 DSDB_FLAG_NEXT_MODULE, ar->req);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": After conflict resolution, failed to rename dn '%s' to '%s' - %s\n",
+			 ldb_dn_get_linearized(ar->search_msg->dn),
+			 ldb_dn_get_linearized(msg->dn),
+			 ldb_errstring(ldb_module_get_ctx(ar->module))));
+			goto failed;
+	}
+failed:
+
+	/*
+	 * On failure make the caller get the error
+	 * This means replication will stop with an error,
+	 * but there is not much else we can do.  In the
+	 * LDB_ERR_ENTRY_ALREADY_EXISTS case this is exactly what is
+	 * needed.
+	 */
 
 	talloc_free(tmp_ctx);
 	return ret;
@@ -4489,50 +4632,24 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		 * replmd_replicated_apply_search_callback())
 		 */
 		renamed = true;
-		ret = replmd_replicated_handle_rename(ar, msg, ar->req);
+		ret = replmd_replicated_handle_rename(ar, msg, ar->req, &renamed);
 	}
 
-	/*
-	 * This particular error code means that we already tried the
-	 * conflict algrorithm, and the existing record name was newer, so we
-	 * need to rename the incoming record
-	 */
-	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		struct ldb_dn *new_dn;
-
-		new_dn = replmd_conflict_dn(msg, msg->dn,
-					    &ar->objs->objects[ar->index_current].object_guid);
-		if (new_dn == NULL) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
-								  "Failed to form conflict DN for %s\n",
-								  ldb_dn_get_linearized(msg->dn));
-
-			return replmd_replicated_request_werror(ar, WERR_NOMEM);
-		}
-
-		ret = dsdb_module_rename(ar->module, ar->search_msg->dn, new_dn,
-					 DSDB_FLAG_NEXT_MODULE, ar->req);
-		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
-					       "Failed to rename incoming conflicting dn '%s' (was '%s') to '%s' - %s\n",
-					       ldb_dn_get_linearized(msg->dn),
-					       ldb_dn_get_linearized(ar->search_msg->dn),
-					       ldb_dn_get_linearized(new_dn),
-					       ldb_errstring(ldb_module_get_ctx(ar->module)));
-			return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
-		}
-
-		/* Set the callback to one that will fix up the name to be a conflict DN */
-		callback = replmd_op_name_modify_callback;
-		msg->dn = new_dn;
-		renamed = true;
-	} else if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "replmd_replicated_request rename %s => %s failed - %s\n",
 			  ldb_dn_get_linearized(ar->search_msg->dn),
 			  ldb_dn_get_linearized(msg->dn),
 			  ldb_errstring(ldb));
 		return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
+	}
+
+	if (renamed == true) {
+		/*
+		 * Set the callback to one that will fix up the name
+		 * metadata on the new conflict DN
+		 */
+		callback = replmd_op_name_modify_callback;
 	}
 
 	ZERO_STRUCT(nmd);
