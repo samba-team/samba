@@ -199,7 +199,7 @@ class BaseSortTests(samba.tests.TestCase):
                     c[x] = 1
                 fixed = []
                 for x in FIENDISH_TESTS:
-                    fixed += [norm(x)] * c[x]
+                    fixed += [norm(x)] * c.get(x, 0)
 
                 rev = list(reversed(fixed))
                 self.expected_results[k] = (fixed, rev)
