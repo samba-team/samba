@@ -3495,14 +3495,6 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	 *
 	 */
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE, req);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
-				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
 	/*
 	 * No matter what has happned with other renames, try again to
 	 * get this to be under the deleted DN.
@@ -3518,6 +3510,15 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 			talloc_free(tmp_ctx);
 			return ret;
 		}
+		msg->dn = new_dn;
+	}
+
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE, req);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
+				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	talloc_free(tmp_ctx);
