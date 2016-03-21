@@ -171,7 +171,7 @@ struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx,
 	char *strdn;
 	va_list ap;
 
-	if ( (! mem_ctx) || (! ldb)) return NULL;
+	if (! ldb) return NULL;
 
 	va_start(ap, new_fmt);
 	strdn = talloc_vasprintf(mem_ctx, new_fmt, ap);
