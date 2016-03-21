@@ -671,6 +671,8 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	WERROR status;
 	NTSTATUS nt_status;
 	uint32_t dsdb_repl_flags = 0;
+	struct ldb_dn *nc_root = NULL;
+	int ret;
 
 	switch (ctr_level) {
 	case 1:
@@ -744,9 +746,22 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		dsdb_repl_flags |= DSDB_REPL_FLAG_EXPECT_NO_SECRETS;
 	}
 
+	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
+		ret = dsdb_find_nc_root(service->samdb, partition,
+					partition->dn, &nc_root);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find nc_root for %s\n",
+				 ldb_dn_get_linearized(partition->dn)));
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+	} else {
+		nc_root = partition->dn;
+	}
+
 	status = dsdb_replicated_objects_convert(service->samdb,
 						 working_schema ? working_schema : schema,
-						 partition->nc.dn,
+						 nc_root,
 						 mapping_ctr,
 						 object_count,
 						 first_object,

@@ -639,7 +639,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 				       const struct dsdb_schema *schema,
-				       const char *partition_dn_str,
+				       struct ldb_dn *partition_dn,
 				       const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
 				       uint32_t object_count,
 				       const struct drsuapi_DsReplicaObjectListItemEx *first_object,
@@ -653,7 +653,6 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 				       struct dsdb_extended_replicated_objects **objects)
 {
 	WERROR status;
-	struct ldb_dn *partition_dn;
 	struct dsdb_schema_prefixmap *pfm_remote;
 	struct dsdb_extended_replicated_objects *out;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -670,9 +669,6 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	 */
 	schema = talloc_reference(out, schema);
 	W_ERROR_HAVE_NO_MEMORY(schema);
-
-	partition_dn = ldb_dn_new(out, ldb, partition_dn_str);
-	W_ERROR_HAVE_NO_MEMORY_AND_FREE(partition_dn, out);
 
 	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
 						  out, &pfm_remote, NULL);
@@ -691,7 +687,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		status = dsdb_schema_info_cmp(schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(1,("Remote schema has changed while replicating %s\n",
-				 partition_dn_str));
+				 ldb_dn_get_linearized(partition_dn)));
 			talloc_free(out);
 			return status;
 		}

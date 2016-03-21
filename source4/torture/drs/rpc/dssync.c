@@ -358,6 +358,9 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	struct dsdb_extended_replicated_objects *objs;
 	struct ldb_extended_dn_control *extended_dn_ctrl;
 	struct dsdb_schema *ldap_schema;
+	struct ldb_dn *partition_dn = ldb_dn_new(tctx, ldb, partition);
+
+	torture_assert_not_null(tctx, partition_dn, "Failed to parse partition DN as as DN");
 
 	/* load dsdb_schema using remote prefixMap */
 	torture_assert(tctx,
@@ -367,7 +370,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 
 	status = dsdb_replicated_objects_convert(ldb,
 						 ldap_schema,
-						 partition,
+						 partition_dn,
 						 mapping_ctr,
 						 object_count,
 						 first_object,
