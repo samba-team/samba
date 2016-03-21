@@ -132,14 +132,14 @@ static void capture_tcp_handler(struct tevent_context *ev,
 		return;
 	}
 
-	/* This one has been tickled !
-	   now reset him and remove him from the list.
-	 */
+	/* This connection has been tickled!  RST it and remove it
+	 * from the list. */
 	DEBUG(DEBUG_INFO,
-	      ("sending a tcp reset to kill connection :%d -> %s:%d\n",
-	       ntohs(con->dst_addr.ip.sin_port),
+	      ("Sending a TCP RST to kill connection (%s:%d) -> %s:%d\n",
 	       ctdb_sock_addr_to_string(con, &con->src_addr),
-	       ntohs(con->src_addr.ip.sin_port)));
+	       ntohs(con->src_addr.ip.sin_port),
+	       ctdb_sock_addr_to_string(con, &con->dst_addr),
+	       ntohs(con->dst_addr.ip.sin_port)));
 
 	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, ack_seq, seq, 1);
 	talloc_free(con);
