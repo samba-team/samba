@@ -35,7 +35,7 @@
 #endif
 
 #ifndef _DEPRECATED_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#ifdef HAVE___ATTRIBUTE__
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
@@ -43,7 +43,7 @@
 #endif
 
 #ifndef _WARN_UNUSED_RESULT_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#ifdef HAVE___ATTRIBUTE__
 #define _WARN_UNUSED_RESULT_ __attribute__ ((warn_unused_result))
 #else
 #define _WARN_UNUSED_RESULT_
@@ -51,7 +51,7 @@
 #endif
 
 #ifndef _NORETURN_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#ifdef HAVE___ATTRIBUTE__
 #define _NORETURN_ __attribute__ ((noreturn))
 #else
 #define _NORETURN_
@@ -59,7 +59,7 @@
 #endif
 
 #ifndef _PURE_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1)
+#ifdef HAVE___ATTRIBUTE__
 #define _PURE_ __attribute__((pure))
 #else
 #define _PURE_
@@ -67,7 +67,7 @@
 #endif
 
 #ifndef NONNULL
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1)
+#ifdef HAVE___ATTRIBUTE__
 #define NONNULL(param) param __attribute__((nonnull))
 #else
 #define NONNULL(param) param
@@ -75,7 +75,7 @@
 #endif
 
 #ifndef PRINTF_ATTRIBUTE
-#if __GNUC__ >= 3
+#ifdef HAVE___ATTRIBUTE__
 /** Use gcc attribute to check printf fns.  a1 is the 1-based index of
  * the parameter containing the format, and a2 the index of the first
  * argument. Note that some gcc 2.x versions don't handle this
@@ -87,11 +87,11 @@
 #endif
 
 #ifndef FORMAT_ATTRIBUTE
-#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
+#ifdef HAVE___ATTRIBUTE__
 /** Use gcc attribute to check printf fns.  a1 is argument to format()
  * in the above macro.  This is needed to support Heimdal's printf
  * decorations. Note that some gcc 2.x versions don't handle this
- * properly, and as such I've used the same minimum from heimdal: GCC 3.1 **/
+ * properly. **/
 #define FORMAT_ATTRIBUTE(a) __attribute__ ((format a))
 #else
 #define FORMAT_ATTRIBUTE(a)
