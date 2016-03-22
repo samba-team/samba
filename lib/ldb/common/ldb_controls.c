@@ -446,7 +446,6 @@ char *ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *contr
 struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *control_strings)
 {
 	struct ldb_control *ctrl;
-	char *error_string = NULL;
 
 	if (!(ctrl = talloc(mem_ctx, struct ldb_control))) {
 		ldb_oom(ldb);
@@ -481,12 +480,11 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		}
 
 		if ((ret < 4) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid VLV control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):bc(n):ac(n):"
-							      "{os(n):cc(n)|>=val(s)|base64>=val(o)}[:ctxid(o)]\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, s = string, o = b64 binary blob");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid VLV control syntax\n"
+					  " syntax: crit(b):bc(n):ac(n):"
+					  "{os(n):cc(n)|>=val(s)|base64>=val(o)}[:ctxid(o)]\n"
+					  "   note: b = boolean, n = number, s = string, o = b64 binary blob");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -539,17 +537,16 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		char cookie[1024];
 		int crit, max_attrs, ret;
 		uint32_t flags;
-		
+
 		cookie[0] = '\0';
 		p = &(control_strings[sizeof(LDB_CONTROL_DIRSYNC_NAME)]);
 		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
 		if ((ret < 3) || (crit < 0) || (crit > 1) || (max_attrs < 0)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid dirsync control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, o = b64 binary blob");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid dirsync control syntax\n"
+					  " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n"
+					  "   note: b = boolean, n = number, o = b64 binary blob");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -600,12 +597,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ret = sscanf(p, "%d:%u:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
 		if ((ret < 3) || (crit < 0) || (crit > 1) || (max_attrs < 0)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid %s control syntax\n",
-						       LDB_CONTROL_DIRSYNC_EX_NAME);
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number, o = b64 binary blob");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid dirsync_ex control syntax\n"
+					  " syntax: crit(b):flags(n):max_attrs(n)[:cookie(o)]\n"
+					  "   note: b = boolean, n = number, o = b64 binary blob");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -656,11 +651,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_ASQ_NAME)]);
 		ret = sscanf(p, "%d:%255[^$]", &crit, attr);
 		if ((ret != 2) || (crit < 0) || (crit > 1) || (attr[0] == '\0')) {
-			error_string = talloc_asprintf(mem_ctx, "invalid asq control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):attr(s)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid asq control syntax\n"
+					  " syntax: crit(b):attr(s)\n"
+					  "   note: b = boolean, s = string");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -686,14 +680,13 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		if ((ret != 2) || (crit < 0) || (crit > 1) || (type < 0) || (type > 1)) {
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
-				error_string = talloc_asprintf(mem_ctx, "invalid extended_dn control syntax\n");
-				error_string = talloc_asprintf_append(error_string, " syntax: crit(b)[:type(i)]\n");
-				error_string = talloc_asprintf_append(error_string, "   note: b = boolean\n");
-				error_string = talloc_asprintf_append(error_string, "         i = integer\n");
-				error_string = talloc_asprintf_append(error_string, "   valid values are: 0 - hexadecimal representation\n");
-				error_string = talloc_asprintf_append(error_string, "                     1 - normal string representation");
-				ldb_set_errstring(ldb, error_string);
-				talloc_free(error_string);
+				ldb_set_errstring(ldb,
+						  "invalid extended_dn control syntax\n"
+						  " syntax: crit(b)[:type(i)]\n"
+						  "   note: b = boolean\n"
+						  "         i = integer\n"
+						  "   valid values are: 0 - hexadecimal representation\n"
+						  "                     1 - normal string representation");
 				talloc_free(ctrl);
 				return NULL;
 			}
@@ -719,11 +712,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_SD_FLAGS_NAME)]);
 		ret = sscanf(p, "%d:%u", &crit, &secinfo_flags);
 		if ((ret != 2) || (crit < 0) || (crit > 1) || (secinfo_flags > 0xF)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid sd_flags control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):secinfo_flags(n)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid sd_flags control syntax\n"
+					  " syntax: crit(b):secinfo_flags(n)\n"
+					  "   note: b = boolean, n = number");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -746,11 +738,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_SEARCH_OPTIONS_NAME)]);
 		ret = sscanf(p, "%d:%u", &crit, &search_options);
 		if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options > 0xF)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid search_options control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):search_options(n)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, n = number");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid search_options control syntax\n"
+					  " syntax: crit(b):search_options(n)\n"
+					  "   note: b = boolean, n = number");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -771,11 +762,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_BYPASS_OPERATIONAL_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid bypassopreational control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid bypassopreational control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -794,11 +784,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_RELAX_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid relax control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid relax control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -817,11 +806,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_RECALCULATE_SD_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid recalculate_sd control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid recalculate_sd control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -840,11 +828,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_DOMAIN_SCOPE_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid domain_scope control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid domain_scope control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -915,11 +902,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_SERVER_SORT_NAME)]);
 		ret = sscanf(p, "%d:%d:%255[^:]:%127[^:]", &crit, &rev, attr, rule);
 		if ((ret < 3) || (crit < 0) || (crit > 1) || (rev < 0 ) || (rev > 1) ||attr[0] == '\0') {
-			error_string = talloc_asprintf(mem_ctx, "invalid server_sort control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b):rev(b):attr(s)[:rule(s)]\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid server_sort control syntax\n"
+					  " syntax: crit(b):rev(b):attr(s)[:rule(s)]\n"
+					  "   note: b = boolean, s = string");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -946,11 +932,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_NOTIFICATION_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid notification control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid notification control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -969,11 +954,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_TREE_DELETE_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid tree_delete control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid tree_delete control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -992,11 +976,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_SHOW_DELETED_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid show_deleted control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid show_deleted control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1015,11 +998,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_SHOW_DEACTIVATED_LINK_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid show_deactivated_link control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid show_deactivated_link control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1038,11 +1020,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_SHOW_RECYCLED_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid show_recycled control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid show_recycled control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1061,11 +1042,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_PERMISSIVE_MODIFY_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid permissive_modify control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid permissive_modify control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1084,11 +1064,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_REVEAL_INTERNALS_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid reveal_internals control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid reveal_internals control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1110,11 +1089,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ret = sscanf(p, "%255[^:]:%d", oid, &crit);
 
 		if ((ret != 2) || strlen(oid) == 0 || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid local_oid control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: oid(s):crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean, s = string");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid local_oid control syntax\n"
+					  " syntax: oid(s):crit(b)\n"
+					  "   note: b = boolean, s = string");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1138,11 +1116,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_RODC_DCPROMO_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid rodc_join control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid rodc_join control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1161,11 +1138,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		p = &(control_strings[sizeof(LDB_CONTROL_PROVISION_NAME)]);
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
-			error_string = talloc_asprintf(mem_ctx, "invalid provision control syntax\n");
-			error_string = talloc_asprintf_append(error_string, " syntax: crit(b)\n");
-			error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-			ldb_set_errstring(ldb, error_string);
-			talloc_free(error_string);
+			ldb_set_errstring(ldb,
+					  "invalid provision control syntax\n"
+					  " syntax: crit(b)\n"
+					  "   note: b = boolean");
 			talloc_free(ctrl);
 			return NULL;
 		}
@@ -1189,13 +1165,12 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		if ((ret != 3) || (crit < 0) || (crit > 1)) {
 			ret = sscanf(p, "%d:%d", &crit, &flags);
 			if ((ret != 2) || (crit < 0) || (crit > 1)) {
-				error_string = talloc_asprintf(mem_ctx, "invalid verify_name control syntax\n");
-				error_string = talloc_asprintf_append(error_string, " syntax: crit(b):flags(i)[:gc(s)]\n");
-				error_string = talloc_asprintf_append(error_string, "   note: b = boolean");
-				error_string = talloc_asprintf_append(error_string, "   note: i = integer");
-				error_string = talloc_asprintf_append(error_string, "   note: s = string");
-				ldb_set_errstring(ldb, error_string);
-				talloc_free(error_string);
+				ldb_set_errstring(ldb,
+						  "invalid verify_name control syntax\n"
+						  " syntax: crit(b):flags(i)[:gc(s)]\n"
+						  "   note: b = boolean"
+						  "   note: i = integer"
+						  "   note: s = string");
 				talloc_free(ctrl);
 				return NULL;
 			}
