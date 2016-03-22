@@ -24,6 +24,7 @@ builddirs = {
     "ctdb"    : "ctdb",
     "samba"  : ".",
     "samba-xc" : ".",
+    "samba-o3" : ".",
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
     "samba-static"  : ".",
@@ -79,6 +80,14 @@ tasks = {
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
                    ("compare-results", "script/compare_cc_results.py ./bin/c4che/default.cache.py ./bin-xe/c4che/default.cache.py ./bin-xa/c4che/default.cache.py", "text/plain")],
 
+    # test build with -O3 -- catches extra warnings and bugs
+    "samba-o3" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+                   ("configure", "ADDITIONAL_CFLAGS='-O3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                   ("make", "make -j", "text/plain"),
+                   ("test", "make quicktest FAIL_IMMEDIATELY=1 TESTS='\(ad_dc\)'", "text/plain"),
+                   ("install", "make install", "text/plain"),
+                   ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                   ("clean", "make clean", "text/plain") ],
 
     "samba-ctdb" : [ ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
 
