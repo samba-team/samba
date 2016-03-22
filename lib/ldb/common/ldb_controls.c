@@ -520,6 +520,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			control->ctxid_len = len;
 			control->contextId = talloc_memdup(control, ctxid,
 							   control->ctxid_len);
+			if (control->contextId == NULL) {
+				ldb_oom(ldb);
+				return NULL;
+			}
 		} else {
 			control->ctxid_len = 0;
 			control->contextId = NULL;
@@ -572,6 +576,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			}
 			control->cookie_len = len;
 			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
+			if (control->cookie == NULL) {
+				ldb_oom(ldb);
+				return NULL;
+			}
 		} else {
 			control->cookie = NULL;
 			control->cookie_len = 0;
@@ -625,6 +633,10 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 			}
 			control->cookie_len = len;
 			control->cookie = (char *)talloc_memdup(control, cookie, control->cookie_len);
+			if (control->cookie == NULL) {
+				ldb_oom(ldb);
+				return NULL;
+			}
 		} else {
 			control->cookie = NULL;
 			control->cookie_len = 0;
