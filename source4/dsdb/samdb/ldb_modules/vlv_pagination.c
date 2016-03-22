@@ -332,7 +332,7 @@ static int vlv_results(struct vlv_context *ac)
 	int ret, i, first_i, last_i;
 	struct ldb_vlv_req_control *vlv_details;
 	struct ldb_server_sort_control *sort_details;
-	int index = 0;
+	int target = 0;
 	struct ldb_context *ldb = NULL;
 
 	if (ac->store == NULL) {
@@ -355,22 +355,22 @@ static int vlv_results(struct vlv_context *ac)
 	sort_details = ac->store->sort_details;
 
 	if (vlv_details->type == 1) {
-		index = vlv_gt_eq_to_index(ac, ac->store->results, vlv_details,
-					   sort_details, &ret);
+		target = vlv_gt_eq_to_index(ac, ac->store->results, vlv_details,
+					    sort_details, &ret);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	} else {
-		index = vlv_calc_real_offset(vlv_details->match.byOffset.offset,
-					     vlv_details->match.byOffset.contentCount,
-					     ac->store->num_entries);
-		if (index == -1) {
+		target = vlv_calc_real_offset(vlv_details->match.byOffset.offset,
+					      vlv_details->match.byOffset.contentCount,
+					      ac->store->num_entries);
+		if (target == -1) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 	/* send the results */
-	first_i = MAX(index - vlv_details->beforeCount, 0);
-	last_i = MIN(index + vlv_details->afterCount, ac->store->num_entries - 1);
+	first_i = MAX(target - vlv_details->beforeCount, 0);
+	last_i = MIN(target + vlv_details->afterCount, ac->store->num_entries - 1);
 
 	for (i = first_i; i <= last_i; i++) {
 		struct ldb_result *result;
@@ -446,8 +446,8 @@ static int vlv_results(struct vlv_context *ac)
 	vlv->ctxid_len = sizeof(uint32_t);
 	vlv->vlv_result = 0;
 	vlv->contentCount = ac->store->num_entries;
-	if (index >= 0) {
-		vlv->targetPosition = index + 1;
+	if (target >= 0) {
+		vlv->targetPosition = target + 1;
 	} else if (vlv_details->type == 1) {
 		vlv->targetPosition = ac->store->num_entries + 1;
 	} else {
