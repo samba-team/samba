@@ -37,6 +37,7 @@
 #include "../libcli/security/security.h"
 #include "auth/gensec/gensec.h"
 #include "lib/conn_tdb.h"
+#include "../libcli/smb/smb_signing.h"
 
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
@@ -599,7 +600,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	struct smbd_server_connection *sconn = req->sconn;
 	bool doencrypt = xconn->smb1.negprot.encrypted_passwords;
 	bool signing_allowed = false;
-	bool signing_mandatory = false;
+	bool signing_mandatory = smb_signing_is_mandatory(
+		xconn->smb1.signing_state);
 
 	START_PROFILE(SMBsesssetupX);
 
