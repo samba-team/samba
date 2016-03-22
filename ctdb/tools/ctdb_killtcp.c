@@ -51,7 +51,6 @@ static const char *prog;
 struct ctdb_killtcp_con {
 	ctdb_sock_addr src_addr;
 	ctdb_sock_addr dst_addr;
-	int count;
 	struct ctdb_kill_tcp *killtcp;
 };
 
@@ -171,14 +170,6 @@ static int tickle_connection_traverse(void *param, void *data)
 {
 	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
 
-	/* have tried too many times, just give up */
-	if (con->count >= con->killtcp->max_attempts) {
-		/* can't delete in traverse: reparent to delete_cons */
-		talloc_steal(param, con);
-		return 0;
-	}
-
-	con->count++;
 	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, 0, 0, 0);
 
 	return 0;
@@ -203,11 +194,12 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 
 	killtcp->attempts++;
 
-	/* If there are no more connections to kill we can remove the
-	   entire killtcp structure
+	/* If there are no more connections to kill or we have tried
+	   too many times we can remove the entire killtcp structure
 	 */
-	if ((killtcp->connections == NULL) ||
-	    (killtcp->connections->root == NULL)) {
+	if (killtcp->connections == NULL ||
+	    killtcp->connections->root == NULL ||
+		killtcp->attempts >= killtcp->max_attempts) {
 		talloc_free(killtcp);
 		return;
 	}
@@ -279,7 +271,6 @@ static int ctdb_killtcp(struct tevent_context *ev,
 	}
 	con->src_addr = *src;
 	con->dst_addr = *dst;
-	con->count    = 0;
 	con->killtcp  = killtcp;
 
 
