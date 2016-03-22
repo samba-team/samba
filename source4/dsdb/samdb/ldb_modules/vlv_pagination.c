@@ -229,19 +229,20 @@ static int vlv_gt_eq_to_index(struct vlv_context *ac,
 	const struct ldb_schema_attribute *a;
 	struct GUID *result = NULL;
 	struct vlv_sort_context context;
+	struct ldb_val value = {
+		.data = (uint8_t *)vlv_details->match.gtOrEq.value,
+		.length = vlv_details->match.gtOrEq.value_len
+	};
 	ldb = ldb_module_get_ctx(ac->module);
 	a = ldb_schema_attribute_by_name(ldb, sort_details->attributeName);
 
 	context = (struct vlv_sort_context){
-		ldb,
-		a->syntax->comparison_fn,
-		sort_details->attributeName,
-		ac,
-		LDB_SUCCESS,
-		{
-			(uint8_t *)vlv_details->match.gtOrEq.value,
-			vlv_details->match.gtOrEq.value_len
-		}
+		.ldb = ldb,
+		.comparison_fn = a->syntax->comparison_fn,
+		.attr = sort_details->attributeName,
+		.mem_ctx = ac,
+		.status = LDB_SUCCESS,
+		.value = value
 	};
 
 	if (sort_details->reverse) {
