@@ -424,6 +424,10 @@ bool smb_signing_set_negotiated(struct smb_signing_state *si,
 		return true;
 	}
 
+	if (mandatory) {
+		allowed = true;
+	}
+
 	if (!si->allowed && mandatory) {
 		return false;
 	}
