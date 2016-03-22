@@ -270,13 +270,6 @@
 ^samba3.local.nss.reentrant enumeration\(ad_dc:local\)
 ^samba3.local.nss.enumeration\(ad_dc:local\)
 #
-# These fail only if we run the unix.whoami test before them
-# in the member and ad_member environments. ==> Strange!!!
-#
-^samba3.local.nss.reentrant enumeration crosschecks\(ad_member:local\)
-^samba3.local.nss.reentrant enumeration\(ad_member:local\)
-^samba3.local.nss.enumeration\(ad_member:local\)
-#
 # These do not work against winbindd in member mode for unknown reasons
 #
 ^samba.blackbox.wbinfo\(ad_member:local\).wbinfo -U against ad_member\(ad_member:local\)
