@@ -41,6 +41,8 @@ struct ctdb_kill_tcp {
 	trbt_tree_t *connections;
 	void *private_data;
 	void *destructor_data;
+	unsigned int attempts;
+	unsigned int max_attempts;
 };
 
 static const char *prog;
@@ -170,7 +172,7 @@ static int tickle_connection_traverse(void *param, void *data)
 	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
 
 	/* have tried too many times, just give up */
-	if (con->count >= 5) {
+	if (con->count >= con->killtcp->max_attempts) {
 		/* can't delete in traverse: reparent to delete_cons */
 		talloc_steal(param, con);
 		return 0;
@@ -198,6 +200,8 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 
 	/* now we've finished traverse, it's safe to do deletion. */
 	talloc_free(delete_cons);
+
+	killtcp->attempts++;
 
 	/* If there are no more connections to kill we can remove the
 	   entire killtcp structure
@@ -258,6 +262,10 @@ static int ctdb_killtcp(struct tevent_context *ev,
 
 		killtcp->capture_fd  = -1;
 		killtcp->connections = trbt_create(killtcp, 0);
+
+		killtcp->attempts = 0;
+		killtcp->max_attempts = 5;
+
 		*killtcp_arg = killtcp;
 	}
 
