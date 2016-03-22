@@ -126,8 +126,12 @@ bool domain_has_idmap_config(const char *domname)
 	char *config_option;
 	const char *range = NULL;
 	const char *backend = NULL;
+	bool ok;
 
-	idmap_init();
+	ok = idmap_init();
+	if (!ok) {
+		return false;
+	}
 
 	for (i=0; i<num_domains; i++) {
 		if (strequal(idmap_domains[i]->name, domname)) {
