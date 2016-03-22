@@ -1497,7 +1497,7 @@ static bool test_channel_sequence_table(struct torture_context *tctx,
 					bool do_replay,
 					uint16_t opcode)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_handle handle;
 	struct smb2_handle *phandle = NULL;
