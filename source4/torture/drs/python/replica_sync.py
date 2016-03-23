@@ -29,9 +29,10 @@
 
 import drs_base
 import samba.tests
+import time
 
 from ldb import (
-    SCOPE_BASE)
+    SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT)
 
 class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     """Intended as a black box test case for DsReplicaSync
@@ -40,11 +41,25 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsReplicaSyncTestCase, self).setUp()
+        self.ou1 = None
+        self.ou2 = None
 
     def tearDown(self):
         # re-enable replication
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
+        if self.ldb_dc2 is not None:
+            if self.ou1 is not None:
+                try:
+                    self.ldb_dc2.delete('<GUID=%s>' % self.ou1, ["tree_delete:1"])
+                except LdbError, (num, _):
+                    self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            if self.ou2 is not None:
+                try:
+                    self.ldb_dc2.delete('<GUID=%s>' % self.ou2, ["tree_delete:1"])
+                except LdbError, (num, _):
+                    self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
         super(DrsReplicaSyncTestCase, self).tearDown()
 
     def test_ReplEnabled(self):
@@ -84,9 +99,7 @@ objectClass: organizationalUnit
 
     def _check_deleted(self, sam_ldb, guid):
         # search the user by guid as it may be deleted
-        expression = "(objectGUID=%s)" % guid
-        res = sam_ldb.search(base=self.domain_dn,
-                             expression=expression,
+        res = sam_ldb.search(base='<GUID=%s>' % guid,
                              controls=["show_deleted:1"],
                              attrs=["isDeleted", "objectCategory", "ou"])
         self.assertEquals(len(res), 1)
@@ -102,42 +115,49 @@ objectClass: organizationalUnit
 
     def test_ReplConflictsFullSync(self):
         """Tests that objects created in conflict become conflict DNs (honour full sync override)"""
+
+        # First confirm local replication (so when we test against windows, this fails fast without creating objects)
+        self._enable_inbound_repl(self.dnsname_dc2)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, local=True, forced=True, full_sync=True)
+
         self._disable_inbound_repl(self.dnsname_dc1)
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create conflicting objects on DC1 and DC2, with DC1 object created first
-        ou1 = self._create_ou(self.ldb_dc1, "OU=Test Full Sync")
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Test Full Sync")
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Full Sync")
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Full Sync")
 
         self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, local=True, forced=True, full_sync=True)
         self._disable_inbound_repl(self.dnsname_dc2)
 
-        # Check that DC2 got the DC1 object, and one or other object was make into conflict
-        res1 = self.ldb_dc2.search(base="<GUID=%s>" % ou1,
+        # Check that DC2 got the DC1 object, and OU1 was make into conflict
+        res1 = self.ldb_dc2.search(base="<GUID=%s>" % self.ou1,
                                   scope=SCOPE_BASE, attrs=["name"])
-        res2 = self.ldb_dc2.search(base="<GUID=%s>" % ou2,
+        res2 = self.ldb_dc2.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
         print res1[0]["name"][0]
         print res2[0]["name"][0]
-        self.assertTrue('CNF:%s' % ou1 in str(res1[0]["name"][0]) or 'CNF:%s' % ou2 in str(res2[0]["name"][0]))
+        self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc2, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc2, self.domain_dn) not in str(res2[0].dn))
 
-        # Delete both objects by GUID on DC1
+        # Delete both objects by GUID on DC2
 
-        self.ldb_dc2.delete('<GUID=%s>' % ou1)
-        self.ldb_dc2.delete('<GUID=%s>' % ou2)
+        self.ldb_dc2.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc2.delete('<GUID=%s>' % self.ou2)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=True)
 
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         # Check deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
 
     def test_ReplConflictsRemoteWin(self):
         """Tests that objects created in conflict become conflict DNs"""
@@ -145,38 +165,40 @@ objectClass: organizationalUnit
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create conflicting objects on DC1 and DC2, with DC1 object created first
-        ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Conflict")
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Conflict")
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Conflict")
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Conflict")
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
         self._disable_inbound_repl(self.dnsname_dc1)
 
-        # Check that DC2 got the DC1 object, and one or other object was make into conflict
-        res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1,
+        # Check that DC2 got the DC1 object, and OU1 was make into conflict
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
                                   scope=SCOPE_BASE, attrs=["name"])
-        res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2,
+        res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
         print res1[0]["name"][0]
         print res2[0]["name"][0]
-        self.assertTrue('CNF:%s' % ou1 in str(res1[0]["name"][0]) or 'CNF:%s' % ou2 in str(res2[0]["name"][0]))
+        self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
 
         # Delete both objects by GUID on DC1
 
-        self.ldb_dc1.delete('<GUID=%s>' % ou1)
-        self.ldb_dc1.delete('<GUID=%s>' % ou2)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         # Check deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
 
     def test_ReplConflictsLocalWin(self):
         """Tests that objects created in conflict become conflict DNs"""
@@ -184,38 +206,40 @@ objectClass: organizationalUnit
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create conflicting objects on DC1 and DC2, with DC2 object created first
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Test Local Conflict")
-        ou1 = self._create_ou(self.ldb_dc1, "OU=Test Local Conflict")
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Local Conflict")
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Local Conflict")
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
         self._disable_inbound_repl(self.dnsname_dc1)
 
-        # Check that DC2 got the DC1 object, and one or other object was make into conflict
-        res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1,
+        # Check that DC2 got the DC1 object, and OU2 was make into conflict
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
                                   scope=SCOPE_BASE, attrs=["name"])
-        res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2,
+        res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
         print res1[0]["name"][0]
         print res2[0]["name"][0]
-        self.assertTrue('CNF:%s' % ou1 in str(res1[0]["name"][0]) or 'CNF:%s' % ou2 in str(res2[0]["name"][0]))
+        self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]), "Got %s for %s" % (str(res2[0]["name"][0]), self.ou2))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
 
         # Delete both objects by GUID on DC1
 
-        self.ldb_dc1.delete('<GUID=%s>' % ou1)
-        self.ldb_dc1.delete('<GUID=%s>' % ou2)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         # Check deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
 
     def test_ReplConflictsRenameRemoteWin(self):
         """Tests that objects created in conflict become conflict DNs"""
@@ -223,45 +247,47 @@ objectClass: organizationalUnit
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create conflicting objects on DC1 and DC2, with DC1 object created first
-        ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Rename Conflict")
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Rename Conflict 2")
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Remote Rename Conflict")
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Remote Rename Conflict 2")
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
         self._disable_inbound_repl(self.dnsname_dc1)
 
-        self.ldb_dc1.rename("<GUID=%s>" % ou1, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
-        self.ldb_dc2.rename("<GUID=%s>" % ou2, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Remote Rename Conflict 3,%s" % self.domain_dn)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
         self._disable_inbound_repl(self.dnsname_dc1)
 
-        # Check that DC2 got the DC1 object, and one or other object was make into conflict
-        res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1,
+        # Check that DC2 got the DC1 object, and SELF.OU1 was make into conflict
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
                                   scope=SCOPE_BASE, attrs=["name"])
-        res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2,
+        res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
         print res1[0]["name"][0]
         print res2[0]["name"][0]
-        self.assertTrue('CNF:%s' % ou1 in str(res1[0]["name"][0]) or 'CNF:%s' % ou2 in str(res2[0]["name"][0]))
+        self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
 
         # Delete both objects by GUID on DC1
 
-        self.ldb_dc1.delete('<GUID=%s>' % ou1)
-        self.ldb_dc1.delete('<GUID=%s>' % ou2)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         # Check deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
 
     def test_ReplConflictsRenameLocalWin(self):
         """Tests that objects created in conflict become conflict DNs"""
@@ -269,45 +295,47 @@ objectClass: organizationalUnit
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create conflicting objects on DC1 and DC2, with DC1 object created first
-        ou1 = self._create_ou(self.ldb_dc1, "OU=Test Rename Local Conflict")
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Test Rename Local Conflict 2")
+        self.ou1 = self._create_ou(self.ldb_dc1, "OU=Test Rename Local Conflict")
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Test Rename Local Conflict 2")
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
         self._disable_inbound_repl(self.dnsname_dc1)
 
-        self.ldb_dc2.rename("<GUID=%s>" % ou2, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
-        self.ldb_dc1.rename("<GUID=%s>" % ou1, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
+        # We have to sleep to ensure that the two objects have different timestamps
+        time.sleep(1)
+        self.ldb_dc1.rename("<GUID=%s>" % self.ou1, "OU=Test Rename Local Conflict 3,%s" % self.domain_dn)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True, full_sync=False)
         self._disable_inbound_repl(self.dnsname_dc1)
 
-        # Check that DC2 got the DC1 object, and one or other object was make into conflict
-        res1 = self.ldb_dc1.search(base="<GUID=%s>" % ou1,
+        # Check that DC2 got the DC1 object, and OU2 was make into conflict
+        res1 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou1,
                                   scope=SCOPE_BASE, attrs=["name"])
-        res2 = self.ldb_dc1.search(base="<GUID=%s>" % ou2,
+        res2 = self.ldb_dc1.search(base="<GUID=%s>" % self.ou2,
                                   scope=SCOPE_BASE, attrs=["name"])
         print res1[0]["name"][0]
         print res2[0]["name"][0]
-        self.assertTrue('CNF:%s' % ou1 in str(res1[0]["name"][0]) or 'CNF:%s' % ou2 in str(res2[0]["name"][0]))
+        self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
 
         # Delete both objects by GUID on DC1
 
-        self.ldb_dc1.delete('<GUID=%s>' % ou1)
-        self.ldb_dc1.delete('<GUID=%s>' % ou2)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True, full_sync=False)
 
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         # Check deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
 
     def test_ReplLostAndFound(self):
         """Tests that objects created under a OU deleted eleswhere end up in lostAndFound"""
@@ -315,8 +343,8 @@ objectClass: organizationalUnit
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create two OUs on DC2
-        ou1 = self._create_ou(self.ldb_dc2, "OU=Deleted parent")
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Deleted parent 2")
+        self.ou1 = self._create_ou(self.ldb_dc2, "OU=Deleted parent")
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Deleted parent 2")
 
         # replicate them from DC2 to DC1
         self._enable_inbound_repl(self.dnsname_dc1)
@@ -325,8 +353,8 @@ objectClass: organizationalUnit
 
         # Delete both objects by GUID on DC1
 
-        self.ldb_dc1.delete('<GUID=%s>' % ou1)
-        self.ldb_dc1.delete('<GUID=%s>' % ou2)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         # Create children on DC2
         ou1_child = self._create_ou(self.ldb_dc2, "OU=Test Child,OU=Deleted parent")
@@ -361,13 +389,13 @@ objectClass: organizationalUnit
 
 
         # Check all deleted on DC1
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         self._check_deleted(self.ldb_dc1, ou1_child)
         self._check_deleted(self.ldb_dc1, ou2_child)
         # Check all deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
         self._check_deleted(self.ldb_dc2, ou1_child)
         self._check_deleted(self.ldb_dc2, ou2_child)
 
@@ -377,8 +405,8 @@ objectClass: organizationalUnit
         self._disable_inbound_repl(self.dnsname_dc2)
 
         # Create two OUs on DC2
-        ou1 = self._create_ou(self.ldb_dc2, "OU=Original parent")
-        ou2 = self._create_ou(self.ldb_dc2, "OU=Original parent 2")
+        self.ou1 = self._create_ou(self.ldb_dc2, "OU=Original parent")
+        self.ou2 = self._create_ou(self.ldb_dc2, "OU=Original parent 2")
 
         # replicate them from DC2 to DC1
         self._enable_inbound_repl(self.dnsname_dc1)
@@ -399,8 +427,8 @@ objectClass: organizationalUnit
         self.ldb_dc1.rename("<GUID=%s>" % ou1_child, "OU=Test Child 2,OU=Original parent 2,%s" % self.domain_dn)
         self.ldb_dc1.rename("<GUID=%s>" % ou2_child, "OU=Test Child,OU=Original parent 2,%s" % self.domain_dn)
         self.ldb_dc1.rename("<GUID=%s>" % ou3_child, "OU=Test CASE Child,OU=Original parent,%s" % self.domain_dn)
-        self.ldb_dc2.rename("<GUID=%s>" % ou2, "OU=Original parent 3,%s" % self.domain_dn)
-        self.ldb_dc2.rename("<GUID=%s>" % ou1, "OU=Original parent 2,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou2, "OU=Original parent 3,%s" % self.domain_dn)
+        self.ldb_dc2.rename("<GUID=%s>" % self.ou1, "OU=Original parent 2,%s" % self.domain_dn)
 
         # replicate them from DC1 to DC2
         self._enable_inbound_repl(self.dnsname_dc2)
@@ -454,8 +482,8 @@ objectClass: organizationalUnit
         self.ldb_dc1.delete('<GUID=%s>' % ou1_child)
         self.ldb_dc1.delete('<GUID=%s>' % ou2_child)
         self.ldb_dc1.delete('<GUID=%s>' % ou3_child)
-        self.ldb_dc1.delete('<GUID=%s>' % ou1)
-        self.ldb_dc1.delete('<GUID=%s>' % ou2)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou1)
+        self.ldb_dc1.delete('<GUID=%s>' % self.ou2)
 
         self._enable_inbound_repl(self.dnsname_dc1)
         self._enable_inbound_repl(self.dnsname_dc2)
@@ -463,14 +491,14 @@ objectClass: organizationalUnit
 
 
         # Check all deleted on DC1
-        self._check_deleted(self.ldb_dc1, ou1)
-        self._check_deleted(self.ldb_dc1, ou2)
+        self._check_deleted(self.ldb_dc1, self.ou1)
+        self._check_deleted(self.ldb_dc1, self.ou2)
         self._check_deleted(self.ldb_dc1, ou1_child)
         self._check_deleted(self.ldb_dc1, ou2_child)
         self._check_deleted(self.ldb_dc1, ou3_child)
         # Check all deleted on DC2
-        self._check_deleted(self.ldb_dc2, ou1)
-        self._check_deleted(self.ldb_dc2, ou2)
+        self._check_deleted(self.ldb_dc2, self.ou1)
+        self._check_deleted(self.ldb_dc2, self.ou2)
         self._check_deleted(self.ldb_dc2, ou1_child)
         self._check_deleted(self.ldb_dc2, ou2_child)
         self._check_deleted(self.ldb_dc2, ou3_child)
