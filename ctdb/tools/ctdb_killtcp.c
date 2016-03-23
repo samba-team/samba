@@ -43,6 +43,7 @@ struct ctdb_kill_tcp {
 	void *destructor_data;
 	unsigned int attempts;
 	unsigned int max_attempts;
+	struct timeval retry_interval;
 };
 
 static const char *prog;
@@ -207,7 +208,9 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 	/* try tickling them again in a seconds time
 	 */
 	tevent_add_timer(ev, killtcp,
-			 tevent_timeval_current_ofs(1, 0),
+			 tevent_timeval_current_ofs(
+				 killtcp->retry_interval.tv_sec,
+				 killtcp->retry_interval.tv_usec),
 			 ctdb_tickle_sentenced_connections, killtcp);
 }
 
@@ -257,6 +260,9 @@ static int ctdb_killtcp(struct tevent_context *ev,
 
 		killtcp->attempts = 0;
 		killtcp->max_attempts = 5;
+
+		killtcp->retry_interval.tv_sec = 1;
+		killtcp->retry_interval.tv_usec = 0;
 
 		*killtcp_arg = killtcp;
 	}
