@@ -223,8 +223,12 @@ static void usage(void)
 
 static void send_count_and_suicide(int sig)
 {
+	ssize_t ret;
+
 	/* This ensures our successor can continue where we left off. */
-	write(count_pipe, &loopnum, sizeof(loopnum));
+	do {
+		ret = write(count_pipe, &loopnum, sizeof(loopnum));
+	} while (ret == -1 && errno == EINTR);
 	/* This gives a unique signature. */
 	kill(getpid(), SIGUSR2);
 }
