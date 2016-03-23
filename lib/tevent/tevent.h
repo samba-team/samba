@@ -1752,7 +1752,7 @@ void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
 
 #ifdef TEVENT_DEPRECATED
 #ifndef _DEPRECATED_
-#if (__GNUC__ >= 3) && (__GNUC_MINOR__ >= 1 )
+#ifdef HAVE___ATTRIBUTE__
 #define _DEPRECATED_ __attribute__ ((deprecated))
 #else
 #define _DEPRECATED_
