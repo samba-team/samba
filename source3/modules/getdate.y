@@ -72,7 +72,7 @@
 # include <string.h>
 #endif
 
-#if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 8) || __STRICT_ANSI__
+#ifndef HAVE___ATTRIBUTE__
 # define __attribute__(x)
 #endif
 
