@@ -275,6 +275,8 @@ static void ctdb_pnn_print(uint32_t pnn, FILE *fp)
 
 static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 {
+	uint64_t prefix = 0xFFFF000000000000LL;
+
 	if (srvid == CTDB_SRVID_ALL) {
 		fprintf(fp, "ALL");
 	} else if (srvid == CTDB_SRVID_ELECTION) {
@@ -315,26 +317,26 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 		fprintf(fp, "DISABLE_IP_CHECK");
 	} else if (srvid == CTDB_SRVID_TAKEOVER_RUN_RESPONSE) {
 		fprintf(fp, "TAKEOVER_RUN_RESPONSE");
-	} else if ((srvid & CTDB_SRVID_SAMBA_RANGE) == CTDB_SRVID_SAMBA_RANGE) {
+	} else if ((srvid & prefix) == CTDB_SRVID_SAMBA_RANGE) {
 		if (srvid == CTDB_SRVID_SAMBA_NOTIFY) {
 			fprintf(fp, "SAMBA_NOTIFY");
 		} else {
 			srvid &= ~CTDB_SRVID_SAMBA_RANGE;
 			fprintf(fp, "samba-0x%"PRIx64"", srvid);
 		}
-	} else if ((srvid & CTDB_SRVID_NFSD_RANGE) == CTDB_SRVID_NFSD_RANGE) {
+	} else if ((srvid & prefix) == CTDB_SRVID_NFSD_RANGE) {
 		srvid &= ~CTDB_SRVID_NFSD_RANGE;
 		fprintf(fp, "nfsd-0x%"PRIx64"", srvid);
-	} else if ((srvid & CTDB_SRVID_ISCSID_RANGE) == CTDB_SRVID_ISCSID_RANGE) {
+	} else if ((srvid & prefix) == CTDB_SRVID_ISCSID_RANGE) {
 		srvid &= ~CTDB_SRVID_ISCSID_RANGE;
 		fprintf(fp, "iscsi-0x%"PRIx64"", srvid);
-	} else if ((srvid & CTDB_SRVID_TEST_RANGE) == CTDB_SRVID_TEST_RANGE) {
+	} else if ((srvid & prefix) == CTDB_SRVID_TEST_RANGE) {
 		srvid &= ~CTDB_SRVID_TEST_RANGE;
 		fprintf(fp, "test-0x%"PRIx64"", srvid);
-	} else if ((srvid & CTDB_SRVID_TRAVERSE_RANGE) == CTDB_SRVID_TRAVERSE_RANGE) {
+	} else if ((srvid & prefix) == CTDB_SRVID_TRAVERSE_RANGE) {
 		srvid &= ~CTDB_SRVID_TRAVERSE_RANGE;
 		fprintf(fp, "traverse-0x%"PRIx64"", srvid);
-	} else if ((srvid & 0xFF00000000000000L) == CTDB_SRVID_PID_RANGE) {
+	} else if ((srvid & prefix) == CTDB_SRVID_PID_RANGE) {
 		if (srvid < UINT16_MAX) {
 			fprintf(fp, "pid-%"PRIu64, srvid);
 		} else {
