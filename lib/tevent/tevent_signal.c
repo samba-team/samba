@@ -238,9 +238,13 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 				uint16_t flags, void *_private)
 {
+	ssize_t ret;
+
 	char c[16];
 	/* its non-blocking, doesn't matter if we read too much */
-	(void) read(fde->fd, c, sizeof(c));
+	do {
+		ret = read(fde->fd, c, sizeof(c));
+	} while (ret == -1 && errno == EINTR);
 }
 
 /*
