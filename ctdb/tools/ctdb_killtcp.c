@@ -162,12 +162,9 @@ static int tickle_connection_traverse(void *param, void *data)
 		return 0;
 	}
 
-	/* othervise, try tickling it again */
 	con->count++;
-	ctdb_sys_send_tcp(
-		(ctdb_sock_addr *)&con->dst_addr,
-		(ctdb_sock_addr *)&con->src_addr,
-		0, 0, 0);
+	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, 0, 0, 0);
+
 	return 0;
 }
 
