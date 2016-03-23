@@ -114,10 +114,6 @@ static void capture_tcp_handler(struct tevent_context *ev,
 	ctdb_sock_addr src, dst;
 	uint32_t ack_seq, seq;
 
-	if (!(flags & TEVENT_FD_READ)) {
-		return;
-	}
-
 	if (ctdb_sys_read_tcp_packet(killtcp->capture_fd,
 				killtcp->private_data,
 				&src, &dst,
