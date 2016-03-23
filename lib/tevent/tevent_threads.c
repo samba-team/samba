@@ -310,6 +310,7 @@ void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
 	struct tevent_immediate_list *im_entry;
 	int ret;
 	char c;
+	ssize_t written;
 
 	ret = pthread_mutex_lock(&tp->mutex);
 	if (ret != 0) {
@@ -341,7 +342,9 @@ void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
 
 	/* And notify the dest_ev_ctx to wake up. */
 	c = '\0';
-	(void)write(tp->write_fd, &c, 1);
+	do {
+		written = write(tp->write_fd, &c, 1);
+	} while (written == -1 && errno == EINTR);
 
   end:
 
