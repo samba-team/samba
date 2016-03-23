@@ -1449,6 +1449,186 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 		 return rc;
 }
 
+static uint32_t vfs_gpfs_winattrs_to_dosmode(unsigned int winattrs)
+{
+	uint32_t dosmode = 0;
+
+	if (winattrs & GPFS_WINATTR_ARCHIVE){
+		dosmode |= FILE_ATTRIBUTE_ARCHIVE;
+	}
+	if (winattrs & GPFS_WINATTR_HIDDEN){
+		dosmode |= FILE_ATTRIBUTE_HIDDEN;
+	}
+	if (winattrs & GPFS_WINATTR_SYSTEM){
+		dosmode |= FILE_ATTRIBUTE_SYSTEM;
+	}
+	if (winattrs & GPFS_WINATTR_READONLY){
+		dosmode |= FILE_ATTRIBUTE_READONLY;
+	}
+	if (winattrs & GPFS_WINATTR_SPARSE_FILE) {
+		dosmode |= FILE_ATTRIBUTE_SPARSE;
+	}
+
+	return dosmode;
+}
+
+static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
+{
+	unsigned int winattrs = 0;
+
+	if (dosmode & FILE_ATTRIBUTE_ARCHIVE){
+		winattrs |= GPFS_WINATTR_ARCHIVE;
+	}
+	if (dosmode & FILE_ATTRIBUTE_HIDDEN){
+		winattrs |= GPFS_WINATTR_HIDDEN;
+	}
+	if (dosmode & FILE_ATTRIBUTE_SYSTEM){
+		winattrs |= GPFS_WINATTR_SYSTEM;
+	}
+	if (dosmode & FILE_ATTRIBUTE_READONLY){
+		winattrs |= GPFS_WINATTR_READONLY;
+	}
+	if (dosmode & FILE_ATTRIBUTE_SPARSE) {
+		winattrs |= GPFS_WINATTR_SPARSE_FILE;
+	}
+
+	return winattrs;
+}
+
+static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
+					    struct smb_filename *smb_fname,
+					    uint32_t *dosmode)
+{
+	struct gpfs_config_data *config;
+	struct gpfs_winattr attrs = { };
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->winattr) {
+		return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
+						       smb_fname, dosmode);
+	}
+
+	ret = gpfswrap_get_winattrs_path(smb_fname->base_name, &attrs);
+	if (ret == -1 && errno == ENOSYS) {
+		return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle, smb_fname,
+						       dosmode);
+	}
+
+	if (ret == -1) {
+		DBG_WARNING("Getting winattrs failed for %s: %s\n",
+			    smb_fname->base_name, strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	*dosmode |= vfs_gpfs_winattrs_to_dosmode(attrs.winAttrs);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
+					     struct files_struct *fsp,
+					     uint32_t *dosmode)
+{
+	struct gpfs_config_data *config;
+	struct gpfs_winattr attrs = { };
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->winattr) {
+		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
+	}
+
+	ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
+	if (ret == -1 && errno == ENOSYS) {
+		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
+	}
+
+	if (ret == -1) {
+		DBG_WARNING("Getting winattrs failed for %s: %s\n",
+			    fsp->fsp_name->base_name, strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	*dosmode |= vfs_gpfs_winattrs_to_dosmode(attrs.winAttrs);
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vfs_gpfs_set_dos_attributes(struct vfs_handle_struct *handle,
+					   const struct smb_filename *smb_fname,
+					   uint32_t dosmode)
+{
+	struct gpfs_config_data *config;
+	struct gpfs_winattr attrs = { };
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->winattr) {
+		return SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
+						       smb_fname, dosmode);
+	}
+
+	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
+	ret = gpfswrap_set_winattrs_path(smb_fname->base_name,
+					 GPFS_WINATTR_SET_ATTRS, &attrs);
+
+	if (ret == -1 && errno == ENOSYS) {
+		return SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
+						       smb_fname, dosmode);
+	}
+
+	if (ret == -1) {
+		DBG_WARNING("Setting winattrs failed for %s: %s\n",
+			    smb_fname->base_name, strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
+					     struct files_struct *fsp,
+					     uint32_t dosmode)
+{
+	struct gpfs_config_data *config;
+	struct gpfs_winattr attrs = { };
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct gpfs_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	if (!config->winattr) {
+		return SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
+	}
+
+	attrs.winAttrs = vfs_gpfs_dosmode_to_winattrs(dosmode);
+	ret = gpfswrap_set_winattrs(fsp->fh->fd,
+				    GPFS_WINATTR_SET_ATTRS, &attrs);
+
+	if (ret == -1 && errno == ENOSYS) {
+		return SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle, fsp, dosmode);
+	}
+
+	if (ret == -1) {
+		DBG_WARNING("Setting winattrs failed for %s: %s\n",
+			    fsp->fsp_name->base_name, strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	return NT_STATUS_OK;
+}
+
 static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
                            const char *name, const void *value, size_t size,  int flags){
 	struct xattr_DOSATTRIB dosattrib;
@@ -2485,6 +2665,10 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.kernel_flock_fn = vfs_gpfs_kernel_flock,
 	.linux_setlease_fn = vfs_gpfs_setlease,
 	.get_real_filename_fn = vfs_gpfs_get_real_filename,
+	.get_dos_attributes_fn = vfs_gpfs_get_dos_attributes,
+	.fget_dos_attributes_fn = vfs_gpfs_fget_dos_attributes,
+	.set_dos_attributes_fn = vfs_gpfs_set_dos_attributes,
+	.fset_dos_attributes_fn = vfs_gpfs_fset_dos_attributes,
 	.fget_nt_acl_fn = gpfsacl_fget_nt_acl,
 	.get_nt_acl_fn = gpfsacl_get_nt_acl,
 	.fset_nt_acl_fn = gpfsacl_fset_nt_acl,
