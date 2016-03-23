@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
-#include "librpc/gen_ndr/ndr_xattr.h"
 #include "include/smbprofile.h"
 #include "modules/non_posix_acls.h"
 #include "libcli/security/security.h"
@@ -1629,163 +1628,6 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
-                           const char *name, const void *value, size_t size,  int flags){
-	struct xattr_DOSATTRIB dosattrib;
-        enum ndr_err_code ndr_err;
-        DATA_BLOB blob;
-        unsigned int dosmode=0;
-        struct gpfs_winattr attrs;
-        int ret = 0;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	if (!config->winattr) {
-		DEBUG(10, ("gpfs_set_xattr:name is %s -> next\n",name));
-		return SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags);
-	}
-
-        DEBUG(10, ("gpfs_set_xattr: %s \n",path));
-
-        /* Only handle DOS Attributes */
-        if (strcmp(name,SAMBA_XATTR_DOS_ATTRIB) != 0){
-		DEBUG(5, ("gpfs_set_xattr:name is %s\n",name));
-		return SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags);
-        }
-
-	blob.data = discard_const_p(uint8_t, value);
-	blob.length = size;
-
-	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &dosattrib,
-			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
-
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1, ("gpfs_set_xattr: bad ndr decode "
-			  "from EA on file %s: Error = %s\n",
-			  path, ndr_errstr(ndr_err)));
-		return false;
-	}
-
-	if (dosattrib.version != 3) {
-		DEBUG(1, ("gpfs_set_xattr: expected dosattrib version 3, got "
-			  "%d\n", (int)dosattrib.version));
-		return false;
-	}
-	if (!(dosattrib.info.info3.valid_flags & XATTR_DOSINFO_ATTRIB)) {
-		DEBUG(10, ("gpfs_set_xattr: XATTR_DOSINFO_ATTRIB not "
-			   "valid, ignoring\n"));
-		return true;
-	}
-
-	dosmode = dosattrib.info.info3.attrib;
-
-        attrs.winAttrs = 0;
-        /*Just map RD_ONLY, ARCHIVE, SYSTEM HIDDEN and SPARSE. Ignore the others*/
-        if (dosmode & FILE_ATTRIBUTE_ARCHIVE){
-                attrs.winAttrs |= GPFS_WINATTR_ARCHIVE;
-        }
-        if (dosmode & FILE_ATTRIBUTE_HIDDEN){
-                        attrs.winAttrs |= GPFS_WINATTR_HIDDEN;
-                }
-        if (dosmode & FILE_ATTRIBUTE_SYSTEM){
-                        attrs.winAttrs |= GPFS_WINATTR_SYSTEM;
-                }
-        if (dosmode & FILE_ATTRIBUTE_READONLY){
-                        attrs.winAttrs |= GPFS_WINATTR_READONLY;
-        }
-        if (dosmode & FILE_ATTRIBUTE_SPARSE) {
-		attrs.winAttrs |= GPFS_WINATTR_SPARSE_FILE;
-	}
-
-
-	ret = gpfswrap_set_winattrs_path(discard_const_p(char, path),
-					 GPFS_WINATTR_SET_ATTRS, &attrs);
-        if ( ret == -1){
-		if (errno == ENOSYS) {
-			return SMB_VFS_NEXT_SETXATTR(handle, path, name, value,
-						     size, flags);
-		}
-
-                DEBUG(1, ("gpfs_set_xattr:Set GPFS attributes failed %d\n",ret));
-                return -1;
-        }
-
-        DEBUG(10, ("gpfs_set_xattr:Set attributes: 0x%x\n",attrs.winAttrs));
-        return 0;
-}
-
-static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *path,
-                              const char *name, void *value, size_t size){
-        char *attrstr = value;
-        unsigned int dosmode = 0;
-        struct gpfs_winattr attrs;
-        int ret = 0;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	if (!config->winattr) {
-		DEBUG(10, ("gpfs_get_xattr:name is %s -> next\n",name));
-		return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
-	}
-
-        DEBUG(10, ("gpfs_get_xattr: %s \n",path));
-
-        /* Only handle DOS Attributes */
-        if (strcmp(name,SAMBA_XATTR_DOS_ATTRIB) != 0){
-		DEBUG(5, ("gpfs_get_xattr:name is %s\n",name));
-                return SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size);
-        }
-
-	ret = gpfswrap_get_winattrs_path(discard_const_p(char, path), &attrs);
-        if ( ret == -1){
-		int dbg_lvl;
-
-		if (errno == ENOSYS) {
-			return SMB_VFS_NEXT_GETXATTR(handle, path, name, value,
-						     size);
-		}
-
-		if (errno != EPERM && errno != EACCES) {
-			dbg_lvl = 1;
-		} else {
-			dbg_lvl = 5;
-		}
-		DEBUG(dbg_lvl, ("gpfs_get_xattr: Get GPFS attributes failed: "
-			      "%d (%s)\n", ret, strerror(errno)));
-                return -1;
-        }
-
-        DEBUG(10, ("gpfs_get_xattr:Got attributes: 0x%x\n",attrs.winAttrs));
-
-        /*Just map RD_ONLY, ARCHIVE, SYSTEM, HIDDEN and SPARSE. Ignore the others*/
-        if (attrs.winAttrs & GPFS_WINATTR_ARCHIVE){
-                dosmode |= FILE_ATTRIBUTE_ARCHIVE;
-        }
-        if (attrs.winAttrs & GPFS_WINATTR_HIDDEN){
-                dosmode |= FILE_ATTRIBUTE_HIDDEN;
-        }
-        if (attrs.winAttrs & GPFS_WINATTR_SYSTEM){
-                dosmode |= FILE_ATTRIBUTE_SYSTEM;
-        }
-        if (attrs.winAttrs & GPFS_WINATTR_READONLY){
-                dosmode |= FILE_ATTRIBUTE_READONLY;
-        }
-        if (attrs.winAttrs & GPFS_WINATTR_SPARSE_FILE) {
-		dosmode |= FILE_ATTRIBUTE_SPARSE;
-	}
-
-        snprintf(attrstr, size, "0x%2.2x",
-		 (unsigned int)(dosmode & SAMBA_ATTRIBUTES_MASK));
-        DEBUG(10, ("gpfs_get_xattr: returning %s\n",attrstr));
-        return 4;
-}
-
 #if defined(HAVE_FSTATAT)
 static int stat_with_capability(struct vfs_handle_struct *handle,
 				struct smb_filename *smb_fname, int flag)
@@ -2682,8 +2524,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.chmod_fn = vfs_gpfs_chmod,
 	.fchmod_fn = vfs_gpfs_fchmod,
 	.close_fn = vfs_gpfs_close,
-	.setxattr_fn = gpfs_set_xattr,
-	.getxattr_fn = gpfs_get_xattr,
 	.stat_fn = vfs_gpfs_stat,
 	.fstat_fn = vfs_gpfs_fstat,
 	.lstat_fn = vfs_gpfs_lstat,
