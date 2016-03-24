@@ -540,6 +540,8 @@ static int _pam_winbind_free_context(struct pwb_context *ctx)
 		tiniparser_freedict(ctx->dict);
 	}
 
+	wbcCtxFree(ctx->wbc_ctx);
+
 	return 0;
 }
 
@@ -574,6 +576,12 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 		return PAM_SYSTEM_ERR;
 	}
 	r->ctrl = ctrl_code;
+
+	r->wbc_ctx = wbcCtxCreate();
+	if (r->wbc_ctx == NULL) {
+		TALLOC_FREE(r);
+		return PAM_SYSTEM_ERR;
+	}
 
 	*ctx_p = r;
 
@@ -1102,7 +1110,11 @@ static bool winbind_name_to_sid_string(struct pwb_context *ctx,
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "no sid given, looking up: %s\n", name);
 
-		wbc_status = wbcLookupName("", name, &sid, &type);
+		wbc_status = wbcCtxLookupName(ctx->wbc_ctx,
+					      "",
+					      name,
+					      &sid,
+					      &type);
 		if (!WBC_ERROR_IS_OK(wbc_status)) {
 			_pam_log(ctx, LOG_INFO,
 				 "could not lookup name: %s\n", name);
@@ -1822,7 +1834,11 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		}
 	}
 
-	wbc_status = wbcLogonUser(&logon, &info, &error, &policy);
+	wbc_status = wbcCtxLogonUser(ctx->wbc_ctx,
+				     &logon,
+				     &info,
+				     &error,
+				     &policy);
 	ret = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
 					  user, "wbcLogonUser");
 	wbcFreeMemory(logon.blobs);
@@ -1969,7 +1985,11 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 	params.new_password.plaintext	= newpass;
 	params.flags			= flags;
 
-	wbc_status = wbcChangeUserPasswordEx(&params, &error, &reject_reason, &policy);
+	wbc_status = wbcCtxChangeUserPasswordEx(ctx->wbc_ctx,
+						&params,
+						&error,
+						&reject_reason,
+						&policy);
 	ret = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
 					  user, "wbcChangeUserPasswordEx");
 
@@ -2073,7 +2093,7 @@ static int valid_user(struct pwb_context *ctx,
 		return 1;
 	}
 
-	wbc_status = wbcGetpwnam(user, &wb_pwd);
+	wbc_status = wbcCtxGetpwnam(ctx->wbc_ctx, user, &wb_pwd);
 	wbcFreeMemory(wb_pwd);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		_pam_log(ctx, LOG_DEBUG, "valid_user: wbcGetpwnam gave %s\n",
@@ -2403,7 +2423,7 @@ static char winbind_get_separator(struct pwb_context *ctx)
 	wbcErr wbc_status;
 	static struct wbcInterfaceDetails *details = NULL;
 
-	wbc_status = wbcInterfaceDetails(&details);
+	wbc_status = wbcCtxInterfaceDetails(ctx->wbc_ctx, &details);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		_pam_log(ctx, LOG_ERR,
 			 "Could not retrieve winbind interface details: %s",
@@ -2458,14 +2478,14 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 
 	/* Convert the UPN to a SID */
 
-	wbc_status = wbcLookupName(domain, name, &sid, &type);
+	wbc_status = wbcCtxLookupName(ctx->wbc_ctx, domain, name, &sid, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}
 
 	/* Convert the the SID back to the sAMAccountName */
 
-	wbc_status = wbcLookupSid(&sid, &domain, &name, &type);
+	wbc_status = wbcCtxLookupSid(ctx->wbc_ctx, &sid, &domain, &name, &type);
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		return NULL;
 	}
@@ -2570,7 +2590,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 			goto out;
 		}
 
-		wbc_status = wbcLogoffUserEx(&logoff, &error);
+		wbc_status = wbcCtxLogoffUserEx(ctx->wbc_ctx, &logoff, &error);
 		retval = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
 						     user, "wbcLogoffUser");
 		wbcFreeMemory(error);

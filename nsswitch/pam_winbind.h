@@ -213,6 +213,7 @@ struct pwb_context {
 	const char **argv;
 	struct tiniparser_dictionary *dict;
 	uint32_t ctrl;
+	struct wbcContext *wbc_ctx;
 };
 
 #ifndef TALLOC_FREE
