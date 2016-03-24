@@ -276,6 +276,37 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	data_blob_free(&blob_in);
 	data_blob_free(&blob_out);
 
+	if (ads->ldap.wrap_type >= ADS_SASLWRAP_TYPE_SEAL) {
+		bool ok;
+
+		ok = gensec_have_feature(auth_generic_state->gensec_security,
+					 GENSEC_FEATURE_SEAL);
+		if (!ok) {
+			DEBUG(0,("The gensec feature sealing request, but unavailable\n"));
+			TALLOC_FREE(auth_generic_state);
+			return ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
+		}
+
+		ok = gensec_have_feature(auth_generic_state->gensec_security,
+					 GENSEC_FEATURE_SIGN);
+		if (!ok) {
+			DEBUG(0,("The gensec feature signing request, but unavailable\n"));
+			TALLOC_FREE(auth_generic_state);
+			return ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
+		}
+
+	} else if (ads->ldap.wrap_type >= ADS_SASLWRAP_TYPE_SIGN) {
+		bool ok;
+
+		ok = gensec_have_feature(auth_generic_state->gensec_security,
+					 GENSEC_FEATURE_SIGN);
+		if (!ok) {
+			DEBUG(0,("The gensec feature signing request, but unavailable\n"));
+			TALLOC_FREE(auth_generic_state);
+			return ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
+		}
+	}
+
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
 		size_t max_wrapped = gensec_max_wrapped_size(auth_generic_state->gensec_security);
 		ads->ldap.out.max_unwrapped = gensec_max_input_size(auth_generic_state->gensec_security);
