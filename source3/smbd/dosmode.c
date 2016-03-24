@@ -1035,7 +1035,7 @@ NTSTATUS set_create_timespec_ea(connection_struct *conn,
 
 	ret = file_set_dosmode(conn, smb_fname, dosmode, NULL, false);
 	if (ret == -1) {
-		map_nt_error_from_unix(errno);
+		return map_nt_error_from_unix(errno);
 	}
 
 	DEBUG(10,("set_create_timespec_ea: wrote create time EA for file %s\n",
