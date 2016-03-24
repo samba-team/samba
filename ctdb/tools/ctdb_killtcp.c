@@ -44,6 +44,8 @@ struct ctdb_kill_tcp {
 	unsigned int attempts;
 	unsigned int max_attempts;
 	struct timeval retry_interval;
+	unsigned int batch_count;
+	unsigned int batch_size;
 };
 
 static const char *prog;
@@ -171,6 +173,12 @@ static int tickle_connection_traverse(void *param, void *data)
 {
 	struct ctdb_killtcp_con *con = talloc_get_type(data, struct ctdb_killtcp_con);
 
+	con->killtcp->batch_count++;
+	if (con->killtcp->batch_count > con->killtcp->batch_size) {
+		/* Terminate the traverse */
+		return -1;
+	}
+
 	ctdb_sys_send_tcp(&con->dst_addr, &con->src_addr, 0, 0, 0);
 
 	return 0;
@@ -187,7 +195,8 @@ static void ctdb_tickle_sentenced_connections(struct tevent_context *ev,
 	struct ctdb_kill_tcp *killtcp = talloc_get_type(private_data, struct ctdb_kill_tcp);
 	void *delete_cons = talloc_new(NULL);
 
-	/* loop over all connections sending tickle ACKs */
+	/* loop over up to batch_size connections sending tickle ACKs */
+	killtcp->batch_count = 0;
 	trbt_traversearray32(killtcp->connections, KILLTCP_KEYLEN, tickle_connection_traverse, delete_cons);
 
 	/* now we've finished traverse, it's safe to do deletion. */
@@ -263,6 +272,9 @@ static int ctdb_killtcp(struct tevent_context *ev,
 
 		killtcp->retry_interval.tv_sec = 1;
 		killtcp->retry_interval.tv_usec = 0;
+
+		killtcp->batch_count = 0;
+		killtcp->batch_size = UINT_MAX;
 
 		*killtcp_arg = killtcp;
 	}
