@@ -20,6 +20,11 @@ if [ -x "$BINDIR/ldbmodify" ]; then
     ldbmodify="$BINDIR/ldbmodify"
 fi
 
+ldbdel="ldbdel"
+if [ -x "$BINDIR/ldbdel" ]; then
+    ldbdel="$BINDIR/ldbdel"
+fi
+
 ldbsearch="ldbsearch"
 if [ -x "$BINDIR/ldbsearch" ]; then
     ldbsearch="$BINDIR/ldbsearch"
@@ -277,6 +282,43 @@ dbcheck_clean2() {
     fi
 }
 
+rm_deleted_objects() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	TZ=UTC $ldbdel -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-1-0RC3,DC%3DSAMBA,DC%3DCORP.ldb 'CN=Deleted Objects,DC=RELEASE-4-1-0RC3,DC=SAMBA,DC=CORP'
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    else
+	return 0
+    fi
+}
+# This should 'fail', because it returns the number of modified records
+dbcheck3() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+    else
+	exit 1
+    fi
+}
+# But having fixed it all up, this should pass
+dbcheck_clean3() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+    fi
+}
+
+check_expected_after_deleted_objects() {
+    if [ x$RELEASE = x"release-4-1-0rc3" ]; then
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-deleted_objects-after-dbcheck.ldif.tmp
+	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=deleted\ objects -s base -b cn=deleted\ objects,DC=release-4-1-0rc3,DC=samba,DC=corp objectClass description isDeleted isCriticalSystemObject objectGUID showInAdvancedViewOnly systemFlags --sorted --show-binary --show-deleted | grep -v \# | sort > $tmpldif
+	diff $tmpldif $release_dir/expected-deleted_objects-after-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+    fi
+    return 0
+}
+
 referenceprovision() {
     if [ x$RELEASE == x"release-4-0-0" ]; then
         $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=SAMBA --host-name=ares --realm=${RELEASE}.samba.corp --targetdir=$PREFIX_ABS/${RELEASE}_reference --use-ntvfs --host-ip=127.0.0.1 --host-ip6=::1 --function-level=2003
@@ -314,6 +356,10 @@ if [ -d $release_dir ]; then
     testit "add_userparameters3" add_userparameters3
     testit_expect_failure "dbcheck2" dbcheck2
     testit "dbcheck_clean2" dbcheck_clean2
+    testit "rm_deleted_objects" rm_deleted_objects
+    testit_expect_failure "dbcheck3" dbcheck3
+    testit "dbcheck_clean3" dbcheck_clean3
+    testit "check_expected_after_deleted_objects" check_expected_after_deleted_objects
     testit "referenceprovision" referenceprovision
     testit "ldapcmp" ldapcmp
     testit "ldapcmp_sd" ldapcmp_sd

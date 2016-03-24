@@ -69,6 +69,7 @@ class dbcheck(object):
         self.fix_replmetadata_wrong_attid = False
         self.fix_replmetadata_unsorted_attid = False
         self.fix_deleted_deleted_objects = False
+        self.fix_incorrect_deleted_objects = False
         self.fix_dn = False
         self.fix_base64_userparameters = False
         self.fix_utf8_userparameters = False
@@ -84,6 +85,7 @@ class dbcheck(object):
         self.class_schemaIDGUID = {}
         self.wellknown_sds = get_wellknown_sds(self.samdb)
         self.fix_all_missing_objectclass = False
+        self.fix_missing_deleted_objects = False
 
         self.dn_set = set()
 
@@ -115,26 +117,30 @@ class dbcheck(object):
                 self.write_ncs = None
 
         res = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=['namingContexts'])
+        self.deleted_objects_containers = []
+        self.ncs_lacking_deleted_containers = []
         try:
-            ncs = res[0]["namingContexts"]
-            self.deleted_objects_containers = []
-            for nc in ncs:
-                try:
-                    dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc),
-                                                     dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
-                    self.deleted_objects_containers.append(dn)
-                except KeyError:
-                    pass
+            self.ncs = res[0]["namingContexts"]
         except KeyError:
             pass
         except IndexError:
             pass
+
+        for nc in self.ncs:
+            try:
+                dn = self.samdb.get_wellknown_dn(ldb.Dn(self.samdb, nc),
+                                                 dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+                self.deleted_objects_containers.append(dn)
+            except KeyError:
+                self.ncs_lacking_deleted_containers.append(ldb.Dn(self.samdb, nc))
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
         res = self.samdb.search(base=DN, scope=scope, attrs=['dn'], controls=controls)
         self.report('Checking %u objects' % len(res))
         error_count = 0
+
+        error_count += self.check_deleted_objects_containers()
 
         for object in res:
             self.dn_set.add(str(object.dn))
@@ -147,6 +153,105 @@ class dbcheck(object):
             self.report("Please use --fix to fix these errors")
 
         self.report('Checked %u objects (%u errors)' % (len(res), error_count))
+        return error_count
+
+
+    def check_deleted_objects_containers(self):
+        """This function only fixes conflicts on the Deleted Objects
+        containers, not the attributes"""
+        error_count = 0
+        for nc in self.ncs_lacking_deleted_containers:
+            if nc == self.schema_dn:
+                continue
+            error_count += 1
+            self.report("ERROR: NC %s lacks a reference to a Deleted Objects container" % nc)
+            if not self.confirm_all('Fix missing Deleted Objects container for %s?' % (nc), 'fix_missing_deleted_objects'):
+                continue
+
+            dn = ldb.Dn(self.samdb, "CN=Deleted Objects")
+            dn.add_base(nc)
+
+            conflict_dn = None
+            try:
+                # If something already exists here, add a conflict
+                res = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[],
+                                        controls=["show_deleted:1", "extended_dn:1:1",
+                                                  "show_recycled:1", "reveal_internals:0"])
+                if len(res) != 0:
+                    guid = res[0].dn.get_extended_component("GUID")
+                    conflict_dn = ldb.Dn(self.samdb,
+                                         "CN=Deleted Objects\\0ACNF:%s" % str(misc.GUID(guid)))
+                    conflict_dn.add_base(nc)
+
+            except ldb.LdbError, (enum, estr):
+                if enum == ldb.ERR_NO_SUCH_OBJECT:
+                    pass
+                else:
+                    self.report("Couldn't check for conflicting Deleted Objects container: %s" % estr)
+                    return 1
+
+            if conflict_dn is not None:
+                try:
+                    self.samdb.rename(dn, conflict_dn, ["show_deleted:1", "relax:0", "show_recycled:1"])
+                except ldb.LdbError, (enum, estr):
+                    self.report("Couldn't move old Deleted Objects placeholder: %s to %s: %s" % (dn, conflict_dn, estr))
+                    return 1
+
+            # Refresh wellKnownObjects links
+            res = self.samdb.search(base=nc, scope=ldb.SCOPE_BASE,
+                                    attrs=['wellKnownObjects'],
+                                    controls=["show_deleted:1", "extended_dn:0",
+                                              "show_recycled:1", "reveal_internals:0"])
+            if len(res) != 1:
+                self.report("wellKnownObjects was not found for NC %s" % nc)
+                return 1
+
+            # Prevent duplicate deleted objects containers just in case
+            wko = res[0]["wellKnownObjects"]
+            listwko = []
+            proposed_objectguid = None
+            for o in wko:
+                dsdb_dn = dsdb_Dn(self.samdb, o, dsdb.DSDB_SYNTAX_BINARY_DN)
+                if self.is_deleted_objects_dn(dsdb_dn):
+                    self.report("wellKnownObjects had duplicate Deleted Objects value %s" % o)
+                    # We really want to put this back in the same spot
+                    # as the original one, so that on replication we
+                    # merge, rather than conflict.
+                    proposed_objectguid = dsdb_dn.dn.get_extended_component("GUID")
+                listwko.append(o)
+
+            if proposed_objectguid is not None:
+                guid_suffix = "\nobjectGUID: %s" % str(misc.GUID(proposed_objectguid))
+            else:
+                wko_prefix = "B:32:%s" % dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER
+                listwko.append('%s:%s' % (wko_prefix, dn))
+                guid_suffix = ""
+
+            # Insert a brand new Deleted Objects container
+            self.samdb.add_ldif("""dn: %s
+objectClass: top
+objectClass: container
+description: Container for deleted objects
+isDeleted: TRUE
+isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: TRUE
+systemFlags: -1946157056%s""" % (dn, guid_suffix),
+                                controls=["relax:0", "provision:0"])
+
+            delta = ldb.Message()
+            delta.dn = ldb.Dn(self.samdb, str(res[0]["dn"]))
+            delta["wellKnownObjects"] = ldb.MessageElement(listwko,
+                                                           ldb.FLAG_MOD_REPLACE,
+                                                           "wellKnownObjects")
+
+            # Insert the link to the brand new container
+            if self.do_modify(delta, ["relax:0"],
+                              "NC %s lacks Deleted Objects WKGUID" % nc,
+                              validate=False):
+                self.report("Added %s well known guid link" % dn)
+
+            self.deleted_objects_containers.append(dn)
+
         return error_count
 
     def report(self, msg):
@@ -1143,20 +1248,30 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if "description" not in obj:
             self.report("ERROR: description not present on Deleted Objects container %s" % obj.dn)
             faulty = True
-        if "showInAdvancedViewOnly" not in obj:
+        if "showInAdvancedViewOnly" not in obj or obj['showInAdvancedViewOnly'][0].upper() == 'FALSE':
             self.report("ERROR: showInAdvancedViewOnly not present on Deleted Objects container %s" % obj.dn)
             faulty = True
         if "objectCategory" not in obj:
             self.report("ERROR: objectCategory not present on Deleted Objects container %s" % obj.dn)
             faulty = True
-        if "isCriticalSystemObject" not in obj:
+        if "isCriticalSystemObject" not in obj or obj['isCriticalSystemObject'][0].upper() == 'FALSE':
             self.report("ERROR: isCriticalSystemObject not present on Deleted Objects container %s" % obj.dn)
             faulty = True
         if "isRecycled" in obj:
             self.report("ERROR: isRecycled present on Deleted Objects container %s" % obj.dn)
             faulty = True
+        if "isDeleted" in obj and obj['isDeleted'][0].upper() == 'FALSE':
+            self.report("ERROR: isDeleted not set on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "objectClass" not in obj or (len(obj['objectClass']) != 2 or
+                                        obj['objectClass'][0] != 'top' or
+                                        obj['objectClass'][1] != 'container'):
+            self.report("ERROR: objectClass incorrectly set on Deleted Objects container %s" % obj.dn)
+            faulty = True
+        if "systemFlags" not in obj or obj['systemFlags'][0] != '-1946157056':
+            self.report("ERROR: systemFlags incorrectly set on Deleted Objects container %s" % obj.dn)
+            faulty = True
         return faulty
-
 
     def err_deleted_deleted_objects(self, obj):
         nmsg = ldb.Message()
@@ -1172,6 +1287,10 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             nmsg["isCriticalSystemObject"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isCriticalSystemObject")
         if "isRecycled" in obj:
             nmsg["isRecycled"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_DELETE, "isRecycled")
+
+        nmsg["isDeleted"] = ldb.MessageElement("TRUE", ldb.FLAG_MOD_REPLACE, "isDeleted")
+        nmsg["systemFlags"] = ldb.MessageElement("-1946157056", ldb.FLAG_MOD_REPLACE, "systemFlags")
+        nmsg["objectClass"] = ldb.MessageElement(["top", "container"], ldb.FLAG_MOD_REPLACE, "objectClass")
 
         if not self.confirm_all('Fix Deleted Objects container %s by restoring default attributes?'
                                 % (dn), 'fix_deleted_deleted_objects'):
@@ -1281,9 +1400,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         nc_dn = self.samdb.get_nc_root(obj.dn)
         try:
             deleted_objects_dn = self.samdb.get_wellknown_dn(nc_dn,
-                                                 samba.dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
-        except KeyError, e:
-            deleted_objects_dn = ldb.Dn(self.samdb, "CN=Deleted Objects,%s" % nc_dn)
+                                                             samba.dsdb.DS_GUID_DELETED_OBJECTS_CONTAINER)
+        except KeyError:
+            # We have no deleted objects DN for schema, and we check for this above for the other
+            # NCs
+            deleted_objects_dn = None
+
 
         object_rdn_attr = None
         object_rdn_val = None

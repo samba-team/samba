@@ -1,0 +1,10 @@
+
+description: Container for deleted objects
+dn: CN=Deleted Objects,DC=release-4-1-0rc3,DC=samba,DC=corp
+isCriticalSystemObject: TRUE
+isDeleted: TRUE
+objectClass: container
+objectClass: top
+objectGUID: 3857e32d-3a4a-4e3b-a35a-efd9d45673a1
+showInAdvancedViewOnly: TRUE
+systemFlags: -1946157056

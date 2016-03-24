@@ -984,6 +984,14 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
+	/*
+	 * Bypass the constraint checks when we do have the "DBCHECK" control
+	 * set, so we can force objects under the deleted objects container.
+	 */
+	if (ldb_request_get_control(req, DSDB_CONTROL_DBCHECK) != NULL) {
+		return ldb_next_request(module, req);
+	}
+
 	ac = oc_init_context(module, req);
 	if (ac == NULL) {
 		return ldb_operr(ldb);
