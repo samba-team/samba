@@ -551,6 +551,7 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 				     struct pwb_context **ctx_p)
 {
 	struct pwb_context *r = NULL;
+	int ctrl_code;
 
 #ifdef HAVE_GETTEXT
 	textdomain_init();
@@ -567,11 +568,12 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 	r->flags = flags;
 	r->argc = argc;
 	r->argv = argv;
-	r->ctrl = _pam_parse(pamh, flags, argc, argv, type, &r->dict);
-	if (r->ctrl == -1) {
+	ctrl_code = _pam_parse(pamh, flags, argc, argv, type, &r->dict);
+	if (ctrl_code == -1) {
 		TALLOC_FREE(r);
 		return PAM_SYSTEM_ERR;
 	}
+	r->ctrl = ctrl_code;
 
 	*ctx_p = r;
 
