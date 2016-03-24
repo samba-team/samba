@@ -4864,7 +4864,7 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	ret = ldb_build_search_req(&search_req,
 				   ldb,
 				   ar,
-				   NULL,
+				   ar->objs->partition_dn,
 				   LDB_SCOPE_SUBTREE,
 				   filter,
 				   NULL,
@@ -4874,7 +4874,7 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   ar->req);
 	LDB_REQ_SET_LOCATION(search_req);
 
-	ret = dsdb_request_add_controls(search_req, DSDB_SEARCH_SEARCH_ALL_PARTITIONS|DSDB_SEARCH_SHOW_RECYCLED);
+	ret = dsdb_request_add_controls(search_req, DSDB_SEARCH_SHOW_RECYCLED);
 
 	if (ret != LDB_SUCCESS) {
 		return ret;
