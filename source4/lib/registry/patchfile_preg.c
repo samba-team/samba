@@ -23,6 +23,7 @@
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/winreg.h"
+#include "lib/util/sys_rw.h"
 
 struct preg_data {
 	int fd;
@@ -71,12 +72,12 @@ static WERROR reg_preg_diff_set_value(void *_data, const char *key_name,
 	preg_write_utf16(data->fd, value_name);
 	preg_write_utf16(data->fd, ";");
 	SIVAL(&buf, 0, value_type);
-	write(data->fd, &buf, sizeof(uint32_t));
+	sys_write_v(data->fd, &buf, sizeof(uint32_t));
 	preg_write_utf16(data->fd, ";");
 	SIVAL(&buf, 0, value_data.length);
-	write(data->fd, &buf, sizeof(uint32_t));
+	sys_write_v(data->fd, &buf, sizeof(uint32_t));
 	preg_write_utf16(data->fd, ";");
-	write(data->fd, value_data.data, value_data.length);
+	sys_write_v(data->fd, value_data.data, value_data.length);
 	preg_write_utf16(data->fd, "]");
 	
 	return WERR_OK;
@@ -189,7 +190,7 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
 
 	memcpy(preg_header.hdr, "PReg", sizeof(preg_header.hdr));
 	SIVAL(&preg_header.version, 0, 1);
-	write(data->fd, (uint8_t *)&preg_header, sizeof(preg_header));
+	sys_write_v(data->fd, (uint8_t *)&preg_header, sizeof(preg_header));
 
 	data->ctx = ctx;
 
