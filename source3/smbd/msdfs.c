@@ -669,7 +669,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		const char *dfspath, /* Incoming complete dfs path */
 		const struct dfs_path *pdp, /* Parsed out
 					       server+share+extrapath. */
-		bool search_flag, /* Called from a findfirst ? */
+		uint32_t ucf_flags,
 		int *consumedcntp,
 		char **pp_targetpath)
 {
@@ -691,7 +691,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	 */
 
 	status = unix_convert(ctx, conn, pdp->reqpath, &smb_fname,
-			      search_flag ? UCF_ALWAYS_ALLOW_WCARD_LCOMP : 0);
+			      ucf_flags);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (!NT_STATUS_EQUAL(status,
@@ -707,7 +707,10 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	if (is_msdfs_link_internal(ctx, conn, smb_fname->base_name,
 				   pp_targetpath, NULL)) {
-		if (search_flag) {
+		/* XX_ALLOW_WCARD_XXX is called from search functions. */
+		if (ucf_flags &
+				(UCF_COND_ALLOW_WCARD_LCOMP|
+				 UCF_ALWAYS_ALLOW_WCARD_LCOMP)) {
 			DEBUG(6,("dfs_path_lookup (FindFirst) No redirection "
 				 "for dfs link %s.\n", dfspath));
 			status = NT_STATUS_OK;
