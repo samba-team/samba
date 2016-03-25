@@ -38,7 +38,7 @@ _PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const cha
 
 	n=i=0;
 
-	while (*s && (p=strchr_m(b64,*s))) {
+	while (*s && (p=strchr(b64,*s))) {
 		idx = (int)(p - b64);
 		byte_offset = (i*6)/8;
 		bit_offset = (i*6)%8;
