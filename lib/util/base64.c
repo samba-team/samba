@@ -48,8 +48,7 @@ _PUBLIC_ DATA_BLOB base64_decode_data_blob_talloc(TALLOC_CTX *mem_ctx, const cha
 			n = byte_offset+1;
 		} else {
 			d[byte_offset] |= (idx >> (bit_offset-2));
-			d[byte_offset+1] = 0;
-			d[byte_offset+1] |= (idx << (8-(bit_offset-2))) & 0xFF;
+			d[byte_offset+1] = (idx << (8-(bit_offset-2))) & 0xFF;
 			n = byte_offset+2;
 		}
 		s++; i++;
