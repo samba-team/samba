@@ -40,6 +40,22 @@ ssize_t sys_read(int fd, void *buf, size_t count)
 	return ret;
 }
 
+/**
+ * read wrapper, void variant:
+ * This is intended to be used as a void variant of
+ * read in situations where the caller wants to ignore
+ * the result. Hence not checking for EAGAIN|EWOULDBLOCK.
+ */
+void sys_read_v(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = read(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+}
+
+
 /*******************************************************************
 A write wrapper that will deal with EINTR/EWOULDBLOCK.
 ********************************************************************/
