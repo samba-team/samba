@@ -72,6 +72,23 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	return ret;
 }
 
+/**
+ * write wrapper to deal with EINTR and friends.
+ * void-variant that ignores the number of bytes written.
+ * This is intended to be used as a void variant of
+ * write in situations where the caller wants to ignore
+ * the result. Hence not checking for EAGAIN|EWOULDBLOCK.
+ */
+void sys_write_v(int fd, const void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = write(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+}
+
+
 /*******************************************************************
 A writev wrapper that will deal with EINTR.
 ********************************************************************/
