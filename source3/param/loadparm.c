@@ -742,7 +742,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.client_ldap_sasl_wrapping = ADS_AUTH_SASL_SIGN;
 
 	Globals.ldap_server_require_strong_auth =
-		LDAP_SERVER_REQUIRE_STRONG_AUTH_NO;
+		LDAP_SERVER_REQUIRE_STRONG_AUTH_YES;
 
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 

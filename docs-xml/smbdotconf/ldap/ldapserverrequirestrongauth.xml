@@ -21,8 +21,6 @@
 	<para>A value of <emphasis>yes</emphasis> allows only simple binds
 	over TLS encrypted connections. Unencrypted connections only
 	allow sasl binds with sign or seal.</para>
-
-	<para>Note the default will change to <constant>yes</constant> with Samba 4.5.</para>
 </description>
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
