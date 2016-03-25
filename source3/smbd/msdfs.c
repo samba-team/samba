@@ -1666,13 +1666,15 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				bool dfs_pathnames,
 				const char *name_in,
-				bool allow_wcards,
+				uint32_t ucf_flags,
 				bool allow_broken_path,
 				char **pp_name_out,
 				bool *ppath_contains_wcard)
 {
 	bool path_contains_wcard;
 	NTSTATUS status = NT_STATUS_OK;
+	bool allow_wcards = (ucf_flags &
+		(UCF_COND_ALLOW_WCARD_LCOMP|UCF_ALWAYS_ALLOW_WCARD_LCOMP));
 
 	if (dfs_pathnames) {
 		status = dfs_redirect(ctx,

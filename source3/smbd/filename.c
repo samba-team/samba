@@ -1401,7 +1401,6 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 				struct smb_filename **pp_smb_fname)
 {
 	NTSTATUS status;
-	bool allow_wcards = (ucf_flags & (UCF_COND_ALLOW_WCARD_LCOMP|UCF_ALWAYS_ALLOW_WCARD_LCOMP));
 	char *fname = NULL;
 
 	*pp_smb_fname = NULL;
@@ -1409,7 +1408,7 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	status = resolve_dfspath_wcard(ctx, conn,
 				dfs_path,
 				name_in,
-				allow_wcards,
+				ucf_flags,
 				!conn->sconn->using_smb2,
 				&fname,
 				ppath_contains_wcard);

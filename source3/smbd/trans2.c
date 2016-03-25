@@ -6876,7 +6876,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 	status = resolve_dfspath_wcard(ctx, conn,
 				       req->flags2 & FLAGS2_DFS_PATHNAMES,
 				       newname,
-				       true,
+				       UCF_COND_ALLOW_WCARD_LCOMP,
 				       !conn->sconn->using_smb2,
 				       &newname,
 				       &dest_has_wcard);
