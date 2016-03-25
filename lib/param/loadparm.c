@@ -2710,7 +2710,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "client ldap sasl wrapping", "sign");
 
-	lpcfg_do_global_parameter(lp_ctx, "ldap server require strong auth", "no");
+	lpcfg_do_global_parameter(lp_ctx, "ldap server require strong auth", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "follow symlinks", "yes");
 
