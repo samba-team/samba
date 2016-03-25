@@ -41,6 +41,7 @@
 #include "lib/util/util_net.h"
 #include "lib/addns/dnsquery.h"
 #include "lib/addns/dns.h"
+#include "lib/util/sys_rw.h"
 #include <arpa/nameser.h>
 #include <resolv.h>
 
@@ -370,7 +371,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 
 	if (addrs) {
 		DEBUG(11, ("Addrs = %s\n", addrs));
-		write(fd, addrs, talloc_get_size(addrs));
+		sys_write_v(fd, addrs, talloc_get_size(addrs));
 	}
 
 done:
@@ -436,7 +437,7 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 	}
 
 	if (addrs) {
-		write(fd, addrs, talloc_get_size(addrs));
+		sys_write_v(fd, addrs, talloc_get_size(addrs));
 	}
 done:
 	if (res_list) {
