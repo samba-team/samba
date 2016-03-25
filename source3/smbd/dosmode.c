@@ -27,7 +27,7 @@
 #include "lib/param/loadparm.h"
 
 static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
-				struct smb_filename *smb_fname,
+				const struct smb_filename *smb_fname,
 				files_struct **ret_fsp,
 				bool *need_close);
 
@@ -260,9 +260,9 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
  This can also pull the create time into the stat struct inside smb_fname.
 ****************************************************************************/
 
-static bool get_ea_dos_attribute(connection_struct *conn,
-				 struct smb_filename *smb_fname,
-				 uint32_t *pattr)
+NTSTATUS get_ea_dos_attribute(connection_struct *conn,
+			      struct smb_filename *smb_fname,
+			      uint32_t *pattr)
 {
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
@@ -272,7 +272,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	uint32_t dosattr;
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
-		return False;
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	/* Don't reset pattr to zero as we may already have filename-based attributes we
@@ -285,7 +285,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 		DBG_INFO("Cannot get attribute "
 			 "from EA on file %s: Error = %s\n",
 			 smb_fname_str_dbg(smb_fname), strerror(errno));
-		return False;
+		return map_nt_error_from_unix(errno);
 	}
 
 	blob.data = (uint8_t *)attrstr;
@@ -299,7 +299,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 			 "from EA on file %s: Error = %s\n",
 			 smb_fname_str_dbg(smb_fname),
 			 ndr_errstr(ndr_err)));
-		return false;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	DEBUG(10,("get_ea_dos_attribute: %s attr = %s\n",
@@ -352,7 +352,8 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 			DEBUG(1,("get_ea_dos_attribute: Badly formed DOSATTRIB on "
 				 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
 				 attrstr));
-	                return false;
+			/* Should this be INTERNAL_ERROR? */
+	                return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
@@ -363,7 +364,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 
 	dos_mode_debug_print(__func__, *pattr);
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -371,13 +372,17 @@ static bool get_ea_dos_attribute(connection_struct *conn,
  Also sets the create time.
 ****************************************************************************/
 
-static bool set_ea_dos_attribute(connection_struct *conn,
-				 struct smb_filename *smb_fname,
-				 uint32_t dosmode)
+NTSTATUS set_ea_dos_attribute(connection_struct *conn,
+			      const struct smb_filename *smb_fname,
+			      uint32_t dosmode)
 {
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
+
+	if (!lp_store_dos_attributes(SNUM(conn))) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 
 	ZERO_STRUCT(dosattrib);
 	ZERO_STRUCT(blob);
@@ -401,17 +406,18 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(5, ("create_acl_blob: ndr_push_xattr_DOSATTRIB failed: %s\n",
 			ndr_errstr(ndr_err)));
-		return false;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	if (blob.data == NULL || blob.length == 0) {
-		return false;
+		/* Should this be INTERNAL_ERROR? */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (SMB_VFS_SETXATTR(conn, smb_fname->base_name,
 			     SAMBA_XATTR_DOS_ATTRIB, blob.data, blob.length,
 			     0) == -1) {
-		bool ret = false;
+		NTSTATUS status = NT_STATUS_OK;
 		bool need_close = false;
 		files_struct *fsp = NULL;
 
@@ -419,7 +425,7 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 			DBG_INFO("Cannot set "
 				 "attribute EA on file %s: Error = %s\n",
 				 smb_fname_str_dbg(smb_fname), strerror(errno));
-			return false;
+			return map_nt_error_from_unix(errno);
 		}
 
 		/* We want DOS semantics, ie allow non owner with write permission to change the
@@ -428,10 +434,10 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 
 		/* Check if we have write access. */
 		if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
-			return false;
+			return NT_STATUS_ACCESS_DENIED;
 
 		if (!can_write_to_file(conn, smb_fname)) {
-			return false;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		/*
@@ -439,29 +445,30 @@ static bool set_ea_dos_attribute(connection_struct *conn,
 		 * metadata operation under root.
 		 */
 
-		if (!NT_STATUS_IS_OK(get_file_handle_for_metadata(conn,
+		status = get_file_handle_for_metadata(conn,
 						smb_fname,
 						&fsp,
-						&need_close))) {
-			return false;
+						&need_close);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		become_root();
 		if (SMB_VFS_FSETXATTR(fsp,
 				     SAMBA_XATTR_DOS_ATTRIB, blob.data,
 				     blob.length, 0) == 0) {
-			ret = true;
+			status = NT_STATUS_OK;
 		}
 		unbecome_root();
 		if (need_close) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
 		}
-		return ret;
+		return status;
 	}
 	DEBUG(10,("set_ea_dos_attribute: set EA 0x%x on file %s\n",
 		(unsigned int)dosmode,
 		smb_fname_str_dbg(smb_fname)));
-	return true;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -565,6 +572,7 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 {
 	uint32_t result = 0;
 	bool offline;
+	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(8,("dos_mode: %s\n", smb_fname_str_dbg(smb_fname)));
 
@@ -589,8 +597,9 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		}
 	}
 
-	/* Get the DOS attributes from an EA by preference. */
-	if (!get_ea_dos_attribute(conn, smb_fname, &result)) {
+	/* Get the DOS attributes via the VFS if we can */
+	status = SMB_VFS_GET_DOS_ATTRIBUTES(conn, smb_fname, &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		result |= dos_mode_from_sbuf(conn, smb_fname);
 	}
 
@@ -601,8 +610,8 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 
 	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {
 		bool compressed = false;
-		NTSTATUS status = dos_mode_check_compressed(conn, smb_fname,
-							    &compressed);
+		status = dos_mode_check_compressed(conn, smb_fname,
+						   &compressed);
 		if (NT_STATUS_IS_OK(status) && compressed) {
 			result |= FILE_ATTRIBUTE_COMPRESSED;
 		}
@@ -696,23 +705,27 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	smb_fname->st.st_ex_btime = new_create_timespec;
 
 	/* Store the DOS attributes in an EA by preference. */
-	if (lp_store_dos_attributes(SNUM(conn))) {
-		/*
-		 * Don't fall back to using UNIX modes. Finally
-		 * follow the smb.conf manpage.
-		 */
-		if (!set_ea_dos_attribute(conn, smb_fname, dosmode)) {
-			return -1;
-		}
+	status = SMB_VFS_SET_DOS_ATTRIBUTES(conn, smb_fname, dosmode);
+	if (NT_STATUS_IS_OK(status)) {
 		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-				     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-				     smb_fname->base_name);
+				FILE_NOTIFY_CHANGE_ATTRIBUTES,
+				smb_fname->base_name);
 		}
 		smb_fname->st.st_ex_mode = unixmode;
 		return 0;
+	} else {
+		/*
+		 * Only fall back to using UNIX modes if
+		 * we get NOT_IMPLEMENTED.
+		 */
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			errno = map_errno_from_nt_status(status);
+			return -1;
+		}
 	}
 
+	/* Fall back to UNIX modes. */
 	unixmode = unix_mode(conn, dosmode, smb_fname, parent_dir);
 
 	/* preserve the file type bits */
@@ -896,12 +909,9 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 	}
 
 	/* Store the DOS attributes in an EA. */
-	if (!set_ea_dos_attribute(conn, fsp->fsp_name,
-				  new_dosmode)) {
-		if (errno == 0) {
-			errno = EIO;
-		}
-		return map_nt_error_from_unix(errno);
+	status = SMB_VFS_FSET_DOS_ATTRIBUTES(conn, fsp, new_dosmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
@@ -1080,13 +1090,14 @@ struct timespec get_change_timespec(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
-				struct smb_filename *smb_fname,
+				const struct smb_filename *smb_fname,
 				files_struct **ret_fsp,
 				bool *need_close)
 {
 	NTSTATUS status;
 	files_struct *fsp;
 	struct file_id file_id;
+	struct smb_filename *smb_fname_cp = NULL;
 
 	*need_close = false;
 
@@ -1105,12 +1116,18 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 		}
 	}
 
+	smb_fname_cp = cp_smb_filename(talloc_tos(),
+					smb_fname);
+	if (smb_fname_cp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* Opens an INTERNAL_OPEN_ONLY write handle. */
 	status = SMB_VFS_CREATE_FILE(
 		conn,                                   /* conn */
 		NULL,                                   /* req */
 		0,                                      /* root_dir_fid */
-		smb_fname,                              /* fname */
+		smb_fname_cp,				/* fname */
 		FILE_WRITE_DATA,                        /* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
 			FILE_SHARE_DELETE),
@@ -1126,6 +1143,8 @@ static NTSTATUS get_file_handle_for_metadata(connection_struct *conn,
 		ret_fsp,                                /* result */
 		NULL,                                   /* pinfo */
 		NULL, NULL);				/* create context */
+
+	TALLOC_FREE(smb_fname_cp);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*need_close = true;
