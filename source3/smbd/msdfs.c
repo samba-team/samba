@@ -817,12 +817,14 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			connection_struct *conn,
 			const char *path_in,
-			bool search_wcard_flag,
+			uint32_t ucf_flags,
 			bool allow_broken_path,
 			char **pp_path_out,
 			bool *ppath_contains_wcard)
 {
 	NTSTATUS status;
+	bool search_wcard_flag = (ucf_flags &
+		(UCF_COND_ALLOW_WCARD_LCOMP|UCF_ALWAYS_ALLOW_WCARD_LCOMP));
 	struct dfs_path *pdp = talloc(ctx, struct dfs_path);
 
 	if (!pdp) {
@@ -1673,14 +1675,12 @@ NTSTATUS resolve_dfspath_wcard(TALLOC_CTX *ctx,
 {
 	bool path_contains_wcard;
 	NTSTATUS status = NT_STATUS_OK;
-	bool allow_wcards = (ucf_flags &
-		(UCF_COND_ALLOW_WCARD_LCOMP|UCF_ALWAYS_ALLOW_WCARD_LCOMP));
 
 	if (dfs_pathnames) {
 		status = dfs_redirect(ctx,
 					conn,
 					name_in,
-					allow_wcards,
+					ucf_flags,
 					allow_broken_path,
 					pp_name_out,
 					&path_contains_wcard);
