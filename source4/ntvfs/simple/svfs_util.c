@@ -158,7 +158,12 @@ int svfs_file_utime(int fd, struct utimbuf *times)
 	char *fd_path = NULL;
 	int ret;
 
-	asprintf(&fd_path, "/proc/self/%d", fd);
+	ret = asprintf(&fd_path, "/proc/self/%d", fd);
+	if (ret == -1) {
+		errno = ENOMEM;
+		return -1;
+	}
+
 	if (!fd_path) {
 		errno = ENOMEM;
 		return -1;
