@@ -329,6 +329,17 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	
 
 	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		if (!cli_credentials_is_anonymous(io->in.credentials) &&
+		    session->options.ntlmv2_auth &&
+		    session->transport->options.use_spnego)
+		{
+			/*
+			 * Don't send an NTLMv2_RESPONSE without NTLMSSP
+			 * if we want to use spnego
+			 */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state, 
 							      &flags, 
 							      session->transport->negotiate.secblob, 
