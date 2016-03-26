@@ -94,6 +94,7 @@ struct cifspsx_dir *cifspsx_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request 
 		unsigned int i = dir->count;
 		char *full_name;
 		char *low_name;
+		int ret;
 
 		if (strchr(dent->d_name, ':') && !strchr(unix_path, ':')) {
 			/* don't show streams in dir listing */
@@ -120,7 +121,11 @@ struct cifspsx_dir *cifspsx_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request 
 		dir->files[i].name = low_name;
 		if (!dir->files[i].name) { continue; }
 
-		asprintf(&full_name, "%s/%s", dir->unix_dir, dir->files[i].name);
+		ret = asprintf(&full_name, "%s/%s", dir->unix_dir, dir->files[i].name);
+		if (ret == -1) {
+			continue;
+		}
+
 		if (!full_name) { continue; }
 
 		if (stat(full_name, &dir->files[i].st) == 0) { 
