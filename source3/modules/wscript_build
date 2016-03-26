@@ -456,7 +456,7 @@ bld.SAMBA3_MODULE('vfs_ceph',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_ceph'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph'),
-                 cflags=bld.CONFIG_GET('CCFLAGS_CEPHFS'))
+                 cflags=bld.CONFIG_GET('CFLAGS_CEPHFS'))
 
 bld.SAMBA3_MODULE('vfs_glusterfs',
                   subsystem='vfs',

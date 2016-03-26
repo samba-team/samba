@@ -48,8 +48,10 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
         conf.msg("python headers", "Check disabled due to --disable-python")
         # we don't want PYTHONDIR in config.h, as otherwise changing
         # --prefix causes a complete rebuild
-        del(conf.env.defines['PYTHONDIR'])
-        del(conf.env.defines['PYTHONARCHDIR'])
+        conf.env.DEFINES = [x for x in conf.env.DEFINES
+            if not x.startswith('PYTHONDIR=')
+            and not x.startswith('PYTHONARCHDIR=')]
+
         return
 
     if conf.env["python_headers_checked"] == []:
@@ -71,13 +73,14 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
 
     # we don't want PYTHONDIR in config.h, as otherwise changing
     # --prefix causes a complete rebuild
-    del(conf.env.defines['PYTHONDIR'])
-    del(conf.env.defines['PYTHONARCHDIR'])
+    conf.env.DEFINES = [x for x in conf.env.DEFINES
+        if not x.startswith('PYTHONDIR=')
+        and not x.startswith('PYTHONARCHDIR=')]
 
 def _check_python_headers(conf, mandatory):
     try:
         Configure.ConfigurationError
-        conf.check_python_headers(mandatory=mandatory)
+        conf.check_python_headers()
     except Configure.ConfigurationError:
         if mandatory:
              raise
@@ -94,6 +97,11 @@ def _check_python_headers(conf, mandatory):
         if lib.startswith('-L'):
             conf.env.append_unique('LIBPATH_PYEMBED', lib[2:]) # strip '-L'
             conf.env['LINKFLAGS_PYEMBED'].remove(lib)
+
+    # same as in waf 1.5, keep only '-fno-strict-aliasing'
+    # and ignore defines such as NDEBUG _FORTIFY_SOURCE=2
+    conf.env.DEFINES_PYEXT = []
+    conf.env.CFLAGS_PYEXT = ['-fno-strict-aliasing']
 
     return
 

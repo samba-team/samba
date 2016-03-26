@@ -18,7 +18,7 @@ def DEFINE(conf, d, v, add_to_cflags=False, quote=False):
     '''define a config option'''
     conf.define(d, v, quote=quote)
     if add_to_cflags:
-        conf.env.append_value('CCDEFINES', d + '=' + str(v))
+        conf.env.append_value('CFLAGS', '-D%s=%s' % (d, str(v)))
 
 def hlist_to_string(conf, headers=None):
     '''convert a headers list to a set of #include lines'''
@@ -99,7 +99,7 @@ def CHECK_HEADER(conf, h, add_headers=False, lib=None):
     ret = conf.check(fragment='%s\nint main(void) { return 0; }' % hdrs,
                      type='nolink',
                      execute=0,
-                     ccflags=ccflags,
+                     cflags=ccflags,
                      mandatory=False,
                      includes=cpppath,
                      uselib=lib.upper(),
@@ -383,12 +383,10 @@ def CHECK_CODE(conf, code, define,
     else:
         execute = 0
 
-    defs = conf.get_config_header()
-
     if addmain:
-        fragment='%s\n%s\n int main(void) { %s; return 0; }\n' % (defs, hdrs, code)
+        fragment='%s\n int main(void) { %s; return 0; }\n' % (hdrs, code)
     else:
-        fragment='%s\n%s\n%s\n' % (defs, hdrs, code)
+        fragment='%s\n%s\n' % (hdrs, code)
 
     if msg is None:
         msg="Checking for %s" % define
@@ -421,11 +419,11 @@ def CHECK_CODE(conf, code, define,
 
     conf.COMPOUND_START(msg)
 
-    ret = conf.check(fragment=fragment,
+    try:
+        ret = conf.check(fragment=fragment,
                      execute=execute,
                      define_name = define,
-                     mandatory = mandatory,
-                     ccflags=cflags,
+                     cflags=cflags,
                      ldflags=ldflags,
                      includes=includes,
                      uselib=uselib,
@@ -434,22 +432,22 @@ def CHECK_CODE(conf, code, define,
                      quote=quote,
                      exec_args=exec_args,
                      define_ret=define_ret)
-    if not ret and CONFIG_SET(conf, define):
-        # sometimes conf.check() returns false, but it
-        # sets the define. Maybe a waf bug?
-        ret = True
-    if ret:
+    except Exception:
+        if always:
+            conf.DEFINE(define, 0)
+        conf.COMPOUND_END(False)
+        if mandatory:
+            raise
+        return False
+    else:
+        # success
         if not define_ret:
             conf.DEFINE(define, 1)
             conf.COMPOUND_END(True)
         else:
-            conf.COMPOUND_END(conf.env[define])
+            conf.DEFINE(define, ret, quote=quote)
+            conf.COMPOUND_END(ret)
         return True
-    if always:
-        conf.DEFINE(define, 0)
-    conf.COMPOUND_END(False)
-    return False
-
 
 
 @conf
@@ -475,8 +473,9 @@ def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
     '''
     return conf.check(fragment=fragment,
                       execute=0,
+                      mandatory=False,
                       type='nolink',
-                      ccflags=cflags,
+                      cflags=cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
 @conf
@@ -532,11 +531,14 @@ def library_flags(self, libs):
         # note that we do not add the -I and -L in here, as that is added by the waf
         # core. Adding it here would just change the order that it is put on the link line
         # which can cause system paths to be added before internal libraries
-        extra_ccflags = TO_LIST(getattr(self.env, 'CCFLAGS_%s' % lib.upper(), []))
+        extra_ccflags = TO_LIST(getattr(self.env, 'CFLAGS_%s' % lib.upper(), []))
         extra_ldflags = TO_LIST(getattr(self.env, 'LDFLAGS_%s' % lib.upper(), []))
         extra_cpppath = TO_LIST(getattr(self.env, 'CPPPATH_%s' % lib.upper(), []))
         ccflags.extend(extra_ccflags)
         ldflags.extend(extra_ldflags)
+        cpppath.extend(extra_cpppath)
+
+        extra_cpppath = TO_LIST(getattr(self.env, 'INCLUDES_%s' % lib.upper(), []))
         cpppath.extend(extra_cpppath)
     if 'EXTRA_LDFLAGS' in self.env:
         ldflags.extend(self.env['EXTRA_LDFLAGS'])
@@ -570,9 +572,9 @@ int foo()
 
         (ccflags, ldflags, cpppath) = library_flags(conf, lib)
         if shlib:
-            res = conf.check(features='c cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
+            res = conf.check(features='c cshlib', fragment=fragment, lib=lib, uselib_store=lib, cflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
         else:
-            res = conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
+            res = conf.check(lib=lib, uselib_store=lib, cflags=ccflags, ldflags=ldflags, uselib=lib.upper(), mandatory=False)
 
         if not res:
             if mandatory:
@@ -670,7 +672,7 @@ def SAMBA_CONFIG_H(conf, path=None):
         }
         ''',
         execute=0,
-        ccflags='-fstack-protector',
+        cflags='-fstack-protector',
         ldflags='-fstack-protector',
         mandatory=False,
         msg='Checking if toolchain accepts -fstack-protector'):
@@ -753,9 +755,12 @@ int main(void) {
         conf.env['EXTRA_LDFLAGS'].extend(conf.env['ADDITIONAL_LDFLAGS'])
 
     if path is None:
-        conf.write_config_header('config.h', top=True)
+        conf.write_config_header('default/config.h', top=True, remove=False)
     else:
-        conf.write_config_header(path)
+        conf.write_config_header(os.path.join(conf.variant, path), remove=False)
+    for key in conf.env.define_key:
+        conf.undefine(key, from_env=False)
+    conf.env.define_key = []
     conf.SAMBA_CROSS_CHECK_COMPLETE()
 
 
@@ -876,6 +881,3 @@ def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
         if conf.CHECK_LDFLAGS(['-undefined', 'dynamic_lookup']):
             conf.env.undefined_ignore_ldflags = ['-undefined', 'dynamic_lookup']
 
-@conf
-def CHECK_CFG(self, *k, **kw):
-    return self.check_cfg(*k, **kw)

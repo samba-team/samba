@@ -157,7 +157,7 @@ def HEIMDAL_ERRTABLE(name, source):
 
     t = bld(rule='"${SRC[1].abspath(env)}" "${TGT[0].parent.abspath(env)}" "${COMPILE_ET}" "${SRC[0].abspath(env)}" ${TGT[0].bldpath(env)}',
             ext_out = '.c',
-            before  = 'cc',
+            before  = 'c',
             update_outputs = True,
             shell   = True,
             source  = sources,
@@ -178,7 +178,7 @@ def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
             target=header,
             update_outputs=True,
             ext_out='.c',
-            before='cc')
+            before='c')
     t.env.HEIMDAL = os.path.join(bld.srcnode.abspath(), 'source4/heimdal')
     t.env.OPTIONS = options
 

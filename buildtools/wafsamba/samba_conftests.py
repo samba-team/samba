@@ -9,6 +9,7 @@ from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH
 
 def add_option(self, *k, **kw):
     '''syntax help: provide the "match" attribute to opt.add_option() so that folders can be added to specific config tests'''
+    Options.parser = self
     match = kw.get('match', [])
     if match:
         del kw['match']
@@ -486,7 +487,7 @@ def CHECK_XSLTPROC_MANPAGES(conf):
         return False
 
     s='http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl'
-    conf.CHECK_COMMAND('%s --nonet %s 2> /dev/null' % (conf.env.XSLTPROC, s),
+    conf.CHECK_COMMAND('%s --nonet %s 2> /dev/null' % (conf.env.get_flat('XSLTPROC'), s),
                              msg='Checking for stylesheet %s' % s,
                              define='XSLTPROC_MANPAGES', on_target=False,
                              boolean=True)
