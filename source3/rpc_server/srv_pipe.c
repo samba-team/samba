@@ -48,6 +48,8 @@
 #include "../librpc/gen_ndr/ndr_samr.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "../librpc/gen_ndr/ndr_epmapper.h"
+#include "../librpc/gen_ndr/ndr_echo.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -396,6 +398,18 @@ static bool check_bind_req(struct pipes_struct *p,
 	ok = ndr_syntax_id_equal(abstract, &ndr_table_netlogon.syntax_id);
 	if (ok) {
 		context_fns->allow_connect = false;
+	}
+	/*
+	 * for the epmapper and echo interfaces we allow "connect"
+	 * auth_level by default.
+	 */
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_epmapper.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = true;
+	}
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_rpcecho.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = true;
 	}
 	/*
 	 * every interface can be modified to allow "connect" auth_level by
