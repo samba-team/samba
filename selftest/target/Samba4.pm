@@ -523,6 +523,7 @@ sub provision_raw_step1($$)
 	interfaces = $ctx->{interfaces}
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
 	tls crlfile = ${crlfile}
+	tls verify peer = no_check
 	panic action = $RealBin/gdb_backtrace \%d
 	wins support = yes
 	server role = $ctx->{server_role}

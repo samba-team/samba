@@ -586,6 +586,7 @@ sub write_clientconf($$$)
         winbind separator = /
 	tls cafile = ${cacert}
 	tls crlfile = ${cacrl_pem}
+	tls verify peer = no_check
 ";
 	close(CF);
 }
