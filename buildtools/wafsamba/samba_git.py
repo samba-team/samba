@@ -4,7 +4,7 @@ import subprocess
 def find_git(env=None):
     """Find the git binary."""
     if env is not None and 'GIT' in env:
-        return env['GIT']
+        return env.get_flat('GIT')
 
     # Get version from GIT
     if os.path.exists("/usr/bin/git"):

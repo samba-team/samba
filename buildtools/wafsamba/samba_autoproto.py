@@ -16,7 +16,7 @@ def SAMBA_AUTOPROTO(bld, header, source):
         target = header,
         update_outputs=True,
         ext_out='.c',
-        before ='cc',
+        before ='c',
         rule = '${PERL} "${SCRIPT}/mkproto.pl" --srcdir=.. --builddir=. --public=/dev/null --private="${TGT}" ${SRC}'
         )
     t.env.SCRIPT = os.path.join(bld.srcnode.abspath(), 'source4/script')
