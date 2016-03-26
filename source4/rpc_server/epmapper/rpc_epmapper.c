@@ -24,6 +24,14 @@
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "rpc_server/dcerpc_server.h"
 
+#define DCESRV_INTERFACE_EPMAPPER_BIND(call, iface) \
+       dcesrv_interface_epmapper_bind(call, iface)
+static NTSTATUS dcesrv_interface_epmapper_bind(struct dcesrv_call_state *dce_call,
+					     const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_allow_connect(dce_call, iface);
+}
+
 typedef uint32_t error_status_t;
 
 /* handle types for this module */
