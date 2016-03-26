@@ -209,7 +209,7 @@ static NTSTATUS cifspsx_map_fileinfo(struct ntvfs_module_context *ntvfs,
 {
 	struct cifspsx_dir *dir = NULL;
 	char *pattern = NULL;
-	int i;
+	int i, ret;
 	const char *s, *short_name;
 
 	s = strrchr(unix_path, '/');
@@ -219,8 +219,11 @@ static NTSTATUS cifspsx_map_fileinfo(struct ntvfs_module_context *ntvfs,
 		short_name = "";
 	}
 
-	asprintf(&pattern, "%s:*", unix_path);
-	
+	ret = asprintf(&pattern, "%s:*", unix_path);
+	if (ret == -1) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	if (pattern) {
 		dir = cifspsx_list_unix(req, req, pattern);
 	}
