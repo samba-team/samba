@@ -393,24 +393,13 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	struct sesssetup_state *state = talloc_get_type(c->private_data,
 							struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
-	const char *domain = cli_credentials_get_domain(io->in.credentials);
 
 	/*
 	 * domain controllers tend to reject the NTLM v2 blob
 	 * if the netbiosname is not valid (e.g. IP address or FQDN)
 	 * so just leave it away (as Windows client do)
 	 */
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, NULL, domain);
-
 	DATA_BLOB session_key;
-	int flags = 0;
-	if (session->options.lanman_auth) {
-		flags |= CLI_CRED_LANMAN_AUTH;
-	}
-
-	if (session->options.ntlmv2_auth) {
-		flags |= CLI_CRED_NTLMv2_AUTH;
-	}
 
 	state->setup.old.level      = RAW_SESSSETUP_OLD;
 	state->setup.old.in.bufsize = session->transport->options.max_xmit;
@@ -424,6 +413,17 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 						 &state->setup.old.in.domain);
 	
 	if (session->transport->negotiate.sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) {
+		DATA_BLOB names_blob = data_blob_null;
+		int flags = 0;
+
+		if (!cli_credentials_is_anonymous(io->in.credentials) &&
+		    !session->options.lanman_auth)
+		{
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		flags |= CLI_CRED_LANMAN_AUTH;
+
 		nt_status = cli_credentials_get_ntlm_response(io->in.credentials, state, 
 							      &flags, 
 							      session->transport->negotiate.secblob, 
