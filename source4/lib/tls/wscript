@@ -44,7 +44,7 @@ def configure(conf):
                            args='"gnutls >= 1.4.0 gnutls != 2.2.4 gnutls != 2.8.0 gnutls != 2.8.1" --cflags --libs',
                            msg='Checking for gnutls >= 1.4.0 and broken versions', mandatory=False)
 
-    if 'HAVE_GNUTLS' in conf.env:
+    if conf.env.HAVE_GNUTLS:
         conf.DEFINE('ENABLE_GNUTLS', 1)
     else:
         if 'AD_DC_BUILD_IS_ENABLED' in conf.env:
@@ -72,7 +72,7 @@ def configure(conf):
                      headers='gnutls/gnutls.h', lib='gnutls')
 
     # GnuTLS3 moved to libnettle, so only do this in the < 3.0 case
-    if not 'HAVE_GNUTLS3' in conf.env:
+    if conf.env.HAVE_GNUTLS3:
         conf.CHECK_FUNCS_IN('gcry_control', 'gcrypt', headers='gcrypt.h')
         conf.CHECK_FUNCS_IN('gpg_err_code_from_errno', 'gpg-error')
     else:
