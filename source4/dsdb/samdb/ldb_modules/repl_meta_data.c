@@ -3778,36 +3778,37 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 	bool rename_incoming_record, rodc;
 	struct replPropertyMetaData1 *rmd_name, *omd_name;
 	struct ldb_message *msg;
+	struct ldb_request *down_req = NULL;
 
-	req->callback = callback;
-
-	if (ares->error != LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		/* call the normal callback for everything except
-		   conflicts */
-		return ldb_module_done(req, ares->controls, ares->response, ares->error);
+	/* call the normal callback for success */
+	if (ares->error == LDB_SUCCESS) {
+		return callback(req, ares);
 	}
 
-	ret = samdb_rodc(ldb_module_get_ctx(ar->module), &rodc);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), "Failed to determine if we are an RODC when attempting to form conflict DN: %s", ldb_errstring(ldb_module_get_ctx(ar->module)));
-		return ldb_module_done(req, ares->controls, ares->response, LDB_ERR_OPERATIONS_ERROR);
-	}
 	/*
 	 * we have a conflict, and need to decide if we will keep the
 	 * new record or the old record
 	 */
 
 	msg = ar->objs->objects[ar->index_current].msg;
+	conflict_dn = msg->dn;
 
-	switch (req->operation) {
-	case LDB_ADD:
-		conflict_dn = msg->dn;
-		break;
-	case LDB_RENAME:
-		conflict_dn = req->op.rename.newdn;
-		break;
-	default:
-		return ldb_module_done(req, ares->controls, ares->response, ldb_module_operr(ar->module));
+	/* For failures other than conflicts, fail the whole operation here */
+	if (ares->error != LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), "Failed to locally apply remote add of %s: %s",
+				       ldb_dn_get_linearized(conflict_dn),
+				       ldb_errstring(ldb_module_get_ctx(ar->module)));
+
+		return ldb_module_done(ar->req, NULL, NULL,
+				       LDB_ERR_OPERATIONS_ERROR);
+	}
+
+	ret = samdb_rodc(ldb_module_get_ctx(ar->module), &rodc);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), "Failed to determine if we are an RODC when attempting to form conflict DN: %s", ldb_errstring(ldb_module_get_ctx(ar->module)));
+		return ldb_module_done(ar->req, NULL, NULL,
+				       LDB_ERR_OPERATIONS_ERROR);
+
 	}
 
 	if (rodc) {
@@ -3826,7 +3827,7 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 
 	/*
 	 * first we need the replPropertyMetaData attribute from the
-	 * old record
+	 * local, conflicting record
 	 */
 	ret = dsdb_module_search_dn(ar->module, req, &res, conflict_dn,
 				    attrs,
@@ -3873,23 +3874,6 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 		struct GUID guid;
 		struct ldb_dn *new_dn;
 
-		/*
-		 * We want to run the original callback here, which
-		 * will return LDB_ERR_ENTRY_ALREADY_EXISTS to the
-		 * caller, which will in turn know to rename the
-		 * incoming record.  The error string is set in case
-		 * this isn't handled properly at some point in the
-		 * future.
-		 */
-		if (req->operation == LDB_RENAME) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
-					       "Unable to handle incoming renames where this would "
-					       "create a conflict. Incoming record is %s (caller to handle)\n",
-					       ldb_dn_get_extended_linearized(req, conflict_dn, 1));
-
-			goto failed;
-		}
-
 		guid = samdb_result_guid(msg, "objectGUID");
 		if (GUID_all_zero(&guid)) {
 			DEBUG(0,(__location__ ": Failed to find objectGUID for conflicting incoming record %s\n",
@@ -3906,12 +3890,9 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 		DEBUG(2,(__location__ ": Resolving conflict record via incoming rename '%s' -> '%s'\n",
 			 ldb_dn_get_linearized(conflict_dn), ldb_dn_get_linearized(new_dn)));
 
-		/* re-submit the request, but with a different
-		   callback, so we don't loop forever. */
+		/* re-submit the request, but with the new DN */
+		callback = replmd_op_name_modify_callback;
 		msg->dn = new_dn;
-		req->callback = replmd_op_name_modify_callback;
-
-		return ldb_next_request(ar->module, req);
 	} else {
 		/* we are renaming the existing record */
 		struct GUID guid;
@@ -3953,15 +3934,55 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 			goto failed;
 		}
 
-		return ldb_next_request(ar->module, req);
+		DEBUG(2,(__location__ ": With conflicting record renamed, re-apply replicated creation of '%s'\n",
+			 ldb_dn_get_linearized(req->op.add.message->dn)));
 	}
 
-failed:
-	/* on failure do the original callback. This means replication
-	 * will stop with an error, but there is not much else we can
-	 * do
+	ret = ldb_build_add_req(&down_req,
+				ldb_module_get_ctx(ar->module),
+				req,
+				msg,
+				ar->controls,
+				ar,
+				callback,
+				req);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+	LDB_REQ_SET_LOCATION(down_req);
+
+	/* current partition control needed by "repmd_op_callback" */
+	ret = ldb_request_add_control(down_req,
+				      DSDB_CONTROL_CURRENT_PARTITION_OID,
+				      false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return replmd_replicated_request_error(ar, ret);
+	}
+
+	if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PARTIAL_REPLICA) {
+		/* this tells the partition module to make it a
+		   partial replica if creating an NC */
+		ret = ldb_request_add_control(down_req,
+					      DSDB_CONTROL_PARTIAL_REPLICA,
+					      false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return replmd_replicated_request_error(ar, ret);
+		}
+	}
+
+	/*
+	 * Finally we re-run the add, otherwise the new record won't
+	 * exist, as we are here because of that exact failure!
 	 */
-	return ldb_module_done(req, ares->controls, ares->response, ares->error);
+	return ldb_next_request(ar->module, down_req);
+failed:
+
+	/* on failure make the caller get the error. This means
+	 * replication will stop with an error, but there is not much
+	 * else we can do.
+	 */
+	return ldb_module_done(ar->req, NULL, NULL,
+			       ret);
 }
 
 /*
