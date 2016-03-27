@@ -87,13 +87,19 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         self.assertEquals(len(res), 1)
         user_cur = res[0]
         # now check properties of the user
-        name_orig = obj_orig["cn"][0]
-        name_cur  = user_cur["cn"][0]
+        cn_orig = obj_orig["cn"][0]
+        cn_cur  = user_cur["cn"][0]
+        name_orig = obj_orig["name"][0]
+        name_cur  = user_cur["name"][0]
         dn_orig = obj_orig["dn"]
         dn_cur  = user_cur["dn"]
         self.assertFalse("isDeleted" in user_cur)
+        self.assertEquals(cn_cur, cn_orig)
         self.assertEquals(name_cur, name_orig)
         self.assertEquals(dn_cur, dn_orig)
+        self.assertEqual(name_cur, cn_cur)
+        self.assertEqual(name_cur, user_cur.dn.get_rdn_value())
+
         return user_cur
 
 

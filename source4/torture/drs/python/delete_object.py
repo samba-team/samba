@@ -68,8 +68,10 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         # Deleted Object base DN
         dodn = self._deleted_objects_dn(sam_ldb)
         # now check properties of the user
-        name_orig = obj_orig["cn"][0]
-        name_cur  = user_cur["cn"][0]
+        cn_orig = obj_orig["cn"][0]
+        cn_cur  = user_cur["cn"][0]
+        name_orig = obj_orig["name"][0]
+        name_cur  = user_cur["name"][0]
         if is_deleted:
             self.assertEquals(user_cur["isDeleted"][0],"TRUE")
             self.assertFalse("objectCategory" in user_cur)
@@ -80,9 +82,15 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
             self.assertTrue(dodn in str(user_cur["dn"]),
                             "User %s is deleted but it is not located under %s (found at %s)!" % (name_orig, dodn, user_cur["dn"]))
             self.assertEquals(name_cur, name_orig + "\nDEL:" + guid_str)
+            self.assertEquals(name_cur, user_cur.dn.get_rdn_value())
+            self.assertEquals(cn_cur, cn_orig + "\nDEL:" + guid_str)
+            self.assertEquals(name_cur, cn_cur)
         else:
             self.assertFalse("isDeleted" in user_cur)
             self.assertEquals(name_cur, name_orig)
+            self.assertEquals(name_cur, user_cur.dn.get_rdn_value())
+            self.assertEquals(cn_cur, cn_orig)
+            self.assertEquals(name_cur, cn_cur)
             self.assertEquals(obj_orig["dn"], user_cur["dn"])
             self.assertTrue(dodn not in str(user_cur["dn"]))
         return user_cur

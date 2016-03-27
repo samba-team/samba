@@ -140,9 +140,12 @@ objectClass: organizationalUnit
                                   scope=SCOPE_BASE, attrs=["name"])
         print res1[0]["name"][0]
         print res2[0]["name"][0]
+        self.assertFalse('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc2, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc2, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC2
 
@@ -184,6 +187,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC1
 
@@ -225,6 +230,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]), "Got %s for %s" % (str(res2[0]["name"][0]), self.ou2))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC1
 
@@ -269,6 +276,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC1
 
@@ -324,6 +333,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC1
 
@@ -376,6 +387,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % self.ou1 in str(res1[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC1
 
@@ -431,6 +444,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % self.ou2 in str(res2[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) not in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete both objects by GUID on DC1
 
@@ -487,6 +502,8 @@ objectClass: organizationalUnit
         self.assertTrue('CNF:%s' % ou1_child in str(res1[0]["name"][0]) or 'CNF:%s' % ou2_child in str(res2[0]["name"][0]))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) in str(res1[0].dn))
         self.assertTrue(self._lost_and_found_dn(self.ldb_dc1, self.domain_dn) in str(res2[0].dn))
+        self.assertEqual(str(res1[0]["name"][0]), res1[0].dn.get_rdn_value())
+        self.assertEqual(str(res2[0]["name"][0]), res2[0].dn.get_rdn_value())
 
         # Delete all objects by GUID on DC1
 

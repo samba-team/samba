@@ -101,10 +101,12 @@ class BasicDeleteTests(BaseDeleteTests):
         print "Checking for correct rDN"
         rdn=liveObj[rdnName][0]
         rdn2=delObj[rdnName][0]
-        name2=delObj[rdnName][0]
+        name2=delObj["name"][0]
+        dn_rdn=delObj.dn.get_rdn_value()
         guid=liveObj["objectGUID"][0]
         self.assertEquals(rdn2, rdn + "\nDEL:" + self.GUID_string(guid))
         self.assertEquals(name2, rdn + "\nDEL:" + self.GUID_string(guid))
+        self.assertEquals(name2, dn_rdn)
 
     def delete_deleted(self, ldb, dn):
         print "Testing the deletion of the already deleted dn %s" % dn
