@@ -117,6 +117,9 @@ class dc_join(object):
             ctx.acct_dn = None
             ctx.myname = ctx.server.split('.')[0]
             ctx.ntds_guid = None
+
+            # Save this early
+            ctx.remote_dc_ntds_guid = ctx.samdb.get_ntds_GUID()
         else:
             # work out the DNs of all the objects we will be adding
             ctx.myname = netbios_name
@@ -929,7 +932,7 @@ class dc_join(object):
 
         # We want to appear to be the server we just cloned
         if ctx.clone_only:
-            guid = ctx.samdb.get_ntds_GUID()
+            guid = ctx.remote_dc_ntds_guid
         else:
             guid = ctx.ntds_guid
 
