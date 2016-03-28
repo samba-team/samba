@@ -477,7 +477,7 @@ _PUBLIC_ int64_t usec_time_diff(const struct timeval *tv1, const struct timeval 
 }
 
 /**
-  return (tp1 - tp2) in microseconds
+  return (tp1 - tp2) in nanoseconds
 */
 _PUBLIC_ int64_t nsec_time_diff(const struct timespec *tp1, const struct timespec *tp2)
 {
