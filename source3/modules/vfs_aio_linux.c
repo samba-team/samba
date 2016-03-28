@@ -27,6 +27,7 @@
 #include "lib/util/sys_rw.h"
 #include <sys/eventfd.h>
 #include <libaio.h>
+#include "smbprofile.h"
 
 static int event_fd = -1;
 static io_context_t io_ctx;
@@ -168,7 +169,7 @@ static struct tevent_req *aio_linux_pread_send(
 
 	piocb = &state->event_iocb;
 
-	clock_gettime_mono(&state->start);
+	PROFILE_TIMESTAMP(&state->start);
 	ret = io_submit(io_ctx, 1, &piocb);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
@@ -205,7 +206,7 @@ static struct tevent_req *aio_linux_pwrite_send(
 
 	piocb = &state->event_iocb;
 
-	clock_gettime_mono(&state->start);
+	PROFILE_TIMESTAMP(&state->start);
 	ret = io_submit(io_ctx, 1, &piocb);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
@@ -240,7 +241,7 @@ static struct tevent_req *aio_linux_fsync_send(
 
 	piocb = &state->event_iocb;
 
-	clock_gettime_mono(&state->start);
+	PROFILE_TIMESTAMP(&state->start);
 	ret = io_submit(io_ctx, 1, &piocb);
 	if (ret < 0) {
 		tevent_req_error(req, -ret);
@@ -261,7 +262,7 @@ static void aio_linux_done(struct tevent_context *event_ctx,
 	DEBUG(10, ("aio_linux_done called with flags=%d\n",
 		   (int)flags));
 
-	clock_gettime_mono(&end);
+	PROFILE_TIMESTAMP(&end);
 
 	/* Read the number of events available. */
 	if (sys_read(event_fd, &num_events, sizeof(num_events)) !=
