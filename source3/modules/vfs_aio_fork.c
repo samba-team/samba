@@ -29,6 +29,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
 #include "lib/msghdr.h"
+#include "smbprofile.h"
 
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
 # error Can not pass file descriptors
@@ -343,7 +344,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 
 		ZERO_STRUCT(ret_struct);
 
-		clock_gettime_mono(&start);
+		PROFILE_TIMESTAMP(&start);
 
 		switch (cmd_struct.cmd) {
 		case READ_CMD:
@@ -370,7 +371,7 @@ static void aio_child_loop(int sockfd, struct mmap_area *map)
 			errno = EINVAL;
 		}
 
-		clock_gettime_mono(&end);
+		PROFILE_TIMESTAMP(&end);
 		ret_struct.duration = nsec_time_diff(&end, &start);
 		DEBUG(10, ("aio_child_loop: syscall returned %d\n",
 			   (int)ret_struct.size));
