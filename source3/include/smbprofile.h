@@ -565,6 +565,8 @@ static inline uint64_t profile_timestamp(void)
 #define END_PROFILE_BYTES(x) \
 	SMBPROFILE_BYTES_ASYNC_END(__profasync_##x)
 
+#define PROFILE_TIMESTAMP(x) clock_gettime_mono(x)
+
 #else /* WITH_PROFILE */
 
 #define SMBPROFILE_COUNT_INCREMENT(_name, _area, _v)
@@ -594,6 +596,8 @@ static inline uint64_t profile_timestamp(void)
 #define START_PROFILE_BYTES(x,n)
 #define END_PROFILE(x)
 #define END_PROFILE_BYTES(x)
+
+#define PROFILE_TIMESTAMP(x) (*(x)=(struct timespec){0})
 
 static inline bool smbprofile_dump_pending(void)
 {
