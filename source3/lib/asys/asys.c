@@ -21,6 +21,7 @@
 #include <errno.h>
 #include "../pthreadpool/pthreadpool.h"
 #include "lib/util/time.h"
+#include "smbprofile.h"
 
 struct asys_pwrite_args {
 	int fildes;
@@ -192,9 +193,9 @@ static void asys_pwrite_do(void *private_data)
 	struct asys_job *job = (struct asys_job *)private_data;
 	struct asys_pwrite_args *args = &job->args.pwrite_args;
 
-	clock_gettime_mono(&job->start_time);
+	PROFILE_TIMESTAMP(&job->start_time);
 	job->ret = pwrite(args->fildes, args->buf, args->nbyte, args->offset);
-	clock_gettime_mono(&job->end_time);
+	PROFILE_TIMESTAMP(&job->end_time);
 
 	if (job->ret == -1) {
 		job->err = errno;
@@ -237,9 +238,9 @@ static void asys_pread_do(void *private_data)
 	struct asys_job *job = (struct asys_job *)private_data;
 	struct asys_pread_args *args = &job->args.pread_args;
 
-	clock_gettime_mono(&job->start_time);
+	PROFILE_TIMESTAMP(&job->start_time);
 	job->ret = pread(args->fildes, args->buf, args->nbyte, args->offset);
-	clock_gettime_mono(&job->end_time);
+	PROFILE_TIMESTAMP(&job->end_time);
 
 	if (job->ret == -1) {
 		job->err = errno;
@@ -278,9 +279,9 @@ static void asys_fsync_do(void *private_data)
 	struct asys_job *job = (struct asys_job *)private_data;
 	struct asys_fsync_args *args = &job->args.fsync_args;
 
-	clock_gettime_mono(&job->start_time);
+	PROFILE_TIMESTAMP(&job->start_time);
 	job->ret = fsync(args->fildes);
-	clock_gettime_mono(&job->end_time);
+	PROFILE_TIMESTAMP(&job->end_time);
 
 	if (job->ret == -1) {
 		job->err = errno;
