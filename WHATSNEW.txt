@@ -1,3 +1,527 @@
+                   =============================
+                   Release Notes for Samba 4.4.1
+                           April 12, 2016
+                   =============================
+
+
+This is a security release in order to address the following CVEs:
+
+o  CVE-2015-5370 (Multiple errors in DCE-RPC code)
+
+o  CVE-2016-2110 (Man in the middle attacks possible with NTLMSSP)
+
+o  CVE-2016-2111 (NETLOGON Spoofing Vulnerability)
+
+o  CVE-2016-2112 (LDAP client and server don't enforce integrity)
+
+o  CVE-2016-2113 (Missing TLS certificate validation)
+
+o  CVE-2016-2114 ("server signing = mandatory" not enforced)
+
+o  CVE-2016-2115 (SMB IPC traffic is not integrity protected)
+
+o  CVE-2016-2118 (SAMR and LSA man in the middle attacks possible)
+
+The number of changes are rather huge for a security release,
+compared to typical security releases.
+
+Given the number of problems and the fact that they are all related
+to man in the middle attacks we decided to fix them all at once
+instead of splitting them.
+
+In order to prevent the man in the middle attacks it was required
+to change the (default) behavior for some protocols. Please see the
+"New smb.conf options" and "Behavior changes" sections below.
+
+=======
+Details
+=======
+
+o  CVE-2015-5370
+
+   Versions of Samba from 3.6.0 to 4.4.0 inclusive are vulnerable to
+   denial of service attacks (crashes and high cpu consumption)
+   in the DCE-RPC client and server implementations. In addition,
+   errors in validation of the DCE-RPC packets can lead to a downgrade
+   of a secure connection to an insecure one.
+
+   The above applies all possible server roles Samba can operate in.
+
+   Note that versions before 3.6.0 had completely different marshalling
+   functions for the generic DCE-RPC layer. It's quite possible that
+   that code has similar problems!
+
+   The downgrade of a secure connection to an insecure one may
+   allow an attacker to take control of Active Directory object
+   handles created on a connection created from an Administrator
+   account and re-use them on the now non-privileged connection,
+   compromising the security of the Samba AD-DC.
+
+o  CVE-2016-2110:
+
+   There are several man in the middle attacks possible with
+   NTLMSSP authentication.
+
+   E.g. NTLMSSP_NEGOTIATE_SIGN and NTLMSSP_NEGOTIATE_SEAL
+   can be cleared by a man in the middle.
+
+   This was by protocol design in earlier Windows versions.
+
+   Windows Server 2003 RTM and Vista RTM introduced a way
+   to protect against the trivial downgrade.
+
+   See MsvAvFlags and flag 0x00000002 in
+   https://msdn.microsoft.com/en-us/library/cc236646.aspx
+
+   This new feature also implies support for a mechlistMIC
+   when used within SPNEGO, which may prevent downgrades
+   from other SPNEGO mechs, e.g. Kerberos, if sign or
+   seal is finally negotiated.
+
+   The Samba implementation doesn't enforce the existence of
+   required flags, which were requested by the application layer,
+   e.g. LDAP or SMB1 encryption (via the unix extensions).
+   As a result a man in the middle can take over the connection.
+   It is also possible to misguide client and/or
+   server to send unencrypted traffic even if encryption
+   was explicitly requested.
+
+   LDAP (with NTLMSSP authentication) is used as a client
+   by various admin tools of the Samba project,
+   e.g. "net", "samba-tool", "ldbsearch", "ldbedit", ...
+
+   As an active directory member server LDAP is also used
+   by the winbindd service when connecting to domain controllers.
+
+   Samba also offers an LDAP server when running as
+   active directory domain controller.
+
+   The NTLMSSP authentication used by the SMB1 encryption
+   is protected by smb signing, see CVE-2015-5296.
+
+o  CVE-2016-2111:
+
+   It's basically the same as CVE-2015-0005 for Windows:
+
+     The NETLOGON service in Microsoft Windows Server 2003 SP2,
+     Windows Server 2008 SP2 and R2 SP1, and Windows Server 2012 Gold
+     and R2, when a Domain Controller is configured, allows remote
+     attackers to spoof the computer name of a secure channel's
+     endpoint, and obtain sensitive session information, by running a
+     crafted application and leveraging the ability to sniff network
+     traffic, aka "NETLOGON Spoofing Vulnerability".
+
+   The vulnerability in Samba is worse as it doesn't require
+   credentials of a computer account in the domain.
+
+   This only applies to Samba running as classic primary domain controller,
+   classic backup domain controller or active directory domain controller.
+
+   The security patches introduce a new option called "raw NTLMv2 auth"
+   ("yes" or "no") for the [global] section in smb.conf.
+   Samba (the smbd process) will reject client using raw NTLMv2
+   without using NTLMSSP.
+
+   Note that this option also applies to Samba running as
+   standalone server and member server.
+
+   You should also consider using "lanman auth = no" (which is already the default)
+   and "ntlm auth = no". Have a look at the smb.conf manpage for further details,
+   as they might impact compatibility with older clients. These also
+   apply for all server roles.
+
+o  CVE-2016-2112:
+
+   Samba uses various LDAP client libraries, a builtin one and/or the system
+   ldap libraries (typically openldap).
+
+   As active directory domain controller Samba also provides an LDAP server.
+
+   Samba takes care of doing SASL (GSS-SPNEGO) authentication with Kerberos or NTLMSSP
+   for LDAP connections, including possible integrity (sign) and privacy (seal)
+   protection.
+
+   Samba has support for an option called "client ldap sasl wrapping" since version
+   3.2.0. Its default value has changed from "plain" to "sign" with version 4.2.0.
+
+   Tools using the builtin LDAP client library do not obey the
+   "client ldap sasl wrapping" option. This applies to tools like:
+   "samba-tool", "ldbsearch", "ldbedit" and more. Some of them have command line
+   options like "--sign" and "--encrypt". With the security update they will
+   also obey the "client ldap sasl wrapping" option as default.
+
+   In all cases, even if explicitly request via "client ldap sasl wrapping",
+   "--sign" or "--encrypt", the protection can be downgraded by a man in the
+   middle.
+
+   The LDAP server doesn't have an option to enforce strong authentication
+   yet. The security patches will introduce a new option called
+   "ldap server require strong auth", possible values are "no",
+   "allow_sasl_over_tls" and "yes".
+
+   As the default behavior was as "no" before, you may
+   have to explicitly change this option until all clients have
+   been adjusted to handle LDAP_STRONG_AUTH_REQUIRED errors.
+   Windows clients and Samba member servers already use
+   integrity protection.
+
+o  CVE-2016-2113:
+
+   Samba has support for TLS/SSL for some protocols:
+   ldap and http, but currently certificates are not
+   validated at all. While we have a "tls cafile" option,
+   the configured certificate is not used to validate
+   the server certificate.
+
+   This applies to ldaps:// connections triggered by tools like:
+   "ldbsearch", "ldbedit" and more. Note that it only applies
+   to the ldb tools when they are built as part of Samba or with Samba
+   extensions installed, which means the Samba builtin LDAP client library is
+   used.
+
+   It also applies to dcerpc client connections using ncacn_http (with https://),
+   which are only used by the openchange project. Support for ncacn_http
+   was introduced in version 4.2.0.
+
+   The security patches will introduce a new option called
+   "tls verify peer". Possible values are "no_check", "ca_only",
+   "ca_and_name_if_available", "ca_and_name" and "as_strict_as_possible".
+
+   If you use the self-signed certificates which are auto-generated
+   by Samba, you won't have a crl file and need to explicitly
+   set "tls verify peer = ca_and_name".
+
+o  CVE-2016-2114
+
+   Due to a regression introduced in Samba 4.0.0,
+   an explicit "server signing = mandatory" in the [global] section
+   of the smb.conf was not enforced for clients using the SMB1 protocol.
+
+   As a result it does not enforce smb signing and allows man in the middle attacks.
+
+   This problem applies to all possible server roles:
+   standalone server, member server, classic primary domain controller,
+   classic backup domain controller and active directory domain controller.
+
+   In addition, when Samba is configured with "server role = active directory domain controller"
+   the effective default for the "server signing" option should be "mandatory".
+
+   During the early development of Samba 4 we had a new experimental
+   file server located under source4/smb_server. But before
+   the final 4.0.0 release we switched back to the file server
+   under source3/smbd.
+
+   But the logic for the correct default of "server signing" was not
+   ported correctly ported.
+
+   Note that the default for server roles other than active directory domain
+   controller, is "off" because of performance reasons.
+
+o  CVE-2016-2115:
+
+   Samba has an option called "client signing", this is turned off by default
+   for performance reasons on file transfers.
+
+   This option is also used when using DCERPC with ncacn_np.
+
+   In order to get integrity protection for ipc related communication
+   by default the "client ipc signing" option is introduced.
+   The effective default for this new option is "mandatory".
+
+   In order to be compatible with more SMB server implementations,
+   the following additional options are introduced:
+   "client ipc min protocol" ("NT1" by default) and
+   "client ipc max protocol" (the highest support SMB2/3 dialect by default).
+   These options overwrite the "client min protocol" and "client max protocol"
+   options, because the default for "client max protocol" is still "NT1".
+   The reason for this is the fact that all SMB2/3 support SMB signing,
+   while there are still SMB1 implementations which don't offer SMB signing
+   by default (this includes Samba versions before 4.0.0).
+
+   Note that winbindd (in versions 4.2.0 and higher) enforces SMB signing
+   against active directory domain controllers despite of the
+   "client signing" and "client ipc signing" options.
+
+o  CVE-2016-2118 (a.k.a. BADLOCK):
+
+   The Security Account Manager Remote Protocol [MS-SAMR] and the
+   Local Security Authority (Domain Policy) Remote Protocol [MS-LSAD]
+   are both vulnerable to man in the middle attacks. Both are application level
+   protocols based on the generic DCE 1.1 Remote Procedure Call (DCERPC) protocol.
+
+   These protocols are typically available on all Windows installations
+   as well as every Samba server. They are used to maintain
+   the Security Account Manager Database. This applies to all
+   roles, e.g. standalone, domain member, domain controller.
+
+   Any authenticated DCERPC connection a client initiates against a server
+   can be used by a man in the middle to impersonate the authenticated user
+   against the SAMR or LSAD service on the server.
+
+   The client chosen application protocol, auth type (e.g. Kerberos or NTLMSSP)
+   and auth level (NONE, CONNECT, PKT_INTEGRITY, PKT_PRIVACY) do not matter
+   in this case. A man in the middle can change auth level to CONNECT
+   (which means authentication without message protection) and take over
+   the connection.
+
+   As a result, a man in the middle is able to get read/write access to the
+   Security Account Manager Database, which reveals all passwords
+   and any other potential sensitive information.
+
+   Samba running as an active directory domain controller is additionally
+   missing checks to enforce PKT_PRIVACY for the
+   Directory Replication Service Remote Protocol [MS-DRSR] (drsuapi)
+   and the BackupKey Remote Protocol [MS-BKRP] (backupkey).
+   The Domain Name Service Server Management Protocol [MS-DNSP] (dnsserver)
+   is not enforcing at least PKT_INTEGRITY.
+
+====================
+New smb.conf options
+====================
+
+  allow dcerpc auth level connect (G)
+
+    This option controls whether DCERPC services are allowed to be used with
+    DCERPC_AUTH_LEVEL_CONNECT, which provides authentication, but no per
+    message integrity nor privacy protection.
+
+    Some interfaces like samr, lsarpc and netlogon have a hard-coded default
+    of no and epmapper, mgmt and rpcecho have a hard-coded default of yes.
+
+    The behavior can be overwritten per interface name (e.g. lsarpc,
+    netlogon, samr, srvsvc, winreg, wkssvc ...) by using
+    'allow dcerpc auth level connect:interface = yes' as option.
+
+    This option yields precedence to the implementation specific restrictions.
+    E.g. the drsuapi and backupkey protocols require DCERPC_AUTH_LEVEL_PRIVACY.
+    The dnsserver protocol requires DCERPC_AUTH_LEVEL_INTEGRITY.
+
+    Default: allow dcerpc auth level connect = no
+
+    Example: allow dcerpc auth level connect = yes
+
+  client ipc signing (G)
+
+    This controls whether the client is allowed or required to use
+    SMB signing for IPC$ connections as DCERPC transport. Possible
+    values are auto, mandatory and disabled.
+
+    When set to mandatory or default, SMB signing is required.
+
+    When set to auto, SMB signing is offered, but not enforced and
+    if set to disabled, SMB signing is not offered either.
+
+    Connections from winbindd to Active Directory Domain Controllers
+    always enforce signing.
+
+    Default: client ipc signing = default
+
+  client ipc max protocol (G)
+
+    The value of the parameter (a string) is the highest protocol level that will
+    be supported for IPC$ connections as DCERPC transport.
+
+    Normally this option should not be set as the automatic negotiation phase
+    in the SMB protocol takes care of choosing the appropriate protocol.
+
+    The value default refers to the latest supported protocol, currently SMB3_11.
+
+    See client max protocol for a full list of available protocols.
+    The values CORE, COREPLUS, LANMAN1, LANMAN2 are silently upgraded to NT1.
+
+    Default: client ipc max protocol = default
+
+    Example: client ipc max protocol = SMB2_10
+
+  client ipc min protocol (G)
+
+    This setting controls the minimum protocol version that the will be
+    attempted to use for IPC$ connections as DCERPC transport.
+
+    Normally this option should not be set as the automatic negotiation phase
+    in the SMB protocol takes care of choosing the appropriate protocol.
+
+    The value default refers to the higher value of NT1 and the
+    effective value of "client min protocol".
+
+    See client max protocol for a full list of available protocols.
+    The values CORE, COREPLUS, LANMAN1, LANMAN2 are silently upgraded to NT1.
+
+    Default: client ipc min protocol = default
+
+    Example: client ipc min protocol = SMB3_11
+
+  ldap server require strong auth (G)
+
+    The ldap server require strong auth defines whether the
+    ldap server requires ldap traffic to be signed or
+    signed and encrypted (sealed). Possible values are no,
+    allow_sasl_over_tls and yes.
+
+    A value of no allows simple and sasl binds over all transports.
+
+    A value of allow_sasl_over_tls allows simple and sasl binds (without sign or seal)
+    over TLS encrypted connections. Unencrypted connections only
+    allow sasl binds with sign or seal.
+
+    A value of yes allows only simple binds over TLS encrypted connections.
+    Unencrypted connections only allow sasl binds with sign or seal.
+
+    Default: ldap server require strong auth = yes
+
+  raw NTLMv2 auth (G)
+
+    This parameter determines whether or not smbd(8) will allow SMB1 clients
+    without extended security (without SPNEGO) to use NTLMv2 authentication.
+
+    If this option, lanman auth and ntlm auth are all disabled, then only
+    clients with SPNEGO support will be permitted. That means NTLMv2 is only
+    supported within NTLMSSP.
+
+    Default: raw NTLMv2 auth = no
+
+  tls verify peer (G)
+
+    This controls if and how strict the client will verify the peer's
+    certificate and name. Possible values are (in increasing order): no_check,
+    ca_only, ca_and_name_if_available, ca_and_name and as_strict_as_possible.
+
+    When set to no_check the certificate is not verified at all,
+    which allows trivial man in the middle attacks.
+
+    When set to ca_only the certificate is verified to be signed from a ca
+    specified in the "tls ca file" option. Setting "tls ca file" to a valid file
+    is required. The certificate lifetime is also verified. If the "tls crl file"
+    option is configured, the certificate is also verified against
+    the ca crl.
+
+    When set to ca_and_name_if_available all checks from ca_only are performed.
+    In addition, the peer hostname is verified against the certificate's
+    name, if it is provided by the application layer and not given as
+    an ip address string.
+
+    When set to ca_and_name all checks from ca_and_name_if_available are performed.
+    In addition the peer hostname needs to be provided and even an ip
+    address is checked against the certificate's name.
+
+    When set to as_strict_as_possible all checks from ca_and_name are performed.
+    In addition the "tls crl file" needs to be configured. Future versions
+    of Samba may implement additional checks.
+
+    Default: tls verify peer = as_strict_as_possible
+
+  tls priority (G) (backported from Samba 4.3 to Samba 4.2)
+
+    This option can be set to a string describing the TLS protocols to be
+    supported in the parts of Samba that use GnuTLS, specifically the AD DC.
+
+    The default turns off SSLv3, as this protocol is no longer considered
+    secure after CVE-2014-3566 (otherwise known as POODLE) impacted SSLv3 use
+    in HTTPS applications.
+
+    The valid options are described in the GNUTLS Priority-Strings
+    documentation at http://gnutls.org/manual/html_node/Priority-Strings.html
+
+    Default: tls priority = NORMAL:-VERS-SSL3.0
+
+================
+Behavior changes
+================
+
+o  The default auth level for authenticated binds has changed from
+   DCERPC_AUTH_LEVEL_CONNECT to DCERPC_AUTH_LEVEL_INTEGRITY.
+   That means ncacn_ip_tcp:server is now implicitly the same
+   as ncacn_ip_tcp:server[sign] and offers a similar protection
+   as ncacn_np:server, which relies on smb signing.
+
+o  The following constraints are applied to SMB1 connections:
+
+   - "client lanman auth = yes" is now consistently
+     required for authenticated connections using the
+     SMB1 LANMAN2 dialect.
+   - "client ntlmv2 auth = yes" and "client use spnego = yes"
+     (both the default values), require extended security (SPNEGO)
+     support from the server. That means NTLMv2 is only used within
+     NTLMSSP.
+
+o  Tools like "samba-tool", "ldbsearch", "ldbedit" and more obey the
+   default of "client ldap sasl wrapping = sign". Even with
+   "client ldap sasl wrapping = plain" they will automatically upgrade
+   to "sign" when getting LDAP_STRONG_AUTH_REQUIRED from the LDAP
+   server.
+
+Changes since 4.4.0:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * Bug 11344 - CVE-2015-5370: Multiple errors in DCE-RPC code.
+
+o  Christian Ambach <ambi@samba.org>
+   * Bug 11804 - prerequisite backports for the security release on
+     April 12th, 2016.
+
+o  Ralph Boehme <slow@samba.org>
+   * Bug 11644 - CVE-2016-2112: The LDAP client and server don't enforce
+     integrity protection.
+
+o  Günther Deschner <gd@samba.org>
+   * Bug 11749 - CVE-2016-2111: NETLOGON Spoofing Vulnerability.
+
+   * Bug 11804 - prerequisite backports for the security release on
+     April 12th, 2016.
+
+o  Volker Lendecke <vl@samba.org>
+   * Bug 11804 - prerequisite backports for the security release on
+     April 12th, 2016.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * Bug 11344 - CVE-2015-5370: Multiple errors in DCE-RPC code.
+
+   * Bug 11616 - CVE-2016-2118: SAMR and LSA man in the middle attacks possible.
+
+   * Bug 11644 - CVE-2016-2112: The LDAP client and server doesn't enforce
+     integrity protection.
+
+   * Bug 11687 - CVE-2016-2114: "server signing = mandatory" not enforced.
+
+   * Bug 11688 - CVE-2016-2110: Man in the middle attacks possible with NTLMSSP.
+
+   * Bug 11749 - CVE-2016-2111: NETLOGON Spoofing Vulnerability.
+
+   * Bug 11752 - CVE-2016-2113: Missing TLS certificate validation allows man in
+     the middle attacks.
+
+   * Bug 11756 - CVE-2016-2115: SMB client connections for IPC traffic are not
+     integrity protected.
+
+   * Bug 11804 - prerequisite backports for the security release on
+     April 12th, 2016.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
 Release Announcements
 =====================
 
