@@ -44,6 +44,7 @@
 #include "lib/tevent/tevent_internal.h"
 #include "smbd/globals.h"
 #include "lib/util/sys_rw.h"
+#include "smbprofile.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
 
@@ -527,7 +528,7 @@ static void aio_glusterfs_done(glfs_fd_t *fd, ssize_t ret, void *data)
 
 	state = (struct glusterfs_aio_state *)data;
 
-	clock_gettime_mono(&end);
+	PROFILE_TIMESTAMP(&end);
 
 	if (ret < 0) {
 		state->ret = -1;
@@ -695,7 +696,7 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 		return tevent_req_post(req, ev);
 	}
 
-	clock_gettime_mono(&state->start);
+	PROFILE_TIMESTAMP(&state->start);
 	ret = glfs_pread_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), data, n, offset, 0, aio_glusterfs_done,
 				state);
@@ -731,7 +732,7 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 		return tevent_req_post(req, ev);
 	}
 
-	clock_gettime_mono(&state->start);
+	PROFILE_TIMESTAMP(&state->start);
 	ret = glfs_pwrite_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), data, n, offset, 0, aio_glusterfs_done,
 				state);
@@ -845,7 +846,7 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 		return tevent_req_post(req, ev);
 	}
 
-	clock_gettime_mono(&state->start);
+	PROFILE_TIMESTAMP(&state->start);
 	ret = glfs_fsync_async(*(glfs_fd_t **)VFS_FETCH_FSP_EXTENSION(handle,
 				fsp), aio_glusterfs_done, req);
 	if (ret < 0) {
