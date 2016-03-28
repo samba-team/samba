@@ -618,8 +618,9 @@ static inline void smbprofile_cleanup(pid_t pid, pid_t dst)
 #endif /* WITH_PROFILE */
 
 /* The following definitions come from profile/profile.c  */
+struct server_id;
 
-void set_profile_level(int level, struct server_id src);
+void set_profile_level(int level, const struct server_id *src);
 
 struct messaging_context;
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly);

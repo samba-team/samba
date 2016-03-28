@@ -39,7 +39,7 @@ struct smbprofile_global_state smbprofile_state;
 /****************************************************************************
 Set a profiling level.
 ****************************************************************************/
-void set_profile_level(int level, struct server_id src)
+void set_profile_level(int level, const struct server_id *src)
 {
 	SMB_ASSERT(smbprofile_state.internal.db != NULL);
 
@@ -48,25 +48,25 @@ void set_profile_level(int level, struct server_id src)
 		smbprofile_state.config.do_count = false;
 		smbprofile_state.config.do_times = false;
 		DEBUG(1,("INFO: Profiling turned OFF from pid %d\n",
-			 (int)procid_to_pid(&src)));
+			 (int)procid_to_pid(src)));
 		break;
 	case 1:		/* turn on counter profiling only */
 		smbprofile_state.config.do_count = true;
 		smbprofile_state.config.do_times = false;
 		DEBUG(1,("INFO: Profiling counts turned ON from pid %d\n",
-			 (int)procid_to_pid(&src)));
+			 (int)procid_to_pid(src)));
 		break;
 	case 2:		/* turn on complete profiling */
 		smbprofile_state.config.do_count = true;
 		smbprofile_state.config.do_times = true;
 		DEBUG(1,("INFO: Full profiling turned ON from pid %d\n",
-			 (int)procid_to_pid(&src)));
+			 (int)procid_to_pid(src)));
 		break;
 	case 3:		/* reset profile values */
 		ZERO_STRUCT(profile_p->values);
 		tdb_wipe_all(smbprofile_state.internal.db->tdb);
 		DEBUG(1,("INFO: Profiling values cleared from pid %d\n",
-			 (int)procid_to_pid(&src)));
+			 (int)procid_to_pid(src)));
 		break;
 	}
 }
@@ -88,7 +88,7 @@ static void profile_message(struct messaging_context *msg_ctx,
 	}
 
 	memcpy(&level, data->data, sizeof(level));
-	set_profile_level(level, src);
+	set_profile_level(level, &src);
 }
 
 /****************************************************************************

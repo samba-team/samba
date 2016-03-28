@@ -1192,6 +1192,7 @@ extern void build_options(bool screen);
 	int opt;
 	poptContext pc;
 	bool print_build_options = False;
+	struct server_id main_server_id = {0};
         enum {
 		OPT_DAEMON = 1000,
 		OPT_INTERACTIVE,
@@ -1444,7 +1445,8 @@ extern void build_options(bool screen);
 	} else {
 		profiling_level = lp_smbd_profiling_level();
 	}
-	set_profile_level(profiling_level, messaging_server_id(msg_ctx));
+	main_server_id = messaging_server_id(msg_ctx);
+	set_profile_level(profiling_level, &main_server_id);
 
 	if (!is_daemon && !is_a_socket(0)) {
 		if (!interactive) {
