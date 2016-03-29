@@ -53,14 +53,6 @@ static uint64_t limit_unix2nt(uint64_t in, uint64_t bsize)
 
 	ret = (uint64_t)(in*bsize);
 	
-	if (ret < in) {
-		/* we overflow */
-		ret = SMB_NTQUOTAS_NO_LIMIT;
-	}
-
-	if (in == SMB_QUOTAS_NO_LIMIT)
-		ret = SMB_NTQUOTAS_NO_LIMIT;
-
 	return ret;
 }
 
