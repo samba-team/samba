@@ -482,7 +482,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 			return WERR_OK;
 		}
 	}
-	la->attid = sa->attributeID_id;
+	la->attid = dsdb_attribute_get_attid(sa, false);
 	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;
 
 	status = dsdb_get_extended_dn_uint32(dsdb_dn->dn, &la->meta_data.version, "RMD_VERSION");
