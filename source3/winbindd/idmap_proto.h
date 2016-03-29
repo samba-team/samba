@@ -63,4 +63,6 @@ struct id_map **id_map_ptrs_init(TALLOC_CTX *mem_ctx, size_t num_ids);
 /* max number of ids requested per LDAP batch query */
 #define IDMAP_LDAP_MAX_IDS 30
 
+NTSTATUS idmap_ad_nss_init(void);
+
 #endif /* _WINBINDD_IDMAP_PROTO_H_ */

@@ -20,7 +20,7 @@ bld.SAMBA3_SUBSYSTEM('IDMAP_HASH',
                     enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_hash'))
 
 bld.SAMBA3_SUBSYSTEM('IDMAP_AD',
-                    source='idmap_ad.c',
+                    source='idmap_ad.c idmap_ad_nss.c',
                     deps='ads nss_info',
                     enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad'))
 
