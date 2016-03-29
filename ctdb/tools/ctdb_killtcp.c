@@ -268,13 +268,13 @@ static int ctdb_killtcp(struct tevent_context *ev,
 		killtcp->connections = trbt_create(killtcp, 0);
 
 		killtcp->attempts = 0;
-		killtcp->max_attempts = 5;
+		killtcp->max_attempts = 50;
 
-		killtcp->retry_interval.tv_sec = 1;
-		killtcp->retry_interval.tv_usec = 0;
+		killtcp->retry_interval.tv_sec = 0;
+		killtcp->retry_interval.tv_usec = 100 * 1000;
 
 		killtcp->batch_count = 0;
-		killtcp->batch_size = UINT_MAX;
+		killtcp->batch_size = 300;
 
 		*killtcp_arg = killtcp;
 	}
