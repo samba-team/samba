@@ -289,19 +289,7 @@ static int ctdb_killtcp(struct tevent_context *ev,
 					     TEVENT_FD_READ,
 					     capture_tcp_handler, killtcp);
 		tevent_fd_set_auto_close(killtcp->fde);
-
-		/* We also need to set up some events to tickle all these connections
-		   until they are all reset
-		*/
-		tevent_add_timer(ev, killtcp, tevent_timeval_current_ofs(1, 0),
-				 ctdb_tickle_sentenced_connections, killtcp);
 	}
-
-	/* tickle him once now */
-	ctdb_sys_send_tcp(
-		&con->dst_addr,
-		&con->src_addr,
-		0, 0, 0);
 
 	return 0;
 }
@@ -391,6 +379,11 @@ int main(int argc, char **argv)
 	done = false;
 	killtcp->destructor_data = &done;
 	talloc_set_destructor(killtcp, ctdb_killtcp_destructor);
+
+	/* Do the initial processing of connections */
+	tevent_add_timer(ev, killtcp,
+			 tevent_timeval_current_ofs(0, 0),
+			 ctdb_tickle_sentenced_connections, killtcp);
 
 	while (!done) {
 		tevent_loop_once(ev);
