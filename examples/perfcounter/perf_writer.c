@@ -77,7 +77,7 @@ void output_perf_desc(PerfCounter counter, RuntimeSettings rt)
 void initialize(PERF_DATA_BLOCK *data, RuntimeSettings *rt, int argc, char **argv)
 {
     memset(data, 0, sizeof(*data));
-    memset(rt, 0, sizeof(*data));
+    memset(rt, 0, sizeof(*rt));
 
     parse_flags(rt, argc, argv);
     setup_file_paths(rt);
