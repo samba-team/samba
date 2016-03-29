@@ -137,7 +137,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	}
 
 	/* 
-	   OK.  listen up becasue I'm only going to say this once.
+	   OK.  Listen up because I'm only going to say this once.
 	   We have the following scenarios to consider
 	   (a) trusted AD domains on a Samba DC,
 	   (b) trusted AD domains and we are joined to a non-kerberos domain
