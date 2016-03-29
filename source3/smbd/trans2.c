@@ -3712,9 +3712,11 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			if (vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
+			status = vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE,
+						 NULL, &quotas);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(talloc_tos(), SNUM(conn))));
-				return map_nt_error_from_unix(errno);
+				return status;
 			}
 
 			data_len = 48;

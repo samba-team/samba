@@ -600,7 +600,8 @@ NTSTATUS notify_walk(struct notify_context *notify,
 
 /* The following definitions come from smbd/ntquotas.c  */
 
-int vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt);
+NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
+			 struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt);
 int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt);
 int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list);
 void *init_quota_handle(TALLOC_CTX *mem_ctx);
