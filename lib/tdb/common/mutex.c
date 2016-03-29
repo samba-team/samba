@@ -766,8 +766,8 @@ static void tdb_robust_mutex_handler(int sig)
 
 _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 {
-	void *ptr;
-	pthread_mutex_t *m;
+	void *ptr = NULL;
+	pthread_mutex_t *m = NULL;
 	pthread_mutexattr_t ma;
 	int ret = 1;
 	int pipe_down[2] = { -1, -1 };
@@ -777,6 +777,8 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	bool ok;
 	static bool initialized;
 	sigset_t mask, old_mask, suspend_mask;
+	bool cleanup_ma = false;
+	bool cleanup_sigmask = false;
 
 	if (initialized) {
 		return tdb_mutex_locking_cached;
@@ -796,37 +798,38 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	if (ptr == MAP_FAILED) {
 		return false;
 	}
-	m = (pthread_mutex_t *)ptr;
 
 	ret = pipe(pipe_down);
 	if (ret != 0) {
-		goto cleanup_mmap;
+		goto cleanup;
 	}
 	ret = pipe(pipe_up);
 	if (ret != 0) {
-		goto cleanup_pipe;
+		goto cleanup;
 	}
 
 	ret = pthread_mutexattr_init(&ma);
 	if (ret != 0) {
-		goto cleanup_pipe;
+		goto cleanup;
 	}
+	cleanup_ma = true;
 	ret = pthread_mutexattr_settype(&ma, PTHREAD_MUTEX_ERRORCHECK);
 	if (ret != 0) {
-		goto cleanup_ma;
+		goto cleanup;
 	}
 	ret = pthread_mutexattr_setpshared(&ma, PTHREAD_PROCESS_SHARED);
 	if (ret != 0) {
-		goto cleanup_ma;
+		goto cleanup;
 	}
 	ret = pthread_mutexattr_setrobust(&ma, PTHREAD_MUTEX_ROBUST);
 	if (ret != 0) {
-		goto cleanup_ma;
+		goto cleanup;
 	}
-	ret = pthread_mutex_init(m, &ma);
+	ret = pthread_mutex_init(ptr, &ma);
 	if (ret != 0) {
-		goto cleanup_ma;
+		goto cleanup;
 	}
+	m = (pthread_mutex_t *)ptr;
 
 	/*
 	 * Block SIGCHLD so we can atomically wait for it later with
@@ -836,14 +839,15 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	sigaddset(&mask, SIGCHLD);
 	ret = pthread_sigmask(SIG_BLOCK, &mask, &old_mask);
 	if (ret != 0) {
-		goto cleanup_m;
+		goto cleanup;
 	}
+	cleanup_sigmask = true;
 	suspend_mask = old_mask;
 	sigdelset(&suspend_mask, SIGCHLD);
 
 	if (tdb_robust_mutex_setup_sigchild(tdb_robust_mutex_handler,
 			&tdb_robust_mutext_old_handler) == false) {
-		goto cleanup_sigmask;
+		goto cleanup;
 	}
 
 	tdb_robust_mutex_pid = fork();
@@ -867,7 +871,7 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 		_exit(0);
 	}
 	if (tdb_robust_mutex_pid == -1) {
-		goto cleanup_sig_child;
+		goto cleanup;
 	}
 	close(pipe_down[0]);
 	pipe_down[0] = -1;
@@ -876,7 +880,7 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 
 	nread = read(pipe_up[0], &ret, sizeof(ret));
 	if (nread != sizeof(ret)) {
-		goto cleanup_child;
+		goto cleanup;
 	}
 
 	ret = pthread_mutex_trylock(m);
@@ -884,16 +888,16 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 		if (ret == 0) {
 			pthread_mutex_unlock(m);
 		}
-		goto cleanup_child;
+		goto cleanup;
 	}
 
 	if (write(pipe_down[1], &c, 1) != 1) {
-		goto cleanup_child;
+		goto cleanup;
 	}
 
 	nread = read(pipe_up[0], &c, 1);
 	if (nread != 0) {
-		goto cleanup_child;
+		goto cleanup;
 	}
 
 	while (tdb_robust_mutex_pid > 0) {
@@ -903,35 +907,35 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 		}
 	}
 	tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler, NULL);
+	tdb_robust_mutext_old_handler = SIG_ERR;
 
 	ret = pthread_mutex_trylock(m);
 	if (ret != EOWNERDEAD) {
 		if (ret == 0) {
 			pthread_mutex_unlock(m);
 		}
-		goto cleanup_sigmask;
+		goto cleanup;
 	}
 
 	ret = pthread_mutex_consistent(m);
 	if (ret != 0) {
-		goto cleanup_sigmask;
+		goto cleanup;
 	}
 
 	ret = pthread_mutex_trylock(m);
 	if (ret != EDEADLK) {
 		pthread_mutex_unlock(m);
-		goto cleanup_sigmask;
+		goto cleanup;
 	}
 
 	ret = pthread_mutex_unlock(m);
 	if (ret != 0) {
-		goto cleanup_sigmask;
+		goto cleanup;
 	}
 
 	tdb_mutex_locking_cached = true;
-	goto cleanup_sigmask;
 
-cleanup_child:
+cleanup:
 	while (tdb_robust_mutex_pid > 0) {
 		kill(tdb_robust_mutex_pid, SIGKILL);
 		ret = sigsuspend(&suspend_mask);
@@ -940,18 +944,21 @@ cleanup_child:
 		}
 	}
 
-cleanup_sig_child:
-	tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler, NULL);
-cleanup_sigmask:
-	ret = pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
-	if (ret != 0) {
-		abort();
+	if (tdb_robust_mutext_old_handler != SIG_ERR) {
+		tdb_robust_mutex_setup_sigchild(tdb_robust_mutext_old_handler, NULL);
 	}
-cleanup_m:
-	pthread_mutex_destroy(m);
-cleanup_ma:
-	pthread_mutexattr_destroy(&ma);
-cleanup_pipe:
+	if (cleanup_sigmask) {
+		ret = pthread_sigmask(SIG_SETMASK, &old_mask, NULL);
+		if (ret != 0) {
+			abort();
+		}
+	}
+	if (m != NULL) {
+		pthread_mutex_destroy(m);
+	}
+	if (cleanup_ma) {
+		pthread_mutexattr_destroy(&ma);
+	}
 	if (pipe_down[0] != -1) {
 		close(pipe_down[0]);
 	}
@@ -964,8 +971,9 @@ cleanup_pipe:
 	if (pipe_up[1] != -1) {
 		close(pipe_up[1]);
 	}
-cleanup_mmap:
-	munmap(ptr, sizeof(pthread_mutex_t));
+	if (ptr != NULL) {
+		munmap(ptr, sizeof(pthread_mutex_t));
+	}
 
 	return tdb_mutex_locking_cached;
 }
