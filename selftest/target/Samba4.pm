@@ -1455,8 +1455,6 @@ sub provision_fl2003dc($$$)
 		return undef;
 	}
 
-        return $ret;
-
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;
