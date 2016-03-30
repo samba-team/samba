@@ -189,6 +189,11 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 		status =
 		    vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &tmp_qt);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5, ("failed getting quota for uid[%ld] - %s\n",
+				  (long)usr->pw_uid, nt_errstr(status)));
+			continue;
+		}
+		if (tmp_qt.softlim == 0 && tmp_qt.hardlim == 0) {
 			DEBUG(5,("no quota entry for sid[%s] path[%s]\n",
 				 sid_string_dbg(&sid),
 				 fsp->conn->connectpath));
