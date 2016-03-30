@@ -90,16 +90,28 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
 				path, bdev, (unsigned)id.uid));
 
-			if ((ret=quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D)))
+			ret=quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D);
+			/* XFS fails with ENOENT if the user has no
+			 * quota. Our protocol in that case is to
+			 * succeed and return 0 as quota.
+			 */
+			if (ret != 0 && errno != ENOENT) {
 				return ret;
+			}
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
 			DEBUG(10,("sys_get_xfs_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
 				path, bdev, (unsigned)id.gid));
 
-			if ((ret=quotactl(QCMD(Q_XGETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D)))
+			ret=quotactl(QCMD(Q_XGETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D);
+			/* XFS fails with ENOENT if the user has no
+			 * quota. Our protocol in that case is to
+			 * succeed and return 0 as quota.
+			 */
+			if (ret != 0 && errno != ENOENT) {
 				return ret;
+			}
 			break;
 #endif /* HAVE_GROUP_QUOTA */
 		case SMB_USER_FS_QUOTA_TYPE:
