@@ -180,8 +180,20 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 			      timeout);
 
 	if (clnt_stat != RPC_SUCCESS) {
-		DEBUG(3, ("sys_get_nfs_quotas: clnt_call failed\n"));
-		ret = -1;
+		if (errno == ECONNREFUSED) {
+			/* If we cannot connect with rpc.quotad, it may
+			 * simply be because there's no quota on the remote
+			 * system
+			 */
+			DBG_INFO("clnt_call failed with ECONNREFUSED - "
+				 "assuming no quotas on server\n");
+			ret = 0;
+		} else {
+			int save_errno = errno;
+			DBG_NOTICE("clnt_call failed - %s\n", strerror(errno));
+			errno = save_errno;
+			ret = -1;
+		}
 		goto out;
 	}
 
