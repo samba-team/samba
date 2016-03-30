@@ -2512,12 +2512,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			nt_status = vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE,
 						    &sid, &qt);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				ZERO_STRUCT(qt);
-				/*
-				 * we have to return zero's in all fields
-				 * instead of returning an error here
-				 * --metze
-				 */
+				reply_nterror(req, nt_status);
 			}
 
 			/* Realloc the size of parameters and data we will return */
