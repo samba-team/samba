@@ -236,7 +236,7 @@ static const char *quota_str_static(uint64_t val, bool special, bool _numeric)
 {
 	const char *result;
 
-	if (!_numeric&&special&&(val == SMB_NTQUOTAS_NO_LIMIT)) {
+	if (!_numeric && special && val == 0) {
 		return "NO LIMIT";
 	}
 	result = talloc_asprintf(talloc_tos(), "%"PRIu64, val);
