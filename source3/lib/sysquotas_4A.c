@@ -104,13 +104,7 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				return ret;
 			}
 
-			if ((D.dqb_curblocks==0)&&
-				(D.dqb_bsoftlimit==0)&&
-				(D.dqb_bhardlimit==0)) {
-				/* the upper layer functions don't want empty quota records...*/
-				return -1;
-			}
-
+			ret = 0;
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
@@ -121,13 +115,7 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 				return ret;
 			}
 
-			if ((D.dqb_curblocks==0)&&
-				(D.dqb_bsoftlimit==0)&&
-				(D.dqb_bhardlimit==0)) {
-				/* the upper layer functions don't want empty quota records...*/
-				return -1;
-			}
-
+			ret = 0;
 			break;
 #endif /* HAVE_GROUP_QUOTA */
 		case SMB_USER_FS_QUOTA_TYPE:

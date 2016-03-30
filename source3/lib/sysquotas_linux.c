@@ -447,14 +447,7 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 					}
 				}
 			}
-
-			if ((dp->curblocks==0)&&
-				(dp->softlimit==0)&&
-				(dp->hardlimit==0)) {
-				/* the upper layer functions don't want empty quota records...*/
-				return -1;
-			}
-
+			ret = 0;
 			break;
 		case SMB_USER_FS_QUOTA_TYPE:
 			id.uid = getuid();
