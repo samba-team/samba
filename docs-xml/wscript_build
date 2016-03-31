@@ -15,6 +15,7 @@ manpages='''
          manpages/idmap_nss.8
          manpages/idmap_rfc2307.8
          manpages/idmap_rid.8
+         manpages/idmap_script.8
          manpages/idmap_tdb.8
          manpages/idmap_tdb2.8
          manpages/net.8
