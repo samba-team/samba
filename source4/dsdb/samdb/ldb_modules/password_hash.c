@@ -2106,10 +2106,11 @@ done:
 
 static int check_password_restrictions(struct setup_password_fields_io *io)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	int ret;
-
-	ldb = ldb_module_get_ctx(io->ac->module);
+	struct loadparm_context *lp_ctx =
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
 
 	if (!io->ac->update_password) {
 		return LDB_SUCCESS;
@@ -2175,7 +2176,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	 */
 	if (io->n.cleartext_utf8 != NULL) {
 		enum samr_ValidationStatus vstat;
-		vstat = samdb_check_password(io->n.cleartext_utf8,
+		vstat = samdb_check_password(io->ac, lp_ctx,
+					     io->n.cleartext_utf8,
 					     io->ac->status->domain_data.pwdProperties,
 					     io->ac->status->domain_data.minPwdLength);
 		switch (vstat) {

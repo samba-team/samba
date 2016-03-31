@@ -4400,7 +4400,9 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 	case NetValidatePasswordChange:
 		password = data_blob_const(r->in.req->req2.password.string,
 					   r->in.req->req2.password.length);
-		res = samdb_check_password(&password,
+		res = samdb_check_password(mem_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   &password,
 					   pwInfo.password_properties,
 					   pwInfo.min_password_length);
 		(*r->out.rep)->ctr2.status = res;
@@ -4408,7 +4410,9 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 	case NetValidatePasswordReset:
 		password = data_blob_const(r->in.req->req3.password.string,
 					   r->in.req->req3.password.length);
-		res = samdb_check_password(&password,
+		res = samdb_check_password(mem_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   &password,
 					   pwInfo.password_properties,
 					   pwInfo.min_password_length);
 		(*r->out.rep)->ctr3.status = res;

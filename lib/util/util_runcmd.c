@@ -27,20 +27,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
-#include <tevent.h>
 #include "../lib/util/tevent_unix.h"
-
-struct samba_runcmd_state {
-	int stdout_log_level;
-	int stderr_log_level;
-	struct tevent_fd *fde_stdout;
-	struct tevent_fd *fde_stderr;
-	int fd_stdin, fd_stdout, fd_stderr;
-	char *arg0;
-	pid_t pid;
-	char buf[1024];
-	uint16_t buf_used;
-};
+#include "../lib/util/util_runcmd.h"
 
 static int samba_runcmd_state_destructor(struct samba_runcmd_state *state)
 {

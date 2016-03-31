@@ -44,6 +44,7 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/irpc.h"
 #include "libds/common/flag_mapping.h"
+#include "../lib/util/util_runcmd.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -1988,12 +1989,15 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  *
  * Result codes from "enum samr_ValidationStatus" (consider "samr.idl")
  */
-enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *utf8_blob,
+enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
+						struct loadparm_context *lp_ctx,
+						const DATA_BLOB *utf8_blob,
 						const uint32_t pwdProperties,
 						const uint32_t minPwdLength)
 {
 	const char *utf8_pw = (const char *)utf8_blob->data;
 	size_t utf8_len = strlen_m(utf8_pw);
+	char *password_script = NULL;
 
 	/* checks if the "minPwdLength" property is satisfied */
 	if (minPwdLength > utf8_len) {
@@ -2008,6 +2012,61 @@ enum samr_ValidationStatus samdb_check_password(const DATA_BLOB *utf8_blob,
 	if (utf8_len == 0) {
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 	}
+
+	password_script = lpcfg_check_password_script(lp_ctx, mem_ctx);
+	if (password_script != NULL && *password_script != '\0') {
+		int check_ret = 0;
+		int error = 0;
+		struct tevent_context *event_ctx = NULL;
+		struct tevent_req *req = NULL;
+		struct samba_runcmd_state *run_cmd = NULL;
+		const char * const cmd[4] = {
+			"/bin/sh", "-c",
+			password_script,
+			NULL
+		};
+
+		event_ctx = tevent_context_init(mem_ctx);
+		if (event_ctx == NULL) {
+			TALLOC_FREE(password_script);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+
+		req = samba_runcmd_send(mem_ctx, event_ctx,
+					tevent_timeval_current_ofs(0, 10000000),
+					100, 100, cmd, NULL);
+		run_cmd = tevent_req_data(req, struct samba_runcmd_state);
+		if (write(run_cmd->fd_stdin, utf8_pw, utf8_len) != utf8_len) {
+			TALLOC_FREE(password_script);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+
+		close(run_cmd->fd_stdin);
+		run_cmd->fd_stdin = -1;
+
+		if (!tevent_req_poll(req, event_ctx)) {
+			TALLOC_FREE(password_script);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+
+		check_ret = samba_runcmd_recv(req, &error);
+		TALLOC_FREE(req);
+
+		DEBUG(5,("check_password_complexity: check password script (%s) "
+			 "returned [%d]\n", password_script, check_ret));
+		TALLOC_FREE(password_script);
+
+		if (check_ret != 0) {
+			DEBUG(1,("check_password_complexity: "
+				 "check password script said new password is not good "
+				 "enough!\n"));
+			return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+		}
+
+		return SAMR_VALIDATION_STATUS_SUCCESS;
+	}
+
+	TALLOC_FREE(password_script);
 
 	if (!check_password_quality(utf8_pw)) {
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
