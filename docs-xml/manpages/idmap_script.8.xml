@@ -148,6 +148,24 @@
 	look up the mapping in a table or use some other mechanism for
 	mapping SIDs to UIDs and etc.
 	</para>
+
+	<para>
+	  Please be aware that the script is called with the
+	  _NO_WINBINDD environment variable set to 1. This prevents
+	  recursive calls into winbind from the script both via
+	  explicit calls to wbinfo and via implicit calls via
+	  nss_winbind. For example a call to <command>ls -l</command>
+	  could trigger such an infinite recursion.
+	</para>
+
+	<para>
+	  It is safe to call <command>wbinfo -n</command> and
+	  <command>wbinfo -s</command> from within an idmap script. To
+	  do so, the script must unset the _NO_WINBINDD environment
+	  variable right before the call to <command>wbinfo</command>
+	  and set it to 1 again right after <command>wbinfo</command>
+	  has returned to protect against the recursion.
+	</para>
 </refsect1>
 
 <refsect1>
