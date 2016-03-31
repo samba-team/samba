@@ -940,7 +940,7 @@ class cmd_domain_demote(Command):
             else:
                 raise CommandError("Error while sending a removeDsServer of %s: " % server_dsa_dn, e)
 
-        remove_dc.remove_sysvol_references(remote_samdb, dc_name)
+        remove_dc.remove_sysvol_references(remote_samdb, logger, dc_name)
 
         # These are objects under the computer account that should be deleted
         for s in ("CN=Enterprise,CN=NTFRS Subscriptions",
