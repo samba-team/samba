@@ -71,6 +71,8 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 
 	pid = fork();
 	if (pid == -1) {
+		DEBUG(DEBUG_ERR,
+		      (__location__ " fork() failed (%s)\n", strerror(errno)));
 		return -1;
 	}
 	if (pid == 0) {
