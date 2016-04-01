@@ -335,12 +335,12 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 	} else if ((srvid & prefix) == CTDB_SRVID_ISCSID_RANGE) {
 		srvid &= ~CTDB_SRVID_ISCSID_RANGE;
 		fprintf(fp, "iscsi-0x%"PRIx64"", srvid);
+	} else if ((srvid & prefix) == CTDB_SRVID_TOOL_RANGE) {
+		srvid &= ~CTDB_SRVID_TOOL_RANGE;
+		fprintf(fp, "tool-0x%"PRIx64"", srvid);
 	} else if ((srvid & prefix) == CTDB_SRVID_TEST_RANGE) {
 		srvid &= ~CTDB_SRVID_TEST_RANGE;
 		fprintf(fp, "test-0x%"PRIx64"", srvid);
-	} else if ((srvid & prefix) == CTDB_SRVID_TRAVERSE_RANGE) {
-		srvid &= ~CTDB_SRVID_TRAVERSE_RANGE;
-		fprintf(fp, "traverse-0x%"PRIx64"", srvid);
 	} else if ((srvid & prefix) == CTDB_SRVID_PID_RANGE) {
 		if (srvid < UINT16_MAX) {
 			fprintf(fp, "pid-%"PRIu64, srvid);

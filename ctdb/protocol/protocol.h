@@ -206,14 +206,17 @@ struct ctdb_call {
  */
 #define CTDB_SRVID_ISCSID_RANGE  0xDE00000000000000LL
 
-/* A range of ports reserved for testing (top 8 bits)
+/* A range of ports reserved for CTDB tool (top 8 bits)
+ * All ports matching the 8 top bits are reserved for exclusive use by
+ * CTDB tool
+ */
+#define CTDB_SRVID_TOOL_RANGE  0xCE00000000000000LL
+
+/* Range of ports reserved for test applications (top 8 bits)
  * All ports matching the 8 top bits are reserved for exclusive use by
  * test applications
  */
-#define CTDB_SRVID_TEST_RANGE  0xCE00000000000000LL
-
-/* Range of ports reserved for traversals */
-#define CTDB_SRVID_TRAVERSE_RANGE  0xBE00000000000000LL
+#define CTDB_SRVID_TEST_RANGE  0xBE00000000000000LL
 
 
 enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
