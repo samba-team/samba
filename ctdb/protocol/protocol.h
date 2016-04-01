@@ -118,9 +118,6 @@ struct ctdb_call {
 /* SRVID to catch all messages */
 #define CTDB_SRVID_ALL (~(uint64_t)0)
 
-/* SRVID prefix used by CTDB */
-#define CTDB_SRVID_PREFIX	0xF000000000000000LL
-
 /* SRVID prefix used during recovery for pulling and pushing databases */
 #define CTDB_SRVID_RECOVERY	0xF001000000000000LL
 
