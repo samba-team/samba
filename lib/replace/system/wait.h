@@ -49,7 +49,7 @@ typedef int sig_atomic_t;
 #endif
 
 #if !defined(HAVE_WAITPID) && defined(HAVE_WAIT4)
-int rep_waitpid(pid_t pid,int *status,int options)
+int rep_waitpid(pid_t pid,int *status,int options);
 #endif
 
 #endif
