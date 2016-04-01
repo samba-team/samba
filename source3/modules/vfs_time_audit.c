@@ -2724,6 +2724,8 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 NTSTATUS vfs_time_audit_init(void);
 NTSTATUS vfs_time_audit_init(void)
 {
+	smb_vfs_assert_all_fns(&vfs_time_audit_fns, "time_audit");
+
 	audit_timeout = (double)lp_parm_int(-1, "time_audit", "timeout",
 					    10000) / 1000.0;
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "time_audit",
