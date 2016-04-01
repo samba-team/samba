@@ -548,7 +548,7 @@ sub setup_simpleserver($$)
 
 	my $simpleserver_options = "
 	lanman auth = yes
-	vfs objects = xattr_tdb streams_depot
+	vfs objects = xattr_tdb streams_depot time_audit full_audit
 	change notify = no
 
 [vfs_aio_fork]
