@@ -2587,9 +2587,13 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 static_decl_vfs;
 NTSTATUS vfs_full_audit_init(void)
 {
-	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
-					"full_audit", &vfs_full_audit_fns);
-	
+	NTSTATUS ret;
+
+	smb_vfs_assert_all_fns(&vfs_full_audit_fns, "full_audit");
+
+	ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "full_audit",
+			       &vfs_full_audit_fns);
+
 	if (!NT_STATUS_IS_OK(ret))
 		return ret;
 
