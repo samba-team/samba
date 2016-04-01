@@ -167,7 +167,7 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 		memcpy(res, digest, 16);
 	}
 
-	if (memcmp(res, sig, 16) != 0) {
+	if (memcmp_const_time(res, sig, 16) != 0) {
 		DEBUG(0,("Bad SMB2 signature for message\n"));
 		dump_data(0, sig, 16);
 		dump_data(0, res, 16);
