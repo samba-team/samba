@@ -316,6 +316,36 @@ void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
 
 #undef EXT_DATA_AREA
 
+/*
+ * Ensure this module catches all VFS functions.
+ */
+#ifdef DEVELOPER
+void smb_vfs_assert_all_fns(const struct vfs_fn_pointers* fns,
+			    const char *module)
+{
+	bool missing_fn = false;
+	unsigned int idx;
+	const uintptr_t *end = (const uintptr_t *)(fns + 1);
+
+	for (idx = 0; ((const uintptr_t *)fns + idx) < end; idx++) {
+		if (*((const uintptr_t *)fns + idx) == 0) {
+			DBG_ERR("VFS function at index %d not implemented "
+				"in module %s\n", idx, module);
+			missing_fn = true;
+		}
+	}
+
+	if (missing_fn) {
+		smb_panic("Required VFS function not implemented in module.\n");
+	}
+}
+#else
+void smb_vfs_assert_all_fns(const struct vfs_fn_pointers* fns,
+			    const char *module)
+{
+}
+#endif
+
 /*****************************************************************
  Generic VFS init.
 ******************************************************************/
