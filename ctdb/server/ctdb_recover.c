@@ -800,7 +800,7 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 {
 	struct ctdb_cluster_mutex_handle *h=
 		talloc_get_type(private_data, struct ctdb_cluster_mutex_handle);
-	char c = 0;
+	char c = '0';
 	int ret;
 	int status = 0;
 	const char *err = NULL;
@@ -813,14 +813,14 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 
 	ret = sys_read(h->fd[0], &c, 1);
 	if (ret == 1) {
-		/* Child wrote status. EACCES indicates that it was unable
+		/* Child wrote status. '1' indicates that it was unable
 		 * to take the lock, which is the expected outcome.
-		 * 0 indicates that it was able to take the
+		 * '0' indicates that it was able to take the
 		 * lock, which is an error because the recovery daemon
 		 * should be holding the lock. */
 		double l = timeval_elapsed(&h->start_time);
 
-		if (c == EACCES) {
+		if (c == '1') {
 			status = 0;
 			err = NULL;
 
@@ -974,7 +974,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 	if (h->child == 0) {
-		char cc = EACCES;
+		char cc = '1';
 		close(h->fd[0]);
 
 		prctl_set_comment("ctdb_recmode");
@@ -986,7 +986,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 			      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
 			       ctdb->recovery_lock_file));
 			ctdb_recovery_unlock(ctdb);
-			cc = 0;
+			cc = '0';
 		}
 
 		sys_write(h->fd[1], &cc, 1);
