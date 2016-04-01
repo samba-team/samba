@@ -1164,7 +1164,7 @@ static bool check_access_snapdir(struct vfs_handle_struct *handle,
 					&smb_fname,
 					false,
 					SEC_DIR_LIST);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (status == NT_STATUS_ACCESS_DENIED) {
 		DEBUG(0,("user does not have list permission "
 			"on snapdir %s\n",
 			smb_fname.base_name));
