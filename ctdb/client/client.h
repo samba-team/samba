@@ -92,6 +92,13 @@ int ctdb_client_message(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			uint32_t destnode, struct ctdb_req_message *message);
 
+int ctdb_client_message_multi(TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      uint32_t *pnn_list, int count,
+			      struct ctdb_req_message *message,
+			      int **perr_list);
+
 struct tevent_req *ctdb_client_set_message_handler_send(
 					TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,

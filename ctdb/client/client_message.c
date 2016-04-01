@@ -331,6 +331,34 @@ int ctdb_client_message(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
+int ctdb_client_message_multi(TALLOC_CTX *mem_ctx,
+			      struct tevent_context *ev,
+			      struct ctdb_client_context *client,
+			      uint32_t *pnn_list, int count,
+			      struct ctdb_req_message *message,
+			      int **perr_list)
+{
+	struct tevent_req *req;
+	bool status;
+	int ret;
+
+	req = ctdb_client_message_multi_send(mem_ctx, ev, client,
+					     pnn_list, count,
+					     message);
+	if (req == NULL) {
+		return ENOMEM;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_client_message_multi_recv(req, &ret, mem_ctx, perr_list);
+	if (! status) {
+		return ret;
+	}
+
+	return 0;
+}
+
 struct ctdb_client_set_message_handler_state {
 	struct ctdb_client_context *client;
 	uint64_t srvid;
