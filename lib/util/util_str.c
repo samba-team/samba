@@ -333,3 +333,15 @@ _PUBLIC_ size_t utf16_len_n(const void *src, size_t n)
 
 	return len;
 }
+
+_PUBLIC_ int memcmp_const_time(const void *s1, const void *s2, size_t n)
+{
+	const uint8_t *p1 = s1, *p2 = s2;
+	size_t i, sum = 0;
+
+	for (i = 0; i < n; i++) {
+		sum |= (p1[i] ^ p2[i]);
+	}
+
+	return sum != 0;
+}

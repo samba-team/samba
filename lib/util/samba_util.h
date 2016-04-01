@@ -280,6 +280,19 @@ _PUBLIC_ size_t utf16_len_n(const void *src, size_t n);
 _PUBLIC_ size_t ucs2_align(const void *base_ptr, const void *p, int flags);
 
 /**
+ * @brief Constant time compare to memory regions.
+ *
+ * @param[in]  s1  The first memory region to compare.
+ *
+ * @param[in]  s2  The second memory region to compare.
+ *
+ * @param[in]  n   The length of the memory to comapre.
+ *
+ * @return 0 when the memory regions are equal, 0 if not.
+ */
+_PUBLIC_ int memcmp_const_time(const void *s1, const void *s2, size_t n);
+
+/**
 Do a case-insensitive, whitespace-ignoring string compare.
 **/
 _PUBLIC_ int strwicmp(const char *psz1, const char *psz2);
