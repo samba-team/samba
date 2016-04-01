@@ -111,7 +111,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 
 	memcpy(buf->hdr+SMB2_HDR_SIGNATURE, sig, 16);
 
-	if (memcmp(res, sig, 16) != 0) {
+	if (memcmp_const_time(res, sig, 16) != 0) {
 		DEBUG(0,("Bad SMB2 signature for message of size %u\n", 
 			 (unsigned)buf->size-NBT_HDR_SIZE));
 		dump_data(0, sig, 16);
