@@ -1856,7 +1856,7 @@ static NTSTATUS snapper_snap_path_expand(struct connection_struct *conn,
 	NTSTATUS status;
 	char *conf_name;
 	char *base_path;
-	char *snap_path;
+	char *snap_path = NULL;
 
 	dconn = snapper_dbus_conn_create();
 	if (dconn == NULL) {
