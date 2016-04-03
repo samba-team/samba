@@ -212,7 +212,9 @@ bool set_current_service(connection_struct *conn, uint16_t flags, bool do_chdir)
 			{
 				/* We need this uglyness due to DOS/Win9x clients that lie about case insensitivity. */
 				enum remote_arch_types ra_type = get_remote_arch();
-				if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+				if (conn->sconn->using_smb2) {
+					conn->case_sensitive = false;
+				} else if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
 					/* Client can't support per-packet case sensitive pathnames. */
 					conn->case_sensitive = False;
 				} else {
