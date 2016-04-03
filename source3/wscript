@@ -135,10 +135,13 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
         headers='fcntl.h'):
         conf.CHECK_DECLS('splice', reverse=True, headers='fcntl.h')
 
-    # Check for inotify support
-    conf.CHECK_HEADERS('sys/inotify.h')
-    if "HAVE_SYS_INOTIFY_H" in conf.env:
-        conf.DEFINE('HAVE_INOTIFY', 1)
+    # Check for inotify support (Skip if we are SunOS)
+    #NOTE: illumos provides sys/inotify.h but is not an exact match for linux
+    host_os = sys.platform
+    if host_os.rfind('sunos') == -1:
+        conf.CHECK_HEADERS('sys/inotify.h')
+        if "HAVE_SYS_INOTIFY_H" in conf.env:
+           conf.DEFINE('HAVE_INOTIFY', 1)
 
     # Check for kernel change notify support
     conf.CHECK_CODE('''
