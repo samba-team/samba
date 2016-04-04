@@ -62,7 +62,7 @@ def configure(conf):
                                define='HAVE_SOLARIS_GETPWUID_R', headers='unistd.h pwd.h')
         conf.CHECK_C_PROTOTYPE('getgrent_r',
                                'struct group *getgrent_r(struct group *src, char *buf, int buflen)',
-                               define='SOLARIS_GETGRENT_R', headers='unistd.h grp.h')
+                               define='HAVE_SOLARIS_GETGRENT_R', headers='unistd.h grp.h')
         conf.CHECK_C_PROTOTYPE('getgrnam_r',
                                'int getgrnam_r(const char *name, struct group *grp, char *buf, int buflen, struct group **pgrp)',
                                define='HAVE_SOLARIS_GETGRNAM_R', headers='unistd.h grp.h')
