@@ -97,8 +97,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
 	SMB_VFS_OP_FS_CAPABILITIES,
-
-	/* Missing get_dfs_referrals */
+	SMB_VFS_OP_GET_DFS_REFERRALS,
 
 	/* Directory operations */
 
@@ -248,7 +247,7 @@ static struct {
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
-	/* Missing get_dfs_referrals */
+	{ SMB_VFS_OP_GET_DFS_REFERRALS,	"get_dfs_referrals" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
@@ -757,6 +756,20 @@ static uint32_t smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_FS_CAPABILITIES, true, handle, "");
 
 	return result;
+}
+
+static NTSTATUS smb_full_audit_get_dfs_referrals(
+				struct vfs_handle_struct *handle,
+				struct dfs_GetDFSReferral *r)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_GET_DFS_REFERRALS(handle, r);
+
+	do_log(SMB_VFS_OP_GET_DFS_REFERRALS, NT_STATUS_IS_OK(status),
+	       handle, "");
+
+	return status;
 }
 
 static NTSTATUS smb_full_audit_snap_check_path(struct vfs_handle_struct *handle,
@@ -2353,9 +2366,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_shadow_copy_data_fn = smb_full_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_full_audit_statvfs,
 	.fs_capabilities_fn = smb_full_audit_fs_capabilities,
-
-	/* Missing get_dfs_referrals_fn */
-
+	.get_dfs_referrals_fn = smb_full_audit_get_dfs_referrals,
 	.opendir_fn = smb_full_audit_opendir,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,
