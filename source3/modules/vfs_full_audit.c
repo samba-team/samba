@@ -97,9 +97,8 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
 	SMB_VFS_OP_FS_CAPABILITIES,
-	SMB_VFS_OP_SNAP_CHECK_PATH,
-	SMB_VFS_OP_SNAP_CREATE,
-	SMB_VFS_OP_SNAP_DELETE,
+
+	/* Missing get_dfs_referrals */
 
 	/* Directory operations */
 
@@ -169,11 +168,14 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STRICT_LOCK,
 	SMB_VFS_OP_STRICT_UNLOCK,
 	SMB_VFS_OP_TRANSLATE_NAME,
+	/* Missing fsctl */
 	SMB_VFS_OP_COPY_CHUNK_SEND,
 	SMB_VFS_OP_COPY_CHUNK_RECV,
 	SMB_VFS_OP_GET_COMPRESSION,
 	SMB_VFS_OP_SET_COMPRESSION,
-	SMB_VFS_OP_READDIR_ATTR,
+	SMB_VFS_OP_SNAP_CHECK_PATH,
+	SMB_VFS_OP_SNAP_CREATE,
+	SMB_VFS_OP_SNAP_DELETE,
 
 	/* DOS attribute operations. */
 	SMB_VFS_OP_GET_DOS_ATTRIBUTES,
@@ -186,6 +188,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FGET_NT_ACL,
 	SMB_VFS_OP_GET_NT_ACL,
 	SMB_VFS_OP_FSET_NT_ACL,
+	/* Missing audit_file */
 
 	/* POSIX ACL operations. */
 
@@ -217,6 +220,15 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_IS_OFFLINE,
 	SMB_VFS_OP_SET_OFFLINE,
 
+	/* Durable handle operations */
+	/* Missing:
+		durable_cookie
+		durable_disconnect
+		durable_reconnect
+	*/
+
+	SMB_VFS_OP_READDIR_ATTR,
+
 	/* This should always be last enum value */
 
 	SMB_VFS_OP_LAST
@@ -236,9 +248,7 @@ static struct {
 	{ SMB_VFS_OP_GET_SHADOW_COPY_DATA,	"get_shadow_copy_data" },
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
-	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
-	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
-	{ SMB_VFS_OP_SNAP_DELETE, "snap_delete" },
+	/* Missing get_dfs_referrals */
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
@@ -302,11 +312,14 @@ static struct {
 	{ SMB_VFS_OP_STRICT_LOCK, "strict_lock" },
 	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
+	/* Missing fsctl */
 	{ SMB_VFS_OP_COPY_CHUNK_SEND,	"copy_chunk_send" },
 	{ SMB_VFS_OP_COPY_CHUNK_RECV,	"copy_chunk_recv" },
 	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
 	{ SMB_VFS_OP_SET_COMPRESSION,	"set_compression" },
-	{ SMB_VFS_OP_READDIR_ATTR,      "readdir_attr" },
+	{ SMB_VFS_OP_SNAP_CHECK_PATH, "snap_check_path" },
+	{ SMB_VFS_OP_SNAP_CREATE, "snap_create" },
+	{ SMB_VFS_OP_SNAP_DELETE, "snap_delete" },
 	{ SMB_VFS_OP_GET_DOS_ATTRIBUTES, "get_dos_attributes" },
 	{ SMB_VFS_OP_FGET_DOS_ATTRIBUTES, "fget_dos_attributes" },
 	{ SMB_VFS_OP_SET_DOS_ATTRIBUTES, "set_dos_attributes" },
@@ -314,6 +327,7 @@ static struct {
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
+	/* Missing audit_file */
 	{ SMB_VFS_OP_CHMOD_ACL,	"chmod_acl" },
 	{ SMB_VFS_OP_FCHMOD_ACL,	"fchmod_acl" },
 	{ SMB_VFS_OP_SYS_ACL_GET_FILE,	"sys_acl_get_file" },
@@ -334,6 +348,12 @@ static struct {
 	{ SMB_VFS_OP_AIO_FORCE, "aio_force" },
 	{ SMB_VFS_OP_IS_OFFLINE, "is_offline" },
 	{ SMB_VFS_OP_SET_OFFLINE, "set_offline" },
+	/* Missing:
+		durable_cookie
+		durable_disconnect
+		durable_reconnect
+	*/
+	{ SMB_VFS_OP_READDIR_ATTR,      "readdir_attr" },
 	{ SMB_VFS_OP_LAST, NULL }
 };
 
@@ -2333,9 +2353,9 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_shadow_copy_data_fn = smb_full_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_full_audit_statvfs,
 	.fs_capabilities_fn = smb_full_audit_fs_capabilities,
-	.snap_check_path_fn =  smb_full_audit_snap_check_path,
-	.snap_create_fn = smb_full_audit_snap_create,
-	.snap_delete_fn = smb_full_audit_snap_delete,
+
+	/* Missing get_dfs_referrals_fn */
+
 	.opendir_fn = smb_full_audit_opendir,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,
@@ -2390,6 +2410,13 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.realpath_fn = smb_full_audit_realpath,
 	.chflags_fn = smb_full_audit_chflags,
 	.file_id_create_fn = smb_full_audit_file_id_create,
+	.copy_chunk_send_fn = smb_full_audit_copy_chunk_send,
+	.copy_chunk_recv_fn = smb_full_audit_copy_chunk_recv,
+	.get_compression_fn = smb_full_audit_get_compression,
+	.set_compression_fn = smb_full_audit_set_compression,
+	.snap_check_path_fn =  smb_full_audit_snap_check_path,
+	.snap_create_fn = smb_full_audit_snap_create,
+	.snap_delete_fn = smb_full_audit_snap_delete,
 	.streaminfo_fn = smb_full_audit_streaminfo,
 	.get_real_filename_fn = smb_full_audit_get_real_filename,
 	.connectpath_fn = smb_full_audit_connectpath,
@@ -2399,11 +2426,9 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.strict_lock_fn = smb_full_audit_strict_lock,
 	.strict_unlock_fn = smb_full_audit_strict_unlock,
 	.translate_name_fn = smb_full_audit_translate_name,
-	.copy_chunk_send_fn = smb_full_audit_copy_chunk_send,
-	.copy_chunk_recv_fn = smb_full_audit_copy_chunk_recv,
-	.get_compression_fn = smb_full_audit_get_compression,
-	.set_compression_fn = smb_full_audit_set_compression,
-	.readdir_attr_fn = smb_full_audit_readdir_attr,
+
+	/* Missing fsctl_fn */
+
 	.get_dos_attributes_fn = smb_full_audit_get_dos_attributes,
 	.fget_dos_attributes_fn = smb_full_audit_fget_dos_attributes,
 	.set_dos_attributes_fn = smb_full_audit_set_dos_attributes,
@@ -2411,6 +2436,9 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fget_nt_acl_fn = smb_full_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_full_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_full_audit_fset_nt_acl,
+
+	/* Missing audit_file_fn */
+
 	.chmod_acl_fn = smb_full_audit_chmod_acl,
 	.fchmod_acl_fn = smb_full_audit_fchmod_acl,
 	.sys_acl_get_file_fn = smb_full_audit_sys_acl_get_file,
@@ -2431,6 +2459,15 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.aio_force_fn = smb_full_audit_aio_force,
 	.is_offline_fn = smb_full_audit_is_offline,
 	.set_offline_fn = smb_full_audit_set_offline,
+
+	/* Missing:
+
+		durable_cookie_fn
+		durable_disconnect_fn
+		durable_reconnect_fn
+	*/
+	.readdir_attr_fn = smb_full_audit_readdir_attr
+
 };
 
 static_decl_vfs;
