@@ -167,7 +167,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STRICT_LOCK,
 	SMB_VFS_OP_STRICT_UNLOCK,
 	SMB_VFS_OP_TRANSLATE_NAME,
-	/* Missing fsctl */
+	SMB_VFS_OP_FSCTL,
 	SMB_VFS_OP_COPY_CHUNK_SEND,
 	SMB_VFS_OP_COPY_CHUNK_RECV,
 	SMB_VFS_OP_GET_COMPRESSION,
@@ -311,7 +311,7 @@ static struct {
 	{ SMB_VFS_OP_STRICT_LOCK, "strict_lock" },
 	{ SMB_VFS_OP_STRICT_UNLOCK, "strict_unlock" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
-	/* Missing fsctl */
+	{ SMB_VFS_OP_FSCTL,		"fsctl" },
 	{ SMB_VFS_OP_COPY_CHUNK_SEND,	"copy_chunk_send" },
 	{ SMB_VFS_OP_COPY_CHUNK_RECV,	"copy_chunk_recv" },
 	{ SMB_VFS_OP_GET_COMPRESSION,	"get_compression" },
@@ -1857,6 +1857,35 @@ static NTSTATUS smb_full_audit_translate_name(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_full_audit_fsctl(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				TALLOC_CTX *ctx,
+				uint32_t function,
+				uint16_t req_flags,
+				const uint8_t *_in_data,
+				uint32_t in_len,
+				uint8_t **_out_data,
+				uint32_t max_out_len,
+				uint32_t *out_len)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_FSCTL(handle,
+				fsp,
+				ctx,
+				function,
+				req_flags,
+				_in_data,
+				in_len,
+				_out_data,
+				max_out_len,
+				out_len);
+
+	do_log(SMB_VFS_OP_FSCTL, NT_STATUS_IS_OK(result), handle, "");
+
+	return result;
+}
+
 static struct tevent_req *smb_full_audit_copy_chunk_send(struct vfs_handle_struct *handle,
 							 TALLOC_CTX *mem_ctx,
 							 struct tevent_context *ev,
@@ -2437,9 +2466,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.strict_lock_fn = smb_full_audit_strict_lock,
 	.strict_unlock_fn = smb_full_audit_strict_unlock,
 	.translate_name_fn = smb_full_audit_translate_name,
-
-	/* Missing fsctl_fn */
-
+	.fsctl_fn = smb_full_audit_fsctl,
 	.get_dos_attributes_fn = smb_full_audit_get_dos_attributes,
 	.fget_dos_attributes_fn = smb_full_audit_fget_dos_attributes,
 	.set_dos_attributes_fn = smb_full_audit_set_dos_attributes,
