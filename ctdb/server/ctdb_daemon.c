@@ -1709,9 +1709,9 @@ int32_t ctdb_control_register_notify(struct ctdb_context *ctdb, uint32_t client_
 	nl->ctdb       = ctdb;
 	nl->srvid      = notify->srvid;
 	nl->data.dsize = notify->len;
-	nl->data.dptr  = talloc_size(nl, nl->data.dsize);
+	nl->data.dptr  = talloc_memdup(nl, notify->notify_data,
+				       nl->data.dsize);
 	CTDB_NO_MEMORY(ctdb, nl->data.dptr);
-	memcpy(nl->data.dptr, notify->notify_data, nl->data.dsize);
 	
 	DLIST_ADD(client->notify, nl);
 	talloc_set_destructor(nl, ctdb_client_notify_destructor);
