@@ -1780,6 +1780,97 @@ static NTSTATUS smb_time_audit_fsctl(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_time_get_dos_attributes(struct vfs_handle_struct *handle,
+					struct smb_filename *smb_fname,
+					uint32_t *dosmode)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
+				smb_fname,
+				dosmode);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fname("get_dos_attributes",
+				timediff,
+				smb_fname->base_name);
+	}
+
+	return result;
+}
+
+static NTSTATUS smb_time_fget_dos_attributes(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					uint32_t *dosmode)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle,
+				fsp,
+				dosmode);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("fget_dos_attributes", timediff, fsp);
+	}
+
+	return result;
+}
+
+static NTSTATUS smb_time_set_dos_attributes(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname,
+					uint32_t dosmode)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
+				smb_fname,
+				dosmode);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fname("set_dos_attributes",
+				timediff,
+				smb_fname->base_name);
+	}
+
+	return result;
+}
+
+static NTSTATUS smb_time_fset_dos_attributes(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					uint32_t dosmode)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FSET_DOS_ATTRIBUTES(handle,
+				fsp,
+				dosmode);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("fset_dos_attributes", timediff, fsp);
+	}
+
+	return result;
+}
 
 struct time_audit_cc_state {
 	struct timespec ts_send;
@@ -2565,12 +2656,10 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.strict_unlock_fn = smb_time_audit_strict_unlock,
 	.translate_name_fn = smb_time_audit_translate_name,
 	.fsctl_fn = smb_time_audit_fsctl,
-	/* Missing
-		get_dos_attributes
-		fget_dos_attributes
-		set_dos_attributes
-		fset_dos_attributes
-	*/
+	.get_dos_attributes_fn = smb_time_get_dos_attributes,
+	.fget_dos_attributes_fn = smb_time_fget_dos_attributes,
+	.set_dos_attributes_fn = smb_time_set_dos_attributes,
+	.fset_dos_attributes_fn = smb_time_fset_dos_attributes,
 	.fget_nt_acl_fn = smb_time_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_time_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,
