@@ -277,6 +277,26 @@ static uint32_t smb_time_audit_fs_capabilities(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_time_audit_get_dfs_referrals(
+			struct vfs_handle_struct *handle,
+			struct dfs_GetDFSReferral *r)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_GET_DFS_REFERRALS(handle, r);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("get_dfs_referrals(", timediff);
+	}
+
+	return result;
+}
+
 static NTSTATUS smb_time_audit_snap_check_path(struct vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       const char *service_path,
@@ -2436,7 +2456,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.get_shadow_copy_data_fn = smb_time_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_time_audit_statvfs,
 	.fs_capabilities_fn = smb_time_audit_fs_capabilities,
-	/* Missing get_dfs_referrals_fn */
+	.get_dfs_referrals_fn = smb_time_audit_get_dfs_referrals,
 	.opendir_fn = smb_time_audit_opendir,
 	.fdopendir_fn = smb_time_audit_fdopendir,
 	.readdir_fn = smb_time_audit_readdir,
