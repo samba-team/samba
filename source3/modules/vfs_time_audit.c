@@ -1744,6 +1744,43 @@ static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_time_audit_fsctl(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				TALLOC_CTX *ctx,
+				uint32_t function,
+				uint16_t req_flags,
+				const uint8_t *_in_data,
+				uint32_t in_len,
+				uint8_t **_out_data,
+				uint32_t max_out_len,
+				uint32_t *out_len)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FSCTL(handle,
+				fsp,
+				ctx,
+				function,
+				req_flags,
+				_in_data,
+				in_len,
+				_out_data,
+				max_out_len,
+				out_len);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("fsctl", timediff, fsp);
+	}
+
+	return result;
+}
+
+
 struct time_audit_cc_state {
 	struct timespec ts_send;
 	struct vfs_handle_struct *handle;
@@ -2527,7 +2564,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.strict_lock_fn = smb_time_audit_strict_lock,
 	.strict_unlock_fn = smb_time_audit_strict_unlock,
 	.translate_name_fn = smb_time_audit_translate_name,
-	/* Missing fsctl */
+	.fsctl_fn = smb_time_audit_fsctl,
 	/* Missing
 		get_dos_attributes
 		fget_dos_attributes
