@@ -219,12 +219,10 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_IS_OFFLINE,
 	SMB_VFS_OP_SET_OFFLINE,
 
-	/* Durable handle operations */
-	/* Missing:
-		durable_cookie
-		durable_disconnect
-		durable_reconnect
-	*/
+	/* Durable handle operations. */
+	SMB_VFS_OP_DURABLE_COOKIE,
+	SMB_VFS_OP_DURABLE_DISCONNECT,
+	SMB_VFS_OP_DURABLE_RECONNECT,
 
 	SMB_VFS_OP_READDIR_ATTR,
 
@@ -347,11 +345,9 @@ static struct {
 	{ SMB_VFS_OP_AIO_FORCE, "aio_force" },
 	{ SMB_VFS_OP_IS_OFFLINE, "is_offline" },
 	{ SMB_VFS_OP_SET_OFFLINE, "set_offline" },
-	/* Missing:
-		durable_cookie
-		durable_disconnect
-		durable_reconnect
-	*/
+	{ SMB_VFS_OP_DURABLE_COOKIE, "durable_cookie" },
+	{ SMB_VFS_OP_DURABLE_DISCONNECT, "durable_disconnect" },
+	{ SMB_VFS_OP_DURABLE_RECONNECT, "durable_reconnect" },
 	{ SMB_VFS_OP_READDIR_ATTR,      "readdir_attr" },
 	{ SMB_VFS_OP_LAST, NULL }
 };
@@ -2403,6 +2399,72 @@ static int smb_full_audit_set_offline(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static NTSTATUS smb_full_audit_durable_cookie(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				TALLOC_CTX *mem_ctx,
+				DATA_BLOB *cookie)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_DURABLE_COOKIE(handle,
+					fsp,
+					mem_ctx,
+					cookie);
+
+	do_log(SMB_VFS_OP_DURABLE_COOKIE, NT_STATUS_IS_OK(result), handle,
+			"%s", fsp_str_do_log(fsp));
+
+	return result;
+}
+
+static NTSTATUS smb_full_audit_durable_disconnect(
+				struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				const DATA_BLOB old_cookie,
+				TALLOC_CTX *mem_ctx,
+				DATA_BLOB *new_cookie)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_DURABLE_DISCONNECT(handle,
+					fsp,
+					old_cookie,
+					mem_ctx,
+					new_cookie);
+
+	do_log(SMB_VFS_OP_DURABLE_DISCONNECT, NT_STATUS_IS_OK(result), handle,
+			"%s", fsp_str_do_log(fsp));
+
+	return result;
+}
+
+static NTSTATUS smb_full_audit_durable_reconnect(
+				struct vfs_handle_struct *handle,
+				struct smb_request *smb1req,
+				struct smbXsrv_open *op,
+				const DATA_BLOB old_cookie,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct **fsp,
+				DATA_BLOB *new_cookie)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_DURABLE_RECONNECT(handle,
+					smb1req,
+					op,
+					old_cookie,
+					mem_ctx,
+					fsp,
+					new_cookie);
+
+	do_log(SMB_VFS_OP_DURABLE_RECONNECT,
+			NT_STATUS_IS_OK(result),
+			handle,
+			"");
+
+	return result;
+}
+
 static struct vfs_fn_pointers vfs_full_audit_fns = {
 
 	/* Disk operations */
@@ -2515,13 +2577,9 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.aio_force_fn = smb_full_audit_aio_force,
 	.is_offline_fn = smb_full_audit_is_offline,
 	.set_offline_fn = smb_full_audit_set_offline,
-
-	/* Missing:
-
-		durable_cookie_fn
-		durable_disconnect_fn
-		durable_reconnect_fn
-	*/
+	.durable_cookie_fn = smb_full_audit_durable_cookie,
+	.durable_disconnect_fn = smb_full_audit_durable_disconnect,
+	.durable_reconnect_fn = smb_full_audit_durable_reconnect,
 	.readdir_attr_fn = smb_full_audit_readdir_attr
 
 };
