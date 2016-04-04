@@ -2436,9 +2436,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.get_shadow_copy_data_fn = smb_time_audit_get_shadow_copy_data,
 	.statvfs_fn = smb_time_audit_statvfs,
 	.fs_capabilities_fn = smb_time_audit_fs_capabilities,
-	.snap_check_path_fn = smb_time_audit_snap_check_path,
-	.snap_create_fn = smb_time_audit_snap_create,
-	.snap_delete_fn = smb_time_audit_snap_delete,
+	/* Missing get_dfs_referrals_fn */
 	.opendir_fn = smb_time_audit_opendir,
 	.fdopendir_fn = smb_time_audit_fdopendir,
 	.readdir_fn = smb_time_audit_readdir,
@@ -2493,6 +2491,13 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.realpath_fn = smb_time_audit_realpath,
 	.chflags_fn = smb_time_audit_chflags,
 	.file_id_create_fn = smb_time_audit_file_id_create,
+	.copy_chunk_send_fn = smb_time_audit_copy_chunk_send,
+	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
+	.get_compression_fn = smb_time_audit_get_compression,
+	.set_compression_fn = smb_time_audit_set_compression,
+	.snap_check_path_fn = smb_time_audit_snap_check_path,
+	.snap_create_fn = smb_time_audit_snap_create,
+	.snap_delete_fn = smb_time_audit_snap_delete,
 	.streaminfo_fn = smb_time_audit_streaminfo,
 	.get_real_filename_fn = smb_time_audit_get_real_filename,
 	.connectpath_fn = smb_time_audit_connectpath,
@@ -2502,14 +2507,17 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.strict_lock_fn = smb_time_audit_strict_lock,
 	.strict_unlock_fn = smb_time_audit_strict_unlock,
 	.translate_name_fn = smb_time_audit_translate_name,
-	.copy_chunk_send_fn = smb_time_audit_copy_chunk_send,
-	.copy_chunk_recv_fn = smb_time_audit_copy_chunk_recv,
-	.get_compression_fn = smb_time_audit_get_compression,
-	.set_compression_fn = smb_time_audit_set_compression,
-	.readdir_attr_fn = smb_time_audit_readdir_attr,
+	/* Missing fsctl */
+	/* Missing
+		get_dos_attributes
+		fget_dos_attributes
+		set_dos_attributes
+		fset_dos_attributes
+	*/
 	.fget_nt_acl_fn = smb_time_audit_fget_nt_acl,
 	.get_nt_acl_fn = smb_time_audit_get_nt_acl,
 	.fset_nt_acl_fn = smb_time_audit_fset_nt_acl,
+	/* Missing audit_file */
 	.chmod_acl_fn = smb_time_audit_chmod_acl,
 	.fchmod_acl_fn = smb_time_audit_fchmod_acl,
 	.sys_acl_get_file_fn = smb_time_audit_sys_acl_get_file,
@@ -2533,6 +2541,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.durable_cookie_fn = smb_time_audit_durable_cookie,
 	.durable_disconnect_fn = smb_time_audit_durable_disconnect,
 	.durable_reconnect_fn = smb_time_audit_durable_reconnect,
+	.readdir_attr_fn = smb_time_audit_readdir_attr,
 };
 
 
