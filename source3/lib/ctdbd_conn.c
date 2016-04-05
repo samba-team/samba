@@ -1304,8 +1304,8 @@ int ctdbd_probe(const char *sockname, int timeout)
 	struct ctdbd_connection *conn = NULL;
 	int ret;
 
-	ret = ctdbd_messaging_connection(talloc_tos(), sockname, timeout,
-					 &conn);
+	ret = ctdbd_init_connection(talloc_tos(), sockname, timeout,
+				    &conn);
 
 	/*
 	 * We only care if we can connect.
