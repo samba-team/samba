@@ -22,14 +22,22 @@ int main(int argc, char * argv[])
     
     printf("CAUTION: This program will overwrite a file.  "
            "Press ENTER to continue.");
-    fgets(buffer, sizeof(buffer), stdin);
+    p = fgets(buffer, sizeof(buffer), stdin);
+    if (p == NULL) {
+        fprintf(stderr, "failed to read from stdin\n");
+        return 1;
+    }
            
 
     for (;;)
     {
         fprintf(stdout, "\nPath: ");
         *path = '\0';
-        fgets(path, sizeof(path) - 1, stdin);
+        p = fgets(path, sizeof(path) - 1, stdin);
+        if (p == NULL) {
+            fprintf(stderr, "failed to read from stdin\n");
+            return 1;
+        }
         if (strlen(path) == 0)
         {
             return 0;
