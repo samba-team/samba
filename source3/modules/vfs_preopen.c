@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "smbd/smbd.h"
+#include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
 
 struct preopen_state;
@@ -185,7 +186,7 @@ static bool preopen_helper_open_one(int sock_fd, char **pnamebuf,
 	close(fd);
 
  done:
-	(void)write(sock_fd, &c, 1);
+	sys_write_v(sock_fd, &c, 1);
 	return true;
 }
 
