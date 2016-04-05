@@ -61,12 +61,22 @@ static void fde_handler_read(struct tevent_context *ev_ctx, struct tevent_fd *f,
 	fde_count++;
 }
 
+static void do_write(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = write(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+}
+
 static void fde_handler_write(struct tevent_context *ev_ctx, struct tevent_fd *f,
 			uint16_t flags, void *private_data)
 {
 	int *fd = (int *)private_data;
 	char c = 0;
-	write(fd[1], &c, 1);
+
+	do_write(fd[1], &c, 1);
 }
 
 
@@ -91,7 +101,7 @@ static void fde_handler_write_1(struct tevent_context *ev_ctx, struct tevent_fd 
 {
 	int *fd = (int *)private_data;
 	char c = 0;
-	write(fd[0], &c, 1);
+	do_write(fd[0], &c, 1);
 }
 
 static void finished_handler(struct tevent_context *ev_ctx, struct tevent_timer *te,
@@ -290,7 +300,7 @@ static void test_event_fd1_fde_handler(struct tevent_context *ev_ctx,
 		/*
 		 * we write to the other socket...
 		 */
-		write(state->sock[1], &c, 1);
+		do_write(state->sock[1], &c, 1);
 		TEVENT_FD_NOT_WRITEABLE(fde);
 		TEVENT_FD_READABLE(fde);
 		return;
@@ -659,9 +669,9 @@ static bool test_event_fd2(struct torture_context *tctx,
 	tevent_fd_set_auto_close(state.sock0.fde);
 	tevent_fd_set_auto_close(state.sock1.fde);
 
-	write(state.sock0.fd, &c, 1);
+	do_write(state.sock0.fd, &c, 1);
 	state.sock0.num_written++;
-	write(state.sock1.fd, &c, 1);
+	do_write(state.sock1.fd, &c, 1);
 	state.sock1.num_written++;
 
 	while (!state.finished) {
@@ -801,7 +811,7 @@ static bool test_event_context_threaded(struct torture_context *test,
 
 	poll(NULL, 0, 100);
 
-	write(fds[1], &c, 1);
+	do_write(fds[1], &c, 1);
 
 	poll(NULL, 0, 100);
 
@@ -809,7 +819,7 @@ static bool test_event_context_threaded(struct torture_context *test,
 	do_shutdown = true;
 	test_event_threaded_unlock();
 
-	write(fds[1], &c, 1);
+	do_write(fds[1], &c, 1);
 
 	ret = pthread_join(poll_thread, NULL);
 	torture_assert(test, ret == 0, "pthread_join failed");
