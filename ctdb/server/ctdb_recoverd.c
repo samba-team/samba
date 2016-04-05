@@ -3270,53 +3270,6 @@ static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static int update_recovery_lock_file(struct ctdb_context *ctdb)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	const char *reclockfile;
-
-	if (ctdb_ctrl_getreclock(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &reclockfile) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to read reclock file from daemon\n"));
-		talloc_free(tmp_ctx);
-		return -1;	
-	}
-
-	if (reclockfile == NULL) {
-		if (ctdb->recovery_lock_file != NULL) {
-			DEBUG(DEBUG_NOTICE,("Recovery lock file disabled\n"));
-			talloc_free(ctdb->recovery_lock_file);
-			ctdb->recovery_lock_file = NULL;
-			ctdb_recovery_unlock(ctdb);
-		}
-		talloc_free(tmp_ctx);
-		return 0;
-	}
-
-	if (ctdb->recovery_lock_file == NULL) {
-		DEBUG(DEBUG_NOTICE,
-		      ("Recovery lock file enabled (%s)\n", reclockfile));
-		ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
-		ctdb_recovery_unlock(ctdb);
-		talloc_free(tmp_ctx);
-		return 0;
-	}
-
-
-	if (!strcmp(reclockfile, ctdb->recovery_lock_file)) {
-		talloc_free(tmp_ctx);
-		return 0;
-	}
-
-	DEBUG(DEBUG_NOTICE,
-	      ("Recovery lock file changed (now %s)\n", reclockfile));
-	talloc_free(ctdb->recovery_lock_file);
-	ctdb->recovery_lock_file = talloc_strdup(ctdb, reclockfile);
-	ctdb_recovery_unlock(ctdb);
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
 static bool validate_recovery_master(struct ctdb_recoverd *rec,
 				     TALLOC_CTX *mem_ctx)
 {
@@ -3458,12 +3411,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 				     CTDB_CURRENT_NODE, &ctdb->runstate);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Failed to get runstate - retrying\n"));
-		return;
-	}
-
-	/* get the current recovery lock file from the server */
-	if (update_recovery_lock_file(ctdb) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to update the recovery lock file\n"));
 		return;
 	}
 
