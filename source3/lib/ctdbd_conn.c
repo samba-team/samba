@@ -420,9 +420,9 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
  * Get us a ctdbd connection
  */
 
-static int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
-				 const char *sockname, int timeout,
-				 struct ctdbd_connection **pconn)
+int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
+			  const char *sockname, int timeout,
+			  struct ctdbd_connection **pconn)
 {
 	struct ctdbd_connection *conn;
 	int ret;

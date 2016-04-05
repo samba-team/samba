@@ -26,6 +26,10 @@ struct ctdbd_connection;
 struct messaging_context;
 struct messaging_rec;
 
+int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
+			  const char *sockname, int timeout,
+			  struct ctdbd_connection **pconn);
+
 int ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 			       const char *sockname, int timeout,
 			       struct ctdbd_connection **pconn);
