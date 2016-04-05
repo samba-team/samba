@@ -955,14 +955,14 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>getreclock</title>
       <para>
-	Show the name of the recovery lock file, if any.
+	Show details of the recovery lock, if any.
       </para>
 
       <para>
 	Example output:
       </para>
       <screen>
-	Reclock file:/clusterfs/.ctdb/recovery.lock
+	/clusterfs/.ctdb/recovery.lock
       </screen>
 
     </refsect2>

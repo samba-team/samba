@@ -4224,16 +4224,8 @@ static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **
 		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
 		return ret;
 	} else {
-		if (options.machinereadable){
-			if (reclock != NULL) {
-				printm("%s", reclock);
-			}
-		} else {
-			if (reclock == NULL) {
-				printf("No reclock file used.\n");
-			} else {
-				printf("Reclock file:%s\n", reclock);
-			}
+		if (reclock != NULL) {
+			printf("%s\n", reclock);
 		}
 	}
 	return 0;

@@ -60,8 +60,8 @@ fi
 
 echo
 echo "Check that recovery lock is actually enabled..."
-t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
-if [ "$t" != "No reclock file used." ] ; then
+orig_reclock=$(echo "$out" | sort -u)
+if [ "$orig_reclock" != "" ] ; then
     echo "OK: Recovery lock is set"
 else
     echo "OOPS: Recovery lock is unset. Skipping remainder of test"
@@ -69,8 +69,7 @@ else
 fi
 
 echo
-orig_reclock=$(sed -n -e '1s@^Reclock file:@@p' <<<"$out")
-echo "Remember original recovery lock file: \"${orig_reclock}\""
+echo "Original recovery lock file: \"${orig_reclock}\""
 
 echo
 echo "Unset and test the recovery lock on all nodes..."
@@ -78,7 +77,7 @@ try_command_on_node -pq all $CTDB setreclock
 wait_until_recovered
 try_command_on_node -v -q all $CTDB getreclock
 t=$(sort -u <<<"$out")
-if [ "$t" = "No reclock file used." ] ; then
+if [ "$t" = "" ] ; then
     echo "GOOD: Recovery lock unset on all nodes"
 else
     echo "BAD: Recovery lock not unset on all nodes"
@@ -95,7 +94,7 @@ echo "Set alternative recovery lock (${alt}) and test on all nodes..."
 try_command_on_node -pq all $CTDB setreclock "$alt"
 wait_until_recovered
 try_command_on_node -v -q all $CTDB getreclock
-t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
+t=$(echo "$out" | sort -u)
 if [ "$t" = "$alt" ] ; then
     echo "GOOD: Recovery lock set on all nodes"
 else
@@ -113,7 +112,7 @@ try_command_on_node -pq all $CTDB setreclock "$orig_reclock"
 wait_until_recovered
 try_command_on_node -v all rm -vf "$alt"
 try_command_on_node -v -q all $CTDB getreclock
-t=$(echo "$out" | sed -e 's@^Reclock file:@@' | sort -u)
+t=$(echo "$out" | sort -u)
 if [ "$t" = "$orig_reclock" ] ; then
     echo "GOOD: Recovery lock restored on all nodes"
 else
