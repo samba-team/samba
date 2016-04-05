@@ -484,36 +484,6 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-/*
- * Get us a ctdbd connection and register us as a process
- */
-
-int ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
-			       const char *sockname, int timeout,
-			       struct ctdbd_connection **pconn)
-{
-        struct ctdbd_connection *conn;
-	int ret;
-
-	ret = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
-
-	if (ret != 0) {
-		return ret;
-	}
-
-	ret = register_with_ctdbd(conn, MSG_SRVID_SAMBA, NULL, NULL);
-	if (ret != 0) {
-		goto fail;
-	}
-
-	*pconn = conn;
-	return 0;
-
- fail:
-	TALLOC_FREE(conn);
-	return ret;
-}
-
 struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn)
 {
 	return conn->msg_ctx;
