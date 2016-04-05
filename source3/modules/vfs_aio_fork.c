@@ -411,7 +411,7 @@ static int aio_child_destructor(struct aio_child *child)
 	 * closing the sockfd makes the child not return from recvmsg() on RHEL
 	 * 5.5 so instead force the child to exit by writing bad data to it
 	 */
-	write(child->sockfd, &c, sizeof(c));
+	sys_write_v(child->sockfd, &c, sizeof(c));
 	close(child->sockfd);
 	DLIST_REMOVE(child->list->children, child);
 	return 0;
