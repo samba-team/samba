@@ -1760,6 +1760,7 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 	int dnum1 = -1;
 	bool correct = true;
 	NTSTATUS status;
+	int ret;
 
 	del_clean_area(cli1, cli2);
 
@@ -1789,7 +1790,8 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	{
 		char *fullname;
-		asprintf(&fullname, "\\%s%s", dname, fname);
+		ret = asprintf(&fullname, "\\%s%s", dname, fname);
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		fnum1 = smbcli_open(cli1->tree, fullname, O_CREAT|O_RDWR,
 				    DENY_NONE);
 		torture_assert(tctx, fnum1 == -1, 
@@ -1809,7 +1811,8 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 		
 	{
 		char *fullname;
-		asprintf(&fullname, "\\%s%s", dname, fname);
+		ret = asprintf(&fullname, "\\%s%s", dname, fname);
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		fnum1 = smbcli_open(cli1->tree, fullname, O_CREAT|O_RDWR,
 				    DENY_NONE);
 		torture_assert(tctx, fnum1 != -1, 
