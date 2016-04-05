@@ -482,6 +482,7 @@ static char **reg_complete_key(const char *text, int start, int end)
 	const char *base_n = "";
 	TALLOC_CTX *mem_ctx;
 	WERROR status;
+	int ret;
 
 	matches = malloc_array_p(char *, MAX_COMPLETIONS);
 	if (!matches) return NULL;
@@ -529,12 +530,16 @@ static char **reg_complete_key(const char *text, int start, int end)
 	}
 
 	if (j == 2) { /* Exact match */
-		asprintf(&matches[0], "%s%s", base_n, matches[1]);
+		ret = asprintf(&matches[0], "%s%s", base_n, matches[1]);
 	} else {
-		asprintf(&matches[0], "%s%s", base_n,
+		ret = asprintf(&matches[0], "%s%s", base_n,
 				talloc_strndup(mem_ctx, matches[1], samelen));
 	}
 	talloc_free(mem_ctx);
+	if (ret == -1) {
+		SAFE_FREE(matches);
+		return NULL;
+	}
 
 	matches[j] = NULL;
 	return matches;
