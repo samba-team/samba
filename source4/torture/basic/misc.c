@@ -70,13 +70,16 @@ static bool rw_torture(struct torture_context *tctx, struct smbcli_state *c)
 
 	for (i=0;i<torture_numops;i++) {
 		unsigned int n = (unsigned int)random()%10;
+		int ret;
+
 		if (i % 10 == 0) {
 			if (torture_setting_bool(tctx, "progress", true)) {
 				torture_comment(tctx, "%d\r", i);
 				fflush(stdout);
 			}
 		}
-		asprintf(&fname, "\\torture.%u", n);
+		ret = asprintf(&fname, "\\torture.%u", n);
+		torture_assert(tctx, ret != -1, "asprintf failed");
 
 		if (!wait_lock(c, fnum2, n*sizeof(int), sizeof(int))) {
 			return false;
@@ -302,6 +305,7 @@ bool torture_maxfid_test(struct torture_context *tctx, struct smbcli_state *cli)
 	int fnums[0x11000], i;
 	int retries=4, maxfid;
 	bool correct = true;
+	int ret;
 
 	if (retries <= 0) {
 		torture_comment(tctx, "failed to connect\n");
@@ -323,7 +327,8 @@ bool torture_maxfid_test(struct torture_context *tctx, struct smbcli_state *cli)
 
 	for (i=0; i<0x11000; i++) {
 		if (i % 1000 == 0) {
-			asprintf(&fname, "\\maxfid\\fid%d", i/1000);
+			ret = asprintf(&fname, "\\maxfid\\fid%d", i/1000);
+			torture_assert(tctx, ret != -1, "asprintf failed");
 			if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
 				torture_comment(tctx, "Failed to mkdir %s, error=%s\n", 
 				       fname, smbcli_errstr(cli->tree));
@@ -331,7 +336,8 @@ bool torture_maxfid_test(struct torture_context *tctx, struct smbcli_state *cli)
 			}
 			free(fname);
 		}
-		asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
+		ret = asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		if ((fnums[i] = smbcli_open(cli->tree, fname, 
 					O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) ==
 		    -1) {
@@ -352,7 +358,8 @@ bool torture_maxfid_test(struct torture_context *tctx, struct smbcli_state *cli)
 
 	torture_comment(tctx, "cleaning up\n");
 	for (i=0;i<maxfid;i++) {
-		asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
+		ret = asprintf(&fname, MAXFID_TEMPLATE, i/1000, i,(int)getpid());
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnums[i]))) {
 			torture_comment(tctx, "Close of fnum %d failed - %s\n", fnums[i], smbcli_errstr(cli->tree));
 		}
