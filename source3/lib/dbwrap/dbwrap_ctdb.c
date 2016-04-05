@@ -1358,6 +1358,36 @@ static int traverse_persistent_callback_dbwrap(struct db_record *rec, void* data
 	return traverse_persistent_callback(NULL, rec->key, rec->value, data);
 }
 
+static int db_ctdbd_traverse(uint32_t db_id,
+			     void (*fn)(TDB_DATA key, TDB_DATA data,
+					void *private_data),
+			     void *private_data)
+{
+	struct ctdbd_connection *conn;
+	int ret;
+
+	become_root();
+	ret = ctdbd_init_connection(talloc_tos(), lp_ctdbd_socket(),
+				    lp_ctdb_timeout(), &conn);
+	unbecome_root();
+	if (ret != 0) {
+		DBG_WARNING("ctdbd_init_connection failed: %s\n",
+			    strerror(ret));
+		return ret;
+	}
+
+	ret = ctdbd_traverse(conn, db_id, fn, private_data);
+	TALLOC_FREE(conn);
+
+	if (ret != 0) {
+		DBG_WARNING("ctdbd_traverse failed: %s\n",
+			    strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
 
 static int db_ctdb_traverse(struct db_context *db,
 			    int (*fn)(struct db_record *rec,
@@ -1422,8 +1452,7 @@ static int db_ctdb_traverse(struct db_context *db,
 		return ret;
 	}
 
-	ret = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
-			     traverse_callback, &state);
+	ret = db_ctdbd_traverse(ctx->db_id, traverse_callback, &state);
 	if (ret != 0) {
 		return -1;
 	}
@@ -1512,8 +1541,7 @@ static int db_ctdb_traverse_read(struct db_context *db,
 		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
 	}
 
-	ret = ctdbd_traverse(messaging_ctdbd_connection(), ctx->db_id,
-			     traverse_read_callback, &state);
+	ret = db_ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
 	if (ret != 0) {
 		return -1;
 	}

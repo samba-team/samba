@@ -1014,31 +1014,20 @@ int ctdbd_parse(struct ctdbd_connection *conn, uint32_t db_id,
 }
 
 /*
-  Traverse a ctdb database. This uses a kind-of hackish way to open a second
-  connection to ctdbd to avoid the hairy recursive and async problems with
-  everything in-line.
+  Traverse a ctdb database. "conn" must be an otherwise unused
+  ctdb_connection where no other messages but the traverse ones are
+  expected.
 */
 
-int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
+int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 			void (*fn)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 			void *private_data)
 {
-	struct ctdbd_connection *conn;
 	int ret;
 	TDB_DATA key, data;
 	struct ctdb_traverse_start t;
 	int cstatus;
-
-	become_root();
-	ret = ctdbd_init_connection(NULL, master->sockname, master->timeout,
-				    &conn);
-	unbecome_root();
-	if (ret != 0) {
-		DEBUG(0, ("ctdbd_init_connection failed: %s\n",
-			  strerror(ret)));
-		return ret;
-	}
 
 	t.db_id = db_id;
 	t.srvid = conn->rand_srvid;
@@ -1061,7 +1050,6 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 			 */
 			ret = EIO;
 		}
-		TALLOC_FREE(conn);
 		return ret;
 	}
 
@@ -1080,7 +1068,6 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 		if (hdr->operation != CTDB_REQ_MESSAGE) {
 			DEBUG(0, ("Got operation %u, expected a message\n",
 				  (unsigned)hdr->operation));
-			TALLOC_FREE(conn);
 			return EIO;
 		}
 
@@ -1089,7 +1076,6 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 		if (m->datalen < sizeof(uint32_t) || m->datalen != d->length) {
 			DEBUG(0, ("Got invalid traverse data of length %d\n",
 				  (int)m->datalen));
-			TALLOC_FREE(conn);
 			return EIO;
 		}
 
@@ -1100,14 +1086,12 @@ int ctdbd_traverse(struct ctdbd_connection *master, uint32_t db_id,
 
 		if (key.dsize == 0 && data.dsize == 0) {
 			/* end of traverse */
-			TALLOC_FREE(conn);
 			return 0;
 		}
 
 		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 			DEBUG(0, ("Got invalid ltdb header length %d\n",
 				  (int)data.dsize));
-			TALLOC_FREE(conn);
 			return EIO;
 		}
 		data.dsize -= sizeof(struct ctdb_ltdb_header);
