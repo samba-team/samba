@@ -178,12 +178,20 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return ENOMEM;
 	}
 
-	ret = ctdbd_messaging_connection(ctx, lp_ctdbd_socket(),
-					 lp_ctdb_timeout(), &ctx->conn);
+	ret = ctdbd_init_connection(ctx, lp_ctdbd_socket(),
+				    lp_ctdb_timeout(), &ctx->conn);
 
 	if (ret != 0) {
-		DEBUG(10, ("ctdbd_messaging_connection failed: %s\n",
-			   strerror(ret)));
+		DBG_DEBUG("ctdbd_init_connection failed: %s\n",
+			  strerror(ret));
+		TALLOC_FREE(result);
+		return ret;
+	}
+
+	ret = register_with_ctdbd(ctx->conn, MSG_SRVID_SAMBA, NULL, NULL);
+	if (ret != 0) {
+		DBG_DEBUG("Could not register MSG_SRVID_SAMBA: %s\n",
+			  strerror(ret));
 		TALLOC_FREE(result);
 		return ret;
 	}
