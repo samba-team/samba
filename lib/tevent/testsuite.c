@@ -38,6 +38,15 @@
 
 static int fde_count;
 
+static void do_read(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = read(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+}
+
 static void fde_handler_read(struct tevent_context *ev_ctx, struct tevent_fd *f,
 			uint16_t flags, void *private_data)
 {
@@ -48,7 +57,7 @@ static void fde_handler_read(struct tevent_context *ev_ctx, struct tevent_fd *f,
 #endif
 	kill(getpid(), SIGALRM);
 
-	read(fd[0], &c, 1);
+	do_read(fd[0], &c, 1);
 	fde_count++;
 }
 
@@ -72,7 +81,7 @@ static void fde_handler_read_1(struct tevent_context *ev_ctx, struct tevent_fd *
 #endif
 	kill(getpid(), SIGALRM);
 
-	read(fd[1], &c, 1);
+	do_read(fd[1], &c, 1);
 	fde_count++;
 }
 
