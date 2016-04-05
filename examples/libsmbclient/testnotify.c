@@ -43,7 +43,11 @@ int main(int argc, char * argv[])
 
 	fprintf(stdout, "Path: ");
 	*path = '\0';
-	fgets(path, sizeof(path) - 1, stdin);
+	p = fgets(path, sizeof(path) - 1, stdin);
+	if (p == NULL) {
+		fprintf(stderr, "error reading from stdin\n");
+		return 1;
+	}
 	if (strlen(path) == 0) {
 		return 0;
 	}
