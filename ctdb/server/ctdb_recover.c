@@ -1124,40 +1124,123 @@ static void ctdb_start_recovery_callback(struct ctdb_context *ctdb, int status, 
 	talloc_free(state);
 }
 
-/*
-  run the startrecovery eventscript
- */
-int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
-				struct ctdb_req_control_old *c,
-				bool *async_reply)
+static void run_start_recovery_event(struct ctdb_context *ctdb,
+				     struct recovery_callback_state *state)
 {
 	int ret;
-	struct recovery_callback_state *state;
-
-	DEBUG(DEBUG_NOTICE,(__location__ " startrecovery eventscript has been invoked\n"));
-	gettimeofday(&ctdb->last_recovery_started, NULL);
-
-	state = talloc(ctdb, struct recovery_callback_state);
-	CTDB_NO_MEMORY(ctdb, state);
-
-	state->c    = talloc_steal(state, c);
 
 	ctdb_disable_monitoring(ctdb);
 
 	ret = ctdb_event_script_callback(ctdb, state,
-					 ctdb_start_recovery_callback, 
+					 ctdb_start_recovery_callback,
 					 state,
 					 CTDB_EVENT_START_RECOVERY,
 					 "%s", "");
 
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to start recovery\n"));
+		DEBUG(DEBUG_ERR,("Unable to run startrecovery event\n"));
+		ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
 		talloc_free(state);
-		return -1;
+		return;
+	}
+
+	return;
+}
+
+static bool reclock_strings_equal(const char *a, const char *b)
+{
+	return (a == NULL && b == NULL) ||
+		(a != NULL && b != NULL && strcmp(a, b) == 0);
+}
+
+static void start_recovery_reclock_callback(struct ctdb_context *ctdb,
+						int32_t status,
+						TDB_DATA data,
+						const char *errormsg,
+						void *private_data)
+{
+	struct recovery_callback_state *state = talloc_get_type_abort(
+		private_data, struct recovery_callback_state);
+	const char *local = ctdb->recovery_lock_file;
+	const char *remote = NULL;
+
+	if (status != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " GET_RECLOCK failed\n"));
+		ctdb_request_control_reply(ctdb, state->c, NULL,
+					   status, errormsg);
+		talloc_free(state);
+		return;
+	}
+
+	/* Check reclock consistency */
+	if (data.dsize > 0) {
+		/* Ensure NUL-termination */
+		data.dptr[data.dsize-1] = '\0';
+		remote = (const char *)data.dptr;
+	}
+	if (! reclock_strings_equal(local, remote)) {
+		/* Inconsistent */
+		ctdb_request_control_reply(ctdb, state->c, NULL, -1, NULL);
+		DEBUG(DEBUG_ERR,
+		      ("Recovery lock configuration inconsistent: "
+		       "recmaster has %s, this node has %s, shutting down\n",
+		       remote == NULL ? "NULL" : remote,
+		       local == NULL ? "NULL" : local));
+		talloc_free(state);
+		ctdb_shutdown_sequence(ctdb, 1);
+	}
+	DEBUG(DEBUG_INFO,
+	      ("Recovery lock consistency check successful\n"));
+
+	run_start_recovery_event(ctdb, state);
+}
+
+/* Check recovery lock consistency and run eventscripts for the
+ * "startrecovery" event */
+int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
+				    struct ctdb_req_control_old *c,
+				    bool *async_reply)
+{
+	int ret;
+	struct recovery_callback_state *state;
+	uint32_t recmaster = c->hdr.srcnode;
+
+	DEBUG(DEBUG_NOTICE, ("Running startrecovery event\n"));
+	gettimeofday(&ctdb->last_recovery_started, NULL);
+
+	state = talloc(ctdb, struct recovery_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c = c;
+
+	/* Although the recovery master sent this node a start
+	 * recovery control, this node might still think the recovery
+	 * master is disconnected.  In this case defer the recovery
+	 * lock consistency check. */
+	if (ctdb->nodes[recmaster]->flags & NODE_FLAGS_DISCONNECTED) {
+		run_start_recovery_event(ctdb, state);
+	} else {
+		/* Ask the recovery master about its reclock setting */
+		ret = ctdb_daemon_send_control(ctdb,
+					       recmaster,
+					       0,
+					       CTDB_CONTROL_GET_RECLOCK_FILE,
+					       0, 0,
+					       tdb_null,
+					       start_recovery_reclock_callback,
+					       state);
+
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " GET_RECLOCK failed\n"));
+			talloc_free(state);
+			return -1;
+		}
 	}
 
 	/* tell the control that we will be reply asynchronously */
+	state->c = talloc_steal(state, c);
 	*async_reply = true;
+
 	return 0;
 }
 
