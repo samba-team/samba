@@ -24,6 +24,7 @@
 #include "torture/util.h"
 #include "param/param.h"
 #include "torture/basic/proto.h"
+#include "lib/util/sys_rw.h"
 
 bool torture_utable(struct torture_context *tctx, 
 					struct smbcli_state *cli)
@@ -96,7 +97,7 @@ bool torture_utable(struct torture_context *tctx,
 	torture_assert(tctx, fd != -1, 
 		talloc_asprintf(tctx, 
 		"Failed to create valid.dat - %s", strerror(errno)));
-	write(fd, valid, 0x10000);
+	sys_write_v(fd, valid, 0x10000);
 	close(fd);
 	torture_comment(tctx, "wrote valid.dat\n");
 
