@@ -874,6 +874,7 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	char *mget_mask;
 	char *saved_curdir;
 	char *l_fname;
+	int ret;
 
 	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name))
 		return;
@@ -922,7 +923,11 @@ static void do_mget(struct smbclient_context *ctx, struct clilist_file_info *fin
 	mget_mask = talloc_asprintf(ctx, "%s*", ctx->remote_cur_dir);
 	
 	do_list(ctx, mget_mask, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,do_mget,false, true);
-	chdir("..");
+	ret = chdir("..");
+	if (ret == -1) {
+		d_printf("failed to chdir to '..': %s\n", strerror(errno));
+		return;
+	}
 	talloc_free(ctx->remote_cur_dir);
 
 	ctx->remote_cur_dir = saved_curdir;
@@ -965,7 +970,11 @@ static int cmd_more(struct smbclient_context *ctx, const char **args)
 	pager=getenv("PAGER");
 
 	pager_cmd = talloc_asprintf(ctx, "%s %s",(pager? pager:DEFAULT_PAGER), lname);
-	system(pager_cmd);
+	rc = system(pager_cmd);
+	if (rc == -1) {
+		d_printf("failed to call pager command\n");
+		return 1;
+	}
 	unlink(lname);
 	
 	return rc;
@@ -2540,8 +2549,17 @@ static int cmd_lcd(struct smbclient_context *ctx, const char **args)
 {
 	char d[PATH_MAX];
 	
-	if (args[1]) 
-		chdir(args[1]);
+	if (args[1]) {
+		int ret;
+
+		ret = chdir(args[1]);
+		if (ret == -1) {
+			d_printf("failed to chdir to dir '%s': %s\n",
+				 args[1], strerror(errno));
+			return 1;
+		}
+	}
+
 	DEBUG(2,("the local directory is now %s\n",getcwd(d, PATH_MAX)));
 
 	return 0;
@@ -3138,8 +3156,12 @@ static int process_stdin(struct smbclient_context *ctx)
 
 		/* special case - first char is ! */
 		if (*cline == '!') {
-			system(cline + 1);
+			int ret;
+			ret = system(cline + 1);
 			free(cline);
+			if (ret == -1) {
+				rc |= ret;
+			}
 			continue;
 		}
 
