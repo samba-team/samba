@@ -490,12 +490,12 @@ struct foo bar = { .y = 'X', .x = 1 };
     if not conf.CHECK_LARGEFILE():
         raise Utils.WafError('Samba requires large file support support, but not available on this platform: sizeof(off_t) < 8')
 
-    if 'HAVE_STDDEF_H' in conf.env and 'HAVE_STDLIB_H' in conf.env:
+    if conf.env.HAVE_STDDEF_H and conf.env.HAVE_STDLIB_H:
         conf.DEFINE('STDC_HEADERS', 1)
 
     conf.CHECK_HEADERS('sys/time.h time.h', together=True)
 
-    if 'HAVE_SYS_TIME_H' in conf.env and 'HAVE_TIME_H' in conf.env:
+    if conf.env.HAVE_SYS_TIME_H and conf.env.HAVE_TIME_H:
         conf.DEFINE('TIME_WITH_SYS_TIME', 1)
 
     # cope with different extensions for libraries

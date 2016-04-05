@@ -137,7 +137,7 @@ long ret = splice(0,0,1,0,400,SPLICE_F_MOVE);
 
     # Check for inotify support
     conf.CHECK_HEADERS('sys/inotify.h')
-    if "HAVE_SYS_INOTIFY_H" in conf.env:
+    if conf.env.HAVE_SYS_INOTIFY_H:
         conf.DEFINE('HAVE_INOTIFY', 1)
 
     # Check for kernel change notify support
@@ -309,7 +309,7 @@ int main(int argc, char **argv)
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_flags', define='HAVE_STAT_ST_FLAGS',
                                 headers='sys/types.h sys/stat.h unistd.h')
 
-    if "HAVE_BLKCNT_T" in conf.env:
+    if conf.env.HAVE_BLKCNT_T:
         conf.CHECK_CODE('''
         static int test_array[1 - 2 * !(((long int)(sizeof(blkcnt_t))) <= 4)];''',
                 'SIZEOF_BLKCNT_T_4',
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
                 msg="Checking whether blkcnt_t is 32 bit")
 
     # If sizeof is 4 it can't be 8
-    if "HAVE_BLKCNT_T" in conf.env:
+    if conf.env.HAVE_BLKCNT_T:
         if not conf.CONFIG_SET('SIZEOF_BLKCNT_T_4'):
             conf.CHECK_CODE('''
             static int test_array[1 - 2 * !(((long int)(sizeof(blkcnt_t))) <= 8)];''',
@@ -328,7 +328,7 @@ int main(int argc, char **argv)
     # Check for POSIX capability support
     conf.CHECK_FUNCS_IN('cap_get_proc', 'cap', headers='sys/capability.h')
 
-    if "HAVE_SYS_CAPABILITY_H" in conf.env:
+    if conf.env.HAVE_SYS_CAPABILITY_H:
         conf.CHECK_CODE('''
         cap_t cap;
         cap_value_t vals[1];
