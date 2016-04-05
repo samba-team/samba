@@ -1591,28 +1591,6 @@ int ctdb_reply_control_get_reclock_file(struct ctdb_reply_control *reply,
 	return reply->status;
 }
 
-/* CTDB_CONTROL_SET_RECLOCK_FILE */
-
-void ctdb_req_control_set_reclock_file(struct ctdb_req_control *request,
-				       const char *reclock_file)
-{
-	request->opcode = CTDB_CONTROL_SET_RECLOCK_FILE;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_SET_RECLOCK_FILE;
-	request->rdata.data.reclock_file = reclock_file;
-}
-
-int ctdb_reply_control_set_reclock_file(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply,
-					  CTDB_CONTROL_SET_RECLOCK_FILE);
-}
-
-
 /* CTDB_CONTROL_STOP_NODE */
 
 void ctdb_req_control_stop_node(struct ctdb_req_control *request)

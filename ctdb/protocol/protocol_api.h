@@ -457,10 +457,6 @@ int ctdb_reply_control_get_reclock_file(struct ctdb_reply_control *reply,
 					TALLOC_CTX *mem_ctx,
 					const char **reclock_file);
 
-void ctdb_req_control_set_reclock_file(struct ctdb_req_control *request,
-				       const char *reclock_file);
-int ctdb_reply_control_set_reclock_file(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_stop_node(struct ctdb_req_control *request);
 int ctdb_reply_control_stop_node(struct ctdb_reply_control *reply);
 

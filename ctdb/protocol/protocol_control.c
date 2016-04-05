@@ -304,10 +304,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		break;
 
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		len = ctdb_string_len(cd->data.reclock_file);
-		break;
-
 	case CTDB_CONTROL_STOP_NODE:
 		break;
 
@@ -634,10 +630,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
 		ctdb_double_push(cd->data.reclock_latency, buf);
-		break;
-
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		ctdb_string_push(cd->data.reclock_file, buf);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
@@ -977,11 +969,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
 		ret = ctdb_double_pull(buf, buflen, mem_ctx,
 				       &cd->data.reclock_latency);
-		break;
-
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.reclock_file);
 		break;
 
 	case CTDB_CONTROL_SET_LMASTERROLE:
@@ -1391,9 +1378,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		len = ctdb_string_len(cd->data.reclock_file);
-		break;
-
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
 		break;
 
 	case CTDB_CONTROL_STOP_NODE:

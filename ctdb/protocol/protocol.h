@@ -867,7 +867,6 @@ struct ctdb_req_control_data {
 		struct ctdb_public_ip *pubip;
 		enum ctdb_event event;
 		double reclock_latency;
-		const char *reclock_file;
 		uint32_t role;
 		const char *script;
 		struct ctdb_ban_state *ban_state;

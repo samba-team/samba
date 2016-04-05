@@ -439,11 +439,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		break;
 
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		fill_ctdb_string(mem_ctx, &cd->data.reclock_file);
-		assert(cd->data.reclock_file != NULL);
-		break;
-
 	case CTDB_CONTROL_STOP_NODE:
 		break;
 
@@ -907,11 +902,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
-		break;
-
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		verify_ctdb_string(cd->data.reclock_file,
-				   cd2->data.reclock_file);
 		break;
 
 	case CTDB_CONTROL_STOP_NODE:
@@ -1380,9 +1370,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		assert(cd->data.reclock_file != NULL);
 		break;
 
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
-		break;
-
 	case CTDB_CONTROL_STOP_NODE:
 		break;
 
@@ -1765,9 +1752,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		verify_ctdb_string(cd->data.reclock_file,
 				   cd2->data.reclock_file);
-		break;
-
-	case CTDB_CONTROL_SET_RECLOCK_FILE:
 		break;
 
 	case CTDB_CONTROL_STOP_NODE:
