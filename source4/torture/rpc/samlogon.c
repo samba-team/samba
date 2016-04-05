@@ -346,8 +346,13 @@ static bool test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
@@ -467,8 +472,13 @@ static bool test_ntlm_in_lm(struct samlogon_state *samlogon_state, char **error_
 		}
 		return false;
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
@@ -564,8 +574,13 @@ static bool test_ntlm_in_both(struct samlogon_state *samlogon_state, char **erro
 		}
 		return false;
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
@@ -677,8 +692,13 @@ static bool test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state,
 	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
@@ -845,8 +865,13 @@ static bool test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
@@ -1126,8 +1151,13 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 		}
 		return false;
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
@@ -1229,8 +1259,13 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_FOUND, nt_status) && strchr_m(samlogon_state->account_name, '@')) {
 		return ((break_which == BREAK_NT) || (break_which == BREAK_BOTH) || (break_which == NO_NT));
 	} else if (!NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status)) {
+		int ret;
+
 		SAFE_FREE(*error_string);
-		asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		ret = asprintf(error_string, "Expected error: %s, got %s", nt_errstr(samlogon_state->expected_error), nt_errstr(nt_status));
+		if (ret == -1) {
+			*error_string = NULL;
+		}
 		return false;
 	} else if (NT_STATUS_EQUAL(samlogon_state->expected_error, nt_status) && !NT_STATUS_IS_OK(nt_status)) {
 		return true;
