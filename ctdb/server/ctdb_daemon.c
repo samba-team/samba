@@ -1276,6 +1276,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	ctdb_set_child_logging(ctdb);
 
+	TALLOC_FREE(ctdb->srv);
 	if (srvid_init(ctdb, &ctdb->srv) != 0) {
 		DEBUG(DEBUG_CRIT,("Failed to setup message srvid context\n"));
 		exit(1);

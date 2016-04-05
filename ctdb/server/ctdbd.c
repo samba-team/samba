@@ -197,6 +197,7 @@ int main(int argc, const char *argv[])
 	ctdb->upcalls          = &ctdb_upcalls;
 	ctdb->recovery_lock_fd = -1;
 
+	TALLOC_FREE(ctdb->idr);
 	ret = reqid_init(ctdb, 0, &ctdb->idr);;
 	if (ret != 0) {
 		DEBUG(DEBUG_ALERT, ("reqid_init failed (%s)\n", strerror(ret)));
