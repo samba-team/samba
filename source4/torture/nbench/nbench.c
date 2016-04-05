@@ -64,6 +64,7 @@ static bool run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	bool correct = true;
 	double target_rate = torture_setting_double(tctx, "targetrate", 0);	
 	int n = 0;
+	int ret;
 
 	if (target_rate != 0 && client == 0) {
 		printf("Targeting %.4f MByte/sec\n", target_rate);
@@ -77,7 +78,10 @@ static bool run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 		}
 	}
 
-	asprintf(&cname, "client%d", client+1);
+	ret = asprintf(&cname, "client%d", client+1);
+	if (ret == -1) {
+		return false;
+	}
 
 	f = fopen(loadfile, "r");
 
