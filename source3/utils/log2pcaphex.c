@@ -350,7 +350,13 @@ int main(int argc, const char **argv)
 	if(!hexformat)print_pcap_header(out);
 
 	while(!feof(in)) {
-		fgets(buffer, sizeof(buffer), in); line_num++;
+		char *p;
+		p = fgets(buffer, sizeof(buffer), in);
+		if (p == NULL) {
+			fprintf(stderr, "error reading from input file\n");
+			break;
+		}
+		line_num++;
 		if(buffer[0] == '[') { /* Header */
 			if(strstr(buffer, "show_msg")) {
 				in_packet++;
