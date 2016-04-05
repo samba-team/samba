@@ -1789,35 +1789,6 @@ int ctdb_ctrl_get_reclock_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_set_reclock_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       struct ctdb_client_context *client,
-			       int destnode, struct timeval timeout,
-			       const char *reclock_file)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_set_reclock_file(&request, reclock_file);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control SET_RECLOCK_FILE failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_set_reclock_file(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control SET_RECLOCK_FILE failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_stop_node(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			int destnode, struct timeval timeout)

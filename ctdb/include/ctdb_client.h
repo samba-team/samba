@@ -555,9 +555,6 @@ int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb,
 int ctdb_ctrl_getreclock(struct ctdb_context *ctdb,
 			 struct timeval timeout, uint32_t destnode,
 			 TALLOC_CTX *mem_ctx, const char **reclock);
-int ctdb_ctrl_setreclock(struct ctdb_context *ctdb,
-			 struct timeval timeout, uint32_t destnode,
-			 const char *reclock);
 
 int ctdb_ctrl_stop_node(struct ctdb_context *ctdb, struct timeval timeout,
 			uint32_t destnode);

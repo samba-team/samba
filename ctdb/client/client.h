@@ -508,11 +508,6 @@ int ctdb_ctrl_get_reclock_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int destnode, struct timeval timeout,
 			       const char **reclock_file);
 
-int ctdb_ctrl_set_reclock_file(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       struct ctdb_client_context *client,
-			       int destnode, struct timeval timeout,
-			       const char *reclock_file);
-
 int ctdb_ctrl_stop_node(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,
 			int destnode, struct timeval timeout);
