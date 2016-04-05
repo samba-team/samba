@@ -824,7 +824,9 @@ static bool run_vuidtest(struct torture_context *tctx,
 	int failures = 0;
 	int i;
 
-	asprintf(&control_char_fname, "\\readonly.afile");
+	control_char_fname = talloc_strdup(tctx, "\\readonly.afile");
+	torture_assert_not_null(tctx, control_char_fname, "asprintf failed\n");
+
 	for (i = 1; i <= 0x1f; i++) {
 		control_char_fname[10] = i;
 		fnum1 = smbcli_nt_create_full(cli1->tree, control_char_fname, 0, SEC_FILE_WRITE_DATA, FILE_ATTRIBUTE_NORMAL,
@@ -843,7 +845,7 @@ static bool run_vuidtest(struct torture_context *tctx,
 		smbcli_setatr(cli1->tree, control_char_fname, 0, 0);
 		smbcli_unlink(cli1->tree, control_char_fname);
 	}
-	free(control_char_fname);
+	TALLOC_FREE(control_char_fname);
 
 	if (!failures)
 		torture_comment(tctx, "Create file with control char names passed.\n");
