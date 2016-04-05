@@ -41,6 +41,7 @@ bool torture_dirtest1(struct torture_context *tctx,
 	bool correct = true;
 	extern int torture_numops;
 	struct timeval tv;
+	int ret;
 
 	torture_comment(tctx, "Creating %d random filenames\n", torture_numops);
 
@@ -48,7 +49,8 @@ bool torture_dirtest1(struct torture_context *tctx,
 	tv = timeval_current();
 	for (i=0;i<torture_numops;i++) {
 		char *fname;
-		asprintf(&fname, "\\%x", (int)random());
+		ret = asprintf(&fname, "\\%x", (int)random());
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum == -1) {
 			fprintf(stderr,"(%s) Failed to open %s\n", 
@@ -68,7 +70,8 @@ bool torture_dirtest1(struct torture_context *tctx,
 	srandom(0);
 	for (i=0;i<torture_numops;i++) {
 		char *fname;
-		asprintf(&fname, "\\%x", (int)random());
+		ret = asprintf(&fname, "\\%x", (int)random());
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		smbcli_unlink(cli->tree, fname);
 		free(fname);
 	}
@@ -83,6 +86,7 @@ bool torture_dirtest2(struct torture_context *tctx,
 	int fnum, num_seen;
 	bool correct = true;
 	extern int torture_entries;
+	int ret;
 
 	if (!torture_setup_dir(cli, "\\LISTDIR")) {
 		return false;
@@ -93,7 +97,8 @@ bool torture_dirtest2(struct torture_context *tctx,
 	/* Create torture_entries files and torture_entries directories. */
 	for (i=0;i<torture_entries;i++) {
 		char *fname;
-		asprintf(&fname, "\\LISTDIR\\f%d", i);
+		ret = asprintf(&fname, "\\LISTDIR\\f%d", i);
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		fnum = smbcli_nt_create_full(cli->tree, fname, 0, 
 					     SEC_RIGHTS_FILE_ALL,
 					     FILE_ATTRIBUTE_ARCHIVE,
@@ -109,7 +114,8 @@ bool torture_dirtest2(struct torture_context *tctx,
 	}
 	for (i=0;i<torture_entries;i++) {
 		char *fname;
-		asprintf(&fname, "\\LISTDIR\\d%d", i);
+		ret = asprintf(&fname, "\\LISTDIR\\d%d", i);
+		torture_assert(tctx, ret != -1, "asprintf failed");
 		if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, fname))) {
 			fprintf(stderr,"(%s) Failed to open %s, error=%s\n", 
 				__location__, fname, smbcli_errstr(cli->tree));
