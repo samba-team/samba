@@ -77,7 +77,13 @@ clear:
 	first_try = false;
 
 	DEBUG(0,("retry after truncate for '%s'\n", path));
-	truncate(path, 0);
+	ret = truncate(path, 0);
+	if (ret == -1) {
+		DBG_ERR("truncate failed: %s\n", strerror(errno));
+		talloc_free(path);
+		return false;
+	}
+
 	goto again;
 }
 
