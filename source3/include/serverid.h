@@ -22,6 +22,7 @@
 
 #include "replace.h"
 #include "lib/dbwrap/dbwrap.h"
+#include "librpc/gen_ndr/server_id.h"
 
 /*
  * Register a server with its unique id
