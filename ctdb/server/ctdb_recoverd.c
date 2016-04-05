@@ -1615,40 +1615,6 @@ static void ctdb_recovery_unlock(struct ctdb_context *ctdb)
 	}
 }
 
-/* when we start a recovery, make sure all nodes use the same reclock file
-   setting
-*/
-static int sync_recovery_lock_file_across_cluster(struct ctdb_recoverd *rec)
-{
-	struct ctdb_context *ctdb = rec->ctdb;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	TDB_DATA data;
-	uint32_t *nodes;
-
-	if (ctdb->recovery_lock_file == NULL) {
-		data.dptr  = NULL;
-		data.dsize = 0;
-	} else {
-		data.dsize = strlen(ctdb->recovery_lock_file) + 1;
-		data.dptr  = (uint8_t *)ctdb->recovery_lock_file;
-	}
-
-	nodes = list_of_active_nodes(ctdb, rec->nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_SET_RECLOCK_FILE,
-					nodes, 0,
-					CONTROL_TIMEOUT(),
-					false, data,
-					NULL, NULL,
-					rec) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to sync reclock file settings\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
 static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -2150,11 +2116,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated db priority for all databases\n"));
 
-
-	/* update all other nodes to use the same setting for reclock files
-	   as the local recovery master.
-	*/
-	sync_recovery_lock_file_across_cluster(rec);
 
 	/* Retrieve capabilities from all connected nodes */
 	ret = update_capabilities(rec, nodemap);
