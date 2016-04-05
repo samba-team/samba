@@ -88,6 +88,7 @@ static void filter_request(char *buf, size_t buf_len)
 	int name_len1 = 0;
 	int name_len2;
 	int name_type1, name_type2;
+	int ret;
 
 	if (msg_type) {
 		/* it's a netbios special */
@@ -142,7 +143,10 @@ static void filter_request(char *buf, size_t buf_len)
 		x = IVAL(buf,smb_vwv11);
 		d_printf("SMBsesssetupX cap=0x%08x\n", x);
 		d_printf("pwlen=%d/%d\n", SVAL(buf, smb_vwv7), SVAL(buf, smb_vwv8));
-		system("mv sessionsetup.dat sessionsetup1.dat");
+		ret = system("mv sessionsetup.dat sessionsetup1.dat");
+		if (ret == -1) {
+			DBG_ERR("failed to call mv command\n");
+		}
 		save_file("sessionsetup.dat", smb_buf(buf), SVAL(buf, smb_vwv7));
 		x = (x | CLI_CAPABILITY_SET) & ~CLI_CAPABILITY_MASK;
 		SIVAL(buf, smb_vwv11, x);
