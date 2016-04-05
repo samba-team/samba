@@ -186,7 +186,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			namelen = IVAL(p,0);
 			p += 4;
 			p += 4; /* EA size */
-			slen = SVAL(p, 0);
+			slen = CVAL(p, 0);
 			if (slen > 24) {
 				/* Bad short name length. */
 				return pdata_end - base;
