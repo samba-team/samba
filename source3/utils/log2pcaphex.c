@@ -302,7 +302,8 @@ int main(int argc, const char **argv)
 	int opt;
 	poptContext pc;
 	char buffer[4096];
-	long data_offset, data_length;
+	long data_offset = 0;
+	long data_length;
 	long data_bytes_read = 0;
 	int in_packet = 0;
 	struct poptOption long_options[] = {
