@@ -21,12 +21,18 @@ NEW FEATURES/CHANGES
 REMOVED FEATURES
 ================
 
+only user and username parameters
+---------------------------------
+These two parameters have long been deprecated and superseded by
+"valid users" and "invalid users".
+
 smb.conf changes
 ----------------
 
   Parameter Name		Description		Default
   --------------		-----------		-------
-
+  only user			Removed
+  username			Removed
 
 KNOWN ISSUES
 ============
