@@ -16,12 +16,12 @@ if ! type ipvsadm >/dev/null 2>&1 ; then
 	exit 0
 fi
 
-case "$1" in 
-     startup)
-	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
-	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
+case "$1" in
+startup)
+	ipvsadm -D -t "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
+	ipvsadm -D -u "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
 
-	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host
+	ip addr add "${CTDB_LVS_PUBLIC_IP}/32" dev lo scope host
 
 	# do not respond to ARPs that are for ip addresses with scope 'host'
 	set_proc_maybe sys/net/ipv4/conf/all/arp_ignore 3
@@ -29,59 +29,55 @@ case "$1" in
 	set_proc_maybe sys/net/ipv4/conf/all/arp_announce 2
 	;;
 
-     shutdown)
-	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
-	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
+shutdown)
+	ipvsadm -D -t "$CTDB_LVS_PUBLIC_IP"
+	ipvsadm -D -u "$CTDB_LVS_PUBLIC_IP"
 
-	# remove the ip
-	ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+	ip addr del "${CTDB_LVS_PUBLIC_IP}/32" dev lo >/dev/null 2>&1
 
 	flush_route_cache
 	;;
 
-     ipreallocated)
-	# kill off any tcp connections
-	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
-	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
+ipreallocated)
+	# Kill connections
+	ipvsadm -D -t "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
+	ipvsadm -D -u "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
 	kill_tcp_connections_local_only \
 		"$CTDB_PUBLIC_INTERFACE" "$CTDB_LVS_PUBLIC_IP"
 
 	ctdb_get_pnn
-	LVSMASTER=`ctdb lvsmaster | sed -e "s/.*Node //" -e "s/ .*//"`
-
-	[ "$pnn" != "$LVSMASTER" ] && {
-	    # we are not the lvs master so we have to
-	    # change the ip address to have scope host so we wont respond
-	    # to arps
-	    ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
-	    ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
+	lvsmaster=$(ctdb lvsmaster | sed -n -e 's/Node \([0-9]*\) is LVS master/\1/p')
+	if [ "$pnn" != "$lvsmaster" ] ; then
+	    # This node is not the LVS master so change the IP address
+	    # to have scope "host" so this node won't respond to ARPs
+	    ip addr del "${CTDB_LVS_PUBLIC_IP}/32" dev lo >/dev/null 2>&1
+	    ip addr add "${CTDB_LVS_PUBLIC_IP}/32" dev lo scope host
 	    exit 0
-	}
+	fi
 
-	# change the scope so we start responding to arps
-	ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
-	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
+	# Change the scope so this node starts responding to ARPs
+	ip addr del "${CTDB_LVS_PUBLIC_IP}/32" dev lo >/dev/null 2>&1
+	ip addr add "${CTDB_LVS_PUBLIC_IP}/32" dev lo >/dev/null 2>&1
 
-	ipvsadm -A -t $CTDB_LVS_PUBLIC_IP:0 -p 1999999 -s lc
-	ipvsadm -A -u $CTDB_LVS_PUBLIC_IP:0 -p 1999999 -s lc
+	ipvsadm -A -t "$CTDB_LVS_PUBLIC_IP" -p 1999999 -s lc
+	ipvsadm -A -u "$CTDB_LVS_PUBLIC_IP" -p 1999999 -s lc
 
-	# add all nodes (except ourselves) to the lvs config
-	ctdb lvs | egrep -v "^${pnn}:" | sed -e "s/.*://" | while read IP; do
-		ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
-		ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r $IP -g
+	# Add all nodes (except this node) as LVS servers
+	ctdb lvs |
+	awk -F: -v pnn="$pnn" '$1 != pnn { print $2 }' |
+	while read ip ; do
+		ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r $ip -g
+		ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r $ip -g
 	done
-	# and add the localhost too
-	ipvsadm -a -t $CTDB_LVS_PUBLIC_IP:0 -r 127.0.0.1
-	ipvsadm -a -u $CTDB_LVS_PUBLIC_IP:0 -r 127.0.0.1
 
-	# send out a gratious arp so our peers will update their arp tables
-	ctdb gratiousarp $CTDB_LVS_PUBLIC_IP $CTDB_PUBLIC_INTERFACE >/dev/null 2>/dev/null
+	# Add localhost too...
+	ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r 127.0.0.1
+	ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r 127.0.0.1
+
+	ctdb gratiousarp \
+	     "$CTDB_LVS_PUBLIC_IP" "$CTDB_PUBLIC_INTERFACE" >/dev/null 2>&1
 
 	flush_route_cache
-	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
 	;;
 esac
 
