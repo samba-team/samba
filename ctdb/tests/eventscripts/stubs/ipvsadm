@@ -1,0 +1,126 @@
+#!/bin/sh
+
+die ()
+{
+	echo "$1" >&2
+	exit ${2:-1}
+}
+
+
+[ -n "$FAKE_LVS_STATE_DIR" ] || die "FAKE_LVS_STATE_DIR not set"
+
+
+service_address=""
+scheduling_method="wlc"
+persistent_timeout=""
+real_server=""
+forwarding_method="Route"
+
+set_service_address ()
+{
+	[ -z "$service_address" ] ||
+		die "multiple 'service-address' options specified" 2
+	case "$2" in
+	*:*) service_address="${1}  ${2}"   ;;
+	*)   service_address="${1}  ${2}:0" ;;
+	esac
+}
+
+set_real_server ()
+{
+	[ -z "$real_server" ] ||
+		die "multiple 'real-server' options specified" 2
+	case "$1" in
+	*\]:*) real_server="${1}"   ;;
+	*\])   real_server="${1}:0" ;;
+	*:*)   real_server="${1}"   ;;
+	*)     real_server="${1}:0" ;;
+	esac
+
+	case "$real_server" in
+	127.0.0.1:*|\[::1\]:*) forwarding_method="Local" ;;
+	esac
+}
+
+case "$1" in
+-A)
+	shift
+	while [ -n "$1" ] ; do
+		case "$1" in
+		-t) set_service_address "TCP" "$2" ; shift 2  ;;
+		-u) set_service_address "UDP" "$2" ; shift 2  ;;
+		-s) scheduling_method="$2" ; shift 2  ;;
+		-p) persistent_timeout="persistent $2" ; shift 2  ;;
+		*) die "Unsupported -A option $1" ;;
+		esac
+	done
+	[ -n "$service_address" ] ||
+		die "You need to supply the 'service-address' option for the 'add-service' command" 2
+	d="${FAKE_LVS_STATE_DIR}/${service_address}"
+	mkdir "$d" 2>/dev/null || die "Service already exists" 255
+	t="${scheduling_method}${persistent_timeout:+ }${persistent_timeout}"
+	echo "$t" >"${d}/.info"
+	;;
+-D)
+	shift
+	while [ -n "$1" ] ; do
+		case "$1" in
+		-t) set_service_address "TCP" "$2" ; shift 2 ;;
+		-u) set_service_address "UDP" "$2" ; shift 2  ;;
+		*) die "Unsupported -D option $1" ;;
+		esac
+	done
+	[ -n "$service_address" ] ||
+		die "You need to supply the 'service-address' option for the 'delete-service' command" 2
+	d="${FAKE_LVS_STATE_DIR}/${service_address}"
+	rm -f "${d}/"*
+	rm -f "${d}/.info"
+	rmdir "$d" 2>/dev/null || die "No such service" 255
+	;;
+-a)
+	shift
+	while [ -n "$1" ] ; do
+		case "$1" in
+		-t) set_service_address "TCP" "$2" ; shift 2 ;;
+		-u) set_service_address "UDP" "$2" ; shift 2 ;;
+		-r) set_real_server "$2" ; shift 2 ;;
+		-g) forwarding_method="Route" ; shift 1 ;;
+		*) die "Unsupported -A option $1" ;;
+		esac
+	done
+	[ -n "$service_address" ] ||
+		die "You need to supply the 'service-address' option for the 'delete-service' command" 2
+	d="${FAKE_LVS_STATE_DIR}/${service_address}"
+	[ -d "$d" ] || die "Service not defined" 255
+	[ -n "$real_server" ] ||
+		die "You need to supply the 'real-server' option for the 'add-server' command" 2
+	f="${d}/${real_server}"
+	echo "$forwarding_method" >"$f"
+	;;
+-l)
+	cat <<EOF
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+EOF
+	[ -d "$FAKE_LVS_STATE_DIR" ] || exit 0
+	(
+		cd "$FAKE_LVS_STATE_DIR"
+		for d in *; do
+			[ -d "$d" ] || continue
+			echo -n "$d "
+			cat "${d}/.info"
+			for f in "${d}/"* ; do
+				[ -f "$f" ] || continue
+				read forwarding_method <"$f"
+				printf "  -> %-28s %-7s %-6s %-10s %-10s\n" \
+				       "${f##*/}" "$forwarding_method" 1 0 0
+			done
+		done
+	)
+	;;
+*)
+	die "Unknown option $1"
+esac
+
+exit 0
