@@ -758,32 +758,32 @@ class TestDNSUpdates(DNSTest):
 
 
 class TestComplexQueries(DNSTest):
-
-    def setUp(self):
-        super(TestComplexQueries, self).setUp()
+    def make_dns_update(self, key, value, qtype):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
-        updates = []
 
         name = self.get_dns_domain()
-
         u = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
-        updates.append(u)
-        self.finish_name_packet(p, updates)
+        self.finish_name_packet(p, [u])
 
-        updates = []
         r = dns.res_rec()
-        r.name = "cname_test.%s" % self.get_dns_domain()
-        r.rr_type = dns.DNS_QTYPE_CNAME
+        r.name = key
+        r.rr_type = qtype
         r.rr_class = dns.DNS_QCLASS_IN
         r.ttl = 900
         r.length = 0xffff
-        r.rdata = "%s.%s" % (self.server, self.get_dns_domain())
-        updates.append(r)
-        p.nscount = len(updates)
+        rdata = value
+        r.rdata = rdata
+        updates = [r]
+        p.nscount = 1
         p.nsrecs = updates
-
         response = self.dns_transaction_udp(p)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+
+    def setUp(self):
+        super(TestComplexQueries, self).setUp()
+        name = "cname_test.%s" % self.get_dns_domain()
+        rdata = "%s.%s" % (self.server, self.get_dns_domain())
+        self.make_dns_update(name, rdata, dns.DNS_QTYPE_CNAME)
 
     def tearDown(self):
         super(TestComplexQueries, self).tearDown()
@@ -832,6 +832,69 @@ class TestComplexQueries(DNSTest):
         self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
         self.assertEquals(response.answers[1].rdata,
                           self.server_ip)
+
+    def test_cname_two_chain(self):
+        name0 = "cnamechain0.%s" % self.get_dns_domain()
+        name1 = "cnamechain1.%s" % self.get_dns_domain()
+        name2 = "cnamechain2.%s" % self.get_dns_domain()
+        self.make_dns_update(name1, name2, dns.DNS_QTYPE_CNAME)
+        self.make_dns_update(name2, name0, dns.DNS_QTYPE_CNAME)
+        self.make_dns_update(name0, server_ip, dns.DNS_QTYPE_A)
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+        q = self.make_name_question(name1, dns.DNS_QTYPE_A,
+                                    dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        self.assertEquals(response.ancount, 3)
+
+        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
+        self.assertEquals(response.answers[0].name, name1)
+        self.assertEquals(response.answers[0].rdata, name2)
+
+        self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_CNAME)
+        self.assertEquals(response.answers[1].name, name2)
+        self.assertEquals(response.answers[1].rdata, name0)
+
+        self.assertEquals(response.answers[2].rr_type, dns.DNS_QTYPE_A)
+        self.assertEquals(response.answers[2].rdata,
+                          self.server_ip)
+
+    def test_cname_two_chain_not_matching_qtype(self):
+        name0 = "cnamechain0.%s" % self.get_dns_domain()
+        name1 = "cnamechain1.%s" % self.get_dns_domain()
+        name2 = "cnamechain2.%s" % self.get_dns_domain()
+        self.make_dns_update(name1, name2, dns.DNS_QTYPE_CNAME)
+        self.make_dns_update(name2, name0, dns.DNS_QTYPE_CNAME)
+        self.make_dns_update(name0, server_ip, dns.DNS_QTYPE_A)
+
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+        q = self.make_name_question(name1, dns.DNS_QTYPE_TXT,
+                                    dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        response = self.dns_transaction_udp(p)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+
+        # CNAME should return all intermediate results!
+        # Only the A records exists, not the TXT.
+        self.assertEquals(response.ancount, 2)
+
+        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
+        self.assertEquals(response.answers[0].name, name1)
+        self.assertEquals(response.answers[0].rdata, name2)
+
+        self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_CNAME)
+        self.assertEquals(response.answers[1].name, name2)
+        self.assertEquals(response.answers[1].rdata, name3)
 
 class TestInvalidQueries(DNSTest):
 
