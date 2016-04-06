@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.4.  This is *not*
+This is the first release candidate of Samba 4.5.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.4 will be the next version of the Samba suite.
+Samba 4.5 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -18,216 +18,14 @@ Nothing special.
 NEW FEATURES/CHANGES
 ====================
 
-Asynchronous flush requests
----------------------------
-
-Flush requests from SMB2/3 clients are handled asynchronously and do
-not block the processing of other requests. Note that 'strict sync'
-has to be set to 'yes' for Samba to honor flush requests from SMB
-clients.
-
-s3: smbd
---------
-
-Remove '--with-aio-support' configure option. We no longer would ever prefer
-POSIX-RT aio, use pthread_aio instead.
-
-samba-tool sites
-----------------
-
-The 'samba-tool sites' subcommand can now be run against another server by
-specifying an LDB URL using the '-H' option and not against the local database
-only (which is still the default when no URL is given).
-
-samba-tool domain demote
-------------------------
-
-Add '--remove-other-dead-server' option to 'samba-tool domain demote'
-subcommand. The new version of this tool now can remove another DC that is
-itself offline.  The '--remove-other-dead-server' removes as many references
-to the DC as possible.
-
-samba-tool drs clone-dc-database
---------------------------------
-
-Replicate an initial clone of domain, but do not join it.
-This is developed for debugging purposes, but not for setting up another DC.
-
-pdbedit
--------
-
-Add '--set-nt-hash' option to pdbedit to update user password from nt-hash
-hexstring. 'pdbedit -vw' shows also password hashes.
-
-smbstatus
----------
-
-'smbstatus' was enhanced to show the state of signing and encryption for
-sessions and shares.
-
-smbget
-------
-The -u and -p options for user and password were replaced by the -U option that
-accepts username[%password] as in many other tools of the Samba suite.
-Similary, smbgetrc files do not accept username and password options any more,
-only a single "user" option which also accepts user%password combinations.
-The -P option was removed.
-
-s4-rpc_server
--------------
-
-Add a GnuTLS based backupkey implementation.
-
-ntlm_auth
----------
-
-Using the '--offline-logon' enables ntlm_auth to use cached passwords when the
-DC is offline.
-
-Allow '--password' force a local password check for ntlm-server-1 mode.
-
-vfs_offline
------------
-
-A new VFS module called vfs_offline has been added to mark all files in the
-share as offline. It can be useful for shares mounted on top of a remote file
-system (either through a samba VFS module or via FUSE).
-
-KCC
----
-
-The Samba KCC has been improved, but is still disabled by default.
-
-DNS
----
-
-There were several improvements concerning the Samba DNS server.
-
-Active Directory
-----------------
-
-There were some improvements in the Active Directory area.
-
-WINS nsswitch module
---------------------
-
-The WINS nsswitch module has been rewritten to address memory issues and to
-simplify the code. The module now uses libwbclient to do WINS queries. This
-means that winbind needs to be running in order to resolve WINS names using
-the nss_wins module. This does not affect smbd.
-
-CTDB changes
-------------
-
-* CTDB now uses a newly implemented parallel database recovery scheme
-  that avoids deadlocks with smbd.
-
-  In certain circumstances CTDB and smbd could deadlock.  The new
-  recovery implementation avoid this.  It also provides improved
-  recovery performance.
-
-* All files are now installed into and referred to by the paths
-  configured at build time.  Therefore, CTDB will now work properly
-  when installed into the default location at /usr/local.
-
-* Public CTDB header files are no longer installed, since Samba and
-  CTDB are built from within the same source tree.
-
-* CTDB_DBDIR can now be set to tmpfs[:<tmpfs-options>]
-
-  This will cause volatile TDBs to be located in a tmpfs.  This can
-  help to avoid performance problems associated with contention on the
-  disk where volatile TDBs are usually stored.  See ctdbd.conf(5) for
-  more details.
-
-* Configuration variable CTDB_NATGW_SLAVE_ONLY is no longer used.
-  Instead, nodes should be annotated with the "slave-only" option in
-  the CTDB NAT gateway nodes file.  This file must be consistent
-  across nodes in a NAT gateway group.  See ctdbd.conf(5) for more
-  details.
-
-* New event script 05.system allows various system resources to be
-  monitored
-
-  This can be helpful for explaining poor performance or unexpected
-  behaviour.  New configuration variables are
-  CTDB_MONITOR_FILESYSTEM_USAGE, CTDB_MONITOR_MEMORY_USAGE and
-  CTDB_MONITOR_SWAP_USAGE.  Default values cause warnings to be
-  logged.  See the SYSTEM RESOURCE MONITORING CONFIGURATION in
-  ctdbd.conf(5) for more information.
-
-  The memory, swap and filesystem usage monitoring previously found in
-  00.ctdb and 40.fs_use is no longer available.  Therefore,
-  configuration variables CTDB_CHECK_FS_USE, CTDB_MONITOR_FREE_MEMORY,
-  CTDB_MONITOR_FREE_MEMORY_WARN and CTDB_CHECK_SWAP_IS_NOT_USED are
-  now ignored.
-
-* The 62.cnfs eventscript has been removed.  To get a similar effect
-  just do something like this:
-
-      mmaddcallback ctdb-disable-on-quorumLoss \
-        --command /usr/bin/ctdb \
-        --event quorumLoss --parms "disable"
-
-      mmaddcallback ctdb-enable-on-quorumReached \
-        --command /usr/bin/ctdb \
-        --event quorumReached --parms "enable"
-
-* The CTDB tunable parameter EventScriptTimeoutCount has been renamed
-  to MonitorTimeoutCount
-
-  It has only ever been used to limit timed-out monitor events.
-
-  Configurations containing CTDB_SET_EventScriptTimeoutCount=<n> will
-  cause CTDB to fail at startup.  Useful messages will be logged.
-
-* The commandline option "-n all" to CTDB tool has been removed.
-
-  The option was not uniformly implemented for all the commands.
-  Instead of command "ctdb ip -n all", use "ctdb ip all".
-
-* All CTDB current manual pages are now correctly installed
-
-
 REMOVED FEATURES
 ================
-
-Public headers
---------------
-
-Several public headers are not installed any longer. They are made for internal
-use only. More public headers will very likely be removed in future releases.
-
-The following headers are not installed any longer:
-dlinklist.h, gen_ndr/epmapper.h, gen_ndr/mgmt.h, gen_ndr/ndr_atsvc_c.h,
-gen_ndr/ndr_epmapper_c.h, gen_ndr/ndr_epmapper.h, gen_ndr/ndr_mgmt_c.h,
-gen_ndr/ndr_mgmt.h,gensec.h, ldap_errors.h, ldap_message.h, ldap_ndr.h,
-ldap-util.h, pytalloc.h, read_smb.h, registry.h, roles.h, samba_util.h,
-smb2_constants.h, smb2_create_blob.h, smb2.h, smb2_lease.h, smb2_signing.h,
-smb_cli.h, smb_cliraw.h, smb_common.h, smb_composite.h, smb_constants.h,
-smb_raw.h, smb_raw_interfaces.h, smb_raw_signing.h, smb_raw_trans2.h,
-smb_request.h, smb_seal.h, smb_signing.h, smb_unix_ext.h, smb_util.h,
-torture.h, tstream_smbXcli_np.h.
-
-vfs_smb_traffic_analyzer
-------------------------
-
-The SMB traffic analyzer VFS module has been removed, because it is not
-maintained any longer and not widely used.
-
-vfs_scannedonly
----------------
-
-The scannedonly VFS module has been removed, because it is not maintained
-any longer.
 
 smb.conf changes
 ----------------
 
   Parameter Name		Description		Default
   --------------		-----------		-------
-  aio max threads               New                     100
-  ldap page size		Changed default		1000
 
 
 KNOWN ISSUES
