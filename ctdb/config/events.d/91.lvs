@@ -11,10 +11,10 @@ loadconfig ctdb
 [ -z "$CTDB_LVS_PUBLIC_IP" ] && exit 0
 [ -z "$CTDB_PUBLIC_INTERFACE" ] && exit 0
 
-[ -x /sbin/ipvsadm ] || {
-    echo "LVS configured but /sbin/ipvsadm is not installed."
-    exit 0
-}
+if ! type ipvsadm >/dev/null 2>&1 ; then
+	echo "LVS configured but ipvsadm not found"
+	exit 0
+fi
 
 case "$1" in 
      startup)
@@ -24,9 +24,9 @@ case "$1" in
 	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
 
 	# do not respond to ARPs that are for ip addresses with scope 'host'
-	echo 3 > /proc/sys/net/ipv4/conf/all/arp_ignore
+	set_proc_maybe sys/net/ipv4/conf/all/arp_ignore 3
 	# do not send out arp requests from loopback addresses
-	echo 2 > /proc/sys/net/ipv4/conf/all/arp_announce
+	set_proc_maybe sys/net/ipv4/conf/all/arp_announce 2
 	;;
 
      shutdown)
@@ -36,8 +36,7 @@ case "$1" in
 	# remove the ip
 	ip addr del $CTDB_LVS_PUBLIC_IP/32 dev lo >/dev/null 2>/dev/null
 
-	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	flush_route_cache
 	;;
 
      recovered|ipreallocated)
@@ -78,8 +77,7 @@ case "$1" in
 	# send out a gratious arp so our peers will update their arp tables
 	ctdb gratiousarp $CTDB_LVS_PUBLIC_IP $CTDB_PUBLIC_INTERFACE >/dev/null 2>/dev/null
 
-	# flush our route cache
-	echo 1 > /proc/sys/net/ipv4/route/flush
+	flush_route_cache
 	;;
 
     *)
