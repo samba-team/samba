@@ -118,7 +118,6 @@ static struct loadparm_service sDefault =
 	.usershare_last_mod = {0, 0},
 	.szService = NULL,
 	.path = NULL,
-	.username = NULL,
 	.invalid_users = NULL,
 	.valid_users = NULL,
 	.admin_users = NULL,
@@ -202,7 +201,6 @@ static struct loadparm_service sDefault =
 	.oplocks = true,
 	.kernel_oplocks = false,
 	.level2_oplocks = true,
-	.only_user = false,
 	.mangled_names = true,
 	.wide_links = false,
 	.follow_symlinks = true,
@@ -1571,7 +1569,6 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	}
 
 	lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->path, tmpdir());
-	lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->username, "");
 	lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->comment, comment);
 	lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->fstype, "IPC");
 	ServicePtrs[i]->max_connections = 0;

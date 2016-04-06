@@ -183,7 +183,7 @@ bool token_contains_name_in_list(const char *username,
 /*
  * Check whether the user described by "token" has access to share snum.
  *
- * This looks at "invalid users", "valid users" and "only user/username"
+ * This looks at "invalid users" and "valid users".
  *
  * Please note that the user name and share names passed in here mainly for
  * the substitution routines that expand the parameter values, the decision
@@ -217,22 +217,6 @@ bool user_ok_token(const char *username, const char *domain,
 		}
 	}
 
-	if (lp_only_user(snum)) {
-		const char *list[2];
-		list[0] = lp_username(talloc_tos(), snum);
-		list[1] = NULL;
-		if ((list[0] == NULL) || (*list[0] == '\0')) {
-			DEBUG(0, ("'only user = yes' and no 'username ='\n"));
-			return False;
-		}
-		if (!token_contains_name_in_list(NULL, domain,
-						 lp_servicename(talloc_tos(), snum),
-						 token, list)) {
-			DEBUG(10, ("%s != 'username'\n", username));
-			return False;
-		}
-	}
-
 	DEBUG(10, ("user_ok_token: share %s is ok for unix user %s\n",
 		   lp_servicename(talloc_tos(), snum), username));
 
@@ -243,7 +227,7 @@ bool user_ok_token(const char *username, const char *domain,
  * Check whether the user described by "token" is restricted to read-only
  * access on share snum.
  *
- * This looks at "invalid users", "valid users" and "only user/username"
+ * This looks at "read list", "write list" and "read only".
  *
  * Please note that the user name and share names passed in here mainly for
  * the substitution routines that expand the parameter values, the decision
