@@ -550,6 +550,13 @@ def build(bld):
     bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_natgw',
                       destname='ctdb_natgw', chmod=0755)
 
+    bld.SAMBA_GENERATOR('ctdb-lvs',
+                        source='tools/ctdb_lvs',
+                        target='ctdb_lvs',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_lvs',
+                      destname='ctdb_lvs', chmod=0755)
+
     bld.SAMBA_GENERATOR('ctdbd-wrapper',
                         source='config/ctdbd_wrapper',
                         target='ctdbd_wrapper',
