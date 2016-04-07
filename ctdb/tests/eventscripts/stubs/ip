@@ -221,17 +221,17 @@ ip_addr_show ()
 	    pf="${FAKE_IP_STATE}/addresses/${dev}-${net}-primary"
 	    sf="${FAKE_IP_STATE}/addresses/${dev}-${net}-secondary"
 	    if $primary && [ -r "$pf" ] ; then
-		read local <"$pf"
+		read local scope <"$pf"
 		if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 		    calc_brd
-		    echo "    inet ${local} brd ${brd} scope global ${dev}"
+		    echo "    inet ${local} brd ${brd} scope ${scope} ${dev}"
 		fi
 	    fi
 	    if $secondary && [ -r "$sf" ] ; then
-		while read local ; do
+		while read local scope ; do
 		    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 			calc_brd
-			echo "    inet ${local} brd ${brd} scope global secondary ${dev}"
+			echo "    inet ${local} brd ${brd} scope ${scope} secondary ${dev}"
 		    fi
 		done <"$sf"
 	    fi
@@ -282,6 +282,7 @@ ip_addr_add ()
     local=""
     dev=""
     brd=""
+    scope="global"
     while [ -n "$1" ] ; do
 	case "$1" in
 	    *.*.*.*/*)
@@ -300,6 +301,9 @@ ip_addr_add ()
 	    dev)
 		dev="$2" ; shift 2
 		;;
+	    scope)
+		scope="$2" ; shift 2
+		;;
 	    *)
 		not_implemented "$@"
 	esac
@@ -315,7 +319,7 @@ ip_addr_add ()
     # We could lock here... but we should be the only ones playing
     # around here with these stubs.
     if [ ! -f "$pf" ] ; then
-	echo "$local" >"$pf"
+	echo "$local $scope" >"$pf"
     elif grep -Fq "$local" "$pf" ; then 
 	echo "RTNETLINK answers: File exists" >&2
 	exit 254
@@ -323,7 +327,7 @@ ip_addr_add ()
 	echo "RTNETLINK answers: File exists" >&2
 	exit 254
     else
-	echo "$local" >>"$sf"
+	echo "$local $scope" >>"$sf"
     fi
 }
 
