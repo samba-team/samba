@@ -214,12 +214,10 @@ ip_addr_show ()
     fi
     calc_brd ()
     {
-	case "${local#*/}" in
-	    24)
-		brd="${local%.*}.255"
-		;;
-	    *)
-		not_implemented "list ... fake bits other than 24: ${local#*/}"
+	    case "${local#*/}" in
+	    24) brd="${local%.*}.255" ;;
+	    32) brd="" ;;
+	    *) not_implemented "list ... fake bits other than 24/32: ${local#*/}"
 	esac
     }
     show_iface()
@@ -236,14 +234,14 @@ ip_addr_show ()
 		read local scope <"$pf"
 		if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 		    calc_brd
-		    echo "    inet ${local} brd ${brd} scope ${scope} ${dev}"
+		    echo "    inet ${local} ${brd:+brd ${brd} }scope ${scope} ${dev}"
 		fi
 	    fi
 	    if $secondary && [ -r "$sf" ] ; then
 		while read local scope ; do
 		    if [ -z "$_to" -o "${_to%/*}" = "${local%/*}" ] ; then
 			calc_brd
-			echo "    inet ${local} brd ${brd} scope ${scope} secondary ${dev}"
+			echo "    inet ${local} ${brd:+brd }${brd} scope ${scope} secondary ${dev}"
 		    fi
 		done <"$sf"
 	    fi
