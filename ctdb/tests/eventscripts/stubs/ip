@@ -107,15 +107,27 @@ ip_link_show ()
 	dev="${dev}@${_link}"
     fi
 
-    mac=$(echo $dev | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
     _state="UP"
     _flags=",UP,LOWER_UP"
     if [ -e "${FAKE_IP_STATE}/interfaces-down/$dev" ] ; then
 	_state="DOWN"
 	_flags=""
     fi
-    echo "${n:-42}: ${dev}: <BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
-    echo "    link/ether ${mac} brd ff:ff:ff:ff:ff:ff"
+    case "$dev" in
+    lo)
+	    _mac="00:00:00:00:00:00"
+	    _brd="00:00:00:00:00:00"
+	    _type="loopback"
+	    _opts="<LOOPBACK${_flags}> mtu 65536 qdisc noqueue state UNKNOWN"
+	    ;;
+    *)
+	    _mac=$(echo $dev | md5sum | sed -r -e 's@(..)(..)(..)(..)(..)(..).*@\1:\2:\3:\4:\5:\6@')
+	    _brd="ff:ff:ff:ff:ff:ff"
+	    _type="ether"
+	    _opts="<BROADCAST,MULTICAST${_flags}> mtu 1500 qdisc pfifo_fast state ${_state} qlen 1000"
+    esac
+    echo "${n:-42}: ${dev}: ${_opts}"
+    echo "    link/${_type} ${_mac} brd ${_brd}"
 }
 
 # This is incomplete because it doesn't actually look up table ids in
