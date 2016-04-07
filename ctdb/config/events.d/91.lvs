@@ -18,10 +18,10 @@ fi
 
 case "$1" in 
      startup)
-	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
-	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
+	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
+	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
 
-	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host >/dev/null 2>/dev/null
+	ip addr add $CTDB_LVS_PUBLIC_IP/32 dev lo scope host
 
 	# do not respond to ARPs that are for ip addresses with scope 'host'
 	set_proc_maybe sys/net/ipv4/conf/all/arp_ignore 3
@@ -41,8 +41,8 @@ case "$1" in
 
      recovered|ipreallocated)
 	# kill off any tcp connections
-	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0
-	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0
+	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
+	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
 	kill_tcp_connections_local_only \
 		"$CTDB_PUBLIC_INTERFACE" "$CTDB_LVS_PUBLIC_IP"
 
