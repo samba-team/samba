@@ -326,13 +326,14 @@ static void ctdb_attach_mutex_done(struct tevent_req *subreq)
 		mutex_enabled = 0;
 	}
 
-	state->tdb_flags = TDB_DEFAULT;
-	if (! state->db->persistent) {
-		state->tdb_flags |= (TDB_INCOMPATIBLE_HASH |
-				     TDB_CLEAR_IF_FIRST);
-	}
-	if (mutex_enabled == 1) {
-		state->tdb_flags |= TDB_MUTEX_LOCKING;
+	if (state->db->persistent) {
+		state->tdb_flags = TDB_DEFAULT;
+	} else {
+		state->tdb_flags = (TDB_NOSYNC | TDB_INCOMPATIBLE_HASH |
+				    TDB_CLEAR_IF_FIRST);
+		if (mutex_enabled == 1) {
+			state->tdb_flags |= TDB_MUTEX_LOCKING;
+		}
 	}
 
 	if (state->db->persistent) {
