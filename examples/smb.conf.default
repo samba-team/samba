@@ -33,7 +33,7 @@
 # domain controller", "classic backup domain controller", "active
 # directory domain controller".
 #
-# Most people will want "standalone sever" or "member server".
+# Most people will want "standalone server" or "member server".
 # Running as "active directory domain controller" will require first
 # running "samba-tool domain provision" to wipe databases and create a
 # new domain.
