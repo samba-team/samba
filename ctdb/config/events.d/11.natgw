@@ -23,19 +23,6 @@ natgw_cfg_new="${service_state_dir}/cfg_new"
 natgw_cfg_old="${service_state_dir}/cfg_old"
 natgw_master_old="${service_state_dir}/master_old"
 
-# Cached retrieval of private IP address from local node.  This never
-# changes.  Sets $ip_address to avoid an unnecessary subprocess.
-ctdb_get_ip_address ()
-{
-    _ip_addr_file="${service_state_dir}/my-ip-address"
-    if [ ! -f "$_ip_addr_file" ] ; then
-	ctdb -X nodestatus |
-	    awk -F '|' 'NR == 2 { print $3 }' >"$_ip_addr_file"
-    fi
-
-    read ip_address <"$_ip_addr_file"
-}
-
 ctdb_natgw_slave_only ()
 {
     ctdb_get_ip_address
