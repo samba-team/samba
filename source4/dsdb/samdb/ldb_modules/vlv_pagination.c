@@ -355,48 +355,57 @@ static int vlv_results(struct vlv_context *ac)
 	vlv_details = ac->store->vlv_details;
 	sort_details = ac->store->sort_details;
 
-	if (vlv_details->type == 1) {
-		target = vlv_gt_eq_to_index(ac, ac->store->results, vlv_details,
-					    sort_details, &ret);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+	if (ac->store->num_entries != 0) {
+		if (vlv_details->type == 1) {
+			target = vlv_gt_eq_to_index(ac, ac->store->results,
+						    vlv_details,
+						    sort_details, &ret);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		} else {
+			target = vlv_calc_real_offset(vlv_details->match.byOffset.offset,
+						      vlv_details->match.byOffset.contentCount,
+						      ac->store->num_entries);
+			if (target == -1) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
+
+		/* send the results */
+		first_i = MAX(target - vlv_details->beforeCount, 0);
+		last_i = MIN(target + vlv_details->afterCount,
+			     ac->store->num_entries - 1);
+
+		for (i = first_i; i <= last_i; i++) {
+			struct ldb_result *result;
+			struct GUID *guid = &ac->store->results[i];
+			ret =  dsdb_search_by_dn_guid(ldb, ac,
+						      &result,
+						      guid,
+						      ac->req->op.search.attrs,
+						      0);
+
+			if (ret == LDAP_NO_SUCH_OBJECT) {
+				/* The thing isn't there, which we quietly
+				   ignore and go on to send an extra one
+				   instead. */
+				if (last_i < ac->store->num_entries - 1) {
+					last_i++;
+				}
+				continue;
+			} else if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
+			ret = ldb_module_send_entry(ac->req, result->msgs[0],
+						    NULL);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 	} else {
-		target = vlv_calc_real_offset(vlv_details->match.byOffset.offset,
-					      vlv_details->match.byOffset.contentCount,
-					      ac->store->num_entries);
-		if (target == -1) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-	}
-	/* send the results */
-	first_i = MAX(target - vlv_details->beforeCount, 0);
-	last_i = MIN(target + vlv_details->afterCount, ac->store->num_entries - 1);
-
-	for (i = first_i; i <= last_i; i++) {
-		struct ldb_result *result;
-		struct GUID *guid = &ac->store->results[i];
-		ret =  dsdb_search_by_dn_guid(ldb, ac,
-					      &result,
-					      guid,
-					      ac->req->op.search.attrs,
-					      0);
-
-		if (ret == LDAP_NO_SUCH_OBJECT) {
-			/* The thing isn't there, which we quietly ignore and
-			   go on to send an extra one instead. */
-			if (last_i < ac->store->num_entries - 1) {
-				last_i++;
-			}
-			continue;
-		} else if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		ret = ldb_module_send_entry(ac->req, result->msgs[0], NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+		target = -1;
 	}
 
 	/* return result done */
@@ -512,12 +521,14 @@ static int vlv_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		break;
 
 	case LDB_REPLY_DONE:
-		store->results = talloc_realloc(store, store->results,
-						struct GUID,
-						store->num_entries);
-		if (store->results == NULL) {
-			return ldb_module_done(ac->req, NULL, NULL,
-					       LDB_ERR_OPERATIONS_ERROR);
+		if (store->num_entries != 0) {
+			store->results = talloc_realloc(store, store->results,
+							struct GUID,
+							store->num_entries);
+			if (store->results == NULL) {
+				return ldb_module_done(ac->req, NULL, NULL,
+						       LDB_ERR_OPERATIONS_ERROR);
+			}
 		}
 		store->result_array_size = store->num_entries;
 

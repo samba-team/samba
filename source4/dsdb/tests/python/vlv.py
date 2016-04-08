@@ -212,11 +212,12 @@ class VLVTests(samba.tests.TestCase):
         controls = res.controls
         return full_results, controls, sort_control
 
-    def get_expected_order(self, attr):
+    def get_expected_order(self, attr, expression=None):
         """Fetch the whole list sorted on the attribute, using sort only."""
         sort_control = "server_sort:1:0:%s" % attr
         res = self.ldb.search(self.ou,
                               scope=ldb.SCOPE_ONELEVEL,
+                              expression=expression,
                               attrs=[attr],
                               controls=[sort_control])
         results = [x[attr][0] for x in res]
@@ -226,8 +227,8 @@ class VLVTests(samba.tests.TestCase):
         self.ldb.delete(user['dn'])
         del self.users[self.users.index(user)]
 
-    def get_gte_tests_and_order(self, attr):
-        expected_order = self.get_expected_order(attr)
+    def get_gte_tests_and_order(self, attr, expression=None):
+        expected_order = self.get_expected_order(attr, expression=expression)
         gte_users = []
         if attr in self.delicate_keys:
             gte_keys = [
@@ -260,8 +261,10 @@ class VLVTests(samba.tests.TestCase):
                 '\n\t\t',
                 '桑巴',
                 'zzzz',
-                expected_order[len(expected_order) // 2] + ' tail',
             ]
+            if expected_order:
+                gte_keys.append(expected_order[len(expected_order) // 2] + ' tail')
+
         else:
             # "numeric" means positive integers
             # doesn't work with -1, 3.14, ' 3', '9' * 20
@@ -285,7 +288,7 @@ class VLVTests(samba.tests.TestCase):
             self.delete_user(user)
 
         # for sanity's sake
-        expected_order_2 = self.get_expected_order(attr)
+        expected_order_2 = self.get_expected_order(attr, expression=expression)
         self.assertEqual(expected_order, expected_order_2)
 
         # Map gte tests to indexes in expected order. This will break
@@ -376,6 +379,105 @@ class VLVTests(samba.tests.TestCase):
 
                         self.assertCorrectResults(results, expected_order,
                                                   offset, before, after)
+
+    def run_index_tests_with_expressions(self, expressions):
+        # Here we don't test every before/after combination.
+        attrs = [x for x in self.users[0].keys() if x not in
+                 ('dn', 'objectclass')]
+        for attr in attrs:
+            for expression in expressions:
+                expected_order = self.get_expected_order(attr, expression)
+                sort_control = "server_sort:1:0:%s" % attr
+                res = None
+                n = len(expected_order)
+                for before in range(0, 11):
+                    after = before
+                    for offset in range(max(1, before - 2),
+                                        min(n - after + 2, n)):
+                        if res is None:
+                            vlv_search = "vlv:1:%d:%d:%d:0" % (before, after,
+                                                               offset)
+                        else:
+                            cookie = get_cookie(res.controls)
+                            vlv_search = ("vlv:1:%d:%d:%d:%s:%s" %
+                                          (before, after, offset, n,
+                                           cookie))
+
+                        res = self.ldb.search(self.ou,
+                                              expression=expression,
+                                              scope=ldb.SCOPE_ONELEVEL,
+                                              attrs=[attr],
+                                              controls=[sort_control,
+                                                        vlv_search])
+
+                        results = [x[attr][0] for x in res]
+
+                        self.assertCorrectResults(results, expected_order,
+                                                  offset, before, after)
+
+    def test_server_vlv_with_failing_expression(self):
+        """What happens when we run the VLV on an expression that matches
+        nothing?"""
+        expressions = ["(samaccountname=testferf)",
+                       "(cn=hefalump)",
+                       ]
+        self.run_index_tests_with_expressions(expressions)
+
+    def run_gte_tests_with_expressions(self, expressions):
+        # Here we don't test every before/after combination.
+        attrs = [x for x in self.users[0].keys() if x not in
+                 ('dn', 'objectclass')]
+        for expression in expressions:
+            for attr in attrs:
+                gte_order, expected_order, gte_map = \
+                    self.get_gte_tests_and_order(attr, expression)
+                # In case there is some order dependency, disorder tests
+                gte_tests = gte_order[:]
+                random.seed(2)
+                random.shuffle(gte_tests)
+                res = None
+                sort_control = "server_sort:1:0:%s" % attr
+
+                expected_order = self.get_expected_order(attr, expression)
+                sort_control = "server_sort:1:0:%s" % attr
+                res = None
+                for before in range(0, 11):
+                    after = before
+                    for gte in gte_tests:
+                        if res is not None:
+                            cookie = get_cookie(res.controls)
+                        else:
+                            cookie = None
+                        vlv_search = encode_vlv_control(before=before,
+                                                        after=after,
+                                                        gte=gte,
+                                                        cookie=cookie)
+
+                        res = self.ldb.search(self.ou,
+                                              scope=ldb.SCOPE_ONELEVEL,
+                                              expression=expression,
+                                              attrs=[attr],
+                                              controls=[sort_control,
+                                                        vlv_search])
+
+                        results = [x[attr][0] for x in res]
+                        offset = gte_map.get(gte, len(expected_order))
+
+                        # here offset is 0-based
+                        start = max(offset - before, 0)
+                        end = offset + 1 + after
+
+                        expected_results = expected_order[start: end]
+
+                        self.assertEquals(expected_results, results)
+
+    def test_vlv_gte_with_failing_expression(self):
+        """What happens when we run the VLV on an expression that matches
+        nothing?"""
+        expressions = ["(samaccountname=testferf)",
+                       "(cn=hefalump)",
+                       ]
+        self.run_gte_tests_with_expressions(expressions)
 
     def test_server_vlv_with_cookie_while_adding_and_deleting(self):
         """What happens if we add or remove items in the middle of the VLV?
