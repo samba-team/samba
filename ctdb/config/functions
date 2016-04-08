@@ -115,7 +115,7 @@ die ()
     _msg="$1"
     _rc="${2:-1}"
 
-    echo "$_msg"
+    echo "$_msg" >&2
     exit $_rc
 }
 
