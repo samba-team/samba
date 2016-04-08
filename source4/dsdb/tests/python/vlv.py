@@ -415,6 +415,14 @@ class VLVTests(samba.tests.TestCase):
                         self.assertCorrectResults(results, expected_order,
                                                   offset, before, after)
 
+    def test_server_vlv_with_expression(self):
+        """What happens when we run the VLV with an expression?"""
+        expressions = ["(objectClass=*)",
+                       "(cn=%s)" % self.users[-1]['cn'],
+                       "(roomNumber=%s)" % self.users[0]['roomNumber'],
+                       ]
+        self.run_index_tests_with_expressions(expressions)
+
     def test_server_vlv_with_failing_expression(self):
         """What happens when we run the VLV on an expression that matches
         nothing?"""
@@ -470,6 +478,14 @@ class VLVTests(samba.tests.TestCase):
                         expected_results = expected_order[start: end]
 
                         self.assertEquals(expected_results, results)
+
+    def test_vlv_gte_with_expression(self):
+        """What happens when we run the VLV with an expression?"""
+        expressions = ["(objectClass=*)",
+                       "(cn=%s)" % self.users[-1]['cn'],
+                       "(roomNumber=%s)" % self.users[0]['roomNumber'],
+                       ]
+        self.run_gte_tests_with_expressions(expressions)
 
     def test_vlv_gte_with_failing_expression(self):
         """What happens when we run the VLV on an expression that matches
