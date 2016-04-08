@@ -1,0 +1,53 @@
+#!/bin/sh
+
+prog="ctdb_lvs"
+
+# Print a message and exit.
+die ()
+{
+    echo "$1" >&2 ; exit ${2:-1}
+}
+
+not_implemented_exit_code=1
+
+usage ()
+{
+    cat >&2 <<EOF
+Usage: $prog { master | list }
+EOF
+    exit 1
+}
+
+not_implemented ()
+{
+    echo "${prog}: command \"$1\" not implemented in stub" >&2
+    exit $not_implemented_exit_code
+}
+
+ctdb_lvs_master ()
+{
+	if [ -n "$FAKE_CTDB_LVS_MASTER" ] ; then
+		echo "Node ${FAKE_CTDB_LVS_MASTER} is LVS master"
+		return 0
+	else
+		echo "This is no LVS master"
+		return 255
+	fi
+}
+
+ctdb_lvs_list ()
+{
+	_pnn=0
+	while read _ip _opts ; do
+		echo "${_pnn}:${_ip}"
+		_pnn=$(($_pnn + 1))
+	done <"$CTDB_LVS_NODES"
+}
+
+######################################################################
+
+case "$1" in
+    master) ctdb_lvs_master "$@" ;;
+    list)   ctdb_lvs_list "$@" ;;
+    *) not_implemented "$1" ;;
+esac

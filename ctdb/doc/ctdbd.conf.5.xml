@@ -303,16 +303,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_LVS_PUBLIC_IP=<parameter>IPADDR</parameter></term>
-	<listitem>
-	  <para>
-	    No default.  Corresponds to "<option>--lvs</option>
-	    <option>--single-public-ip IPADDR"</option>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_NODES=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
@@ -815,6 +805,81 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</screen>
       </refsect3>
 
+    </refsect2>
+
+    <refsect2>
+      <title>LVS</title>
+
+      <para>
+	For a general description see the <citetitle>LVS</citetitle>
+	section in <citerefentry><refentrytitle>ctdb</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.
+      </para>
+
+      <refsect3>
+	<title>Eventscript</title>
+
+	<simplelist>
+	  <member><filename>91.lvs</filename></member>
+	</simplelist>
+      </refsect3>
+
+      <variablelist>
+
+	<varlistentry>
+	  <term>CTDB_LVS_NODES=<parameter>FILENAME</parameter></term>
+	  <listitem>
+	    <para>
+	      FILENAME contains the list of nodes that belong to the
+	      same LVS group.
+	    </para>
+	    <para>
+	      File format:
+	      <screen>
+<parameter>IPADDR</parameter> <optional>slave-only</optional>
+	      </screen>
+	    </para>
+	    <para>
+	      IPADDR is the private IP address of each node in the LVS
+	      group.
+	    </para>
+	    <para>
+	      If "slave-only" is specified then the corresponding node
+	      can not be the LVS master node.  In this case
+	      <varname>CTDB_LVS_PUBLIC_IFACE</varname> and
+	      <varname>CTDB_LVS_PUBLIC_IP</varname> are optional and
+	      unused.
+	    </para>
+	    <para>
+	      No default, usually
+	      <filename>/usr/local/etc/ctdb/lvs_nodes</filename> when enabled.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>CTDB_LVS_PUBLIC_IFACE=<parameter>INTERFACE</parameter></term>
+	  <listitem>
+	    <para>
+	      INTERFACE is the network interface that clients will use
+	      to connection to <varname>CTDB_LVS_PUBLIC_IP</varname>.
+	      This is optional for slave-only nodes.
+	      No default.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
+	  <term>CTDB_LVS_PUBLIC_IP=<parameter>IPADDR</parameter></term>
+	  <listitem>
+	    <para>
+	      CTDB_LVS_PUBLIC_IP is the LVS public address.  No
+	      default.
+	  </para>
+	  </listitem>
+	</varlistentry>
+
+      </variablelist>
     </refsect2>
 
     <refsect2>

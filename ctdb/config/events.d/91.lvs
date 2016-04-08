@@ -8,16 +8,47 @@
 
 loadconfig ctdb
 
-[ -z "$CTDB_LVS_PUBLIC_IP" ] && exit 0
-[ -z "$CTDB_PUBLIC_INTERFACE" ] && exit 0
+[ -n "$CTDB_LVS_NODES" ] || exit 0
+export CTDB_LVS_NODES
 
 if ! type ipvsadm >/dev/null 2>&1 ; then
 	echo "LVS configured but ipvsadm not found"
 	exit 0
 fi
 
+
+lvs_slave_only ()
+{
+	ctdb_get_ip_address
+
+	awk -v my_ip="$ip_address" \
+	    '$1 == my_ip { if ($2 ~ "slave-only") { exit 0 } else { exit 1 } }' \
+	    "$CTDB_LVS_NODES"
+}
+
+lvs_check_config ()
+{
+	[ -r "$CTDB_LVS_NODES" ] || \
+		die "error: CTDB_LVS_NODES=${CTDB_LVS_NODES} unreadable"
+	[ -n "$CTDB_LVS_PUBLIC_IP" ] || \
+		die "Invalid configuration: CTDB_LVS_PUBLIC_IP not set"
+	if ! lvs_slave_only ; then
+		[ -n "$CTDB_LVS_PUBLIC_IFACE" ] || \
+			die "Invalid configuration: CTDB_LVS_PUBLIC_IFACE not set"
+	fi
+
+	if [ "$CTDB_PARTIALLY_ONLINE_INTERFACES" = "yes" ] ; then
+		die "Invalid configuration: CTDB_PARTIALLY_ONLINE_INTERFACES=yes incompatible with LVS"
+	fi
+}
+
 case "$1" in
+setup)
+	lvs_check_config
+	;;
 startup)
+	lvs_check_config
+
 	ipvsadm -D -t "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
 	ipvsadm -D -u "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
 
@@ -30,6 +61,8 @@ startup)
 	;;
 
 shutdown)
+	lvs_check_config
+
 	ipvsadm -D -t "$CTDB_LVS_PUBLIC_IP"
 	ipvsadm -D -u "$CTDB_LVS_PUBLIC_IP"
 
@@ -39,14 +72,16 @@ shutdown)
 	;;
 
 ipreallocated)
+	lvs_check_config
+
 	# Kill connections
 	ipvsadm -D -t "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
 	ipvsadm -D -u "$CTDB_LVS_PUBLIC_IP" >/dev/null 2>&1
 	kill_tcp_connections_local_only \
-		"$CTDB_PUBLIC_INTERFACE" "$CTDB_LVS_PUBLIC_IP"
+		"$CTDB_LVS_PUBLIC_IFACE" "$CTDB_LVS_PUBLIC_IP"
 
 	ctdb_get_pnn
-	lvsmaster=$(ctdb lvsmaster | sed -n -e 's/Node \([0-9]*\) is LVS master/\1/p')
+	lvsmaster=$("${CTDB_HELPER_BINDIR}/ctdb_lvs" master | sed -n -e 's/Node \([0-9]*\) is LVS master/\1/p')
 	if [ "$pnn" != "$lvsmaster" ] ; then
 	    # This node is not the LVS master so change the IP address
 	    # to have scope "host" so this node won't respond to ARPs
@@ -63,7 +98,7 @@ ipreallocated)
 	ipvsadm -A -u "$CTDB_LVS_PUBLIC_IP" -p 1999999 -s lc
 
 	# Add all nodes (except this node) as LVS servers
-	ctdb lvs |
+	"${CTDB_HELPER_BINDIR}/ctdb_lvs" list |
 	awk -F: -v pnn="$pnn" '$1 != pnn { print $2 }' |
 	while read ip ; do
 		ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r $ip -g
@@ -75,7 +110,7 @@ ipreallocated)
 	ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r 127.0.0.1
 
 	ctdb gratiousarp \
-	     "$CTDB_LVS_PUBLIC_IP" "$CTDB_PUBLIC_INTERFACE" >/dev/null 2>&1
+	     "$CTDB_LVS_PUBLIC_IP" "$CTDB_LVS_PUBLIC_IFACE" >/dev/null 2>&1
 
 	flush_route_cache
 	;;

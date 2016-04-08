@@ -436,21 +436,6 @@ Node 3:/usr/local/etc/ctdb/public_addresses
 	</listitem>
       </varlistentry>
 
-      <varlistentry>
-	<term>LVS</term>
-	<listitem>
-	  <para>
-	    Indicates that a node is configued in Linux Virtual Server
-	    (LVS) mode.  In this mode the entire CTDB cluster uses one
-	    single public address for the entire cluster instead of
-	    using multiple public addresses in failover mode.  This is
-	    an alternative to using a load-balancing layer-4 switch.
-	    See the <citetitle>LVS</citetitle> section for more
-	    details.
-	  </para>
-	</listitem>
-      </varlistentry>
-
     </variablelist>
 
     <para>
@@ -477,25 +462,35 @@ Node 3:/usr/local/etc/ctdb/public_addresses
     </para>
 
     <para>
-      In this mode the cluster selects a set of nodes in the cluster
-      and loadbalance all client access to the LVS address across this
-      set of nodes. This set of nodes are all LVS capable nodes that
-      are HEALTHY, or if no HEALTHY nodes exists all LVS capable nodes
-      regardless of health status.  LVS will however never loadbalance
-      traffic to nodes that are BANNED, STOPPED, DISABLED or
-      DISCONNECTED. The <command>ctdb lvs</command> command is used to
-      show which nodes are currently load-balanced across.
+      One extra LVS public address is assigned on the public network
+      to each LVS group.  Each LVS group is a set of nodes in the
+      cluster that presents the same LVS address public address to the
+      outside world.  Normally there would only be one LVS group
+      spanning an entire cluster, but in situations where one CTDB
+      cluster spans multiple physical sites it might be useful to have
+      one LVS group for each site.  There can be multiple LVS groups
+      in a cluster but each node can only be member of one LVS group.
     </para>
 
     <para>
-      One of the these nodes are elected as the LVSMASTER. This node
-      receives all traffic from clients coming in to the LVS address
-      and multiplexes it across the internal network to one of the
-      nodes that LVS is using.  When responding to the client, that
-      node will send the data back directly to the client, bypassing
-      the LVSMASTER node.  The command <command>ctdb
-      lvsmaster</command> will show which node is the current
-      LVSMASTER.
+      Client access to the cluster is load-balanced across the HEALTHY
+      nodes in an LVS group.  If no HEALTHY nodes exists then all
+      nodes in the group are used, regardless of health status.  CTDB
+      will, however never load-balance LVS traffic to nodes that are
+      BANNED, STOPPED, DISABLED or DISCONNECTED.  The <command>ctdb
+      lvs</command> command is used to show which nodes are currently
+      load-balanced across.
+    </para>
+
+    <para>
+      In each LVS group, one of the nodes is selected by CTDB to be
+      the LVS master.  This node receives all traffic from clients
+      coming in to the LVS public address and multiplexes it across
+      the internal network to one of the nodes that LVS is using.
+      When responding to the client, that node will send the data back
+      directly to the client, bypassing the LVS master node.  The
+      command <command>ctdb lvsmaster</command> will show which node
+      is the current LVS master.
     </para>
 
     <para>
@@ -525,7 +520,7 @@ Node 3:/usr/local/etc/ctdb/public_addresses
       </orderedlist>
     </para>
 
-    <para> 
+    <para>
       This means that all incoming traffic to the cluster will pass
       through one physical node, which limits scalability. You can
       send more data to the LVS address that one physical node can
@@ -565,19 +560,49 @@ Node 3:/usr/local/etc/ctdb/public_addresses
 
       <para>
 	To activate LVS on a CTDB node you must specify the
-	<varname>CTDB_PUBLIC_INTERFACE</varname> and
-	<varname>CTDB_LVS_PUBLIC_IP</varname> configuration variables.
-	Setting the latter variable also enables the LVS capability on
-	the node at startup.
+	<varname>CTDB_LVS_PUBLIC_IFACE</varname>,
+	<varname>CTDB_LVS_PUBLIC_IP</varname> and
+	<varname>CTDB_LVS_NODES</varname> configuration variables.
+	<varname>CTDB_LVS_NODES</varname> specifies a file containing
+	the private address of all nodes in the current node's LVS
+	group.
       </para>
-	
+
       <para>
 	Example:
 	<screen format="linespecific">
-CTDB_PUBLIC_INTERFACE=eth1
+CTDB_LVS_PUBLIC_IFACE=eth1
 CTDB_LVS_PUBLIC_IP=10.1.1.237
+CTDB_LVS_NODES=/usr/local/etc/ctdb/lvs_nodes
 	</screen>
       </para>
+
+      <para>
+	Example <filename>/usr/local/etc/ctdb/lvs_nodes</filename>:
+      </para>
+      <screen format="linespecific">
+192.168.1.2
+192.168.1.3
+192.168.1.4
+      </screen>
+
+      <para>
+	Normally any node in an LVS group can act as the LVS master.
+	Nodes that are highly loaded due to other demands maybe
+	flagged with the "slave-only" option in the
+	<varname>CTDB_LVS_NODES</varname> file to limit the LVS
+	functionality of those nodes.
+      </para>
+
+      <para>
+	LVS nodes file that excludes 192.168.1.4 from being
+	the LVS master node:
+      </para>
+      <screen format="linespecific">
+192.168.1.2
+192.168.1.3
+192.168.1.4 slave-only
+      </screen>
 
     </refsect2>
   </refsect1>

@@ -543,9 +543,6 @@ EOF
 
 setup_ctdb_lvs ()
 {
-	export CTDB_LVS_PUBLIC_IP="$1"
-	export CTDB_PUBLIC_INTERFACE="$2"
-
 	lvs_state_dir="${EVENTSCRIPTS_TESTS_VAR_DIR}/lvs"
 	mkdir -p "$lvs_state_dir"
 
@@ -554,8 +551,12 @@ setup_ctdb_lvs ()
 
 	lvs_header=$(ipvsadm -l -n)
 
-	# Not an official configuration file, just used by the ctdb
-	# tool stub
+	export CTDB_LVS_PUBLIC_IP="$1"
+	export CTDB_LVS_PUBLIC_IFACE="$2"
+
+	[ -n "$CTDB_LVS_PUBLIC_IP" ] || return 0
+	[ -n "$CTDB_LVS_PUBLIC_IFACE" ] || return 0
+
 	export CTDB_LVS_NODES=$(mktemp --tmpdir="$lvs_state_dir")
 	export FAKE_CTDB_LVS_MASTER=""
 
