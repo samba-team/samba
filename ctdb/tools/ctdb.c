@@ -1148,85 +1148,6 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	return ret;
 }
 
-/* talloc off the existing nodemap... */
-static struct ctdb_node_map_old *talloc_nodemap(struct ctdb_node_map_old *nodemap)
-{
-	return talloc_zero_size(nodemap,
-				offsetof(struct ctdb_node_map_old, nodes) +
-				nodemap->num * sizeof(struct ctdb_node_and_flags));
-}
-
-static struct ctdb_node_map_old *
-filter_nodemap_by_capabilities(struct ctdb_context *ctdb,
-			       struct ctdb_node_map_old *nodemap,
-			       uint32_t required_capabilities,
-			       bool first_only)
-{
-	int i;
-	uint32_t capabilities;
-	struct ctdb_node_map_old *ret;
-
-	ret = talloc_nodemap(nodemap);
-	CTDB_NO_MEMORY_NULL(ctdb, ret);
-
-	ret->num = 0;
-
-	for (i = 0; i < nodemap->num; i++) {
-		int res;
-
-		/* Disconnected nodes have no capabilities! */
-		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
-			continue;
-		}
-
-		res = ctdb_ctrl_getcapabilities(ctdb, TIMELIMIT(),
-						nodemap->nodes[i].pnn,
-						&capabilities);
-		if (res != 0) {
-			DEBUG(DEBUG_ERR, ("Unable to get capabilities from node %u\n",
-					  nodemap->nodes[i].pnn));
-			talloc_free(ret);
-			return NULL;
-		}
-		if (!(capabilities & required_capabilities)) {
-			continue;
-		}
-
-		ret->nodes[ret->num] = nodemap->nodes[i];
-		ret->num++;
-		if (first_only) {
-			break;
-		}
-	}
-
-	return ret;
-}
-
-static struct ctdb_node_map_old *
-filter_nodemap_by_flags(struct ctdb_context *ctdb,
-			struct ctdb_node_map_old *nodemap,
-			uint32_t flags_mask)
-{
-	int i;
-	struct ctdb_node_map_old *ret;
-
-	ret = talloc_nodemap(nodemap);
-	CTDB_NO_MEMORY_NULL(ctdb, ret);
-
-	ret->num = 0;
-
-	for (i = 0; i < nodemap->num; i++) {
-		if (nodemap->nodes[i].flags & flags_mask) {
-			continue;
-		}
-
-		ret->nodes[ret->num] = nodemap->nodes[i];
-		ret->num++;
-	}
-
-	return ret;
-}
-
 /*
   display the list of nodes belonging to this natgw configuration
  */
@@ -3197,123 +3118,52 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 	return 0;
 }
 
-/*
-  display lvs configuration
- */
-
-static uint32_t lvs_exclude_flags[] = {
-	/* Look for a nice healthy node */
-	NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED,
-	/* If not found, an UNHEALTHY node will do */
-	NODE_FLAGS_INACTIVE|NODE_FLAGS_PERMANENTLY_DISABLED,
-	0,
-};
-
-static int control_lvs(struct ctdb_context *ctdb, int argc, const char **argv)
+/* display lvs configuration */
+static int control_lvs(struct ctdb_context *ctdb,
+		       int argc, const char **argv)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_node_map_old *orig_nodemap=NULL;
-	struct ctdb_node_map_old *nodemap;
-	int i, ret;
+	static char prog[PATH_MAX+1] = "";
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
-				   tmp_ctx, &orig_nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		talloc_free(tmp_ctx);
-		return -1;
+	if (argc != 0) {
+		usage();
 	}
 
-	nodemap = filter_nodemap_by_capabilities(ctdb, orig_nodemap,
-						 CTDB_CAP_LVS, false);
-	if (nodemap == NULL) {
-		/* No memory */
-		ret = -1;
-		goto done;
+	if (!ctdb_set_helper("LVS helper", prog, sizeof(prog),
+			     "CTDB_LVS_HELPER", CTDB_HELPER_BINDIR,
+			     "ctdb_lvs")) {
+		DEBUG(DEBUG_ERR, ("Unable to set LVS helper\n"));
+		exit(1);
 	}
 
-	ret = 0;
+	execl(prog, prog, "list", NULL);
 
-	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
-		struct ctdb_node_map_old *t =
-			filter_nodemap_by_flags(ctdb, nodemap,
-						lvs_exclude_flags[i]);
-		if (t == NULL) {
-			/* No memory */
-			ret = -1;
-			goto done;
-		}
-		if (t->num > 0) {
-			/* At least 1 node without excluded flags */
-			int j;
-			for (j = 0; j < t->num; j++) {
-				printf("%d:%s\n", t->nodes[j].pnn, 
-				       ctdb_addr_to_str(&t->nodes[j].addr));
-			}
-			goto done;
-		}
-		talloc_free(t);
-	}
-done:
-	talloc_free(tmp_ctx);
-	return ret;
+	DEBUG(DEBUG_ERR,
+	      ("Unable to run LVS helper %s\n", strerror(errno)));
+	exit(1);
 }
 
-/*
-  display who is the lvs master
- */
-static int control_lvsmaster(struct ctdb_context *ctdb, int argc, const char **argv)
+/* display who the lvs is */
+static int control_lvsmaster(struct ctdb_context *ctdb,
+			     int argc, const char **argv)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_node_map_old *nodemap=NULL;
-	int i, ret;
+	static char prog[PATH_MAX+1] = "";
 
-	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn,
-				   tmp_ctx, &nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
-		talloc_free(tmp_ctx);
-		return -1;
+	if (argc != 0) {
+		usage();
 	}
 
-	for (i = 0; lvs_exclude_flags[i] != 0; i++) {
-		struct ctdb_node_map_old *t =
-			filter_nodemap_by_flags(ctdb, nodemap,
-						lvs_exclude_flags[i]);
-		if (t == NULL) {
-			/* No memory */
-			ret = -1;
-			goto done;
-		}
-		if (t->num > 0) {
-			struct ctdb_node_map_old *n;
-			n = filter_nodemap_by_capabilities(ctdb,
-							   t,
-							   CTDB_CAP_LVS,
-							   true);
-			if (n == NULL) {
-				/* No memory */
-				ret = -1;
-				goto done;
-			}
-			if (n->num > 0) {
-				ret = 0;
-				if (options.machinereadable) {
-					printm("%d\n", n->nodes[0].pnn);
-				} else {
-					printf("Node %d is LVS master\n", n->nodes[0].pnn);
-				}
-				goto done;
-			}
-		}
-		talloc_free(t);
+	if (!ctdb_set_helper("LVS helper", prog, sizeof(prog),
+			     "CTDB_LVS_HELPER", CTDB_HELPER_BINDIR,
+			     "ctdb_lvs")) {
+		DEBUG(DEBUG_ERR, ("Unable to set LVS helper\n"));
+		exit(1);
 	}
 
-	printf("There is no LVS master\n");
-	ret = 255;
-done:
-	talloc_free(tmp_ctx);
-	return ret;
+	execl(prog, prog, "master", NULL);
+
+	DEBUG(DEBUG_ERR,
+	      ("Unable to run LVS helper %s\n", strerror(errno)));
+	exit(1);
 }
 
 /*
@@ -6076,8 +5926,8 @@ static const struct {
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
 	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
-	{ "lvs",             control_lvs,               true,	false,  "show lvs configuration" },
-	{ "lvsmaster",       control_lvsmaster,         true,	false,  "show which node is the lvs master" },
+	{ "lvs",             control_lvs,               false,	true,   "show lvs configuration" },
+	{ "lvsmaster",       control_lvsmaster,         false,	true,   "show which node is the lvs master" },
 	{ "disablemonitor",      control_disable_monmode,true,	false,  "set monitoring mode to DISABLE" },
 	{ "enablemonitor",      control_enable_monmode, true,	false,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,	false,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },

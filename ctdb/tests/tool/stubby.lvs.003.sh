@@ -4,6 +4,11 @@
 
 define_test "3 nodes, some LVS, all ok"
 
+setup_lvs <<EOF
+192.168.20.41
+192.168.20.43
+EOF
+
 required_result 0 <<EOF
 0:192.168.20.41
 2:192.168.20.43
@@ -11,9 +16,9 @@ EOF
 
 simple_test <<EOF
 NODEMAP
-0       192.168.20.41   0x0     CURRENT RECMASTER CTDB_CAP_LVS
+0       192.168.20.41   0x0     CURRENT RECMASTER
 1       192.168.20.42   0x0
-2       192.168.20.43   0x0	CTDB_CAP_LVS
+2       192.168.20.43   0x0
 
 IFACES
 :Name:LinkStatus:References:

@@ -4,6 +4,9 @@
 
 define_test "3 nodes, no LVS, all ok"
 
+setup_lvs <<EOF
+EOF
+
 required_result 0 <<EOF
 EOF
 

@@ -4,15 +4,21 @@
 
 define_test "3 nodes, all LVS, nodes 0,1 disabled, node 2 unhealthy"
 
+setup_lvs <<EOF
+192.168.20.41
+192.168.20.42
+192.168.20.43
+EOF
+
 required_result 0 <<EOF
 Node 2 is LVS master
 EOF
 
 simple_test <<EOF
 NODEMAP
-0       192.168.20.41   0x4	CURRENT RECMASTER CTDB_CAP_LVS
-1       192.168.20.42   0x4	CTDB_CAP_LVS
-2       192.168.20.43   0x2	CTDB_CAP_LVS
+0       192.168.20.41   0x4	CURRENT RECMASTER
+1       192.168.20.42   0x4
+2       192.168.20.43   0x2
 
 IFACES
 :Name:LinkStatus:References:

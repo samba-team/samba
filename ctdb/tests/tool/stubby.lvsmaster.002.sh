@@ -4,6 +4,9 @@
 
 define_test "3 nodes, current disconnected"
 
+setup_lvs <<EOF
+EOF
+
 required_result 10 <<EOF
 ${TEST_DATE_STAMP}Unable to get nodemap from local node
 EOF

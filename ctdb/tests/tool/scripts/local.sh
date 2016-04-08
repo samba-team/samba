@@ -60,6 +60,30 @@ setup_natgw ()
 	cat >"$CTDB_NATGW_NODES"
 }
 
+setup_lvs ()
+{
+	debug "Setting up LVS"
+
+	# Use in-tree binaries if running against local daemons.
+	# Otherwise CTDB need to be installed on all nodes.
+	if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
+		if [ -z "$CTDB_LVS_HELPER" ] ; then
+			export CTDB_LVS_HELPER="${ctdb_dir}/tools/ctdb_lvs"
+		fi
+		# Only want to find functions file, so this is OK
+		export CTDB_BASE="${ctdb_dir}/config"
+	fi
+
+	lvs_config_dir="${TEST_VAR_DIR}/lvs_config"
+	mkdir -p "$lvs_config_dir"
+
+	# These will accumulate, 1 per test... but will be cleaned up
+	# at the end.
+	export CTDB_LVS_NODES=$(mktemp --tmpdir="$lvs_config_dir")
+
+	cat >"$CTDB_LVS_NODES"
+}
+
 setup_nodes ()
 {
     _pnn="$1"
