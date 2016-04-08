@@ -20,7 +20,11 @@
 #ifndef _CTDBD_CONN_H
 #define _CTDBD_CONN_H
 
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/network.h"
 #include <tdb.h>
+#include <tevent.h>
 
 struct ctdbd_connection;
 struct messaging_context;

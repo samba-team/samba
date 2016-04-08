@@ -18,7 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "util_tdb.h"
 #include "serverid.h"
 #include "ctdbd_conn.h"
@@ -26,6 +26,10 @@
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/iov_buf.h"
 #include "lib/util/select.h"
+#include "lib/util/debug.h"
+#include "lib/util/talloc_stack.h"
+#include "lib/util/genrand.h"
+#include "lib/util/fault.h"
 
 #include "messages.h"
 
@@ -1053,7 +1057,7 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 		return ret;
 	}
 
-	while (True) {
+	while (true) {
 		struct ctdb_req_header *hdr = NULL;
 		struct ctdb_req_message_old *m;
 		struct ctdb_rec_data_old *d;
