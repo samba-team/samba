@@ -201,7 +201,8 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	struct ctdb_node_map_old *m;
 	uint32_t failure_flags;
 	bool ok = false;
-	int i, ret;
+	uint32_t i;
+	int ret;
 
 	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
 			    CTDB_CONTROL_GET_NODEMAP, 0, 0,
