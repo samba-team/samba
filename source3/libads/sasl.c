@@ -312,7 +312,13 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		ads->ldap.out.max_unwrapped = gensec_max_input_size(auth_generic_state->gensec_security);
 
 		ads->ldap.out.sig_size = max_wrapped - ads->ldap.out.max_unwrapped;
-		ads->ldap.in.min_wrapped = ads->ldap.out.sig_size;
+		/*
+		 * Note that we have to truncate this to 0x2C
+		 * (taken from a capture with LDAP unbind), as the
+		 * signature size is not constant for Kerberos with
+		 * arcfour-hmac-md5.
+		 */
+		ads->ldap.in.min_wrapped = MIN(ads->ldap.out.sig_size, 0x2C);
 		ads->ldap.in.max_wrapped = max_wrapped;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gensec_ops, auth_generic_state->gensec_security);
 		if (!ADS_ERR_OK(status)) {
