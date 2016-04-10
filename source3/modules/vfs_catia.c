@@ -805,7 +805,7 @@ catia_streaminfo(struct vfs_handle_struct *handle,
 {
 	char *mapped_name = NULL;
 	NTSTATUS status;
-	int i;
+	unsigned int i;
 	struct smb_filename *catia_smb_fname = NULL;
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
