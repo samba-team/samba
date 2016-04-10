@@ -53,7 +53,6 @@ static struct {
 	const char *db_dir_persistent;
 	const char *db_dir_state;
 	const char *public_interface;
-	const char *single_public_ip;
 	int         valgrinding;
 	int         nosetsched;
 	int         start_as_disabled;
@@ -122,7 +121,6 @@ int main(int argc, const char *argv[])
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
-		{ "single-public-ip", 0, POPT_ARG_STRING, &options.single_public_ip, 0, "single public ip", "ip-address"},
 		{ "event-script-dir", 0, POPT_ARG_STRING, &options.event_script_dir, 0, "event script directory", "dirname" },
 		{ "logging", 0, POPT_ARG_STRING, &options.logging, 0, "logging method to be used", NULL },
 		{ "nlist", 0, POPT_ARG_STRING, &options.nlist, 0, "node list file", "filename" },
@@ -280,20 +278,6 @@ int main(int argc, const char *argv[])
 	if (options.public_interface) {
 		ctdb->default_public_interface = talloc_strdup(ctdb, options.public_interface);
 		CTDB_NO_MEMORY(ctdb, ctdb->default_public_interface);
-	}
-
-	if (options.single_public_ip) {
-		if (options.public_interface == NULL) {
-			DEBUG(DEBUG_ALERT,("--single_public_ip used but --public_interface is not specified. You must specify the public interface when using single public ip. Exiting\n"));
-			exit(10);
-		}
-
-		ret = ctdb_set_single_public_ip(ctdb, options.public_interface,
-						options.single_public_ip);
-		if (ret != 0) {
-			DEBUG(DEBUG_ALERT,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
-			exit(10);
-		}
 	}
 
 	if (options.event_script_dir != NULL) {

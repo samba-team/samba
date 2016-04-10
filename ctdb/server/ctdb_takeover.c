@@ -114,10 +114,9 @@ static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
  * foolproof.  One alternative is reference counting, where the logic
  * is distributed and can, therefore, be broken in multiple places.
  * Another alternative is to build a red-black tree of interfaces that
- * can have addresses (by walking ctdb->vnn and ctdb->single_ip_vnn
- * once) and then walking ctdb->ifaces once and deleting those not in
- * the tree.  Let's go to one of those if the naive implementation
- * causes problems...  :-)
+ * can have addresses (by walking ctdb->vnn once) and then walking
+ * ctdb->ifaces once and deleting those not in the tree.  Let's go to
+ * one of those if the naive implementation causes problems...  :-)
  */
 static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 					struct ctdb_vnn *vnn)
@@ -135,13 +134,6 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 			continue;
 		}
 
-		/* Is the "single IP" on this interface? */
-		if ((ctdb->single_ip_vnn != NULL) &&
-		    (ctdb->single_ip_vnn->ifaces[0] != NULL) &&
-		    (strcmp(i->name, ctdb->single_ip_vnn->ifaces[0]) == 0)) {
-			/* Found, next interface please... */
-			continue;
-		}
 		/* Search for a vnn with this interface. */
 		found = false;
 		for (tv=ctdb->vnn; tv; tv=tv->next) {
@@ -1137,58 +1129,6 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 
 
 	talloc_free(lines);
-	return 0;
-}
-
-int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
-			      const char *iface,
-			      const char *ip)
-{
-	struct ctdb_vnn *svnn;
-	struct ctdb_interface *cur = NULL;
-	bool ok;
-	int ret;
-
-	svnn = talloc_zero(ctdb, struct ctdb_vnn);
-	CTDB_NO_MEMORY(ctdb, svnn);
-
-	svnn->ifaces = talloc_array(svnn, const char *, 2);
-	CTDB_NO_MEMORY(ctdb, svnn->ifaces);
-	svnn->ifaces[0] = talloc_strdup(svnn->ifaces, iface);
-	CTDB_NO_MEMORY(ctdb, svnn->ifaces[0]);
-	svnn->ifaces[1] = NULL;
-
-	ok = parse_ip(ip, iface, 0, &svnn->public_address);
-	if (!ok) {
-		talloc_free(svnn);
-		return -1;
-	}
-
-	ret = ctdb_add_local_iface(ctdb, svnn->ifaces[0]);
-	if (ret != 0) {
-		DEBUG(DEBUG_CRIT, (__location__ " failed to add iface[%s] "
-				   "for single_ip[%s]\n",
-				   svnn->ifaces[0],
-				   ctdb_addr_to_str(&svnn->public_address)));
-		talloc_free(svnn);
-		return -1;
-	}
-
-	/* assume the single public ip interface is initially "good" */
-	cur = ctdb_find_iface(ctdb, iface);
-	if (cur == NULL) {
-		DEBUG(DEBUG_CRIT,("Can not find public interface %s used by --single-public-ip", iface));
-		return -1;
-	}
-	cur->link_up = true;
-
-	ret = ctdb_vnn_assign_iface(ctdb, svnn);
-	if (ret != 0) {
-		talloc_free(svnn);
-		return -1;
-	}
-
-	ctdb->single_ip_vnn = svnn;
 	return 0;
 }
 
@@ -2474,14 +2414,6 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 	addr = (ctdb_sock_addr *)indata.dptr;
 
 	vnn = find_public_ip_vnn(ctdb, addr);
-	if (vnn == NULL) {
-		/* if it is not a public ip   it could be our 'single ip' */
-		if (ctdb->single_ip_vnn) {
-			if (ctdb_same_ip(&ctdb->single_ip_vnn->public_address, addr)) {
-				vnn = ctdb->single_ip_vnn;
-			}
-		}
-	}
 	if (vnn == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Could not get public ip info, "
 				 "'%s'not a public address\n",

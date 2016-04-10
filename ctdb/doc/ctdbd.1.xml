@@ -367,8 +367,7 @@
 	<term>--public-interface=<parameter>INTERFACE</parameter></term>
 	<listitem>
 	  <para>
-	    INTERFACE on which to attach public IP addresses or on which
-	    to attach the single-public-ip when used.
+	    Default INTERFACE on which to attach public IP addresses.
 	  </para>
 	  <para>
 	    When using public IP addresses, this is only required if
@@ -391,22 +390,6 @@
 	    <citetitle>RECOVERY LOCK</citetitle> section in
 	    <citerefentry><refentrytitle>ctdb</refentrytitle>
 	    <manvolnum>7</manvolnum></citerefentry>.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
-	<term>--single-public-ip=<parameter>IPADDR</parameter></term>
-	<listitem>
-	  <para>
-	    IPADDR specifies the single IP that CTDB will use in
-	    conjunction with LVS.
-	  </para>
-	  <para>
-	    Please see the <citetitle>LVS</citetitle> section in
-	    <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>7</manvolnum></citerefentry> for more
-	    information.
 	  </para>
 	</listitem>
       </varlistentry>

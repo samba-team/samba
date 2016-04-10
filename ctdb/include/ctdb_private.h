@@ -318,7 +318,6 @@ struct ctdb_context {
 	struct reqid_context *idr;
 	struct ctdb_node **nodes; /* array of nodes in the cluster - indexed by vnn */
 	struct ctdb_vnn *vnn; /* list of public ip addresses and interfaces */
-	struct ctdb_vnn *single_ip_vnn; /* a structure for the single ip */
 	struct ctdb_interface *ifaces; /* list of local interfaces */
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
@@ -977,8 +976,6 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 				 bool *async_reply);
 
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
-int ctdb_set_single_public_ip(struct ctdb_context *ctdb, const char *iface,
-			      const char *ip);
 
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
 		      uint32_t *force_rebalance_nodes,
