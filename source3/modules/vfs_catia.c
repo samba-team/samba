@@ -141,6 +141,9 @@ static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 
 	ret->snum = snum;
 
+	ret->next = srt_head;
+	srt_head = ret;
+
 	if (mappings) {
 		ret->mappings = (struct char_mappings**) ((unsigned char*) ret +
 		    sizeof(struct share_mapping_entry));
@@ -175,9 +178,6 @@ static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 			continue;
 		}
 	}
-
-	ret->next = srt_head;
-	srt_head = ret;
 
 	return ret;
 }
