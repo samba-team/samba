@@ -29,8 +29,7 @@ static struct ctdb_node_capabilities *global_caps = NULL;
  * By default, capablities for each node are
  * CTDB_CAP_RECMASTER|CTDB_CAP_LMASTER.  These 2
  * capabilities can be faked off by adding, for example,
- * -CTDB_CAP_RECMASTER.  LVS can be faked on by adding
- * CTDB_CAP_LVS.
+ * -CTDB_CAP_RECMASTER.
  */
 
 /* A fake flag that is only supported by some functions */
@@ -102,8 +101,6 @@ static void ctdb_test_stubs_read_nodemap(struct ctdb_context *ctdb)
 				capabilities &= ~CTDB_CAP_RECMASTER;
 			} else if (strcmp(tok, "-CTDB_CAP_LMASTER") == 0) {
 				capabilities &= ~CTDB_CAP_LMASTER;
-			} else if (strcmp(tok, "CTDB_CAP_LVS") == 0) {
-				capabilities |= CTDB_CAP_LVS;
 			} else if (strcmp(tok, "TIMEOUT") == 0) {
 				/* This can be done with just a flag
 				 * value but it is probably clearer

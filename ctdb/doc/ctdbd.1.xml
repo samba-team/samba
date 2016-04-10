@@ -229,19 +229,6 @@
       </varlistentry>
 
       <varlistentry>
-	<term>--lvs</term>
-	<listitem>
-	  <para>
-	    This option is used to activate the LVS capability on a CTDB
-	    node.  Please see the <citetitle>LVS</citetitle> section in
-	    <citerefentry><refentrytitle>ctdb</refentrytitle>
-	    <manvolnum>7</manvolnum></citerefentry> for more
-	    information.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>--max-persistent-check-errors=<parameter>NUM</parameter></term>
 	<listitem>
 	  <para>

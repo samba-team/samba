@@ -59,7 +59,6 @@ static struct {
 	int         start_as_stopped;
 	int         no_lmaster;
 	int         no_recmaster;
-	int         lvs;
 	int	    script_log_level;
 	int         no_publicipcheck;
 	int         max_persistent_check_errors;
@@ -138,7 +137,6 @@ int main(int argc, const char *argv[])
 		{ "start-as-stopped", 0, POPT_ARG_NONE, &options.start_as_stopped, 0, "Node starts in stopped state", NULL },
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
-		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
 		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, 0, "log level of event script output", NULL },
 		{ "nopublicipcheck", 0, POPT_ARG_NONE, &options.no_publicipcheck, 0, "don't check we have/don't have the correct public ip addresses", NULL },
 		{ "max-persistent-check-errors", 0, POPT_ARG_INT,
@@ -235,9 +233,6 @@ int main(int argc, const char *argv[])
 	}
 	if (options.no_recmaster != 0) {
 		ctdb->capabilities &= ~CTDB_CAP_RECMASTER;
-	}
-	if (options.lvs != 0) {
-		ctdb->capabilities |= CTDB_CAP_LVS;
 	}
 
 	/* Initialise this node's PNN to the unknown value.  This will

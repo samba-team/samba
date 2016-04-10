@@ -800,7 +800,6 @@ pnn:3 10.0.0.14        OK
       <screen>
 RECMASTER: YES
 LMASTER: YES
-LVS: NO
       </screen>
 
     </refsect2>

@@ -711,8 +711,7 @@ struct ctdb_public_ip_list {
  */
 #define CTDB_CAP_RECMASTER		0x00000001
 #define CTDB_CAP_LMASTER		0x00000002
-/* This capability is set if CTDB_LVS_PUBLIC_IP is set */
-#define CTDB_CAP_LVS			0x00000004
+#define CTDB_CAP_LVS			0x00000004 /* obsolete */
 #define CTDB_CAP_NATGW			0x00000008 /* obsolete */
 
 /*

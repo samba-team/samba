@@ -7,7 +7,6 @@ define_test "3 nodes, all ok"
 required_result 0 <<EOF
 RECMASTER: YES
 LMASTER: YES
-LVS: NO
 EOF
 
 simple_test <<EOF
