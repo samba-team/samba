@@ -357,7 +357,7 @@ static bool parse_newest_in_marshall_buffer(
 	struct ctdb_rec_data_old *rec = NULL;
 	struct ctdb_ltdb_header *h = NULL;
 	TDB_DATA data;
-	int i;
+	uint32_t i;
 
 	if (buf == NULL) {
 		return false;
@@ -1431,7 +1431,7 @@ static int db_ctdb_traverse(struct db_context *db,
 			struct db_context *newkeys = db_open_rbt(talloc_tos());
 			struct ctdb_marshall_buffer *mbuf = ctx->transaction->m_write;
 			struct ctdb_rec_data_old *rec=NULL;
-			int i;
+			uint32_t i;
 			int count = 0;
 			NTSTATUS status;
 
