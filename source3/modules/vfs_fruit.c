@@ -132,6 +132,7 @@ struct fruit_config_data {
 	bool unix_info_enabled;
 	bool copyfile_enabled;
 	bool veto_appledouble;
+	bool posix_rename;
 
 	/*
 	 * Additional options, all enabled by default,
@@ -1354,6 +1355,9 @@ static int init_fruit_config(vfs_handle_struct *handle)
 
 	config->use_copyfile = lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME,
 					   "copyfile", false);
+
+	config->posix_rename = lp_parm_bool(
+		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME, "posix_rename", true);
 
 	config->readdir_attr_rsize = lp_parm_bool(
 		SNUM(handle->conn), "readdir_attr", "aapl_rsize", true);
@@ -3427,7 +3431,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 			fsp->aapl_copyfile_supported = true;
 		}
 
-		if (fsp->is_directory) {
+		if (config->posix_rename && fsp->is_directory) {
 			/*
 			 * Enable POSIX directory rename behaviour
 			 */
