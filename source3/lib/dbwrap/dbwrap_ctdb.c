@@ -49,6 +49,7 @@ struct db_ctdb_transaction_handle {
 
 struct db_ctdb_ctx {
 	struct db_context *db;
+	struct ctdbd_connection *conn;
 	struct tdb_wrap *wtdb;
 	uint32_t db_id;
 	struct db_ctdb_transaction_handle *transaction;
@@ -760,8 +761,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 
 again:
 	/* tell ctdbd to commit to the other nodes */
-	ret = ctdbd_control_local(messaging_ctdbd_connection(),
-				  CTDB_CONTROL_TRANS3_COMMIT,
+	ret = ctdbd_control_local(ctx->conn, CTDB_CONTROL_TRANS3_COMMIT,
 				  h->ctx->db_id, 0,
 				  db_ctdb_marshall_finish(h->m_write),
 				  NULL, NULL, &status);
@@ -858,6 +858,7 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 	int32_t cstatus;
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_rec);
+	struct db_ctdb_ctx *ctx = crec->ctdb_ctx;
 
 	indata.dsize = offsetof(struct ctdb_control_schedule_for_deletion, key) + rec->key.dsize;
 	indata.dptr = talloc_zero_array(crec, uint8_t, indata.dsize);
@@ -867,12 +868,12 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 	}
 
 	dd = (struct ctdb_control_schedule_for_deletion *)(void *)indata.dptr;
-	dd->db_id = crec->ctdb_ctx->db_id;
+	dd->db_id = ctx->db_id;
 	dd->hdr = crec->header;
 	dd->keylen = rec->key.dsize;
 	memcpy(dd->key, rec->key.dptr, rec->key.dsize);
 
-	ret = ctdbd_control_local(messaging_ctdbd_connection(),
+	ret = ctdbd_control_local(ctx->conn,
 				  CTDB_CONTROL_SCHEDULE_FOR_DELETION,
 				  crec->ctdb_ctx->db_id,
 				  CTDB_CTRL_FLAG_NOREPLY, /* flags */
@@ -1107,8 +1108,7 @@ again:
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
 		GetTimeOfDay(&ctdb_start_time);
-		ret = ctdbd_migrate(messaging_ctdbd_connection(), ctx->db_id,
-				    key);
+		ret = ctdbd_migrate(ctx->conn, ctx->db_id, key);
 		ctdb_time += timeval_elapsed(&ctdb_start_time);
 
 		if (ret != 0) {
@@ -1295,7 +1295,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_OK;
 	}
 
-	ret = ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
+	ret = ctdbd_parse(ctx->conn, ctx->db_id, key,
 			  state.ask_for_readonly_copy, parser, private_data);
 	if (ret != 0) {
 		if (ret == ENOENT) {
@@ -1587,7 +1587,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct db_context *result;
 	struct db_ctdb_ctx *db_ctdb;
 	char *db_path;
-	struct ctdbd_connection *conn;
 	struct loadparm_context *lp_ctx;
 	struct ctdb_db_priority prio;
 	int32_t cstatus;
@@ -1620,14 +1619,14 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	db_ctdb->transaction = NULL;
 	db_ctdb->db = result;
 
-	conn = messaging_ctdbd_connection();
-	if (conn == NULL) {
+	db_ctdb->conn = messaging_ctdbd_connection();
+	if (db_ctdb->conn == NULL) {
 		DEBUG(1, ("Could not connect to ctdb\n"));
 		TALLOC_FREE(result);
 		return NULL;
 	}
 
-	ret = ctdbd_db_attach(conn, name, &db_ctdb->db_id, tdb_flags);
+	ret = ctdbd_db_attach(db_ctdb->conn, name, &db_ctdb->db_id, tdb_flags);
 	if (ret != 0) {
 		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
 			  strerror(ret)));
@@ -1635,7 +1634,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	db_path = ctdbd_dbpath(conn, db_ctdb, db_ctdb->db_id);
+	db_path = ctdbd_dbpath(db_ctdb->conn, db_ctdb, db_ctdb->db_id);
 
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	result->lock_order = lock_order;
@@ -1648,7 +1647,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	prio.priority = lock_order;
 
 	ret = ctdbd_control_local(
-		conn, CTDB_CONTROL_SET_DB_PRIORITY, 0, 0,
+		db_ctdb->conn, CTDB_CONTROL_SET_DB_PRIORITY, 0, 0,
 		make_tdb_data((uint8_t *)&prio, sizeof(prio)),
 		NULL, NULL, &cstatus);
 
@@ -1668,8 +1667,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				       sizeof(db_ctdb->db_id));
 
 		ret = ctdbd_control_local(
-			conn, CTDB_CONTROL_SET_DB_READONLY, 0, 0, indata,
-			NULL, NULL, &cstatus);
+			db_ctdb->conn, CTDB_CONTROL_SET_DB_READONLY, 0, 0,
+			indata, NULL, NULL, &cstatus);
 		if ((ret != 0) || (cstatus != 0)) {
 			DEBUG(1, ("CTDB_CONTROL_SET_DB_READONLY failed: "
 				  "%s, %"PRIi32"\n", strerror(ret), cstatus));
@@ -1709,8 +1708,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	}
 
 	if (result->persistent) {
-		db_ctdb->lock_ctx = g_lock_ctx_init(db_ctdb,
-						    ctdb_conn_msg_ctx(conn));
+		db_ctdb->lock_ctx = g_lock_ctx_init(
+			db_ctdb, ctdb_conn_msg_ctx(db_ctdb->conn));
 		if (db_ctdb->lock_ctx == NULL) {
 			DEBUG(0, ("g_lock_ctx_init failed\n"));
 			TALLOC_FREE(result);
