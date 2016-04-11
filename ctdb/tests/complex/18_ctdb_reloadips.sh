@@ -93,9 +93,10 @@ iface=$(echo "$ctdb_ip_info" | awk -v pnn=$test_node '$2 == pnn { print $3 ; exi
 
 ####################
 
+# This needs to be set only on the recmaster. All nodes should do the trick.
 new_takeover_timeout=90
 echo "Setting TakeoverTimeout=${new_takeover_timeout} to avoid potential bans"
-try_command_on_node $test_node "$CTDB setvar TakeoverTimeout ${new_takeover_timeout}"
+try_command_on_node all "$CTDB setvar TakeoverTimeout ${new_takeover_timeout}"
 
 ####################
 
