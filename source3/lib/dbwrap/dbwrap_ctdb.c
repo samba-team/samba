@@ -590,7 +590,7 @@ static NTSTATUS db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 		SAFE_FREE(rec.dptr);
 	}
 
-	header.dmaster = get_my_vnn();
+	header.dmaster = ctdbd_vnn(h->ctx->conn);
 	header.rsn++;
 
 	h->m_write = db_ctdb_marshall_add(h, h->m_write, h->ctx->db_id, 0, key, &header, data);
@@ -978,9 +978,9 @@ static int db_ctdb_record_destr(struct db_record* data)
  * either for reading or for writing.
  */
 static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
-				      bool read_only)
+				      uint32_t my_vnn, bool read_only)
 {
-	if (hdr->dmaster != get_my_vnn()) {
+	if (hdr->dmaster != my_vnn) {
 		/* If we're not dmaster, it must be r/o copy. */
 		return read_only && (hdr->flags & CTDB_REC_RO_HAVE_READONLY);
 	}
@@ -991,7 +991,8 @@ static bool db_ctdb_can_use_local_hdr(const struct ctdb_ltdb_header *hdr,
 	return read_only || !(hdr->flags & CTDB_REC_RO_HAVE_DELEGATIONS);
 }
 
-static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
+static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, uint32_t my_vnn,
+				       bool read_only)
 {
 	if (ctdb_data.dptr == NULL) {
 		return false;
@@ -1002,7 +1003,7 @@ static bool db_ctdb_can_use_local_copy(TDB_DATA ctdb_data, bool read_only)
 	}
 
 	return db_ctdb_can_use_local_hdr(
-		(struct ctdb_ltdb_header *)ctdb_data.dptr, read_only);
+		(struct ctdb_ltdb_header *)ctdb_data.dptr, my_vnn, read_only);
 }
 
 static struct db_record *fetch_locked_internal(struct db_ctdb_ctx *ctx,
@@ -1087,7 +1088,8 @@ again:
 	 * take the shortcut and just return it.
 	 */
 
-	if (!db_ctdb_can_use_local_copy(ctdb_data, false)) {
+	if (!db_ctdb_can_use_local_copy(ctdb_data, ctdbd_vnn(ctx->conn),
+					false)) {
 		SAFE_FREE(ctdb_data.dptr);
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		talloc_set_destructor(result, NULL);
@@ -1105,7 +1107,7 @@ again:
 			   ctdb_data.dptr, ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster :
 			   UINT32_MAX,
-			   get_my_vnn(),
+			   ctdbd_vnn(ctx->conn),
 			   ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
 
@@ -1216,6 +1218,7 @@ static struct db_record *db_ctdb_try_fetch_locked(struct db_context *db,
 struct db_ctdb_parse_record_state {
 	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data);
 	void *private_data;
+	uint32_t my_vnn;
 	bool ask_for_readonly_copy;
 	bool done;
 };
@@ -1236,7 +1239,7 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 	struct db_ctdb_parse_record_state *state =
 		(struct db_ctdb_parse_record_state *)private_data;
 
-	if (db_ctdb_can_use_local_hdr(header, true)) {
+	if (db_ctdb_can_use_local_hdr(header, state->my_vnn, true)) {
 		state->parser(key, data, state->private_data);
 		state->done = true;
 	} else {
@@ -1263,6 +1266,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 
 	state.parser = parser;
 	state.private_data = private_data;
+	state.my_vnn = ctdbd_vnn(ctx->conn);
 
 	if (ctx->transaction != NULL) {
 		struct db_ctdb_transaction_handle *h = ctx->transaction;
