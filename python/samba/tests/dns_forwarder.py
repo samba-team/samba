@@ -33,7 +33,7 @@ import samba.getopt as options
 import optparse
 import subprocess
 
-parser = optparse.OptionParser("dns_forwarder.py <server name> <server ip> [options]")
+parser = optparse.OptionParser("dns_forwarder.py <server name> <server ip> (dns forwarder)+ [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 
@@ -55,12 +55,14 @@ creds = credopts.get_credentials(lp)
 
 timeout = opts.timeout
 
-if len(args) < 2:
+if len(args) < 3:
     parser.print_usage()
     sys.exit(1)
 
 server_name = args[0]
 server_ip = args[1]
+dns_servers = args[2:]
+
 creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
 
 def make_txt_record(records):
@@ -199,7 +201,7 @@ class TestDnsForwarding(DNSTest):
             p.kill()
 
     def test_comatose_forwarder(self):
-        s = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
+        s = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         s.send("timeout 1000000", 0)
 
         # make DNS query
@@ -223,7 +225,7 @@ class TestDnsForwarding(DNSTest):
             pass
 
     def test_single_forwarder(self):
-        s = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
+        s = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         ad = contact_real_server(server_ip, 53)
         name = "dsfsfds.dsfsdfs"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
@@ -272,7 +274,7 @@ class TestDnsForwarding(DNSTest):
 
 
     def test_single_forwarder_waiting_forever(self):
-        s = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
+        s = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         s.send('timeout 10000', 0)
         ad = contact_real_server(server_ip, 53)
         name = "dsfsfds.dsfsdfs"
@@ -292,14 +294,16 @@ class TestDnsForwarding(DNSTest):
         try:
             data = ad.recv(0xffff + 2, 0)
             data = ndr.ndr_unpack(dns.name_packet, data)
-            print data.__ndr_print__()
             self.assert_dns_rcode_equals(data, dns.DNS_RCODE_SERVFAIL)
         except socket.timeout:
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_double_forwarder_first_frozen(self):
-        s1 = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
-        s2 = self.start_toy_server('127.0.0.37', 53, 'forwarder2')
+        if len(dns_servers) < 2:
+            print "Ignoring test_double_forwarder_first_frozen"
+            return
+        s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
+        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
         s1.send('timeout 1000', 0)
         ad = contact_real_server(server_ip, 53)
         name = "dsfsfds.dsfsdfs"
@@ -325,7 +329,10 @@ class TestDnsForwarding(DNSTest):
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_double_forwarder_first_down(self):
-        s2 = self.start_toy_server('127.0.0.37', 53, 'forwarder2')
+        if len(dns_servers) < 2:
+            print "Ignoring test_double_forwarder_first_down"
+            return
+        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
         ad = contact_real_server(server_ip, 53)
         name = "dsfsfds.dsfsdfs"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
@@ -350,8 +357,11 @@ class TestDnsForwarding(DNSTest):
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_double_forwarder_both_slow(self):
-        s1 = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
-        s2 = self.start_toy_server('127.0.0.37', 53, 'forwarder2')
+        if len(dns_servers) < 2:
+            print "Ignoring test_double_forwarder_both_slow"
+            return
+        s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
+        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
         s1.send('timeout 1.5', 0)
         s2.send('timeout 1.5', 0)
         ad = contact_real_server(server_ip, 53)
@@ -378,7 +388,7 @@ class TestDnsForwarding(DNSTest):
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_cname(self):
-        s1 = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
+        s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
 
         ad = contact_real_server(server_ip, 53)
         name = "resolve.cname"
@@ -404,7 +414,7 @@ class TestDnsForwarding(DNSTest):
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_double_cname(self):
-        s1 = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
+        s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
 
         name = 'resolve.cname.%s' % self.get_dns_domain()
         self.make_cname_update(name, "dsfsfds.dsfsdfs")
@@ -432,8 +442,11 @@ class TestDnsForwarding(DNSTest):
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_cname_forwarding_with_slow_server(self):
-        s1 = self.start_toy_server('127.0.0.36', 53, 'forwarder1')
-        s2 = self.start_toy_server('127.0.0.37', 53, 'forwarder2')
+        if len(dns_servers) < 2:
+            print "Ignoring test_cname_forwarding_with_slow_server"
+            return
+        s1 = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
+        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
         s1.send('timeout 10000', 0)
 
         name = 'resolve.cname.%s' % self.get_dns_domain()
@@ -462,7 +475,10 @@ class TestDnsForwarding(DNSTest):
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
     def test_cname_forwarding_with_server_down(self):
-        s2 = self.start_toy_server('127.0.0.37', 53, 'forwarder2')
+        if len(dns_servers) < 2:
+            print "Ignoring test_cname_forwarding_with_server_down"
+            return
+        s2 = self.start_toy_server(dns_servers[1], 53, 'forwarder2')
 
         name1 = 'resolve1.cname.%s' % self.get_dns_domain()
         name2 = 'resolve2.cname.%s' % self.get_dns_domain()
@@ -493,7 +509,7 @@ class TestDnsForwarding(DNSTest):
 
     def test_cname_forwarding_with_lots_of_cnames(self):
         name3 = 'resolve3.cname.%s' % self.get_dns_domain()
-        s1 = self.start_toy_server('127.0.0.36', 53, name3)
+        s1 = self.start_toy_server(dns_servers[0], 53, name3)
 
         name1 = 'resolve1.cname.%s' % self.get_dns_domain()
         name2 = 'resolve2.cname.%s' % self.get_dns_domain()
