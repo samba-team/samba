@@ -1100,9 +1100,11 @@ again:
 
 		migrate_attempts += 1;
 
-		DEBUG(10, ("ctdb_data.dptr = %p, dmaster = %u (%u) %u\n",
+		DEBUG(10, ("ctdb_data.dptr = %p, dmaster = %"PRIu32" "
+			   "(%"PRIu32") %"PRIu32"\n",
 			   ctdb_data.dptr, ctdb_data.dptr ?
-			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster : -1,
+			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster :
+			   UINT32_MAX,
 			   get_my_vnn(),
 			   ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->flags : 0));
