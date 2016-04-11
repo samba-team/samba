@@ -58,13 +58,6 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 	return ENOSYS;
 }
 
-bool ctdb_processes_exist(struct ctdbd_connection *conn,
-			  const struct server_id *pids, int num_pids,
-			  bool *results)
-{
-	return false;
-}
-
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn, pid_t pid)
 {
 	return false;

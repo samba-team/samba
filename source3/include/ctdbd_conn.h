@@ -49,9 +49,6 @@ int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn,
 			  pid_t pid);
-bool ctdb_processes_exist(struct ctdbd_connection *conn,
-			  const struct server_id *pids, int num_pids,
-			  bool *results);
 
 char *ctdbd_dbpath(struct ctdbd_connection *conn,
 		   TALLOC_CTX *mem_ctx, uint32_t db_id);

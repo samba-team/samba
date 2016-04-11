@@ -692,126 +692,17 @@ static int ctdbd_control(struct ctdbd_connection *conn,
  */
 bool ctdbd_process_exists(struct ctdbd_connection *conn, uint32_t vnn, pid_t pid)
 {
-	struct server_id id;
-	bool result;
+	int32_t cstatus = 0;
+	int ret;
 
-	id.pid = pid;
-	id.vnn = vnn;
-
-	if (!ctdb_processes_exist(conn, &id, 1, &result)) {
-		DEBUG(10, ("ctdb_processes_exist failed\n"));
+	ret = ctdbd_control(conn, vnn, CTDB_CONTROL_PROCESS_EXISTS, 0, 0,
+			    (TDB_DATA) { .dptr = (uint8_t *)&pid,
+					 .dsize = sizeof(pid) },
+			    NULL, NULL, &cstatus);
+	if (ret != 0) {
 		return false;
 	}
-	return result;
-}
-
-bool ctdb_processes_exist(struct ctdbd_connection *conn,
-			  const struct server_id *pids, int num_pids,
-			  bool *results)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	int i, num_received;
-	uint32_t *reqids;
-	bool result = false;
-
-	reqids = talloc_array(talloc_tos(), uint32_t, num_pids);
-	if (reqids == NULL) {
-		goto fail;
-	}
-
-	for (i=0; i<num_pids; i++) {
-		struct ctdb_req_control_old req;
-		pid_t pid;
-		struct iovec iov[2];
-		ssize_t nwritten;
-
-		results[i] = false;
-		reqids[i] = ctdbd_next_reqid(conn);
-
-		ZERO_STRUCT(req);
-
-		/*
-		 * pids[i].pid is uint64_t, scale down to pid_t which
-		 * is the wire protocol towards ctdb.
-		 */
-		pid = pids[i].pid;
-
-		DEBUG(10, ("Requesting PID %d/%d, reqid=%d\n",
-			   (int)pids[i].vnn, (int)pid,
-			   (int)reqids[i]));
-
-		req.hdr.length = offsetof(struct ctdb_req_control_old, data);
-		req.hdr.length += sizeof(pid);
-		req.hdr.ctdb_magic   = CTDB_MAGIC;
-		req.hdr.ctdb_version = CTDB_PROTOCOL;
-		req.hdr.operation    = CTDB_REQ_CONTROL;
-		req.hdr.reqid        = reqids[i];
-		req.hdr.destnode     = pids[i].vnn;
-		req.opcode           = CTDB_CONTROL_PROCESS_EXISTS;
-		req.srvid            = 0;
-		req.datalen          = sizeof(pid);
-		req.flags            = 0;
-
-		DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
-		ctdb_packet_dump(&req.hdr);
-
-		iov[0].iov_base = &req;
-		iov[0].iov_len = offsetof(struct ctdb_req_control_old, data);
-		iov[1].iov_base = &pid;
-		iov[1].iov_len = sizeof(pid);
-
-		nwritten = write_data_iov(conn->fd, iov, ARRAY_SIZE(iov));
-		if (nwritten == -1) {
-			DEBUG(10, ("write_data_iov failed: %s\n",
-				   strerror(errno)));
-			goto fail;
-		}
-	}
-
-	num_received = 0;
-
-	while (num_received < num_pids) {
-		struct ctdb_req_header *hdr;
-		struct ctdb_reply_control_old *reply;
-		uint32_t reqid;
-		int ret;
-
-		ret = ctdb_read_req(conn, 0, talloc_tos(), &hdr);
-		if (ret != 0) {
-			DEBUG(10, ("ctdb_read_req failed: %s\n",
-				   strerror(ret)));
-			goto fail;
-		}
-
-		if (hdr->operation != CTDB_REPLY_CONTROL) {
-			DEBUG(10, ("Received invalid reply\n"));
-			goto fail;
-		}
-		reply = (struct ctdb_reply_control_old *)hdr;
-
-		reqid = reply->hdr.reqid;
-
-		DEBUG(10, ("Received reqid %d\n", (int)reqid));
-
-		for (i=0; i<num_pids; i++) {
-			if (reqid == reqids[i]) {
-				break;
-			}
-		}
-		if (i == num_pids) {
-			DEBUG(10, ("Received unknown record number %u\n",
-				   (unsigned)reqid));
-			goto fail;
-		}
-		results[i] = ((reply->status) == 0);
-		TALLOC_FREE(reply);
-		num_received += 1;
-	}
-
-	result = true;
-fail:
-	TALLOC_FREE(frame);
-	return result;
+	return (cstatus == 0);
 }
 
 /*
