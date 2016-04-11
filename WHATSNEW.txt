@@ -1,4 +1,25 @@
                    =============================
+                   Release Notes for Samba 4.4.2
+                           April 12, 2016
+                   =============================
+
+This is a security release containing one additional
+regression fix for the security release 4.4.1.
+
+This fixes a regression that prevents things like 'net ads join'
+from working against a Windows 2003 domain.
+
+Changes since 4.4.1:
+====================
+
+o  Stefan Metzmacher <metze@samba.org>
+   * Bug 11804 - prerequisite backports for the security release on
+     April 12th, 2016
+
+Release notes for the original 4.4.1 release follows:
+-----------------------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.4.1
                            April 12, 2016
                    =============================
@@ -44,6 +65,11 @@ o  CVE-2015-5370
    in the DCE-RPC client and server implementations. In addition,
    errors in validation of the DCE-RPC packets can lead to a downgrade
    of a secure connection to an insecure one.
+
+   While we think it is unlikely, there's a nonzero chance for
+   a remote code execution attack against the client components,
+   which are used by smbd, winbindd and tools like net, rpcclient and
+   others. This may gain root access to the attacker.
 
    The above applies all possible server roles Samba can operate in.
 
@@ -451,7 +477,7 @@ o  Tools like "samba-tool", "ldbsearch", "ldbedit" and more obey the
    server.
 
 Changes since 4.4.0:
---------------------
+====================
 
 o  Jeremy Allison <jra@samba.org>
    * Bug 11344 - CVE-2015-5370: Multiple errors in DCE-RPC code.
