@@ -28,6 +28,7 @@
 #include "lib/cluster_support.h"
 #include "util_tdb.h"
 #include "ctdbd_conn.h"
+#include "messages.h"
 
 bool db_is_local(const char *name)
 {
@@ -143,7 +144,16 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		}
 		/* allow ctdb for individual databases to be disabled */
 		if (lp_parm_bool(-1, "ctdb", partname, True)) {
-			result = db_open_ctdb(mem_ctx, partname, hash_size,
+			struct ctdbd_connection *conn;
+
+			conn = messaging_ctdbd_connection();
+			if (conn == NULL) {
+				DBG_WARNING("No ctdb connection\n");
+				errno = EIO;
+				return NULL;
+			}
+			result = db_open_ctdb(mem_ctx, conn, partname,
+					      hash_size,
 					      tdb_flags, open_flags, mode,
 					      lock_order, dbwrap_flags);
 			if (result == NULL) {

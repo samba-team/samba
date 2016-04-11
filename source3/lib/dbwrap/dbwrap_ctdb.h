@@ -26,8 +26,10 @@
 #include "dbwrap/dbwrap_private.h"
 
 struct db_context;
+struct ctdbd_connection;
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
+				struct ctdbd_connection *conn,
 				const char *name,
 				int hash_size, int tdb_flags,
 				int open_flags, mode_t mode,

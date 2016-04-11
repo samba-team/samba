@@ -22,16 +22,24 @@
 #include "system/filesys.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_ctdb.h"
+#include "messages.h"
 
 bool run_local_dbwrap_ctdb(int dummy)
 {
-	struct db_context *db;
+	struct db_context *db = NULL;
 	int res;
 	bool ret = false;
 	NTSTATUS status;
 	uint32_t val;
+	struct ctdbd_connection *conn;
 
-	db = db_open_ctdb(talloc_tos(), "torture.tdb", 0, TDB_DEFAULT,
+	conn = messaging_ctdbd_connection();
+	if (conn == NULL) {
+		fprintf(stderr, "no ctdbd connection\n");
+		goto fail;
+	}
+
+	db = db_open_ctdb(talloc_tos(), conn, "torture.tdb", 0, TDB_DEFAULT,
 			  O_RDWR, 0755, DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		perror("db_open_ctdb failed");

@@ -1578,6 +1578,7 @@ static size_t db_ctdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 }
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
+				struct ctdbd_connection *conn,
 				const char *name,
 				int hash_size, int tdb_flags,
 				int open_flags, mode_t mode,
@@ -1618,13 +1619,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	db_ctdb->transaction = NULL;
 	db_ctdb->db = result;
-
-	db_ctdb->conn = messaging_ctdbd_connection();
-	if (db_ctdb->conn == NULL) {
-		DEBUG(1, ("Could not connect to ctdb\n"));
-		TALLOC_FREE(result);
-		return NULL;
-	}
+	db_ctdb->conn = conn;
 
 	ret = ctdbd_db_attach(db_ctdb->conn, name, &db_ctdb->db_id, tdb_flags);
 	if (ret != 0) {
