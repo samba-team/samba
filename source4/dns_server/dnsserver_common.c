@@ -473,7 +473,7 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 	struct dns_server_zone *new_list = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	// TODO: this search does not work against windows
+	/* TODO: this search does not work against windows */
 	ret = dsdb_search(samdb, frame, &res, NULL, LDB_SCOPE_SUBTREE,
 			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
 	if (ret != LDB_SUCCESS) {
