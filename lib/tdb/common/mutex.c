@@ -786,6 +786,8 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 
 	initialized = true;
 
+	sigemptyset(&suspend_mask);
+
 	ok = tdb_mutex_locking_supported();
 	if (!ok) {
 		return false;
