@@ -23,13 +23,36 @@
 
 #include "common/db_hash.c"
 
+static int record_parser(uint8_t *keybuf, size_t keylen,
+			 uint8_t *databuf, size_t datalen,
+			 void *private_data)
+{
+	int *count = (int *)private_data;
+
+	(*count) += 1;
+	return 0;
+}
+
 static void do_test(enum db_hash_type type)
 {
-	struct db_hash_context *dh;
+	struct db_hash_context *dh = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	uint8_t key[] = "This is a long key";
 	uint8_t value[] = "This is a long value";
 	int ret;
+	int count = 0;
+
+	ret = db_hash_insert(dh, key, sizeof(key), value, sizeof(value));
+	assert(ret == EINVAL);
+
+	ret = db_hash_add(dh, key, sizeof(key), value, sizeof(value));
+	assert(ret == EINVAL);
+
+	ret = db_hash_exists(dh, key, sizeof(key));
+	assert(ret == EINVAL);
+
+	ret = db_hash_delete(dh, key, sizeof(key));
+	assert(ret == EINVAL);
 
 	ret = db_hash_init(mem_ctx, "foobar", 1024, type, &dh);
 	assert(ret == 0);
@@ -39,6 +62,13 @@ static void do_test(enum db_hash_type type)
 
 	ret = db_hash_exists(dh, key, sizeof(key));
 	assert(ret == 0);
+
+	ret = db_hash_fetch(dh, key, sizeof(key), NULL, NULL);
+	assert(ret = EINVAL);
+
+	ret = db_hash_fetch(dh, key, sizeof(key), record_parser, &count);
+	assert(ret == 0);
+	assert(count == 1);
 
 	ret = db_hash_insert(dh, key, sizeof(key), value, sizeof(value));
 	assert(ret == EEXIST);
@@ -67,11 +97,14 @@ static void do_test(enum db_hash_type type)
 
 static void do_traverse_test(enum db_hash_type type)
 {
-	struct db_hash_context *dh;
+	struct db_hash_context *dh = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	char key[] = "keyXXXX";
 	char value[] = "This is some test value";
 	int count, ret, i;
+
+	ret = db_hash_traverse(dh, NULL, NULL, &count);
+	assert(ret == EINVAL);
 
 	ret = db_hash_init(mem_ctx, "foobar", 1024, type, &dh);
 	assert(ret == 0);
@@ -86,6 +119,10 @@ static void do_traverse_test(enum db_hash_type type)
 	ret = db_hash_traverse(dh, NULL, NULL, &count);
 	assert(ret == 0);
 	assert(count == 2000);
+
+	ret = db_hash_traverse(dh, record_parser, &count, NULL);
+	assert(ret == 0);
+	assert(count == 4000);
 
 	talloc_free(dh);
 	talloc_free(mem_ctx);

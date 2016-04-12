@@ -55,7 +55,8 @@ static void writer(int fd)
 struct reader_state {
 	struct tevent_context *ev;
 	int fd;
-	uint8_t buf[1024];
+	uint8_t *buf;
+	size_t buflen;
 	struct tevent_req *subreq;
 };
 
@@ -64,7 +65,8 @@ static void reader_done(struct tevent_req *subreq);
 
 static struct tevent_req *reader_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
-				      int fd)
+				      int fd, uint8_t *buf,
+				      size_t buflen)
 {
 	struct tevent_req *req, *subreq;
 	struct reader_state *state;
@@ -76,9 +78,11 @@ static struct tevent_req *reader_send(TALLOC_CTX *mem_ctx,
 
 	state->ev = ev;
 	state->fd = fd;
+	state->buf = buf;
+	state->buflen = buflen;
 
 	subreq = pkt_read_send(state, state->ev, state->fd, 4,
-			       state->buf, 1024, reader_more, NULL);
+			       state->buf, state->buflen, reader_more, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		tevent_req_post(req, ev);
 	}
@@ -128,7 +132,7 @@ static void reader_done(struct tevent_req *subreq)
 	}
 
 	subreq = pkt_read_send(state, state->ev, state->fd, 4,
-			       state->buf, 1024, reader_more, NULL);
+			       state->buf, state->buflen, reader_more, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -167,13 +171,15 @@ static void reader_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	pkt_read_handler(ev, fde, flags, state->subreq);
 }
 
-static void reader(int fd)
+static void reader(int fd, bool fixed)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	struct tevent_fd *fde;
 	struct tevent_req *req;
 	int err;
+	uint8_t *buf = NULL;
+	size_t buflen = 0;
 
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
@@ -181,7 +187,13 @@ static void reader(int fd)
 	ev = tevent_context_init(mem_ctx);
 	assert(ev != NULL);
 
-	req = reader_send(mem_ctx, ev, fd);
+	if (fixed) {
+		buflen = 1024;
+		buf = talloc_size(mem_ctx, buflen);
+		assert(buf != NULL);
+	}
+
+	req = reader_send(mem_ctx, ev, fd, buf, buflen);
 	assert(req != NULL);
 
 	fde = tevent_add_fd(ev, mem_ctx, fd, TEVENT_FD_READ,
@@ -212,7 +224,7 @@ static bool set_nonblocking(int fd)
 	return true;
 }
 
-int main(void)
+static void reader_test(bool fixed)
 {
 	int fd[2];
 	int ret;
@@ -236,7 +248,13 @@ int main(void)
 		exit(1);
 	}
 
-	reader(fd[0]);
+	reader(fd[0], fixed);
+}
+
+int main(void)
+{
+	reader_test(true);
+	reader_test(false);
 
 	return 0;
 }
