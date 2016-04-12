@@ -723,38 +723,36 @@ MonitorInterval         = 15
     </refsect2>
 
     <refsect2>
-      <title>lvsmaster</title>
+      <title>lvs {master|list|status}</title>
       <para>
-	This command shows which node is currently the LVSMASTER. The
-	LVSMASTER is the node in the cluster which drives the LVS system and
-	which receives all incoming traffic from clients.
-      </para>
-      <para>
-	LVS is the mode where the entire CTDB/Samba cluster uses a single
-	ip address for the entire cluster. In this mode all clients connect to
-	one specific node which will then multiplex/loadbalance the clients
-	evenly onto the other nodes in the cluster. This is an alternative to using
-	public ip addresses. See the manpage for ctdbd for more information
-	about LVS.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>lvs</title>
-      <para>
-	This command shows which nodes in the cluster are currently active in the
-	LVS configuration. I.e. which nodes we are currently loadbalancing
-	the single ip address across.
+	This command shows different aspects of LVS status.  For an
+	overview of CTDB's LVS functionality please see the
+	<citetitle>LVS</citetitle> section in
+	<citerefentry><refentrytitle>ctdb</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.
       </para>
 
+      <variablelist>
+	<varlistentry>
+	  <term>master</term>
+	  <listitem>
+	    <para>
+	      Shows the PNN of the current LVS master node.
+	    </para>
       <para>
-	LVS will by default only loadbalance across those nodes that are both
-	LVS capable and also HEALTHY. Except if all nodes are UNHEALTHY in which
-	case LVS will loadbalance across all UNHEALTHY nodes as well.
-	LVS will never use nodes that are DISCONNECTED, STOPPED, BANNED or
-	DISABLED.
+	Example output:
       </para>
-
+      <screen>
+Node 2 is LVS master
+      </screen>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>list</term>
+	  <listitem>
+	    <para>
+	      Lists the currently usable LVS nodes.
+	    </para>
       <para>
 	Example output:
       </para>
@@ -762,6 +760,26 @@ MonitorInterval         = 15
 2:10.0.0.13
 3:10.0.0.14
       </screen>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>status</term>
+	  <listitem>
+	    <para>
+	      List the nodes in the current LVS group and their status.
+	    </para>
+      <para>
+	Example output:
+      </para>
+      <screen>
+pnn:0 10.0.0.11        UNHEALTHY (THIS NODE)
+pnn:1 10.0.0.12        UNHEALTHY
+pnn:2 10.0.0.13        OK
+pnn:3 10.0.0.14        OK
+      </screen>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
 
     </refsect2>
 

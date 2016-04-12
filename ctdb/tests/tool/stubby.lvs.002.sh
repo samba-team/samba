@@ -10,13 +10,7 @@ setup_lvs <<EOF
 192.168.20.43
 EOF
 
-required_result 0 <<EOF
-0:192.168.20.41
-1:192.168.20.42
-2:192.168.20.43
-EOF
-
-simple_test <<EOF
+ctdb_state="\
 NODEMAP
 0       192.168.20.41   0x0     CURRENT RECMASTER
 1       192.168.20.42   0x0
@@ -32,4 +26,38 @@ VNNMAP
 0
 1
 2
+"
+
+#####
+
+required_result 0 <<EOF
+Node 0 is LVS master
+EOF
+
+simple_test master <<EOF
+$ctdb_state
+EOF
+
+#####
+
+required_result 0 <<EOF
+0:192.168.20.41
+1:192.168.20.42
+2:192.168.20.43
+EOF
+
+simple_test list <<EOF
+$ctdb_state
+EOF
+
+#####
+
+required_result 0 <<EOF
+pnn:0 192.168.20.41    OK (THIS NODE)
+pnn:1 192.168.20.42    OK
+pnn:2 192.168.20.43    OK
+EOF
+
+simple_test status <<EOF
+$ctdb_state
 EOF

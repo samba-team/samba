@@ -3118,13 +3118,13 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 	return 0;
 }
 
-/* display lvs configuration */
+/* Display LVS status */
 static int control_lvs(struct ctdb_context *ctdb,
 		       int argc, const char **argv)
 {
 	static char prog[PATH_MAX+1] = "";
 
-	if (argc != 0) {
+	if (argc != 1) {
 		usage();
 	}
 
@@ -3135,31 +3135,7 @@ static int control_lvs(struct ctdb_context *ctdb,
 		exit(1);
 	}
 
-	execl(prog, prog, "list", NULL);
-
-	DEBUG(DEBUG_ERR,
-	      ("Unable to run LVS helper %s\n", strerror(errno)));
-	exit(1);
-}
-
-/* display who the lvs is */
-static int control_lvsmaster(struct ctdb_context *ctdb,
-			     int argc, const char **argv)
-{
-	static char prog[PATH_MAX+1] = "";
-
-	if (argc != 0) {
-		usage();
-	}
-
-	if (!ctdb_set_helper("LVS helper", prog, sizeof(prog),
-			     "CTDB_LVS_HELPER", CTDB_HELPER_BINDIR,
-			     "ctdb_lvs")) {
-		DEBUG(DEBUG_ERR, ("Unable to set LVS helper\n"));
-		exit(1);
-	}
-
-	execl(prog, prog, "master", NULL);
+	execl(prog, prog, argv[0], NULL);
 
 	DEBUG(DEBUG_ERR,
 	      ("Unable to run LVS helper %s\n", strerror(errno)));
@@ -5926,8 +5902,7 @@ static const struct {
 	{ "getmonmode",      control_getmonmode,        true,	false,  "show monitoring mode" },
 	{ "getcapabilities", control_getcapabilities,   true,	false,  "show node capabilities" },
 	{ "pnn",             control_pnn,               true,	false,  "show the pnn of the currnet node" },
-	{ "lvs",             control_lvs,               false,	true,   "show lvs configuration" },
-	{ "lvsmaster",       control_lvsmaster,         false,	true,   "show which node is the lvs master" },
+	{ "lvs",             control_lvs,               false,	true,   "show lvs configuration", "[master|list|status]" },
 	{ "disablemonitor",      control_disable_monmode,true,	false,  "set monitoring mode to DISABLE" },
 	{ "enablemonitor",      control_enable_monmode, true,	false,  "set monitoring mode to ACTIVE" },
 	{ "setdebug",        control_setdebug,          true,	false,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },

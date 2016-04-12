@@ -2,18 +2,19 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "3 nodes, some LVS, all ok"
+define_test "3 nodes, all LVS, all unhealthy"
 
 setup_lvs <<EOF
 192.168.20.41
+192.168.20.42
 192.168.20.43
 EOF
 
 ctdb_state="\
 NODEMAP
-0       192.168.20.41   0x0     CURRENT RECMASTER
-1       192.168.20.42   0x0
-2       192.168.20.43   0x0
+0       192.168.20.41   0x2	CURRENT RECMASTER
+1       192.168.20.42   0x2
+2       192.168.20.43   0x2
 
 IFACES
 :Name:LinkStatus:References:
@@ -26,6 +27,7 @@ VNNMAP
 1
 2
 "
+
 #####
 
 required_result 0 <<EOF
@@ -40,6 +42,7 @@ EOF
 
 required_result 0 <<EOF
 0:192.168.20.41
+1:192.168.20.42
 2:192.168.20.43
 EOF
 
@@ -50,8 +53,9 @@ EOF
 #####
 
 required_result 0 <<EOF
-pnn:0 192.168.20.41    OK (THIS NODE)
-pnn:2 192.168.20.43    OK
+pnn:0 192.168.20.41    UNHEALTHY (THIS NODE)
+pnn:1 192.168.20.42    UNHEALTHY
+pnn:2 192.168.20.43    UNHEALTHY
 EOF
 
 simple_test status <<EOF
