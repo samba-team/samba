@@ -59,8 +59,9 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 /* The following definitions come from auth/ntlmssp_util.c  */
 
 void debug_ntlmssp_flags(uint32_t neg_flags);
-void ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
-			      uint32_t neg_flags, bool allow_lm);
+NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
+				  uint32_t neg_flags, const char *name);
+const DATA_BLOB ntlmssp_version_blob(void);
 
 /* The following definitions come from auth/ntlmssp_server.c  */
 
@@ -88,6 +89,10 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 				TALLOC_CTX *out_mem_ctx,
 				DATA_BLOB in, DATA_BLOB *out) ;
 
+NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
+				TALLOC_CTX *out_mem_ctx,
+				DATA_BLOB in, DATA_BLOB *out);
+
 /**
  * Next state function for the Challenge Packet.  Generate an auth packet.
  *
@@ -101,6 +106,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 				  TALLOC_CTX *out_mem_ctx,
 				  const DATA_BLOB in, DATA_BLOB *out) ;
 NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security);
+NTSTATUS gensec_ntlmssp_resume_ccache_start(struct gensec_security *gensec_security);
 
 /* The following definitions come from auth/ntlmssp/gensec_ntlmssp_server.c  */
 

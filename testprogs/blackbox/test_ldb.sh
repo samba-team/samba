@@ -39,6 +39,9 @@ ldbsearch="$VALGRIND ldbsearch"
 check "RootDSE" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN || failed=`expr $failed + 1`
 check "RootDSE (full)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base '(objectClass=*)' || failed=`expr $failed + 1`
 check "RootDSE (extended)" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base '(objectClass=*)' --extended-dn || failed=`expr $failed + 1`
+if [ x$p = x"ldaps" ]; then
+   testit_expect_failure "RootDSE over SSLv3 should fail" $ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x dnsHostName highestCommittedUSN --option='tlspriority=NONE:+VERS-SSL3.0:+MAC-ALL:+CIPHER-ALL:+RSA:+SIGN-ALL:+COMP-NULL' && failed=`expr $failed + 1`
+fi
 
 echo "Getting defaultNamingContext"
 BASEDN=`$ldbsearch $CONFIGURATION $options --basedn='' -H $p://$SERVER -s base DUMMY=x defaultNamingContext | grep defaultNamingContext | awk '{print $2}'`

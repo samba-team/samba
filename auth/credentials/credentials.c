@@ -900,6 +900,7 @@ _PUBLIC_ void cli_credentials_set_anonymous(struct cli_credentials *cred)
 	cli_credentials_set_password(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_realm(cred, NULL, CRED_SPECIFIED);
 	cli_credentials_set_workstation(cred, "", CRED_UNINITIALISED);
+	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
 }
 
 /**

@@ -210,6 +210,7 @@ sub setup_s3dc($$)
 	domain master = yes
 	domain logons = yes
 	lanman auth = yes
+	raw NTLMv2 auth = yes
 
 	rpc_server:epmapper = external
 	rpc_server:spoolss = external

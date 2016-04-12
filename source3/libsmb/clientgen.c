@@ -231,6 +231,15 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		use_level_II_oplocks = true;
 	}
 
+	if (signing_state == SMB_SIGNING_IPC_DEFAULT) {
+		/*
+		 * Ensure for IPC/RPC the default is to require
+		 * signing unless explicitly turned off by the
+		 * administrator.
+		 */
+		signing_state = lp_client_ipc_signing();
+	}
+
 	if (signing_state == SMB_SIGNING_DEFAULT) {
 		signing_state = lp_client_signing();
 	}
@@ -379,7 +388,7 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
  Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
 
-uint16 cli_setpid(struct cli_state *cli, uint16 pid)
+uint16_t cli_setpid(struct cli_state *cli, uint16 pid)
 {
 	uint16_t ret = cli->smb1.pid;
 	cli->smb1.pid = pid;

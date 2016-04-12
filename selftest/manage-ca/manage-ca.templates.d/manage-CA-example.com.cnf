@@ -1,0 +1,17 @@
+
+CRL_HTTP_BASE="http://www.example.com/crls"
+CRL_SSH_BASE="www.example.com:/path/to/crls"
+DNS_DOMAIN="example.com"
+
+#CA_BITS="8192"
+#DC_BITS="8192"
+#USER_BITS="8192"
+#CA_DAYS="3650"
+#CRL_DAYS="30"
+#DC_DAYS="730"
+#USER_DAYS="730"
+
+COUNTRY_NAME="US"
+STATE_NAME="ExampleState"
+LOCALITY_NAME="ExampleCity"
+ORGANIZATION_NAME="ExampleOrganization"

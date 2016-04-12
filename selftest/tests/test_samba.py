@@ -21,7 +21,7 @@
 
 from cStringIO import StringIO
 
-from selftest.tests import TestCase
+from samba.tests import TestCase
 
 from selftest.target.samba import (
     bindir_path,

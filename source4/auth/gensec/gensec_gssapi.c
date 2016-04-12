@@ -42,6 +42,7 @@
 #include "gensec_gssapi.h"
 #include "lib/util/util_net.h"
 #include "auth/kerberos/pac_utils.h"
+#include "auth/kerberos/gssapi_helper.h"
 
 #ifndef gss_mech_spnego
 gss_OID_desc spnego_mech_oid_desc =
@@ -53,65 +54,33 @@ _PUBLIC_ NTSTATUS gensec_gssapi_init(void);
 
 static size_t gensec_gssapi_max_input_size(struct gensec_security *gensec_security);
 static size_t gensec_gssapi_max_wrapped_size(struct gensec_security *gensec_security);
+static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, size_t data_size);
 
 static int gensec_gssapi_destructor(struct gensec_gssapi_state *gensec_gssapi_state)
 {
-	OM_uint32 maj_stat, min_stat;
-	
+	OM_uint32 min_stat;
+
 	if (gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
-		maj_stat = gss_release_cred(&min_stat, 
-					    &gensec_gssapi_state->delegated_cred_handle);
+		gss_release_cred(&min_stat,
+				 &gensec_gssapi_state->delegated_cred_handle);
 	}
 
 	if (gensec_gssapi_state->gssapi_context != GSS_C_NO_CONTEXT) {
-		maj_stat = gss_delete_sec_context (&min_stat,
-						   &gensec_gssapi_state->gssapi_context,
-						   GSS_C_NO_BUFFER);
+		gss_delete_sec_context(&min_stat,
+				       &gensec_gssapi_state->gssapi_context,
+				       GSS_C_NO_BUFFER);
 	}
 
 	if (gensec_gssapi_state->server_name != GSS_C_NO_NAME) {
-		maj_stat = gss_release_name(&min_stat, &gensec_gssapi_state->server_name);
+		gss_release_name(&min_stat,
+				 &gensec_gssapi_state->server_name);
 	}
 	if (gensec_gssapi_state->client_name != GSS_C_NO_NAME) {
-		maj_stat = gss_release_name(&min_stat, &gensec_gssapi_state->client_name);
-	}
-
-	if (gensec_gssapi_state->lucid) {
-		gss_krb5_free_lucid_sec_context(&min_stat, gensec_gssapi_state->lucid);
+		gss_release_name(&min_stat,
+				 &gensec_gssapi_state->client_name);
 	}
 
 	return 0;
-}
-
-static NTSTATUS gensec_gssapi_init_lucid(struct gensec_gssapi_state *gensec_gssapi_state)
-{
-	OM_uint32 maj_stat, min_stat;
-
-	if (gensec_gssapi_state->lucid) {
-		return NT_STATUS_OK;
-	}
-
-	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
-						     &gensec_gssapi_state->gssapi_context,
-						     1,
-						     (void **)&gensec_gssapi_state->lucid);
-	if (maj_stat != GSS_S_COMPLETE) {
-		DEBUG(0,("gensec_gssapi_init_lucid: %s\n",
-			gssapi_error_string(gensec_gssapi_state,
-					    maj_stat, min_stat,
-					    gensec_gssapi_state->gss_oid)));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	if (gensec_gssapi_state->lucid->version != 1) {
-		DEBUG(0,("gensec_gssapi_init_lucid: lucid version[%d] != 1\n",
-			gensec_gssapi_state->lucid->version));
-		gss_krb5_free_lucid_sec_context(&min_stat, gensec_gssapi_state->lucid);
-		gensec_gssapi_state->lucid = NULL;
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
@@ -190,8 +159,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	gensec_gssapi_state->client_cred = NULL;
 	gensec_gssapi_state->server_cred = NULL;
-
-	gensec_gssapi_state->lucid = NULL;
 
 	gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
 
@@ -303,6 +270,7 @@ static NTSTATUS gensec_gssapi_client_creds(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
 		DEBUG(1, ("Wrong username or password: %s\n", error_string));
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5KDC_ERR_CLIENT_REVOKED:
@@ -524,7 +492,8 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			*out = data_blob_talloc(out_mem_ctx, output_token.value, output_token.length);
 			gss_release_buffer(&min_stat2, &output_token);
 			
-			if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG) {
+			if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG &&
+			    gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
 				DEBUG(5, ("gensec_gssapi: credentials were delegated\n"));
 			} else {
 				DEBUG(5, ("gensec_gssapi: NO credentials were delegated\n"));
@@ -1028,53 +997,30 @@ static NTSTATUS gensec_gssapi_seal_packet(struct gensec_security *gensec_securit
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc input_token, output_token;
-	int conf_state;
-	ssize_t sig_length;
+	bool hdr_signing = false;
+	size_t sig_size = 0;
+	NTSTATUS status;
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
-		DEBUG(1, ("gensec_gssapi_seal_packet: "
-			  "GENSEC_FEATURE_SIGN_PKT_HEADER not supported\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		hdr_signing = true;
 	}
 
-	input_token.length = length;
-	input_token.value = data;
-	
-	maj_stat = gss_wrap(&min_stat, 
-			    gensec_gssapi_state->gssapi_context,
-			    gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
-			    GSS_C_QOP_DEFAULT,
-			    &input_token,
-			    &conf_state,
-			    &output_token);
-	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap failed: %s\n", 
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		return NT_STATUS_ACCESS_DENIED;
+	sig_size = gensec_gssapi_sig_size(gensec_security, length);
+
+	status = gssapi_seal_packet(gensec_gssapi_state->gssapi_context,
+				    gensec_gssapi_state->gss_oid,
+				    hdr_signing, sig_size,
+				    data, length,
+				    whole_pdu, pdu_length,
+				    mem_ctx, sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_seal_packet(hdr_signing=%u,sig_size=%ju,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, sig_size, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
 	}
 
-	if (output_token.length < input_token.length) {
-		DEBUG(1, ("gensec_gssapi_seal_packet: GSS Wrap length [%ld] *less* than caller length [%ld]\n", 
-			  (long)output_token.length, (long)length));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	sig_length = output_token.length - input_token.length;
-
-	memcpy(data, ((uint8_t *)output_token.value) + sig_length, length);
-	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, sig_length);
-
-	dump_data_pw("gensec_gssapi_seal_packet: sig\n", sig->data, sig->length);
-	dump_data_pw("gensec_gssapi_seal_packet: clear\n", data, length);
-	dump_data_pw("gensec_gssapi_seal_packet: sealed\n", ((uint8_t *)output_token.value) + sig_length, output_token.length - sig_length);
-
-	gss_release_buffer(&min_stat, &output_token);
-
-	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
-	    && !conf_state) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
 	return NT_STATUS_OK;
 }
 
@@ -1085,55 +1031,27 @@ static NTSTATUS gensec_gssapi_unseal_packet(struct gensec_security *gensec_secur
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc input_token, output_token;
-	int conf_state;
-	gss_qop_t qop_state;
-	DATA_BLOB in;
-
-	dump_data_pw("gensec_gssapi_unseal_packet: sig\n", sig->data, sig->length);
+	bool hdr_signing = false;
+	NTSTATUS status;
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
-		DEBUG(1, ("gensec_gssapi_unseal_packet: "
-			  "GENSEC_FEATURE_SIGN_PKT_HEADER not supported\n"));
-		return NT_STATUS_ACCESS_DENIED;
+		hdr_signing = true;
 	}
 
-	in = data_blob_talloc(gensec_security, NULL, sig->length + length);
-
-	memcpy(in.data, sig->data, sig->length);
-	memcpy(in.data + sig->length, data, length);
-
-	input_token.length = in.length;
-	input_token.value = in.data;
-	
-	maj_stat = gss_unwrap(&min_stat, 
-			      gensec_gssapi_state->gssapi_context, 
-			      &input_token,
-			      &output_token, 
-			      &conf_state,
-			      &qop_state);
-	talloc_free(in.data);
-	if (GSS_ERROR(maj_stat)) {
-		char *error_string = gssapi_error_string(NULL, maj_stat, min_stat, gensec_gssapi_state->gss_oid);
-		DEBUG(1, ("gensec_gssapi_unseal_packet: GSS UnWrap failed: %s\n", 
-			  error_string));
-		talloc_free(error_string);
-		return NT_STATUS_ACCESS_DENIED;
+	status = gssapi_unseal_packet(gensec_gssapi_state->gssapi_context,
+				      gensec_gssapi_state->gss_oid,
+				      hdr_signing,
+				      data, length,
+				      whole_pdu, pdu_length,
+				      sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_unseal_packet(hdr_signing=%u,sig_size=%ju,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, sig->length, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
 	}
 
-	if (output_token.length != length) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	memcpy(data, output_token.value, length);
-
-	gss_release_buffer(&min_stat, &output_token);
-	
-	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)
-	    && !conf_state) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
 	return NT_STATUS_OK;
 }
 
@@ -1145,33 +1063,26 @@ static NTSTATUS gensec_gssapi_sign_packet(struct gensec_security *gensec_securit
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc input_token, output_token;
+	bool hdr_signing = false;
+	NTSTATUS status;
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
-		input_token.length = pdu_length;
-		input_token.value = discard_const_p(uint8_t *, whole_pdu);
-	} else {
-		input_token.length = length;
-		input_token.value = discard_const_p(uint8_t *, data);
+		hdr_signing = true;
 	}
 
-	maj_stat = gss_get_mic(&min_stat,
-			    gensec_gssapi_state->gssapi_context,
-			    GSS_C_QOP_DEFAULT,
-			    &input_token,
-			    &output_token);
-	if (GSS_ERROR(maj_stat)) {
-		DEBUG(1, ("GSS GetMic failed: %s\n",
-			  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-		return NT_STATUS_ACCESS_DENIED;
+	status = gssapi_sign_packet(gensec_gssapi_state->gssapi_context,
+				    gensec_gssapi_state->gss_oid,
+				    hdr_signing,
+				    data, length,
+				    whole_pdu, pdu_length,
+				    mem_ctx, sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_sign_packet(hdr_signing=%u,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
 	}
-
-	*sig = data_blob_talloc(mem_ctx, (uint8_t *)output_token.value, output_token.length);
-
-	dump_data_pw("gensec_gssapi_sign_packet: sig\n", sig->data, sig->length);
-
-	gss_release_buffer(&min_stat, &output_token);
 
 	return NT_STATUS_OK;
 }
@@ -1183,35 +1094,25 @@ static NTSTATUS gensec_gssapi_check_packet(struct gensec_security *gensec_securi
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	OM_uint32 maj_stat, min_stat;
-	gss_buffer_desc input_token;
-	gss_buffer_desc input_message;
-	gss_qop_t qop_state;
-
-	dump_data_pw("gensec_gssapi_check_packet: sig\n", sig->data, sig->length);
+	bool hdr_signing = false;
+	NTSTATUS status;
 
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
-		input_message.length = pdu_length;
-		input_message.value = discard_const(whole_pdu);
-	} else {
-		input_message.length = length;
-		input_message.value = discard_const(data);
+		hdr_signing = true;
 	}
 
-	input_token.length = sig->length;
-	input_token.value = sig->data;
-
-	maj_stat = gss_verify_mic(&min_stat,
-			      gensec_gssapi_state->gssapi_context, 
-			      &input_message,
-			      &input_token,
-			      &qop_state);
-	if (GSS_ERROR(maj_stat)) {
-		char *error_string = gssapi_error_string(NULL, maj_stat, min_stat, gensec_gssapi_state->gss_oid);
-		DEBUG(1, ("GSS VerifyMic failed: %s\n", error_string));
-		talloc_free(error_string);
-
-		return NT_STATUS_ACCESS_DENIED;
+	status = gssapi_check_packet(gensec_gssapi_state->gssapi_context,
+				     gensec_gssapi_state->gss_oid,
+				     hdr_signing,
+				     data, length,
+				     whole_pdu, pdu_length,
+				     sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_check_packet(hdr_signing=%u,sig_size=%ju,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, sig->length, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
 	}
 
 	return NT_STATUS_OK;
@@ -1294,8 +1195,7 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 	}
 	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
 		if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-			/* TODO: implement this using gss_wrap_iov() */
-			return false;
+			return true;
 		}
 
 		if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
@@ -1402,9 +1302,8 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		return nt_status;
 	}
 
-	if (!(gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG)) {
-		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
-	} else {
+	if (gensec_gssapi_state->gss_got_flags & GSS_C_DELEG_FLAG &&
+	    gensec_gssapi_state->delegated_cred_handle != GSS_C_NO_CREDENTIAL) {
 		krb5_error_code ret;
 		const char *error_string;
 
@@ -1434,7 +1333,10 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 
 		/* It has been taken from this place... */
 		gensec_gssapi_state->delegated_cred_handle = GSS_C_NO_CREDENTIAL;
+	} else {
+		DEBUG(10, ("gensec_gssapi: NO delegated credentials supplied by client\n"));
 	}
+
 	*_session_info = talloc_steal(mem_ctx, session_info);
 	talloc_free(tmp_ctx);
 
@@ -1445,56 +1347,18 @@ static size_t gensec_gssapi_sig_size(struct gensec_security *gensec_security, si
 {
 	struct gensec_gssapi_state *gensec_gssapi_state
 		= talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
-	NTSTATUS status;
+	size_t sig_size;
 
-	if (gensec_gssapi_state->sig_size) {
+	if (gensec_gssapi_state->sig_size > 0) {
 		return gensec_gssapi_state->sig_size;
 	}
 
-	if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
-		gensec_gssapi_state->sig_size = 45;
-	} else {
-		gensec_gssapi_state->sig_size = 37;
-	}
+	sig_size = gssapi_get_sig_size(gensec_gssapi_state->gssapi_context,
+				       gensec_gssapi_state->gss_oid,
+				       gensec_gssapi_state->gss_want_flags,
+				       data_size);
 
-	status = gensec_gssapi_init_lucid(gensec_gssapi_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		return gensec_gssapi_state->sig_size;
-	}
-
-	if (gensec_gssapi_state->lucid->protocol == 1) {
-		if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
-			/*
-			 * TODO: windows uses 76 here, but we don't know
-			 *       gss_wrap works with aes keys yet
-			 */
-			gensec_gssapi_state->sig_size = 76;
-		} else {
-			gensec_gssapi_state->sig_size = 28;
-		}
-	} else if (gensec_gssapi_state->lucid->protocol == 0) {
-		switch (gensec_gssapi_state->lucid->rfc1964_kd.ctx_key.type) {
-		case ENCTYPE_DES_CBC_CRC:
-		case ENCTYPE_ARCFOUR_HMAC:
-		case ENCTYPE_ARCFOUR_HMAC_EXP:
-			if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
-				gensec_gssapi_state->sig_size = 45;
-			} else {
-				gensec_gssapi_state->sig_size = 37;
-			}
-			break;
-#ifdef SAMBA4_USES_HEIMDAL
-		case ENCTYPE_OLD_DES3_CBC_SHA1:
-			if (gensec_gssapi_state->gss_got_flags & GSS_C_CONF_FLAG) {
-				gensec_gssapi_state->sig_size = 57;
-			} else {
-				gensec_gssapi_state->sig_size = 49;
-			}
-			break;
-#endif
-		}
-	}
-
+	gensec_gssapi_state->sig_size = sig_size;
 	return gensec_gssapi_state->sig_size;
 }
 
@@ -1525,6 +1389,8 @@ static const struct gensec_security_ops gensec_gssapi_spnego_security_ops = {
 	.check_packet	= gensec_gssapi_check_packet,
 	.seal_packet	= gensec_gssapi_seal_packet,
 	.unseal_packet	= gensec_gssapi_unseal_packet,
+	.max_input_size	  = gensec_gssapi_max_input_size,
+	.max_wrapped_size = gensec_gssapi_max_wrapped_size,
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,
@@ -1550,6 +1416,8 @@ static const struct gensec_security_ops gensec_gssapi_krb5_security_ops = {
 	.check_packet	= gensec_gssapi_check_packet,
 	.seal_packet	= gensec_gssapi_seal_packet,
 	.unseal_packet	= gensec_gssapi_unseal_packet,
+	.max_input_size	  = gensec_gssapi_max_input_size,
+	.max_wrapped_size = gensec_gssapi_max_wrapped_size,
 	.wrap           = gensec_gssapi_wrap,
 	.unwrap         = gensec_gssapi_unwrap,
 	.have_feature   = gensec_gssapi_have_feature,

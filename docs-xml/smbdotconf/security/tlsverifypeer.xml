@@ -1,0 +1,47 @@
+<samba:parameter name="tls verify peer"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_tls_verify_peer_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This controls if and how strict the client will verify the peer's certificate and name.
+	Possible values are (in increasing order):
+	<constant>no_check</constant>,
+	<constant>ca_only</constant>,
+	<constant>ca_and_name_if_available</constant>,
+	<constant>ca_and_name</constant>
+	and
+	<constant>as_strict_as_possible</constant>.</para>
+
+	<para>When set to <constant>no_check</constant> the certificate is not verified at
+	all, which allows trivial man in the middle attacks.
+	</para>
+
+	<para>When set to <constant>ca_only</constant> the certificate is verified to
+	be signed from a ca specified in the <smbconfoption name="tls ca file"/> option.
+	Setting <smbconfoption name="tls ca file"/> to a valid file is required.
+	The certificate lifetime is also verified. If the <smbconfoption name="tls crl file"/>
+	option is configured, the certificate is also verified against the ca crl.
+	</para>
+
+	<para>When set to <constant>ca_and_name_if_available</constant> all checks from
+	<constant>ca_only</constant> are performed. In addition, the peer hostname is verified
+	against the certificate's name, if it is provided by the application layer and
+	not given as an ip address string.
+	</para>
+
+	<para>When set to <constant>ca_and_name</constant> all checks from
+	<constant>ca_and_name_if_available</constant> are performed.
+	In addition the peer hostname needs to be provided and even an ip
+	address is checked against the certificate's name.
+	</para>
+
+	<para>When set to <constant>as_strict_as_possible</constant> all checks from
+	<constant>ca_and_name</constant> are performed. In addition the
+	<smbconfoption name="tls crl file"/> needs to be configured.
+	Future versions of Samba may implement additional checks.
+	</para>
+</description>
+
+<value type="default">as_strict_as_possible</value>
+</samba:parameter>

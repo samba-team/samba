@@ -43,8 +43,11 @@ smbclient4 = binpath('smbclient4')
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
 # Simple tests for LDAP and CLDAP
-for options in ['-U"$USERNAME%$PASSWORD" --option=socket:testnonblock=true', '-U"$USERNAME%$PASSWORD"', '-U"$USERNAME%$PASSWORD" -k yes', '-U"$USERNAME%$PASSWORD" -k no', '-U"$USERNAME%$PASSWORD" -k no --sign', '-U"$USERNAME%$PASSWORD" -k no --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --encrypt', '-U"$USERNAME%$PASSWORD" -k yes --sign']:
-    plantestsuite("samba4.ldb.ldap with options %s(dc)" % options, "dc", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
+for auth_type in ['', '-k no', '-k yes']:
+    for auth_level in ['--option=clientldapsaslwrapping=plain', '--sign', '--encrypt']:
+        creds = '-U"$USERNAME%$PASSWORD"'
+        options = creds + ' ' + auth_type + ' ' + auth_level
+        plantestsuite("samba4.ldb.ldap with options %r(dc)" % options, "dc", "%s/test_ldb.sh ldap $SERVER %s" % (bbdir, options))
 
 # see if we support ADS on the Samba3 side
 try:
@@ -64,6 +67,58 @@ if have_tls_support:
         plantestsuite("samba4.ldb.ldaps with options %s(dc)" % options, "dc",
                 "%s/test_ldb.sh ldaps $SERVER_IP %s" % (bbdir, options))
 
+    creds_options = [
+        '--simple-bind-dn=$USERNAME@$REALM --password=$PASSWORD',
+    ]
+    peer_options = {
+        'SERVER_IP': '$SERVER_IP',
+        'SERVER_NAME': '$SERVER',
+        'SERVER.REALM': '$SERVER.$REALM',
+    }
+    tls_verify_options = [
+        '--option="tlsverifypeer=no_check"',
+        '--option="tlsverifypeer=ca_only"',
+        '--option="tlsverifypeer=ca_and_name_if_available"',
+        '--option="tlsverifypeer=ca_and_name"',
+        '--option="tlsverifypeer=as_strict_as_possible"',
+    ]
+
+    # we use :local for fl2008r2dc because of the self-signed certificate
+    for env in ["ad_dc_ntvfs", "fl2008r2dc:local"]:
+        for peer_key in peer_options.keys():
+            peer_val = peer_options[peer_key]
+            for creds in creds_options:
+                for tls_verify in tls_verify_options:
+                    options = creds + ' ' + tls_verify
+                    plantestsuite("samba4.ldb.simple.ldaps with options %s %s(%s)" % (
+                                  peer_key, options, env), env,
+                                  "%s/test_ldb_simple.sh ldaps %s %s" % (bbdir, peer_val, options))
+
+# test all "ldap server require strong auth" combinations
+for env in ["ad_dc_ntvfs", "fl2008r2dc", "fl2003dc"]:
+    options = '--simple-bind-dn="$USERNAME@$REALM" --password="$PASSWORD"'
+    plantestsuite("samba4.ldb.simple.ldap with SIMPLE-BIND %s(%s)" % (options, env),
+                  env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
+    if have_tls_support:
+        options += ' --option="tlsverifypeer=no_check"'
+        plantestsuite("samba4.ldb.simple.ldaps with SIMPLE-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+
+    auth_options = [
+        '--option=clientldapsaslwrapping=plain',
+        '--sign',
+        '--encrypt',
+    ]
+
+    for auth_option in auth_options:
+        options = '-U"$USERNAME%$PASSWORD"' + ' ' + auth_option
+        plantestsuite("samba4.ldb.simple.ldap with SASL-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldap $SERVER %s" % (bbdir, options))
+    if have_tls_support:
+        options = '-U"$USERNAME%$PASSWORD" --option="tlsverifypeer=no_check"'
+        plantestsuite("samba4.ldb.simple.ldaps with SASL-BIND %s(%s)" % (options, env),
+                      env, "%s/test_ldb_simple.sh ldaps $SERVER %s" % (bbdir, options))
+
 for options in ['-U"$USERNAME%$PASSWORD"']:
     plantestsuite("samba4.ldb.ldapi with options %s(dc:local)" % options, "dc:local",
             "%s/test_ldb.sh ldapi $PREFIX_ABS/dc/private/ldapi %s" % (bbdir, options))
@@ -82,12 +137,12 @@ else:
 
 # add tests to this list as they start passing, so we test
 # that they stay passing
-ncacn_np_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.altercontext", "rpc.netlogon", "rpc.handles", "rpc.samsync", "rpc.samba3-sessionkey", "rpc.samba3-getusername", "rpc.samba3-lsa", "rpc.samba3-bind", "rpc.samba3-netlogon", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"]
-ncalrpc_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.altercontext", "rpc.netlogon", "rpc.drsuapi", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"]
+ncacn_np_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.altercontext", "rpc.netlogon", "rpc.netlogon.admin", "rpc.handles", "rpc.samsync", "rpc.samba3-sessionkey", "rpc.samba3-getusername", "rpc.samba3-lsa", "rpc.samba3-bind", "rpc.samba3-netlogon", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"]
+ncalrpc_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.altercontext", "rpc.netlogon", "rpc.netlogon.admin", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext"]
 drs_rpc_tests = smbtorture4_testsuites("drs.rpc")
-ncacn_ip_tcp_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.netlogon", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext", "rpc.samr.passwords.validate"] + drs_rpc_tests
-slow_ncacn_np_tests = ["rpc.samlogon", "rpc.samr.users", "rpc.samr.large-dc", "rpc.samr.users.privileges", "rpc.samr.passwords", "rpc.samr.passwords.pwdlastset", "rpc.samr.passwords.lockout", "rpc.samr.passwords.badpwdcount"]
-slow_ncacn_ip_tcp_tests = ["rpc.samr", "rpc.cracknames"]
+ncacn_ip_tcp_tests = ["rpc.schannel", "rpc.join", "rpc.lsa", "rpc.dssetup", "rpc.drsuapi", "rpc.netlogon", "rpc.netlogon.admin", "rpc.asyncbind", "rpc.lsalookup", "rpc.lsa-getuser", "rpc.schannel2", "rpc.authcontext", "rpc.samr.passwords.validate"] + drs_rpc_tests
+slow_ncacn_np_tests = ["rpc.samlogon", "rpc.samr", "rpc.samr.users", "rpc.samr.large-dc", "rpc.samr.users.privileges", "rpc.samr.passwords", "rpc.samr.passwords.pwdlastset", "rpc.samr.passwords.lockout", "rpc.samr.passwords.badpwdcount"]
+slow_ncacn_ip_tcp_tests = ["rpc.cracknames"]
 
 all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn_np_tests + slow_ncacn_ip_tcp_tests + ["rpc.lsa.secrets", "rpc.pac", "rpc.samba3-sharesec", "rpc.countcalls"]
 
@@ -135,7 +190,10 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
     else:
         raise AssertionError("Invalid transport %r" % transport)
     for t in tests:
-        plansmbtorture4testsuite(t, env, ["%s:$SERVER" % transport, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s" % (t, transport))
+        bindoptions = ''
+        if t == 'rpc.cracknames':
+            bindoptions = 'seal'
+        plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport,bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
 
 # Tests for the DFS referral calls implementation
 for t in smbtorture4_testsuites("dfs."):
@@ -470,6 +528,7 @@ planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
 planoldpythontestsuite("dc:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("plugin_s4_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("plugin_s4_dc", "samba.tests.dcerpc.raw_protocol", extra_args=['-U"$USERNAME%$PASSWORD"'])
 plantestsuite_loadlist("samba4.ldap.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.tokengroups.python(dc)", "dc:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/token_group.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.sam.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
@@ -505,7 +564,7 @@ plantestsuite("samba4.blackbox.setpassword.py", "none", ["PYTHON=%s" % python, o
 plantestsuite("samba4.blackbox.newuser.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_newuser.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.group.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_group.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.spn.py(dc:local)", "dc:local", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_spn.sh"), '$PREFIX/dc'])
-plantestsuite_loadlist("samba4.ldap.bind(dc)", "dc", [python, os.path.join(srcdir(), "auth/credentials/tests/bind.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '$LOADLIST', '$LISTOPT'])
+plantestsuite_loadlist("samba4.ldap.bind(fl2008r2dc)", "fl2008r2dc", [python, os.path.join(srcdir(), "auth/credentials/tests/bind.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '$LOADLIST', '$LISTOPT'])
 
 # This makes sure we test the rid allocation code
 t = "rpc.samr.large-dc"

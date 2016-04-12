@@ -37,9 +37,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 import optparse
 import samba
 import sys
-samba.ensure_external_module("mimeparse", "mimeparse")
-samba.ensure_external_module("extras", "extras")
-samba.ensure_external_module("testtools", "testtools")
+import samba.tests
 samba.ensure_external_module("subunit", "subunit/python")
 import subunit.run
 

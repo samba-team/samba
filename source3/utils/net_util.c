@@ -126,7 +126,7 @@ NTSTATUS connect_to_service(struct net_context *c,
 					service_name, service_type,
 					c->opt_user_name, c->opt_workgroup,
 					c->opt_password, flags,
-					SMB_SIGNING_DEFAULT);
+					SMB_SIGNING_IPC_DEFAULT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
 			  server_name);

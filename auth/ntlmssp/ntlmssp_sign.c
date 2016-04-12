@@ -479,57 +479,18 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_state,
 					     &sig);
 
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
-		NTSTATUS status;
-		struct ntlmssp_crypt_direction save_direction;
-
 		if (in->length < NTLMSSP_SIG_SIZE) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		sig.data = in->data;
 		sig.length = NTLMSSP_SIG_SIZE;
+
 		*out = data_blob_talloc(out_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
 
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-			save_direction = ntlmssp_state->crypt->ntlm2.receiving;
-		} else {
-			save_direction = ntlmssp_state->crypt->ntlm;
-		}
-
-		status = ntlmssp_check_packet(ntlmssp_state,
-					      out->data, out->length,
-					      out->data, out->length,
-					      &sig);
-		if (!NT_STATUS_IS_OK(status)) {
-			NTSTATUS check_status = status;
-			/*
-			 * The Windows LDAP libraries seems to have a bug
-			 * and always use sealing even if only signing was
-			 * negotiated. So we need to fallback.
-			 */
-
-			if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-				ntlmssp_state->crypt->ntlm2.receiving = save_direction;
-			} else {
-				ntlmssp_state->crypt->ntlm = save_direction;
-			}
-
-			status = ntlmssp_unseal_packet(ntlmssp_state,
-						       out->data,
-						       out->length,
-						       out->data,
-						       out->length,
-						       &sig);
-			if (NT_STATUS_IS_OK(status)) {
-				ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
-			} else {
-				status = check_status;
-			}
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("NTLMSSP packet check for unwrap failed due to invalid signature\n"));
-		}
-		return status;
+		return ntlmssp_check_packet(ntlmssp_state,
+					    out->data, out->length,
+					    out->data, out->length,
+					    &sig);
 	} else {
 		*out = data_blob_talloc(out_mem_ctx, in->data, in->length);
 		if (!out->data) {
@@ -542,20 +503,30 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_state,
 /**
    Initialise the state for NTLMSSP signing.
 */
-NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
+NTSTATUS ntlmssp_sign_reset(struct ntlmssp_state *ntlmssp_state,
+			    bool reset_seqnums)
 {
 	DEBUG(3, ("NTLMSSP Sign/Seal - Initialising with flags:\n"));
 	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
-	if (ntlmssp_state->session_key.length < 8) {
-		DEBUG(3, ("NO session key, cannot intialise signing\n"));
-		return NT_STATUS_NO_USER_SESSION_KEY;
+	if (ntlmssp_state->crypt == NULL) {
+		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	ntlmssp_state->crypt = talloc_zero(ntlmssp_state,
-					   union ntlmssp_crypt_state);
-	if (ntlmssp_state->crypt == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (ntlmssp_state->force_wrap_seal &&
+	    (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN))
+	{
+		/*
+		 * We need to handle NTLMSSP_NEGOTIATE_SIGN as
+		 * NTLMSSP_NEGOTIATE_SEAL if GENSEC_FEATURE_LDAP_STYLE
+		 * is requested.
+		 *
+		 * The negotiation of flags (and authentication)
+		 * is completed when ntlmssp_sign_init() is called
+		 * so we can safely pretent NTLMSSP_NEGOTIATE_SEAL
+		 * was negotiated.
+		 */
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
@@ -629,7 +600,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 				&ntlmssp_state->crypt->ntlm2.sending.seal_state);
 
 		/* SEND: seq num */
-		ntlmssp_state->crypt->ntlm2.sending.seq_num = 0;
+		if (reset_seqnums) {
+			ntlmssp_state->crypt->ntlm2.sending.seq_num = 0;
+		}
 
 		/* RECV: sign key */
 		calc_ntlmv2_key(ntlmssp_state->crypt->ntlm2.receiving.sign_key,
@@ -649,7 +622,9 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 				&ntlmssp_state->crypt->ntlm2.receiving.seal_state);
 
 		/* RECV: seq num */
-		ntlmssp_state->crypt->ntlm2.receiving.seq_num = 0;
+		if (reset_seqnums) {
+			ntlmssp_state->crypt->ntlm2.receiving.seq_num = 0;
+		}
 	} else {
 		uint8_t weak_session_key[8];
 		DATA_BLOB seal_session_key = ntlmssp_state->session_key;
@@ -699,8 +674,26 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 		dump_arc4_state("NTLMv1 arc4 state:\n",
 				&ntlmssp_state->crypt->ntlm.seal_state);
 
-		ntlmssp_state->crypt->ntlm.seq_num = 0;
+		if (reset_seqnums) {
+			ntlmssp_state->crypt->ntlm.seq_num = 0;
+		}
 	}
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
+{
+	if (ntlmssp_state->session_key.length < 8) {
+		DEBUG(3, ("NO session key, cannot intialise signing\n"));
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	ntlmssp_state->crypt = talloc_zero(ntlmssp_state,
+					   union ntlmssp_crypt_state);
+	if (ntlmssp_state->crypt == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return ntlmssp_sign_reset(ntlmssp_state, true);
 }

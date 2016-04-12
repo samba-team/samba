@@ -118,7 +118,7 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 /* Also happens to be a really good one-step verfication of our Kerberos stack */
 
 static bool test_PACVerify(struct torture_context *tctx,
-			   struct dcerpc_pipe *p,
+			   struct dcerpc_pipe *p1,
 			   struct cli_credentials *credentials,
 			   enum netr_SchannelType secure_channel_type,
 			   const char *test_machine_name,
@@ -139,6 +139,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds;
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
+	struct cli_credentials *client_creds;
+	struct cli_credentials *server_creds;
 
 	DATA_BLOB client_to_server, server_to_client, pac_wrapped, payload;
 	struct PAC_Validate pac_wrapped_struct;
@@ -149,7 +151,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct auth_session_info *session_info;
 	struct pac_data *pac_data;
 
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
@@ -157,11 +160,32 @@ static bool test_PACVerify(struct torture_context *tctx,
 		"Testing PAC Verify (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
 		secure_channel_type, test_machine_name, negotiate_flags);
 
-	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
-				    credentials, secure_channel_type,
+	/*
+	 * Copy the credentials in order to use a different MEMORY krb5 ccache
+	 * for each client/server setup. The MEMORY cache identifier is a
+	 * pointer to the creds container. If we copy it the pointer changes and
+	 * we will get a new clean memory cache.
+	 */
+	client_creds = cli_credentials_shallow_copy(tmp_ctx,
+						    cmdline_credentials);
+	torture_assert(tctx, client_creds, "Failed to copy of credentials");
+	/* Invalidate the gss creds container to allocate a new MEMORY ccache */
+	cli_credentials_invalidate_ccache(client_creds, CRED_SPECIFIED);
+
+	server_creds = cli_credentials_shallow_copy(tmp_ctx,
+						    credentials);
+	torture_assert(tctx, server_creds, "Failed to copy of credentials");
+
+	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
+				    server_creds, secure_channel_type,
 				    &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, server_creds, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
@@ -174,7 +198,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	status = gensec_set_target_hostname(gensec_client_context, test_machine_name);
 
-	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	status = gensec_set_credentials(gensec_client_context, client_creds);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
@@ -185,7 +209,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
-	status = gensec_set_credentials(gensec_server_context, credentials);
+	status = gensec_set_credentials(gensec_server_context, server_creds);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (server) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_server_context, "GSSAPI");
@@ -269,7 +293,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.logon = &logon;
 	r.in.logon_level = NetlogonGenericInformation;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
@@ -292,7 +316,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.logon_level = NetlogonGenericInformation;
 	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
@@ -315,7 +339,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.logon_level = NetlogonGenericInformation;
 	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
@@ -368,7 +392,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.logon_level = NetlogonGenericInformation;
 	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
@@ -420,7 +444,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	r.in.logon_level = NetlogonGenericInformation;
 	r.in.logon = &logon;
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.validation_level = NetlogonValidationGenericInfo2;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
@@ -430,6 +454,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
 		       "Credential chaining failed");
+
+	talloc_free(tmp_ctx);
 
 	return true;
 }
@@ -505,14 +531,15 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 
 /* Check various ways to get the PAC, in particular check the group membership and other details between the PAC from a normal kinit, S2U4Self and a SamLogon */
 static bool test_S2U4Self(struct torture_context *tctx,
-			  struct dcerpc_pipe *p,
+			  struct dcerpc_pipe *p1,
 			  struct cli_credentials *credentials,
 			  enum netr_SchannelType secure_channel_type,
 			  const char *test_machine_name,
 			  uint32_t negotiate_flags)
 {
 	NTSTATUS status;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	struct netr_LogonSamLogon r;
 
@@ -527,6 +554,8 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds;
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
+	struct cli_credentials *client_creds;
+	struct cli_credentials *server_creds;
 
 	struct auth4_context *auth_context;
 	struct auth_session_info *kinit_session_info;
@@ -548,6 +577,31 @@ static bool test_S2U4Self(struct torture_context *tctx,
 		"Testing S4U2SELF (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
 		secure_channel_type, test_machine_name, negotiate_flags);
 
+	/*
+	 * Copy the credentials in order to use a different MEMORY krb5 ccache
+	 * for each client/server setup. The MEMORY cache identifier is a
+	 * pointer to the creds container. If we copy it the pointer changes and
+	 * we will get a new clean memory cache.
+	 */
+	client_creds = cli_credentials_shallow_copy(tmp_ctx,
+						    cmdline_credentials);
+	torture_assert(tctx, client_creds, "Failed to copy of credentials");
+
+	server_creds = cli_credentials_shallow_copy(tmp_ctx,
+						    credentials);
+	torture_assert(tctx, server_creds, "Failed to copy of credentials");
+
+	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
+				    server_creds, secure_channel_type,
+				    &creds)) {
+		return false;
+	}
+	if (!test_SetupCredentialsPipe(p1, tctx, server_creds, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
+
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
 
@@ -561,7 +615,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	status = gensec_set_target_hostname(gensec_client_context, test_machine_name);
 
-	status = gensec_set_credentials(gensec_client_context, cmdline_credentials);
+	status = gensec_set_credentials(gensec_client_context, client_creds);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
@@ -572,7 +626,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
-	status = gensec_set_credentials(gensec_server_context, credentials);
+	status = gensec_set_credentials(gensec_server_context, server_creds);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (server) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_server_context, "GSSAPI");
@@ -606,9 +660,10 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	/* Now do the dance with S2U4Self */
 
 	/* Wipe out any existing ccache */
-	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
-	cli_credentials_set_impersonate_principal(credentials,
-			cli_credentials_get_principal(cmdline_credentials, tmp_ctx),
+	cli_credentials_invalidate_ccache(client_creds, CRED_SPECIFIED);
+	cli_credentials_invalidate_ccache(server_creds, CRED_SPECIFIED);
+	cli_credentials_set_impersonate_principal(server_creds,
+			cli_credentials_get_principal(client_creds, tmp_ctx),
 			talloc_asprintf(tmp_ctx, "host/%s", test_machine_name));
 
 	status = gensec_client_start(tctx, &gensec_client_context,
@@ -618,7 +673,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	status = gensec_set_target_hostname(gensec_client_context, test_machine_name);
 
 	/* We now set the same credentials on both client and server contexts */
-	status = gensec_set_credentials(gensec_client_context, credentials);
+	status = gensec_set_credentials(gensec_client_context, server_creds);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
@@ -629,7 +684,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 				     auth_context, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
-	status = gensec_set_credentials(gensec_server_context, credentials);
+	status = gensec_set_credentials(gensec_server_context, server_creds);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (server) failed");
 
 	status = gensec_start_mech_by_sasl_name(gensec_server_context, "GSSAPI");
@@ -655,16 +710,16 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	} while (1);
 
 	/* Don't pollute the remaining tests with the changed credentials */
-	cli_credentials_invalidate_ccache(credentials, CRED_SPECIFIED);
-	cli_credentials_set_target_service(credentials, NULL);
-	cli_credentials_set_impersonate_principal(credentials, NULL, NULL);
+	cli_credentials_invalidate_ccache(server_creds, CRED_SPECIFIED);
+	cli_credentials_set_target_service(server_creds, NULL);
+	cli_credentials_set_impersonate_principal(server_creds, NULL, NULL);
 
 	/* Extract the PAC using Samba's code */
 
 	status = gensec_session_info(gensec_server_context, gensec_server_context, &s2u4self_session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
 
-	cli_credentials_get_ntlm_username_domain(cmdline_credentials, tctx,
+	cli_credentials_get_ntlm_username_domain(client_creds, tctx,
 						 &ninfo.identity_info.account_name.string,
 						 &ninfo.identity_info.domain_name.string);
 
@@ -674,12 +729,13 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	chal = data_blob_const(ninfo.challenge,
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials),
-						cli_credentials_get_domain(credentials));
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(server_creds),
+						cli_credentials_get_domain(server_creds));
 
-	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
+	status = cli_credentials_get_ntlm_response(client_creds, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
@@ -694,24 +750,18 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	ninfo.identity_info.parameter_control = 0;
 	ninfo.identity_info.logon_id_low = 0;
 	ninfo.identity_info.logon_id_high = 0;
-	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(credentials);
+	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(server_creds);
 
 	logon.network = &ninfo;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = cli_credentials_get_workstation(credentials);
+	r.in.computer_name = cli_credentials_get_workstation(server_creds);
 	r.in.credential = &auth;
 	r.in.return_authenticator = &auth2;
 	r.in.logon_level = NetlogonNetworkInformation;
 	r.in.logon = &logon;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
-
-	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
-				    credentials, secure_channel_type,
-				    &creds)) {
-		return false;
-	}
 
 	ZERO_STRUCT(auth2);
 	netlogon_creds_client_authenticator(creds, &auth);
@@ -797,7 +847,6 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "pac");
 	struct torture_rpc_tcase *tcase;
 
-	/* It is important to use different names, so that old entries in our credential cache are not used */
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-arcfour",
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_BDC);
 	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-arcfour", test_PACVerify_bdc_arcfour);

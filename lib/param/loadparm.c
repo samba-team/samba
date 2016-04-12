@@ -2494,6 +2494,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "SMB3");
 	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
 	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "default");
+	lpcfg_do_global_parameter(lp_ctx, "client ipc min protocol", "default");
+	lpcfg_do_global_parameter(lp_ctx, "client ipc max protocol", "default");
 	lpcfg_do_global_parameter(lp_ctx, "security", "AUTO");
 	lpcfg_do_global_parameter(lp_ctx, "EncryptPasswords", "True");
 	lpcfg_do_global_parameter(lp_ctx, "ReadRaw", "True");
@@ -2509,7 +2511,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "ClientNTLMv2Auth", "True");
 	lpcfg_do_global_parameter(lp_ctx, "LanmanAuth", "False");
 	lpcfg_do_global_parameter(lp_ctx, "NTLMAuth", "True");
+	lpcfg_do_global_parameter(lp_ctx, "RawNTLMv2Auth", "False");
 	lpcfg_do_global_parameter(lp_ctx, "client use spnego principal", "False");
+
+	lpcfg_do_global_parameter(lp_ctx, "allow dcerpc auth level connect", "False");
 
 	lpcfg_do_global_parameter(lp_ctx, "UnixExtensions", "True");
 
@@ -2533,6 +2538,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "template homedir", "/home/%D/%U");
 
 	lpcfg_do_global_parameter(lp_ctx, "client signing", "default");
+	lpcfg_do_global_parameter(lp_ctx, "client ipc signing", "default");
 	lpcfg_do_global_parameter(lp_ctx, "server signing", "default");
 
 	lpcfg_do_global_parameter(lp_ctx, "use spnego", "True");
@@ -2553,9 +2559,11 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "min wins ttl", "21600");
 
 	lpcfg_do_global_parameter(lp_ctx, "tls enabled", "True");
+	lpcfg_do_global_parameter(lp_ctx, "tls verify peer", "as_strict_as_possible");
 	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
+	lpcfg_do_global_parameter(lp_ctx, "tls priority", "NORMAL:-VERS-SSL3.0");
 	lpcfg_do_global_parameter(lp_ctx, "prefork children:smb", "4");
 
 	lpcfg_do_global_parameter(lp_ctx, "rndc command", "/usr/sbin/rndc");
@@ -2685,6 +2693,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "ldap debug threshold", "10");
 
 	lpcfg_do_global_parameter(lp_ctx, "client ldap sasl wrapping", "sign");
+
+	lpcfg_do_global_parameter(lp_ctx, "ldap server require strong auth", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "follow symlinks", "yes");
 
@@ -3176,6 +3186,39 @@ int lpcfg_client_max_protocol(struct loadparm_context *lp_ctx)
 	return client_max_protocol;
 }
 
+int lpcfg_client_ipc_min_protocol(struct loadparm_context *lp_ctx)
+{
+	int client_ipc_min_protocol = lpcfg__client_ipc_min_protocol(lp_ctx);
+	if (client_ipc_min_protocol == PROTOCOL_DEFAULT) {
+		client_ipc_min_protocol = lpcfg_client_min_protocol(lp_ctx);
+	}
+	if (client_ipc_min_protocol < PROTOCOL_NT1) {
+		return PROTOCOL_NT1;
+	}
+	return client_ipc_min_protocol;
+}
+
+int lpcfg_client_ipc_max_protocol(struct loadparm_context *lp_ctx)
+{
+	int client_ipc_max_protocol = lpcfg__client_ipc_max_protocol(lp_ctx);
+	if (client_ipc_max_protocol == PROTOCOL_DEFAULT) {
+		return PROTOCOL_LATEST;
+	}
+	if (client_ipc_max_protocol < PROTOCOL_NT1) {
+		return PROTOCOL_NT1;
+	}
+	return client_ipc_max_protocol;
+}
+
+int lpcfg_client_ipc_signing(struct loadparm_context *lp_ctx)
+{
+	int client_ipc_signing = lpcfg__client_ipc_signing(lp_ctx);
+	if (client_ipc_signing == SMB_SIGNING_DEFAULT) {
+		return SMB_SIGNING_REQUIRED;
+	}
+	return client_ipc_signing;
+}
+
 bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandatory)
 {
 	bool allowed = true;
@@ -3210,9 +3253,12 @@ bool lpcfg_server_signing_allowed(struct loadparm_context *lp_ctx, bool *mandato
 	case SMB_SIGNING_DESIRED:
 	case SMB_SIGNING_IF_REQUIRED:
 		break;
-	case SMB_SIGNING_DEFAULT:
 	case SMB_SIGNING_OFF:
 		allowed = false;
+		break;
+	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_IPC_DEFAULT:
+		smb_panic(__location__);
 		break;
 	}
 

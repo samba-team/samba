@@ -53,6 +53,11 @@ struct spnego_state {
 	const char *neg_oid;
 
 	DATA_BLOB mech_types;
+	size_t num_targs;
+	bool mic_requested;
+	bool needs_mic_sign;
+	bool needs_mic_check;
+	bool done_mic_check;
 
 	/*
 	 * The following is used to implement
@@ -219,59 +224,6 @@ static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security,
 
 	return gensec_unwrap(spnego_state->sub_sec_security, 
 			     mem_ctx, in, out);
-}
-
-static NTSTATUS gensec_spnego_wrap_packets(struct gensec_security *gensec_security, 
-					   TALLOC_CTX *mem_ctx, 
-					   const DATA_BLOB *in, 
-					   DATA_BLOB *out,
-					   size_t *len_processed) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_wrap: wrong state for wrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_wrap_packets(spnego_state->sub_sec_security, 
-				   mem_ctx, in, out,
-				   len_processed);
-}
-
-static NTSTATUS gensec_spnego_packet_full_request(struct gensec_security *gensec_security, 
-					     	DATA_BLOB blob, size_t *size)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_packet_full_request(spnego_state->sub_sec_security, 
-					  blob, size);
-}
-
-static NTSTATUS gensec_spnego_unwrap_packets(struct gensec_security *gensec_security, 
-					     TALLOC_CTX *mem_ctx, 
-					     const DATA_BLOB *in, 
-					     DATA_BLOB *out,
-					     size_t *len_processed) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_unwrap_packets(spnego_state->sub_sec_security, 
-				     mem_ctx, in, out,
-				     len_processed);
 }
 
 static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, size_t data_size) 
@@ -469,6 +421,11 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 					spnego_state->neg_oid = all_sec[i].oid;
 					*unwrapped_out = data_blob_null;
 					nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+					/*
+					 * Indicate the downgrade and request a
+					 * mic.
+					 */
+					spnego_state->mic_requested = true;
 					break;
 				}
 
@@ -727,22 +684,27 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_st
 	/* compose reply */
 	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
 	spnego_out.negTokenTarg.responseToken = unwrapped_out;
-	spnego_out.negTokenTarg.mechListMIC = null_data_blob;
+	spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
 	spnego_out.negTokenTarg.supportedMech = NULL;
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {	
 		spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
-		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+		if (spnego_state->mic_requested) {
+			spnego_out.negTokenTarg.negResult = SPNEGO_REQUEST_MIC;
+			spnego_state->mic_requested = false;
+		} else {
+			spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
+		}
 		spnego_state->state_position = SPNEGO_SERVER_TARG;
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		if (unwrapped_out.data) {
 			spnego_out.negTokenTarg.supportedMech = spnego_state->neg_oid;
 		}
 		spnego_out.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
-		spnego_out.negTokenTarg.mechListMIC = mech_list_mic;
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
 		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
+		spnego_out.negTokenTarg.mechListMIC = null_data_blob;
 		DEBUG(2, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
 		spnego_state->state_position = SPNEGO_DONE;
 	}
@@ -753,6 +715,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_st
 	}
 
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
+	spnego_state->num_targs++;
 
 	return nt_status;
 }
@@ -837,6 +800,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		const char *my_mechs[] = {NULL, NULL};
 		NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
+		bool ok;
 
 		if (!in.length) {
 			/* client to produce negTokenInit */
@@ -899,6 +863,14 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		ok = spnego_write_mech_types(spnego_state,
+					     my_mechs,
+					     &spnego_state->mech_types);
+		if (!ok) {
+			DEBUG(1, ("SPNEGO: Failed to write mechTypes\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		/* set next state */
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
@@ -936,18 +908,57 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		spnego_state->num_targs++;
+
 		if (!spnego_state->sub_sec_security) {
 			DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
 			spnego_free_data(&spnego);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		if (spnego_state->needs_mic_check) {
+			if (spnego.negTokenTarg.responseToken.length != 0) {
+				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
+				spnego_free_data(&spnego);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							&spnego.negTokenTarg.mechListMIC);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->needs_mic_check = false;
+				spnego_state->done_mic_check = true;
+			} else {
+				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+			}
+			goto server_response;
+		}
+
 		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-					  out_mem_ctx, ev,
-					  spnego.negTokenTarg.responseToken,
-					  &unwrapped_out);
-		if (NT_STATUS_IS_OK(nt_status) && spnego.negTokenTarg.mechListMIC.length > 0) {
+					     out_mem_ctx, ev,
+					     spnego.negTokenTarg.responseToken,
+					     &unwrapped_out);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			goto server_response;
+		}
+
+		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
+						 GENSEC_FEATURE_NEW_SPNEGO);
+		if (spnego.negTokenTarg.mechListMIC.length > 0) {
 			new_spnego = true;
+		}
+
+		if (new_spnego) {
+			spnego_state->needs_mic_check = true;
+			spnego_state->needs_mic_sign = true;
+		}
+
+		if (spnego.negTokenTarg.mechListMIC.length > 0) {
 			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
@@ -957,9 +968,14 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
 					nt_errstr(nt_status)));
+				goto server_response;
 			}
+
+			spnego_state->needs_mic_check = false;
+			spnego_state->done_mic_check = true;
 		}
-		if (NT_STATUS_IS_OK(nt_status) && new_spnego) {
+
+		if (spnego_state->needs_mic_sign) {
 			nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
 						       out_mem_ctx,
 						       spnego_state->mech_types.data,
@@ -970,9 +986,16 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
 					nt_errstr(nt_status)));
+				goto server_response;
 			}
+			spnego_state->needs_mic_sign = false;
 		}
 
+		if (spnego_state->needs_mic_check) {
+			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		}
+
+ server_response:
 		nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
 							      out_mem_ctx, 
 							      nt_status,
@@ -986,7 +1009,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	}
 	case SPNEGO_CLIENT_TARG:
 	{
-		NTSTATUS nt_status;
+		NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
+
 		if (!in.length) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1008,19 +1032,27 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		spnego_state->num_targs++;
+
 		if (spnego.negTokenTarg.negResult == SPNEGO_REJECT) {
 			spnego_free_data(&spnego);
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
+		if (spnego.negTokenTarg.negResult == SPNEGO_REQUEST_MIC) {
+			spnego_state->mic_requested = true;
+		}
+
 		/* Server didn't like our choice of mech, and chose something else */
-		if ((spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_INCOMPLETE) &&
+		if (((spnego.negTokenTarg.negResult == SPNEGO_ACCEPT_INCOMPLETE) ||
+		     (spnego.negTokenTarg.negResult == SPNEGO_REQUEST_MIC)) &&
 		    spnego.negTokenTarg.supportedMech &&
 		    strcmp(spnego.negTokenTarg.supportedMech, spnego_state->neg_oid) != 0) {
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
-				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech), 
-				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid)));
+				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
+				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech)));
 
+			spnego_state->no_response_expected = false;
 			talloc_free(spnego_state->sub_sec_security);
 			nt_status = gensec_subcontext_start(spnego_state,
 							    gensec_security,
@@ -1037,64 +1069,143 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				return nt_status;
 			}
 
-			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-						  out_mem_ctx, ev,
-						  spnego.negTokenTarg.responseToken,
-						  &unwrapped_out);
-			spnego_state->neg_oid = talloc_strdup(spnego_state, spnego.negTokenTarg.supportedMech);
-		} else if (spnego_state->no_response_expected) {
-			if (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
-				DEBUG(3,("GENSEC SPNEGO: client GENSEC accepted, but server rejected (bad password?)\n"));
-				nt_status = NT_STATUS_INVALID_PARAMETER;
-			} else if (spnego.negTokenTarg.responseToken.length) {
-				DEBUG(2,("GENSEC SPNEGO: client GENSEC accepted, but server continued negotiation!\n"));
-				nt_status = NT_STATUS_INVALID_PARAMETER;
-			} else {
-				nt_status = NT_STATUS_OK;
-			}
-			if (NT_STATUS_IS_OK(nt_status) && spnego.negTokenTarg.mechListMIC.length > 0) {
-				nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-								spnego_state->mech_types.data,
-								spnego_state->mech_types.length,
-								spnego_state->mech_types.data,
-								spnego_state->mech_types.length,
-								&spnego.negTokenTarg.mechListMIC);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
-						nt_errstr(nt_status)));
-				}
-			}
-		} else {
-			bool new_spnego = false;
+			spnego_state->neg_oid = talloc_strdup(spnego_state,
+						spnego.negTokenTarg.supportedMech);
+			if (spnego_state->neg_oid == NULL) {
+				spnego_free_data(&spnego);
+				return NT_STATUS_NO_MEMORY;
+			};
+		}
 
+		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+			if (spnego_state->no_response_expected) {
+				spnego_state->needs_mic_check = true;
+			}
+		}
+
+		if (spnego_state->needs_mic_check) {
+			if (spnego.negTokenTarg.responseToken.length != 0) {
+				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
+				spnego_free_data(&spnego);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							&spnego.negTokenTarg.mechListMIC);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+				spnego_free_data(&spnego);
+				return nt_status;
+			}
+			spnego_state->needs_mic_check = false;
+			spnego_state->done_mic_check = true;
+			goto client_response;
+		}
+
+		if (!spnego_state->no_response_expected) {
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						  out_mem_ctx, ev,
 						  spnego.negTokenTarg.responseToken, 
 						  &unwrapped_out);
-
-			if (NT_STATUS_IS_OK(nt_status)
-			    && spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
-				new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
-								 GENSEC_FEATURE_NEW_SPNEGO);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				goto client_response;
 			}
-			if (NT_STATUS_IS_OK(nt_status) && new_spnego) {
-				nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
-							       out_mem_ctx,
-							       spnego_state->mech_types.data,
-							       spnego_state->mech_types.length,
-							       spnego_state->mech_types.data,
-							       spnego_state->mech_types.length,
-							       &mech_list_mic);
-				if (!NT_STATUS_IS_OK(nt_status)) {
-					DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
-						nt_errstr(nt_status)));
+
+			spnego_state->no_response_expected = true;
+		} else {
+			nt_status = NT_STATUS_OK;
+		}
+
+		if (spnego_state->no_response_expected &&
+		    !spnego_state->done_mic_check)
+		{
+			bool new_spnego = false;
+
+			new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
+							 GENSEC_FEATURE_NEW_SPNEGO);
+
+			switch (spnego.negTokenTarg.negResult) {
+			case SPNEGO_ACCEPT_COMPLETED:
+			case SPNEGO_NONE_RESULT:
+				if (spnego_state->num_targs == 1) {
+					/*
+					 * the first exchange doesn't require
+					 * verification
+					 */
+					new_spnego = false;
+				}
+				break;
+
+			case SPNEGO_ACCEPT_INCOMPLETE:
+			case SPNEGO_REQUEST_MIC:
+				if (spnego.negTokenTarg.mechListMIC.length > 0) {
+					new_spnego = true;
+				}
+				break;
+			default:
+				break;
+			}
+
+			if (spnego_state->mic_requested) {
+				bool sign;
+
+				sign = gensec_have_feature(spnego_state->sub_sec_security,
+							   GENSEC_FEATURE_SIGN);
+				if (sign) {
+					new_spnego = true;
 				}
 			}
-			if (NT_STATUS_IS_OK(nt_status)) {
-				spnego_state->no_response_expected = true;
-			}
-		} 
 
+			if (new_spnego) {
+				spnego_state->needs_mic_check = true;
+				spnego_state->needs_mic_sign = true;
+			}
+		}
+
+		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							&spnego.negTokenTarg.mechListMIC);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+				spnego_free_data(&spnego);
+				return nt_status;
+			}
+			spnego_state->needs_mic_check = false;
+			spnego_state->done_mic_check = true;
+		}
+
+		if (spnego_state->needs_mic_sign) {
+			nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
+						       out_mem_ctx,
+						       spnego_state->mech_types.data,
+						       spnego_state->mech_types.length,
+						       spnego_state->mech_types.data,
+						       spnego_state->mech_types.length,
+						       &mech_list_mic);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+				spnego_free_data(&spnego);
+				return nt_status;
+			}
+			spnego_state->needs_mic_sign = false;
+		}
+
+		if (spnego_state->needs_mic_check) {
+			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		}
+
+ client_response:
 		spnego_free_data(&spnego);
 
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)
@@ -1118,6 +1229,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 
+			spnego_state->num_targs++;
 			spnego_state->state_position = SPNEGO_CLIENT_TARG;
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		} else {
@@ -1148,26 +1260,24 @@ static NTSTATUS gensec_spnego_update_in(struct gensec_security *gensec_security,
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	size_t expected;
-	NTSTATUS status;
 	bool ok;
 
 	*full_in = data_blob_null;
 
 	if (spnego_state->in_needed == 0) {
 		size_t size = 0;
+		int ret;
 
 		/*
 		 * try to work out the size of the full
 		 * input token, it might be fragmented
 		 */
-		status = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
-		if (!NT_STATUS_IS_OK(status) &&
-		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-			status = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
+		ret = asn1_peek_full_tag(in,  ASN1_APPLICATION(0), &size);
+		if ((ret != 0) && (ret != EAGAIN)) {
+			ret = asn1_peek_full_tag(in, ASN1_CONTEXT(1), &size);
 		}
 
-		if (NT_STATUS_IS_OK(status) ||
-		    NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		if ((ret == 0) || (ret == EAGAIN)) {
 			spnego_state->in_needed = size;
 		} else {
 			/*
@@ -1315,6 +1425,16 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 				      &spnego_state->out_frag);
 	data_blob_free(&spnego_state->in_frag);
 	spnego_state->in_needed = 0;
+	if (NT_STATUS_IS_OK(status)) {
+		bool reset_full = true;
+
+		gensec_security->child_security = spnego_state->sub_sec_security;
+
+		reset_full = !spnego_state->done_mic_check;
+
+		status = gensec_may_reset_crypto(spnego_state->sub_sec_security,
+						 reset_full);
+	}
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return status;
@@ -1384,11 +1504,8 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.max_input_size	  = gensec_spnego_max_input_size,
 	.check_packet	  = gensec_spnego_check_packet,
 	.unseal_packet	  = gensec_spnego_unseal_packet,
-	.packet_full_request = gensec_spnego_packet_full_request,
 	.wrap             = gensec_spnego_wrap,
 	.unwrap           = gensec_spnego_unwrap,
-	.wrap_packets     = gensec_spnego_wrap_packets,
-	.unwrap_packets   = gensec_spnego_unwrap_packets,
 	.session_key	  = gensec_spnego_session_key,
 	.session_info     = gensec_spnego_session_info,
 	.want_feature     = gensec_spnego_want_feature,

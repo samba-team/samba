@@ -312,7 +312,7 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 	}
 	case NetlogonNetworkInformation: {
 		struct netr_NetworkInfo *network_info;
-		uint8 chal[8];
+		uint8_t chal[8];
 		unsigned char local_lm_response[24];
 		unsigned char local_nt_response[24];
 		struct netr_ChallengeResponse lm;
@@ -400,7 +400,7 @@ NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 				       const char *username,
 				       const char *domain,
 				       const char *workstation,
-				       const uint8 chal[8],
+				       const uint8_t chal[8],
 				       DATA_BLOB lm_response,
 				       DATA_BLOB nt_response,
 				       uint8_t *authoritative,

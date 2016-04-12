@@ -46,7 +46,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 
 	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
-	h = talloc(context->assoc_group, struct dcesrv_handle);
+	h = talloc_zero(context->conn->assoc_group, struct dcesrv_handle);
 	if (!h) {
 		return NULL;
 	}
@@ -56,12 +56,12 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 		talloc_free(h);
 		return NULL;
 	}
-	h->assoc_group = context->assoc_group;
+	h->assoc_group = context->conn->assoc_group;
 	h->iface = context->iface;
 	h->wire_handle.handle_type = handle_type;
 	h->wire_handle.uuid = GUID_random();
 	
-	DLIST_ADD(context->assoc_group->handles, h);
+	DLIST_ADD(context->conn->assoc_group->handles, h);
 
 	talloc_set_destructor(h, dcesrv_handle_destructor);
 
@@ -87,7 +87,7 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 		return dcesrv_handle_new(context, handle_type);
 	}
 
-	for (h=context->assoc_group->handles; h; h=h->next) {
+	for (h=context->conn->assoc_group->handles; h; h=h->next) {
 		if (h->wire_handle.handle_type == p->handle_type &&
 		    GUID_equal(&p->uuid, &h->wire_handle.uuid)) {
 			if (handle_type != DCESRV_HANDLE_ANY &&

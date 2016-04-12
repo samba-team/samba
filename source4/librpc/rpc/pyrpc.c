@@ -246,44 +246,8 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	return ret;
 }
 
-static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject *kwargs)
-{
-	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
-	NTSTATUS status;
-	const char *kwnames[] = { "abstract_syntax", "transfer_syntax", NULL };
-	PyObject *py_abstract_syntax = Py_None, *py_transfer_syntax = Py_None;
-	struct ndr_syntax_id abstract_syntax, transfer_syntax;
-
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O:alter_context", 
-		discard_const_p(char *, kwnames), &py_abstract_syntax,
-		&py_transfer_syntax)) {
-		return NULL;
-	}
-
-	if (!ndr_syntax_from_py_object(py_abstract_syntax, &abstract_syntax))
-		return NULL;
-
-	if (py_transfer_syntax == Py_None) {
-		transfer_syntax = ndr_transfer_syntax_ndr;
-	} else {
-		if (!ndr_syntax_from_py_object(py_transfer_syntax, &transfer_syntax))
-			return NULL;
-	}
-
-	status = dcerpc_alter_context(iface->pipe, iface->pipe, &abstract_syntax, 
-				      &transfer_syntax);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetDCERPCStatus(iface->pipe, status);
-		return NULL;
-	}
-
-	Py_RETURN_NONE;
-}
-
 static PyMethodDef dcerpc_interface_methods[] = {
 	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data, object=None) -> data\nMake a raw request" },
-	{ "alter_context", (PyCFunction)py_iface_alter_context, METH_VARARGS|METH_KEYWORDS, "S.alter_context(syntax)\nChange to a different interface" },
 	{ NULL, NULL, 0, NULL },
 };
 
@@ -398,6 +362,45 @@ static PyTypeObject py_transfer_syntax_ndr64_SyntaxType = {
 	.tp_new = py_transfer_syntax_ndr64_new,
 };
 
+static PyObject *py_bind_time_features_syntax_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	const char *kwnames[] = {
+		"features", NULL
+	};
+	unsigned long long features = 0;
+	struct ndr_syntax_id syntax;
+	PyObject *args2 = Py_None;
+	PyObject *kwargs2 = Py_None;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "K:features", discard_const_p(char *, kwnames), &features)) {
+		return NULL;
+	}
+
+	args2 = Py_BuildValue("()");
+	if (args2 == NULL) {
+		return NULL;
+	}
+
+	kwargs2 = Py_BuildValue("{}");
+	if (kwargs2 == NULL) {
+		Py_DECREF(args2);
+		return NULL;
+	}
+
+	syntax = dcerpc_construct_bind_time_features(features);
+
+	return py_dcerpc_syntax_init_helper(type, args2, kwargs2, &syntax);
+}
+
+static PyTypeObject py_bind_time_features_syntax_SyntaxType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "base.bind_time_features_syntax",
+	.tp_basicsize = sizeof(pytalloc_Object),
+	.tp_doc = "bind_time_features_syntax(features)\n",
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_new = py_bind_time_features_syntax_new,
+};
+
 void initbase(void)
 {
 	PyObject *m;
@@ -413,6 +416,7 @@ void initbase(void)
 
 	py_transfer_syntax_ndr_SyntaxType.tp_base = ndr_syntax_id_Type;
 	py_transfer_syntax_ndr64_SyntaxType.tp_base = ndr_syntax_id_Type;
+	py_bind_time_features_syntax_SyntaxType.tp_base = ndr_syntax_id_Type;
 
 	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
 		return;
@@ -420,6 +424,8 @@ void initbase(void)
 	if (PyType_Ready(&py_transfer_syntax_ndr_SyntaxType) < 0)
 		return;
 	if (PyType_Ready(&py_transfer_syntax_ndr64_SyntaxType) < 0)
+		return;
+	if (PyType_Ready(&py_bind_time_features_syntax_SyntaxType) < 0)
 		return;
 
 	m = Py_InitModule3("base", NULL, "DCE/RPC protocol implementation");
@@ -433,4 +439,6 @@ void initbase(void)
 	PyModule_AddObject(m, "transfer_syntax_ndr", (PyObject *)(void *)&py_transfer_syntax_ndr_SyntaxType);
 	Py_INCREF((PyObject *)(void *)&py_transfer_syntax_ndr64_SyntaxType);
 	PyModule_AddObject(m, "transfer_syntax_ndr64", (PyObject *)(void *)&py_transfer_syntax_ndr64_SyntaxType);
+	Py_INCREF((PyObject *)(void *)&py_bind_time_features_syntax_SyntaxType);
+	PyModule_AddObject(m, "bind_time_features_syntax", (PyObject *)(void *)&py_bind_time_features_syntax_SyntaxType);
 }

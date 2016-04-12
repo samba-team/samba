@@ -33,15 +33,20 @@
 #if defined(HAVE_KRB5)
 
 #include "auth/kerberos/pac_utils.h"
+#include "auth/kerberos/gssapi_helper.h"
 #include "gse_krb5.h"
 
 static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min);
+static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
+				  size_t data_size);
 
 struct gse_context {
 	gss_ctx_id_t gssapi_context;
 	gss_name_t server_name;
 	gss_name_t client_name;
 	OM_uint32 gss_want_flags, gss_got_flags;
+	size_t max_wrap_buf_size;
+	size_t sig_size;
 
 	gss_cred_id_t delegated_cred_handle;
 
@@ -132,6 +137,7 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor((TALLOC_CTX *)gse_ctx, gse_context_destructor);
 
 	gse_ctx->expire_time = GENSEC_EXPIRE_TIME_INFINITY;
+	gse_ctx->max_wrap_buf_size = UINT16_MAX;
 
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
@@ -197,8 +203,11 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
-	gss_buffer_desc name_buffer = {0, NULL};
+	gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID_set_desc mech_set;
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+#endif
 	NTSTATUS status;
 
 	if (!server || !service) {
@@ -251,12 +260,34 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				   &gse_ctx->creds,
 				   NULL, NULL);
 	if (gss_maj) {
-		DEBUG(0, ("gss_acquire_creds failed for %s, with [%s]\n",
-			  (char *)name_buffer.value,
+		DEBUG(5, ("gss_acquire_creds failed for GSS_C_NO_NAME with [%s] -"
+			  "the caller may retry after a kinit.\n",
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
+
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+	/*
+	 * Don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG.
+	 *
+	 * This allows us to disable SIGN and SEAL for
+	 * AUTH_LEVEL_CONNECT and AUTH_LEVEL_INTEGRITY.
+	 *
+	 * https://groups.yahoo.com/neo/groups/cat-ietf/conversations/topics/575
+	 * http://krbdev.mit.edu/rt/Ticket/Display.html?id=6938
+	 */
+	gss_maj = gss_set_cred_option(&gss_min, &gse_ctx->creds,
+				      GSS_KRB5_CRED_NO_CI_FLAGS_X,
+				      &empty_buffer);
+	if (gss_maj) {
+		DEBUG(0, ("gss_set_cred_option(GSS_KRB5_CRED_NO_CI_FLAGS_X), "
+			  "failed with [%s]\n",
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto err_out;
+	}
+#endif
 
 	*_gse_ctx = gse_ctx;
 	TALLOC_FREE(name_buffer.value);
@@ -541,193 +572,6 @@ done:
 	return errstr;
 }
 
-static size_t gse_get_signature_length(struct gse_context *gse_ctx,
-				       bool seal, size_t payload_size)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_iov_buffer_desc iov[2];
-	int sealed;
-
-	/*
-	 * gss_wrap_iov_length() only needs the type and length
-	 */
-	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
-	iov[0].buffer.value = NULL;
-	iov[0].buffer.length = 0;
-	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
-	iov[1].buffer.value = NULL;
-	iov[1].buffer.length = payload_size;
-
-	gss_maj = gss_wrap_iov_length(&gss_min, gse_ctx->gssapi_context,
-					seal, GSS_C_QOP_DEFAULT,
-					&sealed, iov, 2);
-	if (gss_maj) {
-		DEBUG(0, ("gss_wrap_iov_length failed with [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		return 0;
-	}
-
-	return iov[0].buffer.length;
-}
-
-static NTSTATUS gse_seal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-			 DATA_BLOB *data, DATA_BLOB *signature)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_iov_buffer_desc iov[2];
-	int req_seal = 1; /* setting to 1 means we request sign+seal */
-	int sealed = 1;
-	NTSTATUS status;
-
-	/* allocate the memory ourselves so we do not need to talloc_memdup */
-	signature->length = gse_get_signature_length(gse_ctx, true, data->length);
-	if (!signature->length) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	signature->data = (uint8_t *)talloc_size(mem_ctx, signature->length);
-	if (!signature->data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
-	iov[0].buffer.value = signature->data;
-	iov[0].buffer.length = signature->length;
-
-	/* data is encrypted in place, which is ok */
-	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
-	iov[1].buffer.value = data->data;
-	iov[1].buffer.length = data->length;
-
-	gss_maj = gss_wrap_iov(&gss_min, gse_ctx->gssapi_context,
-				req_seal, GSS_C_QOP_DEFAULT,
-				&sealed, iov, 2);
-	if (gss_maj) {
-		DEBUG(0, ("gss_wrap_iov failed with [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	if (!sealed) {
-		DEBUG(0, ("gss_wrap_iov says data was not sealed!\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	status = NT_STATUS_OK;
-
-	DEBUG(10, ("Sealed %d bytes, and got %d bytes header/signature.\n",
-		   (int)iov[1].buffer.length, (int)iov[0].buffer.length));
-
-done:
-	return status;
-}
-
-static NTSTATUS gse_unseal(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-			   DATA_BLOB *data, const DATA_BLOB *signature)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_iov_buffer_desc iov[2];
-	int sealed;
-	NTSTATUS status;
-
-	iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER;
-	iov[0].buffer.value = signature->data;
-	iov[0].buffer.length = signature->length;
-
-	/* data is decrypted in place, which is ok */
-	iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
-	iov[1].buffer.value = data->data;
-	iov[1].buffer.length = data->length;
-
-	gss_maj = gss_unwrap_iov(&gss_min, gse_ctx->gssapi_context,
-				 &sealed, NULL, iov, 2);
-	if (gss_maj) {
-		DEBUG(0, ("gss_unwrap_iov failed with [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	if (!sealed) {
-		DEBUG(0, ("gss_unwrap_iov says data is not sealed!\n"));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	status = NT_STATUS_OK;
-
-	DEBUG(10, ("Unsealed %d bytes, with %d bytes header/signature.\n",
-		   (int)iov[1].buffer.length, (int)iov[0].buffer.length));
-
-done:
-	return status;
-}
-
-static NTSTATUS gse_sign(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-			 DATA_BLOB *data, DATA_BLOB *signature)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_buffer_desc in_data = { 0, NULL };
-	gss_buffer_desc out_data = { 0, NULL};
-	NTSTATUS status;
-
-	in_data.value = data->data;
-	in_data.length = data->length;
-
-	gss_maj = gss_get_mic(&gss_min, gse_ctx->gssapi_context,
-			      GSS_C_QOP_DEFAULT,
-			      &in_data, &out_data);
-	if (gss_maj) {
-		DEBUG(0, ("gss_get_mic failed with [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	*signature = data_blob_talloc(mem_ctx,
-					out_data.value, out_data.length);
-	if (!signature->data) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	status = NT_STATUS_OK;
-
-done:
-	if (out_data.value) {
-		gss_maj = gss_release_buffer(&gss_min, &out_data);
-	}
-	return status;
-}
-
-static NTSTATUS gse_sigcheck(TALLOC_CTX *mem_ctx, struct gse_context *gse_ctx,
-			     const DATA_BLOB *data, const DATA_BLOB *signature)
-{
-	OM_uint32 gss_min, gss_maj;
-	gss_buffer_desc in_data = { 0, NULL };
-	gss_buffer_desc in_token = { 0, NULL};
-	NTSTATUS status;
-
-	in_data.value = data->data;
-	in_data.length = data->length;
-	in_token.value = signature->data;
-	in_token.length = signature->length;
-
-	gss_maj = gss_verify_mic(&gss_min, gse_ctx->gssapi_context,
-				 &in_data, &in_token, NULL);
-	if (gss_maj) {
-		DEBUG(0, ("gss_verify_mic failed with [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto done;
-	}
-
-	status = NT_STATUS_OK;
-
-done:
-	return status;
-}
-
 static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 {
 	struct gse_context *gse_ctx;
@@ -753,6 +597,9 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
+		do_sign = true;
+	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		do_sign = true;
 	}
@@ -921,8 +768,31 @@ static NTSTATUS gensec_gse_seal_packet(struct gensec_security *gensec_security,
 	struct gse_context *gse_ctx =
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
-	DATA_BLOB payload = data_blob_const(data, length);
-	return gse_seal(mem_ctx, gse_ctx, &payload, sig);
+	bool hdr_signing = false;
+	size_t sig_size = 0;
+	NTSTATUS status;
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		hdr_signing = true;
+	}
+
+	sig_size = gensec_gse_sig_size(gensec_security, length);
+
+	status = gssapi_seal_packet(gse_ctx->gssapi_context,
+				    &gse_ctx->gss_mech,
+				    hdr_signing, sig_size,
+				    data, length,
+				    whole_pdu, pdu_length,
+				    mem_ctx, sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_seal_packet(hdr_signing=%u,sig_size=%ju,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, sig_size, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_gse_unseal_packet(struct gensec_security *gensec_security,
@@ -933,8 +803,28 @@ static NTSTATUS gensec_gse_unseal_packet(struct gensec_security *gensec_security
 	struct gse_context *gse_ctx =
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
-	DATA_BLOB payload = data_blob_const(data, length);
-	return gse_unseal(talloc_tos() /* unused */, gse_ctx, &payload, sig);
+	bool hdr_signing = false;
+	NTSTATUS status;
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		hdr_signing = true;
+	}
+
+	status = gssapi_unseal_packet(gse_ctx->gssapi_context,
+				      &gse_ctx->gss_mech,
+				      hdr_signing,
+				      data, length,
+				      whole_pdu, pdu_length,
+				      sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_unseal_packet(hdr_signing=%u,sig_size=%ju,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, sig->length, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_gse_sign_packet(struct gensec_security *gensec_security,
@@ -946,8 +836,28 @@ static NTSTATUS gensec_gse_sign_packet(struct gensec_security *gensec_security,
 	struct gse_context *gse_ctx =
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
-	DATA_BLOB payload = data_blob_const(data, length);
-	return gse_sign(mem_ctx, gse_ctx, &payload, sig);
+	bool hdr_signing = false;
+	NTSTATUS status;
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		hdr_signing = true;
+	}
+
+	status = gssapi_sign_packet(gse_ctx->gssapi_context,
+				    &gse_ctx->gss_mech,
+				    hdr_signing,
+				    data, length,
+				    whole_pdu, pdu_length,
+				    mem_ctx, sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_sign_packet(hdr_signing=%u,"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_gse_check_packet(struct gensec_security *gensec_security,
@@ -958,8 +868,28 @@ static NTSTATUS gensec_gse_check_packet(struct gensec_security *gensec_security,
 	struct gse_context *gse_ctx =
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
-	DATA_BLOB payload = data_blob_const(data, length);
-	return gse_sigcheck(NULL, gse_ctx, &payload, sig);
+	bool hdr_signing = false;
+	NTSTATUS status;
+
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		hdr_signing = true;
+	}
+
+	status = gssapi_check_packet(gse_ctx->gssapi_context,
+				     &gse_ctx->gss_mech,
+				     hdr_signing,
+				     data, length,
+				     whole_pdu, pdu_length,
+				     sig);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("gssapi_check_packet(hdr_signing=%u,sig_size=%ju"
+			  "data=%ju,pdu=%ju) failed: %s\n",
+			  hdr_signing, sig->length, length, pdu_length,
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /* Try to figure out what features we actually got on the connection */
@@ -970,17 +900,14 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
 
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
+	}
 	if (feature & GENSEC_FEATURE_SIGN) {
 		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
 		return gse_ctx->gss_got_flags & GSS_C_CONF_FLAG;
-	}
-	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-		/* Only for GSE/Krb5 */
-		if (smb_gss_oid_equal(gse_ctx->ret_mech, gss_mech_krb5)) {
-			return true;
-		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return gse_ctx->gss_got_flags & GSS_C_DCE_STYLE;
@@ -1018,6 +945,17 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 	/* We can always do async (rather than strict request/reply) packets.  */
 	if (feature & GENSEC_FEATURE_ASYNC_REPLIES) {
 		return true;
+	}
+	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+			return true;
+		}
+
+		if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+			return true;
+		}
+
+		return false;
 	}
 	return false;
 }
@@ -1126,6 +1064,40 @@ static NTSTATUS gensec_gse_session_info(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+static size_t gensec_gse_max_input_size(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	OM_uint32 maj_stat, min_stat;
+	OM_uint32 max_input_size;
+
+	maj_stat = gss_wrap_size_limit(&min_stat,
+				       gse_ctx->gssapi_context,
+				       gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
+				       GSS_C_QOP_DEFAULT,
+				       gse_ctx->max_wrap_buf_size,
+				       &max_input_size);
+	if (GSS_ERROR(maj_stat)) {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
+		DEBUG(1, ("gensec_gssapi_max_input_size: determining signature size with gss_wrap_size_limit failed: %s\n",
+			  gse_errstr(mem_ctx, maj_stat, min_stat)));
+		talloc_free(mem_ctx);
+		return 0;
+	}
+
+	return max_input_size;
+}
+
+/* Find out the maximum output size negotiated on this connection */
+static size_t gensec_gse_max_wrapped_size(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	return gse_ctx->max_wrap_buf_size;
+}
+
 static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
 				  size_t data_size)
 {
@@ -1133,9 +1105,15 @@ static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
 
-	return gse_get_signature_length(gse_ctx,
-					gensec_security->want_features & GENSEC_FEATURE_SEAL,
-					data_size);
+	if (gse_ctx->sig_size > 0) {
+		return gse_ctx->sig_size;
+	}
+
+	gse_ctx->sig_size = gssapi_get_sig_size(gse_ctx->gssapi_context,
+					        &gse_ctx->gss_mech,
+					        gse_ctx->gss_want_flags,
+					        data_size);
+	return gse_ctx->sig_size;
 }
 
 static const char *gensec_gse_krb5_oids[] = {
@@ -1159,6 +1137,8 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.check_packet	= gensec_gse_check_packet,
 	.seal_packet	= gensec_gse_seal_packet,
 	.unseal_packet	= gensec_gse_unseal_packet,
+	.max_input_size	  = gensec_gse_max_input_size,
+	.max_wrapped_size = gensec_gse_max_wrapped_size,
 	.wrap           = gensec_gse_wrap,
 	.unwrap         = gensec_gse_unwrap,
 	.have_feature   = gensec_gse_have_feature,

@@ -33,8 +33,6 @@ parser = optparse.OptionParser("dns.py <server name> <server ip> [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 
-FILTER=''.join([(len(repr(chr(x)))==3) and chr(x) or '.' for x in range(256)])
-
 # This timeout only has relevance when testing against Windows
 # Format errors tend to return patchy responses, so a timeout is needed.
 parser.add_option("--timeout", type="int", dest="timeout",
@@ -177,16 +175,6 @@ class DNSTest(TestCase):
         finally:
                 if s is not None:
                     s.close()
-
-    def hexdump(self, src, length=8):
-        N=0; result=''
-        while src:
-           s,src = src[:length],src[length:]
-           hexa = ' '.join(["%02X"%ord(x) for x in s])
-           s = s.translate(FILTER)
-           result += "%04X   %-*s   %s\n" % (N, length*3, hexa, s)
-           N+=length
-        return result
 
     def make_txt_update(self, prefix, txt_array):
         p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)

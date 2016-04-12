@@ -62,7 +62,7 @@ NTSTATUS cli_query_security_descriptor(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	status = unmarshall_sec_desc(mem_ctx, (uint8 *)rdata, rdata_count,
+	status = unmarshall_sec_desc(mem_ctx, (uint8_t *)rdata, rdata_count,
 				     &lsd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("unmarshall_sec_desc failed: %s\n",
@@ -100,7 +100,7 @@ NTSTATUS cli_set_security_descriptor(struct cli_state *cli,
 				     const struct security_descriptor *sd)
 {
 	uint8_t param[8];
-	uint8 *data;
+	uint8_t *data;
 	size_t len;
 	NTSTATUS status;
 

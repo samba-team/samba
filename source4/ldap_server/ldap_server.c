@@ -334,6 +334,12 @@ static void ldapsrv_accept(struct stream_connection *c,
 
 	conn->sockets.active = conn->sockets.raw;
 
+	if (conn->is_privileged) {
+		conn->require_strong_auth = LDAP_SERVER_REQUIRE_STRONG_AUTH_NO;
+	} else {
+		conn->require_strong_auth = lpcfg_ldap_server_require_strong_auth(conn->lp_ctx);
+	}
+
 	if (!NT_STATUS_IS_OK(ldapsrv_backend_Init(conn))) {
 		ldapsrv_terminate_connection(conn, "backend Init failed");
 		return;
@@ -934,6 +940,7 @@ static void ldapsrv_task_init(struct task_server *task)
 					   lpcfg_tls_cafile(ldap_service, task->lp_ctx),
 					   lpcfg_tls_crlfile(ldap_service, task->lp_ctx),
 					   lpcfg_tls_dhpfile(ldap_service, task->lp_ctx),
+					   lpcfg_tls_priority(task->lp_ctx),
 					   &ldap_service->tls_params);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsrv failed tstream_tls_params_server - %s\n",

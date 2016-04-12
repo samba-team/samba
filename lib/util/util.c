@@ -530,7 +530,7 @@ void dump_data_cb(const uint8_t *buf, int len,
 	if (i%16) {
 		int n;
 		n = 16 - (i%16);
-		cb(" ", private_data);
+		cb("  ", private_data);
 		if (n>8) {
 			cb(" ", private_data);
 		}

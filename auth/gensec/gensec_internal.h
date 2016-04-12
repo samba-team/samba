@@ -47,6 +47,8 @@ struct gensec_security_ops {
 	NTSTATUS (*update_recv)(struct tevent_req *req,
 				TALLOC_CTX *out_mem_ctx,
 				DATA_BLOB *out);
+	NTSTATUS (*may_reset_crypto)(struct gensec_security *gensec_security,
+				     bool full_reset);
 	NTSTATUS (*seal_packet)(struct gensec_security *gensec_security, TALLOC_CTX *sig_mem_ctx,
 				uint8_t *data, size_t length,
 				const uint8_t *whole_pdu, size_t pdu_length,
@@ -74,18 +76,6 @@ struct gensec_security_ops {
 			   TALLOC_CTX *mem_ctx,
 			   const DATA_BLOB *in,
 			   DATA_BLOB *out);
-	NTSTATUS (*wrap_packets)(struct gensec_security *gensec_security,
-				 TALLOC_CTX *mem_ctx,
-				 const DATA_BLOB *in,
-				 DATA_BLOB *out,
-				 size_t *len_processed);
-	NTSTATUS (*unwrap_packets)(struct gensec_security *gensec_security,
-				   TALLOC_CTX *mem_ctx,
-				   const DATA_BLOB *in,
-				   DATA_BLOB *out,
-				   size_t *len_processed);
-	NTSTATUS (*packet_full_request)(struct gensec_security *gensec_security,
-					DATA_BLOB blob, size_t *size);
 	NTSTATUS (*session_key)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx,
 				DATA_BLOB *session_key);
 	NTSTATUS (*session_info)(struct gensec_security *gensec_security, TALLOC_CTX *mem_ctx,
@@ -122,6 +112,8 @@ struct gensec_security {
 	 * NTLM authentication backend, and user lookup (such as if no
 	 * PAC is found) */
 	struct auth4_context *auth_context;
+
+	struct gensec_security *child_security;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
@@ -130,5 +122,8 @@ struct gensec_critical_sizes {
 	int sizeof_gensec_security_ops;
 	int sizeof_gensec_security;
 };
+
+NTSTATUS gensec_may_reset_crypto(struct gensec_security *gensec_security,
+				 bool full_reset);
 
 #endif /* __GENSEC_H__ */

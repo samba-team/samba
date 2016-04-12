@@ -25,6 +25,7 @@
 #define NTLMSSP_PULL_MESSAGE(type, blob, mem_ctx, r) \
 do { \
 	enum ndr_err_code __ndr_err; \
+	ZERO_STRUCTP(r); /* in order to deal with unset neg flags */\
 	__ndr_err = ndr_pull_struct_blob(blob, mem_ctx, r, \
 			(ndr_pull_flags_fn_t)ndr_pull_ ##type); \
 	if (!NDR_ERR_CODE_IS_SUCCESS(__ndr_err)) { \

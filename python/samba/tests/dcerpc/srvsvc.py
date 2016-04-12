@@ -45,12 +45,12 @@ class SrvsvcTests(RpcInterfaceTestCase):
         return share
 
     def test_NetShareAdd(self):
-        self.skip("Dangerous test")
+        self.skipTest("Dangerous test")
         share = self.getDummyShareObject()
         self.conn.NetShareAdd(self.server_unc, 2, share, None)
 
     def test_NetShareSetInfo(self):
-        self.skip("Dangerous test")
+        self.skipTest("Dangerous test")
         share = self.getDummyShareObject()
         parm_error = 0x00000000
         self.conn.NetShareAdd(self.server_unc, 502, share, parm_error)
@@ -60,7 +60,7 @@ class SrvsvcTests(RpcInterfaceTestCase):
                 502, share, parm_error)
 
     def test_NetShareDel(self):
-        self.skip("Dangerous test")
+        self.skipTest("Dangerous test")
         share = self.getDummyShareObject()
         parm_error = 0x00000000
         self.expectFailure("NetShareAdd doesn't work properly from Python",

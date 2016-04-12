@@ -267,7 +267,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	struct cli_state *c = NULL;
 	const char *server_n = server;
         int is_ipc = (share != NULL && strcmp(share, "IPC$") == 0);
-	uint32 fs_attrs = 0;
+	uint32_t fs_attrs = 0;
         const char *username_used;
  	NTSTATUS status;
 	char *newserver, *newshare;

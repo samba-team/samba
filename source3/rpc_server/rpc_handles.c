@@ -69,6 +69,7 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 	p->msg_ctx = msg_ctx;
 	p->transport = transport;
 	p->endian = endian;
+	p->allow_bind = true;
 
 	p->remote_address = tsocket_address_copy(remote_address, p);
 	if (p->remote_address == NULL) {
@@ -253,8 +254,8 @@ static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
 				struct policy_handle *hnd, void *data_ptr)
 {
 	struct dcesrv_handle *rpc_hnd;
-	static uint32 pol_hnd_low  = 0;
-	static uint32 pol_hnd_high = 0;
+	static uint32_t pol_hnd_low  = 0;
+	static uint32_t pol_hnd_high = 0;
 	time_t t = time(NULL);
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
@@ -336,7 +337,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 	for (h = p->pipe_handles->handles; h != NULL; h = h->next) {
 		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
 			DEBUG(6,("Found policy hnd[%u] ", count));
-			dump_data(6, (const uint8 *)hnd, sizeof(*hnd));
+			dump_data(6, (const uint8_t *)hnd, sizeof(*hnd));
 			if (data_p) {
 				*data_p = h->data;
 			}

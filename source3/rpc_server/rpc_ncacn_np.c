@@ -224,7 +224,7 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	context_fns = talloc(p, struct pipe_rpc_fns);
+	context_fns = talloc_zero(p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DEBUG(0,("talloc() failed!\n"));
 		TALLOC_FREE(p);
@@ -977,6 +977,7 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 	}
 	result->auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 	result->auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+	result->auth->auth_context_id = 0;
 
 	status = rpccli_anon_bind_data(result, &auth);
 	if (!NT_STATUS_IS_OK(status)) {

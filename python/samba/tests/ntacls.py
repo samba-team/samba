@@ -19,10 +19,9 @@
 """Tests for samba.ntacls."""
 
 from samba.ntacls import setntacl, getntacl, XattrBackendError
-from samba.dcerpc import xattr, security
 from samba.param import LoadParm
-from samba.tests import TestCaseInTempDir, TestSkipped
-import random
+from samba.dcerpc import security
+from samba.tests import TestCaseInTempDir, SkipTest
 import os
 
 class NtaclsTests(TestCaseInTempDir):
@@ -64,7 +63,7 @@ class NtaclsTests(TestCaseInTempDir):
 
     def test_setntacl_forcenative(self):
         if os.getuid() == 0:
-            raise TestSkipped("Running test as root, test skipped")
+            raise SkipTest("Running test as root, test skipped")
         lp = LoadParm()
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         open(self.tempf, 'w').write("empty")

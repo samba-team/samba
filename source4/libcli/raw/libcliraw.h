@@ -95,6 +95,7 @@ struct smbcli_options {
 	unsigned int use_spnego:1;
 	unsigned int unicode:1;
 	unsigned int ntstatus_support:1;
+	int min_protocol;
 	int max_protocol;
 	uint32_t max_xmit;
 	uint16_t max_mux;

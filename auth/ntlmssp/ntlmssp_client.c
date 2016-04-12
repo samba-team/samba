@@ -34,6 +34,7 @@ struct auth_session_info;
 #include "auth/ntlmssp/ntlmssp_private.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 #include "../auth/ntlmssp/ntlmssp_ndr.h"
+#include "../nsswitch/libwbclient/wbclient.h"
 
 /*********************************************************************
  Client side NTLMSSP
@@ -57,38 +58,18 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	const char *domain = ntlmssp_state->client.netbios_domain;
-	const char *workstation = ntlmssp_state->client.netbios_name;
 	NTSTATUS status;
-
-	/* These don't really matter in the initial packet, so don't panic if they are not set */
-	if (!domain) {
-		domain = "";
-	}
-
-	if (!workstation) {
-		workstation = "";
-	}
-
-	if (ntlmssp_state->unicode) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
-	} else {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
-	}
-
-	if (ntlmssp_state->use_ntlmv2) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
-	}
+	const DATA_BLOB version_blob = ntlmssp_version_blob();
 
 	/* generate the ntlmssp negotiate packet */
 	status = msrpc_gen(out_mem_ctx,
-		  out, "CddAA",
+		  out, "CddAAb",
 		  "NTLMSSP",
 		  NTLMSSP_NEGOTIATE,
 		  ntlmssp_state->neg_flags,
-		  domain,
-		  workstation);
-
+		  "", /* domain */
+		  "", /* workstation */
+		  version_blob.data, version_blob.length);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntlmssp_client_initial: failed to generate "
 			  "ntlmssp negotiate packet\n"));
@@ -107,6 +88,122 @@ NTSTATUS ntlmssp_client_initial(struct gensec_security *gensec_security,
 			}
 			TALLOC_FREE(negotiate);
 		}
+	}
+
+	ntlmssp_state->negotiate_blob = data_blob_dup_talloc(ntlmssp_state,
+							     *out);
+	if (ntlmssp_state->negotiate_blob.length != out->length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
+
+	return NT_STATUS_MORE_PROCESSING_REQUIRED;
+}
+
+NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
+				TALLOC_CTX *out_mem_ctx,
+				DATA_BLOB in, DATA_BLOB *out)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	uint32_t neg_flags = 0;
+	uint32_t ntlmssp_command;
+	NTSTATUS status;
+	bool ok;
+
+	*out = data_blob_null;
+
+	if (in.length == 0) {
+		/*
+		 * This is compat code for older callers
+		 * which were missing the "initial_blob"/"negotiate_blob".
+		 *
+		 * That means we can't calculate the NTLMSSP_MIC
+		 * field correctly and need to force the
+		 * old_spnego behaviour.
+		 */
+		DEBUG(10, ("%s: in.length==%u force_old_spnego!\n",
+			   __func__, (unsigned int)in.length));
+		ntlmssp_state->force_old_spnego = true;
+		ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+		ntlmssp_state->required_flags = 0;
+		ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
+		return NT_STATUS_MORE_PROCESSING_REQUIRED;
+	}
+
+	/* parse the NTLMSSP packet */
+
+	if (in.length > UINT16_MAX) {
+		DEBUG(1, ("%s: reject large request of length %u\n",
+			__func__, (unsigned int)in.length));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ok = msrpc_parse(ntlmssp_state, &in, "Cdd",
+			 "NTLMSSP",
+			 &ntlmssp_command,
+			 &neg_flags);
+	if (!ok) {
+		DEBUG(1, ("%s: failed to parse NTLMSSP Negotiate of length %u\n",
+			__func__, (unsigned int)in.length));
+		dump_data(2, in.data, in.length);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
+		DEBUG(1, ("%s: no NTLMSSP Negotiate message (length %u)\n",
+			__func__, (unsigned int)in.length));
+		dump_data(2, in.data, in.length);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ntlmssp_state->neg_flags = neg_flags;
+	DEBUG(3, ("Imported Negotiate flags:\n"));
+	debug_ntlmssp_flags(neg_flags);
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_UNICODE) {
+		ntlmssp_state->unicode = true;
+	} else {
+		ntlmssp_state->unicode = false;
+	}
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
+		gensec_security->want_features |= GENSEC_FEATURE_SIGN;
+
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+	}
+
+	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
+		gensec_security->want_features |= GENSEC_FEATURE_SEAL;
+
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
+	}
+
+	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
+
+	if (DEBUGLEVEL >= 10) {
+		struct NEGOTIATE_MESSAGE *negotiate = talloc(
+			ntlmssp_state, struct NEGOTIATE_MESSAGE);
+		if (negotiate != NULL) {
+			status = ntlmssp_pull_NEGOTIATE_MESSAGE(
+				&in, negotiate, negotiate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(NEGOTIATE_MESSAGE,
+						negotiate);
+			}
+			TALLOC_FREE(negotiate);
+		}
+	}
+
+	ntlmssp_state->negotiate_blob = data_blob_dup_talloc(ntlmssp_state,
+							     in);
+	if (ntlmssp_state->negotiate_blob.length != in.length) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ntlmssp_state->expected_state = NTLMSSP_CHALLENGE;
@@ -147,7 +244,13 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
 	NTSTATUS nt_status;
 	int flags = 0;
-	const char *user, *domain;
+	const char *user = NULL, *domain = NULL, *workstation = NULL;
+	bool is_anonymous = false;
+	const DATA_BLOB version_blob = ntlmssp_version_blob();
+	const NTTIME *server_timestamp = NULL;
+	uint8_t mic_buffer[NTLMSSP_MIC_SIZE] = { 0, };
+	DATA_BLOB mic_blob = data_blob_const(mic_buffer, sizeof(mic_buffer));
+	HMACMD5Context ctx;
 
 	TALLOC_CTX *mem_ctx = talloc_new(out_mem_ctx);
 	if (!mem_ctx) {
@@ -172,7 +275,11 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	DEBUG(3, ("Got challenge flags:\n"));
 	debug_ntlmssp_flags(chal_flags);
 
-	ntlmssp_handle_neg_flags(ntlmssp_state, chal_flags, ntlmssp_state->allow_lm_key);
+	nt_status = ntlmssp_handle_neg_flags(ntlmssp_state,
+					     chal_flags, "challenge");
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
 	if (ntlmssp_state->unicode) {
 		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
@@ -181,7 +288,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string = "CdUdbdd";
 			chal_parse_string_short = "CdUdb";
 		}
-		auth_gen_string = "CdBBUUUBd";
+		auth_gen_string = "CdBBUUUBdbb";
 	} else {
 		if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
 			chal_parse_string = "CdAdbddB";
@@ -190,7 +297,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			chal_parse_string_short = "CdAdb";
 		}
 
-		auth_gen_string = "CdBBAAABd";
+		auth_gen_string = "CdBBAAABdbb";
 	}
 
 	if (!msrpc_parse(mem_ctx,
@@ -244,7 +351,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 	/* TODO: parse struct_blob and fill in the rest */
 	ntlmssp_state->server.netbios_name = "";
-	ntlmssp_state->server.netbios_domain = server_domain;
+	ntlmssp_state->server.netbios_domain = talloc_move(ntlmssp_state, &server_domain);
 	ntlmssp_state->server.dns_name = "";
 	ntlmssp_state->server.dns_domain = "";
 
@@ -253,8 +360,117 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	is_anonymous = cli_credentials_is_anonymous(gensec_security->credentials);
 	cli_credentials_get_ntlm_username_domain(gensec_security->credentials, mem_ctx,
 						 &user, &domain);
+
+	workstation = cli_credentials_get_workstation(gensec_security->credentials);
+
+	if (user == NULL) {
+		DEBUG(10, ("User is NULL, returning INVALID_PARAMETER\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (domain == NULL) {
+		DEBUG(10, ("Domain is NULL, returning INVALID_PARAMETER\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (workstation == NULL) {
+		DEBUG(10, ("Workstation is NULL, returning INVALID_PARAMETER\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (is_anonymous) {
+		ntlmssp_state->neg_flags |= NTLMSSP_ANONYMOUS;
+		/*
+		 * don't use the ccache for anonymous auth
+		 */
+		ntlmssp_state->use_ccache = false;
+	}
+	if (ntlmssp_state->use_ccache) {
+		struct samr_Password *nt_hash = NULL;
+
+		/*
+		 * If we have a password given we don't
+		 * use the ccache
+		 */
+		nt_hash = cli_credentials_get_nt_hash(gensec_security->credentials,
+						      mem_ctx);
+		if (nt_hash != NULL) {
+			ZERO_STRUCTP(nt_hash);
+			TALLOC_FREE(nt_hash);
+			ntlmssp_state->use_ccache = false;
+		}
+	}
+
+	if (ntlmssp_state->use_ccache) {
+		struct wbcCredentialCacheParams params;
+		struct wbcCredentialCacheInfo *info = NULL;
+		struct wbcAuthErrorInfo *error = NULL;
+		struct wbcNamedBlob auth_blobs[2];
+		const struct wbcBlob *wbc_auth_blob = NULL;
+		const struct wbcBlob *wbc_session_key = NULL;
+		wbcErr wbc_status;
+		int i;
+		bool new_spnego = false;
+
+		params.account_name = user;
+		params.domain_name = domain;
+		params.level = WBC_CREDENTIAL_CACHE_LEVEL_NTLMSSP;
+
+		auth_blobs[0].name = "challenge_blob";
+		auth_blobs[0].flags = 0;
+		auth_blobs[0].blob.data = in.data;
+		auth_blobs[0].blob.length = in.length;
+		auth_blobs[1].name = "negotiate_blob";
+		auth_blobs[1].flags = 0;
+		auth_blobs[1].blob.data = ntlmssp_state->negotiate_blob.data;
+		auth_blobs[1].blob.length = ntlmssp_state->negotiate_blob.length;
+		params.num_blobs = ARRAY_SIZE(auth_blobs);
+		params.blobs = auth_blobs;
+
+		wbc_status = wbcCredentialCache(&params, &info, &error);
+		wbcFreeMemory(error);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
+		}
+
+		for (i=0; i<info->num_blobs; i++) {
+			if (strequal(info->blobs[i].name, "auth_blob")) {
+				wbc_auth_blob = &info->blobs[i].blob;
+			}
+			if (strequal(info->blobs[i].name, "session_key")) {
+				wbc_session_key = &info->blobs[i].blob;
+			}
+			if (strequal(info->blobs[i].name, "new_spnego")) {
+				new_spnego = true;
+			}
+		}
+		if ((wbc_auth_blob == NULL) || (wbc_session_key == NULL)) {
+			wbcFreeMemory(info);
+			return NT_STATUS_WRONG_CREDENTIAL_HANDLE;
+		}
+
+		session_key = data_blob_talloc(mem_ctx,
+					       wbc_session_key->data,
+					       wbc_session_key->length);
+		if (session_key.length != wbc_session_key->length) {
+			wbcFreeMemory(info);
+			return NT_STATUS_NO_MEMORY;
+		}
+		*out = data_blob_talloc(mem_ctx,
+					wbc_auth_blob->data,
+					wbc_auth_blob->length);
+		if (out->length != wbc_auth_blob->length) {
+			wbcFreeMemory(info);
+			return NT_STATUS_NO_MEMORY;
+		}
+		ntlmssp_state->new_spnego = new_spnego;
+
+		wbcFreeMemory(info);
+		goto done;
+	}
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		flags |= CLI_CRED_NTLM2;
@@ -265,15 +481,159 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (ntlmssp_state->use_nt_response) {
 		flags |= CLI_CRED_NTLM_AUTH;
 	}
-	if (lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx)) {
+	if (ntlmssp_state->allow_lm_response) {
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
+	if (target_info.length != 0 && !is_anonymous) {
+		struct AV_PAIR *pairs = NULL;
+		uint32_t count = 0;
+		enum ndr_err_code err;
+		struct AV_PAIR *timestamp = NULL;
+		struct AV_PAIR *eol = NULL;
+		uint32_t i = 0;
+		const char *service = NULL;
+		const char *hostname = NULL;
+
+		err = ndr_pull_struct_blob(&target_info,
+					ntlmssp_state,
+					&ntlmssp_state->server.av_pair_list,
+					(ndr_pull_flags_fn_t)ndr_pull_AV_PAIR_LIST);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return ndr_map_error2ntstatus(err);
+		}
+
+		count = ntlmssp_state->server.av_pair_list.count;
+		/*
+		 * We need room for Flags, SingleHost,
+		 * ChannelBindings and Target
+		 */
+		pairs = talloc_zero_array(ntlmssp_state, struct AV_PAIR,
+					  count + 4);
+		if (pairs == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i = 0; i < count; i++) {
+			pairs[i] = ntlmssp_state->server.av_pair_list.pair[i];
+		}
+
+		ntlmssp_state->client.av_pair_list.count = count;
+		ntlmssp_state->client.av_pair_list.pair = pairs;
+
+		eol = ndr_ntlmssp_find_av(&ntlmssp_state->client.av_pair_list,
+					  MsvAvEOL);
+		if (eol == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		timestamp = ndr_ntlmssp_find_av(&ntlmssp_state->client.av_pair_list,
+						MsvAvTimestamp);
+		if (timestamp != NULL) {
+			uint32_t sign_features =
+					GENSEC_FEATURE_SESSION_KEY |
+					GENSEC_FEATURE_SIGN |
+					GENSEC_FEATURE_SEAL;
+
+			server_timestamp = &timestamp->Value.AvTimestamp;
+
+			if (ntlmssp_state->force_old_spnego) {
+				sign_features = 0;
+			}
+
+			if (gensec_security->want_features & sign_features) {
+				struct AV_PAIR *av_flags = NULL;
+
+				av_flags = ndr_ntlmssp_find_av(&ntlmssp_state->client.av_pair_list,
+							       MsvAvFlags);
+				if (av_flags == NULL) {
+					av_flags = eol;
+					eol++;
+					count++;
+					*eol = *av_flags;
+					av_flags->AvId = MsvAvFlags;
+					av_flags->Value.AvFlags = 0;
+				}
+
+				av_flags->Value.AvFlags |= NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE;
+				ntlmssp_state->new_spnego = true;
+			}
+		}
+
+		{
+			struct AV_PAIR *SingleHost = NULL;
+
+			SingleHost = eol;
+			eol++;
+			count++;
+			*eol = *SingleHost;
+
+			/*
+			 * This is not really used, but we want to
+			 * add some more random bytes and match
+			 * Windows.
+			 */
+			SingleHost->AvId = MsvAvSingleHost;
+			SingleHost->Value.AvSingleHost.token_info.Flags = 0;
+			SingleHost->Value.AvSingleHost.token_info.TokenIL = 0;
+			generate_random_buffer(SingleHost->Value.AvSingleHost.token_info.MachineId,
+					sizeof(SingleHost->Value.AvSingleHost.token_info.MachineId));
+			SingleHost->Value.AvSingleHost.remaining = data_blob_null;
+		}
+
+		{
+			struct AV_PAIR *ChannelBindings = NULL;
+
+			ChannelBindings = eol;
+			eol++;
+			count++;
+			*eol = *ChannelBindings;
+
+			/*
+			 * gensec doesn't support channel bindings yet,
+			 * but we want to match Windows on the wire
+			 */
+			ChannelBindings->AvId = MsvChannelBindings;
+			memset(ChannelBindings->Value.ChannelBindings, 0,
+			       sizeof(ChannelBindings->Value.ChannelBindings));
+		}
+
+		service = gensec_get_target_service(gensec_security);
+		hostname = gensec_get_target_hostname(gensec_security);
+		if (service != NULL && hostname != NULL) {
+			struct AV_PAIR *target = NULL;
+
+			target = eol;
+			eol++;
+			count++;
+			*eol = *target;
+
+			target->AvId = MsvAvTargetName;
+			target->Value.AvTargetName = talloc_asprintf(pairs, "%s/%s",
+								     service,
+								     hostname);
+			if (target->Value.AvTargetName == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		ntlmssp_state->client.av_pair_list.count = count;
+		ntlmssp_state->client.av_pair_list.pair = pairs;
+
+		err = ndr_push_struct_blob(&target_info,
+					ntlmssp_state,
+					&ntlmssp_state->client.av_pair_list,
+					(ndr_push_flags_fn_t)ndr_push_AV_PAIR_LIST);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	nt_status = cli_credentials_get_ntlm_response(gensec_security->credentials, mem_ctx,
-						      &flags, challenge_blob, target_info,
+						      &flags, challenge_blob,
+						      server_timestamp, target_info,
 						      &lm_response, &nt_response,
 						      &lm_session_key, &session_key);
-
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -292,7 +652,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	}
 
 	if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY)
-	    && lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx) && lm_session_key.length == 16) {
+	    && ntlmssp_state->allow_lm_key && lm_session_key.length == 16) {
 		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (lm_response.length == 24) {
 			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data,
@@ -325,9 +685,6 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		session_key = data_blob_talloc(mem_ctx, client_session_key, sizeof(client_session_key));
 	}
 
-	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
-	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
-
 	/* this generates the actual auth packet */
 	nt_status = msrpc_gen(mem_ctx,
 		       out, auth_gen_string,
@@ -337,22 +694,48 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		       nt_response.data, nt_response.length,
 		       domain,
 		       user,
-		       cli_credentials_get_workstation(gensec_security->credentials),
+		       workstation,
 		       encrypted_session_key.data, encrypted_session_key.length,
-		       ntlmssp_state->neg_flags);
+		       ntlmssp_state->neg_flags,
+		       version_blob.data, version_blob.length,
+		       mic_blob.data, mic_blob.length);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
 	}
 
+	/*
+	 * We always include the MIC, even without:
+	 * av_flags->Value.AvFlags |= NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE;
+	 * ntlmssp_state->new_spnego = true;
+	 *
+	 * This matches a Windows client.
+	 */
+	hmac_md5_init_limK_to_64(session_key.data,
+				 session_key.length,
+				 &ctx);
+	hmac_md5_update(ntlmssp_state->negotiate_blob.data,
+			ntlmssp_state->negotiate_blob.length,
+			&ctx);
+	hmac_md5_update(in.data, in.length, &ctx);
+	hmac_md5_update(out->data, out->length, &ctx);
+	hmac_md5_final(mic_buffer, &ctx);
+	memcpy(out->data + NTLMSSP_MIC_OFFSET, mic_buffer, NTLMSSP_MIC_SIZE);
+
+done:
+	data_blob_free(&ntlmssp_state->negotiate_blob);
+
 	ntlmssp_state->session_key = session_key;
 	talloc_steal(ntlmssp_state, session_key.data);
+
+	DEBUG(3, ("NTLMSSP: Set final flags:\n"));
+	debug_ntlmssp_flags(ntlmssp_state->neg_flags);
 
 	talloc_steal(out_mem_ctx, out->data);
 
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
-	if (gensec_security->want_features & (GENSEC_FEATURE_SIGN|GENSEC_FEATURE_SEAL)) {
+	if (gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n",
@@ -398,7 +781,9 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->use_nt_response = gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "send_nt_reponse", true);
 
-	ntlmssp_state->allow_lm_key = (lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx)
+	ntlmssp_state->allow_lm_response = lpcfg_client_lanman_auth(gensec_security->settings->lp_ctx);
+
+	ntlmssp_state->allow_lm_key = (ntlmssp_state->allow_lm_response
 					      && (gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "allow_lm_key", false)
 						  || gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "lm_key", false)));
 
@@ -408,7 +793,14 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_NTLM |
+		NTLMSSP_NEGOTIATE_VERSION |
 		NTLMSSP_REQUEST_TARGET;
+
+	if (ntlmssp_state->unicode) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_UNICODE;
+	} else {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
+	}
 
 	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_client", "128bit", true)) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;
@@ -437,6 +829,16 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		ntlmssp_state->use_ntlmv2 = false;
 	}
 
+	if (ntlmssp_state->use_ntlmv2) {
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_NTLM2;
+		ntlmssp_state->allow_lm_response = false;
+		ntlmssp_state->allow_lm_key = false;
+	}
+
+	if (ntlmssp_state->allow_lm_key) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
+	}
+
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		/*
 		 * We need to set this to allow a later SetPassword
@@ -447,15 +849,57 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		 * that it thinks is only used for NTLMSSP signing and
 		 * sealing.  (It is actually pulled out and used directly)
 		 */
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+
+		if (gensec_security->want_features & GENSEC_FEATURE_LDAP_STYLE) {
+			/*
+			 * We need to handle NTLMSSP_NEGOTIATE_SIGN as
+			 * NTLMSSP_NEGOTIATE_SEAL if GENSEC_FEATURE_LDAP_STYLE
+			 * is requested.
+			 */
+			ntlmssp_state->force_wrap_seal = true;
+			/*
+			 * We want also work against old Samba servers
+			 * which didn't had GENSEC_FEATURE_LDAP_STYLE
+			 * we negotiate SEAL too. We may remove this
+			 * in a few years. As all servers should have
+			 * GENSEC_FEATURE_LDAP_STYLE by then.
+			 */
+			ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
+		}
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
+	if (gensec_security->want_features & GENSEC_FEATURE_NTLM_CCACHE) {
+		ntlmssp_state->use_ccache = true;
+	}
+
+	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS gensec_ntlmssp_resume_ccache_start(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp = NULL;
+	NTSTATUS status;
+
+	status = gensec_ntlmssp_client_start(gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
+					       struct gensec_ntlmssp_context);
+	gensec_ntlmssp->ntlmssp_state->use_ccache = false;
+	gensec_ntlmssp->ntlmssp_state->resume_ccache = true;
+	gensec_ntlmssp->ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
 	return NT_STATUS_OK;
 }

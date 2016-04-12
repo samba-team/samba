@@ -46,11 +46,21 @@ struct dcecli_connection;
 struct gensec_settings;
 struct cli_credentials;
 struct dcecli_security {
-	struct dcerpc_auth *auth_info;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	uint32_t auth_context_id;
+	struct {
+		struct dcerpc_auth *out;
+		struct dcerpc_auth *in;
+		TALLOC_CTX *mem;
+	} tmp_auth_info;
 	struct gensec_security *generic_state;
 
 	/* get the session key */
 	NTSTATUS (*session_key)(struct dcecli_connection *, DATA_BLOB *);
+
+	bool verified_bitmask1;
+
 };
 
 /*
@@ -126,6 +136,8 @@ struct dcerpc_pipe {
 	 */
 	bool inhibit_timeout_processing;
 	bool timed_out;
+
+	bool verified_pcontext;
 };
 
 /* default timeout for all rpc requests, in seconds */

@@ -119,7 +119,7 @@ SMBC_stat_ctx(SMBCCTX *context,
         struct timespec access_time_ts;
         struct timespec change_time_ts;
 	off_t size = 0;
-	uint16 mode = 0;
+	uint16_t mode = 0;
 	uint16_t port = 0;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -207,7 +207,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
         struct timespec access_time_ts;
         struct timespec write_time_ts;
 	off_t size;
-	uint16 mode;
+	uint16_t mode;
 	char *server = NULL;
 	char *share = NULL;
 	char *user = NULL;
@@ -368,7 +368,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                   struct statvfs *st)
 {
         unsigned long flags = 0;
-	uint32 fs_attrs = 0;
+	uint32_t fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;
 	struct smbXcli_tcon *tcon;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -424,8 +424,8 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
 
                 flags |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
         } else {
-                uint32 optimal_transfer_size;
-                uint32 block_size;
+                uint32_t optimal_transfer_size;
+                uint32_t block_size;
                 uint64_t total_blocks;
                 uint64_t blocks_available;
                 uint64_t user_blocks_available;

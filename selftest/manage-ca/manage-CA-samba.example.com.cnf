@@ -1,0 +1,21 @@
+#
+# All passwords are "1234"
+#
+
+CRL_HTTP_BASE="http://www.samba.example.com/crls"
+CRL_SSH_BASE="none@samba.example.com:/none/crls"
+DNS_DOMAIN="samba.example.com"
+
+CA_BITS="8192"
+DC_BITS="4096"
+USER_BITS="2048"
+# 20 years should be enough
+CA_DAYS="7300"
+CRL_DAYS="7300"
+DC_DAYS="7300"
+USER_DAYS="7300"
+
+COUNTRY_NAME="US"
+STATE_NAME="SambaState"
+LOCALITY_NAME="SambaCity"
+ORGANIZATION_NAME="SambaSelfTesting"

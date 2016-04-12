@@ -49,8 +49,10 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 	nt_status = cli_credentials_set_machine_account(server_credentials, req->smb_conn->lp_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(nt_status)));
-		talloc_free(server_credentials);
-		server_credentials = NULL;
+		/*
+		 * We keep the server_credentials as anonymous
+		 * this is required for the spoolss.notify test
+		 */
 	}
 
 	req->smb_conn->negotiate.server_credentials = talloc_steal(req->smb_conn, server_credentials);
@@ -145,6 +147,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 
 	switch (signing_setting) {
 	case SMB_SIGNING_DEFAULT:
+	case SMB_SIGNING_IPC_DEFAULT:
 		smb_panic(__location__);
 		break;
 	case SMB_SIGNING_OFF:

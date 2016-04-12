@@ -45,6 +45,11 @@ struct socket_context *tls_init_server(struct tls_params *parms,
 				    struct tevent_fd *fde,
 				    const char *plain_chars);
 
+void tls_cert_generate(TALLOC_CTX *mem_ctx,
+		       const char *hostname,
+		       const char *keyfile, const char *certfile,
+		       const char *cafile);
+
 /*
   call tls_init_client() on each new client connection
 */
@@ -63,9 +68,33 @@ const struct socket_ops *socket_tls_ops(enum socket_type type);
 struct tstream_context;
 struct tstream_tls_params;
 
+enum tls_verify_peer_state {
+	TLS_VERIFY_PEER_NO_CHECK = 0,
+#define TLS_VERIFY_PEER_NO_CHECK_STRING "no_check"
+
+	TLS_VERIFY_PEER_CA_ONLY = 10,
+#define TLS_VERIFY_PEER_CA_ONLY_STRING "ca_only"
+
+	TLS_VERIFY_PEER_CA_AND_NAME_IF_AVAILABLE = 20,
+#define TLS_VERIFY_PEER_CA_AND_NAME_IF_AVAILABLE_STRING \
+		"ca_and_name_if_available"
+
+	TLS_VERIFY_PEER_CA_AND_NAME = 30,
+#define TLS_VERIFY_PEER_CA_AND_NAME_STRING "ca_and_name"
+
+	TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE = 9999,
+#define TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE_STRING \
+		"as_strict_as_possible"
+};
+
+const char *tls_verify_peer_string(enum tls_verify_peer_state verify_peer);
+
 NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
+				   const char *tls_priority,
+				   enum tls_verify_peer_state verify_peer,
+				   const char *peer_name,
 				   struct tstream_tls_params **_tlsp);
 
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
@@ -76,6 +105,7 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *ca_file,
 				   const char *crl_file,
 				   const char *dhp_file,
+				   const char *tls_priority,
 				   struct tstream_tls_params **_params);
 
 bool tstream_tls_params_enabled(struct tstream_tls_params *params);
@@ -85,7 +115,7 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 					     struct tstream_context *plain_stream,
 					     struct tstream_tls_params *tls_params,
 					     const char *location);
-#define tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params); \
+#define tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params) \
 	_tstream_tls_connect_send(mem_ctx, ev, plain_stream, tls_params, __location__)
 
 int tstream_tls_connect_recv(struct tevent_req *req,

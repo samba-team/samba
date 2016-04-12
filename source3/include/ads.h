@@ -13,7 +13,7 @@ struct ads_struct;
 
 struct ads_saslwrap_ops {
 	const char *name;
-	ADS_STATUS (*wrap)(struct ads_struct *, uint8 *buf, uint32 len);
+	ADS_STATUS (*wrap)(struct ads_struct *, uint8_t *buf, uint32_t len);
 	ADS_STATUS (*unwrap)(struct ads_struct *);
 	void (*disconnect)(struct ads_struct *);
 };
@@ -53,7 +53,7 @@ typedef struct ads_struct {
 
 	/* info derived from the servers config */
 	struct {
-		uint32 flags; /* cldap flags identifying the services. */
+		uint32_t flags; /* cldap flags identifying the services. */
 		char *realm;
 		char *bind_path;
 		char *ldap_server_name;
@@ -82,23 +82,23 @@ typedef struct ads_struct {
 		const struct ads_saslwrap_ops *wrap_ops;
 		void *wrap_private_data;
 		struct {
-			uint32 ofs;
-			uint32 needed;
-			uint32 left;
+			uint32_t ofs;
+			uint32_t needed;
+			uint32_t left;
 #define        ADS_SASL_WRAPPING_IN_MAX_WRAPPED        0x0FFFFFFF
-			uint32 max_wrapped;
-			uint32 min_wrapped;
-			uint32 size;
-			uint8 *buf;
+			uint32_t max_wrapped;
+			uint32_t min_wrapped;
+			uint32_t size;
+			uint8_t *buf;
 		} in;
 		struct {
-			uint32 ofs;
-			uint32 left;
+			uint32_t ofs;
+			uint32_t left;
 #define        ADS_SASL_WRAPPING_OUT_MAX_WRAPPED       0x00A00000
-			uint32 max_unwrapped;
-			uint32 sig_size;
-			uint32 size;
-			uint8 *buf;
+			uint32_t max_unwrapped;
+			uint32_t sig_size;
+			uint32_t size;
+			uint8_t *buf;
 		} out;
 	} ldap;
 #endif /* HAVE_LDAP */

@@ -22,6 +22,7 @@
 import datetime
 import os
 import subunit
+from samba.tests import TestCase
 import tempfile
 
 from selftest.run import (
@@ -33,7 +34,6 @@ from selftest.run import (
     run_testsuite_command,
     )
 
-from selftest.tests import TestCase
 
 
 class ExpandEnvironmentStringsTests(TestCase):

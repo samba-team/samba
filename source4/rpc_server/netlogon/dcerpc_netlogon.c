@@ -41,6 +41,14 @@
 #include "librpc/gen_ndr/ndr_irpc.h"
 #include "lib/socket/netif.h"
 
+#define DCESRV_INTERFACE_NETLOGON_BIND(call, iface) \
+       dcesrv_interface_netlogon_bind(call, iface)
+static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_call,
+					       const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_reject_connect(dce_call, iface);
+}
+
 static struct memcache *global_challenge_table;
 
 struct netlogon_server_pipe_state {
@@ -126,6 +134,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	bool allow_nt4_crypto = lpcfg_allow_nt4_crypto(dce_call->conn->dce_ctx->lp_ctx);
 	bool reject_des_client = !allow_nt4_crypto;
 	bool reject_md5_client = lpcfg_reject_md5_clients(dce_call->conn->dce_ctx->lp_ctx);
+	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
+	bool reject_none_rpc = (schannel == true);
 
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
@@ -198,6 +208,10 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	negotiate_flags = *r->in.negotiate_flags & server_flags;
 
+	if (negotiate_flags & NETLOGON_NEG_AUTHENTICATED_RPC) {
+		reject_none_rpc = false;
+	}
+
 	if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
 		reject_des_client = false;
 	}
@@ -233,6 +247,14 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	 * call fails with access denied!
 	 */
 	*r->out.negotiate_flags = negotiate_flags;
+
+	if (reject_none_rpc) {
+		/* schannel must be used, but client did not offer it. */
+		DEBUG(0,("%s: schannel required but client failed "
+			"to offer it. Client was %s\n",
+			__func__, r->in.account_name));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	switch (r->in.secure_channel_type) {
 	case SEC_CHAN_WKSTA:
@@ -451,7 +473,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
 /*
  * If schannel is required for this call test that it actually is available.
  */
-static NTSTATUS schannel_check_required(struct dcerpc_auth *auth_info,
+static NTSTATUS schannel_check_required(const struct dcesrv_auth *auth_info,
 					const char *computer_name,
 					bool integrity, bool privacy)
 {
@@ -487,11 +509,11 @@ static NTSTATUS dcesrv_netr_creds_server_step_check(struct dcesrv_call_state *dc
 						    struct netlogon_creds_CredentialState **creds_out)
 {
 	NTSTATUS nt_status;
-	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
-	bool schannel_global_required = false; /* Should be lpcfg_schannel_server() == true */
+	int schannel = lpcfg_server_schannel(dce_call->conn->dce_ctx->lp_ctx);
+	bool schannel_global_required = (schannel == true);
 
 	if (schannel_global_required) {
-		nt_status = schannel_check_required(auth_info,
+		nt_status = schannel_check_required(&dce_call->conn->auth_state,
 						    computer_name,
 						    true, false);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -724,6 +746,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
 static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonSamLogonEx *r, struct netlogon_creds_CredentialState *creds)
 {
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	const char *workgroup = lpcfg_workgroup(lp_ctx);
 	struct auth4_context *auth_context;
 	struct auth_usersupplied_info *user_info;
 	struct auth_user_info_dc *user_info_dc;
@@ -793,6 +817,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
 		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon->network->lm.data, r->in.logon->network->lm.length);
 		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon->network->nt.data, r->in.logon->network->nt.length);
+
+		nt_status = NTLMv2_RESPONSE_verify_netlogon_creds(
+					user_info->client.account_name,
+					user_info->client.domain_name,
+					user_info->password.response.nt,
+					creds, workgroup);
+		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		break;
 
@@ -889,6 +920,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 
 	case 6:
+		if (dce_call->conn->auth_state.auth_level < DCERPC_AUTH_LEVEL_PRIVACY) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
 							   user_info_dc,
 							   &sam3);
@@ -945,8 +980,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 		return nt_status;
 	}
 
-	if (!dce_call->conn->auth_state.auth_info ||
-	    dce_call->conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
+	if (dce_call->conn->auth_state.auth_type != DCERPC_AUTH_TYPE_SCHANNEL) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	return dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, r, creds);

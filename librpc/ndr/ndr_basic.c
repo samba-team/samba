@@ -1204,11 +1204,11 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 #undef _ONELINE_LIMIT
 }
 
-static void ndr_print_asc(struct ndr_print *ndr, const uint8_t *buf, int len)
+static void ndr_print_dump_data_cb(const char *buf, void *private_data)
 {
-	int i;
-	for (i=0;i<len;i++)
-		ndr->print(ndr, "%c", isprint(buf[i])?buf[i]:'.');
+	struct ndr_print *ndr = (struct ndr_print *)private_data;
+
+	ndr->print(ndr, "%s", buf);
 }
 
 /*
@@ -1216,37 +1216,8 @@ static void ndr_print_asc(struct ndr_print *ndr, const uint8_t *buf, int len)
  */
 static void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len)
 {
-	int i=0;
-
 	ndr->no_newline = true;
-
-	for (i=0;i<len;) {
-		if (i%16 == 0 && i<len) {
-			ndr->print(ndr, "[%04X] ",i);
-		}
-
-		ndr->print(ndr, "%02X ",(int)buf[i]);
-		i++;
-		if (i%8 == 0) ndr->print(ndr,"  ");
-		if (i%16 == 0) {
-			ndr_print_asc(ndr,&buf[i-16],8); ndr->print(ndr," ");
-			ndr_print_asc(ndr,&buf[i-8],8); ndr->print(ndr, "\n");
-		}
-	}
-
-	if (i%16) {
-		int n;
-		n = 16 - (i%16);
-		ndr->print(ndr, " ");
-		if (n>8) ndr->print(ndr," ");
-		while (n--) ndr->print(ndr,"   ");
-		n = MIN(8,i%16);
-		ndr_print_asc(ndr,&buf[i-(i%16)],n); ndr->print(ndr, " ");
-		n = (i%16) - n;
-		if (n>0) ndr_print_asc(ndr,&buf[i-n],n);
-		ndr->print(ndr,"\n");
-	}
-
+	dump_data_cb(buf, len, true, ndr_print_dump_data_cb, ndr);
 	ndr->no_newline = false;
 }
 

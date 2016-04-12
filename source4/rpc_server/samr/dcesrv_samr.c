@@ -41,6 +41,14 @@
 #include "lib/util/tsort.h"
 #include "libds/common/flag_mapping.h"
 
+#define DCESRV_INTERFACE_SAMR_BIND(call, iface) \
+       dcesrv_interface_samr_bind(call, iface)
+static NTSTATUS dcesrv_interface_samr_bind(struct dcesrv_call_state *dce_call,
+					     const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_reject_connect(dce_call, iface);
+}
+
 /* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 
 #define QUERY_STRING(msg, field, attr) \
@@ -4315,6 +4323,10 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
 
 	if (transport != NCACN_IP_TCP && transport != NCALRPC) {
+		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
+	}
+
+	if (dce_call->conn->auth_state.auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 

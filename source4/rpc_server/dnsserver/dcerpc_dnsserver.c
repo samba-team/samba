@@ -28,6 +28,14 @@
 #include "dnsserver.h"
 #include "lib/ldb/include/ldb_private.h"
 
+#define DCESRV_INTERFACE_DNSSERVER_BIND(call, iface) \
+	dcesrv_interface_dnsserver_bind(call, iface)
+static NTSTATUS dcesrv_interface_dnsserver_bind(struct dcesrv_call_state *dce_call,
+					        const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_require_integrity(dce_call, iface);
+}
+
 struct dnsserver_state {
 	struct loadparm_context *lp_ctx;
 	struct ldb_context *samdb;
