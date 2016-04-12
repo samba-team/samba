@@ -86,7 +86,7 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	}
 
 	backends = talloc_zero_array(gensec_settings,
-				     const struct gensec_security_ops *, 6);
+				     const struct gensec_security_ops *, 7);
 	if (backends == NULL) {
 		TALLOC_FREE(ans);
 		return NT_STATUS_NO_MEMORY;
@@ -100,7 +100,8 @@ NTSTATUS auth_generic_client_prepare(TALLOC_CTX *mem_ctx, struct auth_generic_st
 	backends[idx++] = &gensec_gse_krb5_security_ops;
 #endif
 
-	backends[idx++] = &gensec_ntlmssp3_client_ops;
+	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_NTLMSSP);
+	backends[idx++] = gensec_security_by_name(NULL, "ntlmssp_resume_ccache");
 
 	backends[idx++] = gensec_security_by_oid(NULL, GENSEC_OID_SPNEGO);
 	backends[idx++] = gensec_security_by_auth_type(NULL, DCERPC_AUTH_TYPE_SCHANNEL);
@@ -151,6 +152,29 @@ NTSTATUS auth_generic_client_start(struct auth_generic_state *ans, const char *o
 	return NT_STATUS_OK;
 }
 
+NTSTATUS auth_generic_client_start_by_name(struct auth_generic_state *ans,
+					   const char *name)
+{
+	NTSTATUS status;
+
+	/* Transfer the credentials to gensec */
+	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	talloc_unlink(ans, ans->credentials);
+	ans->credentials = NULL;
+
+	status = gensec_start_mech_by_name(ans->gensec_security, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 					       uint8_t auth_type,
 					       uint8_t auth_level)
@@ -169,6 +193,29 @@ NTSTATUS auth_generic_client_start_by_authtype(struct auth_generic_state *ans,
 
 	status = gensec_start_mech_by_authtype(ans->gensec_security,
 					       auth_type, auth_level);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS auth_generic_client_start_by_sasl(struct auth_generic_state *ans,
+					   const char **sasl_list)
+{
+	NTSTATUS status;
+
+	/* Transfer the credentials to gensec */
+	status = gensec_set_credentials(ans->gensec_security, ans->credentials);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to set GENSEC credentials: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+	talloc_unlink(ans, ans->credentials);
+	ans->credentials = NULL;
+
+	status = gensec_start_mech_by_sasl_list(ans->gensec_security, sasl_list);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

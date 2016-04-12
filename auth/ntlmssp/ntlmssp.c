@@ -48,6 +48,10 @@ static const struct ntlmssp_callbacks {
 		.command	= NTLMSSP_INITIAL,
 		.sync_fn	= ntlmssp_client_initial,
 	},{
+		.role		= NTLMSSP_CLIENT,
+		.command	= NTLMSSP_NEGOTIATE,
+		.sync_fn	= gensec_ntlmssp_resume_ccache,
+	},{
 		.role		= NTLMSSP_SERVER,
 		.command	= NTLMSSP_NEGOTIATE,
 		.sync_fn	= gensec_ntlmssp_server_negotiate,
@@ -82,6 +86,15 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
 	if (!input.length) {
 		switch (gensec_ntlmssp->ntlmssp_state->role) {
 		case NTLMSSP_CLIENT:
+			if (gensec_ntlmssp->ntlmssp_state->resume_ccache) {
+				/*
+				 * make sure gensec_ntlmssp_resume_ccache()
+				 * will be called
+				 */
+				ntlmssp_command = NTLMSSP_NEGOTIATE;
+				break;
+			}
+
 			ntlmssp_command = NTLMSSP_INITIAL;
 			break;
 		case NTLMSSP_SERVER:
@@ -166,6 +179,30 @@ NTSTATUS gensec_ntlmssp_update(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS gensec_ntlmssp_may_reset_crypto(struct gensec_security *gensec_security,
+						bool full_reset)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
+	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
+	NTSTATUS status;
+	bool reset_seqnums = full_reset;
+
+	if (!gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+		return NT_STATUS_OK;
+	}
+
+	status = ntlmssp_sign_reset(ntlmssp_state, reset_seqnums);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Could not reset NTLMSSP signing/sealing system (error was: %s)\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static const char *gensec_ntlmssp_oids[] = {
 	GENSEC_OID_NTLMSSP,
 	NULL
@@ -180,6 +217,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.server_start   = gensec_ntlmssp_server_start,
 	.magic 	        = gensec_ntlmssp_magic,
 	.update 	= gensec_ntlmssp_update,
+	.may_reset_crypto= gensec_ntlmssp_may_reset_crypto,
 	.sig_size	= gensec_ntlmssp_sig_size,
 	.sign_packet	= gensec_ntlmssp_sign_packet,
 	.check_packet	= gensec_ntlmssp_check_packet,
@@ -194,6 +232,15 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.priority       = GENSEC_NTLMSSP
 };
 
+static const struct gensec_security_ops gensec_ntlmssp_resume_ccache_ops = {
+	.name		= "ntlmssp_resume_ccache",
+	.client_start   = gensec_ntlmssp_resume_ccache_start,
+	.update 	= gensec_ntlmssp_update,
+	.session_key	= gensec_ntlmssp_session_key,
+	.have_feature   = gensec_ntlmssp_have_feature,
+	.enabled        = true,
+	.priority       = GENSEC_NTLMSSP
+};
 
 _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 {
@@ -206,16 +253,58 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 		return ret;
 	}
 
+	ret = gensec_register(&gensec_ntlmssp_resume_ccache_ops);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0,("Failed to register '%s' gensec backend!\n",
+			gensec_ntlmssp_resume_ccache_ops.name));
+		return ret;
+	}
+
 	return ret;
+}
+
+static struct gensec_security *gensec_find_child_by_ops(struct gensec_security *gensec_security,
+							const struct gensec_security_ops *ops)
+{
+	struct gensec_security *current = gensec_security;
+
+	while (current != NULL) {
+		if (current->ops == ops) {
+			return current;
+		}
+
+		current = current->child_security;
+	}
+
+	return NULL;
 }
 
 uint32_t gensec_ntlmssp_neg_flags(struct gensec_security *gensec_security)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp;
-	if (gensec_security->ops != &gensec_ntlmssp_security_ops) {
+
+	gensec_security = gensec_find_child_by_ops(gensec_security,
+					&gensec_ntlmssp_security_ops);
+	if (gensec_security == NULL) {
 		return 0;
 	}
+
 	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
 					       struct gensec_ntlmssp_context);
 	return gensec_ntlmssp->ntlmssp_state->neg_flags;
+}
+
+const char *gensec_ntlmssp_server_domain(struct gensec_security *gensec_security)
+{
+	struct gensec_ntlmssp_context *gensec_ntlmssp;
+
+	gensec_security = gensec_find_child_by_ops(gensec_security,
+					&gensec_ntlmssp_security_ops);
+	if (gensec_security == NULL) {
+		return NULL;
+	}
+
+	gensec_ntlmssp = talloc_get_type_abort(gensec_security->private_data,
+					       struct gensec_ntlmssp_context);
+	return gensec_ntlmssp->ntlmssp_state->server.netbios_domain;
 }

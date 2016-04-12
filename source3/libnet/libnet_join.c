@@ -792,7 +792,7 @@ static NTSTATUS libnet_join_connect_dc_ipc(const char *dc,
 				   domain,
 				   pass,
 				   flags,
-				   SMB_SIGNING_DEFAULT);
+				   SMB_SIGNING_IPC_DEFAULT);
 }
 
 /****************************************************************
@@ -1347,7 +1347,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 				     machine_domain,
 				     machine_password,
 				     flags,
-				     SMB_SIGNING_DEFAULT);
+				     SMB_SIGNING_IPC_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		status = cli_full_connection(&cli, NULL,
@@ -1358,7 +1358,7 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 					     NULL,
 					     "",
 					     0,
-					     SMB_SIGNING_DEFAULT);
+					     SMB_SIGNING_IPC_DEFAULT);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {

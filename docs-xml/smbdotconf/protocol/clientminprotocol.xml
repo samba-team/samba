@@ -12,10 +12,16 @@
 
 	<para>See <related>client max protocol</related> for a full list
 	of available protocols.</para>
+
+	<para>IPC$ connections for DCERPC e.g. in winbindd, are handled by the
+	<smbconfoption name="client ipc min protocol"/> option.</para>
 </description>
 
 <related>client max protocol</related>
 <related>server min protocol</related>
+<related>client ipc min protocol</related>
+<related>client ipc max protocol</related>
+
 <value type="default">CORE</value>
 <value type="example">NT1</value>
 </samba:parameter>

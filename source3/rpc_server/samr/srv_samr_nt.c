@@ -5097,7 +5097,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 		case 18:
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
-				return status;
+				break;
 			}
 			/* Used by AS/U JRA. */
 			status = set_user_info_18(&info->info18,
@@ -5114,7 +5114,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 		case 21:
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
-				return status;
+				break;
 			}
 			status = set_user_info_21(&info->info21,
 						  p->mem_ctx,
@@ -5124,6 +5124,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 
 		case 23:
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+			if(!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 			arcfour_crypt_blob(info->info23.password.data, 516,
 					   &session_key);
 
@@ -5137,6 +5140,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 
 		case 24:
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+			if(!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 			arcfour_crypt_blob(info->info24.password.data,
 					   516,
 					   &session_key);
@@ -5150,6 +5156,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 
 		case 25:
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+			if(!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 			encode_or_decode_arc4_passwd_buffer(
 				info->info25.password.data,
 				&session_key);
@@ -5163,6 +5172,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 
 		case 26:
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
+			if(!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 			encode_or_decode_arc4_passwd_buffer(
 				info->info26.password.data,
 				&session_key);
@@ -6730,6 +6742,11 @@ NTSTATUS _samr_ValidatePassword(struct pipes_struct *p,
 	struct samr_PwInfo dom_pw_info;
 
 	if (p->transport != NCACN_IP_TCP && p->transport != NCALRPC) {
+		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (p->auth.auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
 		return NT_STATUS_ACCESS_DENIED;
 	}

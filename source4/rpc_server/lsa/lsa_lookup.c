@@ -718,7 +718,7 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
-	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
+	const struct dcesrv_auth *auth = &dce_call->conn->auth_state;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupSids2 q;
 	NTSTATUS status;
@@ -731,8 +731,8 @@ NTSTATUS dcesrv_lsa_LookupSids3(struct dcesrv_call_state *dce_call,
 	 * We don't have policy handles on this call. So this must be restricted
 	 * to crypto connections only.
 	 */
-	if (auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
-	    auth_info->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (auth->auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    auth->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 
@@ -946,7 +946,7 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(dce_call->conn->endpoint->ep_description);
-	struct dcerpc_auth *auth_info = dce_call->conn->auth_state.auth_info;
+	const struct dcesrv_auth *auth = &dce_call->conn->auth_state;
 	struct lsa_policy_state *policy_state;
 	struct lsa_LookupNames3 q;
 	NTSTATUS status;
@@ -959,8 +959,8 @@ NTSTATUS dcesrv_lsa_LookupNames4(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 	 * We don't have policy handles on this call. So this must be restricted
 	 * to crypto connections only.
 	 */
-	if (auth_info->auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
-	    auth_info->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (auth->auth_type != DCERPC_AUTH_TYPE_SCHANNEL ||
+	    auth->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
 		DCESRV_FAULT(DCERPC_FAULT_ACCESS_DENIED);
 	}
 

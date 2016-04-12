@@ -257,219 +257,6 @@ sub mk_openldap($$)
 	return ($slapd_conf_d, $pidfile);
 }
 
-sub mk_keyblobs($$)
-{
-	my ($self, $tlsdir) = @_;
-
-	#TLS and PKINIT crypto blobs
-	my $dhfile = "$tlsdir/dhparms.pem";
-	my $cafile = "$tlsdir/ca.pem";
-	my $certfile = "$tlsdir/cert.pem";
-	my $reqkdc = "$tlsdir/req-kdc.der";
-	my $kdccertfile = "$tlsdir/kdc.pem";
-	my $keyfile = "$tlsdir/key.pem";
-	my $adminkeyfile = "$tlsdir/adminkey.pem";
-	my $reqadmin = "$tlsdir/req-admin.der";
-	my $admincertfile = "$tlsdir/admincert.pem";
-	my $admincertupnfile = "$tlsdir/admincertupn.pem";
-
-	mkdir($tlsdir, 0700);
-	my $oldumask = umask;
-	umask 0077;
-
-	#This is specified here to avoid draining entropy on every run
-	open(DHFILE, ">$dhfile");
-	print DHFILE <<EOF;
------BEGIN DH PARAMETERS-----
-MGYCYQC/eWD2xkb7uELmqLi+ygPMKyVcpHUo2yCluwnbPutEueuxrG/Cys8j8wLO
-svCN/jYNyR2NszOmg7ZWcOC/4z/4pWDVPUZr8qrkhj5MRKJc52MncfaDglvEdJrv
-YX70obsCAQI=
------END DH PARAMETERS-----
-EOF
-	close(DHFILE);
-
-	#Likewise, we pregenerate the key material.  This allows the
-	#other certificates to be pre-generated
-	open(KEYFILE, ">$keyfile");
-	print KEYFILE <<EOF;
------BEGIN RSA PRIVATE KEY-----
-MIICXQIBAAKBgQDKg6pAwCHUMA1DfHDmWhZfd+F0C+9Jxcqvpw9ii9En3E1uflpc
-ol3+S9/6I/uaTmJHZre+DF3dTzb/UOZo0Zem8N+IzzkgoGkFafjXuT3BL5UPY2/H
-6H+pPqVIRLOmrWImai359YyoKhFyo37Y6HPeU8QcZ+u2rS9geapIWfeuowIDAQAB
-AoGAAqDLzFRR/BF1kpsiUfL4WFvTarCe9duhwj7ORc6fs785qAXuwUYAJ0Uvzmy6
-HqoGv3t3RfmeHDmjcpPHsbOKnsOQn2MgmthidQlPBMWtQMff5zdoYNUFiPS0XQBq
-szNW4PRjaA9KkLQVTwnzdXGkBSkn/nGxkaVu7OR3vJOBoo0CQQDO4upypesnbe6p
-9/xqfZ2uim8IwV1fLlFClV7WlCaER8tsQF4lEi0XSzRdXGUD/dilpY88Nb+xok/X
-8Z8OvgAXAkEA+pcLsx1gN7kxnARxv54jdzQjC31uesJgMKQXjJ0h75aUZwTNHmZQ
-vPxi6u62YiObrN5oivkixwFNncT9MxTxVQJBAMaWUm2SjlLe10UX4Zdm1MEB6OsC
-kVoX37CGKO7YbtBzCfTzJGt5Mwc1DSLA2cYnGJqIfSFShptALlwedot0HikCQAJu
-jNKEKnbf+TdGY8Q0SKvTebOW2Aeg80YFkaTvsXCdyXrmdQcifw4WdO9KucJiDhSz
-Y9hVapz7ykEJtFtWjLECQQDIlfc63I5ZpXfg4/nN4IJXUW6AmPVOYIA5215itgki
-cSlMYli1H9MEXH0pQMGv5Qyd0OYIx2DDg96mZ+aFvqSG
------END RSA PRIVATE KEY-----
-EOF
-	close(KEYFILE);
-
-	open(ADMINKEYFILE, ">$adminkeyfile");
-
-	print ADMINKEYFILE <<EOF;
------BEGIN RSA PRIVATE KEY-----
-MIICXQIBAAKBgQD0+OL7TQBj0RejbIH1+g5GeRaWaM9xF43uE5y7jUHEsi5owhZF
-5iIoHZeeL6cpDF5y1BZRs0JlA1VqMry1jjKlzFYVEMMFxB6esnXhl0Jpip1JkUMM
-XLOP1m/0dqayuHBWozj9f/cdyCJr0wJIX1Z8Pr+EjYRGPn/MF0xdl3JRlwIDAQAB
-AoGAP8mjCP628Ebc2eACQzOWjgEvwYCPK4qPmYOf1zJkArzG2t5XAGJ5WGrENRuB
-cm3XFh1lpmaADl982UdW3gul4gXUy6w4XjKK4vVfhyHj0kZ/LgaXUK9BAGhroJ2L
-osIOUsaC6jdx9EwSRctwdlF3wWJ8NK0g28AkvIk+FlolW4ECQQD7w5ouCDnf58CN
-u4nARx4xv5XJXekBvOomkCQAmuOsdOb6b9wn3mm2E3au9fueITjb3soMR31AF6O4
-eAY126rXAkEA+RgHzybzZEP8jCuznMqoN2fq/Vrs6+W3M8/G9mzGEMgLLpaf2Jiz
-I9tLZ0+OFk9tkRaoCHPfUOCrVWJZ7Y53QQJBAMhoA6rw0WDyUcyApD5yXg6rusf4
-ASpo/tqDkqUIpoL464Qe1tjFqtBM3gSXuhs9xsz+o0bzATirmJ+WqxrkKTECQHt2
-OLCpKqwAspU7N+w32kaUADoRLisCEdrhWklbwpQgwsIVsCaoEOpt0CLloJRYTANE
-yoZeAErTALjyZYZEPcECQQDlUi0N8DFxQ/lOwWyR3Hailft+mPqoPCa8QHlQZnlG
-+cfgNl57YHMTZFwgUVFRdJNpjH/WdZ5QxDcIVli0q+Ko
------END RSA PRIVATE KEY-----
-EOF
-
-	#generated with
-	# hxtool issue-certificate --self-signed --issue-ca \
-	# --ca-private-key="FILE:$KEYFILE" \
-	# --subject="CN=CA,DC=samba,DC=example,DC=com" \
-	# --certificate="FILE:$CAFILE" --lifetime="25 years"
-
-	open(CAFILE, ">$cafile");
-	print CAFILE <<EOF;
------BEGIN CERTIFICATE-----
-MIICcTCCAdqgAwIBAgIUaBPmjnPVqyFqR5foICmLmikJTzgwCwYJKoZIhvcNAQEFMFIxEzAR
-BgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxlMRUwEwYKCZImiZPy
-LGQBGQwFc2FtYmExCzAJBgNVBAMMAkNBMCIYDzIwMDgwMzAxMTIyMzEyWhgPMjAzMzAyMjQx
-MjIzMTJaMFIxEzARBgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxl
-MRUwEwYKCZImiZPyLGQBGQwFc2FtYmExCzAJBgNVBAMMAkNBMIGfMA0GCSqGSIb3DQEBAQUA
-A4GNADCBiQKBgQDKg6pAwCHUMA1DfHDmWhZfd+F0C+9Jxcqvpw9ii9En3E1uflpcol3+S9/6
-I/uaTmJHZre+DF3dTzb/UOZo0Zem8N+IzzkgoGkFafjXuT3BL5UPY2/H6H+pPqVIRLOmrWIm
-ai359YyoKhFyo37Y6HPeU8QcZ+u2rS9geapIWfeuowIDAQABo0IwQDAOBgNVHQ8BAf8EBAMC
-AaYwHQYDVR0OBBYEFMLZufegDKLZs0VOyFXYK1L6M8oyMA8GA1UdEwEB/wQFMAMBAf8wDQYJ
-KoZIhvcNAQEFBQADgYEAAZJbCAAkaqgFJ0xgNovn8Ydd0KswQPjicwiODPgw9ZPoD2HiOUVO
-yYDRg/dhFF9y656OpcHk4N7qZ2sl3RlHkzDu+dseETW+CnKvQIoXNyeARRJSsSlwrwcoD4JR
-HTLk2sGigsWwrJ2N99sG/cqSJLJ1MFwLrs6koweBnYU0f/g=
------END CERTIFICATE-----
-EOF
-
-	#generated with GNUTLS internally in Samba.
-
-	open(CERTFILE, ">$certfile");
-	print CERTFILE <<EOF;
------BEGIN CERTIFICATE-----
-MIICYTCCAcygAwIBAgIE5M7SRDALBgkqhkiG9w0BAQUwZTEdMBsGA1UEChMUU2Ft
-YmEgQWRtaW5pc3RyYXRpb24xNDAyBgNVBAsTK1NhbWJhIC0gdGVtcG9yYXJ5IGF1
-dG9nZW5lcmF0ZWQgY2VydGlmaWNhdGUxDjAMBgNVBAMTBVNhbWJhMB4XDTA2MDgw
-NDA0MzY1MloXDTA4MDcwNDA0MzY1MlowZTEdMBsGA1UEChMUU2FtYmEgQWRtaW5p
-c3RyYXRpb24xNDAyBgNVBAsTK1NhbWJhIC0gdGVtcG9yYXJ5IGF1dG9nZW5lcmF0
-ZWQgY2VydGlmaWNhdGUxDjAMBgNVBAMTBVNhbWJhMIGcMAsGCSqGSIb3DQEBAQOB
-jAAwgYgCgYDKg6pAwCHUMA1DfHDmWhZfd+F0C+9Jxcqvpw9ii9En3E1uflpcol3+
-S9/6I/uaTmJHZre+DF3dTzb/UOZo0Zem8N+IzzkgoGkFafjXuT3BL5UPY2/H6H+p
-PqVIRLOmrWImai359YyoKhFyo37Y6HPeU8QcZ+u2rS9geapIWfeuowIDAQABoyUw
-IzAMBgNVHRMBAf8EAjAAMBMGA1UdJQQMMAoGCCsGAQUFBwMBMAsGCSqGSIb3DQEB
-BQOBgQAmkN6XxvDnoMkGcWLCTwzxGfNNSVcYr7TtL2aJh285Xw9zaxcm/SAZBFyG
-LYOChvh6hPU7joMdDwGfbiLrBnMag+BtGlmPLWwp/Kt1wNmrRhduyTQFhN3PP6fz
-nBr9vVny2FewB2gHmelaPS//tXdxivSXKz3NFqqXLDJjq7P8wA==
------END CERTIFICATE-----
-EOF
-	close(CERTFILE);
-
-	#KDC certificate
-	# hxtool request-create \
-	# --subject="CN=krbtgt,CN=users,DC=samba,DC=example,DC=com" \
-	# --key="FILE:$KEYFILE" $KDCREQ
-
-	# hxtool issue-certificate --ca-certificate=FILE:$CAFILE,$KEYFILE \
-	# --type="pkinit-kdc" \
-	# --pk-init-principal="krbtgt/SAMBA.EXAMPLE.COM@SAMBA.EXAMPLE.COM" \
-	# --req="PKCS10:$KDCREQ" --certificate="FILE:$KDCCERTFILE" \
-	# --lifetime="25 years"
-
-	open(KDCCERTFILE, ">$kdccertfile");
-	print KDCCERTFILE <<EOF;
------BEGIN CERTIFICATE-----
-MIIDDDCCAnWgAwIBAgIUI2Tzj+JnMzMcdeabcNo30rovzFAwCwYJKoZIhvcNAQEFMFIxEzAR
-BgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxlMRUwEwYKCZImiZPy
-LGQBGQwFc2FtYmExCzAJBgNVBAMMAkNBMCIYDzIwMDgwMzAxMTMxOTIzWhgPMjAzMzAyMjQx
-MzE5MjNaMGYxEzARBgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxl
-MRUwEwYKCZImiZPyLGQBGQwFc2FtYmExDjAMBgNVBAMMBXVzZXJzMQ8wDQYDVQQDDAZrcmJ0
-Z3QwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAMqDqkDAIdQwDUN8cOZaFl934XQL70nF
-yq+nD2KL0SfcTW5+WlyiXf5L3/oj+5pOYkdmt74MXd1PNv9Q5mjRl6bw34jPOSCgaQVp+Ne5
-PcEvlQ9jb8fof6k+pUhEs6atYiZqLfn1jKgqEXKjftjoc95TxBxn67atL2B5qkhZ966jAgMB
-AAGjgcgwgcUwDgYDVR0PAQH/BAQDAgWgMBIGA1UdJQQLMAkGBysGAQUCAwUwVAYDVR0RBE0w
-S6BJBgYrBgEFAgKgPzA9oBMbEVNBTUJBLkVYQU1QTEUuQ09NoSYwJKADAgEBoR0wGxsGa3Ji
-dGd0GxFTQU1CQS5FWEFNUExFLkNPTTAfBgNVHSMEGDAWgBTC2bn3oAyi2bNFTshV2CtS+jPK
-MjAdBgNVHQ4EFgQUwtm596AMotmzRU7IVdgrUvozyjIwCQYDVR0TBAIwADANBgkqhkiG9w0B
-AQUFAAOBgQBmrVD5MCmZjfHp1nEnHqTIh8r7lSmVtDx4s9MMjxm9oNrzbKXynvdhwQYFVarc
-ge4yRRDXtSebErOl71zVJI9CVeQQpwcH+tA85oGA7oeFtO/S7ls581RUU6tGgyxV4veD+lJv
-KPH5LevUtgD+q9H4LU4Sq5N3iFwBaeryB0g2wg==
------END CERTIFICATE-----
-EOF
-
-	# hxtool request-create \
-	# --subject="CN=Administrator,CN=users,DC=samba,DC=example,DC=com" \
-	# --key="FILE:$ADMINKEYFILE" $ADMINREQFILE
-
-	# hxtool issue-certificate --ca-certificate=FILE:$CAFILE,$KEYFILE \
-	# --type="pkinit-client" \
-	# --pk-init-principal="administrator@SAMBA.EXAMPLE.COM" \
-	# --req="PKCS10:$ADMINREQFILE" --certificate="FILE:$ADMINCERTFILE" \
-	# --lifetime="25 years"
-	
-	open(ADMINCERTFILE, ">$admincertfile");
-	print ADMINCERTFILE <<EOF;
------BEGIN CERTIFICATE-----
-MIIDHTCCAoagAwIBAgIUUggzW4lLRkMKe1DAR2NKatkMDYwwCwYJKoZIhvcNAQELMFIxEzAR
-BgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxlMRUwEwYKCZImiZPy
-LGQBGQwFc2FtYmExCzAJBgNVBAMMAkNBMCIYDzIwMDkwNzI3MDMzMjE1WhgPMjAzNDA3MjIw
-MzMyMTVaMG0xEzARBgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxl
-MRUwEwYKCZImiZPyLGQBGQwFc2FtYmExDjAMBgNVBAMMBXVzZXJzMRYwFAYDVQQDDA1BZG1p
-bmlzdHJhdG9yMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD0+OL7TQBj0RejbIH1+g5G
-eRaWaM9xF43uE5y7jUHEsi5owhZF5iIoHZeeL6cpDF5y1BZRs0JlA1VqMry1jjKlzFYVEMMF
-xB6esnXhl0Jpip1JkUMMXLOP1m/0dqayuHBWozj9f/cdyCJr0wJIX1Z8Pr+EjYRGPn/MF0xd
-l3JRlwIDAQABo4HSMIHPMA4GA1UdDwEB/wQEAwIFoDAoBgNVHSUEITAfBgcrBgEFAgMEBggr
-BgEFBQcDAgYKKwYBBAGCNxQCAjBIBgNVHREEQTA/oD0GBisGAQUCAqAzMDGgExsRU0FNQkEu
-RVhBTVBMRS5DT02hGjAYoAMCAQGhETAPGw1BZG1pbmlzdHJhdG9yMB8GA1UdIwQYMBaAFMLZ
-ufegDKLZs0VOyFXYK1L6M8oyMB0GA1UdDgQWBBQg81bLyfCA88C2B/BDjXlGuaFaxjAJBgNV
-HRMEAjAAMA0GCSqGSIb3DQEBCwUAA4GBAEf/OSHUDJaGdtWGNuJeqcVYVMwrfBAc0OSwVhz1
-7/xqKHWo8wIMPkYRtaRHKLNDsF8GkhQPCpVsa6mX/Nt7YQnNvwd+1SBP5E8GvwWw9ZzLJvma
-nk2n89emuayLpVtp00PymrDLRBcNaRjFReQU8f0o509kiVPHduAp3jOiy13l
------END CERTIFICATE-----
-EOF
-	close(ADMINCERTFILE);
-
-	# hxtool issue-certificate --ca-certificate=FILE:$CAFILE,$KEYFILE \
-	# --type="pkinit-client" \
-	# --ms-upn="administrator@samba.example.com" \
-	# --req="PKCS10:$ADMINREQFILE" --certificate="FILE:$ADMINCERTUPNFILE" \
-	# --lifetime="25 years"
-	
-	open(ADMINCERTUPNFILE, ">$admincertupnfile");
-	print ADMINCERTUPNFILE <<EOF;
------BEGIN CERTIFICATE-----
-MIIDDzCCAnigAwIBAgIUUp3CJMuNaEaAdPKp3QdNIwG7a4wwCwYJKoZIhvcNAQELMFIxEzAR
-BgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxlMRUwEwYKCZImiZPy
-LGQBGQwFc2FtYmExCzAJBgNVBAMMAkNBMCIYDzIwMDkwNzI3MDMzMzA1WhgPMjAzNDA3MjIw
-MzMzMDVaMG0xEzARBgoJkiaJk/IsZAEZDANjb20xFzAVBgoJkiaJk/IsZAEZDAdleGFtcGxl
-MRUwEwYKCZImiZPyLGQBGQwFc2FtYmExDjAMBgNVBAMMBXVzZXJzMRYwFAYDVQQDDA1BZG1p
-bmlzdHJhdG9yMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQD0+OL7TQBj0RejbIH1+g5G
-eRaWaM9xF43uE5y7jUHEsi5owhZF5iIoHZeeL6cpDF5y1BZRs0JlA1VqMry1jjKlzFYVEMMF
-xB6esnXhl0Jpip1JkUMMXLOP1m/0dqayuHBWozj9f/cdyCJr0wJIX1Z8Pr+EjYRGPn/MF0xd
-l3JRlwIDAQABo4HEMIHBMA4GA1UdDwEB/wQEAwIFoDAoBgNVHSUEITAfBgcrBgEFAgMEBggr
-BgEFBQcDAgYKKwYBBAGCNxQCAjA6BgNVHREEMzAxoC8GCisGAQQBgjcUAgOgIQwfYWRtaW5p
-c3RyYXRvckBzYW1iYS5leGFtcGxlLmNvbTAfBgNVHSMEGDAWgBTC2bn3oAyi2bNFTshV2CtS
-+jPKMjAdBgNVHQ4EFgQUIPNWy8nwgPPAtgfwQ415RrmhWsYwCQYDVR0TBAIwADANBgkqhkiG
-9w0BAQsFAAOBgQBk42+egeUB3Ji2PC55fbt3FNKxvmm2xUUFkV9POK/YR9rajKOwk5jtYSeS
-Zd7J9s//rNFNa7waklFkDaY56+QWTFtdvxfE+KoHaqt6X8u6pqi7p3M4wDKQox+9Dx8yWFyq
-Wfz/8alZ5aMezCQzXJyIaJsCLeKABosSwHcpAFmxlQ==
------END CERTIFICATE-----
-EOF
-
-	umask $oldumask;
-}
-
 sub setup_namespaces($$:$$)
 {
 	my ($self, $localenv, $upn_array, $spn_array) = @_;
@@ -712,6 +499,11 @@ sub provision_raw_step1($$)
 		warn("can't open $ctx->{smb_conf}$?");
 		return undef;
 	}
+
+	Samba::prepare_keyblobs($ctx);
+	my $crlfile = "$ctx->{tlsdir}/crl.pem";
+	$crlfile = "" unless -e ${crlfile};
+
 	print CONFFILE "
 [global]
 	netbios name = $ctx->{netbiosname}
@@ -730,6 +522,8 @@ sub provision_raw_step1($$)
 	winbind separator = /
 	interfaces = $ctx->{interfaces}
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
+	tls crlfile = ${crlfile}
+	tls verify peer = no_check
 	panic action = $RealBin/gdb_backtrace \%d
 	wins support = yes
 	server role = $ctx->{server_role}
@@ -737,6 +531,7 @@ sub provision_raw_step1($$)
         dcerpc endpoint servers = +winreg +srvsvc
 	notify:inotify = false
 	ldb:nosync = true
+	ldap server require strong auth = yes
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	log file = $ctx->{logdir}/log.\%m
@@ -766,8 +561,6 @@ sub provision_raw_step1($$)
 	# End extra options
 ";
 	close(CONFFILE);
-
-	$self->mk_keyblobs($ctx->{tlsdir});
 
         #Default the KDC IP to the server's IP
 	if (not defined($ctx->{kdc_ipv4})) {
@@ -1528,7 +1321,9 @@ sub provision_ad_dc_ntvfs($$)
 
 	print "PROVISIONING AD DC (NTVFS)...";
         my $extra_conf_options = "netbios aliases = localDC1-a
-        server services = +winbind -winbindd";
+        server services = +winbind -winbindd
+	ldap server require strong auth = allow_sasl_over_tls
+	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1646,6 +1441,7 @@ sub provision_fl2008r2dc($$$)
 	my ($self, $prefix, $dcvars) = @_;
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...";
+        my $extra_conf_options = "ldap server require strong auth = no";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
@@ -1655,7 +1451,7 @@ sub provision_fl2008r2dc($$$)
 				   "locDCpass7",
 				   undef,
 				   undef,
-				   "",
+				   $extra_conf_options,
 				   "",
 				   undef);
 
@@ -1864,7 +1660,7 @@ sub provision_ad_dc($$)
 				   "domain controller",
 				   "addc",
 				   "ADDOMAIN",
-				   "addc.samba.example.com",
+				   "addom.samba.example.com",
 				   "2008",
 				   "locDCpass1",
 				   undef,

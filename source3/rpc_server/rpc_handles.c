@@ -69,6 +69,7 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 	p->msg_ctx = msg_ctx;
 	p->transport = transport;
 	p->endian = endian;
+	p->allow_bind = true;
 
 	p->remote_address = tsocket_address_copy(remote_address, p);
 	if (p->remote_address == NULL) {

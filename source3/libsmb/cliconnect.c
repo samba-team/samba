@@ -26,7 +26,10 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/auth/spnego.h"
 #include "smb_krb5.h"
-#include "../auth/ntlmssp/ntlmssp.h"
+#include "auth/credentials/credentials.h"
+#include "auth/gensec/gensec.h"
+#include "auth/ntlmssp/ntlmssp.h"
+#include "auth_generic.h"
 #include "libads/kerberos_proto.h"
 #include "krb5_env.h"
 #include "../lib/util/tevent_ntstatus.h"
@@ -1264,233 +1267,178 @@ static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
 }
 
-/****************************************************************************
- Do a spnego/kerberos encrypted session setup.
-****************************************************************************/
-
-struct cli_session_setup_kerberos_state {
-	struct cli_state *cli;
-	DATA_BLOB negTokenTarg;
-	DATA_BLOB session_key_krb5;
-	ADS_STATUS ads_status;
-};
-
-static void cli_session_setup_kerberos_done(struct tevent_req *subreq);
-
-static struct tevent_req *cli_session_setup_kerberos_send(
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *principal)
-{
-	struct tevent_req *req, *subreq;
-	struct cli_session_setup_kerberos_state *state;
-	int rc;
-
-	DEBUG(2,("Doing kerberos session setup\n"));
-
-	req = tevent_req_create(mem_ctx, &state,
-				struct cli_session_setup_kerberos_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	state->cli = cli;
-	state->ads_status = ADS_SUCCESS;
-
-	/*
-	 * Ok, this is cheating: spnego_gen_krb5_negTokenInit can block if
-	 * we have to acquire a ticket. To be fixed later :-)
-	 */
-	rc = spnego_gen_krb5_negTokenInit(state, principal, 0, &state->negTokenTarg,
-				     &state->session_key_krb5, 0, NULL, NULL);
-	if (rc) {
-		NTSTATUS status;
-
-		state->ads_status = ADS_ERROR_KRB5(rc);
-		status = ads_ntstatus(state->ads_status);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_UNSUCCESSFUL)) {
-			status = NT_STATUS_LOGON_FAILURE;
-			state->ads_status = ADS_ERROR_NT(status);
-		}
-		DEBUG(1, ("cli_session_setup_kerberos: "
-			  "spnego_gen_krb5_negTokenInit failed: %s - %s\n",
-			  error_message(rc), nt_errstr(status)));
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
-
-#if 0
-	file_save("negTokenTarg.dat", state->negTokenTarg.data,
-		  state->negTokenTarg.length);
-#endif
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		state->cli->smb2.session = smbXcli_session_create(cli,
-								  cli->conn);
-		if (tevent_req_nomem(state->cli->smb2.session, req)) {
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	subreq = cli_sesssetup_blob_send(state, ev, cli, state->negTokenTarg);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, cli_session_setup_kerberos_done, req);
-	return req;
-}
-
-static void cli_session_setup_kerberos_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct cli_session_setup_kerberos_state *state = tevent_req_data(
-		req, struct cli_session_setup_kerberos_state);
-	uint8_t *inbuf = NULL;
-	struct iovec *recv_iov = NULL;
-	NTSTATUS status;
-
-	status = cli_sesssetup_blob_recv(subreq, state,
-					 NULL, &inbuf, &recv_iov);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-
-	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-		struct smbXcli_session *session = state->cli->smb2.session;
-		status = smb2cli_session_set_session_key(session,
-						state->session_key_krb5,
-						recv_iov);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-	} else {
-		struct smbXcli_session *session = state->cli->smb1.session;
-
-		status = smb1cli_session_set_session_key(session,
-							 state->session_key_krb5);
-		if (tevent_req_nterror(req, status)) {
-			return;
-		}
-
-		if (smb1cli_conn_activate_signing(state->cli->conn, state->session_key_krb5,
-					   data_blob_null)
-		    && !smb1cli_conn_check_signing(state->cli->conn, inbuf, 1)) {
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-	}
-
-	tevent_req_done(req);
-}
-
-static ADS_STATUS cli_session_setup_kerberos_recv(struct tevent_req *req)
-{
-	struct cli_session_setup_kerberos_state *state = tevent_req_data(
-		req, struct cli_session_setup_kerberos_state);
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		ADS_STATUS ads = state->ads_status;
-
-		if (!ADS_ERR_OK(state->ads_status)) {
-			ads = state->ads_status;
-		} else {
-			ads = ADS_ERROR_NT(status);
-		}
-		tevent_req_received(req);
-		return ads;
-	}
-	tevent_req_received(req);
-	return ADS_SUCCESS;
-}
-
 #endif	/* HAVE_KRB5 */
 
 /****************************************************************************
  Do a spnego/NTLMSSP encrypted session setup.
 ****************************************************************************/
 
-struct cli_session_setup_ntlmssp_state {
+struct cli_session_setup_gensec_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
-	struct ntlmssp_state *ntlmssp_state;
-	int turn;
+	struct auth_generic_state *auth_generic;
+	bool is_anonymous;
+	DATA_BLOB blob_in;
+	uint8_t *inbuf;
+	struct iovec *recv_iov;
 	DATA_BLOB blob_out;
+	bool local_ready;
+	bool remote_ready;
+	DATA_BLOB session_key;
 };
 
-static int cli_session_setup_ntlmssp_state_destructor(
-	struct cli_session_setup_ntlmssp_state *state)
+static int cli_session_setup_gensec_state_destructor(
+	struct cli_session_setup_gensec_state *state)
 {
-	if (state->ntlmssp_state != NULL) {
-		TALLOC_FREE(state->ntlmssp_state);
-	}
+	TALLOC_FREE(state->auth_generic);
+	data_blob_clear_free(&state->session_key);
 	return 0;
 }
 
-static void cli_session_setup_ntlmssp_done(struct tevent_req *req);
+static void cli_session_setup_gensec_local_next(struct tevent_req *req);
+static void cli_session_setup_gensec_local_done(struct tevent_req *subreq);
+static void cli_session_setup_gensec_remote_next(struct tevent_req *req);
+static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq);
+static void cli_session_setup_gensec_ready(struct tevent_req *req);
 
-static struct tevent_req *cli_session_setup_ntlmssp_send(
+static struct tevent_req *cli_session_setup_gensec_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *user, const char *pass, const char *domain)
+	const char *user, const char *pass, const char *domain,
+	enum credentials_use_kerberos krb5_state,
+	const char *target_service,
+	const char *target_hostname,
+	const char *target_principal)
 {
-	struct tevent_req *req, *subreq;
-	struct cli_session_setup_ntlmssp_state *state;
+	struct tevent_req *req;
+	struct cli_session_setup_gensec_state *state;
 	NTSTATUS status;
-	DATA_BLOB blob_out;
-	const char *OIDs_ntlm[] = {OID_NTLMSSP, NULL};
+	bool use_spnego_principal = lp_client_use_spnego_principal();
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct cli_session_setup_ntlmssp_state);
+				struct cli_session_setup_gensec_state);
 	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
 	state->cli = cli;
-	state->turn = 1;
 
-	state->ntlmssp_state = NULL;
 	talloc_set_destructor(
-		state, cli_session_setup_ntlmssp_state_destructor);
+		state, cli_session_setup_gensec_state_destructor);
 
-	status = ntlmssp_client_start(state,
-				      lp_netbios_name(),
-				      lp_workgroup(),
-				      lp_client_ntlmv2_auth(),
-				      &state->ntlmssp_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+	status = auth_generic_client_prepare(state, &state->auth_generic);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
-	ntlmssp_want_feature(state->ntlmssp_state,
-			     NTLMSSP_FEATURE_SESSION_KEY);
+
+	gensec_want_feature(state->auth_generic->gensec_security,
+			    GENSEC_FEATURE_SESSION_KEY);
 	if (cli->use_ccache) {
-		ntlmssp_want_feature(state->ntlmssp_state,
-				     NTLMSSP_FEATURE_CCACHE);
-	}
-	status = ntlmssp_set_username(state->ntlmssp_state, user);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-	status = ntlmssp_set_domain(state->ntlmssp_state, domain);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-	if (cli->pw_nt_hash) {
-		status = ntlmssp_set_password_hash(state->ntlmssp_state, pass);
-	} else {
-		status = ntlmssp_set_password(state->ntlmssp_state, pass);
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-	status = ntlmssp_update(state->ntlmssp_state, data_blob_null,
-				&blob_out);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		goto fail;
+		gensec_want_feature(state->auth_generic->gensec_security,
+				    GENSEC_FEATURE_NTLM_CCACHE);
+		if (pass != NULL && strlen(pass) == 0) {
+			/*
+			 * some callers pass "" as no password
+			 *
+			 * GENSEC_FEATURE_NTLM_CCACHE only handles
+			 * NULL as no password.
+			 */
+			pass = NULL;
+		}
 	}
 
-	state->blob_out = spnego_gen_negTokenInit(state, OIDs_ntlm, &blob_out, NULL);
-	data_blob_free(&blob_out);
+	status = auth_generic_set_username(state->auth_generic, user);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = auth_generic_set_domain(state->auth_generic, domain);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (cli->pw_nt_hash) {
+		struct samr_Password nt_hash;
+		size_t converted;
+		bool ok;
+
+		if (pass == NULL) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return tevent_req_post(req, ev);
+		}
+
+		converted = strhex_to_str((char *)nt_hash.hash,
+					  sizeof(nt_hash.hash),
+					  pass, strlen(pass));
+		if (converted != sizeof(nt_hash.hash)) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+			return tevent_req_post(req, ev);
+		}
+
+		ok = cli_credentials_set_nt_hash(state->auth_generic->credentials,
+						 &nt_hash, CRED_SPECIFIED);
+		if (!ok) {
+			tevent_req_oom(req);
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		status = auth_generic_set_password(state->auth_generic, pass);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	cli_credentials_set_kerberos_state(state->auth_generic->credentials,
+					   krb5_state);
+
+	if (krb5_state == CRED_DONT_USE_KERBEROS) {
+		use_spnego_principal = false;
+	}
+
+	if (target_service != NULL) {
+		status = gensec_set_target_service(
+				state->auth_generic->gensec_security,
+				target_service);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (target_hostname != NULL) {
+		status = gensec_set_target_hostname(
+				state->auth_generic->gensec_security,
+				target_hostname);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (target_principal != NULL) {
+		status = gensec_set_target_principal(
+				state->auth_generic->gensec_security,
+				target_principal);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		use_spnego_principal = false;
+	} else if (target_service != NULL && target_hostname != NULL) {
+		use_spnego_principal = false;
+	}
+
+	if (use_spnego_principal) {
+		const DATA_BLOB *b;
+		b = smbXcli_conn_server_gss_blob(cli->conn);
+		if (b != NULL) {
+			state->blob_in = *b;
+		}
+	}
+
+	state->is_anonymous = cli_credentials_is_anonymous(state->auth_generic->credentials);
+
+	status = auth_generic_client_start(state->auth_generic,
+					   GENSEC_OID_SPNEGO);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
 		state->cli->smb2.session = smbXcli_session_create(cli,
@@ -1500,150 +1448,226 @@ static struct tevent_req *cli_session_setup_ntlmssp_send(
 		}
 	}
 
-	subreq = cli_sesssetup_blob_send(state, ev, cli, state->blob_out);
-	if (tevent_req_nomem(subreq, req)) {
+	cli_session_setup_gensec_local_next(req);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_done, req);
+
 	return req;
-fail:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
 }
 
-static void cli_session_setup_ntlmssp_done(struct tevent_req *subreq)
+static void cli_session_setup_gensec_local_next(struct tevent_req *req)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
-		req, struct cli_session_setup_ntlmssp_state);
-	DATA_BLOB blob_in, msg_in, blob_out;
-	uint8_t *inbuf = NULL;
-	struct iovec *recv_iov = NULL;
-	bool parse_ret;
-	NTSTATUS status;
+	struct cli_session_setup_gensec_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_gensec_state);
+	struct tevent_req *subreq = NULL;
 
-	status = cli_sesssetup_blob_recv(subreq, talloc_tos(), &blob_in,
-					 &inbuf, &recv_iov);
-	TALLOC_FREE(subreq);
-	data_blob_free(&state->blob_out);
-
-	if (NT_STATUS_IS_OK(status)) {
-		if (state->cli->server_domain[0] == '\0') {
-			TALLOC_FREE(state->cli->server_domain);
-			state->cli->server_domain = talloc_strdup(state->cli,
-						state->ntlmssp_state->server.netbios_domain);
-			if (state->cli->server_domain == NULL) {
-				tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
-				return;
-			}
-		}
-
-		if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-			struct smbXcli_session *session = state->cli->smb2.session;
-
-			if (ntlmssp_is_anonymous(state->ntlmssp_state)) {
-				/*
-				 * Windows server does not set the
-				 * SMB2_SESSION_FLAG_IS_GUEST nor
-				 * SMB2_SESSION_FLAG_IS_NULL flag.
-				 *
-				 * This fix makes sure we do not try
-				 * to verify a signature on the final
-				 * session setup response.
-				 */
-				TALLOC_FREE(state->ntlmssp_state);
-				tevent_req_done(req);
-				return;
-			}
-
-			status = smb2cli_session_set_session_key(session,
-						state->ntlmssp_state->session_key,
-						recv_iov);
-			if (tevent_req_nterror(req, status)) {
-				return;
-			}
-		} else {
-			struct smbXcli_session *session = state->cli->smb1.session;
-
-			status = smb1cli_session_set_session_key(session,
-					state->ntlmssp_state->session_key);
-			if (tevent_req_nterror(req, status)) {
-				return;
-			}
-
-			if (smb1cli_conn_activate_signing(
-				    state->cli->conn, state->ntlmssp_state->session_key,
-				    data_blob_null)
-			    && !smb1cli_conn_check_signing(state->cli->conn, inbuf, 1)) {
-				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-				return;
-			}
-		}
-		TALLOC_FREE(state->ntlmssp_state);
-		tevent_req_done(req);
+	if (state->local_ready) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+
+	subreq = gensec_update_send(state, state->ev,
+			state->auth_generic->gensec_security,
+			state->blob_in);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_session_setup_gensec_local_done, req);
+}
+
+static void cli_session_setup_gensec_local_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_session_setup_gensec_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_gensec_state);
+	NTSTATUS status;
+
+	status = gensec_update_recv(subreq, state, &state->blob_out);
+	TALLOC_FREE(subreq);
+	state->blob_in = data_blob_null;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	if (blob_in.length == 0) {
-		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+	if (NT_STATUS_IS_OK(status)) {
+		state->local_ready = true;
+	}
+
+	if (state->local_ready && state->remote_ready) {
+		cli_session_setup_gensec_ready(req);
 		return;
 	}
 
-	if ((state->turn == 1)
-	    && NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DATA_BLOB tmp_blob = data_blob_null;
-		/* the server might give us back two challenges */
-		parse_ret = spnego_parse_challenge(state, blob_in, &msg_in,
-						   &tmp_blob);
-		data_blob_free(&tmp_blob);
-	} else {
-		parse_ret = spnego_parse_auth_response(state, blob_in, status,
-						       OID_NTLMSSP, &msg_in);
-	}
-	state->turn += 1;
+	cli_session_setup_gensec_remote_next(req);
+}
 
-	if (!parse_ret) {
-		DEBUG(3,("Failed to parse auth response\n"));
-		if (NT_STATUS_IS_OK(status)
-		    || NT_STATUS_EQUAL(status,
-				       NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			tevent_req_nterror(
-				req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+static void cli_session_setup_gensec_remote_next(struct tevent_req *req)
+{
+	struct cli_session_setup_gensec_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_gensec_state);
+	struct tevent_req *subreq = NULL;
+
+	if (state->remote_ready) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	subreq = cli_sesssetup_blob_send(state, state->ev,
+					 state->cli, state->blob_out);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				cli_session_setup_gensec_remote_done,
+				req);
+}
+
+static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_session_setup_gensec_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_gensec_state);
+	NTSTATUS status;
+
+	TALLOC_FREE(state->inbuf);
+	TALLOC_FREE(state->recv_iov);
+
+	status = cli_sesssetup_blob_recv(subreq, state, &state->blob_in,
+					 &state->inbuf, &state->recv_iov);
+	TALLOC_FREE(subreq);
+	data_blob_free(&state->blob_out);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		state->remote_ready = true;
+	}
+
+	if (state->local_ready && state->remote_ready) {
+		cli_session_setup_gensec_ready(req);
+		return;
+	}
+
+	cli_session_setup_gensec_local_next(req);
+}
+
+static void cli_session_setup_gensec_ready(struct tevent_req *req)
+{
+	struct cli_session_setup_gensec_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_gensec_state);
+	const char *server_domain = NULL;
+	NTSTATUS status;
+
+	if (state->blob_in.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (state->blob_out.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	/*
+	 * gensec_ntlmssp_server_domain() returns NULL
+	 * if NTLMSSP is not used.
+	 *
+	 * We can remove this later
+	 * and leave the server domain empty for SMB2 and above
+	 * in future releases.
+	 */
+	server_domain = gensec_ntlmssp_server_domain(
+				state->auth_generic->gensec_security);
+
+	if (state->cli->server_domain[0] == '\0' && server_domain != NULL) {
+		TALLOC_FREE(state->cli->server_domain);
+		state->cli->server_domain = talloc_strdup(state->cli,
+					server_domain);
+		if (state->cli->server_domain == NULL) {
+			tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	}
 
-	status = ntlmssp_update(state->ntlmssp_state, msg_in, &blob_out);
-
-	if (!NT_STATUS_IS_OK(status)
-	    && !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		TALLOC_FREE(state->ntlmssp_state);
-		tevent_req_nterror(req, status);
+	status = gensec_session_key(state->auth_generic->gensec_security,
+				    state, &state->session_key);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	state->blob_out = spnego_gen_auth(state, blob_out);
-	if (tevent_req_nomem(state->blob_out.data, req)) {
-		return;
+	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
+		struct smbXcli_session *session = state->cli->smb2.session;
+
+		if (state->is_anonymous) {
+			/*
+			 * Windows server does not set the
+			 * SMB2_SESSION_FLAG_IS_GUEST nor
+			 * SMB2_SESSION_FLAG_IS_NULL flag.
+			 *
+			 * This fix makes sure we do not try
+			 * to verify a signature on the final
+			 * session setup response.
+			 */
+			tevent_req_done(req);
+			return;
+		}
+
+		status = smb2cli_session_set_session_key(session,
+							 state->session_key,
+							 state->recv_iov);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	} else {
+		struct smbXcli_session *session = state->cli->smb1.session;
+		bool active;
+
+		status = smb1cli_session_set_session_key(session,
+							 state->session_key);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+
+		active = smb1cli_conn_activate_signing(state->cli->conn,
+						       state->session_key,
+						       data_blob_null);
+		if (active) {
+			bool ok;
+
+			ok = smb1cli_conn_check_signing(state->cli->conn,
+							state->inbuf, 1);
+			if (!ok) {
+				tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return;
+			}
+		}
 	}
 
-	subreq = cli_sesssetup_blob_send(state, state->ev, state->cli,
-					 state->blob_out);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, cli_session_setup_ntlmssp_done, req);
+	tevent_req_done(req);
 }
 
-static NTSTATUS cli_session_setup_ntlmssp_recv(struct tevent_req *req)
+static NTSTATUS cli_session_setup_gensec_recv(struct tevent_req *req)
 {
-	struct cli_session_setup_ntlmssp_state *state = tevent_req_data(
-		req, struct cli_session_setup_ntlmssp_state);
+	struct cli_session_setup_gensec_state *state =
+		tevent_req_data(req,
+		struct cli_session_setup_gensec_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -1723,6 +1747,7 @@ static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
 struct cli_session_setup_spnego_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
+	const char *target_hostname;
 	const char *user;
 	const char *account;
 	const char *pass;
@@ -1739,14 +1764,14 @@ static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq);
 
 static struct tevent_req *cli_session_setup_spnego_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *user, const char *pass, const char *user_domain,
-	const char *dest_realm)
+	const char *user, const char *pass, const char *user_domain)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_spnego_state *state;
 	char *principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 	int i;
+	const char *dest_realm = cli_state_remote_realm(cli);
 	const DATA_BLOB *server_blob;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1766,6 +1791,7 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		return tevent_req_post(req, ev);
 	}
 
+	state->target_hostname = smbXcli_conn_remote_name(cli->conn);
 	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
 
 	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n",
@@ -1813,12 +1839,10 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	 * and do not store results */
 
 	if (user && *user && cli->got_kerberos_mechanism && cli->use_kerberos) {
-		const char *remote_name = smbXcli_conn_remote_name(cli->conn);
 		char *tmp;
 
-
 		tmp = cli_session_setup_get_principal(
-			talloc_tos(), principal, remote_name, dest_realm);
+			talloc_tos(), principal, state->target_hostname, dest_realm);
 		TALLOC_FREE(principal);
 		principal = tmp;
 
@@ -1840,8 +1864,11 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		}
 
 		if (principal) {
-			subreq = cli_session_setup_kerberos_send(
-				state, ev, cli, principal);
+			subreq = cli_session_setup_gensec_send(
+				state, ev, cli,
+				state->account, pass, user_domain,
+				CRED_MUST_USE_KERBEROS,
+				"cifs", state->target_hostname, principal);
 			if (tevent_req_nomem(subreq, req)) {
 				return tevent_req_post(req, ev);
 			}
@@ -1854,8 +1881,11 @@ static struct tevent_req *cli_session_setup_spnego_send(
 #endif
 
 ntlmssp:
-	subreq = cli_session_setup_ntlmssp_send(
-		state, ev, cli, state->account, pass, user_domain);
+	subreq = cli_session_setup_gensec_send(
+		state, state->ev, state->cli,
+		state->account, state->pass, state->user_domain,
+		CRED_DONT_USE_KERBEROS,
+		"cifs", state->target_hostname, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1871,9 +1901,11 @@ static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_session_setup_spnego_state *state = tevent_req_data(
 		req, struct cli_session_setup_spnego_state);
+	NTSTATUS status;
 
-	state->result = cli_session_setup_kerberos_recv(subreq);
+	status = cli_session_setup_gensec_recv(subreq);
 	TALLOC_FREE(subreq);
+	state->result = ADS_ERROR_NT(status);
 
 	if (ADS_ERR_OK(state->result) ||
 	    !state->cli->fallback_after_kerberos) {
@@ -1881,9 +1913,11 @@ static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_session_setup_ntlmssp_send(
-		state, state->ev, state->cli, state->account, state->pass,
-		state->user_domain);
+	subreq = cli_session_setup_gensec_send(
+		state, state->ev, state->cli,
+		state->account, state->pass, state->user_domain,
+		CRED_DONT_USE_KERBEROS,
+		"cifs", state->target_hostname, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -1900,7 +1934,7 @@ static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq)
 		req, struct cli_session_setup_spnego_state);
 	NTSTATUS status;
 
-	status = cli_session_setup_ntlmssp_recv(subreq);
+	status = cli_session_setup_gensec_recv(subreq);
 	TALLOC_FREE(subreq);
 	state->result = ADS_ERROR_NT(status);
 	tevent_req_done(req);
@@ -2014,10 +2048,8 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		const char *remote_realm = cli_state_remote_realm(cli);
-
 		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup, remote_realm);
+			state, ev, cli, user, pass, workgroup);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -2077,10 +2109,8 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	/* if the server supports extended security then use SPNEGO */
 
 	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
-		const char *remote_realm = cli_state_remote_realm(cli);
-
 		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup, remote_realm);
+			state, ev, cli, user, pass, workgroup);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -2089,6 +2119,17 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return req;
 	} else {
 		/* otherwise do a NT1 style session setup */
+		if (lp_client_ntlmv2_auth() && lp_client_use_spnego()) {
+			/*
+			 * Don't send an NTLMv2 response without NTLMSSP
+			 * if we want to use spnego support
+			 */
+			DEBUG(1, ("Server does not support EXTENDED_SECURITY "
+				  " but 'client use spnego = yes"
+				  " and 'client ntlmv2 auth = yes'\n"));
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
 
 		subreq = cli_session_setup_nt1_send(
 			state, ev, cli, user, pass, passlen, ntpass, ntpasslen,
@@ -3111,6 +3152,8 @@ fail:
 struct cli_start_connection_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
+	int min_protocol;
+	int max_protocol;
 };
 
 static void cli_start_connection_connected(struct tevent_req *subreq);
@@ -3140,6 +3183,14 @@ static struct tevent_req *cli_start_connection_send(
 	}
 	state->ev = ev;
 
+	if (signing_state == SMB_SIGNING_IPC_DEFAULT) {
+		state->min_protocol = lp_client_ipc_min_protocol();
+		state->max_protocol = lp_client_ipc_max_protocol();
+	} else {
+		state->min_protocol = lp_client_min_protocol();
+		state->max_protocol = lp_client_max_protocol();
+	}
+
 	subreq = cli_connect_nb_send(state, ev, dest_host, dest_ss, port,
 				     0x20, my_name, signing_state, flags);
 	if (tevent_req_nomem(subreq, req)) {
@@ -3165,8 +3216,8 @@ static void cli_start_connection_connected(struct tevent_req *subreq)
 
 	subreq = smbXcli_negprot_send(state, state->ev, state->cli->conn,
 				      state->cli->timeout,
-				      lp_client_min_protocol(),
-				      lp_client_max_protocol());
+				      state->min_protocol,
+				      state->max_protocol);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

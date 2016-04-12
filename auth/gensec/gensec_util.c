@@ -81,7 +81,7 @@ static bool gensec_gssapi_check_oid(const DATA_BLOB *blob, const char *oid)
 	if (!asn1_start_tag(data, ASN1_APPLICATION(0))) goto err;
 	if (!asn1_check_OID(data, oid)) goto err;
 
-	ret = !data->has_error;
+	ret = !asn1_has_error(data);
 
   err:
 

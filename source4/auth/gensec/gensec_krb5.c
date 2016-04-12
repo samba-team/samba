@@ -417,14 +417,17 @@ static DATA_BLOB gensec_gssapi_gen_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLO
 	if (!asn1_pop_tag(data)) goto err;
 
 
-	ret = data_blob_talloc(mem_ctx, data->data, data->length);
+	if (!asn1_extract_blob(data, mem_ctx, &ret)) {
+		goto err;
+	}
 	asn1_free(data);
 
 	return ret;
 
   err:
 
-	DEBUG(1,("Failed to build krb5 wrapper at offset %d\n", (int)data->ofs));
+	DEBUG(1, ("Failed to build krb5 wrapper at offset %d\n",
+		  (int)asn1_current_ofs(data)));
 	asn1_free(data);
 	return ret;
 }
@@ -449,7 +452,7 @@ static bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *
 	data_remaining = asn1_tag_remaining(data);
 
 	if (data_remaining < 3) {
-		data->has_error = true;
+		asn1_set_error(data);
 	} else {
 		if (!asn1_read(data, tok_id, 2)) goto err;
 		data_remaining -= 2;
@@ -459,7 +462,7 @@ static bool gensec_gssapi_parse_krb5_wrap(TALLOC_CTX *mem_ctx, const DATA_BLOB *
 
 	if (!asn1_end_tag(data)) goto err;
 
-	ret = !data->has_error;
+	ret = !asn1_has_error(data);
 
   err:
 

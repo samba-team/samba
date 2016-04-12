@@ -62,7 +62,9 @@ struct ntlmssp_state
 	bool unicode;
 	bool use_ntlmv2;
 	bool use_ccache;
+	bool resume_ccache;
 	bool use_nt_response;  /* Set to 'False' to debug what happens when the NT response is omited */
+	bool allow_lm_response;/* The LM_RESPONSE code is not very secure... */
 	bool allow_lm_key;     /* The LM_KEY code is not very secure... */
 
 	const char *user;
@@ -70,9 +72,15 @@ struct ntlmssp_state
 	uint8_t *nt_hash;
 	uint8_t *lm_hash;
 
+	DATA_BLOB negotiate_blob;
+	DATA_BLOB challenge_blob;
+	bool new_spnego;
+	bool force_old_spnego;
+
 	struct {
 		const char *netbios_name;
 		const char *netbios_domain;
+		struct AV_PAIR_LIST av_pair_list;
 	} client;
 
 	struct {
@@ -81,6 +89,8 @@ struct ntlmssp_state
 		const char *netbios_domain;
 		const char *dns_name;
 		const char *dns_domain;
+		NTTIME challenge_endtime;
+		struct AV_PAIR_LIST av_pair_list;
 	} server;
 
 	DATA_BLOB internal_chal; /* Random challenge as supplied to the client for NTLM authentication */
@@ -90,7 +100,11 @@ struct ntlmssp_state
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
 
+	uint32_t conf_flags;
+	uint32_t required_flags;
 	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+
+	bool force_wrap_seal;
 
 	union ntlmssp_crypt_state *crypt;
 };
@@ -123,6 +137,8 @@ NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_stae,
 			TALLOC_CTX *out_mem_ctx,
 			const DATA_BLOB *in,
 			DATA_BLOB *out);
+NTSTATUS ntlmssp_sign_reset(struct ntlmssp_state *ntlmssp_state,
+			    bool reset_seqnums);
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
 
 bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);
@@ -132,3 +148,4 @@ bool ntlmssp_blob_matches_magic(const DATA_BLOB *blob);
 NTSTATUS gensec_ntlmssp_init(void);
 
 uint32_t gensec_ntlmssp_neg_flags(struct gensec_security *gensec_security);
+const char *gensec_ntlmssp_server_domain(struct gensec_security *gensec_security);

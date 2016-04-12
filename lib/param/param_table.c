@@ -32,6 +32,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/param/param_global.h"
 #include "libcli/smb/smb_constants.h"
+#include "source4/lib/tls/tls.h"
 
 #ifndef N_
 #define N_(x) x
@@ -121,6 +122,20 @@ static const struct enum_list enum_smb_signing_vals[] = {
 	{SMB_SIGNING_REQUIRED, "force"},
 	{SMB_SIGNING_REQUIRED, "forced"},
 	{SMB_SIGNING_REQUIRED, "enforced"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_tls_verify_peer_vals[] = {
+	{TLS_VERIFY_PEER_NO_CHECK,
+	 TLS_VERIFY_PEER_NO_CHECK_STRING},
+	{TLS_VERIFY_PEER_CA_ONLY,
+	 TLS_VERIFY_PEER_CA_ONLY_STRING},
+	{TLS_VERIFY_PEER_CA_AND_NAME_IF_AVAILABLE,
+	 TLS_VERIFY_PEER_CA_AND_NAME_IF_AVAILABLE_STRING},
+	{TLS_VERIFY_PEER_CA_AND_NAME,
+	 TLS_VERIFY_PEER_CA_AND_NAME_STRING},
+	{TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE,
+	 TLS_VERIFY_PEER_AS_STRICT_AS_POSSIBLE_STRING},
 	{-1, NULL}
 };
 
@@ -219,6 +234,18 @@ static const struct enum_list enum_ldap_sasl_wrapping[] = {
 	{0, "plain"},
 	{ADS_AUTH_SASL_SIGN, "sign"},
 	{ADS_AUTH_SASL_SEAL, "seal"},
+	{-1, NULL}
+};
+
+static const struct enum_list enum_ldap_server_require_strong_auth_vals[] = {
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_NO, "No" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_NO, "False" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_NO, "0" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS,
+	  "allow_sasl_over_tls" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_YES, "Yes" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_YES, "True" },
+	{ LDAP_SERVER_REQUIRE_STRONG_AUTH_YES, "1" },
 	{-1, NULL}
 };
 
@@ -672,6 +699,14 @@ struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(ntlm_auth),
+		.special	= NULL,
+		.enum_list	= NULL,
+	},
+	{
+		.label		= "raw NTLMv2 auth",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(raw_ntlmv2_auth),
 		.special	= NULL,
 		.enum_list	= NULL,
 	},
@@ -1542,6 +1577,14 @@ struct parm_struct parm_table[] = {
 		.offset		= GLOBAL_VAR(client_ldap_sasl_wrapping),
 		.special	= NULL,
 		.enum_list	= enum_ldap_sasl_wrapping,
+	},
+	{
+		.label		= "ldap server require strong auth",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(ldap_server_require_strong_auth),
+		.special	= NULL,
+		.enum_list	= enum_ldap_server_require_strong_auth_vals
 	},
 	{
 		.label		= "enable asu support",
@@ -4002,6 +4045,46 @@ struct parm_struct parm_table[] = {
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.offset		= GLOBAL_VAR(tls_priority),
+		.special	= NULL,
+		.enum_list	= NULL
+	},
+	{
+		.label		= "tls verify peer",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(tls_verify_peer),
+		.special	= NULL,
+		.enum_list	= enum_tls_verify_peer_vals,
+	},
+	{
+		.label		= "client ipc max protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(_client_ipc_max_protocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+	},
+	{
+		.label		= "client ipc min protocol",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(_client_ipc_min_protocol),
+		.special	= NULL,
+		.enum_list	= enum_protocol,
+	},
+	{
+		.label		= "client ipc signing",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(_client_ipc_signing),
+		.special	= NULL,
+		.enum_list	= enum_smb_signing_vals,
+	},
+	{
+		.label		= "allow dcerpc auth level connect",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.offset		= GLOBAL_VAR(allow_dcerpc_auth_level_connect),
 		.special	= NULL,
 		.enum_list	= NULL
 	},

@@ -729,13 +729,6 @@ bool wins_server_tag_ips(const char *tag, TALLOC_CTX *mem_ctx,
 			 struct in_addr **pservers, int *pnum_servers);
 unsigned wins_srv_count_tag(const char *tag);
 
-/* The following definitions come from libsmb/clispnego.c  */
-
-DATA_BLOB spnego_gen_negTokenInit(TALLOC_CTX *ctx,
-				  const char *OIDs[],
-				  DATA_BLOB *psecblob,
-				  const char *principal);
-
 #ifndef ASN1_MAX_OIDS
 #define ASN1_MAX_OIDS 20
 #endif
@@ -745,18 +738,6 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 			       char **principal,
 			       DATA_BLOB *secblob);
 DATA_BLOB spnego_gen_krb5_wrap(TALLOC_CTX *ctx, const DATA_BLOB ticket, const uint8_t tok_id[2]);
-int spnego_gen_krb5_negTokenInit(TALLOC_CTX *ctx,
-			    const char *principal, int time_offset,
-			    DATA_BLOB *targ,
-			    DATA_BLOB *session_key_krb5, uint32_t extra_ap_opts,
-			    const char *ccname, time_t *expire_time);
-bool spnego_parse_challenge(TALLOC_CTX *ctx, const DATA_BLOB blob,
-			    DATA_BLOB *chal1, DATA_BLOB *chal2);
-DATA_BLOB spnego_gen_auth(TALLOC_CTX *ctx, DATA_BLOB blob);
-bool spnego_parse_auth_response(TALLOC_CTX *ctx,
-				DATA_BLOB blob, NTSTATUS nt_status,
-				const char *mechOID,
-				DATA_BLOB *auth);
 
 /* The following definitions come from libsmb/conncache.c  */
 
@@ -899,31 +880,6 @@ bool get_dc_name(const char *domain,
 		fstring srv_name,
 		struct sockaddr_storage *ss_out);
 
-/* The following definitions come from libsmb/ntlmssp.c  */
-struct ntlmssp_state;
-NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) ;
-NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) ;
-NTSTATUS ntlmssp_set_password_hash(struct ntlmssp_state *ntlmssp_state,
-				   const char *hash);
-NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) ;
-void ntlmssp_want_feature_list(struct ntlmssp_state *ntlmssp_state, char *feature_list);
-void ntlmssp_want_feature(struct ntlmssp_state *ntlmssp_state, uint32_t feature);
-NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state,
-			const DATA_BLOB in, DATA_BLOB *out) ;
-bool ntlmssp_is_anonymous(struct ntlmssp_state *ntlmssp_state);
-NTSTATUS ntlmssp_server_start(TALLOC_CTX *mem_ctx,
-			      bool is_standalone,
-			      const char *netbios_name,
-			      const char *netbios_domain,
-			      const char *dns_name,
-			      const char *dns_domain,
-			      struct ntlmssp_state **ntlmssp_state);
-NTSTATUS ntlmssp_client_start(TALLOC_CTX *mem_ctx,
-			      const char *netbios_name,
-			      const char *netbios_domain,
-			      bool use_ntlmv2,
-			      struct ntlmssp_state **_ntlmssp_state);
-
 /* The following definitions come from libsmb/passchange.c  */
 
 NTSTATUS remote_password_change(const char *remote_machine, const char *user_name, 
@@ -984,7 +940,9 @@ const char *lp_idmap_backend(const char *domain_name);
 const char *lp_idmap_default_backend (void);
 int lp_security(void);
 int lp_client_max_protocol(void);
-int lp_winbindd_max_protocol(void);
+int lp_client_ipc_min_protocol(void);
+int lp_client_ipc_max_protocol(void);
+int lp_client_ipc_signing(void);
 int lp_smb2_max_credits(void);
 int lp_cups_encrypt(void);
 bool lp_widelinks(int );

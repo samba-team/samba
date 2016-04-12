@@ -124,7 +124,8 @@ _PUBLIC_ NTSTATUS dcerpc_bind_auth_none(struct dcerpc_pipe *p,
 
 struct bind_auth_state {
 	struct dcerpc_pipe *pipe;
-	DATA_BLOB credentials;
+	struct dcerpc_auth out_auth_info;
+	struct dcerpc_auth in_auth_info;
 	bool more_processing;	/* Is there anything more to do after the
 				 * first bind itself received? */
 };
@@ -141,6 +142,27 @@ static void bind_auth_next_step(struct composite_context *c)
 	state = talloc_get_type(c->private_data, struct bind_auth_state);
 	sec = &state->pipe->conn->security_state;
 
+	if (state->in_auth_info.auth_type != sec->auth_type) {
+		composite_error(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
+	if (state->in_auth_info.auth_level != sec->auth_level) {
+		composite_error(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
+	if (state->in_auth_info.auth_context_id != sec->auth_context_id) {
+		composite_error(c, NT_STATUS_RPC_PROTOCOL_ERROR);
+		return;
+	}
+
+	state->out_auth_info = (struct dcerpc_auth) {
+		.auth_type = sec->auth_type,
+		.auth_level = sec->auth_level,
+		.auth_context_id = sec->auth_context_id,
+	};
+
 	/* The status value here, from GENSEC is vital to the security
 	 * of the system.  Even if the other end accepts, if GENSEC
 	 * claims 'MORE_PROCESSING_REQUIRED' then you must keep
@@ -156,15 +178,13 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	c->status = gensec_update_ev(sec->generic_state, state,
 				  state->pipe->conn->event_ctx,
-				  sec->auth_info->credentials,
-				  &state->credentials);
+				  state->in_auth_info.credentials,
+				  &state->out_auth_info.credentials);
 	if (state->pipe->timed_out) {
 		composite_error(c, NT_STATUS_IO_TIMEOUT);
 		return;
 	}
 	state->pipe->inhibit_timeout_processing = false;
-
-	data_blob_free(&sec->auth_info->credentials);
 
 	if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		more_processing = true;
@@ -173,18 +193,21 @@ static void bind_auth_next_step(struct composite_context *c)
 
 	if (!composite_is_ok(c)) return;
 
-	if (state->credentials.length == 0) {
+	if (state->out_auth_info.credentials.length == 0) {
 		composite_done(c);
 		return;
 	}
 
-	sec->auth_info->credentials = state->credentials;
+	state->in_auth_info = (struct dcerpc_auth) {
+		.auth_type = DCERPC_AUTH_TYPE_NONE,
+	};
+	sec->tmp_auth_info.in = &state->in_auth_info;
+	sec->tmp_auth_info.mem = state;
+	sec->tmp_auth_info.out = &state->out_auth_info;
 
 	if (!more_processing) {
 		/* NO reply expected, so just send it */
 		c->status = dcerpc_auth3(state->pipe, state);
-		data_blob_free(&state->credentials);
-		sec->auth_info->credentials = data_blob(NULL, 0);
 		if (!composite_is_ok(c)) return;
 
 		composite_done(c);
@@ -197,8 +220,6 @@ static void bind_auth_next_step(struct composite_context *c)
 					   state->pipe,
 					   &state->pipe->syntax,
 					   &state->pipe->transfer_syntax);
-	data_blob_free(&state->credentials);
-	sec->auth_info->credentials = data_blob(NULL, 0);
 	if (composite_nomem(subreq, c)) return;
 	tevent_req_set_callback(subreq, bind_auth_recv_alter, c);
 }
@@ -209,6 +230,11 @@ static void bind_auth_recv_alter(struct tevent_req *subreq)
 	struct composite_context *c =
 		tevent_req_callback_data(subreq,
 		struct composite_context);
+	struct bind_auth_state *state =	talloc_get_type(c->private_data,
+							struct bind_auth_state);
+	struct dcecli_security *sec = &state->pipe->conn->security_state;
+
+	ZERO_STRUCT(sec->tmp_auth_info);
 
 	c->status = dcerpc_alter_context_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -225,14 +251,15 @@ static void bind_auth_recv_bindreply(struct tevent_req *subreq)
 		struct composite_context);
 	struct bind_auth_state *state =	talloc_get_type(c->private_data,
 							struct bind_auth_state);
+	struct dcecli_security *sec = &state->pipe->conn->security_state;
+
+	ZERO_STRUCT(sec->tmp_auth_info);
 
 	c->status = dcerpc_bind_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!composite_is_ok(c)) return;
 
 	if (state->pipe->conn->flags & DCERPC_HEADER_SIGNING) {
-		struct dcecli_security *sec = &state->pipe->conn->security_state;
-
 		gensec_want_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER);
 	}
 
@@ -353,15 +380,20 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
-	sec->auth_info = talloc(p, struct dcerpc_auth);
-	if (composite_nomem(sec->auth_info, c)) return c;
+	sec->auth_type = auth_type;
+	sec->auth_level = auth_level,
+	/*
+	 * We use auth_context_id = 1 as some older
+	 * Samba versions (<= 4.2.3) use that value hardcoded
+	 * in a response.
+	 */
+	sec->auth_context_id = 1;
 
-	sec->auth_info->auth_type = auth_type;
-	sec->auth_info->auth_level = auth_level,
-	sec->auth_info->auth_pad_length = 0;
-	sec->auth_info->auth_reserved = 0;
-	sec->auth_info->auth_context_id = random();
-	sec->auth_info->credentials = data_blob(NULL, 0);
+	state->out_auth_info = (struct dcerpc_auth) {
+		.auth_type = sec->auth_type,
+		.auth_level = sec->auth_level,
+		.auth_context_id = sec->auth_context_id,
+	};
 
 	/* The status value here, from GENSEC is vital to the security
 	 * of the system.  Even if the other end accepts, if GENSEC
@@ -377,8 +409,8 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	state->pipe->timed_out = false;
 	c->status = gensec_update_ev(sec->generic_state, state,
 				  p->conn->event_ctx,
-				  sec->auth_info->credentials,
-				  &state->credentials);
+				  data_blob_null,
+				  &state->out_auth_info.credentials);
 	if (state->pipe->timed_out) {
 		composite_error(c, NT_STATUS_IO_TIMEOUT);
 		return c;
@@ -394,25 +426,28 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	state->more_processing = NT_STATUS_EQUAL(c->status,
 						 NT_STATUS_MORE_PROCESSING_REQUIRED);
 
-	if (state->credentials.length == 0) {
+	if (state->out_auth_info.credentials.length == 0) {
 		composite_done(c);
 		return c;
 	}
 
-	sec->auth_info->credentials = state->credentials;
-
 	if (gensec_have_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER)) {
-		if (auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		if (sec->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
 			state->pipe->conn->flags |= DCERPC_PROPOSE_HEADER_SIGNING;
 		}
 	}
+
+	state->in_auth_info = (struct dcerpc_auth) {
+		.auth_type = DCERPC_AUTH_TYPE_NONE,
+	};
+	sec->tmp_auth_info.in = &state->in_auth_info;
+	sec->tmp_auth_info.mem = state;
+	sec->tmp_auth_info.out = &state->out_auth_info;
 
 	/* The first request always is a dcerpc_bind. The subsequent ones
 	 * depend on gensec results */
 	subreq = dcerpc_bind_send(state, p->conn->event_ctx, p,
 				  &syntax, &transfer_syntax);
-	data_blob_free(&state->credentials);
-	sec->auth_info->credentials = data_blob(NULL, 0);
 	if (composite_nomem(subreq, c)) return c;
 	tevent_req_set_callback(subreq, bind_auth_recv_bindreply, c);
 

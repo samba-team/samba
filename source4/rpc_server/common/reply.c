@@ -97,28 +97,41 @@ void dcesrv_init_hdr(struct ncacn_packet *pkt, bool bigendian)
 /*
   return a dcerpc fault
 */
-NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
+NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
+				 uint32_t fault_code,
+				 uint8_t extra_flags)
 {
 	struct ncacn_packet pkt;
 	struct data_blob_list_item *rep;
-	uint8_t zeros[4];
+	static const uint8_t zeros[4] = { 0, };
 	NTSTATUS status;
 
-	/* setup a bind_ack */
+	/* setup a fault */
 	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_FAULT;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.u.fault.alloc_hint = 0;
-	pkt.u.fault.context_id = 0;
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
+	pkt.u.fault.alloc_hint = 24;
+	switch (call->pkt.ptype) {
+	case DCERPC_PKT_REQUEST:
+		pkt.u.fault.context_id = call->pkt.u.request.context_id;
+		break;
+	default:
+		pkt.u.fault.context_id = 0;
+		break;
+	}
+	if (fault_code == DCERPC_NCA_S_PROTO_ERROR) {
+		/*
+		 * context_id = 0 is forced on protocol errors.
+		 */
+		pkt.u.fault.context_id = 0;
+	}
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.status = fault_code;
-
-	ZERO_STRUCT(zeros);
 	pkt.u.fault._pad = data_blob_const(zeros, sizeof(zeros));
 
-	rep = talloc(call, struct data_blob_list_item);
+	rep = talloc_zero(call, struct data_blob_list_item);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -142,7 +155,10 @@ NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
 	return NT_STATUS_OK;
 }
 
-
+NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code)
+{
+	return dcesrv_fault_with_flags(call, fault_code, 0);
+}
 
 _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 {
@@ -183,9 +199,9 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = call->conn->cli_max_recv_frag;
+	chunk_size = call->conn->max_xmit_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (call->conn->auth_state.auth_info &&
+	if (call->conn->auth_state.auth_finished &&
 	    call->conn->auth_state.gensec_security) {
 		size_t max_payload = chunk_size;
 
@@ -206,7 +222,7 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		struct data_blob_list_item *rep;
 		struct ncacn_packet pkt;
 
-		rep = talloc(call, struct data_blob_list_item);
+		rep = talloc_zero(call, struct data_blob_list_item);
 		NT_STATUS_HAVE_NO_MEMORY(rep);
 
 		length = MIN(chunk_size, stub.length);
@@ -259,5 +275,12 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 NTSTATUS dcesrv_generic_session_key(struct dcesrv_connection *c,
 				    DATA_BLOB *session_key)
 {
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(c->endpoint->ep_description);
+
+	if (transport != NCALRPC && transport != NCACN_UNIX_STREAM) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
 	return dcerpc_generic_session_key(NULL, session_key);
 }

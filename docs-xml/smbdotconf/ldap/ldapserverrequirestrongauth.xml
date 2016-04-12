@@ -1,0 +1,26 @@
+<samba:parameter name="ldap server require strong auth"
+                 context="G"
+                 type="enum"
+                 enumlist="enum_ldap_server_require_strong_auth_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	The <smbconfoption name="ldap server require strong auth"/> defines whether
+	the ldap server requires ldap traffic to be signed or signed and encrypted (sealed).
+	Possible values are <emphasis>no</emphasis>, <emphasis>allow_sasl_over_tls</emphasis>
+	and <emphasis>yes</emphasis>.
+	</para>
+
+	<para>A value of <emphasis>no</emphasis> allows simple and sasl binds over
+	all transports.</para>
+
+	<para>A value of <emphasis>allow_sasl_over_tls</emphasis> allows simple and sasl binds
+	(without sign or seal) over TLS encrypted connections. Unencrypted connections only
+	allow sasl binds with sign or seal.</para>
+
+	<para>A value of <emphasis>yes</emphasis> allows only simple binds
+	over TLS encrypted connections. Unencrypted connections only
+	allow sasl binds with sign or seal.</para>
+</description>
+<value type="default">yes</value>
+</samba:parameter>

@@ -467,6 +467,16 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 
 	*out = data_blob(NULL, 0);
 
+	if (gensec_security->dcerpc_auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+		switch (gensec_security->gensec_role) {
+		case GENSEC_CLIENT:
+			return NT_STATUS_INVALID_PARAMETER_MIX;
+		case GENSEC_SERVER:
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
 		if (state != NULL) {
@@ -662,9 +672,15 @@ static NTSTATUS schannel_client_start(struct gensec_security *gensec_security)
 static bool schannel_have_feature(struct gensec_security *gensec_security,
 					 uint32_t feature)
 {
-	if (feature & (GENSEC_FEATURE_SIGN |
-		       GENSEC_FEATURE_SEAL)) {
-		return true;
+	if (gensec_security->dcerpc_auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		if (feature & GENSEC_FEATURE_SIGN) {
+			return true;
+		}
+	}
+	if (gensec_security->dcerpc_auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		if (feature & GENSEC_FEATURE_SEAL) {
+			return true;
+		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return true;

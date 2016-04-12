@@ -359,6 +359,35 @@ bool test_SetupCredentials3(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
+bool test_SetupCredentialsPipe(const struct dcerpc_pipe *p1,
+			       struct torture_context *tctx,
+			       struct cli_credentials *machine_credentials,
+			       struct netlogon_creds_CredentialState *creds,
+			       uint32_t additional_flags,
+			       struct dcerpc_pipe **_p2)
+{
+	NTSTATUS status;
+	struct dcerpc_binding *b2 = NULL;
+	struct dcerpc_pipe *p2 = NULL;
+
+	b2 = dcerpc_binding_dup(tctx, p1->binding);
+	torture_assert(tctx, b2 != NULL, "dcerpc_binding_dup");
+	dcerpc_binding_set_flags(b2,
+				 DCERPC_SCHANNEL | additional_flags,
+				 DCERPC_AUTH_OPTIONS);
+
+	cli_credentials_set_netlogon_creds(machine_credentials, creds);
+	status = dcerpc_pipe_connect_b(tctx, &p2, b2,
+				       &ndr_table_netlogon,
+				       machine_credentials,
+				       tctx->ev, tctx->lp_ctx);
+	cli_credentials_set_netlogon_creds(machine_credentials, NULL);
+	torture_assert_ntstatus_ok(tctx, status, "dcerpc_pipe_connect_b schannel");
+
+	*_p2 = p2;
+	return true;
+}
+
 /*
   try a change password for our machine account
 */
@@ -436,7 +465,7 @@ static bool test_SetPassword(struct torture_context *tctx,
   try a change password for our machine account
 */
 static bool test_SetPassword_flags(struct torture_context *tctx,
-				   struct dcerpc_pipe *p,
+				   struct dcerpc_pipe *p1,
 				   struct cli_credentials *machine_credentials,
 				   uint32_t negotiate_flags)
 {
@@ -445,14 +474,20 @@ static bool test_SetPassword_flags(struct torture_context *tctx,
 	struct netlogon_creds_CredentialState *creds;
 	struct netr_Authenticator credential, return_authenticator;
 	struct samr_Password new_password;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
-	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
+	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
 				    machine_credentials,
 				    cli_credentials_get_secure_channel_type(machine_credentials),
 				    &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, machine_credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
@@ -532,7 +567,7 @@ static DATA_BLOB netlogon_very_rand_pass(TALLOC_CTX *mem_ctx, int len)
   try a change password for our machine account
 */
 static bool test_SetPassword2_with_flags(struct torture_context *tctx,
-					 struct dcerpc_pipe *p,
+					 struct dcerpc_pipe *p1,
 					 struct cli_credentials *machine_credentials,
 					 uint32_t flags)
 {
@@ -544,11 +579,19 @@ static bool test_SetPassword2_with_flags(struct torture_context *tctx,
 	struct samr_Password nt_hash;
 	struct netr_Authenticator credential, return_authenticator;
 	struct netr_CryptPassword new_password;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
-	if (!test_SetupCredentials2(p, tctx, flags, machine_credentials, cli_credentials_get_secure_channel_type(machine_credentials), &creds)) {
+	if (!test_SetupCredentials2(p1, tctx, flags, machine_credentials,
+				    cli_credentials_get_secure_channel_type(machine_credentials),
+				    &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, machine_credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.account_name = talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
@@ -839,6 +882,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
@@ -2507,7 +2551,7 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 }
 
 static bool test_netr_GetForestTrustInformation(struct torture_context *tctx,
-						struct dcerpc_pipe *p,
+						struct dcerpc_pipe *p1,
 						struct cli_credentials *machine_credentials)
 {
 	struct netr_GetForestTrustInformation r;
@@ -2515,12 +2559,18 @@ static bool test_netr_GetForestTrustInformation(struct torture_context *tctx,
 	struct netr_Authenticator a;
 	struct netr_Authenticator return_authenticator;
 	struct lsa_ForestTrustInformation *forest_trust_info;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
-	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+	if (!test_SetupCredentials3(p1, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
 				    machine_credentials, &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, machine_credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	netlogon_creds_client_authenticator(creds, &a);
 
@@ -3343,7 +3393,7 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 }
 
 static bool test_netr_ServerGetTrustInfo_flags(struct torture_context *tctx,
-					       struct dcerpc_pipe *p,
+					       struct dcerpc_pipe *p1,
 					       struct cli_credentials *machine_credentials,
 					       uint32_t negotiate_flags)
 {
@@ -3356,14 +3406,20 @@ static bool test_netr_ServerGetTrustInfo_flags(struct torture_context *tctx,
 	struct netr_TrustInfo *trust_info;
 
 	struct netlogon_creds_CredentialState *creds;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	struct samr_Password nt_hash;
 
-	if (!test_SetupCredentials3(p, tctx, negotiate_flags,
+	if (!test_SetupCredentials3(p1, tctx, negotiate_flags,
 				    machine_credentials, &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, machine_credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	netlogon_creds_client_authenticator(creds, &a);
 
@@ -3413,7 +3469,7 @@ static bool test_netr_ServerGetTrustInfo_AES(struct torture_context *tctx,
 }
 
 static bool test_GetDomainInfo(struct torture_context *tctx,
-			       struct dcerpc_pipe *p,
+			       struct dcerpc_pipe *p1,
 			       struct cli_credentials *machine_credentials)
 {
 	struct netr_LogonGetDomainInfo r;
@@ -3436,14 +3492,20 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	char **spns = NULL;
 	int num_spns = 0;
 	char *temp_str;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
 
-	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+	if (!test_SetupCredentials3(p1, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
 				    machine_credentials, &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, machine_credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	/* We won't double-check this when we are over 'local' transports */
 	if (dcerpc_server_name(p)) {
@@ -3868,7 +3930,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 }
 
 static bool test_GetDomainInfo_async(struct torture_context *tctx,
-				     struct dcerpc_pipe *p,
+				     struct dcerpc_pipe *p1,
 				     struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
@@ -3882,11 +3944,16 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	int i;
 	union netr_WorkstationInfo query;
 	union netr_DomainInfo info;
+	struct dcerpc_pipe *p = NULL;
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
 
 	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
 				    machine_credentials, &creds)) {
+		return false;
+	}
+	if (!test_SetupCredentialsPipe(p1, tctx, machine_credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
 		return false;
 	}
 
@@ -3962,7 +4029,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	int i;
 
 	if (p->conn->transport.transport != NCACN_NP) {
-		return true;
+		torture_skip(tctx, "test_ManyGetDCName works only with NCACN_NP");
 	}
 
 	torture_comment(tctx, "Torturing GetDCName\n");

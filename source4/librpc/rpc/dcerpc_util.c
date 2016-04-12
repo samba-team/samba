@@ -678,15 +678,15 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 
 	/* Perform an authenticated DCE-RPC bind
 	 */
-	if (!(conn->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+	if (!(conn->flags & (DCERPC_CONNECT|DCERPC_SEAL))) {
 		/*
 		  we are doing an authenticated connection,
-		  but not using sign or seal. We must force
-		  the CONNECT dcerpc auth type as a NONE auth
-		  type doesn't allow authentication
-		  information to be passed.
+		  which needs to use [connect], [sign] or [seal].
+		  If nothing is specified, we default to [sign] now.
+		  This give roughly the same protection as
+		  ncacn_np with smb signing.
 		*/
-		conn->flags |= DCERPC_CONNECT;
+		conn->flags |= DCERPC_SIGN;
 	}
 
 	if (conn->flags & DCERPC_AUTH_SPNEGO) {
@@ -776,6 +776,16 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 NTSTATUS dcerpc_generic_session_key(struct dcecli_connection *c,
 				    DATA_BLOB *session_key)
 {
+	*session_key = data_blob_null;
+
+	if (c != NULL) {
+		if (c->transport.transport != NCALRPC &&
+		    c->transport.transport != NCACN_UNIX_STREAM)
+		{
+			return NT_STATUS_LOCAL_USER_SESSION_KEY;
+		}
+	}
+
 	/* this took quite a few CPU cycles to find ... */
 	session_key->data = discard_const_p(unsigned char, "SystemLibraryDTC");
 	session_key->length = 16;

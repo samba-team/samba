@@ -86,6 +86,9 @@
 ^samba4.rpc.lsalookup with seal,padcheck
 ^samba4.rpc.lsalookup with validate
 ^samba4.rpc.lsalookup with bigendian
+^samba4.rpc.lsa on ncacn_np with seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
+^samba4.rpc.lsa with seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
+^samba4.rpc.lsa.secrets.*seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
 ^samba4.rpc.netlogon.*.LogonUasLogon
 ^samba4.rpc.netlogon.*.LogonUasLogoff
 ^samba4.rpc.netlogon.*.DatabaseSync
@@ -94,6 +97,10 @@
 ^samba4.rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
 ^samba4.rpc.netlogon.*.GetPassword
 ^samba4.rpc.netlogon.*.DatabaseRedo
+^samba4.rpc.drsuapi.*ncacn_ip_tcp.*validate # should only work with seal
+^samba4.rpc.drsuapi.*ncacn_ip_tcp.*bigendian # should only work with seal
+^samba4.rpc.samr.passwords.validate.*ncacn_ip_tcp.*with.validate # should only work with seal
+^samba4.rpc.samr.passwords.validate.*ncacn_ip_tcp.*with.bigendian # should only work with seal
 ^samba4.base.charset.*.Testing partial surrogate
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT
 .*net.api.delshare.*				# DelShare isn't implemented yet
@@ -211,6 +218,7 @@
 ^samba3.smb2.replay.replay4
 ^samba3.smb2.lock.*replay
 ^samba3.raw.session.*reauth2 # maybe fix this?
+^samba3.rpc.lsa.secrets.seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
 ^samba3.rpc.samr.passwords.badpwdcount.samr.badPwdCount\(nt4_dc\) # We fail this test currently
 ^samba3.rpc.samr.passwords.lockout.*\(nt4_dc\)$ # We fail this test currently
 ^samba3.rpc.spoolss.printer.addprinter.driver_info_winreg # knownfail or flapping?
@@ -312,3 +320,23 @@
 # we can watch for set methods on.
 #
 ^samba.tests.dcerpc.integer.samba.tests.dcerpc.integer.IntegerTests.test_.*_into_uint8_list
+#
+## We assert all "ldap server require strong auth" combinations
+#
+^samba4.ldb.simple.ldap with SIMPLE-BIND.*ad_dc_ntvfs # ldap server require strong auth = allow_sasl_over_tls
+^samba4.ldb.simple.ldap with SIMPLE-BIND.*fl2003dc    # ldap server require strong auth = yes
+^samba4.ldb.simple.ldaps with SASL-BIND.*fl2003dc     # ldap server require strong auth = yes
+# These are supposed to fail as we want to verify the "tls verify peer"
+# restrictions. Note that fl2008r2dc uses a self-signed certificate
+# with does not have a crl file.
+#
+^samba4.ldb.simple.ldaps.*SERVER_NAME.*tlsverifypeer=ca_and_name_if_available\(
+^samba4.ldb.simple.ldaps.*SERVER_NAME.*tlsverifypeer=ca_and_name\(
+^samba4.ldb.simple.ldaps.*SERVER_NAME.*tlsverifypeer=as_strict_as_possible\(
+^samba4.ldb.simple.ldaps.*SERVER_IP.*tlsverifypeer=ca_and_name\(
+^samba4.ldb.simple.ldaps.*SERVER_IP.*tlsverifypeer=as_strict_as_possible\(
+^samba4.ldb.simple.ldaps.*SERVER.REALM.*tlsverifypeer=as_strict_as_possible.*fl2008r2dc
+#
+# we don't allow auth_level_connect anymore...
+#
+^samba3.blackbox.rpcclient.*ncacn_np.*with.*connect.*rpcclient # we don't allow auth_level_connect anymore

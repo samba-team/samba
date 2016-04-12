@@ -20,6 +20,21 @@
 #include "includes.h"
 #include "../lib/util/asn1.h"
 
+struct nesting {
+	off_t start;
+	size_t taglen; /* for parsing */
+	struct nesting *next;
+};
+
+
+struct asn1_data {
+	uint8_t *data;
+	size_t length;
+	off_t ofs;
+	struct nesting *nesting;
+	bool has_error;
+};
+
 /* allocate an asn1 structure */
 struct asn1_data *asn1_init(TALLOC_CTX *mem_ctx)
 {
@@ -36,10 +51,36 @@ void asn1_free(struct asn1_data *data)
 	talloc_free(data);
 }
 
+bool asn1_has_error(const struct asn1_data *data)
+{
+	return data->has_error;
+}
+
+void asn1_set_error(struct asn1_data *data)
+{
+	data->has_error = true;
+}
+
+bool asn1_has_nesting(const struct asn1_data *data)
+{
+	return data->nesting != NULL;
+}
+
+off_t asn1_current_ofs(const struct asn1_data *data)
+{
+	return data->ofs;
+}
+
 /* write to the ASN1 buffer, advancing the buffer pointer */
 bool asn1_write(struct asn1_data *data, const void *p, int len)
 {
 	if (data->has_error) return false;
+
+	if ((len < 0) || (data->ofs + (size_t)len < data->ofs)) {
+		data->has_error = true;
+		return false;
+	}
+
 	if (data->length < data->ofs+len) {
 		uint8_t *newp;
 		newp = talloc_realloc(data, data->data, uint8_t, data->ofs+len);
@@ -66,7 +107,9 @@ bool asn1_push_tag(struct asn1_data *data, uint8_t tag)
 {
 	struct nesting *nesting;
 
-	asn1_write_uint8(data, tag);
+	if (!asn1_write_uint8(data, tag)) {
+		return false;
+	}
 	nesting = talloc(data, struct nesting);
 	if (!nesting) {
 		data->has_error = true;
@@ -84,6 +127,10 @@ bool asn1_pop_tag(struct asn1_data *data)
 {
 	struct nesting *nesting;
 	size_t len;
+
+	if (data->has_error) {
+		return false;
+	}
 
 	nesting = data->nesting;
 
@@ -184,6 +231,10 @@ static bool push_int_bigendian(struct asn1_data *data, unsigned int i, bool nega
 
 bool asn1_write_implicit_Integer(struct asn1_data *data, int i)
 {
+	if (data->has_error) {
+		return false;
+	}
+
 	if (i == -1) {
 		/* -1 is special as it consists of all-0xff bytes. In
                     push_int_bigendian this is the only case that is not
@@ -986,6 +1037,26 @@ bool asn1_blob(const struct asn1_data *asn1, DATA_BLOB *blob)
 	return true;
 }
 
+bool asn1_extract_blob(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
+		       DATA_BLOB *pblob)
+{
+	DATA_BLOB blob;
+
+	if (!asn1_blob(asn1, &blob)) {
+		return false;
+	}
+
+	*pblob = (DATA_BLOB) { .length = blob.length };
+	pblob->data = talloc_move(mem_ctx, &blob.data);
+
+	/*
+	 * Stop access from here on
+	 */
+	asn1->has_error = true;
+
+	return true;
+}
+
 /*
   Fill in an asn1 struct without making a copy
 */
@@ -996,35 +1067,7 @@ void asn1_load_nocopy(struct asn1_data *data, uint8_t *buf, size_t len)
 	data->length = len;
 }
 
-/*
-  check if a ASN.1 blob is a full tag
-*/
-NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
-{
-	struct asn1_data *asn1 = asn1_init(NULL);
-	int size;
-
-	NT_STATUS_HAVE_NO_MEMORY(asn1);
-
-	asn1->data = blob.data;
-	asn1->length = blob.length;
-	if (!asn1_start_tag(asn1, tag)) {
-		talloc_free(asn1);
-		return STATUS_MORE_ENTRIES;
-	}
-	size = asn1_tag_remaining(asn1) + asn1->ofs;
-
-	talloc_free(asn1);
-
-	if (size > blob.length) {
-		return STATUS_MORE_ENTRIES;
-	}
-
-	*packet_size = size;
-	return NT_STATUS_OK;
-}
-
-NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
+int asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 {
 	struct asn1_data asn1;
 	size_t size;
@@ -1036,14 +1079,14 @@ NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 
 	ok = asn1_peek_tag_needed_size(&asn1, tag, &size);
 	if (!ok) {
-		return NT_STATUS_INVALID_BUFFER_SIZE;
+		return EMSGSIZE;
 	}
 
 	if (size > blob.length) {
 		*packet_size = size;
-		return STATUS_MORE_ENTRIES;
+		return EAGAIN;
 	}		
 
 	*packet_size = size;
-	return NT_STATUS_OK;
+	return 0;
 }

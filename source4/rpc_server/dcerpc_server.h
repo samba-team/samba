@@ -130,6 +130,14 @@ struct dcesrv_call_state {
 
 	/* this is used by the boilerplate code to generate DCERPC faults */
 	uint32_t fault_code;
+
+	/* the reason why we terminate the connection after sending a response */
+	const char *terminate_reason;
+
+	/* temporary auth_info fields */
+	struct dcerpc_auth in_auth_info;
+	struct dcerpc_auth _out_auth_info;
+	struct dcerpc_auth *out_auth_info;
 };
 
 #define DCESRV_HANDLE_ANY 255
@@ -146,18 +154,23 @@ struct dcesrv_handle {
 
 /* hold the authentication state information */
 struct dcesrv_auth {
-	struct dcerpc_auth *auth_info;
+	enum dcerpc_AuthType auth_type;
+	enum dcerpc_AuthLevel auth_level;
+	uint32_t auth_context_id;
 	struct gensec_security *gensec_security;
 	struct auth_session_info *session_info;
 	NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
 	bool client_hdr_signing;
 	bool hdr_signing;
+	bool auth_finished;
+	bool auth_invalid;
 };
 
 struct dcesrv_connection_context {
 	struct dcesrv_connection_context *next, *prev;
 	uint32_t context_id;
 
+	/* TODO: remove this legacy (for openchange) in master */
 	struct dcesrv_assoc_group *assoc_group;
 
 	/* the connection this is on */
@@ -168,6 +181,12 @@ struct dcesrv_connection_context {
 
 	/* private data for the interface implementation */
 	void *private_data;
+
+	/*
+	 * the minimum required auth level for this interface
+	 */
+	enum dcerpc_AuthLevel min_auth_level;
+	bool allow_connect;
 };
 
 
@@ -195,12 +214,20 @@ struct dcesrv_connection {
 	struct dcesrv_call_state *call_list;
 
 	/* the maximum size the client wants to receive */
-	uint32_t cli_max_recv_frag;
+	uint16_t max_recv_frag;
+	uint16_t max_xmit_frag;
 
 	DATA_BLOB partial_input;
 
-	/* the current authentication state */
-	struct dcesrv_auth auth_state;
+	/* This can be removed in master... */
+	struct  {
+		struct dcerpc_auth *auth_info;
+		struct gensec_security *gensec_security;
+		struct auth_session_info *session_info;
+		NTSTATUS (*session_key)(struct dcesrv_connection *, DATA_BLOB *session_key);
+		bool client_hdr_signing;
+		bool hdr_signing;
+	} _unused_auth_state;
 
 	/* the event_context that will be used for this connection */
 	struct tevent_context *event_ctx;
@@ -232,6 +259,20 @@ struct dcesrv_connection {
 
 	const struct tsocket_address *local_address;
 	const struct tsocket_address *remote_address;
+
+	/* the current authentication state */
+	struct dcesrv_auth auth_state;
+
+	/*
+	 * remember which pdu types are allowed
+	 */
+	bool allow_bind;
+	bool allow_auth3;
+	bool allow_alter;
+	bool allow_request;
+
+	/* the association group the connection belongs to */
+	struct dcesrv_assoc_group *assoc_group;
 };
 
 
@@ -414,5 +455,13 @@ _PUBLIC_ bool dcesrv_call_authenticated(struct dcesrv_call_state *dce_call);
  */
 _PUBLIC_ const char *dcesrv_call_account_name(struct dcesrv_call_state *dce_call);
 
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_call,
+							  const struct dcesrv_interface *iface);
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_require_privacy(struct dcesrv_call_state *dce_call,
+						        const struct dcesrv_interface *iface);
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_reject_connect(struct dcesrv_call_state *dce_call,
+						       const struct dcesrv_interface *iface);
+_PUBLIC_ NTSTATUS dcesrv_interface_bind_allow_connect(struct dcesrv_call_state *dce_call,
+						      const struct dcesrv_interface *iface);
 
 #endif /* SAMBA_DCERPC_SERVER_H */

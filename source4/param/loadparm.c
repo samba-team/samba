@@ -36,10 +36,11 @@ void lpcfg_smbcli_options(struct loadparm_context *lp_ctx,
 {
 	options->max_xmit = lpcfg_max_xmit(lp_ctx);
 	options->max_mux = lpcfg_max_mux(lp_ctx);
-	options->use_spnego = lpcfg_nt_status_support(lp_ctx) && lpcfg_use_spnego(lp_ctx);
+	options->use_spnego = lpcfg_nt_status_support(lp_ctx) && lpcfg_client_use_spnego(lp_ctx);
 	options->signing = lpcfg_client_signing(lp_ctx);
 	options->request_timeout = SMB_REQUEST_TIMEOUT;
 	options->ntstatus_support = lpcfg_nt_status_support(lp_ctx);
+	options->min_protocol = lpcfg_client_min_protocol(lp_ctx);
 	options->max_protocol = lpcfg__client_max_protocol(lp_ctx);
 	options->unicode = lpcfg_unicode(lp_ctx);
 	options->use_oplocks = true;

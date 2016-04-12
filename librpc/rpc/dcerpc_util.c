@@ -83,31 +83,49 @@ uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob)
 *
 * @return		- A NTSTATUS error code.
 */
-NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
+NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 				  TALLOC_CTX *mem_ctx,
-				  DATA_BLOB *pkt_trailer,
+				  const DATA_BLOB *pkt_trailer,
 				  struct dcerpc_auth *auth,
-				  uint32_t *auth_length,
+				  uint32_t *_auth_length,
 				  bool auth_data_only)
 {
 	struct ndr_pull *ndr;
 	enum ndr_err_code ndr_err;
-	uint32_t data_and_pad;
+	uint16_t data_and_pad;
+	uint16_t auth_length;
+	uint32_t tmp_length;
 
-	data_and_pad = pkt_trailer->length
-			- (DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length);
-
-	/* paranoia check for pad size. This would be caught anyway by
-	   the ndr_pull_advance() a few lines down, but it scared
-	   Jeremy enough for him to call me, so we might as well check
-	   it now, just to prevent someone posting a bogus YouTube
-	   video in the future.
-	*/
-	if (data_and_pad > pkt_trailer->length) {
-		return NT_STATUS_INFO_LENGTH_MISMATCH;
+	ZERO_STRUCTP(auth);
+	if (_auth_length != NULL) {
+		*_auth_length = 0;
 	}
 
-	*auth_length = pkt_trailer->length - data_and_pad;
+	/* Paranoia checks for auth_length. The caller should check this... */
+	if (pkt->auth_length == 0) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/* Paranoia checks for auth_length. The caller should check this... */
+	if (pkt->auth_length > pkt->frag_length) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	tmp_length = DCERPC_NCACN_PAYLOAD_OFFSET;
+	tmp_length += DCERPC_AUTH_TRAILER_LENGTH;
+	tmp_length += pkt->auth_length;
+	if (tmp_length > pkt->frag_length) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (pkt_trailer->length > UINT16_MAX) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	auth_length = DCERPC_AUTH_TRAILER_LENGTH + pkt->auth_length;
+	if (pkt_trailer->length < auth_length) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	data_and_pad = pkt_trailer->length - auth_length;
 
 	ndr = ndr_pull_init_blob(pkt_trailer, mem_ctx);
 	if (!ndr) {
@@ -127,14 +145,28 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 	ndr_err = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(ndr);
+		ZERO_STRUCTP(auth);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	if (auth_data_only && data_and_pad != auth->auth_pad_length) {
-		DEBUG(1, (__location__ ": WARNING: pad length mismatch. "
+	if (data_and_pad < auth->auth_pad_length) {
+		DEBUG(1, (__location__ ": ERROR: pad length mismatch. "
 			  "Calculated %u  got %u\n",
 			  (unsigned)data_and_pad,
 			  (unsigned)auth->auth_pad_length));
+		talloc_free(ndr);
+		ZERO_STRUCTP(auth);
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (auth_data_only && data_and_pad != auth->auth_pad_length) {
+		DEBUG(1, (__location__ ": ERROR: pad length mismatch. "
+			  "Calculated %u  got %u\n",
+			  (unsigned)data_and_pad,
+			  (unsigned)auth->auth_pad_length));
+		talloc_free(ndr);
+		ZERO_STRUCTP(auth);
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
 	DEBUG(6,(__location__ ": auth_pad_length %u\n",
@@ -142,6 +174,83 @@ NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
 
 	talloc_steal(mem_ctx, auth->credentials.data);
 	talloc_free(ndr);
+
+	if (_auth_length != NULL) {
+		*_auth_length = auth_length;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+* @brief	Verify the fields in ncacn_packet header.
+*
+* @param pkt		- The ncacn_packet strcuture
+* @param ptype		- The expected PDU type
+* @param max_auth_info	- The maximum size of a possible auth trailer
+* @param required_flags	- The required flags for the pdu.
+* @param optional_flags	- The possible optional flags for the pdu.
+*
+* @return		- A NTSTATUS error code.
+*/
+NTSTATUS dcerpc_verify_ncacn_packet_header(const struct ncacn_packet *pkt,
+					   enum dcerpc_pkt_type ptype,
+					   size_t max_auth_info,
+					   uint8_t required_flags,
+					   uint8_t optional_flags)
+{
+	if (pkt->rpc_vers != 5) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (pkt->rpc_vers_minor != 0) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (pkt->auth_length > pkt->frag_length) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (pkt->ptype != ptype) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (max_auth_info > UINT16_MAX) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (pkt->auth_length > 0) {
+		size_t max_auth_length;
+
+		if (max_auth_info <= DCERPC_AUTH_TRAILER_LENGTH) {
+			return NT_STATUS_RPC_PROTOCOL_ERROR;
+		}
+		max_auth_length = max_auth_info - DCERPC_AUTH_TRAILER_LENGTH;
+
+		if (pkt->auth_length > max_auth_length) {
+			return NT_STATUS_RPC_PROTOCOL_ERROR;
+		}
+	}
+
+	if ((pkt->pfc_flags & required_flags) != required_flags) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+	if (pkt->pfc_flags & ~(optional_flags|required_flags)) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (pkt->drep[0] & ~DCERPC_DREP_LE) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+	if (pkt->drep[1] != 0) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+	if (pkt->drep[2] != 0) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+	if (pkt->drep[3] != 0) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
 
 	return NT_STATUS_OK;
 }

@@ -503,9 +503,35 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	struct test_join *tj;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
-	
+	const char *binding_str = NULL;
+	struct dcerpc_binding *binding = NULL;
+	enum dcerpc_transport_t transport;
+
 	tj = talloc_zero(tctx, struct test_join);
 	if (!tj) return NULL;
+
+	binding_str = torture_setting_string(tctx, "binding", NULL);
+	if (binding_str == NULL) {
+		const char *host = torture_setting_string(tctx, "host", NULL);
+		binding_str = talloc_asprintf(tj, "ncacn_np:%s", host);
+	}
+	status = dcerpc_parse_binding(tj, binding_str, &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_parse_binding(%s) failed - %s\n",
+			  binding_str, nt_errstr(status)));
+		talloc_free(tj);
+		return NULL;
+	}
+	transport = dcerpc_binding_get_transport(binding);
+	switch (transport) {
+	case NCALRPC:
+	case NCACN_UNIX_STREAM:
+		break;
+	default:
+		dcerpc_binding_set_transport(binding, NCACN_NP);
+		dcerpc_binding_set_flags(binding, 0, DCERPC_AUTH_OPTIONS);
+		break;
+	}
 
 	libnet_r = talloc_zero(tj, struct libnet_JoinDomain);
 	if (!libnet_r) {
@@ -522,9 +548,10 @@ _PUBLIC_ struct test_join *torture_join_domain(struct torture_context *tctx,
 	tj->libnet_r = libnet_r;
 		
 	libnet_ctx->cred = cmdline_credentials;
-	libnet_r->in.binding = torture_setting_string(tctx, "binding", NULL);
-	if (!libnet_r->in.binding) {
-		libnet_r->in.binding = talloc_asprintf(libnet_r, "ncacn_np:%s", torture_setting_string(tctx, "host", NULL));
+	libnet_r->in.binding = dcerpc_binding_string(libnet_r, binding);
+	if (libnet_r->in.binding == NULL) {
+		talloc_free(tj);
+		return NULL;
 	}
 	libnet_r->in.level = LIBNET_JOINDOMAIN_SPECIFIED;
 	libnet_r->in.netbios_name = machine_name;

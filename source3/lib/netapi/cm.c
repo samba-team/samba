@@ -88,7 +88,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	if (!auth_info) {
 		return WERR_NOMEM;
 	}
-	auth_info->signing_state = SMB_SIGNING_DEFAULT;
+	auth_info->signing_state = SMB_SIGNING_IPC_DEFAULT;
 	set_cmdline_auth_info_use_kerberos(auth_info, ctx->use_kerberos);
 	set_cmdline_auth_info_username(auth_info, ctx->username);
 	if (ctx->password) {

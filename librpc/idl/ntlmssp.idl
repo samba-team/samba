@@ -1,5 +1,7 @@
 #include "idl_types.h"
 
+import "security.idl";
+
 /*
   ntlmssp interface definition
 */
@@ -54,18 +56,21 @@ interface ntlmssp
 
 	/*
 	   NTLMSSP_WINDOWS_MAJOR_VERSION_5: Windows XP SP2 and Server 2003
-	   NTLMSSP_WINDOWS_MAJOR_VERSION_6: Windows Vista, Server 2008, 7 and Server 2008 R2
+	   NTLMSSP_WINDOWS_MAJOR_VERSION_6: Windows Vista, Server 2008, 7, Server 2008 R2, 8, Server 2012, 8.1, Server 2012 R2
+	   NTLMSSP_WINDOWS_MAJOR_VERSION_10: Windows 10, Windows Server 2016 Technical Preview
 	 */
 
 	typedef [enum8bit] enum {
 		NTLMSSP_WINDOWS_MAJOR_VERSION_5	= 0x05,
-		NTLMSSP_WINDOWS_MAJOR_VERSION_6	= 0x06
+		NTLMSSP_WINDOWS_MAJOR_VERSION_6	= 0x06,
+		NTLMSSP_WINDOWS_MAJOR_VERSION_10 = 0x0A
 	} ntlmssp_WindowsMajorVersion;
 
 	/*
-	   NTLMSSP_WINDOWS_MINOR_VERSION_0: Windows Vista, Server 2008, 7, Server 2008 R2
-	   NTLMSSP_WINDOWS_MINOR_VERSION_1: Windows XP SP2
-	   NTLMSSP_WINDOWS_MINOR_VERSION_2: Windows Server 2003
+	   NTLMSSP_WINDOWS_MINOR_VERSION_0: Windows Vista, 10, Server 2016 Technical Preview
+	   NTLMSSP_WINDOWS_MINOR_VERSION_1: Windows XP SP2, 7, Server 2008 R2
+	   NTLMSSP_WINDOWS_MINOR_VERSION_2: Windows Server 2003, 8, Server 2012
+	   NTLMSSP_WINDOWS_MINOR_VERSION_3: Windows 8.1, Server 2012 R2
 	 */
 
 	typedef [enum8bit] enum {
@@ -124,24 +129,24 @@ interface ntlmssp
 		MsvAvDnsTreeName	= 5,
 		MsvAvFlags		= 6,
 		MsvAvTimestamp		= 7,
-		MsAvRestrictions	= 8,
+		MsvAvSingleHost		= 8,
 		MsvAvTargetName		= 9,
 		MsvChannelBindings	= 10
 	} ntlmssp_AvId;
 
-	/* [MS-NLMP] 2.2.2.2 Restriction_Encoding */
+	/* [MS-NLMP] 2.2.2.2 SingleHostData */
 
-	typedef struct {
-		uint32 Size;
+	typedef [flag(NDR_PAHEX)] struct {
+		[value(8+ndr_size_LSAP_TOKEN_INFO_INTEGRITY(&r->token_info, 0)+r->remaining.length)] uint32 Size;
 		[value(0)] uint32 Z4;
-		boolean32 IntegrityLevel;
-		uint32 SubjectIntegrityLevel;
-		uint8 MachineId[32];
-	} Restriction_Encoding;
+		LSAP_TOKEN_INFO_INTEGRITY token_info;
+		[flag(NDR_REMAINING)] DATA_BLOB remaining;
+	} ntlmssp_SingleHostData;
 
 	typedef [bitmap32bit] bitmap {
 		NTLMSSP_AVFLAG_CONSTRAINTED_ACCOUNT		= 0x00000001,
-		NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE	= 0x00000002
+		NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE	= 0x00000002,
+		NTLMSSP_AVFLAG_TARGET_SPN_FROM_UNTRUSTED_SOURCE	= 0x00000004
 	} ntlmssp_AvFlags;
 
 	typedef [gensize,nodiscriminant,flag(NDR_NOALIGN)] union {
@@ -153,7 +158,7 @@ interface ntlmssp
 		[case(MsvAvDnsTreeName)]	[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvDnsTreeName;
 		[case(MsvAvFlags)]		ntlmssp_AvFlags AvFlags;
 		[case(MsvAvTimestamp)]		NTTIME AvTimestamp;
-		[case(MsAvRestrictions)]	Restriction_Encoding AvRestrictions;
+		[case(MsvAvSingleHost)]		ntlmssp_SingleHostData AvSingleHost;
 		[case(MsvAvTargetName)]		[flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_UNICODE))] string AvTargetName;
 		[case(MsvChannelBindings)]	uint8 ChannelBindings[16];
 		[default]			[flag(NDR_REMAINING)] DATA_BLOB blob;
@@ -167,7 +172,7 @@ interface ntlmssp
 		[subcontext(0),subcontext_size(AvLen),switch_is(AvId)] ntlmssp_AvValue Value;
 	} AV_PAIR;
 
-	typedef [gensize,nopush,nopull,flag(NDR_NOALIGN)] struct {
+	typedef [public,gensize,nopush,nopull,flag(NDR_NOALIGN)] struct {
 		uint32 count;
 		AV_PAIR pair[count];
 	} AV_PAIR_LIST;
@@ -184,7 +189,7 @@ interface ntlmssp
 		uint8 ServerChallenge[8];
 		uint8 Reserved[8];
 		[value(ndr_size_AV_PAIR_LIST(TargetInfo, ndr->flags))] uint16 TargetInfoLen;
-		[value(TargetInfoLen)] uint16 TargetNameInfoMaxLen;
+		[value(TargetInfoLen)] uint16 TargetInfoMaxLen;
 		[relative] [subcontext(0),subcontext_size(TargetInfoLen)] AV_PAIR_LIST *TargetInfo;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 	} CHALLENGE_MESSAGE;
@@ -239,9 +244,12 @@ interface ntlmssp
 		[default] NTLMv2_RESPONSE v2;
 	} ntlmssp_NTLM_RESPONSE;
 
+	const int NTLMSSP_MIC_OFFSET = 72;
+	const int NTLMSSP_MIC_SIZE = 16;
+
 	typedef [flag(NDR_PAHEX)] struct {
-		uint8 MIC[16];
-	} MIC;
+		uint8 MIC[NTLMSSP_MIC_SIZE];
+	} ntlmssp_MIC;
 
 	/* [MS-NLMP] 2.2.1.3 AUTHENTICATE_MESSAGE */
 
@@ -270,7 +278,7 @@ interface ntlmssp
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
 		/* MIC (Message Integrity) is only included when the client has
 		 * sent a timestap Av struct in the CHALLENGE_MESSAGE AvPair */
-		/* [flag(NDR_REMAINING)] MIC mic; */
+		/* [flag(NDR_REMAINING)] ntlmssp_MIC mic; */
 	} AUTHENTICATE_MESSAGE;
 
 	/* NTLMSSP signature version */

@@ -34,7 +34,7 @@
 #include "auth/gensec/gensec_internal.h"
 #include "auth/common_auth.h"
 #include "param/param.h"
-
+#include "param/loadparm.h"
 
 /**
  * Return the credentials of a logged on user, including session keys
@@ -98,6 +98,9 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	const char *netbios_domain;
 	const char *dns_name;
 	const char *dns_domain;
+	enum server_role role;
+
+	role = lpcfg_server_role(gensec_security->settings->lp_ctx);
 
 	nt_status = gensec_ntlmssp_start(gensec_security);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -117,11 +120,30 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	if (lpcfg_lanman_auth(gensec_security->settings->lp_ctx) &&
+	ntlmssp_state->allow_lm_response =
+		lpcfg_lanman_auth(gensec_security->settings->lp_ctx);
+
+	if (ntlmssp_state->allow_lm_response &&
 	    gensec_setting_bool(gensec_security->settings,
 				"ntlmssp_server", "allow_lm_key", false))
 	{
 		ntlmssp_state->allow_lm_key = true;
+	}
+
+	if (lpcfg_map_to_guest(gensec_security->settings->lp_ctx) != NEVER_MAP_TO_GUEST) {
+		/*
+		 * map to guest is not secure anyway, so
+		 * try to make it work and don't try to
+		 * negotiate new_spnego and MIC checking
+		 */
+		ntlmssp_state->force_old_spnego = true;
+	}
+
+	if (role == ROLE_ACTIVE_DIRECTORY_DC) {
+		/*
+		 * map to guest is not supported on an AD DC.
+		 */
+		ntlmssp_state->force_old_spnego = false;
 	}
 
 	ntlmssp_state->neg_flags =
@@ -147,18 +169,31 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
+	if (ntlmssp_state->allow_lm_key) {
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_LM_KEY;
+	}
+
 	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
+
+		if (gensec_security->want_features & GENSEC_FEATURE_LDAP_STYLE) {
+			/*
+			 * We need to handle NTLMSSP_NEGOTIATE_SIGN as
+			 * NTLMSSP_NEGOTIATE_SEAL if GENSEC_FEATURE_LDAP_STYLE
+			 * is requested.
+			 */
+			ntlmssp_state->force_wrap_seal = true;
+		}
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	if (lpcfg_server_role(gensec_security->settings->lp_ctx) == ROLE_STANDALONE) {
+	if (role == ROLE_STANDALONE) {
 		ntlmssp_state->server.is_standalone = true;
 	} else {
 		ntlmssp_state->server.is_standalone = false;
@@ -214,6 +249,9 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->server.dns_domain = talloc_strdup(ntlmssp_state, dns_domain);
 	NT_STATUS_HAVE_NO_MEMORY(ntlmssp_state->server.dns_domain);
+
+	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
+	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
 
 	return NT_STATUS_OK;
 }

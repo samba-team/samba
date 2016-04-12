@@ -45,7 +45,11 @@ enum spnego_negResult {
 	SPNEGO_ACCEPT_COMPLETED = 0,
 	SPNEGO_ACCEPT_INCOMPLETE = 1,
 	SPNEGO_REJECT = 2,
-	SPNEGO_NONE_RESULT = 3
+	SPNEGO_REQUEST_MIC = 3,
+	/*
+	 * The max value is 0xff (255) on the wire
+	 */
+	SPNEGO_NONE_RESULT = 256
 };
 
 struct spnego_negTokenInit {
@@ -58,7 +62,7 @@ struct spnego_negTokenInit {
 };
 
 struct spnego_negTokenTarg {
-	uint8_t negResult;
+	enum spnego_negResult negResult;
 	const char *supportedMech;
 	DATA_BLOB responseToken;
 	DATA_BLOB mechListMIC;

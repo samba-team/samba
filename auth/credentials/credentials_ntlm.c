@@ -30,7 +30,9 @@
 
 _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					   int *flags,
-					   DATA_BLOB challenge, DATA_BLOB target_info, 
+					   DATA_BLOB challenge,
+					   const NTTIME *server_timestamp,
+					   DATA_BLOB target_info,
 					   DATA_BLOB *_lm_response, DATA_BLOB *_nt_response, 
 					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key) 
 {
@@ -102,7 +104,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 					   user, 
 					   domain, 
 					   nt_hash->hash, &challenge, 
-					   &target_info, 
+					   server_timestamp, &target_info,
 					   &lm_response, &nt_response, 
 					   NULL, &session_key)) {
 			return NT_STATUS_NO_MEMORY;
@@ -110,6 +112,12 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 
 		/* LM Key is incompatible... */
 		*flags &= ~CLI_CRED_LANMAN_AUTH;
+		if (lm_response.length != 0) {
+			/*
+			 * We should not expose the lm key.
+			 */
+			memset(lm_response.data, 0, lm_response.length);
+		}
 	} else if (*flags & CLI_CRED_NTLM2) {
 		MD5_CTX md5_session_nonce_ctx;
 		uint8_t session_nonce[16];

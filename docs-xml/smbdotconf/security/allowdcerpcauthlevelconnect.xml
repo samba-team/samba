@@ -1,0 +1,27 @@
+<samba:parameter name="allow dcerpc auth level connect"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>This option controls whether DCERPC services are allowed to
+	be used with DCERPC_AUTH_LEVEL_CONNECT, which provides authentication,
+	but no per message integrity nor privacy protection.</para>
+
+	<para>Some interfaces like samr, lsarpc and netlogon have a hard-coded default of
+	<constant>no</constant> and epmapper, mgmt and rpcecho have a hard-coded default of
+	<constant>yes</constant>.
+	</para>
+
+	<para>The behavior can be overwritten per interface name (e.g. lsarpc, netlogon, samr, srvsvc,
+	winreg, wkssvc ...) by using 'allow dcerpc auth level connect:interface = yes' as option.</para>
+
+	<para>This option yields precedence to the implementation specific restrictions.
+	E.g. the drsuapi and backupkey protocols require DCERPC_AUTH_LEVEL_PRIVACY.
+	The dnsserver protocol requires DCERPC_AUTH_LEVEL_INTEGRITY.
+	</para>
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+
+</samba:parameter>

@@ -516,7 +516,8 @@ static bool test_validate_trust(struct torture_context *tctx,
 	NTSTATUS status;
 	struct cli_credentials *credentials;
 	struct dcerpc_binding *b;
-	struct dcerpc_pipe *p;
+	struct dcerpc_pipe *p1 = NULL;
+	struct dcerpc_pipe *p = NULL;
 
 	struct netr_GetForestTrustInformation fr;
 	struct lsa_ForestTrustInformation *forest_trust_info;
@@ -547,7 +548,7 @@ static bool test_validate_trust(struct torture_context *tctx,
 					trusted_dom_name, CRED_SPECIFIED);
 	cli_credentials_set_secure_channel_type(credentials, SEC_CHAN_DOMAIN);
 
-	status = dcerpc_pipe_connect_b(tctx, &p, b,
+	status = dcerpc_pipe_connect_b(tctx, &p1, b,
 				       &ndr_table_netlogon, credentials,
 				       tctx->ev, tctx->lp_ctx);
 
@@ -559,9 +560,14 @@ static bool test_validate_trust(struct torture_context *tctx,
 		return false;
 	}
 
-	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
+	if (!test_SetupCredentials3(p1, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES,
 				    credentials, &creds)) {
 		torture_comment(tctx, "test_SetupCredentials3 failed.\n");
+		return false;
+	}
+	if (!test_SetupCredentialsPipe(p1, tctx, credentials, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		torture_comment(tctx, "test_SetupCredentialsPipe failed.\n");
 		return false;
 	}
 

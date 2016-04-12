@@ -211,8 +211,10 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_sasl_name(
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
-		if (!gensec_security_ops_enabled(backends[i], gensec_security))
-		    continue;
+		if (gensec_security != NULL &&
+		    !gensec_security_ops_enabled(backends[i], gensec_security)) {
+			continue;
+		}
 		if (backends[i]->sasl_name
 		    && (strcmp(backends[i]->sasl_name, sasl_name) == 0)) {
 			backend = backends[i];
@@ -232,7 +234,13 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
 	int i;
 	const struct gensec_security_ops **backends;
 	const struct gensec_security_ops *backend;
-	TALLOC_CTX *mem_ctx = talloc_new(gensec_security);
+	TALLOC_CTX *mem_ctx;
+
+	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(gensec_security);
 	if (!mem_ctx) {
 		return NULL;
 	}
@@ -253,8 +261,8 @@ _PUBLIC_ const struct gensec_security_ops *gensec_security_by_auth_type(
 	return NULL;
 }
 
-static const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
-								 const char *name)
+const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
+							  const char *name)
 {
 	int i;
 	const struct gensec_security_ops **backends;

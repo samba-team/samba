@@ -37,6 +37,7 @@ static void smb_raw_negotiate_done(struct tevent_req *subreq);
 struct tevent_req *smb_raw_negotiate_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct smbcli_transport *transport,
+					  int minprotocol,
 					  int maxprotocol)
 {
 	struct tevent_req *req;
@@ -51,10 +52,14 @@ struct tevent_req *smb_raw_negotiate_send(TALLOC_CTX *mem_ctx,
 	}
 	state->transport = transport;
 
+	if (maxprotocol > PROTOCOL_NT1) {
+		maxprotocol = PROTOCOL_NT1;
+	}
+
 	subreq = smbXcli_negprot_send(state, ev,
 				      transport->conn,
 				      timeout_msec,
-				      PROTOCOL_CORE,
+				      minprotocol,
 				      maxprotocol);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -127,7 +132,8 @@ NTSTATUS smb_raw_negotiate_recv(struct tevent_req *req)
 /*
  Send a negprot command (sync interface)
 */
-NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, bool unicode, int maxprotocol)
+NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, bool unicode,
+			   int minprotocol, int maxprotocol)
 {
 	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
 	struct tevent_req *subreq = NULL;
@@ -136,6 +142,7 @@ NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, bool unicode, int
 	subreq = smb_raw_negotiate_send(transport,
 					transport->ev,
 					transport,
+					minprotocol,
 					maxprotocol);
 	if (subreq == NULL) {
 		return NT_STATUS_NO_MEMORY;

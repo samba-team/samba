@@ -39,6 +39,14 @@
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR); \
 } while (0)
 
+#define DCESRV_INTERFACE_DRSUAPI_BIND(call, iface) \
+	dcesrv_interface_drsuapi_bind(call, iface)
+static NTSTATUS dcesrv_interface_drsuapi_bind(struct dcesrv_call_state *dce_call,
+					      const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_require_privacy(dce_call, iface);
+}
+
 /* 
   drsuapi_DsBind 
 */

@@ -245,8 +245,8 @@ static NTSTATUS prepare_gensec(const struct auth_context *auth_context,
 	status = cli_credentials_set_machine_account(server_credentials, lp_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Failed to obtain server credentials, perhaps a standalone server?: %s\n", nt_errstr(status)));
-		talloc_free(server_credentials);
-		server_credentials = NULL;
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	status = samba_server_gensec_start(mem_ctx,

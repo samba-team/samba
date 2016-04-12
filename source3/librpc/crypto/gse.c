@@ -45,6 +45,7 @@ struct gse_context {
 	gss_name_t server_name;
 	gss_name_t client_name;
 	OM_uint32 gss_want_flags, gss_got_flags;
+	size_t max_wrap_buf_size;
 	size_t sig_size;
 
 	gss_cred_id_t delegated_cred_handle;
@@ -136,6 +137,7 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor((TALLOC_CTX *)gse_ctx, gse_context_destructor);
 
 	gse_ctx->expire_time = GENSEC_EXPIRE_TIME_INFINITY;
+	gse_ctx->max_wrap_buf_size = UINT16_MAX;
 
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
@@ -201,8 +203,11 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 {
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
-	gss_buffer_desc name_buffer = {0, NULL};
+	gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
 	gss_OID_set_desc mech_set;
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+#endif
 	NTSTATUS status;
 
 	if (!server || !service) {
@@ -255,12 +260,34 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				   &gse_ctx->creds,
 				   NULL, NULL);
 	if (gss_maj) {
-		DEBUG(0, ("gss_acquire_creds failed for %s, with [%s]\n",
-			  (char *)name_buffer.value,
+		DEBUG(5, ("gss_acquire_creds failed for GSS_C_NO_NAME with [%s] -"
+			  "the caller may retry after a kinit.\n",
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
+
+#ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
+	/*
+	 * Don't force GSS_C_CONF_FLAG and GSS_C_INTEG_FLAG.
+	 *
+	 * This allows us to disable SIGN and SEAL for
+	 * AUTH_LEVEL_CONNECT and AUTH_LEVEL_INTEGRITY.
+	 *
+	 * https://groups.yahoo.com/neo/groups/cat-ietf/conversations/topics/575
+	 * http://krbdev.mit.edu/rt/Ticket/Display.html?id=6938
+	 */
+	gss_maj = gss_set_cred_option(&gss_min, &gse_ctx->creds,
+				      GSS_KRB5_CRED_NO_CI_FLAGS_X,
+				      &empty_buffer);
+	if (gss_maj) {
+		DEBUG(0, ("gss_set_cred_option(GSS_KRB5_CRED_NO_CI_FLAGS_X), "
+			  "failed with [%s]\n",
+			  gse_errstr(gse_ctx, gss_maj, gss_min)));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto err_out;
+	}
+#endif
 
 	*_gse_ctx = gse_ctx;
 	TALLOC_FREE(name_buffer.value);
@@ -570,6 +597,9 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (gensec_security->want_features & GENSEC_FEATURE_SESSION_KEY) {
+		do_sign = true;
+	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		do_sign = true;
 	}
@@ -870,17 +900,14 @@ static bool gensec_gse_have_feature(struct gensec_security *gensec_security,
 		talloc_get_type_abort(gensec_security->private_data,
 		struct gse_context);
 
+	if (feature & GENSEC_FEATURE_SESSION_KEY) {
+		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
+	}
 	if (feature & GENSEC_FEATURE_SIGN) {
 		return gse_ctx->gss_got_flags & GSS_C_INTEG_FLAG;
 	}
 	if (feature & GENSEC_FEATURE_SEAL) {
 		return gse_ctx->gss_got_flags & GSS_C_CONF_FLAG;
-	}
-	if (feature & GENSEC_FEATURE_SESSION_KEY) {
-		/* Only for GSE/Krb5 */
-		if (smb_gss_oid_equal(gse_ctx->ret_mech, gss_mech_krb5)) {
-			return true;
-		}
 	}
 	if (feature & GENSEC_FEATURE_DCE_STYLE) {
 		return gse_ctx->gss_got_flags & GSS_C_DCE_STYLE;
@@ -1037,6 +1064,40 @@ static NTSTATUS gensec_gse_session_info(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+static size_t gensec_gse_max_input_size(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	OM_uint32 maj_stat, min_stat;
+	OM_uint32 max_input_size;
+
+	maj_stat = gss_wrap_size_limit(&min_stat,
+				       gse_ctx->gssapi_context,
+				       gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL),
+				       GSS_C_QOP_DEFAULT,
+				       gse_ctx->max_wrap_buf_size,
+				       &max_input_size);
+	if (GSS_ERROR(maj_stat)) {
+		TALLOC_CTX *mem_ctx = talloc_new(NULL);
+		DEBUG(1, ("gensec_gssapi_max_input_size: determining signature size with gss_wrap_size_limit failed: %s\n",
+			  gse_errstr(mem_ctx, maj_stat, min_stat)));
+		talloc_free(mem_ctx);
+		return 0;
+	}
+
+	return max_input_size;
+}
+
+/* Find out the maximum output size negotiated on this connection */
+static size_t gensec_gse_max_wrapped_size(struct gensec_security *gensec_security)
+{
+	struct gse_context *gse_ctx =
+		talloc_get_type_abort(gensec_security->private_data,
+		struct gse_context);
+	return gse_ctx->max_wrap_buf_size;
+}
+
 static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
 				  size_t data_size)
 {
@@ -1076,6 +1137,8 @@ const struct gensec_security_ops gensec_gse_krb5_security_ops = {
 	.check_packet	= gensec_gse_check_packet,
 	.seal_packet	= gensec_gse_seal_packet,
 	.unseal_packet	= gensec_gse_unseal_packet,
+	.max_input_size	  = gensec_gse_max_input_size,
+	.max_wrapped_size = gensec_gse_max_wrapped_size,
 	.wrap           = gensec_gse_wrap,
 	.unwrap         = gensec_gse_unwrap,
 	.have_feature   = gensec_gse_have_feature,

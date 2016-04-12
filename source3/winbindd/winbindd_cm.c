@@ -996,7 +996,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	enum smb_signing_setting smb_sign_client_connections = lp_client_signing();
+	enum smb_signing_setting smb_sign_client_connections = lp_client_ipc_signing();
 
 	if (smb_sign_client_connections == SMB_SIGNING_DEFAULT) {
 		/*
@@ -1049,8 +1049,8 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	cli_set_timeout(*cli, 10000); /* 10 seconds */
 
 	result = smbXcli_negprot((*cli)->conn, (*cli)->timeout,
-				 lp_client_min_protocol(),
-				 lp_winbindd_max_protocol());
+				 lp_client_ipc_min_protocol(),
+				 lp_client_ipc_max_protocol());
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1, ("cli_negprot failed: %s\n", nt_errstr(result)));

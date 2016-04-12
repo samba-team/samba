@@ -34,6 +34,14 @@
 #include "libcli/lsarpc/util_lsarpc.h"
 #include "lib/messaging/irpc.h"
 
+#define DCESRV_INTERFACE_LSARPC_BIND(call, iface) \
+       dcesrv_interface_lsarpc_bind(call, iface)
+static NTSTATUS dcesrv_interface_lsarpc_bind(struct dcesrv_call_state *dce_call,
+					     const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_reject_connect(dce_call, iface);
+}
+
 /*
   this type allows us to distinguish handle types
 */

@@ -8,7 +8,7 @@ if bld.CONFIG_SET('WITH_PAM_MODULES'):
                   support.c''',
         allow_warnings=True,
         deps='''tdb talloc pam PAM_ERRORS wbclient cap asn1util param pdb
-                LIBNTLMSSP LIBTSOCKET''',
+                LIBTSOCKET''',
         cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
         realname='pam_smbpass.so',
         install_path='${PAMMODULESDIR}',

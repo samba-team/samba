@@ -26,7 +26,7 @@
 #include "../libcli/auth/msrpc_parse.h"
 #include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/ntlmssp.h"
+#include "../librpc/gen_ndr/ndr_ntlmssp.h"
 
 void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24])
 {
@@ -387,14 +387,13 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 	return names_blob;
 }
 
-static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLOB *names_blob)
+static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx,
+					     NTTIME nttime,
+					     const DATA_BLOB *names_blob)
 {
 	uint8_t client_chal[8];
 	DATA_BLOB response = data_blob(NULL, 0);
 	uint8_t long_date[8];
-	NTTIME nttime;
-
-	unix_to_nt_time(&nttime, time(NULL));
 
 	generate_random_buffer(client_chal, sizeof(client_chal));
 
@@ -417,6 +416,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 					  const uint8_t ntlm_v2_hash[16],
 					  const DATA_BLOB *server_chal,
+					  NTTIME nttime,
 					  const DATA_BLOB *names_blob)
 {
 	uint8_t ntlmv2_response[16];
@@ -433,7 +433,7 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 	/* NTLMv2 */
 	/* generate some data to pass into the response function - including
 	   the hostname and domain name of the server */
-	ntlmv2_client_data = NTLMv2_generate_client_data(mem_ctx, names_blob);
+	ntlmv2_client_data = NTLMv2_generate_client_data(mem_ctx, nttime, names_blob);
 
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
@@ -479,6 +479,7 @@ static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx,
 bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 			   const char *user, const char *domain, const uint8_t nt_hash[16],
 			   const DATA_BLOB *server_chal,
+			   const NTTIME *server_timestamp,
 			   const DATA_BLOB *names_blob,
 			   DATA_BLOB *lm_response, DATA_BLOB *nt_response,
 			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key)
@@ -494,8 +495,19 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	}
 
 	if (nt_response) {
+		const NTTIME *nttime = server_timestamp;
+		NTTIME _now = 0;
+
+		if (nttime == NULL) {
+			struct timeval tv_now = timeval_current();
+			_now = timeval_to_nttime(&tv_now);
+			nttime = &_now;
+		}
+
 		*nt_response = NTLMv2_generate_response(mem_ctx,
-							ntlm_v2_hash, server_chal,
+							ntlm_v2_hash,
+							server_chal,
+							*nttime,
 							names_blob);
 		if (user_session_key) {
 			*user_session_key = data_blob_talloc(mem_ctx, NULL, 16);
@@ -509,8 +521,13 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 	/* LMv2 */
 
 	if (lm_response) {
-		*lm_response = LMv2_generate_response(mem_ctx,
-						      ntlm_v2_hash, server_chal);
+		if (server_timestamp != NULL) {
+			*lm_response = data_blob_talloc_zero(mem_ctx, 24);
+		} else {
+			*lm_response = LMv2_generate_response(mem_ctx,
+							      ntlm_v2_hash,
+							      server_chal);
+		}
 		if (lm_session_key) {
 			*lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 
@@ -535,8 +552,141 @@ bool SMBNTLMv2encrypt(TALLOC_CTX *mem_ctx,
 	E_md4hash(password, nt_hash);
 
 	return SMBNTLMv2encrypt_hash(mem_ctx,
-				     user, domain, nt_hash, server_chal, names_blob,
+				     user, domain, nt_hash,
+				     server_chal, NULL, names_blob,
 				     lm_response, nt_response, lm_session_key, user_session_key);
+}
+
+NTSTATUS NTLMv2_RESPONSE_verify_netlogon_creds(const char *account_name,
+			const char *account_domain,
+			const DATA_BLOB response,
+			const struct netlogon_creds_CredentialState *creds,
+			const char *workgroup)
+{
+	TALLOC_CTX *frame = NULL;
+	/* RespType + HiRespType */
+	static const char *magic = "\x01\x01";
+	int cmp;
+	struct NTLMv2_RESPONSE v2_resp;
+	enum ndr_err_code err;
+	const struct AV_PAIR *av_nb_cn = NULL;
+	const struct AV_PAIR *av_nb_dn = NULL;
+
+	if (response.length < 48) {
+		/*
+		 * NTLMv2_RESPONSE has at least 48 bytes.
+		 */
+		return NT_STATUS_OK;
+	}
+
+	cmp = memcmp(response.data + 16, magic, 2);
+	if (cmp != 0) {
+		/*
+		 * It doesn't look like a valid NTLMv2_RESPONSE
+		 */
+		return NT_STATUS_OK;
+	}
+
+	frame = talloc_stackframe();
+
+	err = ndr_pull_struct_blob(&response, frame, &v2_resp,
+		(ndr_pull_flags_fn_t)ndr_pull_NTLMv2_RESPONSE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		NTSTATUS status;
+		status = ndr_map_error2ntstatus(err);
+		DEBUG(2,("Failed to parse NTLMv2_RESPONSE "
+			 "length %u - %s - %s\n",
+			 (unsigned)response.length,
+			 ndr_map_error2string(err),
+			 nt_errstr(status)));
+		dump_data(2, response.data, response.length);
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(NTLMv2_RESPONSE, &v2_resp);
+	}
+
+	/*
+	 * Make sure the netbios computer name in the
+	 * NTLMv2_RESPONSE matches the computer name
+	 * in the secure channel credentials for workstation
+	 * trusts.
+	 *
+	 * And the netbios domain name matches our
+	 * workgroup.
+	 *
+	 * This prevents workstations from requesting
+	 * the session key of NTLMSSP sessions of clients
+	 * to other hosts.
+	 */
+	if (creds->secure_channel_type == SEC_CHAN_WKSTA) {
+		av_nb_cn = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+					       MsvAvNbComputerName);
+		av_nb_dn = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+					       MsvAvNbDomainName);
+	}
+
+	if (av_nb_cn != NULL) {
+		const char *v = NULL;
+		char *a = NULL;
+		size_t len;
+
+		v = av_nb_cn->Value.AvNbComputerName;
+
+		a = talloc_strdup(frame, creds->account_name);
+		if (a == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		len = strlen(a);
+		if (len > 0 && a[len - 1] == '$') {
+			a[len - 1] = '\0';
+		}
+
+		cmp = strcasecmp_m(a, v);
+		if (cmp != 0) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbComputerName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against SEC_CHAN_WKSTA[%s/%s] "
+				 "in workgroup[%s]\n",
+				 __func__, v,
+				 account_domain,
+				 account_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 workgroup));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+	if (av_nb_dn != NULL) {
+		const char *v = NULL;
+
+		v = av_nb_dn->Value.AvNbDomainName;
+
+		cmp = strcasecmp_m(workgroup, v);
+		if (cmp != 0) {
+			DEBUG(2,("%s: NTLMv2_RESPONSE with "
+				 "NbDomainName[%s] rejected "
+				 "for user[%s\\%s] "
+				 "against SEC_CHAN_WKSTA[%s/%s] "
+				 "in workgroup[%s]\n",
+				 __func__, v,
+				 account_domain,
+				 account_name,
+				 creds->computer_name,
+				 creds->account_name,
+				 workgroup));
+			TALLOC_FREE(frame);
+			return NT_STATUS_LOGON_FAILURE;
+		}
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 /***********************************************************

@@ -134,6 +134,7 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	struct tevent_req *subreq;
 	NTSTATUS status;
 	uint32_t timeout_msec;
+	enum protocol_types min_protocol;
 
 	status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (tevent_req_nterror(req, status)) {
@@ -146,10 +147,14 @@ static void smb2_connect_socket_done(struct composite_context *creq)
 	}
 
 	timeout_msec = state->transport->options.request_timeout * 1000;
+	min_protocol = state->transport->options.min_protocol;
+	if (min_protocol < PROTOCOL_SMB2_02) {
+		min_protocol = PROTOCOL_SMB2_02;
+	}
 
 	subreq = smbXcli_negprot_send(state, state->ev,
 				      state->transport->conn, timeout_msec,
-				      PROTOCOL_SMB2_02,
+				      min_protocol,
 				      state->transport->options.max_protocol);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

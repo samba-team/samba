@@ -61,6 +61,8 @@ struct gensec_target {
 #define GENSEC_FEATURE_SIGN_PKT_HEADER	0x00000040
 #define GENSEC_FEATURE_NEW_SPNEGO	0x00000080
 #define GENSEC_FEATURE_UNIX_TOKEN	0x00000100
+#define GENSEC_FEATURE_NTLM_CCACHE	0x00000200
+#define GENSEC_FEATURE_LDAP_STYLE	0x00000400
 
 #define GENSEC_EXPIRE_TIME_INFINITY (NTTIME)0x8000000000000000LL
 
@@ -163,6 +165,8 @@ const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_sec
 const struct gensec_security_ops *gensec_security_by_auth_type(
 				struct gensec_security *gensec_security,
 				uint32_t auth_type);
+const struct gensec_security_ops *gensec_security_by_name(struct gensec_security *gensec_security,
+							  const char *name);
 const struct gensec_security_ops **gensec_security_mechs(struct gensec_security *gensec_security,
 						   TALLOC_CTX *mem_ctx);
 const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(

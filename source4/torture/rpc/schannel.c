@@ -62,6 +62,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct netr_SamBaseInfo *base = NULL;
 	const char *crypto_alg = "";
 	bool can_do_validation_6 = true;
+	enum dcerpc_AuthLevel auth_level = DCERPC_AUTH_LEVEL_NONE;
 
 	if (lpcfg_client_lanman_auth(tctx->lp_ctx)) {
 		flags |= CLI_CRED_LANMAN_AUTH;
@@ -86,6 +87,7 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
@@ -131,16 +133,26 @@ bool test_netlogon_ex_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 	}
 
-	r.in.validation_level = 6;
+	dcerpc_binding_handle_auth_info(b, NULL, &auth_level);
+	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
+		r.in.validation_level = 6;
 
-	torture_comment(tctx,
-			"Testing LogonSamLogonEx with name %s using %s and validation_level: %d\n",
-			ninfo.identity_info.account_name.string, crypto_alg,
-			r.in.validation_level);
+		torture_comment(tctx,
+				"Testing LogonSamLogonEx with name %s using %s and validation_level: %d\n",
+				ninfo.identity_info.account_name.string, crypto_alg,
+				r.in.validation_level);
 
-	torture_assert_ntstatus_ok(tctx,
-		dcerpc_netr_LogonSamLogonEx_r(b, tctx, &r),
-		"LogonSamLogonEx failed");
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_netr_LogonSamLogonEx_r(b, tctx, &r),
+			"LogonSamLogonEx failed");
+	} else {
+		torture_comment(tctx,
+				"Skip auth_level[%u] Testing LogonSamLogonEx with name %s using %s and validation_level: %d\n",
+				auth_level, ninfo.identity_info.account_name.string, crypto_alg,
+				r.in.validation_level);
+		r.out.result = NT_STATUS_INVALID_INFO_CLASS;
+	}
+
 	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_INVALID_INFO_CLASS)) {
 		can_do_validation_6 = false;
 	} else {
@@ -842,6 +854,7 @@ static bool torture_schannel_bench_start(struct torture_schannel_bench_conn *con
 	status = cli_credentials_get_ntlm_response(user_creds, conn->tmp,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);

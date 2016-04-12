@@ -1755,7 +1755,8 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 	 * with INTERNAL_ERROR */
 
 	status = dcerpc_binding_set_flags(b,
-					  DCERPC_SCHANNEL | DCERPC_SIGN |
+					  DCERPC_SCHANNEL |
+					  DCERPC_SIGN | DCERPC_SEAL |
 					  DCERPC_SCHANNEL_128,
 					  DCERPC_AUTH_OPTIONS);
 	torture_assert_ntstatus_ok(torture, status, "set flags");

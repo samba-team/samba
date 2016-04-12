@@ -465,16 +465,15 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 			char *ca_file = lpcfg_tls_cafile(state, conn->lp_ctx);
 			char *crl_file = lpcfg_tls_crlfile(state, conn->lp_ctx);
 			const char *tls_priority = lpcfg_tls_priority(conn->lp_ctx);
-			if (!ca_file || !*ca_file) {
-				composite_error(result,
-						NT_STATUS_INVALID_PARAMETER_MIX);
-				return result;
-			}
+			enum tls_verify_peer_state verify_peer =
+				lpcfg_tls_verify_peer(conn->lp_ctx);
 
 			status = tstream_tls_params_client(state,
 							   ca_file,
 							   crl_file,
 							   tls_priority,
+							   verify_peer,
+							   conn->host,
 							   &state->tls_params);
 			if (!NT_STATUS_IS_OK(status)) {
 				composite_error(result, status);

@@ -371,6 +371,7 @@ static bool run_negprot_nowait(struct torture_context *tctx)
 		struct tevent_req *req;
 		req = smb_raw_negotiate_send(cli, tctx->ev,
 					     cli->transport,
+					     PROTOCOL_CORE,
 					     PROTOCOL_NT1);
 		tevent_loop_once(tctx->ev);
 		if (!tevent_req_is_in_progress(req)) {
@@ -1527,6 +1528,7 @@ static bool torture_chkpath_test(struct torture_context *tctx,
 static bool torture_samba3_errorpaths(struct torture_context *tctx)
 {
 	bool nt_status_support;
+	bool client_ntlmv2_auth;
 	struct smbcli_state *cli_nt = NULL, *cli_dos = NULL;
 	bool result = false;
 	int fnum;
@@ -1536,9 +1538,14 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	NTSTATUS status;
 
 	nt_status_support = lpcfg_nt_status_support(tctx->lp_ctx);
+	client_ntlmv2_auth = lpcfg_client_ntlmv2_auth(tctx->lp_ctx);
 
 	if (!lpcfg_set_cmdline(tctx->lp_ctx, "nt status support", "yes")) {
 		torture_result(tctx, TORTURE_FAIL, "Could not set 'nt status support = yes'\n");
+		goto fail;
+	}
+	if (!lpcfg_set_cmdline(tctx->lp_ctx, "client ntlmv2 auth", "yes")) {
+		torture_result(tctx, TORTURE_FAIL, "Could not set 'client ntlmv2 auth = yes'\n");
 		goto fail;
 	}
 
@@ -1547,7 +1554,11 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	}
 
 	if (!lpcfg_set_cmdline(tctx->lp_ctx, "nt status support", "no")) {
-		torture_result(tctx, TORTURE_FAIL, "Could not set 'nt status support = yes'\n");
+		torture_result(tctx, TORTURE_FAIL, "Could not set 'nt status support = no'\n");
+		goto fail;
+	}
+	if (!lpcfg_set_cmdline(tctx->lp_ctx, "client ntlmv2 auth", "no")) {
+		torture_result(tctx, TORTURE_FAIL, "Could not set 'client ntlmv2 auth = no'\n");
 		goto fail;
 	}
 
@@ -1557,7 +1568,12 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 
 	if (!lpcfg_set_cmdline(tctx->lp_ctx, "nt status support",
 			    nt_status_support ? "yes":"no")) {
-		torture_result(tctx, TORTURE_FAIL, "Could not reset 'nt status support = yes'");
+		torture_result(tctx, TORTURE_FAIL, "Could not reset 'nt status support'");
+		goto fail;
+	}
+	if (!lpcfg_set_cmdline(tctx->lp_ctx, "client ntlmv2 auth",
+			       client_ntlmv2_auth ? "yes":"no")) {
+		torture_result(tctx, TORTURE_FAIL, "Could not reset 'client ntlmv2 auth'");
 		goto fail;
 	}
 

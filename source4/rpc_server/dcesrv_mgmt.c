@@ -23,6 +23,14 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
 
+#define DCESRV_INTERFACE_MGMT_BIND(call, iface) \
+       dcesrv_interface_mgmt_bind(call, iface)
+static NTSTATUS dcesrv_interface_mgmt_bind(struct dcesrv_call_state *dce_call,
+					     const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_allow_connect(dce_call, iface);
+}
+
 /* 
   mgmt_inq_if_ids 
 */

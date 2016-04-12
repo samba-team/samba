@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/time_basic.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "auth/ntlmssp/ntlmssp_private.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
@@ -84,6 +85,27 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	uint8_t cryptkey[8];
 	const char *target_name;
 	NTSTATUS status;
+	struct timeval tv_now = timeval_current();
+	/*
+	 * See [MS-NLMP]
+	 *
+	 * Windows NT 4.0, windows_2000: use 30 minutes,
+	 * Windows XP, Windows Server 2003, Windows Vista,
+	 * Windows Server 2008, Windows 7, and Windows Server 2008 R2
+	 * use 36 hours.
+	 *
+	 * Newer systems doesn't check this, likely because the
+	 * connectionless NTLMSSP is no longer supported.
+	 *
+	 * As we expect the AUTHENTICATION_MESSAGE to arrive
+	 * directly after the NEGOTIATE_MESSAGE (typically less than
+	 * as 1 second later). We use a hard timeout of 30 Minutes.
+	 *
+	 * We don't look at AUTHENTICATE_MESSAGE.NtChallengeResponse.TimeStamp
+	 * instead we just remember our own time.
+	 */
+	uint32_t max_lifetime = 30 * 60;
+	struct timeval tv_end = timeval_add(&tv_now, max_lifetime, 0);
 
 	/* parse the NTLMSSP packet */
 #if 0
@@ -91,6 +113,12 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 #endif
 
 	if (request.length) {
+		if (request.length > UINT16_MAX) {
+			DEBUG(1, ("ntlmssp_server_negotiate: reject large request of length %u\n",
+				(unsigned int)request.length));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		if ((request.length < 16) || !msrpc_parse(ntlmssp_state, &request, "Cdd",
 							  "NTLMSSP",
 							  &ntlmssp_command,
@@ -117,7 +145,10 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 		}
 	}
 
-	ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, ntlmssp_state->allow_lm_key);
+	status = ntlmssp_handle_neg_flags(ntlmssp_state, neg_flags, "negotiate");
+	if (!NT_STATUS_IS_OK(status)){
+		return status;
+	}
 
 	/* Ask our caller what challenge they would like in the packet */
 	if (auth_context->get_ntlm_challenge) {
@@ -138,6 +169,7 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	 */
 
 	chal_flags = ntlmssp_state->neg_flags;
+	ntlmssp_state->server.challenge_endtime = timeval_to_nttime(&tv_end);
 
 	/* get the right name to fill in as 'target' */
 	target_name = ntlmssp_target_name(ntlmssp_state,
@@ -150,16 +182,48 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 							cryptkey, 8);
 
 	/* This creates the 'blob' of names that appears at the end of the packet */
-	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO)
-	{
-		status = msrpc_gen(ntlmssp_state, &struct_blob, "aaaaa",
-			  MsvAvNbDomainName, target_name,
-			  MsvAvNbComputerName, ntlmssp_state->server.netbios_name,
-			  MsvAvDnsDomainName, ntlmssp_state->server.dns_domain,
-			  MsvAvDnsComputerName, ntlmssp_state->server.dns_name,
-			  MsvAvEOL, "");
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+	if (chal_flags & NTLMSSP_NEGOTIATE_TARGET_INFO) {
+		enum ndr_err_code err;
+		struct AV_PAIR *pairs = NULL;
+		uint32_t count = 5;
+
+		pairs = talloc_zero_array(ntlmssp_state, struct AV_PAIR, count + 1);
+		if (pairs == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		pairs[0].AvId			= MsvAvNbDomainName;
+		pairs[0].Value.AvNbDomainName	= target_name;
+
+		pairs[1].AvId			= MsvAvNbComputerName;
+		pairs[1].Value.AvNbComputerName	= ntlmssp_state->server.netbios_name;
+
+		pairs[2].AvId			= MsvAvDnsDomainName;
+		pairs[2].Value.AvDnsDomainName	= ntlmssp_state->server.dns_domain;
+
+		pairs[3].AvId			= MsvAvDnsComputerName;
+		pairs[3].Value.AvDnsComputerName= ntlmssp_state->server.dns_name;
+
+		if (!ntlmssp_state->force_old_spnego) {
+			pairs[4].AvId			= MsvAvTimestamp;
+			pairs[4].Value.AvTimestamp	=
+						timeval_to_nttime(&tv_now);
+			count += 1;
+
+			pairs[5].AvId			= MsvAvEOL;
+		} else {
+			pairs[4].AvId			= MsvAvEOL;
+		}
+
+		ntlmssp_state->server.av_pair_list.count = count;
+		ntlmssp_state->server.av_pair_list.pair = pairs;
+
+		err = ndr_push_struct_blob(&struct_blob,
+					ntlmssp_state,
+					&ntlmssp_state->server.av_pair_list,
+					(ndr_push_flags_fn_t)ndr_push_AV_PAIR_LIST);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
 		struct_blob = data_blob_null;
@@ -168,29 +232,7 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	{
 		/* Marshal the packet in the right format, be it unicode or ASCII */
 		const char *gen_string;
-		DATA_BLOB version_blob = data_blob_null;
-
-		if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
-			enum ndr_err_code err;
-			struct ntlmssp_VERSION vers;
-
-			/* "What Windows returns" as a version number. */
-			ZERO_STRUCT(vers);
-			vers.ProductMajorVersion = NTLMSSP_WINDOWS_MAJOR_VERSION_6;
-			vers.ProductMinorVersion = NTLMSSP_WINDOWS_MINOR_VERSION_1;
-			vers.ProductBuild = 0;
-			vers.NTLMRevisionCurrent = NTLMSSP_REVISION_W2K3;
-
-			err = ndr_push_struct_blob(&version_blob,
-						ntlmssp_state,
-						&vers,
-						(ndr_push_flags_fn_t)ndr_push_ntlmssp_VERSION);
-
-			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
-				data_blob_free(&struct_blob);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
+		const DATA_BLOB version_blob = ntlmssp_version_blob();
 
 		if (ntlmssp_state->unicode) {
 			gen_string = "CdUdbddBb";
@@ -209,12 +251,9 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 			version_blob.data, version_blob.length);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			data_blob_free(&version_blob);
 			data_blob_free(&struct_blob);
 			return status;
 		}
-
-		data_blob_free(&version_blob);
 
 		if (DEBUGLEVEL >= 10) {
 			struct CHALLENGE_MESSAGE *challenge = talloc(
@@ -233,6 +272,18 @@ NTSTATUS gensec_ntlmssp_server_negotiate(struct gensec_security *gensec_security
 	}
 
 	data_blob_free(&struct_blob);
+
+	ntlmssp_state->negotiate_blob = data_blob_dup_talloc(ntlmssp_state,
+							     request);
+	if (ntlmssp_state->negotiate_blob.length != request.length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ntlmssp_state->challenge_blob = data_blob_dup_talloc(ntlmssp_state,
+							     *reply);
+	if (ntlmssp_state->challenge_blob.length != reply->length) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ntlmssp_state->expected_state = NTLMSSP_AUTH;
 
@@ -266,19 +317,24 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 	struct auth4_context *auth_context = gensec_security->auth_context;
 	uint32_t ntlmssp_command, auth_flags;
 	NTSTATUS nt_status;
-
+	const unsigned int version_len = 8;
+	DATA_BLOB version_blob = data_blob_null;
+	const unsigned int mic_len = NTLMSSP_MIC_SIZE;
+	DATA_BLOB mic_blob = data_blob_null;
 	uint8_t session_nonce_hash[16];
-
 	const char *parse_string;
+	bool ok;
+	struct timeval endtime;
+	bool expired = false;
 
 #if 0
 	file_save("ntlmssp_auth.dat", request.data, request.length);
 #endif
 
 	if (ntlmssp_state->unicode) {
-		parse_string = "CdBBUUUBd";
+		parse_string = "CdBBUUUBdbb";
 	} else {
-		parse_string = "CdBBAAABd";
+		parse_string = "CdBBAAABdbb";
 	}
 
 	/* zero these out */
@@ -291,7 +347,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 	ntlmssp_state->client.netbios_name = NULL;
 
 	/* now the NTLMSSP encoded auth hashes */
-	if (!msrpc_parse(ntlmssp_state, &request, parse_string,
+	ok = msrpc_parse(ntlmssp_state, &request, parse_string,
 			 "NTLMSSP",
 			 &ntlmssp_command,
 			 &ntlmssp_state->lm_resp,
@@ -300,7 +356,35 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 			 &ntlmssp_state->user,
 			 &ntlmssp_state->client.netbios_name,
 			 &state->encrypted_session_key,
-			 &auth_flags)) {
+			 &auth_flags,
+			 &version_blob, version_len,
+			 &mic_blob, mic_len);
+	if (!ok) {
+		DEBUG(10, ("ntlmssp_server_auth: failed to parse NTLMSSP (nonfatal):\n"));
+		dump_data(10, request.data, request.length);
+
+		data_blob_free(&version_blob);
+		data_blob_free(&mic_blob);
+
+		if (ntlmssp_state->unicode) {
+			parse_string = "CdBBUUUBd";
+		} else {
+			parse_string = "CdBBAAABd";
+		}
+
+		ok = msrpc_parse(ntlmssp_state, &request, parse_string,
+				 "NTLMSSP",
+				 &ntlmssp_command,
+				 &ntlmssp_state->lm_resp,
+				 &ntlmssp_state->nt_resp,
+				 &ntlmssp_state->domain,
+				 &ntlmssp_state->user,
+				 &ntlmssp_state->client.netbios_name,
+				 &state->encrypted_session_key,
+				 &auth_flags);
+	}
+
+	if (!ok) {
 		DEBUG(10, ("ntlmssp_server_auth: failed to parse NTLMSSP (nonfatal):\n"));
 		dump_data(10, request.data, request.length);
 
@@ -333,8 +417,14 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 
 	talloc_steal(state, state->encrypted_session_key.data);
 
-	if (auth_flags)
-		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, ntlmssp_state->allow_lm_key);
+	if (auth_flags != 0) {
+		nt_status = ntlmssp_handle_neg_flags(ntlmssp_state,
+						     auth_flags,
+						     "authenticate");
+		if (!NT_STATUS_IS_OK(nt_status)){
+			return nt_status;
+		}
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		struct AUTHENTICATE_MESSAGE *authenticate = talloc(
@@ -362,6 +452,194 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 	file_save("nthash1.dat",  &ntlmssp_state->nt_resp.data,  &ntlmssp_state->nt_resp.length);
 	file_save("lmhash1.dat",  &ntlmssp_state->lm_resp.data,  &ntlmssp_state->lm_resp.length);
 #endif
+
+	if (ntlmssp_state->nt_resp.length > 24) {
+		struct NTLMv2_RESPONSE v2_resp;
+		enum ndr_err_code err;
+		uint32_t i = 0;
+		uint32_t count = 0;
+		const struct AV_PAIR *flags = NULL;
+		const struct AV_PAIR *eol = NULL;
+		uint32_t av_flags = 0;
+
+		err = ndr_pull_struct_blob(&ntlmssp_state->nt_resp,
+					ntlmssp_state,
+					&v2_resp,
+					(ndr_pull_flags_fn_t)ndr_pull_NTLMv2_RESPONSE);
+		if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+			nt_status = ndr_map_error2ntstatus(err);
+			DEBUG(1,("%s: failed to parse NTLMv2_RESPONSE of length %zu for "
+				 "user=[%s] domain=[%s] workstation=[%s] - %s %s\n",
+				 __func__, ntlmssp_state->nt_resp.length,
+				 ntlmssp_state->user, ntlmssp_state->domain,
+				 ntlmssp_state->client.netbios_name,
+				 ndr_errstr(err), nt_errstr(nt_status)));
+			return nt_status;
+		}
+
+		if (DEBUGLVL(10)) {
+			NDR_PRINT_DEBUG(NTLMv2_RESPONSE, &v2_resp);
+		}
+
+		eol = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+					  MsvAvEOL);
+		if (eol == NULL) {
+			DEBUG(1,("%s: missing MsvAvEOL for "
+				 "user=[%s] domain=[%s] workstation=[%s]\n",
+				 __func__, ntlmssp_state->user, ntlmssp_state->domain,
+				 ntlmssp_state->client.netbios_name));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		flags = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+					    MsvAvFlags);
+		if (flags != NULL) {
+			av_flags = flags->Value.AvFlags;
+		}
+
+		if (av_flags & NTLMSSP_AVFLAG_MIC_IN_AUTHENTICATE_MESSAGE) {
+			if (mic_blob.length != NTLMSSP_MIC_SIZE) {
+				DEBUG(1,("%s: mic_blob.length[%u] for "
+					 "user=[%s] domain=[%s] workstation=[%s]\n",
+					 __func__,
+					 (unsigned)mic_blob.length,
+					 ntlmssp_state->user,
+					 ntlmssp_state->domain,
+					 ntlmssp_state->client.netbios_name));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			if (request.length <
+			    (NTLMSSP_MIC_OFFSET + NTLMSSP_MIC_SIZE))
+			{
+				DEBUG(1,("%s: missing MIC "
+					 "request.length[%u] for "
+					 "user=[%s] domain=[%s] workstation=[%s]\n",
+					 __func__,
+					 (unsigned)request.length,
+					 ntlmssp_state->user,
+					 ntlmssp_state->domain,
+					 ntlmssp_state->client.netbios_name));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			ntlmssp_state->new_spnego = true;
+		}
+
+		count = ntlmssp_state->server.av_pair_list.count;
+		if (v2_resp.Challenge.AvPairs.count < count) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		for (i = 0; i < count; i++) {
+			const struct AV_PAIR *sp =
+				&ntlmssp_state->server.av_pair_list.pair[i];
+			const struct AV_PAIR *cp = NULL;
+
+			if (sp->AvId == MsvAvEOL) {
+				continue;
+			}
+
+			cp = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+						 sp->AvId);
+			if (cp == NULL) {
+				DEBUG(1,("%s: AvId 0x%x missing for"
+					 "user=[%s] domain=[%s] "
+					 "workstation=[%s]\n",
+					 __func__,
+					 (unsigned)sp->AvId,
+					 ntlmssp_state->user,
+					 ntlmssp_state->domain,
+					 ntlmssp_state->client.netbios_name));
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			switch (cp->AvId) {
+#define CASE_STRING(v) case Msv ## v: do { \
+	int cmp; \
+	if (sp->Value.v == NULL) { \
+		return NT_STATUS_INTERNAL_ERROR; \
+	} \
+	if (cp->Value.v == NULL) { \
+		DEBUG(1,("%s: invalid %s " \
+			 "got[%s] expect[%s] for " \
+			 "user=[%s] domain=[%s] workstation=[%s]\n", \
+			 __func__, #v, \
+			 cp->Value.v, \
+			 sp->Value.v, \
+			 ntlmssp_state->user, \
+			 ntlmssp_state->domain, \
+			 ntlmssp_state->client.netbios_name)); \
+		return NT_STATUS_INVALID_PARAMETER; \
+	} \
+	cmp = strcmp(cp->Value.v, sp->Value.v); \
+	if (cmp != 0) { \
+		DEBUG(1,("%s: invalid %s " \
+			 "got[%s] expect[%s] for " \
+			 "user=[%s] domain=[%s] workstation=[%s]\n", \
+			 __func__, #v, \
+			 cp->Value.v, \
+			 sp->Value.v, \
+			 ntlmssp_state->user, \
+			 ntlmssp_state->domain, \
+			 ntlmssp_state->client.netbios_name)); \
+		return NT_STATUS_INVALID_PARAMETER; \
+	} \
+} while(0); break
+			CASE_STRING(AvNbComputerName);
+			CASE_STRING(AvNbDomainName);
+			CASE_STRING(AvDnsComputerName);
+			CASE_STRING(AvDnsDomainName);
+			CASE_STRING(AvDnsTreeName);
+			case MsvAvTimestamp:
+				if (cp->Value.AvTimestamp != sp->Value.AvTimestamp) {
+					struct timeval ct;
+					struct timeval st;
+					struct timeval_buf tmp1;
+					struct timeval_buf tmp2;
+
+					nttime_to_timeval(&ct,
+							  cp->Value.AvTimestamp);
+					nttime_to_timeval(&st,
+							  sp->Value.AvTimestamp);
+
+					DEBUG(1,("%s: invalid AvTimestamp "
+						 "got[%s] expect[%s] for "
+						 "user=[%s] domain=[%s] "
+						 "workstation=[%s]\n",
+						 __func__,
+						 timeval_str_buf(&ct, false,
+								 true, &tmp1),
+						 timeval_str_buf(&st, false,
+								 true, &tmp2),
+						 ntlmssp_state->user,
+						 ntlmssp_state->domain,
+						 ntlmssp_state->client.netbios_name));
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+				break;
+			default:
+				/*
+				 * This can't happen as we control
+				 * ntlmssp_state->server.av_pair_list
+				 */
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+	}
+
+	nttime_to_timeval(&endtime, ntlmssp_state->server.challenge_endtime);
+	expired = timeval_expired(&endtime);
+	if (expired) {
+		struct timeval_buf tmp;
+		DEBUG(1,("%s: challenge invalid (expired %s) for "
+			 "user=[%s] domain=[%s] workstation=[%s]\n",
+			 __func__,
+			 timeval_str_buf(&endtime, false, true, &tmp),
+			 ntlmssp_state->user, ntlmssp_state->domain,
+			 ntlmssp_state->client.netbios_name));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* NTLM2 uses a 'challenge' that is made of up both the server challenge, and a
 	   client challenge
@@ -474,7 +752,8 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 
 static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 					struct gensec_ntlmssp_context *gensec_ntlmssp,
-					struct ntlmssp_server_auth_state *state)
+					struct ntlmssp_server_auth_state *state,
+					DATA_BLOB request)
 {
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	DATA_BLOB user_session_key = state->user_session_key;
@@ -591,7 +870,56 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		talloc_steal(ntlmssp_state, session_key.data);
 	}
 
-	if (ntlmssp_state->session_key.length) {
+	if (ntlmssp_state->new_spnego) {
+		HMACMD5Context ctx;
+		uint8_t mic_buffer[NTLMSSP_MIC_SIZE] = { 0, };
+		int cmp;
+
+		hmac_md5_init_limK_to_64(ntlmssp_state->session_key.data,
+					 ntlmssp_state->session_key.length,
+					 &ctx);
+
+		hmac_md5_update(ntlmssp_state->negotiate_blob.data,
+				ntlmssp_state->negotiate_blob.length,
+				&ctx);
+		hmac_md5_update(ntlmssp_state->challenge_blob.data,
+				ntlmssp_state->challenge_blob.length,
+				&ctx);
+
+		/* checked were we set ntlmssp_state->new_spnego */
+		SMB_ASSERT(request.length >
+			   (NTLMSSP_MIC_OFFSET + NTLMSSP_MIC_SIZE));
+
+		hmac_md5_update(request.data, NTLMSSP_MIC_OFFSET, &ctx);
+		hmac_md5_update(mic_buffer, NTLMSSP_MIC_SIZE, &ctx);
+		hmac_md5_update(request.data +
+				(NTLMSSP_MIC_OFFSET + NTLMSSP_MIC_SIZE),
+				request.length -
+				(NTLMSSP_MIC_OFFSET + NTLMSSP_MIC_SIZE),
+				&ctx);
+		hmac_md5_final(mic_buffer, &ctx);
+
+		cmp = memcmp(request.data + NTLMSSP_MIC_OFFSET,
+			     mic_buffer, NTLMSSP_MIC_SIZE);
+		if (cmp != 0) {
+			DEBUG(1,("%s: invalid NTLMSSP_MIC for "
+				 "user=[%s] domain=[%s] workstation=[%s]\n",
+				 __func__,
+				 ntlmssp_state->user,
+				 ntlmssp_state->domain,
+				 ntlmssp_state->client.netbios_name));
+			dump_data(1, request.data + NTLMSSP_MIC_OFFSET,
+				  NTLMSSP_MIC_SIZE);
+			dump_data(1, mic_buffer,
+				  NTLMSSP_MIC_SIZE);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
+	data_blob_free(&ntlmssp_state->negotiate_blob);
+	data_blob_free(&ntlmssp_state->challenge_blob);
+
+	if (gensec_ntlmssp_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 		nt_status = ntlmssp_sign_init(ntlmssp_state);
 	}
 
@@ -656,7 +984,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 	   ntlmssp_state->check_password, the ntlmssp_server_postpath
 	   can be done in a callback */
 
-	nt_status = ntlmssp_server_postauth(gensec_security, gensec_ntlmssp, state);
+	nt_status = ntlmssp_server_postauth(gensec_security, gensec_ntlmssp, state, in);
 	TALLOC_FREE(state);
 	return nt_status;
 }

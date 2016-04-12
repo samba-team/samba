@@ -30,7 +30,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "srv_pipe_internal.h"
-#include "../librpc/gen_ndr/dcerpc.h"
+#include "../librpc/gen_ndr/ndr_dcerpc.h"
 #include "../librpc/rpc/rpc_common.h"
 #include "dcesrv_auth_generic.h"
 #include "rpc_server.h"
@@ -44,6 +44,12 @@
 #include "librpc/ndr/ndr_table.h"
 #include "auth/gensec/gensec.h"
 #include "librpc/ndr/ndr_dcerpc.h"
+#include "lib/tsocket/tsocket.h"
+#include "../librpc/gen_ndr/ndr_samr.h"
+#include "../librpc/gen_ndr/ndr_lsa.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "../librpc/gen_ndr/ndr_epmapper.h"
+#include "../librpc/gen_ndr/ndr_echo.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -272,10 +278,14 @@ static bool setup_bind_nak(struct pipes_struct *p, struct ncacn_packet *pkt)
 	p->out_data.data_sent_length = 0;
 	p->out_data.current_pdu_sent = 0;
 
+	set_incoming_fault(p);
 	TALLOC_FREE(p->auth.auth_ctx);
 	p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
 	p->pipe_bound = False;
+	p->allow_bind = false;
+	p->allow_alter = false;
+	p->allow_auth3 = false;
 
 	return True;
 }
@@ -338,20 +348,55 @@ static bool check_bind_req(struct pipes_struct *p,
 {
 	struct pipe_rpc_fns *context_fns;
 	bool ok;
+	const char *interface_name = NULL;
 
-	DEBUG(3,("check_bind_req for %s\n",
+	DEBUG(3,("check_bind_req for %s context_id=%u\n",
 		 ndr_interface_name(&abstract->uuid,
-				    abstract->if_version)));
+				    abstract->if_version),
+		 (unsigned)context_id));
 
-	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
-	if (rpc_srv_pipe_exists_by_id(abstract) &&
-	   ndr_syntax_id_equal(transfer, &ndr_transfer_syntax_ndr)) {
-		DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
-			  rpc_srv_get_pipe_cli_name(abstract),
-			  rpc_srv_get_pipe_srv_name(abstract)));
-	} else {
+	ok = ndr_syntax_id_equal(transfer, &ndr_transfer_syntax_ndr);
+	if (!ok) {
+		DEBUG(1,("check_bind_req unknown transfer syntax for "
+			 "%s context_id=%u\n",
+			 ndr_interface_name(&abstract->uuid,
+				    abstract->if_version),
+			 (unsigned)context_id));
 		return false;
 	}
+
+	for (context_fns = p->contexts;
+	     context_fns != NULL;
+	     context_fns = context_fns->next)
+	{
+		if (context_fns->context_id != context_id) {
+			continue;
+		}
+
+		ok = ndr_syntax_id_equal(&context_fns->syntax,
+					 abstract);
+		if (ok) {
+			return true;
+		}
+
+		DEBUG(1,("check_bind_req: changing abstract syntax for "
+			 "%s context_id=%u into %s not supported\n",
+			 ndr_interface_name(&context_fns->syntax.uuid,
+					    context_fns->syntax.if_version),
+			 (unsigned)context_id,
+			 ndr_interface_name(&abstract->uuid,
+					    abstract->if_version)));
+		return false;
+	}
+
+	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
+	if (!rpc_srv_pipe_exists_by_id(abstract)) {
+		return false;
+	}
+
+	DEBUG(3, ("check_bind_req: %s -> %s rpc service\n",
+		  rpc_srv_get_pipe_cli_name(abstract),
+		  rpc_srv_get_pipe_srv_name(abstract)));
 
 	ok = init_pipe_handles(p, abstract);
 	if (!ok) {
@@ -359,17 +404,61 @@ static bool check_bind_req(struct pipes_struct *p,
 		return false;
 	}
 
-	context_fns = talloc(p, struct pipe_rpc_fns);
+	context_fns = talloc_zero(p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DEBUG(0,("check_bind_req: talloc() failed!\n"));
 		return false;
 	}
+
+	interface_name = ndr_interface_name(&abstract->uuid,
+					    abstract->if_version);
+	SMB_ASSERT(interface_name != NULL);
 
 	context_fns->next = context_fns->prev = NULL;
 	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(abstract);
 	context_fns->cmds = rpc_srv_get_pipe_cmds(abstract);
 	context_fns->context_id = context_id;
 	context_fns->syntax = *abstract;
+
+	context_fns->allow_connect = lp_allow_dcerpc_auth_level_connect();
+	/*
+	 * for the samr, lsarpc and netlogon interfaces we don't allow "connect"
+	 * auth_level by default.
+	 */
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_samr.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = false;
+	}
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_lsarpc.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = false;
+	}
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_netlogon.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = false;
+	}
+	/*
+	 * for the epmapper and echo interfaces we allow "connect"
+	 * auth_level by default.
+	 */
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_epmapper.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = true;
+	}
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_rpcecho.syntax_id);
+	if (ok) {
+		context_fns->allow_connect = true;
+	}
+	/*
+	 * every interface can be modified to allow "connect" auth_level by
+	 * using a parametric option like:
+	 * allow dcerpc auth level connect:<interface>
+	 * e.g.
+	 * allow dcerpc auth level connect:samr = yes
+	 */
+	context_fns->allow_connect = lp_parm_bool(-1,
+		"allow dcerpc auth level connect",
+		interface_name, context_fns->allow_connect);
 
 	/* add to the list of open contexts */
 
@@ -449,6 +538,8 @@ static bool pipe_auth_generic_bind(struct pipes_struct *p,
 
 	p->auth.auth_ctx = gensec_security;
 	p->auth.auth_type = auth_info->auth_type;
+	p->auth.auth_level = auth_info->auth_level;
+	p->auth.auth_context_id = auth_info->auth_context_id;
 
 	if (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN) {
 		p->auth.client_hdr_signing = true;
@@ -575,7 +666,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 {
 	struct dcerpc_auth auth_info = {0};
 	uint16_t assoc_gid;
-	unsigned int auth_type = DCERPC_AUTH_TYPE_NONE;
 	NTSTATUS status;
 	struct ndr_syntax_id id;
 	uint8_t pfc_flags = 0;
@@ -585,14 +675,38 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	DATA_BLOB auth_blob = data_blob_null;
 	const struct ndr_interface_table *table;
 
-	/* No rebinds on a bound pipe - use alter context. */
-	if (p->pipe_bound) {
-		DEBUG(2,("Rejecting bind request on bound rpc connection\n"));
+	if (!p->allow_bind) {
+		DEBUG(2,("Pipe not in allow bind state\n"));
 		return setup_bind_nak(p, pkt);
+	}
+	p->allow_bind = false;
+
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_BIND,
+			pkt->u.bind.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("api_pipe_bind_req: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		goto err_exit;
 	}
 
 	if (pkt->u.bind.num_contexts == 0) {
-		DEBUG(0, ("api_pipe_bind_req: no rpc contexts around\n"));
+		DEBUG(1, ("api_pipe_bind_req: no rpc contexts around\n"));
+		goto err_exit;
+	}
+
+	if (pkt->u.bind.ctx_list[0].num_transfer_syntaxes == 0) {
+		DEBUG(1, ("api_pipe_bind_req: no transfer syntaxes around\n"));
 		goto err_exit;
 	}
 
@@ -671,7 +785,6 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 		bind_ack_ctx.reason.value = 0;
 		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
 	} else {
-		p->pipe_bound = False;
 		/* Rejection reason: abstract syntax not supported */
 		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
 		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
@@ -682,71 +795,25 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	 * Check if this is an authenticated bind request.
 	 */
 	if (pkt->auth_length) {
-		/* Quick length check. Won't catch a bad auth footer,
-		 * prevents overrun. */
-
-		if (pkt->frag_length < RPC_HEADER_LEN +
-					DCERPC_AUTH_TRAILER_LENGTH +
-					pkt->auth_length) {
-			DEBUG(0,("api_pipe_bind_req: auth_len (%u) "
-				"too long for fragment %u.\n",
-				(unsigned int)pkt->auth_length,
-				(unsigned int)pkt->frag_length));
-			goto err_exit;
-		}
-
 		/*
 		 * Decode the authentication verifier.
 		 */
-		status = dcerpc_pull_dcerpc_auth(pkt,
-						 &pkt->u.bind.auth_info,
-						 &auth_info, p->endian);
+		status = dcerpc_pull_auth_trailer(pkt, pkt,
+						  &pkt->u.bind.auth_info,
+						  &auth_info, NULL, true);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
 			goto err_exit;
 		}
 
-		auth_type = auth_info.auth_type;
-
-		/* Work out if we have to sign or seal etc. */
-		switch (auth_info.auth_level) {
-		case DCERPC_AUTH_LEVEL_INTEGRITY:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-			break;
-		case DCERPC_AUTH_LEVEL_PRIVACY:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-			break;
-		case DCERPC_AUTH_LEVEL_CONNECT:
-			p->auth.auth_level = DCERPC_AUTH_LEVEL_CONNECT;
-			break;
-		default:
-			DEBUG(0, ("Unexpected auth level (%u).\n",
-				(unsigned int)auth_info.auth_level ));
+		if (!pipe_auth_generic_bind(p, pkt,
+					    &auth_info, &auth_resp)) {
 			goto err_exit;
 		}
-
-		switch (auth_type) {
-		case DCERPC_AUTH_TYPE_NONE:
-			break;
-
-		default:
-			if (!pipe_auth_generic_bind(p, pkt,
-						    &auth_info, &auth_resp)) {
-				goto err_exit;
-			}
-			break;
-		}
-	}
-
-	if (auth_type == DCERPC_AUTH_TYPE_NONE) {
-		/* Unauthenticated bind request. */
-		/* We're finished - no more packets. */
+	} else {
 		p->auth.auth_type = DCERPC_AUTH_TYPE_NONE;
-		/* We must set the pipe auth_level here also. */
 		p->auth.auth_level = DCERPC_AUTH_LEVEL_NONE;
-		p->pipe_bound = True;
-		/* The session key was initialized from the SMB
-		 * session in make_internal_rpc_pipe_p */
+		p->auth.auth_context_id = 0;
 	}
 
 	ZERO_STRUCT(u.bind_ack);
@@ -793,15 +860,15 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
 			  nt_errstr(status)));
+		goto err_exit;
 	}
 
 	if (auth_resp.length) {
-
 		status = dcerpc_push_dcerpc_auth(pkt,
-						 auth_type,
-						 auth_info.auth_level,
-						 0,
-						 1, /* auth_context_id */
+						 p->auth.auth_type,
+						 p->auth.auth_level,
+						 0, /* pad_len */
+						 p->auth.auth_context_id,
 						 &auth_resp,
 						 &auth_blob);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -832,6 +899,22 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	p->out_data.current_pdu_sent = 0;
 
 	TALLOC_FREE(auth_blob.data);
+
+	if (bind_ack_ctx.result == 0) {
+		p->allow_alter = true;
+		p->allow_auth3 = true;
+		if (p->auth.auth_type == DCERPC_AUTH_TYPE_NONE) {
+			status = pipe_auth_verify_final(p);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("pipe_auth_verify_final failed: %s\n",
+					  nt_errstr(status)));
+				goto err_exit;
+			}
+		}
+	} else {
+		goto err_exit;
+	}
+
 	return True;
 
   err_exit:
@@ -854,18 +937,39 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 	DEBUG(5, ("api_pipe_bind_auth3: decode request. %d\n", __LINE__));
 
-	if (pkt->auth_length == 0) {
-		DEBUG(1, ("No auth field sent for bind request!\n"));
+	if (!p->allow_auth3) {
+		DEBUG(1, ("Pipe not in allow auth3 state.\n"));
 		goto err;
 	}
 
-	/* Ensure there's enough data for an authenticated request. */
-	if (pkt->frag_length < RPC_HEADER_LEN
-				+ DCERPC_AUTH_TRAILER_LENGTH
-				+ pkt->auth_length) {
-			DEBUG(1,("api_pipe_ntlmssp_auth_process: auth_len "
-				"%u is too large.\n",
-                        (unsigned int)pkt->auth_length));
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_AUTH3,
+			pkt->u.auth3.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("api_pipe_bind_auth3: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		goto err;
+	}
+
+	/* We can only finish if the pipe is unbound for now */
+	if (p->pipe_bound) {
+		DEBUG(0, (__location__ ": Pipe already bound, "
+			  "AUTH3 not supported!\n"));
+		goto err;
+	}
+
+	if (pkt->auth_length == 0) {
+		DEBUG(1, ("No auth field sent for auth3 request!\n"));
 		goto err;
 	}
 
@@ -873,9 +977,9 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	 * Decode the authentication verifier response.
 	 */
 
-	status = dcerpc_pull_dcerpc_auth(pkt,
-					 &pkt->u.auth3.auth_info,
-					 &auth_info, p->endian);
+	status = dcerpc_pull_auth_trailer(pkt, pkt,
+					  &pkt->u.auth3.auth_info,
+					  &auth_info, NULL, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to unmarshall dcerpc_auth.\n"));
 		goto err;
@@ -890,6 +994,21 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 		DEBUG(1, ("Auth type mismatch! Client sent %d, "
 			  "but auth was started as type %d!\n",
 			  auth_info.auth_type, p->auth.auth_type));
+		goto err;
+	}
+
+	if (auth_info.auth_level != p->auth.auth_level) {
+		DEBUG(1, ("Auth level mismatch! Client sent %d, "
+			  "but auth was started as level %d!\n",
+			  auth_info.auth_level, p->auth.auth_level));
+		goto err;
+	}
+
+	if (auth_info.auth_context_id != p->auth.auth_context_id) {
+		DEBUG(0, ("Auth context id mismatch! Client sent %u, "
+			  "but auth was started as level %u!\n",
+			  (unsigned)auth_info.auth_context_id,
+			  (unsigned)p->auth.auth_context_id));
 		goto err;
 	}
 
@@ -923,6 +1042,10 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	return true;
 
 err:
+	p->pipe_bound = false;
+	p->allow_bind = false;
+	p->allow_alter = false;
+	p->allow_auth3 = false;
 
 	TALLOC_FREE(p->auth.auth_ctx);
 	return false;
@@ -940,15 +1063,49 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	uint16_t assoc_gid;
 	NTSTATUS status;
 	union dcerpc_payload u;
-	struct dcerpc_ack_ctx bind_ack_ctx;
+	struct dcerpc_ack_ctx alter_ack_ctx;
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
 	struct gensec_security *gensec_security;
 
 	DEBUG(5,("api_pipe_alter_context: make response. %d\n", __LINE__));
 
-	if (pkt->u.bind.assoc_group_id != 0) {
-		assoc_gid = pkt->u.bind.assoc_group_id;
+	if (!p->allow_alter) {
+		DEBUG(1, ("Pipe not in allow alter state.\n"));
+		goto err_exit;
+	}
+
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_ALTER,
+			pkt->u.alter.auth_info.length,
+			0, /* required flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("api_pipe_alter_context: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		goto err_exit;
+	}
+
+	if (pkt->u.alter.num_contexts == 0) {
+		DEBUG(1, ("api_pipe_alter_context: no rpc contexts around\n"));
+		goto err_exit;
+	}
+
+	if (pkt->u.alter.ctx_list[0].num_transfer_syntaxes == 0) {
+		DEBUG(1, ("api_pipe_alter_context: no transfer syntaxes around\n"));
+		goto err_exit;
+	}
+
+	if (pkt->u.alter.assoc_group_id != 0) {
+		assoc_gid = pkt->u.alter.assoc_group_id;
 	} else {
 		assoc_gid = 0x53f0;
 	}
@@ -958,52 +1115,30 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	 */
 
 	/* If the requested abstract synt uuid doesn't match our client pipe,
-		reject the bind_ack & set the transfer interface synt to all 0's,
+		reject the alter_ack & set the transfer interface synt to all 0's,
 		ver 0 (observed when NT5 attempts to bind to abstract interfaces
 		unknown to NT4)
 		Needed when adding entries to a DACL from NT5 - SK */
 
 	if (check_bind_req(p,
-			&pkt->u.bind.ctx_list[0].abstract_syntax,
-			&pkt->u.bind.ctx_list[0].transfer_syntaxes[0],
-			pkt->u.bind.ctx_list[0].context_id)) {
+			&pkt->u.alter.ctx_list[0].abstract_syntax,
+			&pkt->u.alter.ctx_list[0].transfer_syntaxes[0],
+			pkt->u.alter.ctx_list[0].context_id)) {
 
-		bind_ack_ctx.result = 0;
-		bind_ack_ctx.reason.value = 0;
-		bind_ack_ctx.syntax = pkt->u.bind.ctx_list[0].transfer_syntaxes[0];
+		alter_ack_ctx.result = 0;
+		alter_ack_ctx.reason.value = 0;
+		alter_ack_ctx.syntax = pkt->u.alter.ctx_list[0].transfer_syntaxes[0];
 	} else {
-		p->pipe_bound = False;
 		/* Rejection reason: abstract syntax not supported */
-		bind_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
-		bind_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
-		bind_ack_ctx.syntax = ndr_syntax_id_null;
+		alter_ack_ctx.result = DCERPC_BIND_PROVIDER_REJECT;
+		alter_ack_ctx.reason.value = DCERPC_BIND_REASON_ASYNTAX;
+		alter_ack_ctx.syntax = ndr_syntax_id_null;
 	}
 
 	/*
 	 * Check if this is an authenticated alter context request.
 	 */
 	if (pkt->auth_length) {
-		/* Quick length check. Won't catch a bad auth footer,
-		 * prevents overrun. */
-
-		if (pkt->frag_length < RPC_HEADER_LEN +
-					DCERPC_AUTH_TRAILER_LENGTH +
-					pkt->auth_length) {
-			DEBUG(0,("api_pipe_alter_context: auth_len (%u) "
-				"too long for fragment %u.\n",
-				(unsigned int)pkt->auth_length,
-				(unsigned int)pkt->frag_length ));
-			goto err_exit;
-		}
-
-		status = dcerpc_pull_dcerpc_auth(pkt,
-						 &pkt->u.bind.auth_info,
-						 &auth_info, p->endian);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
-			goto err_exit;
-		}
-
 		/* We can only finish if the pipe is unbound for now */
 		if (p->pipe_bound) {
 			DEBUG(0, (__location__ ": Pipe already bound, "
@@ -1011,10 +1146,33 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 			goto err_exit;
 		}
 
+		status = dcerpc_pull_auth_trailer(pkt, pkt,
+						  &pkt->u.alter.auth_info,
+						  &auth_info, NULL, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Unable to unmarshall dcerpc_auth.\n"));
+			goto err_exit;
+		}
+
 		if (auth_info.auth_type != p->auth.auth_type) {
 			DEBUG(0, ("Auth type mismatch! Client sent %d, "
 				  "but auth was started as type %d!\n",
 				  auth_info.auth_type, p->auth.auth_type));
+			goto err_exit;
+		}
+
+		if (auth_info.auth_level != p->auth.auth_level) {
+			DEBUG(0, ("Auth level mismatch! Client sent %d, "
+				  "but auth was started as level %d!\n",
+				  auth_info.auth_level, p->auth.auth_level));
+			goto err_exit;
+		}
+
+		if (auth_info.auth_context_id != p->auth.auth_context_id) {
+			DEBUG(0, ("Auth context id mismatch! Client sent %u, "
+				  "but auth was started as level %u!\n",
+				  (unsigned)auth_info.auth_context_id,
+				  (unsigned)p->auth.auth_context_id));
 			goto err_exit;
 		}
 
@@ -1054,7 +1212,7 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 	u.alter_resp.secondary_address_size = 1;
 
 	u.alter_resp.num_results = 1;
-	u.alter_resp.ctx_list = &bind_ack_ctx;
+	u.alter_resp.ctx_list = &alter_ack_ctx;
 
 	/* NOTE: We leave the auth_info empty so we can calculate the padding
 	 * later and then append the auth_info --simo */
@@ -1074,16 +1232,17 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 					  &u,
 					  &p->out_data.frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to marshall bind_ack packet. (%s)\n",
+		DEBUG(0, ("Failed to marshall alter_resp packet. (%s)\n",
 			  nt_errstr(status)));
+		goto err_exit;
 	}
 
 	if (auth_resp.length) {
 		status = dcerpc_push_dcerpc_auth(pkt,
-						 auth_info.auth_type,
-						 auth_info.auth_level,
+						 p->auth.auth_type,
+						 p->auth.auth_level,
 						 0, /* pad_len */
-						 1, /* auth_context_id */
+						 p->auth.auth_context_id,
 						 &auth_resp,
 						 &auth_blob);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1174,6 +1333,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = False;
 	struct pipe_rpc_fns *pipe_fns;
+	const char *interface_name = NULL;
 
 	if (!p->pipe_bound) {
 		DEBUG(1, ("Pipe not bound!\n"));
@@ -1194,8 +1354,40 @@ static bool api_pipe_request(struct pipes_struct *p,
 		return false;
 	}
 
+	interface_name = ndr_interface_name(&pipe_fns->syntax.uuid,
+					    pipe_fns->syntax.if_version);
+	SMB_ASSERT(interface_name != NULL);
+
+	switch (p->auth.auth_level) {
+	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		break;
+	default:
+		if (!pipe_fns->allow_connect) {
+			char *addr;
+
+			addr = tsocket_address_string(p->remote_address, frame);
+
+			DEBUG(1, ("%s: restrict auth_level_connect access "
+				  "to [%s] with auth[type=0x%x,level=0x%x] "
+				  "on [%s] from [%s]\n",
+				  __func__, interface_name,
+				  p->auth.auth_type,
+				  p->auth.auth_level,
+				  derpc_transport_string_by_transport(p->transport),
+				  addr));
+
+			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_ACCESS_DENIED));
+			TALLOC_FREE(frame);
+			return true;
+		}
+		break;
+	}
+
 	if (!srv_pipe_check_verification_trailer(p, pkt, pipe_fns)) {
 		DEBUG(1, ("srv_pipe_check_verification_trailer: failed\n"));
+		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_ACCESS_DENIED));
 		data_blob_free(&p->out_data.rdata);
 		TALLOC_FREE(frame);
@@ -1209,9 +1401,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 		return false;
 	}
 
-	DEBUG(5, ("Requested %s rpc service\n",
-		  ndr_interface_name(&pipe_fns->syntax.uuid,
-				     pipe_fns->syntax.if_version)));
+	DEBUG(5, ("Requested %s rpc service\n", interface_name));
 
 	ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
 			 &pipe_fns->syntax);
@@ -1345,7 +1535,11 @@ void set_incoming_fault(struct pipes_struct *p)
 	data_blob_free(&p->in_data.data);
 	p->in_data.pdu_needed_len = 0;
 	p->in_data.pdu.length = 0;
-	p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+	p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
+
+	p->allow_alter = false;
+	p->allow_auth3 = false;
+	p->pipe_bound = false;
 
 	DEBUG(10, ("Setting fault state\n"));
 }
@@ -1356,7 +1550,6 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 {
 	NTSTATUS status;
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
-	size_t pad_len;
 
 	DEBUG(10, ("Checking request auth.\n"));
 
@@ -1367,23 +1560,9 @@ static NTSTATUS dcesrv_auth_request(struct pipe_auth_data *auth,
 	/* in case of sealing this function will unseal the data in place */
 	status = dcerpc_check_auth(auth, pkt,
 				   &pkt->u.request.stub_and_verifier,
-				   hdr_size, raw_pkt,
-				   &pad_len);
+				   hdr_size, raw_pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
-	}
-
-
-	/* remove padding and auth trailer,
-	 * this way the caller will get just the data */
-	if (pkt->auth_length) {
-		size_t trail_len = pad_len
-					+ DCERPC_AUTH_TRAILER_LENGTH
-					+ pkt->auth_length;
-		if (pkt->u.request.stub_and_verifier.length < trail_len) {
-			return NT_STATUS_INFO_LENGTH_MISMATCH;
-		}
-		pkt->u.request.stub_and_verifier.length -= trail_len;
 	}
 
 	return NT_STATUS_OK;
@@ -1404,6 +1583,29 @@ static bool process_request_pdu(struct pipes_struct *p, struct ncacn_packet *pkt
 		DEBUG(0,("process_request_pdu: rpc request with no bind.\n"));
 		set_incoming_fault(p);
 		return False;
+	}
+
+	/*
+	 * We don't ignore DCERPC_PFC_FLAG_PENDING_CANCEL.
+	 * TODO: we can reject it with DCERPC_FAULT_NO_CALL_ACTIVE later.
+	 */
+	status = dcerpc_verify_ncacn_packet_header(pkt,
+			DCERPC_PKT_REQUEST,
+			pkt->u.request.stub_and_verifier.length,
+			0, /* required_flags */
+			DCERPC_PFC_FLAG_FIRST |
+			DCERPC_PFC_FLAG_LAST |
+			0x08 | /* this is not defined, but should be ignored */
+			DCERPC_PFC_FLAG_CONC_MPX |
+			DCERPC_PFC_FLAG_DID_NOT_EXECUTE |
+			DCERPC_PFC_FLAG_MAYBE |
+			DCERPC_PFC_FLAG_OBJECT_UUID);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("process_request_pdu: invalid pdu: %s\n",
+			  nt_errstr(status)));
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+		set_incoming_fault(p);
+		return false;
 	}
 
 	hdr2 = dcerpc_sec_vt_header2_from_ncacn_packet(pkt);
@@ -1597,7 +1799,7 @@ done:
 	if (!reply) {
 		DEBUG(3,("DCE/RPC fault sent!"));
 		set_incoming_fault(p);
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
+		setup_fault_pdu(p, NT_STATUS(DCERPC_NCA_S_PROTO_ERROR));
 	}
 	/* pkt and p->in_data.pdu.data freed by caller */
 }

@@ -78,13 +78,16 @@
     negotiation phase in the SMB protocol takes care of choosing 
     the appropriate protocol.</para>
 
-    <para>The value <constant>default</constant> refers to the default protocol in each
-    part of the code, currently <constant>NT1</constant> in the client tools and
-    <constant>SMB3_02</constant> in winbindd.</para>
+    <para>The value <constant>default</constant> refers to <constant>NT1</constant>.</para>
+
+    <para>IPC$ connections for DCERPC e.g. in winbindd, are handled by the
+    <smbconfoption name="client ipc max protocol"/> option.</para>
 </description>
 
 <related>server max protocol</related>
 <related>client min protocol</related>
+<related>client ipc min protocol</related>
+<related>client ipc max protocol</related>
 
 <value type="default">default</value>
 <value type="example">LANMAN1</value>

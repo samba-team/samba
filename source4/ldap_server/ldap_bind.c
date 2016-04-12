@@ -45,6 +45,23 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 
 	DEBUG(10, ("BindSimple dn: %s\n",req->dn));
 
+	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
+	if (!reply) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (req->dn != NULL &&
+	    strlen(req->dn) != 0 &&
+	    call->conn->require_strong_auth > LDAP_SERVER_REQUIRE_STRONG_AUTH_NO &&
+	    call->conn->sockets.active != call->conn->sockets.tls)
+	{
+		status = NT_STATUS_NETWORK_ACCESS_DENIED;
+		result = LDAP_STRONG_AUTH_REQUIRED;
+		errstr = talloc_asprintf(reply,
+					 "BindSimple: Transport encryption required.");
+		goto do_reply;
+	}
+
 	status = crack_auto_name_to_nt4_name(call, call->conn->connection->event.ctx, call->conn->lp_ctx, req->dn, &nt4_domain, &nt4_account);
 	if (NT_STATUS_IS_OK(status)) {
 		status = authenticate_username_pw(call,
@@ -56,11 +73,6 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 						  MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 						  MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						  &session_info);
-	}
-
-	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
-	if (!reply) {
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -86,6 +98,7 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 		errstr = talloc_asprintf(reply, "Simple Bind Failed: %s", nt_errstr(status));
 	}
 
+do_reply:
 	resp = &reply->msg->r.BindResponse;
 	resp->response.resultcode = result;
 	resp->response.errormessage = errstr;
@@ -181,6 +194,7 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
 			gensec_want_feature(conn->gensec, GENSEC_FEATURE_SEAL);
 			gensec_want_feature(conn->gensec, GENSEC_FEATURE_ASYNC_REPLIES);
+			gensec_want_feature(conn->gensec, GENSEC_FEATURE_LDAP_STYLE);
 			
 			status = gensec_start_mech_by_sasl_name(conn->gensec, req->creds.SASL.mechanism);
 			
@@ -217,7 +231,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		result = LDAP_SASL_BIND_IN_PROGRESS;
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
-		struct auth_session_info *old_session_info=NULL;
 		struct ldapsrv_sasl_postprocess_context *context = NULL;
 
 		result = LDAP_SUCCESS;
@@ -262,17 +275,38 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 					status = NT_STATUS_NO_MEMORY;
 				}
 			}
+		} else {
+			switch (call->conn->require_strong_auth) {
+			case LDAP_SERVER_REQUIRE_STRONG_AUTH_NO:
+				break;
+			case LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS:
+				if (call->conn->sockets.active == call->conn->sockets.tls) {
+					break;
+				}
+				status = NT_STATUS_NETWORK_ACCESS_DENIED;
+				result = LDAP_STRONG_AUTH_REQUIRED;
+				errstr = talloc_asprintf(reply,
+						"SASL:[%s]: not allowed if TLS is used.",
+						 req->creds.SASL.mechanism);
+				break;
+			case LDAP_SERVER_REQUIRE_STRONG_AUTH_YES:
+				status = NT_STATUS_NETWORK_ACCESS_DENIED;
+				result = LDAP_STRONG_AUTH_REQUIRED;
+				errstr = talloc_asprintf(reply,
+						 "SASL:[%s]: Sign or Seal are required.",
+						 req->creds.SASL.mechanism);
+				break;
+			}
 		}
 
 		if (result != LDAP_SUCCESS) {
-			conn->session_info = old_session_info;
 		} else if (!NT_STATUS_IS_OK(status)) {
-			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, 
 						 "SASL:[%s]: Failed to setup SASL socket: %s", 
 						 req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
+			struct auth_session_info *old_session_info=NULL;
 
 			old_session_info = conn->session_info;
 			conn->session_info = NULL;

@@ -118,7 +118,7 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 /* Also happens to be a really good one-step verfication of our Kerberos stack */
 
 static bool test_PACVerify(struct torture_context *tctx,
-			   struct dcerpc_pipe *p,
+			   struct dcerpc_pipe *p1,
 			   struct cli_credentials *credentials,
 			   enum netr_SchannelType secure_channel_type,
 			   const char *test_machine_name,
@@ -151,7 +151,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct auth_session_info *session_info;
 	struct pac_data *pac_data;
 
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
@@ -175,11 +176,16 @@ static bool test_PACVerify(struct torture_context *tctx,
 						    credentials);
 	torture_assert(tctx, server_creds, "Failed to copy of credentials");
 
-	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
+	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
 				    server_creds, secure_channel_type,
 				    &creds)) {
 		return false;
 	}
+	if (!test_SetupCredentialsPipe(p1, tctx, server_creds, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
@@ -525,14 +531,15 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 
 /* Check various ways to get the PAC, in particular check the group membership and other details between the PAC from a normal kinit, S2U4Self and a SamLogon */
 static bool test_S2U4Self(struct torture_context *tctx,
-			  struct dcerpc_pipe *p,
+			  struct dcerpc_pipe *p1,
 			  struct cli_credentials *credentials,
 			  enum netr_SchannelType secure_channel_type,
 			  const char *test_machine_name,
 			  uint32_t negotiate_flags)
 {
 	NTSTATUS status;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	struct netr_LogonSamLogon r;
 
@@ -583,6 +590,17 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    credentials);
 	torture_assert(tctx, server_creds, "Failed to copy of credentials");
+
+	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
+				    server_creds, secure_channel_type,
+				    &creds)) {
+		return false;
+	}
+	if (!test_SetupCredentialsPipe(p1, tctx, server_creds, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
 
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
@@ -711,12 +729,13 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	chal = data_blob_const(ninfo.challenge,
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(client_creds),
-						cli_credentials_get_domain(client_creds));
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(server_creds),
+						cli_credentials_get_domain(server_creds));
 
 	status = cli_credentials_get_ntlm_response(client_creds, tctx,
 						   &flags,
 						   chal,
+						   NULL, /* server_timestamp */
 						   names_blob,
 						   &lm_resp, &nt_resp,
 						   NULL, NULL);
@@ -743,12 +762,6 @@ static bool test_S2U4Self(struct torture_context *tctx,
 	r.in.logon = &logon;
 	r.out.validation = &validation;
 	r.out.authoritative = &authoritative;
-
-	if (!test_SetupCredentials2(p, tctx, negotiate_flags,
-				    server_creds, secure_channel_type,
-				    &creds)) {
-		return false;
-	}
 
 	ZERO_STRUCT(auth2);
 	netlogon_creds_client_authenticator(creds, &auth);
