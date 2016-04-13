@@ -1306,12 +1306,23 @@ static void smbd_smb2_logoff_shutdown_done(struct tevent_req *subreq)
 	struct smbd_smb2_logoff_state *state = tevent_req_data(
 		req, struct smbd_smb2_logoff_state);
 	NTSTATUS status;
+	bool ok;
+	const struct GUID *client_guid =
+		&state->smb2req->session->client->connections->smb2.client.guid;
 
 	status = smb2srv_session_shutdown_recv(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	TALLOC_FREE(subreq);
+
+	if (!GUID_all_zero(client_guid)) {
+		ok = remote_arch_cache_delete(client_guid);
+		if (!ok) {
+			/* Most likely not an error, but not in cache */
+			DBG_DEBUG("Deletion from remote arch cache failed\n");
+		}
+	}
 
 	/*
 	 * As we've been awoken, we may have changed

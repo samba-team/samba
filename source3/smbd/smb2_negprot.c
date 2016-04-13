@@ -162,6 +162,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 	uint32_t max_write = lp_smb2_max_write();
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	bool signing_required = true;
+	bool ok;
 
 	status = smbd_smb2_request_verify_sizes(req, 0x24);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -257,6 +258,17 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		if (in_negotiate_context_count != in_c.num_contexts) {
 			return smbd_smb2_request_error(req,
 					NT_STATUS_INVALID_PARAMETER);
+		}
+	}
+
+	if ((dialect != SMB2_DIALECT_REVISION_2FF) &&
+	    (protocol >= PROTOCOL_SMB2_10) &&
+	    !GUID_all_zero(&in_guid))
+	{
+		ok = remote_arch_cache_update(&in_guid);
+		if (!ok) {
+			return smbd_smb2_request_error(
+				req, NT_STATUS_UNSUCCESSFUL);
 		}
 	}
 
@@ -532,7 +544,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		static const uint8_t zeros[8];
 		size_t pad = 0;
 		size_t ofs;
-		bool ok;
 
 		outdyn = data_blob_dup_talloc(req, security_buffer);
 		if (outdyn.length != security_buffer.length) {
