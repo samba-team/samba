@@ -256,8 +256,9 @@ smbc_free_context(SMBCCTX *context,
 
                 f = context->internal->files;
                 while (f) {
+			SMBCFILE *next = f->next;
                         smbc_getFunctionClose(context)(context, f);
-                        f = f->next;
+			f = next;
                 }
                 context->internal->files = NULL;
 
