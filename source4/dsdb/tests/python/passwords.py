@@ -87,7 +87,7 @@ class PasswordTests(samba.tests.TestCase):
         # Get the old "minPwdAge"
         minPwdAge = self.ldb.get_minPwdAge()
 
-        # Set it temporarely to "0"
+        # Set it temporarily to "0"
         self.ldb.set_minPwdAge("0")
         self.base_dn = self.ldb.domain_dn()
 
