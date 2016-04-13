@@ -389,6 +389,7 @@ bool fcntl_getlock(int fd, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppi
 bool is_myname(const char *s);
 void ra_lanman_string( const char *native_lanman );
 const char *get_remote_arch_str(void);
+enum remote_arch_types get_remote_arch_from_str(const char *remote_arch_string);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
 const char *tab_depth(int level, int depth);

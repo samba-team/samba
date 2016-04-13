@@ -1260,6 +1260,18 @@ const char *get_remote_arch_str(void)
 	return remote_arch_strings[ra_type];
 }
 
+enum remote_arch_types get_remote_arch_from_str(const char *remote_arch_string)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(remote_arch_strings); i++) {
+		if (strcmp(remote_arch_string, remote_arch_strings[i]) == 0) {
+			return i;
+		}
+	}
+	return RA_UNKNOWN;
+}
+
 /*******************************************************************
  Set the horrid remote_arch string based on an enum.
 ********************************************************************/
