@@ -1303,6 +1303,146 @@ enum remote_arch_types get_remote_arch(void)
 	return ra_type;
 }
 
+#define RA_CACHE_TTL 7*24*3600
+
+static bool remote_arch_cache_key(const struct GUID *client_guid,
+				  fstring key)
+{
+	struct GUID_txt_buf guid_buf;
+	const char *guid_string = NULL;
+
+	guid_string = GUID_buf_string(client_guid, &guid_buf);
+	if (guid_string == NULL) {
+		return false;
+	}
+
+	fstr_sprintf(key, "RA/%s", guid_string);
+	return true;
+}
+
+struct ra_parser_state {
+	bool found;
+	enum remote_arch_types ra;
+};
+
+static void ra_parser(time_t timeout, DATA_BLOB blob, void *priv_data)
+{
+	struct ra_parser_state *state = (struct ra_parser_state *)priv_data;
+	const char *ra_str = NULL;
+
+	if (timeout <= time(NULL)) {
+		return;
+	}
+
+	if ((blob.length == 0) || (blob.data[blob.length-1] != '\0')) {
+		DBG_ERR("Remote arch cache key not a string\n");
+		return;
+	}
+
+	ra_str = (const char *)blob.data;
+	DBG_INFO("Got remote arch [%s] from cache\n", ra_str);
+
+	state->ra = get_remote_arch_from_str(ra_str);
+	state->found = true;
+	return;
+}
+
+static bool remote_arch_cache_get(const struct GUID *client_guid)
+{
+	bool ok;
+	fstring ra_key;
+	struct ra_parser_state state = (struct ra_parser_state) {
+		.found = false,
+		.ra = RA_UNKNOWN,
+	};
+
+	ok = remote_arch_cache_key(client_guid, ra_key);
+	if (!ok) {
+		return false;
+	}
+
+	ok = gencache_parse(ra_key, ra_parser, &state);
+	if (!ok || !state.found) {
+		return true;
+	}
+
+	if (state.ra == RA_UNKNOWN) {
+		return true;
+	}
+
+	set_remote_arch(state.ra);
+	return true;
+}
+
+static bool remote_arch_cache_set(const struct GUID *client_guid)
+{
+	bool ok;
+	fstring ra_key;
+	const char *ra_str = NULL;
+
+	if (get_remote_arch() == RA_UNKNOWN) {
+		return true;
+	}
+
+	ok = remote_arch_cache_key(client_guid, ra_key);
+	if (!ok) {
+		return false;
+	}
+
+	ra_str = get_remote_arch_str();
+	if (ra_str == NULL) {
+		return false;
+	}
+
+	ok = gencache_set(ra_key, ra_str, time(NULL) + RA_CACHE_TTL);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
+bool remote_arch_cache_update(const struct GUID *client_guid)
+{
+	bool ok;
+
+	if (get_remote_arch() == RA_UNKNOWN) {
+
+		become_root();
+		ok = remote_arch_cache_get(client_guid);
+		unbecome_root();
+
+		return ok;
+	}
+
+	become_root();
+	ok = remote_arch_cache_set(client_guid);
+	unbecome_root();
+
+	return ok;
+}
+
+bool remote_arch_cache_delete(const struct GUID *client_guid)
+{
+	bool ok;
+	fstring ra_key;
+
+	ok = remote_arch_cache_key(client_guid, ra_key);
+	if (!ok) {
+		return false;
+	}
+
+	become_root();
+	ok = gencache_del(ra_key);
+	unbecome_root();
+
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
 const char *tab_depth(int level, int depth)
 {
 	if( CHECK_DEBUGLVL(level) ) {

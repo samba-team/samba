@@ -392,6 +392,8 @@ const char *get_remote_arch_str(void);
 enum remote_arch_types get_remote_arch_from_str(const char *remote_arch_string);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
+bool remote_arch_cache_update(const struct GUID *client_guid);
+bool remote_arch_cache_delete(const struct GUID *client_guid);
 const char *tab_depth(int level, int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
