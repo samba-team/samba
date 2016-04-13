@@ -1230,14 +1230,34 @@ void ra_lanman_string( const char *native_lanman )
 		set_remote_arch( RA_WIN2K3 );
 }
 
-static const char *remote_arch_str;
+static const char *remote_arch_strings[] = {
+	[RA_UNKNOWN] =	"UNKNOWN",
+	[RA_WFWG] =	"WfWg",
+	[RA_OS2] =	"OS2",
+	[RA_WIN95] =	"Win95",
+	[RA_WINNT] =	"WinNT",
+	[RA_WIN2K] =	"Win2K",
+	[RA_WINXP] =	"WinXP",
+	[RA_WIN2K3] =	"Win2K3",
+	[RA_VISTA] =	"Vista",
+	[RA_SAMBA] =	"Samba",
+	[RA_CIFSFS] =	"CIFSFS",
+	[RA_WINXP64] =	"WinXP64",
+	[RA_OSX] =	"OSX",
+};
 
 const char *get_remote_arch_str(void)
 {
-	if (!remote_arch_str) {
-		return "UNKNOWN";
+	if (ra_type >= ARRAY_SIZE(remote_arch_strings)) {
+		/*
+		 * set_remote_arch() already checks this so ra_type
+		 * should be in the allowed range, but anyway, let's
+		 * do another bound check here.
+		 */
+		DBG_ERR("Remote arch info out of sync [%d] missing\n", ra_type);
+		ra_type = RA_UNKNOWN;
 	}
-	return remote_arch_str;
+	return remote_arch_strings[ra_type];
 }
 
 /*******************************************************************
@@ -1246,52 +1266,20 @@ const char *get_remote_arch_str(void)
 
 void set_remote_arch(enum remote_arch_types type)
 {
-	ra_type = type;
-	switch( type ) {
-	case RA_WFWG:
-		remote_arch_str = "WfWg";
-		break;
-	case RA_OS2:
-		remote_arch_str = "OS2";
-		break;
-	case RA_WIN95:
-		remote_arch_str = "Win95";
-		break;
-	case RA_WINNT:
-		remote_arch_str = "WinNT";
-		break;
-	case RA_WIN2K:
-		remote_arch_str = "Win2K";
-		break;
-	case RA_WINXP:
-		remote_arch_str = "WinXP";
-		break;
-	case RA_WINXP64:
-		remote_arch_str = "WinXP64";
-		break;
-	case RA_WIN2K3:
-		remote_arch_str = "Win2K3";
-		break;
-	case RA_VISTA:
-		remote_arch_str = "Vista";
-		break;
-	case RA_SAMBA:
-		remote_arch_str = "Samba";
-		break;
-	case RA_CIFSFS:
-		remote_arch_str = "CIFSFS";
-		break;
-	case RA_OSX:
-		remote_arch_str = "OSX";
-		break;
-	default:
+	if (ra_type >= ARRAY_SIZE(remote_arch_strings)) {
+		/*
+		 * This protects against someone adding values to enum
+		 * remote_arch_types without updating
+		 * remote_arch_strings array.
+		 */
+		DBG_ERR("Remote arch info out of sync [%d] missing\n", ra_type);
 		ra_type = RA_UNKNOWN;
-		remote_arch_str = "UNKNOWN";
-		break;
+		return;
 	}
 
+	ra_type = type;
 	DEBUG(10,("set_remote_arch: Client arch is \'%s\'\n",
-				remote_arch_str));
+		  get_remote_arch_str()));
 }
 
 /*******************************************************************
