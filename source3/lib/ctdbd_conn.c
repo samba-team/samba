@@ -116,9 +116,8 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 	size_t num_callbacks;
 	struct ctdbd_srvid_cb *tmp;
 
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
-			    tdb_null, NULL, NULL, &cstatus);
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_REGISTER_SRVID, srvid, 0,
+				  tdb_null, NULL, NULL, &cstatus);
 	if (ret != 0) {
 		return ret;
 	}
@@ -185,9 +184,8 @@ static int get_cluster_vnn(struct ctdbd_connection *conn, uint32_t *vnn)
 {
 	int32_t cstatus=-1;
 	int ret;
-	ret = ctdbd_control(conn,
-			    CTDB_CURRENT_NODE, CTDB_CONTROL_GET_PNN, 0, 0,
-			    tdb_null, NULL, NULL, &cstatus);
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_GET_PNN, 0, 0,
+				  tdb_null, NULL, NULL, &cstatus);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
 		return ret;
@@ -209,9 +207,8 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	uint32_t i;
 	int ret;
 
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    CTDB_CONTROL_GET_NODEMAP, 0, 0,
-			    tdb_null, talloc_tos(), &outdata, &cstatus);
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_GET_NODEMAP, 0, 0,
+				  tdb_null, talloc_tos(), &outdata, &cstatus);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_control failed: %s\n", strerror(ret)));
 		return false;
@@ -828,9 +825,8 @@ char *ctdbd_dbpath(struct ctdbd_connection *conn,
 	data.dptr = (uint8_t*)&db_id;
 	data.dsize = sizeof(db_id);
 
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    CTDB_CONTROL_GETDBPATH, 0, 0, data,
-			    mem_ctx, &rdata, &cstatus);
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_GETDBPATH, 0, 0, data,
+				  mem_ctx, &rdata, &cstatus);
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(0, (__location__ " ctdb_control for getdbpath failed: %s\n",
 			  strerror(ret)));
@@ -853,11 +849,11 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 
 	data = string_term_tdb_data(name);
 
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    persistent
-			    ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
-			    : CTDB_CONTROL_DB_ATTACH,
-			    tdb_flags, 0, data, NULL, &data, &cstatus);
+	ret = ctdbd_control_local(conn,
+				  persistent
+				  ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
+				  : CTDB_CONTROL_DB_ATTACH,
+				  tdb_flags, 0, data, NULL, &data, &cstatus);
 	if (ret != 0) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", strerror(ret)));
@@ -879,9 +875,8 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 	data.dptr = (uint8_t *)db_id;
 	data.dsize = sizeof(*db_id);
 
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
-			    NULL, NULL, &cstatus);
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_ENABLE_SEQNUM, 0, 0, data,
+				  NULL, NULL, &cstatus);
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(0, (__location__ " ctdb_control for enable seqnum "
 			  "failed: %s\n", strerror(ret)));
@@ -1040,9 +1035,9 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	ret = ctdbd_control(conn, CTDB_CURRENT_NODE,
-			    CTDB_CONTROL_TRAVERSE_START, conn->rand_srvid,
-			    0, data, NULL, NULL, &cstatus);
+	ret = ctdbd_control_local(conn, CTDB_CONTROL_TRAVERSE_START,
+				  conn->rand_srvid,
+				  0, data, NULL, NULL, &cstatus);
 
 	if ((ret != 0) || (cstatus != 0)) {
 		DEBUG(0,("ctdbd_control failed: %s, %d\n", strerror(ret),
