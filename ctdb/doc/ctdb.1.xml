@@ -743,7 +743,7 @@ MonitorInterval         = 15
 	Example output:
       </para>
       <screen>
-Node 2 is LVS master
+2
       </screen>
 	  </listitem>
 	</varlistentry>
@@ -757,8 +757,8 @@ Node 2 is LVS master
 	Example output:
       </para>
       <screen>
-2:10.0.0.13
-3:10.0.0.14
+2 10.0.0.13
+3 10.0.0.14
       </screen>
 	  </listitem>
 	</varlistentry>

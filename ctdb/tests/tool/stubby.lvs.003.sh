@@ -29,7 +29,7 @@ VNNMAP
 #####
 
 required_result 0 <<EOF
-Node 0 is LVS master
+0
 EOF
 
 simple_test master <<EOF
@@ -39,8 +39,8 @@ EOF
 #####
 
 required_result 0 <<EOF
-0:192.168.20.41
-2:192.168.20.43
+0 192.168.20.41
+2 192.168.20.43
 EOF
 
 simple_test list <<EOF

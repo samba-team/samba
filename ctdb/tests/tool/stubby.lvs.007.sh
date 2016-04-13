@@ -31,7 +31,6 @@ VNNMAP
 #####
 
 required_result 255 <<EOF
-There is no LVS master
 EOF
 
 simple_test master <<EOF

@@ -81,7 +81,7 @@ ipreallocated)
 		"$CTDB_LVS_PUBLIC_IFACE" "$CTDB_LVS_PUBLIC_IP"
 
 	ctdb_get_pnn
-	lvsmaster=$("${CTDB_HELPER_BINDIR}/ctdb_lvs" master | sed -n -e 's/Node \([0-9]*\) is LVS master/\1/p')
+	lvsmaster=$("${CTDB_HELPER_BINDIR}/ctdb_lvs" master)
 	if [ "$pnn" != "$lvsmaster" ] ; then
 	    # This node is not the LVS master so change the IP address
 	    # to have scope "host" so this node won't respond to ARPs
@@ -99,7 +99,7 @@ ipreallocated)
 
 	# Add all nodes (except this node) as LVS servers
 	"${CTDB_HELPER_BINDIR}/ctdb_lvs" list |
-	awk -F: -v pnn="$pnn" '$1 != pnn { print $2 }' |
+	awk -v pnn="$pnn" '$1 != pnn { print $2 }' |
 	while read ip ; do
 		ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r $ip -g
 		ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r $ip -g

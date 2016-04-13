@@ -141,25 +141,6 @@ EOF
 	echo "${_master_candidates%% *}"
 }
 
-# Print the PNN of the LVS master node, verbose version
-show_master ()
-{
-	_master_pnn=$(find_master)
-	case "$?" in
-	0)
-		echo "Node ${_master_pnn} is LVS master"
-		exit 0
-		;;
-	255)
-		echo "There is no LVS master"
-		exit 255
-		;;
-	*)
-		exit 10
-		;;
-	esac
-}
-
 # List all usable nodes in the LVS group
 nodes_list ()
 {
@@ -181,7 +162,7 @@ EOF
 	*)   exit 10 ;;
 	esac
 
-	awk '{ print $1 ":" $2 }'<<EOF
+	awk '{ print $1, $2 }'<<EOF
 $_usable_nodes
 EOF
 }
@@ -213,7 +194,7 @@ prog=$(basename "$0")
 cmd="$1"
 
 case "$cmd" in
-master) show_master ;;
+master) find_master ;;
 list)   nodes_list ;;
 status) nodes_status ;;
 *)      usage ;;
