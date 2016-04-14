@@ -246,6 +246,10 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return tevent_req_post(req, ev);
 	}
 
+	/* Block those signals that we are not handling */
+	BlockSignals(True, SIGHUP);
+	BlockSignals(True, SIGUSR1);
+
 	if (ctdbd_conn == NULL) {
 		/*
 		 * No cluster around, skip the database replication
