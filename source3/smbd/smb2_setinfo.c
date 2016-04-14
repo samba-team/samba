@@ -530,6 +530,24 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
+	case 0x02:/* SMB2_SETINFO_FS */
+	{
+		uint16_t file_info_level = in_file_info_class + 1000;
+
+		status = smbd_do_setfsinfo(conn, smbreq, state,
+					file_info_level,
+					fsp,
+					&in_input_buffer);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+				status = NT_STATUS_INVALID_INFO_CLASS;
+			}
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+		break;
+	}
+
 	case 0x03:/* SMB2_SETINFO_SECURITY */
 	{
 		if (!CAN_WRITE(conn)) {
