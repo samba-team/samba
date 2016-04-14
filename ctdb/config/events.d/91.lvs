@@ -114,6 +114,14 @@ ipreallocated)
 
 	flush_route_cache
 	;;
+
+monitor)
+	lvs_check_config
+
+	if [ -n "$CTDB_LVS_PUBLIC_IFACE" ] ; then
+		interface_monitor "$CTDB_LVS_PUBLIC_IFACE" || exit 1
+	fi
+	;;
 esac
 
 exit 0
