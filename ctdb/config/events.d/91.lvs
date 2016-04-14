@@ -39,7 +39,7 @@ case "$1" in
 	flush_route_cache
 	;;
 
-     recovered|ipreallocated)
+     ipreallocated)
 	# kill off any tcp connections
 	ipvsadm -D -t $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
 	ipvsadm -D -u $CTDB_LVS_PUBLIC_IP:0 >/dev/null 2>&1
