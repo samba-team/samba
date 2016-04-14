@@ -25,6 +25,19 @@ from samba.dcerpc import misc, drsuapi
 from samba.drs_utils import drs_Replicate
 import sys
 
+class RODCException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return "%s: %s" % (self.__class__.__name__, self.value)
+
+class NamingError(RODCException):
+    pass
+
+class ReplicationError(RODCException):
+    pass
+
 class cmd_rodc_preload(Command):
     """Preload accounts for an RODC.  Multiple accounts may be requested."""
 
@@ -39,6 +52,7 @@ class cmd_rodc_preload(Command):
     takes_options = [
         Option("--server", help="DC to use", type=str),
         Option("--file", help="Read account list from a file, or - for stdin (one per line)", type=str),
+        Option("--ignore-errors", help="When preloading multiple accounts, skip any failing accounts", action="store_true"),
         ]
 
     takes_args = ["account*"]
@@ -59,7 +73,7 @@ class cmd_rodc_preload(Command):
             res = samdb.search(expression="(&(samAccountName=%s)(objectclass=user))" % ldb.binary_encode(account),
                                scope=ldb.SCOPE_SUBTREE, attrs=[])
         if len(res) != 1:
-            raise Exception("Failed to find account '%s'" % account)
+            raise NamingError("Failed to find account '%s'" % account)
         return str(res[0]["dn"])
 
 
@@ -69,6 +83,7 @@ class cmd_rodc_preload(Command):
         versionpts = kwargs.get("versionopts")
         server = kwargs.get("server")
         accounts_file = kwargs.get("file")
+        ignore_errors = kwargs.get("ignore_errors")
 
         if server is None:
             raise Exception("You must supply a server")
@@ -98,13 +113,22 @@ class cmd_rodc_preload(Command):
 
         repl = drs_Replicate("ncacn_ip_tcp:%s[seal,print]" % server, lp, creds,
                              local_samdb, destination_dsa_guid)
+
+        errors = []
         for account in accounts:
             # work out the source and destination GUIDs
             dc_ntds_dn = samdb.get_dsServiceName()
             res = samdb.search(base=dc_ntds_dn, scope=ldb.SCOPE_BASE, attrs=["invocationId"])
             source_dsa_invocation_id = misc.GUID(local_samdb.schema_format_value("objectGUID", res[0]["invocationId"][0]))
 
-            dn = self.get_dn(samdb, account)
+            try:
+                dn = self.get_dn(samdb, account)
+            except RODCException, e:
+                if not ignore_errors:
+                    raise CommandError(str(e))
+                errors.append(e)
+                continue
+
             self.outf.write("Replicating DN %s\n" % dn)
 
             local_samdb.transaction_start()
@@ -113,9 +137,17 @@ class cmd_rodc_preload(Command):
                                exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
             except Exception, e:
                 local_samdb.transaction_cancel()
-                raise CommandError("Error replicating DN %s" % dn, e)
+                if not ignore_errors:
+                    raise CommandError("Error replicating DN %s" % dn)
+                errors.append(ReplicationError("Error replicating DN %s" % dn))
+                continue
+
             local_samdb.transaction_commit()
 
+        if len(errors) > 0:
+            print "\nPreload encountered problematic users:"
+            for error in errors:
+                print "    %s" % error
 
 
 class cmd_rodc(SuperCommand):
