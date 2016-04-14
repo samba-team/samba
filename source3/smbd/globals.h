@@ -143,6 +143,13 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       char **ppdata,
 			       unsigned int *pdata_size);
 
+NTSTATUS smbd_do_setfsinfo(connection_struct *conn,
+				struct smb_request *req,
+				TALLOC_CTX *mem_ctx,
+				uint16_t info_level,
+				files_struct *fsp,
+				const DATA_BLOB *pdata);
+
 NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 				struct smb_request *req,
 				TALLOC_CTX *mem_ctx,
