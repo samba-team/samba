@@ -43,10 +43,12 @@ class RodcCmdTestCase(SambaToolCmdTest):
         self.ldb.newuser("sambatool2", "2wsxCDE#")
         self.ldb.newuser("sambatool3", "3edcVFR$")
         self.ldb.newuser("sambatool4", "4rfvBGT%")
+        self.ldb.newuser("sambatool5", "5tjbNHY*")
+        self.ldb.newuser("sambatool6", "6yknMJU*")
 
         self.ldb.add_remove_group_members("Allowed RODC Password Replication Group",
                                           ["sambatool1", "sambatool2", "sambatool3",
-                                           "sambatool4"],
+                                           "sambatool4", "sambatool5"],
                                           add_members_operation=True)
 
     def tearDown(self):
@@ -55,6 +57,8 @@ class RodcCmdTestCase(SambaToolCmdTest):
         self.ldb.deleteuser("sambatool2")
         self.ldb.deleteuser("sambatool3")
         self.ldb.deleteuser("sambatool4")
+        self.ldb.deleteuser("sambatool5")
+        self.ldb.deleteuser("sambatool6")
         (result, out, err) = self.runsubcmd("drs", "replicate", "--local", "unused",
                                             os.environ["DC_SERVER"], self.base_dn)
 
@@ -92,3 +96,33 @@ class RodcCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool1,CN=Users,%s\nReplicating DN CN=sambatool2,CN=Users,%s\n" % (self.base_dn, self.base_dn))
         os.unlink(tempf)
+
+    def test_multi_with_missing_name_success(self):
+        (result, out, err) = self.runsubcmd("rodc", "preload",
+                                            "nonexistentuser1", "sambatool5",
+                                            "nonexistentuser2",
+                                            "--server", os.environ["DC_SERVER"],
+                                            "--ignore-errors")
+        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertEqual(out, "Replicating DN CN=sambatool5,CN=Users,%s\n" % self.base_dn)
+
+    def test_multi_with_missing_name_failure(self):
+        (result, out, err) = self.runsubcmd("rodc", "preload",
+                                            "nonexistentuser1", "sambatool5",
+                                            "nonexistentuser2",
+                                            "--server", os.environ["DC_SERVER"])
+        self.assertCmdFail(result, "ensuring rodc prefetch quit on missing user")
+
+    def test_multi_without_group_success(self):
+        (result, out, err) = self.runsubcmd("rodc", "preload",
+                                            "sambatool6", "sambatool5",
+                                            "--server", os.environ["DC_SERVER"],
+                                            "--ignore-errors")
+        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertEqual(out, "Replicating DN CN=sambatool6,CN=Users,%s\nReplicating DN CN=sambatool5,CN=Users,%s\n" % (self.base_dn, self.base_dn))
+
+    def test_multi_without_group_failure(self):
+        (result, out, err) = self.runsubcmd("rodc", "preload",
+                                            "sambatool6", "sambatool5",
+                                            "--server", os.environ["DC_SERVER"])
+        self.assertCmdFail(result, "ensuring rodc prefetch quit on non-replicated user")
