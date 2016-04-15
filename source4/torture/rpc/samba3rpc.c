@@ -2960,6 +2960,7 @@ static bool enumvalues(struct torture_context *tctx,
 		NTSTATUS status;
 		uint32_t size, length;
 
+		ZERO_STRUCT(buf8);
 		r.in.handle = handle;
 		r.in.enum_index = enum_index;
 		name.name = "";
