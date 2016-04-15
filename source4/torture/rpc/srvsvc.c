@@ -970,6 +970,7 @@ static bool test_NetDiskEnum(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	ZERO_STRUCT(info);
+	ZERO_STRUCT(r);
 
 	r.in.server_unc = NULL;
 	r.in.resume_handle = &resume_handle;
