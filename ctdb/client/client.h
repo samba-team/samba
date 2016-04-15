@@ -828,6 +828,7 @@ int ctdb_transaction_delete_record(struct ctdb_transaction_handle *h,
 struct tevent_req *ctdb_transaction_commit_send(
 					TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
+					struct timeval timeout,
 					struct ctdb_transaction_handle *h);
 
 bool ctdb_transaction_commit_recv(struct tevent_req *req, int *perr);
