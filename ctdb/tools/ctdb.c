@@ -92,7 +92,7 @@ static int printm(const char *format, ...)
 	size_t len = strlen(format);
 	char new_format[len+1];
 
-	strcpy(new_format, format);
+	strncpy(new_format, format, len+1);
 
 	if (options.machineseparator[0] != ':') {
 		all_string_sub(new_format,
@@ -2718,7 +2718,8 @@ static int control_setifacelink(struct ctdb_context *ctdb, int argc, const char 
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	strcpy(info.name, argv[0]);
+	strncpy(info.name, argv[0], sizeof(info.name)-1);
+	info.name[sizeof(info.name)-1] = '\0';
 
 	if (strcmp(argv[1], "up") == 0) {
 		info.link_state = 1;
