@@ -3165,7 +3165,12 @@ static bool torture_samba3_createshare(struct torture_context *tctx,
 	struct policy_handle new_handle;
 	struct winreg_CreateKey c;
 	struct winreg_CloseKey cl;
-	enum winreg_CreateAction action_taken;
+	enum winreg_CreateAction action_taken = REG_ACTION_NONE;
+
+	ZERO_STRUCT(c);
+	ZERO_STRUCT(cl);
+	ZERO_STRUCT(hklm);
+	ZERO_STRUCT(new_handle);
 
 	c.in.handle = &hklm;
 	c.in.name.name = talloc_asprintf(
