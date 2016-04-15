@@ -249,7 +249,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
 
 	while ((line = afdgets(fd, mem_ctx, 0))) {
 		/* Remove '\r' if it's a Windows text file */
-		if (line[strlen(line)-1] == '\r') {
+		if (strlen(line) && line[strlen(line)-1] == '\r') {
 			line[strlen(line)-1] = '\0';
 		}
 
