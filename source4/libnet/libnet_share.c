@@ -175,6 +175,7 @@ NTSTATUS libnet_DelShare(struct libnet_context *ctx,
 	struct srvsvc_NetShareDel s;
 
 	ZERO_STRUCT(c);
+	ZERO_STRUCT(s);
 
 	c.level               = LIBNET_RPC_CONNECT_SERVER;
 	c.in.name             = r->in.server_name;
