@@ -1619,9 +1619,7 @@ struct ctdb_transaction_start_state {
 };
 
 static void ctdb_transaction_g_lock_attached(struct tevent_req *subreq);
-static void ctdb_transaction_register_done(struct tevent_req *subreq);
 static void ctdb_transaction_g_lock_done(struct tevent_req *subreq);
-static int ctdb_transaction_handle_destructor(struct ctdb_transaction_handle *h);
 
 struct tevent_req *ctdb_transaction_start_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
@@ -1691,7 +1689,6 @@ static void ctdb_transaction_g_lock_attached(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct ctdb_transaction_start_state *state = tevent_req_data(
 		req, struct ctdb_transaction_start_state);
-	struct ctdb_req_control request;
 	bool status;
 	int ret;
 
@@ -1702,42 +1699,9 @@ static void ctdb_transaction_g_lock_attached(struct tevent_req *subreq)
 		return;
 	}
 
-	ctdb_req_control_register_srvid(&request, state->h->sid.unique_id);
-	subreq = ctdb_client_control_send(state, state->ev, state->client,
-					  state->destnode, state->timeout,
-					  &request);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, ctdb_transaction_register_done, req);
-}
-
-static void ctdb_transaction_register_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct ctdb_transaction_start_state *state = tevent_req_data(
-		req, struct ctdb_transaction_start_state);
-	struct ctdb_reply_control *reply;
-	bool status;
-	int ret;
-
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	ret = ctdb_reply_control_register_srvid(reply);
-	talloc_free(reply);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
-		return;
-	}
-
 	subreq = ctdb_g_lock_lock_send(state, state->ev, state->client,
-				       state->h->db_g_lock, state->h->lock_name,
+				       state->h->db_g_lock,
+				       state->h->lock_name,
 				       &state->h->sid, state->h->readonly);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -1778,22 +1742,7 @@ struct ctdb_transaction_handle *ctdb_transaction_start_recv(
 		return NULL;
 	}
 
-	talloc_set_destructor(h, ctdb_transaction_handle_destructor);
 	return h;
-}
-
-static int ctdb_transaction_handle_destructor(struct ctdb_transaction_handle *h)
-{
-	int ret;
-
-	ret = ctdb_ctrl_deregister_srvid(h, h->ev, h->client, h->client->pnn,
-					 tevent_timeval_zero(),
-					 h->sid.unique_id);
-	if (ret != 0) {
-		DEBUG(DEBUG_WARNING, ("Failed to deregister SRVID\n"));
-	}
-
-	return 0;
 }
 
 int ctdb_transaction_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
