@@ -428,7 +428,10 @@ static bool torture_dsgetinfo_tcase_teardown(struct torture_context *tctx, void 
 
 	/* Unbing admin handle */
 	r.in.bind_handle = &ctx->admin.drsuapi.bind_handle;
-	dcerpc_drsuapi_DsUnbind_r(ctx->admin.drsuapi.drs_handle, ctx, &r);
+	if (ctx->admin.drsuapi.drs_handle) {
+		dcerpc_drsuapi_DsUnbind_r(ctx->admin.drsuapi.drs_handle,
+					  ctx, &r);
+	}
 
 	talloc_free(ctx);
 
