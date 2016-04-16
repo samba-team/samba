@@ -280,7 +280,7 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	}
 
 	if ((he->h_addr_list = (char **)get_static(
-		     &buffer, &buflen, i * sizeof(char *))) == NULL) {
+		     &buffer, &buflen, 2 * sizeof(char *))) == NULL) {
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -291,9 +291,9 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 		goto out;
 	}
 
-	memcpy(he->h_addr_list[i], &in, INADDRSZ);
+	memcpy(he->h_addr_list[0], &in, INADDRSZ);
 
-	he->h_addr_list[0] = NULL;
+	he->h_addr_list[1] = NULL;
 
 	/* Set h_addr_type and h_length */
 
