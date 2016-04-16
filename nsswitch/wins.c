@@ -47,7 +47,7 @@ NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *
 static char *lookup_byname_backend(const char *name)
 {
 	const char *p;
-	char *ip;
+	char *ip, *ipp;
 	size_t nbt_len;
 	wbcErr result;
 
@@ -64,6 +64,11 @@ static char *lookup_byname_backend(const char *name)
 	if (result != WBC_ERR_SUCCESS) {
 		return NULL;
 	}
+
+        ipp = strchr(ip, '\t');
+        if (ipp != NULL) {
+                *ipp = '\0';
+        }
 
 	return ip;
 }
