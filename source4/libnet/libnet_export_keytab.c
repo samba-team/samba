@@ -56,10 +56,27 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	for (code = samba_kdc_firstkey(context, db_ctx, &sentry);
-	     code == 0;
-	     code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
-		bool principal_found = false;
+	if (copy_one_principal) {
+		krb5_principal k5_princ;
+
+		code = smb_krb5_parse_name(context, principal, &k5_princ);
+		if (code != 0) {
+			*error_string = smb_get_krb5_error_message(context,
+								   code,
+								   mem_ctx);
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		code = samba_kdc_fetch(context, db_ctx, k5_princ,
+				       SDB_F_GET_ANY, 0, &sentry);
+
+		krb5_free_principal(context, k5_princ);
+	} else {
+		code = samba_kdc_firstkey(context, db_ctx, &sentry);
+	}
+
+	for (; code == 0; code = samba_kdc_nextkey(context, db_ctx, &sentry)) {
 		int i;
 
 		code = krb5_unparse_name(context,
@@ -73,17 +90,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		if (principal != NULL) {
-			int cmp;
-
-			cmp = strcmp(principal, entry_principal);
-			if (cmp == 0) {
-				principal_found = true;
-			}
-		}
-
-		if (sentry.entry.keys.len == 0 ||
-		    (copy_one_principal && !principal_found)) {
+		if (sentry.entry.keys.len == 0) {
 			SAFE_FREE(entry_principal);
 			sdb_free_entry(&sentry);
 			sentry = (struct sdb_entry_ex) {
@@ -123,7 +130,7 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		if (principal_found) {
+		if (copy_one_principal) {
 			break;
 		}
 
