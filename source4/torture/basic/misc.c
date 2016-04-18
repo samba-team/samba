@@ -284,7 +284,7 @@ bool torture_holdopen(struct torture_context *tctx,
 
 	while (1) {
 		struct smb_echo ec;
-
+		ZERO_STRUCT(ec);
 		status = smb_raw_echo(cli->transport, &ec);
 		torture_comment(tctx, ".");
 		fflush(stdout);
