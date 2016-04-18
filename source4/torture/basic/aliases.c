@@ -192,6 +192,7 @@ static bool findfirst_aliases(struct torture_context *tctx, struct smbcli_state 
 	const char *fname = "\\findfirst_aliases.txt";
 	int fnum;
 
+	ZERO_STRUCT(t2);
 	t2.in.max_param = 16;
 	t2.in.max_data = UINT16_MAX;
 	t2.in.max_setup = 0;
@@ -201,7 +202,6 @@ static bool findfirst_aliases(struct torture_context *tctx, struct smbcli_state 
 	t2.in.setup = &setup;
 	t2.in.params = data_blob_talloc_zero(tctx, 12);
 	t2.in.data = data_blob(NULL, 0);
-	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
