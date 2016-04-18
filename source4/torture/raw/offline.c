@@ -93,6 +93,7 @@ static void loadfile_callback(struct composite_context *ctx)
 		printf("Failed to read file '%s' - %s\n", 
 		       state->loadfile->in.fname, nt_errstr(status));
 		test_failed++;
+		return;
 	}
 
 	/* check the data is correct */
@@ -183,6 +184,8 @@ static void getoffline_callback(struct smbcli_request *req)
 	struct offline_state *state = req->async.private_data;
 	NTSTATUS status;
 	union smb_fileinfo io;
+
+	ZERO_STRUCT(io);
 
 	io.getattr.level = RAW_FILEINFO_GETATTR;
 	
