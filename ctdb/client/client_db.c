@@ -1028,6 +1028,108 @@ int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data)
 	return 0;
 }
 
+struct ctdb_delete_record_state {
+	struct ctdb_record_handle *h;
+};
+
+static void ctdb_delete_record_done(struct tevent_req *subreq);
+
+struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct ctdb_record_handle *h)
+{
+	struct tevent_req *req, *subreq;
+	struct ctdb_delete_record_state *state;
+	struct ctdb_key_data key;
+	struct ctdb_req_control request;
+	TDB_DATA rec;
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ctdb_delete_record_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->h = h;
+
+	/* Cannot delete the record if it was obtained as a readonly copy */
+	if (h->readonly) {
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
+	}
+
+	rec.dsize = ctdb_ltdb_header_len(&h->header);
+	rec.dptr = talloc_size(h, rec.dsize);
+	if (tevent_req_nomem(rec.dptr, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	ctdb_ltdb_header_push(&h->header, rec.dptr);
+
+	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
+	talloc_free(rec.dptr);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to delete record in DB %s\n",
+				  h->db->db_name));
+		tevent_req_error(req, EIO);
+		return tevent_req_post(req, ev);
+	}
+
+	key.db_id = h->db->db_id;
+	key.header = h->header;
+	key.key = h->key;
+
+	ctdb_req_control_schedule_for_deletion(&request, &key);
+	subreq = ctdb_client_control_send(state, ev, h->client,
+					  ctdb_client_pnn(h->client),
+					  tevent_timeval_zero(),
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ctdb_delete_record_done, req);
+
+	return req;
+}
+
+static void ctdb_delete_record_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_delete_record_state *state = tevent_req_data(
+		req, struct ctdb_delete_record_state);
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		DEBUG(DEBUG_ERR,
+		      ("delete_record: %s SCHDULE_FOR_DELETION failed, "
+		       "ret=%d\n", state->h->db->db_name, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+bool ctdb_delete_record_recv(struct tevent_req *req, int *perr)
+{
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+
 int ctdb_delete_record(struct ctdb_record_handle *h)
 {
 	TDB_DATA rec;

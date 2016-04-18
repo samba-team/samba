@@ -771,6 +771,12 @@ int ctdb_fetch_lock(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data);
 
+struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
+					   struct tevent_context *ev,
+					   struct ctdb_record_handle *h);
+
+bool ctdb_delete_record_recv(struct tevent_req *req, int *perr);
+
 int ctdb_delete_record(struct ctdb_record_handle *h);
 
 struct tevent_req *ctdb_g_lock_lock_send(TALLOC_CTX *mem_ctx,
