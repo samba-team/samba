@@ -238,6 +238,8 @@ static bool test_nttrans_create_ext(struct torture_context *tctx,
 	NTSTATUS (*delete_func)(struct smbcli_tree *, const char *) =
 	    test_dir ? smbcli_rmdir : smbcli_unlink;
 
+	ZERO_STRUCT(ace);
+
 	if (!torture_setup_dir(cli, BASEDIR))
 		return false;
 
