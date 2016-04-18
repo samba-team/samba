@@ -156,7 +156,7 @@ natgw_set_slave ()
 natgw_ensure_master ()
 {
     set -- $("${CTDB_HELPER_BINDIR}/ctdb_natgw" master)
-    natgwmaster="${1:--1}" # Default is -1 if natgwlist fails
+    natgwmaster="${1:--1}" # Default is -1, for failure above
     natgwip="$2"
 
     if [ "$natgwmaster" = "-1" ]; then
