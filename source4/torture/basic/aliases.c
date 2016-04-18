@@ -306,6 +306,7 @@ static bool setfileinfo_aliases(struct torture_context *tctx, struct smbcli_stat
 	const char *fname = "\\setfileinfo_aliases.txt";
 	int fnum;
 
+	ZERO_STRUCT(t2);
 	t2.in.max_param = 2;
 	t2.in.max_data = 0;
 	t2.in.max_setup = 0;
@@ -315,7 +316,6 @@ static bool setfileinfo_aliases(struct torture_context *tctx, struct smbcli_stat
 	t2.in.setup = &setup;
 	t2.in.params = data_blob_talloc_zero(tctx, 6);
 	t2.in.data = data_blob(NULL, 0);
-	ZERO_STRUCT(t2.out);
 
 	smbcli_unlink(cli->tree, fname);
 	fnum = create_complex_file(cli, cli, fname);
