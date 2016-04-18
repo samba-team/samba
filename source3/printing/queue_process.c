@@ -147,16 +147,17 @@ static void reload_pcap_change_notify(struct tevent_context *ev,
 	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
 }
 
-struct printing_queue_housekeeping_state {
+struct bq_state {
 	struct tevent_context *ev;
 	struct messaging_context *msg;
+	struct idle_event *housekeep;
 };
 
 static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 {
-	struct printing_queue_housekeeping_state *state =
-		talloc_get_type_abort(pvt,
-		struct printing_queue_housekeeping_state);
+	struct bq_state *state;
+
+	state = talloc_get_type_abort(pvt, struct bq_state);
 
 	DEBUG(5, ("print queue housekeeping\n"));
 	pcap_cache_reload(state->ev, state->msg, &reload_pcap_change_notify);
@@ -164,30 +165,23 @@ static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 	return true;
 }
 
-static bool printing_subsystem_queue_tasks(struct tevent_context *ev_ctx,
-					   struct messaging_context *msg_ctx)
+static bool printing_subsystem_queue_tasks(struct bq_state *state)
 {
-	struct printing_queue_housekeeping_state *state;
 	uint32_t housekeeping_period = lp_printcap_cache_time();
 
-	state = talloc_zero(ev_ctx, struct printing_queue_housekeeping_state);
-	if (state == NULL) {
-		DEBUG(0,("Could not talloc printing_queue_housekeeping_state\n"));
-		return false;
-	}
-	state->ev = ev_ctx;
-	state->msg = msg_ctx;
+	/* cancel any existing housekeeping event */
+	TALLOC_FREE(state->housekeep);
 
 	if (housekeeping_period == 0) {
 		DEBUG(4, ("background print queue housekeeping disabled\n"));
 		return true;
 	}
 
-	if (!(event_add_idle(ev_ctx, NULL,
-			     timeval_set(housekeeping_period, 0),
-			     "print_queue_housekeeping",
-			     print_queue_housekeeping,
-			     state))) {
+	state->housekeep = event_add_idle(state->ev, NULL,
+					  timeval_set(housekeeping_period, 0),
+					  "print_queue_housekeeping",
+					  print_queue_housekeeping, state);
+	if (state->housekeep == NULL) {
 		DEBUG(0,("Could not add print_queue_housekeeping event\n"));
 		return false;
 	}
@@ -234,23 +228,24 @@ static void bq_sig_hup_handler(struct tevent_context *ev,
 				void *siginfo,
 				void *pvt)
 {
-	struct messaging_context *msg_ctx;
+	struct bq_state *state;
 
-	msg_ctx = talloc_get_type_abort(pvt, struct messaging_context);
+	state = talloc_get_type_abort(pvt, struct bq_state);
 	change_to_root_user();
 
 	DEBUG(1, ("Reloading pcap cache after SIGHUP\n"));
-	pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
+	pcap_cache_reload(state->ev, state->msg,
+			  &reload_pcap_change_notify);
+	printing_subsystem_queue_tasks(state);
 	bq_reopen_logs(NULL);
 }
 
-static void bq_setup_sig_hup_handler(struct tevent_context *ev,
-				     struct messaging_context *msg_ctx)
+static void bq_setup_sig_hup_handler(struct bq_state *state)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(ev, ev, SIGHUP, 0, bq_sig_hup_handler,
-			       msg_ctx);
+	se = tevent_add_signal(state->ev, state->ev, SIGHUP, 0,
+			       bq_sig_hup_handler, state);
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}
@@ -291,13 +286,15 @@ static void bq_smb_conf_updated(struct messaging_context *msg_ctx,
 				struct server_id server_id,
 				DATA_BLOB *data)
 {
-	struct tevent_context *ev_ctx =
-		talloc_get_type_abort(private_data, struct tevent_context);
+	struct bq_state *state;
+
+	state = talloc_get_type_abort(private_data, struct bq_state);
 
 	DEBUG(10,("smb_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
-	pcap_cache_reload(ev_ctx, msg_ctx, &reload_pcap_change_notify);
+	pcap_cache_reload(state->ev, msg_ctx, &reload_pcap_change_notify);
+	printing_subsystem_queue_tasks(state);
 }
 
 static void printing_pause_fd_handler(struct tevent_context *ev,
@@ -320,6 +317,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 			     char *logfile)
 {
 	pid_t pid;
+	struct bq_state *state;
 
 	/* Use local variables for this as we don't
 	 * need to save the parent side of this, just
@@ -375,15 +373,22 @@ pid_t start_background_queue(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
+		state = talloc_zero(NULL, struct bq_state);
+		if (state == NULL) {
+			exit(1);
+		}
+		state->ev = ev;
+		state->msg = msg_ctx;
+
 		bq_reopen_logs(logfile);
 		bq_setup_sig_term_handler();
-		bq_setup_sig_hup_handler(ev, msg_ctx);
+		bq_setup_sig_hup_handler(state);
 		bq_setup_sig_chld_handler(ev);
 
 		BlockSignals(false, SIGTERM);
 		BlockSignals(false, SIGHUP);
 
-		if (!printing_subsystem_queue_tasks(ev, msg_ctx)) {
+		if (!printing_subsystem_queue_tasks(state)) {
 			exit(1);
 		}
 
@@ -396,7 +401,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 		if (!locking_init()) {
 			exit(1);
 		}
-		messaging_register(msg_ctx, ev, MSG_SMB_CONF_UPDATED,
+		messaging_register(msg_ctx, state, MSG_SMB_CONF_UPDATED,
 				   bq_smb_conf_updated);
 		messaging_register(msg_ctx, NULL, MSG_PRINTER_UPDATE,
 				   print_queue_receive);
@@ -453,8 +458,16 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 
 	} else {
 		bool ret;
+		struct bq_state *state;
 
-		ret = printing_subsystem_queue_tasks(ev_ctx, msg_ctx);
+		state = talloc_zero(NULL, struct bq_state);
+		if (state == NULL) {
+			exit(1);
+		}
+		state->ev = ev_ctx;
+		state->msg = msg_ctx;
+
+		ret = printing_subsystem_queue_tasks(state);
 
 		/* Publish nt printers, this requires a working winreg pipe */
 		pcap_cache_reload(ev_ctx, msg_ctx,
