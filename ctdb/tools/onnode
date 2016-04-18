@@ -39,9 +39,7 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -P          Push given files to nodes instead of running commands.
     -q          Do not print node addresses (overrides -v).
     -v          Print node address even for a single node.
-  <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected"),
-                "rm" (or "recmaster"), "lvs" (or "lvsmaster"),
-                "natgw" (or "natgwlist"); or
+  <NODES>       "all", "any", "ok" (or "healthy"), "con" (or "connected") ; or
                 a node number (0 base); or
                 a hostname (if -n is specified); or
                 list (comma separated) of <NODES>; or
@@ -132,9 +130,7 @@ parse_nodespec ()
 	for i in $1 ; do
 	    case "$i" in
 		*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
-		# Separate lines for readability.
 		all|any|ok|healthy|con|connected) echo "$i" ;;
-		rm|recmaster|lvs|lvsmaster|natgw|natgwlist) echo "$i" ;;
 		*)
 		    [ $i -gt -1 ] 2>/dev/null || $names_ok || invalid_nodespec
 		    echo $i
@@ -190,52 +186,6 @@ get_nodes_with_status ()
 	    echo_nth "$pnn" $all_nodes
 	done <<<"$ctdb_status_output"
     )
-}
-
-ctdb_props="" # cache
-get_node_with_property ()
-{
-    local all_nodes="$1"
-    local prop="$2"
-
-    local prop_node=""
-    if [ "${ctdb_props##:${prop}:}" = "$ctdb_props" ] ; then
-	# Not in cache.
-	prop_node=$(ctdb "$prop" -X 2>/dev/null)
-	if [ $? -eq 0 ] ; then
-	    if [ "$prop" = "natgwlist" ] ; then
-		prop_node="${prop_node%% *}" # 1st word
-		if [ "$prop_node" = "-1" ] ; then
-		    # This works around natgwlist returning 0 even
-		    # when there's no natgw.
-		    prop_node=""
-		fi
-	    else
-		# We only want the first line.
-		local nl="
-"
-		prop_node="${prop_node%%${nl}*}"
-	    fi
-	else
-	    prop_node=""
-	fi
-
-	if [ -n "$prop_node" ] ; then
-	    # Add to cache.
-	    ctdb_props="${ctdb_props}${ctdb_props:+ }:${prop}:${prop_node}"
-	fi
-    else
-	# Get from cache.
-	prop_node="${ctdb_props##:${prop}:}"
-	prop_node="${prop_node%% *}"
-    fi
-
-    if [ -n "$prop_node" ] ; then
-	echo_nth "$prop_node" $all_nodes
-    else
-	echo "${prog}: No ${prop} available" >&2
-	exit 1
-    fi
 }
 
 get_any_available_node ()
@@ -298,15 +248,6 @@ get_nodes ()
 		;;
 	    con|connected) 
 		get_nodes_with_status "$all_nodes" "connected" || exit 1
-		;;
-	    rm|recmaster)
-		get_node_with_property "$all_nodes" "recmaster" || exit 1
-		;;
-	    lvs|lvsmaster)
-		get_node_with_property "$all_nodes" "lvsmaster" || exit 1
-		;;
-	    natgw|natgwlist)
-		get_node_with_property "$all_nodes" "natgwlist" || exit 1
 		;;
 	    [0-9]|[0-9][0-9]|[0-9][0-9][0-9])
 		echo_nth $n $all_nodes

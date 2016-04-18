@@ -196,27 +196,6 @@
 	  </para>
         </listitem>
       </varlistentry>
-      <varlistentry><term>lvs | lvsmaster</term>
-        <listitem>
-          <para>
-            The current LVS master.
-	  </para>
-        </listitem>
-      </varlistentry>
-      <varlistentry><term>natgw | natgwlist</term>
-        <listitem>
-          <para>
-            The current NAT gateway.
-	  </para>
-        </listitem>
-      </varlistentry>
-      <varlistentry><term>rm | recmaster</term>
-        <listitem>
-          <para>
-            The current recovery master.
-	  </para>
-        </listitem>
-      </varlistentry>
     </variablelist>
   </refsect1>
 
