@@ -198,7 +198,8 @@ bool torture_winattrtest(struct torture_context *tctx,
 	union smb_fileinfo query, query_org;
 	NTSTATUS status;
 	struct security_descriptor *sd1, *sd2;
-
+	ZERO_STRUCT(query);
+	ZERO_STRUCT(query_org);
 
 	/* Test winattrs for file */
 	smbcli_unlink(cli1->tree, fname);
