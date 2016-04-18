@@ -491,6 +491,71 @@ pnn:3 192.168.2.203       OK
     </refsect2>
 
     <refsect2>
+      <title>natgw {master|list|status}</title>
+      <para>
+	This command shows different aspects of NAT gateway status.
+	For an overview of CTDB's NAT gateway functionality please see
+	the <citetitle>NAT GATEWAY</citetitle> section in
+	<citerefentry><refentrytitle>ctdb</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry>.
+      </para>
+
+      <variablelist>
+	<varlistentry>
+	  <term>master</term>
+	  <listitem>
+	    <para>
+	      Show the PNN and private IP address of the current NAT
+	      gateway master node.
+	    </para>
+	    <para>
+	      Example output:
+	    </para>
+	    <screen>
+1 192.168.2.201
+	    </screen>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>list</term>
+	  <listitem>
+	    <para>
+	      List the private IP addresses of nodes in the current
+	      NAT gateway group, annotating the master node.
+	    </para>
+	    <para>
+	      Example output:
+	    </para>
+	    <screen>
+192.168.2.200
+192.168.2.201	MASTER
+192.168.2.202
+192.168.2.203
+	    </screen>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>status</term>
+	  <listitem>
+	    <para>
+	      List the nodes in the current NAT gateway group and
+	      their status.
+	    </para>
+	    <para>
+	      Example output:
+	    </para>
+	    <screen>
+pnn:0 192.168.2.200       UNHEALTHY (THIS NODE)
+pnn:1 192.168.2.201       OK
+pnn:2 192.168.2.202       OK
+pnn:3 192.168.2.203       OK
+	    </screen>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+    </refsect2>
+
+    <refsect2>
       <title>ping</title>
       <para>
 	This command will "ping" specified CTDB nodes in the cluster
