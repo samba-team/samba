@@ -1469,6 +1469,8 @@ static bool test_openx_over_dir(struct torture_context *tctx, struct smbcli_stat
 	int fnum = -1;
 	bool ret = true;
 
+	ZERO_STRUCT(io);
+
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	/* Create the Directory */
