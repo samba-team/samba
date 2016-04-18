@@ -157,20 +157,9 @@ static bool print_queue_housekeeping(const struct timeval *now, void *pvt)
 	struct printing_queue_housekeeping_state *state =
 		talloc_get_type_abort(pvt,
 		struct printing_queue_housekeeping_state);
-	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
-	time_t t = time_mono(NULL);
 
 	DEBUG(5, ("print queue housekeeping\n"));
-
-	/* if periodic printcap rescan is enabled,
-	 * see if it's time to reload */
-	if ((printcap_cache_time != 0) &&
-	    (t >= (last_printer_reload_time + printcap_cache_time))) {
-		DEBUG( 3,( "Printcap cache time expired.\n"));
-		pcap_cache_reload(state->ev, state->msg,
-				  &reload_pcap_change_notify);
-		last_printer_reload_time = t;
-	}
+	pcap_cache_reload(state->ev, state->msg, &reload_pcap_change_notify);
 
 	return true;
 }
@@ -179,6 +168,7 @@ static bool printing_subsystem_queue_tasks(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx)
 {
 	struct printing_queue_housekeeping_state *state;
+	uint32_t housekeeping_period = lp_printcap_cache_time();
 
 	state = talloc_zero(ev_ctx, struct printing_queue_housekeeping_state);
 	if (state == NULL) {
@@ -188,8 +178,13 @@ static bool printing_subsystem_queue_tasks(struct tevent_context *ev_ctx,
 	state->ev = ev_ctx;
 	state->msg = msg_ctx;
 
+	if (housekeeping_period == 0) {
+		DEBUG(4, ("background print queue housekeeping disabled\n"));
+		return true;
+	}
+
 	if (!(event_add_idle(ev_ctx, NULL,
-			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
+			     timeval_set(housekeeping_period, 0),
 			     "print_queue_housekeeping",
 			     print_queue_housekeeping,
 			     state))) {
