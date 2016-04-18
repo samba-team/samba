@@ -379,6 +379,8 @@ void smbXcli_session_set_disconnect_expired(struct smbXcli_session *session);
 uint16_t smb1cli_session_current_id(struct smbXcli_session* session);
 void smb1cli_session_set_id(struct smbXcli_session* session,
 			    uint16_t session_id);
+void smb1cli_session_set_action(struct smbXcli_session *session,
+				uint16_t action);
 NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
 					 const DATA_BLOB _session_key);
 NTSTATUS smb1cli_session_protect_session_key(struct smbXcli_session *session);
