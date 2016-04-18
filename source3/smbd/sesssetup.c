@@ -286,7 +286,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 
 		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-			action = 1;
+			action |= SMB_SETUP_GUEST;
 		}
 
 		if (session_info->session_key.length > 0) {
@@ -412,7 +412,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 
 		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-			action = 1;
+			action |= SMB_SETUP_GUEST;
 		}
 
 		/*
@@ -940,7 +940,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 
 	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-		action = 1;
+		action |= SMB_SETUP_GUEST;
 	}
 
 	/* register the name and uid as being validated, so further connections
