@@ -147,9 +147,8 @@ systemFlags: 33554432""", ["relax:0"])
     def test_attributeSchema_object(self):
         """Test if the urgent replication is activated when handling an attributeSchema object"""
 
-        try:
-            self.ldb.add_ldif(
-                              """dn: CN=test attributeSchema,cn=Schema,CN=Configuration,%s""" % self.base_dn + """
+        self.ldb.add_ldif(
+            """dn: CN=test attributeSchema,cn=Schema,CN=Configuration,%s""" % self.base_dn + """
 objectClass: attributeSchema
 cn: test attributeSchema
 instanceType: 4
@@ -165,12 +164,9 @@ searchFlags: 8
 lDAPDisplayName: testAttributeSchema
 name: test attributeSchema""")
 
-            # urgent replication should be enabled when creating
-            res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
-            self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
-
-        except LdbError:
-            print "Not testing urgent replication when creating attributeSchema object ...\n"
+        # urgent replication should be enabled when creating
+        res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
+        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying
         m = Message()
