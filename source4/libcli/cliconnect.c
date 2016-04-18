@@ -142,13 +142,16 @@ NTSTATUS smbcli_tconX(struct smbcli_state *cli, const char *sharename,
 	tcon.tconx.in.device = devtype;
 	
 	status = smb_raw_tcon(cli->tree, mem_ctx, &tcon);
-
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
 	cli->tree->tid = tcon.tconx.out.tid;
 
 	if (tcon.tconx.out.options & SMB_EXTENDED_SIGNATURES) {
 		smb1cli_session_protect_session_key(cli->tree->session->smbXcli);
 	}
 
+out:
 	talloc_free(mem_ctx);
 
 	return status;
