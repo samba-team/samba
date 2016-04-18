@@ -578,6 +578,8 @@ static bool test_create_acl_ext(struct torture_context *tctx, struct smb2_tree *
 	NTSTATUS (*delete_func)(struct smb2_tree *, const char *) =
 	    test_dir ? smb2_util_rmdir : smb2_util_unlink;
 
+	ZERO_STRUCT(ace);
+
 	smb2_deltree(tree, FNAME);
 
 	ZERO_STRUCT(io);
