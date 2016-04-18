@@ -251,6 +251,33 @@ class TestDnsForwarding(DNSTest):
         except socket.timeout:
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
+    def test_no_flag_recursive_forwarder(self):
+        ad = contact_real_server(server_ip, 53)
+
+        name = "dsfsfds.dsfsdfs"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        q = self.make_name_question(name, dns.DNS_QTYPE_TXT, dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        send_packet = ndr.ndr_pack(p)
+
+        self.finish_name_packet(p, questions)
+        # Leave off the recursive flag
+        send_packet = ndr.ndr_pack(p)
+
+        ad.send(send_packet, 0)
+        ad.settimeout(timeout)
+        try:
+            data = ad.recv(0xffff + 2, 0)
+            data = ndr.ndr_unpack(dns.name_packet, data)
+            self.assert_dns_rcode_equals(data, dns.DNS_RCODE_NXDOMAIN)
+            self.assertEqual(data.ancount, 0)
+        except socket.timeout:
+            self.fail("DNS server is too slow (timeout %s)" % timeout)
+
     def test_single_forwarder(self):
         s = self.start_toy_server(dns_servers[0], 53, 'forwarder1')
         ad = contact_real_server(server_ip, 53)
