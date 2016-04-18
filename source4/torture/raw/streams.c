@@ -1473,6 +1473,8 @@ static bool create_file_with_stream(struct torture_context *tctx,
 	bool ret = true;
 	union smb_open io;
 
+	ZERO_STRUCT(io);
+
 	/* Create a file with a stream */
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid.fnum = 0;
