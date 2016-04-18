@@ -166,10 +166,7 @@ $natgw_nodes
 EOF
 
     # Print status of nodes in $_ns, along with node count
-    awk -v ns="$_ns" \
-	'BEGIN { out = "" ; count = 0 } \
-         ns ~ "@" $2 "@" { out =  out "\n" $0 ; count += 1 } \
-         END { print "Number of nodes:" count out }' <<EOF
+    awk -v ns="$_ns" 'ns ~ "@" $2 "@" { print $0 }' <<EOF
 $nodestatus
 EOF
 }
@@ -177,14 +174,17 @@ EOF
 # For backward compatibility
 natgwlist ()
 {
-    ret=0
+    _ret=0
     find_master
     if [ $? -eq 2 ] ; then
 	echo "-1 0.0.0.0"
-	ret=2
+	_ret=2
     fi
-    nodes_status || return $?
-    return $ret
+    _t=$(nodes_status) || return $?
+    _n=$(echo "$_t" | wc -l)
+    echo "Number of nodes:${_n}"
+    echo "$_t"
+    return $_ret
 }
 
 prog=$(basename "$0")
