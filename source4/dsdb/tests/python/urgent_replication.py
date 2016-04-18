@@ -12,6 +12,7 @@ from ldb import (LdbError, ERR_NO_SUCH_OBJECT, Message,
 import samba.tests
 import samba.dsdb as dsdb
 import samba.getopt as options
+import random
 
 parser = optparse.OptionParser("urgent_replication.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -154,7 +155,7 @@ cn: test attributeSchema
 instanceType: 4
 isSingleValued: FALSE
 showInAdvancedViewOnly: FALSE
-attributeID: 0.9.2342.19200300.100.1.1
+attributeID: 1.3.6.1.4.1.7165.4.6.1.4.""" + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.12
 adminDisplayName: test attributeSchema
 adminDescription: test attributeSchema
@@ -189,7 +190,7 @@ objectClass: classSchema
 cn: test classSchema
 instanceType: 4
 subClassOf: top
-governsID: 1.2.840.113556.1.5.999
+governsId: 1.3.6.1.4.1.7165.4.6.2.4.""" + str(random.randint(1,100000)) + """
 rDNAttID: cn
 showInAdvancedViewOnly: TRUE
 adminDisplayName: test classSchema

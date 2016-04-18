@@ -81,7 +81,7 @@ objectClass: classSchema
 objectCategory: CN=Class-Schema,""" + self.schema_dn + """
 defaultObjectCategory: """ + object_dn + """
 distinguishedName: """ + object_dn + """
-governsID: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.3.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson

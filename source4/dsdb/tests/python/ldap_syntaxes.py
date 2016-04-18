@@ -65,7 +65,7 @@ ldapDisplayName: """ + attr_ldap_display_name + """
 objectClass: top
 objectClass: attributeSchema
 cn: """ + attr_name + """
-attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeId: 1.3.6.1.4.1.7165.4.6.1.1.""" + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.14
 omSyntax: 127
 omObjectClass: \x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x0C
@@ -92,7 +92,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.2.1.""" + str(random.randint(1,100000)) + """
 schemaIdGuid: """ + str(uuid.uuid4()) + """
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -125,7 +125,7 @@ ldapDisplayName: """ + attr_ldap_display_name + """
 objectClass: top
 objectClass: attributeSchema
 cn: """ + attr_name + """
-attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeId: 1.3.6.1.4.1.7165.4.6.1.2.""" + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.7
 omSyntax: 127
 omObjectClass: \x2A\x86\x48\x86\xF7\x14\x01\x01\x01\x0B
@@ -152,7 +152,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.2.2.""" + str(random.randint(1,100000)) + """
 schemaIdGuid: """ + str(uuid.uuid4()) + """
 objectClassCategory: 1
 subClassOf: organizationalPerson

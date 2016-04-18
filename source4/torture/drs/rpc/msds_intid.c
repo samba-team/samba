@@ -85,7 +85,7 @@ struct DsIntIdTestCtx {
 		"objectClass: top\n" \
 		"objectClass: attributeSchema\n" \
 		"cn: msds-intid-%1$d\n" \
-		"attributeID: 1.2.840.%1$d.1.5.9940\n" \
+		"attributeID: 1.3.6.1.4.1.7165.4.6.1.%1$d.1.5.9940\n" \
 		"attributeSyntax: 2.5.5.10\n" \
 		"omSyntax: 4\n" \
 		"instanceType: 4\n" \

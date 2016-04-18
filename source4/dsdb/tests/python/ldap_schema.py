@@ -105,7 +105,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeId: 1.3.6.1.4.1.7165.4.6.1.""" + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -149,7 +149,7 @@ defaultObjectCategory: CN=_
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -172,7 +172,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -254,7 +254,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalUnit
@@ -343,7 +343,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeId: 1.3.6.1.4.1.7165.4.6.1.""" + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -459,7 +459,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson

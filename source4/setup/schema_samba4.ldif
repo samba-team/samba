@@ -14,6 +14,17 @@
 
 ## 1.3.6.1.4.1.7165.4.5.x - ldap extended matches
 
+## 1.3.6.1.4.1.7165.4.6.1.x - SELFTEST random attributes
+## 1.3.6.1.4.1.7165.4.6.1.1.x - ldap_syntaxes.py
+## 1.3.6.1.4.1.7165.4.6.1.2.x - ldap_syntaxes.py
+## 1.3.6.1.4.1.7165.4.6.1.4.x - urgent_replication.py
+
+## 1.3.6.1.4.1.7165.4.6.2.x - SELFTEST random classes
+## 1.3.6.1.4.1.7165.4.6.2.1.x - ldap_syntaxes.py
+## 1.3.6.1.4.1.7165.4.6.2.2.x - ldap_syntaxes.py
+## 1.3.6.1.4.1.7165.4.6.2.3.x - sec_descriptor.py
+## 1.3.6.1.4.1.7165.4.6.2.4.x - urgent_replication.py
+
 ## 1.3.6.1.4.1.7165.4.255.x - mapped OIDs due to conflicts between AD and standards-track
 #
 #
