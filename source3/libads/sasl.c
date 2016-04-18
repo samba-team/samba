@@ -134,6 +134,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	struct auth_generic_state *auth_generic_state;
 	bool use_spnego_principal = lp_client_use_spnego_principal();
 	const char *sasl_list[] = { sasl, NULL };
+	NTTIME end_nt_time;
 
 	nt_status = auth_generic_client_prepare(NULL, &auth_generic_state);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -305,6 +306,14 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 			TALLOC_FREE(auth_generic_state);
 			return ADS_ERROR_NT(NT_STATUS_INVALID_NETWORK_RESPONSE);
 		}
+	}
+
+	ads->auth.tgs_expire = LONG_MAX;
+	end_nt_time = gensec_expire_time(auth_generic_state->gensec_security);
+	if (end_nt_time != GENSEC_EXPIRE_TIME_INFINITY) {
+		struct timeval tv;
+		nttime_to_timeval(&tv, end_nt_time);
+		ads->auth.tgs_expire = tv.tv_sec;
 	}
 
 	if (ads->ldap.wrap_type > ADS_SASLWRAP_TYPE_PLAIN) {
