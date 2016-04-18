@@ -3004,7 +3004,7 @@ static int control_getcapabilities(struct ctdb_context *ctdb, int argc, const ch
 		printf("RECMASTER: %s\n", (capabilities&CTDB_CAP_RECMASTER)?"YES":"NO");
 		printf("LMASTER: %s\n", (capabilities&CTDB_CAP_LMASTER)?"YES":"NO");
 	} else {
-		printm(":RECMASTER:LMASTER:LVS:\n");
+		printm(":RECMASTER:LMASTER:\n");
 		printm(":%d:%d:\n",
 			!!(capabilities&CTDB_CAP_RECMASTER),
 			!!(capabilities&CTDB_CAP_LMASTER));
