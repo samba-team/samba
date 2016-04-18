@@ -685,7 +685,6 @@ def build(bld):
         'ctdb_randrec',
         'ctdb_persistent',
         'ctdb_porting_tests',
-        'ctdb_transaction',
         'ctdb_lock_tdb'
     ]
 
@@ -710,7 +709,8 @@ def build(bld):
         'fetch_ring',
         'fetch_loop',
         'fetch_readonly',
-        'fetch_readonly_loop'
+        'fetch_readonly_loop',
+        'transaction_loop'
     ]
 
     for target in ctdb_tests:

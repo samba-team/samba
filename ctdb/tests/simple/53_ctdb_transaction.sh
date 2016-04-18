@@ -37,11 +37,8 @@ if [ -z "$CTDB_TEST_TIMELIMIT" ] ; then
     CTDB_TEST_TIMELIMIT=30
 fi
 
-# Add a timeout command to ensure this test completes if
-# ctdb_transaction gets stuck
-timeout_cmd="timeout $((CTDB_TEST_TIMELIMIT * 2))"
-
-t="$CTDB_TEST_WRAPPER $VALGRIND $timeout_cmd ctdb_transaction --timelimit=${CTDB_TEST_TIMELIMIT}"
+t="$CTDB_TEST_WRAPPER $VALGRIND transaction_loop \
+	-n ${num_nodes} -t ${CTDB_TEST_TIMELIMIT}"
 
 echo "Running ctdb_transaction on all $num_nodes nodes."
-try_command_on_node -v -p all "$t & $t"
+try_command_on_node -v -p all "$t"
