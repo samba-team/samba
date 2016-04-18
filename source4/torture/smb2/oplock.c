@@ -1811,7 +1811,7 @@ static bool test_smb2_oplock_batch10(struct torture_context *tctx,
 	{
 		struct smb2_write wr;
 		DATA_BLOB data;
-		data = data_blob_talloc(tree1, NULL, UINT16_MAX);
+		data = data_blob_talloc_zero(tree1, UINT16_MAX);
 		data.data[0] = (const uint8_t)'x';
 		ZERO_STRUCT(wr);
 		wr.in.file.handle = h1;
