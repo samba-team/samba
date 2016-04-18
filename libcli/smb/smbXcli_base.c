@@ -167,6 +167,7 @@ struct smbXcli_session {
 
 	struct {
 		uint16_t session_id;
+		uint16_t action;
 		DATA_BLOB application_key;
 		bool protected_key;
 	} smb1;
@@ -5375,6 +5376,12 @@ void smb1cli_session_set_id(struct smbXcli_session *session,
 			    uint16_t session_id)
 {
 	session->smb1.session_id = session_id;
+}
+
+void smb1cli_session_set_action(struct smbXcli_session *session,
+				uint16_t action)
+{
+	session->smb1.action = action;
 }
 
 NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
