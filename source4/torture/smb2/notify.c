@@ -866,6 +866,8 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 	torture_comment(torture, "TESTING CHANGE NOTIFY COMPLETION FILTERS\n");
 
 
+	ZERO_STRUCT(h1);
+	ZERO_STRUCT(h2);
 	/*
 	  get a handle on the directory
 	*/
