@@ -1700,6 +1700,8 @@ static bool test_chained_ntcreatex_readx(struct torture_context *tctx, struct sm
 	const char buf[] = "test";
 	char buf2[4];
 
+	ZERO_STRUCT(io);
+
 	torture_assert(tctx, torture_setup_dir(cli, BASEDIR), "Failed to setup up test directory: " BASEDIR);
 
 	torture_comment(tctx, "Checking RAW_NTCREATEX_READX chained on "
