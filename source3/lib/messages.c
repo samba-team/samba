@@ -379,6 +379,11 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	register_dmalloc_msgs(ctx);
 	debug_register_msgs(ctx);
 
+	{
+		struct server_id_buf tmp;
+		DBG_DEBUG("my id: %s\n", server_id_str_buf(ctx->id, &tmp));
+	}
+
 	return ctx;
 }
 
