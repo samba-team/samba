@@ -23,7 +23,6 @@ $0 <option>
   master     Display node number and private IP address of master node
   list       List private IP addresses of nodes in group, annotate master
   status     Show status of nodes in NAT gateway group
-  natgwlist  Combination of "master" and "status", for backward compatiblity
 EOF
     exit 1
 }
@@ -171,22 +170,6 @@ $nodestatus
 EOF
 }
 
-# For backward compatibility
-natgwlist ()
-{
-    _ret=0
-    find_master
-    if [ $? -eq 2 ] ; then
-	echo "-1 0.0.0.0"
-	_ret=2
-    fi
-    _t=$(nodes_status) || return $?
-    _n=$(echo "$_t" | wc -l)
-    echo "Number of nodes:${_n}"
-    echo "$_t"
-    return $_ret
-}
-
 prog=$(basename "$0")
 cmd="$1"
 
@@ -194,6 +177,5 @@ case "$cmd" in
     master)    find_master ;;
     list)      nodes_list ;;
     status)    nodes_status ;;
-    natgwlist) natgwlist ;;
     *)         usage ;;
 esac

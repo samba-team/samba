@@ -1148,31 +1148,6 @@ static int control_nodestatus(struct ctdb_context *ctdb, int argc, const char **
 	return ret;
 }
 
-/*
-  display the list of nodes belonging to this natgw configuration
- */
-static int control_natgwlist(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	static char prog[PATH_MAX+1] = "";
-
-	if (argc != 0) {
-		usage();
-	}
-
-	if (!ctdb_set_helper("NAT gateway helper", prog, sizeof(prog),
-			     "CTDB_NATGW_HELPER", CTDB_HELPER_BINDIR,
-			     "ctdb_natgw")) {
-		DEBUG(DEBUG_ERR, ("Unable to set NAT gateway helper\n"));
-		exit(1);
-	}
-
-	execl(prog, prog, "natgwlist", NULL);
-
-	DEBUG(DEBUG_ERR,
-	      ("Unable to run NAT gateway helper %s\n", strerror(errno)));
-	exit(1);
-}
-
 /* Display NAT gateway status */
 static int control_natgw(struct ctdb_context *ctdb, int argc, const char **argv)
 {
@@ -5858,7 +5833,6 @@ static const struct {
 	{ "scriptstatus",     control_scriptstatus,     true,	false, "show the status of the monitoring scripts (or all scripts)", "[all]"},
 	{ "enablescript",     control_enablescript,  true,	false, "enable an eventscript", "<script>"},
 	{ "disablescript",    control_disablescript,  true,	false, "disable an eventscript", "<script>"},
-	{ "natgwlist",        control_natgwlist,	false,	true, "show the nodes belonging to this natgw configuration"},
 	{ "natgw",            control_natgw,		false,	true, "show NAT gateway configuration ", "[master|list|status]"},
 	{ "xpnn",             control_xpnn,             false,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 	{ "getreclock",       control_getreclock,	true,	false, "Show the reclock file of a node"},

@@ -467,30 +467,6 @@ Duration of last recovery/failover: 2.248552 seconds
     </refsect2>
 
     <refsect2>
-      <title>natgwlist</title>
-      <para>
-	Show the current NAT gateway master and the status of all
-	nodes in the current NAT gateway group.  See the
-	<citetitle>NAT GATEWAY</citetitle> section in
-	<citerefentry><refentrytitle>ctdb</refentrytitle>
-	<manvolnum>7</manvolnum></citerefentry> for more details.
-      </para>
-
-      <refsect3>
-	<title>Example</title>
-	<screen>
-# ctdb natgwlist
-0 192.168.2.200
-Number of nodes:4
-pnn:0 192.168.2.200       OK (THIS NODE)
-pnn:1 192.168.2.201       OK
-pnn:2 192.168.2.202       OK
-pnn:3 192.168.2.203       OK
-	</screen>
-      </refsect3>
-    </refsect2>
-
-    <refsect2>
       <title>natgw {master|list|status}</title>
       <para>
 	This command shows different aspects of NAT gateway status.
