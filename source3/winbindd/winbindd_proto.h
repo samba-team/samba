@@ -306,17 +306,6 @@ NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
 struct winbindd_domain *wb_child_domain(void);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
-
-void winbindd_getgrnam(struct winbindd_cli_state *state);
-void winbindd_getgrgid(struct winbindd_cli_state *state);
-void winbindd_setgrent(struct winbindd_cli_state *state);
-void winbindd_endgrent(struct winbindd_cli_state *state);
-void winbindd_getgrent(struct winbindd_cli_state *state);
-void winbindd_list_groups(struct winbindd_cli_state *state);
-void winbindd_getgroups(struct winbindd_cli_state *state);
-void winbindd_getusersids(struct winbindd_cli_state *state);
-void winbindd_getuserdomgroups(struct winbindd_cli_state *state);
-void winbindd_getsidaliases(struct winbindd_cli_state *state);
 bool fill_grent(TALLOC_CTX *mem_ctx, struct winbindd_gr *gr,
 		const char *dom_name, const char *gr_name, gid_t unix_gid);
 NTSTATUS winbindd_print_groupmembers(struct talloc_dict *members,
