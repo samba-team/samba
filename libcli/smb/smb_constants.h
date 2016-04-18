@@ -278,6 +278,12 @@ enum smb_signing_setting {
 	CAP_LARGE_WRITEX | \
 	0)
 
+/*
+ * The action flags in the SMB session setup response
+ */
+#define SMB_SETUP_GUEST          0x0001
+#define SMB_SETUP_USE_LANMAN_KEY 0x0002
+
 /* Client-side offline caching policy types */
 enum csc_policy {
 	CSC_POLICY_MANUAL=0,
