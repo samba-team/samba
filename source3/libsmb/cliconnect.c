@@ -1325,6 +1325,17 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	talloc_set_destructor(
 		state, cli_session_setup_gensec_state_destructor);
 
+	if (user == NULL || strlen(user) == 0) {
+		if (pass != NULL && strlen(pass) == 0) {
+			/*
+			 * some callers pass "" as no password
+			 *
+			 * gensec only handles NULL as no password.
+			 */
+			pass = NULL;
+		}
+	}
+
 	status = auth_generic_client_prepare(state, &state->auth_generic);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
