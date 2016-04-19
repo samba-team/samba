@@ -1747,13 +1747,9 @@ struct tevent_req *ctdb_transaction_start_send(TALLOC_CTX *mem_ctx,
 	h->readonly = readonly;
 	h->updated = false;
 
-	/* SRVID is unique for databases, so client can have transactions active
-	 * for multiple databases */
-	h->sid.pid = getpid();
-	h->sid.task_id = db->db_id;
-	h->sid.vnn = state->destnode;
-	h->sid.unique_id = h->sid.task_id;
-	h->sid.unique_id = (h->sid.unique_id << 32) | h->sid.pid;
+	/* SRVID is unique for databases, so client can have transactions
+	 * active for multiple databases */
+	h->sid = ctdb_client_get_server_id(client, db->db_id);
 
 	h->recbuf = ctdb_rec_buffer_init(h, db->db_id);
 	if (tevent_req_nomem(h->recbuf, req)) {

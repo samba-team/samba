@@ -854,6 +854,10 @@ int ctdb_ctrl_modflags(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		       uint32_t destnode, struct timeval timeout,
 		       uint32_t set, uint32_t clear);
 
+struct ctdb_server_id ctdb_client_get_server_id(
+				struct ctdb_client_context *client,
+				uint32_t task_id);
+
 bool ctdb_server_id_equal(struct ctdb_server_id *sid1,
 			  struct ctdb_server_id *sid2);
 

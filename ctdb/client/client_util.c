@@ -112,6 +112,21 @@ int ctdb_ctrl_modflags(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return ret;
 }
 
+struct ctdb_server_id ctdb_client_get_server_id(
+				struct ctdb_client_context *client,
+				uint32_t task_id)
+{
+	struct ctdb_server_id sid;
+
+	sid.pid = getpid();
+	sid.task_id = task_id;
+	sid.vnn = ctdb_client_pnn(client);
+	sid.unique_id = task_id;
+	sid.unique_id = (sid.unique_id << 32) | sid.pid;
+
+	return sid;
+}
+
 bool ctdb_server_id_equal(struct ctdb_server_id *sid1,
 			  struct ctdb_server_id *sid2)
 {
