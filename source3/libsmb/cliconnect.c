@@ -1661,6 +1661,19 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 		}
 	}
 
+	if (state->is_anonymous) {
+		/*
+		 * Windows server does not set the
+		 * SMB2_SESSION_FLAG_IS_NULL flag.
+		 *
+		 * This fix makes sure we do not try
+		 * to verify a signature on the final
+		 * session setup response.
+		 */
+		tevent_req_done(req);
+		return;
+	}
+
 	status = gensec_session_key(state->auth_generic->gensec_security,
 				    state, &state->session_key);
 	if (tevent_req_nterror(req, status)) {
@@ -1669,20 +1682,6 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req)
 
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		struct smbXcli_session *session = state->cli->smb2.session;
-
-		if (state->is_anonymous) {
-			/*
-			 * Windows server does not set the
-			 * SMB2_SESSION_FLAG_IS_GUEST nor
-			 * SMB2_SESSION_FLAG_IS_NULL flag.
-			 *
-			 * This fix makes sure we do not try
-			 * to verify a signature on the final
-			 * session setup response.
-			 */
-			tevent_req_done(req);
-			return;
-		}
 
 		status = smb2cli_session_set_session_key(session,
 							 state->session_key,
@@ -2121,6 +2120,21 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
+	/*
+	 * if the server supports extended security then use SPNEGO
+	 * even for anonymous connections.
+	 */
+	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
+		subreq = cli_session_setup_spnego_send(
+			state, ev, cli, user, pass, workgroup);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
+					req);
+		return req;
+	}
+
 	/* if no user is supplied then we have to do an anonymous connection.
 	   passwords are ignored */
 
@@ -2169,18 +2183,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	/* if the server supports extended security then use SPNEGO */
-
-	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
-		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
-					req);
-		return req;
-	} else {
+	{
 		/* otherwise do a NT1 style session setup */
 		if (lp_client_ntlmv2_auth() && lp_client_use_spnego()) {
 			/*
