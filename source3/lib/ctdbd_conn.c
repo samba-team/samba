@@ -47,7 +47,6 @@ struct ctdbd_srvid_cb {
 };
 
 struct ctdbd_connection {
-	const char *sockname;	/* Needed in ctdbd_traverse */
 	struct messaging_context *msg_ctx;
 	uint32_t reqid;
 	uint32_t our_vnn;
@@ -433,20 +432,13 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	conn->sockname = talloc_strdup(conn, sockname);
-	if (conn->sockname == NULL) {
-		DBG_ERR("talloc failed\n");
-		ret = ENOMEM;
-		goto fail;
-	}
-
 	conn->timeout = timeout;
 
 	if (conn->timeout == 0) {
 		conn->timeout = -1;
 	}
 
-	ret = ctdbd_connect(conn->sockname, &conn->fd);
+	ret = ctdbd_connect(sockname, &conn->fd);
 	if (ret != 0) {
 		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
 		goto fail;
