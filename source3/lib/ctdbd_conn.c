@@ -142,20 +142,19 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 static int ctdbd_msg_call_back(struct ctdbd_connection *conn,
 			       struct ctdb_req_message_old *msg)
 {
-	size_t msg_len;
+	uint32_t msg_len;
 	size_t i, num_callbacks;
 
 	msg_len = msg->hdr.length;
 	if (msg_len < offsetof(struct ctdb_req_message_old, data)) {
-		DEBUG(10, ("%s: len %u too small\n", __func__,
-			   (unsigned)msg_len));
+		DBG_DEBUG("len %"PRIu32" too small\n", msg_len);
 		return 0;
 	}
 	msg_len -= offsetof(struct ctdb_req_message_old, data);
 
 	if (msg_len < msg->datalen) {
-		DEBUG(10, ("%s: msg_len=%u < msg->datalen=%u\n", __func__,
-			   (unsigned)msg_len, (unsigned)msg->datalen));
+		DBG_DEBUG("msg_len=%"PRIu32" < msg->datalen=%"PRIu32"\n",
+			  msg_len, msg->datalen);
 		return 0;
 	}
 
