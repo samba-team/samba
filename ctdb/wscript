@@ -709,6 +709,20 @@ def build(bld):
                         includes='include',
                         deps='replace popt talloc tevent tdb')
 
+    ctdb_tests = [
+        'g_lock_loop'
+    ]
+
+    for target in ctdb_tests:
+        src = 'tests/src/' + target + '.c'
+
+        bld.SAMBA_BINARY(target,
+                         source=src,
+                         includes='include',
+                         deps='''ctdb-client2 ctdb-protocol ctdb-util
+                                 samba-util ctdb-tests-common''',
+                         install_path='${CTDB_TEST_LIBDIR}')
+
     bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='''replace popt tdb tevent talloc ctdb-system
