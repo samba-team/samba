@@ -1802,19 +1802,26 @@ struct ctdb_transaction_record_fetch_state {
 	bool found;
 };
 
-static int ctdb_transaction_record_fetch_traverse(uint32_t reqid,
-						  struct ctdb_ltdb_header *header,
-						  TDB_DATA key,
-						  TDB_DATA data,
-						  void *private_data)
+static int ctdb_transaction_record_fetch_traverse(
+				uint32_t reqid,
+				struct ctdb_ltdb_header *nullheader,
+				TDB_DATA key, TDB_DATA data,
+				void *private_data)
 {
 	struct ctdb_transaction_record_fetch_state *state =
 		(struct ctdb_transaction_record_fetch_state *)private_data;
 
 	if (state->key.dsize == key.dsize &&
 	    memcmp(state->key.dptr, key.dptr, key.dsize) == 0) {
+		int ret;
+
+		ret = ctdb_ltdb_header_extract(&data, &state->header);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Failed to extract header\n"));
+			return 1;
+		}
+
 		state->data = data;
-		state->header = *header;
 		state->found = true;
 	}
 
