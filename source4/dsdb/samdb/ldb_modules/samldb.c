@@ -152,6 +152,126 @@ static int samldb_next_step(struct samldb_ctx *ac)
 	}
 }
 
+static int samldb_unique_attr_check(struct samldb_ctx *ac, const char *attr,
+				    const char *attr_conflict,
+				    struct ldb_dn *base_dn)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	const char * const no_attrs[] = { NULL };
+	struct ldb_result *res;
+	const char *enc_str;
+	struct ldb_message_element *el;
+	int ret;
+
+	el = dsdb_get_single_valued_attr(ac->msg, attr,
+					 ac->req->operation);
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	if (el->num_values > 1) {
+		ldb_asprintf_errstring(ldb,
+				       "samldb: %s has %u values, should be single-valued!",
+				       attr, el->num_values);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	} else if (el->num_values == 0) {
+		ldb_asprintf_errstring(ldb,
+				       "samldb: new value for %s not provided for mandatory, single-valued attribute!",
+				       attr);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+	if (el->values[0].length == 0) {
+		ldb_asprintf_errstring(ldb,
+				       "samldb: %s is of zero length, should have a value!",
+				       attr);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	}
+	enc_str = ldb_binary_encode(ac, el->values[0]);
+
+	if (enc_str == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+
+	/* Make sure that attr (eg) "sAMAccountName" is only used once */
+
+	if (attr_conflict != NULL) {
+		ret = dsdb_module_search(ac->module, ac, &res,
+					 base_dn,
+					 LDB_SCOPE_SUBTREE, no_attrs,
+					 DSDB_FLAG_NEXT_MODULE, ac->req,
+					 "(|(%s=%s)(%s=%s))",
+					 attr, enc_str,
+					 attr_conflict, enc_str);
+	} else {
+		ret = dsdb_module_search(ac->module, ac, &res,
+					 base_dn,
+					 LDB_SCOPE_SUBTREE, no_attrs,
+					 DSDB_FLAG_NEXT_MODULE, ac->req,
+					 "(%s=%s)", attr, enc_str);
+	}
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count > 1) {
+		return ldb_operr(ldb);
+	} else if (res->count == 1) {
+		if (ldb_dn_compare(res->msgs[0]->dn, ac->msg->dn) != 0) {
+			ldb_asprintf_errstring(ldb,
+					       "samldb: %s '%s' already in use!",
+					       attr, enc_str);
+			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+		}
+	}
+	talloc_free(res);
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_sam_accountname_valid_check(struct samldb_ctx *ac)
+{
+	int ret = samldb_unique_attr_check(ac, "samAccountName", NULL,
+					   ldb_get_default_basedn(
+						   ldb_module_get_ctx(ac->module)));
+	if (ret == LDB_ERR_OBJECT_CLASS_VIOLATION) {
+		ret = LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+	return ret;
+}
+
+static int samldb_schema_attributeid_valid_check(struct samldb_ctx *ac)
+{
+	int ret = samldb_unique_attr_check(ac, "attributeID", "governsID",
+					   ldb_get_schema_basedn(
+						   ldb_module_get_ctx(ac->module)));
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	return ret;
+}
+
+static int samldb_schema_governsid_valid_check(struct samldb_ctx *ac)
+{
+	int ret = samldb_unique_attr_check(ac, "governsID", "attributeID",
+					   ldb_get_schema_basedn(
+						   ldb_module_get_ctx(ac->module)));
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	return ret;
+}
+
+static int samldb_schema_ldapdisplayname_valid_check(struct samldb_ctx *ac)
+{
+	int ret = samldb_unique_attr_check(ac, "lDAPDisplayName", NULL,
+					   ldb_get_schema_basedn(
+						   ldb_module_get_ctx(ac->module)));
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	return ret;
+}
+
 
 /* sAMAccountName handling */
 
@@ -175,10 +295,7 @@ static int samldb_generate_sAMAccountName(struct ldb_context *ldb,
 static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	const char *name;
 	int ret;
-	struct ldb_result *res;
-	const char * const noattrs[] = { NULL };
 
 	if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
 		ret = samldb_generate_sAMAccountName(ldb, ac->msg);
@@ -187,31 +304,10 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 		}
 	}
 
-	name = ldb_msg_find_attr_as_string(ac->msg, "sAMAccountName", NULL);
-	if (name == NULL) {
-		/* The "sAMAccountName" cannot be nothing */
-		ldb_set_errstring(ldb,
-				  "samldb: Empty account names aren't allowed!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	ret = dsdb_module_search(ac->module, ac, &res,
-				 ldb_get_default_basedn(ldb), LDB_SCOPE_SUBTREE, noattrs,
-				 DSDB_FLAG_NEXT_MODULE,
-				 ac->req,
-				 "(sAMAccountName=%s)",
-				 ldb_binary_encode_string(ac, name));
+	ret = samldb_sam_accountname_valid_check(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	if (res->count != 0) {
-		ldb_asprintf_errstring(ldb,
-				       "samldb: Account name (sAMAccountName) '%s' already in use!",
-				       name);
-		talloc_free(res);
-		return LDB_ERR_ENTRY_ALREADY_EXISTS;
-	}
-	talloc_free(res);
 
 	return samldb_next_step(ac);
 }
@@ -2169,75 +2265,6 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
-static int samldb_sam_accountname_check(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	const char * const no_attrs[] = { NULL };
-	struct ldb_result *res;
-	const char *sam_accountname, *enc_str;
-	struct ldb_message_element *el;
-	struct ldb_message *tmp_msg;
-	int ret;
-
-	el = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName",
-					 ac->req->operation);
-	if (el == NULL) {
-		/* we are not affected */
-		return LDB_SUCCESS;
-	}
-
-	/* Create a temporary message for fetching the "sAMAccountName" */
-	tmp_msg = ldb_msg_new(ac->msg);
-	if (tmp_msg == NULL) {
-		return ldb_module_oom(ac->module);
-	}
-	ret = ldb_msg_add(tmp_msg, el, 0);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	/* We must not steal the original string, it belongs to the caller! */
-	sam_accountname = talloc_strdup(ac, 
-					ldb_msg_find_attr_as_string(tmp_msg, "sAMAccountName", NULL));
-	talloc_free(tmp_msg);
-
-	if (sam_accountname == NULL) {
-		/* The "sAMAccountName" cannot be nothing */
-		ldb_set_errstring(ldb,
-				  "samldb: Empty account names aren't allowed!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	enc_str = ldb_binary_encode_string(ac, sam_accountname);
-	if (enc_str == NULL) {
-		return ldb_module_oom(ac->module);
-	}
-
-	/* Make sure that a "sAMAccountName" is only used once */
-
-	ret = dsdb_module_search(ac->module, ac, &res,
-				 ldb_get_default_basedn(ldb),
-				 LDB_SCOPE_SUBTREE, no_attrs,
-				 DSDB_FLAG_NEXT_MODULE, ac->req,
-				 "(sAMAccountName=%s)", enc_str);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	if (res->count > 1) {
-		return ldb_operr(ldb);
-	} else if (res->count == 1) {
-		if (ldb_dn_compare(res->msgs[0]->dn, ac->msg->dn) != 0) {
-			ldb_asprintf_errstring(ldb,
-					       "samldb: Account name (sAMAccountName) '%s' already in use!",
-					       sam_accountname);
-			return LDB_ERR_ENTRY_ALREADY_EXISTS;
-		}
-	}
-	talloc_free(res);
-
-	return LDB_SUCCESS;
-}
-
 static int samldb_member_check(struct samldb_ctx *ac)
 {
 	const char * const attrs[] = { "objectSid", NULL };
@@ -3025,25 +3052,47 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "classSchema") != NULL) {
+		ac->type = SAMLDB_TYPE_CLASS;
+
+		ret = samldb_schema_governsid_valid_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ret = samldb_schema_ldapdisplayname_valid_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
 		ret = samldb_schema_info_update(ac);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
 
-		ac->type = SAMLDB_TYPE_CLASS;
 		return samldb_fill_object(ac);
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "attributeSchema") != NULL) {
+		ac->type = SAMLDB_TYPE_ATTRIBUTE;
+
+		ret = samldb_schema_attributeid_valid_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ret = samldb_schema_ldapdisplayname_valid_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
 		ret = samldb_schema_info_update(ac);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
 
-		ac->type = SAMLDB_TYPE_ATTRIBUTE;
 		return samldb_fill_object(ac);
 	}
 
@@ -3187,10 +3236,36 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "sAMAccountName");
 	if (el != NULL) {
-		ret = samldb_sam_accountname_check(ac);
+		ret = samldb_sam_accountname_valid_check(ac);
+		/*
+		 * Other errors are checked for elsewhere, we just
+		 * want to prevent duplicates
+		 */
+		if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "ldapDisplayName");
+	if (el != NULL) {
+		ret = samldb_schema_ldapdisplayname_valid_check(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "attributeID");
+	if (el != NULL) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+				       "Once set, attributeID values may not be modified");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	el = ldb_msg_find_element(ac->msg, "governsID");
+	if (el != NULL) {
+		ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+				       "Once set, governsID values may not be modified");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	el = ldb_msg_find_element(ac->msg, "member");
