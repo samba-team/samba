@@ -25,6 +25,7 @@
 #include "system/select.h"
 #include "lib/util/sys_rw_data.h"
 #include "lib/util/iov_buf.h"
+#include "lib/util/select.h"
 
 #include "messages.h"
 
@@ -296,12 +297,14 @@ static int ctdb_read_packet(int fd, int timeout, TALLOC_CTX *mem_ctx,
 			    struct ctdb_req_header **result)
 {
 	struct ctdb_req_header *req;
-	int ret, revents;
 	uint32_t msglen;
 	ssize_t nread;
 
 	if (timeout != -1) {
-		ret = poll_intr_one_fd(fd, POLLIN, timeout, &revents);
+		struct pollfd pfd = { .fd = fd, .events = POLLIN };
+		int ret;
+
+		ret = sys_poll_intr(&pfd, 1, timeout);
 		if (ret == -1) {
 			return errno;
 		}
