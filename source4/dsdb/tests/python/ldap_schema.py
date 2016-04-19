@@ -35,7 +35,9 @@ from samba.auth import system_session
 from ldb import SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT
 from ldb import ERR_UNWILLING_TO_PERFORM
+from ldb import ERR_ENTRY_ALREADY_EXISTS
 from ldb import ERR_CONSTRAINT_VIOLATION
+from ldb import ERR_OBJECT_CLASS_VIOLATION
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE
 from samba.samdb import SamDB
@@ -95,7 +97,8 @@ class SchemaTests(samba.tests.TestCase):
 
     def test_schemaUpdateNow(self):
         """Testing schemaUpdateNow"""
-        attr_name = "test-Attr" + time.strftime("%s", time.gmtime())
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
 
         ldif = """
@@ -105,7 +108,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.3.6.1.4.1.7165.4.6.1.""" + str(random.randint(1,100000)) + """
+attributeId: 1.3.6.1.4.1.7165.4.6.1.""" + rand + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -242,6 +245,656 @@ name: """ + object_name + """
 
     def test_subClassOf(self):
         """ Testing usage of custom child schamaClass
+        """
+
+        class_name = "my-Class" + time.strftime("%s", time.gmtime())
+        class_ldap_display_name = class_name.replace("-", "")
+
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalUnit
+systemFlags: 16
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        # Search for created objectclass
+        res = []
+        res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE,
+                              attrs=["lDAPDisplayName", "defaultObjectCategory",
+                                     "schemaIDGUID", "distinguishedName"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
+        self.assertTrue("schemaIDGUID" in res[0])
+
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+
+        object_name = "org" + time.strftime("%s", time.gmtime())
+
+        ldif = """
+dn: OU=%s,%s""" % (object_name, self.base_dn) + """
+objectClass: """ + class_ldap_display_name + """
+ou: """ + object_name + """
+instanceType: 4
+"""
+        self.ldb.add_ldif(ldif)
+
+        # Search for created object
+        res = []
+        res = self.ldb.search("ou=%s,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["dn"])
+        self.assertEquals(len(res), 1)
+        # Delete the object
+        delete_force(self.ldb, "ou=%s,%s" % (object_name, self.base_dn))
+
+
+    def test_duplicate_attributeID(self):
+        """Testing creating a duplicate attribute"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add duplicate attributeID value")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_duplicate_attributeID_governsID(self):
+        """Testing creating a duplicate attribute and class"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+governsId: """ + attributeID + """
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalPerson
+rDNAttID: cn
+systemMustContain: cn
+systemOnly: FALSE
+"""
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add duplicate governsID conflicting with attributeID value")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_duplicate_cn(self):
+        """Testing creating a duplicate attribute"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """.1
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add attribute with duplicate CN")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_ENTRY_ALREADY_EXISTS)
+
+    def test_duplicate_implicit_ldapdisplayname(self):
+        """Testing creating a duplicate attribute ldapdisplayname"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+ldapDisplayName: """ + attr_ldap_display_name + """
+attributeId: """ + attributeID + """.1
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add attribute with duplicate of the implicit ldapDisplayName")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_duplicate_explicit_ldapdisplayname(self):
+        """Testing creating a duplicate attribute ldapdisplayname"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+ldapDisplayName: """ + attr_ldap_display_name + """
+attributeId: """ + attributeID + """.1
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add attribute with duplicate ldapDisplayName")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_duplicate_explicit_ldapdisplayname_with_class(self):
+        """Testing creating a duplicate attribute ldapdisplayname between
+        and attribute and a class"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        governsID = "1.3.6.1.4.1.7165.4.6.2." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+ldapDisplayName: """ + attr_ldap_display_name + """
+governsID: """ + governsID + """
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalPerson
+rDNAttID: cn
+systemMustContain: cn
+systemOnly: FALSE
+"""
+        try:
+            self.ldb.add_ldif(ldif)
+            self.fail("Should have failed to add class with duplicate ldapDisplayName")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_duplicate_via_rename_ldapdisplayname(self):
+        """Testing creating a duplicate attribute ldapdisplayname"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+ldapDisplayName: """ + attr_ldap_display_name + """dup
+attributeId: """ + attributeID + """.1
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+changetype: modify
+replace: ldapDisplayName
+ldapDisplayName: """ + attr_ldap_display_name + """
+-
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to modify schema to have attribute with duplicate ldapDisplayName")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_UNWILLING_TO_PERFORM)
+
+
+    def test_duplicate_via_rename_attributeID(self):
+        """Testing creating a duplicate attributeID"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """dup
+adminDisplayName: """ + attr_name + """dup
+cn: """ + attr_name + """-dup
+ldapDisplayName: """ + attr_ldap_display_name + """dup
+attributeId: """ + attributeID + """.1
+attributeSyntax: 2.5.5.12
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s-dup,%s""" % (attr_name, self.schema_dn) + """
+changetype: modify
+replace: attributeId
+attributeId: """ + attributeID + """
+-
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to modify schema to have attribute with duplicate attributeID")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
+
+    def test_remove_ldapdisplayname(self):
+        """Testing removing the ldapdisplayname"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+changetype: modify
+replace: ldapDisplayName
+-
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to remove the ldapdisplayname")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_OBJECT_CLASS_VIOLATION)
+
+    def test_rename_ldapdisplayname(self):
+        """Testing renaming ldapdisplayname"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+changetype: modify
+replace: ldapDisplayName
+ldapDisplayName: """ + attr_ldap_display_name + """2
+-
+"""
+        self.ldb.modify_ldif(ldif)
+
+
+    def test_change_attributeID(self):
+        """Testing change the attributeID"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+changetype: modify
+replace: attributeID
+attributeId: """ + attributeID + """.1
+
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to modify schema to have different attributeID")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
+
+
+    def test_change_attributeID_same(self):
+        """Testing change the attributeID to the same value"""
+        rand = str(random.randint(1,100000))
+        attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
+        attr_ldap_display_name = attr_name.replace("-", "")
+        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+objectClass: top
+objectClass: attributeSchema
+adminDescription: """ + attr_name + """
+adminDisplayName: """ + attr_name + """
+cn: """ + attr_name + """
+attributeId: """ + attributeID + """
+attributeSyntax: 2.5.5.12
+ldapDisplayName: """ + attr_ldap_display_name + """
+omSyntax: 64
+instanceType: 4
+isSingleValued: TRUE
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
+changetype: modify
+replace: attributeID
+attributeId: """ + attributeID + """
+
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to modify schema to have the same attributeID")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
+
+
+    def test_change_governsID(self):
+        """Testing change the governsID"""
+        rand = str(random.randint(1,100000))
+        class_name = "test-Class" + time.strftime("%s", time.gmtime()) + "-" + rand
+        class_ldap_display_name = class_name.replace("-", "")
+        governsID = "1.3.6.1.4.1.7165.4.6.2." + rand
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+governsId: """ + governsID + """
+ldapDisplayName: """ + class_ldap_display_name + """
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalPerson
+rDNAttID: cn
+systemMustContain: cn
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+changetype: modify
+replace: governsID
+governsId: """ + governsID + """.1
+
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to modify schema to have different governsID")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
+
+
+    def test_change_governsID_same(self):
+        """Testing change the governsID"""
+        rand = str(random.randint(1,100000))
+        class_name = "test-Class" + time.strftime("%s", time.gmtime()) + "-" + rand
+        class_ldap_display_name = class_name.replace("-", "")
+        governsID = "1.3.6.1.4.1.7165.4.6.2." + rand
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+governsId: """ + governsID + """
+ldapDisplayName: """ + class_ldap_display_name + """
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalPerson
+rDNAttID: cn
+systemMustContain: cn
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+changetype: modify
+replace: governsID
+governsId: """ + governsID + """.1
+
+"""
+        try:
+            self.ldb.modify_ldif(ldif)
+            self.fail("Should have failed to modify schema to have the same governsID")
+        except LdbError, (enum, estr):
+            self.assertEquals(enum, ERR_CONSTRAINT_VIOLATION)
+
+
+    def test_subClassOf(self):
+        """ Testing usage of custom child classSchema
         """
 
         class_name = "my-Class" + time.strftime("%s", time.gmtime())
