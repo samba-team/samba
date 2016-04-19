@@ -1322,6 +1322,7 @@ static void ctdb_g_lock_lock_process_locks(struct tevent_req *req)
 		return;
 	}
 
+	TALLOC_FREE(state->h);
 	tevent_req_done(req);
 }
 
@@ -1521,6 +1522,7 @@ static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq)
 		return;
 	}
 
+	TALLOC_FREE(state->h);
 	tevent_req_done(req);
 }
 
@@ -1583,6 +1585,7 @@ static void ctdb_g_lock_unlock_deleted(struct tevent_req *subreq)
 		return;
 	}
 
+	TALLOC_FREE(state->h);
 	tevent_req_done(req);
 }
 
