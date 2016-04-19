@@ -468,6 +468,10 @@ static bool cleanupd_init(struct messaging_context *msg, bool interactive,
 
 		DBG_DEBUG("Started cleanupd pid=%d\n", (int)pid);
 
+		if (am_parent != NULL) {
+			add_child_pid(am_parent, pid);
+		}
+
 		*ppid = pid_to_procid(pid);
 		return true;
 	}
@@ -557,16 +561,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	struct iovec iov[2];
 	NTSTATUS status;
 
-	iov[0] = (struct iovec) { .iov_base = (uint8_t *)&pid,
-				  .iov_len = sizeof(pid) };
-	iov[1] = (struct iovec) { .iov_base = (uint8_t *)&unclean_shutdown,
-				  .iov_len = sizeof(bool) };
-
-	status = messaging_send_iov(parent->msg_ctx, parent->cleanupd,
-				    MSG_SMB_NOTIFY_CLEANUP,
-				    iov, ARRAY_SIZE(iov), NULL, 0);
-	DEBUG(10, ("messaging_send_iov returned %s\n", nt_errstr(status)));
-
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
 			struct smbd_child_pid *tmp = child;
@@ -582,6 +576,27 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		DEBUG(2, ("Could not find child %d -- ignoring\n", (int)pid));
 		return;
 	}
+
+	if (child->pid == procid_to_pid(&parent->cleanupd)) {
+		bool ok;
+
+		DBG_WARNING("Restarting cleanupd\n");
+		ok = cleanupd_init(parent->msg_ctx, false, &parent->cleanupd);
+		if (!ok) {
+			DBG_ERR("Failed to restart cleanupd\n");
+		}
+		return;
+	}
+
+	iov[0] = (struct iovec) { .iov_base = (uint8_t *)&pid,
+				  .iov_len = sizeof(pid) };
+	iov[1] = (struct iovec) { .iov_base = (uint8_t *)&unclean_shutdown,
+				  .iov_len = sizeof(bool) };
+
+	status = messaging_send_iov(parent->msg_ctx, parent->cleanupd,
+				    MSG_SMB_NOTIFY_CLEANUP,
+				    iov, ARRAY_SIZE(iov), NULL, 0);
+	DEBUG(10, ("messaging_send_iov returned %s\n", nt_errstr(status)));
 
 	if (unclean_shutdown) {
 		/* a child terminated uncleanly so tickle all
