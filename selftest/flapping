@@ -25,9 +25,6 @@
 ^samba3.raw.acls.inheritance\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.samba3checkfsp.samba3checkfsp\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
 ^samba3.raw.samba3closeerr.samba3closeerr\(ad_dc\) # Seems to flap - succeeds on sn-devel, fails on Fedora 16
-^samba4.tombstone_reanimation.python # flakey on sn-devel
-^samba4.drs.delete_object.python # flakey on sn-devel
-^samba4.blackbox.samba_tool_demote # flakey on sn-devel
 ^samba4.blackbox.dbcheck\( # flakey on sn-devel
 ^samba4.smb2.create.mkdir-dup\(ad_dc_ntvfs\) # This test (for bug 11486) involves a race, not always protected against in the NTVFS file server
 ^samba4.winbind.struct.domain_info.ad_member # flakey on sn-devel-104 and sn-devel-144
