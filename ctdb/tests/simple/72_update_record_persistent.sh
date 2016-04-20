@@ -61,7 +61,8 @@ fi
 
 # 4,
 echo "Create a new record in the persistent database using UPDATE_RECORD"
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database="$test_db" --record=Update_Record_Persistent --value=FirstValue
+try_command_on_node 0 $CTDB_TEST_WRAPPER $VALGRIND update_record_persistent \
+	-D "$test_db" -k "Update_Record_Persistent" -v "FirstValue"
 
 try_command_on_node 0 "$CTDB cattdb "$test_db" | grep 'FirstValue' | wc -l"
 if [ "$out" = 1 ] ; then
@@ -73,7 +74,8 @@ fi
 
 # 5,
 echo Modify an existing record in the persistent database using UPDATE_RECORD
-try_command_on_node 0 $CTDB_TEST_WRAPPER ctdb_update_record_persistent  --database="$test_db" --record=Update_Record_Persistent --value=SecondValue
+try_command_on_node 0 $CTDB_TEST_WRAPPER $VALGRIND update_record_persistent \
+	-D "$test_db" -k "Update_Record_Persistent" -v "SecondValue"
 
 try_command_on_node 0 "$CTDB cattdb "$test_db" | grep 'FirstValue' | wc -l"
 if [ "$out" = 0 ] ; then
