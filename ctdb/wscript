@@ -684,23 +684,6 @@ def build(bld):
                      deps='samba-util ctdb-system popt',
                      install_path='${CTDB_TEST_LIBDIR}')
 
-    # Test binaries
-    ctdb_tests = [
-        'ctdb_trackingdb_test',
-        'ctdb_store',
-        'ctdb_traverse',
-        'ctdb_randrec',
-        'ctdb_persistent',
-    ]
-
-    for target in ctdb_tests:
-        src = 'tests/src/' + target + '.c'
-
-        bld.SAMBA_BINARY(target,
-                         source=src,
-                         includes='include',
-                         deps='ctdb-client ctdb-common ctdb-util',
-                         install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-tests-common',
                         source=bld.SUBDIR('tests/src',
