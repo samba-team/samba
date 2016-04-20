@@ -3339,6 +3339,9 @@ static bool test_smb2_oplock_brl1(struct torture_context *tctx,
 	ZERO_STRUCT(break_info);
 
 	torture_comment(tctx, "a self BRL acquisition should break to none\n");
+
+	ZERO_STRUCT(lock);
+
 	lock[0].offset = 0;
 	lock[0].length = 4;
 	lock[0].flags = SMB2_LOCK_FLAG_EXCLUSIVE |
