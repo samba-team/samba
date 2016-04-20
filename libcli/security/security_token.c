@@ -130,6 +130,11 @@ bool security_token_has_sid_string(const struct security_token *token, const cha
 	return ret;
 }
 
+bool security_token_has_builtin_guests(const struct security_token *token)
+{
+	return security_token_has_sid(token, &global_sid_Builtin_Guests);
+}
+
 bool security_token_has_builtin_administrators(const struct security_token *token)
 {
 	return security_token_has_sid(token, &global_sid_Builtin_Administrators);

@@ -51,6 +51,8 @@ bool security_token_has_sid(const struct security_token *token, const struct dom
 
 bool security_token_has_sid_string(const struct security_token *token, const char *sid_string);
 
+bool security_token_has_builtin_guests(const struct security_token *token);
+
 bool security_token_has_builtin_administrators(const struct security_token *token);
 
 bool security_token_has_nt_authenticated_users(const struct security_token *token);
