@@ -669,6 +669,11 @@ def build(bld):
                      deps='samba-util',
                      install_path='${CTDB_TEST_LIBDIR}')
 
+    bld.SAMBA_BINARY('rb_test',
+                     source='tests/src/rb_test.c',
+                     deps='samba-util talloc',
+                     install_path='${CTDB_TEST_LIBDIR}')
+
     bld.SAMBA_BINARY('ctdb_packet_parse',
                      source='tests/src/ctdb_packet_parse.c',
                      deps='talloc tevent tdb ctdb-protocol',
@@ -676,7 +681,6 @@ def build(bld):
 
     # Test binaries
     ctdb_tests = [
-        'rb_test',
         'ctdb_trackingdb_test',
         'ctdb_store',
         'ctdb_traverse',

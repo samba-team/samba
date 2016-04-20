@@ -7,32 +7,26 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "replace.h"
-#include "system/filesys.h"
-#include "system/network.h"
 #include "system/time.h"
 
-#include <popt.h>
 #include <talloc.h>
-#include <tevent.h>
+#include <assert.h>
 
 #include "lib/util/dlinklist.h"
+#include "lib/util/debug.h"
 
-#include "ctdb_private.h"
-
-#include "common/rb_tree.h"
-#include "common/cmdline.h"
-#include "common/common.h"
+#include "common/rb_tree.c"
 
 static struct timeval tp1,tp2;
 
@@ -111,16 +105,7 @@ static int count_traverse_abort(void *p, void *d)
 */
 int main(int argc, const char *argv[])
 {
-	struct poptOption popt_options[] = {
-		POPT_AUTOHELP
-		POPT_CTDB_CMDLINE
-		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
-		POPT_TABLEEND
-	};
-	int opt, traverse_count;
-	const char **extra_argv;
-	int extra_argc = 0;
-	poptContext pc;
+	int traverse_count;
 	int i,j,k;
 	trbt_tree_t *tree;
 	uint32_t *data;
@@ -133,30 +118,19 @@ int main(int argc, const char *argv[])
 	uint32_t **u32array;
 	uint32_t checksum;
 
-	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
-
-	while ((opt = poptGetNextOpt(pc)) != -1) {
-		switch (opt) {
-		default:
-			fprintf(stderr, "Invalid option %s: %s\n", 
-				poptBadOption(pc, 0), poptStrerror(opt));
-			exit(1);
-		}
-	}
-
-	/* setup the remaining options for the main program to use */
-	extra_argv = poptGetArgs(pc);
-	if (extra_argv) {
-		extra_argv++;
-		while (extra_argv[extra_argc]) extra_argc++;
-	}
-
-	printf("testing trbt_insert32_callback for %d records\n", num_records);
+	/* testing trbt_insert32_callback for num_records */
 	memctx   = talloc_new(NULL);
+	assert(memctx != NULL);
+
 	u32array = talloc_array(memctx, uint32_t *, num_records);
+	assert(u32array != NULL);
+
 	tree = trbt_create(memctx, 0);
+	assert(tree != NULL);
+
 	for (i=0; i<num_records; i++) {
 		u32array[i]  = talloc(u32array, uint32_t);
+		assert(u32array[i] != NULL);
 		*u32array[i] = 0;
 		trbt_insert32_callback(tree, i, callback, u32array[i]);
 	}
@@ -164,41 +138,46 @@ int main(int argc, const char *argv[])
 		trbt_insert32_callback(tree, i, callback, NULL);
 	}
 
-	printf("first 3 keys should have data==1\n");
-	printf("the rest of the keys should have data==2\n");
+	/* first 3 keys should have data == 1
+	 * the rest of the keys should have data == 2
+	 */
 	for (i=0; i<num_records; i++) {
 		data = trbt_lookup32(tree, i);
-		printf("key:%d data:%d\n", i, *data);
+		if (i < 3) {
+			assert(*data == 1);
+		} else {
+			assert(*data == 2);
+		}
 	}
-//	talloc_report_full(tree, stdout);
-//	talloc_report_full(memctx, stdout);
-//	print_tree(tree);
 
-	printf("deleting key 2\n");
+	/* deleting key 2 */
 	talloc_free(u32array[2]);
-//	talloc_report_full(tree, stdout);
-//	talloc_report_full(memctx, stdout);
-//	print_tree(tree);
 
-	printf("deleting key 1\n");
+	/* deleting key 1 */
 	talloc_free(u32array[1]);
-//	talloc_report_full(tree, stdout);
-//	talloc_report_full(memctx, stdout);
-//	print_tree(tree);
 
-	printf("freeing tree\n");
-	talloc_report_full(memctx, stdout);
+	assert(talloc_total_size(memctx) == 212);
+
+	/* freeing tree */
 	talloc_free(memctx);
 
 
 	printf("testing trbt_insertarray32_callback\n");
 	memctx   = talloc_new(NULL);
+	assert(memctx != NULL);
+
 	tree = trbt_create(memctx, 0);
+	assert(tree != NULL);
+
 	u32array = talloc_array(memctx, uint32_t *, 4);
+	assert(u32array != NULL);
+
 	for (i=0;i<4;i++) {
 		u32array[i]  = talloc(u32array, uint32_t);
+		assert(u32array[i] != NULL);
 		*u32array[i] = 0;
 	}
+
 	trbt_insertarray32_callback(tree, 3, key1, callback, u32array[0]);
 	trbt_insertarray32_callback(tree, 3, key1, callback, u32array[0]);
 	trbt_insertarray32_callback(tree, 3, key2, callback, u32array[1]);
@@ -207,70 +186,78 @@ int main(int argc, const char *argv[])
 	trbt_insertarray32_callback(tree, 3, key1, callback, u32array[0]);
 
 	data = trbt_lookuparray32(tree, 3, key1);
-	printf("key1 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 3);
 	data = trbt_lookuparray32(tree, 3, key2);
-	printf("key2 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 2);
 	data = trbt_lookuparray32(tree, 3, key3);
-	printf("key3 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 1);
 	data = trbt_lookuparray32(tree, 3, key4);
-	printf("key4 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	trbt_traversearray32(tree, 3, traverse, NULL);
 
 	printf("\ndeleting key4\n");
 	talloc_free(trbt_lookuparray32(tree, 3, key4));
+
 	data = trbt_lookuparray32(tree, 3, key1);
-	printf("key1 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 3);
 	data = trbt_lookuparray32(tree, 3, key2);
-	printf("key2 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 2);
 	data = trbt_lookuparray32(tree, 3, key3);
-	printf("key3 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 1);
 	data = trbt_lookuparray32(tree, 3, key4);
-	printf("key4 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	trbt_traversearray32(tree, 3, traverse, NULL);
 
 	printf("\ndeleting key2\n");
 	talloc_free(trbt_lookuparray32(tree, 3, key2));
+
 	data = trbt_lookuparray32(tree, 3, key1);
-	printf("key1 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 3);
 	data = trbt_lookuparray32(tree, 3, key2);
-	printf("key2 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	data = trbt_lookuparray32(tree, 3, key3);
-	printf("key3 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 1);
 	data = trbt_lookuparray32(tree, 3, key4);
-	printf("key4 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	trbt_traversearray32(tree, 3, traverse, NULL);
-	
+
 	printf("\ndeleting key3\n");
 	talloc_free(trbt_lookuparray32(tree, 3, key3));
+
 	data = trbt_lookuparray32(tree, 3, key1);
-	printf("key1 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data != NULL && *data == 3);
 	data = trbt_lookuparray32(tree, 3, key2);
-	printf("key2 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	data = trbt_lookuparray32(tree, 3, key3);
-	printf("key3 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	data = trbt_lookuparray32(tree, 3, key4);
-	printf("key4 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	trbt_traversearray32(tree, 3, traverse, NULL);
-	
+
 	printf("\ndeleting key1\n");
 	talloc_free(trbt_lookuparray32(tree, 3, key1));
+
 	data = trbt_lookuparray32(tree, 3, key1);
-	printf("key1 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	data = trbt_lookuparray32(tree, 3, key2);
-	printf("key2 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	data = trbt_lookuparray32(tree, 3, key3);
-	printf("key3 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	data = trbt_lookuparray32(tree, 3, key4);
-	printf("key4 dataptr:%p == %d\n",data,data?*data:-1);
+	assert(data == NULL);
 	trbt_traversearray32(tree, 3, traverse, NULL);
 
 	talloc_free(tree);
 	talloc_free(memctx);
-	
+
 
 	printf("\nrun random insert and delete for 60 seconds\n");
 	memctx   = talloc_new(NULL);
+	assert(memctx != NULL);
+
 	tree = trbt_create(memctx, 0);
+	assert(tree != NULL);
+
 	i=0;
 	start_timer();
 	checksum = 0;
@@ -286,6 +273,7 @@ int main(int argc, const char *argv[])
 		key[0]=random()%10;
 		key[1]=random()%10;
 		key[2]=random()%10;
+
 		if (random()%2) {
 			if (trbt_lookuparray32(tree, 3, key) == NULL) {
 				/* this node does not yet exist, add it to the
@@ -310,31 +298,24 @@ int main(int argc, const char *argv[])
 		*/
 		calc_checksum = 0;
 		trbt_traversearray32(tree, 3, traverse_checksum, NULL);
-		if(checksum != calc_checksum) {
-			printf("Wrong checksum  %d!=%d\n",checksum, calc_checksum);
-			exit(10);
-		}
-
-		if(i%1000==999)printf(".");fflush(stdout);
+		assert(checksum == calc_checksum);
 	}
+
+	/*
 	printf("\niterations passed:%d\n", i);
 	trbt_traversearray32(tree, 3, random_traverse, NULL);
 	printf("\n");
 	printf("first node: %s\n", (char *)trbt_findfirstarray32(tree, 3));
+	*/
 
 	traverse_count = 0;
 	trbt_traversearray32(tree, 3, count_traverse, &traverse_count);
-	printf("\n");
-	printf("number of entries in traverse %d\n", traverse_count);
+	assert(traverse_count > 0);
 
 	traverse_count = 0;
 	trbt_traversearray32(tree, 3, count_traverse_abort, &traverse_count);
-	printf("\n");
-	printf("number of entries in aborted traverse %d\n", traverse_count);
-	if (traverse_count != 1) {
-		printf("Failed to abort the traverse. Should have been aborted after 1 element but did iterate over %d elements\n", traverse_count);
-		exit(10);
-	}
+	assert(traverse_count == 1);
+
 	printf("\ndeleting all entries\n");
 	for(i=0;i<10;i++){
 	for(j=0;j<10;j++){
@@ -347,8 +328,8 @@ int main(int argc, const char *argv[])
 	}
 	}
 	trbt_traversearray32(tree, 3, random_traverse, NULL);
-	printf("\n");
-	talloc_report_full(tree, stdout);
+
+	assert(talloc_total_size(memctx) == 16);
 
 	return 0;
 }
