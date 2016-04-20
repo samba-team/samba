@@ -176,6 +176,10 @@ static bool test_addshare(struct torture_context *tctx,
 	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 i;
 
+	ZERO_STRUCT(i);
+	ZERO_STRUCT(info);
+	ZERO_STRUCT(add);
+
 	i.name         = share;
 	i.type         = STYPE_DISKTREE;
 	i.path         = "C:\\WINDOWS\\TEMP";
