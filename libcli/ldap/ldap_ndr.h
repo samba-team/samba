@@ -1,5 +1,5 @@
 /*
-   Unix SMB/CIFS mplementation.
+   Unix SMB/CIFS implementation.
 
    wrap/unwrap NDR encoded elements for ldap calls
 
