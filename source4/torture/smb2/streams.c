@@ -574,6 +574,10 @@ static bool test_stream_sharemodes(struct torture_context *tctx,
 	bool ret = true;
 	struct smb2_handle h, h1, h2;
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(h1);
+	ZERO_STRUCT(h2);
+
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname,
 				 "Second Stream");
