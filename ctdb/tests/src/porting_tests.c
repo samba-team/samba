@@ -25,16 +25,14 @@
 #include <talloc.h>
 #include <tevent.h>
 #include <tdb.h>
+#include <assert.h>
 
 #include "lib/util/debug.h"
 #include "lib/util/blocking.h"
 
-#include "ctdb_private.h"
-#include "ctdb_client.h"
-
+#include "protocol/protocol.h"
 #include "common/cmdline.h"
 #include "common/system.h"
-#include "common/common.h"
 #include "common/logging.h"
 
 
@@ -43,8 +41,6 @@ static struct {
 	const char *debuglevel;
 	pid_t helper_pid;
 	int socket;
-	int successcount;
-	int testcount;
 } globals = {
 	.socketname = "/tmp/test.sock"
 };
@@ -61,12 +57,10 @@ static struct {
 static int socket_server_create(void)
 {
 	struct sockaddr_un addr;
+	int ret;
 
 	globals.socket = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (globals.socket == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to create server socket: %s\n", strerror(errno)));
-		return -1;
-	}
+	assert(globals.socket != -1);
 
 	set_close_on_exec(globals.socket);
 	//set_blocking(globals.socket, false);
@@ -75,28 +69,19 @@ static int socket_server_create(void)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, globals.socketname, sizeof(addr.sun_path)-1);
 
-	if (bind(globals.socket, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to bind on socket '%s': %s\n", globals.socketname, strerror(errno)));
-		goto failed;
-	}
+	ret = bind(globals.socket, (struct sockaddr *)&addr, sizeof(addr));
+	assert(ret == 0);
 
-	if (chown(globals.socketname, geteuid(), getegid()) != 0 ||
-		chmod(globals.socketname, 0700) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to secure socket '%s': %s\n", globals.socketname, strerror(errno)));
-		goto failed;
-	}
+	ret = chown(globals.socketname, geteuid(), getegid());
+	assert(ret == 0);
 
+	ret = chmod(globals.socketname, 0700);
+	assert(ret == 0);
 
-	if (listen(globals.socket, 100) != 0) {
-		DEBUG(DEBUG_CRIT,("Unable to listen on socket '%s': %s\n", globals.socketname, strerror(errno)));
-		goto failed;
-	}
+	ret = listen(globals.socket, 100);
+	assert(ret == 0);
+
 	return 0;
-
-failed:
-	close(globals.socket);
-	globals.socket = -1;
-	return -1;
 }
 
 static int socket_server_wait_peer(void)
@@ -108,10 +93,7 @@ static int socket_server_wait_peer(void)
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
 	fd = accept(globals.socket, (struct sockaddr *)&addr, &len);
-	if (fd == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to accept on ctdb socket '%s': %s\n", globals.socketname, strerror(errno)));
-		return -1;
-	}
+	assert(fd != -1);
 
 	//set_blocking(fd, false);
 	set_close_on_exec(fd);
@@ -120,14 +102,14 @@ static int socket_server_wait_peer(void)
 
 static int socket_server_close(void)
 {
-	if (close(globals.socket) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to close server socket: %s\n", strerror(errno)));
-		return -1;
-	}
-	if (unlink(globals.socketname) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to remove server socket: %s\n", strerror(errno)));
-		return -1;
-	}
+	int ret;
+
+	ret = close(globals.socket);
+	assert(ret == 0);
+
+	ret = unlink(globals.socketname);
+	assert(ret == 0);
+
 	return 0;
 }
 
@@ -135,40 +117,38 @@ static int socket_client_connect(void)
 {
 	struct sockaddr_un addr;
 	int client = 0;
+	int ret;
 
 	client = socket(AF_UNIX, SOCK_STREAM, 0);
-	if (client == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to create client socket: %s\n", strerror(errno)));
-		return -1;
-	}
+	assert(client != -1);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, globals.socketname, sizeof(addr.sun_path)-1);
-	if (connect(client, (struct sockaddr *)&addr, sizeof(addr))==-1) {
-		DEBUG(DEBUG_CRIT,("Unable to connect to '%s': %s\n", globals.socketname, strerror(errno)));
-		close(client);
-		return -1;
-	}
+
+	ret = connect(client, (struct sockaddr *)&addr, sizeof(addr));
+	assert(ret == 0);
 
 	return client;
 }
 
 static int socket_client_write(int client)
 {
-	if (sys_write(client, "\0", 1) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to write to client socket: %s\n", strerror(errno)));
-		return -1;
-	}
+	int ret;
+
+	ret = sys_write(client, "\0", 1);
+	assert(ret == 1);
+
 	return 0;
 }
 
 static int socket_client_close(int client)
 {
-	if (close(client) == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to close client socket: %s\n", strerror(errno)));
-		return -1;
-	}
+	int ret;
+
+	ret = close(client);
+	assert(ret == 0);
+
 	return 0;
 }
 
@@ -181,18 +161,12 @@ static int fork_helper(void)
 	int i, client, max_rounds = 10;
 
 	pid = fork();
-	if (pid == -1) {
-		DEBUG(DEBUG_CRIT,("Unable to fork: %s\n", strerror(errno)));
-		return -1;
-	}
+	assert(pid != -1);
+
 	if (pid == 0) { // Child
 		client = socket_client_connect();
-		if (client < 0) {
-			exit(1);
-		}
 		socket_client_write(client);
 		for (i = 1 ; i <= max_rounds ; i++ ) {
-			DEBUG(DEBUG_DEBUG,("Child process waiting ( %d/%d)\n", i, max_rounds));
 			sleep(1);
 		}
 		socket_client_close(client);
@@ -210,14 +184,13 @@ static int test_ctdb_sys_check_iface_exists(void)
 {
 	const char *fakename = "fake";
 	bool test;
-	globals.testcount++;
+
 	test = ctdb_sys_check_iface_exists(fakename);
-	if(test == true) {
-		DEBUG(DEBUG_CRIT,("Test failed: Fake interface detected: %s\n", fakename));
-		return -1;
+	if (geteuid() == 0) {
+		assert(test == false);
+	} else {
+		assert(test == true);
 	}
-	DEBUG(DEBUG_INFO,("Test OK: Fake interface not detected: %s\n", fakename));
-	globals.successcount++;
 	return 0;
 }
 
@@ -226,24 +199,14 @@ static int test_ctdb_get_peer_pid(void)
 	int ret;
 	int fd;
 	pid_t peer_pid = 0;
-	globals.testcount++;
+
 	fd = socket_server_wait_peer();
-	if (fd < 0) {
-		return -1;
-	}
+
 	ret = ctdb_get_peer_pid(fd, &peer_pid);
-	if (ret == -1) {
-		DEBUG(DEBUG_CRIT,("Test failed: Unable to get peer process id\n"));
-		close(fd);
-		return -1;
-	}
-	if (peer_pid <= 0) {
-		DEBUG(DEBUG_CRIT,("Test failed: Invalid peer process id: %d\n", peer_pid));
-		close(fd);
-		return -1;
-	}
-	DEBUG(DEBUG_INFO,("Test OK: Peer process id: %d\n", peer_pid));
-	globals.successcount++;
+	assert(ret == 0);
+
+	assert(peer_pid == globals.helper_pid);
+
 	close(fd);
 	return 0;
 }
@@ -258,12 +221,10 @@ int main(int argc, const char *argv[])
 		{ "socket", 0, POPT_ARG_STRING, &globals.socketname, 0, "local socket name", "filename" },
 		POPT_TABLEEND
 	};
-	int opt;
+	int opt, ret;
 	const char **extra_argv;
 	int extra_argc = 0;
 	poptContext pc;
-
-	DEBUGLEVEL = DEBUG_INFO;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -283,26 +244,22 @@ int main(int argc, const char *argv[])
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	if (globals.socketname == NULL) {
-		DEBUG(DEBUG_CRIT,("Socket name is undefined\n"));
-		exit(1);
-	}
-	if (socket_server_create()) {
-		DEBUG(DEBUG_CRIT,("Socket error: exiting\n"));
-		exit(1);
-	}
-	if (fork_helper()) {
-		DEBUG(DEBUG_CRIT,("Forking error: exiting\n"));
-		exit(1);
-	}
+	assert(globals.socketname != NULL);
+
+	ret = socket_server_create();
+	assert(ret == 0);
+
+	ret = fork_helper();
+	assert(ret == 0);
+
 	/* FIXME: Test tcp_checksum6, tcp_checksum */
 	/* FIXME: Test ctdb_sys_send_arp, ctdb_sys_send_tcp */
 	/* FIXME: Test ctdb_sys_{open,close}_capture_socket, ctdb_sys_read_tcp_packet */
 	test_ctdb_sys_check_iface_exists();
 	test_ctdb_get_peer_pid();
 
-	socket_server_close();
+	ret = socket_server_close();
+	assert(ret == 0);
 
-	DEBUG(DEBUG_INFO,("%d/%d tests successfull\n", globals.successcount, globals.testcount));
 	return 0;
 }
