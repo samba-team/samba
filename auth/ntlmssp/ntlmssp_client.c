@@ -843,8 +843,11 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 		 * Without this, Windows will not create the master key
 		 * that it thinks is only used for NTLMSSP signing and
 		 * sealing.  (It is actually pulled out and used directly)
+		 *
+		 * We don't require this here as some servers (e.g. NetAPP)
+		 * doesn't support this.
 		 */
-		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
+		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
