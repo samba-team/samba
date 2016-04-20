@@ -752,6 +752,10 @@ int ctdb_db_traverse(struct ctdb_db_context *db, bool readonly,
 		     bool extract_header,
 		     ctdb_rec_parser_func_t parser, void *private_data);
 
+int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
+		    struct ctdb_ltdb_header *header,
+		    TALLOC_CTX *mem_ctx, TDB_DATA *data);
+
 struct tevent_req *ctdb_fetch_lock_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct ctdb_client_context *client,
