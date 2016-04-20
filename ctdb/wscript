@@ -687,7 +687,6 @@ def build(bld):
         'ctdb_randrec',
         'ctdb_persistent',
         'ctdb_porting_tests',
-        'ctdb_lock_tdb'
     ]
 
     for target in ctdb_tests:
@@ -714,7 +713,8 @@ def build(bld):
         'fetch_readonly_loop',
         'transaction_loop',
         'update_record',
-        'update_record_persistent'
+        'update_record_persistent',
+        'lock_tdb'
     ]
 
     for target in ctdb_tests:
