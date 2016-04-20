@@ -285,7 +285,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			return;
 		}
 
-		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+		if (security_session_user_level(session_info, NULL) == SECURITY_GUEST) {
 			action |= SMB_SETUP_GUEST;
 		}
 
@@ -411,7 +411,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			return;
 		}
 
-		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+		if (security_session_user_level(session_info, NULL) == SECURITY_GUEST) {
 			action |= SMB_SETUP_GUEST;
 		}
 
@@ -939,7 +939,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/* perhaps grab OS version here?? */
 	}
 
-	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+	if (security_session_user_level(session_info, NULL) == SECURITY_GUEST) {
 		action |= SMB_SETUP_GUEST;
 	}
 
