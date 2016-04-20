@@ -1936,6 +1936,14 @@ static bool test_aapl(struct torture_context *tctx,
 	aapl = smb2_create_blob_find(&io.out.blobs,
 				     SMB2_CREATE_TAG_AAPL);
 
+	if (aapl == NULL) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) unexpectedly no AAPL capabilities were returned.",
+			       __location__);
+		ret = false;
+		goto done;
+	}
+
 	if (aapl->data.length != 50) {
 		/*
 		 * uint32_t CommandCode = kAAPL_SERVER_QUERY
