@@ -128,7 +128,8 @@ try_command_on_node all $CTDB_TEST_WRAPPER ctdb_update_record
 ######################################################################
 
 echo "Try some readonly fetches, these should all be upgraded to full fetchlocks..."
-try_command_on_node all $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/null"
+try_command_on_node all $CTDB_TEST_WRAPPER $VALGRIND fetch_readonly \
+	-D ${testdb} -k testkey
 
 check_no_readonly
 
@@ -155,7 +156,8 @@ echo "Create 1 read-only delegation ..."
 try_command_on_node 1 $CTDB_TEST_WRAPPER ctdb_update_record
 
 # Fetch read-only to node 0
-try_command_on_node 0 $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/null"
+try_command_on_node 0 $CTDB_TEST_WRAPPER $VALGRIND fetch_readonly \
+	-D ${testdb} -k testkey
 
 check_readonly 1 0
 
@@ -177,8 +179,8 @@ others=""
 for n in $all_nodes ; do
     if [ "$n" != "$dmaster" ] ; then
 	# Fetch read-only copy to this node
-	try_command_on_node $n \
-	    $CTDB_TEST_WRAPPER "ctdb_fetch_readonly_once </dev/null"
+	try_command_on_node $n $CTDB_TEST_WRAPPER $VALGRIND fetch_readonly \
+		-D ${testdb} -k testkey
 	others="${others} ${n}"
     fi
 done
