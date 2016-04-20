@@ -789,12 +789,12 @@ class cmd_domain_demote(Command):
                         pass
                     else:
                         self.errf.write(
-                            "Error while demoting, "
-                        "re-enabling inbound replication\n")
+                            "Error while replicating out last local changes from '%s' for demotion, "
+                            "re-enabling inbound replication\n" % part)
                         dsa_options ^= DS_NTDSDSA_OPT_DISABLE_INBOUND_REPL
                         nmsg["options"] = ldb.MessageElement(str(dsa_options), ldb.FLAG_MOD_REPLACE, "options")
                         samdb.modify(nmsg)
-                        raise CommandError("Error while sending a DsReplicaSync for partion %s" % str(part), e)
+                        raise CommandError("Error while sending a DsReplicaSync for partition '%s'" % str(part), string)
         try:
             remote_samdb = SamDB(url="ldap://%s" % server,
                                 session_info=system_session(),
