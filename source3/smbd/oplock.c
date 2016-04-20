@@ -190,6 +190,7 @@ bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
 		/*
 		 * If we're the only one, we don't need a brlock entry
 		 */
+		remove_stale_share_mode_entries(d);
 		SMB_ASSERT(d->num_share_modes == 1);
 		SMB_ASSERT(EXCLUSIVE_OPLOCK_TYPE(d->share_modes[0].op_type));
 		return true;
