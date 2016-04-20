@@ -24,6 +24,7 @@
 
 enum security_user_level {
 	SECURITY_ANONYMOUS            = 0,
+	SECURITY_GUEST                = 1,
 	SECURITY_USER                 = 10,
 	SECURITY_RO_DOMAIN_CONTROLLER = 20,
 	SECURITY_DOMAIN_CONTROLLER    = 30,
