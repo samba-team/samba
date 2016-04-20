@@ -278,11 +278,12 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
-		/* we map anonymous to guest internally */
-		*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
-		*out_session_flags |= SMB2_SESSION_FLAG_IS_NULL;
+		if (security_session_user_level(session_info, NULL) == SECURITY_GUEST) {
+			*out_session_flags |= SMB2_SESSION_FLAG_IS_GUEST;
+		}
 		/* force no signing */
 		x->global->signing_flags &= ~SMBXSRV_SIGNING_REQUIRED;
+		/* we map anonymous to guest internally */
 		guest = true;
 	}
 
