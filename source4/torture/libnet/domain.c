@@ -33,6 +33,8 @@ static bool test_domainopen(struct torture_context *tctx,
 	NTSTATUS status;
 	struct libnet_DomainOpen io;
 
+	ZERO_STRUCT(io);
+
 	torture_comment(tctx, "opening domain\n");
 
 	io.in.domain_name  = talloc_strdup(mem_ctx, domname->string);
