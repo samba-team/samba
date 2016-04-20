@@ -1298,6 +1298,16 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 	ret = ctdbd_parse(messaging_ctdbd_connection(), ctx->db_id, key,
 			  state.ask_for_readonly_copy, parser, private_data);
 	if (ret != 0) {
+		if (ret == ENOENT) {
+			/*
+			 * This maps to
+			 * NT_STATUS_OBJECT_NAME_NOT_FOUND. Our upper
+			 * layers expect NT_STATUS_NOT_FOUND for "no
+			 * record around". We need to convert dbwrap
+			 * to 0/errno away from NTSTATUS ... :-)
+			 */
+			return NT_STATUS_NOT_FOUND;
+		}
 		return map_nt_error_from_unix(ret);
 	}
 	return NT_STATUS_OK;
