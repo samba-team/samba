@@ -168,11 +168,15 @@ nfs_check_service ()
 	    # Using eval means variables can contain semicolon separated commands
 	    if eval "$service_check_cmd" ; then
 		_ok=true
+	    else
+		_err="monitoring service \"${_progname}\" failed"
 	    fi
 	else
 	    if nfs_check_rpcinfo \
 		   "$_progname" "$version" "$family" >/dev/null ; then
 		_ok=true
+	    else
+		_err="$ctdb_check_rpc_out"
 	    fi
 	fi
 
@@ -190,14 +194,14 @@ nfs_check_service ()
 	if [ $unhealthy_after -gt 0 ] ; then
 	    if [ $_failcount -ge $unhealthy_after ] ; then
 		_unhealthy=true
-		echo "ERROR: $ctdb_check_rpc_out"
+		echo "ERROR: $_err"
 	    fi
 	fi
 
 	if [ $restart_every -gt 0 ] ; then
 	    if [ $(($_failcount % $restart_every)) -eq 0 ] ; then
 		if ! $_unhealthy ; then
-		    echo "WARNING: $ctdb_check_rpc_out"
+		    echo "WARNING: $_err"
 		fi
 		nfs_restart_service
 	    fi
