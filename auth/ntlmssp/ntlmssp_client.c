@@ -172,19 +172,14 @@ NTSTATUS gensec_ntlmssp_resume_ccache(struct gensec_security *gensec_security,
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN) {
 		gensec_security->want_features |= GENSEC_FEATURE_SIGN;
-
-		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
 	}
 
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL) {
 		gensec_security->want_features |= GENSEC_FEATURE_SEAL;
-
-		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SIGN;
-		ntlmssp_state->required_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 
-	ntlmssp_state->neg_flags |= ntlmssp_state->required_flags;
 	ntlmssp_state->conf_flags = ntlmssp_state->neg_flags;
+	ntlmssp_state->required_flags = 0;
 
 	if (DEBUGLEVEL >= 10) {
 		struct NEGOTIATE_MESSAGE *negotiate = talloc(
