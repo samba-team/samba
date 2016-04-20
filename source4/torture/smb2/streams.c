@@ -1685,6 +1685,9 @@ static bool test_stream_attributes(struct torture_context *tctx,
 	union smb_setfileinfo sfinfo;
 	time_t basetime = (time(NULL) - 86400) & ~1;
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(h1);
+
 	torture_comment(tctx, "(%s) testing attribute setting on stream\n",
 			__location__);
 
