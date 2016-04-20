@@ -1731,7 +1731,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	}
 	if (!can_host_ips) {
 		DEBUG(DEBUG_WARNING,("No nodes available to host public IPs yet\n"));
-		return 0;
+		goto ipreallocated;
 	}
 
 	/* since nodes only know about those public addresses that
