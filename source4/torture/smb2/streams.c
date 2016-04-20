@@ -318,6 +318,9 @@ static bool test_stream_io(struct torture_context *tctx,
 	const char *three[] = { "::$DATA", ":Stream One:$DATA",
 				":Second Stream:$DATA" };
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(h2);
+
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname,
 				 "Second Stream");
