@@ -678,7 +678,6 @@ def build(bld):
     ctdb_tests = [
         'rb_test',
         'ctdb_trackingdb_test',
-        'ctdb_update_record',
         'ctdb_update_record_persistent',
         'ctdb_store',
         'ctdb_traverse',
@@ -710,7 +709,8 @@ def build(bld):
         'fetch_loop',
         'fetch_readonly',
         'fetch_readonly_loop',
-        'transaction_loop'
+        'transaction_loop',
+        'update_record'
     ]
 
     for target in ctdb_tests:
