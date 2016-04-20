@@ -1287,15 +1287,11 @@ static void ctdb_g_lock_lock_process_locks(struct tevent_req *req)
 
 	if (check_server) {
 		struct ctdb_req_control request;
-		struct ctdb_uint64_array u64_array;
 
-		u64_array.num = 1;
-		u64_array.val = &lock->sid.unique_id;
-
-		ctdb_req_control_check_srvids(&request, &u64_array);
+		ctdb_req_control_process_exists(&request, lock->sid.pid);
 		subreq = ctdb_client_control_send(state, state->ev,
 						  state->client,
-						  state->client->pnn,
+						  lock->sid.vnn,
 						  tevent_timeval_zero(),
 						  &request);
 		if (tevent_req_nomem(subreq, req)) {
@@ -1336,10 +1332,8 @@ static void ctdb_g_lock_lock_checked(struct tevent_req *subreq)
 	struct ctdb_g_lock_lock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_lock_state);
 	struct ctdb_reply_control *reply;
-	struct ctdb_uint8_array *u8_array;
-	int ret;
+	int ret, value;
 	bool status;
-	int8_t val;
 
 	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
 	TALLOC_FREE(subreq);
@@ -1348,22 +1342,14 @@ static void ctdb_g_lock_lock_checked(struct tevent_req *subreq)
 		return;
 	}
 
-	ret = ctdb_reply_control_check_srvids(reply, state, &u8_array);
+	ret = ctdb_reply_control_process_exists(reply, &value);
 	if (ret != 0) {
-		tevent_req_error(req, ENOMEM);
+		tevent_req_error(req, ret);
 		return;
 	}
+	talloc_free(reply);
 
-	if (u8_array->num != 1) {
-		talloc_free(u8_array);
-		tevent_req_error(req, EIO);
-		return;
-	}
-
-	val = u8_array->val[0];
-	talloc_free(u8_array);
-
-	if (val == 1) {
+	if (value == 0) {
 		/* server process exists, need to retry */
 		subreq = tevent_wakeup_send(state, state->ev,
 					    tevent_timeval_current_ofs(0,1000));
