@@ -841,6 +841,11 @@ static bool test_stream_names(struct torture_context *tctx,
 		":?Stream*:$DATA"
 	};
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(h1);
+	ZERO_STRUCT(h2);
+	ZERO_STRUCT(h3);
+
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "\x05Stream\n One");
 	sname1b = talloc_asprintf(mem_ctx, "%s:", sname1);
 	sname1c = talloc_asprintf(mem_ctx, "%s:$FOO", sname1);
