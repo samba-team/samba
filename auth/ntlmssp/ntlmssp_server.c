@@ -31,6 +31,9 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
 #include "auth/common_auth.h"
+#include "param/param.h"
+#include "param/loadparm.h"
+#include "libcli/security/session.h"
 
 /**
  * Determine correct target name flags for reply, given server role
@@ -700,6 +703,7 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	struct auth4_context *auth_context = gensec_security->auth_context;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	struct auth_session_info *session_info = NULL;
 	struct auth_usersupplied_info *user_info;
 
 	user_info = talloc_zero(ntlmssp_state, struct auth_usersupplied_info);
@@ -735,6 +739,42 @@ static NTSTATUS ntlmssp_server_check_password(struct gensec_security *gensec_sec
 	TALLOC_FREE(user_info);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (lpcfg_map_to_guest(gensec_security->settings->lp_ctx) != NEVER_MAP_TO_GUEST
+	    && auth_context->generate_session_info != NULL)
+	{
+		NTSTATUS tmp_status;
+
+		/*
+		 * We need to check if the auth is anonymous or mapped to guest
+		 */
+		tmp_status = auth_context->generate_session_info(auth_context, mem_ctx,
+								 gensec_ntlmssp->server_returned_info,
+								 gensec_ntlmssp->ntlmssp_state->user,
+								 AUTH_SESSION_INFO_SIMPLE_PRIVILEGES,
+								 &session_info);
+		if (!NT_STATUS_IS_OK(tmp_status)) {
+			/*
+			 * We don't care about failures,
+			 * the worst result is that we try MIC checking
+			 * for a map to guest authentication.
+			 */
+			TALLOC_FREE(session_info);
+		}
+	}
+
+	if (session_info != NULL) {
+		if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
+			/*
+			 * Anonymous and GUEST are not secure anyway.
+			 * avoid new_spnego and MIC checking.
+			 */
+			ntlmssp_state->new_spnego = false;
+			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SIGN;
+			ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_SEAL;
+		}
+		TALLOC_FREE(session_info);
+	}
 
 	talloc_steal(mem_ctx, user_session_key->data);
 	talloc_steal(mem_ctx, lm_session_key->data);
