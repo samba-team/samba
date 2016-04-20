@@ -38,6 +38,10 @@ enum security_user_level security_session_user_level(struct auth_session_info *s
 		return SECURITY_ANONYMOUS;
 	}
 
+	if (security_token_has_builtin_guests(session_info->security_token)) {
+		return SECURITY_GUEST;
+	}
+
 	if (security_token_has_builtin_administrators(session_info->security_token)) {
 		return SECURITY_ADMINISTRATOR;
 	}
