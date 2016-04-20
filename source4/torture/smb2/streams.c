@@ -1334,6 +1334,9 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	struct smb2_handle h, h1;
 	union smb_setfileinfo sinfo;
 
+	ZERO_STRUCT(h);
+	ZERO_STRUCT(h1);
+
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname1, "Stream One");
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s", fname1, "Stream Two");
 
