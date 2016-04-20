@@ -4945,6 +4945,10 @@ bool smbXcli_session_is_authenticated(struct smbXcli_session *session)
 {
 	const DATA_BLOB *application_key;
 
+	if (session == NULL) {
+		return false;
+	}
+
 	if (session->conn == NULL) {
 		return false;
 	}
