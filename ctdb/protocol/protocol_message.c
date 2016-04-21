@@ -310,35 +310,34 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 	return 0;
 }
 
-int ctdb_req_message_pull(uint8_t *pkt, size_t pkt_len,
+int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 			  struct ctdb_req_header *h,
 			  TALLOC_CTX *mem_ctx,
-			  struct ctdb_req_message *message)
+			  struct ctdb_req_message *c)
 {
 	struct ctdb_req_message_wire *wire =
-		(struct ctdb_req_message_wire *)pkt;
+		(struct ctdb_req_message_wire *)buf;
 	size_t length;
 	int ret;
 
 	length = offsetof(struct ctdb_req_message_wire, data);
-
-	if (pkt_len < length) {
+	if (buflen < length) {
 		return EMSGSIZE;
 	}
-	if (pkt_len < length + wire->datalen) {
+	if (buflen < length + wire->datalen) {
 		return EMSGSIZE;
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, pkt_len, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
 		if (ret != 0) {
 			return ret;
 		}
 	}
 
-	message->srvid = wire->srvid;
+	c->srvid = wire->srvid;
 	ret = ctdb_message_data_pull(wire->data, wire->datalen, wire->srvid,
-				     mem_ctx, &message->data);
+				     mem_ctx, &c->data);
 	return ret;
 }
 
@@ -372,36 +371,35 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	return 0;
 }
 
-int ctdb_req_message_data_pull(uint8_t *pkt, size_t pkt_len,
+int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 			       struct ctdb_req_header *h,
 			       TALLOC_CTX *mem_ctx,
-			       struct ctdb_req_message_data *message)
+			       struct ctdb_req_message_data *c)
 {
 	struct ctdb_req_message_wire *wire =
-		(struct ctdb_req_message_wire *)pkt;
+		(struct ctdb_req_message_wire *)buf;
 	size_t length;
 	int ret;
 
 	length = offsetof(struct ctdb_req_message_wire, data);
-
-	if (pkt_len < length) {
+	if (buflen < length) {
 		return EMSGSIZE;
 	}
-	if (pkt_len < length + wire->datalen) {
+	if (buflen < length + wire->datalen) {
 		return EMSGSIZE;
 	}
 
 	if (h != NULL) {
-		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, pkt_len, h);
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, buflen, h);
 		if (ret != 0) {
 			return ret;
 		}
 	}
 
-	message->srvid = wire->srvid;
+	c->srvid = wire->srvid;
 
 	ret = ctdb_tdb_data_pull(wire->data, wire->datalen,
-				 mem_ctx, &message->data);
+				 mem_ctx, &c->data);
 	if (ret != 0) {
 		return ret;
 	}
