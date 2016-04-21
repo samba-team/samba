@@ -1519,6 +1519,8 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 	DEBUG(3, (__location__ ": Will try to delete old keytab entries\n"));
 	while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 		bool name_ok = false;
+		krb5_enctype kt_entry_enctype =
+			smb_get_enctype_from_kt_entry(&kt_entry);
 
 		if (!flush && (princ_s != NULL)) {
 			ret = smb_krb5_unparse_name(tmp_ctx, context,
@@ -1585,6 +1587,16 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 			DEBUG(5, (__location__ ": Saving old (kvno %d) "
 				  "entry for principal: %s.\n",
 				  kvno, princ_s));
+			continue;
+		}
+
+		if (!flush &&
+		    (kt_entry.vno == kvno) &&
+		    (kt_entry_enctype != enctype))
+		{
+			DEBUG(5, (__location__ ": Saving entry with kvno [%d] "
+				  "enctype [%d] for principal: %s.\n",
+				  kvno, kt_entry_enctype, princ_s));
 			continue;
 		}
 
