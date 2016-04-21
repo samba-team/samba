@@ -72,7 +72,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 			 uint64_t srvid, uint32_t flags,
 			 TDB_DATA data,
 			 TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			 int *cstatus);
+			 int32_t *cstatus);
 
 /*
  * exit on fatal communications errors with the ctdbd daemon
@@ -112,7 +112,8 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 			void *private_data)
 {
 
-	int ret, cstatus;
+	int ret;
+	int32_t cstatus;
 	size_t num_callbacks;
 	struct ctdbd_srvid_cb *tmp;
 
@@ -613,7 +614,7 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 			 uint64_t srvid, uint32_t flags,
 			 TDB_DATA data,
 			 TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			 int *cstatus)
+			 int32_t *cstatus)
 {
 	struct ctdb_req_control_old req;
 	struct ctdb_req_header *hdr;
@@ -1028,7 +1029,7 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 	int ret;
 	TDB_DATA key, data;
 	struct ctdb_traverse_start t;
-	int cstatus;
+	int32_t cstatus;
 
 	t.db_id = db_id;
 	t.srvid = conn->rand_srvid;
@@ -1202,7 +1203,7 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,
 			TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			int *cstatus)
+			int32_t *cstatus)
 {
 	return ctdbd_control(conn, CTDB_CURRENT_NODE, opcode, srvid, flags, data,
 			     mem_ctx, outdata, cstatus);
@@ -1213,7 +1214,7 @@ int ctdb_watch_us(struct ctdbd_connection *conn)
 	struct ctdb_notify_data_old reg_data;
 	size_t struct_len;
 	int ret;
-	int cstatus;
+	int32_t cstatus;
 
 	reg_data.srvid = CTDB_SRVID_SAMBA_NOTIFY;
 	reg_data.len = 1;
@@ -1237,7 +1238,7 @@ int ctdb_unwatch(struct ctdbd_connection *conn)
 {
 	uint64_t srvid = CTDB_SRVID_SAMBA_NOTIFY;
 	int ret;
-	int cstatus;
+	int32_t cstatus;
 
 	ret = ctdbd_control_local(
 		conn, CTDB_CONTROL_DEREGISTER_NOTIFY, conn->rand_srvid, 0,

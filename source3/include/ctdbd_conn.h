@@ -84,7 +84,7 @@ int ctdbd_register_ips(struct ctdbd_connection *conn,
 int ctdbd_control_local(struct ctdbd_connection *conn, uint32_t opcode,
 			uint64_t srvid, uint32_t flags, TDB_DATA data,
 			TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
-			int *cstatus);
+			int32_t *cstatus);
 int ctdb_watch_us(struct ctdbd_connection *conn);
 int ctdb_unwatch(struct ctdbd_connection *conn);
 

@@ -700,7 +700,7 @@ static int db_ctdb_transaction_commit(struct db_context *db)
 	struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 							struct db_ctdb_ctx);
 	NTSTATUS rets;
-	int status;
+	int32_t status;
 	struct db_ctdb_transaction_handle *h = ctx->transaction;
 	uint64_t old_seqnum, new_seqnum;
 	int ret;
@@ -855,7 +855,7 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 	int ret;
 	struct ctdb_control_schedule_for_deletion *dd;
 	TDB_DATA indata;
-	int cstatus;
+	int32_t cstatus;
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_rec);
 
@@ -884,7 +884,7 @@ static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
 
 	if ((ret != 0) || cstatus != 0) {
 		DEBUG(1, (__location__ " Error sending local control "
-			  "SCHEDULE_FOR_DELETION: %s, cstatus = %d\n",
+			  "SCHEDULE_FOR_DELETION: %s, cstatus = %"PRIi32"\n",
 			  strerror(ret), cstatus));
 		if (ret != 0) {
 			status = map_nt_error_from_unix(ret);
@@ -1580,7 +1580,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct ctdbd_connection *conn;
 	struct loadparm_context *lp_ctx;
 	struct ctdb_db_priority prio;
-	int cstatus;
+	int32_t cstatus;
 	int ret;
 
 	if (!lp_clustering()) {
@@ -1643,8 +1643,8 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		NULL, NULL, &cstatus);
 
 	if ((ret != 0) || (cstatus != 0)) {
-		DEBUG(1, ("CTDB_CONTROL_SET_DB_PRIORITY failed: %s, %d\n",
-			  strerror(ret), cstatus));
+		DEBUG(1, ("CTDB_CONTROL_SET_DB_PRIORITY failed: %s, "
+			  "%"PRIi32"\n", strerror(ret), cstatus));
 		TALLOC_FREE(result);
 		return NULL;
 	}
@@ -1662,7 +1662,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 			NULL, NULL, &cstatus);
 		if ((ret != 0) || (cstatus != 0)) {
 			DEBUG(1, ("CTDB_CONTROL_SET_DB_READONLY failed: "
-				  "%s, %d\n", strerror(ret), cstatus));
+				  "%s, %"PRIi32"\n", strerror(ret), cstatus));
 			TALLOC_FREE(result);
 			return NULL;
 		}
