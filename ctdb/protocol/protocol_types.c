@@ -199,6 +199,7 @@ int ctdb_string_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	char *str;
 
 	if (buflen == 0) {
+		*out = NULL;
 		return 0;
 	}
 
