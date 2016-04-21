@@ -144,8 +144,8 @@ $1 == "SwapFree:"     { swapfree  = $2 }
 $1 == "SwapTotal:"    { swaptotal = $2 }
 END {
     if (memavail != 0) { memfree = memavail ; }
-    print int((memtotal -  memfree)  / memtotal * 100),
-          int((swaptotal - swapfree) / swaptotal * 100)
+    if (memtotal != 0) { print int((memtotal - memfree) / memtotal * 100) ; } else { print 0 ; }
+    if (swaptotal != 0) { print int((swaptotal - swapfree) / swaptotal * 100) ; } else { print 0 ; }
 }')
     _mem_usage="$1"
     _swap_usage="$2"
