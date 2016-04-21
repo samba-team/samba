@@ -301,7 +301,7 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 	wire = (struct ctdb_req_message_wire *)buf;
 
 	h->length = buflen;
-	memcpy(&wire->hdr, h, sizeof(struct ctdb_req_header));
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->srvid = message->srvid;
 	wire->datalen = datalen;
@@ -332,7 +332,10 @@ int ctdb_req_message_pull(uint8_t *pkt, size_t pkt_len,
 	}
 
 	if (h != NULL) {
-		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, pkt_len, h);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	message->srvid = wire->srvid;
@@ -362,7 +365,7 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	wire = (struct ctdb_req_message_wire *)buf;
 
 	h->length = buflen;
-	memcpy(&wire->hdr, h, sizeof(struct ctdb_req_header));
+	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->srvid = message->srvid;
 	wire->datalen = ctdb_tdb_data_len(message->data);
@@ -393,7 +396,10 @@ int ctdb_req_message_data_pull(uint8_t *pkt, size_t pkt_len,
 	}
 
 	if (h != NULL) {
-		memcpy(h, &wire->hdr, sizeof(struct ctdb_req_header));
+		ret = ctdb_req_header_pull((uint8_t *)&wire->hdr, pkt_len, h);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	message->srvid = wire->srvid;

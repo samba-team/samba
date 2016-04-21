@@ -40,7 +40,7 @@
 static void verify_ctdb_req_header(struct ctdb_req_header *h,
 				   struct ctdb_req_header *h2)
 {
-	verify_buffer(h, h2, sizeof(struct ctdb_req_header));
+	verify_buffer(h, h2, ctdb_req_header_len(h));
 }
 
 static void fill_ctdb_req_call(TALLOC_CTX *mem_ctx,
@@ -1945,7 +1945,7 @@ static void test_ctdb_req_header(void)
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
 	size_t pkt_len;
-	struct ctdb_req_header *h, h2;
+	struct ctdb_req_header h, h2;
 	int ret;
 
 	printf("ctdb_req_header\n");
@@ -1954,18 +1954,21 @@ static void test_ctdb_req_header(void)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	ret = allocate_pkt(mem_ctx, sizeof(struct ctdb_req_header),
+	ctdb_req_header_fill(&h, GENERATION, OPERATION, DESTNODE, SRCNODE,
+			     REQID);
+
+	ret = allocate_pkt(mem_ctx, ctdb_req_header_len(&h),
 			   &pkt, &pkt_len);
 	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= ctdb_req_header_len(&h));
 
-	h = (struct ctdb_req_header *)pkt;
-	ctdb_req_header_fill(h, GENERATION, OPERATION, DESTNODE, SRCNODE,
-			     REQID);
+	ctdb_req_header_push(&h, pkt);
 
 	ret = ctdb_req_header_pull(pkt, pkt_len, &h2);
 	assert(ret == 0);
 
-	verify_ctdb_req_header(h, &h2);
+	verify_ctdb_req_header(&h, &h2);
 
 	talloc_free(mem_ctx);
 }
