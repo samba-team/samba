@@ -61,13 +61,23 @@ void ctdb_req_header_fill(struct ctdb_req_header *h, uint32_t generation,
 	h->reqid = reqid;
 }
 
-int ctdb_req_header_pull(uint8_t *pkt, size_t pkt_len,
+size_t ctdb_req_header_len(struct ctdb_req_header *h)
+{
+	return sizeof(struct ctdb_req_header);
+}
+
+void ctdb_req_header_push(struct ctdb_req_header *h, uint8_t *buf)
+{
+	memcpy(buf, h, sizeof(struct ctdb_req_header));
+}
+
+int ctdb_req_header_pull(uint8_t *buf, size_t buflen,
 			 struct ctdb_req_header *h)
 {
-	if (pkt_len < sizeof(struct ctdb_req_header)) {
+	if (buflen < sizeof(struct ctdb_req_header)) {
 		return EMSGSIZE;
 	}
 
-	memcpy(h, pkt, sizeof(struct ctdb_req_header));
+	memcpy(h, buf, sizeof(struct ctdb_req_header));
 	return 0;
 }
