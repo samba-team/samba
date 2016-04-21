@@ -634,7 +634,9 @@ static int ctdbd_control(struct ctdbd_connection *conn,
 	req.datalen          = data.dsize;
 	req.flags            = flags;
 
-	DEBUG(10, ("ctdbd_control: Sending ctdb packet\n"));
+	DBG_DEBUG("Sending ctdb packet reqid=%"PRIu32", vnn=%"PRIu32", "
+		  "opcode=%"PRIu32", srvid=%"PRIu64"\n", req.hdr.reqid,
+		  req.hdr.destnode, req.opcode, req.srvid);
 	ctdb_packet_dump(&req.hdr);
 
 	iov[0].iov_base = &req;
