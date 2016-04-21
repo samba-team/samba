@@ -1972,7 +1972,7 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 {
 	struct ctdb_reply_control_wire *wire;
 	uint8_t *buf;
-	size_t length, buflen, datalen, errlen;
+	size_t length, buflen, datalen;
 	int ret;
 
 	if (reply->status == 0) {
@@ -1981,14 +1981,8 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 		datalen = 0;
 	}
 
-	if (reply->errmsg == NULL) {
-		errlen = 0;
-	} else {
-		errlen = strlen(reply->errmsg) + 1;
-	}
-
 	length = offsetof(struct ctdb_reply_control_wire, data) +
-		 datalen + errlen;
+		 datalen + ctdb_string_len(reply->errmsg);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -2007,10 +2001,8 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 		ctdb_reply_control_data_push(&reply->rdata, wire->data);
 	}
 
-	wire->errorlen = errlen;
-	if (errlen > 0) {
-		memcpy(wire->data + datalen, reply->errmsg, wire->errorlen);
-	}
+	wire->errorlen = ctdb_string_len(reply->errmsg);
+	ctdb_string_push(reply->errmsg, wire->data + wire->datalen);
 
 	*pkt = buf;
 	*pkt_len = buflen;
@@ -2051,12 +2043,10 @@ int ctdb_reply_control_pull(uint8_t *pkt, size_t pkt_len, uint32_t opcode,
 		}
 	}
 
-	if (wire->errorlen > 0) {
-		reply->errmsg = talloc_memdup(mem_ctx,
-					      wire->data + wire->datalen,
-					      wire->errorlen);
-	} else {
-		reply->errmsg = NULL;
+	ret = ctdb_string_pull(wire->data + wire->datalen, wire->errorlen,
+			       mem_ctx, &reply->errmsg);
+	if (ret != 0) {
+		return ret;
 	}
 
 	return 0;
