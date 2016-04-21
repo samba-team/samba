@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('samba-net',
 
 bld.SAMBA_PYTHON('python_net',
 	source='py_net.c',
-	deps='samba-net pyrpc_util',
+	deps='samba-net pyrpc_util pytalloc-util',
 	realname='samba/net.so'
 	)
 

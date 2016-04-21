@@ -49,7 +49,7 @@ bld.SAMBA_SUBSYSTEM('param_options',
 
 bld.SAMBA_SUBSYSTEM('pyparam_util',
 	source='pyparam_util.c',
-	deps='LIBPYTHON samba-hostconfig',
+	deps='LIBPYTHON samba-hostconfig pytalloc-util',
 	pyext=True,
 	)
 
