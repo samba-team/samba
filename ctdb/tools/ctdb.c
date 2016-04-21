@@ -2305,111 +2305,6 @@ static int control_gratious_arp(struct ctdb_context *ctdb, int argc, const char 
 }
 
 /*
-  register a server id
- */
-static int regsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	struct ctdb_client_id server_id;
-
-	if (argc < 3) {
-		usage();
-	}
-
-	server_id.pnn       = strtoul(argv[0], NULL, 0);
-	server_id.type      = strtoul(argv[1], NULL, 0);
-	server_id.server_id = strtoul(argv[2], NULL, 0);
-
-	ret = ctdb_ctrl_register_server_id(ctdb, TIMELIMIT(), &server_id);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to register server_id from node %u\n", options.pnn));
-		return ret;
-	}
-	DEBUG(DEBUG_ERR,("Srvid registered. Sleeping for 999 seconds\n"));
-	sleep(999);
-	return -1;
-}
-
-/*
-  unregister a server id
- */
-static int unregsrvid(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	struct ctdb_client_id server_id;
-
-	if (argc < 3) {
-		usage();
-	}
-
-	server_id.pnn       = strtoul(argv[0], NULL, 0);
-	server_id.type      = strtoul(argv[1], NULL, 0);
-	server_id.server_id = strtoul(argv[2], NULL, 0);
-
-	ret = ctdb_ctrl_unregister_server_id(ctdb, TIMELIMIT(), &server_id);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to unregister server_id from node %u\n", options.pnn));
-		return ret;
-	}
-	return -1;
-}
-
-/*
-  check if a server id exists
- */
-static int chksrvid(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	uint32_t status = 0;
-	int ret;
-	struct ctdb_client_id server_id;
-
-	if (argc < 3) {
-		usage();
-	}
-
-	server_id.pnn       = strtoul(argv[0], NULL, 0);
-	server_id.type      = strtoul(argv[1], NULL, 0);
-	server_id.server_id = strtoul(argv[2], NULL, 0);
-
-	ret = ctdb_ctrl_check_server_id(ctdb, TIMELIMIT(), options.pnn, &server_id, &status);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to check server_id from node %u\n", options.pnn));
-		return ret;
-	}
-
-	if (status) {
-		printf("Server id %d:%d:%d EXISTS\n", server_id.pnn, server_id.type, server_id.server_id);
-	} else {
-		printf("Server id %d:%d:%d does NOT exist\n", server_id.pnn, server_id.type, server_id.server_id);
-	}
-	return 0;
-}
-
-/*
-  get a list of all server ids that are registered on a node
- */
-static int getsrvids(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int i, ret;
-	struct ctdb_client_id_list_old *server_ids;
-
-	ret = ctdb_ctrl_get_server_id_list(ctdb, ctdb, TIMELIMIT(), options.pnn, &server_ids);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get server_id list from node %u\n", options.pnn));
-		return ret;
-	}
-
-	for (i=0; i<server_ids->num; i++) {
-		printf("Server id %d:%d:%d\n", 
-			server_ids->server_ids[i].pnn, 
-			server_ids->server_ids[i].type, 
-			server_ids->server_ids[i].server_id); 
-	}
-
-	return -1;
-}
-
-/*
   check if a server id exists
  */
 static int check_srvids(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5931,10 +5826,6 @@ static const struct {
 
 	{ "deltickle",       control_del_tickle,        false,	false, "delete a tickle from this ip", "<ip>:<port> <ip>:<port>" },
 
-	{ "regsrvid",        regsrvid,			false,	false, "register a server id", "<pnn> <type> <id>" },
-	{ "unregsrvid",      unregsrvid,		false,	false, "unregister a server id", "<pnn> <type> <id>" },
-	{ "chksrvid",        chksrvid,			false,	false, "check if a server id exists", "<pnn> <type> <id>" },
-	{ "getsrvids",       getsrvids,			false,	false, "get a list of all server ids"},
 	{ "check_srvids",    check_srvids,		false,	false, "check if a srvid exists", "<id>+" },
 	{ "listnodes",       control_listnodes,		false,	true, "list all nodes in the cluster"},
 	{ "reloadnodes",     control_reload_nodes_file,	false,	false, "reload the nodes file and restart the transport on all nodes"},
