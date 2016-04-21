@@ -211,21 +211,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		len = ctdb_tickle_list_len(cd->data.tickles);
 		break;
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		len = ctdb_client_id_len(cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		len = ctdb_client_id_len(cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		len = ctdb_client_id_len(cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		len = ctdb_string_len(cd->data.db_name);
 		break;
@@ -591,18 +576,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		ctdb_tickle_list_push(cd->data.tickles, buf);
 		break;
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		ctdb_client_id_push(cd->data.cid, buf);
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		ctdb_client_id_push(cd->data.cid, buf);
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		ctdb_client_id_push(cd->data.cid, buf);
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		ctdb_string_push(cd->data.db_name, buf);
 		break;
@@ -929,21 +902,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
 		ret = ctdb_tickle_list_pull(buf, buflen, mem_ctx,
 					    &cd->data.tickles);
-		break;
-
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		ret = ctdb_client_id_pull(buf, buflen, mem_ctx,
-					  &cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		ret = ctdb_client_id_pull(buf, buflen, mem_ctx,
-					  &cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		ret = ctdb_client_id_pull(buf, buflen, mem_ctx,
-					  &cd->data.cid);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
@@ -1349,19 +1307,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
 		break;
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		len = ctdb_client_id_map_len(cd->data.cid_map);
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		len = ctdb_uint32_len(cd->data.db_id);
 		break;
@@ -1662,10 +1607,6 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		ctdb_tickle_list_push(cd->data.tickles, buf);
 		break;
 
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		ctdb_client_id_map_push(cd->data.cid_map, buf);
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		ctdb_uint32_push(cd->data.db_id, buf);
 		break;
@@ -1835,11 +1776,6 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_GET_TCP_TICKLE_LIST:
 		ret = ctdb_tickle_list_pull(buf, buflen, mem_ctx,
 					    &cd->data.tickles);
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		ret = ctdb_client_id_map_pull(buf, buflen, mem_ctx,
-					      &cd->data.cid_map);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:

@@ -276,10 +276,10 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_KILL_TCP                = 54, /* obsolete */
 		    CTDB_CONTROL_GET_TCP_TICKLE_LIST     = 55,
 		    CTDB_CONTROL_SET_TCP_TICKLE_LIST     = 56,
-		    CTDB_CONTROL_REGISTER_SERVER_ID      = 57,
-		    CTDB_CONTROL_UNREGISTER_SERVER_ID    = 58,
-		    CTDB_CONTROL_CHECK_SERVER_ID         = 59,
-		    CTDB_CONTROL_GET_SERVER_ID_LIST      = 60,
+		    CTDB_CONTROL_REGISTER_SERVER_ID      = 57, /* obsolete */
+		    CTDB_CONTROL_UNREGISTER_SERVER_ID    = 58, /* obsolete */
+		    CTDB_CONTROL_CHECK_SERVER_ID         = 59, /* obsolete */
+		    CTDB_CONTROL_GET_SERVER_ID_LIST      = 60, /* obsolete */
 		    CTDB_CONTROL_DB_ATTACH_PERSISTENT    = 61,
 		    CTDB_CONTROL_PERSISTENT_STORE        = 62, /* obsolete */
 		    CTDB_CONTROL_UPDATE_RECORD           = 63,
@@ -641,29 +641,6 @@ struct ctdb_tickle_list {
 	ctdb_sock_addr addr;
 	uint32_t num;
 	struct ctdb_connection *conn;
-};
-
-enum ctdb_client_type {
-	SERVER_TYPE_CTDB = 0,
-	SERVER_TYPE_SAMBA = 1,
-	SERVER_TYPE_NFSD = 2,
-	SERVER_TYPE_ISCSID = 3
-};
-
-struct ctdb_client_id {
-	enum ctdb_client_type type;
-	uint32_t pnn;
-	uint32_t server_id;
-};
-
-struct ctdb_client_id_list {
-	uint32_t num;
-	struct ctdb_client_id *cid;
-};
-
-struct ctdb_client_id_map {
-	int count;
-	struct ctdb_client_id_list *list;
 };
 
 struct ctdb_addr_info {

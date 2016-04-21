@@ -157,22 +157,6 @@ void ctdb_tickle_list_push(struct ctdb_tickle_list *tickles, uint8_t *buf);
 int ctdb_tickle_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			  struct ctdb_tickle_list **out);
 
-size_t ctdb_client_id_len(struct ctdb_client_id *cid);
-void ctdb_client_id_push(struct ctdb_client_id *cid, uint8_t *buf);
-int ctdb_client_id_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			struct ctdb_client_id **out);
-
-size_t ctdb_client_id_list_len(struct ctdb_client_id_list *cid_list);
-void ctdb_client_id_list_push(struct ctdb_client_id_list *cid_list,
-			      uint8_t *buf);
-int ctdb_client_id_list_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			     struct ctdb_client_id_list **out);
-
-size_t ctdb_client_id_map_len(struct ctdb_client_id_map *cid_map);
-void ctdb_client_id_map_push(struct ctdb_client_id_map *cid_map, uint8_t *buf);
-int ctdb_client_id_map_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			    struct ctdb_client_id_map **out);
-
 size_t ctdb_addr_info_len(struct ctdb_addr_info *addr_info);
 void ctdb_addr_info_push(struct ctdb_addr_info *addr_info, uint8_t *buf);
 int ctdb_addr_info_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

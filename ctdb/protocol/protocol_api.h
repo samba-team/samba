@@ -333,23 +333,6 @@ void ctdb_req_control_set_tcp_tickle_list(struct ctdb_req_control *request,
 					  struct ctdb_tickle_list *tickles);
 int ctdb_reply_control_set_tcp_tickle_list(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_register_server_id(struct ctdb_req_control *request,
-					 struct ctdb_client_id *sid);
-int ctdb_reply_control_register_server_id(struct ctdb_reply_control *reply);
-
-void ctdb_req_control_unregister_server_id(struct ctdb_req_control *request,
-					   struct ctdb_client_id *sid);
-int ctdb_reply_control_unregister_server_id(struct ctdb_reply_control *reply);
-
-void ctdb_req_control_check_server_id(struct ctdb_req_control *request,
-				      struct ctdb_client_id *sid);
-int ctdb_reply_control_check_server_id(struct ctdb_reply_control *reply);
-
-void ctdb_req_control_get_server_id_list(struct ctdb_req_control *request);
-int ctdb_reply_control_get_server_id_list(struct ctdb_reply_control *reply,
-					  TALLOC_CTX *mem_ctx,
-					  struct ctdb_client_id_map **cid_map);
-
 void ctdb_req_control_db_attach_persistent(struct ctdb_req_control *request,
 					   const char *name,
 					   uint32_t tdb_flags);

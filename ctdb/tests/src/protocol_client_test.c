@@ -320,27 +320,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_tickle_list(mem_ctx, cd->data.tickles);
 		break;
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		cd->data.cid = talloc(mem_ctx, struct ctdb_client_id);
-		assert(cd->data.cid != NULL);
-		fill_ctdb_client_id(mem_ctx, cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		cd->data.cid = talloc(mem_ctx, struct ctdb_client_id);
-		assert(cd->data.cid != NULL);
-		fill_ctdb_client_id(mem_ctx, cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		cd->data.cid = talloc(mem_ctx, struct ctdb_client_id);
-		assert(cd->data.cid != NULL);
-		fill_ctdb_client_id(mem_ctx, cd->data.cid);
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		fill_ctdb_string(mem_ctx, &cd->data.db_name);
 		assert(cd->data.db_name != NULL);
@@ -830,21 +809,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		verify_ctdb_tickle_list(cd->data.tickles, cd2->data.tickles);
 		break;
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		verify_ctdb_client_id(cd->data.cid, cd2->data.cid);
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		verify_ctdb_client_id(cd->data.cid, cd2->data.cid);
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		verify_ctdb_client_id(cd->data.cid, cd2->data.cid);
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		verify_ctdb_string(cd->data.db_name, cd2->data.db_name);
 		break;
@@ -1314,21 +1278,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
 		break;
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		cd->data.cid_map = talloc(mem_ctx, struct ctdb_client_id_map);
-		assert(cd->data.cid_map != NULL);
-		fill_ctdb_client_id_map(mem_ctx, cd->data.cid_map);
-		break;
-
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:
 		break;
 
@@ -1728,19 +1677,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_TCP_TICKLE_LIST:
-		break;
-
-	case CTDB_CONTROL_REGISTER_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_CHECK_SERVER_ID:
-		break;
-
-	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		verify_ctdb_client_id_map(cd->data.cid_map, cd2->data.cid_map);
 		break;
 
 	case CTDB_CONTROL_DB_ATTACH_PERSISTENT:

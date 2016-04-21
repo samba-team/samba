@@ -214,11 +214,6 @@ struct ctdb_dbid_map_old {
 	struct ctdb_dbid dbs[1];
 };
 
-struct ctdb_client_id_list_old {
-	uint32_t num;
-	struct ctdb_client_id server_ids[1];
-};
-
 /* the list of tcp tickles used by get/set tcp tickle list */
 struct ctdb_tickle_list_old {
 	ctdb_sock_addr addr;

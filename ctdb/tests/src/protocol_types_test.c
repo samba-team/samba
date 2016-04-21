@@ -506,70 +506,6 @@ static void verify_ctdb_tickle_list(struct ctdb_tickle_list *p1,
 	}
 }
 
-static void fill_ctdb_client_id(TALLOC_CTX *mem_ctx,
-				struct ctdb_client_id *p)
-{
-	p->type = rand8();
-	p->pnn = rand32();
-	p->server_id = rand32();
-}
-
-static void verify_ctdb_client_id(struct ctdb_client_id *p1,
-				  struct ctdb_client_id *p2)
-{
-	assert(p1->type == p2->type);
-	assert(p1->pnn == p2->pnn);
-	assert(p1->server_id == p2->server_id);
-}
-
-static void fill_ctdb_client_id_list(TALLOC_CTX *mem_ctx,
-				     struct ctdb_client_id_list *p)
-{
-	int i;
-
-	p->num = rand_int(1000) + 1;
-	p->cid = talloc_array(mem_ctx, struct ctdb_client_id, p->num);
-	assert(p->cid != NULL);
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_client_id(mem_ctx, &p->cid[i]);
-	}
-}
-
-static void verify_ctdb_client_id_list(struct ctdb_client_id_list *p1,
-				       struct ctdb_client_id_list *p2)
-{
-	int i;
-
-	assert(p1->num == p2->num);
-	for (i=0; i<p1->num; i++) {
-		verify_ctdb_client_id(&p1->cid[i], &p2->cid[i]);
-	}
-}
-
-static void fill_ctdb_client_id_map(TALLOC_CTX *mem_ctx,
-				    struct ctdb_client_id_map *p)
-{
-	int i;
-
-	p->count = rand_int(10) + 1;
-	p->list = talloc_array(mem_ctx, struct ctdb_client_id_list, p->count);
-	assert(p->list != NULL);
-	for (i=0; i<p->count; i++) {
-		fill_ctdb_client_id_list(mem_ctx, &p->list[i]);
-	}
-}
-
-static void verify_ctdb_client_id_map(struct ctdb_client_id_map *p1,
-				      struct ctdb_client_id_map *p2)
-{
-	int i;
-
-	assert(p1->count == p2->count);
-	for (i=0; i<p1->count; i++) {
-		verify_ctdb_client_id_list(&p1->list[i], &p2->list[i]);
-	}
-}
-
 static void fill_ctdb_addr_info(TALLOC_CTX *mem_ctx, struct ctdb_addr_info *p)
 {
 	fill_ctdb_sock_addr(mem_ctx, &p->addr);
@@ -1208,9 +1144,6 @@ DEFINE_TEST(struct ctdb_node_flag_change, ctdb_node_flag_change);
 DEFINE_TEST(struct ctdb_var_list, ctdb_var_list);
 DEFINE_TEST(struct ctdb_tunable_list, ctdb_tunable_list);
 DEFINE_TEST(struct ctdb_tickle_list, ctdb_tickle_list);
-DEFINE_TEST(struct ctdb_client_id, ctdb_client_id);
-DEFINE_TEST(struct ctdb_client_id_list, ctdb_client_id_list);
-DEFINE_TEST(struct ctdb_client_id_map, ctdb_client_id_map);
 DEFINE_TEST(struct ctdb_addr_info, ctdb_addr_info);
 DEFINE_TEST(struct ctdb_transdb, ctdb_transdb);
 DEFINE_TEST(struct ctdb_uptime, ctdb_uptime);
@@ -1318,9 +1251,6 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_var_list)();
 	TEST_FUNC(ctdb_tunable_list)();
 	TEST_FUNC(ctdb_tickle_list)();
-	TEST_FUNC(ctdb_client_id)();
-	TEST_FUNC(ctdb_client_id_list)();
-	TEST_FUNC(ctdb_client_id_map)();
 	TEST_FUNC(ctdb_addr_info)();
 	TEST_FUNC(ctdb_transdb)();
 	TEST_FUNC(ctdb_uptime)();
