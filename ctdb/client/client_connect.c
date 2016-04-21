@@ -166,7 +166,7 @@ static void client_read_handler(uint8_t *buf, size_t buflen,
 	struct ctdb_req_header hdr;
 	int ret;
 
-	ret = ctdb_req_header_pull(discard_const(buf), buflen, &hdr);
+	ret = ctdb_req_header_pull(buf, buflen, &hdr);
 	if (ret != 0) {
 		DEBUG(DEBUG_WARNING, ("invalid header, ret=%d\n", ret));
 		return;
