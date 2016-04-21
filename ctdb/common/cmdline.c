@@ -113,9 +113,6 @@ struct ctdb_context *ctdb_cmdline_init(struct tevent_context *ev)
 		DEBUGLEVEL = debug_level_to_int(DEBUG_NOTICE);
 	}
 
-	/* set up the tree to store server ids */
-	ctdb->server_ids = trbt_create(ctdb, 0);
-
 	return ctdb;
 }
 

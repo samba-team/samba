@@ -62,7 +62,6 @@ bool fast_start;
 #include "server/ipalloc_lcp2.c"
 #include "server/ipalloc.c"
 #include "server/ctdb_takeover.c"
-#include "server/ctdb_serverids.c"
 #include "server/ctdb_persistent.c"
 #include "server/ctdb_keepalive.c"
 #include "server/ctdb_logging.c"

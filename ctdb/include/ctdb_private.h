@@ -335,7 +335,6 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_checkpublicip;
-	struct trbt_tree *server_ids; 
 	bool do_setsched;
 	const char *event_script_dir;
 	const char *notification_script;

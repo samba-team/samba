@@ -418,21 +418,17 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		/* data size is verified in the called function */
 		return ctdb_control_set_tcp_tickle_list(ctdb, indata);
 
-	case CTDB_CONTROL_REGISTER_SERVER_ID: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_client_id));
-		return ctdb_control_register_server_id(ctdb, client_id, indata);
+	case CTDB_CONTROL_REGISTER_SERVER_ID:
+		return control_not_implemented("REGISTER_SERVER_ID", NULL);
 
-	case CTDB_CONTROL_UNREGISTER_SERVER_ID: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_client_id));
-		return ctdb_control_unregister_server_id(ctdb, indata);
+	case CTDB_CONTROL_UNREGISTER_SERVER_ID:
+		return control_not_implemented("UNREGISTER_SERVER_ID", NULL);
 
-	case CTDB_CONTROL_CHECK_SERVER_ID: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_client_id));
-		return ctdb_control_check_server_id(ctdb, indata);
+	case CTDB_CONTROL_CHECK_SERVER_ID:
+		return control_not_implemented("CHECK_SERVER_ID", NULL);
 
 	case CTDB_CONTROL_GET_SERVER_ID_LIST:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_get_server_id_list(ctdb, outdata);
+		return control_not_implemented("SERVER_ID_LIST", NULL);
 
 	case CTDB_CONTROL_PERSISTENT_STORE:
 		return control_not_implemented("PERSISTENT_STORE", NULL);

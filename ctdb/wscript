@@ -392,7 +392,7 @@ def build(bld):
                                              ctdb_server.c ctdb_control.c
                                              ctdb_call.c ctdb_ltdb_server.c
                                              ctdb_traverse.c eventscript.c
-                                             ctdb_takeover.c ctdb_serverids.c
+                                             ctdb_takeover.c
                                              ctdb_persistent.c ctdb_keepalive.c
                                              ctdb_logging.c
                                              ctdb_logging_syslog.c
