@@ -2159,6 +2159,79 @@ int ctdb_transaction_commit(struct ctdb_transaction_handle *h)
 	return 0;
 }
 
+struct ctdb_transaction_cancel_state {
+	struct tevent_context *ev;
+	struct ctdb_transaction_handle *h;
+	struct timeval timeout;
+};
+
+static void ctdb_transaction_cancel_done(struct tevent_req *subreq);
+
+struct tevent_req *ctdb_transaction_cancel_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct timeval timeout,
+					struct ctdb_transaction_handle *h)
+{
+	struct tevent_req *req, *subreq;
+	struct ctdb_transaction_cancel_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ctdb_transaction_cancel_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->h = h;
+	state->timeout = timeout;
+
+	subreq = ctdb_g_lock_unlock_send(state, state->ev, state->h->client,
+					 state->h->db_g_lock,
+					 state->h->lock_name, state->h->sid);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ctdb_transaction_cancel_done,
+				req);
+
+	return req;
+}
+
+static void ctdb_transaction_cancel_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_transaction_cancel_state *state = tevent_req_data(
+		req, struct ctdb_transaction_cancel_state);
+	int ret;
+	bool status;
+
+	status = ctdb_g_lock_unlock_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	talloc_free(state->h);
+	tevent_req_done(req);
+}
+
+bool ctdb_transaction_cancel_recv(struct tevent_req *req, int *perr)
+{
+	int err;
+
+	if (tevent_req_is_unix_error(req, &err)) {
+		if (perr != NULL) {
+			*perr = err;
+		}
+		return false;
+	}
+
+	return true;
+}
+
 int ctdb_transaction_cancel(struct ctdb_transaction_handle *h)
 {
 	talloc_free(h);
