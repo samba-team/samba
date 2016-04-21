@@ -386,7 +386,7 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid)
 	struct peercred_struct cr;
 	socklen_t crl = sizeof(struct peercred_struct);
 	int ret;
-	if ((ret = getsockopt(fd, SOL_SOCKET, SO_PEERID, &cr, &crl) == 0)) {
+	if ((ret = getsockopt(fd, SOL_SOCKET, SO_PEERID, &cr, &crl)) == 0) {
 		*peer_pid = cr.pid;
 	}
 	return ret;
