@@ -352,7 +352,7 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	int ret;
 
 	length = offsetof(struct ctdb_req_message_wire, data) +
-		 message->data.dsize;
+			ctdb_tdb_data_len(message->data);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -365,10 +365,8 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	memcpy(&wire->hdr, h, sizeof(struct ctdb_req_header));
 
 	wire->srvid = message->srvid;
-	wire->datalen = message->data.dsize;
-	if (message->data.dsize > 0) {
-		memcpy(wire->data, message->data.dptr, message->data.dsize);
-	}
+	wire->datalen = ctdb_tdb_data_len(message->data);
+	ctdb_tdb_data_push(message->data, wire->data);
 
 	*pkt = buf;
 	*pkt_len = buflen;
@@ -383,6 +381,7 @@ int ctdb_req_message_data_pull(uint8_t *pkt, size_t pkt_len,
 	struct ctdb_req_message_wire *wire =
 		(struct ctdb_req_message_wire *)pkt;
 	size_t length;
+	int ret;
 
 	length = offsetof(struct ctdb_req_message_wire, data);
 
@@ -398,13 +397,11 @@ int ctdb_req_message_data_pull(uint8_t *pkt, size_t pkt_len,
 	}
 
 	message->srvid = wire->srvid;
-	message->data.dsize = wire->datalen;
-	if (wire->datalen > 0) {
-		message->data.dptr = talloc_memdup(mem_ctx, wire->data,
-						   wire->datalen);
-		if (message->data.dptr == NULL) {
-			return ENOMEM;
-		}
+
+	ret = ctdb_tdb_data_pull(wire->data, wire->datalen,
+				 mem_ctx, &message->data);
+	if (ret != 0) {
+		return ret;
 	}
 
 	return 0;
