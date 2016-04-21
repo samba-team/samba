@@ -40,8 +40,13 @@ void ctdb_req_call_fill(struct ctdb_req_call *c,
 }
 */
 
-static int ctdb_reply_control_generic(struct ctdb_reply_control *reply)
+static int ctdb_reply_control_generic(struct ctdb_reply_control *reply,
+				      uint32_t opcode)
 {
+	if (reply->rdata.opcode != opcode) {
+		return EPROTO;
+	}
+
 	return reply->status;
 }
 
@@ -64,11 +69,13 @@ void ctdb_req_control_process_exists(struct ctdb_req_control *request,
 int ctdb_reply_control_process_exists(struct ctdb_reply_control *reply,
 				      int *status)
 {
-	if (reply->rdata.opcode == CTDB_CONTROL_PROCESS_EXISTS) {
-		*status = reply->status;
-		reply->status = 0;
-
+	if (reply->rdata.opcode != CTDB_CONTROL_PROCESS_EXISTS) {
+		return EPROTO;
 	}
+
+	*status = reply->status;
+	reply->status = 0;
+
 	return reply->status;
 }
 
@@ -89,8 +96,11 @@ int ctdb_reply_control_statistics(struct ctdb_reply_control *reply,
 				  TALLOC_CTX *mem_ctx,
 				  struct ctdb_statistics **stats)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_STATISTICS) {
+	if (reply->rdata.opcode != CTDB_CONTROL_STATISTICS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*stats = talloc_steal(mem_ctx, reply->rdata.data.stats);
 	}
 	return reply->status;
@@ -112,6 +122,10 @@ void ctdb_req_control_ping(struct ctdb_req_control *request)
 int ctdb_reply_control_ping(struct ctdb_reply_control *reply,
 			    int *num_clients)
 {
+	if (reply->rdata.opcode != CTDB_CONTROL_PING) {
+		return EPROTO;
+	}
+
 	if (reply->status >= 0) {
 		*num_clients = reply->status;
 		reply->status = 0;
@@ -137,8 +151,11 @@ void ctdb_req_control_getdbpath(struct ctdb_req_control *request,
 int ctdb_reply_control_getdbpath(struct ctdb_reply_control *reply,
 				 TALLOC_CTX *mem_ctx, const char **db_path)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GETDBPATH) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GETDBPATH) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*db_path = talloc_steal(mem_ctx, reply->rdata.data.db_path);
 	}
 	return reply->status;
@@ -161,8 +178,11 @@ int ctdb_reply_control_getvnnmap(struct ctdb_reply_control *reply,
 				 TALLOC_CTX *mem_ctx,
 				 struct ctdb_vnn_map **vnnmap)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GETVNNMAP) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GETVNNMAP) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*vnnmap = talloc_steal(mem_ctx, reply->rdata.data.vnnmap);
 	}
 	return reply->status;
@@ -185,7 +205,7 @@ void ctdb_req_control_setvnnmap(struct ctdb_req_control *request,
 
 int ctdb_reply_control_setvnnmap(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SETVNNMAP);
 }
 
 /* CTDB_CONTROL_GET_DEBUG */
@@ -204,8 +224,11 @@ void ctdb_req_control_get_debug(struct ctdb_req_control *request)
 int ctdb_reply_control_get_debug(struct ctdb_reply_control *reply,
 				 uint32_t *loglevel)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_DEBUG) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_DEBUG) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*loglevel = reply->rdata.data.loglevel;
 	}
 	return reply->status;
@@ -228,7 +251,7 @@ void ctdb_req_control_set_debug(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_debug(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_DEBUG);
 }
 
 /* CTDB_CONTROL_GET_DBMAP */
@@ -248,8 +271,11 @@ int ctdb_reply_control_get_dbmap(struct ctdb_reply_control *reply,
 				 TALLOC_CTX *mem_ctx,
 				 struct ctdb_dbid_map **dbmap)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_DBMAP) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_DBMAP) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*dbmap = talloc_steal(mem_ctx, reply->rdata.data.dbmap);
 	}
 	return reply->status;
@@ -274,8 +300,11 @@ int ctdb_reply_control_pull_db(struct ctdb_reply_control *reply,
 			       TALLOC_CTX *mem_ctx,
 			       struct ctdb_rec_buffer **recbuf)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_PULL_DB) {
+	if (reply->rdata.opcode != CTDB_CONTROL_PULL_DB) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*recbuf = talloc_steal(mem_ctx, reply->rdata.data.recbuf);
 	}
 	return reply->status;
@@ -298,7 +327,7 @@ void ctdb_req_control_push_db(struct ctdb_req_control *request,
 
 int ctdb_reply_control_push_db(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_PUSH_DB);
 }
 
 /* CTDB_CONTROL_GET_RECMODE */
@@ -317,6 +346,10 @@ void ctdb_req_control_get_recmode(struct ctdb_req_control *request)
 int ctdb_reply_control_get_recmode(struct ctdb_reply_control *reply,
 				   int *recmode)
 {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_RECMODE) {
+		return EPROTO;
+	}
+
 	if (reply->status >= 0) {
 		*recmode = reply->status;
 		reply->status = 0;
@@ -341,7 +374,7 @@ void ctdb_req_control_set_recmode(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_recmode(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_RECMODE);
 }
 
 /* CTDB_CONTROL_STATISTICS_RESET */
@@ -359,7 +392,8 @@ void ctdb_req_control_statistics_reset(struct ctdb_req_control *request)
 
 int ctdb_reply_control_statistics_reset(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_STATISTICS_RESET);
 }
 
 /* CTDB_CONTROL_DB_ATTACH */
@@ -380,8 +414,11 @@ void ctdb_req_control_db_attach(struct ctdb_req_control *request,
 int ctdb_reply_control_db_attach(struct ctdb_reply_control *reply,
 				 uint32_t *db_id)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_DB_ATTACH) {
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_ATTACH) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*db_id = reply->rdata.data.db_id;
 	}
 	return reply->status;
@@ -406,7 +443,7 @@ void ctdb_req_control_traverse_start(struct ctdb_req_control *request,
 
 int ctdb_reply_control_traverse_start(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TRAVERSE_START);
 }
 
 /* CTDB_CONTROL_TRAVERSE_ALL */
@@ -428,7 +465,7 @@ void ctdb_req_control_register_srvid(struct ctdb_req_control *request,
 
 int ctdb_reply_control_register_srvid(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_REGISTER_SRVID);
 }
 
 /* CTDB_CONTROL_DEREGISTER_SRVID */
@@ -447,7 +484,8 @@ void ctdb_req_control_deregister_srvid(struct ctdb_req_control *request,
 
 int ctdb_reply_control_deregister_srvid(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_DEREGISTER_SRVID);
 }
 
 /* CTDB_CONTROL_GET_DBNAME */
@@ -468,8 +506,11 @@ void ctdb_req_control_get_dbname(struct ctdb_req_control *request,
 int ctdb_reply_control_get_dbname(struct ctdb_reply_control *reply,
 				  TALLOC_CTX *mem_ctx, const char **db_name)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_DBNAME) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_DBNAME) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*db_name = talloc_steal(mem_ctx, reply->rdata.data.db_name);
 	}
 	return reply->status;
@@ -492,7 +533,7 @@ void ctdb_req_control_enable_seqnum(struct ctdb_req_control *request,
 
 int ctdb_reply_control_enable_seqnum(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_SEQNUM);
 }
 
 /* CTDB_CONTROL_UPDATE_SEQNUM */
@@ -512,7 +553,7 @@ void ctdb_req_control_update_seqnum(struct ctdb_req_control *request,
 
 int ctdb_reply_control_update_seqnum(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_UPDATE_SEQNUM);
 }
 
 /* CTDB_CONTROL_DUMP_MEMORY */
@@ -531,8 +572,11 @@ void ctdb_req_control_dump_memory(struct ctdb_req_control *request)
 int ctdb_reply_control_dump_memory(struct ctdb_reply_control *reply,
 				   TALLOC_CTX *mem_ctx, const char **mem_str)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_DUMP_MEMORY) {
+	if (reply->rdata.opcode != CTDB_CONTROL_DUMP_MEMORY) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*mem_str = talloc_steal(mem_ctx, reply->rdata.data.mem_str);
 	}
 	return reply->status;
@@ -554,10 +598,13 @@ void ctdb_req_control_get_pid(struct ctdb_req_control *request)
 int ctdb_reply_control_get_pid(struct ctdb_reply_control *reply,
 			       pid_t *pid)
 {
-	if (reply->rdata.opcode == CTDB_CONTROL_GET_PID) {
-		*pid = reply->status;
-		reply->status = 0;
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_PID) {
+		return EPROTO;
 	}
+
+	*pid = reply->status;
+	reply->status = 0;
+
 	return reply->status;
 }
 
@@ -577,10 +624,13 @@ void ctdb_req_control_get_recmaster(struct ctdb_req_control *request)
 int ctdb_reply_control_get_recmaster(struct ctdb_reply_control *reply,
 				     uint32_t *recmaster)
 {
-	if (reply->rdata.opcode == CTDB_CONTROL_GET_RECMASTER) {
-		*recmaster = reply->status;
-		reply->status = 0;
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_RECMASTER) {
+		return EPROTO;
 	}
+
+	*recmaster = reply->status;
+	reply->status = 0;
+
 	return reply->status;
 }
 
@@ -601,7 +651,7 @@ void ctdb_req_control_set_recmaster(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_recmaster(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_RECMASTER);
 }
 
 /* CTDB_CONTROL_FREEZE */
@@ -620,7 +670,7 @@ void ctdb_req_control_freeze(struct ctdb_req_control *request,
 
 int ctdb_reply_control_freeze(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_FREEZE);
 }
 
 /* CTDB_CONTROL_THAW */
@@ -639,7 +689,7 @@ void ctdb_req_control_thaw(struct ctdb_req_control *request,
 
 int ctdb_reply_control_thaw(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_THAW);
 }
 
 /* CTDB_CONTROL_GET_PNN */
@@ -658,6 +708,10 @@ void ctdb_req_control_get_pnn(struct ctdb_req_control *request)
 int ctdb_reply_control_get_pnn(struct ctdb_reply_control *reply,
 			       uint32_t *pnn)
 {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_PNN) {
+		return EPROTO;
+	}
+
 	if (reply->status >= 0) {
 		*pnn = reply->status;
 		reply->status = 0;
@@ -680,7 +734,7 @@ void ctdb_req_control_shutdown(struct ctdb_req_control *request)
 
 int ctdb_reply_control_shutdown(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SHUTDOWN);
 }
 
 /* CTDB_CONTROL_GET_MONMODE */
@@ -699,6 +753,10 @@ void ctdb_req_control_get_monmode(struct ctdb_req_control *request)
 int ctdb_reply_control_get_monmode(struct ctdb_reply_control *reply,
 				   int *mon_mode)
 {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_MONMODE) {
+		return EPROTO;
+	}
+
 	if (reply->status >= 0) {
 		*mon_mode = reply->status;
 		reply->status = 0;
@@ -723,7 +781,7 @@ void ctdb_req_control_tcp_client(struct ctdb_req_control *request,
 
 int ctdb_reply_control_tcp_client(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TCP_CLIENT);
 }
 
 /* CTDB_CONTROL_TCP_ADD */
@@ -743,7 +801,7 @@ void ctdb_req_control_tcp_add(struct ctdb_req_control *request,
 
 int ctdb_reply_control_tcp_add(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TCP_ADD);
 }
 
 /* CTDB_CONTROL_TCP_REMOVE */
@@ -763,7 +821,7 @@ void ctdb_req_control_tcp_remove(struct ctdb_req_control *request,
 
 int ctdb_reply_control_tcp_remove(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TCP_REMOVE);
 }
 
 /* CTDB_CONTROL_STARTUP */
@@ -781,7 +839,7 @@ void ctdb_req_control_startup(struct ctdb_req_control *request)
 
 int ctdb_reply_control_startup(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_STARTUP);
 }
 
 /* CTDB_CONTROL_SET_TUNABLE */
@@ -801,7 +859,7 @@ void ctdb_req_control_set_tunable(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_tunable(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_TUNABLE);
 }
 
 /* CTDB_CONTROL_GET_TUNABLE */
@@ -822,8 +880,11 @@ void ctdb_req_control_get_tunable(struct ctdb_req_control *request,
 int ctdb_reply_control_get_tunable(struct ctdb_reply_control *reply,
 				   uint32_t *value)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_TUNABLE) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_TUNABLE) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*value = reply->rdata.data.tun_value;
 	}
 	return reply->status;
@@ -846,8 +907,11 @@ int ctdb_reply_control_list_tunables(struct ctdb_reply_control *reply,
 				     TALLOC_CTX *mem_ctx,
 				     struct ctdb_var_list **tun_var_list)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_LIST_TUNABLES) {
+	if (reply->rdata.opcode != CTDB_CONTROL_LIST_TUNABLES) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*tun_var_list = talloc_steal(mem_ctx,
 					     reply->rdata.data.tun_var_list);
 	}
@@ -871,7 +935,7 @@ void ctdb_req_control_modify_flags(struct ctdb_req_control *request,
 
 int ctdb_reply_control_modify_flags(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_MODIFY_FLAGS);
 }
 
 /* CTDB_CONTROL_GET_ALL_TUNABLES */
@@ -891,8 +955,11 @@ int ctdb_reply_control_get_all_tunables(struct ctdb_reply_control *reply,
 					TALLOC_CTX *mem_ctx,
 					struct ctdb_tunable_list **tun_list)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_ALL_TUNABLES) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_ALL_TUNABLES) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*tun_list = talloc_steal(mem_ctx, reply->rdata.data.tun_list);
 	}
 	return reply->status;
@@ -917,8 +984,11 @@ int ctdb_reply_control_get_tcp_tickle_list(struct ctdb_reply_control *reply,
 					   TALLOC_CTX *mem_ctx,
 					   struct ctdb_tickle_list **tickles)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_TCP_TICKLE_LIST) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_TCP_TICKLE_LIST) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*tickles = talloc_steal(mem_ctx, reply->rdata.data.tickles);
 	}
 	return reply->status;
@@ -941,7 +1011,8 @@ void ctdb_req_control_set_tcp_tickle_list(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_tcp_tickle_list(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_SET_TCP_TICKLE_LIST);
 }
 
 /* CTDB_CONTROL_DB_ATTACH_PERSISTENT */
@@ -963,8 +1034,11 @@ void ctdb_req_control_db_attach_persistent(struct ctdb_req_control *request,
 int ctdb_reply_control_db_attach_persistent(struct ctdb_reply_control *reply,
 					    uint32_t *db_id)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_DB_ATTACH_PERSISTENT) {
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_ATTACH_PERSISTENT) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*db_id = reply->rdata.data.db_id;
 	}
 	return reply->status;
@@ -987,7 +1061,7 @@ void ctdb_req_control_update_record(struct ctdb_req_control *request,
 
 int ctdb_reply_control_update_record(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_UPDATE_RECORD);
 }
 
 /* CTDB_CONTROL_SEND_GRATUITOUS_ARP */
@@ -1007,7 +1081,8 @@ void ctdb_req_control_send_gratuitous_arp(struct ctdb_req_control *request,
 
 int ctdb_reply_control_send_gratuitous_arp(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_SEND_GRATUITOUS_ARP);
 }
 
 /* CTDB_CONTROL_TRANSACTION_START */
@@ -1027,7 +1102,8 @@ void ctdb_req_control_transaction_start(struct ctdb_req_control *request,
 
 int ctdb_reply_control_transaction_start(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_TRANSACTION_START);
 }
 
 /* CTDB_CONTROL_TRANSACTION_COMMIT */
@@ -1047,7 +1123,8 @@ void ctdb_req_control_transaction_commit(struct ctdb_req_control *request,
 
 int ctdb_reply_control_transaction_commit(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_TRANSACTION_COMMIT);
 }
 
 /* CTDB_CONTROL_WIPE_DATABASE */
@@ -1067,7 +1144,7 @@ void ctdb_req_control_wipe_database(struct ctdb_req_control *request,
 
 int ctdb_reply_control_wipe_database(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_WIPE_DATABASE);
 }
 
 /* CTDB_CONTROL_UPTIME */
@@ -1086,8 +1163,11 @@ void ctdb_req_control_uptime(struct ctdb_req_control *request)
 int ctdb_reply_control_uptime(struct ctdb_reply_control *reply,
 			      TALLOC_CTX *mem_ctx, struct ctdb_uptime **uptime)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_UPTIME) {
+	if (reply->rdata.opcode != CTDB_CONTROL_UPTIME) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*uptime = talloc_steal(mem_ctx, reply->rdata.data.uptime);
 	}
 	return reply->status;
@@ -1108,7 +1188,7 @@ void ctdb_req_control_start_recovery(struct ctdb_req_control *request)
 
 int ctdb_reply_control_start_recovery(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_START_RECOVERY);
 }
 
 /* CTDB_CONTROL_END_RECOVERY */
@@ -1126,7 +1206,7 @@ void ctdb_req_control_end_recovery(struct ctdb_req_control *request)
 
 int ctdb_reply_control_end_recovery(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_END_RECOVERY);
 }
 
 /* CTDB_CONTROL_RELOAD_NODES_FILE */
@@ -1144,7 +1224,8 @@ void ctdb_req_control_reload_nodes_file(struct ctdb_req_control *request)
 
 int ctdb_reply_control_reload_nodes_file(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_RELOAD_NODES_FILE);
 }
 
 /* CTDB_CONTROL_TRY_DELETE_RECORDS */
@@ -1166,8 +1247,11 @@ int ctdb_reply_control_try_delete_records(struct ctdb_reply_control *reply,
 					  TALLOC_CTX *mem_ctx,
 					  struct ctdb_rec_buffer **recbuf)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_TRY_DELETE_RECORDS) {
+	if (reply->rdata.opcode != CTDB_CONTROL_TRY_DELETE_RECORDS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*recbuf = talloc_steal(mem_ctx, reply->rdata.data.recbuf);
 	}
 	return reply->status;
@@ -1188,7 +1272,7 @@ void ctdb_req_control_enable_monitor(struct ctdb_req_control *request)
 
 int ctdb_reply_control_enable_monitor(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_MONITOR);
 }
 
 /* CTDB_CONTROL_DISABLE_MONITOR */
@@ -1206,7 +1290,7 @@ void ctdb_req_control_disable_monitor(struct ctdb_req_control *request)
 
 int ctdb_reply_control_disable_monitor(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DISABLE_MONITOR);
 }
 
 /* CTDB_CONTROL_ADD_PUBLIC_IP */
@@ -1226,7 +1310,7 @@ void ctdb_req_control_add_public_ip(struct ctdb_req_control *request,
 
 int ctdb_reply_control_add_public_ip(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ADD_PUBLIC_IP);
 }
 
 /* CTDB_CONTROL_DEL_PUBLIC_IP */
@@ -1246,7 +1330,7 @@ void ctdb_req_control_del_public_ip(struct ctdb_req_control *request,
 
 int ctdb_reply_control_del_public_ip(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DEL_PUBLIC_IP);
 }
 
 /* CTDB_CONTROL_RUN_EVENTSCRIPTS */
@@ -1266,7 +1350,8 @@ void ctdb_req_control_run_eventscripts(struct ctdb_req_control *request,
 
 int ctdb_reply_control_run_eventscripts(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_RUN_EVENTSCRIPTS);
 }
 
 /* CTDB_CONTROL_GET_CAPABILITIES */
@@ -1285,8 +1370,11 @@ void ctdb_req_control_get_capabilities(struct ctdb_req_control *request)
 int ctdb_reply_control_get_capabilities(struct ctdb_reply_control *reply,
 					uint32_t *caps)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_CAPABILITIES) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_CAPABILITIES) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*caps = reply->rdata.data.caps;
 	}
 	return reply->status;
@@ -1307,7 +1395,7 @@ void ctdb_req_control_recd_ping(struct ctdb_req_control *request)
 
 int ctdb_reply_control_recd_ping(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_RECD_PING);
 }
 
 /* CTDB_CONTROL_RELEASE_IP */
@@ -1327,7 +1415,7 @@ void ctdb_req_control_release_ip(struct ctdb_req_control *request,
 
 int ctdb_reply_control_release_ip(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_RELEASE_IP);
 }
 
 /* CTDB_CONTROL_TAKEOVER_IP */
@@ -1347,7 +1435,7 @@ void ctdb_req_control_takeover_ip(struct ctdb_req_control *request,
 
 int ctdb_reply_control_takeover_ip(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TAKEOVER_IP);
 }
 
 /* CTDB_CONTROL_GET_PUBLIC_IPS */
@@ -1367,9 +1455,13 @@ int ctdb_reply_control_get_public_ips(struct ctdb_reply_control *reply,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_public_ip_list **pubip_list)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_PUBLIC_IPS) {
-		*pubip_list = talloc_steal(mem_ctx, reply->rdata.data.pubip_list);
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_PUBLIC_IPS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
+		*pubip_list = talloc_steal(mem_ctx,
+					   reply->rdata.data.pubip_list);
 	}
 	return reply->status;
 }
@@ -1391,8 +1483,11 @@ int ctdb_reply_control_get_nodemap(struct ctdb_reply_control *reply,
 				   TALLOC_CTX *mem_ctx,
 				   struct ctdb_node_map **nodemap)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_NODEMAP) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_NODEMAP) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*nodemap = talloc_steal(mem_ctx, reply->rdata.data.nodemap);
 	}
 	return reply->status;
@@ -1417,8 +1512,11 @@ int ctdb_reply_control_get_event_script_status(struct ctdb_reply_control *reply,
 					       TALLOC_CTX *mem_ctx,
 					       struct ctdb_script_list **slist)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*slist = talloc_steal(mem_ctx, reply->rdata.data.script_list);
 	}
 	return reply->status;
@@ -1441,7 +1539,7 @@ void ctdb_req_control_traverse_kill(struct ctdb_req_control *request,
 
 int ctdb_reply_control_traverse_kill(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TRAVERSE_KILL);
 }
 
 /* CTDB_CONTROL_RECD_RECLOCK_LATENCY */
@@ -1461,7 +1559,8 @@ void ctdb_req_control_recd_reclock_latency(struct ctdb_req_control *request,
 
 int ctdb_reply_control_recd_reclock_latency(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_RECD_RECLOCK_LATENCY);
 }
 
 /* CTDB_CONTROL_GET_RECLOCK_FILE */
@@ -1481,8 +1580,11 @@ int ctdb_reply_control_get_reclock_file(struct ctdb_reply_control *reply,
 					TALLOC_CTX *mem_ctx,
 					const char **reclock_file)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_RECLOCK_FILE) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_RECLOCK_FILE) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*reclock_file = talloc_steal(mem_ctx,
 					     reply->rdata.data.reclock_file);
 	}
@@ -1506,7 +1608,8 @@ void ctdb_req_control_set_reclock_file(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_reclock_file(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_SET_RECLOCK_FILE);
 }
 
 
@@ -1525,7 +1628,7 @@ void ctdb_req_control_stop_node(struct ctdb_req_control *request)
 
 int ctdb_reply_control_stop_node(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_STOP_NODE);
 }
 
 /* CTDB_CONTROL_CONTINUE_NODE */
@@ -1543,7 +1646,7 @@ void ctdb_req_control_continue_node(struct ctdb_req_control *request)
 
 int ctdb_reply_control_continue_node(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_CONTINUE_NODE);
 }
 
 /* CTDB_CONTROL_SET_LMASTERROLE */
@@ -1563,7 +1666,7 @@ void ctdb_req_control_set_lmasterrole(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_lmasterrole(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_LMASTERROLE);
 }
 
 /* CTDB_CONTROL_SET_RECMASTERROLE */
@@ -1583,7 +1686,8 @@ void ctdb_req_control_set_recmasterrole(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_recmasterrole(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_SET_RECMASTERROLE);
 }
 
 /* CTDB_CONTROL_ENABLE_SCRIPT */
@@ -1603,7 +1707,7 @@ void ctdb_req_control_enable_script(struct ctdb_req_control *request,
 
 int ctdb_reply_control_enable_script(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_ENABLE_SCRIPT);
 }
 
 /* CTDB_CONTROL_DISABLE_SCRIPT */
@@ -1623,7 +1727,7 @@ void ctdb_req_control_disable_script(struct ctdb_req_control *request,
 
 int ctdb_reply_control_disable_script(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DISABLE_SCRIPT);
 }
 
 /* CTDB_CONTROL_SET_BAN_STATE */
@@ -1643,7 +1747,7 @@ void ctdb_req_control_set_ban_state(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_ban_state(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_BAN_STATE);
 }
 
 /* CTDB_CONTROL_GET_BAN_STATE */
@@ -1663,8 +1767,11 @@ int ctdb_reply_control_get_ban_state(struct ctdb_reply_control *reply,
 				     TALLOC_CTX *mem_ctx,
 				     struct ctdb_ban_state **ban_state)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_BAN_STATE) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_BAN_STATE) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*ban_state = talloc_steal(mem_ctx,
 					  reply->rdata.data.ban_state);
 	}
@@ -1688,7 +1795,7 @@ void ctdb_req_control_set_db_priority(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_db_priority(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_DB_PRIORITY);
 }
 
 /* CTDB_CONTROL_GET_DB_PRIORITY */
@@ -1709,10 +1816,13 @@ void ctdb_req_control_get_db_priority(struct ctdb_req_control *request,
 int ctdb_reply_control_get_db_priority(struct ctdb_reply_control *reply,
 				       uint32_t *priority)
 {
-	if (reply->rdata.opcode == CTDB_CONTROL_GET_DB_PRIORITY) {
-		*priority = reply->status;
-		reply->status = 0;
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_DB_PRIORITY) {
+		return EPROTO;
 	}
+
+	*priority = reply->status;
+	reply->status = 0;
+
 	return reply->status;
 }
 
@@ -1733,7 +1843,8 @@ void ctdb_req_control_transaction_cancel(struct ctdb_req_control *request,
 
 int ctdb_reply_control_transaction_cancel(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_TRANSACTION_CANCEL);
 }
 
 /* CTDB_CONTROL_REGISTER_NOTIFY */
@@ -1753,7 +1864,7 @@ void ctdb_req_control_register_notify(struct ctdb_req_control *request,
 
 int ctdb_reply_control_register_notify(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_REGISTER_NOTIFY);
 }
 
 /* CTDB_CONTROL_DEREGISTER_NOTIFY */
@@ -1773,7 +1884,8 @@ void ctdb_req_control_deregister_notify(struct ctdb_req_control *request,
 
 int ctdb_reply_control_deregister_notify(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_DEREGISTER_NOTIFY);
 }
 
 /* CTDB_CONTROL_TRANS3_COMMIT */
@@ -1793,7 +1905,7 @@ void ctdb_req_control_trans3_commit(struct ctdb_req_control *request,
 
 int ctdb_reply_control_trans3_commit(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_TRANS3_COMMIT);
 }
 
 /* CTDB_CONTROL_GET_DB_SEQNUM */
@@ -1814,8 +1926,11 @@ void ctdb_req_control_get_db_seqnum(struct ctdb_req_control *request,
 int ctdb_reply_control_get_db_seqnum(struct ctdb_reply_control *reply,
 				     uint64_t *seqnum)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_DB_SEQNUM) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_DB_SEQNUM) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*seqnum = reply->rdata.data.seqnum;
 	}
 	return reply->status;
@@ -1838,7 +1953,7 @@ void ctdb_req_control_db_set_healthy(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_set_healthy(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DB_SET_HEALTHY);
 }
 
 /* CTDB_CONTROL_DB_GET_HEALTH */
@@ -1859,8 +1974,11 @@ void ctdb_req_control_db_get_health(struct ctdb_req_control *request,
 int ctdb_reply_control_db_get_health(struct ctdb_reply_control *reply,
 				     TALLOC_CTX *mem_ctx, const char **reason)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_DB_GET_HEALTH) {
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_GET_HEALTH) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*reason = talloc_steal(mem_ctx, reply->rdata.data.reason);
 	}
 	return reply->status;
@@ -1885,8 +2003,11 @@ int ctdb_reply_control_get_public_ip_info(struct ctdb_reply_control *reply,
 					  TALLOC_CTX *mem_ctx,
 					  struct ctdb_public_ip_info **ipinfo)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_PUBLIC_IP_INFO) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_PUBLIC_IP_INFO) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*ipinfo = talloc_steal(mem_ctx, reply->rdata.data.ipinfo);
 	}
 	return reply->status;
@@ -1909,8 +2030,11 @@ int ctdb_reply_control_get_ifaces(struct ctdb_reply_control *reply,
 				  TALLOC_CTX *mem_ctx,
 				  struct ctdb_iface_list **iface_list)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_IFACES) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_IFACES) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*iface_list = talloc_steal(mem_ctx,
 					   reply->rdata.data.iface_list);
 	}
@@ -1934,7 +2058,8 @@ void ctdb_req_control_set_iface_link_state(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_iface_link_state(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_SET_IFACE_LINK_STATE);
 }
 
 /* CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE */
@@ -1954,7 +2079,8 @@ void ctdb_req_control_tcp_add_delayed_update(struct ctdb_req_control *request,
 
 int ctdb_reply_control_tcp_add_delayed_update(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE);
 }
 
 /* CTDB_CONTROL_GET_STAT_HISTORY */
@@ -1974,8 +2100,11 @@ int ctdb_reply_control_get_stat_history(struct ctdb_reply_control *reply,
 					TALLOC_CTX *mem_ctx,
 					struct ctdb_statistics_list **stats_list)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_STAT_HISTORY) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_STAT_HISTORY) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*stats_list = talloc_steal(mem_ctx,
 					   reply->rdata.data.stats_list);
 	}
@@ -1999,7 +2128,8 @@ void ctdb_req_control_schedule_for_deletion(struct ctdb_req_control *request,
 
 int ctdb_reply_control_schedule_for_deletion(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_SCHEDULE_FOR_DELETION);
 }
 
 /* CTDB_CONTROL_SET_DB_READONLY */
@@ -2019,7 +2149,7 @@ void ctdb_req_control_set_db_readonly(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_db_readonly(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_DB_READONLY);
 }
 
 /* CTDB_CONTROL_CHECK_SRVIDS */
@@ -2041,8 +2171,11 @@ int ctdb_reply_control_check_srvids(struct ctdb_reply_control *reply,
 				    TALLOC_CTX *mem_ctx,
 				    struct ctdb_uint8_array **u8_array)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_CHECK_SRVIDS) {
+	if (reply->rdata.opcode != CTDB_CONTROL_CHECK_SRVIDS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*u8_array = talloc_steal(mem_ctx, reply->rdata.data.u8_array);
 	}
 	return reply->status;
@@ -2065,7 +2198,8 @@ void ctdb_req_control_traverse_start_ext(struct ctdb_req_control *request,
 
 int ctdb_reply_control_traverse_start_ext(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_TRAVERSE_START_EXT);
 }
 
 /* CTDB_CONTROL_GET_DB_STATISTICS */
@@ -2087,8 +2221,11 @@ int ctdb_reply_control_get_db_statistics(struct ctdb_reply_control *reply,
 					 TALLOC_CTX *mem_ctx,
 					 struct ctdb_db_statistics **dbstats)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_DB_STATISTICS) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_DB_STATISTICS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*dbstats = talloc_steal(mem_ctx, reply->rdata.data.dbstats);
 	}
 	return reply->status;
@@ -2111,7 +2248,7 @@ void ctdb_req_control_set_db_sticky(struct ctdb_req_control *request,
 
 int ctdb_reply_control_set_db_sticky(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_DB_STICKY);
 }
 
 /* CTDB_CONTROL_RELOAD_PUBLIC_IPS */
@@ -2129,7 +2266,8 @@ void ctdb_req_control_reload_public_ips(struct ctdb_req_control *request)
 
 int ctdb_reply_control_reload_public_ips(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_RELOAD_PUBLIC_IPS);
 }
 
 /* CTDB_CONTROL_TRAVERSE_ALL_EXT */
@@ -2153,8 +2291,11 @@ int ctdb_reply_control_receive_records(struct ctdb_reply_control *reply,
 				       TALLOC_CTX *mem_ctx,
 				       struct ctdb_rec_buffer **recbuf)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_RECEIVE_RECORDS) {
+	if (reply->rdata.opcode != CTDB_CONTROL_RECEIVE_RECORDS) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*recbuf = talloc_steal(mem_ctx, reply->rdata.data.recbuf);
 	}
 	return reply->status;
@@ -2175,7 +2316,7 @@ void ctdb_req_control_ipreallocated(struct ctdb_req_control *request)
 
 int ctdb_reply_control_ipreallocated(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_IPREALLOCATED);
 }
 
 /* CTDB_CONTROL_GET_RUNSTATE */
@@ -2194,8 +2335,11 @@ void ctdb_req_control_get_runstate(struct ctdb_req_control *request)
 int ctdb_reply_control_get_runstate(struct ctdb_reply_control *reply,
 				    enum ctdb_runstate *runstate)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_RUNSTATE) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_RUNSTATE) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*runstate = reply->rdata.data.runstate;
 	}
 	return reply->status;
@@ -2218,7 +2362,7 @@ void ctdb_req_control_db_detach(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_detach(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DB_DETACH);
 }
 
 /* CTDB_CONTROL_GET_NODES_FILE */
@@ -2238,8 +2382,11 @@ int ctdb_reply_control_get_nodes_file(struct ctdb_reply_control *reply,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_node_map **nodemap)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_GET_NODES_FILE) {
+	if (reply->rdata.opcode != CTDB_CONTROL_GET_NODES_FILE) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*nodemap = talloc_steal(mem_ctx, reply->rdata.data.nodemap);
 	}
 	return reply->status;
@@ -2262,7 +2409,7 @@ void ctdb_req_control_db_freeze(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_freeze(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DB_FREEZE);
 }
 
 /* CTDB_CONTROL_DB_THAW */
@@ -2282,7 +2429,7 @@ void ctdb_req_control_db_thaw(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_thaw(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DB_THAW);
 }
 
 /* CTDB_CONTROL_DB_TRANSACTION_START */
@@ -2302,7 +2449,8 @@ void ctdb_req_control_db_transaction_start(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_transaction_start(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_DB_TRANSACTION_START);
 }
 
 /* CTDB_CONTROL_DB_TRANSACTION_COMMIT */
@@ -2322,7 +2470,8 @@ void ctdb_req_control_db_transaction_commit(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_transaction_commit(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_DB_TRANSACTION_COMMIT);
 }
 
 /* CTDB_CONTROL_DB_TRANSACTION_CANCEL */
@@ -2342,7 +2491,8 @@ void ctdb_req_control_db_transaction_cancel(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_transaction_cancel(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply,
+					  CTDB_CONTROL_DB_TRANSACTION_CANCEL);
 }
 
 /* CTDB_CONTROL_DB_PULL */
@@ -2363,8 +2513,11 @@ void ctdb_req_control_db_pull(struct ctdb_req_control *request,
 int ctdb_reply_control_db_pull(struct ctdb_reply_control *reply,
 			       uint32_t *num_records)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_DB_PULL) {
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_PULL) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*num_records = reply->rdata.data.num_records;
 	}
 	return reply->status;
@@ -2387,7 +2540,7 @@ void ctdb_req_control_db_push_start(struct ctdb_req_control *request,
 
 int ctdb_reply_control_db_push_start(struct ctdb_reply_control *reply)
 {
-	return ctdb_reply_control_generic(reply);
+	return ctdb_reply_control_generic(reply, CTDB_CONTROL_DB_PUSH_START);
 }
 
 /* CTDB_CONTROL_DB_PUSH_CONFIRM */
@@ -2408,8 +2561,11 @@ void ctdb_req_control_db_push_confirm(struct ctdb_req_control *request,
 int ctdb_reply_control_db_push_confirm(struct ctdb_reply_control *reply,
 				       uint32_t *num_records)
 {
-	if (reply->status == 0 &&
-	    reply->rdata.opcode == CTDB_CONTROL_DB_PUSH_CONFIRM) {
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_PUSH_CONFIRM) {
+		return EPROTO;
+	}
+
+	if (reply->status == 0) {
 		*num_records = reply->rdata.data.num_records;
 	}
 	return reply->status;
