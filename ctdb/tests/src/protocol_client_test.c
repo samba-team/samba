@@ -2179,7 +2179,7 @@ static void test_reply_dmaster_test(void)
 	talloc_free(mem_ctx);
 }
 
-#define NUM_CONTROLS	146
+#define NUM_CONTROLS	149
 
 static void test_req_control_data_test(void)
 {
