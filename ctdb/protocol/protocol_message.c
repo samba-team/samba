@@ -289,22 +289,16 @@ size_t ctdb_req_message_len(struct ctdb_req_header *h,
 
 int ctdb_req_message_push(struct ctdb_req_header *h,
 			  struct ctdb_req_message *message,
-			  TALLOC_CTX *mem_ctx,
-			  uint8_t **pkt, size_t *pkt_len)
+			  uint8_t *buf, size_t buflen)
 {
-	struct ctdb_req_message_wire *wire;
-	uint8_t *buf;
-	size_t length, buflen;
-	int ret;
+	struct ctdb_req_message_wire *wire =
+		(struct ctdb_req_message_wire *)buf;
+	size_t length;
 
 	length = ctdb_req_message_len(h, message);
-
-	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
-	if (ret != 0) {
-		return ret;
+	if (buflen < length) {
+		return EMSGSIZE;
 	}
-
-	wire = (struct ctdb_req_message_wire *)buf;
 
 	h->length = buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
@@ -313,8 +307,6 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 	wire->datalen = ctdb_message_data_len(&message->data, message->srvid);
 	ctdb_message_data_push(&message->data, message->srvid, wire->data);
 
-	*pkt = buf;
-	*pkt_len = buflen;
 	return 0;
 }
 
@@ -359,22 +351,16 @@ size_t ctdb_req_message_data_len(struct ctdb_req_header *h,
 
 int ctdb_req_message_data_push(struct ctdb_req_header *h,
 			       struct ctdb_req_message_data *message,
-			       TALLOC_CTX *mem_ctx,
-			       uint8_t **pkt, size_t *pkt_len)
+			       uint8_t *buf, size_t buflen)
 {
-	struct ctdb_req_message_wire *wire;
-	uint8_t *buf;
-	size_t length, buflen;
-	int ret;
+	struct ctdb_req_message_wire *wire =
+		(struct ctdb_req_message_wire *)buf;
+	size_t length;
 
 	length = ctdb_req_message_data_len(h, message);
-
-	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
-	if (ret != 0) {
-		return ret;
+	if (buflen < length) {
+		return EMSGSIZE;
 	}
-
-	wire = (struct ctdb_req_message_wire *)buf;
 
 	h->length = buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
@@ -383,8 +369,6 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	wire->datalen = ctdb_tdb_data_len(message->data);
 	ctdb_tdb_data_push(message->data, wire->data);
 
-	*pkt = buf;
-	*pkt_len = buflen;
 	return 0;
 }
 

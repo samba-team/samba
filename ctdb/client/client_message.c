@@ -62,7 +62,7 @@ struct tevent_req *ctdb_client_message_send(TALLOC_CTX *mem_ctx,
 	struct ctdb_req_header h;
 	uint32_t reqid;
 	uint8_t *buf;
-	size_t buflen;
+	size_t datalen, buflen;
 	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -85,7 +85,14 @@ struct tevent_req *ctdb_client_message_send(TALLOC_CTX *mem_ctx,
 	ctdb_req_header_fill(&h, 0, CTDB_REQ_MESSAGE, destnode,
 			     client->pnn, reqid);
 
-	ret = ctdb_req_message_push(&h, message, state, &buf, &buflen);
+	datalen = ctdb_req_message_len(&h, message);
+	ret = ctdb_allocate_pkt(state, datalen, &buf, &buflen);
+	if (ret != 0) {
+		tevent_req_error(req, ret);
+		return tevent_req_post(req, ev);
+	}
+
+	ret = ctdb_req_message_push(&h, message, buf, buflen);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);

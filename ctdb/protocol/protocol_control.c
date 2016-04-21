@@ -1899,22 +1899,16 @@ size_t ctdb_req_control_len(struct ctdb_req_header *h,
 
 int ctdb_req_control_push(struct ctdb_req_header *h,
 			  struct ctdb_req_control *request,
-			  TALLOC_CTX *mem_ctx,
-			  uint8_t **pkt, size_t *pkt_len)
+			  uint8_t *buf, size_t buflen)
 {
-	struct ctdb_req_control_wire *wire;
-	uint8_t *buf;
-	size_t length, buflen;
-	int ret;
+	struct ctdb_req_control_wire *wire =
+		(struct ctdb_req_control_wire *)buf;
+	size_t length;
 
 	length = ctdb_req_control_len(h, request);
-
-	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
-	if (ret != 0) {
-		return ret;
+	if (buflen < length) {
+		return EMSGSIZE;
 	}
-
-	wire = (struct ctdb_req_control_wire *)buf;
 
 	h->length = buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
@@ -1928,8 +1922,6 @@ int ctdb_req_control_push(struct ctdb_req_header *h,
 	wire->datalen = ctdb_req_control_data_len(&request->rdata);
 	ctdb_req_control_data_push(&request->rdata, wire->data);
 
-	*pkt = buf;
-	*pkt_len = buflen;
 	return 0;
 }
 
@@ -1985,22 +1977,16 @@ size_t ctdb_reply_control_len(struct ctdb_req_header *h,
 
 int ctdb_reply_control_push(struct ctdb_req_header *h,
 			    struct ctdb_reply_control *reply,
-			    TALLOC_CTX *mem_ctx,
-			    uint8_t **pkt, size_t *pkt_len)
+			    uint8_t *buf, size_t buflen)
 {
-	struct ctdb_reply_control_wire *wire;
-	uint8_t *buf;
-	size_t length, buflen;
-	int ret;
+	struct ctdb_reply_control_wire *wire =
+		(struct ctdb_reply_control_wire *)buf;
+	size_t length;
 
 	length = ctdb_reply_control_len(h, reply);
-
-	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
-	if (ret != 0) {
-		return ret;
+	if (buflen < length) {
+		return EMSGSIZE;
 	}
-
-	wire = (struct ctdb_reply_control_wire *)buf;
 
 	h->length = buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
@@ -2017,8 +2003,6 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 		ctdb_string_push(reply->errmsg, wire->data + wire->datalen);
 	}
 
-	*pkt = buf;
-	*pkt_len = buflen;
 	return 0;
 }
 

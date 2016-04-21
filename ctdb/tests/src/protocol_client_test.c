@@ -1977,7 +1977,7 @@ static void test_req_call_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_req_call c, c2;
@@ -1992,7 +1992,12 @@ static void test_req_call_test(void)
 			     DESTNODE, SRCNODE, REQID);
 
 	fill_ctdb_req_call(mem_ctx, &c);
-	ret = ctdb_req_call_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+	datalen = ctdb_req_call_len(&h, &c);
+	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= datalen);
+	ret = ctdb_req_call_push(&h, &c, pkt, pkt_len);
 	assert(ret == 0);
 	ret = ctdb_req_call_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
@@ -2007,7 +2012,7 @@ static void test_reply_call_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_reply_call c, c2;
@@ -2022,7 +2027,12 @@ static void test_reply_call_test(void)
 			     DESTNODE, SRCNODE, REQID);
 
 	fill_ctdb_reply_call(mem_ctx, &c);
-	ret = ctdb_reply_call_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+	datalen = ctdb_reply_call_len(&h, &c);
+	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= datalen);
+	ret = ctdb_reply_call_push(&h, &c, pkt, pkt_len);
 	assert(ret == 0);
 	ret = ctdb_reply_call_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
@@ -2037,7 +2047,7 @@ static void test_reply_error_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_reply_error c, c2;
@@ -2052,7 +2062,12 @@ static void test_reply_error_test(void)
 			     DESTNODE, SRCNODE, REQID);
 
 	fill_ctdb_reply_error(mem_ctx, &c);
-	ret = ctdb_reply_error_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+	datalen = ctdb_reply_error_len(&h, &c);
+	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= datalen);
+	ret = ctdb_reply_error_push(&h, &c, pkt, pkt_len);
 	assert(ret == 0);
 	ret = ctdb_reply_error_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
@@ -2067,7 +2082,7 @@ static void test_req_dmaster_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_req_dmaster c, c2;
@@ -2082,7 +2097,12 @@ static void test_req_dmaster_test(void)
 			     DESTNODE, SRCNODE, REQID);
 
 	fill_ctdb_req_dmaster(mem_ctx, &c);
-	ret = ctdb_req_dmaster_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+	datalen = ctdb_req_dmaster_len(&h, &c);
+	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= datalen);
+	ret = ctdb_req_dmaster_push(&h, &c, pkt, pkt_len);
 	assert(ret == 0);
 	ret = ctdb_req_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
@@ -2097,7 +2117,7 @@ static void test_reply_dmaster_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_reply_dmaster c, c2;
@@ -2112,7 +2132,12 @@ static void test_reply_dmaster_test(void)
 			     DESTNODE, SRCNODE, REQID);
 
 	fill_ctdb_reply_dmaster(mem_ctx, &c);
-	ret = ctdb_reply_dmaster_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+	datalen = ctdb_reply_dmaster_len(&h, &c);
+	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= datalen);
+	ret = ctdb_reply_dmaster_push(&h, &c, pkt, pkt_len);
 	assert(ret == 0);
 	ret = ctdb_reply_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
@@ -2189,7 +2214,7 @@ static void test_req_control_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_req_control c, c2;
@@ -2208,7 +2233,12 @@ static void test_req_control_test(void)
 		printf("%u.. ", opcode);
 		fflush(stdout);
 		fill_ctdb_req_control(mem_ctx, &c, opcode);
-		ret = ctdb_req_control_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+		datalen = ctdb_req_control_len(&h, &c);
+		ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+		assert(ret == 0);
+		assert(pkt != NULL);
+		assert(pkt_len >= datalen);
+		ret = ctdb_req_control_push(&h, &c, pkt, pkt_len);
 		assert(ret == 0);
 		ret = ctdb_req_control_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 		assert(ret == 0);
@@ -2227,7 +2257,7 @@ static void test_reply_control_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_reply_control c, c2;
@@ -2246,7 +2276,12 @@ static void test_reply_control_test(void)
 		printf("%u.. ", opcode);
 		fflush(stdout);
 		fill_ctdb_reply_control(mem_ctx, &c, opcode);
-		ret = ctdb_reply_control_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+		datalen = ctdb_reply_control_len(&h, &c);
+		ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+		assert(ret == 0);
+		assert(pkt != NULL);
+		assert(pkt_len >= datalen);
+		ret = ctdb_reply_control_push(&h, &c, pkt, pkt_len);
 		assert(ret == 0);
 		ret = ctdb_reply_control_pull(pkt, pkt_len, opcode, &h2, mem_ctx, &c2);
 		assert(ret == 0);
@@ -2265,7 +2300,7 @@ static void test_req_message_test(void)
 {
 	TALLOC_CTX *mem_ctx;
 	uint8_t *pkt;
-	size_t pkt_len;
+	size_t datalen, pkt_len;
 	int ret;
 	struct ctdb_req_header h, h2;
 	struct ctdb_req_message_data c, c2;
@@ -2280,7 +2315,12 @@ static void test_req_message_test(void)
 			     DESTNODE, SRCNODE, REQID);
 
 	fill_ctdb_req_message_data(mem_ctx, &c);
-	ret = ctdb_req_message_data_push(&h, &c, mem_ctx, &pkt, &pkt_len);
+	datalen = ctdb_req_message_data_len(&h, &c);
+	ret = ctdb_allocate_pkt(mem_ctx, datalen, &pkt, &pkt_len);
+	assert(ret == 0);
+	assert(pkt != NULL);
+	assert(pkt_len >= datalen);
+	ret = ctdb_req_message_data_push(&h, &c, pkt, pkt_len);
 	assert(ret == 0);
 	ret = ctdb_req_message_data_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
