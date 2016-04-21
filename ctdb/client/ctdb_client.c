@@ -3172,117 +3172,6 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 }
 
 /*
-  register a server id
- */
-int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
-				 struct timeval timeout,
-				 struct ctdb_client_id *id)
-{
-	TDB_DATA data;
-	int32_t res;
-	int ret;
-
-	data.dsize = sizeof(struct ctdb_client_id);
-	data.dptr  = (unsigned char *)id;
-
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
-			CTDB_CONTROL_REGISTER_SERVER_ID, 
-			0, data, NULL,
-			NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for register server id failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
-  unregister a server id
- */
-int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
-				   struct timeval timeout,
-				   struct ctdb_client_id *id)
-{
-	TDB_DATA data;
-	int32_t res;
-	int ret;
-
-	data.dsize = sizeof(struct ctdb_client_id);
-	data.dptr  = (unsigned char *)id;
-
-	ret = ctdb_control(ctdb, CTDB_CURRENT_NODE, 0, 
-			CTDB_CONTROL_UNREGISTER_SERVER_ID, 
-			0, data, NULL,
-			NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for unregister server id failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-
-/*
-  check if a server id exists
-
-  if a server id does exist, return *status == 1, otherwise *status == 0
- */
-int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
-			      struct timeval timeout, uint32_t destnode,
-			      struct ctdb_client_id *id, uint32_t *status)
-{
-	TDB_DATA data;
-	int32_t res;
-	int ret;
-
-	data.dsize = sizeof(struct ctdb_client_id);
-	data.dptr  = (unsigned char *)id;
-
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_CHECK_SERVER_ID, 
-			0, data, NULL,
-			NULL, &res, &timeout, NULL);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for check server id failed\n"));
-		return -1;
-	}
-
-	if (res) {
-		*status = 1;
-	} else {
-		*status = 0;
-	}
-
-	return 0;
-}
-
-/*
-   get the list of server ids that are registered on a node
-*/
-int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
-				 TALLOC_CTX *mem_ctx,
-				 struct timeval timeout, uint32_t destnode,
-				 struct ctdb_client_id_list_old **svid_list)
-{
-	int ret;
-	TDB_DATA outdata;
-	int32_t res;
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_SERVER_ID_LIST, 0, tdb_null, 
-			   mem_ctx, &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get_server_id_list failed\n"));
-		return -1;
-	}
-
-	*svid_list = (struct ctdb_client_id_list_old *)talloc_steal(mem_ctx, outdata.dptr);
-
-	return 0;
-}
-
-/*
   initialise the ctdb daemon for client applications
 
   NOTE: In current code the daemon does not fork. This is for testing purposes only
@@ -3832,24 +3721,13 @@ static bool ctdb_server_id_equal(struct ctdb_server_id *id1, struct ctdb_server_
 	return true;
 }
 
-static bool server_id_exists(struct ctdb_context *ctdb, struct ctdb_server_id *id)
+static bool server_id_exists(struct ctdb_context *ctdb,
+			     struct ctdb_server_id *id)
 {
-	struct ctdb_client_id sid;
 	int ret;
-	uint32_t result = 0;
 
-	sid.type = SERVER_TYPE_SAMBA;
-	sid.pnn = id->vnn;
-	sid.server_id = id->pid;
-
-	ret = ctdb_ctrl_check_server_id(ctdb, timeval_current_ofs(3,0),
-					id->vnn, &sid, &result);
-	if (ret != 0) {
-		/* If control times out, assume server_id exists. */
-		return true;
-	}
-
-	if (result) {
+	ret = ctdb_ctrl_process_exists(ctdb, id->vnn, id->pid);
+	if (ret == 0) {
 		return true;
 	}
 
@@ -4079,7 +3957,6 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 						       TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_transaction_handle *h;
-	struct ctdb_client_id id;
 
 	h = talloc_zero(mem_ctx, struct ctdb_transaction_handle);
 	if (h == NULL) {
@@ -4100,17 +3977,6 @@ struct ctdb_transaction_handle *ctdb_transaction_start(struct ctdb_db_context *c
 				   "g_lock.tdb", false, 0);
 	if (!h->g_lock_db) {
 		DEBUG(DEBUG_ERR, (__location__ " unable to attach to g_lock.tdb\n"));
-		talloc_free(h);
-		return NULL;
-	}
-
-	id.type = SERVER_TYPE_SAMBA;
-	id.pnn = ctdb_get_pnn(ctdb_db->ctdb);
-	id.server_id = getpid();
-
-	if (ctdb_ctrl_register_server_id(ctdb_db->ctdb, timeval_current_ofs(3,0),
-					 &id) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " unable to register server id\n"));
 		talloc_free(h);
 		return NULL;
 	}

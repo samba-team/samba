@@ -397,29 +397,6 @@ int ctdb_ctrl_set_tcp_tickle_list(TALLOC_CTX *mem_ctx,
 				  int destnode, struct timeval timeout,
 				  struct ctdb_tickle_list *tickles);
 
-int ctdb_ctrl_register_server_id(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 struct ctdb_client_context *client,
-				 int destnode, struct timeval timeout,
-				 struct ctdb_client_id *cid);
-
-int ctdb_ctrl_unregister_server_id(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   struct ctdb_client_context *client,
-				   int destnode, struct timeval timeout,
-				   struct ctdb_client_id *cid);
-
-int ctdb_ctrl_check_server_id(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout,
-			      struct ctdb_client_id *cid);
-
-int ctdb_ctrl_get_server_id_list(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 struct ctdb_client_context *client,
-				 int destnode, struct timeval timeout,
-				 struct ctdb_client_id_map **cid_map);
-
 int ctdb_ctrl_db_attach_persistent(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct ctdb_client_context *client,
