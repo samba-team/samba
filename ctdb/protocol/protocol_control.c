@@ -1890,6 +1890,13 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+size_t ctdb_req_control_len(struct ctdb_req_header *h,
+			    struct ctdb_req_control *c)
+{
+	return offsetof(struct ctdb_req_control_wire, data) +
+		ctdb_req_control_data_len(&c->rdata);
+}
+
 int ctdb_req_control_push(struct ctdb_req_header *h,
 			  struct ctdb_req_control *request,
 			  TALLOC_CTX *mem_ctx,
@@ -1966,6 +1973,15 @@ int ctdb_req_control_pull(uint8_t *pkt, size_t pkt_len,
 	}
 
 	return 0;
+}
+
+size_t ctdb_reply_control_len(struct ctdb_req_header *h,
+			      struct ctdb_reply_control *c)
+{
+	return offsetof(struct ctdb_reply_control_wire, data) +
+		(c->status == 0 ?
+			ctdb_reply_control_data_len(&c->rdata) :
+			ctdb_string_len(c->errmsg));
 }
 
 int ctdb_reply_control_push(struct ctdb_req_header *h,

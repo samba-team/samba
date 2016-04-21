@@ -71,6 +71,12 @@ struct ctdb_reply_dmaster_wire {
 	uint8_t  data[1];
 };
 
+size_t ctdb_req_call_len(struct ctdb_req_header *h, struct ctdb_req_call *c)
+{
+	return offsetof(struct ctdb_req_call_wire, data) +
+		ctdb_tdb_data_len(c->key) + ctdb_tdb_data_len(c->calldata);
+}
+
 int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 		       TALLOC_CTX *mem_ctx, uint8_t **pkt, size_t *pkt_len)
 {
@@ -157,6 +163,13 @@ int ctdb_req_call_pull(uint8_t *pkt, size_t pkt_len,
 	return 0;
 }
 
+size_t ctdb_reply_call_len(struct ctdb_req_header *h,
+			   struct ctdb_reply_call *c)
+{
+	return offsetof(struct ctdb_reply_call_wire, data) +
+		ctdb_tdb_data_len(c->data);
+}
+
 int ctdb_reply_call_push(struct ctdb_req_header *h, struct ctdb_reply_call *c,
 			 TALLOC_CTX *mem_ctx, uint8_t **pkt, size_t *pkt_len)
 {
@@ -224,6 +237,13 @@ int ctdb_reply_call_pull(uint8_t *pkt, size_t pkt_len,
 	return 0;
 }
 
+size_t ctdb_reply_error_len(struct ctdb_req_header *h,
+			    struct ctdb_reply_error *c)
+{
+	return offsetof(struct ctdb_reply_error_wire, msg) +
+		ctdb_tdb_data_len(c->msg);
+}
+
 int ctdb_reply_error_push(struct ctdb_req_header *h, struct ctdb_reply_error *c,
 			  TALLOC_CTX *mem_ctx, uint8_t **pkt, size_t *pkt_len)
 {
@@ -289,6 +309,13 @@ int ctdb_reply_error_pull(uint8_t *pkt, size_t pkt_len,
 	}
 
 	return 0;
+}
+
+size_t ctdb_req_dmaster_len(struct ctdb_req_header *h,
+			    struct ctdb_req_dmaster *c)
+{
+	return offsetof(struct ctdb_req_dmaster_wire, data) +
+		ctdb_tdb_data_len(c->key) + ctdb_tdb_data_len(c->data);
 }
 
 int ctdb_req_dmaster_push(struct ctdb_req_header *h, struct ctdb_req_dmaster *c,
@@ -369,6 +396,13 @@ int ctdb_req_dmaster_pull(uint8_t *pkt, size_t pkt_len,
 	}
 
 	return 0;
+}
+
+size_t ctdb_reply_dmaster_len(struct ctdb_req_header *h,
+			      struct ctdb_reply_dmaster *c)
+{
+	return offsetof(struct ctdb_reply_dmaster_wire, data) +
+		ctdb_tdb_data_len(c->key) + ctdb_tdb_data_len(c->data);
 }
 
 int ctdb_reply_dmaster_push(struct ctdb_req_header *h,

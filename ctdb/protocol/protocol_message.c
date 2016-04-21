@@ -280,6 +280,13 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 	return ret;
 }
 
+size_t ctdb_req_message_len(struct ctdb_req_header *h,
+			    struct ctdb_req_message *c)
+{
+	return offsetof(struct ctdb_req_message_wire, data) +
+		ctdb_message_data_len(&c->data, c->srvid);
+}
+
 int ctdb_req_message_push(struct ctdb_req_header *h,
 			  struct ctdb_req_message *message,
 			  TALLOC_CTX *mem_ctx,
@@ -342,6 +349,13 @@ int ctdb_req_message_pull(uint8_t *pkt, size_t pkt_len,
 	ret = ctdb_message_data_pull(wire->data, wire->datalen, wire->srvid,
 				     mem_ctx, &message->data);
 	return ret;
+}
+
+size_t ctdb_req_message_data_len(struct ctdb_req_header *h,
+				 struct ctdb_req_message_data *c)
+{
+	return offsetof(struct ctdb_req_message_wire, data) +
+		ctdb_tdb_data_len(c->data);
 }
 
 int ctdb_req_message_data_push(struct ctdb_req_header *h,
