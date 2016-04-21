@@ -2340,7 +2340,9 @@ size_t ctdb_tdb_data_len(TDB_DATA data)
 
 void ctdb_tdb_data_push(TDB_DATA data, uint8_t *buf)
 {
-	memcpy(buf, data.dptr, data.dsize);
+	if (data.dsize > 0) {
+		memcpy(buf, data.dptr, data.dsize);
+	}
 }
 
 int ctdb_tdb_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
