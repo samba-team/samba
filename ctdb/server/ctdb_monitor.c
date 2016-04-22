@@ -136,7 +136,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 
 	ZERO_STRUCT(rd);
 	rd.pnn   = ctdb->pnn;
-	rd.srvid = CTDB_SRVID_TAKEOVER_RUN_RESPONSE;
+	rd.srvid = 0;
 
 	rddata.dptr = (uint8_t *)&rd;
 	rddata.dsize = sizeof(rd);
