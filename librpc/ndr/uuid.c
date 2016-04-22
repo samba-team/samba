@@ -42,15 +42,9 @@ _PUBLIC_ NTSTATUS GUID_to_ndr_blob(const struct GUID *guid, TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS GUID_from_ndr_blob(const DATA_BLOB *b, struct GUID *guid)
 {
-	enum ndr_err_code ndr_err;
-	TALLOC_CTX *mem_ctx;
-
-	mem_ctx = talloc_new(NULL);
-	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
-
-	ndr_err = ndr_pull_struct_blob_all(b, mem_ctx, guid,
-					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
-	talloc_free(mem_ctx);
+	enum ndr_err_code ndr_err =
+		ndr_pull_struct_blob_all_noalloc(b, guid,
+						 (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	return ndr_map_error2ntstatus(ndr_err);
 }
 
