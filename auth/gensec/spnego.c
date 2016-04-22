@@ -885,6 +885,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	case SPNEGO_SERVER_TARG:
 	{
 		NTSTATUS nt_status;
+		bool have_sign = true;
 		bool new_spnego = false;
 
 		if (!in.length) {
@@ -947,18 +948,20 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			goto server_response;
 		}
 
+		have_sign = gensec_have_feature(spnego_state->sub_sec_security,
+						GENSEC_FEATURE_SIGN);
 		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 						 GENSEC_FEATURE_NEW_SPNEGO);
 		if (spnego.negTokenTarg.mechListMIC.length > 0) {
 			new_spnego = true;
 		}
 
-		if (new_spnego) {
+		if (have_sign && new_spnego) {
 			spnego_state->needs_mic_check = true;
 			spnego_state->needs_mic_sign = true;
 		}
 
-		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+		if (have_sign && spnego.negTokenTarg.mechListMIC.length > 0) {
 			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
 							spnego_state->mech_types.data,
 							spnego_state->mech_types.length,
@@ -1142,8 +1145,11 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		if (spnego_state->no_response_expected &&
 		    !spnego_state->done_mic_check)
 		{
+			bool have_sign = true;
 			bool new_spnego = false;
 
+			have_sign = gensec_have_feature(spnego_state->sub_sec_security,
+							GENSEC_FEATURE_SIGN);
 			new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 							 GENSEC_FEATURE_NEW_SPNEGO);
 
@@ -1170,16 +1176,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			}
 
 			if (spnego_state->mic_requested) {
-				bool sign;
-
-				sign = gensec_have_feature(spnego_state->sub_sec_security,
-							   GENSEC_FEATURE_SIGN);
-				if (sign) {
+				if (have_sign) {
 					new_spnego = true;
 				}
 			}
 
-			if (new_spnego) {
+			if (have_sign && new_spnego) {
 				spnego_state->needs_mic_check = true;
 				spnego_state->needs_mic_sign = true;
 			}
