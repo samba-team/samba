@@ -106,21 +106,15 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 				const struct ldb_val *in, struct ldb_val *out)
 {
-	struct dom_sid *sid;
+	struct dom_sid sid;
 	enum ndr_err_code ndr_err;
 
-	sid = talloc(mem_ctx, struct dom_sid);
-	if (sid == NULL) {
-		return -1;
-	}
-	ndr_err = ndr_pull_struct_blob_all(in, sid, sid,
+	ndr_err = ndr_pull_struct_blob_all_noalloc(in, &sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		talloc_free(sid);
 		return -1;
 	}
-	*out = data_blob_string_const(dom_sid_string(mem_ctx, sid));
-	talloc_free(sid);
+	*out = data_blob_string_const(dom_sid_string(mem_ctx, &sid));
 	if (out->data == NULL) {
 		return -1;
 	}
@@ -210,7 +204,7 @@ static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
 				     (const char *)in->data, in->length);
 
 	/* Check it looks like a SID */
-	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, &sid,
+	ndr_err = ndr_pull_struct_blob_all_noalloc(out, &sid,
 					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
