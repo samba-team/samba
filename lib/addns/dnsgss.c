@@ -89,6 +89,8 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 	struct gss_buffer_desc_struct input_desc, *input_ptr, output_desc;
 	OM_uint32 major, minor;
 	OM_uint32 ret_flags;
+	struct dns_request *req = NULL;
+	struct dns_buffer *buf = NULL;
 	DNS_ERROR err;
 
 	gss_OID_desc krb5_oid_desc =
@@ -112,9 +114,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 
 		if (output_desc.length != 0) {
 
-			struct dns_request *req;
 			struct dns_rrec *rec;
-			struct dns_buffer *buf;
 
 			time_t t = time(NULL);
 
@@ -143,12 +143,13 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 			
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
-			err = dns_marshall_request(req, req, &buf);
+			err = dns_marshall_request(mem_ctx, req, &buf);
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
 			err = dns_send(conn, buf);
 			if (!ERR_DNS_IS_OK(err)) goto error;
 
+			TALLOC_FREE(buf);
 			TALLOC_FREE(req);
 		}
 
@@ -162,7 +163,6 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 		if (major == GSS_S_CONTINUE_NEEDED) {
 
 			struct dns_request *resp;
-			struct dns_buffer *buf;
 			struct dns_tkey_record *tkey;
 			struct dns_rrec *tkey_answer = NULL;
 			uint16_t i;
@@ -210,6 +210,8 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 
       error:
 
+	TALLOC_FREE(buf);
+	TALLOC_FREE(req);
 	return err;
 }
 
