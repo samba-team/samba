@@ -712,6 +712,12 @@ def build(bld):
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')
 
+    bld.SAMBA_BINARY('fake_ctdbd',
+                     source='tests/src/fake_ctdbd.c',
+                     deps='''ctdb-util ctdb-protocol ctdb-system
+                             samba-util tevent-unix-util popt''',
+                     install_path='${CTDB_TEST_LIBDIR}')
+
     if bld.env.HAVE_INFINIBAND:
         bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
