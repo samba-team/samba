@@ -253,7 +253,11 @@ static int tstream_gensec_readv_next_vector(struct tstream_context *unix_stream,
 
 		msg_len = RIVAL(state->wrapped.hdr, 0);
 
-		if (msg_len > 0x00FFFFFF) {
+		/*
+		 * I got a Windows 2012R2 server responding with
+		 * a message of 0x1b28a33.
+		 */
+		if (msg_len > 0x0FFFFFFF) {
 			errno = EMSGSIZE;
 			return -1;
 		}
