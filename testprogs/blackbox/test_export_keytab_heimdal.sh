@@ -23,6 +23,8 @@ samba4bindir="$BINDIR"
 samba_tool="$samba4bindir/samba-tool"
 newuser="$samba_tool user create"
 
+SERVER_FQDN="$SERVER.$(echo $REALM | tr '[:upper:]' '[:lower:]')"
+
 samba4kinit=kinit
 if test -x $BINDIR/samba4kinit; then
 	samba4kinit=$BINDIR/samba4kinit
@@ -53,8 +55,8 @@ testit "create user locally" $VALGRIND $newuser nettestuser $USERPASS $@ || fail
 testit "dump keytab from domain" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
 testit "dump keytab from domain (2nd time)" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
 
-testit "dump keytab from domain for cifs principal" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER $@ || failed=`expr $failed + 1`
-testit "dump keytab from domain for cifs principal (2nd time)" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER $@ || failed=`expr $failed + 1`
+testit "dump keytab from domain for cifs principal" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=`expr $failed + 1`
+testit "dump keytab from domain for cifs principal (2nd time)" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=`expr $failed + 1`
 
 testit "dump keytab from domain for user principal" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=nettestuser $@ || failed=`expr $failed + 1`
 testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=nettestuser@$REALM $@ || failed=`expr $failed + 1`
