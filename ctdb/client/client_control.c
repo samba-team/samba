@@ -91,6 +91,7 @@ struct tevent_req *ctdb_client_control_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->reply, req)) {
 		return tevent_req_post(req, ev);
 	}
+	state->reply->rdata.opcode = request->rdata.opcode;
 
 	talloc_set_destructor(state, ctdb_client_control_state_destructor);
 
