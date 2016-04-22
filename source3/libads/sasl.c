@@ -328,7 +328,7 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 		 * arcfour-hmac-md5.
 		 */
 		ads->ldap.in.min_wrapped = MIN(ads->ldap.out.sig_size, 0x2C);
-		ads->ldap.in.max_wrapped = max_wrapped;
+		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gensec_ops, auth_generic_state->gensec_security);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
@@ -986,7 +986,7 @@ static ADS_STATUS ads_sasl_gssapi_do_bind(ADS_STRUCT *ads, const gss_name_t serv
 
 		ads->ldap.out.sig_size = max_msg_size - ads->ldap.out.max_unwrapped;
 		ads->ldap.in.min_wrapped = 0x2C; /* taken from a capture with LDAP unbind */
-		ads->ldap.in.max_wrapped = max_msg_size;
+		ads->ldap.in.max_wrapped = ADS_SASL_WRAPPING_IN_MAX_WRAPPED;
 		status = ads_setup_sasl_wrapping(ads, &ads_sasl_gssapi_ops, context_handle);
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(0, ("ads_setup_sasl_wrapping() failed: %s\n",
