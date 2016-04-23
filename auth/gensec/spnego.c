@@ -1078,6 +1078,24 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		}
 
 		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+			DATA_BLOB *m = &spnego.negTokenTarg.mechListMIC;
+			const DATA_BLOB *r = &spnego.negTokenTarg.responseToken;
+
+			/*
+			 * Windows 2000 has a bug, it repeats the
+			 * responseToken in the mechListMIC field.
+			 */
+			if (m->length == r->length) {
+				int cmp;
+
+				cmp = memcmp(m->data, r->data, m->length);
+				if (cmp == 0) {
+					data_blob_free(m);
+				}
+			}
+		}
+
+		if (spnego.negTokenTarg.mechListMIC.length > 0) {
 			if (spnego_state->no_response_expected) {
 				spnego_state->needs_mic_check = true;
 			}
