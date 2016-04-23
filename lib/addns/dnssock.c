@@ -37,30 +37,22 @@ static int destroy_dns_connection(struct dns_connection *conn)
 /********************************************************************
 ********************************************************************/
 
-static DNS_ERROR dns_tcp_open( const char *nameserver,
-			       TALLOC_CTX *mem_ctx,
-			       struct dns_connection **result )
+static DNS_ERROR dns_open_helper(const char *nameserver,
+				 const char *service,
+				 struct addrinfo *hints,
+				 TALLOC_CTX *mem_ctx,
+				 struct dns_connection **ret_conn)
 {
-	struct addrinfo hints;
-	struct addrinfo *ai_result = NULL;
-	struct addrinfo *rp;
-	struct dns_connection *conn;
 	int ret;
-	char service[16];
-
-	snprintf(service, sizeof(service), "%d", DNS_TCP_PORT);
+	struct addrinfo *rp;
+	struct addrinfo *ai_result = NULL;
+	struct dns_connection *conn = NULL;
 
 	if (!(conn = talloc(mem_ctx, struct dns_connection))) {
 		return ERROR_DNS_NO_MEMORY;
 	}
 
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = 0;
-	hints.ai_protocol = IPPROTO_TCP;
-
-	ret = getaddrinfo(nameserver, service, &hints, &ai_result);
+	ret = getaddrinfo(nameserver, service, hints, &ai_result);
 	if (ret != 0) {
 		DEBUG(1,("dns_tcp_open: getaddrinfo: %s\n", gai_strerror(ret)));
 		TALLOC_FREE(conn);
@@ -86,13 +78,38 @@ static DNS_ERROR dns_tcp_open( const char *nameserver,
 
 	freeaddrinfo(ai_result);
 
-	/* Failed to connect with any address */
 	if (rp == NULL) {
 		TALLOC_FREE(conn);
 		return ERROR_DNS_CONNECTION_FAILED;
 	}
 
 	talloc_set_destructor(conn, destroy_dns_connection);
+
+	*ret_conn = conn;
+	return ERROR_DNS_SUCCESS;
+}
+
+static DNS_ERROR dns_tcp_open( const char *nameserver,
+			       TALLOC_CTX *mem_ctx,
+			       struct dns_connection **result )
+{
+	struct addrinfo hints;
+	struct dns_connection *conn;
+	DNS_ERROR dns_ret;
+	char service[16];
+
+	snprintf(service, sizeof(service), "%d", DNS_TCP_PORT);
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = 0;
+	hints.ai_protocol = IPPROTO_TCP;
+
+	dns_ret = dns_open_helper(nameserver, service, &hints, mem_ctx, &conn);
+	if (!ERR_DNS_IS_OK(dns_ret)) {
+		return dns_ret;
+	}
 
 	conn->hType = DNS_TCP;
 	*result = conn;
@@ -107,19 +124,13 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 			       struct dns_connection **result )
 {
 	struct addrinfo hints;
-	struct addrinfo *ai_result = NULL;
-	struct addrinfo *rp;
 	struct sockaddr_storage RecvAddr;
 	struct dns_connection *conn;
-	int ret;
+	DNS_ERROR dns_ret;
 	socklen_t RecvAddrLen;
 	char service[16];
 
 	snprintf(service, sizeof(service), "%d", DNS_UDP_PORT);
-
-	if (!(conn = talloc(NULL, struct dns_connection))) {
-		return ERROR_DNS_NO_MEMORY;
-	}
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -127,37 +138,11 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 	hints.ai_flags = 0;
 	hints.ai_protocol = IPPROTO_UDP;
 
-	ret = getaddrinfo(nameserver, service, &hints, &ai_result);
-	if (ret != 0) {
-		DEBUG(1,("dns_ucp_open:getaddrinfo: %s\n", gai_strerror(ret)));
+	dns_ret = dns_open_helper(nameserver, service, &hints, mem_ctx, &conn);
+	if (!ERR_DNS_IS_OK(dns_ret)) {
 		TALLOC_FREE(conn);
-		return ERROR_DNS_INVALID_NAME_SERVER;
+		return dns_ret;
 	}
-
-	for (rp = ai_result; rp != NULL; rp = rp->ai_next) {
-		conn->s = socket(rp->ai_family,
-				rp->ai_socktype,
-				rp->ai_protocol);
-		if (conn->s == -1) {
-			continue;
-		}
-		ret = connect(conn->s, rp->ai_addr, rp->ai_addrlen);
-		if (ret != -1) {
-			/* Successful connect */
-			break;
-		}
-		close(conn->s);
-	}
-
-	freeaddrinfo(ai_result);
-
-	/* Failed to connect with any address */
-	if (rp == NULL) {
-		TALLOC_FREE(conn);
-		return ERROR_DNS_CONNECTION_FAILED;
-	}
-
-	talloc_set_destructor(conn, destroy_dns_connection);
 
 	/* Set up the RecvAddr structure with the IP address of
 	   the receiver and the specified port number. */
@@ -166,7 +151,6 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 	if (getpeername(conn->s,
 			(struct sockaddr *)&RecvAddr,
 			&RecvAddrLen) == -1) {
-		TALLOC_FREE(conn);
 		return ERROR_DNS_CONNECTION_FAILED;
 	}
 
