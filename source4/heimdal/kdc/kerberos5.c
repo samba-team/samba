@@ -762,9 +762,9 @@ kdc_check_flags(krb5_context context,
 	    return KRB5KDC_ERR_POLICY;
 	}
 
-	if(!client->flags.client){
+	if (!is_as_req && !client->flags.client){
 	    kdc_log(context, config, 0,
-		    "Principal may not act as client -- %s", client_name);
+		    "Principal may only act as client in AS-REQ -- %s", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
 
@@ -1055,7 +1055,7 @@ _kdc_as_rep(krb5_context context,
      */
 
     ret = _kdc_db_fetch(context, config, client_princ,
-			HDB_F_GET_CLIENT | flags, NULL,
+			HDB_F_GET_ANY | flags, NULL,
 			&clientdb, &client);
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	kdc_log(context, config, 5, "client %s does not have secrets at this KDC, need to proxy", client_name);
