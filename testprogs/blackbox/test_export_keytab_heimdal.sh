@@ -107,6 +107,10 @@ export KRB5CCNAME
 
 testit "kinit with keytab as $USERNAME" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 
+KRB5CCNAME="$PREFIX/tmpserverccache"
+export KRB5CCNAME
+testit "kinit with SPN from keytab" $VALGRIND $samba4kinit -k -t $PREFIX/tmpkeytab-server cifs/$SERVER_FQDN || failed=`expr $failed + 1`
+
 testit "del user" $VALGRIND $samba_tool user delete nettestuser -k yes $@ || failed=`expr $failed + 1`
 
 rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab $PREFIX/tmpkeytab-2 $PREFIX/tmpkeytab-server
