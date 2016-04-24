@@ -42,6 +42,7 @@ int ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
 struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn);
 
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
+void ctdbd_socket_readable(struct ctdbd_connection *conn);
 
 int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,
 			     uint32_t dst_vnn, uint64_t dst_srvid,

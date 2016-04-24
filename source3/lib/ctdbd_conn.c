@@ -508,17 +508,8 @@ static int ctdb_handle_message(struct ctdbd_connection *conn,
 	return 0;
 }
 
-/*
- * The ctdbd socket is readable asynchronuously
- */
-
-static void ctdbd_socket_handler(struct tevent_context *event_ctx,
-				 struct tevent_fd *event,
-				 uint16_t flags,
-				 void *private_data)
+void ctdbd_socket_readable(struct ctdbd_connection *conn)
 {
-	struct ctdbd_connection *conn = talloc_get_type_abort(
-		private_data, struct ctdbd_connection);
 	struct ctdb_req_header *hdr = NULL;
 	int ret;
 
@@ -536,6 +527,25 @@ static void ctdbd_socket_handler(struct tevent_context *event_ctx,
 		DEBUG(10, ("could not handle incoming message: %s\n",
 			   strerror(ret)));
 	}
+}
+
+/*
+ * The ctdbd socket is readable asynchronuously
+ */
+
+static void ctdbd_socket_handler(struct tevent_context *event_ctx,
+				 struct tevent_fd *event,
+				 uint16_t flags,
+				 void *private_data)
+{
+	struct ctdbd_connection *conn = talloc_get_type_abort(
+		private_data, struct ctdbd_connection);
+
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
+	}
+
+	ctdbd_socket_readable(conn);
 }
 
 /*
