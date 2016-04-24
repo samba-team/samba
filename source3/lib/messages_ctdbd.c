@@ -28,6 +28,7 @@
 
 struct messaging_ctdbd_context {
 	struct ctdbd_connection *conn;
+	struct tevent_fd *fde;
 };
 
 /*
@@ -159,13 +160,28 @@ static int messaging_ctdb_recv(
 	return 0;
 }
 
+static void messaging_ctdbd_readable(struct tevent_context *ev,
+				     struct tevent_fd *fde,
+				     uint16_t flags,
+				     void *private_data)
+{
+	struct ctdbd_connection *conn = talloc_get_type_abort(
+		private_data, struct ctdbd_connection);
+
+	if ((flags & TEVENT_FD_READ) == 0) {
+		return;
+	}
+	ctdbd_socket_readable(conn);
+}
+
 int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			 TALLOC_CTX *mem_ctx,
 			 struct messaging_backend **presult)
 {
 	struct messaging_backend *result;
 	struct messaging_ctdbd_context *ctx;
-	int ret;
+	struct tevent_context *ev;
+	int ret, ctdb_fd;
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -196,16 +212,6 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return ret;
 	}
 
-	ret = ctdbd_register_msg_ctx(ctx->conn, msg_ctx,
-				     messaging_tevent_context(msg_ctx));
-
-	if (ret != 0) {
-		DEBUG(10, ("ctdbd_register_msg_ctx failed: %s\n",
-			   strerror(ret)));
-		TALLOC_FREE(result);
-		return ret;
-	}
-
 	ret = register_with_ctdbd(ctx->conn, getpid(),
 				  messaging_ctdb_recv, msg_ctx);
 	if (ret != 0) {
@@ -213,6 +219,16 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			   strerror(ret)));
 		TALLOC_FREE(result);
 		return ret;
+	}
+
+	ctdb_fd = ctdbd_conn_get_fd(ctx->conn);
+	ev = messaging_tevent_context(msg_ctx);
+
+	ctx->fde = tevent_add_fd(ev, ctx, ctdb_fd, TEVENT_FD_READ,
+				 messaging_ctdbd_readable, ctx->conn);
+	if (ctx->fde == NULL) {
+		TALLOC_FREE(result);
+		return ENOMEM;
 	}
 
 	global_ctdb_connection_pid = getpid();
