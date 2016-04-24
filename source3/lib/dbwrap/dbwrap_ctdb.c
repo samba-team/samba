@@ -1578,6 +1578,7 @@ static size_t db_ctdb_id(struct db_context *db, uint8_t *id, size_t idlen)
 }
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
+				struct messaging_context *msg_ctx,
 				struct ctdbd_connection *conn,
 				const char *name,
 				int hash_size, int tdb_flags,
@@ -1703,8 +1704,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	}
 
 	if (result->persistent) {
-		db_ctdb->lock_ctx = g_lock_ctx_init(
-			db_ctdb, ctdb_conn_msg_ctx(db_ctdb->conn));
+		db_ctdb->lock_ctx = g_lock_ctx_init(db_ctdb, msg_ctx);
 		if (db_ctdb->lock_ctx == NULL) {
 			DEBUG(0, ("g_lock_ctx_init failed\n"));
 			TALLOC_FREE(result);

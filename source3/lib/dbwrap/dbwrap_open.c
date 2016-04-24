@@ -144,6 +144,7 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 		}
 		/* allow ctdb for individual databases to be disabled */
 		if (lp_parm_bool(-1, "ctdb", partname, True)) {
+			struct messaging_context *msg_ctx;
 			struct ctdbd_connection *conn;
 
 			conn = messaging_ctdbd_connection();
@@ -152,7 +153,9 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 				errno = EIO;
 				return NULL;
 			}
-			result = db_open_ctdb(mem_ctx, conn, partname,
+			msg_ctx = server_messaging_context();
+
+			result = db_open_ctdb(mem_ctx, msg_ctx, conn, partname,
 					      hash_size,
 					      tdb_flags, open_flags, mode,
 					      lock_order, dbwrap_flags);
