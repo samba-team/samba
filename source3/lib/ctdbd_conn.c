@@ -31,8 +31,6 @@
 #include "lib/util/genrand.h"
 #include "lib/util/fault.h"
 
-#include "messages.h"
-
 /* paths to these include files come from --with-ctdb= in configure */
 
 #include "ctdb_private.h"
@@ -47,7 +45,6 @@ struct ctdbd_srvid_cb {
 };
 
 struct ctdbd_connection {
-	struct messaging_context *msg_ctx;
 	uint32_t reqid;
 	uint32_t our_vnn;
 	uint64_t rand_srvid;
@@ -376,14 +373,6 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
 		struct ctdb_req_message_old *msg = (struct ctdb_req_message_old *)hdr;
 
-		if (conn->msg_ctx == NULL) {
-			DEBUG(1, ("Got a message without having a msg ctx, "
-				  "dropping msg %llu\n",
-				  (long long unsigned)msg->srvid));
-			TALLOC_FREE(hdr);
-			goto next_pkt;
-		}
-
 		ret = ctdbd_msg_call_back(conn, msg);
 		if (ret != 0) {
 			TALLOC_FREE(hdr);
@@ -477,11 +466,6 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn)
-{
-	return conn->msg_ctx;
-}
-
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 {
 	return conn->fd;
@@ -527,48 +511,6 @@ void ctdbd_socket_readable(struct ctdbd_connection *conn)
 		DEBUG(10, ("could not handle incoming message: %s\n",
 			   strerror(ret)));
 	}
-}
-
-/*
- * The ctdbd socket is readable asynchronuously
- */
-
-static void ctdbd_socket_handler(struct tevent_context *event_ctx,
-				 struct tevent_fd *event,
-				 uint16_t flags,
-				 void *private_data)
-{
-	struct ctdbd_connection *conn = talloc_get_type_abort(
-		private_data, struct ctdbd_connection);
-
-	if ((flags & TEVENT_FD_READ) == 0) {
-		return;
-	}
-
-	ctdbd_socket_readable(conn);
-}
-
-/*
- * Prepare a ctdbd connection to receive messages
- */
-
-int ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
-			   struct messaging_context *msg_ctx,
-			   struct tevent_context *ev)
-{
-	SMB_ASSERT(conn->msg_ctx == NULL);
-	SMB_ASSERT(conn->fde == NULL);
-
-	conn->fde = tevent_add_fd(ev, conn, conn->fd, TEVENT_FD_READ,
-				  ctdbd_socket_handler, conn);
-	if (conn->fde == NULL) {
-		DEBUG(0, ("event_add_fd failed\n"));
-		return ENOMEM;
-	}
-
-	conn->msg_ctx = msg_ctx;
-
-	return 0;
 }
 
 int ctdbd_messaging_send_iov(struct ctdbd_connection *conn,

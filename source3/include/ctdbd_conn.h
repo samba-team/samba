@@ -36,11 +36,6 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 
-int ctdbd_register_msg_ctx(struct ctdbd_connection *conn,
-			   struct messaging_context *msg_ctx,
-			   struct tevent_context *ev);
-struct messaging_context *ctdb_conn_msg_ctx(struct ctdbd_connection *conn);
-
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn);
 void ctdbd_socket_readable(struct ctdbd_connection *conn);
 
