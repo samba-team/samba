@@ -642,12 +642,13 @@ enum ctdb_runstate runstate_from_string(const char *label)
 
 void ctdb_set_runstate(struct ctdb_context *ctdb, enum ctdb_runstate runstate)
 {
+	DEBUG(DEBUG_NOTICE,("Set runstate to %s (%d)\n",
+			    runstate_to_string(runstate), runstate));
+
 	if (runstate <= ctdb->runstate) {
 		ctdb_fatal(ctdb, "runstate must always increase");
 	}
 
-	DEBUG(DEBUG_NOTICE,("Set runstate to %s (%d)\n",
-			    runstate_to_string(runstate), runstate));
 	ctdb->runstate = runstate;
 }
 
