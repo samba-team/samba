@@ -48,24 +48,10 @@ if [ -x "$samba4bindir/ldbsearch" ]; then
 fi
 
 . `dirname $0`/subunit.sh
-
-test_smbclient() {
-	name="$1"
-	cmd="$2"
-	shift
-	shift
-	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" $@
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
+. `dirname $0`/common_test_fns.inc
 
 enctype="-e $ENCTYPE"
+unc="//$SERVER/tmp"
 
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
@@ -75,7 +61,7 @@ testit "kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --r
 testit "kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable --pk-user=FILE:$PREFIX/private/tls/admincertupn.pem,$PREFIX/private/tls/adminkey.pem --pk-enterprise || failed=`expr $failed + 1`
 testit "kinit renew ticket" $samba4kinit --request-pac -R
 
-test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 rm -f $PREFIX/tmpccache
 exit $failed

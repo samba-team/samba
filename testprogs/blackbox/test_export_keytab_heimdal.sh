@@ -32,22 +32,7 @@ if test -x $BINDIR/samba4kinit; then
 fi
 
 . `dirname $0`/subunit.sh
-
-test_smbclient() {
-	name="$1"
-	cmd="$2"
-	shift
-	shift
-	echo "test: $name"
-	$VALGRIND $smbclient //$SERVER/tmp -c "$cmd" $@
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
+. `dirname $0`/common_test_fns.inc
 
 test_keytab() {
 	testname="$1"
@@ -73,6 +58,7 @@ test_keytab() {
 }
 
 USERPASS=testPaSS@01%
+unc="//$SERVER/tmp"
 
 testit "create user locally" $VALGRIND $newuser nettestuser $USERPASS $@ || failed=`expr $failed + 1`
 
@@ -96,11 +82,11 @@ export KRB5CCNAME
 
 testit "kinit with keytab as user" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "kinit with keytab as user (2)" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab-2 --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache as user (2)" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache as user (2)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpadminccache"
 export KRB5CCNAME

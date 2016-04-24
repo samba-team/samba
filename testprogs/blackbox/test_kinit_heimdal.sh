@@ -49,24 +49,10 @@ if [ -x "$samba4bindir/ldbsearch" ]; then
 fi
 
 . `dirname $0`/subunit.sh
-
-test_smbclient() {
-	name="$1"
-	cmd="$2"
-	shift
-	shift
-	echo "test: $name"
-	$VALGRIND $smbclient $CONFIGURATION //$SERVER/tmp -c "$cmd" $@
-	status=$?
-	if [ x$status = x0 ]; then
-		echo "success: $name"
-	else
-		echo "failure: $name"
-	fi
-	return $status
-}
+. `dirname $0`/common_test_fns.inc
 
 enctype="-e $ENCTYPE"
+unc="//$SERVER/tmp"
 
 ADMIN_LDBMODIFY_CONFIG="-H ldap://$SERVER -U$USERNAME%$PASSWORD"
 export ADMIN_LDBMODIFY_CONFIG
@@ -81,17 +67,17 @@ testit "reset password policies beside of minimum password age of 0 days" $VALGR
 
 echo $PASSWORD > $PREFIX/tmppassfile
 testit "kinit with password" $samba4kinit $enctype --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "kinit with password (enterprise style)" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "kinit with password (windows style)" $samba4kinit $enctype  --renewable --windows --password-file=$PREFIX/tmppassfile --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "kinit renew ticket" $samba4kinit $enctype --request-pac -R
 
-test_smbclient "Test login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "check time with kerberos ccache" $VALGRIND $samba_tool time $SERVER $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
@@ -124,7 +110,7 @@ export KRB5CCNAME
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@34%
 testit "change user password with 'samba-tool user password' (rpc)" $VALGRIND $samba_tool user password -W$DOMAIN -Unettestuser%$USERPASS $CONFIGURATION -k no --newpassword=$NEWUSERPASS $@ || failed=`expr $failed + 1`
@@ -133,20 +119,20 @@ echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (NT-Principal style) using UPN" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache from enterprise UPN" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache from enterprise UPN" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (enterprise style) using UPN" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache from enterprise UPN" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache from enterprise UPN" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (windows style) using UPN" $samba4kinit $enctype  --renewable --windows --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache from windows UPN" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache from windows UPN" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmpldbmodify <<EOF
 dn: cn=nettestuser,cn=users,$BASEDN
@@ -159,7 +145,7 @@ testit "modify userPrincipalName to be a different domain" $VALGRIND $ldbmodify 
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with password (enterprise style) using UPN" $samba4kinit $enctype --enterprise --password-file=$PREFIX/tmpuserpassfile --request-pac nettest@$REALM.org   || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos ccache from enterprise UPN, different domain" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache from enterprise UPN, different domain" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 
 USERPASS=$NEWUSERPASS
@@ -184,7 +170,7 @@ testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/
 NEWUSERPASS=testPaSS@78%
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmpkpasswdscript <<EOF
 expect New password
@@ -199,7 +185,7 @@ testit "set user password with kpasswd" $texpect $PREFIX/tmpkpasswdscript $samba
 rm -f $KRB5CCNAME_PATH
 testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@910%
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
@@ -216,7 +202,7 @@ testit "set user password with kpasswd and servicePrincipalName" $texpect $PREFI
 
 testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 cat > $PREFIX/tmpldbmodify <<EOF
 dn: cn=nettestuser,cn=users,$BASEDN
@@ -244,12 +230,12 @@ EOF
 
 testit "kinit with user password for expired password" $texpect $PREFIX/tmppasswordchange $samba4kinit $enctype --request-pac nettestuser@$REALM && failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > $PREFIX/tmpuserpassfile
 testit "kinit with user password" $samba4kinit $enctype --password-file=$PREFIX/tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
-test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
@@ -258,14 +244,14 @@ export KRB5CCNAME
 rm -rf $KRB5CCNAME_PATH
 
 lowerrealm=$(echo $REALM | tr '[A-Z]' '[a-z]')
-test_smbclient "Test login with user kerberos lowercase realm" 'ls' -k yes -Unettestuser@$lowerrealm%$NEWUSERPASS || failed=`expr $failed + 1`
-test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS --realm=$lowerrealm || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos lowercase realm" 'ls' "$unc" -k yes -Unettestuser@$lowerrealm%$NEWUSERPASS || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' "$unc" -k yes -Unettestuser@$REALM%$NEWUSERPASS --realm=$lowerrealm || failed=`expr $failed + 1`
 
 testit "del user with kerberos ccache" $VALGRIND $samba_tool user delete nettestuser $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME_PATH
 testit "kinit with machineaccountccache script" $machineaccountccache $CONFIGURATION $KRB5CCNAME || failed=`expr $failed + 1`
-test_smbclient "Test machine account login with kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
+test_smbclient "Test machine account login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
 testit "reset password policies" $VALGRIND $samba_tool domain passwordsettings $ADMIN_LDBMODIFY_CONFIG set --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default || failed=`expr $failed + 1`
 
