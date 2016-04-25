@@ -202,23 +202,15 @@ def configure(conf):
 
     # Check for atomic builtins. */
     conf.CHECK_CODE('''
-                    int main(void) {
-                        int i;
-                        (void)__sync_fetch_and_add(&i, 1);
-                        return 0;
-                    }
+                    int i;
+                    (void)__sync_fetch_and_add(&i, 1);
                     ''',
                     'HAVE___SYNC_FETCH_AND_ADD',
                     msg='Checking for __sync_fetch_and_add compiler builtin')
 
     conf.CHECK_CODE('''
-                    #include <stdint.h>
-                    #include <sys/atomic.h>
-                    int main(void) {
-                        int32_t i;
-                        atomic_add_32(&i, 1);
-                        return 0;
-                    }
+                    int32_t i;
+                    atomic_add_32(&i, 1);
                     ''',
                     'HAVE_ATOMIC_ADD_32',
                     headers='stdint.h sys/atomic.h',
