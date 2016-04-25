@@ -133,6 +133,13 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->force_old_spnego = false;
 
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "force_old_spnego", false)) {
+		/*
+		 * For testing Windows 2000 mode
+		 */
+		ntlmssp_state->force_old_spnego = true;
+	}
+
 	ntlmssp_state->neg_flags =
 		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
 
