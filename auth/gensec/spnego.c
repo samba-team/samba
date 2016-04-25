@@ -59,6 +59,8 @@ struct spnego_state {
 	bool needs_mic_check;
 	bool done_mic_check;
 
+	bool simulate_w2k;
+
 	/*
 	 * The following is used to implement
 	 * the update token fragmentation
@@ -88,6 +90,9 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
 	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 
+	spnego_state->simulate_w2k = gensec_setting_bool(gensec_security->settings,
+						"spnego", "simulate_w2k", false);
+
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
 }
@@ -108,6 +113,9 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->mech_types = data_blob(NULL, 0);
 	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
 	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+
+	spnego_state->simulate_w2k = gensec_setting_bool(gensec_security->settings,
+						"spnego", "simulate_w2k", false);
 
 	gensec_security->private_data = spnego_state;
 	return NT_STATUS_OK;
@@ -775,11 +783,23 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 								     spnego.negTokenInit.mechToken, 
 								     &unwrapped_out);
 
+			if (spnego_state->simulate_w2k) {
+				/*
+				 * Windows 2000 returns the unwrapped token
+				 * also in the mech_list_mic field.
+				 *
+				 * In order to verify our client code,
+				 * we need a way to have a server with this
+				 * broken behaviour
+				 */
+				mech_list_mic = unwrapped_out;
+			}
+
 			nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
 								      out_mem_ctx,
 								      nt_status,
 								      unwrapped_out,
-								      null_data_blob,
+								      mech_list_mic,
 								      out);
 
 			spnego_free_data(&spnego);
@@ -950,6 +970,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		have_sign = gensec_have_feature(spnego_state->sub_sec_security,
 						GENSEC_FEATURE_SIGN);
+		if (spnego_state->simulate_w2k) {
+			have_sign = false;
+		}
 		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 						 GENSEC_FEATURE_NEW_SPNEGO);
 		if (spnego.negTokenTarg.mechListMIC.length > 0) {
@@ -1150,6 +1173,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 			have_sign = gensec_have_feature(spnego_state->sub_sec_security,
 							GENSEC_FEATURE_SIGN);
+			if (spnego_state->simulate_w2k) {
+				have_sign = false;
+			}
 			new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
 							 GENSEC_FEATURE_NEW_SPNEGO);
 
