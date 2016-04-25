@@ -33,8 +33,11 @@
  */
 #undef TRUE
 #undef FALSE
+/* allow building with --picky-developer */
+#pragma GCC diagnostic ignored "-Wcast-qual"
 #include <gio/gio.h>
 #include <tracker-sparql.h>
+#pragma GCC diagnostic pop
 
 #define MAX_SL_FRAGMENT_SIZE 0xFFFFF
 #define MAX_SL_RESULTS 100
