@@ -1377,6 +1377,10 @@ sub provision_fl2000dc($$)
 	my ($self, $prefix) = @_;
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2000...";
+	my $extra_conf_options = "
+	spnego:simulate_w2k=yes
+	ntlmssp_server:force_old_spnego=yes
+";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc5",
@@ -1386,7 +1390,7 @@ sub provision_fl2000dc($$)
 				   "locDCpass5",
 				   undef,
 				   undef,
-				   "",
+				   $extra_conf_options,
 				   "",
 				   undef);
 
