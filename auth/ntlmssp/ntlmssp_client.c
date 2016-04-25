@@ -784,6 +784,9 @@ NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_security)
 
 	ntlmssp_state->use_ntlmv2 = lpcfg_client_ntlmv2_auth(gensec_security->settings->lp_ctx);
 
+	ntlmssp_state->force_old_spnego = gensec_setting_bool(gensec_security->settings,
+						"ntlmssp_client", "force_old_spnego", false);
+
 	ntlmssp_state->expected_state = NTLMSSP_INITIAL;
 
 	ntlmssp_state->neg_flags =
