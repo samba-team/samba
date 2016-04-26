@@ -200,6 +200,19 @@ sub mk_krb5_conf($$)
  forwardable = yes
  allow_weak_crypto = yes
 
+";
+
+        if (defined($ctx->{supported_enctypes})) {
+		print KRB5CONF "
+ default_etypes = $ctx->{supported_enctypes}
+ default_as_etypes = $ctx->{supported_enctypes}
+ default_tgs_enctypes = $ctx->{supported_enctypes}
+ default_tkt_enctypes = $ctx->{supported_enctypes}
+ permitted_enctypes = $ctx->{supported_enctypes}
+";
+	}
+
+	print KRB5CONF "
 [realms]
  $our_realms_stanza
 ";
