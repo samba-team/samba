@@ -163,6 +163,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc README COPYING
 %doc README.eventscripts README.notify.d
 %doc doc/recovery-process.txt
+%doc doc/cluster_mutex_helper.txt
 %doc doc/*.html
 %doc doc/examples
 %{_sysconfdir}/sudoers.d/ctdb
