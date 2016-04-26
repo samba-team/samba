@@ -280,7 +280,7 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 	ret = smb_krb5_kt_seek_and_delete_old_entries(context,
 						      keytab,
 						      kvno,
-						      KRB5_ENCTYPE_NULL,
+						      ENCTYPE_NULL,
 						      NULL,
 						      NULL,
 						      true,
