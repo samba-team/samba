@@ -64,7 +64,7 @@ static void do_test(enum db_hash_type type)
 	assert(ret == 0);
 
 	ret = db_hash_fetch(dh, key, sizeof(key), NULL, NULL);
-	assert(ret = EINVAL);
+	assert(ret == EINVAL);
 
 	ret = db_hash_fetch(dh, key, sizeof(key), record_parser, &count);
 	assert(ret == 0);
