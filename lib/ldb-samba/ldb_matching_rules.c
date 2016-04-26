@@ -206,7 +206,7 @@ static int ldb_eval_transitive_filter(TALLOC_CTX *mem_ctx,
 	struct dsdb_dn *dn_to_match;
 	const char *dn_oid;
 	unsigned int count;
-	struct dsdb_dn **visited;
+	struct dsdb_dn **visited = NULL;
 
 	schema = dsdb_get_schema(ldb, mem_ctx);
 	if (schema == NULL) {
