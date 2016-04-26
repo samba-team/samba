@@ -176,6 +176,10 @@ static void dcinfo_parser(time_t timeout, DATA_BLOB blob, void *private_data)
 	struct dcinfo_parser_state *state = private_data;
 	enum ndr_err_code ndr_err;
 
+	if (timeout <= time(NULL)) {
+		return;
+	}
+
 	state->dcinfo = talloc(state->mem_ctx, struct netr_DsRGetDCNameInfo);
 	if (state->dcinfo == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
