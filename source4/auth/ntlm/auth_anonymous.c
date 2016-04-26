@@ -41,6 +41,36 @@ static NTSTATUS anonymous_want_check(struct auth_method_context *ctx,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	switch (user_info->password_state) {
+	case AUTH_PASSWORD_PLAIN:
+		if (user_info->password.plaintext != NULL &&
+		    strlen(user_info->password.plaintext) > 0)
+		{
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		break;
+	case AUTH_PASSWORD_HASH:
+		if (user_info->password.hash.lanman != NULL) {
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		if (user_info->password.hash.nt != NULL) {
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		break;
+	case AUTH_PASSWORD_RESPONSE:
+		if (user_info->password.response.lanman.length == 1) {
+			if (user_info->password.response.lanman.data[0] != '\0') {
+				return NT_STATUS_NOT_IMPLEMENTED;
+			}
+		} else if (user_info->password.response.lanman.length > 1) {
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		if (user_info->password.response.nt.length > 0) {
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		break;
+	}
+
 	return NT_STATUS_OK;
 }
 
