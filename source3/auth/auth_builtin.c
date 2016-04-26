@@ -38,17 +38,50 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 				     const struct auth_usersupplied_info *user_info,
 				     struct auth_serversupplied_info **server_info)
 {
-	/* mark this as 'not for me' */
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-
 	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
 
-	if (!(user_info->mapped.account_name
-	      && *user_info->mapped.account_name)) {
-		nt_status = make_server_info_guest(NULL, server_info);
+	if (user_info->mapped.account_name && *user_info->mapped.account_name) {
+		/* mark this as 'not for me' */
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return nt_status;
+	switch (user_info->password_state) {
+	case AUTH_PASSWORD_PLAIN:
+		if (user_info->password.plaintext != NULL &&
+		    strlen(user_info->password.plaintext) > 0)
+		{
+			/* mark this as 'not for me' */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		break;
+	case AUTH_PASSWORD_HASH:
+		if (user_info->password.hash.lanman != NULL) {
+			/* mark this as 'not for me' */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		if (user_info->password.hash.nt != NULL) {
+			/* mark this as 'not for me' */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		break;
+	case AUTH_PASSWORD_RESPONSE:
+		if (user_info->password.response.lanman.length == 1) {
+			if (user_info->password.response.lanman.data[0] != '\0') {
+				/* mark this as 'not for me' */
+				return NT_STATUS_NOT_IMPLEMENTED;
+			}
+		} else if (user_info->password.response.lanman.length > 1) {
+			/* mark this as 'not for me' */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		if (user_info->password.response.nt.length > 0) {
+			/* mark this as 'not for me' */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+		break;
+	}
+
+	return make_server_info_guest(NULL, server_info);
 }
 
 /* Guest modules initialisation */
