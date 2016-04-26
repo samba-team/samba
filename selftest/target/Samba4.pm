@@ -282,6 +282,9 @@ sub provision_raw_prepare($$$$$$$$$$)
 	$ctx->{swiface} = $swiface;
 	$ctx->{password} = $password;
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
+	if ($functional_level eq "2000") {
+		$ctx->{supported_enctypes} = "arcfour-hmac-md5 des-cbc-md5 des-cbc-crc"
+	}
 
 #
 # Set smbd log level here.
