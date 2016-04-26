@@ -1376,6 +1376,13 @@ sub provision_fl2000dc($$)
 		warn("Unable to add wins configuration");
 		return undef;
 	}
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+	$ret->{DC_REALM} = $ret->{REALM};
 
 	return $ret;
 }
@@ -1459,6 +1466,13 @@ sub provision_fl2008r2dc($$$)
 		warn("Unable to add wins configuration");
 		return undef;
 	}
+	$ret->{DC_SERVER} = $ret->{SERVER};
+	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
+	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $ret->{USERNAME};
+	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+	$ret->{DC_REALM} = $ret->{REALM};
 
 	return $ret;
 }
