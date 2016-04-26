@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
 	char f[256];
 	char *dictionary = NULL;
 	char *password;
-	char *reply;
+	const char *reply;
 
 	while ( (c = getopt(argc, argv, "d:cs")) != EOF){
 		switch(c) {
