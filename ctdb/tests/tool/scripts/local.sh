@@ -2,15 +2,14 @@
 
 # Augment PATH with stubs/ directory.
 
-if [ -d "${TEST_SUBDIR}/stubs" ] ; then
-    PATH="${TEST_SUBDIR}/stubs:$PATH"
-fi
-
 if "$TEST_VERBOSE" ; then
     debug () { echo "$@" ; }
 else
     debug () { : ; }
 fi
+
+ctdbd_socket="${TEST_VAR_DIR}/ctdbd.socket.$$"
+ctdbd_pidfile="${TEST_VAR_DIR}/ctdbd.pid.$$"
 
 define_test ()
 {
@@ -20,7 +19,8 @@ define_test ()
 	stubby.*)
 	    _cmd="${_f#stubby.}"
 	    _cmd="${_cmd%.*}" # Strip test number
-	    export CTDB_TEST_PROG="ctdb_stubtest"
+	    export CTDB="ctdb --socket $ctdbd_socket"
+	    export CTDB_DEBUGLEVEL=3
 	    test_args="$_cmd"
 	    ;;
 	*)
@@ -28,6 +28,26 @@ define_test ()
     esac
 
     printf "%-28s - %s\n" "$_f" "$1"
+}
+
+cleanup_ctdbd ()
+{
+	debug "Cleaning up fake ctdbd"
+
+	pid=$(cat "$ctdbd_pidfile" 2>/dev/null || echo)
+	if [ -n "$pid" ] ; then
+		kill $pid || true
+		rm -f "$ctdbd_pidfile"
+	fi
+	rm -f "$ctdbd_socket"
+}
+
+setup_ctdbd ()
+{
+	debug "Setting up fake ctdbd"
+
+	cat | fake_ctdbd -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+	#test_cleanup cleanup_ctdbd
 }
 
 setup_natgw ()
@@ -104,8 +124,9 @@ setup_nodes ()
 
 simple_test ()
 {
-    : ${CTDB_DEBUGLEVEL:=3}
-    export CTDB_DEBUGLEVEL
-
-    unit_test ctdb $test_args "$@"
+    setup_ctdbd
+    (unit_test $CTDB -d $CTDB_DEBUGLEVEL $test_args "$@")
+    status=$?
+    cleanup_ctdbd
+    [ $status -eq 0 ] || exit $status
 }
