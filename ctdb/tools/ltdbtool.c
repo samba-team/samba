@@ -302,9 +302,10 @@ ltdb_traverse_fn(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 	return ctx->fn(tdb, key, val, &hdr.hdr, ctx->state);
 }
 
-int ltdb_traverse(TDB_CONTEXT *tdb,
-		  int (*fn)(TDB_CONTEXT *,TDB_DATA,TDB_DATA,struct ctdb_ltdb_header*,void *),
-		  void *state, int hsize, bool skip_empty)
+static int ltdb_traverse(TDB_CONTEXT *tdb,
+			 int (*fn)(TDB_CONTEXT*, TDB_DATA, TDB_DATA,
+				   struct ctdb_ltdb_header*, void *),
+			 void *state, int hsize, bool skip_empty)
 {
 	struct ltdb_traverse_ctx ctx = {
 		.fn = fn,
@@ -318,9 +319,9 @@ int ltdb_traverse(TDB_CONTEXT *tdb,
 	return (ret < 0) ? ret : (ret - ctx.nempty);
 }
 
-int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
-		 struct ctdb_ltdb_header* hdr,
-		 void* write_record_ctx)
+static int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
+			struct ctdb_ltdb_header* hdr,
+			void* write_record_ctx)
 {
 	struct write_record_ctx* ctx
 		= (struct write_record_ctx*)write_record_ctx;
@@ -347,9 +348,9 @@ int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 	return 0;
 }
 
-int dump_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
-		struct ctdb_ltdb_header* hdr,
-		void* dump_record_ctx)
+static int dump_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
+		       struct ctdb_ltdb_header* hdr,
+		       void* dump_record_ctx)
 {
 	struct dump_record_ctx* ctx = (struct dump_record_ctx*)dump_record_ctx;
 
@@ -363,14 +364,16 @@ int dump_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 	return 0;
 }
 
-void dump_header_full(struct dump_record_ctx* c, struct ctdb_ltdb_header* h)
+static void dump_header_full(struct dump_record_ctx* c,
+			     struct ctdb_ltdb_header* h)
 {
 	fprintf(c->file, "dmaster: %d\nrsn: %llu\nflags: 0x%X\n",
 		(int)h->dmaster,
 		(unsigned long long)h->rsn, h->flags);
 }
 
-void print_data_tdbdump(FILE* file, TDB_DATA data) {
+static void print_data_tdbdump(FILE* file, TDB_DATA data)
+{
 	unsigned char *ptr = data.dptr;
 	fputc('"', file);
 	while (data.dsize--) {
