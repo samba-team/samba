@@ -96,6 +96,9 @@ static NTSTATUS http_create_auth_request(TALLOC_CTX *mem_ctx,
 
 	if (auth_response) {
 		status = http_parse_auth_response(auth, auth_response, &in);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else {
 		in = data_blob_null;
 	}
