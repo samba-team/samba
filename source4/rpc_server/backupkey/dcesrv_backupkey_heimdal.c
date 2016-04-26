@@ -829,7 +829,11 @@ static WERROR create_heimdal_rsa_key(TALLOC_CTX *ctx, hx509_context *hctx,
 
 	*rsa = NULL;
 
-	gnutls_global_init();
+	ret = gnutls_global_init();
+	if (ret != GNUTLS_E_SUCCESS) {
+		DBG_ERR("TLS error: %s\n", gnutls_strerror(ret));
+		return WERR_INTERNAL_ERROR;
+	}
 #if defined(HAVE_GCRYPT_H) && !defined(HAVE_GNUTLS3)
 	DEBUG(3,("Enabling QUICK mode in gcrypt\n"));
 	gcry_control(GCRYCTL_ENABLE_QUICK_RANDOM, 0);
