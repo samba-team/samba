@@ -199,8 +199,11 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 		/*
 		 * KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY is equal to
 		 * SDB_F_FOR_AS_REQ
+		 *
+		 * We use ANY to also allow AS_REQ for service principal names
+		 * This is supported by Windows.
 		 */
-		sflags |= SDB_F_GET_CLIENT|SDB_F_FOR_AS_REQ;
+		sflags |= SDB_F_GET_ANY|SDB_F_FOR_AS_REQ;
 	} else if (ks_is_tgs_principal(ctx, principal)) {
 		sflags |= SDB_F_GET_KRBTGT;
 	} else {
