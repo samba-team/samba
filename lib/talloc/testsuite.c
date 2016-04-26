@@ -1795,11 +1795,11 @@ static bool test_pthread_talloc_passing(void)
 	 * They will use their own toplevel contexts.
 	 */
 	for (i = 0; i < NUM_THREADS; i++) {
-		(void)snprintf(str_array[i],
-				20,
-				"thread:%d",
-				i);
-		if (str_array[i] == NULL) {
+		ret = snprintf(str_array[i],
+			       20,
+			       "thread:%d",
+			       i);
+		if (ret < 0) {
 			printf("snprintf %d failed\n", i);
 			return false;
 		}
