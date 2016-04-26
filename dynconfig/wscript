@@ -254,6 +254,8 @@ dynconfig = {
     'SMB_PASSWD_FILE' : {
          'STD-PATH':  '${PRIVATE_DIR}/smbpasswd',
          'FHS-PATH':  '${PRIVATE_DIR}/smbpasswd',
+         'OPTION':    '--with-smbpasswd-file',
+         'HELPTEXT':  'Where to put the smbpasswd file',
          'DELAY':     True,
     },
 }
