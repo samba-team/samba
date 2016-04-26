@@ -550,7 +550,7 @@ int messaging_send_iov_from(struct messaging_context *msg_ctx,
 		return EINVAL;
 	}
 
-	if (!procid_is_local(&dst)) {
+	if (dst.vnn != msg_ctx->id.vnn) {
 		if (num_fds > 0) {
 			return ENOSYS;
 		}
