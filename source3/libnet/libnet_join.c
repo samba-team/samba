@@ -463,6 +463,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	size_t num_spns = 0;
 	char *spn = NULL;
 	bool ok;
+	const char **netbios_aliases = NULL;
 
 	/* Find our DN */
 
@@ -521,6 +522,65 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 			if (!ok) {
 				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 			}
+		}
+	}
+
+	netbios_aliases = lp_netbios_aliases();
+	if (netbios_aliases != NULL) {
+		for (; *netbios_aliases != NULL; netbios_aliases++) {
+			/*
+			 * Add HOST/NETBIOSNAME
+			 */
+			spn = talloc_asprintf(mem_ctx, "HOST/%s", *netbios_aliases);
+			if (spn == NULL) {
+				TALLOC_FREE(spn);
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
+			if (!strupper_m(spn)) {
+				TALLOC_FREE(spn);
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
+
+			ok = ads_element_in_array(spn_array, num_spns, spn);
+			if (ok) {
+				TALLOC_FREE(spn);
+				continue;
+			}
+			ok = add_string_to_array(spn_array, spn,
+						 &spn_array, &num_spns);
+			if (!ok) {
+				TALLOC_FREE(spn);
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
+			TALLOC_FREE(spn);
+
+			/*
+			 * Add HOST/netbiosname.domainname
+			 */
+			if (r->out.dns_domain_name == NULL) {
+				continue;
+			}
+			fstr_sprintf(my_fqdn, "%s.%s",
+				     *netbios_aliases,
+				     r->out.dns_domain_name);
+
+			spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
+			if (spn == NULL) {
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
+
+			ok = ads_element_in_array(spn_array, num_spns, spn);
+			if (ok) {
+				TALLOC_FREE(spn);
+				continue;
+			}
+			ok = add_string_to_array(spn_array, spn,
+						 &spn_array, &num_spns);
+			if (!ok) {
+				TALLOC_FREE(spn);
+				return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			}
+			TALLOC_FREE(spn);
 		}
 	}
 
