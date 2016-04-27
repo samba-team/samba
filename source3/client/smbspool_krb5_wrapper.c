@@ -24,6 +24,7 @@
 #include "system/passwd.h"
 
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <cups/backend.h>
@@ -195,7 +196,12 @@ int main(int argc, char *argv[])
 	 * Make sure we do not have LD_PRELOAD or other security relevant
 	 * environment variables set.
 	 */
+#ifdef HAVE_CLEARENV
 	clearenv();
+#else
+	extern char **environ;
+	environ = calloc(1, sizeof(*environ));
+#endif
 
 	CUPS_SMB_DEBUG("Setting KRB5CCNAME to '%s'", gen_cc);
 	setenv("KRB5CCNAME", gen_cc, 1);
