@@ -330,5 +330,3 @@
 # ad_dc requires signing
 #
 ^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
-#new disk-free tests fail the code
-^samba3.blackbox.dfree_quota \(fileserver\).Test dfree share root quota not enforced\(fileserver\)
