@@ -140,3 +140,36 @@ const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr)
 
 	return cip;
 }
+
+bool ctdb_sock_addr_same(ctdb_sock_addr *addr1, ctdb_sock_addr *addr2)
+{
+	if (addr1->sa.sa_family != addr2->sa.sa_family) {
+		return false;
+	}
+
+	switch (addr1->sa.sa_family) {
+	case AF_INET:
+		if (addr1->ip.sin_addr.s_addr != addr2->ip.sin_addr.s_addr) {
+			return false;
+		}
+		if (addr1->ip.sin_port != addr2->ip.sin_port) {
+			return false;
+		}
+		break;
+
+	case AF_INET6:
+		if (memcmp(addr1->ip6.sin6_addr.s6_addr,
+			   addr2->ip6.sin6_addr.s6_addr, 16) != 0) {
+			return false;
+		}
+		if (addr1->ip6.sin6_port != addr2->ip6.sin6_port) {
+			return false;
+		}
+		break;
+
+	default:
+		return false;
+	}
+
+	return true;
+}
