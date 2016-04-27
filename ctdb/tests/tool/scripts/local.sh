@@ -17,12 +17,6 @@ define_test ()
     _f=$(basename "$0" ".sh")
 
     case "$_f" in
-	func.*)
-	    _func="${_f#func.}"
-	    _func="${_func%.*}" # Strip test number
-	    export CTDB_TEST_PROG="ctdb_functest"
-	    test_args="$_func"
-	    ;;
 	stubby.*)
 	    _cmd="${_f#stubby.}"
 	    _cmd="${_cmd%.*}" # Strip test number
