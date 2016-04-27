@@ -234,7 +234,7 @@ create_dc)
 		"${OPENSSLCNF}" \
 		${DEFAULT_VARS} DC_DNS_NAME DC_OBJECTGUID_HEX
 
-	openssl req -new -newkey rsa -keyout "${DCKEY_PEM}" -out "${DCREQ_PEM}" -config "${OPENSSLCNF}"
+	openssl req -new -newkey rsa:${DC_BITS} -keyout "${DCKEY_PEM}" -out "${DCREQ_PEM}" -config "${OPENSSLCNF}"
 	openssl rsa -in "${DCKEY_PEM}" -inform PEM -out "${DCKEY_PRIVATE_PEM}" -outform PEM
 	openssl ca -config "${OPENSSLCNF}" -in "${DCREQ_PEM}" -out "${DCCERT_PEM}"
 	ln -s "${DCKEY_PRIVATE_PEM_BASE}" "${DCKEY_PRIVATE_PEM_LINK}"
@@ -326,7 +326,7 @@ create_user)
 		"${OPENSSLCNF}" \
 		${DEFAULT_VARS} USER_PRINCIPAL_NAME
 
-	openssl req -new -newkey rsa -keyout "${USERKEY_PEM}" -out "${USERREQ_PEM}" -config "${OPENSSLCNF}"
+	openssl req -new -newkey rsa:${USER_BITS} -keyout "${USERKEY_PEM}" -out "${USERREQ_PEM}" -config "${OPENSSLCNF}"
 	openssl rsa -in "${USERKEY_PEM}" -inform PEM -out "${USERKEY_PRIVATE_PEM}" -outform PEM
 	openssl ca -config "${OPENSSLCNF}" -in "${USERREQ_PEM}" -out "${USERCERT_PEM}"
 	ln -s "${USERKEY_PRIVATE_PEM_BASE}" "${USERKEY_PRIVATE_PEM_LINK}"
