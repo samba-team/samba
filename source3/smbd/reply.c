@@ -3935,6 +3935,16 @@ normal_read:
 		uint8_t headerbuf[smb_size + 2*12 + 1 /* padding byte */];
 		ssize_t ret;
 
+		if (!S_ISREG(fsp->fsp_name->st.st_ex_mode) ||
+		    (startpos > fsp->fsp_name->st.st_ex_size) ||
+		    (smb_maxcnt > (fsp->fsp_name->st.st_ex_size - startpos))) {
+			/*
+			 * We already know that we would do a short
+			 * read, so don't try the sendfile() path.
+			 */
+			goto nosendfile_read;
+		}
+
 		construct_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
