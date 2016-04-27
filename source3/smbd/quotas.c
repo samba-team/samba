@@ -683,9 +683,24 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 	SMB_DISK_QUOTA D;
 	unid_t id;
 
-	id.uid = geteuid();
+	/*
+	 * First of all, check whether user quota is
+	 * enforced. If the call fails, assume it is
+	 * not enforced.
+	 */
+	ZERO_STRUCT(D);
+	id.uid = -1;
+	r = SMB_VFS_GET_QUOTA(conn, path, SMB_USER_FS_QUOTA_TYPE, id, &D);
+	if (r == -1 && errno != ENOSYS) {
+		goto try_group_quota;
+	}
+	if (r == 0 && (D.qflags & QUOTAS_DENY_DISK) == 0) {
+		goto try_group_quota;
+	}
 
 	ZERO_STRUCT(D);
+	id.uid = geteuid();
+
 	r = SMB_VFS_GET_QUOTA(conn, path, SMB_USER_QUOTA_TYPE, id, &D);
 
 	/* Use softlimit to determine disk space, except when it has been exceeded */
@@ -722,6 +737,21 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 	return True;
 	
 try_group_quota:
+	/*
+	 * First of all, check whether group quota is
+	 * enforced. If the call fails, assume it is
+	 * not enforced.
+	 */
+	ZERO_STRUCT(D);
+	id.gid = -1;
+	r = SMB_VFS_GET_QUOTA(conn, path, SMB_GROUP_FS_QUOTA_TYPE, id, &D);
+	if (r == -1 && errno != ENOSYS) {
+		return false;
+	}
+	if (r == 0 && (D.qflags & QUOTAS_DENY_DISK) == 0) {
+		return false;
+	}
+
 	id.gid = getegid();
 
 	ZERO_STRUCT(D);

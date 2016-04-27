@@ -325,5 +325,3 @@
 # we don't allow auth_level_connect anymore...
 #
 ^samba3.blackbox.rpcclient.*ncacn_np.*with.*connect.*rpcclient # we don't allow auth_level_connect anymore
-#new disk-free tests fail the code
-^samba3.blackbox.dfree_quota \(fileserver\).Test dfree share root quota not enforced\(fileserver\)
