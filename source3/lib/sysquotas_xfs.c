@@ -98,6 +98,8 @@ int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 			if (ret != 0 && errno != ENOENT) {
 				return ret;
 			}
+
+			ret = 0;
 			break;
 #ifdef HAVE_GROUP_QUOTA
 		case SMB_GROUP_QUOTA_TYPE:
