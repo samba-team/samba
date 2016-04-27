@@ -2513,6 +2513,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 						    &sid, &qt);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				reply_nterror(req, nt_status);
+				return;
 			}
 
 			/* Realloc the size of parameters and data we will return */
