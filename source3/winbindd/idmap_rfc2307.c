@@ -99,6 +99,11 @@ static NTSTATUS idmap_rfc2307_ads_search(struct idmap_rfc2307_context *ctx,
 
 	status = ads_do_search_retry(ctx->ads, bind_path,
 				     LDAP_SCOPE_SUBTREE, expr, attrs, result);
+
+	if (!ADS_ERR_OK(status)) {
+		return ads_ntstatus(status);
+	}
+
 	ctx->ldap = ctx->ads->ldap.ld;
 	return ads_ntstatus(status);
 }
