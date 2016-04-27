@@ -1235,7 +1235,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 				  nodemap->nodes[j].pnn));
 			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
 			talloc_free(mem_ctx);
-			return MONITOR_FAILED;
+			return -1;
 		}
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
 			/* We should tell our daemon about this so it
@@ -1261,7 +1261,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 		talloc_free(remote_nodemap);
 	}
 	talloc_free(mem_ctx);
-	return MONITOR_OK;
+	return 0;
 }
 
 
@@ -3622,7 +3622,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* ensure our local copies of flags are right */
 	ret = update_local_flags(rec, nodemap);
-	if (ret != MONITOR_OK) {
+	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Unable to update local flags\n"));
 		return;
 	}
