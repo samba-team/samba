@@ -3622,11 +3622,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 	/* ensure our local copies of flags are right */
 	ret = update_local_flags(rec, nodemap);
-	if (ret == MONITOR_ELECTION_NEEDED) {
-		DEBUG(DEBUG_NOTICE,("update_local_flags() called for a re-election.\n"));
-		force_election(rec, pnn, nodemap);
-		return;
-	}
 	if (ret != MONITOR_OK) {
 		DEBUG(DEBUG_ERR,("Unable to update local flags\n"));
 		return;
