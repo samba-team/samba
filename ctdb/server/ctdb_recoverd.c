@@ -3364,8 +3364,8 @@ static int update_recovery_lock_file(struct ctdb_context *ctdb)
 	return 0;
 }
 
-static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
-						    TALLOC_CTX *mem_ctx)
+static bool validate_recovery_master(struct ctdb_recoverd *rec,
+				     TALLOC_CTX *mem_ctx)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
 	uint32_t pnn = ctdb_get_pnn(ctdb);
@@ -3379,7 +3379,8 @@ static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
 	if (rec->recmaster == CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_NOTICE,
 		      ("Initial recovery master set - forcing election\n"));
-		return MONITOR_ELECTION_NEEDED;
+		force_election(rec, pnn, nodemap);
+		return false;
 	}
 
 	/*
@@ -3396,7 +3397,8 @@ static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
 		      (" Current recmaster node %u does not have CAP_RECMASTER,"
 		       " but we (node %u) have - force an election\n",
 		       rec->recmaster, pnn));
-		return MONITOR_ELECTION_NEEDED;
+		force_election(rec, pnn, nodemap);
+		return false;
 	}
 
 	/* Verify that the master node has not been deleted.  This
@@ -3409,7 +3411,8 @@ static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_ERR,
 		      ("Recmaster node %u has been deleted. Force election\n",
 		       rec->recmaster));
-		return MONITOR_ELECTION_NEEDED;
+		force_election(rec, pnn, nodemap);
+		return false;
 	}
 
 	/* if recovery master is disconnected/deleted we must elect a new recmaster */
@@ -3418,7 +3421,8 @@ static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_NOTICE,
 		      ("Recmaster node %u is disconnected/deleted. Force election\n",
 		       rec->recmaster));
-		return MONITOR_ELECTION_NEEDED;
+		force_election(rec, pnn, nodemap);
+		return false;
 	}
 
 	/* get nodemap from the recovery master to check if it is inactive */
@@ -3429,7 +3433,8 @@ static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
 		      (__location__
 		       " Unable to get nodemap from recovery master %u\n",
 			  rec->recmaster));
-		return MONITOR_FAILED;
+		/* No election, just error */
+		return false;
 	}
 
 
@@ -3445,10 +3450,11 @@ static enum monitor_result validate_recovery_master(struct ctdb_recoverd *rec,
 		 */
 		nodemap->nodes[rec->recmaster].flags =
 			recmaster_nodemap->nodes[rec->recmaster].flags;
-		return MONITOR_ELECTION_NEEDED;
+		force_election(rec, pnn, nodemap);
+		return false;
 	}
 
-	return MONITOR_OK;
+	return true;
 }
 
 static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
@@ -3588,16 +3594,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	switch (validate_recovery_master(rec, mem_ctx)) {
-	case MONITOR_RECOVERY_NEEDED:
-		/* can not happen */
-		return;
-	case MONITOR_ELECTION_NEEDED:
-		force_election(rec, pnn, nodemap);
-		return;
-	case MONITOR_OK:
-		break;
-	case MONITOR_FAILED:
+	if (! validate_recovery_master(rec, mem_ctx)) {
 		return;
 	}
 
