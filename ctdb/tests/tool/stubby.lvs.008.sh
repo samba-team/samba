@@ -4,6 +4,12 @@
 
 define_test "3 nodes, no LVS, current disconnected"
 
+setup_nodes <<EOF
+192.168.20.41
+192.168.20.42
+192.168.20.43
+EOF
+
 setup_lvs <<EOF
 EOF
 
@@ -28,7 +34,11 @@ VNNMAP
 #####
 
 required_result 10 <<EOF
-${TEST_DATE_STAMP}Unable to get nodemap from local node
+../client/ctdb_client.c:293 Failed to connect client socket to daemon. Errno:No such file or directory(2)
+../common/cmdline.c:167 Failed to connect to daemon
+Failed to init ctdb
+Failed to detect which PNN this node is
+Is this node part of a CTDB cluster?
 EOF
 
 simple_test list <<EOF
@@ -38,7 +48,11 @@ EOF
 #####
 
 required_result 10 <<EOF
-${TEST_DATE_STAMP}Unable to get nodemap from local node
+../client/ctdb_client.c:293 Failed to connect client socket to daemon. Errno:No such file or directory(2)
+../common/cmdline.c:167 Failed to connect to daemon
+Failed to init ctdb
+Failed to detect which PNN this node is
+Is this node part of a CTDB cluster?
 EOF
 
 simple_test master <<EOF
@@ -48,7 +62,11 @@ EOF
 #####
 
 required_result 10 <<EOF
-${TEST_DATE_STAMP}Unable to get nodemap from local node
+../client/ctdb_client.c:293 Failed to connect client socket to daemon. Errno:No such file or directory(2)
+../common/cmdline.c:167 Failed to connect to daemon
+Failed to init ctdb
+Failed to detect which PNN this node is
+Is this node part of a CTDB cluster?
 EOF
 
 simple_test list <<EOF
@@ -58,7 +76,11 @@ EOF
 #####
 
 required_result 10 <<EOF
-${TEST_DATE_STAMP}Unable to get nodemap from local node
+../client/ctdb_client.c:293 Failed to connect client socket to daemon. Errno:No such file or directory(2)
+../common/cmdline.c:167 Failed to connect to daemon
+Failed to init ctdb
+Failed to detect which PNN this node is
+Is this node part of a CTDB cluster?
 EOF
 
 simple_test status <<EOF
