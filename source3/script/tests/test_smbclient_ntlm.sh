@@ -37,4 +37,8 @@ else
 
 	testit "smbclient baduser.badpassword.NT1NEW.guest" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -Ubaduser%badpassword -mNT1 -c quit $ADDARGS
 	testit "smbclient baduser.badpassword.SMB3.guest" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -Ubaduser%badpassword -mSMB3 -c quit $ADDARGS
+
+	testit_expect_failure "smbclient baduser.badpassword.NT1OLD.signfail" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -Ubaduser%badpassword -mNT1 --option=clientusespnego=no --option=clientntlmv2auth=no --signing=required -c quit $ADDARGS
+	testit_expect_failure "smbclient baduser.badpassword.NT1NEW.signfail" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -Ubaduser%badpassword -mNT1 --signing=required -c quit $ADDARGS
+	testit_expect_failure "smbclient baduser.badpassword.SMB3.signfail" $SMBCLIENT //$SERVER/IPC\$ $CONFIGURATION -Ubaduser%badpassword -mSMB3 --signing=required -c quit $ADDARGS
 fi
