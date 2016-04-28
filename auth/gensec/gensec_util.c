@@ -48,8 +48,8 @@ NTSTATUS gensec_generate_session_info_pac(TALLOC_CTX *mem_ctx,
 				  principal_string));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		DEBUG(1, ("Unable to find PAC for %s, resorting to local user lookup\n",
-			  principal_string));
+		DBG_NOTICE("Unable to find PAC for %s, resorting to local "
+			   "user lookup\n", principal_string);
 	}
 
 	if (gensec_security->auth_context && gensec_security->auth_context->generate_session_info_pac) {
