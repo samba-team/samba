@@ -884,12 +884,24 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 }
 
 
-static struct ctdb_node_map_old *read_nodes_file(TALLOC_CTX *mem_ctx)
+static struct ctdb_node_map_old *read_nodes_file(TALLOC_CTX *mem_ctx,
+						 uint32_t pnn)
 {
-	const char *nodes_list;
+	const char *nodes_list = NULL;
 
 	/* read the nodes file */
-	nodes_list = getenv("CTDB_NODES");
+	if (pnn != CTDB_UNKNOWN_PNN) {
+		char *t;
+
+		t = talloc_asprintf(mem_ctx, "CTDB_NODES_%u", pnn);
+		if (t != NULL) {
+			nodes_list = getenv(t);
+			talloc_free(t);
+		}
+	}
+	if (nodes_list == NULL) {
+		nodes_list = getenv("CTDB_NODES");
+	}
 	if (nodes_list == NULL) {
 		nodes_list = talloc_asprintf(mem_ctx, "%s/nodes",
 					     getenv("CTDB_BASE"));
@@ -913,7 +925,7 @@ static int find_node_xpnn(void)
 	struct ctdb_node_map_old *node_map;
 	int i, pnn;
 
-	node_map = read_nodes_file(mem_ctx);
+	node_map = read_nodes_file(mem_ctx, CTDB_UNKNOWN_PNN);
 	if (node_map == NULL) {
 		talloc_free(mem_ctx);
 		return -1;
@@ -5432,7 +5444,7 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
 
 	assert_single_node_only();
 
-	node_map = read_nodes_file(mem_ctx);
+	node_map = read_nodes_file(mem_ctx, CTDB_UNKNOWN_PNN);
 	if (node_map == NULL) {
 		talloc_free(mem_ctx);
 		return -1;
@@ -5684,7 +5696,7 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 		return ret;
 	}
 
-	file_nodemap = read_nodes_file(tmp_ctx);
+	file_nodemap = read_nodes_file(tmp_ctx, ctdb->pnn);
 	if (file_nodemap == NULL) {
 		DEBUG(DEBUG_ERR,("Failed to read nodes file\n"));
 		talloc_free(tmp_ctx);
