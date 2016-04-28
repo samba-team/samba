@@ -145,15 +145,13 @@ create_ganesha_recdirs ()
     _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
     _link_dst="${_mntpt}/${CTDB_GANESHA_REC_SUBDIR}"
     mkdir -vp "$_link_dst"
-    if [ -e "$GANRECDIR" ]; then
-        if [ ! -L "$GANRECDIR" ] ; then
-            rm -vrf "$GANRECDIR"
-	else
-	    _t=$(readlink "$GANRECDIR")
-	    if [ "$_t" != "$_link_dst" ] ; then
-		rm -v "$GANRECDIR"
-	    fi
-        fi
+    if [ ! -L "$GANRECDIR" ] ; then
+        rm -vrf "$GANRECDIR"
+    else
+	_t=$(readlink "$GANRECDIR")
+	if [ "$_t" != "$_link_dst" ] ; then
+	    rm -v "$GANRECDIR"
+	fi
     fi
     # This is not an "else".  It also re-creates the link if it was
     # removed above!
