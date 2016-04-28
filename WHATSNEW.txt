@@ -1,4 +1,121 @@
                    ==============================
+                   Release Notes for Samba 4.2.12
+                           April , 2016
+                   ==============================
+
+
+This is the latest stable release of Samba 4.2.
+
+
+Changes since 4.2.11:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 10489: s3: smbd: posix_acls: Fix check for setting u:g:o entry on a
+     filesystem with no ACL support.
+   * BUG 11703: s3: smbd: Fix timestamp rounding inside SMB2 create.
+   * BUG 11742: lib: tevent: Fix memory leak when old signal action restored.
+   * BUG 11771: lib: tevent: Fix memory leak when old signal action restored.
+
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 6482: s3:utils/smbget: Fix recursive download.
+
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 11780: smbd: Only check dev/inode in open_directory, not the full
+     stat().
+   * BUG 11789: build: Mark explicit dependencies on pytalloc-util.
+
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11714: lib/tsocket: Work around sockets not supporting FIONREAD.
+
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11789: libsmb/pysmb: add pytalloc-util dependency to fix the build.
+
+
+o  Berend De Schouwer <berend.de.schouwer@gmail.com>
+   * BUG 11643: docs: Add example for domain logins to smbspool man page.
+
+
+o  Nathan Huff <nhuff@acm.org>
+   * BUG 11771: Fix ETIME handling for Solaris event ports.
+
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 11732: param: Fix str_list_v3 to accept ";" again.
+   * BUG 11816: nwrap: Fix the build on Solaris.
+   * BUG 11827: Fix memleak.
+
+
+o  Justin Maggard <jmaggard10@gmail.com>
+   * BUG 11773: s3:smbd: Add negprot remote arch detection for OSX.
+
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11742: tevent: version 0.9.28. Fix memory leak when old signal action
+     restored.
+   * BUG 11789: s3:wscript: pylibsmb depends on pycredentials.
+
+
+o  Jose A. Rivera <jarrpa@samba.org>
+   * BUG 11727: s3:smbd:open: Skip redundant call to file_set_dosmode when
+     creating a new file.
+
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11690: docs: Add smbspool_krb5_wrapper manpage.
+
+
+o  Jorge Schrauwen <sjorge@blackdot.be>
+   * BUG 11816: configure: Don't check for inotify on illumos.
+
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 11719: ctdb-scripts: Drop use of "smbcontrol winbindd ip-dropped ...".
+
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11852: libads: Record session expiry for spnego sasl binds.
+
+
+o  Hemanth Thummala <hemanth.thummala@nutanix.com>
+   * BUG 11708: loadparm: Fix memory leak issue.
+   * BUG 11740: Real memory leak(buildup) issue in loadparm.
+
+
+o  Jelmer Vernooĳ <jelmer@jelmer.uk>
+   * BUG 11771: tevent: Only set public headers field when installing as a
+     public library.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+
+                   ==============================
                    Release Notes for Samba 4.2.11
                            April 12, 2016
                    ==============================
@@ -16,8 +133,9 @@ o  Stefan Metzmacher <metze@samba.org>
    * Bug 11804 - prerequisite backports for the security release on
      April 12th, 2016
 
-Release notes for the original 4.2.10 release follows:
-------------------------------------------------------
+
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.2.10
@@ -569,11 +687,6 @@ database (https://bugzilla.samba.org/).
 == Our Code, Our Bugs, Our Responsibility.
 == The Samba Team
 ======================================================================
-
-
-Release notes for older releases follow:
-----------------------------------------
-
 
                    =============================
                    Release Notes for Samba 4.2.9
