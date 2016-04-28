@@ -901,14 +901,10 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		}
 	}
 
-	/* release any deferred attach calls from clients */
-	if (recmode == CTDB_RECOVERY_NORMAL) {
-		ctdb_process_deferred_attach(ctdb);
-	}
-
 	if (ctdb->recovery_lock_file == NULL) {
 		/* Not using recovery lock file */
-		ctdb->recovery_mode = recmode;
+		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb_process_deferred_attach(ctdb);
 		return 0;
 	}
 
