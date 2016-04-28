@@ -19,7 +19,8 @@ EOF
 rm "$CTDB_NODES_1"
 
 required_result 255 <<EOF
-Failed to read nodes file "${CTDB_NODES_1}"
+ctdb_control error: 'Failed to read nodes file'
+ctdb_control error: 'Failed to read nodes file'
 ERROR: Failed to get nodes file from node 1
 EOF
 

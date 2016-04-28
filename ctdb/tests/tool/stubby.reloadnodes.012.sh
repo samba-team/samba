@@ -16,8 +16,6 @@ Node 1 is unchanged
 Node 2 is DELETED
 Reloading nodes file on node 0
 Reloading nodes file on node 1
-ctdb_ctrl_reload_nodes_file: node 0
-ctdb_ctrl_reload_nodes_file: node 1
 EOF
 
 simple_test <<EOF
