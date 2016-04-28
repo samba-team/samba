@@ -32,6 +32,10 @@ int ctdb_allocate_pkt(TALLOC_CTX *mem_ctx, size_t length,
 {
 	size_t new_length;
 
+	if (buf == NULL || buflen == NULL) {
+		return EINVAL;
+	}
+
 	new_length = (length + CTDB_DS_ALIGNMENT-1) & ~(CTDB_DS_ALIGNMENT-1);
 
 	*buflen = new_length;
