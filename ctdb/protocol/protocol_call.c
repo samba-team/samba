@@ -91,7 +91,7 @@ int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 
 	length = ctdb_req_call_len(h, c);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}
@@ -178,7 +178,7 @@ int ctdb_reply_call_push(struct ctdb_req_header *h, struct ctdb_reply_call *c,
 
 	length = ctdb_reply_call_len(h, c);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}
@@ -251,7 +251,7 @@ int ctdb_reply_error_push(struct ctdb_req_header *h, struct ctdb_reply_error *c,
 
 	length = ctdb_reply_error_len(h, c);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}
@@ -324,7 +324,7 @@ int ctdb_req_dmaster_push(struct ctdb_req_header *h, struct ctdb_req_dmaster *c,
 
 	length = ctdb_req_dmaster_len(h, c);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}
@@ -410,7 +410,7 @@ int ctdb_reply_dmaster_push(struct ctdb_req_header *h,
 
 	length = ctdb_reply_dmaster_len(h, c);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}

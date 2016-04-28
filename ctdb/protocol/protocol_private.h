@@ -22,9 +22,6 @@
 
 #include "protocol.h"
 
-int allocate_pkt(TALLOC_CTX *mem_ctx, size_t length,
-		 uint8_t **buf, size_t *buflen);
-
 size_t ctdb_uint32_len(uint32_t val);
 void ctdb_uint32_push(uint32_t val, uint8_t *buf);
 int ctdb_uint32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

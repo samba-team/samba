@@ -1957,8 +1957,8 @@ static void test_ctdb_req_header(void)
 	ctdb_req_header_fill(&h, GENERATION, OPERATION, DESTNODE, SRCNODE,
 			     REQID);
 
-	ret = allocate_pkt(mem_ctx, ctdb_req_header_len(&h),
-			   &pkt, &pkt_len);
+	ret = ctdb_allocate_pkt(mem_ctx, ctdb_req_header_len(&h),
+				&pkt, &pkt_len);
 	assert(ret == 0);
 	assert(pkt != NULL);
 	assert(pkt_len >= ctdb_req_header_len(&h));

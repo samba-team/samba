@@ -682,6 +682,11 @@ int ctdb_req_message_data_pull(uint8_t *pkt, size_t pkt_len,
 			       TALLOC_CTX *mem_ctx,
 			       struct ctdb_req_message_data *message);
 
+/* From protocol/protocol_packet.c */
+
+int ctdb_allocate_pkt(TALLOC_CTX *mem_ctx, size_t datalen,
+		      uint8_t **buf, size_t *buflen);
+
 /* From protocol/protocol_util.c */
 
 const char *ctdb_runstate_to_string(enum ctdb_runstate runstate);

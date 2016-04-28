@@ -299,7 +299,7 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 
 	length = ctdb_req_message_len(h, message);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}
@@ -369,7 +369,7 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 
 	length = ctdb_req_message_data_len(h, message);
 
-	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
+	ret = ctdb_allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
 		return ret;
 	}
