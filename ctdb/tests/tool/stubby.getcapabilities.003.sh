@@ -4,8 +4,18 @@
 
 define_test "3 nodes, current disconnected"
 
-required_result 10 <<EOF
-${TEST_DATE_STAMP}Unable to get nodemap from local node
+required_result 1 <<EOF
+../client/ctdb_client.c:293 Failed to connect client socket to daemon. Errno:No such file or directory(2)
+../common/cmdline.c:167 Failed to connect to daemon
+Failed to init ctdb
+Failed to detect which PNN this node is
+Is this node part of a CTDB cluster?
+EOF
+
+setup_nodes <<EOF
+192.168.20.41
+192.168.20.42
+192.168.20.43
 EOF
 
 simple_test <<EOF
