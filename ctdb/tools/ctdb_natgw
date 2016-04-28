@@ -12,6 +12,10 @@ loadconfig "ctdb"
 
 [ -n "$CTDB_SOCKET" ] && export CTDB_SOCKET
 
+if [ -z "$CTDB" ] ; then
+	CTDB=ctdb
+fi
+
 ############################################################
 
 usage ()
@@ -34,14 +38,14 @@ get_nodestatus_X ()
 {
     # Result is cached in global variable nodestatus_X
     [ -n "$nodestatus_X" ] || \
-	nodestatus_X=$(ctdb -X nodestatus all |
+	nodestatus_X=$($CTDB -X nodestatus all |
 			      sed -e '1d' -e 's@^|@@' -e 's@|$@@')
 }
 
 get_nodestatus ()
 {
     # Result is cached in global variable nodestatus
-    [ -n "$nodestatus" ] || nodestatus=$(ctdb nodestatus all)
+    [ -n "$nodestatus" ] || nodestatus=$($CTDB nodestatus all)
     [ $? -ne 255 ] # ctdb nodestatus returns 255 on failure
 }
 
