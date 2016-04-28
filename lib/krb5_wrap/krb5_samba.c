@@ -2388,12 +2388,12 @@ static char *smb_krb5_get_default_realm_from_ccache(TALLOC_CTX *mem_ctx)
 		"Trying to read krb5 cache: %s\n",
 		krb5_cc_default_name(ctx)));
 	if (krb5_cc_default(ctx, &cc)) {
-		DEBUG(0,("kerberos_get_default_realm_from_ccache: "
+		DEBUG(5,("kerberos_get_default_realm_from_ccache: "
 			"failed to read default cache\n"));
 		goto out;
 	}
 	if (krb5_cc_get_principal(ctx, cc, &princ)) {
-		DEBUG(0,("kerberos_get_default_realm_from_ccache: "
+		DEBUG(5,("kerberos_get_default_realm_from_ccache: "
 			"failed to get default principal\n"));
 		goto out;
 	}
