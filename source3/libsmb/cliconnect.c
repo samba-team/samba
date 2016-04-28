@@ -1588,6 +1588,9 @@ static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq)
 			 * have a negotiated session key.
 			 *
 			 * So just pretend we are completely done.
+			 *
+			 * Note that smbXcli_session_is_guest()
+			 * always returns false if we require signing.
 			 */
 			state->blob_in = data_blob_null;
 			state->local_ready = true;
