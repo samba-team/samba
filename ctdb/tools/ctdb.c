@@ -935,21 +935,6 @@ static int find_node_xpnn(void)
 	return -1;
 }
 
-static int control_xpnn(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	uint32_t pnn;
-
-	assert_single_node_only();
-
-	pnn = find_node_xpnn();
-	if (pnn == -1) {
-		return -1;
-	}
-
-	printf("PNN:%d\n", pnn);
-	return 0;
-}
-
 /* Helpers for ctdb status
  */
 static bool is_partially_online(struct ctdb_context *ctdb, struct ctdb_node_and_flags *node)
@@ -5826,7 +5811,6 @@ static const struct {
 	{ "enablescript",     control_enablescript,  true,	false, "enable an eventscript", "<script>"},
 	{ "disablescript",    control_disablescript,  true,	false, "disable an eventscript", "<script>"},
 	{ "natgw",            control_natgw,		false,	true, "show NAT gateway configuration ", "[master|list|status]"},
-	{ "xpnn",             control_xpnn,             false,	true,  "find the pnn of the local node without talking to the daemon (unreliable)" },
 	{ "getreclock",       control_getreclock,	true,	false, "Show the reclock file of a node"},
 	{ "setreclock",       control_setreclock,	true,	false, "Set/clear the reclock file of a node", "[filename]"},
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
