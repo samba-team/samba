@@ -239,7 +239,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				  GSS_C_NT_USER_NAME,
 				  &gse_ctx->server_name);
 	if (gss_maj) {
-		DEBUG(0, ("gss_import_name failed for %s, with [%s]\n",
+		DEBUG(5, ("gss_import_name failed for %s, with [%s]\n",
 			  (char *)name_buffer.value,
 			  gse_errstr(gse_ctx, gss_maj, gss_min)));
 		status = NT_STATUS_INTERNAL_ERROR;
