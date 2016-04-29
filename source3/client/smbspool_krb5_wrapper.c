@@ -31,6 +31,8 @@
 
 #include "dynconfig/dynconfig.h"
 
+#undef calloc
+
 enum cups_smb_dbglvl_e {
 	CUPS_SMB_LOG_DEBUG = 0,
 	CUPS_SMB_LOG_ERROR,
@@ -199,8 +201,10 @@ int main(int argc, char *argv[])
 #ifdef HAVE_CLEARENV
 	clearenv();
 #else
-	extern char **environ;
-	environ = calloc(1, sizeof(*environ));
+	{
+		extern char **environ;
+		environ = calloc(1, sizeof(*environ));
+	}
 #endif
 
 	CUPS_SMB_DEBUG("Setting KRB5CCNAME to '%s'", gen_cc);
