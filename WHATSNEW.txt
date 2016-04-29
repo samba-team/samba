@@ -4,7 +4,8 @@
                    ==============================
 
 
-This is the latest stable release of Samba 4.2.
+This is the last bugfix release of Samba 4.2. Please note that there will
+be security releases only beyond this point!
 
 This release fixes some regressions introduced by the last security fixes.
 Please see bug https://bugzilla.samba.org/show_bug.cgi?id=11849 for a list of
