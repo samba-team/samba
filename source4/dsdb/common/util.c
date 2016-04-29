@@ -5054,7 +5054,7 @@ _PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
  * This also requires that the domain_msg have (if present):
  *  - lockOutObservationWindow
  */
-static int dsdb_effective_badPwdCount(struct ldb_message *user_msg,
+static int dsdb_effective_badPwdCount(const struct ldb_message *user_msg,
 				      int64_t lockOutObservationWindow,
 				      NTTIME now)
 {
@@ -5079,7 +5079,7 @@ static int dsdb_effective_badPwdCount(struct ldb_message *user_msg,
 int samdb_result_effective_badPwdCount(struct ldb_context *sam_ldb,
 				       TALLOC_CTX *mem_ctx,
 				       struct ldb_dn *domain_dn,
-				       struct ldb_message *user_msg)
+				       const struct ldb_message *user_msg)
 {
 	struct timeval tv_now = timeval_current();
 	NTTIME now = timeval_to_nttime(&tv_now);
