@@ -89,9 +89,7 @@ int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 		return EINVAL;
 	}
 
-	length = offsetof(struct ctdb_req_call_wire, data) +
-			ctdb_tdb_data_len(c->key) +
-			ctdb_tdb_data_len(c->calldata);
+	length = ctdb_req_call_len(h, c);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -178,8 +176,7 @@ int ctdb_reply_call_push(struct ctdb_req_header *h, struct ctdb_reply_call *c,
 	size_t length, buflen;
 	int ret;
 
-	length = offsetof(struct ctdb_reply_call_wire, data) +
-			ctdb_tdb_data_len(c->data);
+	length = ctdb_reply_call_len(h, c);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -252,8 +249,7 @@ int ctdb_reply_error_push(struct ctdb_req_header *h, struct ctdb_reply_error *c,
 	size_t length, buflen;
 	int ret;
 
-	length = offsetof(struct ctdb_reply_error_wire, msg) +
-			ctdb_tdb_data_len(c->msg);
+	length = ctdb_reply_error_len(h, c);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -326,9 +322,7 @@ int ctdb_req_dmaster_push(struct ctdb_req_header *h, struct ctdb_req_dmaster *c,
 	size_t length, buflen;
 	int ret;
 
-	length = offsetof(struct ctdb_req_dmaster_wire, data) +
-			ctdb_tdb_data_len(c->key) +
-			ctdb_tdb_data_len(c->data);
+	length = ctdb_req_dmaster_len(h, c);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -414,9 +408,7 @@ int ctdb_reply_dmaster_push(struct ctdb_req_header *h,
 	size_t length, buflen;
 	int ret;
 
-	length = offsetof(struct ctdb_reply_dmaster_wire, data) +
-			ctdb_tdb_data_len(c->key) +
-			ctdb_tdb_data_len(c->data);
+	length = ctdb_reply_dmaster_len(h, c);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {

@@ -294,11 +294,10 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 {
 	struct ctdb_req_message_wire *wire;
 	uint8_t *buf;
-	size_t length, buflen, datalen;
+	size_t length, buflen;
 	int ret;
 
-	datalen = ctdb_message_data_len(&message->data, message->srvid);
-	length = offsetof(struct ctdb_req_message_wire, data) + datalen;
+	length = ctdb_req_message_len(h, message);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -311,7 +310,7 @@ int ctdb_req_message_push(struct ctdb_req_header *h,
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->srvid = message->srvid;
-	wire->datalen = datalen;
+	wire->datalen = ctdb_message_data_len(&message->data, message->srvid);
 	ctdb_message_data_push(&message->data, message->srvid, wire->data);
 
 	*pkt = buf;
@@ -368,8 +367,7 @@ int ctdb_req_message_data_push(struct ctdb_req_header *h,
 	size_t length, buflen;
 	int ret;
 
-	length = offsetof(struct ctdb_req_message_wire, data) +
-			ctdb_tdb_data_len(message->data);
+	length = ctdb_req_message_data_len(h, message);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {

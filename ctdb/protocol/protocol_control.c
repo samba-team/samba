@@ -1904,11 +1904,10 @@ int ctdb_req_control_push(struct ctdb_req_header *h,
 {
 	struct ctdb_req_control_wire *wire;
 	uint8_t *buf;
-	size_t length, buflen, datalen;
+	size_t length, buflen;
 	int ret;
 
-	datalen = ctdb_req_control_data_len(&request->rdata);
-	length = offsetof(struct ctdb_req_control_wire, data) + datalen;
+	length = ctdb_req_control_len(h, request);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -1926,7 +1925,7 @@ int ctdb_req_control_push(struct ctdb_req_header *h,
 	wire->client_id = request->client_id;
 	wire->flags = request->flags;
 
-	wire->datalen = datalen;
+	wire->datalen = ctdb_req_control_data_len(&request->rdata);
 	ctdb_req_control_data_push(&request->rdata, wire->data);
 
 	*pkt = buf;
@@ -1991,17 +1990,10 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 {
 	struct ctdb_reply_control_wire *wire;
 	uint8_t *buf;
-	size_t length, buflen, datalen;
+	size_t length, buflen;
 	int ret;
 
-	if (reply->status == 0) {
-		datalen = ctdb_reply_control_data_len(&reply->rdata);
-	} else {
-		datalen = 0;
-	}
-
-	length = offsetof(struct ctdb_reply_control_wire, data) +
-		 datalen + ctdb_string_len(reply->errmsg);
+	length = ctdb_reply_control_len(h, reply);
 
 	ret = allocate_pkt(mem_ctx, length, &buf, &buflen);
 	if (ret != 0) {
@@ -2015,9 +2007,11 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 
 	wire->status = reply->status;
 
-	wire->datalen = datalen;
 	if (reply->status == 0) {
+		wire->datalen = ctdb_reply_control_data_len(&reply->rdata);
 		ctdb_reply_control_data_push(&reply->rdata, wire->data);
+	} else {
+		wire->datalen = 0;
 	}
 
 	wire->errorlen = ctdb_string_len(reply->errmsg);
