@@ -2009,13 +2009,13 @@ int ctdb_reply_control_push(struct ctdb_req_header *h,
 
 	if (reply->status == 0) {
 		wire->datalen = ctdb_reply_control_data_len(&reply->rdata);
+		wire->errorlen = 0;
 		ctdb_reply_control_data_push(&reply->rdata, wire->data);
 	} else {
 		wire->datalen = 0;
+		wire->errorlen = ctdb_string_len(reply->errmsg);
+		ctdb_string_push(reply->errmsg, wire->data + wire->datalen);
 	}
-
-	wire->errorlen = ctdb_string_len(reply->errmsg);
-	ctdb_string_push(reply->errmsg, wire->data + wire->datalen);
 
 	*pkt = buf;
 	*pkt_len = buflen;
