@@ -39,16 +39,17 @@
 # Exit on 1st error
 set -e
 
+# Filesystem type and mount point for the (typically clustered)
+# volume that will contain the NFS-Ganesha state.
+state_fs="${CTDB_NFS_STATE_FS_TYPE:-gpfs}"
+state_dir="${CTDB_NFS_STATE_MNT}" # No sane default.
+
 # To change the following, edit the default values below.  Do not set
 # these - they aren't configuration variables, just hooks for testing.
 nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/etc/ganesha/ganesha.conf}"
 nfs_service="${CTDB_NFS_SERVICE:-nfs-ganesha}"
 ganesha_rec_subdir=${CTDB_GANESHA_REC_SUBDIR:-.ganesha}
 procfs=${PROCFS_PATH:-/proc}
-
-if [ -z "$CTDB_CLUSTER_FILESYSTEM_TYPE" ] ; then
-    CTDB_CLUSTER_FILESYSTEM_TYPE="gpfs"
-fi
 
 
 ##################################################
@@ -151,12 +152,12 @@ check_ln ()
 # Return 'active' if the shared filesystem is accessible.
 get_cluster_fs_state ()
 {
-    case $CTDB_CLUSTER_FILESYSTEM_TYPE in
+    case $state_fs in
         gpfs)
             /usr/lpp/mmfs/bin/mmgetstate | awk 'NR == 4 { print $3 }'
             ;;
         *)
-            echo "File system $CTDB_CLUSTER_FILESYSTEM_TYPE not supported"
+            echo "File system $state_fs not supported"
             exit 1
             ;;
    esac
@@ -164,9 +165,9 @@ get_cluster_fs_state ()
 
 create_ganesha_recdirs ()
 {
-    _mounts=$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)
+    _mounts=$(mount -t $state_fs)
     if [ -z "$_mounts" ]; then
-      echo "startup $CTDB_CLUSTER_FILESYSTEM_TYPE not ready"
+      echo "startup $state_fs not ready"
       exit 0
     fi
     _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
