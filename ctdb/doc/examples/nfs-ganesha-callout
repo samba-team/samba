@@ -283,6 +283,22 @@ nfs_monitor_list_shares ()
 
 ##################################################
 
+nfs_register ()
+{
+    cat <<EOF
+shutdown
+startup
+stop
+start
+check
+releaseip
+takeip
+monitor-list-shares
+EOF
+}
+
+##################################################
+
 action="$1"
 shift
 
@@ -295,7 +311,8 @@ case "$action" in
     releaseip)           nfs_releaseip "$@"      ;;
     takeip)              nfs_takeip "$@"         ;;
     monitor-list-shares) nfs_monitor_list_shares ;;
-    register|monitor-pre|monitor-post)
+    register)            nfs_register            ;;
+    monitor-pre|monitor-post)
 	# Not required/implemented
 	:
 	;;
