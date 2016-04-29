@@ -6,6 +6,10 @@
 
 This is the latest stable release of Samba 4.2.
 
+This release fixes some regressions introduced by the last security fixes.
+Please see bug https://bugzilla.samba.org/show_bug.cgi?id=11849 for a list of
+bugs addressing these regressions and more information.
+
 
 Changes since 4.2.11:
 ---------------------
@@ -58,6 +62,14 @@ o  Stefan Metzmacher <metze@samba.org>
    * BUG 11742: tevent: version 0.9.28. Fix memory leak when old signal action
      restored.
    * BUG 11789: s3:wscript: pylibsmb depends on pycredentials.
+   * BUG 11841: Fix NT_STATUS_ACCESS_DENIED when accessing Windows public share.
+   * BUG 11847: Only validate MIC if "map to guest" is not being used.
+   * BUG 11849: auth/ntlmssp: Add ntlmssp_{client,server}:force_old_spnego
+     option for testing.
+   * BUG 11850: NetAPP SMB servers don't negotiate NTLMSSP_SIGN.
+   * BUG 11858: Allow anonymous smb connections.
+   * BUG 11870: Fix ads_sasl_spnego_gensec_bind(KRB5).
+   * BUG 11872: Fix 'wbinfo -u' and 'net ads search'.
 
 
 o  Jose A. Rivera <jarrpa@samba.org>
