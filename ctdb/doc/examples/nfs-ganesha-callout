@@ -55,6 +55,16 @@ case $state_fs in
     gpfs)
         GANRECDIR="/var/lib/nfs/ganesha"
         ;;
+    glusterfs)
+        if [ -z "${state_dir}" ]; then
+            echo "CTDB_NFS_STATE_MNT not defined for GlusterFS"
+            exit 1
+        fi
+        host=`hostname`
+        NODESTATEDIR="$state_dir/nfs-ganesha/$host"
+        GANSTATEDIR="$state_dir/nfs-ganesha/.noderefs"
+        NODESTATELN="$GANSTATEDIR/$host"
+        ;;
 esac
 
 
@@ -160,6 +170,10 @@ get_cluster_fs_state ()
         gpfs)
             /usr/lpp/mmfs/bin/mmgetstate | awk 'NR == 4 { print $3 }'
             ;;
+        glusterfs)
+            # Since we're past create_ganesha_recdirs(), we're active.
+            echo "active"
+            ;;
         *)
             echo "File system $state_fs not supported"
             exit 1
@@ -169,7 +183,10 @@ get_cluster_fs_state ()
 
 create_ganesha_recdirs ()
 {
-    _mounts=$(mount -t $state_fs)
+    if ! _mounts=$(mount | grep $state_fs); then
+      echo "Failed to find mounts of type $state_fs"
+      exit 1
+    fi
     if [ -z "$_mounts" ]; then
       echo "startup $state_fs not ready"
       exit 0
@@ -181,6 +198,26 @@ create_ganesha_recdirs ()
             _link_dst="${_mntpt}/${ganesha_rec_subdir}"
             mkdir -vp "$_link_dst"
             check_ln "$_link_dst" "$GANRECDIR"
+            ;;
+        glusterfs)
+            [ -d /var/lib/nfs.backup ] || mv /var/lib/nfs /var/lib/nfs.backup
+            check_ln ${NODESTATEDIR} /var/lib/nfs
+
+            mkdir -p ${NODESTATEDIR}/ganesha/v4recov
+            mkdir -p ${NODESTATEDIR}/ganesha/v4old
+            mkdir -p ${NODESTATEDIR}/statd/sm
+            mkdir -p ${NODESTATEDIR}/statd/sm.bak
+            touch ${NODESTATEDIR}/state
+            touch ${NODESTATEDIR}/statd/state
+
+            mkdir -p ${GANSTATEDIR}
+            check_ln ${NODESTATEDIR} ${NODESTATELN}
+            for node in `ls ${GANSTATEDIR}`; do
+                if [ "${node}" != "${host}" ]; then
+                    check_ln ${GANSTATEDIR}/${node}/ganesha ${NODESTATEDIR}/ganesha/${node}
+                    check_ln ${GANSTATEDIR}/${node}/statd ${NODESTATEDIR}/statd/${node}
+                fi
+            done
             ;;
    esac
 }
