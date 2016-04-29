@@ -14,8 +14,13 @@
 # * Set CTDB_NFS_CALLOUT in your CTDB configuration to point to this
 #   script
 #
-# * Rename nfs-checks.d/{20.nfs.check,30.nlockmgr.check,50.mountd.check}
-#   so that they no longer have the ".check" suffix
+# * Rename the following files in nfs-checks.d so that they no longer
+#   have the ".check" suffix:
+#     * 10.status.check
+#     * 20.nfs.check
+#     * 30.nlockmgr.check
+#     * 40.mountd.check
+#     * 50.rquotad.check
 #
 # * Install 20.nfs-ganesha.check to nfs-checks.d/20.nfs.check
 
@@ -121,6 +126,7 @@ GANRECDIR="/var/lib/nfs/ganesha"
 GANRECDIR2="/var/lib/nfs/ganesha/recevents"
 GANRECDIR3="/var/lib/nfs/ganesha_local"
 
+# Return 'active' if the shared filesystem is accessible.
 get_cluster_fs_state ()
 {
     case $CTDB_CLUSTER_FILESYSTEM_TYPE in
@@ -128,7 +134,8 @@ get_cluster_fs_state ()
             /usr/lpp/mmfs/bin/mmgetstate | awk 'NR == 4 { print $3 }'
             ;;
         *)
-            die "File system $CTDB_CLUSTER_FILESYSTEM_TYPE not supported"
+            echo "File system $CTDB_CLUSTER_FILESYSTEM_TYPE not supported"
+            exit 1
             ;;
    esac
 }
@@ -170,12 +177,12 @@ service_check ()
     # Always succeed if cluster filesystem is not active
     _cluster_fs_state=$(get_cluster_fs_state)
     if [ $_cluster_fs_state != "active" ] ; then
-	exit 0
+	return 0
     fi
 
     # Check that NFS Ganesha is running, according to PID file
     _pidfile="/var/run/ganesha.pid"
-    _ganesha="/usr/bin/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.nfsd"
+    _ganesha="/usr/bin/ganesha.nfsd"
     if ! { read _pid < "$_pidfile" && \
 	   grep "$_ganesha" "${PROCFS_PATH}/${_pid}/cmdline" ; } >/dev/null 2>&1 ; then
 	echo "ERROR: NFS Ganesha not running according to PID file"
@@ -221,7 +228,7 @@ get_nodenum ()
 
 nfs_releaseip ()
 {
-    case  $CLUSTER_FILESYSTEM_TYPE in
+    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
 	gpfs)
 	    _nnum=$(get_nodenum)
 	    _tdate=$(date +"%s")
@@ -234,7 +241,7 @@ nfs_releaseip ()
 
 nfs_takeip ()
 {
-    case  $CLUSTER_FILESYSTEM_TYPE in
+    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
 	gpfs)
 	    _nnum=$(get_nodenum)
 	    _tdate=$(date +"%s")
@@ -254,9 +261,10 @@ nfs_shutdown ()
 
 nfs_startup ()
 {
+    basic_stop "nfs" || true
+
     create_ganesha_recdirs
 
-    basic_stop "nfs" || true
     basic_start "nfs"
     _f="${PROCFS_PATH}/sys/net/ipv4/tcp_tw_recycle"
     if [ "$_f" ] ; then
