@@ -505,10 +505,16 @@ static int cacl_set(struct cli_state *cli, const char *filename,
 	if (!sd) return EXIT_PARSE_ERROR;
 	if (test_args) return EXIT_OK;
 
-	old = get_secdesc(cli, filename);
+	if (mode != SMB_ACL_SET) {
+		/*
+		 * Do not fetch old ACL when it will be overwritten
+		 * completely with a new one.
+		 */
+		old = get_secdesc(cli, filename);
 
-	if (!old) {
-		return EXIT_FAILED;
+		if (!old) {
+			return EXIT_FAILED;
+		}
 	}
 
 	/* the logic here is rather more complex than I would like */
