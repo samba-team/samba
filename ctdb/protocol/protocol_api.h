@@ -90,7 +90,7 @@ size_t ctdb_req_call_len(struct ctdb_req_header *h,
 
 int ctdb_req_call_push(struct ctdb_req_header *h,
 		       struct ctdb_req_call *c,
-		       uint8_t *buf, size_t buflen);
+		       uint8_t *buf, size_t *buflen);
 
 int ctdb_req_call_pull(uint8_t *buf, size_t buflen,
 		       struct ctdb_req_header *h,
@@ -102,7 +102,7 @@ size_t ctdb_reply_call_len(struct ctdb_req_header *h,
 
 int ctdb_reply_call_push(struct ctdb_req_header *h,
 			 struct ctdb_reply_call *c,
-			 uint8_t *buf, size_t buflen);
+			 uint8_t *buf, size_t *buflen);
 
 int ctdb_reply_call_pull(uint8_t *buf, size_t buflen,
 			 struct ctdb_req_header *h,
@@ -114,7 +114,7 @@ size_t ctdb_reply_error_len(struct ctdb_req_header *h,
 
 int ctdb_reply_error_push(struct ctdb_req_header *h,
 			  struct ctdb_reply_error *c,
-			  uint8_t *buf, size_t buflen);
+			  uint8_t *buf, size_t *buflen);
 
 int ctdb_reply_error_pull(uint8_t *buf, size_t buflen,
 			  struct ctdb_req_header *h,
@@ -126,7 +126,7 @@ size_t ctdb_req_dmaster_len(struct ctdb_req_header *h,
 
 int ctdb_req_dmaster_push(struct ctdb_req_header *h,
 			  struct ctdb_req_dmaster *c,
-			  uint8_t *buf, size_t buflen);
+			  uint8_t *buf, size_t *buflen);
 
 int ctdb_req_dmaster_pull(uint8_t *buf, size_t buflen,
 			  struct ctdb_req_header *h,
@@ -138,7 +138,7 @@ size_t ctdb_reply_dmaster_len(struct ctdb_req_header *h,
 
 int ctdb_reply_dmaster_push(struct ctdb_req_header *h,
 			    struct ctdb_reply_dmaster *c,
-			    uint8_t *buf, size_t buflen);
+			    uint8_t *buf, size_t *buflen);
 
 int ctdb_reply_dmaster_pull(uint8_t *buf, size_t buflen,
 			    struct ctdb_req_header *h,
@@ -152,7 +152,7 @@ size_t ctdb_req_control_len(struct ctdb_req_header *h,
 
 int ctdb_req_control_push(struct ctdb_req_header *h,
 			  struct ctdb_req_control *c,
-			  uint8_t *buf, size_t buflen);
+			  uint8_t *buf, size_t *buflen);
 
 int ctdb_req_control_pull(uint8_t *buf, size_t buflen,
 			  struct ctdb_req_header *h,
@@ -164,7 +164,7 @@ size_t ctdb_reply_control_len(struct ctdb_req_header *h,
 
 int ctdb_reply_control_push(struct ctdb_req_header *h,
 			    struct ctdb_reply_control *c,
-			    uint8_t *buf, size_t buflen);
+			    uint8_t *buf, size_t *buflen);
 
 int ctdb_reply_control_pull(uint8_t *buf, size_t buflen, uint32_t opcode,
 			    struct ctdb_req_header *h,
@@ -654,7 +654,7 @@ size_t ctdb_req_message_len(struct ctdb_req_header *h,
 
 int ctdb_req_message_push(struct ctdb_req_header *h,
 			  struct ctdb_req_message *c,
-			  uint8_t *buf, size_t buflen);
+			  uint8_t *buf, size_t *buflen);
 
 int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 			  struct ctdb_req_header *h,
@@ -666,7 +666,7 @@ size_t ctdb_req_message_data_len(struct ctdb_req_header *h,
 
 int ctdb_req_message_data_push(struct ctdb_req_header *h,
 			       struct ctdb_req_message_data *c,
-			       uint8_t *buf, size_t buflen);
+			       uint8_t *buf, size_t *buflen);
 
 int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 			       struct ctdb_req_header *h,

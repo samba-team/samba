@@ -105,7 +105,7 @@ struct tevent_req *ctdb_client_control_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = ctdb_req_control_push(&h, request, buf, buflen);
+	ret = ctdb_req_control_push(&h, request, buf, &buflen);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);

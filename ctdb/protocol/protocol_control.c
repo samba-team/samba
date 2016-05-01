@@ -1899,18 +1899,19 @@ size_t ctdb_req_control_len(struct ctdb_req_header *h,
 
 int ctdb_req_control_push(struct ctdb_req_header *h,
 			  struct ctdb_req_control *request,
-			  uint8_t *buf, size_t buflen)
+			  uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_req_control_wire *wire =
 		(struct ctdb_req_control_wire *)buf;
 	size_t length;
 
 	length = ctdb_req_control_len(h, request);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->opcode = request->opcode;
@@ -1976,18 +1977,19 @@ size_t ctdb_reply_control_len(struct ctdb_req_header *h,
 
 int ctdb_reply_control_push(struct ctdb_req_header *h,
 			    struct ctdb_reply_control *reply,
-			    uint8_t *buf, size_t buflen)
+			    uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_reply_control_wire *wire =
 		(struct ctdb_reply_control_wire *)buf;
 	size_t length;
 
 	length = ctdb_reply_control_len(h, reply);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->status = reply->status;

@@ -92,7 +92,7 @@ struct tevent_req *ctdb_client_message_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ret = ctdb_req_message_push(&h, message, buf, buflen);
+	ret = ctdb_req_message_push(&h, message, buf, &buflen);
 	if (ret != 0) {
 		tevent_req_error(req, ret);
 		return tevent_req_post(req, ev);

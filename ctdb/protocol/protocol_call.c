@@ -78,7 +78,7 @@ size_t ctdb_req_call_len(struct ctdb_req_header *h, struct ctdb_req_call *c)
 }
 
 int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
-		       uint8_t *buf, size_t buflen)
+		       uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_req_call_wire *wire =
 		(struct ctdb_req_call_wire *)buf;
@@ -89,11 +89,12 @@ int ctdb_req_call_push(struct ctdb_req_header *h, struct ctdb_req_call *c,
 	}
 
 	length = ctdb_req_call_len(h, c);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->flags = c->flags;
@@ -160,18 +161,19 @@ size_t ctdb_reply_call_len(struct ctdb_req_header *h,
 }
 
 int ctdb_reply_call_push(struct ctdb_req_header *h, struct ctdb_reply_call *c,
-			 uint8_t *buf, size_t buflen)
+			 uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_reply_call_wire *wire =
 		(struct ctdb_reply_call_wire *)buf;
 	size_t length;
 
 	length = ctdb_reply_call_len(h, c);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->status = c->status;
@@ -224,18 +226,19 @@ size_t ctdb_reply_error_len(struct ctdb_req_header *h,
 }
 
 int ctdb_reply_error_push(struct ctdb_req_header *h, struct ctdb_reply_error *c,
-			  uint8_t *buf, size_t buflen)
+			  uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_reply_error_wire *wire =
 		(struct ctdb_reply_error_wire *)buf;
 	size_t length;
 
 	length = ctdb_reply_error_len(h, c);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->status = c->status;
@@ -288,18 +291,19 @@ size_t ctdb_req_dmaster_len(struct ctdb_req_header *h,
 }
 
 int ctdb_req_dmaster_push(struct ctdb_req_header *h, struct ctdb_req_dmaster *c,
-			  uint8_t *buf, size_t buflen)
+			  uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_req_dmaster_wire *wire =
 		(struct ctdb_req_dmaster_wire *)buf;
 	size_t length;
 
 	length = ctdb_req_dmaster_len(h, c);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->db_id = c->db_id;
@@ -365,18 +369,19 @@ size_t ctdb_reply_dmaster_len(struct ctdb_req_header *h,
 
 int ctdb_reply_dmaster_push(struct ctdb_req_header *h,
 			    struct ctdb_reply_dmaster *c,
-			    uint8_t *buf, size_t buflen)
+			    uint8_t *buf, size_t *buflen)
 {
 	struct ctdb_reply_dmaster_wire *wire =
 		(struct ctdb_reply_dmaster_wire *)buf;
 	size_t length;
 
 	length = ctdb_reply_dmaster_len(h, c);
-	if (buflen < length) {
+	if (*buflen < length) {
+		*buflen = length;
 		return EMSGSIZE;
 	}
 
-	h->length = buflen;
+	h->length = *buflen;
 	ctdb_req_header_push(h, (uint8_t *)&wire->hdr);
 
 	wire->db_id = c->db_id;
