@@ -25,7 +25,7 @@
 /* initialise the arcfour sbox with key */
 _PUBLIC_ void arcfour_init(struct arcfour_state *state, const DATA_BLOB *key) 
 {
-	int ind;
+	size_t ind;
 	uint8_t j = 0;
 	for (ind = 0; ind < sizeof(state->sbox); ind++) {
 		state->sbox[ind] = (uint8_t)ind;
