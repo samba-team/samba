@@ -10,6 +10,7 @@ LimitNOFILE=16384
 EnvironmentFile=-/etc/sysconfig/samba
 ExecStart=/usr/sbin/smbd $SMBDOPTIONS
 ExecReload=/usr/bin/kill -HUP $MAINPID
+LimitCORE=infinity
 
 [Install]
 WantedBy=multi-user.target
