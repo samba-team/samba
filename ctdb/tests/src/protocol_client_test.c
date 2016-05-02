@@ -1997,6 +1997,7 @@ static void test_req_call_test(void)
 	ret = ctdb_req_call_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
 	verify_ctdb_req_header(&h, &h2);
+	assert(h2.length == pkt_len);
 	verify_ctdb_req_call(&c, &c2);
 
 	talloc_free(mem_ctx);
@@ -2026,6 +2027,7 @@ static void test_reply_call_test(void)
 	ret = ctdb_reply_call_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
 	verify_ctdb_req_header(&h, &h2);
+	assert(h2.length == pkt_len);
 	verify_ctdb_reply_call(&c, &c2);
 
 	talloc_free(mem_ctx);
@@ -2055,6 +2057,7 @@ static void test_reply_error_test(void)
 	ret = ctdb_reply_error_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
 	verify_ctdb_req_header(&h, &h2);
+	assert(h2.length == pkt_len);
 	verify_ctdb_reply_error(&c, &c2);
 
 	talloc_free(mem_ctx);
@@ -2084,6 +2087,7 @@ static void test_req_dmaster_test(void)
 	ret = ctdb_req_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
 	verify_ctdb_req_header(&h, &h2);
+	assert(h2.length == pkt_len);
 	verify_ctdb_req_dmaster(&c, &c2);
 
 	talloc_free(mem_ctx);
@@ -2113,6 +2117,7 @@ static void test_reply_dmaster_test(void)
 	ret = ctdb_reply_dmaster_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
 	verify_ctdb_req_header(&h, &h2);
+	assert(h2.length == pkt_len);
 	verify_ctdb_reply_dmaster(&c, &c2);
 
 	talloc_free(mem_ctx);
@@ -2208,6 +2213,7 @@ static void test_req_control_test(void)
 		ret = ctdb_req_control_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 		assert(ret == 0);
 		verify_ctdb_req_header(&h, &h2);
+		assert(h2.length == pkt_len);
 		verify_ctdb_req_control(&c, &c2);
 
 		talloc_free(mem_ctx);
@@ -2245,6 +2251,7 @@ static void test_reply_control_test(void)
 		ret = ctdb_reply_control_pull(pkt, pkt_len, opcode, &h2, mem_ctx, &c2);
 		assert(ret == 0);
 		verify_ctdb_req_header(&h, &h2);
+		assert(h2.length == pkt_len);
 		verify_ctdb_reply_control(&c, &c2);
 
 		talloc_free(mem_ctx);
@@ -2278,6 +2285,7 @@ static void test_req_message_test(void)
 	ret = ctdb_req_message_data_pull(pkt, pkt_len, &h2, mem_ctx, &c2);
 	assert(ret == 0);
 	verify_ctdb_req_header(&h, &h2);
+	assert(h2.length == pkt_len);
 	verify_ctdb_req_message_data(&c, &c2);
 
 	talloc_free(mem_ctx);
