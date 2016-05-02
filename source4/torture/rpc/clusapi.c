@@ -1522,12 +1522,12 @@ static bool test_NodeControl(struct torture_context *tctx,
 	}
 
 	ret = test_NodeControl_int(tctx, t->p, &hNode, CLUSCTL_NODE_GET_RO_COMMON_PROPERTIES);
-	if (ret) {
+	if (!ret) {
 		return false;
 	}
 
 	ret = test_NodeControl_int(tctx, t->p, &hNode, CLUSCTL_NODE_GET_ID);
-	if (ret) {
+	if (!ret) {
 		return false;
 	}
 
@@ -2006,12 +2006,12 @@ static bool test_GroupControl(struct torture_context *tctx,
 	}
 
 	ret = test_GroupControl_int(tctx, t->p, &hGroup, CLUSCTL_GROUP_GET_CHARACTERISTICS);
-	if (ret) {
+	if (!ret) {
 		return false;
 	}
 
 	ret = test_GroupControl_int(tctx, t->p, &hGroup, CLUSCTL_GROUP_GET_RO_COMMON_PROPERTIES);
-	if (ret) {
+	if (!ret) {
 		return false;
 	}
 
