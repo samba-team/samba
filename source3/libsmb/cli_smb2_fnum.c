@@ -262,6 +262,7 @@ NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->raw_status = status;
 		return status;
 	}
 	if (pfnum != NULL) {
@@ -270,6 +271,7 @@ NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
 	if (cr != NULL) {
 		*cr = state->cr;
 	}
+	state->cli->raw_status = NT_STATUS_OK;
 	return NT_STATUS_OK;
 }
 
@@ -390,7 +392,11 @@ static void cli_smb2_close_fnum_done(struct tevent_req *subreq)
 
 NTSTATUS cli_smb2_close_fnum_recv(struct tevent_req *req)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	struct cli_smb2_close_fnum_state *state = tevent_req_data(
+		req, struct cli_smb2_close_fnum_state);
+	NTSTATUS status = tevent_req_simple_recv_ntstatus(req);
+	state->cli->raw_status = status;
+	return status;
 }
 
 NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum)
@@ -2302,6 +2308,7 @@ NTSTATUS cli_smb2_read_recv(struct tevent_req *req,
 				req, struct cli_smb2_read_state);
 
 	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->raw_status = status;
 		return status;
 	}
 	/*
@@ -2311,6 +2318,7 @@ NTSTATUS cli_smb2_read_recv(struct tevent_req *req,
 	 */
 	*received = (ssize_t)state->received;
 	*rcvbuf = state->buf;
+	state->cli->raw_status = NT_STATUS_OK;
 	return NT_STATUS_OK;
 }
 
@@ -2409,6 +2417,7 @@ NTSTATUS cli_smb2_write_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->raw_status = status;
 		tevent_req_received(req);
 		return status;
 	}
@@ -2416,6 +2425,7 @@ NTSTATUS cli_smb2_write_recv(struct tevent_req *req,
 	if (pwritten != NULL) {
 		*pwritten = (size_t)state->written;
 	}
+	state->cli->raw_status = NT_STATUS_OK;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
@@ -2573,11 +2583,13 @@ NTSTATUS cli_smb2_writeall_recv(struct tevent_req *req,
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->raw_status = status;
 		return status;
 	}
 	if (pwritten != NULL) {
 		*pwritten = (size_t)state->written;
 	}
+	state->cli->raw_status = NT_STATUS_OK;
 	return NT_STATUS_OK;
 }
 
@@ -2838,12 +2850,14 @@ NTSTATUS cli_smb2_splice_recv(struct tevent_req *req, off_t *written)
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
+		state->cli->raw_status = status;
 		tevent_req_received(req);
 		return status;
 	}
 	if (written != NULL) {
 		*written = state->written;
 	}
+	state->cli->raw_status = NT_STATUS_OK;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
