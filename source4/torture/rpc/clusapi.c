@@ -2217,7 +2217,8 @@ static bool test_SetServiceAccountPassword(struct torture_context *tctx,
 
 static bool test_ClusterControl_int(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
-				    struct policy_handle *Cluster)
+				    struct policy_handle *Cluster,
+				    enum clusapi_ClusterControlCode dwControlCode)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct clusapi_ClusterControl r;
@@ -2243,7 +2244,7 @@ static bool test_ClusterControl_int(struct torture_context *tctx,
 		WERR_INVALID_FUNCTION,
 		"ClusterControl failed");
 
-	r.in.dwControlCode = CLUSCTL_CLUSTER_GET_RO_COMMON_PROPERTIES;
+	r.in.dwControlCode = dwControlCode;
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_clusapi_ClusterControl_r(b, tctx, &r),
@@ -2263,7 +2264,7 @@ static bool test_ClusterControl_int(struct torture_context *tctx,
 	/* now try what happens when we query with a buffer large enough to hold
 	 * the entire packet */
 
-	r.in.nOutBufferSize = 0x400;
+	r.in.nOutBufferSize = 0xffff;
 	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
 
 	torture_assert_ntstatus_ok(tctx,
@@ -2285,13 +2286,27 @@ static bool test_ClusterControl(struct torture_context *tctx,
 		talloc_get_type_abort(data, struct torture_clusapi_context);
 	struct policy_handle Cluster;
 	bool ret;
+	uint32_t control_codes[] = {
+		CLUSCTL_CLUSTER_GET_COMMON_PROPERTIES,
+		CLUSCTL_CLUSTER_GET_RO_COMMON_PROPERTIES,
+		CLUSCTL_CLUSTER_GET_FQDN,
+		CLUSCTL_CLUSTER_GET_PRIVATE_PROPERTIES
+	};
+	int i;
 
 	if (!test_OpenCluster_int(tctx, t->p, &Cluster)) {
 		return false;
 	}
 
-	ret = test_ClusterControl_int(tctx, t->p, &Cluster);
+	for (i=0; i < ARRAY_SIZE(control_codes); i++) {
+		ret = test_ClusterControl_int(tctx, t->p, &Cluster,
+					      control_codes[i]);
+		if (!ret) {
+			goto done;
+		}
+	}
 
+ done:
 	test_CloseCluster_int(tctx, t->p, &Cluster);
 
 	return ret;
