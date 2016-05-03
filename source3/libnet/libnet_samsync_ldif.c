@@ -29,6 +29,7 @@
 #include "transfer_file.h"
 #include "passdb.h"
 #include "passdb/pdb_ldap_schema.h"
+#include "lib/util/base64.h"
 
 #ifdef HAVE_LDAP
 

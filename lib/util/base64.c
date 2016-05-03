@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/base64.h"
 
 static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

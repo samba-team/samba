@@ -38,6 +38,7 @@
 #include "lib/messaging/irpc.h"
 #include "auth/ntlmssp/ntlmssp.h"
 #include "param/param.h"
+#include "lib/util/base64.h"
 
 #define INITIAL_BUFFER_SIZE 300
 #define MAX_BUFFER_SIZE 63000

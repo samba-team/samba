@@ -24,6 +24,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
 #include "auth/credentials/credentials.h"
+#include "lib/util/base64.h"
 
 _PUBLIC_ NTSTATUS gensec_http_basic_init(void);
 

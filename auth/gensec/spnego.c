@@ -30,6 +30,7 @@
 #include "auth/gensec/gensec_internal.h"
 #include "param/param.h"
 #include "lib/util/asn1.h"
+#include "lib/util/base64.h"
 
 #undef strcasecmp
 

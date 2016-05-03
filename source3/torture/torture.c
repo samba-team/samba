@@ -42,6 +42,7 @@
 #include "../libcli/smb/read_smb.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/util/sys_rw_data.h"
+#include "lib/util/base64.h"
 
 extern char *optarg;
 extern int optind;

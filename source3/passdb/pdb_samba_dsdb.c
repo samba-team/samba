@@ -39,6 +39,7 @@
 #include "source3/include/secrets.h"
 #include "source4/auth/auth_sam.h"
 #include "auth/credentials/credentials.h"
+#include "lib/util/base64.h"
 
 struct pdb_samba_dsdb_state {
 	struct tevent_context *ev;

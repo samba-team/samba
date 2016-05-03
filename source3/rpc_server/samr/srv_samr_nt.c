@@ -45,6 +45,7 @@
 #include "auth.h"
 #include "rpc_server/srv_access_check.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/util/base64.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

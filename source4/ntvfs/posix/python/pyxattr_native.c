@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
 #include "system/filesys.h"
+#include "lib/util/base64.h"
 
 void initxattr_native(void);
 

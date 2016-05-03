@@ -28,6 +28,7 @@
 #include "libnet/libnet_samsync.h"
 #include "../libcli/security/security.h"
 #include "passdb.h"
+#include "lib/util/base64.h"
 
 /* Convert a struct samu_DELTA to a struct samu. */
 #define STRING_CHANGED (old_string && !new_string) ||\

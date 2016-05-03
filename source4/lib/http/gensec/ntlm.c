@@ -23,6 +23,7 @@
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
+#include "lib/util/base64.h"
 
 _PUBLIC_ NTSTATUS gensec_http_ntlm_init(void);
 

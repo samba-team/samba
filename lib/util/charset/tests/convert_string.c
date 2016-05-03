@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "lib/util/charset/charset.h"
 #include "param/param.h"
+#include "lib/util/base64.h"
 
 struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx);
 struct torture_suite *torture_local_string_case_handle(TALLOC_CTX *mem_ctx);

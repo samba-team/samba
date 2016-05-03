@@ -28,6 +28,7 @@
 #include "dbwrap/dbwrap_rbt.h"
 #include "../libds/common/flag_mapping.h"
 #include "passdb.h"
+#include "lib/util/base64.h"
 
 /****************************************************************
 ****************************************************************/

@@ -31,6 +31,7 @@
 #include "lib/param/param.h"
 #include "lib/util/tsort.h"
 #include "lib/util/samba_modules.h"
+#include "lib/util/base64.h"
 
 /* the list of currently registered GENSEC backends */
 static const struct gensec_security_ops **generic_security_ops;
