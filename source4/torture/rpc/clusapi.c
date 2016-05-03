@@ -2154,6 +2154,60 @@ static bool test_GroupControl_int(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_CreateGroupResourceEnum_int(struct torture_context *tctx,
+					     struct dcerpc_pipe *p,
+					     struct policy_handle *hGroup)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateGroupResourceEnum r;
+	uint32_t dwType[] = {
+		CLUSTER_GROUP_ENUM_CONTAINS,
+		CLUSTER_GROUP_ENUM_NODES
+	};
+	uint32_t dwType_invalid[] = {
+		0x00000040,
+		0x00000080,
+		0x00000100 /* and many more ... */
+	};
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.hGroup = *hGroup;
+
+	for (i=0; i < ARRAY_SIZE(dwType); i++) {
+
+		r.in.hGroup = *hGroup;
+		r.in.dwType = dwType[i];
+		r.out.ReturnEnum = &ReturnEnum;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_CreateGroupResourceEnum_r(b, tctx, &r),
+			"CreateGroupResourceEnum failed");
+		torture_assert_werr_ok(tctx,
+			r.out.result,
+			"CreateGroupResourceEnum failed");
+	}
+
+	for (i=0; i < ARRAY_SIZE(dwType_invalid); i++) {
+
+		r.in.dwType = dwType_invalid[i];
+		r.out.ReturnEnum = &ReturnEnum;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_CreateGroupResourceEnum_r(b, tctx, &r),
+			"CreateGroupResourceEnum failed");
+		torture_assert_werr_ok(tctx,
+			r.out.result,
+			"CreateGroupResourceEnum failed");
+	}
+
+	return true;
+}
+
+
 static bool test_GroupControl(struct torture_context *tctx,
 			      void *data)
 {
@@ -2282,6 +2336,10 @@ static bool test_one_group(struct torture_context *tctx,
 	torture_assert(tctx,
 		test_GetGroupState_int(tctx, p, &hGroup),
 		"failed to query group id");
+
+	torture_assert(tctx,
+		test_CreateGroupResourceEnum_int(tctx, p, &hGroup),
+		"failed to query resource enum");
 
 	test_CloseGroup_int(tctx, p, &hGroup);
 
