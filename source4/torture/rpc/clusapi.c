@@ -1148,6 +1148,129 @@ static bool test_GetResourceNetworkName(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_ResourceTypeControl_int(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct policy_handle *Cluster,
+					 const char *resource_type,
+					 enum clusapi_ClusterControlCode dwControlCode)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_ResourceTypeControl r;
+	uint32_t lpBytesReturned;
+	uint32_t lpcbRequired;
+	WERROR rpc_status;
+
+	r.in.hCluster = *Cluster;
+	r.in.lpszResourceTypeName = resource_type;
+	r.in.dwControlCode = 0;
+	r.in.lpInBuffer = NULL;
+	r.in.nInBufferSize = 0;
+	r.in.nOutBufferSize = 0;
+	r.out.lpOutBuffer = NULL;
+	r.out.lpBytesReturned = &lpBytesReturned;
+	r.out.lpcbRequired = &lpcbRequired;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_ResourceTypeControl_r(b, tctx, &r),
+		"ResourceTypeControl failed");
+
+	if (strequal(r.in.lpszResourceTypeName, "MSMQ") ||
+	    strequal(r.in.lpszResourceTypeName, "MSMQTriggers")) {
+		torture_assert_werr_equal(tctx,
+			r.out.result,
+			WERR_CLUSTER_RESTYPE_NOT_SUPPORTED,
+			"ResourceTypeControl failed");
+		return true;
+	}
+
+	torture_assert_werr_equal(tctx,
+		r.out.result,
+		WERR_INVALID_FUNCTION,
+		"ResourceTypeControl failed");
+
+	r.in.dwControlCode = dwControlCode;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_ResourceTypeControl_r(b, tctx, &r),
+		"ResourceTypeControl failed");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, *r.out.lpcbRequired);
+		r.in.nOutBufferSize = *r.out.lpcbRequired;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_ResourceTypeControl_r(b, tctx, &r),
+			"ResourceTypeControl failed");
+	}
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"ResourceTypeControl failed");
+
+	/* now try what happens when we query with a buffer large enough to hold
+	 * the entire packet */
+
+	r.in.nOutBufferSize = 0x400;
+	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_ResourceTypeControl_r(b, tctx, &r),
+		"ResourceTypeControl failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"ResourceTypeControl failed");
+	torture_assert(tctx, *r.out.lpBytesReturned < r.in.nOutBufferSize,
+		"lpBytesReturned expected to be smaller than input size nOutBufferSize");
+
+	return true;
+}
+
+static bool test_ResourceTypeControl(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     const char *resourcetype_name)
+{
+	struct policy_handle Cluster;
+	bool ret;
+	uint32_t control_codes[] = {
+		CLUSCTL_RESOURCE_TYPE_GET_CLASS_INFO,
+		CLUSCTL_RESOURCE_TYPE_GET_CHARACTERISTICS,
+		CLUSCTL_RESOURCE_TYPE_GET_COMMON_PROPERTIES,
+		CLUSCTL_RESOURCE_TYPE_GET_RO_COMMON_PROPERTIES,
+		CLUSCTL_RESOURCE_TYPE_GET_PRIVATE_PROPERTIES
+	};
+	int i;
+
+	if (!test_OpenCluster_int(tctx, p, &Cluster)) {
+		return false;
+	}
+
+	for (i=0; i < ARRAY_SIZE(control_codes); i++) {
+		ret = test_ResourceTypeControl_int(tctx, p, &Cluster,
+						   resourcetype_name,
+						   control_codes[i]);
+		if (!ret) {
+			goto done;
+		}
+	}
+
+ done:
+	test_CloseCluster_int(tctx, p, &Cluster);
+
+	return ret;
+}
+
+
+
+static bool test_one_resourcetype(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  const char *resourcetype_name)
+{
+	torture_assert(tctx,
+		test_ResourceTypeControl(tctx, p, resourcetype_name),
+		"failed to query ResourceTypeControl");
+
+	return true;
+}
+
 static bool test_one_resource(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
 			      const char *resource_name)
@@ -1223,6 +1346,44 @@ static bool test_all_resources(struct torture_context *tctx,
 
 	return true;
 }
+
+static bool test_all_resourcetypes(struct torture_context *tctx,
+				   void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
+	struct clusapi_CreateEnum r;
+	uint32_t dwType = CLUSTER_ENUM_RESTYPE;
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i;
+
+	r.in.dwType = dwType;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateEnum_r(b, tctx, &r),
+		"CreateEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateEnum failed");
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert_int_equal(tctx, e.Type, CLUSTER_ENUM_RESTYPE, "type mismatch");
+
+		torture_assert(tctx,
+			test_one_resourcetype(tctx, t->p, e.Name),
+			"failed to test one resourcetype");
+	}
+
+	return true;
+}
+
 
 static bool test_OpenNode_int(struct torture_context *tctx,
 			      struct dcerpc_pipe *p,
@@ -3375,6 +3536,12 @@ void torture_tcase_resource(struct torture_tcase *tcase)
 				      test_all_resources);
 }
 
+void torture_tcase_resourcetype(struct torture_tcase *tcase)
+{
+	torture_tcase_add_simple_test(tcase, "all_resourcetypes",
+				      test_all_resourcetypes);
+}
+
 void torture_tcase_node(struct torture_tcase *tcase)
 {
 	struct torture_test *test;
@@ -3494,6 +3661,15 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				  torture_rpc_clusapi_teardown);
 
 	torture_tcase_resource(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "resourcetype");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_resourcetype(tcase);
+
 
 	tcase = torture_suite_add_tcase(suite, "node");
 
