@@ -114,7 +114,9 @@ _PUBLIC_ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 					   * random but should be enough for
 					   * the = and \0 */
 	result = talloc_array(mem_ctx, char, output_len); /* get us plenty of space */
-	SMB_ASSERT(result != NULL);
+	if (result == NULL) {
+		return NULL;
+	}
 
 	while (len--) {
 		int c = (unsigned char) *(data.data++);
