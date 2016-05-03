@@ -2814,7 +2814,6 @@ static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx;
 	int i;
-	int disabled_flag_changed;
 
 	if (data.dsize != sizeof(*c)) {
 		DEBUG(DEBUG_ERR,(__location__ "Invalid data in ctdb_node_flag_change\n"));
@@ -2846,27 +2845,7 @@ static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 		DEBUG(DEBUG_NOTICE,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->pnn, c->new_flags, c->old_flags));
 	}
 
-	disabled_flag_changed =  (nodemap->nodes[i].flags ^ c->new_flags) & NODE_FLAGS_DISABLED;
-
 	nodemap->nodes[i].flags = c->new_flags;
-
-	ret = ctdb_ctrl_getrecmode(ctdb, tmp_ctx, CONTROL_TIMEOUT(),
-				   CTDB_CURRENT_NODE, &ctdb->recovery_mode);
-
-	if (ret == 0 &&
-	    rec->recmaster == ctdb->pnn &&
-	    ctdb->recovery_mode == CTDB_RECOVERY_NORMAL) {
-		/* Only do the takeover run if the perm disabled or unhealthy
-		   flags changed since these will cause an ip failover but not
-		   a recovery.
-		   If the node became disconnected or banned this will also
-		   lead to an ip address failover but that is handled 
-		   during recovery
-		*/
-		if (disabled_flag_changed) {
-			rec->need_takeover_run = true;
-		}
-	}
 
 	talloc_free(tmp_ctx);
 }
