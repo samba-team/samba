@@ -2230,6 +2230,11 @@ static bool test_GroupControl(struct torture_context *tctx,
 		return false;
 	}
 
+	ret = test_GroupControl_int(tctx, t->p, &hGroup, CLUSCTL_GROUP_GET_FLAGS);
+	if (!ret) {
+		return false;
+	}
+
 	test_CloseGroup_int(tctx, t->p, &hGroup);
 
 	return ret;
@@ -2336,6 +2341,10 @@ static bool test_one_group(struct torture_context *tctx,
 	torture_assert(tctx,
 		test_GetGroupState_int(tctx, p, &hGroup),
 		"failed to query group id");
+
+	torture_assert(tctx,
+		test_GroupControl_int(tctx, p, &hGroup, CLUSCTL_GROUP_GET_FLAGS),
+		"failed to query group control");
 
 	torture_assert(tctx,
 		test_CreateGroupResourceEnum_int(tctx, p, &hGroup),
