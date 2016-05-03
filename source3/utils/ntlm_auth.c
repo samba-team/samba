@@ -1452,6 +1452,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			return;
 		} else {
 			base64_key = base64_encode_data_blob(state, session_key);
+			SMB_ASSERT(base64_key != NULL);
 			x_fprintf(x_stdout, "GK %s\n", base64_key);
 			talloc_free(base64_key);
 		}
@@ -1481,6 +1482,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 	if (out.length) {
 		out_base64 = base64_encode_data_blob(mem_ctx, out);
+		SMB_ASSERT(out_base64 != NULL);
 	} else {
 		out_base64 = NULL;
 	}

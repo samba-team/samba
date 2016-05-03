@@ -1240,10 +1240,14 @@ static NTSTATUS sam_account_from_object(struct samu *account,
 	}
 
 	if (userParameters.data) {
-		char *newstr;
+		char *newstr = NULL;
 		old_string = pdb_get_munged_dial(account);
-		newstr = (userParameters.length == 0) ? NULL :
-			base64_encode_data_blob(talloc_tos(), userParameters);
+
+		if (userParameters.length != 0) {
+			newstr = base64_encode_data_blob(talloc_tos(),
+							 userParameters);
+			SMB_ASSERT(newstr != NULL);
+		}
 
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(account, newstr, PDB_CHANGED);

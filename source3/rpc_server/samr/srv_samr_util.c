@@ -305,8 +305,6 @@ void copy_id18_to_sam_passwd(struct samu *to,
 void copy_id20_to_sam_passwd(struct samu *to,
 			     struct samr_UserInfo20 *from)
 {
-	const char *old_string;
-	char *new_string;
 	DATA_BLOB mung;
 
 	if (from == NULL || to == NULL) {
@@ -314,11 +312,18 @@ void copy_id20_to_sam_passwd(struct samu *to,
 	}
 
 	if (from->parameters.array) {
+		const char *old_string;
+		char *new_string = NULL;
 		old_string = pdb_get_munged_dial(to);
 		mung = data_blob_const(from->parameters.array,
 				       from->parameters.length);
-		new_string = (mung.length == 0) ?
-			NULL : base64_encode_data_blob(talloc_tos(), mung);
+
+		if (mung.length != 0) {
+			new_string = base64_encode_data_blob(talloc_tos(),
+							     mung);
+			SMB_ASSERT(new_string != NULL);
+		}
+
 		DEBUG(10,("INFO_20 PARAMETERS: %s -> %s\n",
 			old_string, new_string));
 		if (STRING_CHANGED_NC(old_string,new_string)) {
@@ -496,14 +501,17 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 
 	if ((from->fields_present & SAMR_FIELD_PARAMETERS) &&
 	    (from->parameters.array)) {
-		char *newstr;
+		char *newstr = NULL;
 		DATA_BLOB mung;
 		old_string = pdb_get_munged_dial(to);
 
 		mung = data_blob_const(from->parameters.array,
 				       from->parameters.length);
-		newstr = (mung.length == 0) ?
-			NULL : base64_encode_data_blob(talloc_tos(), mung);
+
+		if (mung.length != 0) {
+			newstr = base64_encode_data_blob(talloc_tos(), mung);
+			SMB_ASSERT(newstr != NULL);
+		}
 		DEBUG(10,("%s SAMR_FIELD_PARAMETERS: %s -> %s\n", l,
 			old_string, newstr));
 		if (STRING_CHANGED_NC(old_string,newstr)) {
