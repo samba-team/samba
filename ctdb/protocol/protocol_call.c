@@ -123,6 +123,15 @@ int ctdb_req_call_pull(uint8_t *buf, size_t buflen,
 	if (buflen < length) {
 		return EMSGSIZE;
 	}
+	if (wire->keylen > buflen || wire->calldatalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen < length) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen + wire->calldatalen < length) {
+		return EMSGSIZE;
+	}
 	if (buflen < length + wire->keylen + wire->calldatalen) {
 		return EMSGSIZE;
 	}
@@ -197,6 +206,12 @@ int ctdb_reply_call_pull(uint8_t *buf, size_t buflen,
 	if (buflen < length) {
 		return EMSGSIZE;
 	}
+	if (wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen < length) {
+		return EMSGSIZE;
+	}
 	if (buflen < length + wire->datalen) {
 		return EMSGSIZE;
 	}
@@ -260,6 +275,12 @@ int ctdb_reply_error_pull(uint8_t *buf, size_t buflen,
 
 	length = offsetof(struct ctdb_reply_error_wire, msg);
 	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->msglen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->msglen < length) {
 		return EMSGSIZE;
 	}
 	if (buflen < length + wire->msglen) {
@@ -329,6 +350,15 @@ int ctdb_req_dmaster_pull(uint8_t *buf, size_t buflen,
 
 	length = offsetof(struct ctdb_req_dmaster_wire, data);
 	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->keylen > buflen || wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen < length) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen + wire->datalen < length) {
 		return EMSGSIZE;
 	}
 	if (buflen < length + wire->keylen + wire->datalen) {
@@ -406,6 +436,15 @@ int ctdb_reply_dmaster_pull(uint8_t *buf, size_t buflen,
 
 	length = offsetof(struct ctdb_reply_dmaster_wire, data);
 	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->keylen > buflen || wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen < length) {
+		return EMSGSIZE;
+	}
+	if (length + wire->keylen + wire->datalen < length) {
 		return EMSGSIZE;
 	}
 	if (buflen < length + wire->keylen + wire->datalen) {

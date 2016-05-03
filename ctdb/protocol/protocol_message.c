@@ -325,6 +325,12 @@ int ctdb_req_message_pull(uint8_t *buf, size_t buflen,
 	if (buflen < length) {
 		return EMSGSIZE;
 	}
+	if (wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen < length) {
+		return EMSGSIZE;
+	}
 	if (buflen < length + wire->datalen) {
 		return EMSGSIZE;
 	}
@@ -385,6 +391,12 @@ int ctdb_req_message_data_pull(uint8_t *buf, size_t buflen,
 
 	length = offsetof(struct ctdb_req_message_wire, data);
 	if (buflen < length) {
+		return EMSGSIZE;
+	}
+	if (wire->datalen > buflen) {
+		return EMSGSIZE;
+	}
+	if (length + wire->datalen < length) {
 		return EMSGSIZE;
 	}
 	if (buflen < length + wire->datalen) {
