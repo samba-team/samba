@@ -166,7 +166,7 @@ static PyObject *pytalloc_base_default_repr(PyObject *obj)
 	pytalloc_BaseObject *talloc_obj = (pytalloc_BaseObject *)obj;
 	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
 
-	return PyStr_FromFormat("<%s talloc based object at 0x%p>",
+	return PyStr_FromFormat("<%s talloc based object at %p>",
 				type->tp_name, talloc_obj->ptr);
 }
 
