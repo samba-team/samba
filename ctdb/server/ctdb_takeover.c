@@ -1553,10 +1553,10 @@ fail:
 }
 
 struct takeover_callback_data {
+	uint32_t num_nodes;
 	bool *node_failed;
 	client_async_callback fail_callback;
 	void *fail_callback_data;
-	struct ctdb_node_map_old *nodemap;
 };
 
 static void takeover_run_fail_callback(struct ctdb_context *ctdb,
@@ -1567,7 +1567,7 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 		talloc_get_type_abort(callback_data,
 				      struct takeover_callback_data);
 
-	if (node_pnn >= cd->nodemap->num) {
+	if (node_pnn >= cd->num_nodes) {
 		DEBUG(DEBUG_ERR, (__location__ " invalid PNN %u\n", node_pnn));
 		return;
 	}
@@ -1689,9 +1689,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	takeover_data->node_failed = talloc_zero_array(tmp_ctx,
 						       bool, nodemap->num);
 	CTDB_NO_MEMORY_FATAL(ctdb, takeover_data->node_failed);
+	takeover_data->num_nodes = nodemap->num;
 	takeover_data->fail_callback = fail_callback;
 	takeover_data->fail_callback_data = callback_data;
-	takeover_data->nodemap = nodemap;
 
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
