@@ -2540,6 +2540,105 @@ static bool test_ClusterControl(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_CreateResTypeEnum(struct torture_context *tctx,
+				   void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
+	struct clusapi_CreateResTypeEnum r;
+	uint32_t dwType[] = {
+		CLUSTER_RESOURCE_TYPE_ENUM_NODES,
+		CLUSTER_RESOURCE_TYPE_ENUM_RESOURCES
+	};
+	uint32_t dwType_invalid[] = {
+		0x00000040,
+		0x00000080,
+		0x00000100 /* and many more ... */
+	};
+	const char *valid_names[] = {
+		"Physical Disk",
+		"Storage Pool"
+	};
+	const char *invalid_names[] = {
+		"INVALID_TYPE_XXXX"
+	};
+	struct ENUM_LIST *ReturnEnum;
+	WERROR rpc_status;
+	int i, s;
+
+	for (s = 0; s < ARRAY_SIZE(valid_names); s++) {
+
+		r.in.lpszTypeName = valid_names[s];
+
+		for (i=0; i < ARRAY_SIZE(dwType); i++) {
+
+			r.in.dwType = dwType[i];
+			r.out.ReturnEnum = &ReturnEnum;
+			r.out.rpc_status = &rpc_status;
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_clusapi_CreateResTypeEnum_r(b, tctx, &r),
+				"CreateResTypeEnum failed");
+			torture_assert_werr_ok(tctx,
+				r.out.result,
+				"CreateResTypeEnum failed");
+		}
+
+		for (i=0; i < ARRAY_SIZE(dwType_invalid); i++) {
+
+			r.in.dwType = dwType_invalid[i];
+			r.out.ReturnEnum = &ReturnEnum;
+			r.out.rpc_status = &rpc_status;
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_clusapi_CreateResTypeEnum_r(b, tctx, &r),
+				"CreateResTypeEnum failed");
+			torture_assert_werr_ok(tctx,
+				r.out.result,
+				"CreateResTypeEnum failed");
+		}
+	}
+
+	for (s = 0; s < ARRAY_SIZE(invalid_names); s++) {
+
+		r.in.lpszTypeName = invalid_names[s];
+
+		for (i=0; i < ARRAY_SIZE(dwType); i++) {
+
+			r.in.dwType = dwType[i];
+			r.out.ReturnEnum = &ReturnEnum;
+			r.out.rpc_status = &rpc_status;
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_clusapi_CreateResTypeEnum_r(b, tctx, &r),
+				"CreateResTypeEnum failed");
+			torture_assert_werr_equal(tctx,
+				r.out.result,
+				WERR_CLUSTER_RESOURCE_TYPE_NOT_FOUND,
+				"CreateResTypeEnum failed");
+		}
+
+		for (i=0; i < ARRAY_SIZE(dwType_invalid); i++) {
+
+			r.in.dwType = dwType_invalid[i];
+			r.out.ReturnEnum = &ReturnEnum;
+			r.out.rpc_status = &rpc_status;
+
+			torture_assert_ntstatus_ok(tctx,
+				dcerpc_clusapi_CreateResTypeEnum_r(b, tctx, &r),
+				"CreateResTypeEnum failed");
+			torture_assert_werr_equal(tctx,
+				r.out.result,
+				WERR_CLUSTER_RESOURCE_TYPE_NOT_FOUND,
+				"CreateResTypeEnum failed");
+		}
+	}
+
+
+	return true;
+}
+
 static bool test_OpenNetwork_int(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 const char *lpszNetworkName,
@@ -3556,6 +3655,8 @@ void torture_tcase_cluster(struct torture_tcase *tcase)
 				      test_SetServiceAccountPassword);
 	torture_tcase_add_simple_test(tcase, "ClusterControl",
 				      test_ClusterControl);
+	torture_tcase_add_simple_test(tcase, "CreateResTypeEnum",
+				      test_CreateResTypeEnum);
 
 }
 
