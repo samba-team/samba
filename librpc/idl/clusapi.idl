@@ -791,10 +791,15 @@ import "winreg.idl", "misc.idl";
 	/*****************/
 	/* Function 0x35 */
 
+	typedef [bitmap32bit] bitmap {
+		CLUSTER_GROUP_ENUM_CONTAINS		= 0x00000001,
+		CLUSTER_GROUP_ENUM_NODES		= 0x00000002
+	} ClusterGroupEnumType;
+
 	WERROR
 	clusapi_CreateGroupResourceEnum(
 		[ in ] HGROUP_RPC hGroup,
-		[ in ] uint32 dwType,
+		[ in ] ClusterGroupEnumType dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
 		[ out ] WERROR *rpc_status
 	);
