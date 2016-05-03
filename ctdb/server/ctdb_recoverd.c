@@ -3871,20 +3871,11 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 takeover_run_checks:
 
-	/* if there are takeovers requested, perform it and notify the waiters */
+	/* If there are IP takeover runs requested or the previous one
+	 * failed then perform one and notify the waiters */
 	if (!ctdb_op_is_disabled(rec->takeover_run) &&
-	    rec->reallocate_requests) {
+	    (rec->reallocate_requests || rec->need_takeover_run)) {
 		process_ipreallocate_requests(ctdb, rec);
-	}
-
-	/* we might need to change who has what IP assigned */
-	if (rec->need_takeover_run) {
-		/* If takeover run fails, then the offending nodes are
-		 * assigned ban culprit counts. And we re-try takeover.
-		 * If takeover run fails repeatedly, the node would get
-		 * banned.
-		 */
-		do_takeover_run(rec, nodemap);
 	}
 }
 
