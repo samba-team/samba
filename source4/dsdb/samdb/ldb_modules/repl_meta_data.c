@@ -3583,6 +3583,47 @@ static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *
 				      new_m->originating_change_time);
 }
 
+static bool replmd_replPropertyMetaData1_new_should_be_taken(uint32_t dsdb_repl_flags,
+							     struct replPropertyMetaData1 *cur_m,
+							     struct replPropertyMetaData1 *new_m)
+{
+	bool cmp;
+
+	/*
+	 * If the new replPropertyMetaData entry for this attribute is
+	 * not provided (this happens in the case where we look for
+	 * ATTID_name, but the name was not changed), then the local
+	 * state is clearly still current, as the remote
+	 * server didn't send it due to being older the high watermark
+	 * USN we sent.
+	 */
+	if (new_m == NULL) {
+		return false;
+	}
+
+	if (dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING) {
+		/*
+		 * if we compare equal then do an
+		 * update. This is used when a client
+		 * asks for a FULL_SYNC, and can be
+		 * used to recover a corrupt
+		 * replica.
+		 *
+		 * This call is a bit tricky, what we
+		 * are doing it turning the 'is_newer'
+		 * call into a 'not is older' by
+		 * swapping cur_m and new_m, and negating the
+		 * outcome.
+		 */
+		cmp = !replmd_replPropertyMetaData1_is_newer(new_m,
+							     cur_m);
+	} else {
+		cmp = replmd_replPropertyMetaData1_is_newer(cur_m,
+							    new_m);
+	}
+	return cmp;
+}
+
 
 /*
   form a conflict DN
