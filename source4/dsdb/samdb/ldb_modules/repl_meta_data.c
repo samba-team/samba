@@ -3898,18 +3898,31 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 
 	rmd = ar->objs->objects[ar->index_current].meta_data;
 
-	/* we decide which is newer based on the RPMD on the name
-	   attribute.  See [MS-DRSR] ResolveNameConflict */
+	/*
+	 * we decide which is newer based on the RPMD on the name
+	 * attribute.  See [MS-DRSR] ResolveNameConflict.
+	 *
+	 * We expect omd_name to be present, as this is from a local
+	 * search, but while rmd_name should have been given to us by
+	 * the remote server, if it is missing we just prefer the
+	 * local name in
+	 * replmd_replPropertyMetaData1_new_should_be_taken()
+	 */
 	rmd_name = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTID_name);
 	omd_name = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTID_name);
-	if (!rmd_name || !omd_name) {
-		DEBUG(0,(__location__ ": Failed to find name attribute in replPropertyMetaData for %s\n",
+	if (!omd_name) {
+		DEBUG(0,(__location__ ": Failed to find name attribute in local LDB replPropertyMetaData for %s\n",
 			 ldb_dn_get_linearized(conflict_dn)));
 		goto failed;
 	}
 
-	rename_incoming_record = !(ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING) &&
-		!replmd_replPropertyMetaData1_is_newer(omd_name, rmd_name);
+	/*
+	 * Should we preserve the current record, and so rename the
+	 * incoming record to be a conflict?
+	 */
+	rename_incoming_record
+		= !replmd_replPropertyMetaData1_new_should_be_taken(ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING,
+								    omd_name, rmd_name);
 
 	if (rename_incoming_record) {
 		struct GUID guid;
