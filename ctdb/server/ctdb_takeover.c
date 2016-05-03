@@ -1555,15 +1555,11 @@ fail:
 struct takeover_callback_data {
 	uint32_t num_nodes;
 	bool *node_failed;
-	client_async_callback fail_callback;
-	void *fail_callback_data;
 };
 
 static struct takeover_callback_data *
 takeover_callback_data_init(TALLOC_CTX *mem_ctx,
-			    uint32_t num_nodes,
-			    client_async_callback fail_callback,
-			    void *callback_data)
+			    uint32_t num_nodes)
 {
 	static struct takeover_callback_data *takeover_data;
 
@@ -1582,8 +1578,6 @@ takeover_callback_data_init(TALLOC_CTX *mem_ctx,
 	}
 
 	takeover_data->num_nodes = num_nodes;
-	takeover_data->fail_callback = fail_callback;
-	takeover_data->fail_callback_data = callback_data;
 
 	return takeover_data;
 }
@@ -1602,11 +1596,24 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 	}
 
 	if (!cd->node_failed[node_pnn]) {
+		int ret;
+		TDB_DATA data;
+
 		DEBUG(DEBUG_ERR,
 		      ("Node %u failed the takeover run\n", node_pnn));
 		cd->node_failed[node_pnn] = true;
-		cd->fail_callback(ctdb, node_pnn, res, outdata,
-				  cd->fail_callback_data);
+
+		data.dptr = (uint8_t *)&node_pnn;
+		data.dsize = sizeof(uint32_t);
+		ret = ctdb_client_send_message(ctdb,
+					       CTDB_BROADCAST_CONNECTED,
+					       CTDB_SRVID_BANNING,
+					       data);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to set banning credits for node %u\n",
+			       node_pnn));
+		}
 	}
 }
 
@@ -1660,9 +1667,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	 * following steps will cause an early return, so this can be
 	 * reused for each of those steps without re-initialising. */
 	takeover_data = takeover_callback_data_init(tmp_ctx,
-						    nodemap->num,
-						    fail_callback,
-						    callback_data);
+						    nodemap->num);
 	if (takeover_data == NULL) {
 		talloc_free(tmp_ctx);
 		return -1;
