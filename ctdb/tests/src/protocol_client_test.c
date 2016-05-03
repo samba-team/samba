@@ -50,7 +50,7 @@ static void fill_ctdb_req_call(TALLOC_CTX *mem_ctx,
 	c->db_id = rand32();
 	c->callid = rand32();
 	c->hopcount = rand32();
-	fill_tdb_data(mem_ctx, &c->key);
+	fill_tdb_data_nonnull(mem_ctx, &c->key);
 	fill_tdb_data(mem_ctx, &c->calldata);
 }
 
@@ -99,7 +99,7 @@ static void fill_ctdb_req_dmaster(TALLOC_CTX *mem_ctx,
 	c->db_id = rand32();
 	c->rsn = rand64();
 	c->dmaster = rand32();
-	fill_tdb_data(mem_ctx, &c->key);
+	fill_tdb_data_nonnull(mem_ctx, &c->key);
 	fill_tdb_data(mem_ctx, &c->data);
 }
 
@@ -118,7 +118,7 @@ static void fill_ctdb_reply_dmaster(TALLOC_CTX *mem_ctx,
 {
 	c->db_id = rand32();
 	c->rsn = rand64();
-	fill_tdb_data(mem_ctx, &c->key);
+	fill_tdb_data_nonnull(mem_ctx, &c->key);
 	fill_tdb_data(mem_ctx, &c->data);
 }
 

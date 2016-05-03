@@ -85,12 +85,22 @@ static void verify_buffer(void *p1, void *p2, size_t len)
  * Functions to fill and verify data types
  */
 
-static void fill_tdb_data(TALLOC_CTX *mem_ctx, TDB_DATA *p)
+static void fill_tdb_data_nonnull(TALLOC_CTX *mem_ctx, TDB_DATA *p)
 {
 	p->dsize = rand_int(1024) + 1;
 	p->dptr = talloc_array(mem_ctx, uint8_t, p->dsize);
 	assert(p->dptr != NULL);
 	fill_buffer(p->dptr, p->dsize);
+}
+
+static void fill_tdb_data(TALLOC_CTX *mem_ctx, TDB_DATA *p)
+{
+	if (rand_int(5) == 0) {
+		p->dsize = 0;
+		p->dptr = NULL;
+	} else {
+		fill_tdb_data_nonnull(mem_ctx, p);
+	}
 }
 
 static void verify_tdb_data(TDB_DATA *p1, TDB_DATA *p2)
@@ -115,12 +125,16 @@ static void fill_ctdb_vnn_map(TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *p)
 	int i;
 
 	p->generation = rand32();
-	p->size = rand_int(20) + 1;
-	p->map = talloc_array(mem_ctx, uint32_t, p->size);
-	assert(p->map != NULL);
+	p->size = rand_int(20);
+	if (p->size > 0) {
+		p->map = talloc_array(mem_ctx, uint32_t, p->size);
+		assert(p->map != NULL);
 
-	for (i=0; i<p->size; i++) {
-		p->map[i] = rand32();
+		for (i=0; i<p->size; i++) {
+			p->map[i] = rand32();
+		}
+	} else {
+		p->map = NULL;
 	}
 }
 
@@ -152,11 +166,15 @@ static void fill_ctdb_dbid_map(TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *p)
 {
 	int i;
 
-	p->num = rand_int(40) + 1;
-	p->dbs = talloc_array(mem_ctx, struct ctdb_dbid, p->num);
-	assert(p->dbs != NULL);
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_dbid(mem_ctx, &p->dbs[i]);
+	p->num = rand_int(40);
+	if (p->num > 0) {
+		p->dbs = talloc_array(mem_ctx, struct ctdb_dbid, p->num);
+		assert(p->dbs != NULL);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_dbid(mem_ctx, &p->dbs[i]);
+		}
+	} else {
+		p->dbs = NULL;
 	}
 }
 
@@ -225,7 +243,7 @@ static void fill_ctdb_rec_data(TALLOC_CTX *mem_ctx, struct ctdb_rec_data *p)
 	} else {
 		p->header = NULL;
 	}
-	fill_tdb_data(mem_ctx, &p->key);
+	fill_tdb_data_nonnull(mem_ctx, &p->key);
 	fill_tdb_data(mem_ctx, &p->data);
 }
 
@@ -254,12 +272,15 @@ static void fill_ctdb_rec_buffer(TALLOC_CTX *mem_ctx, struct ctdb_rec_buffer *p)
 	p->buf = NULL;
 	p->buflen = 0;
 
-	count = rand_int(100) + 1;
-	for (i=0; i<count; i++) {
-		fill_ctdb_rec_data(mem_ctx, &rec);
-		ret = ctdb_rec_buffer_add(mem_ctx, p, rec.reqid, rec.header,
-					  rec.key, rec.data);
-		assert(ret == 0);
+	count = rand_int(100);
+	if (count > 0) {
+		for (i=0; i<count; i++) {
+			fill_ctdb_rec_data(mem_ctx, &rec);
+			ret = ctdb_rec_buffer_add(mem_ctx, p, rec.reqid,
+						  rec.header,
+						  rec.key, rec.data);
+			assert(ret == 0);
+		}
 	}
 }
 
@@ -486,11 +507,15 @@ static void fill_ctdb_tickle_list(TALLOC_CTX *mem_ctx,
 	int i;
 
 	fill_ctdb_sock_addr(mem_ctx, &p->addr);
-	p->num = rand_int(1000) + 1;
-	p->conn = talloc_array(mem_ctx, struct ctdb_connection, p->num);
-	assert(p->conn != NULL);
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_connection(mem_ctx, &p->conn[i]);
+	p->num = rand_int(1000);
+	if (p->num > 0) {
+		p->conn = talloc_array(mem_ctx, struct ctdb_connection, p->num);
+		assert(p->conn != NULL);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_connection(mem_ctx, &p->conn[i]);
+		}
+	} else {
+		p->conn = NULL;
 	}
 }
 
@@ -566,14 +591,14 @@ static void fill_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
 	int i;
 
 	p->num = rand_int(32);
-	if (p->num == 0) {
+	if (p->num > 0) {
+		p->ip = talloc_array(mem_ctx, struct ctdb_public_ip, p->num);
+		assert(p->ip != NULL);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_public_ip(mem_ctx, &p->ip[i]);
+		}
+	} else {
 		p->ip = NULL;
-		return;
-	}
-	p->ip = talloc_array(mem_ctx, struct ctdb_public_ip, p->num);
-	assert(p->ip != NULL);
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_public_ip(mem_ctx, &p->ip[i]);
 	}
 }
 
@@ -608,11 +633,16 @@ static void fill_ctdb_node_map(TALLOC_CTX *mem_ctx, struct ctdb_node_map *p)
 {
 	int i;
 
-	p->num = rand_int(32) + 1;
-	p->node = talloc_array(mem_ctx, struct ctdb_node_and_flags, p->num);
-	assert(p->node != NULL);
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_node_and_flags(mem_ctx, &p->node[i]);
+	p->num = rand_int(32);
+	if (p->num > 0) {
+		p->node = talloc_array(mem_ctx, struct ctdb_node_and_flags,
+				       p->num);
+		assert(p->node != NULL);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_node_and_flags(mem_ctx, &p->node[i]);
+		}
+	} else {
+		p->node = NULL;
 	}
 }
 
@@ -642,11 +672,16 @@ static void fill_ctdb_script_list(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	p->num_scripts = rand_int(32) + 1;
-	p->script = talloc_array(mem_ctx, struct ctdb_script, p->num_scripts);
-	assert(p->script != NULL);
-	for (i=0; i<p->num_scripts; i++) {
-		fill_ctdb_script(mem_ctx, &p->script[i]);
+	p->num_scripts = rand_int(32);
+	if (p->num_scripts > 0) {
+		p->script = talloc_array(mem_ctx, struct ctdb_script,
+					 p->num_scripts);
+		assert(p->script != NULL);
+		for (i=0; i<p->num_scripts; i++) {
+			fill_ctdb_script(mem_ctx, &p->script[i]);
+		}
+	} else {
+		p->script = NULL;
 	}
 }
 
@@ -717,11 +752,15 @@ static void fill_ctdb_iface_list(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	p->num = rand_int(32) + 1;
-	p->iface = talloc_array(mem_ctx, struct ctdb_iface, p->num);
-	assert(p->iface != NULL);
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_iface(mem_ctx, &p->iface[i]);
+	p->num = rand_int(32);
+	if (p->num > 0) {
+		p->iface = talloc_array(mem_ctx, struct ctdb_iface, p->num);
+		assert(p->iface != NULL);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_iface(mem_ctx, &p->iface[i]);
+		}
+	} else {
+		p->iface = NULL;
 	}
 }
 
@@ -759,12 +798,17 @@ static void fill_ctdb_statistics_list(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	p->num = rand_int(10) + 1;
-	p->stats = talloc_array(mem_ctx, struct ctdb_statistics, p->num);
-	assert(p->stats != NULL);
+	p->num = rand_int(10);
+	if (p->num > 0) {
+		p->stats = talloc_array(mem_ctx, struct ctdb_statistics,
+					p->num);
+		assert(p->stats != NULL);
 
-	for (i=0; i<p->num; i++) {
-		fill_ctdb_statistics(mem_ctx, &p->stats[i]);
+		for (i=0; i<p->num; i++) {
+			fill_ctdb_statistics(mem_ctx, &p->stats[i]);
+		}
+	} else {
+		p->stats = NULL;
 	}
 }
 
@@ -783,7 +827,7 @@ static void fill_ctdb_key_data(TALLOC_CTX *mem_ctx, struct ctdb_key_data *p)
 {
 	p->db_id = rand32();
 	fill_ctdb_ltdb_header(mem_ctx, &p->header);
-	fill_tdb_data(mem_ctx, &p->key);
+	fill_tdb_data_nonnull(mem_ctx, &p->key);
 }
 
 static void verify_ctdb_key_data(struct ctdb_key_data *p1,
@@ -799,12 +843,16 @@ static void fill_ctdb_uint8_array(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	p->num = rand_int(1024) + 1;
-	p->val = talloc_array(mem_ctx, uint8_t, p->num);
-	assert(p->val != NULL);
+	p->num = rand_int(1024);
+	if (p->num > 0) {
+		p->val = talloc_array(mem_ctx, uint8_t, p->num);
+		assert(p->val != NULL);
 
-	for (i=0; i<p->num; i++) {
-		p->val[i] = rand8();
+		for (i=0; i<p->num; i++) {
+			p->val[i] = rand8();
+		}
+	} else {
+		p->val = NULL;
 	}
 }
 
@@ -824,12 +872,16 @@ static void fill_ctdb_uint64_array(TALLOC_CTX *mem_ctx,
 {
 	int i;
 
-	p->num = rand_int(1024) + 1;
-	p->val = talloc_array(mem_ctx, uint64_t, p->num);
-	assert(p->val != NULL);
+	p->num = rand_int(1024);
+	if (p->num > 0) {
+		p->val = talloc_array(mem_ctx, uint64_t, p->num);
+		assert(p->val != NULL);
 
-	for (i=0; i<p->num; i++) {
-		p->val[i] = rand64();
+		for (i=0; i<p->num; i++) {
+			p->val[i] = rand64();
+		}
+	} else {
+		p->val = NULL;
 	}
 }
 
@@ -845,7 +897,7 @@ static void verify_ctdb_uint64_array(struct ctdb_uint64_array *p1,
 }
 
 static void fill_ctdb_db_statistics(TALLOC_CTX *mem_ctx,
-				   struct ctdb_db_statistics *p)
+				    struct ctdb_db_statistics *p)
 {
 	int i;
 
