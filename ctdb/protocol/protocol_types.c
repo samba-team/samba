@@ -97,7 +97,9 @@ size_t ctdb_uint8_array_len(struct ctdb_uint8_array *array)
 
 void ctdb_uint8_array_push(struct ctdb_uint8_array *array, uint8_t *buf)
 {
-	memcpy(buf, array->val, array->num * sizeof(uint8_t));
+	if (array->num > 0) {
+		memcpy(buf, array->val, array->num * sizeof(uint8_t));
+	}
 }
 
 int ctdb_uint8_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -112,12 +114,16 @@ int ctdb_uint8_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 
 	array->num = buflen / sizeof(uint8_t);
 
-	array->val = talloc_array(array, uint8_t, array->num);
-	if (array->val == NULL) {
-		talloc_free(array);
-		return ENOMEM;
+	if (array->num > 0) {
+		array->val = talloc_array(array, uint8_t, array->num);
+		if (array->val == NULL) {
+			talloc_free(array);
+			return ENOMEM;
+		}
+		memcpy(array->val, buf, buflen);
+	} else {
+		array->val = NULL;
 	}
-	memcpy(array->val, buf, buflen);
 
 	*out = array;
 	return 0;
@@ -130,7 +136,9 @@ size_t ctdb_uint64_array_len(struct ctdb_uint64_array *array)
 
 void ctdb_uint64_array_push(struct ctdb_uint64_array *array, uint8_t *buf)
 {
-	memcpy(buf, array->val, array->num * sizeof(uint64_t));
+	if (array->num > 0) {
+		memcpy(buf, array->val, array->num * sizeof(uint64_t));
+	}
 }
 
 int ctdb_uint64_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -145,12 +153,16 @@ int ctdb_uint64_array_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 
 	array->num = buflen / sizeof(uint64_t);
 
-	array->val = talloc_array(array, uint64_t, array->num);
-	if (array->val == NULL) {
-		talloc_free(array);
-		return ENOMEM;
+	if (array->num > 0) {
+		array->val = talloc_array(array, uint64_t, array->num);
+		if (array->val == NULL) {
+			talloc_free(array);
+			return ENOMEM;
+		}
+		memcpy(array->val, buf, buflen);
+	} else {
+		array->val = NULL;
 	}
-	memcpy(array->val, buf, buflen);
 
 	*out = array;
 	return 0;
