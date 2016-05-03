@@ -51,6 +51,12 @@ nfs_service="${CTDB_NFS_SERVICE:-nfs-ganesha}"
 ganesha_rec_subdir=${CTDB_GANESHA_REC_SUBDIR:-.ganesha}
 procfs=${PROCFS_PATH:-/proc}
 
+case $state_fs in
+    gpfs)
+        GANRECDIR="/var/lib/nfs/ganesha"
+        ;;
+esac
+
 
 ##################################################
 
@@ -128,8 +134,6 @@ service_start ()
 ##################################################
 # Nitty gritty - monitoring and IP handling
 
-GANRECDIR="/var/lib/nfs/ganesha"
-
 # Check that a symlink exists, create it otherwise.
 # Usage: check_ln <TARGET> <LINK>
 check_ln ()
@@ -170,10 +174,15 @@ create_ganesha_recdirs ()
       echo "startup $state_fs not ready"
       exit 0
     fi
-    _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
-    _link_dst="${_mntpt}/${ganesha_rec_subdir}"
-    mkdir -vp "$_link_dst"
-    check_ln "$_link_dst" "$GANRECDIR"
+
+    case $state_fs in
+        gpfs)
+            _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
+            _link_dst="${_mntpt}/${ganesha_rec_subdir}"
+            mkdir -vp "$_link_dst"
+            check_ln "$_link_dst" "$GANRECDIR"
+            ;;
+   esac
 }
 
 service_check ()
