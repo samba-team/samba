@@ -1565,10 +1565,15 @@ import "winreg.idl", "misc.idl";
 	/*****************/
 	/* Function 0x67 */
 
+	typedef [bitmap32bit] bitmap {
+		CLUSTER_RESOURCE_TYPE_ENUM_NODES	= 0x00000001,
+		CLUSTER_RESOURCE_TYPE_ENUM_RESOURCES	= 0x00000002
+	} ClusterResTypeEnumType;
+
 	WERROR
 	clusapi_CreateResTypeEnum(
 		[ in, string ] [charset(UTF16)] uint16 *lpszTypeName,
-		[ in ] uint32 dwType,
+		[ in ] ClusterResTypeEnumType dwType,
 		[ out ] ENUM_LIST **ReturnEnum,
 		[ out ] WERROR *rpc_status
 	);
