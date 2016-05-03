@@ -1602,6 +1602,8 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 	}
 
 	if (!cd->node_failed[node_pnn]) {
+		DEBUG(DEBUG_ERR,
+		      ("Node %u failed the takeover run\n", node_pnn));
 		cd->node_failed[node_pnn] = true;
 		cd->fail_callback(ctdb, node_pnn, res, outdata,
 				  cd->fail_callback_data);
