@@ -1653,6 +1653,19 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	struct takeover_callback_data *takeover_data;
 	bool can_host_ips;
 
+	/* Initialise fail callback data to be used with
+	 * takeover_run_fail_callback().  A failure in any of the
+	 * following steps will cause an early return, so this can be
+	 * reused for each of those steps without re-initialising. */
+	takeover_data = takeover_callback_data_init(tmp_ctx,
+						    nodemap->num,
+						    fail_callback,
+						    callback_data);
+	if (takeover_data == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
 	/*
 	 * ip failover is completely disabled, just send out the 
 	 * ipreallocated event.
@@ -1712,15 +1725,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	 * host.  This will be a NOOP on nodes that don't currently
 	 * hold the given IP.
 	 */
-	takeover_data = takeover_callback_data_init(tmp_ctx,
-						    nodemap->num,
-						    fail_callback,
-						    callback_data);
-	if (takeover_data == NULL) {
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 
@@ -1782,8 +1786,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 
-	async_data->fail_callback = fail_callback;
-	async_data->callback_data = callback_data;
+	async_data->fail_callback = takeover_run_fail_callback;
+	async_data->callback_data = takeover_data;
 
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn == -1) {
@@ -1826,8 +1830,8 @@ ipreallocated:
 	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_IPREALLOCATED,
 					nodes, 0, TAKEOVER_TIMEOUT(),
 					false, tdb_null,
-					NULL, fail_callback,
-					&callback_data);
+					NULL, takeover_run_fail_callback,
+					takeover_data);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Async CTDB_CONTROL_IPREALLOCATED control failed\n"));
