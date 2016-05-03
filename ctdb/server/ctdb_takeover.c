@@ -1566,21 +1566,14 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 	struct takeover_callback_data *cd =
 		talloc_get_type_abort(callback_data,
 				      struct takeover_callback_data);
-	int i;
 
-	for (i = 0; i < cd->nodemap->num; i++) {
-		if (node_pnn == cd->nodemap->nodes[i].pnn) {
-			break;
-		}
-	}
-
-	if (i == cd->nodemap->num) {
+	if (node_pnn >= cd->nodemap->num) {
 		DEBUG(DEBUG_ERR, (__location__ " invalid PNN %u\n", node_pnn));
 		return;
 	}
 
-	if (!cd->node_failed[i]) {
-		cd->node_failed[i] = true;
+	if (!cd->node_failed[node_pnn]) {
+		cd->node_failed[node_pnn] = true;
 		cd->fail_callback(ctdb, node_pnn, res, outdata,
 				  cd->fail_callback_data);
 	}
