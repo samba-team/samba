@@ -2654,8 +2654,6 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	int32_t ret;
 	struct srvid_requests *current;
 
-	DEBUG(DEBUG_INFO, ("recovery master forced ip reallocation\n"));
-
 	/* Only process requests that are currently pending.  More
 	 * might come in while the takeover run is in progress and
 	 * they will need to be processed later since they might
