@@ -1047,6 +1047,17 @@ import "winreg.idl", "misc.idl";
 	/*****************/
 	/* Function 0x49 */
 
+	typedef [v1_enum] enum {
+		CLUS_RESCLASS_UNKNOWN	= 0x00000000,
+		CLUS_RESCLASS_STORAGE	= 0x00000001,
+		CLUS_RESCLASS_NETWORK	= 0x00000002
+	} clusapi_ResourceClass;
+
+	typedef [public] struct {
+		clusapi_ResourceClass Class;
+		uint32 SubClass;
+	} CLUS_RESOURCE_CLASS_INFO;
+
 	WERROR
 	clusapi_ResourceControl(
 		[ in ] HRES_RPC hResource,
