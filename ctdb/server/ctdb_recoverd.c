@@ -3186,14 +3186,31 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 	return ret;
 }
 
-/* called to check that the local allocation of public ip addresses is ok.
-*/
-static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn, struct ctdb_node_map_old *nodemap)
+/* Check that the local allocation of public IP addresses is correct
+ * and do some house-keeping */
+static int verify_local_ip_allocation(struct ctdb_context *ctdb,
+				      struct ctdb_recoverd *rec,
+				      uint32_t pnn,
+				      struct ctdb_node_map_old *nodemap)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	int ret, j;
 	bool need_takeover_run = false;
 	struct ctdb_public_ip_list_old *ips = NULL;
+
+	/* If we are not the recmaster then do some housekeeping */
+	if (rec->recmaster != pnn) {
+		/* Ignore any IP reallocate requests - only recmaster
+		 * processes them
+		 */
+		TALLOC_FREE(rec->reallocate_requests);
+		/* Clear any nodes that should be force rebalanced in
+		 * the next takeover run.  If the recovery master role
+		 * has moved then we don't want to process these some
+		 * time in the future.
+		 */
+		TALLOC_FREE(rec->force_rebalance_nodes);
+	}
 
 	/* Return early if disabled... */
 	if (ctdb->tunable.disable_ip_failover != 0 ||
@@ -3586,20 +3603,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 * node from starting election and sending unnecessary controls.
 		 */
 		return;
-	}
-
-	/* If we are not the recmaster then do some housekeeping */
-	if (rec->recmaster != pnn) {
-		/* Ignore any IP reallocate requests - only recmaster
-		 * processes them
-		 */
-		TALLOC_FREE(rec->reallocate_requests);
-		/* Clear any nodes that should be force rebalanced in
-		 * the next takeover run.  If the recovery master role
-		 * has moved then we don't want to process these some
-		 * time in the future.
-		 */
-		TALLOC_FREE(rec->force_rebalance_nodes);
 	}
 
 	/* Retrieve capabilities from all connected nodes */
