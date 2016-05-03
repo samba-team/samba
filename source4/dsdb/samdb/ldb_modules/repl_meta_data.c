@@ -5067,17 +5067,25 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 		 * parent.
 		 */
 		md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTID_name);
-		md_local  = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTID_name);
-		/* if there is no name attribute then we have to assume the
-		   object we've received is in fact newer */
-		if (ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING ||
-		    !md_remote || !md_local ||
-		    replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
+		md_local = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTID_name);
+		if (!md_local) {
+			DEBUG(0,(__location__ ": Failed to find name attribute in local LDB replPropertyMetaData for %s\n",
+				 ldb_dn_get_linearized(ar->search_msg->dn)));
+			return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
+		}
+
+		/*
+		 * if there is no name attribute given then we have to assume the
+		 *  object we've received has the older name
+		 */
+		if (replmd_replPropertyMetaData1_new_should_be_taken(
+			    ar->objs->dsdb_repl_flags & DSDB_REPL_FLAG_PRIORITISE_INCOMING,
+			    md_local, md_remote)) {
 			struct GUID_txt_buf p_guid_local;
 			struct GUID_txt_buf p_guid_remote;
 			msg = ar->objs->objects[ar->index_current].msg;
 
-			/* Otherwise, just merge on the existing object, force no rename */
+			/* Merge on the existing object, with rename */
 
 			DEBUG(4,(__location__ ": Looking for new parent for object %s currently under %s "
 				 "as incoming object changing to %s under %s\n",
@@ -5092,7 +5100,11 @@ static int replmd_replicated_apply_search_callback(struct ldb_request *req,
 			struct GUID_txt_buf p_guid_remote;
 			msg = ar->objs->objects[ar->index_current].msg;
 
-			/* Otherwise, just merge on the existing object, force no rename */
+			/*
+			 * Merge on the existing object, force no
+			 * rename (code below just to explain why in
+			 * the DEBUG() logs)
+			 */
 
 			if (strcmp(ldb_dn_get_linearized(ar->search_msg->dn),
 				   ldb_dn_get_linearized(msg->dn)) == 0) {
