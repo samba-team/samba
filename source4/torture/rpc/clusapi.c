@@ -2639,6 +2639,118 @@ static bool test_CreateResTypeEnum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_CreateGroupEnum_int(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct policy_handle *Cluster,
+				     const char **multi_sz,
+				     const char **multi_sz_ro)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CreateGroupEnum r;
+	struct GROUP_ENUM_LIST *pResultList;
+	WERROR rpc_status;
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB blob_ro = data_blob_null;
+
+	r.in.hCluster = *Cluster;
+	r.in.pProperties = blob.data;
+	r.in.cbProperties = blob.length;
+	r.in.pRoProperties = blob_ro.data;
+	r.in.cbRoProperties = blob_ro.length;
+	r.out.ppResultList = &pResultList;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateGroupEnum_r(b, tctx, &r),
+		"CreateGroupEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateGroupEnum failed");
+
+	if (!push_reg_multi_sz(tctx, &blob, multi_sz)) {
+		return false;
+	}
+
+	if (!push_reg_multi_sz(tctx, &blob_ro, multi_sz_ro)) {
+		return false;
+	}
+
+	r.in.pProperties = blob.data;
+	r.in.cbProperties = blob.length;
+
+	r.in.pRoProperties = blob_ro.data;
+	r.in.cbRoProperties = blob_ro.length;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateGroupEnum_r(b, tctx, &r),
+		"CreateGroupEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateGroupEnum failed");
+
+#if 0
+	{
+		int i;
+		enum ndr_err_code ndr_err;
+
+		for (i=0; i < pResultList->EntryCount; i++) {
+			struct clusapi_PROPERTY_LIST list;
+			torture_comment(tctx, "entry #%d\n", i);
+
+			blob = data_blob_const(pResultList->Entry[i].Properties,
+					       pResultList->Entry[i].cbProperties);
+
+			ndr_err = ndr_pull_struct_blob(&blob, tctx, &list,
+				(ndr_pull_flags_fn_t)ndr_pull_clusapi_PROPERTY_LIST);
+			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				NDR_PRINT_DEBUG(clusapi_PROPERTY_LIST, &list);
+			}
+
+			blob_ro = data_blob_const(pResultList->Entry[i].RoProperties,
+						  pResultList->Entry[i].cbRoProperties);
+
+			ndr_err = ndr_pull_struct_blob(&blob_ro, tctx, &list,
+				(ndr_pull_flags_fn_t)ndr_pull_clusapi_PROPERTY_LIST);
+			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				NDR_PRINT_DEBUG(clusapi_PROPERTY_LIST, &list);
+			}
+		}
+	}
+#endif
+
+	return true;
+}
+
+static bool test_CreateGroupEnum(struct torture_context *tctx,
+				 void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle Cluster;
+	bool ret;
+	const char *multi_sz[] = {
+		"Priority", NULL,
+	};
+	const char *multi_sz_ro[] = {
+		"GroupType", NULL,
+	};
+
+	if (!test_OpenCluster_int(tctx, t->p, &Cluster)) {
+		return false;
+	}
+
+	ret = test_CreateGroupEnum_int(tctx, t->p, &Cluster,
+				       multi_sz, multi_sz_ro);
+	if (!ret) {
+		goto done;
+	}
+
+ done:
+	test_CloseCluster_int(tctx, t->p, &Cluster);
+
+	return ret;
+}
+
 static bool test_OpenNetwork_int(struct torture_context *tctx,
 				 struct dcerpc_pipe *p,
 				 const char *lpszNetworkName,
@@ -3657,6 +3769,8 @@ void torture_tcase_cluster(struct torture_tcase *tcase)
 				      test_ClusterControl);
 	torture_tcase_add_simple_test(tcase, "CreateResTypeEnum",
 				      test_CreateResTypeEnum);
+	torture_tcase_add_simple_test(tcase, "CreateGroupEnum",
+				      test_CreateGroupEnum);
 
 }
 
