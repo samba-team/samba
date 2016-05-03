@@ -84,6 +84,10 @@ static void srvid_requests_reply(struct ctdb_context *ctdb,
 {
 	struct srvid_list *r;
 
+	if (*requests == NULL) {
+		return;
+	}
+
 	for (r = (*requests)->requests; r != NULL; r = r->next) {
 		srvid_request_reply(ctdb, r->request, result);
 	}
