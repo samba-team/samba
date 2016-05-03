@@ -1668,8 +1668,7 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  * - Send IPREALLOCATED to all nodes (with backward compatibility hack)
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
-		      uint32_t *force_rebalance_nodes,
-		      client_async_callback fail_callback, void *callback_data)
+		      uint32_t *force_rebalance_nodes)
 {
 	int i, ret;
 	struct ctdb_public_ip ip;

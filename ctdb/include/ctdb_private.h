@@ -975,8 +975,7 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses);
 
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap,
-		      uint32_t *force_rebalance_nodes,
-		      client_async_callback fail_callback, void *callback_data);
+		      uint32_t *force_rebalance_nodes);
 
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata);

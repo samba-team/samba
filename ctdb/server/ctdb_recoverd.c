@@ -1644,25 +1644,6 @@ static int sync_recovery_lock_file_across_cluster(struct ctdb_recoverd *rec)
 	return 0;
 }
 
-
-/*
- * this callback is called for every node that failed to execute ctdb_takeover_run()
- * and set flag to re-run takeover run.
- */
-static void takeover_fail_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
-{
-	DEBUG(DEBUG_ERR, ("Node %u failed the takeover run\n", node_pnn));
-
-	if (callback_data != NULL) {
-		struct ctdb_recoverd *rec = talloc_get_type(callback_data, struct ctdb_recoverd);
-
-		DEBUG(DEBUG_ERR, ("Setting node %u as recovery fail culprit\n", node_pnn));
-
-		ctdb_set_culprit(rec, node_pnn);
-	}
-}
-
-
 static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -1693,8 +1674,7 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 }
 
 static bool do_takeover_run(struct ctdb_recoverd *rec,
-			    struct ctdb_node_map_old *nodemap,
-			    bool banning_credits_on_fail)
+			    struct ctdb_node_map_old *nodemap)
 {
 	uint32_t *nodes = NULL;
 	struct ctdb_disable_message dtr;
@@ -1747,9 +1727,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	}
 
 	ret = ctdb_takeover_run(rec->ctdb, nodemap,
-				rec->force_rebalance_nodes,
-				takeover_fail_callback,
-				banning_credits_on_fail ? rec : NULL);
+				rec->force_rebalance_nodes);
 
 	/* Reenable takeover runs and IP checks on other nodes */
 	dtr.timeout = 0;
@@ -2226,7 +2204,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		goto fail;
 	}
 
-	do_takeover_run(rec, nodemap, false);
+	do_takeover_run(rec, nodemap);
 
 	/* execute the "recovered" event script on all nodes */
 	ret = run_recovered_eventscript(rec, nodemap, "do_recovery");
@@ -2686,7 +2664,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb,
 	current = rec->reallocate_requests;
 	rec->reallocate_requests = NULL;
 
-	if (do_takeover_run(rec, rec->nodemap, false)) {
+	if (do_takeover_run(rec, rec->nodemap)) {
 		ret = ctdb_get_pnn(ctdb);
 	} else {
 		ret = -1;
@@ -3923,7 +3901,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 * If takeover run fails repeatedly, the node would get
 		 * banned.
 		 */
-		do_takeover_run(rec, nodemap, true);
+		do_takeover_run(rec, nodemap);
 	}
 }
 
