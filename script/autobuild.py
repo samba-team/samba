@@ -654,7 +654,7 @@ The top commit for the tree that was built was:
 ''' % top_commit_msg
 
     logs = os.path.join(gitroot, 'logs.tar.gz')
-    send_email('autobuild sucess on %s ' % platform.node(),
+    send_email('autobuild success on %s' % platform.node(),
                text, logs)
 
 
