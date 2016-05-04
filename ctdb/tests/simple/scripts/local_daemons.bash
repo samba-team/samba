@@ -137,7 +137,7 @@ EOF
 
     # We'll use "pkill -f" to kill the daemons with
     # "ctdbd --sloppy-start --nopublicipcheck --nosetsched" as context.
-    CTDBD="ctdbd --sloppy-start --nopublicipcheck --nosetsched" \
+    CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck --nosetsched" \
 	 CTDBD_CONF="$conf" \
 	 ctdbd_wrapper "$pidfile" start
 }
