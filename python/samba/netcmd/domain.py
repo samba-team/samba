@@ -173,7 +173,7 @@ class cmd_domain_provision(Command):
     takes_options = [
          Option("--interactive", help="Ask for names", action="store_true"),
          Option("--domain", type="string", metavar="DOMAIN",
-                help="set domain"),
+                help="NetBIOS domain name to use"),
          Option("--domain-guid", type="string", metavar="GUID",
                 help="set domainguid (otherwise random)"),
          Option("--domain-sid", type="string", metavar="SID",
