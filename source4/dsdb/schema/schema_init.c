@@ -39,7 +39,6 @@ struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx)
 	if (!schema) {
 		return NULL;
 	}
-	schema->refresh_interval = 120;
 
 	return schema;
 }
@@ -87,8 +86,6 @@ struct dsdb_schema *dsdb_schema_copy_shallow(TALLOC_CTX *mem_ctx,
 		DLIST_ADD(schema_copy->attributes, a_copy);
 	}
 	schema_copy->num_attributes = schema->num_attributes;
-
-	schema_copy->refresh_interval = schema->refresh_interval;
 
 	/* rebuild indexes */
 	ret = dsdb_setup_sorted_accessors(ldb, schema_copy);
@@ -935,9 +932,6 @@ int dsdb_schema_from_ldb_results(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 
 	if (lp_opaque) {
 		struct loadparm_context *lp_ctx = talloc_get_type_abort(lp_opaque, struct loadparm_context);
-		schema->refresh_interval = lpcfg_parm_int(lp_ctx, NULL, "dsdb", "schema_reload_interval", schema->refresh_interval);
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
 		schema->fsmo.update_allowed = lpcfg_parm_bool(lp_ctx, NULL,
 							      "dsdb", "schema update allowed",
 							      false);

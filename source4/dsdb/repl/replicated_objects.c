@@ -883,83 +883,25 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 	 * a schema cache being refreshed from database.
 	 */
 	if (working_schema) {
-		struct ldb_message *msg;
-		struct ldb_request *req;
-
-		/* Force a reload */
-		working_schema->last_refresh = 0;
+		/* Reload the schema */
 		new_schema = dsdb_get_schema(ldb, tmp_ctx);
-		/* TODO: 
+		/* TODO:
 		 * If dsdb_get_schema() fails, we just fall back
 		 * to what we had.  However, the database is probably
 		 * unable to operate for other users from this
 		 * point... */
-		if (new_schema && used_global_schema) {
-			dsdb_make_schema_global(ldb, new_schema);
-		} else if (used_global_schema) { 
-			DEBUG(0,("Failed to re-load schema after commit of transaction\n"));
-			dsdb_set_global_schema(ldb);
-			TALLOC_FREE(tmp_ctx);
-			return WERR_INTERNAL_ERROR;
-		} else {
-			DEBUG(0,("Failed to re-load schema after commit of transaction\n"));
+		if (new_schema == NULL || new_schema == working_schema) {
+			DEBUG(0,("Failed to re-load schema after commit of transaction (working: %p/%llu, new: %p/%llu)\n",
+				 new_schema, (unsigned long long)new_schema->metadata_usn,
+				 working_schema, (unsigned long long)working_schema->metadata_usn));
 			dsdb_reference_schema(ldb, cur_schema, false);
+			if (used_global_schema) {
+				dsdb_set_global_schema(ldb);
+			}
 			TALLOC_FREE(tmp_ctx);
 			return WERR_INTERNAL_ERROR;
-		}
-		msg = ldb_msg_new(tmp_ctx);
-		if (msg == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return WERR_NOMEM;
-		}
-		msg->dn = ldb_dn_new(msg, ldb, "");
-		if (msg->dn == NULL) {
-			TALLOC_FREE(tmp_ctx);
-			return WERR_NOMEM;
-		}
-
-		ret = ldb_msg_add_string(msg, "schemaUpdateNow", "1");
-		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(tmp_ctx);
-			return WERR_INTERNAL_ERROR;
-		}
-
-		ret = ldb_build_mod_req(&req, ldb, objects,
-				msg,
-				NULL,
-				NULL,
-				ldb_op_default_callback,
-				NULL);
-
-		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		ret = ldb_transaction_start(ldb);
-		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(tmp_ctx);
-			DEBUG(0, ("Autotransaction start failed\n"));
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		ret = ldb_request(ldb, req);
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-		}
-
-		if (ret == LDB_SUCCESS) {
-			ret = ldb_transaction_commit(ldb);
-		} else {
-			DEBUG(0, ("Schema update now failed: %s\n",
-				  ldb_errstring(ldb)));
-			ldb_transaction_cancel(ldb);
-		}
-
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Commit failed: %s\n", ldb_errstring(ldb)));
-			TALLOC_FREE(tmp_ctx);
-			return WERR_DS_INTERNAL_FAILURE;
+		} else if (used_global_schema) {
+			dsdb_make_schema_global(ldb, new_schema);
 		}
 	}
 

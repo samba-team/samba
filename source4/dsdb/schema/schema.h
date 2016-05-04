@@ -214,9 +214,6 @@ struct dsdb_schema {
 	 */
 	const char *schema_info;
 
-	/* We can also tell the schema version from the USN on the partition */
-	uint64_t loaded_usn;
-
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
 
@@ -251,8 +248,6 @@ struct dsdb_schema {
 	/* Was this schema loaded from ldb (if so, then we will reload it when we detect a change in ldb) */
 	bool refresh_in_progress;
 	time_t ts_last_change;
-	time_t last_refresh;
-	time_t refresh_interval;
 	/* This 'opaque' is stored in the metadata and is used to check if the currently
 	 * loaded schema needs a reload because another process has signaled that it has been
 	 * requested to reload the schema (either due through DRS or via the schemaUpdateNow).

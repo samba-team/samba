@@ -565,6 +565,23 @@ static int replmd_notify_store(struct ldb_module *module, struct ldb_request *pa
 				 ldb_dn_get_linearized(modified_partition->dn)));
 			return ret;
 		}
+
+		if (ldb_dn_compare(modified_partition->dn,
+				   replmd_private->schema_dn) == 0) {
+			struct ldb_result *ext_res;
+			ret = dsdb_module_extended(module,
+						   replmd_private->schema_dn,
+						   &ext_res,
+						   DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID,
+						   ext_res,
+						   DSDB_FLAG_NEXT_MODULE,
+						   parent);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			talloc_free(ext_res);
+		}
+
 		DLIST_REMOVE(replmd_private->ncs, modified_partition);
 		talloc_free(modified_partition);
 	}

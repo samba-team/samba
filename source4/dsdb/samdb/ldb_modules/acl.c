@@ -1651,7 +1651,6 @@ static int acl_search_update_confidential_attrs(struct acl_context *ac,
 	}
 
 	if ((ac->schema == data->cached_schema_ptr) &&
-	    (ac->schema->loaded_usn == data->cached_schema_loaded_usn) &&
 	    (ac->schema->metadata_usn == data->cached_schema_metadata_usn))
 	{
 		return LDB_SUCCESS;
@@ -1687,7 +1686,6 @@ static int acl_search_update_confidential_attrs(struct acl_context *ac,
 	}
 
 	data->cached_schema_ptr = ac->schema;
-	data->cached_schema_loaded_usn = ac->schema->loaded_usn;
 	data->cached_schema_metadata_usn = ac->schema->metadata_usn;
 
 	return LDB_SUCCESS;
