@@ -23,6 +23,10 @@
 #     * 50.rquotad.check
 #
 # * Install 20.nfs-ganesha.check to nfs-checks.d/20.nfs.check
+#
+# * It is recommended, but not required, to install the grace_period
+#   script (usually shipped in a utils package for NFS-Ganesha) to
+#   /usr/bin/grace_period
 
 # I (Martin Schwenke) hereby relicense all of my contributions to this
 # callout (and, previously, to 60.ganesha) to a license compatible
@@ -124,7 +128,6 @@ service_start ()
 # Nitty gritty - monitoring and IP handling
 
 GANRECDIR="/var/lib/nfs/ganesha"
-GANRECDIR2="/var/lib/nfs/ganesha/recevents"
 GANRECDIR3="/var/lib/nfs/ganesha_local"
 
 # Return 'active' if the shared filesystem is accessible.
@@ -165,7 +168,6 @@ create_ganesha_recdirs ()
         ln -sv "$_link_dst" "$GANRECDIR"
     fi
 
-    mkdir -p "$GANRECDIR2"
     mkdir -p "$GANRECDIR3"
 }
 
@@ -213,41 +215,31 @@ service_check ()
 
 #-------------------------------------------------
 
-get_nodenum ()
-{
-    _nodenum_file="${GANRECDIR}/gpfs_nodenum"
-
-    if [ ! -f "$_nodenum_file" ]; then
-	/usr/lpp/mmfs/bin/mmlsconfig myNodeConfigNumber |
-	    awk '{print $2}' >"$_nodenum_file"
-    fi
-
-    cat "$_nodenum_file"
-}
-
 nfs_releaseip ()
 {
-    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
-	gpfs)
-	    _nnum=$(get_nodenum)
-	    _tdate=$(date +"%s")
-	    _touchtgt="releaseip_${_tdate}_${_nnum}_${2}_${3}_${1}"
-	    touch "${GANRECDIR2}/${_touchtgt}"
-	    touch "$GANRECDIR2/my${_touchtgt}"
-	    ;;
-    esac
+    if [ -x "/usr/bin/grace_period" ]; then
+        /usr/bin/grace_period "2:${2}"
+    else
+        dbus-send --print-reply --system --dest=org.ganesha.nfsd \
+        /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
+        string:"2:${2}"
+    fi
 }
 
 nfs_takeip ()
 {
-    case  $CTDB_CLUSTER_FILESYSTEM_TYPE in
-	gpfs)
-	    _nnum=$(get_nodenum)
-	    _tdate=$(date +"%s")
-	    _touchtgt="takeip_${_tdate}_${_nnum}_${2}_${3}_${1}"
-	    touch "${GANRECDIR2}/${_touchtgt}"
-	    ;;
+    case  $state_fs in
+        glusterfs)
+            check_ln ${NODESTATEDIR} ${GANSTATEDIR}/${2}
+            ;;
     esac
+    if [ -x "/usr/bin/grace_period" ]; then
+        /usr/bin/grace_period "5:${2}"
+    else
+        dbus-send --print-reply --system --dest=org.ganesha.nfsd \
+        /org/ganesha/nfsd/admin org.ganesha.nfsd.admin.grace \
+        string:"5:${2}"
+    fi
 }
 
 ##################################################
