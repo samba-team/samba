@@ -1100,7 +1100,10 @@ class dc_join(object):
                 ctx.join_setup_trusts()
             ctx.join_finalise()
         except:
-            print "Join failed - cleaning up"
+            try:
+                print "Join failed - cleaning up"
+            except IOError:
+                pass
             if not ctx.clone_only:
                 ctx.cleanup_old_join()
             raise
