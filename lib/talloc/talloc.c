@@ -1528,7 +1528,7 @@ static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
 				 * Destructor already reparented this child.
 				 * No further reparenting needed.
 				 */
-				return;
+				continue;
 			}
 			if (new_parent == null_context) {
 				struct talloc_chunk *p = talloc_parent_chunk(ptr);
