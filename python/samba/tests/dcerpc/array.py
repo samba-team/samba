@@ -32,8 +32,10 @@ class ArrayTests(samba.tests.TestCase):
 
     def tearDown(self):
         super(ArrayTests, self).tearDown()
-        self.assertEqual(talloc.total_blocks(), self.startup_blocks)
-        talloc.report_full()
+        gc.collect()
+        if talloc.total_blocks() != self.startup_blocks:
+            talloc.report_full()
+            self.fail("it appears we are leaking memory")
 
     def test_array_from_python(self):
         rmd = drsblobs.replPropertyMetaDataBlob()
@@ -169,3 +171,35 @@ class ArrayTests(samba.tests.TestCase):
 
         self.assertEqual(rmd.ctr.array[0].attid,
                          rmd_unpacked.ctr.array[0].attid)
+
+    def test_array_delete(self):
+        rmd = drsblobs.replPropertyMetaDataBlob()
+
+        rmd.version = 1
+        rmd.ctr = drsblobs.replPropertyMetaDataCtr1()
+        rmd.ctr.count = 3
+
+        rmd1 = drsblobs.replPropertyMetaData1()
+        rmd1.attid = 1
+        rmd1.version = 2
+
+        rmd2 = drsblobs.replPropertyMetaData1()
+        rmd2.attid = 2
+        rmd2.version = 2
+
+        rmd3 = drsblobs.replPropertyMetaData1()
+        rmd3.attid = 3
+        rmd3.version = 2
+
+        rmd.ctr.array = [rmd1, rmd2, rmd3]
+        try:
+            del rmd1.version
+            self.fail("succeeded in deleting rmd1.version")
+        except AttributeError, e:
+            pass
+
+        try:
+            del rmd.ctr.array
+            self.fail("succeeded in deleting rmd.ctr.array")
+        except AttributeError, e:
+            pass
