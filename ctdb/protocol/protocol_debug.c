@@ -320,8 +320,6 @@ static void ctdb_srvid_print(uint64_t srvid, FILE *fp)
 		fprintf(fp, "DISABLE_RECOVERIES");
 	} else if (srvid == CTDB_SRVID_DISABLE_IP_CHECK) {
 		fprintf(fp, "DISABLE_IP_CHECK");
-	} else if (srvid == CTDB_SRVID_TAKEOVER_RUN_RESPONSE) {
-		fprintf(fp, "TAKEOVER_RUN_RESPONSE");
 	} else if ((srvid & prefix) == CTDB_SRVID_SAMBA_RANGE) {
 		if (srvid == CTDB_SRVID_SAMBA_NOTIFY) {
 			fprintf(fp, "SAMBA_NOTIFY");

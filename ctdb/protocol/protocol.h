@@ -178,9 +178,6 @@ struct ctdb_call {
 /* SRVID to inform recovery daemon to disable the public ip checks */
 #define CTDB_SRVID_DISABLE_IP_CHECK  0xFC00000000000000LL
 
-/* SRVID to inform recovery daemon of ipreallocate resposnes from ctdbd */
-#define CTDB_SRVID_TAKEOVER_RUN_RESPONSE  0xFD00000000000000LL
-
 /* A range of ports reserved for registering a PID (top 8 bits)
  * All ports matching the 8 top bits are reserved for exclusive use by
  * registering a SRVID that matches the process-id of the requesting process
