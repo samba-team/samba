@@ -129,6 +129,25 @@ service_start ()
 
 GANRECDIR="/var/lib/nfs/ganesha"
 
+# Check that a symlink exists, create it otherwise.
+# Usage: check_ln <TARGET> <LINK>
+check_ln ()
+{
+    if [ ! -L "${2}" ] ; then
+        rm -vrf "${2}"
+    else
+        _t=$(readlink "${2}")
+        if [ "$_t" != "${1}" ] ; then
+            rm -v "${2}"
+        fi
+    fi
+    # This is not an "else".  It also re-creates the link if it was
+    # removed above!
+    if [ ! -e "${2}" ]; then
+        ln -sfv "${1}" "${2}"
+    fi
+}
+
 # Return 'active' if the shared filesystem is accessible.
 get_cluster_fs_state ()
 {
@@ -153,19 +172,7 @@ create_ganesha_recdirs ()
     _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
     _link_dst="${_mntpt}/${ganesha_rec_subdir}"
     mkdir -vp "$_link_dst"
-    if [ ! -L "$GANRECDIR" ] ; then
-        rm -vrf "$GANRECDIR"
-    else
-	_t=$(readlink "$GANRECDIR")
-	if [ "$_t" != "$_link_dst" ] ; then
-	    rm -v "$GANRECDIR"
-	fi
-    fi
-    # This is not an "else".  It also re-creates the link if it was
-    # removed above!
-    if [ ! -e "$GANRECDIR" ]; then
-        ln -sv "$_link_dst" "$GANRECDIR"
-    fi
+    check_ln "$_link_dst" "$GANRECDIR"
 }
 
 service_check ()
