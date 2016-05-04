@@ -162,7 +162,7 @@ static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent
 	const char *binary_name = (const char *)private_data;
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
-		DEBUG(0,("%s: EOF on stdin - terminating\n", binary_name));
+		DEBUG(0,("%s: EOF on stdin - PID %d terminating\n", binary_name, (int)getpid()));
 #if HAVE_GETPGRP
 		if (getpgrp() == getpid()) {
 			DEBUG(0,("Sending SIGTERM from pid %d\n", (int)getpid()));
@@ -181,8 +181,8 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 					   struct timeval t, void *private_data)
 {
 	const char *binary_name = (const char *)private_data;
-	DEBUG(0,("%s: maximum runtime exceeded - terminating at %llu, current ts: %llu\n",
-		 binary_name, (unsigned long long)t.tv_sec, (unsigned long long) time(NULL)));
+	DEBUG(0,("%s: maximum runtime exceeded - terminating PID %d at %llu, current ts: %llu\n",
+		 binary_name, (int)getpid(), (unsigned long long)t.tv_sec, (unsigned long long) time(NULL)));
 	exit(0);
 }
 
@@ -209,7 +209,8 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 static NTSTATUS samba_terminate(struct irpc_message *msg, 
 				struct samba_terminate *r)
 {
-	DEBUG(0,("samba_terminate: %s\n", r->in.reason));
+	DEBUG(0,("samba_terminate of %d: %s\n",
+		 (int)getpid(), r->in.reason));
 	exit(1);
 }
 
@@ -456,8 +457,9 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	if (max_runtime) {
-		DEBUG(0,("Called with maxruntime %d - current ts %llu\n",
-		      max_runtime, (unsigned long long) time(NULL)));
+		DEBUG(0,("%s PID %d was called with maxruntime %d - current ts %llu\n",
+			 binary_name, (int)getpid(),
+			 max_runtime, (unsigned long long) time(NULL)));
 		tevent_add_timer(event_ctx, event_ctx,
 				 timeval_current_ofs(max_runtime, 0),
 				 max_runtime_handler,

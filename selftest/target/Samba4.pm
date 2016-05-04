@@ -91,7 +91,10 @@ sub check_or_start($$$)
 
 	my $env_ok = $self->check_env($env_vars);
 	if ($env_ok) {
-	    return $env_vars->{SAMBA_PID};
+		return $env_vars->{SAMBA_PID};
+	} elsif (defined($env_vars->{SAMBA_PID})) {
+		warn("SAMBA PID $env_vars->{SAMBA_PID} is not running (died)");
+		return undef;
 	}
 
 	# use a pipe for stdin in the child processes. This allows
@@ -1820,7 +1823,7 @@ sub teardown_env($$)
 sub getlog_env($$)
 {
 	my ($self, $envvars) = @_;
-	my $title = "SAMBA LOG of: $envvars->{NETBIOSNAME}\n";
+	my $title = "SAMBA LOG of: $envvars->{NETBIOSNAME} pid $envvars->{SAMBA_PID}\n";
 	my $out = $title;
 
 	open(LOG, "<$envvars->{SAMBA_TEST_LOG}");
