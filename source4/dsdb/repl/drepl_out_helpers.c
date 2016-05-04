@@ -772,7 +772,93 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 						 &drsuapi->gensec_skey,
 						 dsdb_repl_flags,
 						 state, &objects);
-	if (!W_ERROR_IS_OK(status)) {
+
+	if (W_ERROR_EQUAL(status, WERR_DS_DRA_SCHEMA_MISMATCH)
+	    && state->op->source_dsa_retry == NULL) {
+		struct dreplsrv_partition *p;
+
+		/*
+		 * Change info sync or extended operation into a fetch
+		 * of the schema partition, so we get all the schema
+		 * objects we need.
+		 *
+		 * We don't want to re-do the remote exop,
+		 * unless it was REPL_SECRET so we set the
+		 * fallback operation to just be a fetch of
+		 * the relevent partition.
+		 */
+
+
+		if (state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
+			state->op->extended_op_retry = state->op->extended_op;
+		} else {
+			state->op->extended_op_retry = DRSUAPI_EXOP_NONE;
+		}
+		state->op->extended_op = DRSUAPI_EXOP_NONE;
+
+		if (ldb_dn_compare(nc_root, partition->dn) == 0) {
+			state->op->source_dsa_retry = state->op->source_dsa;
+		} else {
+			status = dreplsrv_partition_find_for_nc(service,
+								NULL, NULL,
+								ldb_dn_get_linearized(nc_root),
+								&p);
+			if (!W_ERROR_IS_OK(status)) {
+				DEBUG(2, ("Failed to find requested Naming Context for %s: %s",
+					  ldb_dn_get_linearized(nc_root),
+					  win_errstr(status)));
+				nt_status = werror_to_ntstatus(status);
+				tevent_req_nterror(req, nt_status);
+				return;
+			}
+			status = dreplsrv_partition_source_dsa_by_guid(p,
+								       &state->op->source_dsa->repsFrom1->source_dsa_obj_guid,
+								       &state->op->source_dsa_retry);
+
+			if (!W_ERROR_IS_OK(status)) {
+				struct GUID_txt_buf str;
+				DEBUG(2, ("Failed to find requested source DSA for %s and %s: %s",
+					  ldb_dn_get_linearized(nc_root),
+					  GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
+					  win_errstr(status)));
+				nt_status = werror_to_ntstatus(status);
+				tevent_req_nterror(req, nt_status);
+				return;
+			}
+		}
+
+		/* Find schmea naming context to be synchronized first */
+		status = dreplsrv_partition_find_for_nc(service,
+							NULL, NULL,
+							ldb_dn_get_linearized(schema_dn),
+							&p);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(2, ("Failed to find requested Naming Context for schema: %s",
+				  win_errstr(status)));
+			nt_status = werror_to_ntstatus(status);
+			tevent_req_nterror(req, nt_status);
+			return;
+		}
+
+		status = dreplsrv_partition_source_dsa_by_guid(p,
+							       &state->op->source_dsa->repsFrom1->source_dsa_obj_guid,
+							       &state->op->source_dsa);
+		if (!W_ERROR_IS_OK(status)) {
+			struct GUID_txt_buf str;
+			DEBUG(2, ("Failed to find requested source DSA for %s and %s: %s",
+				  ldb_dn_get_linearized(schema_dn),
+				  GUID_buf_string(&state->op->source_dsa->repsFrom1->source_dsa_obj_guid, &str),
+				  win_errstr(status)));
+			nt_status = werror_to_ntstatus(status);
+			tevent_req_nterror(req, nt_status);
+			return;
+		}
+		DEBUG(4,("Wrong schema when applying reply GetNCChanges, retrying\n"));
+
+		dreplsrv_op_pull_source_get_changes_trigger(req);
+		return;
+
+	} else if (!W_ERROR_IS_OK(status)) {
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		DEBUG(0,("Failed to convert objects: %s/%s\n",
 			  win_errstr(status), nt_errstr(nt_status)));
@@ -785,6 +871,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 						objects,
 						&state->op->source_dsa->notify_uSN);
 	talloc_free(objects);
+
 	if (!W_ERROR_IS_OK(status)) {
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		DEBUG(0,("Failed to commit objects: %s/%s\n",
@@ -802,6 +889,19 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	TALLOC_FREE(r);
 
 	if (more_data) {
+		dreplsrv_op_pull_source_get_changes_trigger(req);
+		return;
+	}
+
+	/*
+	 * If we had to divert via doing some other thing, such as
+	 * pulling the schema, then go back and do the original
+	 * operation once we are done.
+	 */
+	if (state->op->source_dsa_retry != NULL) {
+		state->op->source_dsa = state->op->source_dsa_retry;
+		state->op->extended_op = state->op->extended_op_retry;
+		state->op->source_dsa_retry = NULL;
 		dreplsrv_op_pull_source_get_changes_trigger(req);
 		return;
 	}

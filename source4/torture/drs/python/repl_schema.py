@@ -38,6 +38,7 @@ from ldb import (
     FLAG_MOD_ADD,
     FLAG_MOD_REPLACE,
     )
+import ldb
 
 import drs_base
 
@@ -58,6 +59,8 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
             DrsReplSchemaTestCase.obj_prefix = "DrsReplSchema-%s" % t
 
     def tearDown(self):
+        self._enable_inbound_repl(self.dnsname_dc1)
+        self._enable_inbound_repl(self.dnsname_dc2)
         super(DrsReplSchemaTestCase, self).tearDown()
 
     def _make_obj_names(self, base_name):
@@ -66,10 +69,12 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self.obj_id += 1
         obj_name = "%s-%d-%s" % (self.obj_prefix, self.obj_id, base_name)
         obj_ldn = obj_name.replace("-", "")
-        obj_dn = "CN=%s,%s" % (obj_name, self.schema_dn)
+        obj_dn = ldb.Dn(self.ldb_dc1, "CN=X")
+        obj_dn.add_base(ldb.Dn(self.ldb_dc1, self.schema_dn))
+        obj_dn.set_component(0, "CN", obj_name)
         return (obj_dn, obj_name, obj_ldn)
 
-    def _schema_new_class(self, ldb_ctx, base_name, base_int, attrs=None):
+    def _schema_new_class(self, ldb_ctx, base_name, base_int, oc_cat=1, attrs=None):
         (class_dn, class_name, class_ldn) = self._make_obj_names(base_name)
         rec = {"dn": class_dn,
                "objectClass": ["top", "classSchema"],
@@ -78,7 +83,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "governsId": "1.3.6.1.4.1.7165.4.6.2." \
                 + str((100000 * base_int) + random.randint(1,100000)) + ".1.5.13",
                "instanceType": "4",
-               "objectClassCategory": "1",
+               "objectClassCategory": "%d" % oc_cat,
                "subClassOf": "top",
                "systemOnly": "FALSE"}
         # allow overriding/adding attributes
@@ -176,10 +181,12 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         # add a base classSchema class so we can use our new
         # attribute in class definition in a sibling class
         (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A", 7,
+                                               1,
                                                {"systemMayContain": a_ldn,
                                                 "subClassOf": "classSchema"})
         # add new classSchema object with value for a_ldb attribute
         (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B", 8,
+                                               1,
                                                {"objectClass": ["top", "classSchema", c_ldn],
                                                 a_ldn: "test_classWithCustomAttribute"})
         # force replication from DC1 to DC2
@@ -196,6 +203,37 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
         # check object is replicated
         self._check_object(a_dn)
+
+    def test_attribute_on_ou(self):
+        """Simple test having an OU with a custome attribute replicated correctly
+
+        This ensures that the server
+        """
+        # disable automatic replication temporary
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
+
+       # add new attributeSchema object
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-OU-S", 3)
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-OU-A", 8,
+                                               3,
+                                               {"mayContain": a_ldn})
+        ou_dn = ldb.Dn(self.ldb_dc1, "ou=X")
+        ou_dn.add_base(self.ldb_dc1.get_default_basedn())
+        ou_dn.set_component(0, "OU", a_dn.get_component_value(0))
+        rec = {"dn": ou_dn,
+               "objectClass": ["top", "organizationalUnit", c_ldn],
+               "ou": ou_dn.get_component_value(0),
+               a_ldn: "test OU"}
+        self.ldb_dc1.add(rec)
+
+        # force replication from DC1 to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.domain_dn)
+        # check objects are replicated
+        self._check_object(c_dn)
+        self._check_object(a_dn)
+        self._check_object(ou_dn)
+        self.ldb_dc1.delete(ou_dn)
 
     def test_all(self):
         """Basic plan is to create bunch of classSchema

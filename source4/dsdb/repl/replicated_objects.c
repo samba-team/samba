@@ -686,7 +686,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		 */
 		status = dsdb_schema_info_cmp(schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
-			DEBUG(1,("Remote schema has changed while replicating %s\n",
+			DEBUG(4,("Can't replicate %s because remote schema has changed since we last replicated the schema\n",
 				 ldb_dn_get_linearized(partition_dn)));
 			talloc_free(out);
 			return status;

@@ -130,6 +130,13 @@ struct dreplsrv_out_operation {
 	enum drsuapi_DsExtendedError extended_ret;
 	dreplsrv_extended_callback_t callback;
 	void *cb_data;
+
+	/*
+	 * Used when we have to re-try with a different NC, eg for
+	 * EXOP retry or to get a current schema first
+	 */
+	struct dreplsrv_partition_source_dsa *source_dsa_retry;
+	enum drsuapi_DsExtendedOperation extended_op_retry;
 };
 
 struct dreplsrv_notify_operation {
