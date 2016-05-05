@@ -210,7 +210,7 @@ sub wait_for_start($$)
 	    my $count = 0;
 	    my $base_dn = "DC=".join(",DC=", split(/\./, $testenv_vars->{REALM}));
 	    my $rid_set_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
-	    my $max_wait = 40;
+	    my $max_wait = 60;
 	    sleep(1);
 	    while (system("$ldbsearch -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$rid_set_dn\" rIDAllocationPool > /dev/null") != 0) {
 		$count++;
