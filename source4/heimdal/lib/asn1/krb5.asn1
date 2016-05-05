@@ -360,7 +360,7 @@ LastReq ::= SEQUENCE OF SEQUENCE {
 
 EncryptedData ::= SEQUENCE {
 	etype[0] 		ENCTYPE, -- EncryptionType
-	kvno[1]			krb5uint32 OPTIONAL,
+	kvno[1]			krb5int32 OPTIONAL,
 	cipher[2]		OCTET STRING -- ciphertext
 }
 
