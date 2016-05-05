@@ -1554,7 +1554,7 @@ fail:
 
 struct takeover_callback_data {
 	uint32_t num_nodes;
-	bool *node_failed;
+	unsigned int *fail_count;
 };
 
 static struct takeover_callback_data *
@@ -1569,9 +1569,9 @@ takeover_callback_data_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	takeover_data->node_failed = talloc_zero_array(takeover_data,
-						       bool, num_nodes);
-	if (takeover_data->node_failed == NULL) {
+	takeover_data->fail_count = talloc_zero_array(takeover_data,
+						      unsigned int, num_nodes);
+	if (takeover_data->fail_count == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		talloc_free(takeover_data);
 		return NULL;
@@ -1595,13 +1595,12 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 		return;
 	}
 
-	if (!cd->node_failed[node_pnn]) {
+	if (cd->fail_count[node_pnn] == 0) {
 		int ret;
 		TDB_DATA data;
 
 		DEBUG(DEBUG_ERR,
 		      ("Node %u failed the takeover run\n", node_pnn));
-		cd->node_failed[node_pnn] = true;
 
 		data.dptr = (uint8_t *)&node_pnn;
 		data.dsize = sizeof(uint32_t);
@@ -1615,6 +1614,8 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 			       node_pnn));
 		}
 	}
+
+	cd->fail_count[node_pnn]++;
 }
 
 /*
