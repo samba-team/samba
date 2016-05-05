@@ -1596,13 +1596,36 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 	}
 
 	if (cd->fail_count[node_pnn] == 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Node %u failed the takeover run\n", node_pnn));
+	}
+
+	cd->fail_count[node_pnn]++;
+}
+
+static void takeover_run_process_failures(struct ctdb_context *ctdb,
+					  struct takeover_callback_data *tcd)
+{
+	unsigned int max_fails = 0;
+	uint32_t max_pnn = -1;
+	uint32_t i;
+
+	for (i = 0; i < tcd->num_nodes; i++) {
+		if (tcd->fail_count[i] > max_fails) {
+			max_pnn = i;
+			max_fails = tcd->fail_count[i];
+		}
+	}
+
+	if (max_fails > 0) {
 		int ret;
 		TDB_DATA data;
 
 		DEBUG(DEBUG_ERR,
-		      ("Node %u failed the takeover run\n", node_pnn));
+		      ("Sending banning credits to %u with fail count %u\n",
+		       max_pnn, max_fails));
 
-		data.dptr = (uint8_t *)&node_pnn;
+		data.dptr = (uint8_t *)&max_pnn;
 		data.dsize = sizeof(uint32_t);
 		ret = ctdb_client_send_message(ctdb,
 					       CTDB_BROADCAST_CONNECTED,
@@ -1611,11 +1634,9 @@ static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to set banning credits for node %u\n",
-			       node_pnn));
+			       max_pnn));
 		}
 	}
-
-	cd->fail_count[node_pnn]++;
 }
 
 /*
@@ -1780,9 +1801,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		}
 	}
 	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Async control CTDB_CONTROL_RELEASE_IP failed\n"));
-		talloc_free(tmp_ctx);
-		return -1;
+		DEBUG(DEBUG_ERR,
+		      ("Async control CTDB_CONTROL_RELEASE_IP failed\n"));
+		goto fail;
 	}
 	talloc_free(async_data);
 
@@ -1821,9 +1842,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		ctdb_client_async_add(async_data, state);
 	}
 	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " Async control CTDB_CONTROL_TAKEOVER_IP failed\n"));
-		talloc_free(tmp_ctx);
-		return -1;
+		DEBUG(DEBUG_ERR,
+		      ("Async control CTDB_CONTROL_TAKEOVER_IP failed\n"));
+		goto fail;
 	}
 
 ipreallocated:
@@ -1843,10 +1864,16 @@ ipreallocated:
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("Async CTDB_CONTROL_IPREALLOCATED control failed\n"));
+		goto fail;
 	}
 
 	talloc_free(tmp_ctx);
 	return ret;
+
+fail:
+	takeover_run_process_failures(ctdb, takeover_data);
+	talloc_free(tmp_ctx);
+	return -1;
 }
 
 
