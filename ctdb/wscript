@@ -696,6 +696,7 @@ def build(bld):
         'message_ring',
         'fetch_ring',
         'fetch_loop',
+        'fetch_loop_key',
         'fetch_readonly',
         'fetch_readonly_loop',
         'transaction_loop',
