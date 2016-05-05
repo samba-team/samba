@@ -3183,7 +3183,7 @@ static bool check_pw_with_krb5(struct torture_context *tctx,
 	const char *old_password = cli_credentials_get_old_password(credentials);
 	int kvno = cli_credentials_get_kvno(credentials);
 	int expected_kvno = 0;
-	krb5uint32 t_kvno = 0;
+	krb5int32 t_kvno = 0;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	krb5_error_code k5ret;
 	krb5_boolean k5ok;
