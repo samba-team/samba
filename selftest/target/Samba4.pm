@@ -210,10 +210,12 @@ sub wait_for_start($$)
 	    my $count = 0;
 	    my $base_dn = "DC=".join(",DC=", split(/\./, $testenv_vars->{REALM}));
 	    my $rid_set_dn = "cn=RID Set,cn=$testenv_vars->{NETBIOSNAME},ou=domain controllers,$base_dn";
+	    my $max_wait = 40;
 	    sleep(1);
 	    while (system("$ldbsearch -H ldap://$testenv_vars->{SERVER} -U$testenv_vars->{USERNAME}%$testenv_vars->{PASSWORD} -s base -b \"$rid_set_dn\" rIDAllocationPool > /dev/null") != 0) {
 		$count++;
-		if ($count > 40) {
+		if ($count > $max_wait) {
+		    warn("Timed out ($max_wait sec) waiting for working LDAP and a RID Set to be allocated by $testenv_vars->{NETBIOSNAME} PID $testenv_vars->{SAMBA_PID}");
 		    $ret = -1;
 		    last;
 		}
