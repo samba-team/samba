@@ -389,7 +389,7 @@ WERROR reg_mount_hive(struct registry_context *rctx,
 	mp->path.predefined_key = key_id;
 	mp->prev = mp->next = NULL;
 	mp->key = hive_key;
-	if (elements != NULL && str_list_length(elements) != 0) {
+	if (elements != NULL && elements[0] != NULL) {
 		mp->path.elements = talloc_array(mp, const char *,
 						 str_list_length(elements));
 		W_ERROR_HAVE_NO_MEMORY(mp->path.elements);
