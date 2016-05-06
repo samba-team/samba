@@ -942,7 +942,7 @@ static int find_node_xpnn(void)
 		}
 	}
 
-	printf("Failed to detect which PNN this node is\n");
+	DEBUG(DEBUG_ERR, ("Failed to detect which PNN this node is\n"));
 	talloc_free(mem_ctx);
 	return -1;
 }
