@@ -3555,8 +3555,9 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
 	size_t i;
 
 	tokens = str_list_make(mem_ctx, cn, " -_");
-	if (tokens == NULL)
+	if (tokens == NULL || tokens[0] == NULL) {
 		return NULL;
+	}
 
 	/* "tolower()" and "toupper()" should also work properly on 0x00 */
 	tokens[0][0] = tolower(tokens[0][0]);
