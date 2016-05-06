@@ -3560,11 +3560,11 @@ const char *samdb_cn_to_lDAPDisplayName(TALLOC_CTX *mem_ctx, const char *cn)
 
 	/* "tolower()" and "toupper()" should also work properly on 0x00 */
 	tokens[0][0] = tolower(tokens[0][0]);
-	for (i = 1; i < str_list_length((const char * const *)tokens); i++)
+	for (i = 1; tokens[i] != NULL; i++)
 		tokens[i][0] = toupper(tokens[i][0]);
 
 	ret = talloc_strdup(mem_ctx, tokens[0]);
-	for (i = 1; i < str_list_length((const char * const *)tokens); i++)
+	for (i = 1; tokens[i] != NULL; i++)
 		ret = talloc_asprintf_append_buffer(ret, "%s", tokens[i]);
 
 	talloc_free(tokens);
