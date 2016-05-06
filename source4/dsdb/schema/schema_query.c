@@ -240,18 +240,19 @@ const char **merge_attr_list(TALLOC_CTX *mem_ctx,
 {
 	const char **ret_attrs;
 	unsigned int i;
-	size_t new_len, orig_len = str_list_length(attrs);
-	if (!new_attrs) {
+	size_t new_len, new_attr_len, orig_len = str_list_length(attrs);
+	if (new_attrs == NULL || new_attrs[0] == NULL) {
 		return attrs;
 	}
+	new_attr_len = str_list_length(new_attrs);
 
-	ret_attrs = talloc_realloc(mem_ctx, 
-				   attrs, const char *, orig_len + str_list_length(new_attrs) + 1);
+	ret_attrs = talloc_realloc(mem_ctx,
+				   attrs, const char *, orig_len + new_attr_len + 1);
 	if (ret_attrs) {
-		for (i=0; i < str_list_length(new_attrs); i++) {
+		for (i = 0; i < new_attr_len; i++) {
 			ret_attrs[orig_len + i] = new_attrs[i];
 		}
-		new_len = orig_len + str_list_length(new_attrs);
+		new_len = orig_len + new_attr_len;
 
 		ret_attrs[new_len] = NULL;
 	}
