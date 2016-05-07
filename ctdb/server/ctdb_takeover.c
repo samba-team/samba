@@ -1559,6 +1559,35 @@ struct takeover_callback_data {
 	void *fail_callback_data;
 };
 
+static struct takeover_callback_data *
+takeover_callback_data_init(TALLOC_CTX *mem_ctx,
+			    uint32_t num_nodes,
+			    client_async_callback fail_callback,
+			    void *callback_data)
+{
+	static struct takeover_callback_data *takeover_data;
+
+	takeover_data = talloc_zero(mem_ctx, struct takeover_callback_data);
+	if (takeover_data == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return NULL;
+	}
+
+	takeover_data->node_failed = talloc_zero_array(takeover_data,
+						       bool, num_nodes);
+	if (takeover_data->node_failed == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		talloc_free(takeover_data);
+		return NULL;
+	}
+
+	takeover_data->num_nodes = num_nodes;
+	takeover_data->fail_callback = fail_callback;
+	takeover_data->fail_callback_data = callback_data;
+
+	return takeover_data;
+}
+
 static void takeover_run_fail_callback(struct ctdb_context *ctdb,
 				       uint32_t node_pnn, int32_t res,
 				       TDB_DATA outdata, void *callback_data)
@@ -1683,15 +1712,14 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	 * host.  This will be a NOOP on nodes that don't currently
 	 * hold the given IP.
 	 */
-	takeover_data = talloc_zero(tmp_ctx, struct takeover_callback_data);
-	CTDB_NO_MEMORY_FATAL(ctdb, takeover_data);
-
-	takeover_data->node_failed = talloc_zero_array(tmp_ctx,
-						       bool, nodemap->num);
-	CTDB_NO_MEMORY_FATAL(ctdb, takeover_data->node_failed);
-	takeover_data->num_nodes = nodemap->num;
-	takeover_data->fail_callback = fail_callback;
-	takeover_data->fail_callback_data = callback_data;
+	takeover_data = takeover_callback_data_init(tmp_ctx,
+						    nodemap->num,
+						    fail_callback,
+						    callback_data);
+	if (takeover_data == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
 
 	async_data = talloc_zero(tmp_ctx, struct client_async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
