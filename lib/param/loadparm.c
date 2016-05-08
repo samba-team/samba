@@ -2900,6 +2900,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "smb2 leases", "yes");
 
+	lpcfg_do_global_parameter(lp_ctx, "kerberos encryption types", "all");
+
 	/* Allow modules to adjust defaults */
 	for (defaults_hook = defaults_hooks; defaults_hook;
 		 defaults_hook = defaults_hook->next) {

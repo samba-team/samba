@@ -1,0 +1,53 @@
+<samba:parameter name="kerberos encryption types"
+                 context="G"
+                 type="enum"
+		 enumlist="enum_kerberos_encryption_types_vals"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+    <para>This parameter determines the encryption types to use when operating
+    as a Kerberos client. Possible values are <emphasis>all</emphasis>,
+    <emphasis>strong</emphasis>, and <emphasis>legacy</emphasis>.
+    </para>
+
+    <para>Samba uses a Kerberos library (MIT or Heimdal) to obtain Kerberos
+    tickets. This library is normally configured outside of Samba, using
+    the krb5.conf file. This file may also include directives to configure
+    the encryption types to be used. However, Samba implements Active Directory
+    protocols and algorithms to locate a domain controller. In order to
+    force the Kerberos library into using the correct domain controller,
+    some Samba processes, such as
+    <citerefentry><refentrytitle>winbindd</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry> and
+    <citerefentry><refentrytitle>net</refentrytitle>
+    <manvolnum>8</manvolnum></citerefentry>, build a private krb5.conf
+    file for use by the Kerberos library while being invoked from Samba.
+    This private file controls all aspects of the Kerberos library operation,
+    and this parameter controls how the encryption types are configured
+    within this generated file, and therefore also controls the encryption
+    types negotiable by Samba.
+    </para>
+
+    <para>When set to <constant>all</constant>, all active directory
+    encryption types are allowed.
+    </para>
+
+    <para>When set to <constant>strong</constant>, only AES-based encyption
+    types are offered. This can be used in hardened environments to prevent
+    downgrade attacks.
+    </para>
+
+    <para>When set to <constant>legacy</constant>, only RC4-HMAC-MD5
+    is allowed. Avoiding AES this way has one a very specific use.
+    Normally, the encryption type is negotiated between the peers.
+    However, there is one scenario in which a Windows read-only domain
+    controller (RODC) advertises AES encryption, but then proxies the
+    request to a writeable DC which may not support AES encryption,
+    leading to failure of the handshake. Setting this parameter to
+    <constant>legacy</constant> would cause samba not to negotiate AES
+    encryption. It is assumed of course that the weaker legacy
+    encryption types are acceptable for the setup.
+    </para>
+</description>
+
+<value type="default">all</value>
+</samba:parameter>

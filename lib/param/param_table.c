@@ -208,6 +208,15 @@ static const struct enum_list enum_kerberos_method[] = {
 	{-1, NULL}
 };
 
+/* Kerberos encryption types selection options */
+
+static const struct enum_list enum_kerberos_encryption_types_vals[] = {
+	{KERBEROS_ETYPES_ALL, "all"},
+	{KERBEROS_ETYPES_STRONG, "strong"},
+	{KERBEROS_ETYPES_LEGACY, "legacy"},
+	{-1, NULL}
+};
+
 static const struct enum_list enum_printing[] = {
 	{PRINT_SYSV, "sysv"},
 	{PRINT_AIX, "aix"},
