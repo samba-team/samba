@@ -484,9 +484,6 @@ Offset  Data			length.
    otherwise NT will not honour the announce packets */
 #define MAX_SERVER_STRING_LENGTH 48
 
-
-#define SMB_SUCCESS 0  /* The request was successful. */
-
 #ifdef NOSTRDUP
 char *strdup(char *s);
 #endif
