@@ -976,7 +976,7 @@ _kdc_as_rep(krb5_context context,
     krb5_error_code ret = 0;
     const char *e_text = NULL;
     krb5_crypto crypto;
-    Key *ckey, *skey;
+    Key *skey;
     EncryptionKey *reply_key = NULL, session_key;
     int flags = HDB_F_FOR_AS_REQ;
 #ifdef PKINIT
@@ -1373,6 +1373,9 @@ _kdc_as_rep(krb5_context context,
            was some problem with it, other than too large skew */
 	if(found_pa && et.flags.pre_authent == 0){
 	    kdc_log(context, config, 0, "%s -- %s", e_text, client_name);
+	    if (!prepare_enc_data(context, config, &e_data, b, client)) {
+	        goto out;
+	    }
 	    e_text = NULL;
 	    goto out;
 	}
@@ -1380,88 +1383,11 @@ _kdc_as_rep(krb5_context context,
 	      || b->kdc_options.request_anonymous /* hack to force anon */
 	      || client->entry.flags.require_preauth
 	      || server->entry.flags.require_preauth) {
-	METHOD_DATA method_data;
-	PA_DATA *pa;
-	unsigned char *buf;
-	size_t len;
-
     use_pa:
-	method_data.len = 0;
-	method_data.val = NULL;
-
-	ret = realloc_method_data(&method_data);
-	if (ret) {
-	    free_METHOD_DATA(&method_data);
-	    goto out;
-	}
-	pa = &method_data.val[method_data.len-1];
-	pa->padata_type		= KRB5_PADATA_ENC_TIMESTAMP;
-	pa->padata_value.length	= 0;
-	pa->padata_value.data	= NULL;
-
-#ifdef PKINIT
-	ret = realloc_method_data(&method_data);
-	if (ret) {
-	    free_METHOD_DATA(&method_data);
-	    goto out;
-	}
-	pa = &method_data.val[method_data.len-1];
-	pa->padata_type		= KRB5_PADATA_PK_AS_REQ;
-	pa->padata_value.length	= 0;
-	pa->padata_value.data	= NULL;
-
-	ret = realloc_method_data(&method_data);
-	if (ret) {
-	    free_METHOD_DATA(&method_data);
-	    goto out;
-	}
-	pa = &method_data.val[method_data.len-1];
-	pa->padata_type		= KRB5_PADATA_PK_AS_REQ_WIN;
-	pa->padata_value.length	= 0;
-	pa->padata_value.data	= NULL;
-#endif
-
-	/*
-	 * If there is a client key, send ETYPE_INFO{,2}
-	 */
-	ret = _kdc_find_etype(context,
-			      config->preauth_use_strongest_session_key, TRUE,
-			      client, b->etype.val, b->etype.len, NULL, &ckey);
-	if (ret == 0) {
-
-	    /*
-	     * RFC4120 requires:
-	     * - If the client only knows about old enctypes, then send
-	     *   both info replies (we send 'info' first in the list).
-	     * - If the client is 'modern', because it knows about 'new'
-	     *   enctype types, then only send the 'info2' reply.
-	     *
-	     * Before we send the full list of etype-info data, we pick
-	     * the client key we would have used anyway below, just pick
-	     * that instead.
-	     */
-
-	    if (older_enctype(ckey->key.keytype)) {
-		ret = get_pa_etype_info(context, config,
-					&method_data, ckey);
-		if (ret) {
-		    free_METHOD_DATA(&method_data);
-		    goto out;
-		}
-	    }
-	    ret = get_pa_etype_info2(context, config,
-				     &method_data, ckey);
-	    if (ret) {
-		free_METHOD_DATA(&method_data);
+	if (!prepare_enc_data(context, config, &e_data, b, client)) {
 		goto out;
-	    }
 	}
 
-	ASN1_MALLOC_ENCODE(METHOD_DATA, buf, len, &method_data, &len, ret);
-	free_METHOD_DATA(&method_data);
-
-	e_data.data   = buf;
-	e_data.length = len;
 	e_text ="Need to use PA-ENC-TIMESTAMP/PA-PK-AS-REQ",
 
 	ret = KRB5KDC_ERR_PREAUTH_REQUIRED;
@@ -1832,6 +1758,100 @@ out:
     if(server)
 	_kdc_free_ent(context, server);
     return ret;
+}
+
+krb5_boolean
+prepare_enc_data(krb5_context context,
+		 krb5_kdc_configuration *config,
+		 krb5_data *e_data,
+		 KDC_REQ_BODY *b,
+		 hdb_entry_ex *client)
+{
+	METHOD_DATA method_data;
+	PA_DATA *pa;
+	unsigned char *buf;
+	size_t len;
+	Key *ckey;
+	krb5_error_code ret;
+
+	method_data.len = 0;
+	method_data.val = NULL;
+
+	ret = realloc_method_data(&method_data);
+	if (ret) {
+	    free_METHOD_DATA(&method_data);
+	    return FALSE;
+	}
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= KRB5_PADATA_ENC_TIMESTAMP;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
+
+#ifdef PKINIT
+	ret = realloc_method_data(&method_data);
+	if (ret) {
+	    free_METHOD_DATA(&method_data);
+	    return FALSE;
+	}
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= KRB5_PADATA_PK_AS_REQ;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
+
+	ret = realloc_method_data(&method_data);
+	if (ret) {
+	    free_METHOD_DATA(&method_data);
+	    return FALSE;
+	}
+	pa = &method_data.val[method_data.len-1];
+	pa->padata_type		= KRB5_PADATA_PK_AS_REQ_WIN;
+	pa->padata_value.length	= 0;
+	pa->padata_value.data	= NULL;
+#endif
+
+	/*
+	 * If there is a client key, send ETYPE_INFO{,2}
+	 */
+	ret = _kdc_find_etype(context,
+			      config->preauth_use_strongest_session_key, TRUE,
+			      client, b->etype.val, b->etype.len, NULL, &ckey);
+	if (ret == 0) {
+
+	    /*
+	     * RFC4120 requires:
+	     * - If the client only knows about old enctypes, then send
+	     *   both info replies (we send 'info' first in the list).
+	     * - If the client is 'modern', because it knows about 'new'
+	     *   enctype types, then only send the 'info2' reply.
+	     *
+	     * Before we send the full list of etype-info data, we pick
+	     * the client key we would have used anyway below, just pick
+	     * that instead.
+	     */
+
+	    if (older_enctype(ckey->key.keytype)) {
+		ret = get_pa_etype_info(context, config,
+					&method_data, ckey);
+		if (ret) {
+		    free_METHOD_DATA(&method_data);
+		    return FALSE;
+		}
+	    }
+	    ret = get_pa_etype_info2(context, config,
+				     &method_data, ckey);
+	    if (ret) {
+		free_METHOD_DATA(&method_data);
+		return FALSE;
+	    }
+	}
+
+	ASN1_MALLOC_ENCODE(METHOD_DATA, buf, len, &method_data, &len, ret);
+	free_METHOD_DATA(&method_data);
+
+	e_data->data   = buf;
+	e_data->length = len;
+
+	return TRUE;
 }
 
 /*

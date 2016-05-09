@@ -189,6 +189,10 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 						 "Got wrong error.error_code");
 			free_KRB_ERROR(&error);
 		} else if (test_context->packet_count == 1) {
+			METHOD_DATA m;
+			size_t len;
+			int i, ret = 0;
+			bool found = false;
 			torture_assert_int_equal(test_context->tctx,
 						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
 						 "decode_AS_REP failed");
@@ -196,6 +200,20 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
 			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_FAILED - KRB5KDC_ERR_NONE,
 						 "Got wrong error.error_code");
+			torture_assert(test_context->tctx, error.e_data != NULL, "No e-data returned");
+			ret = decode_METHOD_DATA(error.e_data->data, error.e_data->length, &m, &len);
+			torture_assert_int_equal(test_context->tctx, ret, 0,
+						 "Got invalid method data");
+
+			torture_assert(test_context->tctx, m.len > 0, "No PA_DATA given");
+			for (i = 0; i < m.len; i++) {
+				if (m.val[i].padata_type == KRB5_PADATA_ENC_TIMESTAMP) {
+					found = true;
+					break;
+				}
+			}
+			torture_assert(test_context->tctx, found, "Encrypted timestamp not found");
+
 			free_KRB_ERROR(&error);
 		}
 		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
