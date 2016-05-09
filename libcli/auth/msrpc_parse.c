@@ -243,13 +243,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 	uint16_t len1, len2;
 	uint32_t ptr;
 	uint32_t *v;
-	size_t p_len = 1024;
-	char *p = talloc_array(mem_ctx, char, p_len);
 	bool ret = true;
-
-	if (!p) {
-		return false;
-	}
 
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
@@ -411,6 +405,5 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx,
 
 cleanup:
 	va_end(ap);
-	talloc_free(p);
 	return ret;
 }
