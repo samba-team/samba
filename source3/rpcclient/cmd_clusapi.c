@@ -556,6 +556,61 @@ static WERROR cmd_clusapi_pause_node(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+static WERROR cmd_clusapi_resume_node(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv)
+{
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status;
+	const char *lpszNodeName = "CTDB_NODE_0";
+	WERROR Status;
+	struct policy_handle hNode;
+	WERROR rpc_status;
+	WERROR result, ignore;
+
+	if (argc >= 2) {
+		lpszNodeName = argv[1];
+	}
+
+	status = dcerpc_clusapi_OpenNode(b, mem_ctx,
+					 lpszNodeName,
+					 &Status,
+					 &rpc_status,
+					 &hNode);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(Status)) {
+		printf("Failed to open node %s\n", lpszNodeName);
+		printf("Status: %s\n", win_errstr(Status));
+		return Status;
+	}
+
+	status = dcerpc_clusapi_ResumeNode(b, mem_ctx,
+					   hNode,
+					   &rpc_status,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		printf("Failed to resume node %s\n", lpszNodeName);
+		printf("Status: %s\n", win_errstr(result));
+		return result;
+	}
+
+	dcerpc_clusapi_CloseNode(b, mem_ctx,
+				 &hNode,
+				 &ignore);
+
+	printf("Cluster node %s has been resumed\n", lpszNodeName);
+	printf("rpc_status: %s\n", win_errstr(rpc_status));
+
+	return WERR_OK;
+}
+
 
 struct cmd_set clusapi_commands[] = {
 
@@ -680,6 +735,16 @@ struct cmd_set clusapi_commands[] = {
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
 		.description        = "Pause cluster node",
+		.usage              = "",
+	},
+	{
+		.name               = "clusapi_resume_node",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_clusapi_resume_node,
+		.table              = &ndr_table_clusapi,
+		.rpc_pipe           = NULL,
+		.description        = "Resume cluster node",
 		.usage              = "",
 	},
 	{
