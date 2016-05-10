@@ -16,6 +16,8 @@ else
   exit 0
 fi
 
+DAEMON_COREFILE_LIMIT='unlimited'
+
 # Avoid using root's TMPDIR
 unset TMPDIR
 
