@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 
 bld.SAMBA_SUBSYSTEM('DCERPC_SHARE',
-	source='common/server_info.c common/share_info.c',
+	source='common/share_info.c',
 	autoproto='common/share.h',
 	deps='ldb',
-	enabled=bld.AD_DC_BUILD_IS_ENABLED()
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER'),
 	)
 
 bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
-	source='common/forward.c common/reply.c dcesrv_auth.c common/loadparm.c',
+	source='common/server_info.c common/forward.c common/reply.c dcesrv_auth.c common/loadparm.c',
 	autoproto='common/proto.h',
 	deps='ldb DCERPC_SHARE samba_server_gensec',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
@@ -54,7 +54,8 @@ bld.SAMBA_MODULE('dcerpc_srvsvc',
 	autoproto='srvsvc/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_srvsvc_init',
-	deps='DCERPC_COMMON NDR_SRVSVC share ntvfs'
+	deps='DCERPC_COMMON NDR_SRVSVC share ntvfs',
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 
 
@@ -88,7 +89,8 @@ bld.SAMBA_MODULE('dcerpc_winreg',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_winreg_init',
 	deps='registry ndr-standard',
-	internal_module=True
+	internal_module=True,
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 
 
@@ -124,7 +126,8 @@ bld.SAMBA_MODULE('dcerpc_spoolss',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_spoolss_init',
 	deps='DCERPC_COMMON NDR_SPOOLSS ntptr RPC_NDR_SPOOLSS',
-	internal_module=True
+	internal_module=True,
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 
 
@@ -147,7 +150,8 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 	source='eventlog/dcesrv_eventlog6.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_eventlog6_init',
-	deps='DCERPC_COMMON'
+	deps='DCERPC_COMMON',
+	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)
 
 bld.SAMBA_MODULE('dcerpc_dnsserver',

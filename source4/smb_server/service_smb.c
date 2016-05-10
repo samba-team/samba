@@ -34,7 +34,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "file_server/file_server.h"
-
+#include "ntvfs/ntvfs.h"
+#include "lib/cmdline/popt_common.h"
 /*
   open the smb server sockets
 */
@@ -86,6 +87,7 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(void)
 {
+	ntvfs_init(cmdline_lp_ctx);
 	share_init();
 	return register_server_service("smb", smbsrv_task_init);
 }
