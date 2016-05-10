@@ -5,7 +5,7 @@ bld.SAMBA_MODULE('service_smb',
 	autoproto='service_smb_proto.h',
 	subsystem='service',
 	init_function='server_service_smb_init',
-	deps='SMB_SERVER netif shares samba-hostconfig',
+	deps='SMB_SERVER netif shares samba-hostconfig POPT_SAMBA',
 	internal_module=False,
 	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
 	)

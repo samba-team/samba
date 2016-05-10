@@ -28,7 +28,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "ntvfs/ntvfs.h"
 #include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/schannel.h"
@@ -408,9 +407,6 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	ntptr_init();	/* FIXME: maybe run this in the initialization function 
 						of the spoolss RPC server instead? */
-
-	ntvfs_init(cmdline_lp_ctx); 	/* FIXME: maybe run this in the initialization functions 
-						of the SMB[,2] server instead? */
 
 	process_model_init(cmdline_lp_ctx); 
 

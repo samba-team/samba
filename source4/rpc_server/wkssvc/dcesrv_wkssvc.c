@@ -24,7 +24,6 @@
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "rpc_server/common/common.h"
-#include "rpc_server/common/share.h"
 #include "param/param.h"
 
 /*
