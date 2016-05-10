@@ -16,8 +16,8 @@ define_test ()
     _f=$(basename "$0" ".sh")
 
     case "$_f" in
-	stubby.*)
-	    _cmd="${_f#stubby.}"
+	ctdb.*)
+	    _cmd="${_f#ctdb.}"
 	    _cmd="${_cmd%.*}" # Strip test number
 	    export CTDB="ctdb --socket $ctdbd_socket"
 	    export CTDB_DEBUGLEVEL=3
