@@ -6,8 +6,6 @@
 
 . $CTDB_BASE/functions
 
-detect_init_style
-
 CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
 
 service_name="winbind"
