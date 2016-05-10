@@ -9,6 +9,7 @@ PIDFile=/run/winbindd.pid
 EnvironmentFile=-/etc/sysconfig/samba
 ExecStart=/usr/sbin/winbindd "$WINBINDOPTIONS"
 ExecReload=/usr/bin/kill -HUP $MAINPID
+LimitCORE=infinity
 
 [Install]
 WantedBy=multi-user.target
