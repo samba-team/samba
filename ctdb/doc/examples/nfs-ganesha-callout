@@ -35,14 +35,17 @@
 # Exit on 1st error
 set -e
 
+# To change the following, edit the default values below.  Do not set
+# these - they aren't configuration variables, just hooks for testing.
+nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/etc/ganesha/ganesha.conf}"
+nfs_service="${CTDB_NFS_SERVICE:-nfs-ganesha}"
+ganesha_rec_subdir=${CTDB_GANESHA_REC_SUBDIR:-.ganesha}
+procfs=${PROCFS_PATH:-/proc}
+
 if [ -z "$CTDB_CLUSTER_FILESYSTEM_TYPE" ] ; then
     CTDB_CLUSTER_FILESYSTEM_TYPE="gpfs"
 fi
 
-# Override for unit testing
-if [ -z "$PROCFS_PATH" ] ; then
-    PROCFS_PATH="/proc"
-fi
 
 ##################################################
 
@@ -61,8 +64,6 @@ EOF
 
 ##################################################
 # Basic service stop and start
-
-nfs_service="nfs-ganesha-$CTDB_CLUSTER_FILESYSTEM_TYPE"
 
 basic_stop ()
 {
@@ -142,15 +143,13 @@ get_cluster_fs_state ()
 
 create_ganesha_recdirs ()
 {
-    [ -n "$CTDB_GANESHA_REC_SUBDIR" ] || CTDB_GANESHA_REC_SUBDIR=".ganesha"
-
     _mounts=$(mount -t $CTDB_CLUSTER_FILESYSTEM_TYPE)
     if [ -z "$_mounts" ]; then
       echo "startup $CTDB_CLUSTER_FILESYSTEM_TYPE not ready"
       exit 0
     fi
     _mntpt=$(echo "$_mounts" | sort | awk 'NR == 1 {print $3}')
-    _link_dst="${_mntpt}/${CTDB_GANESHA_REC_SUBDIR}"
+    _link_dst="${_mntpt}/${ganesha_rec_subdir}"
     mkdir -vp "$_link_dst"
     if [ ! -L "$GANRECDIR" ] ; then
         rm -vrf "$GANRECDIR"
@@ -184,7 +183,7 @@ service_check ()
     _pidfile="/var/run/ganesha.pid"
     _ganesha="/usr/bin/ganesha.nfsd"
     if ! { read _pid < "$_pidfile" && \
-	   grep "$_ganesha" "${PROCFS_PATH}/${_pid}/cmdline" ; } >/dev/null 2>&1 ; then
+	   grep "$_ganesha" "${procfs}/${_pid}/cmdline" ; } >/dev/null 2>&1 ; then
 	echo "ERROR: NFS Ganesha not running according to PID file"
 	return 1
     fi
@@ -266,7 +265,7 @@ nfs_startup ()
     create_ganesha_recdirs
 
     basic_start "nfs"
-    _f="${PROCFS_PATH}/sys/net/ipv4/tcp_tw_recycle"
+    _f="${procfs}/sys/net/ipv4/tcp_tw_recycle"
     if [ "$_f" ] ; then
 	echo 1 >"$_f"
     fi
@@ -277,7 +276,7 @@ nfs_startup ()
 
 nfs_monitor_list_shares ()
 {
-    grep Path /etc/ganesha/$CTDB_CLUSTER_FILESYSTEM_TYPE.ganesha.exports.conf |
+    grep Path $nfs_exports_file |
 	cut -f2 -d\" |
 	sort -u
 }
