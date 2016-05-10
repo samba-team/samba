@@ -128,7 +128,6 @@ service_start ()
 # Nitty gritty - monitoring and IP handling
 
 GANRECDIR="/var/lib/nfs/ganesha"
-GANRECDIR3="/var/lib/nfs/ganesha_local"
 
 # Return 'active' if the shared filesystem is accessible.
 get_cluster_fs_state ()
@@ -167,8 +166,6 @@ create_ganesha_recdirs ()
     if [ ! -e "$GANRECDIR" ]; then
         ln -sv "$_link_dst" "$GANRECDIR"
     fi
-
-    mkdir -p "$GANRECDIR3"
 }
 
 service_check ()
@@ -187,26 +184,6 @@ service_check ()
     if ! { read _pid < "$_pidfile" && \
 	   grep "$_ganesha" "${procfs}/${_pid}/cmdline" ; } >/dev/null 2>&1 ; then
 	echo "ERROR: NFS Ganesha not running according to PID file"
-	return 1
-    fi
-
-    # Check red conditions against limit
-    _reds_max=2
-    _reds=$(ls $GANRECDIR3 | grep -c "red")
-
-    if [ $_reds -ge $_reds_max ] ; then
-	echo "Too many red conditions (${_reds}/${_reds_max})"
-	return 1
-    fi
-
-    # Check for stall
-    _stall_max=120
-    _now=$(date +"%s")
-    _last=$(ls -t $GANRECDIR3 | sed -n -e '1s@_.*@@p')
-    [ -n $_last ] || _last=$_now  # Handle startup
-    _stall=$(($_now - $_last))
-    if [ $_stall -ge $_stall_max ] ; then
-	echo "ERROR: Stalled for ${_stall} second(s)"
 	return 1
     fi
 
