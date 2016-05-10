@@ -705,13 +705,6 @@ def build(bld):
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')
 
-    bld.SAMBA_BINARY('ctdb_stubtest',
-                     source='tests/src/ctdb_test.c',
-                     deps='''replace tdb tevent talloc popt ctdb-system
-                             samba-util tdb-wrap ctdb-util''',
-                     includes='include',
-                     install_path='${CTDB_TEST_LIBDIR}')
-
     bld.SAMBA_BINARY('fake_ctdbd',
                      source='tests/src/fake_ctdbd.c',
                      deps='''ctdb-util ctdb-protocol ctdb-system
