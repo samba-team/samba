@@ -4593,7 +4593,7 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, -1, 0, 0,
 			   setup, 1, 0,
 			   param, param_len, 2,
-			   data,  data_len, CLI_BUFFER_SIZE,
+			   data,  data_len, 0,
 			   NULL,
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL, /* rparam */
