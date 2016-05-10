@@ -50,7 +50,6 @@ RETVAL=0
 start() {
 	KIND="SMB"
 	echo -n $"Starting $KIND services: "
-	ulimit -c unlimited
 	daemon smbd $SMBDOPTIONS
 	RETVAL=$?
 	echo
