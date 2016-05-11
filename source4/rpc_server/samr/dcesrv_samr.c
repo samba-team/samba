@@ -1525,7 +1525,7 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	const char *filter;
+	char *filter;
 	const char * const attrs[] = { "objectSid", NULL };
 	struct ldb_message **res;
 	uint32_t i;
@@ -1549,8 +1549,8 @@ static NTSTATUS dcesrv_samr_GetAliasMembership(struct dcesrv_call_state *dce_cal
 		dom_sid_string_buf(r->in.sids->sids[i].sid,
 				   membersidstr, sizeof(membersidstr));
 
-		filter = talloc_asprintf(mem_ctx, "%s(member=<SID=%s>)",
-					 filter, membersidstr);
+		filter = talloc_asprintf_append(filter, "(member=<SID=%s>)",
+						membersidstr);
 		if (filter == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
