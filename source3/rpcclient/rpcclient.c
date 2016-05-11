@@ -1084,6 +1084,9 @@ out_free:
 	if (get_cmdline_auth_info_use_ccache(rpcclient_auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
 	}
+	if (get_cmdline_auth_info_use_pw_nt_hash(rpcclient_auth_info)) {
+		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
+	}
 
 	user = talloc_strdup(frame, get_cmdline_auth_info_username(rpcclient_auth_info));
 	SMB_ASSERT(user != NULL);
