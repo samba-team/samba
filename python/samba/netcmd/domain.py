@@ -419,7 +419,7 @@ class cmd_domain_provision(Command):
                                           "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
                     eadb = False
                 except Exception:
-                    self.logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. ")
+                    self.logger.info("You are not root or your system does not support xattr, using tdb backend for attributes. ")
             finally:
                 file.close()
 
@@ -1530,7 +1530,7 @@ class cmd_domain_classicupgrade(Command):
                     eadb = False
                 except Exception:
                     # FIXME: Don't catch all exceptions here
-                    logger.info("You are not root or your system do not support xattr, using tdb backend for attributes. "
+                    logger.info("You are not root or your system does not support xattr, using tdb backend for attributes. "
                                 "If you intend to use this provision in production, rerun the script as root on a system supporting xattrs.")
             finally:
                 tmpfile.close()
