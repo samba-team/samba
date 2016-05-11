@@ -24,6 +24,7 @@
 		<arg choice="opt">-c &lt;command string&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-l logdir</arg>
+		<arg choice="opt">-m maxprotocol</arg>
 		<arg choice="opt">-N</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-U username[%password]</arg>
@@ -83,6 +84,19 @@
 		<para>There is no default for this parameter. If not supplied, 
 		it will be determined automatically by the client as described 
 		above. </para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-m|--max-protocol protocol</term>
+		<listitem><para>This allows the user to select the
+		highest SMB protocol level that rpcclient will use to
+		connect to the server. By default this is set to
+		NT1, which is the highest available SMB1 protocol.
+		To connect using SMB2 or SMB3 protocol, use the
+		strings SMB2 or SMB3 respectively. Note that to connect
+		to a Windows 2012 server with encrypted transport selecting
+		a max-protocol of SMB3 is required.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>

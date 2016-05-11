@@ -913,6 +913,7 @@ out_free:
 		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon separated cmds", "COMMANDS"},
 		{"dest-ip", 'I', POPT_ARG_STRING,   &opt_ipaddr, 'I', "Specify destination IP address", "IP"},
 		{"port", 'p', POPT_ARG_INT,   &opt_port, 'p', "Specify port number", "PORT"},
+		{"max-protocol", 'm', POPT_ARG_STRING, NULL, 'm', "Set the max protocol level", "LEVEL" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -948,6 +949,10 @@ out_free:
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+
+		case 'm':
+			lp_set_cmdline("client max protocol", poptGetOptArg(pc));
+			break;
 
 		case 'I':
 			if (!interpret_string_addr(&server_ss,
