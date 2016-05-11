@@ -2308,6 +2308,7 @@ enum {
 	smb_init_locale();
 
 	setup_logging("ntlm_auth", DEBUG_STDERR);
+	fault_setup();
 
 	/* Parse options */
 
