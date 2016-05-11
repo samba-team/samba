@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "lib/param/param.h"
 #include "popt_common.h"
+#include "libcli/security/security.h"
 #include "utils/ntlm_auth.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "auth/ntlmssp/ntlmssp.h"
@@ -710,18 +711,58 @@ static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_conte
 						uint32_t session_info_flags,
 						struct auth_session_info **session_info_out)
 {
-	char *unix_username = (char *)server_returned_info;
-	struct auth_session_info *session_info = talloc_zero(mem_ctx, struct auth_session_info);
-	if (!session_info) {
+	const char *unix_username = (const char *)server_returned_info;
+	bool ok;
+	struct dom_sid *sids = NULL;
+	struct auth_session_info *session_info = NULL;
+
+	session_info = talloc_zero(mem_ctx, struct auth_session_info);
+	if (session_info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	session_info->unix_info = talloc_zero(session_info, struct auth_user_info_unix);
-	if (!session_info->unix_info) {
+	if (session_info->unix_info == NULL) {
 		TALLOC_FREE(session_info);
 		return NT_STATUS_NO_MEMORY;
 	}
-	session_info->unix_info->unix_name = talloc_steal(session_info->unix_info, unix_username);
+	session_info->unix_info->unix_name = talloc_strdup(session_info->unix_info,
+							   unix_username);
+	if (session_info->unix_info->unix_name == NULL) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	session_info->security_token = talloc_zero(session_info, struct security_token);
+	if (session_info->security_token == NULL) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sids = talloc_zero_array(session_info->security_token,
+				 struct dom_sid, 3);
+	if (sids == NULL) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+	ok = dom_sid_parse(SID_WORLD, &sids[0]);
+	if (!ok) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	ok = dom_sid_parse(SID_NT_NETWORK, &sids[1]);
+	if (!ok) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	ok = dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &sids[2]);
+	if (!ok) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	session_info->security_token->num_sids = talloc_array_length(sids);
+	session_info->security_token->sids = sids;
 
 	*session_info_out = session_info;
 
