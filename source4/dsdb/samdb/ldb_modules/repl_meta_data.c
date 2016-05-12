@@ -4686,6 +4686,26 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
+	if (DEBUGLVL(5)) {
+		struct GUID_txt_buf guid_txt;
+
+		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
+		DEBUG(5, ("Initial DRS replication modify message of %s is:\n%s\n"
+			  "%s\n"
+			  "%s\n",
+			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
+			  s,
+			  ndr_print_struct_string(s,
+						  (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob,
+						  "existing replPropertyMetaData",
+						  &omd),
+			  ndr_print_struct_string(s,
+						  (ndr_print_fn_t)ndr_print_replPropertyMetaDataBlob,
+						  "incoming replPropertyMetaData",
+						  rmd)));
+		talloc_free(s);
+	}
+
 	local_isDeleted = ldb_msg_find_attr_as_bool(ar->search_msg,
 						    "isDeleted", false);
 	remote_isDeleted = ldb_msg_find_attr_as_bool(msg,
@@ -4939,7 +4959,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		struct GUID_txt_buf guid_txt;
 
 		char *s = ldb_ldif_message_string(ldb, ar, LDB_CHANGETYPE_MODIFY, msg);
-		DEBUG(4, ("DRS replication modify message of %s:\n%s\n",
+		DEBUG(4, ("Final DRS replication modify message of %s:\n%s\n",
 			  GUID_buf_string(&ar->objs->objects[ar->index_current].object_guid, &guid_txt),
 			  s));
 		talloc_free(s);
