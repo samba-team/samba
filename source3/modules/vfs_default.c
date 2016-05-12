@@ -2102,6 +2102,14 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, o
 	bool result;
 
 	START_PROFILE(syscall_fcntl_lock);
+
+	if (fsp->use_ofd_locks || !lp_parm_bool(SNUM(fsp->conn),
+						"smbd",
+						"force process locks",
+						false)) {
+		op = map_process_lock_to_ofd_lock(op, &fsp->use_ofd_locks);
+	}
+
 	result =  fcntl_lock(fsp->fh->fd, op, offset, count, type);
 	END_PROFILE(syscall_fcntl_lock);
 	return result;
@@ -2122,6 +2130,14 @@ static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t 
 	int op = F_GETLK;
 
 	START_PROFILE(syscall_fcntl_getlock);
+
+	if (fsp->use_ofd_locks || !lp_parm_bool(SNUM(fsp->conn),
+						"smbd",
+						"force process locks",
+						false)) {
+		op = map_process_lock_to_ofd_lock(op, &fsp->use_ofd_locks);
+	}
+
 	result = fcntl_getlock(fsp->fh->fd, op, poffset, pcount, ptype, ppid);
 	END_PROFILE(syscall_fcntl_getlock);
 	return result;

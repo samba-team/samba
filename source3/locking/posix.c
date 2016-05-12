@@ -198,12 +198,22 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, off_t offset, off_t coun
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
-		DEBUG(0, ("posix_fcntl_lock: WARNING: lock request at offset "
+		if ((errno == EINVAL) &&
+				(op != F_GETLK &&
+				 op != F_SETLK &&
+				 op != F_SETLKW)) {
+			DEBUG(0,("WARNING: OFD locks in use and no kernel "
+				"support. Try setting "
+				"'smbd:force process locks = true' "
+				"in smb.conf\n"));
+		} else {
+			DEBUG(0, ("WARNING: lock request at offset "
 			  "%ju, length %ju returned\n",
 			  (uintmax_t)offset, (uintmax_t)count));
-		DEBUGADD(0, ("an %s error. This can happen when using 64 bit "
+			DEBUGADD(0, ("an %s error. This can happen when using 64 bit "
 			     "lock offsets\n", strerror(errno)));
-		DEBUGADD(0, ("on 32 bit NFS mounted file systems.\n"));
+			DEBUGADD(0, ("on 32 bit NFS mounted file systems.\n"));
+		}
 
 		/*
 		 * If the offset is > 0x7FFFFFFF then this will cause problems on
