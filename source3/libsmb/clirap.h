@@ -200,8 +200,6 @@ int cli_NetFileEnum(struct cli_state *cli, const char * user,
 int cli_NetShareAdd(struct cli_state *cli, struct rap_share_info_2 * sinfo );
 int cli_NetShareDelete(struct cli_state *cli, const char * share_name );
 bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_name);
-bool cli_get_server_domain(struct cli_state *cli);
-bool cli_get_server_type(struct cli_state *cli, uint32_t *pstype);
 bool cli_get_server_name(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			 char **servername);
 bool cli_ns_check_server_type(struct cli_state *cli, char *workgroup, uint32_t stype);
