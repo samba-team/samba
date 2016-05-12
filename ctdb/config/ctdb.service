@@ -1,5 +1,6 @@
 [Unit]
 Description=CTDB
+Documentation=man:ctdbd(1) man:ctdb(7)
 After=network-online.target time-sync.target
 
 [Service]
