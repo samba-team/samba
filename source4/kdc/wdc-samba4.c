@@ -42,6 +42,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	DATA_BLOB **cred_ndr_ptr = NULL;
 	DATA_BLOB _cred_blob = data_blob_null;
 	DATA_BLOB *cred_blob = NULL;
+	DATA_BLOB *upn_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
@@ -59,7 +60,8 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
 					    &logon_blob,
-					    cred_ndr_ptr);
+					    cred_ndr_ptr,
+					    &upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
@@ -79,7 +81,7 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 	}
 
 	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
-				  NULL, pac);
+				  upn_blob, NULL, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -111,6 +113,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_kdc_reget_pac context");
 	krb5_pac new_pac = NULL;
 	DATA_BLOB *pac_blob = NULL;
+	DATA_BLOB *upn_blob = NULL;
 	DATA_BLOB *deleg_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
@@ -124,6 +127,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	ssize_t logon_info_idx = -1;
 	ssize_t delegation_idx = -1;
 	ssize_t logon_name_idx = -1;
+	ssize_t upn_dns_info_idx = -1;
 	ssize_t srv_checksum_idx = -1;
 	ssize_t kdc_checksum_idx = -1;
 
@@ -156,7 +160,8 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 		client_skdc_entry = talloc_get_type_abort(client->ctx,
 							  struct samba_kdc_entry);
 
-		nt_status = samba_kdc_get_pac_blob(mem_ctx, client_skdc_entry, &pac_blob);
+		nt_status = samba_kdc_get_pac_blobs(mem_ctx, client_skdc_entry,
+						    &pac_blob, NULL, &upn_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
 			return EINVAL;
@@ -265,6 +270,18 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 				return EINVAL;
 			}
 			logon_name_idx = i;
+			break;
+		case PAC_TYPE_UPN_DNS_INFO:
+			if (upn_dns_info_idx != -1) {
+				DEBUG(1, ("logon type[%d] twice [%d] and [%d]: \n",
+					  (int)types[i],
+					  (int)logon_info_idx,
+					  (int)i));
+				SAFE_FREE(types);
+				talloc_free(mem_ctx);
+				return EINVAL;
+			}
+			upn_dns_info_idx = i;
 			break;
 		case PAC_TYPE_SRV_CHECKSUM:
 			if (srv_checksum_idx != -1) {
@@ -377,6 +394,20 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			 * we just add a place holder here.
 			 */
 			type_blob = data_blob_const(&zero_byte, 1);
+
+			if (upn_dns_info_idx == -1 && upn_blob != NULL) {
+				/* inject UPN_DNS_INFO behind */
+				forced_next_type = PAC_TYPE_UPN_DNS_INFO;
+			}
+			break;
+		case PAC_TYPE_UPN_DNS_INFO:
+			/*
+			 * Replace in the RODC case, otherwise
+			 * upn_blob is NULL and we just copy.
+			 */
+			if (upn_blob != NULL) {
+				type_blob = *upn_blob;
+			}
 			break;
 		case PAC_TYPE_SRV_CHECKSUM:
 			/*

@@ -133,7 +133,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	bool pkinit_in_use = torture_setting_bool(tctx, "pkinit_in_use", false);
-	bool expect_pac_upn_dns_info = torture_setting_bool(tctx, "expect_pac_upn_dns_info", false);
+	bool expect_pac_upn_dns_info = torture_setting_bool(tctx, "expect_pac_upn_dns_info", true);
 	size_t num_pac_buffers;
 
 	struct netr_LogonSamLogon r;

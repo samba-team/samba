@@ -78,6 +78,42 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 }
 
 static
+NTSTATUS samba_get_upn_info_pac_blob(TALLOC_CTX *mem_ctx,
+				     const struct auth_user_info_dc *info,
+				     DATA_BLOB *upn_data)
+{
+	union PAC_INFO pac_upn;
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+
+	ZERO_STRUCT(pac_upn);
+
+	*upn_data = data_blob_null;
+
+	pac_upn.upn_dns_info.upn_name = info->info->user_principal_name;
+	pac_upn.upn_dns_info.dns_domain_name = strupper_talloc(mem_ctx,
+						info->info->dns_domain_name);
+	if (pac_upn.upn_dns_info.dns_domain_name == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (info->info->user_principal_constructed) {
+		pac_upn.upn_dns_info.flags |= PAC_UPN_DNS_FLAG_CONSTRUCTED;
+	}
+
+	ndr_err = ndr_push_union_blob(upn_data, mem_ctx, &pac_upn,
+				      PAC_TYPE_UPN_DNS_INFO,
+				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC UPN_DNS_INFO (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static
 NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 				      const struct ldb_message *msg,
 				      DATA_BLOB *cred_blob)
@@ -277,11 +313,13 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
 				    const DATA_BLOB *cred_blob,
+				    const DATA_BLOB *upn_blob,
 				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac)
 {
 	krb5_data logon_data;
 	krb5_data cred_data;
+	krb5_data upn_data;
 	krb5_data deleg_data;
 	krb5_data null_data;
 	krb5_error_code ret;
@@ -311,6 +349,18 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		}
 	}
 
+	ZERO_STRUCT(upn_data);
+	if (upn_blob != NULL) {
+		ret = krb5_copy_data_contents(&upn_data,
+					      upn_blob->data,
+					      upn_blob->length);
+		if (ret != 0) {
+			kerberos_free_data_contents(context, &logon_data);
+			kerberos_free_data_contents(context, &cred_data);
+			return ret;
+		}
+	}
+
 	ZERO_STRUCT(deleg_data);
 	if (deleg_blob != NULL) {
 		ret = krb5_copy_data_contents(&deleg_data,
@@ -319,6 +369,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		if (ret != 0) {
 			kerberos_free_data_contents(context, &logon_data);
 			kerberos_free_data_contents(context, &cred_data);
+			kerberos_free_data_contents(context, &upn_data);
 			return ret;
 		}
 	}
@@ -327,6 +378,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	if (ret != 0) {
 		kerberos_free_data_contents(context, &logon_data);
 		kerberos_free_data_contents(context, &cred_data);
+		kerberos_free_data_contents(context, &upn_data);
 		kerberos_free_data_contents(context, &deleg_data);
 		return ret;
 	}
@@ -334,6 +386,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &logon_data);
 	kerberos_free_data_contents(context, &logon_data);
 	if (ret != 0) {
+		kerberos_free_data_contents(context, &upn_data);
 		kerberos_free_data_contents(context, &cred_data);
 		kerberos_free_data_contents(context, &deleg_data);
 		return ret;
@@ -344,6 +397,32 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 					  PAC_TYPE_CREDENTIAL_INFO,
 					  &cred_data);
 		kerberos_free_data_contents(context, &cred_data);
+		if (ret != 0) {
+			kerberos_free_data_contents(context, &upn_data);
+			kerberos_free_data_contents(context, &deleg_data);
+			return ret;
+		}
+	}
+
+	/*
+	 * null_data will be filled by the generic KDC code in the caller
+	 * here we just add it in order to have it before
+	 * PAC_TYPE_UPN_DNS_INFO
+	 */
+	ret = krb5_pac_add_buffer(context, *pac,
+				  PAC_TYPE_LOGON_NAME,
+				  &null_data);
+	if (ret != 0) {
+		kerberos_free_data_contents(context, &upn_data);
+		kerberos_free_data_contents(context, &deleg_data);
+		return ret;
+	}
+
+	if (upn_blob != NULL) {
+		ret = krb5_pac_add_buffer(context, *pac,
+					  PAC_TYPE_UPN_DNS_INFO,
+					  &upn_data);
+		kerberos_free_data_contents(context, &upn_data);
 		if (ret != 0) {
 			kerberos_free_data_contents(context, &deleg_data);
 			return ret;
@@ -451,17 +530,20 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *p,
 				 DATA_BLOB **_logon_info_blob,
-				 DATA_BLOB **_cred_ndr_blob)
+				 DATA_BLOB **_cred_ndr_blob,
+				 DATA_BLOB **_upn_info_blob)
 {
 	struct auth_user_info_dc *user_info_dc;
 	DATA_BLOB *logon_blob = NULL;
 	DATA_BLOB *cred_blob = NULL;
+	DATA_BLOB *upn_blob = NULL;
 	NTSTATUS nt_status;
 
 	*_logon_info_blob = NULL;
 	if (_cred_ndr_blob != NULL) {
 		*_cred_ndr_blob = NULL;
 	}
+	*_upn_info_blob = NULL;
 
 	/* The user account may be set not to want the PAC */
 	if ( ! samba_princ_needs_pac(p)) {
@@ -478,6 +560,11 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		if (cred_blob == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+	}
+
+	upn_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (upn_blob == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	nt_status = authsam_make_user_info_dc(mem_ctx, p->kdc_db_ctx->samdb,
@@ -515,11 +602,21 @@ NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	nt_status = samba_get_upn_info_pac_blob(upn_blob,
+						user_info_dc,
+						upn_blob);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Building PAC UPN INFO failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
 	TALLOC_FREE(user_info_dc);
 	*_logon_info_blob = logon_blob;
 	if (_cred_ndr_blob != NULL) {
 		*_cred_ndr_blob = cred_blob;
 	}
+	*_upn_info_blob = upn_blob;
 	return NT_STATUS_OK;
 }
 
@@ -528,14 +625,17 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				DATA_BLOB **_logon_info_blob)
 {
 	NTSTATUS nt_status;
+	DATA_BLOB *upn_blob = NULL;
 
 	nt_status = samba_kdc_get_pac_blobs(mem_ctx, p,
 					    _logon_info_blob,
-					    NULL);
+					    NULL, /* cred_blob */
+					    &upn_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
+	TALLOC_FREE(upn_blob);
 	return NT_STATUS_OK;
 }
 

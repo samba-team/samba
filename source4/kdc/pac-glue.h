@@ -30,6 +30,7 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
 				    const DATA_BLOB *cred_blob,
+				    const DATA_BLOB *upn_blob,
 				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac);
 
@@ -42,7 +43,8 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
 				 struct samba_kdc_entry *skdc_entry,
 				 DATA_BLOB **_logon_info_blob,
-				 DATA_BLOB **_cred_ndr_blob);
+				 DATA_BLOB **_cred_ndr_blob,
+				 DATA_BLOB **_upn_info_blob);
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct samba_kdc_entry *skdc_entry,
 				DATA_BLOB **_logon_info_blob);
