@@ -10,7 +10,7 @@ PIDFile=@PIDDIR@/smbd.pid
 LimitNOFILE=16384
 EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
 ExecStart=@SBINDIR@/smbd --foreground --no-process-group $SMBDOPTIONS
-ExecReload=/usr/bin/kill -HUP $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
 LimitCORE=infinity
 @systemd_smb_extra@
 

@@ -11,7 +11,7 @@ PIDFile=@PIDDIR@/samba.pid
 LimitNOFILE=16384
 EnvironmentFile=-@SYSCONFDIR@/sysconfig/samba
 ExecStart=@SBINDIR@/samba --foreground --no-process-group $SAMBAOPTIONS
-ExecReload=/usr/bin/kill -HUP $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
 @systemd_samba_extra@
 
 [Install]
