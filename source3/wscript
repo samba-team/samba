@@ -1089,6 +1089,66 @@ syscall(SYS_setgroups32, 0, NULL);
                 execute=True,
                 msg='Checking whether fcntl locking is available')
 
+    conf.CHECK_CODE('''
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+
+#define DATA "ofdtest.fcntl"
+
+int main() {
+        struct flock lck = {
+           .l_whence = SEEK_SET,
+           .l_type = F_WRLCK,
+           .l_start = 0,
+           .l_len = 1,
+           .l_pid = 0,
+        };
+        int ret;
+        int fd1;
+        int fd2;
+        char *testdir = getenv("TESTDIR");
+
+        if (testdir) {
+           if (chdir(testdir) != 0) {
+              goto err;
+           }
+        }
+
+        unlink(DATA);
+        fd1 = open(DATA, O_RDWR|O_CREAT|O_EXCL, 0600);
+        fd2 = open(DATA, O_RDWR);
+        if (fd1 == -1 || fd2 == -1) {
+           goto err;
+        }
+        ret = fcntl(fd1,F_OFD_SETLKW,&lck);
+        if (ret == -1) {
+          goto err;
+        }
+        ret = fcntl(fd2,F_OFD_SETLK,&lck);
+        if (ret != -1) {
+          goto err;
+        }
+        if (errno != EAGAIN) {
+          goto err;
+        }
+        ret = fcntl(fd2,F_OFD_GETLK,&lck);
+        if (ret == -1) {
+          goto err;
+        }
+        unlink(DATA);
+        exit(0);
+err:
+        unlink(DATA);
+        exit(1);
+}''',
+            'HAVE_OFD_LOCKS',
+            addmain=False,
+            execute=True,
+            msg="Checking whether fcntl lock supports open file description locks")
+
 # glibc up to 2.3.6 had dangerously broken posix_fallocate(). DON'T USE IT.
     if not conf.CHECK_CODE('''
 #define _XOPEN_SOURCE 600
