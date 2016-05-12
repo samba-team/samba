@@ -1,5 +1,6 @@
 [Unit]
 Description=Samba Winbind Daemon
+Documentation=man:winbindd(8) man:samba(7) man:smb.conf(5)
 After=network.target nmb.service
 
 [Service]
