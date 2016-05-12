@@ -37,7 +37,11 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					 krb5_pac *pac)
 {
 	TALLOC_CTX *mem_ctx;
-	DATA_BLOB *pac_blob;
+	DATA_BLOB *logon_blob = NULL;
+	DATA_BLOB *cred_ndr = NULL;
+	DATA_BLOB **cred_ndr_ptr = NULL;
+	DATA_BLOB _cred_blob = data_blob_null;
+	DATA_BLOB *cred_blob = NULL;
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct samba_kdc_entry *skdc_entry =
@@ -49,13 +53,33 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 		return ENOMEM;
 	}
 
-	nt_status = samba_kdc_get_pac_blob(mem_ctx, skdc_entry, &pac_blob);
+	if (pk_reply_key != NULL) {
+		cred_ndr_ptr = &cred_ndr;
+	}
+
+	nt_status = samba_kdc_get_pac_blobs(mem_ctx, skdc_entry,
+					    &logon_blob,
+					    cred_ndr_ptr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return EINVAL;
 	}
 
-	ret = samba_make_krb5_pac(context, pac_blob, NULL, pac);
+	if (pk_reply_key != NULL && cred_ndr != NULL) {
+		ret = samba_kdc_encrypt_pac_credentials(context,
+							pk_reply_key,
+							cred_ndr,
+							mem_ctx,
+							&_cred_blob);
+		if (ret != 0) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+		cred_blob = &_cred_blob;
+	}
+
+	ret = samba_make_krb5_pac(context, logon_blob, cred_blob,
+				  NULL, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -336,6 +360,16 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 			if (deleg_blob != NULL) {
 				type_blob = *deleg_blob;
 			}
+			break;
+		case PAC_TYPE_CREDENTIAL_INFO:
+			/*
+			 * Note that we copy the credential blob,
+			 * as it's only usable with the PKINIT based
+			 * AS-REP reply key, it's only available on the
+			 * host which did the AS-REQ/AS-REP exchange.
+			 *
+			 * This matches Windows 2008R2...
+			 */
 			break;
 		case PAC_TYPE_LOGON_NAME:
 			/*

@@ -21,9 +21,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
+						  const krb5_keyblock *pkreplykey,
+						  const DATA_BLOB *cred_ndr_blob,
+						  TALLOC_CTX *mem_ctx,
+						  DATA_BLOB *cred_info_blob);
+
 krb5_error_code samba_make_krb5_pac(krb5_context context,
-				    DATA_BLOB *pac_blob,
-				    DATA_BLOB *deleg_blob,
+				    const DATA_BLOB *logon_blob,
+				    const DATA_BLOB *cred_blob,
+				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac);
 
 bool samba_princ_needs_pac(struct samba_kdc_entry *skdc_entry);
@@ -32,9 +39,13 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *skdc_entry,
 			  bool *is_in_db,
 			  bool *is_untrusted);
 
+NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
+				 struct samba_kdc_entry *skdc_entry,
+				 DATA_BLOB **_logon_info_blob,
+				 DATA_BLOB **_cred_ndr_blob);
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct samba_kdc_entry *skdc_entry,
-				DATA_BLOB **_pac_blob);
+				DATA_BLOB **_logon_info_blob);
 
 NTSTATUS samba_kdc_update_pac_blob(TALLOC_CTX *mem_ctx,
 				   krb5_context context,

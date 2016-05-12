@@ -48,6 +48,8 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(pac_info);
 
+	*pac_data = data_blob_null;
+
 	nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx, info, &info3);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("Getting Samba info failed: %s\n",
@@ -67,7 +69,7 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 				      (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
-		DEBUG(1, ("PAC (presig) push failed: %s\n",
+		DEBUG(1, ("PAC_LOGON_INFO (presig) push failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
 	}
@@ -75,53 +77,280 @@ NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static
+NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
+				      const struct ldb_message *msg,
+				      DATA_BLOB *cred_blob)
+{
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+	int ret;
+	static const struct samr_Password zero_hash;
+	struct samr_Password *lm_hash = NULL;
+	struct samr_Password *nt_hash = NULL;
+	struct PAC_CREDENTIAL_NTLM_SECPKG ntlm_secpkg = {
+		.version = 0,
+	};
+	DATA_BLOB ntlm_blob = data_blob_null;
+	struct PAC_CREDENTIAL_SUPPLEMENTAL_SECPKG secpkgs[1] = {{
+		.credential_size = 0,
+	}};
+	struct PAC_CREDENTIAL_DATA cred_data = {
+		.credential_count = 0,
+	};
+	struct PAC_CREDENTIAL_DATA_NDR cred_ndr;
+
+	ZERO_STRUCT(cred_ndr);
+
+	*cred_blob = data_blob_null;
+
+	lm_hash = samdb_result_hash(mem_ctx, msg, "dBCSPwd");
+	if (lm_hash != NULL) {
+		ret = memcmp(lm_hash->hash, zero_hash.hash, 16);
+		if (ret == 0) {
+			lm_hash = NULL;
+		}
+	}
+	if (lm_hash != NULL) {
+		DEBUG(5, ("Passing LM password hash through credentials set\n"));
+		ntlm_secpkg.flags |= PAC_CREDENTIAL_NTLM_HAS_LM_HASH;
+		ntlm_secpkg.lm_password = *lm_hash;
+		ZERO_STRUCTP(lm_hash);
+		TALLOC_FREE(lm_hash);
+	}
+
+	nt_hash = samdb_result_hash(mem_ctx, msg, "unicodePwd");
+	if (nt_hash != NULL) {
+		ret = memcmp(nt_hash->hash, zero_hash.hash, 16);
+		if (ret == 0) {
+			nt_hash = NULL;
+		}
+	}
+	if (nt_hash != NULL) {
+		DEBUG(5, ("Passing LM password hash through credentials set\n"));
+		ntlm_secpkg.flags |= PAC_CREDENTIAL_NTLM_HAS_NT_HASH;
+		ntlm_secpkg.nt_password = *nt_hash;
+		ZERO_STRUCTP(nt_hash);
+		TALLOC_FREE(nt_hash);
+	}
+
+	if (ntlm_secpkg.flags == 0) {
+		return NT_STATUS_OK;
+	}
+
+#ifdef DEBUG_PASSWORD
+	if (DEBUGLVL(11)) {
+		NDR_PRINT_DEBUG(PAC_CREDENTIAL_NTLM_SECPKG, &ntlm_secpkg);
+	}
+#endif
+
+	ndr_err = ndr_push_struct_blob(&ntlm_blob, mem_ctx, &ntlm_secpkg,
+			(ndr_push_flags_fn_t)ndr_push_PAC_CREDENTIAL_NTLM_SECPKG);
+	ZERO_STRUCT(ntlm_secpkg);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC_CREDENTIAL_NTLM_SECPKG (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	DEBUG(10, ("NTLM credential BLOB (len %zu) for user\n",
+		  ntlm_blob.length));
+	dump_data_pw("PAC_CREDENTIAL_NTLM_SECPKG",
+		     ntlm_blob.data, ntlm_blob.length);
+
+	secpkgs[0].package_name.string = discard_const_p(char, "NTLM");
+	secpkgs[0].credential_size = ntlm_blob.length;
+	secpkgs[0].credential = ntlm_blob.data;
+
+	cred_data.credential_count = ARRAY_SIZE(secpkgs);
+	cred_data.credentials = secpkgs;
+
+#ifdef DEBUG_PASSWORD
+	if (DEBUGLVL(11)) {
+		NDR_PRINT_DEBUG(PAC_CREDENTIAL_DATA, &cred_data);
+	}
+#endif
+
+	cred_ndr.ctr.data = &cred_data;
+
+#ifdef DEBUG_PASSWORD
+	if (DEBUGLVL(11)) {
+		NDR_PRINT_DEBUG(PAC_CREDENTIAL_DATA_NDR, &cred_ndr);
+	}
+#endif
+
+	ndr_err = ndr_push_struct_blob(cred_blob, mem_ctx, &cred_ndr,
+			(ndr_push_flags_fn_t)ndr_push_PAC_CREDENTIAL_DATA_NDR);
+	data_blob_clear(&ntlm_blob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC_CREDENTIAL_DATA_NDR (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return nt_status;
+	}
+
+	DEBUG(10, ("Created credential BLOB (len %zu) for user\n",
+		  cred_blob->length));
+	dump_data_pw("PAC_CREDENTIAL_DATA_NDR",
+		     cred_blob->data, cred_blob->length);
+
+	return NT_STATUS_OK;
+}
+
+krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
+						  const krb5_keyblock *pkreplykey,
+						  const DATA_BLOB *cred_ndr_blob,
+						  TALLOC_CTX *mem_ctx,
+						  DATA_BLOB *cred_info_blob)
+{
+	krb5_crypto cred_crypto;
+	krb5_enctype cred_enctype;
+	krb5_data cred_ndr_crypt;
+	struct PAC_CREDENTIAL_INFO pac_cred_info = { .version = 0, };
+	krb5_error_code ret;
+	const char *krb5err;
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+
+	*cred_info_blob = data_blob_null;
+
+	ret = krb5_crypto_init(context, pkreplykey, ETYPE_NULL,
+			       &cred_crypto);
+	if (ret != 0) {
+		krb5err = krb5_get_error_message(context, ret);
+		DEBUG(1, ("Failed initializing cred data crypto: %s\n", krb5err));
+		krb5_free_error_message(context, krb5err);
+		return ret;
+	}
+
+	ret = krb5_crypto_getenctype(context, cred_crypto, &cred_enctype);
+	if (ret != 0) {
+		DEBUG(1, ("Failed getting crypto type for key\n"));
+		krb5_crypto_destroy(context, cred_crypto);
+		return ret;
+	}
+
+	DEBUG(10, ("Plain cred_ndr_blob (len %zu)\n",
+		  cred_ndr_blob->length));
+	dump_data_pw("PAC_CREDENTIAL_DATA_NDR",
+		     cred_ndr_blob->data, cred_ndr_blob->length);
+
+	ret = krb5_encrypt(context, cred_crypto,
+			   KRB5_KU_OTHER_ENCRYPTED,
+			   cred_ndr_blob->data, cred_ndr_blob->length,
+			   &cred_ndr_crypt);
+	krb5_crypto_destroy(context, cred_crypto);
+	if (ret != 0) {
+		krb5err = krb5_get_error_message(context, ret);
+		DEBUG(1, ("Failed crypt of cred data: %s\n", krb5err));
+		krb5_free_error_message(context, krb5err);
+		return ret;
+	}
+
+	pac_cred_info.encryption_type = cred_enctype;
+	pac_cred_info.encrypted_data.length = cred_ndr_crypt.length;
+	pac_cred_info.encrypted_data.data = (uint8_t *)cred_ndr_crypt.data;
+
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(PAC_CREDENTIAL_INFO, &pac_cred_info);
+	}
+
+	ndr_err = ndr_push_struct_blob(cred_info_blob, mem_ctx, &pac_cred_info,
+			(ndr_push_flags_fn_t)ndr_push_PAC_CREDENTIAL_INFO);
+	krb5_data_free(&cred_ndr_crypt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC_CREDENTIAL_INFO (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return KRB5KDC_ERR_SVC_UNAVAILABLE;
+	}
+
+	DEBUG(10, ("Encrypted credential BLOB (len %zu) with alg %d\n",
+		  cred_info_blob->length, (int)pac_cred_info.encryption_type));
+	dump_data_pw("PAC_CREDENTIAL_INFO",
+		      cred_info_blob->data, cred_info_blob->length);
+
+	return 0;
+}
+
 krb5_error_code samba_make_krb5_pac(krb5_context context,
-				    DATA_BLOB *pac_blob,
-				    DATA_BLOB *deleg_blob,
+				    const DATA_BLOB *logon_blob,
+				    const DATA_BLOB *cred_blob,
+				    const DATA_BLOB *deleg_blob,
 				    krb5_pac *pac)
 {
-	krb5_data pac_data;
+	krb5_data logon_data;
+	krb5_data cred_data;
 	krb5_data deleg_data;
+	krb5_data null_data;
 	krb5_error_code ret;
 
-        /* The user account may be set not to want the PAC */
-	if (!pac_blob) {
+	ZERO_STRUCT(null_data);
+
+	/* The user account may be set not to want the PAC */
+	if (logon_blob == NULL) {
 		return 0;
 	}
 
-	ret = krb5_copy_data_contents(&pac_data,
-				      pac_blob->data,
-				      pac_blob->length);
+	ret = krb5_copy_data_contents(&logon_data,
+				      logon_blob->data,
+				      logon_blob->length);
 	if (ret != 0) {
 		return ret;
 	}
 
+	ZERO_STRUCT(cred_data);
+	if (cred_blob != NULL) {
+		ret = krb5_copy_data_contents(&cred_data,
+					      cred_blob->data,
+					      cred_blob->length);
+		if (ret != 0) {
+			kerberos_free_data_contents(context, &logon_data);
+			return ret;
+		}
+	}
+
 	ZERO_STRUCT(deleg_data);
-	if (deleg_blob) {
+	if (deleg_blob != NULL) {
 		ret = krb5_copy_data_contents(&deleg_data,
 					      deleg_blob->data,
 					      deleg_blob->length);
 		if (ret != 0) {
-			kerberos_free_data_contents(context, &pac_data);
+			kerberos_free_data_contents(context, &logon_data);
+			kerberos_free_data_contents(context, &cred_data);
 			return ret;
 		}
 	}
 
 	ret = krb5_pac_init(context, pac);
 	if (ret != 0) {
-		kerberos_free_data_contents(context, &pac_data);
+		kerberos_free_data_contents(context, &logon_data);
+		kerberos_free_data_contents(context, &cred_data);
 		kerberos_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
-	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &pac_data);
-	kerberos_free_data_contents(context, &pac_data);
+	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &logon_data);
+	kerberos_free_data_contents(context, &logon_data);
 	if (ret != 0) {
+		kerberos_free_data_contents(context, &cred_data);
 		kerberos_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
-	if (deleg_blob) {
+	if (cred_blob != NULL) {
+		ret = krb5_pac_add_buffer(context, *pac,
+					  PAC_TYPE_CREDENTIAL_INFO,
+					  &cred_data);
+		kerberos_free_data_contents(context, &cred_data);
+		if (ret != 0) {
+			kerberos_free_data_contents(context, &deleg_data);
+			return ret;
+		}
+	}
+
+	if (deleg_blob != NULL) {
 		ret = krb5_pac_add_buffer(context, *pac,
 					  PAC_TYPE_CONSTRAINED_DELEGATION,
 					  &deleg_data);
@@ -219,23 +448,36 @@ int samba_krbtgt_is_in_db(struct samba_kdc_entry *p,
 	return 0;
 }
 
-NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
-				struct samba_kdc_entry *p,
-				DATA_BLOB **_pac_blob)
+NTSTATUS samba_kdc_get_pac_blobs(TALLOC_CTX *mem_ctx,
+				 struct samba_kdc_entry *p,
+				 DATA_BLOB **_logon_info_blob,
+				 DATA_BLOB **_cred_ndr_blob)
 {
 	struct auth_user_info_dc *user_info_dc;
-	DATA_BLOB *pac_blob;
+	DATA_BLOB *logon_blob = NULL;
+	DATA_BLOB *cred_blob = NULL;
 	NTSTATUS nt_status;
+
+	*_logon_info_blob = NULL;
+	if (_cred_ndr_blob != NULL) {
+		*_cred_ndr_blob = NULL;
+	}
 
 	/* The user account may be set not to want the PAC */
 	if ( ! samba_princ_needs_pac(p)) {
-		*_pac_blob = NULL;
 		return NT_STATUS_OK;
 	}
 
-	pac_blob = talloc_zero(mem_ctx, DATA_BLOB);
-	if (!pac_blob) {
+	logon_blob = talloc_zero(mem_ctx, DATA_BLOB);
+	if (logon_blob == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (_cred_ndr_blob != NULL) {
+		cred_blob = talloc_zero(mem_ctx, DATA_BLOB);
+		if (cred_blob == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	nt_status = authsam_make_user_info_dc(mem_ctx, p->kdc_db_ctx->samdb,
@@ -253,14 +495,47 @@ NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	nt_status = samba_get_logon_info_pac_blob(mem_ctx, user_info_dc, pac_blob);
+	nt_status = samba_get_logon_info_pac_blob(logon_blob,
+						  user_info_dc,
+						  logon_blob);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Building PAC failed: %s\n",
+		DEBUG(0, ("Building PAC LOGON INFO failed: %s\n",
 			  nt_errstr(nt_status)));
 		return nt_status;
 	}
 
-	*_pac_blob = pac_blob;
+	if (cred_blob != NULL) {
+		nt_status = samba_get_cred_info_ndr_blob(cred_blob,
+							 p->msg,
+							 cred_blob);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Building PAC CRED INFO failed: %s\n",
+				  nt_errstr(nt_status)));
+			return nt_status;
+		}
+	}
+
+	TALLOC_FREE(user_info_dc);
+	*_logon_info_blob = logon_blob;
+	if (_cred_ndr_blob != NULL) {
+		*_cred_ndr_blob = cred_blob;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
+				struct samba_kdc_entry *p,
+				DATA_BLOB **_logon_info_blob)
+{
+	NTSTATUS nt_status;
+
+	nt_status = samba_kdc_get_pac_blobs(mem_ctx, p,
+					    _logon_info_blob,
+					    NULL);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	return NT_STATUS_OK;
 }
 
