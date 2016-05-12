@@ -1150,13 +1150,13 @@ void set_namearray(name_compare_entry **ppname_array, const char *namelist_in)
  F_UNLCK in *ptype if the region is unlocked). False if the call failed.
 ****************************************************************************/
 
-bool fcntl_getlock(int fd, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
+bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
 {
 	struct flock lock;
 	int ret;
 
-	DEBUG(8,("fcntl_getlock fd=%d offset=%.0f count=%.0f type=%d\n",
-		    fd,(double)*poffset,(double)*pcount,*ptype));
+	DEBUG(8,("fcntl_getlock fd=%d op=%d offset=%.0f count=%.0f type=%d\n",
+		    fd,op,(double)*poffset,(double)*pcount,*ptype));
 
 	lock.l_type = *ptype;
 	lock.l_whence = SEEK_SET;
@@ -1164,7 +1164,7 @@ bool fcntl_getlock(int fd, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppi
 	lock.l_len = *pcount;
 	lock.l_pid = 0;
 
-	ret = sys_fcntl_ptr(fd,F_GETLK,&lock);
+	ret = sys_fcntl_ptr(fd,op,&lock);
 
 	if (ret == -1) {
 		int sav = errno;

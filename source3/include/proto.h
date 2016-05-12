@@ -385,7 +385,7 @@ bool is_in_path(const char *name, name_compare_entry *namelist, bool case_sensit
 void set_namearray(name_compare_entry **ppname_array, const char *namelist);
 void free_namearray(name_compare_entry *name_array);
 bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
-bool fcntl_getlock(int fd, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
+bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 bool is_myname(const char *s);
 void ra_lanman_string( const char *native_lanman );
 const char *get_remote_arch_str(void);
