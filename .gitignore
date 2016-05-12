@@ -1,4 +1,5 @@
 /bin/
+/lib/*/bin/
 /st/
 .waf*
 .lock-wscript
