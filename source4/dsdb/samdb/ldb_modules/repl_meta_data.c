@@ -1052,7 +1052,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 		m->attid   = dsdb_attribute_get_attid(sa, is_schema_nc);
 		m->version = 1;
-		if (m->attid == 0x20030) {
+		if (m->attid == DRSUAPI_ATTID_isDeleted) {
 			const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
 			const char* rdn;
 
@@ -1340,7 +1340,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1 = &omd->ctr.ctr1.array[i];
 	md1->version++;
 	md1->attid = attid;
-	if (md1->attid == 0x20030) {
+	if (md1->attid == DRSUAPI_ATTID_isDeleted) {
 		const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
 		const char* rdn;
 
