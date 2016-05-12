@@ -11,6 +11,7 @@ env:
   - TASK=samba-ctdb
   - TASK=samba-libs
   - TASK=samba-static
+  - TASK=samba-o3
   - TASK=ldb
   - TASK=tdb
   - TASK=talloc
