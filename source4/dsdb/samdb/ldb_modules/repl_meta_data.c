@@ -3710,7 +3710,7 @@ static int replmd_op_name_modify_callback(struct ldb_request *req, struct ldb_re
 {
 	struct replmd_replicated_request *ar =
 		talloc_get_type_abort(req->context, struct replmd_replicated_request);
-	struct ldb_dn *conflict_dn;
+	struct ldb_dn *conflict_dn = NULL;
 	int ret;
 
 	if (ares->error != LDB_SUCCESS) {
