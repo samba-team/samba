@@ -591,12 +591,13 @@ int fd_close_posix(const struct files_struct *fsp)
 	size_t count, i;
 
 	if (!lp_locking(fsp->conn->params) ||
-	    !lp_posix_locking(fsp->conn->params))
+	    !lp_posix_locking(fsp->conn->params) ||
+	    fsp->use_ofd_locks)
 	{
 		/*
-		 * No locking or POSIX to worry about or we want POSIX semantics
-		 * which will lose all locks on all fd's open on this dev/inode,
-		 * just close.
+		 * No locking or POSIX to worry about or we are using POSIX
+		 * open file description lock semantics which only removes
+		 * locks on the file descriptor we're closing. Just close.
 		 */
 		return close(fsp->fh->fd);
 	}

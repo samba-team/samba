@@ -192,6 +192,7 @@
 		const struct smb_filename * */
 /* Version 35 - Add uint32_t flags to struct smb_filename */
 /* Version 35 - Add get/set/fget/fset dos attribute functions. */
+/* Version 35 - Add bool use_ofd_locks to struct files_struct */
 
 #define SMB_VFS_INTERFACE_VERSION 35
 
@@ -287,6 +288,7 @@ typedef struct files_struct {
 	bool backup_intent; /* Handle was successfully opened with backup intent
 				and opener has privilege to do so. */
 	bool aapl_copyfile_supported;
+	bool use_ofd_locks; /* Are we using open file description locks ? */
 	struct smb_filename *fsp_name;
 	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 	uint64_t mid;			/* Mid of the operation that created us. */
