@@ -1184,6 +1184,37 @@ bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pi
 	return True;
 }
 
+#if defined(HAVE_OFD_LOCKS)
+int map_process_lock_to_ofd_lock(int op, bool *use_ofd_locks)
+{
+	switch (op) {
+	case F_GETLK:
+	case F_OFD_GETLK:
+		op = F_OFD_GETLK;
+		break;
+	case F_SETLK:
+	case F_OFD_SETLK:
+		op = F_OFD_SETLK;
+		break;
+	case F_SETLKW:
+	case F_OFD_SETLKW:
+		op = F_OFD_SETLKW;
+		break;
+	default:
+		*use_ofd_locks = false;
+		return -1;
+	}
+	*use_ofd_locks = true;
+	return op;
+}
+#else /* HAVE_OFD_LOCKS */
+int map_process_lock_to_ofd_lock(int op, bool *use_ofd_locks)
+{
+	*use_ofd_locks = false;
+	return op;
+}
+#endif /* HAVE_OFD_LOCKS */
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_ALL
 
