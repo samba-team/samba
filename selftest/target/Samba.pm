@@ -313,11 +313,13 @@ sub get_interface($)
 sub cleanup_child($$)
 {
     my ($pid, $name) = @_;
-    my $childpid = -1;
 
-    if (defined($pid)) {
-        $childpid = waitpid($pid, WNOHANG);
+    if (!defined($pid)) {
+        print STDERR "cleanup_child: pid not defined ... not calling waitpid\n";
+        return -1;
     }
+
+    my $childpid = waitpid($pid, WNOHANG);
 
     if ($childpid == 0) {
     } elsif ($childpid < 0) {
