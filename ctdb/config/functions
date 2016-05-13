@@ -608,16 +608,15 @@ ip_maskbits_iface ()
     _addr="$1"
 
     case "$_addr" in
-	*:*) _family="inet6" ; _bits=128 ;;
-	*)   _family="inet"  ; _bits=32  ;;
+	*:*) _bits=128 ;;
+	*)   _bits=32  ;;
     esac
 
     ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
-	awk -v family="${_family}" \
-	    'NR == 1 { iface = $2; sub(":$", "", iface) ; \
+	awk 'NR == 1 { iface = $2; sub(":$", "", iface) ; \
 		       sub("@.*", "", iface) } \
              $1 ~ /inet/ { mask = $2; sub(".*/", "", mask); \
-                           print mask, iface, family }'
+                           print mask, iface }'
 }
 
 drop_ip ()
