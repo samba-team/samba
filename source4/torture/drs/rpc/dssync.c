@@ -384,11 +384,12 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	deleted_dn = ldb_dn_new(objs, ldb, partition);
 	ldb_dn_add_child_fmt(deleted_dn, "CN=Deleted Objects");
 
-	for (i=0; i < object_count; i++) {
+	for (i=0; i < objs->num_objects; i++) {
 		struct ldb_request *search_req;
 		struct ldb_result *res;
 		struct ldb_message *new_msg, *drs_msg, *ldap_msg;
-		const char **attrs = talloc_array(objs, const char *, objs->objects[i].msg->num_elements+1);
+		size_t num_attrs = objs->objects[i].msg->num_elements+1;
+		const char **attrs = talloc_array(objs, const char *, num_attrs);
 		for (j=0; j < objs->objects[i].msg->num_elements; j++) {
 			attrs[j] = objs->objects[i].msg->elements[j].name;
 		}
