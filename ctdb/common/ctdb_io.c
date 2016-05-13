@@ -38,8 +38,6 @@
 #include "common/logging.h"
 #include "common/common.h"
 
-#define QUEUE_BUFFER_SIZE	(16*1024)
-
 /* structures for packet queueing - see common/ctdb_io.c */
 struct ctdb_buffer {
 	uint8_t *data;
@@ -69,6 +67,7 @@ struct ctdb_queue {
 	ctdb_queue_cb_fn_t callback;
 	bool *destroyed;
 	const char *name;
+	uint32_t buffer_size;
 };
 
 
@@ -111,7 +110,7 @@ static void queue_process(struct ctdb_queue *queue)
 	}
 
 	if (queue->buffer.length < pkt_size) {
-		if (pkt_size > QUEUE_BUFFER_SIZE) {
+		if (pkt_size > queue->buffer_size) {
 			queue->buffer.extend = pkt_size;
 		}
 		return;
@@ -138,7 +137,7 @@ static void queue_process(struct ctdb_queue *queue)
 		tevent_schedule_immediate(queue->im, queue->ctdb->ev,
 					  queue_process_event, queue);
 	} else {
-		if (queue->buffer.size > QUEUE_BUFFER_SIZE) {
+		if (queue->buffer.size > queue->buffer_size) {
 			TALLOC_FREE(queue->buffer.data);
 			queue->buffer.size = 0;
 		}
@@ -181,12 +180,12 @@ static void queue_io_read(struct ctdb_queue *queue)
 
 	if (queue->buffer.data == NULL) {
 		/* starting fresh, allocate buf to read data */
-		queue->buffer.data = talloc_size(queue, QUEUE_BUFFER_SIZE);
+		queue->buffer.data = talloc_size(queue, queue->buffer_size);
 		if (queue->buffer.data == NULL) {
 			DEBUG(DEBUG_ERR, ("read error alloc failed for %u\n", num_ready));
 			goto failed;
 		}
-		queue->buffer.size = QUEUE_BUFFER_SIZE;
+		queue->buffer.size = queue->buffer_size;
 	} else if (queue->buffer.extend > 0) {
 		/* extending buffer */
 		data = talloc_realloc_size(queue, queue->buffer.data, queue->buffer.extend);
@@ -452,6 +451,14 @@ struct ctdb_queue *ctdb_queue_setup(struct ctdb_context *ctdb,
 		}
 	}
 	talloc_set_destructor(queue, queue_destructor);
+
+	queue->buffer_size = ctdb->tunable.queue_buffer_size;
+	/* In client code, ctdb->tunable is not initialized.
+	 * This does not affect recovery daemon.
+	 */
+	if (queue->buffer_size == 0) {
+		queue->buffer_size = 1024;
+	}
 
 	return queue;
 }
