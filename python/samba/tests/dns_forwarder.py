@@ -76,7 +76,7 @@ def make_txt_record(records):
 
 class DNSTest(TestCase):
 
-    errcodes = {v: k for k, v in vars(dns).items() if k.startswith('DNS_RCODE_')}
+    errcodes = dict((v, k) for k, v in vars(dns).items() if k.startswith('DNS_RCODE_'))
 
     def assert_dns_rcode_equals(self, packet, rcode):
         "Helper function to check return code"
