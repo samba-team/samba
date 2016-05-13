@@ -6191,6 +6191,125 @@ static bool run_ea_symlink_test(int dummy)
 	return correct;
 }
 
+/*
+  Test POSIX locks are OFD-locks.
+ */
+static bool run_posix_ofd_lock_test(int dummy)
+{
+	static struct cli_state *cli;
+	const char *fname = "posix_file";
+	uint16_t fnum1 = (uint16_t)-1;
+	uint16_t fnum2 = (uint16_t)-1;
+	bool correct = false;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX ofd-lock test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+
+	/* Open the file twice. */
+	status = cli_posix_open(cli, fname, O_RDWR|O_CREAT|O_EXCL,
+				0600, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("First POSIX open of %s failed\n", fname);
+		goto out;
+	}
+
+	status = cli_posix_open(cli, fname, O_RDWR, 0, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("First POSIX open of %s failed\n", fname);
+		goto out;
+	}
+
+	/* Set a 0-50 lock on fnum1. */
+	status = cli_posix_lock(cli, fnum1, 0, 50, false, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX lock (1) failed %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	/* Set a 60-100 lock on fnum2. */
+	status = cli_posix_lock(cli, fnum2, 60, 100, false, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX lock (2) failed %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	/* close fnum1 - 0-50 lock should go away. */
+	status = cli_close(cli, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+	fnum1 = (uint16_t)-1;
+
+	/* Change the lock context. */
+	cli_setpid(cli, cli_getpid(cli) + 1);
+
+	/* Re-open fnum1. */
+	status = cli_posix_open(cli, fname, O_RDWR, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Third POSIX open of %s failed\n", fname);
+		goto out;
+	}
+
+	/* 60-100 lock should still be there. */
+	status = cli_posix_lock(cli, fnum1, 60, 100, false, WRITE_LOCK);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
+		printf("POSIX lock 60-100 not there %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	/* 0-50 lock should be gone. */
+	status = cli_posix_lock(cli, fnum1, 0, 50, false, WRITE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX lock 0-50 failed %s\n", nt_errstr(status));
+		goto out;
+	}
+
+	printf("POSIX OFD lock test passed\n");
+	correct = true;
+
+  out:
+
+	if (fnum1 != (uint16_t)-1) {
+		cli_close(cli, fnum1);
+		fnum1 = (uint16_t)-1;
+	}
+	if (fnum2 != (uint16_t)-1) {
+		cli_close(cli, fnum2);
+		fnum2 = (uint16_t)-1;
+	}
+
+	cli_setatr(cli, fname, 0, 0);
+	cli_posix_unlink(cli, fname);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
 static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
@@ -10020,6 +10139,7 @@ static struct {
 	{"POSIX-APPEND", run_posix_append, 0},
 	{"POSIX-SYMLINK-ACL", run_acl_symlink_test, 0},
 	{"POSIX-SYMLINK-EA", run_ea_symlink_test, 0},
+	{"POSIX-OFD-LOCK", run_posix_ofd_lock_test, 0},
 	{"CASE-INSENSITIVE-CREATE", run_case_insensitive_create, 0},
 	{"ASYNC-ECHO", run_async_echo, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
