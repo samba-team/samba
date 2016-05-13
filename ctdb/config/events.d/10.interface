@@ -74,8 +74,8 @@ monitor_interfaces()
 	return 0
 }
 
-# Sets: iface, ip, maskbits, family
-get_iface_ip_maskbits_family ()
+# Sets: iface, ip, maskbits
+get_iface_ip_maskbits ()
 {
     _iface_in="$1"
     ip="$2"
@@ -85,7 +85,6 @@ get_iface_ip_maskbits_family ()
     if [ -n "$1" ] ; then
 	maskbits="$1"
 	iface="$2"
-	family="$3"
 
 	if [ "$iface" != "$_iface_in" ] ; then
 	    printf \
@@ -183,7 +182,7 @@ case "$1" in
 	# 3) remove the IP from the interface
 	# 4) remove the firewall rule
 	shift
-	get_iface_ip_maskbits_family "$@"
+	get_iface_ip_maskbits "$@"
 
 	ip_block "$ip" "$iface"
 
@@ -216,7 +215,7 @@ case "$1" in
 	_ip=$4
 	_maskbits=$5
 
-	get_iface_ip_maskbits_family "$_oiface" "$_ip" "$_maskbits"
+	get_iface_ip_maskbits "$_oiface" "$_ip" "$_maskbits"
 	oiface="$iface"
 
 	ip_block "$ip" "$oiface"
