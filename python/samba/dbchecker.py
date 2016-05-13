@@ -1161,7 +1161,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         # Sort the array, except for the last element.  This strange
         # construction, creating a new list, due to bugs in samba's
         # array handling in IDL generated objects.
-        ctr.array = sorted(ctr.array[:-1], key=lambda o: o.attid) + [ctr.array[-1]]
+        ctr.array = sorted(ctr.array[:], key=lambda o: o.attid)
         # Now walk it in reverse, so we see the low (and so incorrect,
         # the correct values are above 0x80000000) values first and
         # remove the 'second' value we see.
@@ -1215,9 +1215,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     fix = True
                     o.attid = correct_attid
             if fix:
-                # Sort the array, except for the last element (we changed
-                # the value so must re-sort)
-                new_list[:-1] = sorted(new_list[:-1], key=lambda o: o.attid)
+                # Sort the array, (we changed the value so must re-sort)
+                new_list[:] = sorted(new_list[:], key=lambda o: o.attid)
 
         # If we did not already need to fix it, then ask about sorting
         if not fix:
@@ -1461,7 +1460,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                 if len(set_attrs_from_md) < len(list_attid_from_md) \
                    or len(wrong_attids) > 0 \
-                   or sorted(list_attid_from_md[:-1]) != list_attid_from_md[:-1]:
+                   or sorted(list_attid_from_md) != list_attid_from_md:
                     error_count +=1
                     self.err_replmetadata_incorrect_attid(dn, attrname, obj[attrname], wrong_attids)
 
@@ -1469,12 +1468,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # Here we check that the first attid is 0
                     # (objectClass) and that the last on is the RDN
                     # from the DN.
-                    rdn_attid = self.samdb_schema.get_attid_from_lDAPDisplayName(dn.get_rdn_name())
-                    if list_attid_from_md[-1] != rdn_attid:
-                        error_count += 1
-                        self.report("ERROR: Not fixing incorrect final attributeID in '%s' on '%s', it should match the RDN %s" %
-                                    (attrname, str(dn), dn.get_rdn_name()))
-
                     if list_attid_from_md[0] != 0:
                         error_count += 1
                         self.report("ERROR: Not fixing incorrect inital attributeID in '%s' on '%s', it should be objectClass" %

@@ -690,24 +690,6 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 	}
 
 	/*
-	 * the rdn attribute should be at the end!
-	 * so we need to return a value greater than zero
-	 * which means m1 is greater than m2
-	 */
-	if (attid_1 == *rdn_attid) {
-		return 1;
-	}
-
-	/*
-	 * the rdn attribute should be at the end!
-	 * so we need to return a value less than zero
-	 * which means m2 is greater than m1
-	 */
-	if (attid_2 == *rdn_attid) {
-		return -1;
-	}
-
-	/*
 	 * See above regarding this being an unsigned comparison.
 	 * Otherwise when the high bit is set on non-standard
 	 * attributes, they would end up first, before objectClass
@@ -718,7 +700,6 @@ static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMeta
 
 static int replmd_replPropertyMetaDataCtr1_verify(struct ldb_context *ldb,
 						  struct replPropertyMetaDataCtr1 *ctr1,
-						  const struct dsdb_attribute *rdn_sa,
 						  struct ldb_dn *dn)
 {
 	if (ctr1->count == 0) {
@@ -741,34 +722,12 @@ static int replmd_replPropertyMetaDataCtr1_verify(struct ldb_context *ldb,
 
 static int replmd_replPropertyMetaDataCtr1_sort_and_verify(struct ldb_context *ldb,
 							   struct replPropertyMetaDataCtr1 *ctr1,
-							   const struct dsdb_schema *schema,
 							   struct ldb_dn *dn)
 {
-	const char *rdn_name;
-	const struct dsdb_attribute *rdn_sa;
-
-	rdn_name = ldb_dn_get_rdn_name(dn);
-	if (!rdn_name) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      __location__ ": No rDN for %s?\n",
-			      ldb_dn_get_linearized(dn));
-		return LDB_ERR_INVALID_DN_SYNTAX;
-	}
-
-	rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
-	if (rdn_sa == NULL) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      __location__ ": No sa found for rDN %s for %s\n",
-			      rdn_name, ldb_dn_get_linearized(dn));
-		return LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE;
-	}
-
-	DEBUG(6,("Sorting rpmd with attid exception %u rDN=%s DN=%s\n",
-		 rdn_sa->attributeID_id, rdn_name, ldb_dn_get_linearized(dn)));
-
-	LDB_TYPESAFE_QSORT(ctr1->array, ctr1->count, &rdn_sa->attributeID_id,
+	/* Note this is O(n^2) for the almost-sorted case, which this is */
+	LDB_TYPESAFE_QSORT(ctr1->array, ctr1->count, NULL,
 			   replmd_replPropertyMetaData1_attid_sort);
-	return replmd_replPropertyMetaDataCtr1_verify(ldb, ctr1, rdn_sa, dn);
+	return replmd_replPropertyMetaDataCtr1_verify(ldb, ctr1, dn);
 }
 
 static int replmd_ldb_message_element_attid_sort(const struct ldb_message_element *e1,
@@ -1085,7 +1044,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	/*
 	 * sort meta data array, and move the rdn attribute entry to the end
 	 */
-	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, ac->schema, msg->dn);
+	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, msg->dn);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "%s: error during direct ADD: %s", __func__, ldb_errstring(ldb));
 		talloc_free(ac);
@@ -1618,7 +1577,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &omd.ctr.ctr1, schema, msg->dn);
+		ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &omd.ctr.ctr1, msg->dn);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "%s: %s", __func__, ldb_errstring(ldb));
 			return ret;
@@ -4072,8 +4031,6 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	unsigned int i;
 	int ret;
 	bool remote_isDeleted = false;
-	const struct dsdb_attribute *rdn_sa;
-	const char *rdn_name;
 
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
@@ -4141,23 +4098,12 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 						     "isDeleted", false);
 
 	/*
-	 * the meta data array is already sorted by the caller
+	 * the meta data array is already sorted by the caller, except
+	 * for the RDN, which needs to be put in the right spot.
 	 */
 
-	rdn_name = ldb_dn_get_rdn_name(msg->dn);
-	if (rdn_name == NULL) {
-		ldb_asprintf_errstring(ldb, __location__ ": No rDN for %s?\n", ldb_dn_get_linearized(msg->dn));
-		return replmd_replicated_request_error(ar, LDB_ERR_INVALID_DN_SYNTAX);
-	}
 
-	rdn_sa = dsdb_attribute_by_lDAPDisplayName(ar->schema, rdn_name);
-	if (rdn_sa == NULL) {
-		ldb_asprintf_errstring(ldb, ": No schema attribute found for rDN %s for %s\n",
-				       rdn_name, ldb_dn_get_linearized(msg->dn));
-		return replmd_replicated_request_error(ar, LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE);
-	}
-
-	ret = replmd_replPropertyMetaDataCtr1_verify(ldb, &md->ctr.ctr1, rdn_sa, msg->dn);
+	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &md->ctr.ctr1, msg->dn);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "%s: error during DRS repl ADD: %s", __func__, ldb_errstring(ldb));
 		return replmd_replicated_request_error(ar, ret);
@@ -4867,9 +4813,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 * 'cn' for most objects is the last entry in the meta data array
 	 * we have stored
 	 *
-	 * sort the new meta data array
+	 * sort the new meta data array so it is slotted into the right place
 	 */
-	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, ar->schema, msg->dn);
+	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, msg->dn);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "%s: error during DRS repl merge: %s", __func__, ldb_errstring(ldb));
 		return ret;

@@ -23,6 +23,12 @@ replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
                     originating_usn          : 0x0000000000000dbc (3516)
                     local_usn                : 0x0000000000000dbc (3516)
                 array: struct replPropertyMetaData1
+                    attid                    : DRSUAPI_ATTID_cn (0x3)
+                    version                  : 0x00000001 (1)
+                    originating_invocation_id: b249ef44-b215-4d3b-b5d6-7cec08154b7a
+                    originating_usn          : 0x0000000000000dbc (3516)
+                    local_usn                : 0x0000000000000dbc (3516)
+                array: struct replPropertyMetaData1
                     attid                    : DRSUAPI_ATTID_instanceType (0x20001)
                     version                  : 0x00000001 (1)
                     originating_invocation_id: b249ef44-b215-4d3b-b5d6-7cec08154b7a
@@ -82,12 +88,6 @@ replPropertyMetaData:     NDR: struct replPropertyMetaDataBlob
                     originating_invocation_id: b249ef44-b215-4d3b-b5d6-7cec08154b7a
                     originating_usn          : 0x0000000000000dbe (3518)
                     local_usn                : 0x0000000000000dbe (3518)
-                array: struct replPropertyMetaData1
-                    attid                    : DRSUAPI_ATTID_cn (0x3)
-                    version                  : 0x00000001 (1)
-                    originating_invocation_id: b249ef44-b215-4d3b-b5d6-7cec08154b7a
-                    originating_usn          : 0x0000000000000dbc (3516)
-                    local_usn                : 0x0000000000000dbc (3516)
 
 sudoCommand: ALL
 sudoHost: ALL
