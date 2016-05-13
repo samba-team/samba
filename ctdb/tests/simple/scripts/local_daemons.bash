@@ -133,7 +133,9 @@ EOF
 
     # Override from the environment.  This would be easier if env was
     # guaranteed to quote its output so it could be reused.
-    env | grep '^CTDB_' | sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' >>"$conf"
+    env |
+    grep '^CTDB_' |
+    sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@' >>"$conf"
 
     # We'll use "pkill -f" to kill the daemons with
     # "ctdbd --sloppy-start --nopublicipcheck --nosetsched" as context.
