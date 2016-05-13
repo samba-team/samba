@@ -325,8 +325,7 @@ sub cleanup_child($$)
     } elsif ($childpid < 0) {
 	printf STDERR "%s child process %d isn't here any more\n", $name, $pid;
 	return $childpid;
-    }
-    elsif ($? & 127) {
+    } elsif ($? & 127) {
 	printf STDERR "%s child process %d, died with signal %d, %s coredump\n",
 		$name, $childpid, ($? & 127),  ($? & 128) ? 'with' : 'without';
     } else {
