@@ -321,7 +321,7 @@ sub cleanup_child($$)
 
     if ($childpid == 0) {
     } elsif ($childpid < 0) {
-	printf STDERR "%s child process %d isn't here any more\n",
+	printf STDERR "%s child process %d isn't here any more\n", $name, $pid;
 	return $childpid;
     }
     elsif ($? & 127) {
