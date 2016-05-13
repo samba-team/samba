@@ -38,7 +38,7 @@
 
 static
 NTSTATUS samba_get_logon_info_pac_blob(TALLOC_CTX *mem_ctx,
-				       struct auth_user_info_dc *info,
+				       const struct auth_user_info_dc *info,
 				       DATA_BLOB *pac_data)
 {
 	struct netr_SamInfo3 *info3;
