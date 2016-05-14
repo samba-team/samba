@@ -212,7 +212,6 @@ interface dns
 		uint16     	time_prefix; /* 0 until February 2106*/
 		uint32     	time;
 		uint16     	fudge;
-		uint16     	original_id;
 		uint16     	error;
 		uint16     	other_size;
 		uint8      	other_data[other_size];

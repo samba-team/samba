@@ -207,9 +207,6 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		return WERR_NOMEM;
 	}
 
-	/*FIXME: Why is there too much padding? */
-	buffer_len -= 2;
-
 	/* Now we also need to count down the additional record counter */
 	arcount = RSVAL(buffer, 10);
 	RSSVAL(buffer, 10, arcount-1);
