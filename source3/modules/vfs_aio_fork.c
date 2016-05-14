@@ -28,7 +28,7 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/sys_rw_data.h"
-#include "lib/msghdr.h"
+#include "lib/util/msghdr.h"
 #include "smbprofile.h"
 
 #if !defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL) && !defined(HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS)
