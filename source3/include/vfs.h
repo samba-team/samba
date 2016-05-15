@@ -237,6 +237,8 @@ typedef struct files_struct {
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	uint32_t share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
 
+	bool kernel_share_modes_taken;
+
 	bool update_write_time_triggered;
 	struct tevent_timer *update_write_time_event;
 	bool update_write_time_on_close;
