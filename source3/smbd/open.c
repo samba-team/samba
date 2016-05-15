@@ -3084,6 +3084,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			return NT_STATUS_SHARING_VIOLATION;
 		}
+
+		fsp->kernel_share_modes_taken = true;
 	}
 
 	/*
