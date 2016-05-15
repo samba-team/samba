@@ -713,12 +713,6 @@ static int replmd_replPropertyMetaDataCtr1_verify(struct ldb_context *ldb,
 			      ldb_dn_get_linearized(dn));
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	if (ctr1->array[ctr1->count - 1].attid != rdn_sa->attributeID_id) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "No rDN found in replPropertyMetaData for %s!\n",
-			      ldb_dn_get_linearized(dn));
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
 
 	/* the objectClass attribute is value 0x00000000, so must be first */
 	if (ctr1->array[0].attid != DRSUAPI_ATTID_objectClass) {
