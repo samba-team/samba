@@ -410,11 +410,11 @@ bool posix_locking_end(void)
 ****************************************************************************/
 
 /****************************************************************************
- Keep a reference count of the number of Windows locks open on this dev/ino
+ Keep a reference count of the number of locks open on this dev/ino
  pair. Creates entry if it doesn't exist.
 ****************************************************************************/
 
-static void increment_windows_lock_ref_count(files_struct *fsp)
+static void increment_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	int32_t lock_ref_count = 0;
@@ -427,15 +427,11 @@ static void increment_windows_lock_ref_count(files_struct *fsp)
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 	SMB_ASSERT(lock_ref_count < INT32_MAX);
 
-	DEBUG(10,("increment_windows_lock_ref_count for file now %s = %d\n",
+	DEBUG(10,("lock_ref_count for file %s = %d\n",
 		  fsp_str_dbg(fsp), (int)lock_ref_count));
 }
 
-/****************************************************************************
- Bulk delete - subtract as many locks as we've just deleted.
-****************************************************************************/
-
-static void decrement_windows_lock_ref_count(files_struct *fsp)
+static void decrement_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	int32_t lock_ref_count = 0;
@@ -448,7 +444,7 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 	SMB_ASSERT(lock_ref_count >= 0);
 
-	DEBUG(10,("reduce_windows_lock_ref_count for file now %s = %d\n",
+	DEBUG(10,("lock_ref_count for file %s = %d\n",
 		  fsp_str_dbg(fsp), (int)lock_ref_count));
 }
 
@@ -456,7 +452,7 @@ static void decrement_windows_lock_ref_count(files_struct *fsp)
  Fetch the lock ref count.
 ****************************************************************************/
 
-static int32_t get_windows_lock_ref_count(files_struct *fsp)
+static int32_t get_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	NTSTATUS status;
@@ -468,7 +464,7 @@ static int32_t get_windows_lock_ref_count(files_struct *fsp)
 
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		DEBUG(0, ("get_windows_lock_ref_count: Error fetching "
+		DEBUG(0, ("Error fetching "
 			  "lock ref count for file %s: %s\n",
 			  fsp_str_dbg(fsp), nt_errstr(status)));
 	}
@@ -479,7 +475,7 @@ static int32_t get_windows_lock_ref_count(files_struct *fsp)
  Delete a lock_ref_count entry.
 ****************************************************************************/
 
-static void delete_windows_lock_ref_count(files_struct *fsp)
+static void delete_lock_ref_count(files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 
@@ -488,7 +484,7 @@ static void delete_windows_lock_ref_count(files_struct *fsp)
 	dbwrap_delete(posix_pending_close_db,
 		      locking_ref_count_key_fsp(fsp, &tmp));
 
-	DEBUG(10,("delete_windows_lock_ref_count for file %s\n",
+	DEBUG(10,("delete_lock_ref_count for file %s\n",
 		  fsp_str_dbg(fsp)));
 }
 
@@ -604,7 +600,7 @@ int fd_close_posix(struct files_struct *fsp)
 		return close(fsp->fh->fd);
 	}
 
-	if (get_windows_lock_ref_count(fsp)) {
+	if (get_lock_ref_count(fsp)) {
 
 		/*
 		 * There are outstanding locks on this dev/inode pair on
@@ -644,7 +640,7 @@ int fd_close_posix(struct files_struct *fsp)
 	TALLOC_FREE(fd_array);
 
 	/* Don't need a lock ref count on this dev/ino anymore. */
-	delete_windows_lock_ref_count(fsp);
+	delete_lock_ref_count(fsp);
 
 	/*
 	 * Finally close the fd associated with this fsp.
@@ -948,7 +944,7 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 	 */
 
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
-		increment_windows_lock_ref_count(fsp);
+		increment_lock_ref_count(fsp);
 		return True;
 	}
 
@@ -1053,8 +1049,8 @@ bool set_posix_lock_windows_flavour(files_struct *fsp,
 			posix_fcntl_lock(fsp,F_SETLK,offset,count,F_UNLCK);
 		}
 	} else {
-		/* Remember the number of Windows locks we have on this dev/ino pair. */
-		increment_windows_lock_ref_count(fsp);
+		/* Remember the number of locks we have on this dev/ino pair. */
+		increment_lock_ref_count(fsp);
 	}
 
 	talloc_destroy(l_ctx);
@@ -1085,8 +1081,8 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 		  "count = %ju\n", fsp_str_dbg(fsp),
 		  (uintmax_t)u_offset, (uintmax_t)u_count));
 
-	/* Remember the number of Windows locks we have on this dev/ino pair. */
-	decrement_windows_lock_ref_count(fsp);
+	/* Remember the number of locks we have on this dev/ino pair. */
+	decrement_lock_ref_count(fsp);
 
 	/*
 	 * If the requested lock won't fit in the POSIX range, we will
