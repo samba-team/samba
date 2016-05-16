@@ -346,7 +346,7 @@ struct lock_ref_count_key {
  Form a static locking key for a dev/inode pair for the lock ref count
 ******************************************************************/
 
-static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp,
+static TDB_DATA locking_ref_count_key_fsp(const files_struct *fsp,
 					  struct lock_ref_count_key *tmp)
 {
 	ZERO_STRUCTP(tmp);
@@ -359,9 +359,9 @@ static TDB_DATA locking_ref_count_key_fsp(files_struct *fsp,
  Convenience function to get an fd_array key from an fsp.
 ******************************************************************/
 
-static TDB_DATA fd_array_key_fsp(files_struct *fsp)
+static TDB_DATA fd_array_key_fsp(const files_struct *fsp)
 {
-	return make_tdb_data((uint8_t *)&fsp->file_id, sizeof(fsp->file_id));
+	return make_tdb_data((const uint8_t *)&fsp->file_id, sizeof(fsp->file_id));
 }
 
 /*******************************************************************
@@ -414,7 +414,7 @@ bool posix_locking_end(void)
  pair. Creates entry if it doesn't exist.
 ****************************************************************************/
 
-static void increment_lock_ref_count(files_struct *fsp)
+static void increment_lock_ref_count(const files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	int32_t lock_ref_count = 0;
@@ -431,7 +431,7 @@ static void increment_lock_ref_count(files_struct *fsp)
 		  fsp_str_dbg(fsp), (int)lock_ref_count));
 }
 
-static void decrement_lock_ref_count(files_struct *fsp)
+static void decrement_lock_ref_count(const files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	int32_t lock_ref_count = 0;
@@ -452,7 +452,7 @@ static void decrement_lock_ref_count(files_struct *fsp)
  Fetch the lock ref count.
 ****************************************************************************/
 
-static int32_t get_lock_ref_count(files_struct *fsp)
+static int32_t get_lock_ref_count(const files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 	NTSTATUS status;
@@ -475,7 +475,7 @@ static int32_t get_lock_ref_count(files_struct *fsp)
  Delete a lock_ref_count entry.
 ****************************************************************************/
 
-static void delete_lock_ref_count(files_struct *fsp)
+static void delete_lock_ref_count(const files_struct *fsp)
 {
 	struct lock_ref_count_key tmp;
 
@@ -492,7 +492,7 @@ static void delete_lock_ref_count(files_struct *fsp)
  Add an fd to the pending close tdb.
 ****************************************************************************/
 
-static void add_fd_to_close_entry(files_struct *fsp)
+static void add_fd_to_close_entry(const files_struct *fsp)
 {
 	struct db_record *rec;
 	int *fds;
@@ -532,7 +532,7 @@ static void add_fd_to_close_entry(files_struct *fsp)
  Remove all fd entries for a specific dev/inode pair from the tdb.
 ****************************************************************************/
 
-static void delete_close_entries(files_struct *fsp)
+static void delete_close_entries(const files_struct *fsp)
 {
 	struct db_record *rec;
 
@@ -551,7 +551,8 @@ static void delete_close_entries(files_struct *fsp)
 ****************************************************************************/
 
 static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
-					      files_struct *fsp, int **entries)
+					const files_struct *fsp,
+					int **entries)
 {
 	TDB_DATA dbuf;
 	NTSTATUS status;
@@ -582,7 +583,7 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
-int fd_close_posix(struct files_struct *fsp)
+int fd_close_posix(const struct files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
