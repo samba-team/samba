@@ -2025,7 +2025,8 @@ static void server_new_client(struct tevent_req *subreq)
 	struct server_state *state = tevent_req_data(
 		req, struct server_state);
 	struct ctdbd_context *ctdb = state->ctdb;
-	int client_fd, ret;
+	int client_fd;
+	int ret = 0;
 
 	client_fd = accept_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
@@ -2057,7 +2058,8 @@ static void server_client_done(struct tevent_req *subreq)
 	struct server_state *state = tevent_req_data(
 		req, struct server_state);
 	struct ctdbd_context *ctdb = state->ctdb;
-	int ret, status;
+	int ret = 0;
+	int status;
 
 	status = client_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
