@@ -1180,6 +1180,86 @@ bool release_posix_lock_windows_flavour(files_struct *fsp,
 ****************************************************************************/
 
 /****************************************************************************
+ We only increment the lock ref count when we see a POSIX lock on a context
+ that doesn't already have them.
+****************************************************************************/
+
+static void increment_posix_lock_count(const files_struct *fsp,
+					uint64_t smblctx)
+{
+	NTSTATUS status;
+	TDB_DATA ctx_key;
+	TDB_DATA val = { 0 };
+
+	ctx_key.dptr = (uint8_t *)&smblctx;
+	ctx_key.dsize = sizeof(smblctx);
+
+	/*
+	 * Don't increment if we already have any POSIX flavor
+	 * locks on this context.
+	 */
+	if (dbwrap_exists(posix_pending_close_db, ctx_key)) {
+		return;
+	}
+
+	/* Remember that we have POSIX flavor locks on this context. */
+	status = dbwrap_store(posix_pending_close_db, ctx_key, val, 0);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+
+	increment_lock_ref_count(fsp);
+
+	DEBUG(10,("posix_locks set for file %s\n",
+		fsp_str_dbg(fsp)));
+}
+
+static void decrement_posix_lock_count(const files_struct *fsp, uint64_t smblctx)
+{
+	NTSTATUS status;
+	TDB_DATA ctx_key;
+
+	ctx_key.dptr = (uint8_t *)&smblctx;
+	ctx_key.dsize = sizeof(smblctx);
+
+	status = dbwrap_delete(posix_pending_close_db, ctx_key);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+
+	decrement_lock_ref_count(fsp);
+
+	DEBUG(10,("posix_locks deleted for file %s\n",
+		fsp_str_dbg(fsp)));
+}
+
+/****************************************************************************
+ Return true if any locks exist on the given lock context.
+****************************************************************************/
+
+static bool locks_exist_on_context(const struct lock_struct *plocks,
+				int num_locks,
+				const struct lock_context *lock_ctx)
+{
+	int i;
+
+	for (i=0; i < num_locks; i++) {
+		const struct lock_struct *lock = &plocks[i];
+
+		/* Ignore all but read/write locks. */
+		if (lock->lock_type != READ_LOCK && lock->lock_type != WRITE_LOCK) {
+			continue;
+		}
+
+		/* Ignore locks not owned by this process. */
+		if (!serverid_equal(&lock->context.pid, &lock_ctx->pid)) {
+			continue;
+		}
+
+		if (lock_ctx->smblctx == lock->context.smblctx) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/****************************************************************************
  POSIX function to acquire a lock. Returns True if the
  lock could be granted, False if not.
  As POSIX locks don't stack or conflict (they just overwrite)
@@ -1210,6 +1290,7 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 	 */
 
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
+		increment_posix_lock_count(fsp, lock_ctx->smblctx);
 		return True;
 	}
 
@@ -1219,6 +1300,7 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 			posix_lock_type_name(posix_lock_type), (intmax_t)offset, (intmax_t)count, strerror(errno) ));
 		return False;
 	}
+	increment_posix_lock_count(fsp, lock_ctx->smblctx);
 	return True;
 }
 
@@ -1255,6 +1337,9 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 	 */
 
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
+		if (!locks_exist_on_context(plocks, num_locks, lock_ctx)) {
+			decrement_posix_lock_count(fsp, lock_ctx->smblctx);
+		}
 		return True;
 	}
 
@@ -1308,6 +1393,9 @@ bool release_posix_lock_posix_flavour(files_struct *fsp,
 		}
 	}
 
+	if (!locks_exist_on_context(plocks, num_locks, lock_ctx)) {
+		decrement_posix_lock_count(fsp, lock_ctx->smblctx);
+	}
 	talloc_destroy(ul_ctx);
 	return ret;
 }
