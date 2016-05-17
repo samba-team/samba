@@ -2097,11 +2097,17 @@ static bool server_recv(struct tevent_req *req, int *perr)
 static int socket_init(const char *sockpath)
 {
 	struct sockaddr_un addr;
+	size_t len;
 	int ret, fd;
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
-	strcpy(addr.sun_path, sockpath);
+
+	len = strlcpy(addr.sun_path, sockpath, sizeof(addr.sun_path));
+	if (len >= sizeof(addr.sun_path)) {
+		fprintf(stderr, "path too long: %s\n", sockpath);
+		return -1;
+	}
 
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
