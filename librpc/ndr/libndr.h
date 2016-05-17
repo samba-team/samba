@@ -125,6 +125,9 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_RAW8		(1<<13)
 #define LIBNDR_STRING_FLAGS		(0x7FFC)
 
+/* Disable string token compression  */
+#define LIBNDR_FLAG_NO_COMPRESSION	(1<<15)
+
 /*
  * don't debug NDR_ERR_BUFSIZE failures,
  * as the available buffer might be incomplete.
