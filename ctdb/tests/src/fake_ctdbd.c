@@ -2172,6 +2172,7 @@ static void start_server(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	req = server_send(mem_ctx, ev, ctdb, fd);
 	if (req == NULL) {
 		fprintf(stderr, "Memory error\n");
+		exit(1);
 	}
 
 	len = write(pfd, &ret, sizeof(ret));
