@@ -169,28 +169,30 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
 		size_t complen;
 		uint32_t offset;
 
-		/* see if we have pushed the remaining string already,
-		 * if so we use a label pointer to this string
-		 */
-		ndr_err = ndr_token_retrieve_cmp_fn(&ndr->dns_string_list, s,
-						    &offset,
-						    (comparison_fn_t)strcmp,
-						    false);
-		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			uint8_t b[2];
+		if (!(ndr->flags & LIBNDR_FLAG_NO_COMPRESSION)) {
+			/* see if we have pushed the remaining string already,
+			 * if so we use a label pointer to this string
+			 */
+			ndr_err = ndr_token_retrieve_cmp_fn(&ndr->dns_string_list, s,
+							    &offset,
+							    (comparison_fn_t)strcmp,
+							    false);
+			if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				uint8_t b[2];
 
-			if (offset > 0x3FFF) {
-				return ndr_push_error(ndr, NDR_ERR_STRING,
-						      "offset for dns string " \
-						      "label pointer " \
-						      "%u[%08X] > 0x00003FFF",
-						      offset, offset);
+				if (offset > 0x3FFF) {
+					return ndr_push_error(ndr, NDR_ERR_STRING,
+							      "offset for dns string " \
+							      "label pointer " \
+							      "%u[%08X] > 0x00003FFF",
+							      offset, offset);
+				}
+
+				b[0] = 0xC0 | (offset>>8);
+				b[1] = (offset & 0xFF);
+
+				return ndr_push_bytes(ndr, b, 2);
 			}
-
-			b[0] = 0xC0 | (offset>>8);
-			b[1] = (offset & 0xFF);
-
-			return ndr_push_bytes(ndr, b, 2);
 		}
 
 		complen = strcspn(s, ".");
@@ -213,8 +215,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
 		/* remember the current componemt + the rest of the string
 		 * so it can be reused later
 		 */
-		NDR_CHECK(ndr_token_store(ndr, &ndr->dns_string_list, s,
-					  ndr->offset));
+		if (!(ndr->flags & LIBNDR_FLAG_NO_COMPRESSION)) {
+			NDR_CHECK(ndr_token_store(ndr, &ndr->dns_string_list, s,
+						  ndr->offset));
+		}
 
 		/* push just this component into the blob */
 		NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)compname,

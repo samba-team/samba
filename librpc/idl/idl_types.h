@@ -40,6 +40,7 @@
 #define NDR_ALIGN2        LIBNDR_FLAG_ALIGN2
 #define NDR_ALIGN4        LIBNDR_FLAG_ALIGN4
 #define NDR_ALIGN8        LIBNDR_FLAG_ALIGN8
+#define NDR_NO_COMP       LIBNDR_FLAG_NO_COMPRESSION
 
 /* this flag is used to force a section of IDL as little endian. It is
    needed for the epmapper IDL, which is defined as always being LE */
