@@ -239,6 +239,7 @@ bool set_posix_lock_posix_flavour(files_struct *fsp,
 			uint64_t u_offset,
 			uint64_t u_count,
 			enum brl_type lock_type,
+			const struct lock_context *lock_ctx,
 			int *errno_ret);
 bool release_posix_lock_posix_flavour(files_struct *fsp,
 				uint64_t u_offset,

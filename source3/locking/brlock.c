@@ -923,6 +923,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 				plock->start,
 				plock->size,
 				plock->lock_type,
+				&plock->context,
 				&errno_ret)) {
 
 			/* We don't know who blocked us. */
