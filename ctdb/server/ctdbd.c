@@ -48,7 +48,7 @@ static struct {
 	const char *event_script_dir;
 	const char *notification_script;
 	const char *logging;
-	const char *recovery_lock_file;
+	const char *recovery_lock;
 	const char *db_dir;
 	const char *db_dir_persistent;
 	const char *db_dir_state;
@@ -129,7 +129,7 @@ int main(int argc, const char *argv[])
 		{ "dbdir", 0, POPT_ARG_STRING, &options.db_dir, 0, "directory for the tdb files", NULL },
 		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
 		{ "dbdir-state", 0, POPT_ARG_STRING, &options.db_dir_state, 0, "directory for internal state tdb files", NULL },
-		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
+		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock, 0, "recovery lock", "lock" },
 		{ "pidfile", 0, POPT_ARG_STRING, &ctdbd_pidfile, 0, "location of PID file", "filename" },
 		{ "valgrinding", 0, POPT_ARG_NONE, &options.valgrinding, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.nosetsched, 0, "disable setscheduler SCHED_FIFO call, use mmap for tdbs", NULL },
@@ -196,10 +196,10 @@ int main(int argc, const char *argv[])
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
 
-	if (options.recovery_lock_file == NULL) {
-		DEBUG(DEBUG_WARNING, ("Recovery lock file not set\n"));
+	if (options.recovery_lock == NULL) {
+		DEBUG(DEBUG_WARNING, ("Recovery lock not set\n"));
 	}
-	ctdb->recovery_lock_file = options.recovery_lock_file;
+	ctdb->recovery_lock = options.recovery_lock;
 	ctdb->recovery_lock_handle = NULL;
 
 	TALLOC_FREE(ctdb->idr);

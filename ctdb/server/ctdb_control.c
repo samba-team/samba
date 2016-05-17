@@ -509,9 +509,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return 0;
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		CHECK_CONTROL_DATA_SIZE(0);
-		if (ctdb->recovery_lock_file != NULL) {
-			outdata->dptr  = discard_const(ctdb->recovery_lock_file);
-			outdata->dsize = strlen(ctdb->recovery_lock_file) + 1;
+		if (ctdb->recovery_lock != NULL) {
+			outdata->dptr  = discard_const(ctdb->recovery_lock);
+			outdata->dsize = strlen(ctdb->recovery_lock) + 1;
 		}
 		return 0;
 	case CTDB_CONTROL_SET_RECLOCK_FILE:

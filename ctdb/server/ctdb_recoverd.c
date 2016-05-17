@@ -1590,7 +1590,7 @@ static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 		.status = '0',
 	};
 
-	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock_file, 0);
+	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock, 0);
 	if (h == NULL) {
 		return -1;
 	}
@@ -2054,12 +2054,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		goto fail;
 	}
 
-        if (ctdb->recovery_lock_file != NULL) {
+        if (ctdb->recovery_lock != NULL) {
 		if (ctdb_recovery_have_lock(ctdb)) {
 			DEBUG(DEBUG_NOTICE, ("Already holding recovery lock\n"));
 		} else {
 			DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock (%s)\n",
-					     ctdb->recovery_lock_file));
+					     ctdb->recovery_lock));
 			if (!ctdb_recovery_lock(ctdb)) {
 				if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
 					/* If ctdb is trying first recovery, it's
@@ -3562,7 +3562,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
-        if (ctdb->recovery_lock_file != NULL) {
+        if (ctdb->recovery_lock != NULL) {
 		/* We must already hold the recovery lock */
 		if (!ctdb_recovery_have_lock(ctdb)) {
 			DEBUG(DEBUG_ERR,("Failed recovery lock sanity check.  Force a recovery\n"));

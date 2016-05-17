@@ -769,7 +769,7 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 		/* Mutex taken */
 		DEBUG(DEBUG_ERR,
 		      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
-		       ctdb->recovery_lock_file));
+		       ctdb->recovery_lock));
 		s = -1;
 		err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
 		break;
@@ -901,14 +901,14 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		}
 	}
 
-	if (ctdb->recovery_lock_file == NULL) {
+	if (ctdb->recovery_lock == NULL) {
 		/* Not using recovery lock file */
 		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
 		ctdb_process_deferred_attach(ctdb);
 		return 0;
 	}
 
-	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock_file, 5);
+	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock, 5);
 	if (h == NULL) {
 		return -1;
 	}
@@ -1161,7 +1161,7 @@ static void start_recovery_reclock_callback(struct ctdb_context *ctdb,
 {
 	struct recovery_callback_state *state = talloc_get_type_abort(
 		private_data, struct recovery_callback_state);
-	const char *local = ctdb->recovery_lock_file;
+	const char *local = ctdb->recovery_lock;
 	const char *remote = NULL;
 
 	if (status != 0) {
