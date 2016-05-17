@@ -65,27 +65,6 @@ int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip)
 	return -1;
 }
 
-/*
-  choose the recovery lock file
-*/
-int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
-{
-	if (ctdb->recovery_lock_file != NULL) {
-		talloc_free(ctdb->recovery_lock_file);
-		ctdb->recovery_lock_file = NULL;
-	}
-
-	if (file == NULL) {
-		DEBUG(DEBUG_ALERT,("Recovery lock file set to \"\". Disabling recovery lock checking\n"));
-		return 0;
-	}
-
-	ctdb->recovery_lock_file = talloc_strdup(ctdb, file);
-	CTDB_NO_MEMORY(ctdb, ctdb->recovery_lock_file);
-
-	return 0;
-}
-
 /* Load a nodes list file into a nodes array */
 static int convert_node_map_to_list(struct ctdb_context *ctdb,
 				    TALLOC_CTX *mem_ctx,

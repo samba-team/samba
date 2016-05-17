@@ -310,7 +310,7 @@ struct ctdb_context {
 	uint64_t db_persistent_check_errors;
 	uint64_t max_persistent_check_errors;
 	const char *transport;
-	char *recovery_lock_file;
+	const char *recovery_lock_file;
 	struct ctdb_cluster_mutex_handle *recovery_lock_handle;
 	uint32_t pnn; /* our own pnn */
 	uint32_t num_nodes;
@@ -921,8 +921,6 @@ void ctdb_stop_recoverd(struct ctdb_context *ctdb);
 int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport);
 
 int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip);
-
-int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file);
 
 void ctdb_load_nodes_file(struct ctdb_context *ctdb);
 

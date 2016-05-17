@@ -195,6 +195,11 @@ int main(int argc, const char *argv[])
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
+
+	if (options.recovery_lock_file == NULL) {
+		DEBUG(DEBUG_WARNING, ("Recovery lock file not set\n"));
+	}
+	ctdb->recovery_lock_file = options.recovery_lock_file;
 	ctdb->recovery_lock_handle = NULL;
 
 	TALLOC_FREE(ctdb->idr);
@@ -205,12 +210,6 @@ int main(int argc, const char *argv[])
 	}
 
 	ctdb_tunables_set_defaults(ctdb);
-
-	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
-	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb)));
-		exit(1);
-	}
 
 	ret = ctdb_set_transport(ctdb, options.transport);
 	if (ret == -1) {
