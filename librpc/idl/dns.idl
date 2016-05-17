@@ -179,7 +179,7 @@ interface dns
 		uint8      option_data[option_length];
 	} dns_opt_record;
 
-	typedef [public] struct {
+	typedef [flag(NDR_NO_COMP),public] struct {
 		dns_string     algorithm;
 		uint32         inception;
 		uint32         expiration;
@@ -191,7 +191,7 @@ interface dns
 		uint8          other_data[other_size];
 	} dns_tkey_record;
 
-	typedef [public] struct {
+	typedef [flag(NDR_NO_COMP),public] struct {
 		dns_string algorithm_name;
 		uint16     time_prefix; /* 0 until February 2106*/
 		uint32     time;
@@ -204,7 +204,7 @@ interface dns
 		uint8      other_data[other_size];
 	} dns_tsig_record;
 
-	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+	typedef [flag(NDR_NO_COMP|NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
 		dns_string	name;
 		dns_qclass 	rr_class;
 		uint32     	ttl;
