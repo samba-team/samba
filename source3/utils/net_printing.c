@@ -33,9 +33,13 @@
 #include "printing/nt_printing_migrate.h"
 
 #define FORMS_PREFIX "FORMS/"
+#define FORMS_PREFIX_LEN 6
 #define DRIVERS_PREFIX "DRIVERS/"
+#define DRIVERS_PREFIX_LEN 8
 #define PRINTERS_PREFIX "PRINTERS/"
+#define PRINTERS_PREFIX_LEN 9
 #define SECDESC_PREFIX "SECDESC/"
+#define SECDESC_PREFIX_LEN 8
 
 #define ARG_ENCODING "encoding="
 
@@ -258,12 +262,17 @@ static int net_printing_dump(struct net_context *c, int argc,
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey)
 	{
+		int cmp;
+
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
 
-		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
+		cmp = strncmp((const char *)kbuf.dptr,
+			      FORMS_PREFIX,
+			      FORMS_PREFIX_LEN);
+		if (cmp == 0) {
 			char *key_name = NULL;
 			size_t converted_size = 0;
 			bool ok;
@@ -282,7 +291,10 @@ static int net_printing_dump(struct net_context *c, int argc,
 			continue;
 		}
 
-		if (strncmp((const char *)kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
+		cmp = strncmp((const char *)kbuf.dptr,
+			      DRIVERS_PREFIX,
+			      DRIVERS_PREFIX_LEN);
+		if (cmp == 0) {
 			char *key_name = NULL;
 			size_t converted_size = 0;
 			bool ok;
@@ -305,7 +317,10 @@ static int net_printing_dump(struct net_context *c, int argc,
 			continue;
 		}
 
-		if (strncmp((const char *)kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+		cmp = strncmp((const char *)kbuf.dptr,
+			      PRINTERS_PREFIX,
+			      PRINTERS_PREFIX_LEN);
+		if (cmp == 0) {
 			char *key_name = NULL;
 			size_t converted_size = 0;
 			bool ok;
@@ -328,7 +343,10 @@ static int net_printing_dump(struct net_context *c, int argc,
 			continue;
 		}
 
-		if (strncmp((const char *)kbuf.dptr, SECDESC_PREFIX, strlen(SECDESC_PREFIX)) == 0) {
+		cmp = strncmp((const char *)kbuf.dptr,
+			      SECDESC_PREFIX,
+			      SECDESC_PREFIX_LEN);
+		if (cmp == 0) {
 			dump_sd(ctx, (const char *)kbuf.dptr+strlen(SECDESC_PREFIX), dbuf.dptr, dbuf.dsize);
 			SAFE_FREE(dbuf.dptr);
 			continue;
@@ -390,12 +408,17 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 	     kbuf.dptr;
 	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf = newkey)
 	{
+		int cmp;
+
 		dbuf = tdb_fetch(tdb, kbuf);
 		if (!dbuf.dptr) {
 			continue;
 		}
 
-		if (strncmp((const char *) kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
+		cmp = strncmp((const char *) kbuf.dptr,
+			      FORMS_PREFIX,
+			      FORMS_PREFIX_LEN);
+		if (cmp == 0) {
 			char *key_name = NULL;
 			size_t converted_size = 0;
 			bool ok;
@@ -418,7 +441,10 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 			continue;
 		}
 
-		if (strncmp((const char *) kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
+		cmp = strncmp((const char *) kbuf.dptr,
+			      DRIVERS_PREFIX,
+			      DRIVERS_PREFIX_LEN);
+		if (cmp == 0) {
 			char *key_name = NULL;
 			size_t converted_size = 0;
 			bool ok;
@@ -442,7 +468,10 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 			continue;
 		}
 
-		if (strncmp((const char *) kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+		cmp = strncmp((const char *) kbuf.dptr,
+			      PRINTERS_PREFIX,
+			      PRINTERS_PREFIX_LEN);
+		if (cmp == 0) {
 			char *key_name = NULL;
 			size_t converted_size = 0;
 			bool ok;
