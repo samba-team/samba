@@ -264,27 +264,66 @@ static int net_printing_dump(struct net_context *c, int argc,
 		}
 
 		if (strncmp((const char *)kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
-			dump_form(ctx, (const char *)kbuf.dptr+strlen(FORMS_PREFIX), dbuf.dptr, dbuf.dsize);
+			char *key_name = NULL;
+			size_t converted_size = 0;
+			bool ok;
+
+			ok = pull_ascii_talloc(ctx,
+					       &key_name,
+					       (const char *) kbuf.dptr + strlen(FORMS_PREFIX),
+					       &converted_size);
+			if (!ok) {
+				continue;
+			}
+
+			dump_form(ctx, key_name, dbuf.dptr, dbuf.dsize);
+			TALLOC_FREE(key_name);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
 
 		if (strncmp((const char *)kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
+			char *key_name = NULL;
+			size_t converted_size = 0;
+			bool ok;
+
+			ok = pull_ascii_talloc(ctx,
+					       &key_name,
+					       (const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
+					       &converted_size);
+			if (!ok) {
+				continue;
+			}
+
 			dump_driver(ctx,
-				    (const char *)kbuf.dptr+strlen(DRIVERS_PREFIX),
+				    key_name,
 				    dbuf.dptr,
 				    dbuf.dsize,
 				    do_string_conversion);
+			TALLOC_FREE(key_name);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
 
 		if (strncmp((const char *)kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+			char *key_name = NULL;
+			size_t converted_size = 0;
+			bool ok;
+
+			ok = pull_ascii_talloc(ctx,
+					       &key_name,
+					       (const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
+					       &converted_size);
+			if (!ok) {
+				continue;
+			}
+
 			dump_printer(ctx,
-				     (const char *)kbuf.dptr+strlen(PRINTERS_PREFIX),
+				     key_name,
 				     dbuf.dptr,
 				     dbuf.dsize,
 				     do_string_conversion);
+			TALLOC_FREE(key_name);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
@@ -357,33 +396,72 @@ static NTSTATUS printing_migrate_internal(struct net_context *c,
 		}
 
 		if (strncmp((const char *) kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) == 0) {
+			char *key_name = NULL;
+			size_t converted_size = 0;
+			bool ok;
+
+			ok = pull_ascii_talloc(tmp_ctx,
+					       &key_name,
+					       (const char *) kbuf.dptr + strlen(FORMS_PREFIX),
+					       &converted_size);
+			if (!ok) {
+				continue;
+			}
+
 			printing_tdb_migrate_form(tmp_ctx,
 				     winreg_pipe,
-				     (const char *) kbuf.dptr + strlen(FORMS_PREFIX),
+				     key_name,
 				     dbuf.dptr,
 				     dbuf.dsize);
+			TALLOC_FREE(key_name);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
 
 		if (strncmp((const char *) kbuf.dptr, DRIVERS_PREFIX, strlen(DRIVERS_PREFIX)) == 0) {
+			char *key_name = NULL;
+			size_t converted_size = 0;
+			bool ok;
+
+			ok = pull_ascii_talloc(tmp_ctx,
+					       &key_name,
+					       (const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
+					       &converted_size);
+			if (!ok) {
+				continue;
+			}
+
 			printing_tdb_migrate_driver(tmp_ctx,
 				       winreg_pipe,
-				       (const char *) kbuf.dptr + strlen(DRIVERS_PREFIX),
+				       key_name,
 				       dbuf.dptr,
 				       dbuf.dsize,
 				       do_string_conversion);
+			TALLOC_FREE(key_name);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
 
 		if (strncmp((const char *) kbuf.dptr, PRINTERS_PREFIX, strlen(PRINTERS_PREFIX)) == 0) {
+			char *key_name = NULL;
+			size_t converted_size = 0;
+			bool ok;
+
+			ok = pull_ascii_talloc(tmp_ctx,
+					       &key_name,
+					       (const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
+					       &converted_size);
+			if (!ok) {
+				continue;
+			}
+
 			printing_tdb_migrate_printer(tmp_ctx,
 					winreg_pipe,
-					(const char *) kbuf.dptr + strlen(PRINTERS_PREFIX),
+					key_name,
 					dbuf.dptr,
 					dbuf.dsize,
 					do_string_conversion);
+			TALLOC_FREE(key_name);
 			SAFE_FREE(dbuf.dptr);
 			continue;
 		}
