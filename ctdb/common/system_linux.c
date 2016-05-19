@@ -127,7 +127,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			close(s);
 			return 0;
 		}
-		if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
+		if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
 			close(s);
 			errno = EINVAL;
 			DEBUG(DEBUG_CRIT,(__location__ " not an ethernet address family (0x%x)\n",
@@ -221,7 +221,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 			close(s);
 			return 0;
 		}
-		if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
+		if (if_hwaddr.ifr_hwaddr.sa_family != ARPHRD_ETHER) {
 			close(s);
 			errno = EINVAL;
 			DEBUG(DEBUG_CRIT,(__location__ " not an ethernet address family (0x%x)\n",
