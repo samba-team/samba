@@ -904,6 +904,7 @@ out_free:
 	const char *binding_string = NULL;
 	char *user, *domain, *q;
 	const char *host;
+	int signing_state = SMB_SIGNING_IPC_DEFAULT;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1077,6 +1078,16 @@ out_free:
 		}
 	}
 
+	signing_state = get_cmdline_auth_info_signing_state(rpcclient_auth_info);
+	switch (signing_state) {
+	case SMB_SIGNING_OFF:
+		lp_set_cmdline("client ipc signing", "no");
+		break;
+	case SMB_SIGNING_REQUIRED:
+		lp_set_cmdline("client ipc signing", "required");
+		break;
+	}
+
 	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
@@ -1104,7 +1115,7 @@ out_free:
 					get_cmdline_auth_info_domain(rpcclient_auth_info),
 					get_cmdline_auth_info_password(rpcclient_auth_info),
 					flags,
-					get_cmdline_auth_info_signing_state(rpcclient_auth_info));
+					SMB_SIGNING_IPC_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
