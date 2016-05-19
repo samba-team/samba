@@ -100,7 +100,7 @@ nomem:
 static struct fileid_mount_entry *fileid_find_mount_entry(struct fileid_handle_data *data,
 							  SMB_DEV_T dev)
 {
-	int i;
+	unsigned i;
 
 	if (data->num_mount_entries == 0) {
 		fileid_load_mount_entries(data);
