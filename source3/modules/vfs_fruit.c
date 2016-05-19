@@ -576,10 +576,11 @@ static bool ad_pack(struct adouble *ad)
 /**
  * Unpack an AppleDouble blob into a struct adoble
  **/
-static bool ad_unpack(struct adouble *ad, const int nentries, size_t filesize)
+static bool ad_unpack(struct adouble *ad, const size_t nentries,
+		      size_t filesize)
 {
 	size_t bufsize = talloc_get_size(ad->ad_data);
-	int adentries, i;
+	size_t adentries, i;
 	uint32_t eid, len, off;
 
 	/*
@@ -603,7 +604,8 @@ static bool ad_unpack(struct adouble *ad, const int nentries, size_t filesize)
 
 	adentries = RSVAL(ad->ad_data, ADEDOFF_NENTRIES);
 	if (adentries != nentries) {
-		DEBUG(1, ("invalid number of entries: %d\n", adentries));
+		DEBUG(1, ("invalid number of entries: %zu\n",
+			  adentries));
 		return false;
 	}
 
@@ -1533,7 +1535,7 @@ static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 			     const char *name)
 {
 	struct stream_struct *tmp = *streams;
-	int i;
+	unsigned int i;
 
 	if (*num_streams == 0) {
 		return true;
@@ -2015,7 +2017,7 @@ static NTSTATUS check_ms_nfs(vfs_handle_struct *handle,
 			     mode_t *pmode,
 			     bool *pdo_chmod)
 {
-	int i;
+	uint32_t i;
 	struct fruit_config_data *config = NULL;
 
 	*pdo_chmod = false;
@@ -3770,7 +3772,7 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
-	int i;
+	unsigned int i;
 	struct smb_filename *src_fname_tmp = NULL;
 	struct smb_filename *dst_fname_tmp = NULL;
 
