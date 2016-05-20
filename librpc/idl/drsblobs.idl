@@ -291,7 +291,7 @@ interface drsblobs {
 		[in] ldapControlDirSyncCookie cookie
 		);
 
-	typedef struct {
+	typedef [public] struct {
 		[value(2*strlen_m(name))] uint16 name_len;
 		[value(strlen(data))] uint16 data_len;
 		uint16 reserved; /* 2 for 'Packages', 1 for 'Primary:*', but should be ignored */
@@ -323,11 +323,11 @@ interface drsblobs {
 	/* this are 0x30 (48) whitespaces (0x20) */
 	const string SUPPLEMENTAL_CREDENTIALS_PREFIX = "                                                ";
 
-	typedef [flag(NDR_PAHEX)] enum {
+	typedef [flag(NDR_PAHEX),public] enum {
 		SUPPLEMENTAL_CREDENTIALS_SIGNATURE = 0x0050
 	} supplementalCredentialsSignature;
 
-	typedef [gensize] struct {
+	typedef [gensize,nopush,nopull] struct {
 		[value(SUPPLEMENTAL_CREDENTIALS_PREFIX),charset(UTF16)] uint16 prefix[0x30];
 		[value(SUPPLEMENTAL_CREDENTIALS_SIGNATURE)] supplementalCredentialsSignature signature;
 		uint16 num_packages;

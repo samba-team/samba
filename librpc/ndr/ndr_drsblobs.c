@@ -149,3 +149,50 @@ _PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const c
 		ndr->flags = _flags_save_STRUCT;
 	}
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_supplementalCredentialsSubBlob(struct ndr_push *ndr, int ndr_flags, const struct supplementalCredentialsSubBlob *r)
+{
+	uint32_t cntr_packages_0;
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 3));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_PREFIX, 0x30, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_supplementalCredentialsSignature(ndr, NDR_SCALARS, SUPPLEMENTAL_CREDENTIALS_SIGNATURE));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_packages));
+		for (cntr_packages_0 = 0; cntr_packages_0 < (r->num_packages); cntr_packages_0++) {
+			NDR_CHECK(ndr_push_supplementalCredentialsPackage(ndr, NDR_SCALARS, &r->packages[cntr_packages_0]));
+		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 3));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_supplementalCredentialsSubBlob(struct ndr_pull *ndr, int ndr_flags, struct supplementalCredentialsSubBlob *r)
+{
+	uint32_t size_prefix_0 = 0;
+	uint32_t size_packages_0 = 0;
+	uint32_t cntr_packages_0;
+	TALLOC_CTX *_mem_save_packages_0 = NULL;
+	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 3));
+		size_prefix_0 = 0x30;
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->prefix, size_prefix_0, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_supplementalCredentialsSignature(ndr, NDR_SCALARS, &r->signature));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_packages));
+		size_packages_0 = r->num_packages;
+		NDR_PULL_ALLOC_N(ndr, r->packages, size_packages_0);
+		_mem_save_packages_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->packages, 0);
+		for (cntr_packages_0 = 0; cntr_packages_0 < (size_packages_0); cntr_packages_0++) {
+			NDR_CHECK(ndr_pull_supplementalCredentialsPackage(ndr, NDR_SCALARS, &r->packages[cntr_packages_0]));
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_packages_0, 0);
+		NDR_CHECK(ndr_pull_trailer_align(ndr, 3));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
