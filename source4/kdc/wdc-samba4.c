@@ -25,9 +25,15 @@
 #include "kdc/kdc-glue.h"
 #include "kdc/pac-glue.h"
 
-/* Given the right private pointer from hdb_samba4, get a PAC from the attached ldb messages */
+/*
+ * Given the right private pointer from hdb_samba4,
+ * get a PAC from the attached ldb messages.
+ *
+ * For PKINIT we also get pk_reply_key and can add PAC_CREDENTIAL_INFO.
+ */
 static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 					 struct hdb_entry_ex *client,
+					 const krb5_keyblock *pk_reply_key,
 					 krb5_pac *pac)
 {
 	TALLOC_CTX *mem_ctx;
@@ -53,6 +59,13 @@ static krb5_error_code samba_wdc_get_pac(void *priv, krb5_context context,
 
 	talloc_free(mem_ctx);
 	return ret;
+}
+
+static krb5_error_code samba_wdc_get_pac_compat(void *priv, krb5_context context,
+						struct hdb_entry_ex *client,
+						krb5_pac *pac)
+{
+	return samba_wdc_get_pac(priv, context, client, NULL, pac);
 }
 
 /* Resign (and reform, including possibly new groups) a PAC */
@@ -326,9 +339,10 @@ struct krb5plugin_windc_ftable windc_plugin_table = {
 	.minor_version = KRB5_WINDC_PLUGIN_MINOR,
 	.init = samba_wdc_plugin_init,
 	.fini = samba_wdc_plugin_fini,
-	.pac_generate = samba_wdc_get_pac,
+	.pac_generate = samba_wdc_get_pac_compat,
 	.pac_verify = samba_wdc_reget_pac,
 	.client_access = samba_wdc_check_client_access,
+	.pac_pk_generate = samba_wdc_get_pac,
 };
 
 
