@@ -26,9 +26,13 @@ interface krb5pac
 	} PAC_SIGNATURE_DATA;
 
 	typedef struct {
+		dom_sid2 *domain_sid;
+		samr_RidWithAttributeArray groups;
+	} PAC_DOMAIN_GROUP_MEMBERSHIP;
+
+	typedef struct {
 		netr_SamInfo3 info3;
-		dom_sid2 *res_group_dom_sid;
-		samr_RidWithAttributeArray res_groups;
+		PAC_DOMAIN_GROUP_MEMBERSHIP resource_groups;
 	} PAC_LOGON_INFO;
 
 	typedef [bitmap32bit] bitmap {

@@ -512,6 +512,10 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	union netr_Validation validation;
 	struct auth_user_info_dc *user_info_dc;
+	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *rg = NULL;
+	size_t sidcount;
+
+	rg = &pac_logon_info->resource_groups;
 
 	validation.sam3 = discard_const_p(struct netr_SamInfo3, &pac_logon_info->info3);
 
@@ -522,11 +526,19 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	if (pac_logon_info->res_groups.count > 0) {
-		size_t sidcount;
+	if (pac_logon_info->info3.base.user_flags & NETLOGON_RESOURCE_GROUPS) {
+		rg = &pac_logon_info->resource_groups;
+	}
+
+	if (rg == NULL) {
+		*_user_info_dc = user_info_dc;
+		return NT_STATUS_OK;
+	}
+
+	if (rg->groups.count > 0) {
 		/* The IDL layer would be a better place to check this, but to
 		 * guard the integer addition below, we double-check */
-		if (pac_logon_info->res_groups.count > 65535) {
+		if (rg->groups.count > 65535) {
 			talloc_free(user_info_dc);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -536,12 +548,13 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 		  trusted domains, and verify that the SID
 		  matches.
 		*/
-		if (!pac_logon_info->res_group_dom_sid) {
+		if (rg->domain_sid == NULL) {
+			talloc_free(user_info_dc);
 			DEBUG(0, ("Cannot operate on a PAC without a resource domain SID"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		sidcount = user_info_dc->num_sids + pac_logon_info->res_groups.count;
+		sidcount = user_info_dc->num_sids + rg->groups.count;
 		user_info_dc->sids
 			= talloc_realloc(user_info_dc, user_info_dc->sids, struct dom_sid, sidcount);
 		if (user_info_dc->sids == NULL) {
@@ -549,10 +562,13 @@ NTSTATUS make_user_info_dc_pac(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		for (i = 0; pac_logon_info->res_group_dom_sid && i < pac_logon_info->res_groups.count; i++) {
-			user_info_dc->sids[user_info_dc->num_sids] = *pac_logon_info->res_group_dom_sid;
-			if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids],
-					    pac_logon_info->res_groups.rids[i].rid)) {
+		for (i = 0; i < rg->groups.count; i++) {
+			bool ok;
+
+			user_info_dc->sids[user_info_dc->num_sids] = *rg->domain_sid;
+			ok = sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids],
+					    rg->groups.rids[i].rid);
+			if (!ok) {
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 			user_info_dc->num_sids++;

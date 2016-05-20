@@ -261,9 +261,27 @@ static NTSTATUS merge_resource_sids(const struct PAC_LOGON_INFO *logon_info,
 				struct netr_SamInfo3 *info3)
 {
 	uint32_t i = 0;
+	const struct PAC_DOMAIN_GROUP_MEMBERSHIP *rg = NULL;
 
-	if (!(logon_info->info3.base.user_flags & NETLOGON_RESOURCE_GROUPS)) {
+	if (logon_info->info3.base.user_flags & NETLOGON_RESOURCE_GROUPS) {
+		rg = &logon_info->resource_groups;
+	}
+
+	if (rg == NULL) {
 		return NT_STATUS_OK;
+	}
+
+	if (rg->domain_sid == NULL) {
+		DEBUG(10, ("Missing Resource Group Domain SID\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* The IDL layer would be a better place to check this, but to
+	 * guard the integer addition below, we double-check */
+	if (rg->groups.count > 65535) {
+		DEBUG(10, ("Too much Resource Group RIDs %u\n",
+			  (unsigned)rg->groups.count));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/*
@@ -278,14 +296,14 @@ static NTSTATUS merge_resource_sids(const struct PAC_LOGON_INFO *logon_info,
 	 * Construct a SID for each RID in the list and then append it
 	 * to the info3.
 	 */
-	for (i = 0; i < logon_info->res_groups.count; i++) {
+	for (i = 0; i < rg->groups.count; i++) {
 		NTSTATUS status;
 		struct dom_sid new_sid;
-		uint32_t attributes = logon_info->res_groups.rids[i].attributes;
+		uint32_t attributes = rg->groups.rids[i].attributes;
 
 		sid_compose(&new_sid,
-			logon_info->res_group_dom_sid,
-			logon_info->res_groups.rids[i].rid);
+			    rg->domain_sid,
+			    rg->groups.rids[i].rid);
 
 		DEBUG(10, ("Adding SID %s to extra SIDS\n",
 			sid_string_dbg(&new_sid)));
