@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.6"
+VERSION="1.1.7"
 
 def configure(conf):
     if conf.CHECK_BUNDLED_SYSTEM('socket_wrapper', minversion=VERSION, set_target=False):
@@ -74,6 +74,8 @@ def configure(conf):
         conf.CHECK_FUNCS('getaddrinfo')
         conf.CHECK_FUNCS('signalfd eventfd timerfd_create')
         conf.CHECK_FUNCS('bindresvport')
+        conf.CHECK_FUNCS('pledge')
+        conf.CHECK_FUNCS('accept4')
 
         conf.CHECK_FUNCS_IN('bind',
                             'socket',

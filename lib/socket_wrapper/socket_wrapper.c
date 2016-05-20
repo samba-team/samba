@@ -335,9 +335,16 @@ static void swrap_log(enum swrap_dbglvl_e dbglvl,
 #include <dlfcn.h>
 
 struct swrap_libc_fns {
+#ifdef HAVE_ACCEPT4
+	int (*libc_accept4)(int sockfd,
+			   struct sockaddr *addr,
+			   socklen_t *addrlen,
+			   int flags);
+#else
 	int (*libc_accept)(int sockfd,
 			   struct sockaddr *addr,
 			   socklen_t *addrlen);
+#endif
 	int (*libc_bind)(int sockfd,
 			 const struct sockaddr *addr,
 			 socklen_t addrlen);
@@ -552,12 +559,26 @@ static void *_swrap_load_lib_function(enum swrap_lib lib, const char *fn_name)
  * has probably something todo with with the linker.
  * So we need load each function at the point it is called the first time.
  */
+#ifdef HAVE_ACCEPT4
+static int libc_accept4(int sockfd,
+			struct sockaddr *addr,
+			socklen_t *addrlen,
+			int flags)
+{
+	swrap_load_lib_function(SWRAP_LIBSOCKET, accept4);
+
+	return swrap.fns.libc_accept4(sockfd, addr, addrlen, flags);
+}
+
+#else /* HAVE_ACCEPT4 */
+
 static int libc_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
 	swrap_load_lib_function(SWRAP_LIBSOCKET, accept);
 
 	return swrap.fns.libc_accept(sockfd, addr, addrlen);
 }
+#endif /* HAVE_ACCEPT4 */
 
 static int libc_bind(int sockfd,
 		     const struct sockaddr *addr,
@@ -2386,6 +2407,9 @@ static int swrap_socket(int family, int type, int protocol)
 #ifdef AF_NETLINK
 	case AF_NETLINK:
 #endif /* AF_NETLINK */
+#ifdef AF_PACKET
+	case AF_PACKET:
+#endif /* AF_PACKET */
 	case AF_UNIX:
 		return libc_socket(family, type, protocol);
 	default:
@@ -2575,7 +2599,10 @@ int pipe(int pipefd[2])
  *   ACCEPT
  ***************************************************************************/
 
-static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
+static int swrap_accept(int s,
+			struct sockaddr *addr,
+			socklen_t *addrlen,
+			int flags)
 {
 	struct socket_info *parent_si, *child_si;
 	struct socket_info_fd *child_fi;
@@ -2596,7 +2623,11 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 
 	parent_si = find_socket_info(s);
 	if (!parent_si) {
+#ifdef HAVE_ACCEPT4
+		return libc_accept4(s, addr, addrlen, flags);
+#else
 		return libc_accept(s, addr, addrlen);
+#endif
 	}
 
 	/*
@@ -2609,7 +2640,11 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 		return -1;
 	}
 
+#ifdef HAVE_ACCEPT4
+	ret = libc_accept4(s, &un_addr.sa.s, &un_addr.sa_socklen, flags);
+#else
 	ret = libc_accept(s, &un_addr.sa.s, &un_addr.sa_socklen);
+#endif
 	if (ret == -1) {
 		if (errno == ENOTSOCK) {
 			/* Remove stale fds */
@@ -2713,13 +2748,20 @@ static int swrap_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	return fd;
 }
 
+#ifdef HAVE_ACCEPT4
+int accept4(int s, struct sockaddr *addr, socklen_t *addrlen, int flags)
+{
+	return swrap_accept(s, addr, (socklen_t *)addrlen, flags);
+}
+#endif
+
 #ifdef HAVE_ACCEPT_PSOCKLEN_T
 int accept(int s, struct sockaddr *addr, Psocklen_t addrlen)
 #else
 int accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 #endif
 {
-	return swrap_accept(s, addr, (socklen_t *)addrlen);
+	return swrap_accept(s, addr, (socklen_t *)addrlen, 0);
 }
 
 static int autobind_start_init;
@@ -3880,9 +3922,15 @@ static ssize_t swrap_sendmsg_before(int fd,
 	}
 	case SOCK_DGRAM:
 		if (si->connected) {
-			if (msg->msg_name) {
-				errno = EISCONN;
-				return -1;
+			if (msg->msg_name != NULL) {
+				/*
+				 * We are dealing with unix sockets and if we
+				 * are connected, we should only talk to the
+				 * connected unix path. Using the fd to send
+				 * to another server would be hard to achieve.
+				 */
+				msg->msg_name = NULL;
+				msg->msg_namelen = 0;
 			}
 		} else {
 			const struct sockaddr *msg_name;
@@ -4429,12 +4477,25 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 		return len;
 	}
 
-	ret = libc_sendto(s,
-			  buf,
-			  len,
-			  flags,
-			  (struct sockaddr *)msg.msg_name,
-			  msg.msg_namelen);
+	/*
+	 * If it is a dgram socket and we are connected, don't include the
+	 * 'to' address.
+	 */
+	if (si->type == SOCK_DGRAM && si->connected) {
+		ret = libc_sendto(s,
+				  buf,
+				  len,
+				  flags,
+				  NULL,
+				  0);
+	} else {
+		ret = libc_sendto(s,
+				  buf,
+				  len,
+				  flags,
+				  (struct sockaddr *)msg.msg_name,
+				  msg.msg_namelen);
+	}
 
 	swrap_sendmsg_after(s, si, &msg, to, ret);
 
@@ -5247,6 +5308,16 @@ int eventfd(int count, int flags)
 	return swrap_eventfd(count, flags);
 }
 #endif
+
+#ifdef HAVE_PLEDGE
+int pledge(const char *promises, const char *paths[])
+{
+	(void)promises; /* unused */
+	(void)paths; /* unused */
+
+	return 0;
+}
+#endif /* HAVE_PLEDGE */
 
 /****************************
  * DESTRUCTOR
