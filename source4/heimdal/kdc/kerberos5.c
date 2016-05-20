@@ -1398,6 +1398,8 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
+    e_text = NULL;
+
     /*
      * Verify flags after the user been required to prove its identity
      * with in a preauth mech.
