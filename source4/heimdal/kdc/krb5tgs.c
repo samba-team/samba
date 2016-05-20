@@ -1990,7 +1990,7 @@ server_lookup:
 		    krb5_free_error_message(context, msg);
 		    goto out;
 		}
-		ret = _kdc_pac_generate(context, s4u2self_impersonated_client, &p);
+		ret = _kdc_pac_generate(context, s4u2self_impersonated_client, NULL, &p);
 		if (ret) {
 		    kdc_log(context, config, 0, "PAC generation failed for -- %s",
 			    tpn);

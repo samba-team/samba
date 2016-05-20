@@ -53,7 +53,14 @@ struct hdb_entry_ex;
 
 typedef krb5_error_code
 (*krb5plugin_windc_pac_generate)(void *, krb5_context,
-				 struct hdb_entry_ex *, krb5_pac *);
+				 struct hdb_entry_ex *, /* client */
+				 krb5_pac *);
+
+typedef krb5_error_code
+(*krb5plugin_windc_pac_pk_generate)(void *, krb5_context,
+				    struct hdb_entry_ex *, /* client */
+				    const krb5_keyblock *, /* pk_replykey */
+				    krb5_pac *);
 
 typedef krb5_error_code
 (*krb5plugin_windc_pac_verify)(void *, krb5_context,
@@ -83,6 +90,7 @@ typedef struct krb5plugin_windc_ftable {
     krb5plugin_windc_pac_generate	pac_generate;
     krb5plugin_windc_pac_verify		pac_verify;
     krb5plugin_windc_client_access	client_access;
+    krb5plugin_windc_pac_pk_generate    pac_pk_generate;
 } krb5plugin_windc_ftable;
 
 #endif /* HEIMDAL_KRB5_PAC_PLUGIN_H */

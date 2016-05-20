@@ -982,6 +982,7 @@ _kdc_as_rep(krb5_context context,
 #ifdef PKINIT
     pk_client_params *pkp = NULL;
 #endif
+    const EncryptionKey *pk_reply_key = NULL;
 
     memset(&rep, 0, sizeof(rep));
     memset(&session_key, 0, sizeof(session_key));
@@ -1625,7 +1626,7 @@ _kdc_as_rep(krb5_context context,
 	copy_HostAddresses(et.caddr, ek.caddr);
     }
 
-#if PKINIT
+#ifdef PKINIT
     if (pkp) {
         e_text = "Failed to build PK-INIT reply";
 	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client,
@@ -1640,6 +1641,11 @@ _kdc_as_rep(krb5_context context,
 	if (ret)
 	    goto out;
 
+	/*
+	 * Send reply key as constant value to pac generate which allows
+	 * parts of the buffer to be encrypted (i.e., PAC_CREDENTIAL_DATA).
+	 */
+	pk_reply_key = reply_key;
     } else
 #endif
     {
@@ -1668,7 +1674,7 @@ _kdc_as_rep(krb5_context context,
 	krb5_pac p = NULL;
 	krb5_data data;
 
-	ret = _kdc_pac_generate(context, client, &p);
+	ret = _kdc_pac_generate(context, client, pk_reply_key, &p);
 	if (ret) {
 	    kdc_log(context, config, 0, "PAC generation failed for -- %s",
 		    client_name);
