@@ -248,7 +248,7 @@ interface netlogon
 		netr_SamBaseInfo base;
 	} netr_SamInfo2;
 
-	typedef struct {
+	typedef [public] struct {
 		dom_sid2 *sid;
 		samr_GroupAttrs attributes;
 	} netr_SidAttr;
