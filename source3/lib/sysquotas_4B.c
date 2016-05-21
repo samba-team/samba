@@ -81,6 +81,12 @@ static void xlate_qblk_to_smb(const struct dqblk * const qblk,
 	dp->hardlimit = XLATE_TO_BLOCKS(qblk->dqb_bhardlimit);
 	dp->curblocks = XLATE_TO_BLOCKS(qblk->dqb_curbytes);
 #undef XLATE_TO_BLOCKS
+#else
+	dp->bsize = DEV_BSIZE;
+
+	dp->softlimit = qblk->dqb_bsoftlimit;
+	dp->hardlimit = qblk->dqb_bhardlimit;
+	dp->curblocks = qblk->dqb_curblocks;
 #endif
 
 	dp->ihardlimit = qblk->dqb_ihardlimit;
