@@ -1391,8 +1391,24 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 	return true;
 }
 
-static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
-						 TALLOC_CTX *mem_ctx)
+static enum ipalloc_algorithm
+determine_algorithm(const struct ctdb_tunable_list *tunables)
+{
+	if (1 == tunables->lcp2_public_ip_assignment) {
+		return IPALLOC_LCP2;
+	} else if (1 == tunables->deterministic_public_ips) {
+		return IPALLOC_DETERMINISTIC;
+	} else {
+		return IPALLOC_NONDETERMINISTIC;
+	}
+}
+
+static struct ipalloc_state *
+ipalloc_state_init(TALLOC_CTX *mem_ctx,
+		   uint32_t num_nodes,
+		   enum ipalloc_algorithm algorithm,
+		   bool no_ip_failback,
+		   uint32_t *force_rebalance_nodes)
 {
 	struct ipalloc_state *ipalloc_state =
 		talloc_zero(mem_ctx, struct ipalloc_state);
@@ -1401,7 +1417,7 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 		return NULL;
 	}
 
-	ipalloc_state->num = ctdb->num_nodes;
+	ipalloc_state->num = num_nodes;
 
 	ipalloc_state->noiptakeover =
 		talloc_zero_array(ipalloc_state,
@@ -1420,15 +1436,9 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 		goto fail;
 	}
 
-	if (1 == ctdb->tunable.lcp2_public_ip_assignment) {
-		ipalloc_state->algorithm = IPALLOC_LCP2;
-	} else if (1 == ctdb->tunable.deterministic_public_ips) {
-		ipalloc_state->algorithm = IPALLOC_DETERMINISTIC;
-	} else {
-		ipalloc_state->algorithm = IPALLOC_NONDETERMINISTIC;
-	}
-
-	ipalloc_state->no_ip_failback = (ctdb->tunable.no_ip_failback != 0);
+	ipalloc_state->algorithm = algorithm;
+	ipalloc_state->no_ip_failback = no_ip_failback;
+	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
 	return ipalloc_state;
 fail:
@@ -1527,12 +1537,14 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  * Recalculate the allocation of public IPs to nodes and have the
  * nodes host their allocated addresses.
  *
- * - Allocate memory for IP allocation state, including per node
- *   arrays
- * - Populate IP allocation algorithm in IP allocation state
- * - Populate local value of tunable NoIPFailback in IP allocation
-     state - this is really a cluster-wide configuration variable and
-     only the value form the master node is used
+ * - Initialise IP allocation state.  Pass:
+     + algorithm to be used;
+     + whether IP rebalancing ("failback") should be done (this uses a
+       cluster-wide configuration variable and only the value form the
+       master node is used); and
+ *   + list of nodes to force rebalance (internal structure, currently
+ *     no way to fetch, only used by LCP2 for nodes that have had new
+ *     IP addresses added).
  * - Retrieve tunables NoIPTakeover and NoIPHostOnAllDisabled from all
  *   connected nodes - this is done separately so tunable values can
  *   be faked in unit testing
@@ -1544,9 +1556,6 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  * - Use ipalloc_set_public_ips() to set known and available IP
      addresses for allocation
  * - If cluster can't host IP addresses then early exit
- * - Populate list of nodes to force rebalance - internal structure,
- *   currently no way to fetch, only used by LCP2 for nodes that have
- *   had new IP addresses added
  * - Run IP allocation algorithm
  * - Send RELEASE_IP to all nodes for IPs they should not host
  * - Send TAKE_IP to all nodes for IPs they should host
@@ -1587,7 +1596,10 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		goto ipreallocated;
 	}
 
-	ipalloc_state = ipalloc_state_init(ctdb, tmp_ctx);
+	ipalloc_state = ipalloc_state_init(tmp_ctx, ctdb->num_nodes,
+					   determine_algorithm(&ctdb->tunable),
+					   (ctdb->tunable.no_ip_failback != 0),
+					   force_rebalance_nodes);
 	if (ipalloc_state == NULL) {
 		talloc_free(tmp_ctx);
 		return -1;
@@ -1627,8 +1639,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		DEBUG(DEBUG_WARNING,("No nodes available to host public IPs yet\n"));
 		goto ipreallocated;
 	}
-
-	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
 	/* Do the IP reassignment calculations */
 	ipalloc(ipalloc_state);

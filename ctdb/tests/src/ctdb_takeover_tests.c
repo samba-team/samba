@@ -273,7 +273,6 @@ static void ctdb_test_init(const char nodestates[],
 	(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
 	(*ctdb)->tunable.deterministic_public_ips = 0;
 	(*ctdb)->tunable.disable_ip_failover = 0;
-	(*ctdb)->tunable.no_ip_failback = 0;
 
 	if ((t = getenv("CTDB_IP_ALGORITHM"))) {
 		if (strcmp(t, "lcp2") == 0) {
@@ -297,7 +296,9 @@ static void ctdb_test_init(const char nodestates[],
 
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, nodemap->num); // FIXME: bogus size, overkill
 
-	*ipalloc_state = ipalloc_state_init(*ctdb, *ctdb);
+	*ipalloc_state = ipalloc_state_init(*ctdb, nodemap->num,
+					    determine_algorithm(&((*ctdb)->tunable)),
+					    false, NULL);
 
 	read_ctdb_public_ip_info(*ctdb, nodemap->num,
 				 read_ips_for_multiple_nodes,
@@ -317,8 +318,6 @@ static void ctdb_test_init(const char nodestates[],
 	set_ipflags_internal(*ipalloc_state, nodemap,
 			     tval_noiptakeover,
 			     tval_noiptakeoverondisabled);
-
-	(*ipalloc_state)->force_rebalance_nodes = NULL;
 }
 
 /* IP layout is read from stdin.  See comment for ctdb_test_init() for
