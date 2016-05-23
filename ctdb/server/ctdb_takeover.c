@@ -1403,49 +1403,6 @@ determine_algorithm(const struct ctdb_tunable_list *tunables)
 	}
 }
 
-static struct ipalloc_state *
-ipalloc_state_init(TALLOC_CTX *mem_ctx,
-		   uint32_t num_nodes,
-		   enum ipalloc_algorithm algorithm,
-		   bool no_ip_failback,
-		   uint32_t *force_rebalance_nodes)
-{
-	struct ipalloc_state *ipalloc_state =
-		talloc_zero(mem_ctx, struct ipalloc_state);
-	if (ipalloc_state == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		return NULL;
-	}
-
-	ipalloc_state->num = num_nodes;
-
-	ipalloc_state->noiptakeover =
-		talloc_zero_array(ipalloc_state,
-				  bool,
-				  ipalloc_state->num);
-	if (ipalloc_state->noiptakeover == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		goto fail;
-	}
-	ipalloc_state->noiphost =
-		talloc_zero_array(ipalloc_state,
-				  bool,
-				  ipalloc_state->num);
-	if (ipalloc_state->noiphost == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		goto fail;
-	}
-
-	ipalloc_state->algorithm = algorithm;
-	ipalloc_state->no_ip_failback = no_ip_failback;
-	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
-
-	return ipalloc_state;
-fail:
-	talloc_free(ipalloc_state);
-	return NULL;
-}
-
 struct takeover_callback_data {
 	uint32_t num_nodes;
 	unsigned int *fail_count;

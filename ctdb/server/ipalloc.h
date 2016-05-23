@@ -22,6 +22,8 @@
 #ifndef __CTDB_IPALLOC_H__
 #define __CTDB_IPALLOC_H__
 
+#include <talloc.h>
+
 #include "replace.h"
 #include "system/network.h"
 
@@ -54,6 +56,12 @@ struct ipalloc_state {
 	bool no_ip_failback;
 	uint32_t *force_rebalance_nodes;
 };
+
+struct ipalloc_state * ipalloc_state_init(TALLOC_CTX *mem_ctx,
+					  uint32_t num_nodes,
+					  enum ipalloc_algorithm algorithm,
+					  bool no_ip_failback,
+					  uint32_t *force_rebalance_nodes);
 
 bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *known_ips,
