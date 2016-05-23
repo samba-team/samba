@@ -230,26 +230,24 @@ static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
  * create_merged_ip_list(), so should only be used in tests of
  * ipalloc().  Yes, it is a hack...  :-)
  */
-static void ctdb_test_init(const char nodestates[],
-			   struct ctdb_context **ctdb,
+static void ctdb_test_init(TALLOC_CTX *mem_ctx,
+			   const char nodestates[],
 			   struct ipalloc_state **ipalloc_state,
 			   bool read_ips_for_multiple_nodes)
 {
 	struct ctdb_public_ip_list *known;
 	struct ctdb_public_ip_list *avail;
-	int i;
 	char *tok, *ns, *t;
 	struct ctdb_node_map *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
 	ctdb_sock_addr sa_zero = { .ip = { 0 } };
-
-	*ctdb = talloc_zero(NULL, struct ctdb_context);
+	enum ipalloc_algorithm algorithm;
 
 	/* Avoid that const */
-	ns = talloc_strdup(*ctdb, nodestates);
+	ns = talloc_strdup(mem_ctx, nodestates);
 
-	nodemap = talloc_zero(*ctdb, struct ctdb_node_map);
+	nodemap = talloc_zero(mem_ctx, struct ctdb_node_map);
 	assert(nodemap != NULL);
 	nodemap->num = 0;
 	tok = strtok(ns, ",");
@@ -263,55 +261,41 @@ static void ctdb_test_init(const char nodestates[],
 		nodemap->num++;
 		tok = strtok(NULL, ",");
 	}
-	
-	/* Fake things up... */
-	(*ctdb)->num_nodes = nodemap->num;
 
-	/* Default to LCP2 */
-	(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
-	(*ctdb)->tunable.deterministic_public_ips = 0;
-	(*ctdb)->tunable.disable_ip_failover = 0;
-
+	algorithm = IPALLOC_LCP2;
 	if ((t = getenv("CTDB_IP_ALGORITHM"))) {
 		if (strcmp(t, "lcp2") == 0) {
-			(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
+			algorithm = IPALLOC_LCP2;
 		} else if (strcmp(t, "nondet") == 0) {
-			(*ctdb)->tunable.lcp2_public_ip_assignment = 0;
+			algorithm = IPALLOC_NONDETERMINISTIC;
 		} else if (strcmp(t, "det") == 0) {
-			(*ctdb)->tunable.lcp2_public_ip_assignment = 0;
-			(*ctdb)->tunable.deterministic_public_ips = 1;
+			algorithm = IPALLOC_DETERMINISTIC;
 		} else {
-			fprintf(stderr, "ERROR: unknown IP algorithm %s\n", t);
+			DEBUG(DEBUG_ERR,
+			      ("ERROR: unknown IP algorithm %s\n", t));
 			exit(1);
 		}
 	}
 
-	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, nodemap->num); // FIXME: bogus size, overkill
-
-	*ipalloc_state = ipalloc_state_init(*ctdb, nodemap->num,
-					    determine_algorithm(&((*ctdb)->tunable)),
+	*ipalloc_state = ipalloc_state_init(mem_ctx, nodemap->num,
+					    algorithm,
 					    false, NULL);
+	assert(*ipalloc_state != NULL);
 
-	read_ctdb_public_ip_info(*ctdb, nodemap->num,
+	read_ctdb_public_ip_info(mem_ctx, nodemap->num,
 				 read_ips_for_multiple_nodes,
 				 &known, &avail);
-
-	for (i=0; i < nodemap->num; i++) {
-		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
-		(*ctdb)->nodes[i]->pnn = i;
-		(*ctdb)->nodes[i]->flags = nodemap->node[i].flags;
-	}
 
 	if (! ipalloc_set_public_ips(*ipalloc_state, known, avail)) {
 		DEBUG(DEBUG_ERR, ("Failed to set public IPs\n"));
 		exit(1);
 	}
 
-	tval_noiptakeover = get_tunable_values(*ctdb, nodemap->num,
+	tval_noiptakeover = get_tunable_values(mem_ctx, nodemap->num,
 					       "CTDB_SET_NoIPTakeover");
 	assert(tval_noiptakeover != NULL);
 	tval_noiptakeoverondisabled =
-		get_tunable_values(*ctdb, nodemap->num,
+		get_tunable_values(mem_ctx, nodemap->num,
 				   "CTDB_SET_NoIPHostOnAllDisabled");
 	assert(tval_noiptakeoverondisabled != NULL);
 
@@ -326,15 +310,15 @@ static void ctdb_test_init(const char nodestates[],
 static void ctdb_test_ipalloc(const char nodestates[],
 			      bool read_ips_for_multiple_nodes)
 {
-	struct ctdb_context *ctdb;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	struct ipalloc_state *ipalloc_state;
 
-	ctdb_test_init(nodestates, &ctdb, &ipalloc_state,
+	ctdb_test_init(tmp_ctx, nodestates, &ipalloc_state,
 		       read_ips_for_multiple_nodes);
 
 	print_ctdb_public_ip_list(ipalloc(ipalloc_state));
 
-	talloc_free(ctdb);
+	talloc_free(tmp_ctx);
 }
 
 static void usage(void)
