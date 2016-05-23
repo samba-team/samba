@@ -1247,10 +1247,6 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 
 	for (i=0; i < ctdb->num_nodes; i++) {
 
-		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
-			continue;
-		}
-
 		public_ips = &ipalloc_state->known_public_ips[i];
 
 		for (j=0; j < public_ips->num; j++) {
