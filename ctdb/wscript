@@ -697,6 +697,12 @@ def build(bld):
                         includes='include',
                         deps='replace popt talloc tevent tdb')
 
+    bld.SAMBA_BINARY('protocol_util_test',
+                     source='tests/src/protocol_util_test.c',
+                     deps='talloc ctdb-protocol samba-util',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
+    # Test binaries
     ctdb_tests = [
         'g_lock_loop',
         'message_ring',
