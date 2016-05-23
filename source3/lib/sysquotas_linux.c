@@ -180,10 +180,7 @@ int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
 		case SMB_GROUP_QUOTA_TYPE:
-			if ((ret=sys_get_linux_gen_quota(path, bdev, qtype, id, dp))&&errno != EDQUOT) {
-				return ret;
-			}
-			ret = 0;
+			ret=sys_get_linux_gen_quota(path, bdev, qtype, id, dp);
 			break;
 		case SMB_USER_FS_QUOTA_TYPE:
 			id.uid = getuid();
