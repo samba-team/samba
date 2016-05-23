@@ -141,55 +141,81 @@ const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx, ctdb_sock_addr *addr)
 	return cip;
 }
 
-bool ctdb_sock_addr_same_ip(ctdb_sock_addr *addr1, ctdb_sock_addr *addr2)
+int ctdb_sock_addr_cmp_ip(const ctdb_sock_addr *addr1,
+			  const ctdb_sock_addr *addr2)
 {
-	if (addr1->sa.sa_family != addr2->sa.sa_family) {
-		return false;
+	int ret = 0;
+
+	/* This is somewhat arbitrary.  However, when used for sorting
+	 * it just needs to be consistent.
+	 */
+	if (addr1->sa.sa_family < addr2->sa.sa_family) {
+		return -1;
+	}
+	if (addr1->sa.sa_family > addr2->sa.sa_family) {
+		return 1;
 	}
 
 	switch (addr1->sa.sa_family) {
 	case AF_INET:
-		if (addr1->ip.sin_addr.s_addr != addr2->ip.sin_addr.s_addr) {
-			return false;
-		}
+		ret = memcmp(&addr1->ip.sin_addr.s_addr,
+			     &addr2->ip.sin_addr.s_addr, 4);
 		break;
 
 	case AF_INET6:
-		if (memcmp(addr1->ip6.sin6_addr.s6_addr,
-			   addr2->ip6.sin6_addr.s6_addr, 16) != 0) {
-			return false;
-		}
+		ret = memcmp(addr1->ip6.sin6_addr.s6_addr,
+			     addr2->ip6.sin6_addr.s6_addr, 16);
 		break;
 
 	default:
-		return false;
+		ret = -1;
 	}
 
-	return true;
+	return ret;
 }
 
-bool ctdb_sock_addr_same(ctdb_sock_addr *addr1, ctdb_sock_addr *addr2)
+int ctdb_sock_addr_cmp(const ctdb_sock_addr *addr1,
+		       const ctdb_sock_addr *addr2)
 {
-	if (! ctdb_sock_addr_same_ip(addr1, addr2)) {
-		return false;
+	int ret = 0;
+
+	ret = ctdb_sock_addr_cmp_ip(addr1, addr2);
+	if (ret != 0) {
+		return ret;
 	}
 
 	switch (addr1->sa.sa_family) {
 	case AF_INET:
-		if (addr1->ip.sin_port != addr2->ip.sin_port) {
-			return false;
+		if (addr1->ip.sin_port < addr2->ip.sin_port) {
+			ret = -1;
+		} else if (addr1->ip.sin_port > addr2->ip.sin_port) {
+			ret = 1;
 		}
 		break;
 
 	case AF_INET6:
-		if (addr1->ip6.sin6_port != addr2->ip6.sin6_port) {
-			return false;
+		if (addr1->ip6.sin6_port < addr2->ip6.sin6_port) {
+			ret = -1;
+		} else if (addr1->ip6.sin6_port > addr2->ip6.sin6_port) {
+			ret = 1;
 		}
 		break;
 
 	default:
-		return false;
+		ret = -1;
 	}
 
-	return true;
+	return ret;
+}
+
+bool ctdb_sock_addr_same_ip(const ctdb_sock_addr *addr1,
+			    const ctdb_sock_addr *addr2)
+{
+	return (ctdb_sock_addr_cmp_ip(addr1, addr2) == 0);
+}
+
+bool ctdb_sock_addr_same(const ctdb_sock_addr *addr1,
+			 const ctdb_sock_addr *addr2)
+{
+	return (ctdb_sock_addr_cmp(addr1, addr2) == 0);
 }
