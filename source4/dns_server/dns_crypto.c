@@ -243,12 +243,14 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	time_t current_time = time(NULL);
 	DATA_BLOB packet_blob, tsig_blob, sig;
 	uint8_t *buffer = NULL;
+	uint8_t *p = NULL;
 	size_t buffer_len = 0;
 	struct dns_server_tkey * tkey = NULL;
 	struct dns_res_rec *tsig = talloc_zero(mem_ctx, struct dns_res_rec);
 
 	struct dns_fake_tsig_rec *check_rec = talloc_zero(mem_ctx,
 			struct dns_fake_tsig_rec);
+	size_t mac_size = 0;
 
 	if (tsig == NULL) {
 		return WERR_NOMEM;
@@ -298,15 +300,44 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 		return DNS_ERR(SERVER_FAILURE);
 	}
 
-	buffer_len = packet_blob.length + tsig_blob.length;
+	if (state->tsig != NULL) {
+		mac_size = state->tsig->rdata.tsig_record.mac_size;
+	}
+
+	buffer_len = mac_size;
+
+	buffer_len += packet_blob.length;
+	if (buffer_len < packet_blob.length) {
+		return WERR_INVALID_PARAM;
+	}
+	buffer_len += tsig_blob.length;
+	if (buffer_len < tsig_blob.length) {
+		return WERR_INVALID_PARAM;
+	}
+
 	buffer = talloc_zero_array(mem_ctx, uint8_t, buffer_len);
 	if (buffer == NULL) {
 		return WERR_NOMEM;
 	}
 
-	memcpy(buffer, packet_blob.data, packet_blob.length);
-	memcpy(buffer+packet_blob.length, tsig_blob.data, tsig_blob.length);
+	p = buffer;
 
+	/*
+	 * RFC 2845 "4.2 TSIG on Answers", how to lay out the buffer
+	 * that we're going to sign:
+	 * 1. MAC of request (if present)
+	 * 2. Outgoing packet
+	 * 3. TSIG record
+	 */
+	if (mac_size > 0) {
+		memcpy(p, state->tsig->rdata.tsig_record.mac, mac_size);
+		p += mac_size;
+	}
+
+	memcpy(p, packet_blob.data, packet_blob.length);
+	p += packet_blob.length;
+
+	memcpy(p, tsig_blob.data, tsig_blob.length);
 
 	status = gensec_sign_packet(tkey->gensec, mem_ctx, buffer, buffer_len,
 				    buffer, buffer_len, &sig);
