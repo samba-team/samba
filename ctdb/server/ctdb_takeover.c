@@ -1245,7 +1245,7 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 		return NULL;
 	}
 
-	for (i=0; i < ctdb->num_nodes; i++) {
+	for (i=0; i < ipalloc_state->num; i++) {
 
 		public_ips = &ipalloc_state->known_public_ips[i];
 
@@ -1256,7 +1256,7 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
 			/* Do not use information about IP addresses hosted
 			 * on other nodes, it may not be accurate */
-			if (public_ips->ip[j].pnn == ctdb->nodes[i]->pnn) {
+			if (public_ips->ip[j].pnn == i) {
 				tmp_ip->pnn = public_ips->ip[j].pnn;
 			} else {
 				tmp_ip->pnn = -1;
