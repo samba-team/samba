@@ -1240,14 +1240,14 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 	TALLOC_FREE(ctdb->ip_tree);
 	ctdb->ip_tree = trbt_create(ctdb, 0);
 
+	if (ipalloc_state->known_public_ips == NULL) {
+		DEBUG(DEBUG_ERR, ("Known public IPs not set\n"));
+		return NULL;
+	}
+
 	for (i=0; i < ctdb->num_nodes; i++) {
 
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
-			continue;
-		}
-
-		/* there were no public ips for this node */
-		if (ipalloc_state->known_public_ips == NULL) {
 			continue;
 		}
 
