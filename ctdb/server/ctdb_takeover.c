@@ -1129,31 +1129,6 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, bool check_addresses)
 	return 0;
 }
 
-static void *add_ip_callback(void *parm, void *data)
-{
-	struct public_ip_list *this_ip = parm;
-	struct public_ip_list *prev_ip = data;
-
-	if (prev_ip == NULL) {
-		return parm;
-	}
-	if (this_ip->pnn == -1) {
-		this_ip->pnn = prev_ip->pnn;
-	}
-
-	return parm;
-}
-
-static int getips_count_callback(void *param, void *data)
-{
-	struct public_ip_list **ip_list = (struct public_ip_list **)param;
-	struct public_ip_list *new_ip = (struct public_ip_list *)data;
-
-	new_ip->next = *ip_list;
-	*ip_list     = new_ip;
-	return 0;
-}
-
 static struct ctdb_public_ip_list *
 ctdb_fetch_remote_public_ips(struct ctdb_context *ctdb,
 			     TALLOC_CTX *mem_ctx,
@@ -1208,61 +1183,6 @@ ctdb_fetch_remote_public_ips(struct ctdb_context *ctdb,
 	}
 
 	return public_ips;
-}
-
-static struct public_ip_list *
-create_merged_ip_list(struct ipalloc_state *ipalloc_state)
-{
-	int i, j;
-	struct public_ip_list *ip_list;
-	struct ctdb_public_ip_list *public_ips;
-	struct trbt_tree *ip_tree;
-
-	ip_tree = trbt_create(ipalloc_state, 0);
-
-	if (ipalloc_state->known_public_ips == NULL) {
-		DEBUG(DEBUG_ERR, ("Known public IPs not set\n"));
-		return NULL;
-	}
-
-	for (i=0; i < ipalloc_state->num; i++) {
-
-		public_ips = &ipalloc_state->known_public_ips[i];
-
-		for (j=0; j < public_ips->num; j++) {
-			struct public_ip_list *tmp_ip;
-
-			/* This is returned as part of ip_list */
-			tmp_ip = talloc_zero(ipalloc_state, struct public_ip_list);
-			if (tmp_ip == NULL) {
-				DEBUG(DEBUG_ERR,
-				      (__location__ " out of memory\n"));
-				talloc_free(ip_tree);
-				return NULL;
-			}
-
-			/* Do not use information about IP addresses hosted
-			 * on other nodes, it may not be accurate */
-			if (public_ips->ip[j].pnn == i) {
-				tmp_ip->pnn = public_ips->ip[j].pnn;
-			} else {
-				tmp_ip->pnn = -1;
-			}
-			tmp_ip->addr = public_ips->ip[j].addr;
-			tmp_ip->next = NULL;
-
-			trbt_insertarray32_callback(ip_tree,
-				IP_KEYLEN, ip_key(&public_ips->ip[j].addr),
-				add_ip_callback,
-				tmp_ip);
-		}
-	}
-
-	ip_list = NULL;
-	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
-	talloc_free(ip_tree);
-
-	return ip_list;
 }
 
 static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
@@ -1624,7 +1544,6 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  * - Use ipalloc_set_public_ips() to set known and available IP
      addresses for allocation
  * - If no available IP addresses then early exit
- * - Build list of (known IPs, currently assigned node)
  * - Populate list of nodes to force rebalance - internal structure,
  *   currently no way to fetch, only used by LCP2 for nodes that have
  *   had new IP addresses added
@@ -1717,23 +1636,15 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		goto ipreallocated;
 	}
 
-	/* since nodes only know about those public addresses that
-	   can be served by that particular node, no single node has
-	   a full list of all public addresses that exist in the cluster.
-	   Walk over all node structures and create a merged list of
-	   all public addresses that exist in the cluster.
-	*/
-	all_ips = create_merged_ip_list(ipalloc_state);
-	if (all_ips == NULL) {
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-	ipalloc_state->all_ips = all_ips;
-
 	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
 	/* Do the IP reassignment calculations */
 	ipalloc(ipalloc_state);
+	if (ipalloc_state->all_ips == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	all_ips = ipalloc_state->all_ips;
 
 	/* Now tell all nodes to release any public IPs should not
 	 * host.  This will be a NOOP on nodes that don't currently

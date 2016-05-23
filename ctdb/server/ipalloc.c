@@ -19,14 +19,102 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <talloc.h>
+
 #include "replace.h"
 #include "system/network.h"
 
 #include "lib/util/debug.h"
 
 #include "common/logging.h"
+#include "common/rb_tree.h"
 
 #include "server/ipalloc_private.h"
+
+static void *add_ip_callback(void *parm, void *data)
+{
+	struct public_ip_list *this_ip = parm;
+	struct public_ip_list *prev_ip = data;
+
+	if (prev_ip == NULL) {
+		return parm;
+	}
+	if (this_ip->pnn == -1) {
+		this_ip->pnn = prev_ip->pnn;
+	}
+
+	return parm;
+}
+
+static int getips_count_callback(void *param, void *data)
+{
+	struct public_ip_list **ip_list = (struct public_ip_list **)param;
+	struct public_ip_list *new_ip = (struct public_ip_list *)data;
+
+	new_ip->next = *ip_list;
+	*ip_list     = new_ip;
+	return 0;
+}
+
+/* Nodes only know about those public addresses that they are
+ * configured to serve and no individual node has a full list of all
+ * public addresses configured across the cluster.  Therefore, a
+ * merged list of all public addresses needs to be built so that IP
+ * allocation can be done. */
+static struct public_ip_list *
+create_merged_ip_list(struct ipalloc_state *ipalloc_state)
+{
+	int i, j;
+	struct public_ip_list *ip_list;
+	struct ctdb_public_ip_list *public_ips;
+	struct trbt_tree *ip_tree;
+
+	ip_tree = trbt_create(ipalloc_state, 0);
+
+	if (ipalloc_state->known_public_ips == NULL) {
+		DEBUG(DEBUG_ERR, ("Known public IPs not set\n"));
+		return NULL;
+	}
+
+	for (i=0; i < ipalloc_state->num; i++) {
+
+		public_ips = &ipalloc_state->known_public_ips[i];
+
+		for (j=0; j < public_ips->num; j++) {
+			struct public_ip_list *tmp_ip;
+
+			/* This is returned as part of ip_list */
+			tmp_ip = talloc_zero(ipalloc_state, struct public_ip_list);
+			if (tmp_ip == NULL) {
+				DEBUG(DEBUG_ERR,
+				      (__location__ " out of memory\n"));
+				talloc_free(ip_tree);
+				return NULL;
+			}
+
+			/* Do not use information about IP addresses hosted
+			 * on other nodes, it may not be accurate */
+			if (public_ips->ip[j].pnn == i) {
+				tmp_ip->pnn = public_ips->ip[j].pnn;
+			} else {
+				tmp_ip->pnn = -1;
+			}
+			tmp_ip->addr = public_ips->ip[j].addr;
+			tmp_ip->next = NULL;
+
+			trbt_insertarray32_callback(ip_tree,
+				IP_KEYLEN, ip_key(&public_ips->ip[j].addr),
+				add_ip_callback,
+				tmp_ip);
+		}
+	}
+
+	ip_list = NULL;
+	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
+	talloc_free(ip_tree);
+
+	return ip_list;
+}
 
 bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *known_ips,
@@ -35,7 +123,9 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 	ipalloc_state->known_public_ips = known_ips;
 	ipalloc_state->available_public_ips = available_ips;
 
-	return true;
+	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
+
+	return (ipalloc_state->all_ips != NULL);
 }
 
 /* The calculation part of the IP allocation algorithm. */
