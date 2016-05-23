@@ -29,26 +29,35 @@
 #endif
 #endif
 
-#ifdef HAVE_QUOTACTL_LINUX 
+#ifdef HAVE_QUOTACTL_LINUX
 
 #include <sys/quota.h>
 
 /****************************************************************************
- Abstract out the generic Linux quota get calls.
+ Linux quota get calls.
 ****************************************************************************/
-static int sys_get_linux_gen_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
+int sys_get_vfs_quota(const char *path, const char *bdev,
+		      enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	int ret = -1;
 	uint32_t qflags = 0;
 	struct dqblk D;
 	uint64_t bsize = (uint64_t)QUOTABLOCK_SIZE;
 
+	if (!path || !bdev || !dp) {
+		smb_panic("sys_get_vfs_quota: called with NULL pointer");
+	}
+
+	ZERO_STRUCT(*dp);
+	dp->qtype = qtype;
+
 	ZERO_STRUCT(D);
 
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
-			DEBUG(10,("sys_get_linux_gen_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
-				path, bdev, (unsigned)id.uid));
+			DEBUG(10, ("sys_get_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_USER_QUOTA_TYPE uid[%u]\n",
+				   path, bdev, (unsigned)id.uid));
 
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D))&&errno != EDQUOT) {
 				return ret;
@@ -56,8 +65,9 @@ static int sys_get_linux_gen_quota(const char *path, const char *bdev, enum SMB_
 
 			break;
 		case SMB_GROUP_QUOTA_TYPE:
-			DEBUG(10,("sys_get_linux_gen_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
-				path, bdev, (unsigned)id.gid));
+			DEBUG(10, ("sys_get_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_GROUP_QUOTA_TYPE gid[%u]\n",
+				   path, bdev, (unsigned)id.gid));
 
 			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D))&&errno != EDQUOT) {
 				return ret;
@@ -65,22 +75,29 @@ static int sys_get_linux_gen_quota(const char *path, const char *bdev, enum SMB_
 
 			break;
 		case SMB_USER_FS_QUOTA_TYPE:
-			DEBUG(10,("sys_get_linux_gen_quota: path[%s] bdev[%s] SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
-				path, bdev, (unsigned)id.uid));
+			DEBUG(10, ("sys_get_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
+				   path, bdev, (unsigned)geteuid()));
 
-			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D))==0) {
+			if ((ret = quotactl(QCMD(Q_GETQUOTA, USRQUOTA), bdev,
+					    geteuid(), (caddr_t)&D)) == 0) {
 				qflags |= QUOTAS_DENY_DISK;
 			}
+
+			ret = 0;
 
 			break;
 		case SMB_GROUP_FS_QUOTA_TYPE:
-			DEBUG(10,("sys_get_linux_gen_quota: path[%s] bdev[%s] SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
-				path, bdev, (unsigned)id.gid));
+			DEBUG(10, ("sys_get_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
+				   path, bdev, (unsigned)getgid()));
 
-			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D))==0) {
+			if ((ret = quotactl(QCMD(Q_GETQUOTA, GRPQUOTA), bdev,
+					    getgid(), (caddr_t)&D)) == 0) {
 				qflags |= QUOTAS_DENY_DISK;
 			}
 
+			ret = 0;
 			break;
 		default:
 			errno = ENOSYS;
@@ -102,13 +119,19 @@ static int sys_get_linux_gen_quota(const char *path, const char *bdev, enum SMB_
 }
 
 /****************************************************************************
- Abstract out the gen Linux quota set calls.
+ Linux quota set calls.
 ****************************************************************************/
-static int sys_set_linux_gen_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
+int sys_set_vfs_quota(const char *path, const char *bdev,
+		      enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
 	int ret = -1;
 	struct dqblk D;
 	uint64_t bsize = (uint64_t)QUOTABLOCK_SIZE;
+	bool cur_enf, new_enf;
+
+	if (!path || !bdev || !dp) {
+		smb_panic("sys_set_vfs_quota: called with NULL pointer");
+	}
 
 	ZERO_STRUCT(D);
 
@@ -127,122 +150,57 @@ static int sys_set_linux_gen_quota(const char *path, const char *bdev, enum SMB_
 
 	switch (qtype) {
 		case SMB_USER_QUOTA_TYPE:
-			DEBUG(10,("sys_set_linux_gen_quota: path[%s] bdev[%s] SMB_USER_QUOTA_TYPE uid[%u]\n",
-				path, bdev, (unsigned)id.uid));
+			DEBUG(10, ("sys_set_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_USER_QUOTA_TYPE uid[%u]\n",
+				   path, bdev, (unsigned)id.uid));
 
 			ret = quotactl(QCMD(Q_SETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D);
 			break;
 		case SMB_GROUP_QUOTA_TYPE:
-			DEBUG(10,("sys_set_linux_gen_quota: path[%s] bdev[%s] SMB_GROUP_QUOTA_TYPE gid[%u]\n",
-				path, bdev, (unsigned)id.gid));
+			DEBUG(10, ("sys_set_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_GROUP_QUOTA_TYPE gid[%u]\n",
+				   path, bdev, (unsigned)id.gid));
 
 			ret = quotactl(QCMD(Q_SETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D);
 			break;
 		case SMB_USER_FS_QUOTA_TYPE:
-			DEBUG(10,("sys_set_linux_gen_quota: path[%s] bdev[%s] SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
-				path, bdev, (unsigned)id.uid));
+			DEBUG(10, ("sys_set_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_USER_FS_QUOTA_TYPE (uid[%u])\n",
+				   path, bdev, (unsigned)geteuid()));
 
-			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D))==0) {
-				dp->qflags |= QUOTAS_DENY_DISK;
-			}
-
-			break;
-		case SMB_GROUP_FS_QUOTA_TYPE:
-			DEBUG(10,("sys_set_linux_gen_quota: path[%s] bdev[%s] SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
-				path, bdev, (unsigned)id.gid));
-
-			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D))==0) {
-				dp->qflags |= QUOTAS_DENY_DISK;
-			}
-
-			break;
-		default:
-			errno = ENOSYS;
-			return -1;
-	}
-
-	return ret;
-}
-
-/****************************************************************************
- Abstract out the Linux quota get calls.
-****************************************************************************/
-int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
-{
-	int ret = -1;
-
-	if (!path||!bdev||!dp)
-		smb_panic("sys_set_vfs_quota: called with NULL pointer");
-
-	ZERO_STRUCT(*dp);
-	dp->qtype = qtype;
-
-	switch (qtype) {
-		case SMB_USER_QUOTA_TYPE:
-		case SMB_GROUP_QUOTA_TYPE:
-			ret=sys_get_linux_gen_quota(path, bdev, qtype, id, dp);
-			break;
-		case SMB_USER_FS_QUOTA_TYPE:
-			id.uid = getuid();
-
-			sys_get_linux_gen_quota(path, bdev, qtype, id, dp);
-
-			ret = 0;
-			break;
-		case SMB_GROUP_FS_QUOTA_TYPE:
-			id.gid = getgid();
-
-			sys_get_linux_gen_quota(path, bdev, qtype, id, dp);
-
-			ret = 0;
-			break;
-		default:
-			errno = ENOSYS;
-			return -1;
-	}
-
-	return ret;
-}
-
-/****************************************************************************
- Abstract out the Linux quota set calls.
-****************************************************************************/
-int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
-{
-	int ret = -1;
-	uint32_t oldqflags = 0;
-
-	if (!path||!bdev||!dp)
-		smb_panic("sys_set_vfs_quota: called with NULL pointer");
-
-	oldqflags = dp->qflags;
-
-	switch (qtype) {
-		case SMB_USER_QUOTA_TYPE:
-		case SMB_GROUP_QUOTA_TYPE:
-			if ((ret=sys_set_linux_gen_quota(path, bdev, qtype, id, dp))) {
-				return ret;
-			}
-			break;
-		case SMB_USER_FS_QUOTA_TYPE:
-			id.uid = getuid();
-
-			sys_set_linux_gen_quota(path, bdev, qtype, id, dp);
-
-			if (oldqflags == dp->qflags) {
+			ret = quotactl(QCMD(Q_GETQUOTA, USRQUOTA), bdev,
+				       geteuid(), (caddr_t)&D);
+			cur_enf = (ret == 0);
+			new_enf = ((dp->qflags & QUOTAS_DENY_DISK) != 0);
+			/* We're not changing quota enforcement, so return
+			 * success
+			 * IFF the wanted state is identical to the current
+			 * state */
+			if (cur_enf == new_enf) {
 				ret = 0;
 			} else {
+				errno = EPERM;
 				ret = -1;
 			}
+
 			break;
 		case SMB_GROUP_FS_QUOTA_TYPE:
-			id.gid = getgid();
+			DEBUG(10, ("sys_set_vfs_quota: path[%s] bdev[%s] "
+				   "SMB_GROUP_FS_QUOTA_TYPE (gid[%u])\n",
+				   path, bdev, (unsigned)getgid()));
 
-			sys_set_linux_gen_quota(path, bdev, qtype, id, dp);
-
-			if (oldqflags == dp->qflags) {
+			ret = quotactl(QCMD(Q_GETQUOTA, GRPQUOTA), bdev,
+				       getgid(), (caddr_t)&D);
+			cur_enf = (ret == 0);
+			new_enf = ((dp->qflags & QUOTAS_DENY_DISK) != 0);
+			/* We're not changing quota enforcement, so return
+			 * success
+			 * IFF the wanted state is identical to the current
+			 * state */
+			if (cur_enf == new_enf) {
 				ret = 0;
 			} else {
+				errno = EPERM;
 				ret = -1;
 			}
 
