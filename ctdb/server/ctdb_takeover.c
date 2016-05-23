@@ -1253,7 +1253,12 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 			struct public_ip_list *tmp_ip;
 
 			tmp_ip = talloc_zero(ctdb->ip_tree, struct public_ip_list);
-			CTDB_NO_MEMORY_NULL(ctdb, tmp_ip);
+			if (tmp_ip == NULL) {
+				DEBUG(DEBUG_ERR,
+				      (__location__ " out of memory\n"));
+				return NULL;
+			}
+
 			/* Do not use information about IP addresses hosted
 			 * on other nodes, it may not be accurate */
 			if (public_ips->ip[j].pnn == i) {
