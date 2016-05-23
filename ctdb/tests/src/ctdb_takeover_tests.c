@@ -309,8 +309,10 @@ static void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i]->flags = nodemap->nodes[i].flags;
 	}
 
-	(*ipalloc_state)->available_public_ips = avail;
-	(*ipalloc_state)->known_public_ips = known;
+	if (! ipalloc_set_public_ips(*ipalloc_state, known, avail)) {
+		DEBUG(DEBUG_ERR, ("Failed to set public IPs\n"));
+		exit(1);
+	}
 
 	set_ipflags_internal(*ipalloc_state, nodemap,
 			     tval_noiptakeover,

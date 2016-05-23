@@ -1619,8 +1619,10 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  * - Populate NoIPTakover tunable in IP allocation state
  * - Populate NoIPHost in IP allocation state, derived from node flags
  *   and NoIPHostOnAllDisabled tunable
- * - Retrieve and populate known and available IP lists in IP
- *   allocation state
+ * - Retrieve known and available IP addresses (done separately so
+ *   values can be faked in unit testing)
+ * - Use ipalloc_set_public_ips() to set known and available IP
+     addresses for allocation
  * - If no available IP addresses then early exit
  * - Build list of (known IPs, currently assigned node)
  * - Populate list of nodes to force rebalance - internal structure,
@@ -1697,8 +1699,11 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	ipalloc_state->known_public_ips = known_ips;
-	ipalloc_state->available_public_ips = available_ips;
+	if (! ipalloc_set_public_ips(ipalloc_state, known_ips, available_ips)) {
+		DEBUG(DEBUG_ERR, ("Failed to set public IPs\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
 
 	/* Short-circuit IP allocation if no node has available IPs */
 	can_host_ips = false;

@@ -56,6 +56,10 @@ struct ipalloc_state {
 	uint32_t *force_rebalance_nodes;
 };
 
+bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
+			    struct ctdb_public_ip_list *known_ips,
+			    struct ctdb_public_ip_list *available_ips);
+
 bool ipalloc(struct ipalloc_state *ipalloc_state);
 
 #endif /* __CTDB_IPALLOC_H__ */

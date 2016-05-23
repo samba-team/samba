@@ -28,6 +28,16 @@
 
 #include "server/ipalloc_private.h"
 
+bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
+			    struct ctdb_public_ip_list *known_ips,
+			    struct ctdb_public_ip_list *available_ips)
+{
+	ipalloc_state->known_public_ips = known_ips;
+	ipalloc_state->available_public_ips = available_ips;
+
+	return true;
+}
+
 /* The calculation part of the IP allocation algorithm. */
 bool ipalloc(struct ipalloc_state *ipalloc_state)
 {
