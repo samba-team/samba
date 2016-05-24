@@ -682,6 +682,27 @@ NTSTATUS cli_force_encryption(struct cli_state *c,
 			const char *username,
 			const char *password,
 			const char *domain);
+struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
+			struct tevent_context *ev,
+			struct cli_state *cli);
+NTSTATUS cli_posix_whoami_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx,
+			uint64_t *puid,
+			uint64_t *pgid,
+			uint32_t *pnum_gids,
+			uint64_t **pgids,
+			uint32_t *pnum_sids,
+			struct dom_sid **psids,
+			bool *pguest);
+NTSTATUS cli_posix_whoami(struct cli_state *cli,
+			TALLOC_CTX *mem_ctx,
+			uint64_t *puid,
+			uint64_t *pgid,
+			uint32_t *num_gids,
+			uint64_t **gids,
+			uint32_t *num_sids,
+			struct dom_sid **sids,
+			bool *pguest);
 
 /* The following definitions come from libsmb/clilist.c  */
 

@@ -29,6 +29,7 @@
 #include "auth/gensec/gensec.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "auth/credentials/credentials.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 
 /****************************************************************************
  Get UNIX extensions version info.
@@ -772,4 +773,263 @@ NTSTATUS cli_force_encryption(struct cli_state *c,
 					username,
 					password,
 					domain);
+}
+
+/****************************************************************************
+ Do a UNIX extensions SMB_QUERY_POSIX_WHOAMI call.
+****************************************************************************/
+
+struct posix_whoami_state {
+	uint16_t setup[1];
+	uint8_t param[2];
+	uint32_t max_rdata;
+	bool guest;
+	uint64_t uid;
+	uint64_t gid;
+	uint32_t num_gids;
+	uint64_t *gids;
+	uint32_t num_sids;
+	struct dom_sid *sids;
+};
+
+static void cli_posix_whoami_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct posix_whoami_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct posix_whoami_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	/* Setup setup word. */
+	SSVAL(state->setup, 0, TRANSACT2_QFSINFO);
+	SSVAL(state->param, 0, SMB_QUERY_POSIX_WHOAMI);
+
+	state->max_rdata = 62*1024;
+
+	subreq = cli_trans_send(state,                  /* mem ctx. */
+				ev,                     /* event ctx. */
+				cli,                    /* cli_state. */
+				SMBtrans2,              /* cmd. */
+				NULL,                   /* pipe name. */
+				-1,                     /* fid. */
+				0,                      /* function. */
+				0,                      /* flags. */
+				state->setup,           /* setup. */
+				1,                      /* num setup uint16_t words. */
+				0,                      /* max returned setup. */
+				state->param,           /* param. */
+				2,                      /* num param. */
+				0,                      /* max returned param. */
+				NULL,	                /* data. */
+				0,                      /* num data. */
+				state->max_rdata);      /* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_whoami_done, req);
+	return req;
+}
+
+static void cli_posix_whoami_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct posix_whoami_state *state = tevent_req_data(
+			req, struct posix_whoami_state);
+	uint8_t *rdata = NULL;
+	uint8_t *p = NULL;
+	uint32_t num_rdata = 0;
+	uint32_t i;
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq,
+				state,
+				NULL,
+				NULL,
+				0,
+				NULL,
+                                NULL,
+				0,
+				NULL,
+				&rdata,
+				40,
+				&num_rdata);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * Not strictly needed - cli_trans_recv()
+	 * will ensure at least 40 bytes here. Added
+	 * as more of a reminder to be careful when
+	 * parsing network packets in C.
+	 */
+
+	if (num_rdata < 40 || rdata + num_rdata < rdata) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	state->guest = (IVAL(rdata, 0) & SMB_WHOAMI_GUEST);
+	state->uid = BVAL(rdata, 8);
+	state->gid = BVAL(rdata, 16);
+	state->num_gids = IVAL(rdata, 24);
+	state->num_sids = IVAL(rdata, 28);
+
+	state->gids = talloc_array(state, uint64_t, state->num_gids);
+	if (tevent_req_nomem(state->gids, req)) {
+		return;
+	}
+	state->sids = talloc_array(state, struct dom_sid, state->num_sids);
+	if (tevent_req_nomem(state->sids, req)) {
+		return;
+	}
+
+	p = rdata + 40;
+
+	for (i = 0; i < state->num_gids; i++) {
+		if (p + 8 > rdata + num_rdata) {
+			tevent_req_nterror(req,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+		state->gids[i] = BVAL(p, 0);
+		p += 8;
+	}
+
+	num_rdata -= (p - rdata);
+
+	for (i = 0; i < state->num_sids; i++) {
+		size_t sid_size;
+		DATA_BLOB in = data_blob_const(p, num_rdata);
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_struct_blob(&in,
+				state,
+				&state->sids[i],
+				(ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			tevent_req_nterror(req,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		sid_size = ndr_size_dom_sid(&state->sids[i], 0);
+
+		if (sid_size > num_rdata) {
+			tevent_req_nterror(req,
+				NT_STATUS_INVALID_NETWORK_RESPONSE);
+			return;
+		}
+
+		p += sid_size;
+		num_rdata -= sid_size;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_posix_whoami_recv(struct tevent_req *req,
+			TALLOC_CTX *mem_ctx,
+			uint64_t *puid,
+			uint64_t *pgid,
+			uint32_t *pnum_gids,
+			uint64_t **pgids,
+			uint32_t *pnum_sids,
+			struct dom_sid **psids,
+			bool *pguest)
+{
+	NTSTATUS status;
+	struct posix_whoami_state *state = tevent_req_data(
+			req, struct posix_whoami_state);
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (puid) {
+		*puid = state->uid;
+	}
+	if (pgid) {
+		*pgid = state->gid;
+	}
+	if (pnum_gids) {
+		*pnum_gids = state->num_gids;
+	}
+	if (pgids) {
+		*pgids = talloc_move(mem_ctx, &state->gids);
+	}
+	if (pnum_sids) {
+		*pnum_sids = state->num_sids;
+	}
+	if (psids) {
+		*psids = talloc_move(mem_ctx, &state->sids);
+	}
+	if (pguest) {
+		*pguest = state->guest;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_posix_whoami(struct cli_state *cli,
+			TALLOC_CTX *mem_ctx,
+			uint64_t *puid,
+			uint64_t *pgid,
+			uint32_t *num_gids,
+			uint64_t **gids,
+			uint32_t *num_sids,
+			struct dom_sid **sids,
+			bool *pguest)
+{
+        TALLOC_CTX *frame = talloc_stackframe();
+        struct tevent_context *ev = NULL;
+        struct tevent_req *req = NULL;
+        NTSTATUS status = NT_STATUS_OK;
+
+        if (smbXcli_conn_has_async_calls(cli->conn)) {
+                /*
+                 * Can't use sync call while an async call is in flight
+                 */
+                status = NT_STATUS_INVALID_PARAMETER;
+                goto fail;
+        }
+
+        ev = samba_tevent_context_init(frame);
+        if (ev == NULL) {
+                status = NT_STATUS_NO_MEMORY;
+                goto fail;
+        }
+
+        req = cli_posix_whoami_send(frame,
+                                ev,
+                                cli);
+        if (req == NULL) {
+                status = NT_STATUS_NO_MEMORY;
+                goto fail;
+        }
+
+        if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+                goto fail;
+        }
+
+        status = cli_posix_whoami_recv(req,
+			mem_ctx,
+			puid,
+			pgid,
+			num_gids,
+			gids,
+			num_sids,
+			sids,
+			pguest);
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
