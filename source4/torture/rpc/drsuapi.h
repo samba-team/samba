@@ -40,6 +40,24 @@ struct DsPrivate {
 	struct test_join *join;
 };
 
+/**
+ * Data structure of DRSUAPI W2K8 tests
+ * W2K8 Clients use different versions of structs
+ */
+struct DsPrivate_w2k8 {
+	struct dcerpc_pipe *drs_pipe;
+	struct policy_handle bind_handle;
+	struct GUID bind_guid;
+	struct drsuapi_DsBindInfoCtr srv_bind_info;
+
+	const char *domain_obj_dn;
+	const char *domain_guid_str;
+	const char *domain_dns_name;
+	struct GUID domain_guid;
+	struct drsuapi_DsGetDCInfo3 dcinfo;
+	struct test_join *join;
+};
+
 
 /**
  * Custom torture macro to check dcerpc_drsuapi_ call

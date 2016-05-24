@@ -330,3 +330,4 @@
 # ad_dc requires signing
 #
 ^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
+^samba4.rpc.drsuapi_w2k8.*DsGetDomainControllerInfo_W2K8

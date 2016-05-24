@@ -530,6 +530,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "authcontext", torture_bind_authcontext);
 	torture_suite_add_suite(suite, torture_rpc_samba3(suite));
 	torture_rpc_drsuapi_tcase(suite);
+	torture_rpc_drsuapi_w2k8_tcase(suite);
 	torture_rpc_drsuapi_cracknames_tcase(suite);
 	torture_suite_add_suite(suite, torture_rpc_dssetup(suite));
 	torture_suite_add_suite(suite, torture_rpc_browser(suite));
