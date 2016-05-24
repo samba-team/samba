@@ -29,6 +29,7 @@
 #include "libcli/security/security.h"
 #include "libcli/security/session.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "auth/session.h"
 
 /*
@@ -232,6 +233,8 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn),
 					 ldb_errstring(b_state->sam_ctx)));
+				NDR_PRINT_IN_DEBUG(
+					drsuapi_DsWriteAccountSpn, r);
 				r->out.res->res1.status = WERR_ACCESS_DENIED;
 			} else {
 				DEBUG(2,("Modified %u SPNs on %s\n", spn_count,
