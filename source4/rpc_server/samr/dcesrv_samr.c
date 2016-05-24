@@ -3299,14 +3299,13 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 
 
 		IFSET(SAMR_FIELD_EXPIRED_FLAG) {
-			NTTIME t = 0;
+			const char *t = "0";
 			struct ldb_message_element *set_el;
 			if (r->in.info->info21.password_expired
 					== PASS_DONT_CHANGE_AT_NEXT_LOGON) {
-				unix_to_nt_time(&t, time(NULL));
+				t = "-1";
 			}
-			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg,
-						 "pwdLastSet", t) != LDB_SUCCESS) {
+			if (ldb_msg_add_string(msg, "pwdLastSet", t) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			set_el = ldb_msg_find_element(msg, "pwdLastSet");
@@ -3386,14 +3385,13 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		IFSET(SAMR_FIELD_EXPIRED_FLAG) {
-			NTTIME t = 0;
+			const char *t = "0";
 			struct ldb_message_element *set_el;
 			if (r->in.info->info23.info.password_expired
 					== PASS_DONT_CHANGE_AT_NEXT_LOGON) {
-				unix_to_nt_time(&t, time(NULL));
+				t = "-1";
 			}
-			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg,
-						 "pwdLastSet", t) != LDB_SUCCESS) {
+			if (ldb_msg_add_string(msg, "pwdLastSet", t) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			set_el = ldb_msg_find_element(msg, "pwdLastSet");
@@ -3494,14 +3492,13 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		IFSET(SAMR_FIELD_EXPIRED_FLAG) {
-			NTTIME t = 0;
+			const char *t = "0";
 			struct ldb_message_element *set_el;
 			if (r->in.info->info25.info.password_expired
 					== PASS_DONT_CHANGE_AT_NEXT_LOGON) {
-				unix_to_nt_time(&t, time(NULL));
+				t = "-1";
 			}
-			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg,
-						 "pwdLastSet", t) != LDB_SUCCESS) {
+			if (ldb_msg_add_string(msg, "pwdLastSet", t) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			set_el = ldb_msg_find_element(msg, "pwdLastSet");
@@ -3523,14 +3520,13 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		if (r->in.info->info26.password_expired > 0) {
-			NTTIME t = 0;
+			const char *t = "0";
 			struct ldb_message_element *set_el;
 			if (r->in.info->info26.password_expired
 					== PASS_DONT_CHANGE_AT_NEXT_LOGON) {
-				unix_to_nt_time(&t, time(NULL));
+				t = "-1";
 			}
-			if (samdb_msg_add_uint64(sam_ctx, mem_ctx, msg,
-						 "pwdLastSet", t) != LDB_SUCCESS) {
+			if (ldb_msg_add_string(msg, "pwdLastSet", t) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			set_el = ldb_msg_find_element(msg, "pwdLastSet");
