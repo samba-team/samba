@@ -200,7 +200,6 @@ int main(int argc, const char *argv[])
 		DEBUG(DEBUG_WARNING, ("Recovery lock not set\n"));
 	}
 	ctdb->recovery_lock = options.recovery_lock;
-	ctdb->recovery_lock_handle = NULL;
 
 	TALLOC_FREE(ctdb->idr);
 	ret = reqid_init(ctdb, 0, &ctdb->idr);;

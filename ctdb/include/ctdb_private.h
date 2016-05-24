@@ -311,7 +311,6 @@ struct ctdb_context {
 	uint64_t max_persistent_check_errors;
 	const char *transport;
 	const char *recovery_lock;
-	struct ctdb_cluster_mutex_handle *recovery_lock_handle;
 	uint32_t pnn; /* our own pnn */
 	uint32_t num_nodes;
 	uint32_t num_connected;

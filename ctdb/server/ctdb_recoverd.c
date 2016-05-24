@@ -258,6 +258,7 @@ struct ctdb_recoverd {
 	uint32_t *force_rebalance_nodes;
 	struct ctdb_node_capabilities *caps;
 	bool frozen_on_inactive;
+	struct ctdb_cluster_mutex_handle *recovery_lock_handle;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -1541,9 +1542,9 @@ static int recover_database(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-static bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
+static bool ctdb_recovery_have_lock(struct ctdb_recoverd *rec)
 {
-	return (ctdb->recovery_lock_handle != NULL);
+	return (rec->recovery_lock_handle != NULL);
 }
 
 struct hold_reclock_state {
@@ -1562,7 +1563,6 @@ static void hold_reclock_handler(struct ctdb_context *ctdb,
 
 	switch (status) {
 	case '0':
-		ctdb->recovery_lock_handle = h;
 		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(),
 						   latency);
 		break;
@@ -1582,15 +1582,16 @@ static void hold_reclock_handler(struct ctdb_context *ctdb,
 	s->locked = (status == '0') ;
 }
 
-static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
+static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 {
+	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_cluster_mutex_handle *h;
 	struct hold_reclock_state s = {
 		.done = false,
 		.locked = false,
 	};
 
-	h = ctdb_cluster_mutex(ctdb, ctdb, ctdb->recovery_lock, 0);
+	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0);
 	if (h == NULL) {
 		return false;
 	}
@@ -1601,14 +1602,20 @@ static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 		tevent_loop_once(ctdb->ev);
 	}
 
-	return s.locked;
+	if (! s.locked) {
+		return false;
+	}
+
+	rec->recovery_lock_handle = h;
+
+	return true;
 }
 
-static void ctdb_recovery_unlock(struct ctdb_context *ctdb)
+static void ctdb_recovery_unlock(struct ctdb_recoverd *rec)
 {
-	if (ctdb->recovery_lock_handle != NULL) {
+	if (rec->recovery_lock_handle != NULL) {
 		DEBUG(DEBUG_NOTICE, ("Releasing recovery lock\n"));
-		TALLOC_FREE(ctdb->recovery_lock_handle);
+		TALLOC_FREE(rec->recovery_lock_handle);
 	}
 }
 
@@ -2052,12 +2059,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
         if (ctdb->recovery_lock != NULL) {
-		if (ctdb_recovery_have_lock(ctdb)) {
+		if (ctdb_recovery_have_lock(rec)) {
 			DEBUG(DEBUG_NOTICE, ("Already holding recovery lock\n"));
 		} else {
 			DEBUG(DEBUG_NOTICE, ("Attempting to take recovery lock (%s)\n",
 					     ctdb->recovery_lock));
-			if (!ctdb_recovery_lock(ctdb)) {
+			if (!ctdb_recovery_lock(rec)) {
 				if (ctdb->runstate == CTDB_RUNSTATE_FIRST_RECOVERY) {
 					/* If ctdb is trying first recovery, it's
 					 * possible that current node does not know
@@ -2705,8 +2712,8 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	TALLOC_FREE(rec->send_election_te);
 
 	/* Release the recovery lock file */
-	if (ctdb_recovery_have_lock(ctdb)) {
-		ctdb_recovery_unlock(ctdb);
+	if (ctdb_recovery_have_lock(rec)) {
+		ctdb_recovery_unlock(rec);
 	}
 
 	clear_ip_assignment_tree(ctdb);
@@ -3561,7 +3568,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
         if (ctdb->recovery_lock != NULL) {
 		/* We must already hold the recovery lock */
-		if (!ctdb_recovery_have_lock(ctdb)) {
+		if (!ctdb_recovery_have_lock(rec)) {
 			DEBUG(DEBUG_ERR,("Failed recovery lock sanity check.  Force a recovery\n"));
 			ctdb_set_culprit(rec, ctdb->pnn);
 			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
@@ -3808,6 +3815,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->ctdb = ctdb;
 	rec->recmaster = CTDB_UNKNOWN_PNN;
+	rec->recovery_lock_handle = NULL;
 
 	rec->takeover_run = ctdb_op_init(rec, "takeover runs");
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->takeover_run);
