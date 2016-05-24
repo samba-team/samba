@@ -521,7 +521,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 				  const char *netbios_name,
 				  const char *ntds_guid)
 {
-	int ret;
+	int ret, princ_size;
 	krb5_context krb_ctx;
 	krb5_error_code kerr;
 	krb5_principal principal;
@@ -555,7 +555,9 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	if (krb5_princ_size(krb_ctx, principal) < 2) {
+	princ_size = krb5_princ_size(krb_ctx, principal);
+	if (princ_size < 2) {
+		DBG_WARNING("princ_size=%d\n", princ_size);
 		goto fail;
 	}
 
@@ -572,21 +574,29 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 
 	if (serviceName) {
 		if (!is_dc) {
+			DBG_WARNING("is_dc=false, serviceName=%s,"
+				    "serviceType=%s\n", serviceName,
+				  serviceType);
 			goto fail;
 		}
 		if (strcasecmp(serviceType, "ldap") == 0) {
 			if (strcasecmp(serviceName, netbios_name) != 0 &&
 			    strcasecmp(serviceName, forest_name) != 0) {
+				DBG_WARNING("serviceName=%s\n", serviceName);
 				goto fail;
 			}
 
 		} else if (strcasecmp(serviceType, "gc") == 0) {
 			if (strcasecmp(serviceName, forest_name) != 0) {
+				DBG_WARNING("serviceName=%s\n", serviceName);
 				goto fail;
 			}
 		} else {
 			if (strcasecmp(serviceName, base_domain) != 0 &&
 			    strcasecmp(serviceName, netbios_name) != 0) {
+				DBG_WARNING("serviceType=%s, "
+					    "serviceName=%s\n",
+					    serviceType, serviceName);
 				goto fail;
 			}
 		}
@@ -611,6 +621,14 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 fail:
 	krb5_free_principal(krb_ctx, principal);
 	krb5_free_context(krb_ctx);
+	ldb_debug_set(ldb, LDB_DEBUG_WARNING,
+		      "acl: spn validation failed for "
+		      "spn[%s] uac[0x%x] account[%s] hostname[%s] "
+		      "nbname[%s] ntds[%s] forest[%s] domain[%s]\n",
+		      spn_value, (unsigned)userAccountControl,
+		      samAccountName, dnsHostName,
+		      netbios_name, ntds_guid,
+		      forest_name, base_domain);
 	return LDB_ERR_CONSTRAINT_VIOLATION;
 
 success:
