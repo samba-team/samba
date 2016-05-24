@@ -56,15 +56,19 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *handle;
 	struct drsuapi_DsBindInfoCtr *bind_info;
-	struct GUID site_guid;
-	struct ldb_result *site_res;
-	struct ldb_dn *server_site_dn;
+	struct drsuapi_DsBindInfoCtr *local_info;
+	struct GUID site_guid, config_guid;
+	struct ldb_result *site_res, *config_res;
+	struct ldb_dn *server_site_dn, *config_dn;
 	static const char *site_attrs[] = { "objectGUID", NULL };
+	static const char *config_attrs[] = { "objectGUID", NULL };
 	struct ldb_result *ntds_res;
 	struct ldb_dn *ntds_dn;
 	static const char *ntds_attrs[] = { "ms-DS-ReplicationEpoch", NULL };
 	uint32_t pid;
 	uint32_t repl_epoch;
+	uint32_t supported_extensions;
+	uint32_t req_length;
 	int ret;
 	struct auth_session_info *auth_info;
 	WERROR werr;
@@ -166,73 +170,112 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	 * store the clients bind_info
 	 */
 	if (r->in.bind_info) {
-		switch (r->in.bind_info->length) {
-		case 24: {
-			struct drsuapi_DsBindInfo24 *info24;
-			info24 = &r->in.bind_info->info.info24;
-			b_state->remote_info28.supported_extensions	= info24->supported_extensions;
-			b_state->remote_info28.site_guid		= info24->site_guid;
-			b_state->remote_info28.pid			= info24->pid;
-			b_state->remote_info28.repl_epoch		= 0;
-			break;
-		}
-		case 28:
-			b_state->remote_info28 = r->in.bind_info->info.info28;
-			break;
-		}
+		b_state->remote_info = r->in.bind_info;
 	}
 
 	/*
-	 * fill in our local bind info 28
+	 * fill in our local bind info
 	 */
-	b_state->local_info28.supported_extensions	= 0;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
-#if 0 /* we don't support MSZIP compression (only decompression) */
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
-#endif
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V5;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
-#if 0 /* we don't support XPRESS compression yet */
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
-#endif
-	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10;
-	b_state->local_info28.site_guid			= site_guid;
-	b_state->local_info28.pid			= pid;
-	b_state->local_info28.repl_epoch		= repl_epoch;
+	local_info = talloc_zero(mem_ctx, struct drsuapi_DsBindInfoCtr);
+	W_ERROR_HAVE_NO_MEMORY(local_info);
 
 	/*
-	 * allocate the return bind_info
+	 * Fill in supported extensions
 	 */
-	bind_info = talloc_zero(mem_ctx, struct drsuapi_DsBindInfoCtr);
-	W_ERROR_HAVE_NO_MEMORY(bind_info);
+	supported_extensions = 0;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_BASE;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+#if 0 /* we don't support MSZIP compression (only decompression) */
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+#endif
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V5;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+#if 0 /* we don't support XPRESS compression yet */
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
+#endif
+	supported_extensions |= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10;
 
-	bind_info->length	= 28;
-	bind_info->info.info28	= b_state->local_info28;
+	/*
+	 * There is a chance for r->in.bind_info == NULL
+	 * Currently we don't care, since it seems to be used nowhere else.
+	 * But we need a request length. So use 28 as default.
+	 */
+	req_length = 28;
+	if (r->in.bind_info) {
+		req_length = r->in.bind_info->length;
+	}
+
+	/*
+	 * fill 28 or 48 info, depends on request
+	 */
+	if (req_length < 48) {
+		local_info->length = 28;
+		local_info->info.info28.supported_extensions = supported_extensions;
+		local_info->info.info28.site_guid = site_guid;
+		local_info->info.info28.pid = pid;
+		local_info->info.info28.repl_epoch = repl_epoch;
+	} else {
+		local_info->length = 48;
+		local_info->info.info48.supported_extensions = supported_extensions;
+		local_info->info.info48.site_guid = site_guid;
+		local_info->info.info48.pid = pid;
+		local_info->info.info48.repl_epoch = repl_epoch;
+
+		local_info->info.info48.supported_extensions_ext = 0;
+		local_info->info.info48.supported_extensions_ext |= DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2;
+
+		/*
+		 * find out the guid of our own site
+		 */
+		config_dn = ldb_get_config_basedn(b_state->sam_ctx);
+		W_ERROR_HAVE_NO_MEMORY(config_dn);
+
+		ret = ldb_search(b_state->sam_ctx, mem_ctx, &config_res,
+		             config_dn, LDB_SCOPE_BASE, config_attrs,
+		             "(objectClass=*)");
+		if (ret != LDB_SUCCESS) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		if (config_res->count != 1) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		config_guid = samdb_result_guid(config_res->msgs[0], "objectGUID");
+		local_info->info.info48.config_dn_guid = config_guid;
+	}
+
+	/*
+	 * set local_info
+	 */
+	b_state->local_info = local_info;
+
+	/*
+	 * set bind_info
+	 */
+	bind_info = local_info;
 
 	/*
 	 * allocate a bind handle
@@ -580,6 +623,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 	struct drsuapi_DsGetDCInfoCtr1 *ctr1;
 	struct drsuapi_DsGetDCInfoCtr2 *ctr2;
+	struct drsuapi_DsGetDCInfoCtr3 *ctr3;
 
 	int ret;
 	unsigned int i;
@@ -596,6 +640,7 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 		attrs = attrs_1;
 		break;
 	case 2:
+	case 3:
 		attrs = attrs_2;
 		break;
 	default:
@@ -779,6 +824,111 @@ static WERROR dcesrv_drsuapi_DsGetDomainControllerInfo_1(struct drsuapi_bind_sta
 
 			ctr2->array[i].is_enabled = true;
 
+		}
+		break;
+	case 3:
+		ctr3 = &r->out.ctr->ctr3;
+		ctr3->count = res->count;
+		ctr3->array = talloc_zero_array(mem_ctx,
+						 struct drsuapi_DsGetDCInfo3,
+						 res->count);
+		for (i=0; i<res->count; i++) {
+			struct ldb_dn *domain_dn;
+			struct ldb_result *res_domain;
+			struct ldb_result *res_account;
+			struct ldb_dn *ntds_dn = ldb_dn_copy(mem_ctx, res->msgs[i]->dn);
+			struct ldb_result *res_ntds;
+			struct ldb_dn *site_dn = ldb_dn_copy(mem_ctx, res->msgs[i]->dn);
+			struct ldb_result *res_site;
+			bool is_rodc;
+			struct ldb_dn *ref_dn
+				= ldb_msg_find_attr_as_dn(b_state->sam_ctx,
+							  mem_ctx, res->msgs[i],
+							  "serverReference");
+
+			if (!ntds_dn || !ldb_dn_add_child_fmt(ntds_dn, "CN=NTDS Settings")) {
+				return WERR_NOMEM;
+			}
+
+			/* Format is cn=<NETBIOS name>,cn=Servers,cn=<site>,cn=sites.... */
+			if (!site_dn || !ldb_dn_remove_child_components(site_dn, 2)) {
+				return WERR_NOMEM;
+			}
+
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_ntds, ntds_dn,
+						 LDB_SCOPE_BASE, attrs_ntds, "objectClass=nTDSDSA");
+			if (ret == LDB_SUCCESS && res_ntds->count == 1) {
+				ctr3->array[i].is_gc
+					= (ldb_msg_find_attr_as_uint(res_ntds->msgs[0], "options", 0) & DS_NTDSDSA_OPT_IS_GC);
+				ctr3->array[i].ntds_guid
+					= samdb_result_guid(res_ntds->msgs[0], "objectGUID");
+				ctr3->array[i].ntds_dn = ldb_dn_get_linearized(res_ntds->msgs[0]->dn);
+			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for NTDS DN %s failed: %s\n",
+					  ldb_dn_get_linearized(ntds_dn), ldb_errstring(b_state->sam_ctx)));
+			}
+
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_site, site_dn,
+						 LDB_SCOPE_BASE, attrs_site, "objectClass=site");
+			if (ret == LDB_SUCCESS && res_site->count == 1) {
+				ctr3->array[i].site_guid
+					= samdb_result_guid(res_site->msgs[0], "objectGUID");
+				ctr3->array[i].site_dn = ldb_dn_get_linearized(res_site->msgs[0]->dn);
+			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for site DN %s failed: %s\n",
+					  ldb_dn_get_linearized(site_dn), ldb_errstring(b_state->sam_ctx)));
+			}
+
+			ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_account, ref_dn,
+						 LDB_SCOPE_BASE, attrs_account_2, "objectClass=computer");
+			if (ret == LDB_SUCCESS && res_account->count == 1) {
+				const char *errstr;
+				ctr3->array[i].dns_name
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "dNSHostName", NULL);
+				ctr3->array[i].netbios_name
+					= ldb_msg_find_attr_as_string(res_account->msgs[0], "cn", NULL);
+				ctr3->array[i].computer_dn = ldb_dn_get_linearized(res_account->msgs[0]->dn);
+				ctr3->array[i].computer_guid
+					= samdb_result_guid(res_account->msgs[0], "objectGUID");
+
+				/* Determine if this is the PDC */
+				ret = samdb_search_for_parent_domain(b_state->sam_ctx,
+								     mem_ctx, res_account->msgs[0]->dn,
+								     &domain_dn, &errstr);
+
+				if (ret == LDB_SUCCESS) {
+					ret = ldb_search(b_state->sam_ctx, mem_ctx, &res_domain, domain_dn,
+								 LDB_SCOPE_BASE, attrs_none, "fSMORoleOwner=%s",
+								 ldb_dn_get_linearized(ntds_dn));
+					if (ret == LDB_SUCCESS && res_domain->count == 1) {
+						ctr3->array[i].is_pdc = true;
+					}
+					if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+						DEBUG(5, ("warning: searching for domain DN %s failed: %s\n",
+							  ldb_dn_get_linearized(domain_dn), ldb_errstring(b_state->sam_ctx)));
+					}
+				}
+			}
+			if ((ret != LDB_SUCCESS) && (ret != LDB_ERR_NO_SUCH_OBJECT)) {
+				DEBUG(5, ("warning: searching for computer account DN %s failed: %s\n",
+					  ldb_dn_get_linearized(ref_dn), ldb_errstring(b_state->sam_ctx)));
+			}
+
+			/* Look at server DN and extract site component */
+			ctr3->array[i].site_name = result_site_name(res->msgs[i]->dn);
+			ctr3->array[i].server_dn = ldb_dn_get_linearized(res->msgs[i]->dn);
+			ctr3->array[i].server_guid
+				= samdb_result_guid(res->msgs[i], "objectGUID");
+
+			ctr3->array[i].is_enabled = true;
+
+			/* rodc? */
+			ret = samdb_is_rodc(b_state->sam_ctx, &ctr3->array[i].server_guid, &is_rodc);
+			if (ret == LDB_SUCCESS && is_rodc) {
+				ctr3->array[i].is_rodc = true;
+			}
 		}
 		break;
 	default:

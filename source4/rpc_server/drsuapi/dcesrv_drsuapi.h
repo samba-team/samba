@@ -33,8 +33,8 @@ struct drsuapi_bind_state {
 	struct ldb_context *sam_ctx;
 	struct ldb_context *sam_ctx_system;
 	struct GUID remote_bind_guid;
-	struct drsuapi_DsBindInfo28 remote_info28;
-	struct drsuapi_DsBindInfo28 local_info28;
+	struct drsuapi_DsBindInfoCtr *remote_info;
+	struct drsuapi_DsBindInfoCtr *local_info;
 	struct drsuapi_getncchanges_state *getncchanges_state;
 };
 
