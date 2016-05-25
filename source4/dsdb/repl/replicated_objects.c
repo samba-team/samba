@@ -357,13 +357,9 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	NTTIME whenChanged = 0;
 	time_t whenChanged_t;
 	const char *whenChanged_s;
-	struct drsuapi_DsReplicaAttribute *name_a = NULL;
-	struct drsuapi_DsReplicaMetaData *name_d = NULL;
-	struct replPropertyMetaData1 *rdn_m = NULL;
 	struct dom_sid *sid = NULL;
 	uint32_t rid = 0;
 	uint32_t attr_count;
-	int ret;
 
 	if (!in->object.identifier) {
 		return WERR_FOOBAR;
@@ -394,7 +390,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 
 	msg->num_elements	= in->object.attribute_ctr.num_attributes;
 	msg->elements		= talloc_array(msg, struct ldb_message_element,
-					       msg->num_elements + 1); /* +1 because of the RDN attribute */
+					       msg->num_elements);
 	W_ERROR_HAVE_NO_MEMORY(msg->elements);
 
 	md = talloc(mem_ctx, struct replPropertyMetaDataBlob);
@@ -406,7 +402,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	md->ctr.ctr1.reserved	= 0;
 	md->ctr.ctr1.array	= talloc_array(mem_ctx,
 					       struct replPropertyMetaData1,
-					       md->ctr.ctr1.count + 1); /* +1 because of the RDN attribute */
+					       md->ctr.ctr1.count);
 	W_ERROR_HAVE_NO_MEMORY(md->ctr.ctr1.array);
 
 	for (i=0, attr_count=0; i < in->meta_data_ctr->count; i++, attr_count++) {
@@ -485,72 +481,34 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 		m->originating_usn		= d->originating_usn;
 		m->local_usn			= 0;
 
+		if (a->attid == DRSUAPI_ATTID_name) {
+			const struct ldb_val *rdn_val = ldb_dn_get_rdn_val(msg->dn);
+			if (rdn_val == NULL) {
+				DEBUG(0, ("Unxpectedly unable to get RDN from %s for validation",
+					  ldb_dn_get_linearized(msg->dn)));
+				return WERR_FOOBAR;
+			}
+			if (e->num_values != 1) {
+				DEBUG(0, ("Unxpectedly got wrong number of attribute values (got %u, expected 1) when checking RDN against name of %s",
+					  e->num_values,
+					  ldb_dn_get_linearized(msg->dn)));
+				return WERR_FOOBAR;
+			}
+			if (data_blob_cmp(rdn_val,
+					  &e->values[0]) != 0) {
+				DEBUG(0, ("Unxpectedly got mismatching RDN values when checking RDN against name of %s",
+					  ldb_dn_get_linearized(msg->dn)));
+				return WERR_FOOBAR;
+			}
+		}
 		if (d->originating_change_time > whenChanged) {
 			whenChanged = d->originating_change_time;
 		}
 
-		if (a->attid == DRSUAPI_ATTID_name) {
-			name_a = a;
-			name_d = d;
-		}
 	}
 
 	msg->num_elements = attr_count;
 	md->ctr.ctr1.count = attr_count;
-	if (name_a) {
-		rdn_m = &md->ctr.ctr1.array[md->ctr.ctr1.count];
-	}
-
-	if (rdn_m) {
-		struct ldb_message_element *el;
-		const char *rdn_name = NULL;
-		const struct ldb_val *rdn_value = NULL;
-		const struct dsdb_attribute *rdn_attr = NULL;
-		uint32_t rdn_attid;
-
-		/*
-		 * We only need the schema calls for the RDN in this
-		 * codepath, and by doing this we avoid needing to
-		 * have the dsdb_attribute_by_lDAPDisplayName accessor
-		 * working during the schema load.
-		 */
-		rdn_name	= ldb_dn_get_rdn_name(msg->dn);
-		rdn_attr	= dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
-		if (!rdn_attr) {
-			return WERR_FOOBAR;
-		}
-		rdn_attid	= rdn_attr->attributeID_id;
-		rdn_value	= ldb_dn_get_rdn_val(msg->dn);
-
-		el = ldb_msg_find_element(msg, rdn_attr->lDAPDisplayName);
-		if (!el) {
-			ret = ldb_msg_add_value(msg, rdn_attr->lDAPDisplayName, rdn_value, NULL);
-			if (ret != LDB_SUCCESS) {
-				return WERR_FOOBAR;
-			}
-		} else {
-			if (el->num_values != 1) {
-				DEBUG(0,(__location__ ": Unexpected num_values=%u\n",
-					 el->num_values));
-				return WERR_FOOBAR;				
-			}
-			if (!ldb_val_equal_exact(&el->values[0], rdn_value)) {
-				DEBUG(0,(__location__ ": RDN value changed? '%*.*s' '%*.*s'\n",
-					 (int)el->values[0].length, (int)el->values[0].length, el->values[0].data,
-					 (int)rdn_value->length, (int)rdn_value->length, rdn_value->data));
-				return WERR_FOOBAR;				
-			}
-		}
-
-		rdn_m->attid				= rdn_attid;
-		rdn_m->version				= name_d->version;
-		rdn_m->originating_change_time		= name_d->originating_change_time;
-		rdn_m->originating_invocation_id	= name_d->originating_invocation_id;
-		rdn_m->originating_usn			= name_d->originating_usn;
-		rdn_m->local_usn			= 0;
-		md->ctr.ctr1.count++;
-
-	}
 
 	if (instanceType_e == NULL) {
 		return WERR_FOOBAR;

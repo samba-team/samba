@@ -1042,7 +1042,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	nmd.ctr.ctr1.count = ni;
 
 	/*
-	 * sort meta data array, and move the rdn attribute entry to the end
+	 * sort meta data array
 	 */
 	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, msg->dn);
 	if (ret != LDB_SUCCESS) {
@@ -1324,6 +1324,52 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1->local_usn                 = *seq_num;
 
 	return LDB_SUCCESS;
+}
+
+/*
+ * Bump the replPropertyMetaData version on an attribute, and if it
+ * has changed (or forced by leaving rdn_old NULL), update the value
+ * in the entry.
+ *
+ * This is important, as calling a modify operation may not change the
+ * version number if the values appear unchanged, but a rename between
+ * parents bumps this value.
+ *
+ */
+static int replmd_update_rpmd_rdn_attr(struct ldb_context *ldb,
+				       struct ldb_message *msg,
+				       const struct ldb_val *rdn_new,
+				       const struct ldb_val *rdn_old,
+				       struct replPropertyMetaDataBlob *omd,
+				       struct replmd_replicated_request *ar,
+				       NTTIME now,
+				       bool is_schema_nc)
+{
+	struct ldb_message_element new_el = {
+		.flags = LDB_FLAG_MOD_REPLACE,
+		.name = ldb_dn_get_rdn_name(msg->dn),
+		.num_values = 1,
+		.values = discard_const_p(struct ldb_val, rdn_new)
+	};
+	struct ldb_message_element old_el = {
+		.flags = LDB_FLAG_MOD_REPLACE,
+		.name = ldb_dn_get_rdn_name(msg->dn),
+		.num_values = rdn_old ? 1 : 0,
+		.values = discard_const_p(struct ldb_val, rdn_old)
+	};
+
+	if (ldb_msg_element_equal_ordered(&new_el, &old_el) == false) {
+		int ret = ldb_msg_add(msg, &new_el, LDB_FLAG_MOD_REPLACE);
+		if (ret != LDB_SUCCESS) {
+			return ldb_oom(ldb);
+		}
+	}
+
+	return replmd_update_rpmd_element(ldb, msg, &new_el, NULL,
+					  omd, ar->schema, &ar->seq_num,
+					  &ar->our_invocation_id,
+					  now, is_schema_nc, ar->req);
+
 }
 
 static uint64_t find_max_local_usn(struct replPropertyMetaDataBlob omd)
@@ -4031,10 +4077,19 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	unsigned int i;
 	int ret;
 	bool remote_isDeleted = false;
+	bool is_schema_nc;
+	NTTIME now;
+	time_t t = time(NULL);
+	const struct ldb_val *rdn_val;
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(ar->module),
+				struct replmd_private);
+	unix_to_nt_time(&now, t);
 
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
 	md = ar->objs->objects[ar->index_current].meta_data;
+	is_schema_nc = ldb_dn_compare_base(replmd_private->schema_dn, msg->dn) == 0;
 
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ar->seq_num);
 	if (ret != LDB_SUCCESS) {
@@ -4099,9 +4154,17 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 	/*
 	 * the meta data array is already sorted by the caller, except
-	 * for the RDN, which needs to be put in the right spot.
+	 * for the RDN, which needs to be added.
 	 */
 
+
+	rdn_val = ldb_dn_get_rdn_val(msg->dn);
+	ret = replmd_update_rpmd_rdn_attr(ldb, msg, rdn_val, NULL,
+				     md, ar, now, is_schema_nc);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "%s: error during DRS repl ADD: %s", __func__, ldb_errstring(ldb));
+		return replmd_replicated_request_error(ar, ret);
+	}
 
 	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &md->ctr.ctr1, msg->dn);
 	if (ret != LDB_SUCCESS) {
@@ -4392,6 +4455,11 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 
 	ret = dsdb_module_rename(ar->module, ar->search_msg->dn, msg->dn,
 				 DSDB_FLAG_NEXT_MODULE, ar->req);
+	if (ret == LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		*renamed = true;
+		return ret;
+	}
 
 	if (ret != LDB_ERR_ENTRY_ALREADY_EXISTS) {
 		talloc_free(tmp_ctx);
@@ -4608,10 +4676,20 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	bool take_remote_isDeleted = false;
 	bool sd_updated = false;
 	bool renamed = false;
+	bool is_schema_nc = false;
 	NTSTATUS nt_status;
+	const struct ldb_val *old_rdn, *new_rdn;
+	struct replmd_private *replmd_private =
+		talloc_get_type(ldb_module_get_private(ar->module),
+				struct replmd_private);
+	NTTIME now;
+	time_t t = time(NULL);
+	unix_to_nt_time(&now, t);
 
 	ldb = ldb_module_get_ctx(ar->module);
 	msg = ar->objs->objects[ar->index_current].msg;
+
+	is_schema_nc = ldb_dn_compare_base(replmd_private->schema_dn, msg->dn) == 0;
 
 	rmd = ar->objs->objects[ar->index_current].meta_data;
 	ZERO_STRUCT(omd);
@@ -4690,7 +4768,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		 * the peer has an older name to what we have (see
 		 * replmd_replicated_apply_search_callback())
 		 */
-		renamed = true;
 		ret = replmd_replicated_handle_rename(ar, msg, ar->req, &renamed);
 	}
 
@@ -4808,12 +4885,19 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	 */
 	nmd.ctr.ctr1.count = ni;
 
+	new_rdn = ldb_dn_get_rdn_val(msg->dn);
+	old_rdn = ldb_dn_get_rdn_val(ar->search_msg->dn);
+
+	if (renamed) {
+		ret = replmd_update_rpmd_rdn_attr(ldb, msg, new_rdn, old_rdn,
+						  &nmd, ar, now, is_schema_nc);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "%s: error during DRS repl merge: %s", __func__, ldb_errstring(ldb));
+			return replmd_replicated_request_error(ar, ret);
+		}
+	}
 	/*
-	 * the rdn attribute (the alias for the name attribute),
-	 * 'cn' for most objects is the last entry in the meta data array
-	 * we have stored
-	 *
-	 * sort the new meta data array so it is slotted into the right place
+	 * sort the new meta data array
 	 */
 	ret = replmd_replPropertyMetaDataCtr1_sort_and_verify(ldb, &nmd.ctr.ctr1, msg->dn);
 	if (ret != LDB_SUCCESS) {
