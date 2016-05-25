@@ -775,7 +775,7 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
   components, and creating backlinks to the object
  */
 static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_element *el,
-			     uint64_t seq_num, const struct GUID *invocationId, time_t t,
+			     uint64_t seq_num, const struct GUID *invocationId, NTTIME now,
 			     struct GUID *guid, const struct dsdb_attribute *sa, struct ldb_request *parent)
 {
 	unsigned int i;
@@ -784,9 +784,6 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 
 	/* We will take a reference to the schema in replmd_add_backlink */
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
-	NTTIME now;
-
-	unix_to_nt_time(&now, t);
 
 	for (i=0; i<el->num_values; i++) {
 		struct ldb_val *v = &el->values[i];
@@ -997,7 +994,9 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		if (sa->linkID != 0 && functional_level > DS_DOMAIN_FUNCTION_2000) {
-			ret = replmd_add_fix_la(module, e, ac->seq_num, &ac->our_invocation_id, t, &guid, sa, req);
+			ret = replmd_add_fix_la(module, e, ac->seq_num,
+						&ac->our_invocation_id, now,
+						&guid, sa, req);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
 				return ret;
