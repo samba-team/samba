@@ -924,6 +924,14 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>posix_whoami</term>
+		<listitem><para>Query the remote server for the user token using the CIFS UNIX
+		extensions WHOAMI call. Prints out the guest status, user, group, group list and
+		sid list that the remote server is using on behalf of the logged on user.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>print &lt;file name&gt;</term>
 		<listitem><para>Print the specified file from the local machine
 		through a printable service on the server. </para></listitem>
