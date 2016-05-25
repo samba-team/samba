@@ -2280,8 +2280,8 @@ static int msg_find_old_and_new_pwd_val(const struct ldb_message *msg,
 }
 
 static int setup_io(struct ph_context *ac, 
-		    const struct ldb_message *orig_msg,
-		    const struct ldb_message *searched_msg, 
+		    const struct ldb_message *client_msg,
+		    const struct ldb_message *existing_msg,
 		    struct setup_password_fields_io *io) 
 { 
 	const struct ldb_val *quoted_utf16, *old_quoted_utf16, *lm_hash, *old_lm_hash;
@@ -2289,10 +2289,23 @@ static int setup_io(struct ph_context *ac,
 	struct loadparm_context *lp_ctx = talloc_get_type(
 		ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
 	int ret;
+	const struct ldb_message *info_msg = NULL;
 
 	ZERO_STRUCTP(io);
 
 	/* Some operations below require kerberos contexts */
+
+	if (existing_msg != NULL) {
+		/*
+		 * This is a modify operation
+		 */
+		info_msg = existing_msg;
+	} else {
+		/*
+		 * This is an add operation
+		 */
+		info_msg = client_msg;
+	}
 
 	if (smb_krb5_init_context(ac,
 				  (struct loadparm_context *)ldb_get_opaque(ldb, "loadparm"),
@@ -2302,19 +2315,19 @@ static int setup_io(struct ph_context *ac,
 
 	io->ac				= ac;
 
-	io->u.userAccountControl	= ldb_msg_find_attr_as_uint(searched_msg,
+	io->u.userAccountControl	= ldb_msg_find_attr_as_uint(info_msg,
 								    "userAccountControl", 0);
-	io->u.pwdLastSet		= samdb_result_nttime(searched_msg, "pwdLastSet", 0);
-	io->u.sAMAccountName		= ldb_msg_find_attr_as_string(searched_msg,
+	io->u.pwdLastSet		= samdb_result_nttime(info_msg, "pwdLastSet", 0);
+	io->u.sAMAccountName		= ldb_msg_find_attr_as_string(info_msg,
 								      "sAMAccountName", NULL);
-	io->u.user_principal_name	= ldb_msg_find_attr_as_string(searched_msg,
+	io->u.user_principal_name	= ldb_msg_find_attr_as_string(info_msg,
 								      "userPrincipalName", NULL);
-	io->u.is_computer		= ldb_msg_check_string_attribute(searched_msg, "objectClass", "computer");
+	io->u.is_computer		= ldb_msg_check_string_attribute(info_msg, "objectClass", "computer");
 
 	if (io->u.sAMAccountName == NULL) {
 		ldb_asprintf_errstring(ldb,
 				       "setup_io: sAMAccountName attribute is missing on %s for attempted password set/change",
-				       ldb_dn_get_linearized(searched_msg->dn));
+				       ldb_dn_get_linearized(info_msg->dn));
 
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -2330,7 +2343,7 @@ static int setup_io(struct ph_context *ac,
 				"on %s not allowed via LDAP. Use LSA or NETLOGON",
 				W_ERROR_V(WERR_ACCESS_DENIED),
 				ldb_strerror(ret),
-				ldb_dn_get_linearized(searched_msg->dn));
+				ldb_dn_get_linearized(info_msg->dn));
 			return ret;
 		}
 	}
@@ -2342,7 +2355,7 @@ static int setup_io(struct ph_context *ac,
 			| UF_SERVER_TRUST_ACCOUNT));
 
 	if (ac->userPassword) {
-		ret = msg_find_old_and_new_pwd_val(orig_msg, "userPassword",
+		ret = msg_find_old_and_new_pwd_val(client_msg, "userPassword",
 						   ac->req->operation,
 						   &io->n.cleartext_utf8,
 						   &io->og.cleartext_utf8);
@@ -2377,7 +2390,7 @@ static int setup_io(struct ph_context *ac,
 		io->n.cleartext_utf8 = cleartext_utf8_blob;
 	}
 
-	ret = msg_find_old_and_new_pwd_val(orig_msg, "clearTextPassword",
+	ret = msg_find_old_and_new_pwd_val(client_msg, "clearTextPassword",
 					   ac->req->operation,
 					   &io->n.cleartext_utf16,
 					   &io->og.cleartext_utf16);
@@ -2401,7 +2414,7 @@ static int setup_io(struct ph_context *ac,
 	   that would then be treated as a UTF16 password rather than
 	   a nthash */
 
-	ret = msg_find_old_and_new_pwd_val(orig_msg, "unicodePwd",
+	ret = msg_find_old_and_new_pwd_val(client_msg, "unicodePwd",
 					   ac->req->operation,
 					   &quoted_utf16,
 					   &old_quoted_utf16);
@@ -2520,7 +2533,7 @@ static int setup_io(struct ph_context *ac,
 
 	/* Handles the "dBCSPwd" attribute (LM hash) */
 	io->n.lm_hash = NULL; io->og.lm_hash = NULL;
-	ret = msg_find_old_and_new_pwd_val(orig_msg, "dBCSPwd",
+	ret = msg_find_old_and_new_pwd_val(client_msg, "dBCSPwd",
 					   ac->req->operation,
 					   &lm_hash, &old_lm_hash);
 	if (ret != LDB_SUCCESS) {
@@ -2597,11 +2610,11 @@ static int setup_io(struct ph_context *ac,
 	    && (!io->n.nt_hash) && (!io->n.lm_hash)) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
-			"It' not possible to delete the password (changes using the LAN Manager hash alone could be deactivated)!");
+			"It's not possible to delete the password (changes using the LAN Manager hash alone could be deactivated)!");
 		/* on "userPassword" and "clearTextPassword" we've to return
 		 * something different, since these are virtual attributes */
-		if ((ldb_msg_find_element(orig_msg, "userPassword") != NULL) ||
-		    (ldb_msg_find_element(orig_msg, "clearTextPassword") != NULL)) {
+		if ((ldb_msg_find_element(client_msg, "userPassword") != NULL) ||
+		    (ldb_msg_find_element(client_msg, "clearTextPassword") != NULL)) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -3073,7 +3086,7 @@ static int password_hash_add_do_add(struct ph_context *ac)
 	int ret;
 
 	/* Prepare the internal data structure containing the passwords */
-	ret = setup_io(ac, ac->req->op.add.message, ac->req->op.add.message, &io);
+	ret = setup_io(ac, ac->req->op.add.message, NULL, &io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -3394,7 +3407,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 						struct loadparm_context);
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
-	const struct ldb_message *orig_msg, *searched_msg;
+	const struct ldb_message *searched_msg;
 	struct setup_password_fields_io io;
 	int ret;
 	NTSTATUS status;
@@ -3408,11 +3421,11 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	/* modify dn */
 	msg->dn = ac->req->op.mod.message->dn;
 
-	orig_msg = ac->req->op.mod.message;
 	searched_msg = ac->search_res->message;
 
 	/* Prepare the internal data structure containing the passwords */
-	ret = setup_io(ac, orig_msg, searched_msg, &io);
+	ret = setup_io(ac, ac->req->op.mod.message,
+		       ac->search_res->message, &io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
