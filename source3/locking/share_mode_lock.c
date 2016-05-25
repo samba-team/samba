@@ -441,6 +441,11 @@ static int share_mode_data_destructor(struct share_mode_data *d)
 	TALLOC_FREE(d->record);
 
 	/*
+	 * Release the dptr as well before reparenting to NULL
+	 * (in-memory cache) context.
+	 */
+	TALLOC_FREE(data.dptr);
+	/*
 	 * Reparent d into the in-memory cache so it can be reused if the
 	 * sequence number matches. See parse_share_modes()
 	 * for details.
