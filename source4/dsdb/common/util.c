@@ -3984,7 +3984,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	static const struct timeval tv1970;
 	NTTIME nt1970 = timeval_to_nttime(&tv1970);
 
-	ret = ldb_search(samdb, mem_ctx, &r, dn, LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_search_dn(samdb, mem_ctx, &r, dn, attrs, DSDB_SEARCH_SHOW_RECYCLED|DSDB_SEARCH_SHOW_DELETED);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
