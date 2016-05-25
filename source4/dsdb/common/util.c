@@ -597,7 +597,7 @@ NTSTATUS samdb_result_passwords_from_history(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samdb_result_passwords_no_lockout(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
-					   struct ldb_message *msg,
+					   const struct ldb_message *msg,
 					   struct samr_Password **lm_pwd,
 					   struct samr_Password **nt_pwd)
 {
@@ -637,7 +637,7 @@ NTSTATUS samdb_result_passwords_no_lockout(TALLOC_CTX *mem_ctx,
 
 NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx,
 				struct loadparm_context *lp_ctx,
-				struct ldb_message *msg,
+				const struct ldb_message *msg,
 				struct samr_Password **lm_pwd,
 				struct samr_Password **nt_pwd)
 {
@@ -691,7 +691,7 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
   (if not null) the attributes 'attr' be already
   included in msg
 */
-uint32_t samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
+uint32_t samdb_result_acct_flags(const struct ldb_message *msg, const char *attr)
 {
 	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 	uint32_t attr_flags = 0;
