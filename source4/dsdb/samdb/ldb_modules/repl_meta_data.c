@@ -3408,17 +3408,6 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 			}
 		}
 
-		/* Duplicate with the below - we remove the
-		 * samAccountType as an originating update, in case it
-		 * somehow came back.  The objectCategory will have
-		 * gone in the above */
-		ret = ldb_msg_add_empty(msg, "sAMAccountType", LDB_FLAG_MOD_REPLACE, NULL);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			ldb_module_oom(module);
-			return ret;
-		}
-
 		break;
 
 	case OBJECT_DELETED:
