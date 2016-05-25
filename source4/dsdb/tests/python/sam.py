@@ -2918,7 +2918,8 @@ class SamTests(samba.tests.TestCase):
                 # "**ANY**" values means "any"
                 continue
             self.assertEqual(expected_val, actual_val,
-                             "Unexpected value for '%s'" % name)
+                             "Unexpected value[%r] for '%s' expected[%r]" %
+                             (actual_val, name, expected_val))
         # clean up
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
