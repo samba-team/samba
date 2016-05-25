@@ -250,7 +250,7 @@ main(int argc,			/* I - Number of command-line arguments */
          * Setup the SAMBA server state...
          */
 
-	setup_logging("smbspool", DEBUG_STDOUT);
+	setup_logging("smbspool", DEBUG_STDERR);
 
 	smb_init_locale();
 
