@@ -64,6 +64,12 @@ trygrp1:g$gid:block size = 4096:hard limit = 60:soft limit = 60:cur blocks = 55
 trygrp2:df:block size = 4096:disk free = 10:disk size = 80
 trygrp2:u$uid:block size = 4096:hard limit = 0:soft limit = 0:cur blocks = 41
 trygrp2:g$gid:block size = 4096:hard limit = 60:soft limit = 60:cur blocks = 56
+notenforce:df:block size = 4096:disk free = 10:disk size = 80
+notenforce:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 37
+notenforce:udflt:block size = 4096:qflags = 0
+nfs:df:block size = 4096:disk free = 10:disk size = 80
+nfs:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 37
+nfs:udflt:nosys = 1
 ABC
 }
 
@@ -169,6 +175,12 @@ test_smbclient_dfree "Test quota->dfree inode soft limit" "subdir1" "islimit sub
 test_smbclient_dfree "Test quota->dfree inode hard limit" "subdir1" "ihlimit subdir1" "148 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree err try group" "subdir1" "trygrp1 subdir1" "240 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree no-quota try group" "subdir1" "trygrp2 subdir1" "240 1024. 16" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+#quota configured but not enforced
+test_smbclient_dfree "Test dfree share root quota not enforced" "." "notenforce ." "320 1024. 40" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+#FS quota not implemented (NFS case)
+test_smbclient_dfree "Test dfree share root FS quota not implemented" "." "nfs ." "160 1024. 12" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 
 setup_conf
 exit $failed
