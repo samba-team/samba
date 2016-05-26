@@ -704,8 +704,7 @@ def build(bld):
                      source='tests/src/ctdb_takeover_tests.c',
                      deps='''replace popt tdb tevent talloc ctdb-system
                              samba-util tdb-wrap talloc_report
-                             ctdb-protocol ctdb-util''' +
-                          ib_deps,
+                             ctdb-ipalloc ctdb-protocol ctdb-util''',
                      includes='include',
                      install_path='${CTDB_TEST_LIBDIR}')
 

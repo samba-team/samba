@@ -18,13 +18,27 @@
 */
 
 #include <assert.h>
+#include <talloc.h>
 
-#include "ctdbd_test.c"
+#include "replace.h"
+#include "system/network.h"
 
-static void print_ctdb_public_ip_list(struct public_ip_list * ips)
+#include "lib/util/debug.h"
+
+#include "protocol/protocol.h"
+#include "protocol/protocol_api.h"
+#include "common/logging.h"
+#include "common/system.h"
+
+#include "server/ipalloc.h"
+
+static void print_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
+				      struct public_ip_list * ips)
 {
 	while (ips) {
-		printf("%s %d\n", ctdb_addr_to_str(&(ips->addr)), ips->pnn);
+		printf("%s %d\n",
+		       ctdb_sock_addr_to_string(mem_ctx, &(ips->addr)),
+		       ips->pnn);
 		ips = ips->next;
 	}
 }
@@ -316,7 +330,7 @@ static void ctdb_test_ipalloc(const char nodestates[],
 	ctdb_test_init(tmp_ctx, nodestates, &ipalloc_state,
 		       read_ips_for_multiple_nodes);
 
-	print_ctdb_public_ip_list(ipalloc(ipalloc_state));
+	print_ctdb_public_ip_list(tmp_ctx, ipalloc(ipalloc_state));
 
 	talloc_free(tmp_ctx);
 }
