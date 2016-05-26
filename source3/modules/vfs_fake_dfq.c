@@ -110,6 +110,12 @@ static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
 		section = talloc_asprintf(talloc_tos(), "g%llu",
 					  (unsigned long long)id.gid);
 		break;
+	case SMB_USER_FS_QUOTA_TYPE:
+		section = talloc_strdup(talloc_tos(), "udflt");
+		break;
+	case SMB_GROUP_FS_QUOTA_TYPE:
+		section = talloc_strdup(talloc_tos(), "gdflt");
+		break;
 	default:
 		break;
 	}
@@ -118,13 +124,19 @@ static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
 		goto dflt;
 	}
 
-	bsize = dfq_load_param(snum, rpath, section, "block size", 0);
+	bsize = dfq_load_param(snum, rpath, section, "block size", 4096);
 	if (bsize == 0) {
 		goto dflt;
 	}
 
 	if (dfq_load_param(snum, rpath, section, "err", 0) != 0) {
 		errno = ENOTSUP;
+		rc = -1;
+		goto out;
+	}
+
+	if (dfq_load_param(snum, rpath, section, "nosys", 0) != 0) {
+		errno = ENOSYS;
 		rc = -1;
 		goto out;
 	}
@@ -140,6 +152,7 @@ static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
 	qt->isoftlimit =
 	    dfq_load_param(snum, rpath, section, "inode soft limit", 0);
 	qt->curinodes = dfq_load_param(snum, rpath, section, "cur inodes", 0);
+	qt->qflags = dfq_load_param(snum, rpath, section, "qflags", QUOTAS_DENY_DISK);
 
 	if (dfq_load_param(snum, rpath, section, "edquot", 0) != 0) {
 		errno = EDQUOT;
