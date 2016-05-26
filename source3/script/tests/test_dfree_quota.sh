@@ -66,6 +66,12 @@ trygrp2:u$uid:block size = 4096:hard limit = 0:soft limit = 0:cur blocks = 41
 trygrp2:g$gid:block size = 4096:hard limit = 60:soft limit = 60:cur blocks = 56
 blksize:df:block size = 512:disk free = 614400:disk size = 614400
 blksize:u$uid:block size = 1024:hard limit = 512000:soft limit = 0:cur blocks = 0
+notenforce:df:block size = 4096:disk free = 10:disk size = 80
+notenforce:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 37
+notenforce:udflt:block size = 4096:qflags = 0
+nfs:df:block size = 4096:disk free = 10:disk size = 80
+nfs:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 37
+nfs:udflt:nosys = 1
 ABC
 }
 
@@ -174,6 +180,12 @@ test_smbclient_dfree "Test quota->dfree no-quota try group" "subdir1" "trygrp2 s
 
 #block size different in quota and df systems
 test_smbclient_dfree "Test quota->dfree different block size" "subdir1" "blksize subdir1" "307200 1024. 307200" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+#quota configured but not enforced
+test_smbclient_dfree "Test dfree share root quota not enforced" "." "notenforce ." "320 1024. 40" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+#FS quota not implemented (NFS case)
+test_smbclient_dfree "Test dfree share root FS quota not implemented" "." "nfs ." "160 1024. 12" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 
 setup_conf
 exit $failed
