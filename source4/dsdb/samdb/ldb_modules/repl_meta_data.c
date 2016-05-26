@@ -80,6 +80,7 @@ struct replmd_replicated_request {
 	struct ldb_request *req;
 
 	const struct dsdb_schema *schema;
+	struct GUID our_invocation_id;
 
 	/* the controls we pass down */
 	struct ldb_control **controls;
@@ -579,6 +580,7 @@ static struct replmd_replicated_request *replmd_ctx_init(struct ldb_module *modu
 {
 	struct ldb_context *ldb;
 	struct replmd_replicated_request *ac;
+	const struct GUID *our_invocation_id;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -596,8 +598,19 @@ static struct replmd_replicated_request *replmd_ctx_init(struct ldb_module *modu
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "replmd_modify: no dsdb_schema loaded");
 		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+		talloc_free(ac);
 		return NULL;
 	}
+
+	/* get our invocationId */
+	our_invocation_id = samdb_ntds_invocation_id(ldb);
+	if (!our_invocation_id) {
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
+			      "replmd_add: unable to find invocationId\n");
+		talloc_free(ac);
+		return NULL;
+	}
+	ac->our_invocation_id = *our_invocation_id;
 
 	return ac;
 }
@@ -873,7 +886,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	struct GUID guid;
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
-	const struct GUID *our_invocation_id;
 
 	/*
 	 * The use of a time_t here seems odd, but as the NTTIME
@@ -945,15 +957,6 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
-	}
-
-	/* get our invocationId */
-	our_invocation_id = samdb_ntds_invocation_id(ldb);
-	if (!our_invocation_id) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			      "replmd_add: unable to find invocationId\n");
-		talloc_free(ac);
-		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	/* we have to copy the message as the caller might have it as a const */
@@ -1034,7 +1037,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		if (sa->linkID != 0 && functional_level > DS_DOMAIN_FUNCTION_2000) {
-			ret = replmd_add_fix_la(module, e, ac->seq_num, our_invocation_id, t, &guid, sa, req);
+			ret = replmd_add_fix_la(module, e, ac->seq_num, &ac->our_invocation_id, t, &guid, sa, req);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
 				return ret;
@@ -1069,7 +1072,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		} else {
 			m->originating_change_time	= now;
 		}
-		m->originating_invocation_id	= *our_invocation_id;
+		m->originating_invocation_id	= ac->our_invocation_id;
 		m->originating_usn		= ac->seq_num;
 		m->local_usn			= ac->seq_num;
 		ni++;
@@ -4989,7 +4992,6 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	struct replUpToDateVectorBlob nuv;
 	struct ldb_val nuv_value;
 	struct ldb_message_element *nuv_el = NULL;
-	const struct GUID *our_invocation_id;
 	struct ldb_message_element *orf_el = NULL;
 	struct repsFromToBlob nrf;
 	struct ldb_val *nrf_value = NULL;
@@ -5063,20 +5065,12 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 		ni++;
 	}
 
-	/* get our invocation_id if we have one already attached to the ldb */
-	our_invocation_id = samdb_ntds_invocation_id(ldb);
-	if (our_invocation_id == NULL) {
-		DEBUG(0, ("repl_meta_data: Could not find our own server's invocationID!\n"));
-		return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);		
-	}
-
 	/* merge in the source_dsa vector is available */
 	for (i=0; (ruv && i < ruv->count); i++) {
 		found = false;
 
-		if (our_invocation_id &&
-		    GUID_equal(&ruv->cursors[i].source_dsa_invocation_id,
-			       our_invocation_id)) {
+		if (GUID_equal(&ruv->cursors[i].source_dsa_invocation_id,
+			       &ar->our_invocation_id)) {
 			continue;
 		}
 
