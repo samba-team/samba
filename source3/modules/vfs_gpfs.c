@@ -358,6 +358,21 @@ static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 	}
 }
 
+static int gpfs_getacl_with_capability(const char *fname, int flags, void *buf)
+{
+	int ret, saved_errno;
+
+	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+	ret = gpfswrap_getacl(discard_const_p(char, fname), flags, buf);
+	saved_errno = errno;
+
+	drop_effective_capability(DAC_OVERRIDE_CAPABILITY);
+
+	errno = saved_errno;
+	return ret;
+}
+
 /*
  * get the ACL from GPFS, allocated on the specified mem_ctx
  * internally retries when initial buffer was too small
@@ -378,6 +393,7 @@ static void *vfs_gpfs_getacl(TALLOC_CTX *mem_ctx,
 	int ret, flags;
 	unsigned int *len;
 	size_t struct_size;
+	bool use_capability = false;
 
 again:
 
@@ -406,8 +422,18 @@ again:
 	/* set the length of the buffer as input value */
 	*len = size;
 
-	errno = 0;
-	ret = gpfswrap_getacl(discard_const_p(char, fname), flags, aclbuf);
+	if (use_capability) {
+		ret = gpfs_getacl_with_capability(fname, flags, aclbuf);
+	} else {
+		ret = gpfswrap_getacl(discard_const_p(char, fname),
+				      flags, aclbuf);
+		if ((ret != 0) && (errno == EACCES)) {
+			DBG_DEBUG("Retry with DAC capability for %s\n", fname);
+			use_capability = true;
+			ret = gpfs_getacl_with_capability(fname, flags, aclbuf);
+		}
+	}
+
 	if ((ret != 0) && (errno == ENOSPC)) {
 		/*
 		 * get the size needed to accommodate the complete buffer
