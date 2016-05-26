@@ -26,5 +26,5 @@ EOF
 
 simple_test ()
 {
-    unit_test $test_prog "$@"
+    unit_test $VALGRIND $test_prog "$@"
 }
