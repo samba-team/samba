@@ -672,6 +672,7 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	gid_t *gids;
 	struct dom_sid *group_sids;
+	struct dom_sid tmp_sid;
 	uint32_t num_group_sids;
 	uint32_t num_gids;
 	uint32_t i;
@@ -753,7 +754,6 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 		*uid = sam_acct->unix_pw->pw_uid;
 
 	} else 	if (sid_check_is_in_unix_users(user_sid)) {
-		struct dom_sid tmp_sid;
 		uint32_t getgroups_num_group_sids;
 		/* This is a unix user not in passdb. We need to ask nss
 		 * directly, without consulting passdb */
