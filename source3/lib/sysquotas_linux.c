@@ -59,7 +59,8 @@ int sys_get_vfs_quota(const char *path, const char *bdev,
 				   "SMB_USER_QUOTA_TYPE uid[%u]\n",
 				   path, bdev, (unsigned)id.uid));
 
-			if ((ret = quotactl(QCMD(Q_GETQUOTA,USRQUOTA), bdev, id.uid, (caddr_t)&D))&&errno != EDQUOT) {
+			if ((ret = quotactl(QCMD(Q_GETQUOTA, USRQUOTA), bdev,
+					    id.uid, (caddr_t)&D))) {
 				return ret;
 			}
 
@@ -69,7 +70,8 @@ int sys_get_vfs_quota(const char *path, const char *bdev,
 				   "SMB_GROUP_QUOTA_TYPE gid[%u]\n",
 				   path, bdev, (unsigned)id.gid));
 
-			if ((ret = quotactl(QCMD(Q_GETQUOTA,GRPQUOTA), bdev, id.gid, (caddr_t)&D))&&errno != EDQUOT) {
+			if ((ret = quotactl(QCMD(Q_GETQUOTA, GRPQUOTA), bdev,
+					    id.gid, (caddr_t)&D))) {
 				return ret;
 			}
 
