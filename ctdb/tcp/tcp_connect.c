@@ -145,7 +145,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 
 	tnode->fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	if (tnode->fd == -1) {
-		DEBUG(DEBUG_ERR, (__location__ "Failed to create socket\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Failed to create socket\n"));
 		return;
 	}
 	set_nonblocking(tnode->fd);
@@ -185,7 +185,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 	}
 
 	if (bind(tnode->fd, (struct sockaddr *)&sock_in, sockin_size) == -1) {
-		DEBUG(DEBUG_ERR, (__location__ "Failed to bind socket %s(%d)\n",
+		DEBUG(DEBUG_ERR, (__location__ " Failed to bind socket %s(%d)\n",
 				  strerror(errno), errno));
 		close(tnode->fd);
 		return;
