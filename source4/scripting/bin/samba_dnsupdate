@@ -67,7 +67,7 @@ parser.add_option("--update-list", type="string", help="Add DNS names from the g
 parser.add_option("--update-cache", type="string", help="Cache database of already registered records")
 parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
 parser.add_option("--no-credentials", dest='nocreds', action='store_true', help="don't try and get credentials")
-parser.add_option("--no-substiutions", dest='nosubs', action='store_true', help="don't try and expands variables in file specified by --update-list")
+parser.add_option("--no-substitutions", dest='nosubs', action='store_true', help="don't try and expands variables in file specified by --update-list")
 
 creds = None
 ccachename = None
