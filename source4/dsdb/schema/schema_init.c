@@ -623,6 +623,16 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 	}
 
 	GET_STRING_LDB(msg, "cn", attr, attr, cn, false);
+
+	/*
+	 * This allows for the fact that the CN attribute is not
+	 * replicated over DRS, it is only replicated under the alias
+	 * 'name'.
+	 */
+	if (attr->cn == NULL) {
+		GET_STRING_LDB(msg, "name", attr, attr, cn, true);
+	}
+
 	GET_STRING_LDB(msg, "lDAPDisplayName", attr, attr, lDAPDisplayName, true);
 	GET_STRING_LDB(msg, "attributeID", attr, attr, attributeID_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
@@ -767,6 +777,16 @@ WERROR dsdb_set_class_from_ldb_dups(struct dsdb_schema *schema,
 		return WERR_NOMEM;
 	}
 	GET_STRING_LDB(msg, "cn", obj, obj, cn, false);
+
+	/*
+	 * This allows for the fact that the CN attribute is not
+	 * replicated over DRS, it is only replicated under the alias
+	 * 'name'.
+	 */
+	if (obj->cn == NULL) {
+		GET_STRING_LDB(msg, "name", obj, obj, cn, true);
+	}
+
 	GET_STRING_LDB(msg, "lDAPDisplayName", obj, obj, lDAPDisplayName, true);
 	GET_STRING_LDB(msg, "governsID", obj, obj, governsID_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
