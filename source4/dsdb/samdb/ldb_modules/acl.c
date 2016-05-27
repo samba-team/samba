@@ -604,11 +604,15 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	/* instanceName can be samAccountName without $ or dnsHostName
 	 * or "ntds_guid._msdcs.forest_domain for DC objects */
 	if (strlen(instanceName) == (strlen(samAccountName) - 1)
-	    && strncasecmp(instanceName, samAccountName, strlen(samAccountName) - 1) == 0) {
+	    && strncasecmp(instanceName, samAccountName,
+			   strlen(samAccountName) - 1) == 0) {
 		goto success;
-	} else if (dnsHostName != NULL && strcasecmp(instanceName, dnsHostName) == 0) {
+	}
+	if ((dnsHostName != NULL) &&
+	    (strcasecmp(instanceName, dnsHostName) == 0)) {
 		goto success;
-	} else if (is_dc) {
+	}
+	if (is_dc) {
 		const char *guid_str;
 		guid_str = talloc_asprintf(mem_ctx,"%s._msdcs.%s",
 					   ntds_guid,
