@@ -1508,6 +1508,17 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
+	/* Each of the later stages (RELEASE_IP, TAKEOVER_IP,
+	 * IPREALLOCATED) notionally has a timeout of TakeoverTimeout
+	 * seconds.  However, RELEASE_IP can take longer due to TCP
+	 * connection killing, so sometimes needs more time.
+	 * Therefore, use a cumulative timeout of TakeoverTimeout * 3
+	 * seconds across all 3 stages.  No explicit expiry checks are
+	 * needed before each stage because tevent is smart enough to
+	 * fire the timeouts even if they are in the past.  Initialise
+	 * this here to cope with early jumps to IPREALLOCATED. */
+	timeout = timeval_current_ofs(3 * ctdb->tunable.takeover_timeout,0);
+
 	/*
 	 * ip failover is completely disabled, just send out the 
 	 * ipreallocated event.
@@ -1602,7 +1613,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 			ip.pnn  = tmp_ip->pnn;
 			ip.addr = tmp_ip->addr;
 
-			timeout = TAKEOVER_TIMEOUT();
 			data.dsize = sizeof(ip);
 			data.dptr  = (uint8_t *)&ip;
 			state = ctdb_control_send(ctdb, nodemap->nodes[i].pnn,
@@ -1645,7 +1655,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		ip.pnn  = tmp_ip->pnn;
 		ip.addr = tmp_ip->addr;
 
-		timeout = TAKEOVER_TIMEOUT();
 		data.dsize = sizeof(ip);
 		data.dptr  = (uint8_t *)&ip;
 		state = ctdb_control_send(ctdb, tmp_ip->pnn,
@@ -1675,7 +1684,7 @@ ipreallocated:
 	 */
 	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
 	ret = ctdb_client_async_control(ctdb, CTDB_CONTROL_IPREALLOCATED,
-					nodes, 0, TAKEOVER_TIMEOUT(),
+					nodes, 0, timeout,
 					false, tdb_null,
 					NULL, takeover_run_fail_callback,
 					takeover_data);
