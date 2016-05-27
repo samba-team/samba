@@ -29,4 +29,6 @@
 int set_blocking(int fd, bool set);
 bool smb_set_close_on_exec(int fd);
 
+#define set_close_on_exec(fd)	smb_set_close_on_exec(fd)
+
 #endif /* _SAMBA_BLOCKING_H_ */
