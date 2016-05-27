@@ -120,39 +120,6 @@ void reset_scheduler(void)
 #endif
 }
 
-void set_nonblocking(int fd)
-{
-	int v;
-
-	v = fcntl(fd, F_GETFL, 0);
-	if (v == -1) {
-		DEBUG(DEBUG_WARNING, ("Failed to get file status flags - %s\n",
-				      strerror(errno)));
-		return;
-	}
-        if (fcntl(fd, F_SETFL, v | O_NONBLOCK) == -1) {
-		DEBUG(DEBUG_WARNING, ("Failed to set non_blocking on fd - %s\n",
-				      strerror(errno)));
-	}
-}
-
-void set_close_on_exec(int fd)
-{
-	int v;
-
-	v = fcntl(fd, F_GETFD, 0);
-	if (v == -1) {
-		DEBUG(DEBUG_WARNING, ("Failed to get file descriptor flags - %s\n",
-				      strerror(errno)));
-		return;
-	}
-	if (fcntl(fd, F_SETFD, v | FD_CLOEXEC) != 0) {
-		DEBUG(DEBUG_WARNING, ("Failed to set close_on_exec on fd - %s\n",
-				      strerror(errno)));
-	}
-}
-
-
 bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 {
 	sin->sin_family = AF_INET;

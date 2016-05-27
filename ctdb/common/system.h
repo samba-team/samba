@@ -47,8 +47,6 @@ int ctdb_get_peer_pid(const int fd, pid_t *peer_pid);
 
 bool set_scheduler(void);
 void reset_scheduler(void);
-void set_nonblocking(int fd);
-void set_close_on_exec(int fd);
 
 bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin);
 bool parse_ip(const char *addr, const char *ifaces, unsigned port,
