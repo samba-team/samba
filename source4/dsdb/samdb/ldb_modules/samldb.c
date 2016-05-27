@@ -2086,7 +2086,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 
 	/* As per MS-SAMR 3.1.1.8.10 these flags have not to be set */
 	if ((clear_uac & UF_LOCKOUT) && (old_lockoutTime != 0)) {
-		/* "pwdLastSet" reset as password expiration has been forced  */
+		/* "lockoutTime" reset as per MS-SAMR 3.1.1.8.10 */
 		ldb_msg_remove_attr(ac->msg, "lockoutTime");
 		ret = samdb_msg_add_uint64(ldb, ac->msg, ac->msg, "lockoutTime",
 					   (NTTIME)0);
