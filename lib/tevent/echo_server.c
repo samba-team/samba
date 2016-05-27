@@ -66,7 +66,7 @@ struct accept_state {
 	struct tevent_fd *fde;
 	int listen_sock;
 	socklen_t addrlen;
-	struct sockaddr addr;
+	struct sockaddr_storage addr;
 	int sock;
 };
 
@@ -111,7 +111,9 @@ static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 	state->addrlen = sizeof(state->addr);
 
-	ret = accept(state->listen_sock, &state->addr, &state->addrlen);
+	ret = accept(state->listen_sock,
+			(struct sockaddr *)&state->addr,
+			&state->addrlen);
 	if (ret == -1) {
 		tevent_req_error(req, errno);
 		return;
@@ -133,7 +135,7 @@ static int accept_recv(struct tevent_req *req, struct sockaddr *paddr,
 		return -1;
 	}
 	if (paddr != NULL) {
-		*paddr = state->addr;
+		memcpy(paddr, &state->addr, state->addrlen);
 	}
 	if (paddrlen != NULL) {
 		*paddrlen = state->addrlen;
