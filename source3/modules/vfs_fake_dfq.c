@@ -154,11 +154,6 @@ static int dfq_get_quota(struct vfs_handle_struct *handle, const char *path,
 	qt->curinodes = dfq_load_param(snum, rpath, section, "cur inodes", 0);
 	qt->qflags = dfq_load_param(snum, rpath, section, "qflags", QUOTAS_DENY_DISK);
 
-	if (dfq_load_param(snum, rpath, section, "edquot", 0) != 0) {
-		errno = EDQUOT;
-		rc = -1;
-	}
-
 	goto out;
 
 dflt:
