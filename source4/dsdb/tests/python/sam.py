@@ -5,6 +5,7 @@
 import optparse
 import sys
 import os
+import time
 
 sys.path.insert(0, "bin/python")
 import samba
@@ -1413,6 +1414,215 @@ class SamTests(samba.tests.TestCase):
           ATYPE_SECURITY_GLOBAL_GROUP)
 
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+    def test_pwdLastSet(self):
+        """Test the pwdLastSet behaviour"""
+        print "Testing pwdLastSet behaviour\n"
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": "user",
+            "pwdLastSet": "0"})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        self.assertEqual(int(res1[0]["pwdLastSet"][0]), 0)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": "user",
+            "pwdLastSet": "-1"})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        self.assertNotEqual(int(res1[0]["pwdLastSet"][0]), 0)
+        lastset = int(res1[0]["pwdLastSet"][0])
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "pwdLastSet": str(1)})
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_OTHER)
+            self.assertTrue('00000057' in msg)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "pwdLastSet": str(lastset)})
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_OTHER)
+            self.assertTrue('00000057' in msg)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": "user"})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        self.assertEqual(int(res1[0]["pwdLastSet"][0]), 0)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["pls1"] = MessageElement(str(0),
+                                   FLAG_MOD_REPLACE,
+                                   "pwdLastSet")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["pls1"] = MessageElement(str(0),
+                                   FLAG_MOD_DELETE,
+                                   "pwdLastSet")
+        m["pls2"] = MessageElement(str(0),
+                                   FLAG_MOD_ADD,
+                                   "pwdLastSet")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["pls1"] = MessageElement(str(-1),
+                                   FLAG_MOD_REPLACE,
+                                   "pwdLastSet")
+        ldb.modify(m)
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        self.assertGreater(int(res1[0]["pwdLastSet"][0]), lastset)
+        lastset = int(res1[0]["pwdLastSet"][0])
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["pls1"] = MessageElement(str(0),
+                                       FLAG_MOD_DELETE,
+                                       "pwdLastSet")
+            m["pls2"] = MessageElement(str(0),
+                                       FLAG_MOD_ADD,
+                                       "pwdLastSet")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+            self.assertTrue('00002085' in msg)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["pls1"] = MessageElement(str(-1),
+                                       FLAG_MOD_DELETE,
+                                       "pwdLastSet")
+            m["pls2"] = MessageElement(str(0),
+                                       FLAG_MOD_ADD,
+                                       "pwdLastSet")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+            self.assertTrue('00002085' in msg)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["pls1"] = MessageElement(str(lastset),
+                                   FLAG_MOD_DELETE,
+                                   "pwdLastSet")
+        m["pls2"] = MessageElement(str(-1),
+                                   FLAG_MOD_ADD,
+                                   "pwdLastSet")
+        time.sleep(0.2)
+        ldb.modify(m)
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        self.assertEqual(int(res1[0]["pwdLastSet"][0]), lastset)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["pls1"] = MessageElement(str(lastset),
+                                       FLAG_MOD_DELETE,
+                                       "pwdLastSet")
+            m["pls2"] = MessageElement(str(lastset),
+                                       FLAG_MOD_ADD,
+                                       "pwdLastSet")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, msg):
+            self.assertEquals(num, ERR_OTHER)
+            self.assertTrue('00000057' in msg)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["pls1"] = MessageElement(str(lastset),
+                                   FLAG_MOD_DELETE,
+                                   "pwdLastSet")
+        m["pls2"] = MessageElement(str(0),
+                                   FLAG_MOD_ADD,
+                                   "pwdLastSet")
+        ldb.modify(m)
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        uac = int(res1[0]["userAccountControl"][0])
+        self.assertEqual(int(res1[0]["pwdLastSet"][0]), 0)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["uac1"] = MessageElement(str(uac|UF_PASSWORD_EXPIRED),
+                                   FLAG_MOD_REPLACE,
+                                   "userAccountControl")
+        ldb.modify(m)
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl", "pwdLastSet"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEqual(int(res1[0]["sAMAccountType"][0]),
+                         ATYPE_NORMAL_ACCOUNT)
+        self.assertEqual(int(res1[0]["userAccountControl"][0]),
+                         UF_NORMAL_ACCOUNT | UF_ACCOUNTDISABLE | UF_PASSWD_NOTREQD)
+        self.assertEqual(int(res1[0]["pwdLastSet"][0]), 0)
+
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
 
     def test_userAccountControl(self):
         """Test the userAccountControl behaviour"""
