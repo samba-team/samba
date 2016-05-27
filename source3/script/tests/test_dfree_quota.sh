@@ -48,8 +48,6 @@ confdfq3:df:block size = 4096:disk free = 10:disk size = 80
 confdfq3:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 0
 confdfq4:df:block size = 4096:disk free = 10:disk size = 80
 confdfq4:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 37
-edquot:df:block size = 4096:disk free = 10:disk size = 80
-edquot:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 41:edquot = 1
 slimit:df:block size = 4096:disk free = 10:disk size = 80
 slimit:u$uid:block size = 4096:hard limit = 44:soft limit = 40:cur blocks = 42
 hlimit:df:block size = 4096:disk free = 10:disk size = 80
@@ -170,7 +168,6 @@ test_smbclient_dfree "Test dfree share root df vs quota case 4" "." "confdfq4 ."
 test_smbclient_dfree "Test dfree subdir df vs quota case 4" "subdir1" "confdfq4 subdir1" "160 1024. 12" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 
 #quota-->disk free special cases
-test_smbclient_dfree "Test quota->dfree edquot" "subdir1" "edquot subdir1" "164 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree soft limit" "subdir1" "slimit subdir1" "168 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree hard limit" "subdir1" "hlimit subdir1" "180 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree inode soft limit" "subdir1" "islimit subdir1" "148 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
