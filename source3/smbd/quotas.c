@@ -509,18 +509,11 @@ bool disk_quotas(connection_struct *conn, const char *path, uint64_t *bsize,
 
 	r = SMB_VFS_GET_QUOTA(conn, path, SMB_USER_QUOTA_TYPE, id, &D);
 
-	/* Use softlimit to determine disk space, except when it has been exceeded */
-	*bsize = D.bsize;
 	if (r == -1) {
-		if (errno == EDQUOT) {
-			*dfree =0;
-			*dsize =D.curblocks;
-			return (True);
-		} else {
-			goto try_group_quota;
-		}
+		goto try_group_quota;
 	}
 
+	*bsize = D.bsize;
 	/* Use softlimit to determine disk space, except when it has been exceeded */
 	if (
 		(D.softlimit && D.curblocks >= D.softlimit) ||
@@ -563,18 +556,11 @@ try_group_quota:
 	ZERO_STRUCT(D);
 	r = SMB_VFS_GET_QUOTA(conn, path, SMB_GROUP_QUOTA_TYPE, id, &D);
 
-	/* Use softlimit to determine disk space, except when it has been exceeded */
-	*bsize = D.bsize;
 	if (r == -1) {
-		if (errno == EDQUOT) {
-			*dfree =0;
-			*dsize =D.curblocks;
-			return (True);
-		} else {
-			return False;
-		}
+		return False;
 	}
 
+	*bsize = D.bsize;
 	/* Use softlimit to determine disk space, except when it has been exceeded */
 	if (
 		(D.softlimit && D.curblocks >= D.softlimit) ||
