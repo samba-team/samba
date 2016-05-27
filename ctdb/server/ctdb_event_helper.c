@@ -24,6 +24,8 @@
 
 #include <talloc.h>
 
+#include "lib/util/blocking.h"
+
 #include "ctdb_private.h"
 
 #include "common/system.h"

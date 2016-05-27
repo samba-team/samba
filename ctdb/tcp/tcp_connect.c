@@ -27,6 +27,7 @@
 
 #include "lib/util/debug.h"
 #include "lib/util/time.h"
+#include "lib/util/blocking.h"
 
 #include "ctdb_private.h"
 
@@ -148,7 +149,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 		DEBUG(DEBUG_ERR, (__location__ " Failed to create socket\n"));
 		return;
 	}
-	set_nonblocking(tnode->fd);
+	set_blocking(tnode->fd, false);
 	set_close_on_exec(tnode->fd);
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created TCP SOCKET FD:%d\n", tnode->fd));
@@ -246,7 +247,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	in->fd = fd;
 	in->ctdb = ctdb;
 
-	set_nonblocking(in->fd);
+	set_blocking(in->fd, false);
 	set_close_on_exec(in->fd);
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));

@@ -29,6 +29,7 @@
 #include "system/wait.h"
 
 #include "lib/util/debug.h"
+#include "lib/util/blocking.h"
 
 #include "protocol/protocol.h"
 
@@ -177,7 +178,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			return -1;
 		}
 
-		set_nonblocking(s);
+		set_blocking(s, false);
 		set_close_on_exec(s);
 
 		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0, &dest->ip, sizeof(dest->ip));

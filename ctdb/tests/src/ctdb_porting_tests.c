@@ -27,6 +27,7 @@
 #include <tdb.h>
 
 #include "lib/util/debug.h"
+#include "lib/util/blocking.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -68,7 +69,7 @@ static int socket_server_create(void)
 	}
 
 	set_close_on_exec(globals.socket);
-	//set_nonblocking(globals.socket);
+	//set_blocking(globals.socket, false);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -112,7 +113,7 @@ static int socket_server_wait_peer(void)
 		return -1;
 	}
 
-	//set_nonblocking(fd);
+	//set_blocking(fd, false);
 	set_close_on_exec(fd);
 	return fd;
 }

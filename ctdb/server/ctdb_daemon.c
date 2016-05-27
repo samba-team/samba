@@ -33,6 +33,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/blocking.h"
 
 #include "ctdb_version.h"
 #include "ctdb_private.h"
@@ -937,7 +938,7 @@ static void ctdb_accept_client(struct tevent_context *ev,
 		return;
 	}
 
-	set_nonblocking(fd);
+	set_blocking(fd, false);
 	set_close_on_exec(fd);
 
 	DEBUG(DEBUG_DEBUG,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
@@ -1006,7 +1007,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	unlink(ctdb->daemon.name);
 
 	set_close_on_exec(ctdb->daemon.sd);
-	set_nonblocking(ctdb->daemon.sd);
+	set_blocking(ctdb->daemon.sd, false);
 
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));

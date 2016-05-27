@@ -28,6 +28,7 @@
 #include "lib/util/time.h"
 #include "lib/util/strv.h"
 #include "lib/util/strv_util.h"
+#include "lib/util/blocking.h"
 
 #include "ctdb_private.h"
 #include "common/common.h"

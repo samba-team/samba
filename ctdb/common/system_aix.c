@@ -25,6 +25,7 @@
 #include "system/wait.h"
 
 #include "lib/util/debug.h"
+#include "lib/util/blocking.h"
 
 #include "protocol/protocol.h"
 
@@ -65,7 +66,7 @@ int ctdb_sys_open_sending_socket(void)
 		return -1;
 	}
 
-	set_nonblocking(s);
+	set_blocking(s, false);
 	set_close_on_exec(s);
 
 	return s;
@@ -142,7 +143,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		return -1;
 	}
 
-	set_nonblocking(s);
+	set_blocking(s, false);
 	set_close_on_exec(s);
 
 	memset(&ip4pkt, 0, sizeof(ip4pkt));

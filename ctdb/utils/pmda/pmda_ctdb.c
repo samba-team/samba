@@ -26,6 +26,7 @@
 #include <tevent.h>
 
 #include "lib/util/time.h"
+#include "lib/util/blocking.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -234,7 +235,7 @@ pmda_ctdb_daemon_connect(void)
 		goto err_ctdb;
 	}
 
-	set_nonblocking(ctdb->daemon.sd);
+	set_blocking(ctdb->daemon.sd, false);
 	set_close_on_exec(ctdb->daemon.sd);
 
 	if (connect(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {

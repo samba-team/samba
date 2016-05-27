@@ -28,6 +28,7 @@
 
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
+#include "lib/util/blocking.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
