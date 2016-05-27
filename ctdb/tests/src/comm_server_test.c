@@ -22,86 +22,11 @@
 
 #include <assert.h>
 
+#include "lib/async_req/async_sock.h"
+
 #include "common/pkt_read.c"
 #include "common/pkt_write.c"
 #include "common/comm.c"
-
-
-struct accept_state {
-	int listen_fd;
-	struct tevent_fd *fde;
-	int client_fd;
-};
-
-static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
-			   uint16_t flags, void *private_data);
-
-static struct tevent_req *accept_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      int listen_fd)
-{
-	struct tevent_req *req;
-	struct accept_state *state;
-
-	req = tevent_req_create(mem_ctx, &state, struct accept_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	state->listen_fd = listen_fd;
-
-	state->fde = tevent_add_fd(ev, state, listen_fd, TEVENT_FD_READ,
-				   accept_handler, req);
-	if (tevent_req_nomem(state->fde, req)) {
-		return tevent_req_post(req, ev);
-	}
-	return req;
-}
-
-static void accept_handler(struct tevent_context *ev, struct tevent_fd *fde,
-			   uint16_t flags, void *private_data)
-{
-	struct tevent_req *req = talloc_get_type_abort(
-		private_data, struct tevent_req);
-	struct accept_state *state = tevent_req_data(
-		req, struct accept_state);
-	struct sockaddr addr;
-	socklen_t addrlen = sizeof(addr);
-	int ret;
-
-	TALLOC_FREE(state->fde);
-
-	if ((flags & TEVENT_FD_READ) == 0) {
-		tevent_req_error(req, EIO);
-		return;
-	}
-
-	ret = accept(state->listen_fd, &addr, &addrlen);
-	if (ret == -1) {
-		tevent_req_error(req, errno);
-		return;
-	}
-
-	state->client_fd = ret;
-	tevent_req_done(req);
-}
-
-static int accept_recv(struct tevent_req *req, int *perr)
-{
-	struct accept_state *state = tevent_req_data(
-		req, struct accept_state);
-	int err;
-
-	if (tevent_req_is_unix_error(req, &err)) {
-		if (perr != NULL) {
-			*perr = err;
-		}
-		return -1;
-	}
-
-	return state->client_fd;
-}
-
 
 struct echo_state {
 	struct tevent_context *ev;
@@ -250,7 +175,7 @@ static void socket_process_client(struct tevent_req *subreq)
 	int client_fd;
 	int err = 0;
 
-	client_fd = accept_recv(subreq, &err);
+	client_fd = accept_recv(subreq, NULL, NULL, &err);
 	TALLOC_FREE(subreq);
 
 	state->num_clients++;
