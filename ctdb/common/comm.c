@@ -24,25 +24,12 @@
 #include <talloc.h>
 #include <tdb.h>
 
+#include "lib/util/blocking.h"
 #include "lib/util/tevent_unix.h"
 
 #include "pkt_read.h"
 #include "pkt_write.h"
 #include "comm.h"
-
-static bool set_nonblocking(int fd)
-{
-	int v;
-
-	v = fcntl(fd, F_GETFL, 0);
-	if (v == -1) {
-		return false;
-	}
-        if (fcntl(fd, F_SETFL, v | O_NONBLOCK) == -1) {
-		return false;
-	}
-	return true;
-}
 
 /*
  * Communication endpoint around a socket
@@ -78,6 +65,7 @@ int comm_setup(TALLOC_CTX *mem_ctx, struct tevent_context *ev, int fd,
 	       struct comm_context **result)
 {
 	struct comm_context *comm;
+	int ret;
 
 	if (fd < 0) {
 		return EINVAL;
@@ -88,7 +76,8 @@ int comm_setup(TALLOC_CTX *mem_ctx, struct tevent_context *ev, int fd,
 	}
 
 	/* Socket queue relies on non-blocking sockets. */
-	if (!set_nonblocking(fd)) {
+	ret = set_blocking(fd, false);
+	if (ret == -1) {
 		return EIO;
 	}
 

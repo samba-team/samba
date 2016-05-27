@@ -22,6 +22,8 @@
 
 #include <assert.h>
 
+#include "lib/util/blocking.h"
+
 #include "common/pkt_read.c"
 #include "common/pkt_write.c"
 
@@ -326,20 +328,6 @@ static void reader(int fd)
 	talloc_free(mem_ctx);
 }
 
-static bool set_nonblocking(int fd)
-{
-	int v;
-
-	v = fcntl(fd, F_GETFL, 0);
-	if (v == -1) {
-		return false;
-	}
-        if (fcntl(fd, F_SETFL, v | O_NONBLOCK) == -1) {
-		return false;
-	}
-	return true;
-}
-
 int main(void)
 {
 	int fd[2];
@@ -360,7 +348,8 @@ int main(void)
 	}
 
 	close(fd[1]);
-	if (!set_nonblocking(fd[0])) {
+	ret = set_blocking(fd[0], false);
+	if (ret == -1) {
 		exit(1);
 	}
 
