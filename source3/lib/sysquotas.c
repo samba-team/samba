@@ -493,11 +493,6 @@ int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	SAFE_FREE(bdev);
 	SAFE_FREE(fs);
 
-	if ((ret!=0)&& (errno == EDQUOT)) {
-		DEBUG(10,("sys_get_quota() warning over quota!\n"));
-		return 0;
-	}
-
 	return ret;
 }
 
@@ -559,11 +554,6 @@ int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DI
 	SAFE_FREE(mntpath);
 	SAFE_FREE(bdev);
 	SAFE_FREE(fs);
-
-	if ((ret!=0)&& (errno == EDQUOT)) {
-		DEBUG(10,("sys_set_quota() warning over quota!\n"));
-		return 0;
-	}
 
 	return ret;		
 }
