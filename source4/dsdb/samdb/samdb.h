@@ -164,6 +164,17 @@ struct dsdb_control_password_change {
  */
 #define DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID "1.3.6.1.4.1.7165.4.3.26"
 
+/*
+ * pass the userAccountControl changes between the "samldb" and "password_hash"
+ * modules.
+ */
+#define DSDB_CONTROL_PASSWORD_USER_ACCOUNT_CONTROL_OID "1.3.6.1.4.1.7165.4.3.27"
+struct dsdb_control_password_user_account_control {
+	uint32_t req_flags; /* the flags given by the client request */
+	uint32_t old_flags; /* the old flags stored (0 on add) */
+	uint32_t new_flags; /* the new flags stored */
+};
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
