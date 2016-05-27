@@ -1040,7 +1040,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 #ifdef HAVE_UNIXSOCKET
 		struct sockaddr_un addr;
 #else
-		struct sockaddr addr;
+		struct sockaddr_storage addr;
 #endif
 		socklen_t len = sizeof(addr);
 		int sd;
