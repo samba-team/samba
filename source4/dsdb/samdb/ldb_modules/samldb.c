@@ -1074,6 +1074,7 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 static int samldb_prim_group_tester(struct samldb_ctx *ac, uint32_t rid);
 static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 						   struct dom_sid *sid,
+						   uint32_t req_uac,
 						   uint32_t user_account_control,
 						   uint32_t user_account_control_old);
 
@@ -1145,11 +1146,13 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
 		if (el != NULL) {
+			uint32_t raw_uac;
 			uint32_t user_account_control;
 			/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
 			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
 									 "userAccountControl",
 									 0);
+			raw_uac = user_account_control;
 			/*
 			 * "userAccountControl" = 0 or missing one of
 			 * the types means "UF_NORMAL_ACCOUNT".  See
@@ -1173,7 +1176,9 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			}
 
 			ret = samldb_check_user_account_control_rules(ac, NULL,
-								      user_account_control, 0);
+								      raw_uac,
+								      user_account_control,
+								      0);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -1858,10 +1863,13 @@ static int samldb_check_user_account_control_acl(struct samldb_ctx *ac,
 
 static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 						   struct dom_sid *sid,
+						   uint32_t req_uac,
 						   uint32_t user_account_control,
 						   uint32_t user_account_control_old)
 {
 	int ret;
+	struct dsdb_control_password_user_account_control *uac = NULL;
+
 	ret = samldb_check_user_account_control_invariants(ac, user_account_control);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1870,6 +1878,24 @@ static int samldb_check_user_account_control_rules(struct samldb_ctx *ac,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	uac = talloc_zero(ac->req,
+			  struct dsdb_control_password_user_account_control);
+	if (uac == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+
+	uac->req_flags = req_uac;
+	uac->old_flags = user_account_control_old;
+	uac->new_flags = user_account_control;
+
+	ret = ldb_request_add_control(ac->req,
+				DSDB_CONTROL_PASSWORD_USER_ACCOUNT_CONTROL_OID,
+				false, uac);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	return ret;
 }
 
@@ -1994,7 +2020,10 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 		return ldb_module_operr(ac->module);
 	}
 
-	ret = samldb_check_user_account_control_rules(ac, sid, new_uac, old_uac);
+	ret = samldb_check_user_account_control_rules(ac, sid,
+						      raw_uac,
+						      new_uac,
+						      old_uac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
