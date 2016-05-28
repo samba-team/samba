@@ -1553,7 +1553,7 @@ struct hold_reclock_state {
 	double latency;
 };
 
-static void hold_reclock_handler(char status,
+static void take_reclock_handler(char status,
 				 double latency,
 				 void *private_data)
 {
@@ -1578,6 +1578,22 @@ static void hold_reclock_handler(char status,
 	s->locked = (status == '0') ;
 }
 
+static bool ctdb_recovery_lock(struct ctdb_recoverd *rec);
+
+static void lost_reclock_handler(void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+
+	DEBUG(DEBUG_ERR,
+	      ("Recovery lock helper terminated unexpectedly - "
+	       "trying to retake recovery lock\n"));
+	TALLOC_FREE(rec->recovery_lock_handle);
+	if (! ctdb_recovery_lock(rec)) {
+		DEBUG(DEBUG_ERR, ("Failed to take recovery lock\n"));
+	}
+}
+
 static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
@@ -1589,7 +1605,8 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	};
 
 	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0,
-			       hold_reclock_handler, &s, NULL, NULL);
+			       take_reclock_handler, &s,
+			       lost_reclock_handler, rec);
 	if (h == NULL) {
 		return false;
 	}
