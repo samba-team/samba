@@ -908,7 +908,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock, 5);
+	h = ctdb_cluster_mutex(ctdb, ctdb, ctdb->recovery_lock, 5);
 	if (h == NULL) {
 		return -1;
 	}

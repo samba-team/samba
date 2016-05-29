@@ -22,6 +22,8 @@
 #ifndef __CTDB_CLUSTER_MUTEX_H__
 #define __CTDB_CLUSTER_MUTEX_H__
 
+#include <talloc.h>
+
 #include "replace.h"
 #include "system/network.h"
 
@@ -41,7 +43,8 @@ void ctdb_cluster_mutex_set_handler(struct ctdb_cluster_mutex_handle *h,
 				    void *private_data);
 
 struct ctdb_cluster_mutex_handle *
-ctdb_cluster_mutex(struct ctdb_context *ctdb,
+ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
+		   struct ctdb_context *ctdb,
 		   const char *argstring,
 		   int timeout);
 

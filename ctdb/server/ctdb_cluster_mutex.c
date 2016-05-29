@@ -184,7 +184,8 @@ static bool cluster_mutex_helper_args(TALLOC_CTX *mem_ctx,
 }
 
 struct ctdb_cluster_mutex_handle *
-ctdb_cluster_mutex(struct ctdb_context *ctdb,
+ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
+		   struct ctdb_context *ctdb,
 		   const char *argstring,
 		   int timeout)
 {
@@ -192,7 +193,7 @@ ctdb_cluster_mutex(struct ctdb_context *ctdb,
 	char **args;
 	int ret;
 
-	h = talloc(ctdb, struct ctdb_cluster_mutex_handle);
+	h = talloc(mem_ctx, struct ctdb_cluster_mutex_handle);
 	if (h == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		return NULL;
