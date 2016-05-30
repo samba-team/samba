@@ -1695,14 +1695,23 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 	}
 
 	if (io->ac->pwd_last_set_bypass) {
-		struct ldb_message_element *el;
+		struct ldb_message_element *el1 = NULL;
+		struct ldb_message_element *el2 = NULL;
 
 		if (msg == NULL) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
-		el = ldb_msg_find_element(msg, "pwdLastSet");
-		if (el == NULL) {
+		el1 = dsdb_get_single_valued_attr(msg, "pwdLastSet",
+						  io->ac->req->operation);
+		if (el1 == NULL) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		el2 = ldb_msg_find_element(msg, "pwdLastSet");
+		if (el2 == NULL) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+		if (el1 != el2) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 
