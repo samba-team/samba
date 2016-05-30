@@ -231,7 +231,8 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	status = gensec_check_packet(tkey->gensec, buffer, buffer_len,
 				    buffer, buffer_len, &sig);
 	if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
-		return DNS_ERR(BADKEY);
+		state->tsig_error = DNS_RCODE_BADSIG;
+		return DNS_ERR(NOTAUTH);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
