@@ -357,8 +357,7 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 
 	tkey = dns_find_tkey(dns->tkeys, state->key_name);
 	if (tkey == NULL) {
-		/* FIXME: read up on what to do when we can't find a key */
-		return WERR_OK;
+		return DNS_ERR(SERVER_FAILURE);
 	}
 
 	werror = dns_tsig_compute_mac(mem_ctx, state, packet,
