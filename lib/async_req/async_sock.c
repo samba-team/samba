@@ -308,7 +308,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		private_data, struct tevent_req);
 	struct writev_state *state =
 		tevent_req_data(req, struct writev_state);
-	size_t written;
+	ssize_t written;
 	bool ok;
 
 	if ((state->flags & TEVENT_FD_READ) && (flags & TEVENT_FD_READ)) {
