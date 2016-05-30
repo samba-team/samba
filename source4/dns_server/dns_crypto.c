@@ -146,8 +146,25 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 
 	tkey = dns_find_tkey(dns->tkeys, state->tsig->name);
 	if (tkey == NULL) {
+		/*
+		 * We must save the name for use in the TSIG error
+		 * response and have no choice here but to save the
+		 * keyname from the TSIG request.
+		 */
+		state->key_name = talloc_strdup(state->mem_ctx,
+						state->tsig->name);
 		state->tsig_error = DNS_RCODE_BADKEY;
 		return DNS_ERR(NOTAUTH);
+	}
+
+	/*
+	 * Remember the keyname that found an existing tkey, used
+	 * later to fetch the key with dns_find_tkey() when signing
+	 * and adding a TSIG record with MAC.
+	 */
+	state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
+	if (state->key_name == NULL) {
+		return WERR_NOMEM;
 	}
 
 	/* FIXME: check TSIG here */
@@ -223,10 +240,6 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 	}
 
 	state->authenticated = true;
-	state->key_name = talloc_strdup(state->mem_ctx, tkey->name);
-	if (state->key_name == NULL) {
-		return WERR_NOMEM;
-	}
 
 	return WERR_OK;
 }
