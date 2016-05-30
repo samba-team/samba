@@ -1601,9 +1601,6 @@ static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 		tevent_loop_once(ctdb->ev);
 	}
 
-	/* Ensure no attempts to access to s after function return */
-	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, NULL);
-
 	return s.locked;
 }
 
