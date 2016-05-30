@@ -462,6 +462,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 				j--;
 			} else if (ldb_attr_cmp(drs_msg->elements[j].name, "unicodePwd") == 0 ||
 				   ldb_attr_cmp(drs_msg->elements[j].name, "dBCSPwd") == 0 ||
+				   ldb_attr_cmp(drs_msg->elements[j].name, "userPassword") == 0 ||
 				   ldb_attr_cmp(drs_msg->elements[j].name, "ntPwdHistory") == 0 ||
 				   ldb_attr_cmp(drs_msg->elements[j].name, "lmPwdHistory") == 0 ||
 				   ldb_attr_cmp(drs_msg->elements[j].name, "supplementalCredentials") == 0 ||
