@@ -813,6 +813,76 @@ out:
  run as root or will fail (which is a good thing :-).
 ************************************************************************/
 
+#if !defined(SAMBA4_USES_HEIMDAL) /* MIT version */
+static char *get_enctypes(TALLOC_CTX *mem_ctx)
+{
+	char *aes_enctypes = NULL;
+	const char *legacy_enctypes = "";
+	char *enctypes = NULL;
+
+	aes_enctypes = talloc_strdup(mem_ctx, "");
+	if (aes_enctypes == NULL) {
+		goto done;
+	}
+
+	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
+	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_STRONG) {
+#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
+		aes_enctypes = talloc_asprintf_append(
+		    aes_enctypes, "%s", "aes256-cts-hmac-sha1-96 ");
+		if (aes_enctypes == NULL) {
+			goto done;
+		}
+#endif
+#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
+		aes_enctypes = talloc_asprintf_append(
+		    aes_enctypes, "%s", "aes128-cts-hmac-sha1-96");
+		if (aes_enctypes == NULL) {
+			goto done;
+		}
+#endif
+	}
+
+	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
+	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY) {
+		legacy_enctypes = "RC4-HMAC DES-CBC-CRC DES-CBC-MD5";
+	}
+
+	enctypes =
+	    talloc_asprintf(mem_ctx, "\tdefault_tgs_enctypes = %s %s\n"
+				     "\tdefault_tkt_enctypes = %s %s\n"
+				     "\tpreferred_enctypes = %s %s\n",
+			    aes_enctypes, legacy_enctypes, aes_enctypes,
+			    legacy_enctypes, aes_enctypes, legacy_enctypes);
+done:
+	TALLOC_FREE(aes_enctypes);
+	return enctypes;
+}
+#else /* Heimdal version */
+static char *get_enctypes(TALLOC_CTX *mem_ctx)
+{
+	const char *aes_enctypes = "";
+	const char *legacy_enctypes = "";
+	char *enctypes = NULL;
+
+	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
+	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_STRONG) {
+		aes_enctypes =
+		    "aes256-cts-hmac-sha1-96 aes128-cts-hmac-sha1-96";
+	}
+
+	if (lp_kerberos_encryption_types() == KERBEROS_ETYPES_ALL ||
+	    lp_kerberos_encryption_types() == KERBEROS_ETYPES_LEGACY) {
+		legacy_enctypes = "arcfour-hmac-md5 des-cbc-crc des-cbc-md5";
+	}
+
+	enctypes = talloc_asprintf(mem_ctx, "\tdefault_etypes = %s %s\n",
+				   aes_enctypes, legacy_enctypes);
+
+	return enctypes;
+}
+#endif
+
 bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *domain,
 						const char *sitename,
@@ -828,7 +898,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	int fd;
 	char *realm_upper = NULL;
 	bool result = false;
-	char *aes_enctypes = NULL;
+	char *enctypes = NULL;
 	mode_t mask;
 
 	if (!lp_create_krb5_conf()) {
@@ -879,34 +949,18 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
-	aes_enctypes = talloc_strdup(fname, "");
-	if (aes_enctypes == NULL) {
+	enctypes = get_enctypes(fname);
+	if (enctypes == NULL) {
 		goto done;
 	}
 
-#ifdef HAVE_ENCTYPE_AES256_CTS_HMAC_SHA1_96
-	aes_enctypes = talloc_asprintf_append(aes_enctypes, "%s", "aes256-cts-hmac-sha1-96 ");
-	if (aes_enctypes == NULL) {
-		goto done;
-	}
-#endif
-#ifdef HAVE_ENCTYPE_AES128_CTS_HMAC_SHA1_96
-	aes_enctypes = talloc_asprintf_append(aes_enctypes, "%s", "aes128-cts-hmac-sha1-96");
-	if (aes_enctypes == NULL) {
-		goto done;
-	}
-#endif
-
-	file_contents = talloc_asprintf(fname,
-					"[libdefaults]\n\tdefault_realm = %s\n"
-					"\tdefault_tgs_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tdefault_tkt_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tpreferred_enctypes = %s RC4-HMAC DES-CBC-CRC DES-CBC-MD5\n"
-					"\tdns_lookup_realm = false\n\n"
-					"[realms]\n\t%s = {\n"
-					"%s\t}\n",
-					realm_upper, aes_enctypes, aes_enctypes, aes_enctypes,
-					realm_upper, kdc_ip_string);
+	file_contents =
+	    talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n"
+				   "%s"
+				   "\tdns_lookup_realm = false\n\n"
+				   "[realms]\n\t%s = {\n"
+				   "%s\t}\n",
+			    realm_upper, enctypes, realm_upper, kdc_ip_string);
 
 	if (!file_contents) {
 		goto done;
