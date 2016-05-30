@@ -212,7 +212,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr,
 						(unsigned char)complen, s);
 		NDR_ERR_HAVE_NO_MEMORY(compname);
 
-		/* remember the current componemt + the rest of the string
+		/* remember the current component + the rest of the string
 		 * so it can be reused later
 		 */
 		if (!(ndr->flags & LIBNDR_FLAG_NO_COMPRESSION)) {
