@@ -152,14 +152,6 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUGC(DBGC_DNS, dns_name_packet, &state->in_packet);
 	}
 
-	ret = dns_verify_tsig(dns, state, &state->state, &state->in_packet, in);
-	if (!W_ERROR_IS_OK(ret)) {
-		DEBUG(1, ("Failed to verify TSIG!\n"));
-		state->dns_err = werr_to_dns_err(ret);
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
 	if (state->in_packet.operation & DNS_FLAG_REPLY) {
 		DEBUG(1, ("Won't reply to replies.\n"));
 		tevent_req_werror(req, WERR_INVALID_PARAM);
@@ -175,6 +167,13 @@ static struct tevent_req *dns_process_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->out_packet = state->in_packet;
+
+	ret = dns_verify_tsig(dns, state, &state->state, &state->out_packet, in);
+	if (!W_ERROR_IS_OK(ret)) {
+		state->dns_err = werr_to_dns_err(ret);
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
 
 	switch (state->in_packet.operation & DNS_OPCODE) {
 	case DNS_OPCODE_QUERY:
