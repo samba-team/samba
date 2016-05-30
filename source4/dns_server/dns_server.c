@@ -235,7 +235,9 @@ static WERROR dns_process_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 	if ((state->dns_err != DNS_RCODE_OK) &&
-	    (state->dns_err != DNS_RCODE_NXDOMAIN)) {
+	    (state->dns_err != DNS_RCODE_NXDOMAIN) &&
+	    (state->dns_err != DNS_RCODE_NOTAUTH))
+	{
 		goto drop;
 	}
 	if (state->dns_err != DNS_RCODE_OK) {
