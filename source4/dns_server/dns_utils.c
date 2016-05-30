@@ -130,8 +130,8 @@ WERROR dns_replace_records(struct dns_server *dns,
 				  needs_add, dwSerial, records, rec_count);
 }
 
-bool dns_authorative_for_zone(struct dns_server *dns,
-			      const char *name)
+bool dns_authoritative_for_zone(struct dns_server *dns,
+				const char *name)
 {
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;

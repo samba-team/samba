@@ -84,8 +84,8 @@ WERROR dns_server_process_update(struct dns_server *dns,
 bool dns_name_equal(const char *name1, const char *name2);
 bool dns_records_match(struct dnsp_DnssrvRpcRecord *rec1,
 		       struct dnsp_DnssrvRpcRecord *rec2);
-bool dns_authorative_for_zone(struct dns_server *dns,
-			      const char *name);
+bool dns_authoritative_for_zone(struct dns_server *dns,
+				const char *name);
 const char *dns_get_authoritative_zone(struct dns_server *dns,
 				       const char *name);
 WERROR dns_lookup_records(struct dns_server *dns,

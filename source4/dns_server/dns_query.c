@@ -507,7 +507,7 @@ static struct tevent_req *handle_dnsrpcrec_send(
 		.name = rec->data.cname
 	};
 
-	if (dns_authorative_for_zone(dns, new_q->name)) {
+	if (dns_authoritative_for_zone(dns, new_q->name)) {
 		subreq = handle_authoritative_send(
 			state, ev, dns, forwarder, new_q,
 			state->answers, state->nsrecs);
@@ -984,7 +984,7 @@ struct tevent_req *dns_server_process_query_send(
 		DLIST_ADD_END(state->forwarders, f);
 	}
 
-	if (dns_authorative_for_zone(dns, in->questions[0].name)) {
+	if (dns_authoritative_for_zone(dns, in->questions[0].name)) {
 
 		req_state->flags |= DNS_FLAG_AUTHORITATIVE;
 
