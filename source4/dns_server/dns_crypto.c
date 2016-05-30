@@ -357,7 +357,6 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 {
 	WERROR werror;
 	time_t current_time = time(NULL);
-	struct dns_server_tkey *tkey = NULL;
 	struct dns_res_rec *tsig = NULL;
 	DATA_BLOB sig = (DATA_BLOB) {
 		.data = NULL,
@@ -369,15 +368,18 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 		return WERR_NOMEM;
 	}
 
-	tkey = dns_find_tkey(dns->tkeys, state->key_name);
-	if (tkey == NULL) {
-		return DNS_ERR(SERVER_FAILURE);
-	}
+	if (state->tsig_error == DNS_RCODE_OK) {
+		struct dns_server_tkey *tkey = dns_find_tkey(
+			dns->tkeys, state->key_name);
+		if (tkey == NULL) {
+			return DNS_ERR(SERVER_FAILURE);
+		}
 
-	werror = dns_tsig_compute_mac(mem_ctx, state, packet,
-				      tkey, current_time, &sig);
-	if (!W_ERROR_IS_OK(werror)) {
-		return werror;
+		werror = dns_tsig_compute_mac(mem_ctx, state, packet,
+					      tkey, current_time, &sig);
+		if (!W_ERROR_IS_OK(werror)) {
+			return werror;
+		}
 	}
 
 	tsig->name = talloc_strdup(tsig, state->key_name);
@@ -396,9 +398,10 @@ WERROR dns_sign_tsig(struct dns_server *dns,
 	tsig->rdata.tsig_record.original_id = packet->id;
 	tsig->rdata.tsig_record.other_size = 0;
 	tsig->rdata.tsig_record.other_data = NULL;
-	tsig->rdata.tsig_record.mac_size = sig.length;
-	tsig->rdata.tsig_record.mac = talloc_memdup(tsig, sig.data, sig.length);
-
+	if (sig.length > 0) {
+		tsig->rdata.tsig_record.mac_size = sig.length;
+		tsig->rdata.tsig_record.mac = talloc_memdup(tsig, sig.data, sig.length);
+	}
 
 	if (packet->arcount == 0) {
 		packet->additional = talloc_zero(mem_ctx, struct dns_res_rec);
