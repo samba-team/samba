@@ -343,10 +343,15 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		struct wbint_userinfo *info = &((*pinfo)[count]);
 		uint32_t group;
 		uint32_t atype;
+		bool ok;
 
-		if (!ads_pull_uint32(ads, msg, "sAMAccountType", &atype) ||
-		    ds_atype_map(atype) != SID_NAME_USER) {
-			DEBUG(1,("Not a user account? atype=0x%x\n", atype));
+		ok = ads_pull_uint32(ads, msg, "sAMAccountType", &atype);
+		if (!ok) {
+			DBG_INFO("Object lacks sAMAccountType attribute\n");
+			continue;
+		}
+		if (ds_atype_map(atype) != SID_NAME_USER) {
+			DBG_INFO("Not a user account? atype=0x%x\n", atype);
 			continue;
 		}
 
