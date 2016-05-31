@@ -89,6 +89,8 @@ struct ph_context {
 
 	struct ldb_reply *search_res;
 
+	struct ldb_message *update_msg;
+
 	struct dsdb_control_password_change_status *status;
 	struct dsdb_control_password_change *change;
 
@@ -2151,8 +2153,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
-static int update_final_msg(struct setup_password_fields_io *io,
-			    struct ldb_message *msg)
+static int update_final_msg(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	int ret;
@@ -2164,34 +2165,40 @@ static int update_final_msg(struct setup_password_fields_io *io,
 
 	/* make sure we replace all the old attributes */
 	if (io->ac->update_password && el_flags != 0) {
-		ret = ldb_msg_add_empty(msg, "unicodePwd",
+		ret = ldb_msg_add_empty(io->ac->update_msg,
+					"unicodePwd",
 					el_flags, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = ldb_msg_add_empty(msg, "dBCSPwd",
+		ret = ldb_msg_add_empty(io->ac->update_msg,
+					"dBCSPwd",
 					el_flags, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = ldb_msg_add_empty(msg, "ntPwdHistory",
+		ret = ldb_msg_add_empty(io->ac->update_msg,
+					"ntPwdHistory",
 					el_flags, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = ldb_msg_add_empty(msg, "lmPwdHistory",
+		ret = ldb_msg_add_empty(io->ac->update_msg,
+					"lmPwdHistory",
 					el_flags, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		ret = ldb_msg_add_empty(msg, "supplementalCredentials",
+		ret = ldb_msg_add_empty(io->ac->update_msg,
+					"supplementalCredentials",
 					el_flags, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
 	if (io->ac->update_lastset && el_flags != 0) {
-		ret = ldb_msg_add_empty(msg, "pwdLastSet",
+		ret = ldb_msg_add_empty(io->ac->update_msg,
+					"pwdLastSet",
 					el_flags, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -2199,7 +2206,8 @@ static int update_final_msg(struct setup_password_fields_io *io,
 	}
 
 	if (io->g.nt_hash != NULL) {
-		ret = samdb_msg_add_hash(ldb, io->ac, msg,
+		ret = samdb_msg_add_hash(ldb, io->ac,
+					 io->ac->update_msg,
 					 "unicodePwd",
 					 io->g.nt_hash);
 		if (ret != LDB_SUCCESS) {
@@ -2207,7 +2215,8 @@ static int update_final_msg(struct setup_password_fields_io *io,
 		}
 	}
 	if (io->g.lm_hash != NULL) {
-		ret = samdb_msg_add_hash(ldb, io->ac, msg,
+		ret = samdb_msg_add_hash(ldb, io->ac,
+					 io->ac->update_msg,
 					 "dBCSPwd",
 					 io->g.lm_hash);
 		if (ret != LDB_SUCCESS) {
@@ -2215,7 +2224,8 @@ static int update_final_msg(struct setup_password_fields_io *io,
 		}
 	}
 	if (io->g.nt_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, io->ac, msg,
+		ret = samdb_msg_add_hashes(ldb, io->ac,
+					   io->ac->update_msg,
 					   "ntPwdHistory",
 					   io->g.nt_history,
 					   io->g.nt_history_len);
@@ -2224,7 +2234,8 @@ static int update_final_msg(struct setup_password_fields_io *io,
 		}
 	}
 	if (io->g.lm_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, io->ac, msg,
+		ret = samdb_msg_add_hashes(ldb, io->ac,
+					   io->ac->update_msg,
 					   "lmPwdHistory",
 					   io->g.lm_history,
 					   io->g.lm_history_len);
@@ -2233,13 +2244,15 @@ static int update_final_msg(struct setup_password_fields_io *io,
 		}
 	}
 	if (io->g.supplemental.length > 0) {
-		ret = ldb_msg_add_value(msg, "supplementalCredentials",
+		ret = ldb_msg_add_value(io->ac->update_msg,
+					"supplementalCredentials",
 					&io->g.supplemental, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
-	ret = samdb_msg_add_uint64(ldb, io->ac, msg,
+	ret = samdb_msg_add_uint64(ldb, io->ac,
+				   io->ac->update_msg,
 				   "pwdLastSet",
 				   io->g.last_set);
 	if (ret != LDB_SUCCESS) {
@@ -3138,6 +3151,29 @@ static int password_hash_needed(struct ldb_module *module,
 	}
 	ph_apply_controls(ac);
 
+	/*
+	 * Make a copy in order to apply our modifications
+	 * to the final update
+	 */
+	ac->update_msg = ldb_msg_copy_shallow(ac, msg);
+	if (ac->update_msg == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	/*
+	 * Remove all password related attributes.
+	 */
+	if (ac->userPassword) {
+		ldb_msg_remove_attr(ac->update_msg, "userPassword");
+	}
+	ldb_msg_remove_attr(ac->update_msg, "clearTextPassword");
+	ldb_msg_remove_attr(ac->update_msg, "unicodePwd");
+	ldb_msg_remove_attr(ac->update_msg, "ntPwdHistory");
+	ldb_msg_remove_attr(ac->update_msg, "dBCSPwd");
+	ldb_msg_remove_attr(ac->update_msg, "lmPwdHistory");
+	ldb_msg_remove_attr(ac->update_msg, "supplementalCredentials");
+	ldb_msg_remove_attr(ac->update_msg, "pwdLastSet");
+
 	*_ac = ac;
 	return LDB_SUCCESS;
 }
@@ -3186,9 +3222,8 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 
 static int password_hash_add_do_add(struct ph_context *ac)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_request *down_req;
-	struct ldb_message *msg;
 	struct setup_password_fields_io io;
 	int ret;
 
@@ -3197,22 +3232,6 @@ static int password_hash_add_do_add(struct ph_context *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
-	if (msg == NULL) {
-		return ldb_operr(ldb);
-	}
-
-	/* remove attributes that we just read into 'io' */
-	if (ac->userPassword) {
-		ldb_msg_remove_attr(msg, "userPassword");
-	}
-	ldb_msg_remove_attr(msg, "clearTextPassword");
-	ldb_msg_remove_attr(msg, "unicodePwd");
-	ldb_msg_remove_attr(msg, "dBCSPwd");
-	ldb_msg_remove_attr(msg, "pwdLastSet");
 
 	ret = setup_password_fields(&io);
 	if (ret != LDB_SUCCESS) {
@@ -3224,13 +3243,13 @@ static int password_hash_add_do_add(struct ph_context *ac)
 		return ret;
 	}
 
-	ret = update_final_msg(&io, msg);
+	ret = update_final_msg(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = ldb_build_add_req(&down_req, ldb, ac,
-				msg,
+				ac->update_msg,
 				ac->req->controls,
 				ac, ph_op_callback,
 				ac->req);
@@ -3253,6 +3272,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_message *msg;
 	struct ldb_request *down_req;
 	int ret;
+	unsigned int i = 0;
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_modify\n");
 
@@ -3341,6 +3361,16 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	/* if there was nothing else to be modified skip to next step */
 	if (msg->num_elements == 0) {
 		return password_hash_mod_search_self(ac);
+	}
+
+	/*
+	 * Now we apply all changes remaining in msg
+	 * and remove them from our final update_msg
+	 */
+
+	for (i = 0; i < msg->num_elements; i++) {
+		ldb_msg_remove_attr(ac->update_msg,
+				    msg->elements[i].name);
 	}
 
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
@@ -3510,18 +3540,8 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_request *mod_req;
-	struct ldb_message *msg;
 	struct setup_password_fields_io io;
 	int ret;
-
-	/* use a new message structure so that we can modify it */
-	msg = ldb_msg_new(ac);
-	if (msg == NULL) {
-		return ldb_operr(ldb);
-	}
-
-	/* modify dn */
-	msg->dn = ac->req->op.mod.message->dn;
 
 	/* Prepare the internal data structure containing the passwords */
 	ret = setup_io(ac, ac->req->op.mod.message,
@@ -3540,13 +3560,13 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 		return ret;
 	}
 
-	ret = update_final_msg(&io, msg);
+	ret = update_final_msg(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
-				msg,
+				ac->update_msg,
 				ac->req->controls,
 				ac, ph_op_callback,
 				ac->req);
