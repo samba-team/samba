@@ -540,6 +540,7 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.bare")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.timecmd")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.join")
 
 # test fsmo show
 for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:

@@ -170,6 +170,7 @@ class dc_join(object):
         ctx.managedby = None
         ctx.subdomain = False
         ctx.adminpass = None
+        ctx.partition_dn = None
 
     def del_noerror(ctx, dn, recursive=False):
         if recursive:
@@ -185,71 +186,97 @@ class dc_join(object):
         except Exception:
             pass
 
+    def cleanup_old_accounts(ctx):
+        res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
+                               expression='sAMAccountName=%s' % ldb.binary_encode(ctx.samname),
+                               attrs=["msDS-krbTgtLink", "objectSID"])
+        if len(res) == 0:
+            return
+
+        creds = Credentials()
+        creds.guess(ctx.lp)
+        try:
+            creds.set_machine_account(ctx.lp)
+            machine_samdb = SamDB(url="ldap://%s" % ctx.server,
+                                  session_info=system_session(),
+                                credentials=creds, lp=ctx.lp)
+        except:
+            pass
+        else:
+            token_res = machine_samdb.search(scope=ldb.SCOPE_BASE, base="", attrs=["tokenGroups"])
+            if token_res[0]["tokenGroups"][0] \
+               == res[0]["objectSID"][0]:
+                raise DCJoinException("Not removing account %s which "
+                                   "looks like a Samba DC account "
+                                   "maching the password we already have.  "
+                                   "To override, remove secrets.ldb and secrets.tdb"
+                                % ctx.samname)
+
+        ctx.del_noerror(res[0].dn, recursive=True)
+
+        if "msDS-Krbtgtlink" in res[0]:
+            new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
+            del_noerror(ctx.new_krbtgt_dn)
+
+        res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
+                               expression='(&(sAMAccountName=%s)(servicePrincipalName=%s))' %
+                               (ldb.binary_encode("dns-%s" % ctx.myname),
+                                ldb.binary_encode("dns/%s" % ctx.dnshostname)),
+                               attrs=[])
+        if res:
+            ctx.del_noerror(res[0].dn, recursive=True)
+
+        res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
+                               expression='(sAMAccountName=%s)' % ldb.binary_encode("dns-%s" % ctx.myname),
+                            attrs=[])
+        if res:
+            raise DCJoinException("Not removing account %s which looks like "
+                               "a Samba DNS service account but does not "
+                               "have servicePrincipalName=%s" %
+                               (ldb.binary_encode("dns-%s" % ctx.myname),
+                                ldb.binary_encode("dns/%s" % ctx.dnshostname)))
+
+
     def cleanup_old_join(ctx):
         """Remove any DNs from a previous join."""
-        try:
-            # find the krbtgt link
-            print("checking sAMAccountName")
-            if ctx.subdomain:
-                res = None
-            else:
-                res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
-                                       expression='sAMAccountName=%s' % ldb.binary_encode(ctx.samname),
-                                       attrs=["msDS-krbTgtLink"])
-                if res:
-                    ctx.del_noerror(res[0].dn, recursive=True)
+        # find the krbtgt link
+        if not ctx.subdomain:
+            ctx.cleanup_old_accounts()
 
-                res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
-                                       expression='(&(sAMAccountName=%s)(servicePrincipalName=%s))' % (ldb.binary_encode("dns-%s" % ctx.myname), ldb.binary_encode("dns/%s" % ctx.dnshostname)),
-                                       attrs=[])
-                if res:
-                    ctx.del_noerror(res[0].dn, recursive=True)
+        if ctx.connection_dn is not None:
+            ctx.del_noerror(ctx.connection_dn)
+        if ctx.krbtgt_dn is not None:
+            ctx.del_noerror(ctx.krbtgt_dn)
+        ctx.del_noerror(ctx.ntds_dn)
+        ctx.del_noerror(ctx.server_dn, recursive=True)
+        if ctx.topology_dn:
+            ctx.del_noerror(ctx.topology_dn)
+        if ctx.partition_dn:
+            ctx.del_noerror(ctx.partition_dn)
 
-                res = ctx.samdb.search(base=ctx.samdb.get_default_basedn(),
-                                       expression='(sAMAccountName=%s)' % ldb.binary_encode("dns-%s" % ctx.myname),
-                                       attrs=[])
-                if res:
-                    raise RuntimeError("Not removing account %s which looks like a Samba DNS service account but does not have servicePrincipalName=%s" % (ldb.binary_encode("dns-%s" % ctx.myname), ldb.binary_encode("dns/%s" % ctx.dnshostname)))
+        if ctx.subdomain:
+            binding_options = "sign"
+            lsaconn = lsa.lsarpc("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
+                                 ctx.lp, ctx.creds)
 
-            if ctx.connection_dn is not None:
-                ctx.del_noerror(ctx.connection_dn)
-            if ctx.krbtgt_dn is not None:
-                ctx.del_noerror(ctx.krbtgt_dn)
-            ctx.del_noerror(ctx.ntds_dn)
-            ctx.del_noerror(ctx.server_dn, recursive=True)
-            if ctx.topology_dn:
-                ctx.del_noerror(ctx.topology_dn)
-            if ctx.partition_dn:
-                ctx.del_noerror(ctx.partition_dn)
-            if res:
-                ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
-                ctx.del_noerror(ctx.new_krbtgt_dn)
+            objectAttr = lsa.ObjectAttribute()
+            objectAttr.sec_qos = lsa.QosInfo()
 
-            if ctx.subdomain:
-                binding_options = "sign"
-                lsaconn = lsa.lsarpc("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
-                                     ctx.lp, ctx.creds)
+            pol_handle = lsaconn.OpenPolicy2(''.decode('utf-8'),
+                                             objectAttr, security.SEC_FLAG_MAXIMUM_ALLOWED)
 
-                objectAttr = lsa.ObjectAttribute()
-                objectAttr.sec_qos = lsa.QosInfo()
+            name = lsa.String()
+            name.string = ctx.realm
+            info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
 
-                pol_handle = lsaconn.OpenPolicy2(''.decode('utf-8'),
-                                                 objectAttr, security.SEC_FLAG_MAXIMUM_ALLOWED)
+            lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
 
-                name = lsa.String()
-                name.string = ctx.realm
-                info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
+            name = lsa.String()
+            name.string = ctx.forest_domain_name
+            info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
 
-                lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
+            lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
 
-                name = lsa.String()
-                name.string = ctx.forest_domain_name
-                info = lsaconn.QueryTrustedDomainInfoByName(pol_handle, name, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
-
-                lsaconn.DeleteTrustedDomain(pol_handle, info.info_ex.sid)
-
-        except Exception:
-            pass
 
     def promote_possible(ctx):
         """confirm that the account is just a bare NT4 BDC or a member server, so can be safely promoted"""
