@@ -2160,6 +2160,63 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
+static int update_final_msg(struct setup_password_fields_io *io,
+			    struct ldb_message *msg)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
+	int ret;
+
+	if (io->g.nt_hash != NULL) {
+		ret = samdb_msg_add_hash(ldb, io->ac, msg,
+					 "unicodePwd",
+					 io->g.nt_hash);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io->g.lm_hash != NULL) {
+		ret = samdb_msg_add_hash(ldb, io->ac, msg,
+					 "dBCSPwd",
+					 io->g.lm_hash);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io->g.nt_history_len > 0) {
+		ret = samdb_msg_add_hashes(ldb, io->ac, msg,
+					   "ntPwdHistory",
+					   io->g.nt_history,
+					   io->g.nt_history_len);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io->g.lm_history_len > 0) {
+		ret = samdb_msg_add_hashes(ldb, io->ac, msg,
+					   "lmPwdHistory",
+					   io->g.lm_history,
+					   io->g.lm_history_len);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io->g.supplemental.length > 0) {
+		ret = ldb_msg_add_value(msg, "supplementalCredentials",
+					&io->g.supplemental, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	ret = samdb_msg_add_uint64(ldb, io->ac, msg,
+				   "pwdLastSet",
+				   io->g.last_set);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
  * This is intended for use by the "password_hash" module since there
  * password changes can be specified through one message element with the
@@ -3047,48 +3104,7 @@ static int password_hash_add_do_add(struct ph_context *ac)
 		return ret;
 	}
 
-	if (io.g.nt_hash) {
-		ret = samdb_msg_add_hash(ldb, ac, msg,
-					 "unicodePwd", io.g.nt_hash);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.lm_hash) {
-		ret = samdb_msg_add_hash(ldb, ac, msg,
-					 "dBCSPwd", io.g.lm_hash);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.nt_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, ac, msg,
-					   "ntPwdHistory",
-					   io.g.nt_history,
-					   io.g.nt_history_len);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.lm_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, ac, msg,
-					   "lmPwdHistory",
-					   io.g.lm_history,
-					   io.g.lm_history_len);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.supplemental.length > 0) {
-		ret = ldb_msg_add_value(msg, "supplementalCredentials",
-					&io.g.supplemental, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	ret = samdb_msg_add_uint64(ldb, ac, msg,
-				   "pwdLastSet",
-				   io.g.last_set);
+	ret = update_final_msg(&io, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -3454,48 +3470,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	ret = ldb_msg_add_empty(msg, "supplementalCredentials", LDB_FLAG_MOD_REPLACE, NULL);
 	ret = ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE, NULL);
 
-	if (io.g.nt_hash) {
-		ret = samdb_msg_add_hash(ldb, ac, msg,
-					 "unicodePwd", io.g.nt_hash);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.lm_hash) {
-		ret = samdb_msg_add_hash(ldb, ac, msg,
-					 "dBCSPwd", io.g.lm_hash);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.nt_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, ac, msg,
-					   "ntPwdHistory",
-					   io.g.nt_history,
-					   io.g.nt_history_len);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.lm_history_len > 0) {
-		ret = samdb_msg_add_hashes(ldb, ac, msg,
-					   "lmPwdHistory",
-					   io.g.lm_history,
-					   io.g.lm_history_len);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	if (io.g.supplemental.length > 0) {
-		ret = ldb_msg_add_value(msg, "supplementalCredentials",
-					&io.g.supplemental, NULL);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-	ret = samdb_msg_add_uint64(ldb, ac, msg,
-				   "pwdLastSet",
-				   io.g.last_set);
+	ret = update_final_msg(&io, msg);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
