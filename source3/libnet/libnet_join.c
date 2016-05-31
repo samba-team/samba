@@ -2367,9 +2367,26 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 			W_ERROR_HAVE_NO_MEMORY(wrong_conf);
 		}
 
+		/*
+		 * We should generate the warning for the special case when
+		 * domain is AD, "security = domain" and the realm parameter is
+		 * not set.
+		 */
+		if (lp_security() == SEC_DOMAIN &&
+		    r->out.domain_is_ad &&
+		    !valid_realm) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"Warning: when joining AD domains with security=domain, "
+				"\"realm\" should be defined in the configuration (%s) "
+				"and configuration modification was not requested",
+				wrong_conf);
+			return WERR_OK;
+		}
+
 		libnet_join_set_error_string(mem_ctx, r,
 			"Invalid configuration (%s) and configuration modification "
 			"was not requested", wrong_conf);
+
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
