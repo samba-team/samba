@@ -1510,7 +1510,7 @@ static NTSTATUS is_subpath(const char *sub, const char *full,
 	}
 	string_replace(f, '\\', '/');
 	s = strlower_talloc(tmp_ctx, sub);
-	if (f == NULL) {
+	if (s == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out_ctx_free;
 	}
