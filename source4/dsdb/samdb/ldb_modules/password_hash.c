@@ -2251,12 +2251,14 @@ static int update_final_msg(struct setup_password_fields_io *io)
 			return ret;
 		}
 	}
-	ret = samdb_msg_add_uint64(ldb, io->ac,
-				   io->ac->update_msg,
-				   "pwdLastSet",
-				   io->g.last_set);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+	if (io->ac->update_lastset) {
+		ret = samdb_msg_add_uint64(ldb, io->ac,
+					   io->ac->update_msg,
+					   "pwdLastSet",
+					   io->g.last_set);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	return LDB_SUCCESS;
