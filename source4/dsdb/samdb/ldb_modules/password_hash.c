@@ -2156,6 +2156,47 @@ static int update_final_msg(struct setup_password_fields_io *io,
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	int ret;
+	int el_flags = 0;
+
+	if (io->ac->req->operation == LDB_MODIFY) {
+		el_flags |= LDB_FLAG_MOD_REPLACE;
+	}
+
+	/* make sure we replace all the old attributes */
+	if (io->ac->update_password && el_flags != 0) {
+		ret = ldb_msg_add_empty(msg, "unicodePwd",
+					el_flags, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ret = ldb_msg_add_empty(msg, "dBCSPwd",
+					el_flags, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ret = ldb_msg_add_empty(msg, "ntPwdHistory",
+					el_flags, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ret = ldb_msg_add_empty(msg, "lmPwdHistory",
+					el_flags, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		ret = ldb_msg_add_empty(msg, "supplementalCredentials",
+					el_flags, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	if (io->ac->update_lastset && el_flags != 0) {
+		ret = ldb_msg_add_empty(msg, "pwdLastSet",
+					el_flags, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
 
 	if (io->g.nt_hash != NULL) {
 		ret = samdb_msg_add_hash(ldb, io->ac, msg,
@@ -3498,14 +3539,6 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
-	/* make sure we replace all the old attributes */
-	ret = ldb_msg_add_empty(msg, "unicodePwd", LDB_FLAG_MOD_REPLACE, NULL);
-	ret = ldb_msg_add_empty(msg, "dBCSPwd", LDB_FLAG_MOD_REPLACE, NULL);
-	ret = ldb_msg_add_empty(msg, "ntPwdHistory", LDB_FLAG_MOD_REPLACE, NULL);
-	ret = ldb_msg_add_empty(msg, "lmPwdHistory", LDB_FLAG_MOD_REPLACE, NULL);
-	ret = ldb_msg_add_empty(msg, "supplementalCredentials", LDB_FLAG_MOD_REPLACE, NULL);
-	ret = ldb_msg_add_empty(msg, "pwdLastSet", LDB_FLAG_MOD_REPLACE, NULL);
 
 	ret = update_final_msg(&io, msg);
 	if (ret != LDB_SUCCESS) {
