@@ -101,6 +101,7 @@ struct ph_context {
 	bool update_password;
 	bool update_lastset;
 	bool pwd_last_set_bypass;
+	bool pwd_last_set_default;
 };
 
 
@@ -2847,6 +2848,16 @@ static void ph_apply_controls(struct ph_context *ac)
 				DSDB_CONTROL_PASSWORD_BYPASS_LAST_SET_OID);
 	if (ctrl != NULL) {
 		ac->pwd_last_set_bypass = true;
+
+		/* Mark the "bypass pwdLastSet" control as uncritical (done) */
+		ctrl->critical = false;
+	}
+
+	ac->pwd_last_set_default = false;
+	ctrl = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID);
+	if (ctrl != NULL) {
+		ac->pwd_last_set_default = true;
 
 		/* Mark the "bypass pwdLastSet" control as uncritical (done) */
 		ctrl->critical = false;
