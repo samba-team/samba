@@ -1809,11 +1809,15 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 			break;
 		}
 		/* -1 means set it as now */
-		/* fall through */
-	default:
 		GetTimeOfDay(&tv);
 		io->g.last_set = timeval_to_nttime(&tv);
 		break;
+	default:
+		return dsdb_module_werror(io->ac->module,
+					  LDB_ERR_OTHER,
+					  WERR_INVALID_PARAM,
+					  "setup_last_set_field: "
+					  "pwdLastSet must be 0 or -1 only!");
 	}
 
 	if (io->ac->req->operation == LDB_ADD) {
