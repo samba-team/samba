@@ -158,6 +158,12 @@ struct setup_password_fields_io {
 	} g;
 };
 
+static int msg_find_old_and_new_pwd_val(const struct ldb_message *msg,
+					const char *name,
+					enum ldb_request_type operation,
+					const struct ldb_val **new_val,
+					const struct ldb_val **old_val);
+
 static int password_hash_bypass(struct ldb_module *module, struct ldb_request *request)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -1680,8 +1686,12 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 static int setup_last_set_field(struct setup_password_fields_io *io)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	const struct ldb_message *msg = NULL;
 	struct timeval tv = { .tv_sec = 0 };
+	const struct ldb_val *old_val = NULL;
+	const struct ldb_val *new_val = NULL;
+	int ret;
 
 	switch (io->ac->req->operation) {
 	case LDB_ADD:
@@ -1720,9 +1730,106 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 		return LDB_SUCCESS;
 	}
 
-	/* set it as now */
-	GetTimeOfDay(&tv);
-	io->g.last_set = timeval_to_nttime(&tv);
+	ret = msg_find_old_and_new_pwd_val(msg, "pwdLastSet",
+					   io->ac->req->operation,
+					   &new_val, &old_val);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (old_val != NULL && new_val == NULL) {
+		ldb_set_errstring(ldb,
+				  "'pwdLastSet' deletion is not allowed!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	io->g.last_set = UINT64_MAX;
+	if (new_val != NULL) {
+		struct ldb_message *tmp_msg = NULL;
+
+		tmp_msg = ldb_msg_new(io->ac);
+		if (tmp_msg == NULL) {
+			return ldb_module_oom(io->ac->module);
+		}
+
+		if (old_val != NULL) {
+			NTTIME old_last_set = 0;
+
+			ret = ldb_msg_add_value(tmp_msg, "oldval",
+						old_val, NULL);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
+			old_last_set = samdb_result_nttime(tmp_msg,
+							   "oldval",
+							   1);
+			if (io->u.pwdLastSet != old_last_set) {
+				return dsdb_module_werror(io->ac->module,
+					LDB_ERR_NO_SUCH_ATTRIBUTE,
+					WERR_DS_CANT_REM_MISSING_ATT_VAL,
+					"setup_last_set_field: old pwdLastSet "
+					"value not found!");
+			}
+		}
+
+		ret = ldb_msg_add_value(tmp_msg, "newval",
+					new_val, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		io->g.last_set = samdb_result_nttime(tmp_msg,
+						     "newval",
+						     1);
+	} else if (ldb_msg_find_element(msg, "pwdLastSet")) {
+		ldb_set_errstring(ldb,
+				  "'pwdLastSet' deletion is not allowed!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* only 0 or -1 (0xFFFFFFFFFFFFFFFF) are allowed */
+	switch (io->g.last_set) {
+	case 0:
+		if (!io->ac->pwd_last_set_default) {
+			break;
+		}
+		if (!io->ac->update_password) {
+			break;
+		}
+		/* fall through */
+	case UINT64_MAX:
+		if (!io->ac->update_password && io->u.pwdLastSet != 0) {
+			/*
+			 * Just setting pwdLastSet to -1, while not changing
+			 * any password field has no effect if pwdLastSet
+			 * is already non-zero.
+			 */
+			io->ac->update_lastset = false;
+			break;
+		}
+		/* -1 means set it as now */
+		/* fall through */
+	default:
+		GetTimeOfDay(&tv);
+		io->g.last_set = timeval_to_nttime(&tv);
+		break;
+	}
+
+	if (io->ac->req->operation == LDB_ADD) {
+		/*
+		 * We always need to store the value on add
+		 * operations.
+		 */
+		return LDB_SUCCESS;
+	}
+
+	if (io->g.last_set == io->u.pwdLastSet) {
+		/*
+		 * Just setting pwdLastSet to 0, is no-op if it's already 0.
+		 */
+		io->ac->update_lastset = false;
+	}
 
 	return LDB_SUCCESS;
 }
