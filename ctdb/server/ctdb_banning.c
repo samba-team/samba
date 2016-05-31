@@ -60,7 +60,8 @@ void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
 {
 	struct ctdb_db_context *ctdb_db;
 
-	DEBUG(DEBUG_NOTICE,("This node has been banned - forcing recovery\n"));
+	DEBUG(DEBUG_NOTICE, ("This node has been banned - releasing all public "
+			     "IPs and setting the generation to INVALID.\n"));
 
 	/* Reset the generation id to 1 to make us ignore any
 	   REQ/REPLY CALL/DMASTER someone sends to us.
