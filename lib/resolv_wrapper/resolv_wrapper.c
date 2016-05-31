@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2014      Andreas Schneider <asn@samba.org>
- * Copyright (c) 2014      Jakub Hrozek <jakub.hrozek@gmail.com>
+ * Copyright (c) 2014      Jakub Hrozek <jakub.hrozek@posteo.se>
  *
  * All rights reserved.
  *
@@ -36,7 +36,11 @@
 
 #include <errno.h>
 #include <arpa/inet.h>
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif /* HAVE_ARPA_NAMESER_H */
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -227,6 +231,15 @@ static int rwrap_create_fake_aaaa_rr(const char *key,
 	rr->type = ns_t_aaaa;
 	return 0;
 }
+static int rwrap_create_fake_ns_rr(const char *key,
+				   const char *value,
+				   struct rwrap_fake_rr *rr)
+{
+	memcpy(rr->rrdata.srv_rec.hostname, value, strlen(value) + 1);
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_ns;
+	return 0;
+}
 
 static int rwrap_create_fake_srv_rr(const char *key,
 				    const char *value,
@@ -340,7 +353,7 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 	h->id = res_randomid();		/* random query ID */
 	h->qr = 1;			/* response flag */
 	h->rd = 1;			/* recursion desired */
-	h->ra = 1;			/* resursion available */
+	h->ra = 1;			/* recursion available */
 
 	h->qdcount = htons(1);		/* no. of questions */
 	h->ancount = htons(ancount);	/* no. of answers */
@@ -465,6 +478,47 @@ static ssize_t rwrap_fake_aaaa(struct rwrap_fake_rr *rr,
 	}
 
 	memcpy(a, &rr->rrdata.aaaa_rec, sizeof(struct in6_addr));
+
+	return resp_size;
+}
+
+static ssize_t rwrap_fake_ns(struct rwrap_fake_rr *rr,
+			     uint8_t *answer,
+			    size_t anslen)
+{
+	uint8_t *a = answer;
+	ssize_t resp_size = 0;
+	size_t rdata_size;
+	unsigned char hostname_compressed[MAXDNAME];
+	ssize_t compressed_len;
+
+	if (rr == NULL || rr->type != ns_t_ns) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed record, no or wrong value!\n");
+		return -1;
+	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding NS RR");
+
+	/* Prepare the data to write */
+	compressed_len = ns_name_compress(rr->rrdata.srv_rec.hostname,
+					  hostname_compressed,
+					  MAXDNAME,
+					  NULL,
+					  NULL);
+	if (compressed_len < 0) {
+		return -1;
+	}
+
+	/* Is this enough? */
+	rdata_size = compressed_len;
+
+	resp_size = rwrap_fake_rdata_common(ns_t_ns, rdata_size,
+					    rr->key, anslen, &a);
+	if (resp_size < 0) {
+		return -1;
+	}
+
+	memcpy(a, hostname_compressed, compressed_len);
 
 	return resp_size;
 }
@@ -662,7 +716,8 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 	}
 
 	RWRAP_LOG(RWRAP_LOG_TRACE,
-		  "Searching in fake hosts file %s\n", hostfile);
+		  "Searching in fake hosts file %s for %s:%d\n", hostfile,
+		  query, type);
 
 	fp = fopen(hostfile, "r");
 	if (fp == NULL) {
@@ -701,6 +756,10 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		} else if (TYPE_MATCH(type, ns_t_aaaa,
 				      rec_type, "AAAA", key, query)) {
 			rc = rwrap_create_fake_aaaa_rr(key, value, rr);
+			break;
+		} else if (TYPE_MATCH(type, ns_t_ns,
+				      rec_type, "NS", key, query)) {
+			rc = rwrap_create_fake_ns_rr(key, value, rr);
 			break;
 		} else if (TYPE_MATCH(type, ns_t_srv,
 				      rec_type, "SRV", key, query)) {
@@ -776,6 +835,7 @@ static inline bool rwrap_known_type(int type)
 	switch (type) {
 	case ns_t_a:
 	case ns_t_aaaa:
+	case ns_t_ns:
 	case ns_t_srv:
 	case ns_t_soa:
 	case ns_t_cname:
@@ -834,6 +894,9 @@ static ssize_t rwrap_add_rr(struct rwrap_fake_rr *rr,
 		break;
 	case ns_t_aaaa:
 		resp_data = rwrap_fake_aaaa(rr, answer, anslen);
+		break;
+	case ns_t_ns:
+		resp_data = rwrap_fake_ns(rr, answer, anslen);
 		break;
 	case ns_t_srv:
 		resp_data = rwrap_fake_srv(rr, answer, anslen);
@@ -911,7 +974,7 @@ static ssize_t rwrap_fake_answer(struct rwrap_fake_rr *rrs,
 /* Reads in a file in the following format:
  * TYPE RDATA
  *
- * Malformed entried are silently skipped.
+ * Malformed entries are silently skipped.
  * Allocates answer buffer of size anslen that has to be freed after use.
  */
 static int rwrap_res_fake_hosts(const char *hostfile,
@@ -1421,8 +1484,8 @@ static int rwrap_res_ninit(struct __res_state *state)
 			state->nscount = 0;
 			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
 
-			state->_u._ext.nscount = 0;
 #ifdef HAVE_RESOLV_IPV6_NSADDRS
+			state->_u._ext.nscount = 0;
 			for (i = 0; i < state->_u._ext.nscount; i++) {
 				SAFE_FREE(state->_u._ext.nsaddrs[i]);
 			}
@@ -1690,7 +1753,7 @@ int __res_nsearch(struct __res_state *state,
 }
 
 /****************************************************************************
- *   RES_QUERY
+ *   RES_SEARCH
  ***************************************************************************/
 
 static int rwrap_res_search(const char *dname,
