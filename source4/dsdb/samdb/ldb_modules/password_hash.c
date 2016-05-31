@@ -109,6 +109,7 @@ struct ph_context {
 	bool update_lastset;
 	bool pwd_last_set_bypass;
 	bool pwd_last_set_default;
+	bool smartcard_reset;
 };
 
 
@@ -1990,6 +1991,12 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 		ldb_set_errstring(ldb,
 				  "'pwdLastSet' deletion is not allowed!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	} else if (io->ac->smartcard_reset) {
+		/*
+		 * adding UF_SMARTCARD_REQUIRED doesn't update
+		 * pwdLastSet implicitly.
+		 */
+		io->ac->update_lastset = false;
 	}
 
 	/* only 0 or -1 (0xFFFFFFFFFFFFFFFF) are allowed */
@@ -2202,6 +2209,85 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 		return ret;
 	}
 
+	return LDB_SUCCESS;
+}
+
+static int setup_smartcard_reset(struct setup_password_fields_io *io)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
+	struct loadparm_context *lp_ctx =
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
+	struct supplementalCredentialsBlob scb = { .__ndr_size = 0 };
+	enum ndr_err_code ndr_err;
+
+	if (!io->ac->smartcard_reset) {
+		return LDB_SUCCESS;
+	}
+
+	io->g.nt_hash = talloc(io->ac, struct samr_Password);
+	if (io->g.nt_hash == NULL) {
+		return ldb_module_oom(io->ac->module);
+	}
+	generate_secret_buffer(io->g.nt_hash->hash,
+			       sizeof(io->g.nt_hash->hash));
+	io->g.nt_history_len = 0;
+
+	if (lpcfg_lanman_auth(lp_ctx)) {
+		io->g.lm_hash = talloc(io->ac, struct samr_Password);
+		if (io->g.lm_hash == NULL) {
+			return ldb_module_oom(io->ac->module);
+		}
+		generate_secret_buffer(io->g.lm_hash->hash,
+				       sizeof(io->g.lm_hash->hash));
+	} else {
+		io->g.lm_hash = NULL;
+	}
+	io->g.lm_history_len = 0;
+
+	/*
+	 * We take the "old" value and store it
+	 * with num_packages = 0.
+	 *
+	 * On "add" we have scb.sub.signature == 0, which
+	 * results in:
+	 *
+	 * [0000] 00 00 00 00 00 00 00 00   00 00 00 00 00
+	 *
+	 * On modify it's likely to be scb.sub.signature ==
+	 * SUPPLEMENTAL_CREDENTIALS_SIGNATURE (0x0050), which results in
+	 * something like:
+	 *
+	 * [0000] 00 00 00 00 62 00 00 00   00 00 00 00 20 00 20 00
+	 * [0010] 20 00 20 00 20 00 20 00   20 00 20 00 20 00 20 00
+	 * [0020] 20 00 20 00 20 00 20 00   20 00 20 00 20 00 20 00
+	 * [0030] 20 00 20 00 20 00 20 00   20 00 20 00 20 00 20 00
+	 * [0040] 20 00 20 00 20 00 20 00   20 00 20 00 20 00 20 00
+	 * [0050] 20 00 20 00 20 00 20 00   20 00 20 00 20 00 20 00
+	 * [0060] 20 00 20 00 20 00 20 00   20 00 20 00 50 00 00
+	 *
+	 * See https://bugzilla.samba.org/show_bug.cgi?id=11441
+	 * and ndr_{push,pull}_supplementalCredentialsSubBlob().
+	 */
+	scb = io->o.scb;
+	scb.sub.num_packages = 0;
+
+	/*
+	 * setup 'supplementalCredentials' value without packages
+	 */
+	ndr_err = ndr_push_struct_blob(&io->g.supplemental, io->ac,
+				       &scb,
+				       (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
+		ldb_asprintf_errstring(ldb,
+				       "setup_smartcard_reset: "
+				       "failed to push supplementalCredentialsBlob: %s",
+				       nt_errstr(status));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	io->ac->update_password = true;
 	return LDB_SUCCESS;
 }
 
@@ -3233,6 +3319,26 @@ static void ph_apply_controls(struct ph_context *ac)
 		/* Mark the "bypass pwdLastSet" control as uncritical (done) */
 		ctrl->critical = false;
 	}
+
+	ac->smartcard_reset = false;
+	ctrl = ldb_request_get_control(ac->req,
+				DSDB_CONTROL_PASSWORD_USER_ACCOUNT_CONTROL_OID);
+	if (ctrl != NULL) {
+		struct dsdb_control_password_user_account_control *uac = NULL;
+		uint32_t added_flags = 0;
+
+		uac = talloc_get_type_abort(ctrl->data,
+			struct dsdb_control_password_user_account_control);
+
+		added_flags = uac->new_flags & ~uac->old_flags;
+
+		if (added_flags & UF_SMARTCARD_REQUIRED) {
+			ac->smartcard_reset = true;
+		}
+
+		/* Mark the "smartcard required" control as uncritical (done) */
+		ctrl->critical = false;
+	}
 }
 
 static int ph_op_callback(struct ldb_request *req, struct ldb_reply *ares)
@@ -3461,6 +3567,7 @@ static int password_hash_needed(struct ldb_module *module,
 	const char **a = NULL;
 	unsigned int attr_cnt = 0;
 	struct ldb_control *bypass = NULL;
+	struct ldb_control *uac_ctrl = NULL;
 	bool userPassword = dsdb_user_password_support(module, req, req);
 	bool update_password = false;
 	bool processing_needed = false;
@@ -3537,6 +3644,22 @@ static int password_hash_needed(struct ldb_module *module,
 
 	if (ldb_msg_find_element(msg, "pwdLastSet")) {
 		processing_needed = true;
+	}
+
+	uac_ctrl = ldb_request_get_control(req,
+				DSDB_CONTROL_PASSWORD_USER_ACCOUNT_CONTROL_OID);
+	if (uac_ctrl != NULL) {
+		struct dsdb_control_password_user_account_control *uac = NULL;
+		uint32_t added_flags = 0;
+
+		uac = talloc_get_type_abort(uac_ctrl->data,
+			struct dsdb_control_password_user_account_control);
+
+		added_flags = uac->new_flags & ~uac->old_flags;
+
+		if (added_flags & UF_SMARTCARD_REQUIRED) {
+			processing_needed = true;
+		}
 	}
 
 	if (!processing_needed) {
@@ -3638,6 +3761,11 @@ static int password_hash_add_do_add(struct ph_context *ac)
 	}
 
 	ret = check_password_restrictions(&io);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = setup_smartcard_reset(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -3970,6 +4098,11 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	}
 
 	ret = check_password_restrictions(&io);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = setup_smartcard_reset(&io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
