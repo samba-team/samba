@@ -2664,6 +2664,51 @@ static int setup_io(struct ph_context *ac,
 		return ldb_operr(ldb);
 	}
 
+	if (existing_msg != NULL) {
+		NTSTATUS status;
+
+		if (ac->pwd_reset) {
+			/* Get the old password from the database */
+			status = samdb_result_passwords_no_lockout(ac,
+								   lp_ctx,
+								   existing_msg,
+								   &io->o.lm_hash,
+								   &io->o.nt_hash);
+		} else {
+			/* Get the old password from the database */
+			status = samdb_result_passwords(ac,
+							lp_ctx,
+							existing_msg,
+							&io->o.lm_hash,
+							&io->o.nt_hash);
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
+			return dsdb_module_werror(ac->module,
+						  LDB_ERR_CONSTRAINT_VIOLATION,
+						  WERR_ACCOUNT_LOCKED_OUT,
+						  "Password change not permitted,"
+						  " account locked out!");
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * This only happens if the database has gone weird,
+			 * not if we are just missing the passwords
+			 */
+			return ldb_operr(ldb);
+		}
+
+		io->o.nt_history_len = samdb_result_hashes(ac, existing_msg,
+							   "ntPwdHistory",
+							   &io->o.nt_history);
+		io->o.lm_history_len = samdb_result_hashes(ac, existing_msg,
+							   "lmPwdHistory",
+							   &io->o.lm_history);
+		io->o.supplemental = ldb_msg_find_ldb_val(existing_msg,
+							  "supplementalCredentials");
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -3408,15 +3453,10 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 static int password_hash_mod_do_mod(struct ph_context *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct loadparm_context *lp_ctx =
-				talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-						struct loadparm_context);
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
-	const struct ldb_message *searched_msg;
 	struct setup_password_fields_io io;
 	int ret;
-	NTSTATUS status;
 
 	/* use a new message structure so that we can modify it */
 	msg = ldb_msg_new(ac);
@@ -3427,49 +3467,12 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	/* modify dn */
 	msg->dn = ac->req->op.mod.message->dn;
 
-	searched_msg = ac->search_res->message;
-
 	/* Prepare the internal data structure containing the passwords */
 	ret = setup_io(ac, ac->req->op.mod.message,
 		       ac->search_res->message, &io);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	
-	if (io.ac->pwd_reset) {
-		/* Get the old password from the database */
-		status = samdb_result_passwords_no_lockout(io.ac,
-							   lp_ctx,
-							   discard_const_p(struct ldb_message, searched_msg),
-							   &io.o.lm_hash,
-							   &io.o.nt_hash);
-	} else {
-		/* Get the old password from the database */
-		status = samdb_result_passwords(io.ac,
-						lp_ctx,
-						discard_const_p(struct ldb_message, searched_msg),
-						&io.o.lm_hash, &io.o.nt_hash);
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_LOCKED_OUT)) {
-		ldb_asprintf_errstring(ldb,
-				       "%08X: check_password: "
-				       "Password change not permitted, account locked out!",
-				       W_ERROR_V(WERR_ACCOUNT_LOCKED_OUT));
-		return LDB_ERR_CONSTRAINT_VIOLATION;
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		/*
-		 * This only happens if the database has gone weird,
-		 * not if we are just missing the passwords
-		 */
-		return ldb_operr(ldb);
-	}
-
-	io.o.nt_history_len		= samdb_result_hashes(io.ac, searched_msg, "ntPwdHistory", &io.o.nt_history);
-	io.o.lm_history_len		= samdb_result_hashes(io.ac, searched_msg, "lmPwdHistory", &io.o.lm_history);
-	io.o.supplemental		= ldb_msg_find_ldb_val(searched_msg, "supplementalCredentials");
 
 	ret = setup_password_fields(&io);
 	if (ret != LDB_SUCCESS) {
