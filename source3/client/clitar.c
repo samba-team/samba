@@ -1257,7 +1257,7 @@ static int tar_read_inclusion_file(struct tar *t, const char* filename)
 {
 	char *line;
 	int err = 0;
-	int fd;
+	int fd = -1;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	if (ctx == NULL) {
 		return 1;
@@ -1281,9 +1281,10 @@ static int tar_read_inclusion_file(struct tar *t, const char* filename)
 		}
 	}
 
-	close(fd);
-
 out:
+	if (fd != -1) {
+		close(fd);
+	}
 	talloc_free(ctx);
 	return err;
 }
