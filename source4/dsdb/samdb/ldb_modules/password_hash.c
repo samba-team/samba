@@ -2317,7 +2317,13 @@ static int setup_io(struct ph_context *ac,
 
 	io->u.userAccountControl	= ldb_msg_find_attr_as_uint(info_msg,
 								    "userAccountControl", 0);
-	io->u.pwdLastSet		= samdb_result_nttime(info_msg, "pwdLastSet", 0);
+	if (info_msg == existing_msg) {
+		/*
+		 * We only take pwdLastSet from the existing object
+		 * otherwise we leave it as 0.
+		 */
+		io->u.pwdLastSet = samdb_result_nttime(info_msg, "pwdLastSet", 0);
+	}
 	io->u.sAMAccountName		= ldb_msg_find_attr_as_string(info_msg,
 								      "sAMAccountName", NULL);
 	io->u.user_principal_name	= ldb_msg_find_attr_as_string(info_msg,
