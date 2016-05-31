@@ -199,6 +199,76 @@ the domain controller, which allows the client to do NTLM based
 authentication on behalf of the user. It also allows on offline
 logon using a smartcard to work on Windows clients.
 
+CTDB changes
+------------
+
+* The use of real-time scheduling when taking locks has been narrowed
+  to limit potential performance impacts on nodes
+
+* CTDB_RECOVERY_LOCK now supports specification of an external helper
+  to take and hold the recovery lock
+
+  See the RECOVERY LOCK section in ctdb(7) for details.  Documentation
+  for writing helpers is provided in doc/cluster_mutex_helper.txt.
+
+* "ctdb natgwlist" has been replaced by a top level "ctdb natgw"
+  command that has "master", "list" and "status" subcommands
+
+* The onnode command no longer supports the "recmaster", "lvs" and
+  "natgw" node specifications
+
+* Faster resetting of TCP connections to public IP addresses during
+  failover
+
+* Tunables MaxRedirectCount, ReclockPingPeriod,
+  DeferredRebalanceOnNodeAdd are now obsolete/ignored
+
+* "ctdb listvars" now lists all variables, including the first one
+
+* "ctdb xpnn", "ctdb rebalanceip" and "ctdb rebalancenode" have been
+  removed
+
+  These are not needed because "ctdb reloadips" should do the correct
+  rebalancing.
+
+* Output for the following commands has been simplified:
+
+    ctdb getdbseqnum
+    ctdb getdebug
+    ctdb getmonmode
+    ctdb getpid
+    ctdb getreclock
+    ctdb getpid
+    ctdb pnn
+
+  These now simply print the requested output with no preamble.  This
+  means that scripts no longer need to strip part of the output.
+
+  "ctdb getreclock" now prints nothing when the recovery lock is not
+  set.
+
+* Output for the following commands has been improved:
+
+  ctdb setdebug
+  ctdb uptime
+
+* "ctdb process-exists" has been updated to only take a PID argument
+
+  The PNN can be specified with -n <PNN>.  Output also cleaned up.
+
+* LVS support has been reworked - related commands and configuration
+  variables have changed
+
+  "ctdb lvsmaster" and "ctdb lvs" have been replaced by a top level
+  "ctdb lvs" command that has "master", "list" and "status"
+  subcommands.
+
+  See the LVS sections in ctdb(7) and ctdbd.conf(5) for details,
+  including configuration changes.
+
+* Improved sample NFS Ganesha call-out
+
+
 
 REMOVED FEATURES
 ================
