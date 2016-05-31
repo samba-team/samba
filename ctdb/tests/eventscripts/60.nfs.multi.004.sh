@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "takeip, take reconfigure lock, monitor -> reconfigure, replay timedout"
+define_test "takeip, take reconfigure lock, monitor -> reconfigure, replay timed out"
 
 setup_nfs
 
