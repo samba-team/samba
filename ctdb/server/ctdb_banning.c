@@ -42,7 +42,8 @@ static void ctdb_ban_node_event(struct tevent_context *ev,
 
 	/* Make sure we were able to freeze databases during banning */
 	if (!ctdb_db_all_frozen(ctdb)) {
-		DEBUG(DEBUG_ERR, ("Banning timed out, but still unable to freeze databases\n"));
+		DEBUG(DEBUG_ERR, ("Banning timed out, but not all databases "
+				  "frozen yet - banning this node again.\n"));
 		ctdb_ban_self(ctdb);
 		return;
 	}
