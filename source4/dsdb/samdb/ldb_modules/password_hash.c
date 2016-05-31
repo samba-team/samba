@@ -2865,21 +2865,44 @@ static int build_domain_data_request(struct ph_context *ac)
 	return ret;
 }
 
-static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
+static int password_hash_needed(struct ldb_module *module,
+				struct ldb_request *req,
+				struct ph_context **_ac)
 {
-	struct ldb_context *ldb;
-	struct ph_context *ac;
-	struct ldb_message_element *userPasswordAttr, *clearTextPasswordAttr,
-		*ntAttr, *lmAttr;
-	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const char *operation = NULL;
+	const struct ldb_message *msg = NULL;
+	struct ph_context *ac = NULL;
+	const char *passwordAttrs[] = {
+		"userPassword",
+		"clearTextPassword",
+		"unicodePwd",
+		"dBCSPwd",
+		NULL
+	};
+	const char **a = NULL;
+	unsigned int attr_cnt = 0;
 	struct ldb_control *bypass = NULL;
 	bool userPassword = dsdb_user_password_support(module, req, req);
 
-	ldb = ldb_module_get_ctx(module);
+	*_ac = NULL;
 
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_add\n");
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_needed\n");
 
-	if (ldb_dn_is_special(req->op.add.message->dn)) { /* do not manipulate our control entries */
+	switch (req->operation) {
+	case LDB_ADD:
+		operation = "add";
+		msg = req->op.add.message;
+		break;
+	case LDB_MODIFY:
+		operation = "modify";
+		msg = req->op.mod.message;
+		break;
+	default:
+		return ldb_next_request(module, req);
+	}
+
+	if (ldb_dn_is_special(msg->dn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
 
@@ -2888,40 +2911,74 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	if (bypass != NULL) {
 		/* Mark the "bypass" control as uncritical (done) */
 		bypass->critical = false;
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_add (bypassing)\n");
+		ldb_debug(ldb, LDB_DEBUG_TRACE,
+			  "password_hash_needed(%s) (bypassing)\n",
+			  operation);
 		return password_hash_bypass(module, req);
 	}
 
 	/* nobody must touch password histories and 'supplementalCredentials' */
-	if (ldb_msg_find_element(req->op.add.message, "ntPwdHistory")) {
+	if (ldb_msg_find_element(msg, "ntPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	if (ldb_msg_find_element(req->op.add.message, "lmPwdHistory")) {
+	if (ldb_msg_find_element(msg, "lmPwdHistory")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
-	if (ldb_msg_find_element(req->op.add.message, "supplementalCredentials")) {
+	if (ldb_msg_find_element(msg, "supplementalCredentials")) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	/* If no part of this touches the 'userPassword' OR 'clearTextPassword'
-	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes. */
+	/*
+	 * If no part of this touches the 'userPassword' OR 'clearTextPassword'
+	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes.
+	 * For password changes/set there should be a 'delete' or a 'modify'
+	 * on these attributes.
+	 */
+	for (a = passwordAttrs; *a != NULL; a++) {
+		if ((!userPassword) && (ldb_attr_cmp(*a, "userPassword") == 0)) {
+			continue;
+		}
 
-	userPasswordAttr = NULL;
-	if (userPassword) {
-		userPasswordAttr = ldb_msg_find_element(req->op.add.message,
-							"userPassword");
-		/* MS-ADTS 3.1.1.3.1.5.2 */
-		if ((userPasswordAttr != NULL) &&
-		    (dsdb_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
-			return LDB_ERR_CONSTRAINT_VIOLATION;
+		if (ldb_msg_find_element(msg, *a) != NULL) {
+			/* MS-ADTS 3.1.1.3.1.5.2 */
+			if ((ldb_attr_cmp(*a, "userPassword") == 0) &&
+			    (dsdb_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
+			++attr_cnt;
 		}
 	}
-	clearTextPasswordAttr = ldb_msg_find_element(req->op.add.message, "clearTextPassword");
-	ntAttr = ldb_msg_find_element(req->op.add.message, "unicodePwd");
-	lmAttr = ldb_msg_find_element(req->op.add.message, "dBCSPwd");
 
-	if ((!userPasswordAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
+	if (attr_cnt == 0) {
 		return ldb_next_request(module, req);
+	}
+
+	ac = ph_init_context(module, req, userPassword);
+	if (!ac) {
+		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
+		return ldb_operr(ldb);
+	}
+	ph_apply_controls(ac);
+
+	*_ac = ac;
+	return LDB_SUCCESS;
+}
+
+static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ph_context *ac = NULL;
+	int ret;
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_add\n");
+
+	ret = password_hash_needed(module, req, &ac);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (ac == NULL) {
+		return ret;
 	}
 
 	/* Make sure we are performing the password set action on a (for us)
@@ -2929,6 +2986,8 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	 * "inetOrgPerson". Otherwise continue with the submodules. */
 	if ((!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "user"))
 		&& (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "inetOrgPerson"))) {
+
+		TALLOC_FREE(ac);
 
 		if (ldb_msg_find_element(req->op.add.message, "clearTextPassword") != NULL) {
 			ldb_set_errstring(ldb,
@@ -2938,13 +2997,6 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 
 		return ldb_next_request(module, req);
 	}
-
-	ac = ph_init_context(module, req, userPassword);
-	if (ac == NULL) {
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
-		return ldb_operr(ldb);
-	}
-	ph_apply_controls(ac);
 
 	/* get user domain data */
 	ret = build_domain_data_request(ac);
@@ -3056,76 +3108,25 @@ static int password_hash_add_do_add(struct ph_context *ac)
 
 static int password_hash_modify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb;
-	struct ph_context *ac;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ph_context *ac = NULL;
 	const char *passwordAttrs[] = { "userPassword", "clearTextPassword",
 		"unicodePwd", "dBCSPwd", NULL }, **l;
-	unsigned int attr_cnt, del_attr_cnt, add_attr_cnt, rep_attr_cnt;
+	unsigned int del_attr_cnt, add_attr_cnt, rep_attr_cnt;
 	struct ldb_message_element *passwordAttr;
 	struct ldb_message *msg;
 	struct ldb_request *down_req;
 	int ret;
-	struct ldb_control *bypass = NULL;
-	bool userPassword = dsdb_user_password_support(module, req, req);
-
-	ldb = ldb_module_get_ctx(module);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_modify\n");
 
-	if (ldb_dn_is_special(req->op.mod.message->dn)) { /* do not manipulate our control entries */
-		return ldb_next_request(module, req);
+	ret = password_hash_needed(module, req, &ac);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	
-	bypass = ldb_request_get_control(req,
-					 DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID);
-	if (bypass != NULL) {
-		/* Mark the "bypass" control as uncritical (done) */
-		bypass->critical = false;
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_modify (bypassing)\n");
-		return password_hash_bypass(module, req);
+	if (ac == NULL) {
+		return ret;
 	}
-
-	/* nobody must touch password histories and 'supplementalCredentials' */
-	if (ldb_msg_find_element(req->op.mod.message, "ntPwdHistory")) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-	if (ldb_msg_find_element(req->op.mod.message, "lmPwdHistory")) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-	if (ldb_msg_find_element(req->op.mod.message, "supplementalCredentials")) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	/* If no part of this touches the 'userPassword' OR 'clearTextPassword'
-	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes.
-	 * For password changes/set there should be a 'delete' or a 'modify'
-	 * on these attributes. */
-	attr_cnt = 0;
-	for (l = passwordAttrs; *l != NULL; l++) {
-		if ((!userPassword) && (ldb_attr_cmp(*l, "userPassword") == 0)) {
-			continue;
-		}
-
-		if (ldb_msg_find_element(req->op.mod.message, *l) != NULL) {
-			/* MS-ADTS 3.1.1.3.1.5.2 */
-			if ((ldb_attr_cmp(*l, "userPassword") == 0) &&
-			    (dsdb_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-
-			++attr_cnt;
-		}
-	}
-	if (attr_cnt == 0) {
-		return ldb_next_request(module, req);
-	}
-
-	ac = ph_init_context(module, req, userPassword);
-	if (!ac) {
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
-		return ldb_operr(ldb);
-	}
-	ph_apply_controls(ac);
 
 	/* use a new message structure so that we can modify it */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
