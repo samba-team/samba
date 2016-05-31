@@ -296,7 +296,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         # urgent replication should be enabled when modifying userAccountControl
         m = Message()
         m.dn = Dn(self.ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
-        m["userAccountControl"] = MessageElement(str(dsdb.UF_NORMAL_ACCOUNT+dsdb.UF_SMARTCARD_REQUIRED), FLAG_MOD_REPLACE,
+        m["userAccountControl"] = MessageElement(str(dsdb.UF_NORMAL_ACCOUNT+dsdb.UF_DONT_EXPIRE_PASSWD), FLAG_MOD_REPLACE,
           "userAccountControl")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
@@ -314,7 +314,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         # urgent replication should be enabled when modifying pwdLastSet
         m = Message()
         m.dn = Dn(self.ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
-        m["pwdLastSet"] = MessageElement("1", FLAG_MOD_REPLACE,
+        m["pwdLastSet"] = MessageElement("-1", FLAG_MOD_REPLACE,
           "pwdLastSet")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
