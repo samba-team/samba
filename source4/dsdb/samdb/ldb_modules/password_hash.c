@@ -96,6 +96,8 @@ struct ph_context {
 	bool change_status;
 	bool hash_values;
 	bool userPassword;
+	bool update_password;
+	bool update_lastset;
 	bool pwd_last_set_bypass;
 };
 
@@ -2719,7 +2721,8 @@ static int setup_io(struct ph_context *ac,
 
 static struct ph_context *ph_init_context(struct ldb_module *module,
 					  struct ldb_request *req,
-					  bool userPassword)
+					  bool userPassword,
+					  bool update_password)
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
@@ -2735,6 +2738,8 @@ static struct ph_context *ph_init_context(struct ldb_module *module,
 	ac->module = module;
 	ac->req = req;
 	ac->userPassword = userPassword;
+	ac->update_password = update_password;
+	ac->update_lastset = true;
 
 	return ac;
 }
@@ -3010,6 +3015,7 @@ static int password_hash_needed(struct ldb_module *module,
 	unsigned int attr_cnt = 0;
 	struct ldb_control *bypass = NULL;
 	bool userPassword = dsdb_user_password_support(module, req, req);
+	bool update_password = false;
 
 	*_ac = NULL;
 
@@ -3076,11 +3082,15 @@ static int password_hash_needed(struct ldb_module *module,
 		}
 	}
 
-	if (attr_cnt == 0) {
+	if (attr_cnt > 0) {
+		update_password = true;
+	}
+
+	if (!update_password) {
 		return ldb_next_request(module, req);
 	}
 
-	ac = ph_init_context(module, req, userPassword);
+	ac = ph_init_context(module, req, userPassword, update_password);
 	if (!ac) {
 		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return ldb_operr(ldb);
