@@ -1548,7 +1548,7 @@ static bool ctdb_recovery_have_lock(struct ctdb_context *ctdb)
 
 struct hold_reclock_state {
 	bool done;
-	char status;
+	bool locked;
 };
 
 static void hold_reclock_handler(struct ctdb_context *ctdb,
@@ -1579,7 +1579,7 @@ static void hold_reclock_handler(struct ctdb_context *ctdb,
 	}
 
 	s->done = true;
-	s->status = status;
+	s->locked = (status == '0') ;
 }
 
 static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
@@ -1587,7 +1587,7 @@ static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 	struct ctdb_cluster_mutex_handle *h;
 	struct hold_reclock_state s = {
 		.done = false,
-		.status = '0',
+		.locked = false,
 	};
 
 	h = ctdb_cluster_mutex(ctdb, ctdb->recovery_lock, 0);
@@ -1604,7 +1604,7 @@ static bool ctdb_recovery_lock(struct ctdb_context *ctdb)
 	/* Ensure no attempts to access to s after function return */
 	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, NULL);
 
-	return (s.status == '0');
+	return s.locked;
 }
 
 static void ctdb_recovery_unlock(struct ctdb_context *ctdb)
