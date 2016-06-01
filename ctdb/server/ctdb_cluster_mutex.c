@@ -45,6 +45,7 @@ struct ctdb_cluster_mutex_handle {
 	struct tevent_fd *fde;
 	pid_t child;
 	struct timeval start_time;
+	bool have_response;
 };
 
 void ctdb_cluster_mutex_set_handler(struct ctdb_cluster_mutex_handle *h,
@@ -97,6 +98,13 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 	TALLOC_FREE(h->te);
 
 	ret = sys_read(h->fd[0], &c, 1);
+
+	/* Don't call the handler more than once.  It only exists to
+	 * process the initial response from the helper. */
+	if (h->have_response) {
+		return;
+	}
+	h->have_response = true;
 
 	/* If the child wrote status then just pass it to the handler.
 	 * If no status was written then this is an unexpected error
@@ -193,6 +201,7 @@ ctdb_cluster_mutex(struct ctdb_context *ctdb,
 	h->start_time = timeval_current();
 	h->fd[0] = -1;
 	h->fd[1] = -1;
+	h->have_response = false;
 
 	ret = pipe(h->fd);
 	if (ret != 0) {
