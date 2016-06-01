@@ -25,6 +25,7 @@ import os
 
 sys.path.insert(0, "bin/python")
 import samba.tests
+from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba import dsdb
 
 from ldb import (
@@ -34,7 +35,7 @@ from ldb import (
     )
 
 
-class DrsBaseTestCase(samba.tests.BlackboxTestCase):
+class DrsBaseTestCase(SambaToolCmdTest):
     """Base class implementation for all DRS python tests.
        It is intended to provide common initialization and
        and functionality used by all DRS tests in drs/python
