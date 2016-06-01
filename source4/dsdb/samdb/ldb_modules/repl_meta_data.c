@@ -6203,7 +6203,7 @@ linked_attributes[0]:
 					  la->meta_data.originating_usn, seq_num,
 					  la->meta_data.originating_change_time,
 					  la->meta_data.version,
-					  (la->flags & DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)?false:true);
+					  !active);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
