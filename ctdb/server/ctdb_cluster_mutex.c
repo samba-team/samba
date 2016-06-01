@@ -48,14 +48,6 @@ struct ctdb_cluster_mutex_handle {
 	bool have_response;
 };
 
-void ctdb_cluster_mutex_set_handler(struct ctdb_cluster_mutex_handle *h,
-				    cluster_mutex_handler_t handler,
-				    void *private_data)
-{
-	h->handler = handler;
-	h->private_data = private_data;
-}
-
 static void cluster_mutex_timeout(struct tevent_context *ev,
 				  struct tevent_timer *te,
 				  struct timeval t, void *private_data)
@@ -186,7 +178,9 @@ struct ctdb_cluster_mutex_handle *
 ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		   struct ctdb_context *ctdb,
 		   const char *argstring,
-		   int timeout)
+		   int timeout,
+		   cluster_mutex_handler_t handler,
+		   void *private_data)
 {
 	struct ctdb_cluster_mutex_handle *h;
 	char **args;
@@ -268,8 +262,8 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 	tevent_fd_set_auto_close(h->fde);
 
 	h->ctdb = ctdb;
-	h->handler = NULL;
-	h->private_data = NULL;
+	h->handler = handler;
+	h->private_data = private_data;
 
 	return h;
 }

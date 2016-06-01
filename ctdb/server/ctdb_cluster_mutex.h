@@ -36,14 +36,12 @@ typedef void (*cluster_mutex_handler_t) (
 	double latency,
 	void *private_data);
 
-void ctdb_cluster_mutex_set_handler(struct ctdb_cluster_mutex_handle *h,
-				    cluster_mutex_handler_t handler,
-				    void *private_data);
-
 struct ctdb_cluster_mutex_handle *
 ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		   struct ctdb_context *ctdb,
 		   const char *argstring,
-		   int timeout);
+		   int timeout,
+		   cluster_mutex_handler_t handler,
+		   void *private_data);
 
 #endif /* __CTDB_IPALLOC_H__ */

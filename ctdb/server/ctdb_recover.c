@@ -916,18 +916,14 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state->ctdb = ctdb;
 	state->c = NULL;
 
-	h = ctdb_cluster_mutex(state, ctdb, ctdb->recovery_lock, 5);
+	h = ctdb_cluster_mutex(state, ctdb, ctdb->recovery_lock, 5,
+			       set_recmode_handler, state);
 	if (h == NULL) {
 		talloc_free(state);
 		return -1;
 	}
 
 	state->c = talloc_steal(state, c);
-
-	/* set_recmode_handler() frees state/h */
-	ctdb_cluster_mutex_set_handler(h,
-				       set_recmode_handler,
-				       state);
 	*async_reply = true;
 
 	return 0;

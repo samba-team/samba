@@ -1588,12 +1588,11 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 		.latency = 0,
 	};
 
-	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0);
+	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0,
+			       hold_reclock_handler, &s);
 	if (h == NULL) {
 		return false;
 	}
-
-	ctdb_cluster_mutex_set_handler(h, hold_reclock_handler, &s);
 
 	while (!s.done) {
 		tevent_loop_once(ctdb->ev);
