@@ -3817,11 +3817,25 @@ takeover_run_checks:
 	}
 }
 
+static void recd_sig_term_handler(struct tevent_context *ev,
+				  struct tevent_signal *se, int signum,
+				  int count, void *dont_care,
+				  void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+
+	ctdb_recovery_unlock(rec);
+	exit(0);
+}
+
+
 /*
   the main monitoring loop
  */
 static void monitor_cluster(struct ctdb_context *ctdb)
 {
+	struct tevent_signal *se;
 	struct ctdb_recoverd *rec;
 
 	DEBUG(DEBUG_NOTICE,("monitor_cluster starting\n"));
@@ -3841,6 +3855,13 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	rec->priority_time = timeval_current();
 	rec->frozen_on_inactive = false;
+
+	se = tevent_add_signal(ctdb->ev, ctdb, SIGTERM, 0,
+			       recd_sig_term_handler, rec);
+	if (se == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to install SIGTERM handler\n"));
+		exit(1);
+	}
 
 	/* register a message port for sending memory dumps */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
