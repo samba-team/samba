@@ -749,18 +749,18 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 	return 0;
 }
 
+struct set_recmode_state {
+	struct ctdb_req_control_old *c;
+};
+
 static void set_recmode_handler(struct ctdb_context *ctdb,
 				char status,
 				double latency,
 				struct ctdb_cluster_mutex_handle *h,
 				void *private_data)
 {
-	/* It would be good to use talloc_get_type() here.  However,
-	 * the name of the packet is manually set - not sure why.
-	 * Could use talloc_check_name() but this seems like a lot of
-	 * manual overkill. */
-	struct ctdb_req_control_old *c =
-		(struct ctdb_req_control_old *) private_data;
+	struct set_recmode_state *state = talloc_get_type_abort(
+		private_data, struct set_recmode_state);
 	int s = 0;
 	const char *err = NULL;
 
@@ -808,8 +808,8 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 		err = "Unexpected error when testing recovery lock";
 	}
 
-	ctdb_request_control_reply(ctdb, c, NULL, s, err);
-	talloc_free(h);
+	ctdb_request_control_reply(ctdb, state->c, NULL, s, err);
+	talloc_free(state);
 }
 
 static void
@@ -854,6 +854,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	uint32_t recmode = *(uint32_t *)indata.dptr;
 	int i;
 	struct ctdb_db_context *ctdb_db;
+	struct set_recmode_state *state;
 	struct ctdb_cluster_mutex_handle *h;
 
 	/* if we enter recovery but stay in recovery for too long
@@ -908,15 +909,25 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	h = ctdb_cluster_mutex(ctdb, ctdb, ctdb->recovery_lock, 5);
+	state = talloc_zero(ctdb, struct set_recmode_state);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
+	state->c = NULL;
+
+	h = ctdb_cluster_mutex(state, ctdb, ctdb->recovery_lock, 5);
 	if (h == NULL) {
+		talloc_free(state);
 		return -1;
 	}
 
-	/* set_recmode_handler() frees h */
+	state->c = talloc_steal(state, c);
+
+	/* set_recmode_handler() frees state/h */
 	ctdb_cluster_mutex_set_handler(h,
 				       set_recmode_handler,
-				       talloc_steal(h, c));
+				       state);
 	*async_reply = true;
 
 	return 0;
