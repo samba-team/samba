@@ -252,6 +252,7 @@ struct ctdb_recoverd {
 	struct ctdb_iface_list_old *ifaces;
 	uint32_t *force_rebalance_nodes;
 	struct ctdb_node_capabilities *caps;
+	bool frozen_on_inactive;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -3489,11 +3490,18 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 				return;
 			}
-			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE);
+		}
+		if (! rec->frozen_on_inactive) {
+			ret = ctdb_ctrl_freeze(ctdb, CONTROL_TIMEOUT(),
+					       CTDB_CURRENT_NODE);
 			if (ret != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to freeze node in STOPPED or BANNED state\n"));
+				DEBUG(DEBUG_ERR,
+				      (__location__ " Failed to freeze node "
+				       "in STOPPED or BANNED state\n"));
 				return;
 			}
+
+			rec->frozen_on_inactive = true;
 		}
 
 		/* If this node is stopped or banned then it is not the recovery
@@ -3502,6 +3510,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		 */
 		return;
 	}
+
+	rec->frozen_on_inactive = false;
 
 	/* If we are not the recmaster then do some housekeeping */
 	if (rec->recmaster != pnn) {
@@ -3882,6 +3892,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->recovery);
 
 	rec->priority_time = timeval_current();
+	rec->frozen_on_inactive = false;
 
 	/* register a message port for sending memory dumps */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_MEM_DUMP, mem_dump_handler, rec);
