@@ -296,4 +296,11 @@ struct dsdb_extended_sec_desc_propagation_op {
 #define DSDB_SAMDB_MINIMUM_ALLOWED_RID   1000
 
 #define DSDB_METADATA_SCHEMA_SEQ_NUM	"SCHEMA_SEQ_NUM"
+
+/*
+ * must be in LDB_FLAG_INTERNAL_MASK
+ * see also the values in lib/ldb/include/ldb_module.h
+ */
+#define DSDB_FLAG_INTERNAL_FORCE_META_DATA 0x10000
+
 #endif /* __SAMDB_H__ */

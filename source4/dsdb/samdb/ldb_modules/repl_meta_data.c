@@ -986,12 +986,15 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 	is_schema_nc = ldb_dn_compare_base(replmd_private->schema_dn, msg->dn) == 0;
 
-	for (i=0; i < msg->num_elements; i++) {
+	for (i=0; i < msg->num_elements;) {
 		struct ldb_message_element *e = &msg->elements[i];
 		struct replPropertyMetaData1 *m = &nmd.ctr.ctr1.array[ni];
 		const struct dsdb_attribute *sa;
 
-		if (e->name[0] == '@') continue;
+		if (e->name[0] == '@') {
+			i++;
+			continue;
+		}
 
 		sa = dsdb_attribute_by_lDAPDisplayName(ac->schema, e->name);
 		if (!sa) {
@@ -1006,6 +1009,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			/* if the attribute is not replicated (0x00000001)
 			 * or constructed (0x00000004) it has no metadata
 			 */
+			i++;
 			continue;
 		}
 
@@ -1019,6 +1023,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 			}
 			/* linked attributes are not stored in
 			   replPropertyMetaData in FL above w2k */
+			i++;
 			continue;
 		}
 
@@ -1051,6 +1056,20 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		m->originating_usn		= ac->seq_num;
 		m->local_usn			= ac->seq_num;
 		ni++;
+
+		if (!(e->flags & DSDB_FLAG_INTERNAL_FORCE_META_DATA)) {
+			i++;
+			continue;
+		}
+
+		e->flags &= ~DSDB_FLAG_INTERNAL_FORCE_META_DATA;
+
+		if (e->num_values != 0) {
+			i++;
+			continue;
+		}
+
+		ldb_msg_remove_element(msg, e);
 	}
 
 	/* fix meta data count */
@@ -1235,6 +1254,11 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		} else if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
 			may_skip = true;
 		}
+	}
+
+	if (el->flags & DSDB_FLAG_INTERNAL_FORCE_META_DATA) {
+		may_skip = false;
+		el->flags &= ~DSDB_FLAG_INTERNAL_FORCE_META_DATA;
 	}
 
 	if (may_skip) {
@@ -1565,10 +1589,13 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		for (i=0; i<msg->num_elements; i++) {
+		for (i=0; i<msg->num_elements;) {
+			struct ldb_message_element *el = &msg->elements[i];
 			struct ldb_message_element *old_el;
-			old_el = ldb_msg_find_element(res->msgs[0], msg->elements[i].name);
-			ret = replmd_update_rpmd_element(ldb, msg, &msg->elements[i], old_el, &omd, schema, seq_num,
+
+			old_el = ldb_msg_find_element(res->msgs[0], el->name);
+			ret = replmd_update_rpmd_element(ldb, msg, el, old_el,
+							 &omd, schema, seq_num,
 							 our_invocation_id,
 							 now, is_schema_nc,
 							 req);
@@ -1577,9 +1604,22 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			}
 
 			if (!*is_urgent && (situation == REPL_URGENT_ON_UPDATE)) {
-				*is_urgent = replmd_check_urgent_attribute(&msg->elements[i]);
+				*is_urgent = replmd_check_urgent_attribute(el);
 			}
 
+			if (!(el->flags & DSDB_FLAG_INTERNAL_FORCE_META_DATA)) {
+				i++;
+				continue;
+			}
+
+			el->flags &= ~DSDB_FLAG_INTERNAL_FORCE_META_DATA;
+
+			if (el->num_values != 0) {
+				i++;
+				continue;
+			}
+
+			ldb_msg_remove_element(msg, el);
 		}
 	}
 
