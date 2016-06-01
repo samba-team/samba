@@ -65,7 +65,7 @@ static void cluster_mutex_timeout(struct tevent_context *ev,
 	double latency = timeval_elapsed(&h->start_time);
 
 	if (h->handler != NULL) {
-		h->handler(h->ctdb, '2', latency, h, h->private_data);
+		h->handler('2', latency, h->private_data);
 	}
 }
 
@@ -110,8 +110,7 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 	 * If no status was written then this is an unexpected error
 	 * so pass generic error code to handler. */
 	if (h->handler != NULL) {
-		h->handler(h->ctdb, ret == 1 ? c : '3', latency,
-			   h, h->private_data);
+		h->handler(ret == 1 ? c : '3', latency, h->private_data);
 	}
 }
 

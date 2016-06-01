@@ -32,10 +32,8 @@
 struct ctdb_cluster_mutex_handle;
 
 typedef void (*cluster_mutex_handler_t) (
-	struct ctdb_context *ctdb,
 	char status,
 	double latency,
-	struct ctdb_cluster_mutex_handle *h,
 	void *private_data);
 
 void ctdb_cluster_mutex_set_handler(struct ctdb_cluster_mutex_handle *h,

@@ -1553,10 +1553,8 @@ struct hold_reclock_state {
 	double latency;
 };
 
-static void hold_reclock_handler(struct ctdb_context *ctdb,
-				 char status,
+static void hold_reclock_handler(char status,
 				 double latency,
-				 struct ctdb_cluster_mutex_handle *h,
 				 void *private_data)
 {
 	struct hold_reclock_state *s =

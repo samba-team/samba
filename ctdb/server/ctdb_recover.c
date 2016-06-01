@@ -750,13 +750,12 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 }
 
 struct set_recmode_state {
+	struct ctdb_context *ctdb;
 	struct ctdb_req_control_old *c;
 };
 
-static void set_recmode_handler(struct ctdb_context *ctdb,
-				char status,
+static void set_recmode_handler(char status,
 				double latency,
-				struct ctdb_cluster_mutex_handle *h,
 				void *private_data)
 {
 	struct set_recmode_state *state = talloc_get_type_abort(
@@ -769,7 +768,7 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 		/* Mutex taken */
 		DEBUG(DEBUG_ERR,
 		      ("ERROR: Daemon able to take recovery lock on \"%s\" during recovery\n",
-		       ctdb->recovery_lock));
+		       state->ctdb->recovery_lock));
 		s = -1;
 		err = "Took recovery lock from daemon during recovery - probably a cluster filesystem lock coherence problem";
 		break;
@@ -777,12 +776,12 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 	case '1':
 		/* Contention */
 		DEBUG(DEBUG_DEBUG, (__location__ " Recovery lock check OK\n"));
-		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
-		ctdb_process_deferred_attach(ctdb);
+		state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb_process_deferred_attach(state->ctdb);
 
 		s = 0;
 
-		CTDB_UPDATE_RECLOCK_LATENCY(ctdb, "daemon reclock",
+		CTDB_UPDATE_RECLOCK_LATENCY(state->ctdb, "daemon reclock",
 					    reclock.ctdbd, latency);
 		break;
 
@@ -795,8 +794,8 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_WARNING,
 		      (__location__
 		       "Time out getting recovery lock, allowing recmode set anyway\n"));
-		ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
-		ctdb_process_deferred_attach(ctdb);
+		state->ctdb->recovery_mode = CTDB_RECOVERY_NORMAL;
+		ctdb_process_deferred_attach(state->ctdb);
 
 		s = 0;
 		break;
@@ -808,7 +807,7 @@ static void set_recmode_handler(struct ctdb_context *ctdb,
 		err = "Unexpected error when testing recovery lock";
 	}
 
-	ctdb_request_control_reply(ctdb, state->c, NULL, s, err);
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, s, err);
 	talloc_free(state);
 }
 
@@ -914,6 +913,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		return -1;
 	}
+	state->ctdb = ctdb;
 	state->c = NULL;
 
 	h = ctdb_cluster_mutex(state, ctdb, ctdb->recovery_lock, 5);
