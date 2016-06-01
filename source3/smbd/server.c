@@ -747,11 +747,14 @@ static void smbd_accept_connection(struct tevent_context *ev,
 				goto exit;
 			}
 			if (lp_clustering() &&
-			    NT_STATUS_EQUAL(status,
-			    NT_STATUS_INTERNAL_DB_ERROR)) {
-				DEBUG(1,("child process cannot initialize "
-					 "because connection to CTDB "
-					 "has failed\n"));
+			    (NT_STATUS_EQUAL(
+				    status, NT_STATUS_INTERNAL_DB_ERROR) ||
+			     NT_STATUS_EQUAL(
+				    status, NT_STATUS_CONNECTION_REFUSED))) {
+				DEBUG(1, ("child process cannot initialize "
+					  "because connection to CTDB "
+					  "has failed: %s\n",
+					  nt_errstr(status)));
 				goto exit;
 			}
 
