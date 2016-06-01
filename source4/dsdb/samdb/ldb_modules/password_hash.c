@@ -2289,13 +2289,44 @@ static int update_final_msg(struct setup_password_fields_io *io)
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	int ret;
 	int el_flags = 0;
+	bool update_password = io->ac->update_password;
+	bool update_scb = io->ac->update_password;
 
-	if (io->ac->req->operation == LDB_MODIFY) {
+	/*
+	 * If we add a user without initial password,
+	 * we need to add replication meta data for
+	 * following attributes:
+	 * - unicodePwd
+	 * - dBCSPwd
+	 * - ntPwdHistory
+	 * - lmPwdHistory
+	 *
+	 * If we add a user with initial password or a
+	 * password is changed of an existing user,
+	 * we need to replace the following attributes
+	 * with a forced meta data update, e.g. also
+	 * when updating an empty attribute with an empty value:
+	 * - unicodePwd
+	 * - dBCSPwd
+	 * - ntPwdHistory
+	 * - lmPwdHistory
+	 * - supplementalCredentials
+	 */
+
+	switch (io->ac->req->operation) {
+	case LDB_ADD:
+		update_password = true;
+		el_flags |= DSDB_FLAG_INTERNAL_FORCE_META_DATA;
+		break;
+	case LDB_MODIFY:
 		el_flags |= LDB_FLAG_MOD_REPLACE;
+		el_flags |= DSDB_FLAG_INTERNAL_FORCE_META_DATA;
+		break;
+	default:
+		return ldb_module_operr(io->ac->module);
 	}
 
-	/* make sure we replace all the old attributes */
-	if (io->ac->update_password && el_flags != 0) {
+	if (update_password) {
 		ret = ldb_msg_add_empty(io->ac->update_msg,
 					"unicodePwd",
 					el_flags, NULL);
@@ -2320,6 +2351,8 @@ static int update_final_msg(struct setup_password_fields_io *io)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+	}
+	if (update_scb) {
 		ret = ldb_msg_add_empty(io->ac->update_msg,
 					"supplementalCredentials",
 					el_flags, NULL);
@@ -2327,7 +2360,7 @@ static int update_final_msg(struct setup_password_fields_io *io)
 			return ret;
 		}
 	}
-	if (io->ac->update_lastset && el_flags != 0) {
+	if (io->ac->update_lastset) {
 		ret = ldb_msg_add_empty(io->ac->update_msg,
 					"pwdLastSet",
 					el_flags, NULL);
