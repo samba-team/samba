@@ -1550,6 +1550,7 @@ static bool ctdb_recovery_have_lock(struct ctdb_recoverd *rec)
 struct hold_reclock_state {
 	bool done;
 	bool locked;
+	double latency;
 };
 
 static void hold_reclock_handler(struct ctdb_context *ctdb,
@@ -1563,19 +1564,16 @@ static void hold_reclock_handler(struct ctdb_context *ctdb,
 
 	switch (status) {
 	case '0':
-		ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(),
-						   latency);
+		s->latency = latency;
 		break;
 
 	case '1':
 		DEBUG(DEBUG_ERR,
 		      ("Unable to take recovery lock - contention\n"));
-		talloc_free(h);
 		break;
 
 	default:
 		DEBUG(DEBUG_ERR, ("ERROR: when taking recovery lock\n"));
-		talloc_free(h);
 	}
 
 	s->done = true;
@@ -1589,6 +1587,7 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	struct hold_reclock_state s = {
 		.done = false,
 		.locked = false,
+		.latency = 0,
 	};
 
 	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0);
@@ -1603,10 +1602,13 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	}
 
 	if (! s.locked) {
+		talloc_free(h);
 		return false;
 	}
 
 	rec->recovery_lock_handle = h;
+	ctdb_ctrl_report_recd_lock_latency(ctdb, CONTROL_TIMEOUT(),
+					   s.latency);
 
 	return true;
 }
