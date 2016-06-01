@@ -40,6 +40,8 @@ struct ctdb_cluster_mutex_handle {
 	struct ctdb_context *ctdb;
 	cluster_mutex_handler_t handler;
 	void *private_data;
+	cluster_mutex_lost_handler_t lost_handler;
+	void *lost_data;
 	int fd[2];
 	struct tevent_timer *te;
 	struct tevent_fd *fde;
@@ -94,6 +96,13 @@ static void cluster_mutex_handler(struct tevent_context *ev,
 	/* Don't call the handler more than once.  It only exists to
 	 * process the initial response from the helper. */
 	if (h->have_response) {
+		/* Only deal with EOF due to process exit.  Silently
+		 * ignore any other output. */
+		if (ret == 0) {
+			if (h->lost_handler != NULL) {
+				h->lost_handler(h->lost_data);
+			}
+		}
 		return;
 	}
 	h->have_response = true;
@@ -180,7 +189,9 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		   const char *argstring,
 		   int timeout,
 		   cluster_mutex_handler_t handler,
-		   void *private_data)
+		   void *private_data,
+		   cluster_mutex_lost_handler_t lost_handler,
+		   void *lost_data)
 {
 	struct ctdb_cluster_mutex_handle *h;
 	char **args;
@@ -264,6 +275,8 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 	h->ctdb = ctdb;
 	h->handler = handler;
 	h->private_data = private_data;
+	h->lost_handler = lost_handler;
+	h->lost_data = lost_data;
 
 	return h;
 }

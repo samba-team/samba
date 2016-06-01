@@ -917,7 +917,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state->c = NULL;
 
 	h = ctdb_cluster_mutex(state, ctdb, ctdb->recovery_lock, 5,
-			       set_recmode_handler, state);
+			       set_recmode_handler, state, NULL, NULL);
 	if (h == NULL) {
 		talloc_free(state);
 		return -1;

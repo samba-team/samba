@@ -1589,7 +1589,7 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	};
 
 	h = ctdb_cluster_mutex(rec, ctdb, ctdb->recovery_lock, 0,
-			       hold_reclock_handler, &s);
+			       hold_reclock_handler, &s, NULL, NULL);
 	if (h == NULL) {
 		return false;
 	}
