@@ -2149,6 +2149,142 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static int samldb_check_pwd_last_set_acl(struct samldb_ctx *ac,
+					 struct dom_sid *sid)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	int ret = 0;
+	struct ldb_result *res = NULL;
+	const char * const sd_attrs[] = {"ntSecurityDescriptor", NULL};
+	struct security_token *user_token = NULL;
+	struct security_descriptor *domain_sd = NULL;
+	struct ldb_dn *domain_dn = ldb_get_default_basedn(ldb_module_get_ctx(ac->module));
+	const char *operation = "";
+
+	if (dsdb_module_am_system(ac->module)) {
+		return LDB_SUCCESS;
+	}
+
+	switch (ac->req->operation) {
+	case LDB_ADD:
+		operation = "add";
+		break;
+	case LDB_MODIFY:
+		operation = "modify";
+		break;
+	default:
+		return ldb_module_operr(ac->module);
+	}
+
+	user_token = acl_user_token(ac->module);
+	if (user_token == NULL) {
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	ret = dsdb_module_search_dn(ac->module, ac, &res,
+				    domain_dn,
+				    sd_attrs,
+				    DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED,
+				    ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		return ldb_module_operr(ac->module);
+	}
+
+	ret = dsdb_get_sd_from_ldb_message(ldb, ac, res->msgs[0], &domain_sd);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = acl_check_extended_right(ac, domain_sd,
+				       user_token,
+				       GUID_DRS_UNEXPIRE_PASSWORD,
+				       SEC_ADS_CONTROL_ACCESS,
+				       sid);
+	if (ret != LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		return ret;
+	}
+
+	ldb_debug_set(ldb, LDB_DEBUG_WARNING,
+		      "Failed to %s %s: "
+		      "Setting pwdLastSet to -1 requires the "
+		      "Unexpire-Password right that was not given "
+		      "on the Domain object",
+		      operation,
+		      ldb_dn_get_linearized(ac->msg->dn));
+	dsdb_acl_debug(domain_sd, user_token,
+		       domain_dn, true, 10);
+
+	return ret;
+}
+
+/**
+ * This function is called on LDB modify operations. It performs some additions/
+ * replaces on the current LDB message when "pwdLastSet" changes.
+ */
+static int samldb_pwd_last_set_change(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	NTTIME last_set = 0;
+	struct ldb_message_element *el = NULL;
+	struct ldb_message *tmp_msg = NULL;
+	struct dom_sid *self_sid = NULL;
+	int ret;
+	struct ldb_result *res = NULL;
+	const char * const attrs[] = {
+		"objectSid",
+		NULL
+	};
+
+	el = dsdb_get_single_valued_attr(ac->msg, "pwdLastSet",
+					 ac->req->operation);
+	if (el == NULL || el->num_values == 0) {
+		ldb_asprintf_errstring(ldb,
+			"%08X: samldb: 'pwdLastSet' can't be deleted!",
+			W_ERROR_V(WERR_DS_ILLEGAL_MOD_OPERATION));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* Create a temporary message for fetching the "userAccountControl" */
+	tmp_msg = ldb_msg_new(ac->msg);
+	if (tmp_msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(tmp_msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	last_set = samdb_result_nttime(tmp_msg, "pwdLastSet", 0);
+	talloc_free(tmp_msg);
+
+	/*
+	 * Setting -1 (0xFFFFFFFFFFFFFFFF) requires the Unexpire-Password right
+	 */
+	if (last_set != UINT64_MAX) {
+		return LDB_SUCCESS;
+	}
+
+	/* Fetch the "objectSid" */
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE, ac->req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	self_sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
+	if (self_sid == NULL) {
+		return ldb_module_operr(ac->module);
+	}
+
+	ret = samldb_check_pwd_last_set_acl(ac, self_sid);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int samldb_lockout_time(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
@@ -3240,6 +3376,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	if (el != NULL) {
 		modified = true;
 		ret = samldb_user_account_control_change(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "pwdLastSet");
+	if (el != NULL) {
+		modified = true;
+		ret = samldb_pwd_last_set_change(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
