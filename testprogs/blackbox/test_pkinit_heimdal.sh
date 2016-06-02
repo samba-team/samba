@@ -29,13 +29,11 @@ if test -x $BINDIR/samba4kinit; then
 fi
 
 samba_tool="$samba4bindir/samba-tool"
+wbinfo="$samba4bindir/wbinfo"
 samba4kpasswd=kpasswd
 if test -x $BINDIR/samba4kpasswd; then
 	samba4passwd=$BINDIR/samba4kpasswd
 fi
-
-enableaccount="$samba_tool user enable"
-machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
 
 ldbmodify="ldbmodify"
 if [ -x "$samba4bindir/ldbmodify" ]; then
@@ -57,15 +55,112 @@ KRB5CCNAME_PATH="$PREFIX/tmpccache"
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 rm -f $KRB5CCNAME_PATH
+PASSFILE_PATH="$PREFIX/tmppassfile"
+rm -f $PASSFILE_PATH
+echo $PASSWORD > $PASSFILE_PATH
 
-PKUSER="--pk-user=FILE:$PREFIX/private/tls/admincert.pem,$PREFIX/private/tls/adminkey.pem"
+USER_PRINCIPAL_NAME=`echo "${USERNAME}@${REALM}" | tr A-Z a-z`
+PKUSER="--pk-user=FILE:$PREFIX/pkinit/USER-${USER_PRINCIPAL_NAME}-cert.pem,$PREFIX/pkinit/USER-${USER_PRINCIPAL_NAME}-private-key.pem"
 
-testit "kinit with pkinit (name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
-testit "kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
-testit "kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
-testit "kinit renew ticket" $samba4kinit --request-pac -R
+# STEP1:
+# Now we set the UF_SMARTCARD_REQUIRED bit
+# This means we have a normal enabled account *without* a known password
+testit "STEP1 samba-tool user create $USERNAME --smartcard-required" ${samba_tool} user create $USERNAME --smartcard-required || failed=`expr $failed + 1`
 
-test_smbclient "Test login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+testit_expect_failure "STEP1 kinit with password" $samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM   && failed=`expr $failed + 1`
+testit_expect_failure "STEP1 Test login with NTLM" $smbclient "$unc" -c 'ls' -k no -U$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+testit_expect_failure "STEP1 Test wbinfo with password" $wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD && failed=`expr $failed + 1`
 
+testit "STEP1 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP1 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP1 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP1 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP1 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP1 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP1 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
+testit "STEP1 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP1 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+# STEP2:
+# We still have UF_SMARTCARD_REQUIRED, but with a known password
+testit "STEP2 samba-tool user setpassword $USERNAME --newpassword" ${samba_tool} user setpassword $USERNAME --newpassword=$PASSWORD || failed=`expr $failed + 1`
+
+testit_expect_failure "STEP2 kinit with password" $samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM   && failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with NTLM" 'ls' "$unc" -k no -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
+testit_expect_failure "STEP2 Test wbinfo with password" $wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+
+testit "STEP2 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP2 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP2 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP2 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP2 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
+testit "STEP2 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP2 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+# STEP3:
+# The account is a normal account without the UF_SMARTCARD_REQUIRED bit set
+testit "STEP3 samba-tool user setpassword $USERNAME --smartcard-required" ${samba_tool} user setpassword $USERNAME --newpassword=$PASSWORD --clear-smartcard-required  || failed=`expr $failed + 1`
+
+testit "STEP3 kinit with password" $samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with user kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with NTLM" 'ls' "$unc" -k no -U$USERNAME%$PASSWORD || failed=`expr $failed + 1`
+testit "STEP3 Test wbinfo with password" $wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD || failed=`expr $failed + 1`
+
+testit "STEP3 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP3 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP3 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP3 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP3 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
+testit "STEP3 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP3 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+# STEP4:
+# Now we set the UF_SMARTCARD_REQUIRED bit
+# This means we have a normal enabled account *without* a known password
+testit "STEP4 samba-tool user setpassword $USERNAME --smartcard-required" ${samba_tool} user setpassword $USERNAME --smartcard-required || failed=`expr $failed + 1`
+
+testit_expect_failure "STEP4 kinit with password" $samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM   && failed=`expr $failed + 1`
+testit_expect_failure "STEP4 Test login with NTLM" $smbclient "$unc" -c 'ls' -k no -U$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+testit_expect_failure "STEP4 Test wbinfo with password" $wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+
+testit "STEP4 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP4 kinit renew ticket (name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP4 Test login with kerberos ccache (name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP4 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "STEP4 kinit renew ticket (enterprise name specified)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP4 Test login with kerberos ccache (enterprise name specified)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+testit "STEP4 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
+testit "STEP4 kinit renew ticket (enterprise name in cert)" $samba4kinit --request-pac -R  || failed=`expr $failed + 1`
+test_smbclient "STEP4 Test login with kerberos ccache (enterprise name in cert)" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
+
+# STEP5:
+# disable the account
+testit "STEP5 samba-tool user disable $USERNAME" ${samba_tool} user disable $USERNAME || failed=`expr $failed + 1`
+
+testit_expect_failure "STEP5 kinit with password" $samba4kinit $enctype --password-file=$PASSFILE_PATH --request-pac $USERNAME@$REALM   && failed=`expr $failed + 1`
+testit_expect_failure "STEP5 Test login with NTLM" $smbclient "$unc" -c 'ls' -k no -U$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+testit_expect_failure "STEP5 Test wbinfo with password" $wbinfo --authenticate=$DOMAIN/$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+
+testit_expect_failure "STEP5 kinit with pkinit (name specified) " $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM && failed=`expr $failed + 1`
+testit_expect_failure "STEP5 kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM && failed=`expr $failed + 1`
+testit_expect_failure "STEP5 kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise && failed=`expr $failed + 1`
+
+# STEP6:
+# cleanup
+testit "STEP6 samba-tool user delete $USERNAME " ${samba_tool} user delete $USERNAME || failed=`expr $failed + 2`
+
+rm -f $PASSFILE_PATH
 rm -f $KRB5CCNAME_PATH
 exit $failed
