@@ -41,7 +41,7 @@ static const struct {
 	{ "TraverseTimeout",     20, offsetof(struct ctdb_tunable_list, traverse_timeout), false },
 	{ "KeepaliveInterval",    5,  offsetof(struct ctdb_tunable_list, keepalive_interval), false },
 	{ "KeepaliveLimit",       5,  offsetof(struct ctdb_tunable_list, keepalive_limit), false },
-	{ "RecoverTimeout",     120,  offsetof(struct ctdb_tunable_list, recover_timeout), false },
+	{ "RecoverTimeout",      30,  offsetof(struct ctdb_tunable_list, recover_timeout), false },
 	{ "RecoverInterval",      1,  offsetof(struct ctdb_tunable_list, recover_interval), false },
 	{ "ElectionTimeout",      3,  offsetof(struct ctdb_tunable_list, election_timeout), false },
 	{ "TakeoverTimeout",      9,  offsetof(struct ctdb_tunable_list, takeover_timeout), false },

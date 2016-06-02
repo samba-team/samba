@@ -34,9 +34,9 @@
 #include "protocol/protocol_api.h"
 #include "client/client.h"
 
-static int recover_timeout = 120;
+static int recover_timeout = 30;
 
-#define NUM_RETRIES	5
+#define NUM_RETRIES	3
 
 #define TIMEOUT()	timeval_current_ofs(recover_timeout, 0)
 
