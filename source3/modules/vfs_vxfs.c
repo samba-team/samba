@@ -1,9 +1,10 @@
 /*
 Unix SMB/CIFS implementation.
 Wrap VxFS calls in vfs functions.
-This module is for ACL handling.
+This module is for ACL and XATTR handling.
 
 Copyright (C) Symantec Corporation <www.symantec.com> 2014
+Copyright (C) Veritas Technologies LLC <www.veritas.com> 2016
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "system/filesys.h"
+#include "vfs_vxfs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -509,9 +511,42 @@ static int vxfs_sys_acl_set_file(vfs_handle_struct *handle,  const char *name,
 static int vxfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 			  const char *name, const void *value, size_t size,
 			  int flags){
+	struct smb_filename *smb_fname;
+	bool is_dir = false;
+	int ret = 0;
 
 	DEBUG(10, ("In vxfs_set_xattr\n"));
 
+	smb_fname = synthetic_smb_fname(talloc_tos(), path, NULL, NULL, 0);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	if (SMB_VFS_NEXT_STAT(handle, smb_fname) != 0) {
+		TALLOC_FREE(smb_fname);
+		return -1;
+	}
+
+	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
+	TALLOC_FREE(smb_fname);
+
+	ret = vxfs_setxattr_path(path, name, value, size, flags,
+				  is_dir);
+	if ((ret == 0) ||
+	    ((ret == -1) && (errno != ENOTSUP) && (errno != ENOSYS))) {
+		/*
+		 * Now remve old style xattr if it exists
+		 */
+		SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
+		/*
+		 * Do not bother about return value
+		 */
+
+		return ret;
+	}
+
+	DEBUG(10, ("Fallback to xattr\n"));
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_SETXATTR(handle, path, XATTR_USER_NTACL,
 					     value, size, flags);
@@ -529,9 +564,18 @@ static int vxfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size,  int flags){
+	int ret = 0;
 
 	DEBUG(10, ("In vxfs_fset_xattr\n"));
 
+	ret = vxfs_setxattr_fd(fsp->fh->fd, name, value, size, flags);
+	if ((ret == 0) ||
+	    ((ret == -1) && (errno != ENOTSUP) && (errno != ENOSYS))) {
+		SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
+		return ret;
+	}
+
+	DEBUG(10, ("Fallback to xattr"));
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_FSETXATTR(handle, fsp, XATTR_USER_NTACL,
 					      value, size, flags);
@@ -549,9 +593,16 @@ static int vxfs_fset_xattr(struct vfs_handle_struct *handle,
 static ssize_t vxfs_get_xattr(struct vfs_handle_struct *handle,
 			      const char *path, const char *name,
 			      void *value, size_t size){
+	int ret;
 
 	DEBUG(10, ("In vxfs_get_xattr\n"));
+	ret = vxfs_getxattr_path(path, name, value, size);
+	if ((ret != -1) || ((errno != ENOTSUP) &&
+			    (errno != ENOSYS) && (errno != ENODATA))) {
+		return ret;
+	}
 
+	DEBUG(10, ("Fallback to xattr\n"));
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_GETXATTR(handle, path, XATTR_USER_NTACL,
 					     value, size);
@@ -569,9 +620,17 @@ static ssize_t vxfs_get_xattr(struct vfs_handle_struct *handle,
 static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, const char *name,
 			       void *value, size_t size){
+	int ret;
 
 	DEBUG(10, ("In vxfs_fget_xattr\n"));
 
+	ret = vxfs_getxattr_fd(fsp->fh->fd, name, value, size);
+	if ((ret != -1) || ((errno != ENOTSUP) &&
+			    (errno != ENOSYS) && (errno != ENODATA))) {
+		return ret;
+	}
+
+	DEBUG(10, ("Fallback to xattr\n"));
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
 		return SMB_VFS_NEXT_FGETXATTR(handle, fsp, XATTR_USER_NTACL,
 					      value, size);
@@ -588,38 +647,86 @@ static ssize_t vxfs_fget_xattr(struct vfs_handle_struct *handle,
 
 static int vxfs_remove_xattr(struct vfs_handle_struct *handle,
 			     const char *path, const char *name){
+	struct smb_filename *smb_fname;
+	bool is_dir = false;
+	int ret = 0, ret_new = 0, old_errno;
 
 	DEBUG(10, ("In vxfs_remove_xattr\n"));
 
+	/* Remove with old way */
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
-		return SMB_VFS_NEXT_REMOVEXATTR(handle, path, XATTR_USER_NTACL);
+		ret = SMB_VFS_NEXT_REMOVEXATTR(handle, path,
+					       XATTR_USER_NTACL);
+	} else {
+		if (strcasecmp(name, XATTR_USER_NTACL) != 0) {
+			ret = SMB_VFS_NEXT_REMOVEXATTR(handle, path,
+						       name);
+		}
 	}
+	old_errno = errno;
 
-	/* Clients can't see XATTR_USER_NTACL directly. */
-	if (strcasecmp(name, XATTR_USER_NTACL) == 0) {
-		errno = ENOATTR;
+	/* Remove with new way */
+	smb_fname = synthetic_smb_fname(talloc_tos(), path, NULL, NULL, 0);
+	if (smb_fname == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
-	return SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
+	if (SMB_VFS_NEXT_STAT(handle, smb_fname) != 0) {
+		TALLOC_FREE(smb_fname);
+		return -1;
+	}
+
+	is_dir = S_ISDIR(smb_fname->st.st_ex_mode);
+	TALLOC_FREE(smb_fname);
+	/*
+	 * If both fail, return failuer else return whichever succeeded
+	 */
+	ret_new = vxfs_removexattr_path(path, name, is_dir);
+	if (errno == ENOTSUP || errno == ENOSYS) {
+		errno = old_errno;
+	}
+	if ((ret_new != -1) && (ret == -1)) {
+		ret = ret_new;
+	}
+
+	return ret;
+
 }
 
 static int vxfs_fremove_xattr(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, const char *name){
+	int ret = 0, ret_new = 0, old_errno;
 
 	DEBUG(10, ("In vxfs_fremove_xattr\n"));
 
+	/* Remove with old way */
 	if (strcmp(name, XATTR_NTACL_NAME) == 0) {
-		return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, XATTR_USER_NTACL);
+		ret = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp,
+						XATTR_USER_NTACL);
+	} else {
+		/* Clients can't remove XATTR_USER_NTACL directly. */
+		if (strcasecmp(name, XATTR_USER_NTACL) != 0) {
+			ret = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp,
+							name);
+		}
+	}
+	old_errno = errno;
+
+	/* Remove with new way */
+	ret_new = vxfs_removexattr_fd(fsp->fh->fd, name);
+	/*
+	 * If both fail, return failuer else return whichever succeeded
+	 */
+	if (errno == ENOTSUP || errno == ENOSYS) {
+		errno = old_errno;
+	}
+	if ((ret_new != -1) && (ret == -1)) {
+		ret = ret_new;
 	}
 
-	/* Clients can't remove XATTR_USER_NTACL directly. */
-	if (strcasecmp(name, XATTR_USER_NTACL) == 0) {
-		errno = ENOATTR;
-		return -1;
-	}
+	return ret;
 
-	return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
 }
 
 static size_t vxfs_filter_list(char *list, size_t size)
@@ -645,6 +752,11 @@ static ssize_t vxfs_listxattr(vfs_handle_struct *handle, const char *path,
 {
 	ssize_t result;
 
+	result = vxfs_listxattr_path(path, list, size);
+	if (result >= 0 || ((errno != ENOTSUP) && (errno != ENOSYS))) {
+		return result;
+	}
+
 	result = SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
 
 	if (result <= 0) {
@@ -663,6 +775,11 @@ static ssize_t vxfs_flistxattr(struct vfs_handle_struct *handle,
 {
 	ssize_t result;
 
+	result = vxfs_listxattr_fd(fsp->fh->fd, list, size);
+	if (result >= 0 || ((errno != ENOTSUP) && (errno != ENOSYS))) {
+		return result;
+	}
+
 	result = SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
 
 	if (result <= 0) {
@@ -679,19 +796,25 @@ static int vfs_vxfs_connect(struct vfs_handle_struct *handle,
 			    const char *service, const char *user)
 {
 
-	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	int ret;
 
+	ret  = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	if (ret < 0) {
 		return ret;
 	}
+
+	vxfs_init();
+
 	return 0;
 }
 
 static struct vfs_fn_pointers vfs_vxfs_fns = {
 	.connect_fn = vfs_vxfs_connect,
 
+#ifdef VXFS_ACL_SHARE
 	.sys_acl_set_file_fn = vxfs_sys_acl_set_file,
 	.sys_acl_set_fd_fn = vxfs_sys_acl_set_fd,
+#endif
 
 	.getxattr_fn = vxfs_get_xattr,
 	.fgetxattr_fn = vxfs_fget_xattr,
