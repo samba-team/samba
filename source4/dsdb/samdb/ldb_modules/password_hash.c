@@ -1666,6 +1666,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	 * setup 'supplementalCredentials' value
 	 */
 	ZERO_STRUCT(scb);
+	scb.sub.signature	= SUPPLEMENTAL_CREDENTIALS_SIGNATURE;
 	scb.sub.num_packages	= num_packages;
 	scb.sub.packages	= packages;
 
