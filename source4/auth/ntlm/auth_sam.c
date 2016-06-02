@@ -495,7 +495,7 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 {
 	NTSTATUS nt_status;
 	bool interactive = (user_info->password_state == AUTH_PASSWORD_HASH);
-	uint16_t acct_flags = samdb_result_acct_flags(msg, NULL);
+	uint32_t acct_flags = samdb_result_acct_flags(msg, NULL);
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NT_STATUS_NO_MEMORY;
@@ -506,6 +506,20 @@ static NTSTATUS authsam_authenticate(struct auth4_context *auth_context,
 		if (!(acct_flags & ACB_NORMAL)) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_SUCH_USER;
+		}
+		if (acct_flags & ACB_SMARTCARD_REQUIRED) {
+			if (acct_flags & ACB_DISABLED) {
+				DEBUG(2,("authsam_authenticate: Account for user '%s' "
+					 "was disabled.\n",
+					 user_info->mapped.account_name));
+				TALLOC_FREE(tmp_ctx);
+				return NT_STATUS_ACCOUNT_DISABLED;
+			}
+			DEBUG(2,("authsam_authenticate: Account for user '%s' "
+				 "requires interactive smartcard logon.\n",
+				 user_info->mapped.account_name));
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_SMARTCARD_LOGON_REQUIRED;
 		}
 	}
 
