@@ -261,6 +261,81 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	entry_ex->entry.keys.val = NULL;
 	entry_ex->entry.keys.len = 0;
+	entry_ex->entry.kvno = 0;
+
+	if ((ent_type == SAMBA_KDC_ENT_TYPE_CLIENT)
+	    && (userAccountControl & UF_SMARTCARD_REQUIRED)) {
+		uint8_t secretbuffer[32];
+
+		/*
+		 * Fake keys until we have a better way to reject
+		 * non-pkinit requests.
+		 *
+		 * We just need to indicate which encryption types are
+		 * supported.
+		 */
+		generate_secret_buffer(secretbuffer, sizeof(secretbuffer));
+
+		allocated_keys = 3;
+		entry_ex->entry.keys.len = 0;
+		entry_ex->entry.keys.val = calloc(allocated_keys, sizeof(struct sdb_key));
+		if (entry_ex->entry.keys.val == NULL) {
+			ZERO_STRUCT(secretbuffer);
+			ret = ENOMEM;
+			goto out;
+		}
+
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES256) {
+			struct sdb_key key = {};
+
+			ret = smb_krb5_keyblock_init_contents(context,
+							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+							      secretbuffer, 32,
+							      &key.key);
+			if (ret) {
+				ZERO_STRUCT(secretbuffer);
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+
+		if (supported_enctypes & ENC_HMAC_SHA1_96_AES128) {
+			struct sdb_key key = {};
+
+			ret = smb_krb5_keyblock_init_contents(context,
+							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+							      secretbuffer, 16,
+							      &key.key);
+			if (ret) {
+				ZERO_STRUCT(secretbuffer);
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+
+		if (supported_enctypes & ENC_RC4_HMAC_MD5) {
+			struct sdb_key key = {};
+
+			ret = smb_krb5_keyblock_init_contents(context,
+							      ENCTYPE_ARCFOUR_HMAC,
+							      secretbuffer, 16,
+							      &key.key);
+			if (ret) {
+				ZERO_STRUCT(secretbuffer);
+				goto out;
+			}
+
+			entry_ex->entry.keys.val[entry_ex->entry.keys.len] = key;
+			entry_ex->entry.keys.len++;
+		}
+
+		ret = 0;
+		goto out;
+	}
 
 	kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
 	if (is_rodc) {
