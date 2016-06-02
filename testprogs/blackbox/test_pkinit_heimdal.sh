@@ -56,9 +56,11 @@ unc="//$SERVER/tmp"
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 
-testit "kinit with pkinit (name specified)" $samba4kinit $enctype --request-pac --renewable --pk-user=FILE:$PREFIX/private/tls/admincert.pem,$PREFIX/private/tls/adminkey.pem $USERNAME@$REALM || failed=`expr $failed + 1`
-testit "kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable --pk-user=FILE:$PREFIX/private/tls/admincert.pem,$PREFIX/private/tls/adminkey.pem --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
-testit "kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable --pk-user=FILE:$PREFIX/private/tls/admincertupn.pem,$PREFIX/private/tls/adminkey.pem --pk-enterprise || failed=`expr $failed + 1`
+PKUSER="--pk-user=FILE:$PREFIX/private/tls/admincert.pem,$PREFIX/private/tls/adminkey.pem"
+
+testit "kinit with pkinit (name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "kinit with pkinit (enterprise name specified)" $samba4kinit $enctype --request-pac --renewable $PKUSER --enterprise $USERNAME@$REALM || failed=`expr $failed + 1`
+testit "kinit with pkinit (enterprise name in cert)" $samba4kinit $enctype --request-pac --renewable $PKUSER --pk-enterprise || failed=`expr $failed + 1`
 testit "kinit renew ticket" $samba4kinit --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
