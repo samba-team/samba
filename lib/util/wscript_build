@@ -69,16 +69,15 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                             tevent execinfo pthread''',
                     local_include=False)
 
-bld.SAMBA_LIBRARY('tevent-unix-util',
-                  source='tevent_unix.c',
-                  local_include=False,
-                  deps='tevent',
-                  public_headers='tevent_unix.h',
-                  header_path=[ ('*', 'util') ],
-                  pc_files=[],
-                  vnum='0.0.1')
+if bld.env.SAMBA_UTIL_CORE_ONLY:
 
-if not bld.env.SAMBA_UTIL_CORE_ONLY:
+    bld.SAMBA_LIBRARY('tevent-util',
+                      source='tevent_unix.c',
+                      local_include=False,
+                      deps='tevent',
+                      private_library=True)
+
+else:
 
     bld.env.public_headers_skip.append('charset_compat.h')
 
@@ -141,10 +140,10 @@ if not bld.env.SAMBA_UTIL_CORE_ONLY:
                       )
 
     bld.SAMBA_LIBRARY('tevent-util',
-                      source='tevent_ntstatus.c tevent_werror.c',
+                      source='tevent_unix.c tevent_ntstatus.c tevent_werror.c',
                       local_include=False,
-                      public_deps='tevent samba-errors tevent-unix-util',
-                      public_headers='tevent_ntstatus.h tevent_werror.h',
+                      public_deps='tevent samba-errors',
+                      public_headers='tevent_ntstatus.h tevent_unix.h tevent_werror.h',
                       header_path=[ ('*', 'util') ],
                       pc_files=[],
                       vnum='0.0.1'
