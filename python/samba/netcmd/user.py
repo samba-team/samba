@@ -90,6 +90,9 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
         Option("--random-password",
                 help="Generate random password",
                 action="store_true"),
+        Option("--smartcard-required",
+                help="Require a smartcard for interactive logons",
+                action="store_true"),
         Option("--use-username-as-cn",
                 help="Force use of username as user's CN",
                 action="store_true"),
@@ -141,12 +144,25 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
             mail_address=None, internet_address=None, telephone_number=None,
             physical_delivery_office=None, rfc2307_from_nss=False,
             nis_domain=None, unix_home=None, uid=None, uid_number=None,
-            gid_number=None, gecos=None, login_shell=None):
+            gid_number=None, gecos=None, login_shell=None,
+            smartcard_required=False):
 
-        if random_password:
+        if smartcard_required:
+            if password is not None and password is not '':
+                raise CommandError('It is not allowed to specifiy '
+                                   '--newpassword '
+                                   'together with --smartcard-required.')
+            if must_change_at_next_login:
+                raise CommandError('It is not allowed to specifiy '
+                                   '--must-change-at-next-login '
+                                   'together with --smartcard-required.')
+
+        if random_password and not smartcard_required:
             password = generate_random_password(128, 255)
 
         while True:
+            if smartcard_required:
+                break
             if password is not None and password is not '':
                 break
             password = getpass("New Password: ")
@@ -194,7 +210,8 @@ Example5 shows how to create an RFC2307/NIS domain enabled user account. If
                           telephonenumber=telephone_number, physicaldeliveryoffice=physical_delivery_office,
                           nisdomain=nis_domain, unixhome=unix_home, uid=uid,
                           uidnumber=uid_number, gidnumber=gid_number,
-                          gecos=gecos, loginshell=login_shell)
+                          gecos=gecos, loginshell=login_shell,
+                          smartcard_required=smartcard_required)
         except Exception, e:
             raise CommandError("Failed to add user '%s': " % username, e)
 
