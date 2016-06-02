@@ -277,7 +277,8 @@ static bool db_rbt_search_internal(struct db_context *db, TDB_DATA key,
 	struct rb_node *n;
 	bool found = false;
 	struct db_rbt_node *r = NULL;
-	TDB_DATA search_key, search_val;
+	TDB_DATA search_key = { 0 };
+	TDB_DATA search_val = { 0 };
 
 	n = ctx->tree.rb_node;
 
