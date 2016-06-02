@@ -804,7 +804,7 @@ static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
 {
 	int signvalue = 0;
 	unsigned LLONG uvalue;
-	char convert[20];
+	char convert[22+1]; /* 64-bit value in octal: 22 digits + \0 */
 	int place = 0;
 	int spadlen = 0; /* amount to space pad */
 	int zpadlen = 0; /* amount to zero pad */
@@ -834,8 +834,8 @@ static void fmtint(char *buffer, size_t *currlen, size_t maxlen,
 			(caps? "0123456789ABCDEF":"0123456789abcdef")
 			[uvalue % (unsigned)base  ];
 		uvalue = (uvalue / (unsigned)base );
-	} while(uvalue && (place < 20));
-	if (place == 20) place--;
+	} while(uvalue && (place < sizeof(convert)));
+	if (place == sizeof(convert)) place--;
 	convert[place] = 0;
 
 	zpadlen = max - place;
