@@ -905,6 +905,186 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                    expected_metadata=deleted_metadata_dc2)
 
 
+    def test_ReplicateMoveObject3b(self):
+        """Verifies how a moved container with a user inside is replicated between two DCs.
+           This test should verify that:
+            - the OU is created on DC1
+            - the OU is renamed on DC1
+            - We verify that after replication,
+              that the user has the correct DN (under OU2).
+
+           """
+        # work-out unique username to test with
+        username = self._make_username()
+
+        # create user on DC1
+        self.ldb_dc1.newuser(username=username,
+                             userou="ou=%s" % self.ou1_dn.get_component_value(0),
+                             password=None, setpassword=False)
+        ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
+                                      scope=SCOPE_SUBTREE,
+                                      expression="(samAccountName=%s)" % username,
+                                      attrs=["*", "parentGUID"])
+        self.assertEquals(len(ldb_res), 1)
+        user_orig = ldb_res[0]
+        user_dn   = ldb_res[0]["dn"]
+
+        # check user info on DC1
+        print "Testing for %s with GUID %s" % (username, self._GUID_string(user_orig["objectGUID"][0]))
+        initial_metadata = [
+            (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_instanceType, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_whenCreated, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_name, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_userAccountControl, self.dc1_guid, None),
+            (DRSUAPI_ATTID_codePage, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_countryCode, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_dBCSPwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_logonHours, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_unicodePwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_pwdLastSet, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_primaryGroupID, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_objectSid, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_accountExpires, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_lmPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountName, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountType, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_userPrincipalName, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 1)]
+
+        self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                        obj_orig=user_orig, is_deleted=False,
+                        expected_metadata=initial_metadata)
+
+
+        new_dn = ldb.Dn(self.ldb_dc1, "CN=%s" % username)
+        new_dn.add_base(self.ou2_dn)
+        self.ldb_dc1.rename(user_dn, new_dn)
+        ldb_res = self.ldb_dc1.search(base=self.ou2_dn,
+                                      scope=SCOPE_SUBTREE,
+                                      expression="(samAccountName=%s)" % username,
+                                      attrs=["*", "parentGUID"])
+        self.assertEquals(len(ldb_res), 1)
+
+        user_moved_orig = ldb_res[0]
+        user_moved_dn   = ldb_res[0]["dn"]
+
+        # trigger replication from DC2 (Which has never seen the object) to DC1
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
+        moved_metadata = [
+            (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_cn, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_instanceType, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_whenCreated, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_name, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_userAccountControl, self.dc1_guid, None),
+            (DRSUAPI_ATTID_codePage, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_countryCode, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_dBCSPwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_logonHours, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_unicodePwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_pwdLastSet, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_primaryGroupID, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_objectSid, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_accountExpires, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_lmPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountName, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountType, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_userPrincipalName, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 1)]
+
+        # check user info on DC1 after rename - should be valid user
+        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                                   obj_orig=user_moved_orig,
+                                   is_deleted=False,
+                                   expected_metadata=moved_metadata)
+
+        # delete user on DC1
+        self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
+        deleted_metadata_dc1 = [
+            (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_cn, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_instanceType, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_whenCreated, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_isDeleted, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_name, self.dc1_guid, 3),
+            (DRSUAPI_ATTID_userAccountControl, self.dc1_guid, None),
+            (DRSUAPI_ATTID_codePage, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_countryCode, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_dBCSPwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_logonHours, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_unicodePwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_pwdLastSet, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_primaryGroupID, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_objectSid, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_accountExpires, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_lmPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountName, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountType, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_userPrincipalName, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_lastKnownParent, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
+
+        # check user info on DC1 - should be deleted user
+        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                                   obj_orig=user_moved_orig,
+                                   is_deleted=True,
+                                   expected_metadata=deleted_metadata_dc1)
+
+        # trigger replication from DC2 to DC1
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
+
+        # check user info on DC1 - should be deleted user
+        user_cur = self._check_obj(sam_ldb=self.ldb_dc1, drs=self.drs_dc1,
+                                   obj_orig=user_moved_orig,
+                                   is_deleted=True,
+                                   expected_metadata=deleted_metadata_dc1)
+
+        # trigger replication from DC1 to DC2, for cleanup
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
+
+        deleted_metadata_dc2 = [
+            (DRSUAPI_ATTID_objectClass, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_cn, self.dc2_guid, 1),
+            (DRSUAPI_ATTID_instanceType, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_whenCreated, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_isDeleted, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_name, self.dc1_guid, 3),
+            (DRSUAPI_ATTID_userAccountControl, self.dc1_guid, None),
+            (DRSUAPI_ATTID_codePage, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_countryCode, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_dBCSPwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_logonHours, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_unicodePwd, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_ntPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_pwdLastSet, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_primaryGroupID, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_objectSid, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_accountExpires, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_lmPwdHistory, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountName, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_sAMAccountType, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_userPrincipalName, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_lastKnownParent, self.dc1_guid, 1),
+            (DRSUAPI_ATTID_objectCategory, self.dc1_guid, 2),
+            (DRSUAPI_ATTID_isRecycled, self.dc1_guid, 1)]
+
+        # check user info on DC2 - should be deleted user
+        user_cur = self._check_obj(sam_ldb=self.ldb_dc2, drs=self.drs_dc2,
+                                   obj_orig=user_moved_orig,
+                                   is_deleted=True,
+                                   expected_metadata=deleted_metadata_dc2)
+
+
     def test_ReplicateMoveObject4(self):
         """Verifies how a moved container with a user inside is replicated between two DCs.
            This test should verify that:
