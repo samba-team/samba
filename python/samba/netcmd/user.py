@@ -597,15 +597,19 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         if filter is None and username is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
+        password = newpassword
+
         if random_password:
             password = generate_random_password(128, 255)
-        else:
-            password = newpassword
 
-        while 1:
+        while True:
             if password is not None and password is not '':
                 break
             password = getpass("New Password: ")
+            passwordverify = getpass("Retype Password: ")
+            if not password == passwordverify:
+                password = None
+                self.outf.write("Sorry, passwords do not match.\n")
 
         if filter is None:
             filter = "(&(objectClass=user)(sAMAccountName=%s))" % (ldb.binary_encode(username))
