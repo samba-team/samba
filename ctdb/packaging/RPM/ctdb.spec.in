@@ -207,7 +207,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/ctdb/smnotify
 %dir %{_libdir}
 %{_libdir}/ctdb/lib*
-%{_libdir}/libtevent-unix-util.so.0*
 %{_mandir}/man1/ctdb.1.gz
 %{_mandir}/man1/ctdbd.1.gz
 %{_mandir}/man1/ctdbd_wrapper.1.gz
@@ -229,8 +228,6 @@ development libraries for ctdb
 
 %files devel
 %defattr(-,root,root)
-%{_includedir}/ctdb/util/*.h
-%{_libdir}/libtevent-unix-util.so
 
 %package tests
 Summary: CTDB test suite
