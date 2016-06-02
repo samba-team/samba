@@ -918,11 +918,13 @@ int get_socket_port(int fd)
 
 #if defined(HAVE_IPV6)
 	if (sa.ss_family == AF_INET6) {
-		return ntohs(((struct sockaddr_in6 *)&sa)->sin6_port);
+		struct sockaddr_in6 *sa_in6 = (struct sockaddr_in6 *)&sa;
+		return ntohs(sa_in6->sin6_port);
 	}
 #endif
 	if (sa.ss_family == AF_INET) {
-		return ntohs(((struct sockaddr_in *)&sa)->sin_port);
+		struct sockaddr_in *sa_in = (struct sockaddr_in *)&sa;
+		return ntohs(sa_in->sin_port);
 	}
 	return -1;
 }
