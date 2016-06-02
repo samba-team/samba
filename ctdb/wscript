@@ -341,7 +341,7 @@ def build(bld):
                                           '''db_hash.c srvid.c reqid.c
                                              pkt_read.c pkt_write.c comm.c
                                              logging.c rb_tree.c'''),
-                        deps='replace talloc tevent tdb tevent-unix-util')
+                        deps='replace talloc tevent tdb tevent-util')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',
                         source=bld.SUBDIR('protocol',
@@ -654,7 +654,7 @@ def build(bld):
 
         bld.SAMBA_BINARY(target,
                          source=src,
-                         deps='talloc tevent tdb tevent-unix-util',
+                         deps='talloc tevent tdb tevent-util',
                          install_path='${CTDB_TEST_LIBDIR}')
 
     bld.SAMBA_BINARY('reqid_test',
@@ -708,7 +708,7 @@ def build(bld):
     bld.SAMBA_BINARY('fake_ctdbd',
                      source='tests/src/fake_ctdbd.c',
                      deps='''ctdb-util ctdb-protocol ctdb-system
-                             samba-util tevent-unix-util popt''',
+                             samba-util tevent-util popt''',
                      install_path='${CTDB_TEST_LIBDIR}')
 
     if bld.env.HAVE_INFINIBAND:
