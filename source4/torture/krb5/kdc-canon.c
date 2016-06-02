@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Validate the krb5 pac generation routines
-   
+
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -64,7 +64,7 @@ struct test_data {
 	bool removedollar;
 	const char *krb5_service;
 	const char *krb5_hostname;
-};	
+};
 
 enum test_stage {
 	TEST_AS_REQ = 0,
@@ -1237,7 +1237,7 @@ static bool torture_krb5_post_recv_as_req_self_test(struct torture_krb5_context 
 	return true;
 }
 
-/* 
+/*
  * This function is set in torture_krb5_init_context_canon as krb5
  * send_and_recv function.  This allows us to override what server the
  * test is aimed at, and to inspect the packets just before they are
@@ -1309,7 +1309,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 	}
 
 	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
-						   hi, timeout, &modified_send_buf, 
+						   hi, timeout, &modified_send_buf,
 						   recv_buf);
 	if (k5ret != 0) {
 		return k5ret;
@@ -1351,7 +1351,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 		size_t used;
 		torture_warning(test_context->tctx, "Packet of length %llu failed post-recv checks in test stage %d", (unsigned long long)recv_buf->length, test_context->test_stage);
 		if (decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0) {
-			torture_warning(test_context->tctx, 
+			torture_warning(test_context->tctx,
 					"STAGE: %d Unexpectedly got a KRB-ERROR packet "
 					"with error code %d (%s)",
 					test_context->test_stage,
@@ -1363,7 +1363,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_canon_override(krb5_context c
 	}
 
 	test_context->packet_count++;
-	
+
 	return k5ret;
 }
 
@@ -1372,7 +1372,7 @@ static int test_context_destructor(struct torture_krb5_context *test_context)
 	freeaddrinfo(test_context->server);
 	return 0;
 }
-	
+
 
 static bool torture_krb5_init_context_canon(struct torture_context *tctx,
 					     struct test_data *test_data,
@@ -1387,7 +1387,7 @@ static bool torture_krb5_init_context_canon(struct torture_context *tctx,
 
 	test_context->test_data = test_data;
 	test_context->tctx = tctx;
-	
+
 	k5ret = smb_krb5_init_context(test_context, tctx->lp_ctx, &test_context->smb_krb5_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "smb_krb5_init_context failed");
 
@@ -1395,7 +1395,7 @@ static bool torture_krb5_init_context_canon(struct torture_context *tctx,
 	torture_assert(tctx, ok, "Failed to parse target server");
 
 	talloc_set_destructor(test_context, test_context_destructor);
-	
+
 	set_sockaddr_port(test_context->server->ai_addr, 88);
 
 	k5ret = krb5_set_send_to_kdc_func(test_context->smb_krb5_context->krb5_context,
@@ -1434,12 +1434,12 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	char *cc_name;
 	krb5_data in_data, enc_ticket;
 	krb5_get_creds_opt opt;
-	
+
 	const char *upn = torture_setting_string(tctx, "krb5-upn", "");
 	test_data->krb5_service = torture_setting_string(tctx, "krb5-service", "host");
 	test_data->krb5_hostname = torture_setting_string(tctx, "krb5-hostname", "");
 
-	/* 
+	/*
 	 * If we have not passed a UPN on the command line,
 	 * then skip the UPN tests.
 	 */
@@ -1467,12 +1467,12 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			*p = '\0';
 			p++;
 		}
-		/* 
+		/*
 		 * Test the UPN behaviour carefully.  We can
 		 * test in two different modes, depending on
 		 * what UPN has been set up for us.
 		 *
-		 * If the UPN is in our realm, then we do all the tests with this name also.  
+		 * If the UPN is in our realm, then we do all the tests with this name also.
 		 *
 		 * If the UPN is not in our realm, then we
 		 * expect the tests that replace the realm to
@@ -1484,10 +1484,10 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			test_data->other_upn_suffix = false;
 		}
 
-		/* 
+		/*
 		 * This lets us test the combination of the UPN prefix
 		 * with a valid domain, without adding even more
-		 * combinations 
+		 * combinations
 		 */
 		if (test_data->netbios_realm == false) {
 			test_data->realm = p;
@@ -1497,7 +1497,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	ok = torture_krb5_init_context_canon(tctx, test_data, &test_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
 	k5_context = test_context->smb_krb5_context->krb5_context;
-	
+
 	if (test_data->upper_realm) {
 		test_data->realm = strupper_talloc(test_data, test_data->realm);
 	} else {
@@ -1520,14 +1520,14 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	}
 
 	principal_string = talloc_asprintf(test_data, "%s@%s", test_data->username, test_data->realm);
-	
-	/* 
+
+	/*
 	 * If we are set to canonicalize, we get back the fixed UPPER
 	 * case realm, and the real username (ie matching LDAP
-	 * samAccountName) 
+	 * samAccountName)
 	 *
 	 * Otherwise, if we are set to enterprise, we
-	 * get back the whole principal as-sent 
+	 * get back the whole principal as-sent
 	 *
 	 * Finally, if we are not set to canonicalize, we get back the
 	 * fixed UPPER case realm, but the as-sent username
@@ -1545,7 +1545,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 							    test_data->username,
 							    test_data->real_realm);
 	}
-	
+
 	if (test_data->enterprise) {
 		principal_flags = KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 	} else {
@@ -1587,13 +1587,13 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	test_context->test_stage = TEST_AS_REQ;
 	test_context->packet_count = 0;
 
-	/* 
+	/*
 	 * Set the canonicalize flag if this test requires it
 	 */
 	torture_assert_int_equal(tctx,
 				 krb5_get_init_creds_opt_alloc(k5_context, &krb_options),
 				 0, "krb5_get_init_creds_opt_alloc failed");
-		
+
 	torture_assert_int_equal(tctx,
 				 krb5_get_init_creds_opt_set_canonicalize(k5_context,
 									  krb_options,
@@ -1609,7 +1609,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	k5ret = krb5_get_init_creds_password(k5_context, &my_creds, principal,
 					     password, NULL, NULL, 0,
 					     NULL, krb_options);
-	
+
 	if (test_data->netbios_realm && test_data->upn) {
 		torture_assert_int_equal(tctx, k5ret,
 					 KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN,
@@ -1623,7 +1623,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 						    smb_get_krb5_error_message(k5_context, k5ret, tctx));
 		torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
 	}
-	
+
 	torture_assert(tctx,
 		       test_context->packet_count > 1,
 		       "Expected krb5_get_init_creds_password to send more packets");
@@ -2242,7 +2242,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->removedollar = (i & TEST_REMOVEDOLLAR) != 0;
 		torture_suite_add_simple_tcase_const(suite, name, torture_krb5_as_req_canon,
 						     test_data);
-						     
+
 	}
 	return suite;
 }

@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Validate the krb5 pac generation routines
-   
+
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -134,7 +134,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		free_AS_REQ(&test_context->as_req);
 		break;
 
-		/* 
+		/*
 		 * Confirm correct error codes when we ask for the PAC.  This behaviour is rather odd...
 		 */
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
@@ -175,7 +175,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		free_AS_REQ(&test_context->as_req);
 		break;
 
-		/* 
+		/*
 		 * Confirm correct error codes when we deliberatly send the wrong password
 		 */
 	case TORTURE_KRB5_TEST_BREAK_PW:
@@ -202,7 +202,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		free_AS_REQ(&test_context->as_req);
 		break;
 
-		/* 
+		/*
 		 * Confirm correct error codes when we deliberatly skew the client clock
 		 */
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
@@ -233,7 +233,7 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 }
 
 
-/* 
+/*
  * This function is set in torture_krb5_init_context as krb5
  * send_and_recv function.  This allows us to override what server the
  * test is aimed at, and to inspect the packets just before they are
@@ -256,7 +256,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_override(krb5_context context
 {
 	krb5_error_code k5ret;
 	bool ok;
-	
+
 	struct torture_krb5_context *test_context
 		= talloc_get_type_abort(data, struct torture_krb5_context);
 
@@ -264,7 +264,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_override(krb5_context context
 	if (ok == false) {
 		return EINVAL;
 	}
-	
+
 	k5ret = smb_krb5_send_and_recv_func_forced(context, test_context->server,
 						    hi, timeout, send_buf, recv_buf);
 	if (k5ret != 0) {
@@ -276,7 +276,7 @@ static krb5_error_code smb_krb5_send_and_recv_func_override(krb5_context context
 	}
 
 	test_context->packet_count++;
-	
+
 	return k5ret;
 }
 
@@ -285,7 +285,7 @@ static int test_context_destructor(struct torture_krb5_context *test_context)
 	freeaddrinfo(test_context->server);
 	return 0;
 }
-	
+
 
 static bool torture_krb5_init_context(struct torture_context *tctx,
 				      enum torture_krb5_test test,
@@ -300,7 +300,7 @@ static bool torture_krb5_init_context(struct torture_context *tctx,
 
 	test_context->test = test;
 	test_context->tctx = tctx;
-	
+
 	k5ret = smb_krb5_init_context(tctx, tctx->lp_ctx, smb_krb5_context);
 	torture_assert_int_equal(tctx, k5ret, 0, "smb_krb5_init_context failed");
 
@@ -308,7 +308,7 @@ static bool torture_krb5_init_context(struct torture_context *tctx,
 	torture_assert(tctx, ok, "Failed to parse target server");
 
 	talloc_set_destructor(test_context, test_context_destructor);
-	
+
 	set_sockaddr_port(test_context->server->ai_addr, 88);
 
 	k5ret = krb5_set_send_to_kdc_func((*smb_krb5_context)->krb5_context,
@@ -331,10 +331,10 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	const char *error_string;
 	const char *password = cli_credentials_get_password(credentials);
 	krb5_get_init_creds_opt *krb_options = NULL;
-	
+
 	ok = torture_krb5_init_context(tctx, test, &smb_krb5_context);
 	torture_assert(tctx, ok, "torture_krb5_init_context failed");
-	
+
 	k5ret = principal_from_credentials(tctx, credentials, smb_krb5_context,
 					   &principal, &obtained,  &error_string);
 	torture_assert_int_equal(tctx, k5ret, 0, error_string);
@@ -348,12 +348,12 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 		torture_assert_int_equal(tctx,
 					 krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context, &krb_options),
 					 0, "krb5_get_init_creds_opt_alloc failed");
-		
+
 		torture_assert_int_equal(tctx,
 					 krb5_get_init_creds_opt_set_pac_request(smb_krb5_context->krb5_context, krb_options, true),
 					 0, "krb5_get_init_creds_opt_set_pac_request failed");
 		break;
-		
+
 	case TORTURE_KRB5_TEST_BREAK_PW:
 		password = "NOT the password";
 		break;
@@ -370,7 +370,7 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 					     password, NULL, NULL, 0,
 					     NULL, krb_options);
 	krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
-	
+
 	switch (test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
@@ -424,16 +424,16 @@ NTSTATUS torture_krb5_init(void)
 	suite->description = talloc_strdup(suite, "Kerberos tests");
 	kdc_suite->description = talloc_strdup(kdc_suite, "Kerberos KDC tests");
 
-	torture_suite_add_simple_test(kdc_suite, "as-req-cmdline", 
+	torture_suite_add_simple_test(kdc_suite, "as-req-cmdline",
 				      torture_krb5_as_req_cmdline);
 
-	torture_suite_add_simple_test(kdc_suite, "as-req-pac-request", 
+	torture_suite_add_simple_test(kdc_suite, "as-req-pac-request",
 				      torture_krb5_as_req_pac_request);
 
-	torture_suite_add_simple_test(kdc_suite, "as-req-break-pw", 
+	torture_suite_add_simple_test(kdc_suite, "as-req-break-pw",
 				      torture_krb5_as_req_break_pw);
 
-	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew", 
+	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew",
 				      torture_krb5_as_req_clock_skew);
 
 	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
