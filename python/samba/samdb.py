@@ -302,7 +302,8 @@ member: %s
             description=None, mailaddress=None, internetaddress=None,
             telephonenumber=None, physicaldeliveryoffice=None, sd=None,
             setpassword=True, uidnumber=None, gidnumber=None, gecos=None,
-            loginshell=None, uid=None, nisdomain=None, unixhome=None):
+            loginshell=None, uid=None, nisdomain=None, unixhome=None,
+            smartcard_required=False):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
@@ -335,6 +336,7 @@ member: %s
         :param uid: RFC2307 Unix username of the new user
         :param nisdomain: RFC2307 Unix NIS domain of the new user
         :param unixhome: RFC2307 Unix home directory of the new user
+        :param smartcard_required: set the UF_SMARTCARD_REQUIRED bit of the new user
         """
 
         displayname = ""
@@ -361,6 +363,10 @@ member: %s
                       "sAMAccountName": username,
                       "userPrincipalName": user_principal_name,
                       "objectClass": "user"}
+
+        if smartcard_required:
+            ldbmessage["userAccountControl"] = str(dsdb.UF_NORMAL_ACCOUNT|dsdb.UF_SMARTCARD_REQUIRED)
+            setpassword = False
 
         if surname is not None:
             ldbmessage["sn"] = surname
