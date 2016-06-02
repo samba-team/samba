@@ -587,22 +587,45 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         Option("--random-password",
                 help="Generate random password",
                 action="store_true"),
+        Option("--smartcard-required",
+                help="Require a smartcard for interactive logons",
+                action="store_true"),
+        Option("--clear-smartcard-required",
+                help="Don't require a smartcard for interactive logons",
+                action="store_true"),
         ]
 
     takes_args = ["username?"]
 
     def run(self, username=None, filter=None, credopts=None, sambaopts=None,
             versionopts=None, H=None, newpassword=None,
-            must_change_at_next_login=False, random_password=False):
+            must_change_at_next_login=False, random_password=False,
+            smartcard_required=False, clear_smartcard_required=False):
         if filter is None and username is None:
             raise CommandError("Either the username or '--filter' must be specified!")
 
         password = newpassword
 
-        if random_password:
+        if smartcard_required:
+            if password is not None and password is not '':
+                raise CommandError('It is not allowed to specifiy '
+                                   '--newpassword '
+                                   'together with --smartcard-required.')
+            if must_change_at_next_login:
+                raise CommandError('It is not allowed to specifiy '
+                                   '--must-change-at-next-login '
+                                   'together with --smartcard-required.')
+            if clear_smartcard_required:
+                raise CommandError('It is not allowed to specifiy '
+                                   '--clear-smartcard-required '
+                                   'together with --smartcard-required.')
+
+        if random_password and not smartcard_required:
             password = generate_random_password(128, 255)
 
         while True:
+            if smartcard_required:
+                break
             if password is not None and password is not '':
                 break
             password = getpass("New Password: ")
@@ -622,14 +645,33 @@ Example3 shows how an administrator would reset TestUser3 user's password to pas
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        try:
-            samdb.setpassword(filter, password,
-                              force_change_at_next_login=must_change_at_next_login,
-                              username=username)
-        except Exception, msg:
-            # FIXME: catch more specific exception
-            raise CommandError("Failed to set password for user '%s': %s" % (username or filter, msg))
-        self.outf.write("Changed password OK\n")
+        if smartcard_required:
+            command = ""
+            try:
+                command = "Failed to set UF_SMARTCARD_REQUIRED for user '%s'" % (username or filter)
+                flags = dsdb.UF_SMARTCARD_REQUIRED
+                samdb.toggle_userAccountFlags(filter, flags, on=True)
+                command = "Failed to enable account for user '%s'" % (username or filter)
+                samdb.enable_account(filter)
+            except Exception, msg:
+                # FIXME: catch more specific exception
+                raise CommandError("%s: %s" % (command, msg))
+            self.outf.write("Added UF_SMARTCARD_REQUIRED OK\n")
+        else:
+            command = ""
+            try:
+                if clear_smartcard_required:
+                    command = "Failed to remove UF_SMARTCARD_REQUIRED for user '%s'" % (username or filter)
+                    flags = dsdb.UF_SMARTCARD_REQUIRED
+                    samdb.toggle_userAccountFlags(filter, flags, on=False)
+                command = "Failed to set password for user '%s'" % (username or filter)
+                samdb.setpassword(filter, password,
+                                  force_change_at_next_login=must_change_at_next_login,
+                                  username=username)
+            except Exception, msg:
+                # FIXME: catch more specific exception
+                raise CommandError("%s: %s" % (command, msg))
+            self.outf.write("Changed password OK\n")
 
 
 class cmd_user(SuperCommand):
