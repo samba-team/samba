@@ -208,10 +208,10 @@ class cmd_user_add(cmd_user_create):
     # migrate to create
 
     def run(self, *args, **kwargs):
-        self.err.write(
+        self.outf.write(
             "Note: samba-tool user add is deprecated.  "
             "Please use samba-tool user create for the same function.\n")
-        return super(self, cmd_user_add).run(*args, **kwargs)
+        return super(cmd_user_add, self).run(*args, **kwargs)
 
 
 class cmd_user_delete(Command):
@@ -615,7 +615,7 @@ class cmd_user(SuperCommand):
     """User management."""
 
     subcommands = {}
-    subcommands["add"] = cmd_user_create()
+    subcommands["add"] = cmd_user_add()
     subcommands["create"] = cmd_user_create()
     subcommands["delete"] = cmd_user_delete()
     subcommands["disable"] = cmd_user_disable()
