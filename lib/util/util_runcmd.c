@@ -304,8 +304,8 @@ static void samba_runcmd_io_handler(struct tevent_context *ev,
 				return;
 			}
 			status = WEXITSTATUS(status);
-			DEBUG(3,("Child %s exited with status %d - %s\n",
-				 state->arg0, status, strerror(status)));
+			DEBUG(3,("Child %s exited with status %d\n",
+				 state->arg0, status));
 			if (status != 0) {
 				tevent_req_error(req, status);
 				return;
