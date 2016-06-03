@@ -62,9 +62,6 @@ static NTSTATUS dcesrv_interface_samr_bind(struct dcesrv_call_state *dce_call,
 #define QUERY_APASSC(msg, field, attr) \
 	info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
 							 a_state->domain_state->domain_dn, msg, attr);
-#define QUERY_FPASSC(msg, field, attr) \
-	info->field = samdb_result_force_password_change(sam_ctx, mem_ctx, \
-							 a_state->domain_state->domain_dn, msg);
 #define QUERY_BPWDCT(msg, field, attr) \
 	info->field = samdb_result_effective_badPwdCount(sam_ctx, mem_ctx, \
 							 a_state->domain_state->domain_dn, msg);
@@ -2742,6 +2739,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      "lastLogon",
 						      "lastLogoff",
 						      "pwdLastSet",
+						      "msDS-UserPasswordExpiryTimeComputed",
 						      "logonHours",
 						      "badPwdCount",
 						      "badPasswordTime",
@@ -2778,6 +2776,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 						      "badPasswordTime",
 						      "logonCount",
 						      "pwdLastSet",
+						      "msDS-UserPasswordExpiryTimeComputed",
 						      "accountExpires",
 						      "userAccountControl",
 						      "msDS-User-Account-Control-Computed",
@@ -2855,6 +2854,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		static const char * const attrs2[] = {"userAccountControl",
 						      "msDS-User-Account-Control-Computed",
 						      "pwdLastSet",
+						      "msDS-UserPasswordExpiryTimeComputed",
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -2882,6 +2882,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		static const char * const attrs2[] = {"lastLogon",
 						      "lastLogoff",
 						      "pwdLastSet",
+						      "msDS-UserPasswordExpiryTimeComputed",
 						      "accountExpires",
 						      "sAMAccountName",
 						      "displayName",
@@ -2967,7 +2968,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_UINT64(msg, info3.last_logoff,           "lastLogoff");
 		QUERY_UINT64(msg, info3.last_password_change,  "pwdLastSet");
 		QUERY_APASSC(msg, info3.allow_password_change, "pwdLastSet");
-		QUERY_FPASSC(msg, info3.force_password_change, "pwdLastSet");
+		QUERY_UINT64(msg, info3.force_password_change, "msDS-UserPasswordExpiryTimeComputed");
 		QUERY_LHOURS(msg, info3.logon_hours,           "logonHours");
 		/* level 3 gives the raw badPwdCount value */
 		QUERY_UINT  (msg, info3.bad_password_count,    "badPwdCount");
@@ -3060,7 +3061,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_UINT64(msg, info21.last_password_change, "pwdLastSet");
 		QUERY_UINT64(msg, info21.acct_expiry,          "accountExpires");
 		QUERY_APASSC(msg, info21.allow_password_change,"pwdLastSet");
-		QUERY_FPASSC(msg, info21.force_password_change,"pwdLastSet");
+		QUERY_UINT64(msg, info21.force_password_change, "msDS-UserPasswordExpiryTimeComputed");
 		QUERY_STRING(msg, info21.account_name,         "sAMAccountName");
 		QUERY_STRING(msg, info21.full_name,            "displayName");
 		QUERY_STRING(msg, info21.home_directory,       "homeDirectory");
