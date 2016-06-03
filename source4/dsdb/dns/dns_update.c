@@ -309,14 +309,8 @@ static void dnsupdate_spnupdate_done(struct tevent_req *subreq)
 	ret = samba_runcmd_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		service->nameupdate.status = map_nt_error_from_unix_common(sys_errno);
-	} else {
-		service->nameupdate.status = NT_STATUS_OK;
-	}
-
-	if (!NT_STATUS_IS_OK(service->nameupdate.status)) {
-		DEBUG(0,(__location__ ": Failed SPN update - %s\n",
-			 nt_errstr(service->nameupdate.status)));
+		DEBUG(0,(__location__ ": Failed SPN update - with error code %d\n",
+			 sys_errno));
 	} else {
 		DEBUG(3,("Completed SPN update check OK\n"));
 	}
