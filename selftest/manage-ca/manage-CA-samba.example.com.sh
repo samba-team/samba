@@ -16,3 +16,6 @@ set -x
 # DONE #
 # DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_dc addc.addom.samba.example.com 0123456789ABCDEF
 # DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_user administrator@addom.samba.example.com
+
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_user pkinit@samba.example.com
+# DONE # ./manage-ca.sh manage-CA-samba.example.com.cnf create_user pkinit@addom.samba.example.com
