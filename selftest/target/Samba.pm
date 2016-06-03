@@ -94,10 +94,10 @@ sub prepare_keyblobs($)
 	my $dcdir = "$cadir/DCs/$dcdnsname";
 	my $dccert = "$dcdir/DC-$dcdnsname-cert.pem";
 	my $dckey_private = "$dcdir/DC-$dcdnsname-private-key.pem";
-	my $userprincipalname = "administrator\@$ctx->{dnsname}";
-	my $userdir = "$cadir/Users/$userprincipalname";
-	my $usercert = "$userdir/USER-$userprincipalname-cert.pem";
-	my $userkey_private = "$userdir/USER-$userprincipalname-private-key.pem";
+	my $adminprincipalname = "administrator\@$ctx->{dnsname}";
+	my $admindir = "$cadir/Users/$adminprincipalname";
+	my $admincert = "$admindir/USER-$adminprincipalname-cert.pem";
+	my $adminkey_private = "$admindir/USER-$adminprincipalname-private-key.pem";
 
 	my $tlsdir = "$ctx->{tlsdir}";
 	my $pkinitdir = "$ctx->{prefix_abs}/pkinit";
@@ -107,8 +107,8 @@ sub prepare_keyblobs($)
 	my $crlfile = "$tlsdir/crl.pem";
 	my $certfile = "$tlsdir/cert.pem";
 	my $keyfile = "$tlsdir/key.pem";
-	my $usercertfile = "$pkinitdir/USER-$userprincipalname-cert.pem";
-	my $userkeyfile = "$pkinitdir/USER-$userprincipalname-private-key.pem";
+	my $admincertfile = "$pkinitdir/USER-$adminprincipalname-cert.pem";
+	my $adminkeyfile = "$pkinitdir/USER-$adminprincipalname-private-key.pem";
 
 	mkdir($tlsdir, 0700);
 	mkdir($pkinitdir, 0700);
@@ -156,22 +156,14 @@ EOF
 	copy_file_content(${cacrl_pem}, ${crlfile});
 	copy_file_content(${dccert}, ${certfile});
 	copy_file_content(${dckey_private}, ${keyfile});
-	if (-e ${userkey_private}) {
-		copy_file_content(${usercert}, ${usercertfile});
-		copy_file_content(${userkey_private}, ${userkeyfile});
+	if (-e ${adminkey_private}) {
+		copy_file_content(${admincert}, ${admincertfile});
+		copy_file_content(${adminkey_private}, ${adminkeyfile});
 	}
 
 	# COMPAT stuff to be removed in a later commit
 	my $kdccertfile = "$tlsdir/kdc.pem";
 	copy_file_content(${dccert}, ${kdccertfile});
-	if (-e ${userkey_private}) {
-		my $adminkeyfile = "$tlsdir/adminkey.pem";
-		my $admincertfile = "$tlsdir/admincert.pem";
-		my $admincertupnfile = "$tlsdir/admincertupn.pem";
-		copy_file_content(${userkey_private}, ${adminkeyfile});
-		copy_file_content(${usercert}, ${admincertfile});
-		copy_file_content(${usercert}, ${admincertupnfile});
-	}
 
 	umask $oldumask;
 }
