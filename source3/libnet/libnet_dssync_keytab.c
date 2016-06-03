@@ -153,8 +153,8 @@ static  NTSTATUS parse_supplemental_credentials(TALLOC_CTX *mem_ctx,
 		status = ndr_map_error2ntstatus(ndr_err);
 		goto done;
 	}
-	if (scb.sub.signature !=
-	    SUPPLEMENTAL_CREDENTIALS_SIGNATURE)
+	if ((scb.sub.signature != SUPPLEMENTAL_CREDENTIALS_SIGNATURE)
+	    && (scb.sub.num_packages != 0))
 	{
 		if (DEBUGLEVEL >= 10) {
 			NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
