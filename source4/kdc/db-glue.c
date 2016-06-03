@@ -364,9 +364,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 
 		if (scb.sub.signature != SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
-			NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
-			ret = EINVAL;
-			goto out;
+			if (scb.sub.num_packages != 0) {
+				NDR_PRINT_DEBUG(supplementalCredentialsBlob, &scb);
+				ret = EINVAL;
+				goto out;
+			}
 		}
 
 		for (i=0; i < scb.sub.num_packages; i++) {
