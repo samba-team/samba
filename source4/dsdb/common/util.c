@@ -476,45 +476,6 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 }
 
 /*
-  construct the force_password_change field from the PwdLastSet
-  attribute, the userAccountControl and the domain password settings
-*/
-NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb, 
-					  TALLOC_CTX *mem_ctx, 
-					  struct ldb_dn *domain_dn, 
-					  struct ldb_message *msg)
-{
-	int64_t attr_time = ldb_msg_find_attr_as_int64(msg, "pwdLastSet", 0);
-	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg,
-								"userAccountControl",
-								0);
-	int64_t maxPwdAge;
-
-	/* Machine accounts don't expire, and there is a flag for 'no expiry' */
-	if (!(userAccountControl & UF_NORMAL_ACCOUNT)
-	    || (userAccountControl & UF_DONT_EXPIRE_PASSWD)) {
-		return 0x7FFFFFFFFFFFFFFFULL;
-	}
-
-	if (attr_time == 0) {
-		return 0;
-	}
-	if (attr_time == -1) {
-		return 0x7FFFFFFFFFFFFFFFULL;
-	}
-
-	maxPwdAge = samdb_search_int64(sam_ldb, mem_ctx, 0, domain_dn,
-				       "maxPwdAge", NULL);
-	if (maxPwdAge == 0 || maxPwdAge == -0x8000000000000000ULL) {
-		return 0x7FFFFFFFFFFFFFFFULL;
-	} else {
-		attr_time -= maxPwdAge;
-	}
-
-	return attr_time;
-}
-
-/*
   pull a samr_Password structutre from a result set. 
 */
 struct samr_Password *samdb_result_hash(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, const char *attr)
