@@ -53,8 +53,10 @@ fi
 enctype="-e $ENCTYPE"
 unc="//$SERVER/tmp"
 
-KRB5CCNAME="$PREFIX/tmpccache"
+KRB5CCNAME_PATH="$PREFIX/tmpccache"
+KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
+rm -f $KRB5CCNAME_PATH
 
 PKUSER="--pk-user=FILE:$PREFIX/private/tls/admincert.pem,$PREFIX/private/tls/adminkey.pem"
 
@@ -65,5 +67,5 @@ testit "kinit renew ticket" $samba4kinit --request-pac -R
 
 test_smbclient "Test login with kerberos ccache" 'ls' "$unc" -k yes || failed=`expr $failed + 1`
 
-rm -f $PREFIX/tmpccache
+rm -f $KRB5CCNAME_PATH
 exit $failed
