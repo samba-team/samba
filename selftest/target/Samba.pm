@@ -98,6 +98,10 @@ sub prepare_keyblobs($)
 	my $admindir = "$cadir/Users/$adminprincipalname";
 	my $admincert = "$admindir/USER-$adminprincipalname-cert.pem";
 	my $adminkey_private = "$admindir/USER-$adminprincipalname-private-key.pem";
+	my $pkinitprincipalname = "pkinit\@$ctx->{dnsname}";
+	my $pkinitdir = "$cadir/Users/$pkinitprincipalname";
+	my $pkinitcert = "$pkinitdir/USER-$pkinitprincipalname-cert.pem";
+	my $pkinitkey_private = "$pkinitdir/USER-$pkinitprincipalname-private-key.pem";
 
 	my $tlsdir = "$ctx->{tlsdir}";
 	my $pkinitdir = "$ctx->{prefix_abs}/pkinit";
@@ -109,6 +113,8 @@ sub prepare_keyblobs($)
 	my $keyfile = "$tlsdir/key.pem";
 	my $admincertfile = "$pkinitdir/USER-$adminprincipalname-cert.pem";
 	my $adminkeyfile = "$pkinitdir/USER-$adminprincipalname-private-key.pem";
+	my $pkinitcertfile = "$pkinitdir/USER-$pkinitprincipalname-cert.pem";
+	my $pkinitkeyfile = "$pkinitdir/USER-$pkinitprincipalname-private-key.pem";
 
 	mkdir($tlsdir, 0700);
 	mkdir($pkinitdir, 0700);
@@ -159,6 +165,10 @@ EOF
 	if (-e ${adminkey_private}) {
 		copy_file_content(${admincert}, ${admincertfile});
 		copy_file_content(${adminkey_private}, ${adminkeyfile});
+	}
+	if (-e ${pkinitkey_private}) {
+		copy_file_content(${pkinitcert}, ${pkinitcertfile});
+		copy_file_content(${pkinitkey_private}, ${pkinitkeyfile});
 	}
 
 	# COMPAT stuff to be removed in a later commit
