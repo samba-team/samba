@@ -880,8 +880,9 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	} else {
 		NTTIME must_change_time
-			= samdb_result_force_password_change(kdc_db_ctx->samdb, mem_ctx,
-							     realm_dn, msg);
+			= samdb_result_nttime(msg,
+					"msDS-UserPasswordExpiryTimeComputed",
+					0);
 		if (must_change_time == 0x7FFFFFFFFFFFFFFFULL) {
 			entry_ex->entry.pw_end = NULL;
 		} else {
