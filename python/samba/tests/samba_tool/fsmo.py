@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
+import os, ldb
 from samba.tests.samba_tool.base import SambaToolCmdTest
 
 class FsmoCmdTestCase(SambaToolCmdTest):
@@ -27,3 +27,23 @@ class FsmoCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result)
         self.assertEquals(err,"","Shouldn't be any error messages")
+
+        # Check that the output is sensible
+        samdb = self.getSamDB("-H", "ldap://%s" % os.environ["SERVER"],
+            "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
+
+        try:
+            res = samdb.search(base=ldb.Dn(samdb, "CN=Infrastructure,DC=DomainDnsZones") + samdb.get_default_basedn(),
+                       scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
+
+            self.assertTrue("DomainDnsZonesMasterRole owner: " + res[0]["fsmoRoleOwner"][0] in out)
+        except ldb.LdbError, (enum, string):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                self.assertTrue("The 'domaindns' role is not present in this domain" in out)
+            else:
+                raise
+
+        res = samdb.search(base=samdb.get_default_basedn(),
+                           scope=ldb.SCOPE_BASE, attrs=["fsmoRoleOwner"])
+
+        self.assertTrue("DomainNamingMasterRole owner: " + res[0]["fsmoRoleOwner"][0] in out)
