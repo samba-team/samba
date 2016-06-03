@@ -1,4 +1,117 @@
                    =============================
+                   Release Notes for Samba 4.4.4
+                           June 7, 2016
+                   =============================
+
+
+This is the latest stable release of Samba 4.4.
+
+
+Changes since 4.4.3:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11809: SMB3 multichannel: Add implementation of missing channel sequence
+     number verification.
+   * BUG 11919: smbd:close: Only remove kernel share modes if they had been
+     taken at open.
+   * BUG 11930: notifyd: Prevent NULL deref segfault in notifyd_peer_destructor.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 10618: s3: auth: Move the declaration of struct dom_sid tmp_sid to
+     function level scope.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 10796: s3:rpcclient: Make '--pw-nt-hash' option work.
+   * BUG 11354: s3:libsmb/clifile: Use correct value for MaxParameterCount for
+     setting EAs.
+   * BUG 11438: Fix case sensitivity issues over SMB2 or above.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 1703: s3:libnet:libnet_join: Add netbios aliases as SPNs.
+   * BUG 11721: vfs_fruit: Add an option that allows disabling POSIX rename
+     behaviour.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 11936: s3-smbd: Support systemd 230.
+
+o  Ira Cooper <ira@samba.org>
+   * BUG 11907: source3: Honor the core soft limit of the OS.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11809: SMB3 multichannel: Add implementation of missing channel sequence
+     number verification.
+   * BUG 11864: s3:client:smbspool_krb5_wrapper: Fix the non clearenv build.
+   * BUG 11906: s3-kerberos: Avoid entering a password change dialogue also when
+     using MIT.
+
+o  Robin Hack <hack.robin@gmail.com>
+   * BUG 11890: ldb-samba/ldb_matching_rules: Fix CID 1349424 - Uninitialized
+     pointer read.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 11844: dbwrap_ctdb: Fix ENOENT->NT_STATUS_NOT_FOUND.
+
+o  Robin McCorkell <robin@mccorkell.me.uk>
+   * BUG 11276: Correctly set cli->raw_status for libsmbclient in SMB2 code.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11910: s3:smbd: Fix anonymous authentication if signing is mandatory.
+   * BUG 11912: libcli/auth: Let msrpc_parse() return talloc'ed empty strings.
+   * BUG 11914: Fix NTLM Authentication issue with squid.
+   * BUG 11927: s3:rpcclient: make use of SMB_SIGNING_IPC_DEFAULT.
+
+o  Luca Olivetti <luca@wetron.es>
+   * BUG 11530: pdb: Fix segfault in pdb_ldap for missing gecos.
+
+o  Rowland Penny <rpenny@samba.org>
+   * BUG 11613: Allow 'samba-tool fsmo' to cope with empty or missing fsmo
+     roles.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 11907: packaging: Set default limit for core file size in service
+     files.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11922: s3-net: Convert the key_name to UTF8 during migration.
+   * BUG 11935: s3-smbspool: Log to stderr.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11900: heimdal: Encode/decode kvno as signed integer.
+   * BUG 11931: s3-quotas: Fix sysquotas_4B quota fetching for BSD.
+   * BUG 11937: smbd: dfree: Ignore quota if not enforced.
+
+o  Raghavendra Talur <rtalur@redhat.com>
+   * BUG 11907: init: Set core file size to unlimited by default.
+
+o  Hemanth Thummala <hemanth.thummala@nutanix.com>
+   * BUG 11934: Fix memory leak in share mode locking.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.4.3
                            May 2, 2016
                    =============================
@@ -92,8 +205,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.4.2
