@@ -52,6 +52,7 @@
 	"objectSid",				\
 						\
 	"pwdLastSet",				\
+	"msDS-UserPasswordExpiryTimeComputed",	\
 	"accountExpires"
 
 const char *krbtgt_attrs[] = {
@@ -187,8 +188,8 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 
 	/* Check for when we must change this password, taking the
 	 * userAccountControl flags into account */
-	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
-							      domain_dn, msg);
+	must_change_time = samdb_result_nttime(msg,
+			"msDS-UserPasswordExpiryTimeComputed", 0);
 
 	workstation_list = ldb_msg_find_attr_as_string(msg, "userWorkstations", NULL);
 
@@ -455,9 +456,8 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 	info->allow_password_change
 		= samdb_result_allow_password_change(sam_ctx, mem_ctx, 
 			domain_dn, msg, "pwdLastSet");
-	info->force_password_change
-		= samdb_result_force_password_change(sam_ctx, mem_ctx,
-			domain_dn, msg);
+	info->force_password_change = samdb_result_nttime(msg,
+		"msDS-UserPasswordExpiryTimeComputed", 0);
 	info->logon_count = ldb_msg_find_attr_as_uint(msg, "logonCount", 0);
 	info->bad_password_count = ldb_msg_find_attr_as_uint(msg, "badPwdCount",
 		0);
