@@ -1397,7 +1397,6 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb;
 	struct supplementalCredentialsBlob scb;
-	struct supplementalCredentialsBlob _old_scb;
 	struct supplementalCredentialsBlob *old_scb = NULL;
 	/* Packages + (Kerberos-Newer-Keys, Kerberos, WDigest and CLEARTEXT) */
 	uint32_t num_names = 0;
@@ -1452,27 +1451,17 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return LDB_SUCCESS;
 	}
 
-	/* if there's an old supplementaCredentials blob then parse it */
+	/* if there's an old supplementaCredentials blob then use it */
 	if (io->o.supplemental) {
-		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac,
-						   &_old_scb,
-						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
-			ldb_asprintf_errstring(ldb,
-					       "setup_supplemental_field: "
-					       "failed to pull old supplementalCredentialsBlob: %s",
-					       nt_errstr(status));
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		if (_old_scb.sub.signature == SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
-			old_scb = &_old_scb;
+		if (io->o.scb.sub.signature == SUPPLEMENTAL_CREDENTIALS_SIGNATURE) {
+			old_scb = &io->o.scb;
 		} else {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
-					       "setup_supplemental_field: "
-					       "supplementalCredentialsBlob signature[0x%04X] expected[0x%04X]",
-					       _old_scb.sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE);
+				  "setup_supplemental_field: "
+				  "supplementalCredentialsBlob "
+				  "signature[0x%04X] expected[0x%04X]",
+				  io->o.scb.sub.signature,
+				  SUPPLEMENTAL_CREDENTIALS_SIGNATURE);
 		}
 	}
 	/* Per MS-SAMR 3.1.1.8.11.6 we create AES keys if our domain functionality level is 2008 or higher */
@@ -2707,6 +2696,22 @@ static int setup_io(struct ph_context *ac,
 							   &io->o.lm_history);
 		io->o.supplemental = ldb_msg_find_ldb_val(existing_msg,
 							  "supplementalCredentials");
+
+		if (io->o.supplemental != NULL) {
+			enum ndr_err_code ndr_err;
+
+			ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac,
+					&io->o.scb,
+					(ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				status = ndr_map_error2ntstatus(ndr_err);
+				ldb_asprintf_errstring(ldb,
+						"setup_io: failed to pull "
+						"old supplementalCredentialsBlob: %s",
+						nt_errstr(status));
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+		}
 	}
 
 	return LDB_SUCCESS;
