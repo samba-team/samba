@@ -335,7 +335,7 @@ case "$action" in
     takeip)              nfs_takeip "$@"         ;;
     monitor-list-shares) nfs_monitor_list_shares ;;
     register)            nfs_register            ;;
-    monitor-pre|monitor-post)
+    monitor-pre|monitor-post|releaseip-pre|takeip-pre)
 	# Not required/implemented
 	:
 	;;

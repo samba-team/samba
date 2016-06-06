@@ -171,6 +171,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/01.reclock
 %{_sysconfdir}/ctdb/events.d/05.system
+%{_sysconfdir}/ctdb/events.d/06.nfs
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/10.external
 %{_sysconfdir}/ctdb/events.d/13.per_ip_routing

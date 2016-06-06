@@ -242,7 +242,7 @@ case "$1" in
     register)
 	nfs_register
 	;;
-    monitor-pre|releaseip|takeip)
+    monitor-pre|releaseip|takeip|releaseip-pre|takeip-pre)
 	# Not required/implemented
 	:
 	;;
