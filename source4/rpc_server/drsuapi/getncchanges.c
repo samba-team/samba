@@ -117,13 +117,13 @@ static bool udv_filter(const struct drsuapi_DsReplicaCursorCtrEx *udv,
 {
 	const struct drsuapi_DsReplicaCursor *c;
 	if (udv == NULL) return false;
-	BINARY_ARRAY_SEARCH(udv->cursors, udv->count, source_dsa_invocation_id, 
+	BINARY_ARRAY_SEARCH(udv->cursors, udv->count, source_dsa_invocation_id,
 			    originating_invocation_id, udv_compare, c);
 	if (c && originating_usn <= c->highest_usn) {
 		return true;
 	}
 	return false;
-	
+
 }
 
 static int attid_cmp(enum drsuapi_DsAttributeId a1, enum drsuapi_DsAttributeId a2)
@@ -195,7 +195,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		}
 	}
 	obj->next_object = NULL;
-	
+
 	md_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
 	if (!md_value) {
 		/* nothing to send */
@@ -212,7 +212,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
-	
+
 	if (md.version != 1) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -225,7 +225,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 	rdn_sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn);
 	if (rdn_sa == NULL) {
-		DEBUG(0,(__location__ ": Can't find dsds_attribute for rDN %s in %s\n", 
+		DEBUG(0,(__location__ ": Can't find dsds_attribute for rDN %s in %s\n",
 			 rdn, ldb_dn_get_linearized(msg->dn)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -238,7 +238,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		return WERR_NOMEM;
 	}
 	dom_sid_split_rid(NULL, &obj->object.identifier->sid, NULL, &rid);
-	
+
 	obj->meta_data_ctr->meta_data = talloc_array(obj, struct drsuapi_DsReplicaMetaData, md.ctr.ctr1.count);
 	for (n=i=0; i<md.ctr.ctr1.count; i++) {
 		const struct dsdb_attribute *sa;
@@ -255,10 +255,10 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 
 		sa = dsdb_attribute_by_attributeID_id(schema, md.ctr.ctr1.array[i].attid);
 		if (!sa) {
-			DEBUG(0,(__location__ ": Failed to find attribute in schema for attrid %u mentioned in replPropertyMetaData of %s\n", 
-				 (unsigned int)md.ctr.ctr1.array[i].attid, 
+			DEBUG(0,(__location__ ": Failed to find attribute in schema for attrid %u mentioned in replPropertyMetaData of %s\n",
+				 (unsigned int)md.ctr.ctr1.array[i].attid,
 				 ldb_dn_get_linearized(msg->dn)));
-			return WERR_DS_DRA_INTERNAL_ERROR;		
+			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
 		if (sa->linkID) {
@@ -281,7 +281,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType &&
 		    !force_attribute &&
 		    udv_filter(uptodateness_vector,
-			       &md.ctr.ctr1.array[i].originating_invocation_id, 
+			       &md.ctr.ctr1.array[i].originating_invocation_id,
 			       md.ctr.ctr1.array[i].originating_usn)) {
 			continue;
 		}
@@ -335,7 +335,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		struct ldb_message_element *el;
 		WERROR werr;
 		const struct dsdb_attribute *sa;
-	
+
 		sa = dsdb_attribute_by_attributeID_id(schema, attids[i]);
 		if (!sa) {
 			DEBUG(0,("Unable to find attributeID %u in schema\n", attids[i]));
@@ -619,7 +619,7 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 			 ldb_dn_get_linearized(ncRoot_dn), ldb_errstring(sam_ctx)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
-	
+
 	return WERR_OK;
 }
 
@@ -1784,7 +1784,7 @@ allowed:
 	if (req10->replica_flags & DRSUAPI_DRS_FULL_SYNC_PACKET) {
 		/* Ignore the _in_ uptpdateness vector*/
 		req10->uptodateness_vector = NULL;
-	} 
+	}
 
 	if (GUID_all_zero(&req10->source_dsa_invocation_id)) {
 		req10->source_dsa_invocation_id = invocation_id;
@@ -1914,7 +1914,7 @@ allowed:
 	status = dcesrv_inherited_session_key(dce_call->conn, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,(__location__ ": Failed to get session key\n"));
-		return WERR_DS_DRA_INTERNAL_ERROR;		
+		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	/* 
@@ -2165,7 +2165,7 @@ allowed:
 		}
 
 		r->out.ctr->ctr6.object_count++;
-		
+
 		*currentObject = obj;
 		currentObject = &obj->next_object;
 
