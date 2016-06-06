@@ -48,4 +48,4 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		   cluster_mutex_lost_handler_t lost_handler,
 		   void *lost_data);
 
-#endif /* __CTDB_IPALLOC_H__ */
+#endif /* __CTDB_CLUSTER_MUTEX_H__ */
