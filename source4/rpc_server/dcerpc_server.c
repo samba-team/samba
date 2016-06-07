@@ -2077,8 +2077,16 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	if (transport == NCALRPC) {
 		uid_t uid;
 		gid_t gid;
+		int sock_fd;
 
-		ret = getpeereid(socket_get_fd(srv_conn->socket), &uid, &gid);
+		sock_fd = socket_get_fd(srv_conn->socket);
+		if (sock_fd == -1) {
+			stream_terminate_connection(
+				srv_conn, "socket_get_fd failed\n");
+			return;
+		}
+
+		ret = getpeereid(sock_fd, &uid, &gid);
 		if (ret == -1) {
 			status = map_nt_error_from_unix_common(errno);
 			DEBUG(0, ("dcesrv_sock_accept: "
