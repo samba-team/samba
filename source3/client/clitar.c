@@ -1025,7 +1025,7 @@ static int tar_extract(struct tar *t)
 
 	for (;;) {
 		NTSTATUS status;
-		bool skip;
+		bool skip = false;
 		r = archive_read_next_header(t->archive, &entry);
 		if (r == ARCHIVE_EOF) {
 			break;
