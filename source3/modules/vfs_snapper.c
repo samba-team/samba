@@ -1461,7 +1461,7 @@ static NTSTATUS snapper_snap_create(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	char *conf_name;
 	char *base_path;
-	char *snap_path;
+	char *snap_path = NULL;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -1508,7 +1508,7 @@ static NTSTATUS snapper_delete_snap_call(TALLOC_CTX *mem_ctx,
 					 uint32_t snap_id)
 {
 	NTSTATUS status;
-	DBusMessage *req_msg;
+	DBusMessage *req_msg = NULL;
 	DBusMessage *rsp_msg;
 
 	status = snapper_del_snap_pack(mem_ctx, conf_name, snap_id, &req_msg);
@@ -1603,7 +1603,7 @@ static int snapper_get_shadow_copy_data(struct vfs_handle_struct *handle,
 	NTSTATUS status;
 	char *conf_name;
 	char *base_path;
-	DBusMessage *req_msg;
+	DBusMessage *req_msg = NULL;
 	DBusMessage *rsp_msg;
 	uint32_t num_snaps;
 	struct snapper_snap *snaps;
@@ -1795,7 +1795,7 @@ static NTSTATUS snapper_get_snap_at_time_call(TALLOC_CTX *mem_ctx,
 					      char **snap_path_out)
 {
 	NTSTATUS status;
-	DBusMessage *req_msg;
+	DBusMessage *req_msg = NULL;
 	DBusMessage *rsp_msg;
 	uint32_t num_snaps;
 	struct snapper_snap *snaps;
