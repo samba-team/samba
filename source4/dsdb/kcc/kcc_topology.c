@@ -2592,11 +2592,12 @@ static NTSTATUS kcctpl_get_spanning_tree_edges(struct kccsrv_service *service,
 {
 	TALLOC_CTX *tmp_ctx;
 	struct kcctpl_internal_edge_list internal_edges;
-	uint32_t i, component_count;
+	uint32_t i, component_count = 0;
 	NTSTATUS status;
 	struct kcctpl_multi_edge_list output_edges, st_edge_list;
 
 	ZERO_STRUCT(internal_edges);
+	ZERO_STRUCT(st_edge_list);
 
 	tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
@@ -3220,12 +3221,14 @@ static NTSTATUS kcctpl_create_connections(struct kccsrv_service *service,
 	TALLOC_CTX *tmp_ctx;
 	struct GUID site_guid;
 	struct kcctpl_vertex *site_vertex;
-	uint32_t component_count, i;
+	uint32_t component_count = 0, i;
 	struct kcctpl_multi_edge_list st_edge_list;
 	struct ldb_dn *transports_dn;
 	const char * const attrs[] = { "bridgeheadServerListBL", "name",
 				       "transportAddressAttribute", NULL };
 	int ret;
+
+	ZERO_STRUCT(st_edge_list);
 
 	connected = true;
 
