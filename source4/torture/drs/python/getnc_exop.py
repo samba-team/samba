@@ -73,7 +73,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         req8.partial_attribute_set_ex = None
         req8.mapping_ctr.num_mappings = 0
         req8.mapping_ctr.mappings = None
-    
+
         return req8
 
     def _ds_bind(self, server_name):
@@ -129,7 +129,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         """Test role transfer with against DC not owner of the role"""
         fsmo_dn = self.ldb_dc1.get_schema_basedn()
         (fsmo_owner, fsmo_not_owner) = self._determine_fSMORoleOwner(fsmo_dn)
-        
+
         req8 = self._exop_req8(dest_dsa=fsmo_owner["ntds_guid"],
                                invocation_id=fsmo_not_owner["invocation_id"],
                                nc_dn_str=fsmo_dn,
