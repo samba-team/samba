@@ -10,3 +10,16 @@ bld.INSTALL_FILES('${BINDIR}',
 bld.SAMBA_SCRIPT('smbaddshare', pattern='smbaddshare', installdir='.')
 bld.SAMBA_SCRIPT('smbchangeshare', pattern='smbchangeshare', installdir='.')
 bld.SAMBA_SCRIPT('smbdeleteshare', pattern='smbdeleteshare', installdir='.')
+
+sed_expr1 = 's#@PERL@#/usr/bin/env perl#'
+sed_expr2 = 's#@BINDIR@#${BINDIR}#'
+
+bld.SAMBA_GENERATOR('findsmb-script',
+                    source='findsmb.in',
+                    target='findsmb',
+                    rule='sed -e "%s" -e "%s" ${SRC} > ${TGT}' % (sed_expr1, sed_expr2))
+
+bld.INSTALL_FILES('${BINDIR}',
+                  'findsmb',
+                  destname='findsmb',
+                  chmod=0755)
