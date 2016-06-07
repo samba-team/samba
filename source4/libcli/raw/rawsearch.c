@@ -725,7 +725,7 @@ _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      union smb_search_first *io, void *private_data,
 			      smbcli_search_callback callback)
 {
-	DATA_BLOB p_blob, d_blob;
+	DATA_BLOB p_blob = data_blob_null, d_blob = data_blob_null;
 	NTSTATUS status;
 
 	switch (io->generic.level) {
@@ -773,7 +773,7 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 			     union smb_search_next *io, void *private_data,
 			     smbcli_search_callback callback)
 {
-	DATA_BLOB p_blob, d_blob;
+	DATA_BLOB p_blob = data_blob_null, d_blob = data_blob_null;
 	NTSTATUS status;
 
 	switch (io->generic.level) {
