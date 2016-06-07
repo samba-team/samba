@@ -128,6 +128,7 @@ sub check_or_start($$$)
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 		$ENV{NSS_WRAPPER_HOSTS} = $env_vars->{NSS_WRAPPER_HOSTS};
+		$ENV{NSS_WRAPPER_HOSTNAME} = $env_vars->{NSS_WRAPPER_HOSTNAME};
 		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
 		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
 
@@ -431,6 +432,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
 	$ctx->{nsswrap_hosts} = "$ENV{SELFTEST_PREFIX}/hosts";
+	$ctx->{nsswrap_hostname} = "$ctx->{hostname}.$ctx->{dnsname}";
 	if ($ENV{SAMBA_DNS_FAKING}) {
 		$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
@@ -460,6 +462,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	push (@provision_options, "NSS_WRAPPER_HOSTS=\"$ctx->{nsswrap_hosts}\"");
+	push (@provision_options, "NSS_WRAPPER_HOSTNAME=\"$ctx->{nsswrap_hostname}\"");
 	if (defined($ctx->{resolv_conf})) {
 		push (@provision_options, "RESOLV_WRAPPER_CONF=\"$ctx->{resolv_conf}\"");
 	} else {
@@ -675,6 +678,7 @@ nogroup:x:65534:nobody
 		NSS_WRAPPER_PASSWD => $ctx->{nsswrap_passwd},
 		NSS_WRAPPER_GROUP => $ctx->{nsswrap_group},
 		NSS_WRAPPER_HOSTS => $ctx->{nsswrap_hosts},
+		NSS_WRAPPER_HOSTNAME => $ctx->{nsswrap_hostname},
 		SAMBA_TEST_FIFO => "$ctx->{prefix}/samba_test.fifo",
 		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
