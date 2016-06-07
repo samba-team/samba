@@ -256,7 +256,7 @@ start()
 		return 1
 	    fi
 
-	    if ctdb runstate first_recovery startup running >/dev/null 2>&1 ; then
+	    if $CTDB runstate first_recovery startup running >/dev/null 2>&1 ; then
 		return 0
 	    fi
 	fi
@@ -278,7 +278,7 @@ stop()
 	return 0
     fi
 
-    ctdb shutdown
+    $CTDB shutdown
 
     # Wait for remaining CTDB processes to exit...
     _timeout=${CTDB_SHUTDOWN_TIMEOUT:-30}
