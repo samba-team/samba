@@ -1809,7 +1809,7 @@ static NTSTATUS parse_object(struct dssync_passdb *pctx,
 	for (a=0; a < ARRAY_SIZE(dssync_object_table); a++) {
 		if (sam_type == dssync_object_table[a].type) {
 			if (dssync_object_table[a].fn) {
-				struct dssync_passdb_obj *obj;
+				struct dssync_passdb_obj *obj = NULL;
 				status = dssync_create_obj(pctx, pctx->all,
 							   sam_type, cur, &obj);
 				if (!NT_STATUS_IS_OK(status)) {
