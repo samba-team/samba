@@ -709,7 +709,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
-	schema = dsdb_get_schema(service->samdb, NULL);
+	schema = dsdb_get_schema(service->samdb, state);
 	if (!schema) {
 		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
