@@ -227,7 +227,7 @@ check_forced_duplicate_values() {
 # This should 'fail', because it returns the number of modified records
 dbcheck_after_dup() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+	$PYTHON $BINDIR/samba-tool dbcheck --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp $@
     else
 	return 1
     fi
