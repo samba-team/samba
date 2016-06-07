@@ -3501,8 +3501,8 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 {
 	struct tevent_req *req;
 	struct smbXcli_req_state *state = NULL;
-	struct iovec *iov;
-	int i, num_iov;
+	struct iovec *iov = NULL;
+	int i, num_iov = 0;
 	NTSTATUS status;
 	bool defer = true;
 	struct smbXcli_session *last_session = NULL;
