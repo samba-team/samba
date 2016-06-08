@@ -3572,31 +3572,93 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
-	struct ldb_message **res;
-	const char * const attrs[2] = { "objectSid", NULL };
+	struct ldb_result *res, *res_memberof;
+	const char * const attrs[] = { "primaryGroupID",
+				       "memberOf",
+				       NULL };
+	const char * const group_attrs[] = { "objectSid",
+					     NULL };
+
 	struct samr_RidWithAttributeArray *array;
-	int i, count;
-	char membersidstr[DOM_SID_STR_BUFLEN];
+	struct ldb_message_element *memberof_el;
+	int i, ret, count = 0;
+	uint32_t primary_group_id;
+	char *filter;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
 	a_state = h->data;
 	d_state = a_state->domain_state;
 
-	dom_sid_string_buf(a_state->account_sid,
-			   membersidstr, sizeof(membersidstr)),
+	ret = dsdb_search_dn(a_state->sam_ctx, mem_ctx,
+			     &res,
+			     a_state->account_dn,
+			     attrs, DSDB_SEARCH_SHOW_EXTENDED_DN);
 
-	count = samdb_search_domain(a_state->sam_ctx, mem_ctx,
-				    d_state->domain_dn, &res,
-				    attrs, d_state->domain_sid,
-				    "(&(member=<SID=%s>)"
-				     "(|(grouptype=%d)(grouptype=%d))"
-				     "(objectclass=group))",
-				    membersidstr,
-				    GTYPE_SECURITY_UNIVERSAL_GROUP,
-				    GTYPE_SECURITY_GLOBAL_GROUP);
-	if (count < 0)
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		return NT_STATUS_NO_SUCH_USER;
+	} else if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else if (res->count != 1) {
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	primary_group_id = ldb_msg_find_attr_as_uint(res->msgs[0], "primaryGroupID",
+						     0);
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(|(grouptype=%d)(grouptype=%d))"
+				 "(objectclass=group)(|",
+				 GTYPE_SECURITY_UNIVERSAL_GROUP,
+				 GTYPE_SECURITY_GLOBAL_GROUP);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	memberof_el = ldb_msg_find_element(res->msgs[0], "memberOf");
+	if (memberof_el != NULL) {
+		for (i = 0; i < memberof_el->num_values; i++) {
+			const struct ldb_val *memberof_sid_binary;
+			char *memberof_sid_escaped;
+			struct ldb_dn *memberof_dn
+				= ldb_dn_from_ldb_val(mem_ctx,
+						      a_state->sam_ctx,
+						      &memberof_el->values[i]);
+			if (memberof_dn == NULL) {
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			memberof_sid_binary
+				= ldb_dn_get_extended_component(memberof_dn,
+								"SID");
+			if (memberof_sid_binary == NULL) {
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+
+			memberof_sid_escaped = ldb_binary_encode(mem_ctx,
+								 *memberof_sid_binary);
+			if (memberof_sid_escaped == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			filter = talloc_asprintf_append(filter, "(objectSID=%s)",
+							memberof_sid_escaped);
+			if (filter == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		ret = dsdb_search(a_state->sam_ctx, mem_ctx,
+				  &res_memberof,
+				  d_state->domain_dn,
+				  LDB_SCOPE_SUBTREE,
+				  group_attrs, 0,
+				  "%s))", filter);
+
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+		count = res_memberof->count;
+	}
 
 	array = talloc(mem_ctx, struct samr_RidWithAttributeArray);
 	if (array == NULL)
@@ -3606,23 +3668,24 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 	array->rids = NULL;
 
 	array->rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
-					    count + 1);
+				   count + 1);
 	if (array->rids == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* Adds the primary group */
-	array->rids[0].rid = samdb_search_uint(a_state->sam_ctx, mem_ctx,
-					       ~0, a_state->account_dn,
-					       "primaryGroupID", NULL);
+
+	array->rids[0].rid = primary_group_id;
 	array->rids[0].attributes = SE_GROUP_MANDATORY
-			| SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
+		| SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 	array->count += 1;
 
 	/* Adds the additional groups */
 	for (i = 0; i < count; i++) {
 		struct dom_sid *group_sid;
 
-		group_sid = samdb_result_dom_sid(mem_ctx, res[i], "objectSid");
+		group_sid = samdb_result_dom_sid(mem_ctx,
+						 res_memberof->msgs[i],
+						 "objectSid");
 		if (group_sid == NULL) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
