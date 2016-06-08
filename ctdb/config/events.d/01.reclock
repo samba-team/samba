@@ -41,7 +41,7 @@ case "$1" in
 	    echo "Reclock file \"$CTDB_RECOVERY_LOCK\" can not be accessed. Shutting down."
 	    df
 	    sleep 1
-	    ctdb shutdown
+	    $CTDB shutdown
 	fi
 
 	ctdb_check_counter "error" -gt 3
