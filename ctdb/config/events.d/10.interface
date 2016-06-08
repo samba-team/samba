@@ -33,7 +33,7 @@ get_all_interfaces ()
 
     # Get the interfaces for which CTDB has public IPs configured.
     # That is, for all but the 1st line, get the 1st field.
-    ctdb_ifaces=$(ctdb -X ifaces | sed -e '1d' -e 's@^|@@' -e 's@|.*@@')
+    ctdb_ifaces=$($CTDB -X ifaces | sed -e '1d' -e 's@^|@@' -e 's@|.*@@')
 
     # Add $ctdb_interfaces and uniquify
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
@@ -52,10 +52,10 @@ monitor_interfaces()
 	for _iface in $all_interfaces ; do
 		if interface_monitor "$_iface" ; then
 			up_interfaces_found=true
-			ctdb setifacelink "$_iface" up >/dev/null 2>&1
+			$CTDB setifacelink "$_iface" up >/dev/null 2>&1
 		else
 			down_interfaces_found=true
-			ctdb setifacelink "$_iface" down >/dev/null 2>&1
+			$CTDB setifacelink "$_iface" down >/dev/null 2>&1
 		fi
 	done
 
@@ -233,7 +233,7 @@ case "$1" in
 	flush_route_cache
 
 	# propagate the new mac address
-	ctdb gratiousarp $ip $niface
+	$CTDB gratiousarp $ip $niface
 
 	# tickle all existing connections, so that dropped packets
 	# are retransmited and the tcp streams work
