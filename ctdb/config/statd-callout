@@ -49,7 +49,7 @@ case "$1" in
 	cip="$2"
 	ctdb_get_pnn
 	date=$(date '+%s')
-	ctdb ip -X |
+	$CTDB ip -X |
 	tail -n +2 |
 	while IFS="|" read x sip node x ; do
 	    [ "$node" = "$pnn" ] || continue # not us
@@ -63,7 +63,7 @@ case "$1" in
 	# so we must add it to all the IPs that we serve
 	cip="$2"
 	ctdb_get_pnn
-	ctdb ip -X |
+	$CTDB ip -X |
 	tail -n +2 |
 	while IFS="|" read x sip node x ; do
 	    [ "$node" = "$pnn" ] || continue # not us
@@ -81,12 +81,12 @@ case "$1" in
 	# Filter out lines for any IP addresses that are not currently
 	# hosted public IP addresses.
 	ctdb_get_pnn
-	ctdb_ips=$(ctdb ip | tail -n +2)
+	ctdb_ips=$($CTDB ip | tail -n +2)
 	sed_expr=$(echo "$ctdb_ips" |
 	    awk -v pnn=$pnn 'pnn == $2 { \
                 ip = $1; gsub(/\./, "\\.", ip); \
                 printf "/statd-state@%s@/p\n", ip }')
-        if cat $files | sed -n "$sed_expr" | ctdb ptrans "ctdb.tdb" ; then
+        if cat $files | sed -n "$sed_expr" | $CTDB ptrans "ctdb.tdb" ; then
             rm $files
 	fi
         ;;
@@ -159,13 +159,13 @@ case "$1" in
 	# Construct a sed expression to take catdb output and produce pairs of:
 	#   server-IP client-IP
 	# but only for the server-IPs that are hosted on this node.
-	ctdb_all_ips=$(ctdb ip all | tail -n +2)
+	ctdb_all_ips=$($CTDB ip all | tail -n +2)
 	sed_expr=$(echo "$ctdb_all_ips" |
 	    awk -v pnn=$pnn 'pnn == $2 { \
                 ip = $1; gsub(/\./, "\\.", ip); \
                 printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }')
 
-	statd_state=$(ctdb catdb ctdb.tdb | sed -n "$sed_expr" | sort)
+	statd_state=$($CTDB catdb ctdb.tdb | sed -n "$sed_expr" | sort)
 	[ -n "$statd_state" ] || exit 0
 
 	smnotify="${CTDB_HELPER_BINDIR}/smnotify"
@@ -195,7 +195,7 @@ case "$1" in
 		"$smnotify" --client=$cip --ip=$sip --server=$NFS_HOSTNAME --stateval=$stateval
 	    done
 
-	    echo "$items" | ctdb ptrans "ctdb.tdb"
+	    echo "$items" | $CTDB ptrans "ctdb.tdb"
 	}
 
 	# Remove any stale touch files (i.e. for IPs not currently
