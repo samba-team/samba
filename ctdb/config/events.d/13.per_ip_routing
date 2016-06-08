@@ -292,7 +292,7 @@ flush_rules_and_routes ()
 # routes.
 add_missing_routes ()
 {
-    ctdb ip -v -X | {
+    $CTDB ip -v -X | {
 	read _x # skip header line
 
 	# Read the rest of the lines.  We're only interested in the
@@ -319,7 +319,7 @@ add_missing_routes ()
 remove_bogus_routes ()
 {
     # Get a IPs current hosted by this node, each anchored with '@'.
-    _ips=$(ctdb ip -v -X | awk -F'|' 'NR > 1 && $4 != "" {printf "@%s@\n", $2}')
+    _ips=$($CTDB ip -v -X | awk -F'|' 'NR > 1 && $4 != "" {printf "@%s@\n", $2}')
 
     ip rule show |
     while read _p _x _i _x _t ; do
@@ -382,7 +382,7 @@ case "$1" in
 	# flush our route cache
 	set_proc sys/net/ipv4/route/flush 1
 
-	ctdb gratiousarp "$ip" "$iface"
+	$CTDB gratiousarp "$ip" "$iface"
 	;;
 
     updateip)
@@ -397,7 +397,7 @@ case "$1" in
 	# flush our route cache
 	set_proc sys/net/ipv4/route/flush 1
 
-	ctdb gratiousarp "$ip" "$niface"
+	$CTDB gratiousarp "$ip" "$niface"
 	tickle_tcp_connections "$ip"
 	;;
 
