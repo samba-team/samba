@@ -47,7 +47,7 @@ fi
 
     if [ "$2" != "init" ] ; then
 	echo "---- ctdb scriptstatus ${2}: ----"
-	ctdb scriptstatus "$2"
+	$CTDB scriptstatus "$2"
     fi
 
     echo "===== End of hung script debug for PID=\"$1\", event=\"$2\" ====="
