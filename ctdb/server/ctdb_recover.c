@@ -744,6 +744,7 @@ int32_t ctdb_control_db_push_confirm(struct ctdb_context *ctdb,
 	outdata->dsize = sizeof(uint32_t);
 
 	talloc_free(state);
+	ctdb_db->push_started = false;
 	ctdb_db->push_state = NULL;
 
 	return 0;
