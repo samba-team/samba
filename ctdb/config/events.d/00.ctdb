@@ -107,7 +107,7 @@ set_ctdb_variables ()
     while read v; do
 	varname="${v#CTDB_SET_}"
 	value=$(eval echo "\$$v")
-	if ctdb setvar $varname $value ; then
+	if $CTDB setvar $varname $value ; then
 	    echo "Set $varname to $value"
 	else
 	    echo "Invalid configuration: CTDB_SET_${varname}=${value}"
@@ -140,7 +140,7 @@ case "$1" in
 	;;
 
     startup)
-	ctdb attach ctdb.tdb persistent
+	$CTDB attach ctdb.tdb persistent
 	;;
 
     *)
