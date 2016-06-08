@@ -2079,8 +2079,8 @@ static bool db_recovery_recv(struct tevent_req *req, int *count)
  * - Send START_RECOVERY
  * - Update vnnmap on all nodes
  * - Run database recovery
- * - Send END_RECOVERY
  * - Set RECOVERY_NORMAL
+ * - Send END_RECOVERY
  */
 
 struct recovery_state {
