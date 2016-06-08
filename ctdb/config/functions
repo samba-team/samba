@@ -10,6 +10,8 @@ fi
 CTDB_VARDIR="/usr/local/var/lib/ctdb"
 ctdb_rundir="/usr/local/var/run/ctdb"
 
+CTDB="${CTDB:-/usr/local/bin/ctdb}"
+
 # Only (and always) override these variables in test code
 
 if [ -z "$CTDB_SCRIPT_VARDIR" ] ; then

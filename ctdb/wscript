@@ -515,9 +515,10 @@ def build(bld):
     sed_expr4 = 's|/usr/local/var/run/ctdb|%s|g'  % (bld.env.CTDB_RUNDIR)
     sed_expr5 = 's|/usr/local/sbin|%s|g'          % (bld.env.SBINDIR)
     sed_expr6 = 's|/usr/local/libexec/ctdb|%s|g'  % (bld.env.CTDB_HELPER_BINDIR)
-    sed_cmdline = '-e "%s" -e "%s" -e "%s" -e "%s" -e "%s" -e "%s"' % \
+    sed_expr7 = 's|/usr/local/bin|%s|g'           % (bld.env.BINDIR)
+    sed_cmdline = '-e "%s" -e "%s" -e "%s" -e "%s" -e "%s" -e "%s" -e "%s"' % \
                        (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5,
-                        sed_expr6)
+                        sed_expr6, sed_expr7)
 
     for f in manpages:
         x = '%s.xml' % (f)
