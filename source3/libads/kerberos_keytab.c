@@ -744,26 +744,24 @@ done:
 	TALLOC_FREE(oldEntries);
 	TALLOC_FREE(frame);
 
-	{
+	if (context) {
 		krb5_keytab_entry zero_kt_entry;
+		krb5_kt_cursor zero_csr;
+
 		ZERO_STRUCT(zero_kt_entry);
+		ZERO_STRUCT(zero_csr);
+
 		if (memcmp(&zero_kt_entry, &kt_entry,
 				sizeof(krb5_keytab_entry))) {
 			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
-	}
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
 		if ((memcmp(&cursor, &zero_csr,
 				sizeof(krb5_kt_cursor)) != 0) && keytab) {
 			krb5_kt_end_seq_get(context, keytab, &cursor);
 		}
-	}
-	if (keytab) {
-		krb5_kt_close(context, keytab);
-	}
-	if (context) {
+		if (keytab) {
+			krb5_kt_close(context, keytab);
+		}
 		krb5_free_context(context);
 	}
 	return ret;
