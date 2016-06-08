@@ -77,19 +77,7 @@ class AbstractLink:
     def __hash__(self):
         return hash((self.attid, self.flags, self.identifier, self.targetGUID))
 
-class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
-    """Intended as a semi-black box test case for DsGetNCChanges
-       implementation for extended operations. It should be testing
-       how DsGetNCChanges handles different input params (mostly invalid).
-       Final goal is to make DsGetNCChanges as binary compatible to
-       Windows implementation as possible"""
-
-    def setUp(self):
-        super(DrsReplicaSyncTestCase, self).setUp()
-
-    def tearDown(self):
-        super(DrsReplicaSyncTestCase, self).tearDown()
-
+class ExopBaseTest:
     def _exop_req8(self, dest_dsa, invocation_id, nc_dn_str, exop,
                    replica_flags=0):
         req8 = drsuapi.DsGetNCChangesRequest8()
@@ -121,6 +109,20 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
         (drs_handle, supported_extensions) = drs_DsBind(drs)
         return (drs, drs_handle)
+
+
+class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+    """Intended as a semi-black box test case for DsGetNCChanges
+       implementation for extended operations. It should be testing
+       how DsGetNCChanges handles different input params (mostly invalid).
+       Final goal is to make DsGetNCChanges as binary compatible to
+       Windows implementation as possible"""
+
+    def setUp(self):
+        super(DrsReplicaSyncTestCase, self).setUp()
+
+    def tearDown(self):
+        super(DrsReplicaSyncTestCase, self).tearDown()
 
     def _determine_fSMORoleOwner(self, fsmo_obj_dn):
         """Returns (owner, not_owner) pair where:
@@ -283,14 +285,26 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         # We don't check the linked_attributes_count as if the domain
         # has an RODC, it can gain links on the server account object
 
-    def test_sort_behaviour_single_object(self):
-        """Testing sorting behaviour on single objects"""
+class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+    def setUp(self):
+        super(DrsReplicaSyncSortTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
         self.ou = "ou=sort_exop,%s" % self.base_dn
         self.ldb_dc1.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
 
+    def tearDown(self):
+        super(DrsReplicaSyncSortTestCase, self).tearDown()
+        # tidyup groups and users
+        try:
+            self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
+        except ldb.LdbError as (enum, string):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                pass
+
+    def test_sort_behaviour_single_object(self):
+        """Testing sorting behaviour on single objects"""
         user1_dn = "cn=test_user1,%s" % self.ou
         user2_dn = "cn=test_user2,%s" % self.ou
         user3_dn = "cn=test_user3,%s" % self.ou
@@ -373,8 +387,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         no_inactive.sort(cmp=_linked_attribute_compare)
 
         # assert the two arrays are the same
-        self.assertEqual([x[0] for x in no_inactive], ctr.linked_attributes)
         self.assertEqual(len(expected_links), ctr.linked_attributes_count)
+        self.assertEqual([x[0] for x in no_inactive], ctr.linked_attributes)
 
         self.remove_linked_attribute(group_dn, user3_dn,
                                      attr='nonSecurityMember')
@@ -397,15 +411,8 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         has_inactive.sort(cmp=_linked_attribute_compare)
 
         # assert the two arrays are the same
-        self.assertEqual([x[0] for x in has_inactive], ctr.linked_attributes)
         self.assertEqual(len(expected_links), ctr.linked_attributes_count)
-
-        # tidyup groups and users
-        try:
-            self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
-        except ldb.LdbError as (enum, string):
-            if enum == ldb.ERR_NO_SUCH_OBJECT:
-                pass
+        self.assertEqual([x[0] for x in has_inactive], ctr.linked_attributes)
 
     def add_linked_attribute(self, src, dest, attr='member'):
         m = ldb.Message()
