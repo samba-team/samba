@@ -22,7 +22,7 @@ is_ctdb_managed_service || exit 0
 
 case "$1" in
     ipreallocated)
-	all_ips=$(ctdb -X ip | tail -n +2)
+	all_ips=$($CTDB -X ip | tail -n +2)
 
 	# Block the iSCSI port.  Only block for the address families
 	# we have configured.  This copes with, for example, ip6tables
