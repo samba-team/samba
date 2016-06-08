@@ -109,7 +109,7 @@ ipreallocated)
 	ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r 127.0.0.1
 	ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r 127.0.0.1
 
-	ctdb gratiousarp \
+	$CTDB gratiousarp \
 	     "$CTDB_LVS_PUBLIC_IP" "$CTDB_LVS_PUBLIC_IFACE" >/dev/null 2>&1
 
 	flush_route_cache
