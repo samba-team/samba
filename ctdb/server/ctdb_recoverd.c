@@ -1984,6 +1984,15 @@ static int db_recovery_serial(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
 
+	/* execute the "recovered" event script on all nodes */
+	ret = run_recovered_eventscript(rec, nodemap, "do_recovery");
+	if (ret!=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Recovery process failed.\n"));
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - finished the recovered event\n"));
+
 	return 0;
 }
 
@@ -2158,15 +2167,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	do_takeover_run(rec, nodemap, false);
-
-	/* execute the "recovered" event script on all nodes */
-	ret = run_recovered_eventscript(rec, nodemap, "do_recovery");
-	if (ret!=0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster. Recovery process failed.\n"));
-		goto fail;
-	}
-
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - finished the recovered event\n"));
 
 	/* send a message to all clients telling them that the cluster 
 	   has been reconfigured */
