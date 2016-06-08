@@ -245,7 +245,7 @@ ctdb_get_pnn ()
 {
     _pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
     if [ ! -f "$_pnn_file" ] ; then
-	ctdb pnn | sed -e 's@.*:@@' >"$_pnn_file"
+	$CTDB pnn | sed -e 's@.*:@@' >"$_pnn_file"
     fi
 
     read pnn <"$_pnn_file"
@@ -257,7 +257,7 @@ ctdb_get_ip_address ()
 {
     _ip_addr_file="${CTDB_SCRIPT_VARDIR}/my-ip-address"
     if [ ! -f "$_ip_addr_file" ] ; then
-	ctdb -X nodestatus |
+	$CTDB -X nodestatus |
 	    awk -F '|' 'NR == 2 { print $3 }' >"$_ip_addr_file"
     fi
 
@@ -380,7 +380,7 @@ ctdb_check_tcp_ports()
     fi
 
     for _p ; do  # process each function argument (port)
-	_cmd="ctdb checktcpport $_p"
+	_cmd="$CTDB checktcpport $_p"
 	_out=$($_cmd 2>&1)
 	_ret=$?
 	case "$_ret" in
@@ -402,7 +402,7 @@ ctdb_check_tcp_ports()
 	    *)
 		echo "ERROR: unexpected error running \"ctdb checktcpport\""
 		debug <<EOF
-ctdb checktcpport (exited with $_ret) with output:
+$CTDB checktcpport (exited with $_ret) with output:
 $_out"
 EOF
 		return $_ret
@@ -520,9 +520,9 @@ tickle_tcp_connections ()
 
 	while read dest src; do
 	    echo "Tickle TCP connection $src $dest"
-	    ctdb tickle $src $dest >/dev/null 2>&1 || _failed=true
+	    $CTDB tickle $src $dest >/dev/null 2>&1 || _failed=true
 	    echo "Tickle TCP connection $dest $src"
-	    ctdb tickle $dest $src >/dev/null 2>&1 || _failed=true
+	    $CTDB tickle $dest $src >/dev/null 2>&1 || _failed=true
 	done
 
 	if $_failed ; then
@@ -911,7 +911,7 @@ ctdb_replay_monitor_status ()
 {
     echo "Replaying previous status for this script due to reconfigure..."
     # Leading separator ('|') is missing in some versions...
-    _out=$(ctdb scriptstatus -X | grep -E "^\|?monitor\|${script_name}\|")
+    _out=$($CTDB scriptstatus -X | grep -E "^\|?monitor\|${script_name}\|")
     # Output looks like this:
     # |monitor|60.nfs|1|ERROR|1314764004.030861|1314764004.035514|foo bar|
     # This is the cheapest way of getting fields in the middle.
@@ -1243,7 +1243,7 @@ update_tickles ()
 	ctdb_get_pnn
 
 	# What public IPs do I hold?
-	_ips=$(ctdb -X ip | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
+	_ips=$($CTDB -X ip | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
 
 	# IPs and port as ss filters
 	_ip_filter=""
@@ -1268,7 +1268,7 @@ update_tickles ()
 	# Record our current tickles in a temporary file
 	_my_tickles="${tickledir}/${_port}.tickles.$$"
 	for _i in $_ips ; do
-		ctdb -X gettickles $_i $_port |
+		$CTDB -X gettickles $_i $_port |
 		awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
 	done |
 	sort >"$_my_tickles"
@@ -1276,13 +1276,13 @@ update_tickles ()
 	# Add tickles for connections that we haven't already got tickles for
 	comm -23 "$_my_connections" "$_my_tickles" |
 	while read _src _dst ; do
-		ctdb addtickle $_src $_dst
+		$CTDB addtickle $_src $_dst
 	done
 
 	# Remove tickles for connections that are no longer there
 	comm -13 "$_my_connections" "$_my_tickles" |
 	while read _src _dst ; do
-		ctdb deltickle $_src $_dst
+		$CTDB deltickle $_src $_dst
 	done
 
 	rm -f "$_my_connections" "$_my_tickles"
