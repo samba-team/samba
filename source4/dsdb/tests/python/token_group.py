@@ -240,6 +240,26 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.admin_ldb.add_remove_group_members(self.test_group4, [self.test_group3],
                                        add_members_operation=True)
 
+        self.test_group5 = "tokengroups_group5"
+        self.admin_ldb.newgroup(self.test_group5, grouptype=dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP)
+
+        res = self.admin_ldb.search(base="cn=%s,cn=users,%s" % (self.test_group5, self.base_dn),
+                                    attrs=["objectSid"], scope=ldb.SCOPE_BASE)
+        self.test_group5_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
+
+        self.admin_ldb.add_remove_group_members(self.test_group5, [self.test_group4],
+                                                add_members_operation=True)
+
+        self.test_group6 = "tokengroups_group6"
+        self.admin_ldb.newgroup(self.test_group6, grouptype=dsdb.GTYPE_SECURITY_DOMAIN_LOCAL_GROUP)
+
+        res = self.admin_ldb.search(base="cn=%s,cn=users,%s" % (self.test_group6, self.base_dn),
+                                    attrs=["objectSid"], scope=ldb.SCOPE_BASE)
+        self.test_group6_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
+
+        self.admin_ldb.add_remove_group_members(self.test_group6, [self.test_user],
+                                                add_members_operation=True)
+
         self.ldb = self.get_ldb_connection(self.test_user, self.test_user_pass)
 
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
@@ -278,6 +298,10 @@ class DynamicTokenTest(samba.tests.TestCase):
                           (self.test_group3, "cn=users", self.base_dn))
         delete_force(self.admin_ldb, "CN=%s,%s,%s" %
                           (self.test_group4, "cn=users", self.base_dn))
+        delete_force(self.admin_ldb, "CN=%s,%s,%s" %
+                          (self.test_group5, "cn=users", self.base_dn))
+        delete_force(self.admin_ldb, "CN=%s,%s,%s" %
+                          (self.test_group6, "cn=users", self.base_dn))
 
     def test_rootDSE_tokenGroups(self):
         """Testing rootDSE tokengroups against internal calculation"""
