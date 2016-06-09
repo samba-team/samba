@@ -57,9 +57,11 @@ struct drsuapi_getncchanges_state {
 	uint32_t la_idx;
 };
 
+/* We must keep the GUIDs in NDR form for sorting */
 struct la_for_sorting {
 	struct drsuapi_DsReplicaLinkedAttribute *link;
-	struct GUID target_guid;
+	DATA_BLOB target_guid;
+	DATA_BLOB source_guid;
 };
 
 static int drsuapi_DsReplicaHighWaterMark_cmp(const struct drsuapi_DsReplicaHighWaterMark *h1,
@@ -636,8 +638,8 @@ static int linked_attribute_compare(const struct la_for_sorting *la1,
 				    void *opaque)
 {
 	int c;
-	c = GUID_compare(&la1->link->identifier->guid,
-			 &la2->link->identifier->guid);
+	c = data_blob_cmp(&la1->source_guid,
+			  &la2->source_guid);
 	if (c != 0) {
 		return c;
 	}
@@ -652,7 +654,7 @@ static int linked_attribute_compare(const struct la_for_sorting *la1,
 			DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)? 1:-1;
 	}
 
-	return GUID_compare(&la1->target_guid, &la2->target_guid);
+	return data_blob_cmp(&la1->target_guid, &la2->target_guid);
 }
 
 struct drsuapi_changed_objects {
@@ -2205,8 +2207,9 @@ allowed:
 				/* we need to get the target GUIDs to compare */
 				struct dsdb_dn *dn;
 				const struct drsuapi_DsReplicaLinkedAttribute *la = &getnc_state->la_list[j];
-				struct GUID guid;
 				const struct dsdb_attribute *schema_attrib;
+				const struct ldb_val *target_guid;
+				DATA_BLOB source_guid;
 
 				schema_attrib = dsdb_attribute_by_attributeID_id(schema, la->attid);
 
@@ -2217,7 +2220,17 @@ allowed:
 					return werr;
 				}
 
-				status = dsdb_get_extended_dn_guid(dn->dn, &guid, "GUID");
+				/* Extract the target GUID in NDR form */
+				target_guid = ldb_dn_get_extended_component(dn->dn, "GUID");
+				if (target_guid == NULL) {
+					status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+				} else {
+					/* Repack the source GUID as NDR for sorting */
+					status = GUID_to_ndr_blob(&la->identifier->guid,
+								  tmp_ctx,
+								  &source_guid);
+				}
+
 				if (!NT_STATUS_IS_OK(status)) {
 					DEBUG(0,(__location__ ": Bad la guid in sort\n"));
 					talloc_free(tmp_ctx);
@@ -2226,12 +2239,12 @@ allowed:
 
 				guid_array[j] = (struct la_for_sorting)
 				{
-					.target_guid = guid,
+					.source_guid = source_guid,
+					.target_guid = *target_guid,
 					.link = &getnc_state->la_list[j]
 				};
 			}
 
-			TALLOC_FREE(tmp_ctx);
 			LDB_TYPESAFE_QSORT(guid_array, getnc_state->la_count, NULL, linked_attribute_compare);
 
 			/* apply the sort to the original list */
@@ -2242,6 +2255,7 @@ allowed:
 			       getnc_state->la_count * sizeof(struct drsuapi_DsReplicaLinkedAttribute));
 
 			getnc_state->la_sorted = true;
+			TALLOC_FREE(tmp_ctx);
 		}
 
 		link_count = getnc_state->la_count - getnc_state->la_idx;
