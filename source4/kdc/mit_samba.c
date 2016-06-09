@@ -2,6 +2,8 @@
    MIT-Samba4 library
 
    Copyright (c) 2010, Simo Sorce <idra@samba.org>
+   Copyright (c) 2014-2015 Guenther Deschner <gd@samba.org>
+   Copyright (c) 2014-2016 Andreas Schneider <asn@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
