@@ -608,6 +608,31 @@ class DynamicTokenTest(samba.tests.TestCase):
         if len(samr_dns.difference(S)):
             self.fail(msg="additional samr_GetUserGroups over filtered_closure: %s" % samr_dns.difference(S))
 
+    def test_samr_GetGroupsForUser_nomember(self):
+        # Confirm that we get the correct results against SAMR also
+        if not url.startswith("ldap://"):
+            self.fail(msg="This test is only valid on ldap (so we an find the hostname and use SAMR)")
+        host = url.split("://")[1]
+
+        test_user = "tokengroups_user2"
+        self.admin_ldb.newuser(test_user, self.test_user_pass)
+        res = self.admin_ldb.search(base="cn=%s,cn=users,%s" % (test_user, self.base_dn),
+                                    attrs=["objectSid"], scope=ldb.SCOPE_BASE)
+        user_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
+
+        (domain_sid, user_rid) = user_sid.split()
+        samr_conn = samba.dcerpc.samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, creds)
+        samr_handle = samr_conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
+        samr_domain = samr_conn.OpenDomain(samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED,
+                                           domain_sid)
+        user_handle = samr_conn.OpenUser(samr_domain, security.SEC_FLAG_MAXIMUM_ALLOWED, user_rid)
+        rids = samr_conn.GetGroupsForUser(user_handle)
+        user_info = samr_conn.QueryUserInfo(user_handle, 1)
+        delete_force(self.admin_ldb, "CN=%s,%s,%s" %
+                          (test_user, "cn=users", self.base_dn))
+        self.assertEqual(len(rids.rids), 1)
+        self.assertEqual(rids.rids[0].rid, user_info.primary_gid)
+
 if not "://" in url:
     if os.path.isfile(url):
         url = "tdb://%s" % url
