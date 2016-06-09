@@ -330,3 +330,4 @@
 # ad_dc requires signing
 #
 ^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
+^samba4.drs.getnc_exop.python.*.getnc_exop.DrsReplicaSyncSortTestCase

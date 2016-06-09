@@ -36,7 +36,7 @@ from ldb import SCOPE_BASE
 
 from samba.dcerpc import drsuapi, misc, drsblobs
 from samba.drs_utils import drs_DsBind
-from samba.ndr import ndr_unpack
+from samba.ndr import ndr_unpack, ndr_pack
 
 def _linked_attribute_compare(la1, la2):
     """See CompareLinks() in MS-DRSR section 4.1.10.5.17"""
@@ -44,7 +44,7 @@ def _linked_attribute_compare(la1, la2):
     la2, la2_target = la2
 
     # Ascending host object GUID
-    c = cmp(la1.identifier.guid, la2.identifier.guid)
+    c = cmp(ndr_pack(la1.identifier.guid), ndr_pack(la2.identifier.guid))
     if c != 0:
         return c
 
@@ -60,7 +60,7 @@ def _linked_attribute_compare(la1, la2):
         return 1 if la1_active else -1
 
     # Ascending target object GUID
-    return cmp(la1_target, la2_target)
+    return cmp(ndr_pack(la1_target), ndr_pack(la2_target))
 
 class AbstractLink:
     def __init__(self, attid, flags, identifier, targetGUID):
