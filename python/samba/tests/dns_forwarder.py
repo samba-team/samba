@@ -466,8 +466,9 @@ class TestDnsForwarding(DNSTest):
         try:
             data = ad.recv(0xffff + 2, 0)
             data = ndr.ndr_unpack(dns.name_packet, data)
-            self.assertEqual('forwarder1', data.answers[0].rdata)
             self.assert_dns_rcode_equals(data, dns.DNS_RCODE_OK)
+            self.assertEqual(len(data.answers), 1)
+            self.assertEqual('forwarder1', data.answers[0].rdata)
         except socket.timeout:
             self.fail("DNS server is too slow (timeout %s)" % timeout)
 
