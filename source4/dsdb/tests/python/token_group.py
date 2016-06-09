@@ -558,6 +558,7 @@ class DynamicTokenTest(samba.tests.TestCase):
             samr_dns.add(res[0].dn.get_casefold())
 
         user_info = samr_conn.QueryUserInfo(user_handle, 1)
+        self.assertEqual(rids.rids[0].rid, user_info.primary_gid)
 
         tokenGroupsSet = set()
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroupsGlobalAndUniversal"])
