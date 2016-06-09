@@ -2712,7 +2712,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	{
 		static const char * const attrs2[] = {"sAMAccountName",
 						      "displayName",
-						      "primaryroupID",
+						      "primaryGroupID",
 						      "description",
 						      "comment",
 						      NULL};
