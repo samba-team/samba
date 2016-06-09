@@ -20,6 +20,8 @@ export EVENTSCRIPTS_PATH
 
 PATH="${EVENTSCRIPTS_PATH}:${PATH}"
 
+export CTDB="ctdb"
+
 export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
 if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" -a \
     "$EVENTSCRIPTS_TESTS_VAR_DIR" != "/unit_eventscripts" ] ; then
