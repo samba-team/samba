@@ -247,6 +247,12 @@ size_t rep_strlcpy(char *d, const char *s, size_t bufsize);
 size_t rep_strlcat(char *d, const char *s, size_t bufsize);
 #endif
 
+#ifndef HAVE_CLOSEFROM
+#define closefrom rep_closefrom
+int rep_closefrom(int lower);
+#endif
+
+
 #if (defined(BROKEN_STRNDUP) || !defined(HAVE_STRNDUP))
 #undef HAVE_STRNDUP
 #define strndup rep_strndup

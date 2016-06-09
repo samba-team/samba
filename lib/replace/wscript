@@ -257,6 +257,9 @@ def configure(conf):
     if not conf.CHECK_FUNCS_IN('setproctitle', 'setproctitle', headers='setproctitle.h'):
         conf.CHECK_FUNCS_IN('setproctitle', 'bsd', headers='sys/types.h bsd/unistd.h')
 
+    if not conf.CHECK_FUNCS('closefrom'):
+        conf.CHECK_FUNCS_IN('closefrom', 'bsd', headers='bsd/unistd.h')
+
     conf.CHECK_CODE('''
                 struct ucred cred;
                 socklen_t cred_len;
@@ -682,6 +685,9 @@ def build(bld):
     if not bld.CONFIG_SET('HAVE_INET_PTON'):     REPLACE_SOURCE += ' inet_pton.c'
     if not bld.CONFIG_SET('HAVE_GETXATTR') or bld.CONFIG_SET('XATTR_ADDITIONAL_OPTIONS'):
                                                  REPLACE_SOURCE += ' xattr.c'
+
+    if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
+        REPLACE_SOURCE += ' closefrom.c'
 
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
