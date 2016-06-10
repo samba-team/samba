@@ -25,8 +25,10 @@
 #define _KDC_SERVER_H
 
 #include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 struct tsocket_address;
+struct model_ops;
 
 /*
  * Context structure for the kdc server
@@ -68,5 +70,13 @@ struct kdc_udp_socket {
 	struct tdgram_context *dgram;
 	struct tevent_queue *send_queue;
 };
+
+NTSTATUS kdc_add_socket(struct kdc_server *kdc,
+			const struct model_ops *model_ops,
+			const char *name,
+			const char *address,
+			uint16_t port,
+			kdc_process_fn_t process,
+			bool udp_only);
 
 #endif /* _KDC_SERVER_H */
