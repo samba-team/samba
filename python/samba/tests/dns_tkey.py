@@ -484,4 +484,80 @@ class TestDNSUpdates(DNSTest):
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
 
+    def test_update_tsig_windows(self):
+        "test DNS update with correct TSIG record (follow Windows pattern)"
+
+        newrecname = "win" + self.newrecname
+        rr_class = dns.DNS_QCLASS_IN
+        ttl = 1200
+
+        p = self.make_name_packet(dns.DNS_OPCODE_UPDATE)
+        q = self.make_name_question(self.get_dns_domain(),
+                                    dns.DNS_QTYPE_SOA,
+                                    dns.DNS_QCLASS_IN)
+        questions = []
+        questions.append(q)
+        self.finish_name_packet(p, questions)
+
+        updates = []
+        r = dns.res_rec()
+        r.name = newrecname
+        r.rr_type = dns.DNS_QTYPE_A
+        r.rr_class = dns.DNS_QCLASS_ANY
+        r.ttl = 0
+        r.length = 0
+        updates.append(r)
+        r = dns.res_rec()
+        r.name = newrecname
+        r.rr_type = dns.DNS_QTYPE_AAAA
+        r.rr_class = dns.DNS_QCLASS_ANY
+        r.ttl = 0
+        r.length = 0
+        updates.append(r)
+        r = dns.res_rec()
+        r.name = newrecname
+        r.rr_type = dns.DNS_QTYPE_A
+        r.rr_class = rr_class
+        r.ttl = ttl
+        r.length = 0xffff
+        r.rdata = "10.1.45.64"
+        updates.append(r)
+        p.nscount = len(updates)
+        p.nsrecs = updates
+
+        prereqs = []
+        r = dns.res_rec()
+        r.name = newrecname
+        r.rr_type = dns.DNS_QTYPE_CNAME
+        r.rr_class = dns.DNS_QCLASS_NONE
+        r.ttl = 0
+        r.length = 0
+        prereqs.append(r)
+        p.ancount = len(prereqs)
+        p.answers = prereqs
+
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_REFUSED)
+
+        self.tkey_trans()
+        mac = self.sign_packet(p, self.key_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # Check the record is around
+        rcode = self.search_record(newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_OK)
+
+        # Now delete the record
+        p = self.make_update_request(delete=True)
+        mac = self.sign_packet(p, self.key_name)
+        (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
+        self.verify_packet(response, response_p, mac)
+
+        # check it's gone
+        rcode = self.search_record(self.newrecname)
+        self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
+
 TestProgram(module=__name__, opts=subunitopts)
