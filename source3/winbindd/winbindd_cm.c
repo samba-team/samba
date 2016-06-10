@@ -903,6 +903,7 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 	struct cli_credentials *creds;
 	NTSTATUS status;
 	bool force_machine_account = false;
+	bool ok;
 
 	/* If we are a DC and this is not our own domain */
 
@@ -947,7 +948,13 @@ static NTSTATUS get_trust_credentials(struct winbindd_domain *domain,
 						   CRED_DONT_USE_KERBEROS);
 	}
 
-	if (creds_domain != domain) {
+	/*
+	 * When we contact our own domain and get a list of the trusted domain
+	 * we have the information if we are able to contact the DC with
+	 * with our machine account password.
+	 */
+	ok = winbindd_can_contact_domain(domain);
+	if (!ok) {
 		/*
 		 * We can only use schannel against a direct trust
 		 */
@@ -3284,6 +3291,8 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 
 	sec_chan_type = cli_credentials_get_secure_channel_type(creds);
 	if (sec_chan_type == SEC_CHAN_NULL) {
+		DBG_WARNING("get_secure_channel_type gave SEC_CHAN_NULL for %s\n",
+			    domain->name);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
@@ -3323,6 +3332,11 @@ static NTSTATUS cm_connect_netlogon_transport(struct winbindd_domain *domain,
 	conn->netlogon_flags = netlogon_creds->negotiate_flags;
 	TALLOC_FREE(netlogon_creds);
 
+	/*
+	 * FIXME: Document in which case we are not able to contact
+	 * a DC without schannel. Which information do we try to get
+	 * from this DC?
+	 */
 	if (!(conn->netlogon_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
 		if (lp_winbind_sealed_pipes() || lp_require_strong_key()) {
 			result = NT_STATUS_DOWNGRADE_DETECTED;
