@@ -437,9 +437,10 @@ sub provision_raw_prepare($$$$$$$$$$$)
 		$ctx->{dns_host_file} = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces --use-file=$ctx->{dns_host_file}";
 	} else {
-		$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
-		$ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces";
+	        $ctx->{samba_dnsupdate} = "$ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate -s $ctx->{smb_conf} --all-interfaces";
+		$ctx->{use_resolv_wrapper} = 1;
 	}
+	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
 
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
@@ -463,7 +464,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	push (@provision_options, "NSS_WRAPPER_HOSTS=\"$ctx->{nsswrap_hosts}\"");
 	push (@provision_options, "NSS_WRAPPER_HOSTNAME=\"$ctx->{nsswrap_hostname}\"");
-	if (defined($ctx->{resolv_conf})) {
+	if (defined($ctx->{use_resolv_wrapper})) {
 		push (@provision_options, "RESOLV_WRAPPER_CONF=\"$ctx->{resolv_conf}\"");
 	} else {
 		push (@provision_options, "RESOLV_WRAPPER_HOSTS=\"$ctx->{dns_host_file}\"");
@@ -687,11 +688,12 @@ nogroup:x:65534:nobody
                 LOCAL_PATH => $ctx->{share},
                 UID_RFC2307TEST => $uid_rfc2307test,
                 GID_RFC2307TEST => $gid_rfc2307test,
-                SERVER_ROLE => $ctx->{server_role}
+                SERVER_ROLE => $ctx->{server_role},
+	        RESOLV_CONF => $ctx->{resolv_conf}
 	};
 
-	if (defined($ctx->{resolv_conf})) {
-		$ret->{RESOLV_WRAPPER_CONF} = $ctx->{resolv_conf};
+	if (defined($ctx->{use_resolv_wrapper})) {
+	        $ret->{RESOLV_WRAPPER_CONF} = $ctx->{resolv_conf};
 	} else {
 		$ret->{RESOLV_WRAPPER_HOSTS} = $ctx->{dns_host_file};
 	}

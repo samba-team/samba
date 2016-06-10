@@ -238,7 +238,7 @@ def hostname_match(h1, h2):
     return h1.lower().rstrip('.') == h2.lower().rstrip('.')
 
 def check_one_dns_name(name, name_type, d=None):
-    resolv_conf = os.getenv('RESOLV_WRAPPER_CONF')
+    resolv_conf = os.getenv('RESOLV_CONF')
     if not resolv_conf:
         resolv_conf = '/etc/resolv.conf'
     resolver = dns.resolver.Resolver(filename=resolv_conf, configure=True)

@@ -835,6 +835,7 @@ my @exported_envvars = (
 	"LOCAL_PATH",
 	"DNS_FORWARDER1",
 	"DNS_FORWARDER2",
+	"RESOLV_CONF",
 
 	# nss_wrapper
 	"NSS_WRAPPER_PASSWD",
