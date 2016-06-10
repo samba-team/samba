@@ -1063,6 +1063,38 @@ static int test_memmem(void)
 	return true;
 }
 
+static bool test_closefrom(void)
+{
+	int i, fd;
+
+	for (i=0; i<100; i++) {
+		fd = dup(0);
+		if (fd == -1) {
+			perror("dup failed");
+			return false;
+		}
+
+		/* 1000 is just an arbitrarily chosen upper bound */
+
+		if (fd >= 1000) {
+			printf("fd=%d\n", fd);
+			return false;
+		}
+	}
+
+	closefrom(3);
+
+	for (i=3; i<=fd; i++) {
+		off_t off;
+		off = lseek(i, 0, SEEK_CUR);
+		if ((off != (off_t)-1) || (errno != EBADF)) {
+			printf("fd %d not closed\n", i);
+			return false;
+		}
+	}
+
+	return true;
+}
 
 bool torture_local_replace(struct torture_context *ctx)
 {
@@ -1113,6 +1145,7 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_utime();
 	ret &= test_utimes();
 	ret &= test_memmem();
+	ret &= test_closefrom();
 
 	return ret;
 }
