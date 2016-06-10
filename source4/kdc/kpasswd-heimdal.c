@@ -623,4 +623,3 @@ reply:
 	talloc_free(tmp_ctx);
 	return KDC_PROCESS_OK;
 }
-

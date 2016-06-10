@@ -836,7 +836,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 						 HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
 						 0,
 						 &ent);
-	
+
 	if (ret != 0) {
 		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);
 		krb5_free_principal(kdc->smb_krb5_context->krb5_context, principal);
