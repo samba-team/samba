@@ -47,4 +47,12 @@ typedef enum kdc_code_e {
 	KDC_PROXY_REQUEST
 } kdc_code;
 
+typedef kdc_code (*kdc_process_fn_t)(struct kdc_server *kdc,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *request,
+				     DATA_BLOB *reply,
+				     struct tsocket_address *remote_address,
+				     struct tsocket_address *local_address,
+				     int datagram);
+
 #endif /* _KDC_SERVER_H */

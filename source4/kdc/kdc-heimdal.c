@@ -71,14 +71,6 @@ static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
 	return NT_STATUS_OK;
 }
 
-typedef kdc_code (*kdc_process_fn_t)(struct kdc_server *kdc,
-				     TALLOC_CTX *mem_ctx,
-				     DATA_BLOB *input,
-				     DATA_BLOB *reply,
-				     struct tsocket_address *peer_addr,
-				     struct tsocket_address *my_addr,
-				     int datagram);
-
 /* hold information about one kdc socket */
 struct kdc_socket {
 	struct kdc_server *kdc;
