@@ -225,7 +225,7 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	cli->smb1.pid = (uint16_t)getpid();
+	cli->smb1.pid = (uint32_t)getpid();
 	cli->smb1.vc_num = cli->smb1.pid;
 	cli->smb1.tcon = smbXcli_tcon_create(cli);
 	if (cli->smb1.tcon == NULL) {
@@ -327,14 +327,14 @@ uint16_t cli_state_get_vc_num(struct cli_state *cli)
  Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
 
-uint16_t cli_setpid(struct cli_state *cli, uint16_t pid)
+uint32_t cli_setpid(struct cli_state *cli, uint32_t pid)
 {
-	uint16_t ret = cli->smb1.pid;
+	uint32_t ret = cli->smb1.pid;
 	cli->smb1.pid = pid;
 	return ret;
 }
 
-uint16_t cli_getpid(struct cli_state *cli)
+uint32_t cli_getpid(struct cli_state *cli)
 {
 	return cli->smb1.pid;
 }

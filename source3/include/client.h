@@ -91,7 +91,7 @@ struct cli_state {
 	const char *remote_realm;
 
 	struct {
-		uint16_t pid;
+		uint32_t pid;
 		uint16_t vc_num;
 		struct smbXcli_session *session;
 		struct smbXcli_tcon *tcon;
