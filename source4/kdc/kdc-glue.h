@@ -37,12 +37,12 @@ struct tsocket_address;
 */
 struct kdc_server {
 	struct task_server *task;
-	krb5_kdc_configuration *config;
 	struct smb_krb5_context *smb_krb5_context;
 	struct samba_kdc_base_context *base_ctx;
 	struct ldb_context *samdb;
 	bool am_rodc;
 	uint32_t proxy_timeout;
+	void *private_data;
 };
 
 enum kdc_process_ret {

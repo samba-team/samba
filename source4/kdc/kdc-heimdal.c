@@ -36,6 +36,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/session.h"
 #include "libds/common/roles.h"
+#include <kdc.h>
+#include <hdb.h>
 
 NTSTATUS server_service_kdc_init(void);
 
@@ -145,6 +147,9 @@ static enum kdc_process_ret kdc_process(struct kdc_server *kdc,
 	char *pa;
 	struct sockaddr_storage ss;
 	krb5_data k5_reply;
+	krb5_kdc_configuration *kdc_config =
+		(krb5_kdc_configuration *)kdc->private_data;
+
 	krb5_data_zero(&k5_reply);
 
 	krb5_kdc_update_time(NULL);
@@ -163,7 +168,7 @@ static enum kdc_process_ret kdc_process(struct kdc_server *kdc,
 				(long)input->length - 4, pa));
 
 	ret = krb5_kdc_process_krb5_request(kdc->smb_krb5_context->krb5_context,
-					    kdc->config,
+					    kdc_config,
 					    input->data, input->length,
 					    &k5_reply,
 					    pa,
@@ -796,10 +801,13 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	DATA_BLOB srv_sig;
 	struct PAC_SIGNATURE_DATA kdc_sig;
 	struct kdc_server *kdc = talloc_get_type(msg->private_data, struct kdc_server);
+	krb5_kdc_configuration *kdc_config =
+		(krb5_kdc_configuration *)kdc->private_data;
 	enum ndr_err_code ndr_err;
 	int ret;
 	hdb_entry_ex ent;
 	krb5_principal principal;
+
 
 	/* There is no reply to this request */
 	r->out.generic_reply = data_blob(NULL, 0);
@@ -833,8 +841,8 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = kdc->config->db[0]->hdb_fetch_kvno(kdc->smb_krb5_context->krb5_context,
-						 kdc->config->db[0],
+	ret = kdc_config->db[0]->hdb_fetch_kvno(kdc->smb_krb5_context->krb5_context,
+						 kdc_config->db[0],
 						 principal,
 						 HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
 						 0,
@@ -870,6 +878,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 static void kdc_task_init(struct task_server *task)
 {
 	struct kdc_server *kdc;
+	krb5_kdc_configuration *kdc_config = NULL;
 	NTSTATUS status;
 	krb5_error_code ret;
 	struct interface *ifaces;
@@ -941,19 +950,19 @@ static void kdc_task_init(struct task_server *task)
 	krb5_add_et_list(kdc->smb_krb5_context->krb5_context, initialize_hdb_error_table_r);
 
 	ret = krb5_kdc_get_config(kdc->smb_krb5_context->krb5_context,
-				  &kdc->config);
+				  &kdc_config);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to get KDC configuration", true);
 		return;
 	}
 
-	kdc->config->logf = (krb5_log_facility *)kdc->smb_krb5_context->pvt_log_data;
-	kdc->config->db = talloc(kdc, struct HDB *);
-	if (!kdc->config->db) {
+	kdc_config->logf = (krb5_log_facility *)kdc->smb_krb5_context->pvt_log_data;
+	kdc_config->db = talloc(kdc, struct HDB *);
+	if (!kdc_config->db) {
 		task_server_terminate(task, "kdc: out of memory", true);
 		return;
 	}
-	kdc->config->num_db = 1;
+	kdc_config->num_db = 1;
 
 	/*
 	 * This restores the behavior before
@@ -971,10 +980,10 @@ static void kdc_task_init(struct task_server *task)
 	 * The old behavior in the _kdc_get_preferred_key()
 	 * function is use_strongest_server_key=TRUE.
 	 */
-	kdc->config->as_use_strongest_session_key = false;
-	kdc->config->preauth_use_strongest_session_key = false;
-	kdc->config->tgs_use_strongest_session_key = false;
-	kdc->config->use_strongest_server_key = true;
+	kdc_config->as_use_strongest_session_key = false;
+	kdc_config->preauth_use_strongest_session_key = false;
+	kdc_config->tgs_use_strongest_session_key = false;
+	kdc_config->use_strongest_server_key = true;
 
 	/* Register hdb-samba4 hooks for use as a keytab */
 
@@ -989,7 +998,7 @@ static void kdc_task_init(struct task_server *task)
 
 	status = hdb_samba4_create_kdc(kdc->base_ctx,
 				       kdc->smb_krb5_context->krb5_context,
-				       &kdc->config->db[0]);
+				       &kdc_config->db[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		task_server_terminate(task, "kdc: hdb_samba4_create_kdc (setup KDC database) failed", true);
 		return;
@@ -1025,12 +1034,13 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 
-	ret = krb5_kdc_pkinit_config(kdc->smb_krb5_context->krb5_context, kdc->config);
+	ret = krb5_kdc_pkinit_config(kdc->smb_krb5_context->krb5_context, kdc_config);
 
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to init kdc pkinit subsystem", true);
 		return;
 	}
+	kdc->private_data = kdc_config;
 
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc, task->lp_ctx, ifaces);
