@@ -29,27 +29,9 @@
 #include <kdc.h>
 #include <krb5/windc_plugin.h>
 #include "kdc/samba_kdc.h"
+#include "kdc/kdc-server.h"
 
 struct tsocket_address;
-
-/*
-  top level context structure for the kdc server
-*/
-struct kdc_server {
-	struct task_server *task;
-	struct smb_krb5_context *smb_krb5_context;
-	struct samba_kdc_base_context *base_ctx;
-	struct ldb_context *samdb;
-	bool am_rodc;
-	uint32_t proxy_timeout;
-	void *private_data;
-};
-
-typedef enum kdc_code_e {
-	KDC_OK = 0,
-	KDC_ERROR,
-	KDC_PROXY_REQUEST
-} kdc_code;
 
 kdc_code kpasswdd_process(struct kdc_server *kdc,
 			  TALLOC_CTX *mem_ctx,

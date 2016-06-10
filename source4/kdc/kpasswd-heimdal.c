@@ -29,6 +29,7 @@
 #include "../lib/util/util_ldb.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "kdc/kdc-server.h"
 #include "kdc/kdc-glue.h"
 #include "dsdb/common/util.h"
 #include "kdc/kpasswd_glue.h"

@@ -27,6 +27,7 @@
 #include "libcli/util/tstream.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/stream/packet.h"
+#include "kdc/kdc-server.h"
 #include "kdc/kdc-glue.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/composite/composite.h"
