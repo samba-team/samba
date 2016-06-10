@@ -45,18 +45,19 @@ struct kdc_server {
 	void *private_data;
 };
 
-enum kdc_process_ret {
-	KDC_PROCESS_OK=0,
-	KDC_PROCESS_FAILED,
-	KDC_PROCESS_PROXY};
+typedef enum kdc_code_e {
+	KDC_OK = 0,
+	KDC_ERROR,
+	KDC_PROXY_REQUEST
+} kdc_code;
 
-enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
-				      TALLOC_CTX *mem_ctx,
-				      DATA_BLOB *input,
-				      DATA_BLOB *reply,
-				      struct tsocket_address *peer_addr,
-				      struct tsocket_address *my_addr,
-				      int datagram_reply);
+kdc_code kpasswdd_process(struct kdc_server *kdc,
+			  TALLOC_CTX *mem_ctx,
+			  DATA_BLOB *input,
+			  DATA_BLOB *reply,
+			  struct tsocket_address *peer_addr,
+			  struct tsocket_address *my_addr,
+			  int datagram_reply);
 
 /* from hdb-samba4.c */
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
