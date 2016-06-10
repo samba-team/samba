@@ -55,4 +55,18 @@ typedef kdc_code (*kdc_process_fn_t)(struct kdc_server *kdc,
 				     struct tsocket_address *local_address,
 				     int datagram);
 
+/* Information about one kdc socket */
+struct kdc_socket {
+	struct kdc_server *kdc;
+	struct tsocket_address *local_address;
+	kdc_process_fn_t process;
+};
+
+/* Information about one kdc/kpasswd udp socket */
+struct kdc_udp_socket {
+	struct kdc_socket *kdc_socket;
+	struct tdgram_context *dgram;
+	struct tevent_queue *send_queue;
+};
+
 #endif /* _KDC_SERVER_H */

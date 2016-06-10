@@ -71,13 +71,6 @@ static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
 	return NT_STATUS_OK;
 }
 
-/* hold information about one kdc socket */
-struct kdc_socket {
-	struct kdc_server *kdc;
-	struct tsocket_address *local_address;
-	kdc_process_fn_t process;
-};
-
 struct kdc_tcp_call {
 	struct kdc_tcp_connection *kdc_conn;
 	DATA_BLOB in;
@@ -466,13 +459,6 @@ static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.accept_connection	= kdc_tcp_accept,
 	.recv_handler		= kdc_tcp_recv,
 	.send_handler		= kdc_tcp_send
-};
-
-/* hold information about one kdc/kpasswd udp socket */
-struct kdc_udp_socket {
-	struct kdc_socket *kdc_socket;
-	struct tdgram_context *dgram;
-	struct tevent_queue *send_queue;
 };
 
 struct kdc_udp_call {
