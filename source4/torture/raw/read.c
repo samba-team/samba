@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/raw/raw_proto.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "libcli/libcli.h"
@@ -373,6 +374,8 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	const char *fname = BASEDIR "\\test.txt";
 	const char *test_data = "TEST DATA";
 	unsigned int seed = time(NULL);
+	struct smbcli_request *smbreq = NULL;
+	unsigned int i;
 
 	buf = talloc_zero_array(tctx, uint8_t, maxsize);
 
@@ -421,6 +424,47 @@ static bool test_readx(struct torture_context *tctx, struct smbcli_state *cli)
 	io.readx.in.file.fnum = fnum;
 
 	smbcli_write(cli->tree, fnum, 0, test_data, 0, strlen(test_data));
+
+	printf("Checking reserved fields are [0]\n");
+	io.readx.in.file.fnum = fnum;
+	io.readx.in.offset = 0;
+	io.readx.in.remaining = 0;
+	io.readx.in.read_for_execute = false;
+	io.readx.in.mincnt = strlen(test_data);
+	io.readx.in.maxcnt = strlen(test_data);
+	smbreq = smb_raw_read_send(cli->tree, &io);
+	if (smbreq == NULL) {
+		ret = false;
+		torture_fail_goto(tctx, done, "smb_raw_read_send failed\n");
+	}
+	if (!smbcli_request_receive(smbreq) ||
+	     smbcli_request_is_error(smbreq)) {
+		status = smbcli_request_destroy(smbreq);
+		torture_fail_goto(tctx, done, "receive failed\n");
+	}
+
+	if (smbreq->in.wct != 12) {
+		ret = false;
+		printf("Incorrect wct %u (should be 12)\n",
+			(unsigned int)smbreq->in.wct);
+		status = smbcli_request_destroy(smbreq);
+		torture_fail_goto(tctx, done, "bad wct\n");
+	}
+
+	/* Ensure VWV8 - WVW11 are zero. */
+	for (i = 8; i < 12; i++) {
+		uint16_t br = SVAL(smbreq->in.vwv, VWV(i));
+		if (br != 0) {
+			status = smbcli_request_destroy(smbreq);
+			ret = false;
+			printf("reserved field %u is %u not zero\n",
+				i,
+				(unsigned int)br);
+			torture_fail_goto(tctx, done, "bad reserved field\n");
+		}
+	}
+
+	smbcli_request_destroy(smbreq);
 
 	printf("Trying small read\n");
 	io.readx.in.file.fnum = fnum;
