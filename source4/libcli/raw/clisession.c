@@ -52,7 +52,7 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport,
 	} else {
 		session->transport = talloc_reference(session, transport);
 	}
-	session->pid = (uint16_t)getpid();
+	session->pid = (uint32_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
 	session->options = options;
 
