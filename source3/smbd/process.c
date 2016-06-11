@@ -2077,6 +2077,7 @@ static void construct_reply_common(uint8_t cmd, const uint8_t *inbuf,
 
 	SSVAL(outbuf,smb_tid,SVAL(inbuf,smb_tid));
 	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
+	SSVAL(outbuf,smb_pidhigh,SVAL(inbuf,smb_pidhigh));
 	SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
 	SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
 }
