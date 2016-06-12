@@ -8622,6 +8622,164 @@ static bool run_streamerror(int dummy)
 	return ret;
 }
 
+struct pidtest_state {
+	bool success;
+	uint16_t vwv[1];
+	DATA_BLOB data;
+};
+
+static void pid_echo_done(struct tevent_req *subreq);
+
+static struct tevent_req *pid_echo_send(TALLOC_CTX *mem_ctx,
+			struct tevent_context *ev,
+			struct cli_state *cli)
+{
+	struct tevent_req *req, *subreq;
+	struct pidtest_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct pidtest_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	SSVAL(state->vwv, 0, 1);
+	state->data = data_blob_const("hello", 5);
+
+	subreq = smb1cli_req_send(state,
+				ev,
+				cli->conn,
+				SMBecho,
+				0, 0, /* *_flags */
+				0, 0, /* *_flags2 */
+				cli->timeout,
+				0xDEADBEEF, /* pid */
+				NULL, /* tcon */
+				NULL, /* session */
+				ARRAY_SIZE(state->vwv), state->vwv,
+				state->data.length, state->data.data);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, pid_echo_done, req);
+	return req;
+}
+
+static void pid_echo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct pidtest_state *state = tevent_req_data(
+		req, struct pidtest_state);
+	NTSTATUS status;
+	uint32_t num_bytes;
+	uint8_t *bytes = NULL;
+	struct iovec *recv_iov = NULL;
+	uint8_t *phdr = NULL;
+	uint16_t pidlow = 0;
+	uint16_t pidhigh = 0;
+	struct smb1cli_req_expected_response expected[] = {
+	{
+		.status = NT_STATUS_OK,
+		.wct    = 1,
+	},
+	};
+
+	status = smb1cli_req_recv(subreq, state,
+				&recv_iov,
+				&phdr,
+				NULL, /* pwct */
+				NULL, /* pvwv */
+				NULL, /* pvwv_offset */
+				&num_bytes,
+				&bytes,
+				NULL, /* pbytes_offset */
+				NULL, /* pinbuf */
+				expected, ARRAY_SIZE(expected));
+
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (num_bytes != state->data.length) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (memcmp(bytes, state->data.data, num_bytes) != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	/* Check pid low/high == DEADBEEF */
+	pidlow = SVAL(phdr, HDR_PID);
+	if (pidlow != 0xBEEF){
+		printf("Incorrect pidlow 0x%x, should be 0xBEEF\n",
+			(unsigned int)pidlow);
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	pidhigh = SVAL(phdr, HDR_PIDHIGH);
+	if (pidhigh != 0xDEAD){
+		printf("Incorrect pidhigh 0x%x, should be 0xDEAD\n",
+			(unsigned int)pidhigh);
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS pid_echo_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool run_pidhigh(int dummy)
+{
+	bool success = false;
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	printf("starting pid high test\n");
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+                goto fail;
+	}
+
+	req = pid_echo_send(frame, ev, cli);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+
+	status = pid_echo_recv(req);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("pid high test ok\n");
+		success = true;
+	}
+
+ fail:
+
+	TALLOC_FREE(frame);
+	torture_close_connection(cli);
+	return success;
+}
+
 static bool run_local_substitute(int dummy)
 {
 	bool ok = true;
@@ -10197,6 +10355,7 @@ static struct {
 	{ "CLEANUP3", run_cleanup3 },
 	{ "CLEANUP4", run_cleanup4 },
 	{ "OPLOCK-CANCEL", run_oplock_cancel },
+	{ "PIDHIGH", run_pidhigh },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
