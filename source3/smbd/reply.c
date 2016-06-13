@@ -3776,7 +3776,6 @@ int setup_readX_header(char *outbuf, size_t smb_maxcnt)
 	      + 2		/* the buflen field */
 	      + 1);		/* padding byte */
 	SSVAL(outbuf,smb_vwv7,(smb_maxcnt >> 16));
-	SSVAL(outbuf,smb_vwv11,smb_maxcnt);
 	SCVAL(smb_buf(outbuf), 0, 0); /* padding byte */
 	/* Reset the outgoing length, set_message truncates at 0x1FFFF. */
 	_smb_setlen_large(outbuf,
