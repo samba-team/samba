@@ -251,8 +251,8 @@ static void notify_callback(void *private_data, struct timespec when,
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 			      bool recursive)
 {
-	char *fullpath;
-	size_t len;
+	size_t len = fsp_fullbasepath(fsp, NULL, 0);
+	char fullpath[len+1];
 	uint32_t subdir_filter;
 	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
@@ -267,20 +267,11 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	/* Do notify operations on the base_name. */
-	fullpath = talloc_asprintf(
-		talloc_tos(), "%s/%s", fsp->conn->connectpath,
-		fsp->fsp_name->base_name);
-	if (fullpath == NULL) {
-		DEBUG(0, ("talloc_asprintf failed\n"));
-		TALLOC_FREE(fsp->notify);
-		return NT_STATUS_NO_MEMORY;
-	}
+	fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
 
 	/*
 	 * Avoid /. at the end of the path name. notify can't deal with it.
 	 */
-	len = strlen(fullpath);
 	if (len > 1 && fullpath[len-1] == '.' && fullpath[len-2] == '/') {
 		fullpath[len-2] = '\0';
 	}
@@ -292,7 +283,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 				    fullpath, filter, subdir_filter,
 				    notify_callback, fsp);
 	}
-	TALLOC_FREE(fullpath);
+
 	return status;
 }
 
