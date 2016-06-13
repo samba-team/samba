@@ -35,7 +35,6 @@ struct notify_list {
 	void (*callback)(void *private_data, struct timespec when,
 			 const struct notify_event *ctx);
 	void *private_data;
-	char path[1];
 };
 
 struct notify_context {
@@ -142,14 +141,12 @@ NTSTATUS notify_add(struct notify_context *ctx,
 
 	pathlen = strlen(path)+1;
 
-	listel = (struct notify_list *)talloc_size(
-		ctx, offsetof(struct notify_list, path) + pathlen);
+	listel = (struct notify_list *)talloc(ctx, struct notify_list);
 	if (listel == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	listel->callback = callback;
 	listel->private_data = private_data;
-	memcpy(listel->path, path, pathlen);
 
 	clock_gettime_mono(&msg.instance.creation_time);
 	msg.instance.filter = filter;
