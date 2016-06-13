@@ -53,15 +53,15 @@ struct drsuapi_getncchanges_state {
 	struct drsuapi_DsReplicaCursor2CtrEx *final_udv;
 	struct drsuapi_DsReplicaLinkedAttribute *la_list;
 	uint32_t la_count;
-	bool la_sorted;
+	struct la_for_sorting *la_sorted;
 	uint32_t la_idx;
 };
 
 /* We must keep the GUIDs in NDR form for sorting */
 struct la_for_sorting {
 	struct drsuapi_DsReplicaLinkedAttribute *link;
-	DATA_BLOB target_guid;
-	DATA_BLOB source_guid;
+	uint8_t target_guid[16];
+        uint8_t source_guid[16];
 };
 
 static int drsuapi_DsReplicaHighWaterMark_cmp(const struct drsuapi_DsReplicaHighWaterMark *h1,
@@ -638,8 +638,8 @@ static int linked_attribute_compare(const struct la_for_sorting *la1,
 				    void *opaque)
 {
 	int c;
-	c = data_blob_cmp(&la1->source_guid,
-			  &la2->source_guid);
+	c = memcmp(la1->source_guid,
+		   la2->source_guid, sizeof(la2->source_guid));
 	if (c != 0) {
 		return c;
 	}
@@ -654,7 +654,8 @@ static int linked_attribute_compare(const struct la_for_sorting *la1,
 			DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE)? 1:-1;
 	}
 
-	return data_blob_cmp(&la1->target_guid, &la2->target_guid);
+	return memcmp(la1->target_guid,
+		      la2->target_guid, sizeof(la2->target_guid));
 }
 
 struct drsuapi_changed_objects {
@@ -1594,7 +1595,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
 	int ret;
-	uint32_t i;
+	uint32_t i, k;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
@@ -2198,11 +2199,13 @@ allowed:
 		r->out.ctr->ctr6.more_data = true;
 	} else {
 		/* sort the whole array the first time */
-		if (!getnc_state->la_sorted) {
+		if (getnc_state->la_sorted == NULL) {
 			int j;
-			struct la_for_sorting guid_array[getnc_state->la_count];
-			struct drsuapi_DsReplicaLinkedAttribute tmp_array[getnc_state->la_count];
-			TALLOC_CTX *tmp_ctx = talloc_new(sam_ctx);
+			struct la_for_sorting *guid_array = talloc_array(getnc_state, struct la_for_sorting, getnc_state->la_count);
+			if (guid_array == NULL) {
+				DEBUG(0, ("Out of memory allocating %u linked attributes for sorting", getnc_state->la_count));
+				return WERR_NOMEM;
+			}
 			for (j = 0; j < getnc_state->la_count; j++) {
 				/* we need to get the target GUIDs to compare */
 				struct dsdb_dn *dn;
@@ -2210,59 +2213,62 @@ allowed:
 				const struct dsdb_attribute *schema_attrib;
 				const struct ldb_val *target_guid;
 				DATA_BLOB source_guid;
+				TALLOC_CTX *frame = talloc_stackframe();
 
 				schema_attrib = dsdb_attribute_by_attributeID_id(schema, la->attid);
 
-				werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, tmp_ctx, la->value.blob, &dn);
+				werr = dsdb_dn_la_from_blob(sam_ctx, schema_attrib, schema, frame, la->value.blob, &dn);
 				if (!W_ERROR_IS_OK(werr)) {
 					DEBUG(0,(__location__ ": Bad la blob in sort\n"));
-					talloc_free(tmp_ctx);
+					TALLOC_FREE(frame);
 					return werr;
 				}
 
 				/* Extract the target GUID in NDR form */
 				target_guid = ldb_dn_get_extended_component(dn->dn, "GUID");
-				if (target_guid == NULL) {
+				if (target_guid == NULL
+				    || target_guid->length != sizeof(guid_array[0].target_guid)) {
 					status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 				} else {
 					/* Repack the source GUID as NDR for sorting */
 					status = GUID_to_ndr_blob(&la->identifier->guid,
-								  tmp_ctx,
+								  frame,
 								  &source_guid);
 				}
 
-				if (!NT_STATUS_IS_OK(status)) {
+				if (!NT_STATUS_IS_OK(status)
+				    || source_guid.length != sizeof(guid_array[0].source_guid)) {
 					DEBUG(0,(__location__ ": Bad la guid in sort\n"));
-					talloc_free(tmp_ctx);
+					TALLOC_FREE(frame);
 					return ntstatus_to_werror(status);
 				}
 
-				guid_array[j] = (struct la_for_sorting)
-				{
-					.source_guid = source_guid,
-					.target_guid = *target_guid,
-					.link = &getnc_state->la_list[j]
-				};
+				guid_array[j].link = &getnc_state->la_list[j];
+				memcpy(guid_array[j].target_guid, target_guid->data,
+				       sizeof(guid_array[j].target_guid));
+				memcpy(guid_array[j].source_guid, source_guid.data,
+				       sizeof(guid_array[j].source_guid));
+				TALLOC_FREE(frame);
 			}
 
 			LDB_TYPESAFE_QSORT(guid_array, getnc_state->la_count, NULL, linked_attribute_compare);
-
-			/* apply the sort to the original list */
-			for (j = 0; j < getnc_state->la_count; j++) {
-				tmp_array[j] = *guid_array[j].link;
-			}
-			memcpy(getnc_state->la_list, tmp_array,
-			       getnc_state->la_count * sizeof(struct drsuapi_DsReplicaLinkedAttribute));
-
-			getnc_state->la_sorted = true;
-			TALLOC_FREE(tmp_ctx);
+			getnc_state->la_sorted = guid_array;
 		}
 
 		link_count = getnc_state->la_count - getnc_state->la_idx;
 		link_count = MIN(max_links, link_count);
 
 		r->out.ctr->ctr6.linked_attributes_count = link_count;
-		r->out.ctr->ctr6.linked_attributes = getnc_state->la_list + getnc_state->la_idx;
+		r->out.ctr->ctr6.linked_attributes = talloc_array(r->out.ctr, struct drsuapi_DsReplicaLinkedAttribute, link_count);
+		if (r->out.ctr->ctr6.linked_attributes == NULL) {
+			DEBUG(0, ("Out of memory allocating %u linked attributes for output", link_count));
+			return WERR_NOMEM;
+		}
+
+		for (k = 0; k < link_count; k++) {
+			r->out.ctr->ctr6.linked_attributes[k]
+				= *getnc_state->la_sorted[getnc_state->la_idx + k].link;
+		}
 
 		getnc_state->la_idx += link_count;
 		link_given = getnc_state->la_idx;
