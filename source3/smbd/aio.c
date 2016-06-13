@@ -272,7 +272,6 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 	files_struct *fsp = aio_ex->fsp;
 	int outsize;
 	char *outbuf = (char *)aio_ex->outbuf.data;
-	char *data = smb_buf(outbuf) + 1 /* padding byte */;
 	ssize_t nread;
 	int err;
 
@@ -301,13 +300,7 @@ static void aio_pread_smb1_done(struct tevent_req *req)
 		ERROR_NT(map_nt_error_from_unix(err));
 		outsize = srv_set_message(outbuf,0,0,true);
 	} else {
-		outsize = srv_set_message(outbuf, 12,
-					  nread + 1 /* padding byte */, false);
-		SSVAL(outbuf,smb_vwv2, 0xFFFF); /* Remaining - must be * -1. */
-		SSVAL(outbuf,smb_vwv5, nread);
-		SSVAL(outbuf,smb_vwv6, smb_offset(data,outbuf));
-		SSVAL(outbuf,smb_vwv7, ((nread >> 16) & 1));
-		SSVAL(smb_buf(outbuf), -2, nread);
+		outsize = setup_readX_header(outbuf, nread);
 
 		aio_ex->fsp->fh->pos = aio_ex->offset + nread;
 		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
