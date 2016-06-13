@@ -1761,6 +1761,9 @@ sub provision_chgdcpass($$)
 
 	print "PROVISIONING CHGDCPASS...\n";
 	my $extra_provision_options = undef;
+	# This environment disallows the use of this password
+	# (and also removes the default AD complexity checks)
+	my $unacceptable_password = "widk3Dsle32jxdBdskldsk55klASKQ";
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1771,7 +1774,7 @@ sub provision_chgdcpass($$)
 				   "chgDCpass1",
 				   undef,
 				   undef,
-				   "",
+				   "check password script = sed -e '/$unacceptable_password/{;q1}; /$unacceptable_password/!{q0}'\n",
 				   "",
 				   $extra_provision_options);
 	unless (defined $ret) {
@@ -1797,6 +1800,7 @@ sub provision_chgdcpass($$)
 	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $ret->{USERNAME};
 	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+	$ret->{UNACCEPTABLE_PASSWORD} = $unacceptable_password;
 
 	return $ret;
 }

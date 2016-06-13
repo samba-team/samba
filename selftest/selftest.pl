@@ -836,6 +836,7 @@ my @exported_envvars = (
 	"DNS_FORWARDER1",
 	"DNS_FORWARDER2",
 	"RESOLV_CONF",
+	"UNACCEPTABLE_PASSWORD",
 
 	# nss_wrapper
 	"NSS_WRAPPER_PASSWD",
