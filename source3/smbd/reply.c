@@ -3757,8 +3757,7 @@ strict_unlock:
  Setup readX header.
 ****************************************************************************/
 
-static int setup_readX_header(struct smb_request *req, char *outbuf,
-			      size_t smb_maxcnt)
+static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
 {
 	int outsize;
 
@@ -3845,7 +3844,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
 		construct_reply_common_req(req, (char *)headerbuf);
-		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
+		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		nread = SMB_VFS_SENDFILE(xconn->transport.sock, fsp, &header,
 					 startpos, smb_maxcnt);
@@ -3946,7 +3945,7 @@ normal_read:
 		}
 
 		construct_reply_common_req(req, (char *)headerbuf);
-		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
+		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
 		ret = write_data(xconn->transport.sock, (char *)headerbuf,
@@ -3996,7 +3995,7 @@ nosendfile_read:
 		return;
 	}
 
-	setup_readX_header(req, (char *)req->outbuf, nread);
+	setup_readX_header((char *)req->outbuf, nread);
 
 	DEBUG(3, ("send_file_readX %s max=%d nread=%d\n",
 		  fsp_fnum_dbg(fsp), (int)smb_maxcnt, (int)nread));
