@@ -55,6 +55,39 @@ struct ctdb_interface {
 	uint32_t references;
 };
 
+/* state associated with a public ip address */
+struct ctdb_vnn {
+	struct ctdb_vnn *prev, *next;
+
+	struct ctdb_interface *iface;
+	const char **ifaces;
+	ctdb_sock_addr public_address;
+	uint8_t public_netmask_bits;
+
+	/* the node number that is serving this public address, if any.
+	   If no node serves this ip it is set to -1 */
+	int32_t pnn;
+
+	/* List of clients to tickle for this public address */
+	struct ctdb_tcp_array *tcp_array;
+
+	/* whether we need to update the other nodes with changes to our list
+	   of connected clients */
+	bool tcp_update_needed;
+
+	/* a context to hang sending gratious arp events off */
+	TALLOC_CTX *takeover_ctx;
+
+	/* Set to true any time an update to this VNN is in flight.
+	   This helps to avoid races. */
+	bool update_in_flight;
+
+	/* If CTDB_CONTROL_DEL_PUBLIC_IP is received for this IP
+	 * address then this flag is set.  It will be deleted in the
+	 * release IP callback. */
+	bool delete_pending;
+};
+
 static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
 {
 	if (vnn->iface) {
