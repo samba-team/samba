@@ -45,25 +45,6 @@ kdc_code kpasswdd_process(struct kdc_server *kdc,
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db);
 
-/* from proxy.c */
-struct tevent_req *kdc_udp_proxy_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct kdc_server *kdc,
-				      uint16_t port,
-				      DATA_BLOB in);
-NTSTATUS kdc_udp_proxy_recv(struct tevent_req *req,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *out);
-
-struct tevent_req *kdc_tcp_proxy_send(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct kdc_server *kdc,
-				      uint16_t port,
-				      DATA_BLOB in);
-NTSTATUS kdc_tcp_proxy_recv(struct tevent_req *req,
-			    TALLOC_CTX *mem_ctx,
-			    DATA_BLOB *out);
-
 /* from kdc-glue.c */
 int kdc_check_pac(krb5_context krb5_context,
 		  DATA_BLOB server_sig,

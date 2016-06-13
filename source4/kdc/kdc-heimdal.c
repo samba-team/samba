@@ -32,6 +32,7 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 #include "kdc/kdc-server.h"
+#include "kdc/kdc-proxy.h"
 #include "kdc/kdc-glue.h"
 #include "kdc/pac-glue.h"
 #include "dsdb/samdb/samdb.h"
