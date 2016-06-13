@@ -780,3 +780,14 @@ uint32_t fsp_lease_type(struct files_struct *fsp)
 	}
 	return map_oplock_to_lease_type(fsp->oplock_type);
 }
+
+size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
+{
+	int len;
+
+	len = snprintf(buf, buflen, "%s/%s", fsp->conn->connectpath,
+		       fsp->fsp_name->base_name);
+	SMB_ASSERT(len>0);
+
+	return len;
+}

@@ -412,6 +412,7 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
 const struct GUID *fsp_client_guid(const files_struct *fsp);
 uint32_t fsp_lease_type(struct files_struct *fsp);
+size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen);
 
 /* The following definitions come from smbd/ipc.c  */
 
