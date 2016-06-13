@@ -492,7 +492,6 @@ static void pipe_read_andx_done(struct tevent_req *subreq)
 	      + 12 * sizeof(uint16_t) /* vwv */
 	      + 2		/* the buflen field */
 	      + 1);		/* padding byte */
-	SSVAL(req->outbuf,smb_vwv11,state->smb_maxcnt);
 
 	DEBUG(3,("readX-IPC min=%d max=%d nread=%d\n",
 		 state->smb_mincnt, state->smb_maxcnt, (int)nread));
