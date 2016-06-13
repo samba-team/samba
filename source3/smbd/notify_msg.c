@@ -176,7 +176,8 @@ NTSTATUS notify_add(struct notify_context *ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS notify_remove(struct notify_context *ctx, void *private_data)
+NTSTATUS notify_remove(struct notify_context *ctx, void *private_data,
+		       char *path)
 {
 	struct notify_list *listel;
 	struct notify_rec_change_msg msg = {};
@@ -203,8 +204,8 @@ NTSTATUS notify_remove(struct notify_context *ctx, void *private_data)
 
 	iov[0].iov_base = &msg;
 	iov[0].iov_len = offsetof(struct notify_rec_change_msg, path);
-	iov[1].iov_base = discard_const_p(char, listel->path);
-	iov[1].iov_len = strlen(listel->path)+1;
+	iov[1].iov_base = path;
+	iov[1].iov_len = strlen(path)+1;
 
 	status = messaging_send_iov(
 		ctx->msg_ctx, ctx->notifyd, MSG_SMB_NOTIFY_REC_CHANGE,

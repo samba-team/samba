@@ -589,7 +589,8 @@ NTSTATUS notify_add(struct notify_context *notify,
 		    void (*callback)(void *, struct timespec,
 				     const struct notify_event *),
 		    void *private_data);
-NTSTATUS notify_remove(struct notify_context *notify, void *private_data);
+NTSTATUS notify_remove(struct notify_context *ctx, void *private_data,
+		       char *path);
 void notify_trigger(struct notify_context *notify,
 		    uint32_t action, uint32_t filter,
 		    const char *dir, const char *path);
