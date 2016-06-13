@@ -244,7 +244,7 @@ static NTSTATUS gensec_verify_dcerpc_auth_level(struct gensec_security *gensec_s
 	switch (gensec_security->dcerpc_auth_level) {
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			DEBUG(0,("Did not manage to negotiate mandetory feature "
+			DEBUG(0,("Did not manage to negotiate mandatory feature "
 				 "SIGN for dcerpc auth_level %u\n",
 				 gensec_security->dcerpc_auth_level));
 			return NT_STATUS_ACCESS_DENIED;
@@ -252,13 +252,13 @@ static NTSTATUS gensec_verify_dcerpc_auth_level(struct gensec_security *gensec_s
 		break;
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			DEBUG(0,("Did not manage to negotiate mandetory feature "
+			DEBUG(0,("Did not manage to negotiate mandatory feature "
 				 "SIGN for dcerpc auth_level %u\n",
 				 gensec_security->dcerpc_auth_level));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-			DEBUG(0,("Did not manage to negotiate mandetory feature "
+			DEBUG(0,("Did not manage to negotiate mandatory feature "
 				 "SEAL for dcerpc auth_level %u\n",
 				 gensec_security->dcerpc_auth_level));
 			return NT_STATUS_ACCESS_DENIED;
