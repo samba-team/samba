@@ -7,7 +7,7 @@ else:
     kdc_include = getattr(bld.env, "CPPPATH_KDC")
 
 bld.SAMBA_MODULE('service_kdc',
-                 source='kdc-heimdal.c kpasswd-heimdal.c proxy-heimdal.c',
+                 source='kdc-heimdal.c kpasswd-heimdal.c kdc-proxy.c',
                  subsystem='service',
                  init_function='server_service_kdc_init',
                  deps='''
