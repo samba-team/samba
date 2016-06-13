@@ -138,6 +138,43 @@ bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
 #error UNKNOWN_ADDRTYPE
 #endif
 
+krb5_error_code smb_krb5_mk_error(krb5_context context,
+				  krb5_error_code error_code,
+				  const char *e_text,
+				  krb5_data *e_data,
+				  krb5_data *enc_err)
+{
+	krb5_error_code code = EINVAL;
+#ifdef SAMBA4_USES_HEIMDAL
+	code = krb5_mk_error(context,
+			     error_code,
+			     e_text,
+			     e_data,
+			     NULL, /* client */
+			     NULL, /* server */
+			     NULL, /* client_time */
+			     NULL, /* client_usec */
+			     enc_err);
+#else
+	krb5_error dec_err = {
+		.error = error_code,
+	};
+
+	if (e_text != NULL) {
+		dec_err.text.length = strlen(e_text);
+		dec_err.text.data = discard_const_p(e_text, char);
+	}
+	if (e_data != NULL) {
+		dec_err.e_data = *e_data;
+	}
+
+	code = krb5_mk_error(context,
+			     &dec_err,
+			     enc_err);
+#endif
+	return code;
+}
+
 /**
 * @brief Create a keyblock based on input parameters
 *

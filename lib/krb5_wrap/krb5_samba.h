@@ -145,6 +145,12 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 /* Samba wrapper functions for krb5 functionality. */
 bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
 
+krb5_error_code smb_krb5_mk_error(krb5_context context,
+				  krb5_error_code error_code,
+				  const char *e_text,
+				  krb5_data *e_data,
+				  krb5_data *enc_err);
+
 krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
 bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
 			      krb5_context context,
