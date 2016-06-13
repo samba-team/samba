@@ -3922,7 +3922,7 @@ strict_unlock:
  Setup readX header.
 ****************************************************************************/
 
-static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
+int setup_readX_header(char *outbuf, size_t smb_maxcnt)
 {
 	int outsize;
 
