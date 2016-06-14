@@ -220,7 +220,8 @@ class drs_Replicate(object):
             req8.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
                                   drsuapi.DRSUAPI_DRS_PER_SYNC |
                                   drsuapi.DRSUAPI_DRS_GET_ANC |
-                                  drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+                                  drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                                  drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
             if rodc:
                 req8.replica_flags |= (
                     drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
