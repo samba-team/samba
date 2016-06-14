@@ -472,6 +472,20 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		}
 	}
 
+	if (!checked_reveal_control) {
+		have_reveal_control =
+			ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS) != NULL;
+		checked_reveal_control = true;
+	}
+
+	/* 
+	 * Shortcut for repl_meta_data.  We asked for the data
+	 * 'as-is', so stop processing here!
+	 */
+	if (have_reveal_control && p->normalise == false && ac->inject == true) {
+		return ldb_module_send_entry(ac->req, msg, ares->controls);
+	}
+	
 	/* Walk the returned elements (but only if we have a schema to
 	 * interpret the list with) */
 	for (i = 0; ac->schema && i < msg->num_elements; i++) {
@@ -517,12 +531,6 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			struct dsdb_dn *dsdb_dn = NULL;
 			struct ldb_val *plain_dn = &msg->elements[i].values[j];		
 			bool is_deleted_objects = false;
-
-			if (!checked_reveal_control) {
-				have_reveal_control =
-					ldb_request_get_control(req, LDB_CONTROL_REVEAL_INTERNALS) != NULL;
-				checked_reveal_control = true;
-			}
 
 			/* this is a fast method for detecting deleted
 			   linked attributes, working on the unparsed
