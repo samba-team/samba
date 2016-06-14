@@ -280,8 +280,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 
 	if ((filter != 0) || (subdir_filter != 0)) {
 		status = notify_add(fsp->conn->sconn->notify_ctx,
-				    fullpath, filter, subdir_filter,
-				    notify_callback, fsp);
+				    fullpath, filter, subdir_filter, fsp);
 	}
 
 	return status;

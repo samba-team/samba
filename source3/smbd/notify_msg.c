@@ -32,8 +32,6 @@
 
 struct notify_list {
 	struct notify_list *next, *prev;
-	void (*callback)(void *private_data, struct timespec when,
-			 const struct notify_event *ctx);
 	void *private_data;
 };
 
@@ -41,15 +39,19 @@ struct notify_context {
 	struct server_id notifyd;
 	struct messaging_context *msg_ctx;
 	struct notify_list *list;
+	void (*callback)(void *private_data, struct timespec when,
+			 const struct notify_event *ctx);
 };
 
 static void notify_handler(struct messaging_context *msg, void *private_data,
 			   uint32_t msg_type, struct server_id src,
 			   DATA_BLOB *data);
 
-struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
-				   struct messaging_context *msg,
-				   struct tevent_context *ev)
+struct notify_context *notify_init(
+	TALLOC_CTX *mem_ctx, struct messaging_context *msg,
+	struct tevent_context *ev,
+	void (*callback)(void *, struct timespec,
+			 const struct notify_event *))
 {
 	struct server_id_db *names_db;
 	struct notify_context *ctx;
@@ -61,6 +63,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 	}
 	ctx->msg_ctx = msg;
 	ctx->list = NULL;
+	ctx->callback = callback;
 
 	names_db = messaging_names_db(msg);
 	if (!server_id_db_lookup_one(names_db, "notify-daemon",
@@ -70,12 +73,15 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = messaging_register(msg, ctx, MSG_PVFS_NOTIFY, notify_handler);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("messaging_register failed: %s\n",
-			  nt_errstr(status)));
-		TALLOC_FREE(ctx);
-		return NULL;
+	if (callback != NULL) {
+		status = messaging_register(msg, ctx, MSG_PVFS_NOTIFY,
+					    notify_handler);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("messaging_register failed: %s\n",
+				  nt_errstr(status)));
+			TALLOC_FREE(ctx);
+			return NULL;
+		}
 	}
 
 	return ctx;
@@ -112,8 +118,8 @@ static void notify_handler(struct messaging_context *msg, void *private_data,
 
 	for (listel = ctx->list; listel != NULL; listel = listel->next) {
 		if (listel->private_data == event.private_data) {
-			listel->callback(listel->private_data, event_msg->when,
-					 &event);
+			ctx->callback(listel->private_data, event_msg->when,
+				      &event);
 			break;
 		}
 	}
@@ -121,8 +127,6 @@ static void notify_handler(struct messaging_context *msg, void *private_data,
 
 NTSTATUS notify_add(struct notify_context *ctx,
 		    const char *path, uint32_t filter, uint32_t subdir_filter,
-		    void (*callback)(void *, struct timespec,
-				     const struct notify_event *),
 		    void *private_data)
 {
 	struct notify_list *listel;
@@ -145,7 +149,6 @@ NTSTATUS notify_add(struct notify_context *ctx,
 	if (listel == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	listel->callback = callback;
 	listel->private_data = private_data;
 
 	clock_gettime_mono(&msg.instance.creation_time);

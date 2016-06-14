@@ -583,13 +583,13 @@ int fam_watch(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from smbd/notify_internal.c  */
 
-struct notify_context *notify_init(TALLOC_CTX *mem_ctx,
-				   struct messaging_context *messaging_ctx,
-				   struct tevent_context *ev);
-NTSTATUS notify_add(struct notify_context *notify,
+struct notify_context *notify_init(
+	TALLOC_CTX *mem_ctx, struct messaging_context *msg,
+	struct tevent_context *ev,
+	void (*callback)(void *, struct timespec,
+			 const struct notify_event *));
+NTSTATUS notify_add(struct notify_context *ctx,
 		    const char *path, uint32_t filter, uint32_t subdir_filter,
-		    void (*callback)(void *, struct timespec,
-				     const struct notify_event *),
 		    void *private_data);
 NTSTATUS notify_remove(struct notify_context *ctx, void *private_data,
 		       char *path);

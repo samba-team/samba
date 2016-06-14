@@ -528,7 +528,8 @@ static NTSTATUS notify_init_sconn(struct smbd_server_connection *sconn)
 		return NT_STATUS_OK;
 	}
 
-	sconn->notify_ctx = notify_init(sconn, sconn->msg_ctx, sconn->ev_ctx);
+	sconn->notify_ctx = notify_init(sconn, sconn->msg_ctx, sconn->ev_ctx,
+					notify_callback);
 	if (sconn->notify_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
