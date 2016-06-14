@@ -1,3 +1,104 @@
+                   ==============================
+                   Release Notes for Samba 4.3.10
+                            June 15, 2016
+                   ==============================
+
+
+This is the latest stable release of Samba 4.3.
+
+
+Changes since 4.3.9:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 10618: Do not ignore supplementary groups.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 10796: s3:rpcclient: Make '--pw-nt-hash' option work.
+   * BUG 11354: s3:libsmb/clifile: Use correct value for MaxParameterCount for
+     setting EAs.
+   * BUG 11438: s3:smbd/service disable case-sensitivity for SMB2/3 connections.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 1703: s3:libnet:libnet_join: Add netbios aliases as SPNs.
+   * BUG 11721: vfs_fruit: Add an option that allows disabling POSIX rename
+     behaviour.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 11936: s3-smbd: Support systemd 230.
+
+o  Jérémie Courrèges-Anglas <jca@wxcvbn.org>
+   * BUG 11864: Provide fallback code for non-portable clearenv(3).
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11864: s3:client:smbspool_krb5_wrapper: fix the non clearenv build.
+
+o  Robin McCorkell <robin@mccorkell.me.uk>
+   * BUG 11276: Correctly set cli->raw_status for libsmbclient in SMB2 code.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11910: s3:smbd: Fix anonymous authentication if signing is mandatory.
+   * BUG 11912: libcli/auth: Let msrpc_parse() return talloc'ed empty strings.
+   * BUG 11914: s3:ntlm_auth: Make ntlm_auth_generate_session_info() more
+     complete.
+   * BUG 11927: s3:rpcclient: Make use of SMB_SIGNING_IPC_DEFAULT.
+
+o  Luca Olivetti <luca@wetron.es>
+   * BUG 11530: pdb: Fix segfault in pdb_ldap for missing gecos.
+
+o  Rowland Penny <rpenny@samba.org>
+   * BUG 11613: samba-tool: Allow 'samba-tool fsmo' to cope with empty or missing
+     fsmo roles.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 11907: packaging: Set default limit for core file size in service
+     files.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11922: s3-net: Convert the key_name to UTF8 during migration.
+   * BUG 11935: s3-smbspool: Log to stderr.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 11900: heimdal: Encode/decode kvno as signed integer.
+   * BUG 11931: s3-quotas: Fix sysquotas_4B quota fetching for BSD.
+
+o  Raghavendra Talur <rtalur@redhat.com>
+   * BUG 11907: init: Set core file size to unlimited by default.
+
+o  Hemanth Thummala <hemanth.thummala@nutanix.com>
+   * BUG 11934: Fix memory leak in share mode locking.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 11844: smbd: Fix an assert.
+
+o  Lorinczy Zsigmond <lzsiga@freemail.c3.hu>
+   * BUG 11947: lib: replace: snprintf - Fix length calculation for hex/octal
+     64-bit values.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
                    =============================
                    Release Notes for Samba 4.3.9
                             May 2, 2016
@@ -108,8 +209,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    =============================
