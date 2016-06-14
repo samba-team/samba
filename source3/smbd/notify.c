@@ -240,13 +240,34 @@ void change_notify_reply(struct smb_request *req,
 	notify_buf->num_changes = 0;
 }
 
+struct notify_fsp_state {
+	struct files_struct *notified_fsp;
+	struct timespec when;
+	const struct notify_event *e;
+};
+
+static struct files_struct *notify_fsp_cb(struct files_struct *fsp,
+					  void *private_data)
+{
+	struct notify_fsp_state *state = private_data;
+
+	if (fsp == state->notified_fsp) {
+		DBG_DEBUG("notify_callback called for %s\n", fsp_str_dbg(fsp));
+		notify_fsp(fsp, state->when, state->e->action, state->e->path);
+		return fsp;
+	}
+
+	return NULL;
+}
+
 void notify_callback(struct smbd_server_connection *sconn,
 		     void *private_data, struct timespec when,
 		     const struct notify_event *e)
 {
-	files_struct *fsp = (files_struct *)private_data;
-	DEBUG(10, ("notify_callback called for %s\n", fsp_str_dbg(fsp)));
-	notify_fsp(fsp, when, e->action, e->path);
+	struct notify_fsp_state state = {
+		.notified_fsp = private_data, .when = when, .e = e
+	};
+	files_forall(sconn, notify_fsp_cb, &state);
 }
 
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
