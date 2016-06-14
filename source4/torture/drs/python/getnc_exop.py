@@ -77,7 +77,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         return req8
 
     def _ds_bind(self, server_name):
-        binding_str = "ncacn_ip_tcp:%s[print,seal]" % server_name
+        binding_str = "ncacn_ip_tcp:%s[seal]" % server_name
 
         drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
         (drs_handle, supported_extensions) = drs_DsBind(drs)
