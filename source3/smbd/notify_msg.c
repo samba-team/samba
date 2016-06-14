@@ -39,7 +39,10 @@ struct notify_context {
 	struct server_id notifyd;
 	struct messaging_context *msg_ctx;
 	struct notify_list *list;
-	void (*callback)(void *private_data, struct timespec when,
+
+	struct smbd_server_connection *sconn;
+	void (*callback)(struct smbd_server_connection *sconn,
+			 void *private_data, struct timespec when,
 			 const struct notify_event *ctx);
 };
 
@@ -50,7 +53,9 @@ static void notify_handler(struct messaging_context *msg, void *private_data,
 struct notify_context *notify_init(
 	TALLOC_CTX *mem_ctx, struct messaging_context *msg,
 	struct tevent_context *ev,
-	void (*callback)(void *, struct timespec,
+	struct smbd_server_connection *sconn,
+	void (*callback)(struct smbd_server_connection *sconn,
+			 void *, struct timespec,
 			 const struct notify_event *))
 {
 	struct server_id_db *names_db;
@@ -63,6 +68,8 @@ struct notify_context *notify_init(
 	}
 	ctx->msg_ctx = msg;
 	ctx->list = NULL;
+
+	ctx->sconn = sconn;
 	ctx->callback = callback;
 
 	names_db = messaging_names_db(msg);
@@ -118,8 +125,8 @@ static void notify_handler(struct messaging_context *msg, void *private_data,
 
 	for (listel = ctx->list; listel != NULL; listel = listel->next) {
 		if (listel->private_data == event.private_data) {
-			ctx->callback(listel->private_data, event_msg->when,
-				      &event);
+			ctx->callback(ctx->sconn, listel->private_data,
+				      event_msg->when, &event);
 			break;
 		}
 	}

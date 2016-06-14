@@ -240,7 +240,8 @@ void change_notify_reply(struct smb_request *req,
 	notify_buf->num_changes = 0;
 }
 
-void notify_callback(void *private_data, struct timespec when,
+void notify_callback(struct smbd_server_connection *sconn,
+		     void *private_data, struct timespec when,
 		     const struct notify_event *e)
 {
 	files_struct *fsp = (files_struct *)private_data;

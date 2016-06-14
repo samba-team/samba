@@ -530,7 +530,8 @@ void change_notify_reply(struct smb_request *req,
 			 void (*reply_fn)(struct smb_request *req,
 					  NTSTATUS error_code,
 					  uint8_t *buf, size_t len));
-void notify_callback(void *private_data, struct timespec when,
+void notify_callback(struct smbd_server_connection *sconn,
+		     void *private_data, struct timespec when,
 		     const struct notify_event *e);
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 			      bool recursive);
@@ -586,7 +587,9 @@ int fam_watch(TALLOC_CTX *mem_ctx,
 struct notify_context *notify_init(
 	TALLOC_CTX *mem_ctx, struct messaging_context *msg,
 	struct tevent_context *ev,
-	void (*callback)(void *, struct timespec,
+	struct smbd_server_connection *sconn,
+	void (*callback)(struct smbd_server_connection *sconn,
+			 void *, struct timespec,
 			 const struct notify_event *));
 NTSTATUS notify_add(struct notify_context *ctx,
 		    const char *path, uint32_t filter, uint32_t subdir_filter,
