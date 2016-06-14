@@ -76,14 +76,17 @@ static bool kpasswdd_make_unauth_error_reply(struct kdc_server *kdc,
 	}
 	k5_error_bytes.data = error_bytes.data;
 	k5_error_bytes.length = error_bytes.length;
-	kret = krb5_mk_error(kdc->smb_krb5_context->krb5_context,
-			     result_code, NULL, &k5_error_bytes,
-			     NULL, NULL, NULL, NULL, &k5_error_blob);
+	kret = smb_krb5_mk_error(kdc->smb_krb5_context->krb5_context,
+				 result_code,
+				 NULL,
+				 &k5_error_bytes,
+				 &k5_error_blob);
 	if (kret) {
 		return false;
 	}
 	*error_blob = data_blob_talloc(mem_ctx, k5_error_blob.data, k5_error_blob.length);
-	krb5_data_free(&k5_error_blob);
+	kerberos_free_data_contents(kdc->smb_krb5_context->krb5_context,
+				    &k5_error_blob);
 	if (!error_blob->data) {
 		return false;
 	}
