@@ -401,7 +401,7 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc_schannel", '//$SERVER_IP/tmp -U$%', description="anonymous password set (schannel enforced server-side)")
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$%', description="anonymous password set")
     elif t == "local.nss":
-        for env in ["nt4_dc:local", "ad_member:local", "nt4_member:local", "ad_dc:local", "ad_dc_ntvfs:local"]:
+        for env in ["nt4_dc:local", "ad_member:local", "nt4_member:local", "ad_dc:local"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.change_notify_disabled":
         plansmbtorture4testsuite(t, "simpleserver", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
