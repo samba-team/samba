@@ -530,6 +530,8 @@ void change_notify_reply(struct smb_request *req,
 			 void (*reply_fn)(struct smb_request *req,
 					  NTSTATUS error_code,
 					  uint8_t *buf, size_t len));
+void notify_callback(void *private_data, struct timespec when,
+		     const struct notify_event *e);
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 			      bool recursive);
 NTSTATUS change_notify_add_request(struct smb_request *req,
