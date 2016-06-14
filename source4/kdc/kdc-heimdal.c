@@ -48,16 +48,19 @@ static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
 	int kret;
 	krb5_data k5_error_blob;
 
-	kret = krb5_mk_error(kdc->smb_krb5_context->krb5_context,
-			     KRB5KDC_ERR_SVC_UNAVAILABLE, NULL, NULL,
-			     NULL, NULL, NULL, NULL, &k5_error_blob);
+	kret = smb_krb5_mk_error(kdc->smb_krb5_context->krb5_context,
+				 KRB5KDC_ERR_SVC_UNAVAILABLE,
+				 NULL,
+				 NULL,
+				 &k5_error_blob);
 	if (kret != 0) {
 		DEBUG(2,(__location__ ": Unable to form krb5 error reply\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	*out = data_blob_talloc(mem_ctx, k5_error_blob.data, k5_error_blob.length);
-	krb5_data_free(&k5_error_blob);
+	kerberos_free_data_contents(kdc->smb_krb5_context->krb5_context,
+				    &k5_error_blob);
 	if (!out->data) {
 		return NT_STATUS_NO_MEMORY;
 	}
