@@ -304,7 +304,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.netlogon.admin",
        "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.schannel_anon_setpw", "rpc.join", "rpc.bind"]
 
-local = ["local.nss", "local.ndr"]
+local = ["local.nss"]
 
 idmap = [ "idmap.rfc2307" ]
 
