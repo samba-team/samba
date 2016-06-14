@@ -357,17 +357,19 @@ static int construct_parent_guid(struct ldb_module *module,
 	ret = dsdb_module_search_dn(module, msg, &parent_res, parent_dn, attrs2,
 	                            DSDB_FLAG_NEXT_MODULE |
 	                            DSDB_SEARCH_SHOW_RECYCLED, parent);
-	talloc_free(parent_dn);
-
 	/* not NC, so the object should have a parent*/
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		return ldb_error(ldb_module_get_ctx(module), LDB_ERR_OPERATIONS_ERROR, 
+		ret = ldb_error(ldb_module_get_ctx(module), LDB_ERR_OPERATIONS_ERROR, 
 				 talloc_asprintf(msg, "Parent dn %s for %s does not exist",
 						 ldb_dn_get_linearized(parent_dn),
 						 ldb_dn_get_linearized(msg->dn)));
+		talloc_free(parent_dn);
+		return ret;
 	} else if (ret != LDB_SUCCESS) {
+		talloc_free(parent_dn);
 		return ret;
 	}
+	talloc_free(parent_dn);
 
 	parent_guid = ldb_msg_find_ldb_val(parent_res->msgs[0], "objectGUID");
 	if (!parent_guid) {
