@@ -71,13 +71,10 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 	switch(s->length) {
 	case 36:
 	{
-		TALLOC_CTX *mem_ctx;
-		const char *string;
+		char string[37];
+		memcpy(string, s->data, 36);
+		string[36] = 0;
 
-		mem_ctx = talloc_new(NULL);
-		NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
-		string = talloc_strndup(mem_ctx, (const char *)s->data, s->length);
-		NT_STATUS_HAVE_NO_MEMORY(string);
 		if (11 == sscanf(string,
 				 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 				 &time_low, &time_mid, &time_hi_and_version, 
@@ -85,26 +82,21 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 				 &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 			status = NT_STATUS_OK;
 		}
-		talloc_free(mem_ctx);
 		break;
 	}
 	case 38:
 	{
-		TALLOC_CTX *mem_ctx;
-		const char *string;
+		char string[39];
+		memcpy(string, s->data, 38);
+		string[38] = 0;
 
-		mem_ctx = talloc_new(NULL);
-		NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
-		string = talloc_strndup(mem_ctx, (const char *)s->data, s->length);
-		NT_STATUS_HAVE_NO_MEMORY(string);
-		if (11 == sscanf((const char *)s->data, 
+		if (11 == sscanf(string, 
 				 "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
 				 &time_low, &time_mid, &time_hi_and_version, 
 				 &clock_seq[0], &clock_seq[1],
 				 &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 			status = NT_STATUS_OK;
 		}
-		talloc_free(mem_ctx);
 		break;
 	}
 	case 32:
