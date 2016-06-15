@@ -858,14 +858,22 @@ int ltdb_modify_internal(struct ldb_module *module,
 				goto done;
 			}
 
-			/* TODO: This is O(n^2) - replace with more efficient check */
-			for (j=0; j<el->num_values; j++) {
-				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-					ldb_asprintf_errstring(ldb,
-							       "attribute '%s': value #%u on '%s' provided more than once",
-							       el->name, j, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-					goto done;
+			/*
+			 * We don't need to check this if we have been
+			 * pre-screened by the repl_meta_data module
+			 * in Samba, or someone else who can claim to
+			 * know what they are doing. 
+			 */
+			if (!(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) { 
+				/* TODO: This is O(n^2) - replace with more efficient check */
+				for (j=0; j<el->num_values; j++) {
+					if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
+						ldb_asprintf_errstring(ldb,
+								       "attribute '%s': value #%u on '%s' provided more than once",
+								       el->name, j, ldb_dn_get_linearized(msg2->dn));
+						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+						goto done;
+					}
 				}
 			}
 
