@@ -265,8 +265,6 @@ static bool ldif_comparision_objectGUID_isString(const struct ldb_val *v)
 static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 			      const struct ldb_val *in, struct ldb_val *out)
 {
-	struct GUID guid;
-	NTSTATUS status;
 
 	if (in->length == 36 && ldif_read_objectGUID(ldb, mem_ctx, in, out) == 0) {
 		return 0;
@@ -285,13 +283,13 @@ static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
 	
 	(*out).length = strhex_to_str((char *)out->data, out->length,
 				      (const char *)in->data, in->length);
-	
+
 	/* Check it looks like a GUID */
-	status = GUID_from_ndr_blob(out, &guid);
-	if (!NT_STATUS_IS_OK(status)) {
+	if ((*out).length != 16) {
 		data_blob_free(out);
 		return -1;
 	}
+
 	return 0;
 }
 
