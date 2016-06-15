@@ -6075,7 +6075,7 @@ linked_attributes[0]:
 
 		if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 			/* remove the existing backlink */
-			ret = replmd_add_backlink(module, schema, &la->identifier->guid, &guid, false, attr, false);
+			ret = replmd_add_backlink(module, schema, &la->identifier->guid, &guid, false, attr, true);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -6095,7 +6095,7 @@ linked_attributes[0]:
 
 		if (active) {
 			/* add the new backlink */
-			ret = replmd_add_backlink(module, schema, &la->identifier->guid, &guid, true, attr, false);
+			ret = replmd_add_backlink(module, schema, &la->identifier->guid, &guid, true, attr, true);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
@@ -6130,7 +6130,7 @@ linked_attributes[0]:
 
 		if (active) {
 			ret = replmd_add_backlink(module, schema, &la->identifier->guid, &guid,
-						  true, attr, false);
+						  true, attr, true);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
