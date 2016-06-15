@@ -175,6 +175,7 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 	const char *domain = NULL;
 	WERROR werr;
 	struct libnetapi_private_ctx *priv;
+	const char *realm = lp_realm();
 
 	priv = talloc_get_type_abort(mem_ctx->private_data,
 		struct libnetapi_private_ctx);
@@ -186,8 +187,8 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 	werr = libnet_init_UnjoinCtx(mem_ctx, &u);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	if (lp_realm()) {
-		domain = lp_realm();
+	if (realm[0] != '\0') {
+		domain = realm;
 	} else {
 		domain = lp_workgroup();
 	}
@@ -352,8 +353,10 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 WERROR NetGetJoinInformation_l(struct libnetapi_ctx *ctx,
 			       struct NetGetJoinInformation *r)
 {
-	if ((lp_security() == SEC_ADS) && lp_realm()) {
-		*r->out.name_buffer = talloc_strdup(ctx, lp_realm());
+	const char *realm = lp_realm();
+
+	if ((lp_security() == SEC_ADS) && realm[0] != '\0') {
+		*r->out.name_buffer = talloc_strdup(ctx, realm);
 	} else {
 		*r->out.name_buffer = talloc_strdup(ctx, lp_workgroup());
 	}
