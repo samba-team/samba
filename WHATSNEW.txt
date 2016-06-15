@@ -1,4 +1,59 @@
                    ==============================
+                   Release Notes for Samba 4.2.13
+                            June 17, 2016
+                   ==============================
+
+
+Although Samba 4.2 is in the security only mode, the Samba Team decided to ship
+this very last bug fix release to address some important issues.
+
+
+Changes since 4.2.12:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 10618: s3: auth: Move the declaration of struct dom_sid tmp_sid to
+     function level scope.
+   * BUG 11959: s3: krb5: keytab - The done label can be jumped to with
+     context == NULL.
+
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 11844: smbd: Fix an assert.
+
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11910: s3:smbd: Fix anonymous authentication if signing is mandatory.
+   * BUG 11912: libcli/auth: Let msrpc_parse() return talloc'ed empty strings.
+   * BUG 11914: s3:ntlm_auth: Make ntlm_auth_generate_session_info() more
+     complete.
+   * BUG 11927: s3:rpcclient: Make use of SMB_SIGNING_IPC_DEFAULT.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.2.12
                             May 02, 2016
                    ==============================
@@ -124,8 +179,7 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
 
 
                    ==============================
