@@ -1888,11 +1888,11 @@ sub wait_for_start($$$$$)
 	    do {
 		$ret = system("SELFTEST_WINBINDD_SOCKET_DIR=" . $envvars->{SELFTEST_WINBINDD_SOCKET_DIR} . " " . Samba::bindir_path($self, "wbinfo") . " --ping-dc");
 		if ($ret != 0) {
-		    sleep(2);
+		    sleep(1);
 		}
 		$count++;
-	    } while ($ret != 0 && $count < 10);
-	    if ($count == 10) {
+	    } while ($ret != 0 && $count < 20);
+	    if ($count == 20) {
 		print "WINBINDD not reachable after 20 seconds\n";
 		teardown_env($self, $envvars);
 		return 0;
