@@ -428,6 +428,11 @@ static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 			r->out.netbios_domain_name);
 	}
 
+	/* print out informative error string in case there is one */
+	if (r->out.error_string != NULL) {
+		d_printf("%s\n", r->out.error_string);
+	}
+
 	TALLOC_FREE(mem_ctx);
 
 	return 0;
@@ -605,6 +610,11 @@ static int net_rpc_join_newstyle(struct net_context *c, int argc, const char **a
 	} else {
 		d_printf("Joined '%s' to domain '%s'\n", r->in.machine_name,
 			r->out.netbios_domain_name);
+	}
+
+	/* print out informative error string in case there is one */
+	if (r->out.error_string != NULL) {
+		d_printf("%s\n", r->out.error_string);
 	}
 
 	TALLOC_FREE(mem_ctx);
