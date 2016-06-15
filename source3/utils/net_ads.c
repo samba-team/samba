@@ -1587,6 +1587,11 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			r->out.netbios_domain_name);
 	}
 
+	/* print out informative error string in case there is one */
+	if (r->out.error_string != NULL) {
+		d_printf("%s\n", r->out.error_string);
+	}
+
 	/*
 	 * We try doing the dns update (if it was compiled in).
 	 * If the dns update fails, we still consider the join
