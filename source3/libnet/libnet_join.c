@@ -2303,6 +2303,7 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 	bool valid_security = false;
 	bool valid_workgroup = false;
 	bool valid_realm = false;
+	bool ignored_realm = false;
 
 	/* check if configuration is already set correctly */
 
@@ -2322,11 +2323,26 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 			valid_realm = strequal(lp_realm(), r->out.dns_domain_name);
 			switch (lp_security()) {
 			case SEC_DOMAIN:
+				if (!valid_realm && lp_winbind_rpc_only()) {
+					valid_realm = true;
+					ignored_realm = true;
+				}
 			case SEC_ADS:
 				valid_security = true;
 			}
 
 			if (valid_workgroup && valid_realm && valid_security) {
+				if (ignored_realm && !r->in.modify_config)
+				{
+					libnet_join_set_error_string(mem_ctx, r,
+						"Warning: ignoring realm when "
+						"joining AD domain with "
+						"'security=domain' and "
+						"'winbind rpc only = yes'. "
+						"(realm set to '%s', "
+						"should be '%s').", lp_realm(),
+						r->out.dns_domain_name);
+				}
 				/* nothing to be done */
 				return WERR_OK;
 			}
