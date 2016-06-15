@@ -1407,7 +1407,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	const struct GUID *our_invocation_id;
 	int ret;
 	const char * const *attrs = NULL;
-	const char * const attrs1[] = { "replPropertyMetaData", "*", NULL };
 	const char * const attrs2[] = { "uSNChanged", "objectClass", "instanceType", NULL };
 	struct ldb_result *res;
 	struct ldb_context *ldb;
@@ -1415,11 +1414,19 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	enum urgent_situation situation;
 	bool rmd_is_provided;
 	bool rmd_is_just_resorted = false;
-
+	const char *not_rename_attrs[4 + msg->num_elements];
+	
 	if (rename_attrs) {
 		attrs = rename_attrs;
 	} else {
-		attrs = attrs1;
+		for (i = 0; i < msg->num_elements; i++) {
+			not_rename_attrs[i] = msg->elements[i].name;
+		}
+		not_rename_attrs[i] = "replPropertyMetaData";
+		not_rename_attrs[i+1] = "objectClass";
+		not_rename_attrs[i+2] = "instanceType";
+		not_rename_attrs[i+3] = NULL;
+		attrs = not_rename_attrs;
 	}
 
 	ldb = ldb_module_get_ctx(module);
