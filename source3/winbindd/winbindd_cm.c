@@ -1055,6 +1055,8 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	cli_set_timeout(*cli, 10000); /* 10 seconds */
 
+	set_socket_options(sockfd, lp_socket_options());
+
 	result = smbXcli_negprot((*cli)->conn, (*cli)->timeout,
 				 lp_client_ipc_min_protocol(),
 				 lp_client_ipc_max_protocol());
