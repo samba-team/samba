@@ -697,10 +697,6 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 				MSG_SMB_NOTIFY_CANCEL_DELETED,
 				smbd_notify_cancel_deleted);
 		}
-		if (sconn->sys_notify_ctx == NULL) {
-			sconn->sys_notify_ctx = sys_notify_context_create(
-				sconn, sconn->ev_ctx);
-		}
 	}
 
 	if (lp_kernel_oplocks(snum)) {
