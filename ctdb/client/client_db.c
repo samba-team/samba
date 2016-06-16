@@ -1537,6 +1537,7 @@ struct ctdb_g_lock_unlock_state {
 
 static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq);
 static int ctdb_g_lock_unlock_update(struct tevent_req *req);
+static void ctdb_g_lock_unlock_deleted(struct tevent_req *subreq);
 
 struct tevent_req *ctdb_g_lock_unlock_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
@@ -1600,6 +1601,16 @@ static void ctdb_g_lock_unlock_fetched(struct tevent_req *subreq)
 		return;
 	}
 
+	if (state->lock_list->num == 0) {
+		subreq = ctdb_delete_record_send(state, state->ev, state->h);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, ctdb_g_lock_unlock_deleted,
+					req);
+		return;
+	}
+
 	tevent_req_done(req);
 }
 
@@ -1624,9 +1635,7 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 		state->lock_list->num -= 1;
 	}
 
-	if (state->lock_list->num == 0) {
-		ctdb_delete_record(state->h);
-	} else {
+	if (state->lock_list->num != 0) {
 		TDB_DATA data;
 
 		data.dsize = ctdb_g_lock_list_len(state->lock_list);
@@ -1644,6 +1653,27 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 	}
 
 	return 0;
+}
+
+static void ctdb_g_lock_unlock_deleted(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ctdb_g_lock_unlock_state *state = tevent_req_data(
+		req, struct ctdb_g_lock_unlock_state);
+	int ret;
+	bool status;
+
+	status = ctdb_delete_record_recv(subreq, &ret);
+	if (! status) {
+		DEBUG(DEBUG_ERR,
+		      ("g_lock_unlock %s delete record failed, ret=%d\n",
+		       (char *)state->key.dptr, ret));
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	tevent_req_done(req);
 }
 
 bool ctdb_g_lock_unlock_recv(struct tevent_req *req, int *perr)
