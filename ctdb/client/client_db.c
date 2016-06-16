@@ -1132,42 +1132,28 @@ bool ctdb_delete_record_recv(struct tevent_req *req, int *perr)
 
 int ctdb_delete_record(struct ctdb_record_handle *h)
 {
-	TDB_DATA rec;
-	struct ctdb_key_data key;
+	struct tevent_context *ev = h->ev;
+	TALLOC_CTX *mem_ctx;
+	struct tevent_req *req;
 	int ret;
+	bool status;
 
-	/* Cannot delete the record if it was obtained as a readonly copy */
-	if (h->readonly) {
-		return EINVAL;
-	}
-
-	rec.dsize = ctdb_ltdb_header_len(&h->header);
-	rec.dptr = talloc_size(h, rec.dsize);
-	if (rec.dptr == NULL) {
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
 		return ENOMEM;
 	}
 
-	ctdb_ltdb_header_push(&h->header, rec.dptr);
-
-	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
-	talloc_free(rec.dptr);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Failed to delete record in DB %s\n",
-				  h->db->db_name));
-		return EIO;
+	req = ctdb_delete_record_send(mem_ctx, ev, h);
+	if (req == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
 	}
 
-	key.db_id = h->db->db_id;
-	key.header = h->header;
-	key.key = h->key;
+	tevent_req_poll(req, ev);
 
-	ret = ctdb_ctrl_schedule_for_deletion(h, h->ev, h->client,
-					      h->client->pnn,
-					      tevent_timeval_zero(), &key);
-	if (ret != 0) {
-		DEBUG(DEBUG_WARNING,
-		      ("Failed to mark record to be deleted in DB %s\n",
-		       h->db->db_name));
+	status = ctdb_delete_record_recv(req, &ret);
+	talloc_free(mem_ctx);
+	if (! status) {
 		return ret;
 	}
 
