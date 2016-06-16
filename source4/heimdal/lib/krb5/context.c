@@ -646,7 +646,8 @@ krb5_set_config_files(krb5_context context, char **filenames)
     krb5_config_binding *tmp = NULL;
     while(filenames != NULL && *filenames != NULL && **filenames != '\0') {
 	ret = krb5_config_parse_file_multi(context, *filenames, &tmp);
-	if(ret != 0 && ret != ENOENT && ret != EACCES && ret != EPERM) {
+	if (ret != 0 && ret != ENOENT && ret != EACCES && ret != EPERM
+	    && ret != KRB5_CONFIG_BADFORMAT) {
 	    krb5_config_file_free(context, tmp);
 	    return ret;
 	}
