@@ -1351,6 +1351,7 @@ static void ctdb_g_lock_lock_checked(struct tevent_req *subreq)
 
 	if (value == 0) {
 		/* server process exists, need to retry */
+		TALLOC_FREE(state->h);
 		subreq = tevent_wakeup_send(state, state->ev,
 					    tevent_timeval_current_ofs(0,1000));
 		if (tevent_req_nomem(subreq, req)) {
