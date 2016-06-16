@@ -1143,7 +1143,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 
 	for (i=0; i<d->num_leases; i++) {
 		struct share_mode_lease *l = &d->leases[i];
-		struct share_mode_entry *e;
+		struct share_mode_entry *e = NULL;
 		uint32_t j;
 
 		if ((l->current_state & SMB2_LEASE_READ) == 0) {
