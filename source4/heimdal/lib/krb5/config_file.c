@@ -370,11 +370,11 @@ krb5_config_parse_debug (struct fileptr *f,
 	    b = NULL;
 	} else if (*p == '}') {
 	    *err_message = "unmatched }";
-	    return EINVAL;	/* XXX */
+	    return KRB5_CONFIG_BADFORMAT;
 	} else if(*p != '\0') {
 	    if (s == NULL) {
 		*err_message = "binding before section";
-		return EINVAL;
+		return KRB5_CONFIG_BADFORMAT;
 	    }
 	    ret = parse_binding(f, lineno, p, &b, &s->u.list, err_message);
 	    if (ret)
