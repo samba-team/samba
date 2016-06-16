@@ -3650,7 +3650,7 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 {
 	NTSTATUS status;
 	bool do_chmod;
-	mode_t ms_nfs_mode;
+	mode_t ms_nfs_mode = 0;
 	int result;
 
 	DBG_DEBUG("fruit_fset_nt_acl: %s\n", fsp_str_dbg(fsp));
