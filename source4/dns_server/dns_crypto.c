@@ -153,6 +153,9 @@ WERROR dns_verify_tsig(struct dns_server *dns,
 		 */
 		state->key_name = talloc_strdup(state->mem_ctx,
 						state->tsig->name);
+		if (state->key_name == NULL) {
+			return WERR_NOMEM;
+		}
 		state->tsig_error = DNS_RCODE_BADKEY;
 		return DNS_ERR(NOTAUTH);
 	}
