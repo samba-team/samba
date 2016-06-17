@@ -1049,7 +1049,6 @@ sub provision_rpc_proxy($$$)
 				   $dcvars->{SERVER_IP},
 				   $dcvars->{SERVER_IPV6},
 				   $extra_smbconf_options, "", undef);
-
 	unless ($ret) {
 		return undef;
 	}
@@ -1364,8 +1363,10 @@ sub provision_ad_dc_ntvfs($$)
 				   $extra_conf_options,
 				   "",
 				   undef);
+	unless ($ret) {
+		return undef;
+	}
 
-	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;
@@ -1403,6 +1404,9 @@ sub provision_fl2000dc($$)
 				   $extra_conf_options,
 				   "",
 				   undef);
+	unless ($ret) {
+		return undef;
+	}
 
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1440,7 +1444,6 @@ sub provision_fl2003dc($$$)
 				   $extra_conf_options,
 				   "",
 				   undef);
-
 	unless (defined $ret) {
 		return undef;
 	}
@@ -1496,6 +1499,9 @@ sub provision_fl2008r2dc($$$)
 				   $extra_conf_options,
 				   "",
 				   undef);
+	unless (defined $ret) {
+		return undef;
+	}
 
 	unless ($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
@@ -1720,8 +1726,10 @@ sub provision_ad_dc($$)
 				   $extra_smbconf_options,
 				   $extra_smbconf_shares,
 				   undef);
+	unless (defined $ret) {
+		return undef;
+	}
 
-	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;
@@ -1756,8 +1764,10 @@ sub provision_chgdcpass($$)
 				   "",
 				   "",
 				   $extra_provision_options);
+	unless (defined $ret) {
+		return undef;
+	}
 
-	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;
