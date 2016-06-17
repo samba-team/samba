@@ -625,8 +625,10 @@ static inline struct talloc_chunk *tc_alloc_pool(struct talloc_chunk *parent,
 /*
    Allocate a bit of memory as a child of an existing pointer
 */
-static inline void *__talloc_with_prefix(const void *context, size_t size,
-					size_t prefix_len)
+static inline void *__talloc_with_prefix(const void *context,
+					size_t size,
+					size_t prefix_len,
+					struct talloc_chunk **tc_ret)
 {
 	struct talloc_chunk *tc = NULL;
 	struct talloc_memlimit *limit = NULL;
@@ -700,12 +702,14 @@ static inline void *__talloc_with_prefix(const void *context, size_t size,
 		tc->next = tc->prev = tc->parent = NULL;
 	}
 
+	*tc_ret = tc;
 	return TC_PTR_FROM_CHUNK(tc);
 }
 
 static inline void *__talloc(const void *context, size_t size)
 {
-	return __talloc_with_prefix(context, size, 0);
+	struct talloc_chunk *tc;
+	return __talloc_with_prefix(context, size, 0, &tc);
 }
 
 /*
@@ -718,13 +722,12 @@ static inline void *_talloc_pool(const void *context, size_t size)
 	struct talloc_pool_hdr *pool_hdr;
 	void *result;
 
-	result = __talloc_with_prefix(context, size, TP_HDR_SIZE);
+	result = __talloc_with_prefix(context, size, TP_HDR_SIZE, &tc);
 
 	if (unlikely(result == NULL)) {
 		return NULL;
 	}
 
-	tc = talloc_chunk_from_ptr(result);
 	pool_hdr = talloc_pool_from_chunk(tc);
 
 	tc->flags |= TALLOC_FLAG_POOL;
