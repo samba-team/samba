@@ -293,15 +293,15 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	ctdb->valgrinding = options.valgrinding;
-	if (options.valgrinding || options.nosetsched) {
+	ctdb->valgrinding = (options.valgrinding == 1);
+	if ((options.valgrinding == 1) || (options.nosetsched == 1)) {
 		ctdb->do_setsched = 0;
 	} else {
 		ctdb->do_setsched = 1;
 	}
 
 	ctdb->public_addresses_file = options.public_address_list;
-	ctdb->do_checkpublicip = !options.no_publicipcheck;
+	ctdb->do_checkpublicip = (options.no_publicipcheck == 0);
 
 	if (options.max_persistent_check_errors < 0) {
 		ctdb->max_persistent_check_errors = 0xFFFFFFFFFFFFFFFFLL;
