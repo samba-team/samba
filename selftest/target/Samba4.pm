@@ -201,8 +201,8 @@ sub wait_for_start($$)
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
 	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOSNAME} eq "RODC")) {
-	    # Add hosts file for name lookups
-	    $ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
+		# Add hosts file for name lookups
+		$ENV{NSS_WRAPPER_HOSTS} = $testenv_vars->{NSS_WRAPPER_HOSTS};
 		if (defined($testenv_vars->{RESOLV_WRAPPER_CONF})) {
 			$ENV{RESOLV_WRAPPER_CONF} = $testenv_vars->{RESOLV_WRAPPER_CONF};
 		} else {
