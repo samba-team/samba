@@ -49,6 +49,9 @@ set -e
 
 cluster_is_healthy
 
+try_command_on_node 0 "$CTDB attach transaction_loop.tdb persistent"
+try_command_on_node 0 "$CTDB wipedb transaction_loop.tdb"
+
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
