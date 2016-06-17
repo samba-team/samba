@@ -31,8 +31,12 @@
 _PUBLIC_ NTSTATUS GUID_to_ndr_blob(const struct GUID *guid, TALLOC_CTX *mem_ctx, DATA_BLOB *b)
 {
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_push_struct_blob(b, mem_ctx, guid,
-				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	*b = data_blob_talloc(mem_ctx, NULL, 16);
+	if (b->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		b, guid, (ndr_push_flags_fn_t)ndr_push_GUID);
 	return ndr_map_error2ntstatus(ndr_err);
 }
 

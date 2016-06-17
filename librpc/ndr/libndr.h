@@ -83,7 +83,8 @@ struct ndr_push {
 	uint8_t *data;
 	uint32_t alloc_size;
 	uint32_t offset;
-
+	bool fixed_buf_size;
+	
 	uint32_t relative_base_offset;
 	uint32_t relative_end_offset;
 	struct ndr_token_list *relative_base_list;
@@ -466,6 +467,9 @@ bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax
 char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *id);
 bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id);
 enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p, ndr_push_flags_fn_t fn);
+enum ndr_err_code ndr_push_struct_into_fixed_blob(DATA_BLOB *blob,
+						  const void *p,
+						  ndr_push_flags_fn_t fn);
 enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, uint32_t level, ndr_push_flags_fn_t fn);
 size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push);
 size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push);

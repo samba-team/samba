@@ -254,6 +254,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_expand(struct ndr_push *ndr, uint32_t extra_
 				      size);
 	}
 
+	if (ndr->fixed_buf_size) {
+		if (ndr->alloc_size >= size) {
+			return NDR_ERR_SUCCESS;
+		}
+		return ndr_push_error(ndr,
+				      NDR_ERR_BUFSIZE,
+				      "Overflow of fixed buffer in "
+				      "push_expand to %u",
+				      size);
+	}
+	
 	if (ndr->alloc_size > size) {
 		return NDR_ERR_SUCCESS;
 	}
@@ -1260,6 +1271,35 @@ _PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem
 	*blob = ndr_push_blob(ndr);
 	talloc_steal(mem_ctx, blob->data);
 	talloc_free(ndr);
+
+	return NDR_ERR_SUCCESS;
+}
+
+/* 
+  push a struct into a provided blob using NDR. 
+ 
+  We error because we want to have the performance issue (extra
+  talloc() calls) show up as an error, not just slower code.  This is
+  used for things like GUIDs, which we expect to be a fixed size, and
+  SIDs that we can pre-calculate the size for.
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_struct_into_fixed_blob(
+	DATA_BLOB *blob, const void *p, ndr_push_flags_fn_t fn)
+{
+	struct ndr_push ndr = {
+		.data = blob->data,
+		.alloc_size = blob->length,
+		.fixed_buf_size = true
+	};
+
+	NDR_CHECK(fn(&ndr, NDR_SCALARS|NDR_BUFFERS, p));
+
+	if (ndr.offset != blob->length) {
+		return ndr_push_error(&ndr, NDR_ERR_BUFSIZE,
+				      "buffer was either to large or small "
+				      "ofs[%u] size[%zu]",
+				      ndr.offset, blob->length);
+	}
 
 	return NDR_ERR_SUCCESS;
 }
