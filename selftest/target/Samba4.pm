@@ -172,6 +172,7 @@ sub check_or_start($$$)
 sub wait_for_start($$)
 {
 	my ($self, $testenv_vars) = @_;
+	my $count = 0;
 	my $ret = 0;
 
 	if (not $self->check_env($testenv_vars)) {
@@ -179,25 +180,34 @@ sub wait_for_start($$)
 	    return -1;
 	}
 
-	# give time for nbt server to register its names
-	print "delaying for nbt name registration\n";
-	sleep 2;
-
 	# This will return quickly when things are up, but be slow if we
 	# need to wait for (eg) SSL init
 	my $nmblookup =  Samba::bindir_path($self, "nmblookup4");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
-	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+
+	do {
+		$ret = system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+		if ($ret != 0) {
+			sleep(1);
+		} else {
+			system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+			system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+		}
+		$count++;
+	} while ($ret != 0 && $count < 20);
+	if ($count == 10) {
+		warn("nbt not reachable after 20 retries\n");
+		teardown_env($self, $testenv_vars);
+		return 0;
+	}
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
 	if ($testenv_vars->{SERVER_ROLE} eq "domain controller" and not ($testenv_vars->{NETBIOSNAME} eq "RODC")) {
