@@ -110,7 +110,7 @@ sub check_or_start($$$)
 		}
 	}
 
-	print "STARTING SAMBA...";
+	print "STARTING SAMBA...\n";
 	my $pid = fork();
 	if ($pid == 0) {
 		# we want out from samba to go to the log file, but also
@@ -946,7 +946,7 @@ $extra_smbconf_shares
 sub provision_s4member($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING MEMBER...";
+	print "PROVISIONING MEMBER...\n";
 	my $extra_smb_conf = "
         passdb backend = samba_dsdb
 winbindd:use external pipes = true
@@ -1016,7 +1016,7 @@ rpc_server:tcpip = no
 sub provision_rpc_proxy($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING RPC PROXY...";
+	print "PROVISIONING RPC PROXY...\n";
 
 	my $extra_smbconf_options = "
         passdb backend = samba_dsdb
@@ -1118,7 +1118,7 @@ sub provision_rpc_proxy($$$)
 sub provision_promoted_dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING PROMOTED DC...";
+	print "PROVISIONING PROMOTED DC...\n";
 
 	# We do this so that we don't run the provision.  That's the job of 'samba-tool domain dcpromo'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
@@ -1200,7 +1200,7 @@ sub provision_promoted_dc($$$)
 sub provision_vampire_dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING VAMPIRE DC...";
+	print "PROVISIONING VAMPIRE DC...\n";
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
@@ -1270,7 +1270,7 @@ sub provision_vampire_dc($$$)
 sub provision_subdom_dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING SUBDOMAIN DC...";
+	print "PROVISIONING SUBDOMAIN DC...\n";
 
 	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
@@ -1346,7 +1346,7 @@ sub provision_ad_dc_ntvfs($$)
 	# ensure upgrades which used that name still work with the now
 	# alias.
 
-	print "PROVISIONING AD DC (NTVFS)...";
+	print "PROVISIONING AD DC (NTVFS)...\n";
         my $extra_conf_options = "netbios aliases = localDC1-a
         server services = +winbind -winbindd
 	ldap server require strong auth = allow_sasl_over_tls
@@ -1387,7 +1387,7 @@ sub provision_fl2000dc($$)
 {
 	my ($self, $prefix) = @_;
 
-	print "PROVISIONING DC WITH FOREST LEVEL 2000...";
+	print "PROVISIONING DC WITH FOREST LEVEL 2000...\n";
 	my $extra_conf_options = "
 	spnego:simulate_w2k=yes
 	ntlmssp_server:force_old_spnego=yes
@@ -1429,7 +1429,7 @@ sub provision_fl2003dc($$$)
 	my $swiface1 = Samba::get_interface("fakednsforwarder1");
 	my $swiface2 = Samba::get_interface("fakednsforwarder2");
 
-	print "PROVISIONING DC WITH FOREST LEVEL 2003...";
+	print "PROVISIONING DC WITH FOREST LEVEL 2003...\n";
 	my $extra_conf_options = "allow dns updates = nonsecure and secure
 	dns forwarder = 127.0.0.$swiface1 127.0.0.$swiface2";
 	my $ret = $self->provision($prefix,
@@ -1485,7 +1485,7 @@ sub provision_fl2008r2dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
 
-	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...";
+	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...\n";
         my $extra_conf_options = "ldap server require strong auth = no";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1522,7 +1522,7 @@ sub provision_fl2008r2dc($$$)
 sub provision_rodc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING RODC...";
+	print "PROVISIONING RODC...\n";
 
 	# We do this so that we don't run the provision.  That's the job of 'net join RODC'.
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
@@ -1713,7 +1713,7 @@ sub provision_ad_dc($$)
 	copy = print1
 ";
 
-	print "PROVISIONING AD DC...";
+	print "PROVISIONING AD DC...\n";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "addc",
@@ -1749,7 +1749,7 @@ sub provision_chgdcpass($$)
 {
 	my ($self, $prefix) = @_;
 
-	print "PROVISIONING CHGDCPASS...";
+	print "PROVISIONING CHGDCPASS...\n";
 	my $extra_provision_options = undef;
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
 	my $ret = $self->provision($prefix,
