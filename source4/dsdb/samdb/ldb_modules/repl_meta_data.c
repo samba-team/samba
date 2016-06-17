@@ -1660,13 +1660,18 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 struct parsed_dn {
 	struct dsdb_dn *dsdb_dn;
-	struct GUID *guid;
+	struct GUID guid;
 	struct ldb_val *v;
 };
 
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 {
-	return GUID_compare(pdn1->guid, pdn2->guid);
+	return GUID_compare(&pdn1->guid, &pdn2->guid);
+}
+
+static int GUID_compare_struct(struct GUID *g1, struct GUID g2)
+{
+	return GUID_compare(g1, &g2);
 }
 
 static struct parsed_dn *parsed_dn_find(struct parsed_dn *pdn,
@@ -1686,7 +1691,7 @@ static struct parsed_dn *parsed_dn_find(struct parsed_dn *pdn,
 		}
 		return NULL;
 	}
-	BINARY_ARRAY_SEARCH(pdn, count, guid, guid, GUID_compare, ret);
+	BINARY_ARRAY_SEARCH(pdn, count, guid, guid, GUID_compare_struct, ret);
 	return ret;
 }
 
@@ -1727,16 +1732,10 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 		dn = p->dsdb_dn->dn;
 
-		p->guid = talloc(*pdn, struct GUID);
-		if (p->guid == NULL) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		status = dsdb_get_extended_dn_guid(dn, p->guid, "GUID");
+		status = dsdb_get_extended_dn_guid(dn, &p->guid, "GUID");
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			/* we got a DN without a GUID - go find the GUID */
-			int ret = dsdb_module_guid_by_dn(module, dn, p->guid, parent);
+			int ret = dsdb_module_guid_by_dn(module, dn, &p->guid, parent);
 			if (ret != LDB_SUCCESS) {
 				ldb_asprintf_errstring(ldb, "Unable to find GUID for DN %s\n",
 						       ldb_dn_get_linearized(dn));
@@ -1747,7 +1746,7 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 				}
 				return ret;
 			}
-			ret = dsdb_set_extended_dn_guid(dn, p->guid, "GUID");
+			ret = dsdb_set_extended_dn_guid(dn, &p->guid, "GUID");
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -2037,7 +2036,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 
 	/* for each new value, see if it exists already with the same GUID */
 	for (i=0; i<el->num_values; i++) {
-		struct parsed_dn *p = parsed_dn_find(old_dns, old_num_values, dns[i].guid, NULL);
+		struct parsed_dn *p = parsed_dn_find(old_dns, old_num_values, &dns[i].guid, NULL);
 		if (p == NULL) {
 			/* this is a new linked attribute value */
 			new_values = talloc_realloc(tmp_ctx, new_values, struct ldb_val, num_new_values+1);
@@ -2059,8 +2058,9 @@ static int replmd_modify_la_add(struct ldb_module *module,
 			uint32_t rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
 
 			if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
+				struct GUID_txt_buf guid_str;
 				ldb_asprintf_errstring(ldb, "Attribute %s already exists for target GUID %s",
-						       el->name, GUID_string(tmp_ctx, p->guid));
+						       el->name, GUID_buf_string(&p->guid, &guid_str));
 				talloc_free(tmp_ctx);
 				/* error codes for 'member' need to be
 				   special cased */
@@ -2078,7 +2078,7 @@ static int replmd_modify_la_add(struct ldb_module *module,
 			}
 		}
 
-		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr, true);
+		ret = replmd_add_backlink(module, schema, msg_guid, &dns[i].guid, true, schema_attr, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2176,10 +2176,11 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		struct parsed_dn *p2;
 		uint32_t rmd_flags;
 
-		p2 = parsed_dn_find(old_dns, old_el->num_values, p->guid, NULL);
+		p2 = parsed_dn_find(old_dns, old_el->num_values, &p->guid, NULL);
 		if (!p2) {
+			struct GUID_txt_buf buf;
 			ldb_asprintf_errstring(ldb, "Attribute %s doesn't exist for target GUID %s",
-					       el->name, GUID_string(tmp_ctx, p->guid));
+					       el->name, GUID_buf_string(&p->guid, &buf));
 			if (ldb_attr_cmp(el->name, "member") == 0) {
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			} else {
@@ -2188,8 +2189,9 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		}
 		rmd_flags = dsdb_dn_rmd_flags(p2->dsdb_dn->dn);
 		if (rmd_flags & DSDB_RMD_FLAG_DELETED) {
+			struct GUID_txt_buf buf;
 			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
-					       el->name, GUID_string(tmp_ctx, p->guid));
+					       el->name, GUID_buf_string(&p->guid, &buf));
 			if (ldb_attr_cmp(el->name, "member") == 0) {
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			} else {
@@ -2205,7 +2207,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		struct parsed_dn *p = &old_dns[i];
 		uint32_t rmd_flags;
 
-		if (el->num_values && parsed_dn_find(dns, el->num_values, p->guid, NULL) == NULL) {
+		if (el->num_values && parsed_dn_find(dns, el->num_values, &p->guid, NULL) == NULL) {
 			continue;
 		}
 
@@ -2219,7 +2221,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			return ret;
 		}
 
-		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr, true);
+		ret = replmd_add_backlink(module, schema, msg_guid, &old_dns[i].guid, false, schema_attr, true);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -2302,13 +2304,13 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 
 		if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
 
-		ret = replmd_add_backlink(module, schema, msg_guid, old_dns[i].guid, false, schema_attr, false);
+		ret = replmd_add_backlink(module, schema, msg_guid, &old_dns[i].guid, false, schema_attr, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
 
-		p = parsed_dn_find(dns, el->num_values, old_p->guid, NULL);
+		p = parsed_dn_find(dns, el->num_values, &old_p->guid, NULL);
 		if (p) {
 			/* we don't delete it if we are re-adding it */
 			continue;
@@ -2330,7 +2332,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 
 		if (old_dns &&
 		    (old_p = parsed_dn_find(old_dns,
-					    old_num_values, p->guid, NULL)) != NULL) {
+					    old_num_values, &p->guid, NULL)) != NULL) {
 			/* update in place */
 			ret = replmd_update_la_val(old_el->values, old_p->v, p->dsdb_dn,
 						   old_p->dsdb_dn, invocation_id,
@@ -2357,7 +2359,7 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 			num_new_values++;
 		}
 
-		ret = replmd_add_backlink(module, schema, msg_guid, dns[i].guid, true, schema_attr, false);
+		ret = replmd_add_backlink(module, schema, msg_guid, &dns[i].guid, true, schema_attr, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
