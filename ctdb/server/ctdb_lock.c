@@ -845,6 +845,14 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
+	if (! ctdb->do_setsched) {
+		ret = setenv("CTDB_NOSETSCHED", "1", 1);
+		if (ret != 0) {
+			DEBUG(DEBUG_WARNING,
+			      ("Failed to set CTDB_NOSETSCHED variable\n"));
+		}
+	}
+
 	/* Create arguments for lock helper */
 	if (!lock_helper_args(tmp_ctx, lock_ctx, lock_ctx->fd[1],
 			      &argc, &args)) {
