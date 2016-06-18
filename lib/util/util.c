@@ -802,24 +802,29 @@ _PUBLIC_ bool trim_string(char *s, const char *front, const char *back)
 	size_t len;
 
 	/* Ignore null or empty strings. */
-	if (!s || (s[0] == '\0'))
+	if (!s || (s[0] == '\0')) {
 		return false;
+	}
+	len = strlen(s);
 
 	front_len	= front? strlen(front) : 0;
 	back_len	= back? strlen(back) : 0;
 
-	len = strlen(s);
-
 	if (front_len) {
-		while (len && strncmp(s, front, front_len)==0) {
+		size_t front_trim = 0;
+
+		while (strncmp(s+front_trim, front, front_len)==0) {
+			front_trim += front_len;
+		}
+		if (front_trim > 0) {
 			/* Must use memmove here as src & dest can
 			 * easily overlap. Found by valgrind. JRA. */
-			memmove(s, s+front_len, (len-front_len)+1);
-			len -= front_len;
+			memmove(s, s+front_trim, (len-front_trim)+1);
+			len -= front_trim;
 			ret=true;
 		}
 	}
-	
+
 	if (back_len) {
 		while ((len >= back_len) && strncmp(s+len-back_len,back,back_len)==0) {
 			s[len-back_len]='\0';
