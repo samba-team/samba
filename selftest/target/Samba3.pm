@@ -380,6 +380,7 @@ sub setup_admember($$$$)
 	security = ads
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
+        netbios aliases = foo bar
 ";
 
 	my $ret = $self->provision($prefix,

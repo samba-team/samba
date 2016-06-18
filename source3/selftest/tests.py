@@ -496,6 +496,11 @@ for options in options_list:
                    "none",
                    smbclient3, "$SERVER", "$PREFIX", options, "-U$USERNAME%$PASSWORD " + configuration])
 
+for alias in ["foo", "bar"]:
+    plantestsuite("samba3.blackbox.smbclient_netbios_aliases [%s]" % alias, "ad_member:local",
+                  [os.path.join(samba3srcdir, "script/tests/test_smbclient_netbios_aliases.sh"),
+                   smbclient3, alias, "$DC_USERNAME", "$DC_PASSWORD", "$PREFIX", options, configuration])
+
 for e in endianness_options:
     for a in auth_options:
         for s in signseal_options:
