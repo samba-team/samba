@@ -254,6 +254,9 @@ static inline void tc_memlimit_update_on_free(struct talloc_chunk *tc);
 
 static inline void _tc_set_name_const(struct talloc_chunk *tc,
 				const char *name);
+static struct talloc_chunk *_vasprintf_tc(const void *t,
+				const char *fmt,
+				va_list ap);
 
 typedef int (*talloc_destructor_t)(void *);
 
@@ -2439,7 +2442,9 @@ _PUBLIC_ char *talloc_strndup_append_buffer(char *s, const char *a, size_t n)
 #endif
 #endif
 
-_PUBLIC_ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
+static struct talloc_chunk *_vasprintf_tc(const void *t,
+						const char *fmt,
+						va_list ap)
 {
 	int len;
 	char *ret;
@@ -2466,8 +2471,17 @@ _PUBLIC_ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 		va_end(ap2);
 	}
 
-	_tc_set_name_const(talloc_chunk_from_ptr(ret), ret);
-	return ret;
+	_tc_set_name_const(tc, ret);
+	return tc;
+}
+
+_PUBLIC_ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
+{
+	struct talloc_chunk *tc = _vasprintf_tc(t, fmt, ap);
+	if (tc == NULL) {
+		return NULL;
+	}
+	return TC_PTR_FROM_CHUNK(tc);
 }
 
 
