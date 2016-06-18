@@ -706,10 +706,11 @@ static inline void *__talloc_with_prefix(const void *context,
 	return TC_PTR_FROM_CHUNK(tc);
 }
 
-static inline void *__talloc(const void *context, size_t size)
+static inline void *__talloc(const void *context,
+			size_t size,
+			struct talloc_chunk **tc)
 {
-	struct talloc_chunk *tc;
-	return __talloc_with_prefix(context, size, 0, &tc);
+	return __talloc_with_prefix(context, size, 0, tc);
 }
 
 /*
@@ -864,8 +865,9 @@ static inline void _talloc_set_name_const(const void *ptr, const char *name)
 static inline void *_talloc_named_const(const void *context, size_t size, const char *name)
 {
 	void *ptr;
+	struct talloc_chunk *tc;
 
-	ptr = __talloc(context, size);
+	ptr = __talloc(context, size, &tc);
 	if (unlikely(ptr == NULL)) {
 		return NULL;
 	}
@@ -1398,8 +1400,9 @@ _PUBLIC_ void *talloc_named(const void *context, size_t size, const char *fmt, .
 	va_list ap;
 	void *ptr;
 	const char *name;
+	struct talloc_chunk *tc;
 
-	ptr = __talloc(context, size);
+	ptr = __talloc(context, size, &tc);
 	if (unlikely(ptr == NULL)) return NULL;
 
 	va_start(ap, fmt);
@@ -1493,8 +1496,9 @@ _PUBLIC_ void *talloc_init(const char *fmt, ...)
 	va_list ap;
 	void *ptr;
 	const char *name;
+	struct talloc_chunk *tc;
 
-	ptr = __talloc(NULL, 0);
+	ptr = __talloc(NULL, 0, &tc);
 	if (unlikely(ptr == NULL)) return NULL;
 
 	va_start(ap, fmt);
@@ -1588,7 +1592,8 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 */
 _PUBLIC_ void *_talloc(const void *context, size_t size)
 {
-	return __talloc(context, size);
+	struct talloc_chunk *tc;
+	return __talloc(context, size, &tc);
 }
 
 /*
@@ -2298,8 +2303,9 @@ _PUBLIC_ void *_talloc_memdup(const void *t, const void *p, size_t size, const c
 static inline char *__talloc_strlendup(const void *t, const char *p, size_t len)
 {
 	char *ret;
+	struct talloc_chunk *tc;
 
-	ret = (char *)__talloc(t, len + 1);
+	ret = (char *)__talloc(t, len + 1, &tc);
 	if (unlikely(!ret)) return NULL;
 
 	memcpy(ret, p, len);
@@ -2436,6 +2442,7 @@ _PUBLIC_ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 	int len;
 	char *ret;
 	va_list ap2;
+	struct talloc_chunk *tc;
 	char buf[1024];
 
 	/* this call looks strange, but it makes it work on older solaris boxes */
@@ -2446,7 +2453,7 @@ _PUBLIC_ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 		return NULL;
 	}
 
-	ret = (char *)__talloc(t, len+1);
+	ret = (char *)__talloc(t, len+1, &tc);
 	if (unlikely(!ret)) return NULL;
 
 	if (len < sizeof(buf)) {
