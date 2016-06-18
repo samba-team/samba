@@ -252,7 +252,8 @@ static inline void talloc_memlimit_shrink(struct talloc_memlimit *limit,
 				size_t size);
 static inline void tc_memlimit_update_on_free(struct talloc_chunk *tc);
 
-static inline void _talloc_set_name_const(const void *ptr, const char *name);
+static inline void _tc_set_name_const(struct talloc_chunk *tc,
+				const char *name);
 
 typedef int (*talloc_destructor_t)(void *);
 
@@ -807,7 +808,7 @@ _PUBLIC_ void *_talloc_pooled_object(const void *ctx,
 
 	pool_hdr->end = ((char *)pool_hdr->end + TC_ALIGN16(type_size));
 
-	_talloc_set_name_const(ret, type_name);
+	_tc_set_name_const(tc, type_name);
 	return ret;
 
 overflow:
@@ -853,9 +854,9 @@ static int talloc_reference_destructor(struct talloc_reference_handle *handle)
    more efficient way to add a name to a pointer - the name must point to a
    true string constant
 */
-static inline void _talloc_set_name_const(const void *ptr, const char *name)
+static inline void _tc_set_name_const(struct talloc_chunk *tc,
+					const char *name)
 {
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	tc->name = name;
 }
 
@@ -872,7 +873,7 @@ static inline void *_talloc_named_const(const void *context, size_t size, const 
 		return NULL;
 	}
 
-	_talloc_set_name_const(ptr, name);
+	_tc_set_name_const(tc, name);
 
 	return ptr;
 }
@@ -1371,7 +1372,8 @@ static inline const char *talloc_set_name_v(const void *ptr, const char *fmt, va
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	tc->name = talloc_vasprintf(ptr, fmt, ap);
 	if (likely(tc->name)) {
-		_talloc_set_name_const(tc->name, ".name");
+		_tc_set_name_const(talloc_chunk_from_ptr(tc->name),
+				".name");
 	}
 	return tc->name;
 }
@@ -1601,7 +1603,7 @@ _PUBLIC_ void *_talloc(const void *context, size_t size)
 */
 _PUBLIC_ void talloc_set_name_const(const void *ptr, const char *name)
 {
-	_talloc_set_name_const(ptr, name);
+	_tc_set_name_const(talloc_chunk_from_ptr(ptr), name);
 }
 
 /*
@@ -1920,7 +1922,7 @@ got_new_ptr:
 	}
 
 	tc->size = size;
-	_talloc_set_name_const(TC_PTR_FROM_CHUNK(tc), name);
+	_tc_set_name_const(tc, name);
 
 	return TC_PTR_FROM_CHUNK(tc);
 }
@@ -2311,7 +2313,7 @@ static inline char *__talloc_strlendup(const void *t, const char *p, size_t len)
 	memcpy(ret, p, len);
 	ret[len] = 0;
 
-	_talloc_set_name_const(ret, ret);
+	_tc_set_name_const(tc, ret);
 	return ret;
 }
 
@@ -2345,7 +2347,7 @@ static inline char *__talloc_strlendup_append(char *s, size_t slen,
 	memcpy(&ret[slen], a, alen);
 	ret[slen+alen] = 0;
 
-	_talloc_set_name_const(ret, ret);
+	_tc_set_name_const(talloc_chunk_from_ptr(ret), ret);
 	return ret;
 }
 
@@ -2464,7 +2466,7 @@ _PUBLIC_ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 		va_end(ap2);
 	}
 
-	_talloc_set_name_const(ret, ret);
+	_tc_set_name_const(talloc_chunk_from_ptr(ret), ret);
 	return ret;
 }
 
@@ -2516,7 +2518,7 @@ static inline char *__talloc_vaslenprintf_append(char *s, size_t slen,
 	vsnprintf(s + slen, alen + 1, fmt, ap2);
 	va_end(ap2);
 
-	_talloc_set_name_const(s, s);
+	_tc_set_name_const(talloc_chunk_from_ptr(s), s);
 	return s;
 }
 
