@@ -405,6 +405,7 @@ plantestsuite("samba4.blackbox.rfc2307_mapping(ad_dc_ntvfs:local)", "ad_dc_ntvfs
 plantestsuite("samba4.blackbox.chgdcpass", "chgdcpass", [os.path.join(bbdir, "test_chgdcpass.sh"), '$SERVER', "CHGDCPASS\$", '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", '$SELFTEST_PREFIX/chgdcpass', smbclient4])
 plantestsuite("samba4.blackbox.samba_upgradedns(chgdcpass:local)", "chgdcpass:local", [os.path.join(bbdir, "test_samba_upgradedns.sh"), '$SERVER', '$REALM', '$PREFIX', '$SELFTEST_PREFIX/chgdcpass'])
 plantestsuite("samba4.blackbox.net_ads(ad_member:client)", "ad_member:client", [os.path.join(bbdir, "test_net_ads.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$PREFIX_ABS'])
+plantestsuite("samba4.blackbox.net_ads_dns(ad_member:local)", "ad_member:local", [os.path.join(bbdir, "test_net_ads_dns.sh"), '$DC_SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$USERNAME', '$PASSWORD'])
 plantestsuite_loadlist("samba4.rpc.echo against NetBIOS alias", "ad_dc_ntvfs", [valgrindify(smbtorture4), "$LISTOPT", "$LOADLIST", 'ncacn_np:$NETBIOSALIAS', '-U$DOMAIN/$USERNAME%$PASSWORD', 'rpc.echo'])
 
 # Tests using the "Simple" NTVFS backend
