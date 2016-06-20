@@ -95,6 +95,7 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	uint16_t data_and_pad;
 	uint16_t auth_length;
 	uint32_t tmp_length;
+	uint32_t max_pad_len = 0;
 
 	ZERO_STRUCTP(auth);
 	if (_auth_length != NULL) {
@@ -155,6 +156,42 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 		talloc_free(ndr);
 		ZERO_STRUCTP(auth);
 		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	/*
+	 * Make sure the padding would not exceed
+	 * the frag_length.
+	 *
+	 * Here we assume at least 24 bytes for the
+	 * payload specific header the value of
+	 * DCERPC_{REQUEST,RESPONSE}_LENGTH.
+	 *
+	 * We use this also for BIND_*, ALTER_* and AUTH3 pdus.
+	 *
+	 * We need this check before we ignore possible
+	 * invalid values. See also bug #11982.
+	 *
+	 * This check is mainly used to generate the correct
+	 * error for BIND_*, ALTER_* and AUTH3 pdus.
+	 *
+	 * We always have the 'if (data_and_pad < auth->auth_pad_length)'
+	 * protection for REQUEST and RESPONSE pdus, where the
+	 * auth_pad_length field is actually used by the caller.
+	 */
+	tmp_length = DCERPC_REQUEST_LENGTH;
+	tmp_length += DCERPC_AUTH_TRAILER_LENGTH;
+	tmp_length += pkt->auth_length;
+	if (tmp_length < pkt->frag_length) {
+		max_pad_len = pkt->frag_length - tmp_length;
+	}
+	if (max_pad_len < auth->auth_pad_length) {
+		DEBUG(1, (__location__ ": ERROR: pad length to large. "
+			  "max %u got %u\n",
+			  (unsigned)max_pad_len,
+			  (unsigned)auth->auth_pad_length));
+		talloc_free(ndr);
+		ZERO_STRUCTP(auth);
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
 	if (data_and_pad < auth->auth_pad_length) {
