@@ -294,10 +294,9 @@ int main(int argc, const char *argv[])
 	}
 
 	ctdb->valgrinding = (options.valgrinding == 1);
-	if ((options.valgrinding == 1) || (options.nosetsched == 1)) {
+	ctdb->do_setsched = (options.nosetsched != 1);
+	if (ctdb->valgrinding) {
 		ctdb->do_setsched = false;
-	} else {
-		ctdb->do_setsched = true;
 	}
 
 	ctdb->public_addresses_file = options.public_address_list;
