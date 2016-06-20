@@ -2510,28 +2510,6 @@ static void recd_node_rebalance_handler(uint64_t srvid, TDB_DATA data,
 
 
 
-static void recd_update_ip_handler(uint64_t srvid, TDB_DATA data,
-				   void *private_data)
-{
-	struct ctdb_recoverd *rec = talloc_get_type(
-		private_data, struct ctdb_recoverd);
-	struct ctdb_public_ip *ip;
-
-	if (rec->recmaster != rec->ctdb->pnn) {
-		DEBUG(DEBUG_INFO,("Not recmaster, ignore update ip message\n"));
-		return;
-	}
-
-	if (data.dsize != sizeof(struct ctdb_public_ip)) {
-		DEBUG(DEBUG_ERR,(__location__ " Incorrect size of recd update ip message. Was %zd but expected %zd bytes\n", data.dsize, sizeof(struct ctdb_public_ip)));
-		return;
-	}
-
-	ip = (struct ctdb_public_ip *)data.dptr;
-
-	update_ip_assignment_tree(rec->ctdb, ip);
-}
-
 static void srvid_disable_and_reply(struct ctdb_context *ctdb,
 				    TDB_DATA data,
 				    struct ctdb_op_state *op_state)
@@ -2731,8 +2709,6 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	if (ctdb_recovery_have_lock(rec)) {
 		ctdb_recovery_unlock(rec);
 	}
-
-	clear_ip_assignment_tree(ctdb);
 
 	/* ok, let that guy become recmaster then */
 	ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(),
@@ -3893,9 +3869,6 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for disabling the ip check for a short while */
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_DISABLE_IP_CHECK, disable_ip_check_handler, rec);
-
-	/* register a message port for updating the recovery daemons node assignment for an ip */
-	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECD_UPDATE_IP, recd_update_ip_handler, rec);
 
 	/* register a message port for forcing a rebalance of a node next
 	   reallocation */
