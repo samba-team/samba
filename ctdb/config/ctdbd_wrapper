@@ -163,6 +163,7 @@ build_ctdb_options ()
     maybe_set "--start-as-stopped "      "$CTDB_START_AS_STOPPED"     "yes"
     maybe_set "--no-recmaster"           "$CTDB_CAPABILITY_RECMASTER" "no"
     maybe_set "--no-lmaster"             "$CTDB_CAPABILITY_LMASTER"   "no"
+    maybe_set "--nosetsched"             "$CTDB_NOSETSCHED"           "yes"
     maybe_set "--script-log-level"       "$CTDB_SCRIPT_LOG_LEVEL"
     maybe_set "--max-persistent-check-errors" "$CTDB_MAX_PERSISTENT_CHECK_ERRORS"
 }

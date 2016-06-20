@@ -314,6 +314,20 @@
       </varlistentry>
 
       <varlistentry>
+	<term>CTDB_NOSETSCHED=yes|no</term>
+	<listitem>
+	  <para>
+	    Defaults to no.  Corresponds to <option>--nosetsched</option>.
+	  </para>
+	  <para>
+	    Usually CTDB runs with real-time priority.	If you are running
+	    CTDB on a platform that does not support real-time priority,
+	    you can set this.
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
 	<term>CTDB_NOTIFY_SCRIPT=<parameter>FILENAME</parameter></term>
 	<listitem>
 	  <para>
