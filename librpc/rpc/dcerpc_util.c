@@ -99,6 +99,14 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 	ZERO_STRUCTP(auth);
 	if (_auth_length != NULL) {
 		*_auth_length = 0;
+
+		if (auth_data_only) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	} else {
+		if (!auth_data_only) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	/* Paranoia checks for auth_length. The caller should check this... */
