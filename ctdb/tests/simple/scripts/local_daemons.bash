@@ -30,7 +30,7 @@ daemons_stop ()
     echo "Sleeping for a while..."
     sleep_for 1
 
-    local pat="ctdbd --sloppy-start --nopublicipcheck --nosetsched"
+    local pat="ctdbd --sloppy-start --nopublicipcheck"
     if pgrep -f "$pat" >/dev/null ; then
 	echo "Killing remaining daemons..."
 	pkill -f "$pat"
@@ -129,6 +129,7 @@ CTDB_DBDIR_PERSISTENT="${TEST_VAR_DIR}/test.db/persistent"
 CTDB_DBDIR_STATE="${TEST_VAR_DIR}/test.db/state"
 CTDB_PUBLIC_ADDRESSES="${public_addresses}"
 CTDB_SOCKET="${TEST_VAR_DIR}/sock.$pnn"
+CTDB_NOSETSCHED=yes
 EOF
 
     # Override from the environment.  This would be easier if env was
@@ -138,8 +139,8 @@ EOF
     sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@' >>"$conf"
 
     # We'll use "pkill -f" to kill the daemons with
-    # "ctdbd --sloppy-start --nopublicipcheck --nosetsched" as context.
-    CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck --nosetsched" \
+    # "ctdbd --sloppy-start --nopublicipcheck" as context.
+    CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
 	 CTDBD_CONF="$conf" \
 	 ctdbd_wrapper "$pidfile" start
 }
