@@ -194,6 +194,22 @@ NTSTATUS dcerpc_pull_auth_trailer(const struct ncacn_packet *pkt,
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
 
+	/*
+	 * This is a workarround for a bug in old
+	 * Samba releases. For BIND_ACK <= 3.5.x
+	 * and for ALTER_RESP <= 4.2.x (see bug #11061)
+	 *
+	 * See also bug #11982.
+	 */
+	if (auth_data_only && data_and_pad == 0 &&
+	    auth->auth_pad_length > 0) {
+		/*
+		 * we need to ignore invalid auth_pad_length
+		 * values for BIND_*, ALTER_* and AUTH3 pdus.
+		 */
+		auth->auth_pad_length = 0;
+	}
+
 	if (data_and_pad < auth->auth_pad_length) {
 		DEBUG(1, (__location__ ": ERROR: pad length mismatch. "
 			  "Calculated %u  got %u\n",
