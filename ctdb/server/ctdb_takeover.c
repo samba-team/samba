@@ -3008,37 +3008,6 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 }
 
 
-int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *ip)
-{
-	struct public_ip_list *tmp_ip;
-
-	/* IP tree is never built if DisableIPFailover is set */
-	if (ctdb->tunable.disable_ip_failover != 0) {
-		return 0;
-	}
-
-	if (ctdb->ip_tree == NULL) {
-		DEBUG(DEBUG_ERR,("No ctdb->ip_tree yet. Failed to update ip assignment\n"));
-		return -1;
-	}
-
-	tmp_ip = trbt_lookuparray32(ctdb->ip_tree, IP_KEYLEN, ip_key(&ip->addr));
-	if (tmp_ip == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Could not find record for address %s, update ip\n", ctdb_addr_to_str(&ip->addr)));
-		return -1;
-	}
-
-	DEBUG(DEBUG_NOTICE,("Updated ip assignment tree for ip : %s from node %u to node %u\n", ctdb_addr_to_str(&ip->addr), tmp_ip->pnn, ip->pnn));
-	tmp_ip->pnn = ip->pnn;
-
-	return 0;
-}
-
-void clear_ip_assignment_tree(struct ctdb_context *ctdb)
-{
-	TALLOC_FREE(ctdb->ip_tree);
-}
-
 struct ctdb_reloadips_handle {
 	struct ctdb_context *ctdb;
 	struct ctdb_req_control_old *c;

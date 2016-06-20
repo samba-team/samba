@@ -1015,10 +1015,6 @@ int32_t ctdb_control_del_public_address(struct ctdb_context *ctdb,
 					struct ctdb_req_control_old *c,
 					TDB_DATA recdata, bool *async_reply);
 
-int update_ip_assignment_tree(struct ctdb_context *ctdb,
-				struct ctdb_public_ip *ip);
-void clear_ip_assignment_tree(struct ctdb_context *ctdb);
-
 int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb,
 				       struct ctdb_req_control_old *c,
 				       bool *async_reply);
