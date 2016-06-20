@@ -1154,10 +1154,6 @@ static int getips_count_callback(void *param, void *data)
 	return 0;
 }
 
-static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				       struct ctdb_public_ip_list *ips,
-				       uint32_t pnn);
-
 static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 					 struct ipalloc_state *ipalloc_state,
 					 struct ctdb_node_map_old *nodemap)
@@ -1198,13 +1194,6 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 		 * so this is a safe hack.  This will go away in a
 		 * while anyway... */
 		ipalloc_state->known_public_ips[j].ip = &ip_list->ips[0];
-
-		if (ctdb->do_checkpublicip) {
-			verify_remote_ip_allocation(
-				ctdb,
-				&ipalloc_state->known_public_ips[j],
-				j);
-		}
 
 		/* Retrieve the list of available public IPs from the node */
 		ret = ctdb_ctrl_get_public_ips_flags(ctdb,
@@ -3018,51 +3007,6 @@ int32_t ctdb_control_ipreallocated(struct ctdb_context *ctdb,
 	return 0;
 }
 
-
-/* This function is called from the recovery daemon to verify that a remote
-   node has the expected ip allocation.
-   This is verified against ctdb->ip_tree
-*/
-static int verify_remote_ip_allocation(struct ctdb_context *ctdb,
-				       struct ctdb_public_ip_list *ips,
-				       uint32_t pnn)
-{
-	struct public_ip_list *tmp_ip;
-	int i;
-
-	if (ctdb->ip_tree == NULL) {
-		/* don't know the expected allocation yet, assume remote node
-		   is correct. */
-		return 0;
-	}
-
-	if (ips == NULL) {
-		return 0;
-	}
-
-	for (i=0; i<ips->num; i++) {
-		tmp_ip = trbt_lookuparray32(ctdb->ip_tree, IP_KEYLEN, ip_key(&ips->ip[i].addr));
-		if (tmp_ip == NULL) {
-			DEBUG(DEBUG_ERR,("Node %u has new or unknown public IP %s\n", pnn, ctdb_addr_to_str(&ips->ip[i].addr)));
-			return -1;
-		}
-
-		if (tmp_ip->pnn == -1 || ips->ip[i].pnn == -1) {
-			continue;
-		}
-
-		if (tmp_ip->pnn != ips->ip[i].pnn) {
-			DEBUG(DEBUG_ERR,
-			      ("Inconsistent IP allocation - node %u thinks %s is held by node %u while it is assigned to node %u\n",
-			       pnn,
-			       ctdb_addr_to_str(&ips->ip[i].addr),
-			       ips->ip[i].pnn, tmp_ip->pnn));
-			return -1;
-		}
-	}
-
-	return 0;
-}
 
 int update_ip_assignment_tree(struct ctdb_context *ctdb, struct ctdb_public_ip *ip)
 {

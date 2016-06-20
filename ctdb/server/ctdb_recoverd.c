@@ -3807,6 +3807,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		}
 	}
 
+	/* FIXME: Add remote public IP checking to ensure that nodes
+	 * have the IP addresses that are allocated to them. */
+
 takeover_run_checks:
 
 	/* If there are IP takeover runs requested or the previous one
