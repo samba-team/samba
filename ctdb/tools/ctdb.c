@@ -1581,15 +1581,6 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 		return -1;
 	}
 
-	/* update the recovery daemon so it now knows to expect the new
-	   node assignment for this ip.
-	*/
-	ret = ctdb_client_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECD_UPDATE_IP, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send message to update the ip on the recovery master.\n"));
-		return -1;
-	}
-
 	talloc_free(tmp_ctx);
 	return 0;
 }
