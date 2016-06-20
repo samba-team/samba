@@ -1220,14 +1220,14 @@ static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
 }
 
 static struct public_ip_list *
-create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_state)
+create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 {
 	int i, j;
 	struct public_ip_list *ip_list;
 	struct ctdb_public_ip_list *public_ips;
+	struct trbt_tree *ip_tree;
 
-	TALLOC_FREE(ctdb->ip_tree);
-	ctdb->ip_tree = trbt_create(ctdb, 0);
+	ip_tree = trbt_create(ipalloc_state, 0);
 
 	if (ipalloc_state->known_public_ips == NULL) {
 		DEBUG(DEBUG_ERR, ("Known public IPs not set\n"));
@@ -1241,10 +1241,12 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 		for (j=0; j < public_ips->num; j++) {
 			struct public_ip_list *tmp_ip;
 
-			tmp_ip = talloc_zero(ctdb->ip_tree, struct public_ip_list);
+			/* This is returned as part of ip_list */
+			tmp_ip = talloc_zero(ipalloc_state, struct public_ip_list);
 			if (tmp_ip == NULL) {
 				DEBUG(DEBUG_ERR,
 				      (__location__ " out of memory\n"));
+				talloc_free(ip_tree);
 				return NULL;
 			}
 
@@ -1258,7 +1260,7 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 			tmp_ip->addr = public_ips->ip[j].addr;
 			tmp_ip->next = NULL;
 
-			trbt_insertarray32_callback(ctdb->ip_tree,
+			trbt_insertarray32_callback(ip_tree,
 				IP_KEYLEN, ip_key(&public_ips->ip[j].addr),
 				add_ip_callback,
 				tmp_ip);
@@ -1266,7 +1268,8 @@ create_merged_ip_list(struct ctdb_context *ctdb, struct ipalloc_state *ipalloc_s
 	}
 
 	ip_list = NULL;
-	trbt_traversearray32(ctdb->ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
+	trbt_traversearray32(ip_tree, IP_KEYLEN, getips_count_callback, &ip_list);
+	talloc_free(ip_tree);
 
 	return ip_list;
 }
@@ -1725,10 +1728,12 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	   a full list of all public addresses that exist in the cluster.
 	   Walk over all node structures and create a merged list of
 	   all public addresses that exist in the cluster.
-
-	   keep the tree of ips around as ctdb->ip_tree
 	*/
-	all_ips = create_merged_ip_list(ctdb, ipalloc_state);
+	all_ips = create_merged_ip_list(ipalloc_state);
+	if (all_ips == NULL) {
+		talloc_free(tmp_ctx);
+		return -1;
+	}
 	ipalloc_state->all_ips = all_ips;
 
 	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;

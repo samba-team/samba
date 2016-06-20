@@ -364,9 +364,6 @@ struct ctdb_context {
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
 
-	/* used in the recovery daemon to remember the ip allocation */
-	struct trbt_tree *ip_tree;
-
 	/* Used to defer db attach requests while in recovery mode */
 	struct ctdb_deferred_attach_context *deferred_attach;
 

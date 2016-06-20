@@ -316,8 +316,7 @@ static void ctdb_test_init(const char nodestates[],
 			     tval_noiptakeover,
 			     tval_noiptakeoverondisabled);
 
-	(*ipalloc_state)->all_ips = create_merged_ip_list(*ctdb,
-							  *ipalloc_state);
+	(*ipalloc_state)->all_ips = create_merged_ip_list(*ipalloc_state);
 
 	(*ipalloc_state)->force_rebalance_nodes = NULL;
 }
