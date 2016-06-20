@@ -1415,12 +1415,10 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 
 	/* the bind_ack might contain a reply set of credentials */
 	if (pkt->auth_length != 0 && sec->tmp_auth_info.in != NULL) {
-		uint32_t auth_length;
-
 		status = dcerpc_pull_auth_trailer(pkt, sec->tmp_auth_info.mem,
 						  &pkt->u.bind_ack.auth_info,
 						  sec->tmp_auth_info.in,
-						  &auth_length, true);
+						  NULL, true);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
@@ -2435,12 +2433,10 @@ static void dcerpc_alter_context_recv_handler(struct rpc_request *subreq,
 
 	/* the alter_resp might contain a reply set of credentials */
 	if (pkt->auth_length != 0 && sec->tmp_auth_info.in != NULL) {
-		uint32_t auth_length;
-
 		status = dcerpc_pull_auth_trailer(pkt, sec->tmp_auth_info.mem,
 						  &pkt->u.alter_resp.auth_info,
 						  sec->tmp_auth_info.in,
-						  &auth_length, true);
+						  NULL, true);
 		if (tevent_req_nterror(req, status)) {
 			return;
 		}
