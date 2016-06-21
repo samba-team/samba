@@ -176,6 +176,7 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_smb2_create_fnum_state *state;
+	size_t fname_len = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb2_create_fnum_state);
@@ -197,6 +198,17 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 	   start in a '\' */
 	if (*fname == '\\') {
 		fname++;
+	}
+
+	/* Or end in a '\' */
+	fname_len = strlen(fname);
+	if (fname_len > 0 && fname[fname_len-1] == '\\') {
+		char *new_fname = talloc_strdup(state, fname);
+		if (tevent_req_nomem(new_fname, req)) {
+			return tevent_req_post(req, ev);
+		}
+		new_fname[fname_len-1] = '\0';
+		fname = new_fname;
 	}
 
 	subreq = smb2cli_create_send(state, ev,
