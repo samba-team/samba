@@ -53,31 +53,20 @@ static void add_ip(TALLOC_CTX *mem_ctx,
 	l->num++;
 }
 
-/* Format of each line is "IP CURRENT_PNN ALLOWED_PNN,...".
- */
-static bool
-read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
-			 int numnodes,
-			 struct ctdb_public_ip_list ** known,
-			 struct ctdb_public_ip_list ** avail)
+/* Format of each line is "IP CURRENT_PNN [ALLOWED_PNN,...]".
+ * If multi is true then ALLOWED_PNNs are not allowed.  */
+static void read_ctdb_public_ip_info_node(int numnodes,
+					  bool multi,
+					  struct ctdb_public_ip_list **k,
+					  struct ctdb_public_ip_list *known)
 {
 	char line[1024];
 	ctdb_sock_addr addr;
 	char *t, *tok;
 	int pnn, n;
-	struct ctdb_public_ip_list * k;
-
-	enum ctdb_runstate *runstate;
-
-	runstate = get_runstate(ctx, numnodes);
-
-	*known = talloc_zero_array(ctx, struct ctdb_public_ip_list,
-				   CTDB_TEST_MAX_NODES);
-	*avail = talloc_zero_array(ctx, struct ctdb_public_ip_list,
-				   CTDB_TEST_MAX_NODES);
 
 	/* Known public IPs */
-	k = talloc_zero(ctx, struct ctdb_public_ip_list);
+	*k = talloc_zero(known, struct ctdb_public_ip_list);
 	assert(k != NULL);
 
 	while (fgets(line, sizeof(line), stdin) != NULL) {
@@ -111,7 +100,7 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 			pnn = (int) strtol(tok, (char **) NULL, 10);
 		}
 
-		add_ip(k, k, &addr, pnn);
+		add_ip(*k, *k, &addr, pnn);
 
 		tok = strtok(NULL, " \t#");
 		if (tok == NULL) {
@@ -119,26 +108,57 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 		}
 
 		/* Handle allowed nodes for addr */
+		assert(multi == false);
 		t = strtok(tok, ",");
 		while (t != NULL) {
 			n = (int) strtol(t, (char **) NULL, 10);
-			add_ip(*known, &(*known)[n], &addr, pnn);
+			add_ip(known, &known[n], &addr, pnn);
 			t = strtok(NULL, ",");
 		}
-
 	}
+}
 
-	/* Assign it to any nodes that don't have a list assigned */
-	for (n = 0; n < numnodes; n++) {
-		if ((*known)[n].num == 0) {
+static void read_ctdb_public_ip_info(TALLOC_CTX *ctx,
+				     int numnodes,
+				     bool multi,
+				     struct ctdb_public_ip_list ** known,
+				     struct ctdb_public_ip_list ** avail)
+{
+	int n;
+	struct ctdb_public_ip_list * k;
+	enum ctdb_runstate *runstate;
+
+	*known = talloc_zero_array(ctx, struct ctdb_public_ip_list,
+				   CTDB_TEST_MAX_NODES);
+	assert(*known != NULL);
+	*avail = talloc_zero_array(ctx, struct ctdb_public_ip_list,
+				   CTDB_TEST_MAX_NODES);
+	assert(*avail != NULL);
+
+	if (multi) {
+		for (n = 0; n < numnodes; n++) {
+			read_ctdb_public_ip_info_node(numnodes, multi,
+						      &k, *known);
+
 			(*known)[n] = *k;
 		}
+	} else {
+		read_ctdb_public_ip_info_node(numnodes, multi, &k, *known);
+
+		/* Assign it to any nodes that don't have a list assigned */
+		for (n = 0; n < numnodes; n++) {
+			if ((*known)[n].num == 0) {
+				(*known)[n] = *k;
+			}
+		}
+	}
+
+	runstate = get_runstate(ctx, numnodes);
+	for (n = 0; n < numnodes; n++) {
 		if (runstate[n] == CTDB_RUNSTATE_RUNNING) {
 			(*avail)[n] = (*known)[n];
 		}
 	}
-
-	return true;
 }
 
 static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
@@ -276,24 +296,18 @@ static void ctdb_test_init(const char nodestates[],
 	nodemap =  talloc_array(*ctdb, struct ctdb_node_map_old, numnodes);
 	nodemap->num = numnodes;
 
-	if (!read_ips_for_multiple_nodes) {
-		read_ctdb_public_ip_info(*ctdb, numnodes,
-					 &known, &avail);
-	}
-
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
 
 	*ipalloc_state = ipalloc_state_init(*ctdb, *ctdb);
+
+	read_ctdb_public_ip_info(*ctdb, numnodes,
+				 read_ips_for_multiple_nodes,
+				 &known, &avail);
 
 	for (i=0; i < numnodes; i++) {
 		nodemap->nodes[i].pnn = i;
 		nodemap->nodes[i].flags = nodeflags[i];
 		/* nodemap->nodes[i].sockaddr is uninitialised */
-
-		if (read_ips_for_multiple_nodes) {
-			read_ctdb_public_ip_info(*ctdb, numnodes,
-						 &known, &avail);
-		}
 
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
