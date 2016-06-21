@@ -73,6 +73,7 @@ struct smbd_parent_context {
 	size_t num_children;
 
 	struct server_id cleanupd;
+	struct server_id notifyd;
 
 	struct tevent_timer *cleanup_te;
 };
@@ -374,7 +375,8 @@ static void notifyd_stopped(struct tevent_req *req)
 	DEBUG(1, ("notifyd stopped: %s\n", strerror(ret)));
 }
 
-static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
+static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
+			      struct server_id *ppid)
 {
 	struct tevent_context *ev = messaging_tevent_context(msg);
 	struct tevent_req *req;
@@ -394,6 +396,10 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
 	}
 
 	if (pid != 0) {
+		if (am_parent != 0) {
+			add_child_pid(am_parent, pid);
+		}
+		*ppid = pid_to_procid(pid);
 		return true;
 	}
 
@@ -1600,7 +1606,7 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot init leases", EACCES);
 	}
 
-	if (!smbd_notifyd_init(msg_ctx, interactive)) {
+	if (!smbd_notifyd_init(msg_ctx, interactive, &parent->notifyd)) {
 		exit_daemon("Samba cannot init notification", EACCES);
 	}
 
