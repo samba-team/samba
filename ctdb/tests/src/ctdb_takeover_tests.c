@@ -312,10 +312,10 @@ static void ctdb_test_init(const char nodestates[],
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
 		(*ctdb)->nodes[i]->flags = nodeflags[i];
-
-		(*ipalloc_state)->available_public_ips[i] = avail[i];
-		(*ipalloc_state)->known_public_ips[i] = known[i];
 	}
+
+	(*ipalloc_state)->available_public_ips = avail;
+	(*ipalloc_state)->known_public_ips = known;
 
 	set_ipflags_internal(*ipalloc_state, nodemap,
 			     tval_noiptakeover,
