@@ -43,6 +43,7 @@ struct notify_context {
 static void notify_handler(struct messaging_context *msg, void *private_data,
 			   uint32_t msg_type, struct server_id src,
 			   DATA_BLOB *data);
+static int notify_context_destructor(struct notify_context *ctx);
 
 struct notify_context *notify_init(
 	TALLOC_CTX *mem_ctx, struct messaging_context *msg,
@@ -84,7 +85,18 @@ struct notify_context *notify_init(
 		}
 	}
 
+	talloc_set_destructor(ctx, notify_context_destructor);
+
 	return ctx;
+}
+
+static int notify_context_destructor(struct notify_context *ctx)
+{
+	if (ctx->callback != NULL) {
+		messaging_deregister(ctx->msg_ctx, MSG_PVFS_NOTIFY, ctx);
+	}
+
+	return 0;
 }
 
 static void notify_handler(struct messaging_context *msg, void *private_data,
