@@ -107,6 +107,7 @@ def configure(conf):
     conf.RECURSE('lib/tdb')
     if conf.env.standalone_ctdb or conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('lib/socket_wrapper')
+        conf.env.SOCKET_WRAPPER_SO_PATH = conf.CONFIG_GET('LIBSOCKET_WRAPPER_SO_PATH')
 
     conf.CHECK_HEADERS('sched.h')
     conf.CHECK_HEADERS('procinfo.h')
@@ -816,7 +817,8 @@ def test(ctx):
 
 
 def autotest(ctx):
-    ld = 'LD_PRELOAD=%s/bin/shared/libsocket-wrapper.so' % os.getcwd()
+    env = samba_utils.LOAD_ENVIRONMENT()
+    ld = 'LD_PRELOAD=%s' % env.SOCKET_WRAPPER_SO_PATH
     cmd = '%s tests/run_tests.sh -e -S -C' % ld
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
