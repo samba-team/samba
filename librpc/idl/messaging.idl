@@ -105,6 +105,7 @@ interface messaging
 		MSG_SMB_NOTIFY_GET_DB		= 0x031C,
 		MSG_SMB_NOTIFY_DB		= 0x031D,
 		MSG_SMB_NOTIFY_REC_CHANGES	= 0x031E,
+		MSG_SMB_NOTIFY_STARTED          = 0x031F,
 
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,

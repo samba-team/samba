@@ -545,6 +545,9 @@ NTSTATUS change_notify_add_request(struct smb_request *req,
 void smbd_notify_cancel_deleted(struct messaging_context *msg,
 				void *private_data, uint32_t msg_type,
 				struct server_id server_id, DATA_BLOB *data);
+void smbd_notifyd_restarted(struct messaging_context *msg,
+			    void *private_data, uint32_t msg_type,
+			    struct server_id server_id, DATA_BLOB *data);
 void remove_pending_change_notify_requests_by_mid(
 	struct smbd_server_connection *sconn, uint64_t mid);
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp,

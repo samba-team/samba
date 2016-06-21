@@ -415,6 +415,10 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 		exit(1);
 	}
 	tevent_req_set_callback(req, notifyd_stopped, msg);
+
+	messaging_send(msg, pid_to_procid(getppid()), MSG_SMB_NOTIFY_STARTED,
+		       NULL);
+
 	return tevent_req_poll(req, ev);
 }
 
@@ -1050,6 +1054,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			   ID_CACHE_DELETE, smbd_parent_id_cache_delete);
 	messaging_register(msg_ctx, NULL,
 			   ID_CACHE_KILL, smbd_parent_id_cache_kill);
+	messaging_register(msg_ctx, NULL, MSG_SMB_NOTIFY_STARTED,
+			   smb_parent_send_to_children);
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {

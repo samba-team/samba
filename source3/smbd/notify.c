@@ -490,6 +490,56 @@ done:
 	TALLOC_FREE(fid);
 }
 
+static struct files_struct *smbd_notifyd_reregister(struct files_struct *fsp,
+						    void *private_data)
+{
+	DBG_DEBUG("reregister %s\n", fsp->fsp_name->base_name);
+
+	if ((fsp->conn->sconn->notify_ctx != NULL) &&
+	    (fsp->notify != NULL) &&
+	    ((fsp->notify->filter != 0) ||
+	     (fsp->notify->subdir_filter != 0))) {
+		size_t len = fsp_fullbasepath(fsp, NULL, 0);
+		char fullpath[len+1];
+
+		NTSTATUS status;
+
+		fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
+		if (len > 1 && fullpath[len-1] == '.' &&
+		    fullpath[len-2] == '/') {
+			fullpath[len-2] = '\0';
+		}
+
+		status = notify_add(fsp->conn->sconn->notify_ctx,
+				    fullpath, fsp->notify->filter,
+				    fsp->notify->subdir_filter, fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("notify_add failed: %s\n",
+				  nt_errstr(status));
+		}
+	}
+	return NULL;
+}
+
+void smbd_notifyd_restarted(struct messaging_context *msg,
+			    void *private_data, uint32_t msg_type,
+			    struct server_id server_id, DATA_BLOB *data)
+{
+	struct smbd_server_connection *sconn = talloc_get_type_abort(
+		private_data, struct smbd_server_connection);
+
+	TALLOC_FREE(sconn->notify_ctx);
+
+	sconn->notify_ctx = notify_init(sconn, sconn->msg_ctx, sconn->ev_ctx,
+					sconn, notify_callback);
+	if (sconn->notify_ctx == NULL) {
+		DBG_DEBUG("notify_init failed\n");
+		return;
+	}
+
+	files_forall(sconn, smbd_notifyd_reregister, sconn->notify_ctx);
+}
+
 /****************************************************************************
  Delete entries by fnum from the change notify pending queue.
 *****************************************************************************/
