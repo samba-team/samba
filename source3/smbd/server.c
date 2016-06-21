@@ -205,7 +205,8 @@ static NTSTATUS messaging_send_to_children(struct messaging_context *msg_ctx,
 					pid_to_procid(child->pid),
 					msg_type, data);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			DBG_DEBUG("messaging_send(%d) failed: %s\n",
+				  (int)child->pid, nt_errstr(status));
 		}
 	}
 	return NT_STATUS_OK;
