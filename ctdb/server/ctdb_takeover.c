@@ -1428,7 +1428,7 @@ static struct ipalloc_state * ipalloc_state_init(struct ctdb_context *ctdb,
 		ipalloc_state->algorithm = IPALLOC_NONDETERMINISTIC;
 	}
 
-	ipalloc_state->no_ip_failback = ctdb->tunable.no_ip_failback;
+	ipalloc_state->no_ip_failback = (ctdb->tunable.no_ip_failback != 0);
 
 	return ipalloc_state;
 fail:

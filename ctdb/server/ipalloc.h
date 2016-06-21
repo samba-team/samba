@@ -51,7 +51,7 @@ struct ipalloc_state {
 
 	struct public_ip_list *all_ips;
 	enum ipalloc_algorithm algorithm;
-	uint32_t no_ip_failback;
+	bool no_ip_failback;
 	uint32_t *force_rebalance_nodes;
 };
 

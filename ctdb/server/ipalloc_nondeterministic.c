@@ -134,7 +134,7 @@ bool ipalloc_nondeterministic(struct ipalloc_state *ipalloc_state)
 	basic_allocate_unassigned(ipalloc_state);
 
 	/* If we don't want IPs to fail back then don't rebalance IPs. */
-	if (1 == ipalloc_state->no_ip_failback) {
+	if (ipalloc_state->no_ip_failback) {
 		return true;
 	}
 
