@@ -1213,7 +1213,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				uint32_t access_mask,
 				uint32_t share_access)
 {
-	int i;
+	uint32_t i;
 
 	if(lck->data->num_share_modes == 0) {
 		return NT_STATUS_OK;
