@@ -1210,41 +1210,6 @@ ctdb_fetch_remote_public_ips(struct ctdb_context *ctdb,
 	return public_ips;
 }
 
-static int ctdb_reload_remote_public_ips(struct ctdb_context *ctdb,
-					 struct ipalloc_state *ipalloc_state,
-					 struct ctdb_node_map_old *nodemap)
-{
-	struct ctdb_public_ip_list *ip_list;
-
-	if (ipalloc_state->num != nodemap->num) {
-		DEBUG(DEBUG_ERR,
-		      (__location__
-		       " ipalloc_state->num (%d) != nodemap->num (%d) invalid param\n",
-		       ipalloc_state->num, nodemap->num));
-		return -1;
-	}
-
-	/* Fetch lists of known public IPs from all nodes */
-	ip_list = ctdb_fetch_remote_public_ips(ctdb, ipalloc_state, nodemap, 0);
-	if (ip_list == NULL) {
-		DEBUG(DEBUG_ERR, ("Failed to read known public IPs\n"));
-		return -1;
-	}
-	ipalloc_state->known_public_ips = ip_list;
-
-
-	/* Fetch lists of available public IPs from all nodes */
-	ip_list = ctdb_fetch_remote_public_ips(ctdb, ipalloc_state, nodemap,
-					       CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE);
-	if (ip_list == NULL) {
-		DEBUG(DEBUG_ERR, ("Failed to read available public IPs\n"));
-		return -1;
-	}
-	ipalloc_state->available_public_ips = ip_list;
-
-	return 0;
-}
-
 static struct public_ip_list *
 create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 {
@@ -1679,6 +1644,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	struct ipalloc_state *ipalloc_state;
+	struct ctdb_public_ip_list *known_ips, *available_ips;
 	struct takeover_callback_data *takeover_data;
 	bool can_host_ips;
 
@@ -1714,11 +1680,25 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	}
 
 	/* Fetch known/available public IPs from each active node */
-	ret = ctdb_reload_remote_public_ips(ctdb, ipalloc_state, nodemap);
-	if (ret != 0) {
+	/* Fetch lists of known public IPs from all nodes */
+	known_ips = ctdb_fetch_remote_public_ips(ctdb, ipalloc_state,
+						 nodemap, 0);
+	if (known_ips == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read known public IPs\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
+	available_ips = ctdb_fetch_remote_public_ips(
+		ctdb, ipalloc_state, nodemap,
+		CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE);
+	if (available_ips == NULL) {
+		DEBUG(DEBUG_ERR, ("Failed to read available public IPs\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ipalloc_state->known_public_ips = known_ips;
+	ipalloc_state->available_public_ips = available_ips;
 
 	/* Short-circuit IP allocation if no node has available IPs */
 	can_host_ips = false;
