@@ -45,7 +45,6 @@ struct ipalloc_state {
 	uint32_t num;
 
 	/* Arrays with data for each node */
-	struct ctdb_public_ip_list *known_public_ips;
 	struct ctdb_public_ip_list *available_public_ips;
 	bool *noiptakeover;
 	bool *noiphost;

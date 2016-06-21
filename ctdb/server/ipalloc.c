@@ -62,7 +62,8 @@ static int getips_count_callback(void *param, void *data)
  * merged list of all public addresses needs to be built so that IP
  * allocation can be done. */
 static struct public_ip_list *
-create_merged_ip_list(struct ipalloc_state *ipalloc_state)
+create_merged_ip_list(struct ipalloc_state *ipalloc_state,
+		      struct ctdb_public_ip_list *known_ips)
 {
 	int i, j;
 	struct public_ip_list *ip_list;
@@ -71,14 +72,14 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 
 	ip_tree = trbt_create(ipalloc_state, 0);
 
-	if (ipalloc_state->known_public_ips == NULL) {
+	if (known_ips == NULL) {
 		DEBUG(DEBUG_ERR, ("Known public IPs not set\n"));
 		return NULL;
 	}
 
 	for (i=0; i < ipalloc_state->num; i++) {
 
-		public_ips = &ipalloc_state->known_public_ips[i];
+		public_ips = &known_ips[i];
 
 		for (j=0; j < public_ips->num; j++) {
 			struct public_ip_list *tmp_ip;
@@ -120,10 +121,10 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *known_ips,
 			    struct ctdb_public_ip_list *available_ips)
 {
-	ipalloc_state->known_public_ips = known_ips;
 	ipalloc_state->available_public_ips = available_ips;
 
-	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
+	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state,
+						       known_ips);
 
 	return (ipalloc_state->all_ips != NULL);
 }
