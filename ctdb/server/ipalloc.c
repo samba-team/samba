@@ -129,6 +129,19 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 	return (ipalloc_state->all_ips != NULL);
 }
 
+bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
+{
+	int i;
+
+	for (i=0; i < ipalloc_state->num; i++) {
+		if (ipalloc_state->available_public_ips[i].num != 0) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /* The calculation part of the IP allocation algorithm. */
 bool ipalloc(struct ipalloc_state *ipalloc_state)
 {

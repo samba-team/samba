@@ -1543,7 +1543,7 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  *   values can be faked in unit testing)
  * - Use ipalloc_set_public_ips() to set known and available IP
      addresses for allocation
- * - If no available IP addresses then early exit
+ * - If cluster can't host IP addresses then early exit
  * - Populate list of nodes to force rebalance - internal structure,
  *   currently no way to fetch, only used by LCP2 for nodes that have
  *   had new IP addresses added
@@ -1567,7 +1567,6 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	struct ipalloc_state *ipalloc_state;
 	struct ctdb_public_ip_list *known_ips, *available_ips;
 	struct takeover_callback_data *takeover_data;
-	bool can_host_ips;
 
 	/* Initialise fail callback data to be used with
 	 * takeover_run_fail_callback().  A failure in any of the
@@ -1624,14 +1623,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	/* Short-circuit IP allocation if no node has available IPs */
-	can_host_ips = false;
-	for (i=0; i < ipalloc_state->num; i++) {
-		if (ipalloc_state->available_public_ips[i].num != 0) {
-			can_host_ips = true;
-		}
-	}
-	if (!can_host_ips) {
+	if (! ipalloc_can_host_ips(ipalloc_state)) {
 		DEBUG(DEBUG_WARNING,("No nodes available to host public IPs yet\n"));
 		goto ipreallocated;
 	}
