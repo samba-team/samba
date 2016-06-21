@@ -23,7 +23,6 @@
 
 /* This is lazy... but it is test code! */
 #define CTDB_TEST_MAX_NODES 256
-#define CTDB_TEST_MAX_IPS 1024
 
 static void print_ctdb_public_ip_list(struct public_ip_list * ips)
 {
@@ -65,7 +64,7 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 	char line[1024];
 	ctdb_sock_addr addr;
 	char *t, *tok;
-	int pnn, numips, n;
+	int pnn, n;
 	struct ctdb_public_ip_list * k;
 
 	enum ctdb_runstate *runstate;
@@ -81,7 +80,6 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 	k = talloc_zero(ctx, struct ctdb_public_ip_list);
 	assert(k != NULL);
 
-	numips = 0;
 	while (fgets(line, sizeof(line), stdin) != NULL) {
 
 		/* Get rid of pesky newline */
@@ -104,12 +102,6 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 		if (!parse_ip(tok, NULL, 0, &addr)) {
 			DEBUG(DEBUG_ERR, (__location__ " ERROR, bad address :%s\n", tok));
 			continue;
-		}
-
-		numips++;
-		if (numips > CTDB_TEST_MAX_IPS) {
-			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_IPS: %d\n", CTDB_TEST_MAX_IPS));
-			exit(1);
 		}
 
 		/* Get the PNN */
