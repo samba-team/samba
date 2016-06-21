@@ -17,6 +17,8 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <assert.h>
+
 #include "ctdbd_test.c"
 
 /* This is lazy... but it is test code! */
@@ -37,6 +39,21 @@ static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
 static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
 					int numnodes);
 
+static void add_ip(TALLOC_CTX *mem_ctx,
+		   struct ctdb_public_ip_list *l,
+		   ctdb_sock_addr *addr,
+		   uint32_t pnn)
+{
+
+	l->ip = talloc_realloc(mem_ctx, l->ip,
+			       struct ctdb_public_ip, l->num + 1);
+	assert(l->ip != NULL);
+
+	l->ip[l->num].addr = *addr;
+	l->ip[l->num].pnn  = pnn;
+	l->num++;
+}
+
 /* Format of each line is "IP CURRENT_PNN ALLOWED_PNN,...".
  */
 static bool
@@ -50,8 +67,8 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 	ctdb_sock_addr addr;
 	char *t, *tok;
 	struct public_ip_list * ta;
-	int pnn, numips, curr, n, i;
-	struct ctdb_public_ip_list * a;
+	int pnn, numips, n, i;
+	struct ctdb_public_ip_list * k;
 
 	struct public_ip_list *last = NULL;
 	enum ctdb_runstate *runstate;
@@ -62,6 +79,10 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 				   CTDB_TEST_MAX_NODES);
 	*avail = talloc_zero_array(ctx, struct ctdb_public_ip_list,
 				   CTDB_TEST_MAX_NODES);
+
+	/* Known public IPs */
+	k = talloc_zero(ctx, struct ctdb_public_ip_list);
+	assert(k != NULL);
 
 	numips = 0;
 	*all_ips = NULL;
@@ -125,36 +146,20 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 		t = strtok(tok, ",");
 		while (t != NULL) {
 			n = (int) strtol(t, (char **) NULL, 10);
-			if ((*known)[n].num == 0) {
-				/* Array size here has to be
-				 * CTDB_TEST_MAX_IPS because total
-				 * number of IPs isn't yet known */
-				(*known)[n].ip = talloc_zero_array(
-					*known, struct ctdb_public_ip, CTDB_TEST_MAX_IPS);
-			}
-			curr = (*known)[n].num;
-			(*known)[n].ip[curr].pnn = pnn;
-			memcpy(&((*known)[n].ip[curr].addr),
-			       &addr, sizeof(addr));
-			(*known)[n].num++;
+			add_ip(*known, &(*known)[n], &addr, pnn);
 			t = strtok(NULL, ",");
 		}
 
 	}
 
-	/* Build list of all allowed IPs */
-	a = talloc(ctx, struct ctdb_public_ip_list);
-	a->ip = talloc_zero_array(a, struct ctdb_public_ip, numips);
-	a->num = numips;
 	for (ta = *all_ips, i=0; ta != NULL && i < numips ; ta = ta->next, i++) {
-		a->ip[i].pnn = ta->pnn;
-		memcpy(&(a->ip[i].addr), &(ta->addr), sizeof(ta->addr));
+		add_ip(k, k, &ta->addr, ta->pnn);
 	}
 
 	/* Assign it to any nodes that don't have a list assigned */
 	for (n = 0; n < numnodes; n++) {
 		if ((*known)[n].num == 0) {
-			(*known)[n] = *a;
+			(*known)[n] = *k;
 		}
 		if (runstate[n] == CTDB_RUNSTATE_RUNNING) {
 			(*avail)[n] = (*known)[n];
