@@ -59,7 +59,6 @@ static void add_ip(TALLOC_CTX *mem_ctx,
 static bool
 read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 			 int numnodes,
-			 struct public_ip_list ** all_ips,
 			 struct ctdb_public_ip_list ** known,
 			 struct ctdb_public_ip_list ** avail)
 {
@@ -83,7 +82,6 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 	assert(k != NULL);
 
 	numips = 0;
-	*all_ips = NULL;
 	while (fgets(line, sizeof(line), stdin) != NULL) {
 
 		/* Get rid of pesky newline */
@@ -236,7 +234,6 @@ static void ctdb_test_init(const char nodestates[],
 	struct ctdb_node_map_old *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
-	struct public_ip_list *all_ips;
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
 
@@ -289,7 +286,7 @@ static void ctdb_test_init(const char nodestates[],
 
 	if (!read_ips_for_multiple_nodes) {
 		read_ctdb_public_ip_info(*ctdb, numnodes,
-					 &all_ips, &known, &avail);
+					 &known, &avail);
 	}
 
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
@@ -303,7 +300,7 @@ static void ctdb_test_init(const char nodestates[],
 
 		if (read_ips_for_multiple_nodes) {
 			read_ctdb_public_ip_info(*ctdb, numnodes,
-						 &all_ips, &known, &avail);
+						 &known, &avail);
 		}
 
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
