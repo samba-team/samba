@@ -66,11 +66,9 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 	char line[1024];
 	ctdb_sock_addr addr;
 	char *t, *tok;
-	struct public_ip_list * ta;
-	int pnn, numips, n, i;
+	int pnn, numips, n;
 	struct ctdb_public_ip_list * k;
 
-	struct public_ip_list *last = NULL;
 	enum ctdb_runstate *runstate;
 
 	runstate = get_runstate(ctx, numnodes);
@@ -123,19 +121,7 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 			pnn = (int) strtol(tok, (char **) NULL, 10);
 		}
 
-		/* Add address + pnn to all_ips */
-		if (last == NULL) {
-			last = talloc(ctx, struct public_ip_list);
-		} else {
-			last->next = talloc(ctx, struct public_ip_list);
-			last = last->next;
-		}
-		last->next = NULL;
-		last->pnn = pnn;
-		memcpy(&(last->addr), &addr, sizeof(addr));
-		if (*all_ips == NULL) {
-			*all_ips = last;
-		}
+		add_ip(k, k, &addr, pnn);
 
 		tok = strtok(NULL, " \t#");
 		if (tok == NULL) {
@@ -150,10 +136,6 @@ read_ctdb_public_ip_info(TALLOC_CTX *ctx  ,
 			t = strtok(NULL, ",");
 		}
 
-	}
-
-	for (ta = *all_ips, i=0; ta != NULL && i < numips ; ta = ta->next, i++) {
-		add_ip(k, k, &ta->addr, ta->pnn);
 	}
 
 	/* Assign it to any nodes that don't have a list assigned */
