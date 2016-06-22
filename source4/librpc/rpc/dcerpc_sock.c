@@ -72,6 +72,11 @@ static void continue_socket_connect(struct composite_context *ctx)
 		return;
 	}
 	sock_fd = socket_get_fd(s->socket_ctx);
+	if (sock_fd == -1) {
+		TALLOC_FREE(s->socket_ctx);
+		composite_error(c, NT_STATUS_INVALID_HANDLE);
+		return;
+	}
 	socket_set_flags(s->socket_ctx, SOCKET_FLAG_NOCLOSE);
 	TALLOC_FREE(s->socket_ctx);
 
