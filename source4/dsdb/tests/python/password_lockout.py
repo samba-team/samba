@@ -365,7 +365,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.base_dn = self.ldb.domain_dn()
 
         self.domain_sid = security.dom_sid(self.ldb.get_domain_sid())
-        self.samr = samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, global_creds)
+        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, global_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 

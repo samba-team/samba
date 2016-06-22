@@ -141,7 +141,7 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.domain_sid = security.dom_sid(self.samdb.get_domain_sid())
         self.base_dn = self.samdb.domain_dn()
 
-        self.samr = samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, self.unpriv_creds)
+        self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, self.unpriv_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         self.samr_domain = self.samr.OpenDomain(self.samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED, self.domain_sid)
 

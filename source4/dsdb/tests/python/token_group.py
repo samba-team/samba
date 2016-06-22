@@ -543,7 +543,7 @@ class DynamicTokenTest(samba.tests.TestCase):
             self.fail(msg="This test is only valid on ldap (so we an find the hostname and use SAMR)")
         host = url.split("://")[1]
         (domain_sid, user_rid) = self.user_sid.split()
-        samr_conn = samba.dcerpc.samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, creds)
+        samr_conn = samba.dcerpc.samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, creds)
         samr_handle = samr_conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         samr_domain = samr_conn.OpenDomain(samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED,
                                       domain_sid)
@@ -621,7 +621,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         user_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["objectSid"][0])
 
         (domain_sid, user_rid) = user_sid.split()
-        samr_conn = samba.dcerpc.samr.samr("ncacn_ip_tcp:%s[sign]" % host, lp, creds)
+        samr_conn = samba.dcerpc.samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, creds)
         samr_handle = samr_conn.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
         samr_domain = samr_conn.OpenDomain(samr_handle, security.SEC_FLAG_MAXIMUM_ALLOWED,
                                            domain_sid)
