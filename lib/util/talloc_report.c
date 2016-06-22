@@ -40,6 +40,9 @@ static char *talloc_vasprintf_append_largebuf(char *buf, ssize_t *pstr_len,
 	if (buf == NULL) {
 		return NULL;
 	}
+	if (fmt == NULL) {
+		return NULL;
+	}
 	buflen = talloc_get_size(buf);
 
 	if (buflen > str_len) {
