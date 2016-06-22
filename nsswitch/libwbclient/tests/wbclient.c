@@ -255,21 +255,31 @@ static bool test_wbc_guidtostring(struct torture_context *tctx)
 
 static bool test_wbc_domain_info(struct torture_context *tctx)
 {
-	struct wbcDomainInfo *info;
-	struct wbcInterfaceDetails *details;
+	struct wbcDomainInfo *info = NULL;
+	struct wbcInterfaceDetails *details = NULL;
+	wbcErr ret = false;
 
-	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
-		"%s", "wbcInterfaceDetails failed");
-	torture_assert_wbc_ok(
-		tctx, wbcDomainInfo(details->netbios_domain, &info),
-		"%s", "wbcDomainInfo failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcInterfaceDetails(&details),
+					"%s",
+					"wbcInterfaceDetails failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcDomainInfo(details->netbios_domain, &info),
+					"%s",
+					"wbcDomainInfo failed");
+
+	torture_assert_goto(tctx,
+			    info,
+			    ret,
+			    fail,
+			    "wbcDomainInfo returned NULL pointer");
+
+	ret = true;
+fail:
 	wbcFreeMemory(details);
-
-	torture_assert(tctx, info,
-		"wbcDomainInfo returned NULL pointer");
 	wbcFreeMemory(info);
 
-	return true;
+	return ret;
 }
 
 static bool test_wbc_users(struct torture_context *tctx)
