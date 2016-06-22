@@ -1185,12 +1185,13 @@ ctdb_fetch_remote_public_ips(struct ctdb_context *ctdb,
 	return public_ips;
 }
 
-static bool all_nodes_are_disabled(struct ctdb_node_map_old *nodemap)
+static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
 {
 	int i;
 
 	for (i=0;i<nodemap->num;i++) {
-		if (!(nodemap->nodes[i].flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
+		if (!(nodemap->node[i].flags &
+		      (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
 			/* Found one completely healthy node */
 			return false;
 		}
@@ -1321,7 +1322,7 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
  *     Set NOIPHOST ip flags for disabled nodes
  */
 static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
-				 struct ctdb_node_map_old *nodemap,
+				 struct ctdb_node_map *nodemap,
 				 uint32_t *tval_noiptakeover,
 				 uint32_t *tval_noiphostonalldisabled)
 {
@@ -1334,7 +1335,7 @@ static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		}
 
 		/* Can not host IPs on INACTIVE node */
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
 			ipalloc_state->noiphost[i] = true;
 		}
 	}
@@ -1353,12 +1354,33 @@ static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
 		 * IPs on DISABLED node
 		 */
 		for (i=0;i<nodemap->num;i++) {
-			if (nodemap->nodes[i].flags & NODE_FLAGS_DISABLED) {
+			if (nodemap->node[i].flags & NODE_FLAGS_DISABLED) {
 				ipalloc_state->noiphost[i] = true;
 			}
 		}
 	}
 }
+
+static struct ctdb_node_map *
+ctdb_node_map_old_to_new(TALLOC_CTX *mem_ctx,
+			 const struct ctdb_node_map_old *old)
+{
+	struct ctdb_node_map *new;
+
+	new = talloc(mem_ctx, struct ctdb_node_map);
+	if (new == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return NULL;
+	}
+	new->num = old->num;
+	new->node = talloc_zero_array(new,
+				      struct ctdb_node_and_flags, new->num);
+	memcpy(new->node, &old->nodes[0],
+	       sizeof(struct ctdb_node_and_flags) * new->num);
+
+	return new;
+}
+
 
 static bool set_ipflags(struct ctdb_context *ctdb,
 			struct ipalloc_state *ipalloc_state,
@@ -1366,6 +1388,7 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 {
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiphostonalldisabled;
+	struct ctdb_node_map *new;
 
 	tval_noiptakeover = get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
 						   "NoIPTakeover", 0);
@@ -1381,12 +1404,18 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 		return false;
 	}
 
-	set_ipflags_internal(ipalloc_state, nodemap,
+	new = ctdb_node_map_old_to_new(ipalloc_state, nodemap);
+	if (new == NULL) {
+		return false;
+	}
+
+	set_ipflags_internal(ipalloc_state, new,
 			     tval_noiptakeover,
 			     tval_noiphostonalldisabled);
 
 	talloc_free(tval_noiptakeover);
 	talloc_free(tval_noiphostonalldisabled);
+	talloc_free(new);
 
 	return true;
 }

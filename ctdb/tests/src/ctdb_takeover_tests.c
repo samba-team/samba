@@ -239,7 +239,7 @@ static void ctdb_test_init(const char nodestates[],
 	struct ctdb_public_ip_list *avail;
 	int i;
 	char *tok, *ns, *t;
-	struct ctdb_node_map_old *nodemap;
+	struct ctdb_node_map *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
 	ctdb_sock_addr sa_zero = { .ip = { 0 } };
@@ -249,19 +249,17 @@ static void ctdb_test_init(const char nodestates[],
 	/* Avoid that const */
 	ns = talloc_strdup(*ctdb, nodestates);
 
-	nodemap = talloc_zero(*ctdb, struct ctdb_node_map_old);
+	nodemap = talloc_zero(*ctdb, struct ctdb_node_map);
 	assert(nodemap != NULL);
 	nodemap->num = 0;
 	tok = strtok(ns, ",");
 	while (tok != NULL) {
 		uint32_t n = nodemap->num;
-		size_t size =
-			offsetof(struct ctdb_node_map_old, nodes) +
-			(n + 1) * sizeof(struct ctdb_node_and_flags);
-		nodemap = talloc_realloc_size(*ctdb, nodemap, size);
-		nodemap->nodes[n].pnn = n;
-		nodemap->nodes[n].flags = (uint32_t) strtol(tok, NULL, 0);
-		nodemap->nodes[n].addr = sa_zero;
+		nodemap->node = talloc_realloc(nodemap, nodemap->node,
+					       struct ctdb_node_and_flags, n+1);
+		nodemap->node[n].pnn = n;
+		nodemap->node[n].flags = (uint32_t) strtol(tok, NULL, 0);
+		nodemap->node[n].addr = sa_zero;
 		nodemap->num++;
 		tok = strtok(NULL, ",");
 	}
@@ -307,7 +305,7 @@ static void ctdb_test_init(const char nodestates[],
 	for (i=0; i < nodemap->num; i++) {
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
-		(*ctdb)->nodes[i]->flags = nodemap->nodes[i].flags;
+		(*ctdb)->nodes[i]->flags = nodemap->node[i].flags;
 	}
 
 	if (! ipalloc_set_public_ips(*ipalloc_state, known, avail)) {
