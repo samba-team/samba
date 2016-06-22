@@ -155,6 +155,7 @@ static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	 */
 	c->srv_max_xmit_frag = 5840;
 	c->srv_max_recv_frag = 5840;
+	c->max_total_response_size = DCERPC_NCACN_RESPONSE_DEFAULT_MAX_SIZE;
 	c->pending = NULL;
 
 	c->io_trigger = tevent_create_immediate(c);
@@ -1577,10 +1578,10 @@ static void dcerpc_request_recv_data(struct dcecli_connection *c,
 
 	length = pkt->u.response.stub_and_verifier.length;
 
-	if (req->payload.length + length > DCERPC_NCACN_PAYLOAD_MAX_SIZE) {
+	if (req->payload.length + length > c->max_total_response_size) {
 		DEBUG(2,("Unexpected total payload 0x%X > 0x%X dcerpc response\n",
 			 (unsigned)req->payload.length + length,
-			 DCERPC_NCACN_PAYLOAD_MAX_SIZE));
+			 (unsigned)c->max_total_response_size));
 		dcerpc_connection_dead(c, NT_STATUS_RPC_PROTOCOL_ERROR);
 		return;
 	}
