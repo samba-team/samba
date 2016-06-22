@@ -388,43 +388,80 @@ fail:
 
 static bool test_wbc_groups(struct torture_context *tctx)
 {
+	wbcErr ret = false;
 	const char *domain_name = NULL;
 	uint32_t num_groups;
-	const char **groups;
-	int i;
-	struct wbcInterfaceDetails *details;
+	const char **groups = NULL;
+	uint32_t i;
+	struct wbcInterfaceDetails *details = NULL;
+	char *domain = NULL;
+	char *name = NULL;
+	char *sid_string = NULL;
 
 	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
 			      "%s", "wbcInterfaceDetails failed");
 
 	domain_name = talloc_strdup(tctx, details->netbios_domain);
+	torture_assert_goto(tctx,
+			    domain_name != NULL,
+			    ret,
+			    fail,
+			    "Failed to allocate domain_name");
 	wbcFreeMemory(details);
+	details = NULL;
 
-	torture_assert_wbc_ok(tctx, wbcListGroups(domain_name, &num_groups, &groups),
-			      "wbcListGroups in %s failed", domain_name);
-	torture_assert(tctx, !(num_groups > 0 && !groups),
-		       "wbcListGroups returned invalid results");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcListGroups(domain_name, &num_groups, &groups),
+					"wbcListGroups in %s failed",
+					domain_name);
+	torture_assert_goto(tctx,
+			    !(num_groups > 0 && !groups),
+			    ret,
+			    fail,
+			    "wbcListGroups returned invalid results");
 
 	for (i=0; i < MIN(num_groups,100); i++) {
-
 		struct wbcDomainSid sid;
 		enum wbcSidType name_type;
-		char *domain;
-		char *name;
-		char *sid_string;
 
-		torture_assert_wbc_ok(tctx, wbcLookupName(domain_name, groups[i], &sid, &name_type),
-				      "wbcLookupName for %s failed", domain_name);
+		torture_assert_wbc_ok_goto_fail(tctx,
+						wbcLookupName(domain_name,
+							      groups[i],
+							      &sid,
+							      &name_type),
+						"wbcLookupName for %s failed",
+						domain_name);
 		wbcSidToString(&sid, &sid_string);
-		torture_assert_wbc_ok(tctx, wbcLookupSid(&sid, &domain, &name, &name_type),
-				      "wbcLookupSid of %s failed", sid_string);
-		wbcFreeMemory(sid_string);
-		torture_assert(tctx, name,
-			"wbcLookupSid returned no name");
-	}
-	wbcFreeMemory(groups);
+		torture_assert_wbc_ok_goto_fail(tctx,
+						wbcLookupSid(&sid,
+							     &domain,
+							     &name,
+							     &name_type),
+						"wbcLookupSid of %s failed",
+						sid_string);
+		torture_assert_goto(tctx,
+				    name,
+				    ret,
+				    fail,
+				    "wbcLookupSid returned no name");
 
-	return true;
+		wbcFreeMemory(domain);
+		domain = NULL;
+		wbcFreeMemory(name);
+		name = NULL;
+		wbcFreeMemory(sid_string);
+		sid_string = NULL;
+	}
+
+	ret = true;
+fail:
+	wbcFreeMemory(details);
+	wbcFreeMemory(groups);
+	wbcFreeMemory(domain);
+	wbcFreeMemory(name);
+	wbcFreeMemory(sid_string);
+
+	return ret;
 }
 
 static bool test_wbc_trusts(struct torture_context *tctx)
