@@ -1084,8 +1084,9 @@ static bool torture_ldb_unpack(struct torture_context *torture)
 	const char *ldif_text = dda1d01d_ldif;
 	struct ldb_ldif ldif;
 
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL);
 	torture_assert(torture,
-		       ldb = samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL),
+		       ldb != NULL,
 		       "Failed to init ldb");
 
 	torture_assert_int_equal(torture, ldb_unpack_data(ldb, &data, msg), 0,
@@ -1111,12 +1112,14 @@ static bool torture_ldb_parse_ldif(struct torture_context *torture)
 	struct ldb_val data = data_blob_const(dda1d01d_bin, sizeof(dda1d01d_bin));
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL,NULL,NULL);
 	torture_assert(torture,
-		       ldb=samba_ldb_init(mem_ctx, torture->ev, NULL,NULL,NULL),
+		       ldb != NULL,
 		       "Failed to init ldb");
 
+	ldif = ldb_ldif_read_string(ldb, &ldif_text);
 	torture_assert(torture,
-		       ldif = ldb_ldif_read_string(ldb, &ldif_text),
+		       ldif != NULL,
 		       "ldb_ldif_read_string failed");
 	torture_assert_int_equal(torture, ldif->changetype, LDB_CHANGETYPE_NONE,
 				 "changetype is incorrect");
@@ -1147,8 +1150,9 @@ static bool torture_ldb_unpack_only_attr_list(struct torture_context *torture)
 	const char *ldif_text;
 	struct ldb_ldif ldif;
 
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL);
 	torture_assert(torture,
-		       ldb=samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL),
+		       ldb != NULL,
 		       "Failed to init samba");
 
 	torture_assert_int_equal(torture,
