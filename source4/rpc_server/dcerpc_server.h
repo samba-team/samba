@@ -273,6 +273,9 @@ struct dcesrv_connection {
 
 	/* the association group the connection belongs to */
 	struct dcesrv_assoc_group *assoc_group;
+
+	/* The maximum total payload of reassembled request pdus */
+	size_t max_total_request_size;
 };
 
 
