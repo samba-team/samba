@@ -240,24 +240,33 @@ static void ctdb_test_init(const char nodestates[],
 {
 	struct ctdb_public_ip_list *known;
 	struct ctdb_public_ip_list *avail;
-	int i, numnodes;
-	uint32_t nodeflags[CTDB_TEST_MAX_NODES];
+	int i;
 	char *tok, *ns, *t;
 	struct ctdb_node_map_old *nodemap;
 	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiptakeoverondisabled;
+	ctdb_sock_addr sa_zero = { .ip = { 0 } };
 
 	*ctdb = talloc_zero(NULL, struct ctdb_context);
 
 	/* Avoid that const */
 	ns = talloc_strdup(*ctdb, nodestates);
 
-	numnodes = 0;
+	nodemap = talloc_zero(*ctdb, struct ctdb_node_map_old);
+	assert(nodemap != NULL);
+	nodemap->num = 0;
 	tok = strtok(ns, ",");
 	while (tok != NULL) {
-		nodeflags[numnodes] = (uint32_t) strtol(tok, NULL, 0);
-		numnodes++;
-		if (numnodes >= CTDB_TEST_MAX_NODES) {
+		uint32_t n = nodemap->num;
+		size_t size =
+			offsetof(struct ctdb_node_map_old, nodes) +
+			(n + 1) * sizeof(struct ctdb_node_and_flags);
+		nodemap = talloc_realloc_size(*ctdb, nodemap, size);
+		nodemap->nodes[n].pnn = n;
+		nodemap->nodes[n].flags = (uint32_t) strtol(tok, NULL, 0);
+		nodemap->nodes[n].addr = sa_zero;
+		nodemap->num++;
+		if (nodemap->num >= CTDB_TEST_MAX_NODES) {
 			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_NODES: %d\n", CTDB_TEST_MAX_NODES));
 			exit(1);
 		}
@@ -265,7 +274,7 @@ static void ctdb_test_init(const char nodestates[],
 	}
 	
 	/* Fake things up... */
-	(*ctdb)->num_nodes = numnodes;
+	(*ctdb)->num_nodes = nodemap->num;
 
 	/* Default to LCP2 */
 	(*ctdb)->tunable.lcp2_public_ip_assignment = 1;
@@ -287,31 +296,24 @@ static void ctdb_test_init(const char nodestates[],
 		}
 	}
 
-	tval_noiptakeover = get_tunable_values(*ctdb, numnodes,
+	tval_noiptakeover = get_tunable_values(*ctdb, nodemap->num,
 					       "CTDB_SET_NoIPTakeover");
 	tval_noiptakeoverondisabled =
-		get_tunable_values(*ctdb, numnodes,
+		get_tunable_values(*ctdb, nodemap->num,
 				   "CTDB_SET_NoIPHostOnAllDisabled");
 
-	nodemap =  talloc_array(*ctdb, struct ctdb_node_map_old, numnodes);
-	nodemap->num = numnodes;
-
-	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, numnodes); // FIXME: bogus size, overkill
+	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, nodemap->num); // FIXME: bogus size, overkill
 
 	*ipalloc_state = ipalloc_state_init(*ctdb, *ctdb);
 
-	read_ctdb_public_ip_info(*ctdb, numnodes,
+	read_ctdb_public_ip_info(*ctdb, nodemap->num,
 				 read_ips_for_multiple_nodes,
 				 &known, &avail);
 
-	for (i=0; i < numnodes; i++) {
-		nodemap->nodes[i].pnn = i;
-		nodemap->nodes[i].flags = nodeflags[i];
-		/* nodemap->nodes[i].sockaddr is uninitialised */
-
+	for (i=0; i < nodemap->num; i++) {
 		(*ctdb)->nodes[i] = talloc(*ctdb, struct ctdb_node);
 		(*ctdb)->nodes[i]->pnn = i;
-		(*ctdb)->nodes[i]->flags = nodeflags[i];
+		(*ctdb)->nodes[i]->flags = nodemap->nodes[i].flags;
 	}
 
 	(*ipalloc_state)->available_public_ips = avail;
