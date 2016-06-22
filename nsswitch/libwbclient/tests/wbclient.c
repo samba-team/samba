@@ -466,26 +466,35 @@ fail:
 
 static bool test_wbc_trusts(struct torture_context *tctx)
 {
-	struct wbcDomainInfo *domains;
+	struct wbcDomainInfo *domains = NULL;
+	struct wbcAuthErrorInfo *error = NULL;
 	size_t num_domains;
-	int i;
+	uint32_t i;
+	wbcErr ret = false;
 
-	torture_assert_wbc_ok(tctx, wbcListTrusts(&domains, &num_domains),
-			      "%s", "wbcListTrusts failed");
-	torture_assert(tctx, !(num_domains > 0 && !domains),
-		"wbcListTrusts returned invalid results");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcListTrusts(&domains, &num_domains),
+					"%s",
+					"wbcListTrusts failed");
+	torture_assert_goto(tctx,
+			    !(num_domains > 0 && !domains),
+			    ret,
+			    fail,
+			    "wbcListTrusts returned invalid results");
 
 	for (i=0; i < MIN(num_domains,100); i++) {
 
-		struct wbcAuthErrorInfo *error;
 		/*
 		struct wbcDomainSid sid;
 		enum wbcSidType name_type;
 		char *domain;
 		char *name;
 		*/
-		torture_assert_wbc_ok(tctx, wbcCheckTrustCredentials(domains[i].short_name, &error),
-				      "%s", "wbcCheckTrustCredentials failed");
+		torture_assert_wbc_ok_goto_fail(tctx,
+						wbcCheckTrustCredentials(domains[i].short_name,
+									 &error),
+						"%s",
+						"wbcCheckTrustCredentials failed");
 		/*
 		torture_assert_wbc_ok(tctx, wbcLookupName(domains[i].short_name, NULL, &sid, &name_type),
 			"wbcLookupName failed");
@@ -498,10 +507,16 @@ static bool test_wbc_trusts(struct torture_context *tctx)
 		torture_assert(tctx, name,
 			"wbcLookupSid returned no name");
 		*/
+		wbcFreeMemory(error);
+		error = NULL;
 	}
-	wbcFreeMemory(domains);
 
-	return true;
+	ret = true;
+fail:
+	wbcFreeMemory(domains);
+	wbcFreeMemory(error);
+
+	return ret;
 }
 
 static bool test_wbc_lookupdc(struct torture_context *tctx)
