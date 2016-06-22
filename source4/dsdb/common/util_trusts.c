@@ -2671,7 +2671,9 @@ NTSTATUS dsdb_trust_get_incoming_passwords(struct ldb_message *msg,
 	if (_previous != NULL) {
 		*_previous = talloc(mem_ctx, struct samr_Password);
 		if (*_previous == NULL) {
-			TALLOC_FREE(*_current);
+			if (_current != NULL) {
+				TALLOC_FREE(*_current);
+			}
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
