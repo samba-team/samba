@@ -146,7 +146,7 @@ static void query_iface_speed_from_name(const char *name, uint64_t *speed)
 	}
 
 	ZERO_STRUCT(ifr);
-	strncpy(ifr.ifr_name, name, IF_NAMESIZE);
+	strlcpy(ifr.ifr_name, name, IF_NAMESIZE);
 
 	ifr.ifr_data = (void *)&edata;
 	edata.cmd = ETHTOOL_GLINK;
