@@ -514,36 +514,44 @@ fail:
 static bool test_wbc_get_sidaliases(struct torture_context *tctx)
 {
 	struct wbcDomainSid builtin;
-	struct wbcDomainInfo *info;
-	struct wbcInterfaceDetails *details;
+	struct wbcDomainInfo *info = NULL;
+	struct wbcInterfaceDetails *details = NULL;
 	struct wbcDomainSid sids[2];
-	uint32_t *rids;
+	uint32_t *rids = NULL;
 	uint32_t num_rids;
-	wbcErr ret;
+	wbcErr ret = false;
 
-	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
-			      "%s", "wbcInterfaceDetails failed");
-	torture_assert_wbc_ok(
-		tctx, wbcDomainInfo(details->netbios_domain, &info),
-		"wbcDomainInfo of %s failed", details->netbios_domain);
-	wbcFreeMemory(details);
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcInterfaceDetails(&details),
+					"%s",
+					"wbcInterfaceDetails failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcDomainInfo(details->netbios_domain, &info),
+					"wbcDomainInfo of %s failed",
+					details->netbios_domain);
 
 	sids[0] = info->sid;
 	sids[0].sub_auths[sids[0].num_auths++] = 500;
 	sids[1] = info->sid;
 	sids[1].sub_auths[sids[1].num_auths++] = 512;
-	wbcFreeMemory(info);
 
-	torture_assert_wbc_ok(
-		tctx, wbcStringToSid("S-1-5-32", &builtin),
-		"wbcStringToSid of %s failed", "S-1-5-32");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcStringToSid("S-1-5-32", &builtin),
+					"wbcStringToSid of %s failed",
+					"S-1-5-32");
 
 	ret = wbcGetSidAliases(&builtin, sids, 2, &rids, &num_rids);
-	torture_assert_wbc_ok(tctx, ret, "%s", "wbcGetSidAliases failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					ret,
+					"%s",
+					"wbcGetSidAliases failed");
 
+	ret = true;
+fail:
+	wbcFreeMemory(details);
+	wbcFreeMemory(info);
 	wbcFreeMemory(rids);
-
-	return true;
+	return ret;
 }
 
 static bool test_wbc_authenticate_user_int(struct torture_context *tctx,
