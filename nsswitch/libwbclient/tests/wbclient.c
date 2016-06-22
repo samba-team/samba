@@ -79,28 +79,38 @@ static bool test_wbc_ping(struct torture_context *tctx)
 
 static bool test_wbc_pingdc(struct torture_context *tctx)
 {
-	struct wbcInterfaceDetails *details;
+	struct wbcInterfaceDetails *details = NULL;
+	wbcErr ret = false;
 
-	torture_assert_wbc_equal(tctx, wbcPingDc("random_string", NULL), WBC_ERR_DOMAIN_NOT_FOUND,
-				 "%s", "wbcPingDc failed");
-	torture_assert_wbc_ok(tctx, wbcPingDc(NULL, NULL),
+	torture_assert_wbc_equal_goto_fail(tctx,
+					   wbcPingDc("random_string", NULL),
+					   WBC_ERR_DOMAIN_NOT_FOUND,
+					   "%s",
+					   "wbcPingDc failed");
+	torture_assert_wbc_ok_goto_fail(tctx, wbcPingDc(NULL, NULL),
 		"%s", "wbcPingDc failed");
 
-	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
+	torture_assert_wbc_ok_goto_fail(tctx, wbcInterfaceDetails(&details),
 		"%s", "wbcInterfaceDetails failed");
-	torture_assert(tctx, details,
+	torture_assert_goto(tctx, details, ret, fail,
 		       "wbcInterfaceDetails returned NULL pointer");
-	torture_assert(tctx, details->netbios_domain,
+	torture_assert_goto(tctx, details->netbios_domain, ret, fail,
 		       "wbcInterfaceDetails returned NULL netbios_domain");
 
-	torture_assert_wbc_ok(tctx, wbcPingDc(details->netbios_domain, NULL),
-		"wbcPingDc(%s) failed", details->netbios_domain);
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcPingDc(details->netbios_domain, NULL),
+					"wbcPingDc(%s) failed",
+					details->netbios_domain);
 
-	torture_assert_wbc_ok(tctx, wbcPingDc("BUILTIN", NULL),
-		"%s", "wbcPingDc(BUILTIN) failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcPingDc("BUILTIN", NULL),
+					"%s",
+					"wbcPingDc(BUILTIN) failed");
 
+	ret = true;
+fail:
 	wbcFreeMemory(details);
-	return true;
+	return ret;
 }
 
 static bool test_wbc_pingdc2(struct torture_context *tctx)
