@@ -115,35 +115,55 @@ fail:
 
 static bool test_wbc_pingdc2(struct torture_context *tctx)
 {
-	struct wbcInterfaceDetails *details;
+	struct wbcInterfaceDetails *details = NULL;
 	char *name = NULL;
+	wbcErr ret = false;
 
-	torture_assert_wbc_equal(tctx, wbcPingDc2("random_string", NULL, &name),
-				 WBC_ERR_DOMAIN_NOT_FOUND, "%s",
-				 "wbcPingDc2 failed");
-	torture_assert_wbc_ok(tctx, wbcPingDc2(NULL, NULL, &name), "%s",
-			      "wbcPingDc2 failed");
-
+	torture_assert_wbc_equal_goto_fail(tctx,
+					   wbcPingDc2("random_string", NULL, &name),
+					   WBC_ERR_DOMAIN_NOT_FOUND,
+					   "%s",
+					   "wbcPingDc2 failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcPingDc2(NULL, NULL, &name),
+					"%s",
+					"wbcPingDc2 failed");
 	wbcFreeMemory(name);
+	name = NULL;
 
-	torture_assert_wbc_ok(tctx, wbcInterfaceDetails(&details),
-		"%s", "wbcInterfaceDetails failed");
-	torture_assert(tctx, details,
-		       "wbcInterfaceDetails returned NULL pointer");
-	torture_assert(tctx, details->netbios_domain,
-		       "wbcInterfaceDetails returned NULL netbios_domain");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcInterfaceDetails(&details),
+					"%s",
+					"wbcInterfaceDetails failed");
+	torture_assert_goto(tctx,
+			    details,
+			    ret,
+			    fail,
+			    "wbcInterfaceDetails returned NULL pointer");
+	torture_assert_goto(tctx,
+			    details->netbios_domain,
+			    ret,
+			    fail,
+			    "wbcInterfaceDetails returned NULL netbios_domain");
 
-	torture_assert_wbc_ok(tctx, wbcPingDc2(details->netbios_domain, NULL, &name),
-		"wbcPingDc2(%s) failed", details->netbios_domain);
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcPingDc2(details->netbios_domain, NULL, &name),
+					"wbcPingDc2(%s) failed",
+					details->netbios_domain);
 	wbcFreeMemory(name);
+	name = NULL;
 
-	torture_assert_wbc_ok(tctx, wbcPingDc2("BUILTIN", NULL, &name),
-		"%s", "wbcPingDc2(BUILTIN) failed");
+	torture_assert_wbc_ok_goto_fail(tctx,
+					wbcPingDc2("BUILTIN", NULL, &name),
+					"%s",
+					"wbcPingDc2(BUILTIN) failed");
+
+	ret = true;
+fail:
 	wbcFreeMemory(name);
-
 	wbcFreeMemory(details);
 
-	return true;
+	return ret;
 }
 
 static bool test_wbc_library_details(struct torture_context *tctx)
