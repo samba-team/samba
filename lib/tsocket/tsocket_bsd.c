@@ -2327,10 +2327,14 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	ret = getsockname(state->fd, &lrbsda->u.sa, &lrbsda->sa_socklen);
-	if (ret == -1) {
-		tevent_req_error(req, errno);
-		goto post;
+	if (lrbsda != NULL) {
+		ret = getsockname(state->fd,
+				  &lrbsda->u.sa,
+				  &lrbsda->sa_socklen);
+		if (ret == -1) {
+			tevent_req_error(req, errno);
+			goto post;
+		}
 	}
 
 	tevent_req_done(req);
