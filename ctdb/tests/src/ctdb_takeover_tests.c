@@ -286,12 +286,6 @@ static void ctdb_test_init(const char nodestates[],
 		}
 	}
 
-	tval_noiptakeover = get_tunable_values(*ctdb, nodemap->num,
-					       "CTDB_SET_NoIPTakeover");
-	tval_noiptakeoverondisabled =
-		get_tunable_values(*ctdb, nodemap->num,
-				   "CTDB_SET_NoIPHostOnAllDisabled");
-
 	(*ctdb)->nodes = talloc_array(*ctdb, struct ctdb_node *, nodemap->num); // FIXME: bogus size, overkill
 
 	*ipalloc_state = ipalloc_state_init(*ctdb, nodemap->num,
@@ -313,9 +307,17 @@ static void ctdb_test_init(const char nodestates[],
 		exit(1);
 	}
 
-	set_ipflags_internal(*ipalloc_state, nodemap,
-			     tval_noiptakeover,
-			     tval_noiptakeoverondisabled);
+	tval_noiptakeover = get_tunable_values(*ctdb, nodemap->num,
+					       "CTDB_SET_NoIPTakeover");
+	assert(tval_noiptakeover != NULL);
+	tval_noiptakeoverondisabled =
+		get_tunable_values(*ctdb, nodemap->num,
+				   "CTDB_SET_NoIPHostOnAllDisabled");
+	assert(tval_noiptakeoverondisabled != NULL);
+
+	ipalloc_set_node_flags(*ipalloc_state, nodemap,
+			       tval_noiptakeover,
+			       tval_noiptakeoverondisabled);
 }
 
 /* IP layout is read from stdin.  See comment for ctdb_test_init() for

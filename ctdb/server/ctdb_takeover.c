@@ -1185,21 +1185,6 @@ ctdb_fetch_remote_public_ips(struct ctdb_context *ctdb,
 	return public_ips;
 }
 
-static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
-{
-	int i;
-
-	for (i=0;i<nodemap->num;i++) {
-		if (!(nodemap->node[i].flags &
-		      (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
-			/* Found one completely healthy node */
-			return false;
-		}
-	}
-
-	return true;
-}
-
 struct get_tunable_callback_data {
 	const char *tunable;
 	uint32_t *out;
@@ -1312,55 +1297,6 @@ static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
 	return tvals;
 }
 
-/* Set internal flags for IP allocation:
- *   Clear ip flags
- *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
- *   Set NOIPHOST ip flag for each INACTIVE node
- *   if all nodes are disabled:
- *     Set NOIPHOST ip flags from per-node NoIPHostOnAllDisabled tunable
- *   else
- *     Set NOIPHOST ip flags for disabled nodes
- */
-static void set_ipflags_internal(struct ipalloc_state *ipalloc_state,
-				 struct ctdb_node_map *nodemap,
-				 uint32_t *tval_noiptakeover,
-				 uint32_t *tval_noiphostonalldisabled)
-{
-	int i;
-
-	for (i=0;i<nodemap->num;i++) {
-		/* Can not take IPs on node with NoIPTakeover set */
-		if (tval_noiptakeover[i] != 0) {
-			ipalloc_state->noiptakeover[i] = true;
-		}
-
-		/* Can not host IPs on INACTIVE node */
-		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
-			ipalloc_state->noiphost[i] = true;
-		}
-	}
-
-	if (all_nodes_are_disabled(nodemap)) {
-		/* If all nodes are disabled, can not host IPs on node
-		 * with NoIPHostOnAllDisabled set
-		 */
-		for (i=0;i<nodemap->num;i++) {
-			if (tval_noiphostonalldisabled[i] != 0) {
-				ipalloc_state->noiphost[i] = true;
-			}
-		}
-	} else {
-		/* If some nodes are not disabled, then can not host
-		 * IPs on DISABLED node
-		 */
-		for (i=0;i<nodemap->num;i++) {
-			if (nodemap->node[i].flags & NODE_FLAGS_DISABLED) {
-				ipalloc_state->noiphost[i] = true;
-			}
-		}
-	}
-}
-
 static struct ctdb_node_map *
 ctdb_node_map_old_to_new(TALLOC_CTX *mem_ctx,
 			 const struct ctdb_node_map_old *old)
@@ -1409,7 +1345,7 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 		return false;
 	}
 
-	set_ipflags_internal(ipalloc_state, new,
+	ipalloc_set_node_flags(ipalloc_state, new,
 			     tval_noiptakeover,
 			     tval_noiphostonalldisabled);
 
@@ -1531,12 +1467,10 @@ static void takeover_run_process_failures(struct ctdb_context *ctdb,
  *   + list of nodes to force rebalance (internal structure, currently
  *     no way to fetch, only used by LCP2 for nodes that have had new
  *     IP addresses added).
- * - Retrieve tunables NoIPTakeover and NoIPHostOnAllDisabled from all
- *   connected nodes - this is done separately so tunable values can
- *   be faked in unit testing
- * - Populate NoIPTakover tunable in IP allocation state
- * - Populate NoIPHost in IP allocation state, derived from node flags
- *   and NoIPHostOnAllDisabled tunable
+ * - Set IP flags for IP allocation based on node map and tunables
+ *   NoIPTakeover/NoIPHostOnAllDisabled from all connected nodes
+ *   (tunable fetching done separately so values can be faked in unit
+ *   testing)
  * - Retrieve known and available IP addresses (done separately so
  *   values can be faked in unit testing)
  * - Use ipalloc_set_public_ips() to set known and available IP
@@ -1592,7 +1526,8 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	}
 
 	if (!set_ipflags(ctdb, ipalloc_state, nodemap)) {
-		DEBUG(DEBUG_ERR,("Failed to set IP flags - aborting takeover run\n"));
+		DEBUG(DEBUG_ERR,
+		      ("Failed to set IP flags - aborting takeover run\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}

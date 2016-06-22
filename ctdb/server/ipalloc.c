@@ -161,6 +161,70 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state,
 	return ip_list;
 }
 
+static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
+{
+	int i;
+
+	for (i=0;i<nodemap->num;i++) {
+		if (!(nodemap->node[i].flags &
+		      (NODE_FLAGS_INACTIVE|NODE_FLAGS_DISABLED))) {
+			/* Found one completely healthy node */
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/* Set internal flags for IP allocation:
+ *   Clear ip flags
+ *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
+ *   Set NOIPHOST ip flag for each INACTIVE node
+ *   if all nodes are disabled:
+ *     Set NOIPHOST ip flags from per-node NoIPHostOnAllDisabled tunable
+ *   else
+ *     Set NOIPHOST ip flags for disabled nodes
+ */
+void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
+			    struct ctdb_node_map *nodemap,
+			    uint32_t *tval_noiptakeover,
+			    uint32_t *tval_noiphostonalldisabled)
+{
+	int i;
+
+	for (i=0;i<nodemap->num;i++) {
+		/* Can not take IPs on node with NoIPTakeover set */
+		if (tval_noiptakeover[i] != 0) {
+			ipalloc_state->noiptakeover[i] = true;
+		}
+
+		/* Can not host IPs on INACTIVE node */
+		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
+			ipalloc_state->noiphost[i] = true;
+		}
+	}
+
+	if (all_nodes_are_disabled(nodemap)) {
+		/* If all nodes are disabled, can not host IPs on node
+		 * with NoIPHostOnAllDisabled set
+		 */
+		for (i=0;i<nodemap->num;i++) {
+			if (tval_noiphostonalldisabled[i] != 0) {
+				ipalloc_state->noiphost[i] = true;
+			}
+		}
+	} else {
+		/* If some nodes are not disabled, then can not host
+		 * IPs on DISABLED node
+		 */
+		for (i=0;i<nodemap->num;i++) {
+			if (nodemap->node[i].flags & NODE_FLAGS_DISABLED) {
+				ipalloc_state->noiphost[i] = true;
+			}
+		}
+	}
+}
+
 bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *known_ips,
 			    struct ctdb_public_ip_list *available_ips)
