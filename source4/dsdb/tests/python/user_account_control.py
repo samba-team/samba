@@ -123,10 +123,16 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.admin_samdb = SamDB(url=ldaphost,
                                  session_info=system_session(),
                                  credentials=self.admin_creds, lp=lp)
+        self.domain_sid = security.dom_sid(self.admin_samdb.get_domain_sid())
+        self.base_dn = self.admin_samdb.domain_dn()
 
         self.unpriv_user = "testuser1"
         self.unpriv_user_pw = "samba123@"
         self.unpriv_creds = self.get_creds(self.unpriv_user, self.unpriv_user_pw)
+
+        delete_force(self.admin_samdb, "CN=testcomputer-t,OU=test_computer_ou1,%s" % (self.base_dn))
+        delete_force(self.admin_samdb, "OU=test_computer_ou1,%s" % (self.base_dn))
+        delete_force(self.admin_samdb, "CN=%s,CN=Users,%s" % (self.unpriv_user, self.base_dn))
 
         self.admin_samdb.newuser(self.unpriv_user, self.unpriv_user_pw)
         res = self.admin_samdb.search("CN=%s,CN=Users,%s" % (self.unpriv_user, self.admin_samdb.domain_dn()),
@@ -138,8 +144,6 @@ class UserAccountControlTests(samba.tests.TestCase):
         self.unpriv_user_dn = res[0].dn
 
         self.samdb = SamDB(url=ldaphost, credentials=self.unpriv_creds, lp=lp)
-        self.domain_sid = security.dom_sid(self.samdb.get_domain_sid())
-        self.base_dn = self.samdb.domain_dn()
 
         self.samr = samr.samr("ncacn_ip_tcp:%s[seal]" % host, lp, self.unpriv_creds)
         self.samr_handle = self.samr.Connect2(None, security.SEC_FLAG_MAXIMUM_ALLOWED)
