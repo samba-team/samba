@@ -1562,12 +1562,11 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	}
 
 	/* Do the IP reassignment calculations */
-	ipalloc(ipalloc_state);
-	if (ipalloc_state->all_ips == NULL) {
+	all_ips = ipalloc(ipalloc_state);
+	if (all_ips == NULL) {
 		talloc_free(tmp_ctx);
 		return -1;
 	}
-	all_ips = ipalloc_state->all_ips;
 
 	/* Now tell all nodes to release any public IPs should not
 	 * host.  This will be a NOOP on nodes that don't currently

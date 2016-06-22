@@ -265,7 +265,7 @@ bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 }
 
 /* The calculation part of the IP allocation algorithm. */
-bool ipalloc(struct ipalloc_state *ipalloc_state)
+struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 {
 	bool ret = false;
 
@@ -285,5 +285,5 @@ bool ipalloc(struct ipalloc_state *ipalloc_state)
 	   or -1 if there is no node that can cover this ip
 	*/
 
-	return ret;
+	return (ret ? ipalloc_state->all_ips : NULL);
 }
