@@ -57,7 +57,7 @@
 	} while (0)
 
 #define torture_assert_wbc_ok_goto_fail(torture_ctx,expr,cmt,cmt_arg)			\
-	torture_assert_wbc_equal(torture_ctx,expr,WBC_ERR_SUCCESS,cmt,cmt_arg)
+	torture_assert_wbc_equal_goto_fail(torture_ctx,expr,WBC_ERR_SUCCESS,cmt,cmt_arg)
 
 #define torture_assert_str_equal_goto_fail(torture_ctx,got,expected,cmt)\
 	do { const char *__got = (got), *__expected = (expected); \
