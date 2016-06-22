@@ -21,9 +21,6 @@
 
 #include "ctdbd_test.c"
 
-/* This is lazy... but it is test code! */
-#define CTDB_TEST_MAX_NODES 256
-
 static void print_ctdb_public_ip_list(struct public_ip_list * ips)
 {
 	while (ips) {
@@ -129,10 +126,10 @@ static void read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 	enum ctdb_runstate *runstate;
 
 	*known = talloc_zero_array(ctx, struct ctdb_public_ip_list,
-				   CTDB_TEST_MAX_NODES);
+				   numnodes);
 	assert(*known != NULL);
 	*avail = talloc_zero_array(ctx, struct ctdb_public_ip_list,
-				   CTDB_TEST_MAX_NODES);
+				   numnodes);
 	assert(*avail != NULL);
 
 	if (multi) {
@@ -266,10 +263,6 @@ static void ctdb_test_init(const char nodestates[],
 		nodemap->nodes[n].flags = (uint32_t) strtol(tok, NULL, 0);
 		nodemap->nodes[n].addr = sa_zero;
 		nodemap->num++;
-		if (nodemap->num >= CTDB_TEST_MAX_NODES) {
-			DEBUG(DEBUG_ERR, ("ERROR: Exceeding CTDB_TEST_MAX_NODES: %d\n", CTDB_TEST_MAX_NODES));
-			exit(1);
-		}
 		tok = strtok(NULL, ",");
 	}
 	
