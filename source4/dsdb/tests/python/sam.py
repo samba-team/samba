@@ -42,6 +42,7 @@ from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_ADMINS,
 
 from samba.dcerpc import security
 from samba.tests import delete_force
+from samba import gensec
 
 parser = optparse.OptionParser("sam.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -62,6 +63,7 @@ host = args[0]
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
+creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
 class SamTests(samba.tests.TestCase):
 
