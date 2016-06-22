@@ -26,6 +26,20 @@
 
 #include "server/ipalloc.h"
 
+struct ipalloc_state {
+	uint32_t num;
+
+	/* Arrays with data for each node */
+	struct ctdb_public_ip_list *available_public_ips;
+	bool *noiptakeover;
+	bool *noiphost;
+
+	struct public_ip_list *all_ips;
+	enum ipalloc_algorithm algorithm;
+	bool no_ip_failback;
+	uint32_t *force_rebalance_nodes;
+};
+
 bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
 			  int32_t pnn,
 			  struct public_ip_list *ip);

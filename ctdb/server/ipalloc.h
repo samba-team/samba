@@ -43,19 +43,7 @@ enum ipalloc_algorithm {
 	IPALLOC_LCP2,
 };
 
-struct ipalloc_state {
-	uint32_t num;
-
-	/* Arrays with data for each node */
-	struct ctdb_public_ip_list *available_public_ips;
-	bool *noiptakeover;
-	bool *noiphost;
-
-	struct public_ip_list *all_ips;
-	enum ipalloc_algorithm algorithm;
-	bool no_ip_failback;
-	uint32_t *force_rebalance_nodes;
-};
+struct ipalloc_state;
 
 struct ipalloc_state * ipalloc_state_init(TALLOC_CTX *mem_ctx,
 					  uint32_t num_nodes,
