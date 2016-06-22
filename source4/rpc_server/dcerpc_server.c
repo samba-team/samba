@@ -408,6 +408,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->allow_bind = true;
 	p->max_recv_frag = 5840;
 	p->max_xmit_frag = 5840;
+	p->max_total_request_size = DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE;
 
 	*_p = p;
 	return NT_STATUS_OK;
@@ -1532,7 +1533,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		/*
 		 * Up to 4 MByte are allowed by all fragments
 		 */
-		available = DCERPC_NCACN_PAYLOAD_MAX_SIZE;
+		available = dce_conn->max_total_request_size;
 		if (er->stub_and_verifier.length > available) {
 			dcesrv_call_disconnect_after(existing,
 				"dcesrv_auth_request - existing payload too large");
@@ -1585,7 +1586,7 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		/*
 		 * Up to 4 MByte are allowed by all fragments
 		 */
-		if (call->pkt.u.request.alloc_hint > DCERPC_NCACN_PAYLOAD_MAX_SIZE) {
+		if (call->pkt.u.request.alloc_hint > dce_conn->max_total_request_size) {
 			dcesrv_call_disconnect_after(call,
 				"dcesrv_auth_request - initial alloc hint too large");
 			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
