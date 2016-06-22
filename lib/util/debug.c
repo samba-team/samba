@@ -653,7 +653,7 @@ static bool debug_parse_param(char *param)
 {
 	char *class_name;
 	char *class_level;
-	char *saveptr;
+	char *saveptr = NULL;
 	int ndx;
 
 	class_name = strtok_r(param, ":", &saveptr);
