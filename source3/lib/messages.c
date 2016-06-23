@@ -516,10 +516,12 @@ NTSTATUS messaging_send(struct messaging_context *msg_ctx,
 			struct server_id server, uint32_t msg_type,
 			const DATA_BLOB *data)
 {
-	struct iovec iov;
+	struct iovec iov = {0};
 
-	iov.iov_base = data->data;
-	iov.iov_len = data->length;
+	if (data != NULL) {
+		iov.iov_base = data->data;
+		iov.iov_len = data->length;
+	};
 
 	return messaging_send_iov(msg_ctx, server, msg_type, &iov, 1, NULL, 0);
 }
