@@ -2327,6 +2327,7 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 					valid_realm = true;
 					ignored_realm = true;
 				}
+				/* FALL THROUGH */
 			case SEC_ADS:
 				valid_security = true;
 			}
