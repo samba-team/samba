@@ -550,6 +550,13 @@ sub setup_simpleserver($$)
         vfs objects = aio_fork
         read only = no
         vfs_aio_fork:erratic_testing_mode=yes
+
+[dosmode]
+	path = $prefix_abs/share
+	vfs objects =
+	store dos attributes = yes
+	hide files = /hidefile/
+	hide dot files = yes
 ";
 
 	my $vars = $self->provision($path,

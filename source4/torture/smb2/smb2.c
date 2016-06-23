@@ -170,6 +170,7 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_1smb2_test(suite, "hold-oplock", test_smb2_hold_oplock);
 	torture_suite_add_suite(suite, torture_smb2_session_init());
 	torture_suite_add_suite(suite, torture_smb2_replay_init());
+	torture_suite_add_simple_test(suite, "dosmode", torture_smb2_dosmode);
 
 	torture_suite_add_suite(suite, torture_smb2_doc_init());
 
