@@ -198,7 +198,6 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	int32_t cstatus=-1;
 	TDB_DATA outdata;
 	struct ctdb_node_map_old *m;
-	uint32_t failure_flags;
 	bool ok = false;
 	uint32_t i;
 	int ret;
@@ -228,10 +227,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 		goto fail;
 	}
 
-	failure_flags = NODE_FLAGS_BANNED | NODE_FLAGS_DISCONNECTED
-		| NODE_FLAGS_PERMANENTLY_DISABLED | NODE_FLAGS_STOPPED;
-
-	if ((m->nodes[i].flags & failure_flags) != 0) {
+	if ((m->nodes[i].flags & NODE_FLAGS_INACTIVE) != 0) {
 		DEBUG(2, ("Node has status %x, not active\n",
 			  (int)m->nodes[i].flags));
 		goto fail;
