@@ -552,6 +552,31 @@ err_out:
 	return status;
 }
 
+static uint32_t dos_mode_from_name(connection_struct *conn,
+				   const struct smb_filename *smb_fname)
+{
+	const char *p = NULL;
+	uint32_t result = 0;
+
+	if (lp_hide_dot_files(SNUM(conn))) {
+		p = strrchr_m(smb_fname->base_name, '/');
+		if (p) {
+			p++;
+		} else {
+			p = smb_fname->base_name;
+		}
+
+		/* Only . and .. are not hidden. */
+		if ((p[0] == '.') &&
+		    !((p[1] == '\0') || (p[1] == '.' && p[2] == '\0')))
+		{
+			result |= FILE_ATTRIBUTE_HIDDEN;
+		}
+	}
+
+	return result;
+}
+
 /****************************************************************************
  Change a unix mode to a dos mode.
  May also read the create timespec into the stat struct in smb_fname
@@ -569,22 +594,7 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		return 0;
 	}
 
-	/* First do any modifications that depend on the path name. */
-	/* hide files with a name starting with a . */
-	if (lp_hide_dot_files(SNUM(conn))) {
-		const char *p = strrchr_m(smb_fname->base_name,'/');
-		if (p) {
-			p++;
-		} else {
-			p = smb_fname->base_name;
-		}
-
-		/* Only . and .. are not hidden. */
-		if (p[0] == '.' && !((p[1] == '\0') ||
-				(p[1] == '.' && p[2] == '\0'))) {
-			result |= FILE_ATTRIBUTE_HIDDEN;
-		}
-	}
+	result |= dos_mode_from_name(conn, smb_fname);
 
 	/* Get the DOS attributes from an EA by preference. */
 	if (!get_ea_dos_attribute(conn, smb_fname, &result)) {
