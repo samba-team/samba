@@ -74,6 +74,12 @@ struct notify_context *notify_init(
 		return NULL;
 	}
 
+	{
+		struct server_id_buf tmp;
+		DBG_DEBUG("notifyd=%s\n",
+			  server_id_str_buf(ctx->notifyd, &tmp));
+	}
+
 	if (callback != NULL) {
 		status = messaging_register(msg, ctx, MSG_PVFS_NOTIFY,
 					    notify_handler);
