@@ -804,6 +804,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 		TALLOC_FREE(call->context);
 
+		if (call->fault_code == DCERPC_NCA_S_PROTO_ERROR) {
+			return dcesrv_bind_nak(call,
+			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED);
+		}
+
 		if (auth->auth_level != DCERPC_AUTH_LEVEL_NONE) {
 			/*
 			 * We only give INVALID_AUTH_TYPE if the auth_level was
@@ -936,6 +941,9 @@ static NTSTATUS dcesrv_auth3(struct dcesrv_call_state *call)
 	/* handle the auth3 in the auth code */
 	if (!dcesrv_auth_auth3(call)) {
 		call->conn->auth_state.auth_invalid = true;
+		if (call->fault_code != 0) {
+			return dcesrv_fault_disconnect(call, call->fault_code);
+		}
 	}
 
 	talloc_free(call);
@@ -1105,9 +1113,8 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 
 	auth_ok = dcesrv_auth_alter(call);
 	if (!auth_ok) {
-		if (call->in_auth_info.auth_type == DCERPC_AUTH_TYPE_NONE) {
-			return dcesrv_fault_disconnect(call,
-					DCERPC_FAULT_ACCESS_DENIED);
+		if (call->fault_code != 0) {
+			return dcesrv_fault_disconnect(call, call->fault_code);
 		}
 	}
 
