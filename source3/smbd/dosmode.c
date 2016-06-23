@@ -577,6 +577,12 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 		}
 	}
 
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
+	    IS_HIDDEN_PATH(conn, smb_fname->base_name))
+	{
+		result |= FILE_ATTRIBUTE_HIDDEN;
+	}
+
 	return result;
 }
 
@@ -617,13 +623,6 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	}
 
 	result |= dos_mode_from_name(conn, smb_fname, result);
-
-	/* Optimization : Only call is_hidden_path if it's not already
-	   hidden. */
-	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
-	    IS_HIDDEN_PATH(conn, smb_fname->base_name)) {
-		result |= FILE_ATTRIBUTE_HIDDEN;
-	}
 
 	if (result == 0) {
 		result = FILE_ATTRIBUTE_NORMAL;
