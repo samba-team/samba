@@ -2609,6 +2609,8 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 			}
 			tevent_req_set_callback(subreq, recovery_failed_done,
 						req);
+		} else {
+			tevent_req_error(req, EIO);
 		}
 		return;
 	}
