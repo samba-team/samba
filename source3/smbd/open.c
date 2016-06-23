@@ -2517,7 +2517,19 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!posix_open) {
 		new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
 		if (file_existed) {
-			existing_dos_attributes = dos_mode(conn, smb_fname);
+			/*
+			 * Only use strored DOS attributes for checks
+			 * against requested attributes (below via
+			 * open_match_attributes()), cf bug #11992
+			 * for details. -slow
+			 */
+			bool ok;
+			uint32_t attr = 0;
+
+			ok = get_ea_dos_attribute(conn, smb_fname, &attr);
+			if (ok) {
+				existing_dos_attributes = attr;
+			}
 		}
 	}
 
