@@ -570,12 +570,15 @@ err_out:
 }
 
 static uint32_t dos_mode_from_name(connection_struct *conn,
-				   const struct smb_filename *smb_fname)
+				   const struct smb_filename *smb_fname,
+				   uint32_t dosmode)
 {
 	const char *p = NULL;
-	uint32_t result = 0;
+	uint32_t result = dosmode;
 
-	if (lp_hide_dot_files(SNUM(conn))) {
+	if (!(result & FILE_ATTRIBUTE_HIDDEN) &&
+	    lp_hide_dot_files(SNUM(conn)))
+	{
 		p = strrchr_m(smb_fname->base_name, '/');
 		if (p) {
 			p++;
@@ -611,8 +614,6 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 		return 0;
 	}
 
-	result |= dos_mode_from_name(conn, smb_fname);
-
 	/* Get the DOS attributes from an EA by preference. */
 	if (!get_ea_dos_attribute(conn, smb_fname, &result)) {
 		result |= dos_mode_from_sbuf(conn, smb_fname);
@@ -631,6 +632,8 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 			result |= FILE_ATTRIBUTE_COMPRESSED;
 		}
 	}
+
+	result |= dos_mode_from_name(conn, smb_fname, result);
 
 	/* Optimization : Only call is_hidden_path if it's not already
 	   hidden. */
