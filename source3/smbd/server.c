@@ -595,6 +595,18 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		return;
 	}
 
+	if (pid == procid_to_pid(&parent->notifyd)) {
+		bool ok;
+
+		DBG_WARNING("Restarting notifyd\n");
+		ok = smbd_notifyd_init(parent->msg_ctx, false,
+				       &parent->notifyd);
+		if (!ok) {
+			DBG_ERR("Failed to restart notifyd\n");
+		}
+		return;
+	}
+
 	iov[0] = (struct iovec) { .iov_base = (uint8_t *)&pid,
 				  .iov_len = sizeof(pid) };
 	iov[1] = (struct iovec) { .iov_base = (uint8_t *)&unclean_shutdown,
