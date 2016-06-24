@@ -577,7 +577,7 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		return;
 	}
 
-	if (child->pid == procid_to_pid(&parent->cleanupd)) {
+	if (pid == procid_to_pid(&parent->cleanupd)) {
 		bool ok;
 
 		DBG_WARNING("Restarting cleanupd\n");
