@@ -763,7 +763,12 @@ int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 	}
 
 	if (hdr->operation != CTDB_REPLY_CALL) {
-		DEBUG(0, ("received invalid reply\n"));
+		if (hdr->operation == CTDB_REPLY_ERROR) {
+			DBG_ERR("received error from ctdb\n");
+		} else {
+			DBG_ERR("received invalid reply\n");
+		}
+		ret = EIO;
 		goto fail;
 	}
 
