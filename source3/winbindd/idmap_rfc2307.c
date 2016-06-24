@@ -670,9 +670,7 @@ again:
 			break;
 
 		default:
-			DEBUG(10, ("Nothing to do for SID %s, "
-				   "previous name lookup failed\n",
-				   sid_string_dbg(map->map->sid)));
+			break;
 		}
 
 		if (!fltr_usr || !fltr_grp) {
