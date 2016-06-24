@@ -33,6 +33,12 @@ struct notify_change_event {
 
 struct notify_change_buf {
 	/*
+	 * Filters for reinitializing after notifyd has been restarted
+	 */
+	uint32_t filter;
+	uint32_t subdir_filter;
+
+	/*
 	 * If no requests are pending, changes are queued here. Simple array,
 	 * we only append.
 	 */
@@ -275,7 +281,6 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 {
 	size_t len = fsp_fullbasepath(fsp, NULL, 0);
 	char fullpath[len+1];
-	uint32_t subdir_filter;
 	NTSTATUS status = NT_STATUS_NOT_IMPLEMENTED;
 
 	if (fsp->notify != NULL) {
@@ -288,6 +293,8 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+	fsp->notify->filter = filter;
+	fsp->notify->subdir_filter = recursive ? filter : 0;
 
 	fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
 
@@ -298,11 +305,11 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 		fullpath[len-2] = '\0';
 	}
 
-	subdir_filter = recursive ? filter : 0;
-
-	if ((filter != 0) || (subdir_filter != 0)) {
+	if ((fsp->notify->filter != 0) ||
+	    (fsp->notify->subdir_filter != 0)) {
 		status = notify_add(fsp->conn->sconn->notify_ctx,
-				    fullpath, filter, subdir_filter, fsp);
+				    fullpath, fsp->notify->filter,
+				    fsp->notify->subdir_filter, fsp);
 	}
 
 	return status;
