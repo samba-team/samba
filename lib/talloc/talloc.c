@@ -1368,15 +1368,22 @@ _PUBLIC_ int talloc_unlink(const void *context, void *ptr)
 /*
   add a name to an existing pointer - va_list version
 */
-static inline const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
+static inline const char *tc_set_name_v(struct talloc_chunk *tc,
+				const char *fmt,
+				va_list ap) PRINTF_ATTRIBUTE(2,0);
 
-static inline const char *talloc_set_name_v(const void *ptr, const char *fmt, va_list ap)
+static inline const char *tc_set_name_v(struct talloc_chunk *tc,
+				const char *fmt,
+				va_list ap)
 {
-	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
-	tc->name = talloc_vasprintf(ptr, fmt, ap);
-	if (likely(tc->name)) {
-		_tc_set_name_const(talloc_chunk_from_ptr(tc->name),
-				".name");
+	struct talloc_chunk *name_tc = _vasprintf_tc(TC_PTR_FROM_CHUNK(tc),
+							fmt,
+							ap);
+	if (likely(name_tc)) {
+		tc->name = TC_PTR_FROM_CHUNK(name_tc);
+		_tc_set_name_const(name_tc, ".name");
+	} else {
+		tc->name = NULL;
 	}
 	return tc->name;
 }
@@ -1386,10 +1393,11 @@ static inline const char *talloc_set_name_v(const void *ptr, const char *fmt, va
 */
 _PUBLIC_ const char *talloc_set_name(const void *ptr, const char *fmt, ...)
 {
+	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	const char *name;
 	va_list ap;
 	va_start(ap, fmt);
-	name = talloc_set_name_v(ptr, fmt, ap);
+	name = tc_set_name_v(tc, fmt, ap);
 	va_end(ap);
 	return name;
 }
@@ -1411,7 +1419,7 @@ _PUBLIC_ void *talloc_named(const void *context, size_t size, const char *fmt, .
 	if (unlikely(ptr == NULL)) return NULL;
 
 	va_start(ap, fmt);
-	name = talloc_set_name_v(ptr, fmt, ap);
+	name = tc_set_name_v(tc, fmt, ap);
 	va_end(ap);
 
 	if (unlikely(name == NULL)) {
@@ -1507,7 +1515,7 @@ _PUBLIC_ void *talloc_init(const char *fmt, ...)
 	if (unlikely(ptr == NULL)) return NULL;
 
 	va_start(ap, fmt);
-	name = talloc_set_name_v(ptr, fmt, ap);
+	name = tc_set_name_v(tc, fmt, ap);
 	va_end(ap);
 
 	if (unlikely(name == NULL)) {
