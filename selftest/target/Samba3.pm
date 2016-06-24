@@ -464,6 +464,9 @@ sub setup_admember_rfc2307($$$$)
 	security = ads
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
+        idmap config * : backend = autorid
+        idmap config * : range = 1000000-1999999
+        idmap config * : rangesize = 100000
         idmap config $dcvars->{DOMAIN} : backend = rfc2307
         idmap config $dcvars->{DOMAIN} : range = 2000000-2999999
         idmap config $dcvars->{DOMAIN} : ldap_server = ad
