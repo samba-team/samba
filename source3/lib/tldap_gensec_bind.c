@@ -45,7 +45,8 @@ struct tldap_gensec_bind_state {
 };
 
 static void tldap_gensec_bind_got_mechs(struct tevent_req *subreq);
-static void tldap_gensec_update_done(struct tevent_req *subreq);
+static void tldap_gensec_update_done(struct tldap_gensec_bind_state *state,
+				struct tevent_req *subreq);
 static void tldap_gensec_bind_done(struct tevent_req *subreq);
 
 struct tevent_req *tldap_gensec_bind_send(
@@ -215,25 +216,16 @@ static void tldap_gensec_bind_got_mechs(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = gensec_update_send(state, state->ev, state->gensec,
-				    data_blob_null);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, tldap_gensec_update_done, req);
+	state->gensec_status = gensec_update(state->gensec, state,
+						data_blob_null,
+						&state->gensec_output);
+	tldap_gensec_update_done(state, req);
 }
 
-static void tldap_gensec_update_done(struct tevent_req *subreq)
+static void tldap_gensec_update_done(struct tldap_gensec_bind_state *state,
+					struct tevent_req *req)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct tldap_gensec_bind_state *state = tevent_req_data(
-		req, struct tldap_gensec_bind_state);
-
-	state->gensec_status = gensec_update_recv(
-		subreq, state, &state->gensec_output);
-
-	TALLOC_FREE(subreq);
+	struct tevent_req *subreq;
 
 	if (!NT_STATUS_IS_OK(state->gensec_status) &&
 	    !NT_STATUS_EQUAL(state->gensec_status,
@@ -289,11 +281,10 @@ static void tldap_gensec_bind_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = gensec_update_send(state, state->ev, state->gensec, input);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, tldap_gensec_update_done, req);
+	state->gensec_status = gensec_update(state->gensec, state,
+						input,
+						&state->gensec_output);
+	tldap_gensec_update_done(state, req);
 }
 
 TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req)
