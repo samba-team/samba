@@ -162,7 +162,7 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 
 	if (e_text != NULL) {
 		dec_err.text.length = strlen(e_text);
-		dec_err.text.data = discard_const_p(e_text, char);
+		dec_err.text.data = discard_const_p(char, e_text);
 	}
 	if (e_data != NULL) {
 		dec_err.e_data = *e_data;
