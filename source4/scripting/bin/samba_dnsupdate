@@ -69,7 +69,6 @@ parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--current-ip", action="append", help="IP address to update DNS to match (helpful if behind NAT, valid multiple times, defaults to values from interfaces=)")
 parser.add_option("--rpc-server-ip", type="string", help="IP address of server to use with samba-tool (defaults to first --current-ip)")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
-parser.add_option("--add-ns", action="store_true", help="Add an NS record to the DNS file for self-tests. Can only be used with --use-file")
 parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
 parser.add_option("--update-cache", type="string", help="Cache database of already registered records")
 parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
@@ -682,15 +681,6 @@ dup_set = set()
 cache_set = set()
 
 rebuild_cache = False
-
-# Add an NS line if asked to ...
-if opts.add_ns:
-    if opts.use_file is None:
-        print "Option --add-ns can only be used with --use-file"
-        sys.exit(1)
-    else:
-        dns_list.append(parse_dns_line("NS ${DNSDOMAIN} ${HOSTNAME}", sub_vars))
-
 try:
     cfile = open(dns_update_cache, 'r+')
 except IOError:
