@@ -1142,7 +1142,7 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 					TALLOC_CTX *ctx, ADS_STRUCT *ads,
 					const char *machine_name,
 					const struct sockaddr_storage *addrs,
-					int num_addrs)
+					int num_addrs, bool remove_host)
 {
 	struct dns_rr_ns *nameservers = NULL;
 	int ns_count = 0, i;
@@ -1232,6 +1232,14 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 			flags &= ~DNS_UPDATE_UNSIGNED_SUFFICIENT;
 		}
 
+		/*
+		 *  Do not return after PROBE completion if this function
+		 *  is called for DNS removal.
+		 */
+		if (remove_host) {
+			flags &= ~DNS_UPDATE_PROBE_SUFFICIENT;
+		}
+
 		status = NT_STATUS_UNSUCCESSFUL;
 
 		/* Now perform the dns update - we'll try non-secure and if we fail,
@@ -1239,7 +1247,13 @@ static NTSTATUS net_update_dns_internal(struct net_context *c,
 
 		fstrcpy( dns_server, nameservers[i].hostname );
 
-		dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs, flags);
+		dns_err = DoDNSUpdate(dns_server,
+				      dnsdomain,
+				      machine_name,
+		                      addrs,
+				      num_addrs,
+				      flags,
+				      remove_host);
 		if (ERR_DNS_IS_OK(dns_err)) {
 			status = NT_STATUS_OK;
 			goto done;
@@ -1270,7 +1284,7 @@ static NTSTATUS net_update_dns_ext(struct net_context *c,
 				   TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
 				   const char *hostname,
 				   struct sockaddr_storage *iplist,
-				   int num_addrs)
+				   int num_addrs, bool remove_host)
 {
 	struct sockaddr_storage *iplist_alloc = NULL;
 	fstring machine_name;
@@ -1285,7 +1299,11 @@ static NTSTATUS net_update_dns_ext(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (num_addrs == 0 || iplist == NULL) {
+	/*
+	 * If remove_host is true, then remove all IP addresses associated with
+	 * this hostname from the AD server.
+	 */
+	if (!remove_host && (num_addrs == 0 || iplist == NULL)) {
 		/*
 		 * Get our ip address
 		 * (not the 127.0.0.x address but a real ip address)
@@ -1300,7 +1318,7 @@ static NTSTATUS net_update_dns_ext(struct net_context *c,
 	}
 
 	status = net_update_dns_internal(c, mem_ctx, ads, machine_name,
-					 iplist, num_addrs);
+					 iplist, num_addrs, remove_host);
 
 	SAFE_FREE(iplist_alloc);
 	return status;
@@ -1310,7 +1328,7 @@ static NTSTATUS net_update_dns(struct net_context *c, TALLOC_CTX *mem_ctx, ADS_S
 {
 	NTSTATUS status;
 
-	status = net_update_dns_ext(c, mem_ctx, ads, hostname, NULL, 0);
+	status = net_update_dns_ext(c, mem_ctx, ads, hostname, NULL, 0, false);
 	return status;
 }
 #endif
@@ -1708,7 +1726,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	ntstatus = net_update_dns_ext(c, ctx, ads, hostname, addrs, num_addrs);
+	ntstatus = net_update_dns_ext(c, ctx, ads, hostname, addrs, num_addrs, false);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_fprintf( stderr, _("DNS update failed!\n") );
 		ads_destroy( &ads );
@@ -1717,6 +1735,70 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	}
 
 	d_fprintf( stderr, _("Successfully registered hostname with DNS\n") );
+
+	ads_destroy(&ads);
+	TALLOC_FREE( ctx );
+
+	return 0;
+#else
+	d_fprintf(stderr,
+		  _("DNS update support not enabled at compile time!\n"));
+	return -1;
+#endif
+}
+
+static int net_ads_dns_unregister(struct net_context *c,
+				  int argc,
+				  const char **argv)
+{
+#if defined(WITH_DNS_UPDATES)
+	ADS_STRUCT *ads;
+	ADS_STATUS status;
+	NTSTATUS ntstatus;
+	TALLOC_CTX *ctx;
+	const char *hostname = NULL;
+
+#ifdef DEVELOPER
+	talloc_enable_leak_report();
+#endif
+
+	if (argc != 1) {
+		c->display_usage = true;
+	}
+
+	if (c->display_usage) {
+		d_printf(  "%s\n"
+			   "net ads dns unregister [hostname]\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Register hostname with DNS\n"));
+		return -1;
+	}
+
+	if (!(ctx = talloc_init("net_ads_dns"))) {
+		d_fprintf(stderr, _("Could not initialise talloc context\n"));
+		return -1;
+	}
+
+	/* Get the hostname for un-registering */
+	hostname = argv[0];
+
+	status = ads_startup(c, true, &ads);
+	if ( !ADS_ERR_OK(status) ) {
+		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
+		TALLOC_FREE(ctx);
+		return -1;
+	}
+
+	ntstatus = net_update_dns_ext(c, ctx, ads, hostname, NULL, 0, true);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		d_fprintf( stderr, _("DNS update failed!\n") );
+		ads_destroy( &ads );
+		TALLOC_FREE( ctx );
+		return -1;
+	}
+
+	d_fprintf( stderr, _("Successfully un-registered hostname from DNS\n"));
 
 	ads_destroy(&ads);
 	TALLOC_FREE( ctx );
@@ -1769,6 +1851,14 @@ static int net_ads_dns(struct net_context *c, int argc, const char *argv[])
 			N_("Add host dns entry to AD"),
 			N_("net ads dns register\n"
 			   "    Add host dns entry to AD")
+		},
+		{
+			"unregister",
+			net_ads_dns_unregister,
+			NET_TRANSPORT_ADS,
+			N_("Remove host dns entry from AD"),
+			N_("net ads dns unregister\n"
+			   "    Remove host dns entry from AD")
 		},
 		{
 			"gethostbyname",

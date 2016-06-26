@@ -36,7 +36,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
 		      const struct sockaddr_storage *sslist,
 		      size_t num_addrs,
-		      uint32_t flags);
+		      uint32_t flags, bool remove_host);
 
 DNS_ERROR do_gethostbyname(const char *server, const char *host);
 
