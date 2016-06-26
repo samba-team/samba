@@ -91,8 +91,15 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (sid == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, sid,
-				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+
+	*out = data_blob_talloc(mem_ctx, NULL,
+				ndr_size_dom_sid(sid, 0));
+	if (out->data == NULL) {
+		return -1;
+	}
+	
+	ndr_err = ndr_push_struct_into_fixed_blob(out, sid,
+			(ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
