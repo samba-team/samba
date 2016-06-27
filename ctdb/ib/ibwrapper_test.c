@@ -23,6 +23,7 @@
 #include "replace.h"
 #include "system/network.h"
 #include "system/time.h"
+#include "system/wait.h"
 
 #include <assert.h>
 #include <talloc.h>
