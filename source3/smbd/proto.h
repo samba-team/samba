@@ -257,6 +257,9 @@ int dos_attributes_to_stat_dos_flags(uint32_t dosmode);
 uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32_t dosmode, const char *parent_dir, bool newfile);
+bool get_ea_dos_attribute(connection_struct *conn,
+			  struct smb_filename *smb_fname,
+			  uint32_t *pattr);
 NTSTATUS file_set_sparse(connection_struct *conn,
 			 struct files_struct *fsp,
 			 bool sparse);
