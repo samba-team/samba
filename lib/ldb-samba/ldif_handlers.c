@@ -85,24 +85,32 @@ static int ldif_write_NDR(struct ldb_context *ldb, void *mem_ctx,
 static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 			       const struct ldb_val *in, struct ldb_val *out)
 {
+	bool ret;
 	enum ndr_err_code ndr_err;
-	struct dom_sid *sid;
-	sid = dom_sid_parse_length(mem_ctx, in);
-	if (sid == NULL) {
+	struct dom_sid sid;
+	if (in->length > DOM_SID_STR_BUFLEN) {
 		return -1;
-	}
-
-	*out = data_blob_talloc(mem_ctx, NULL,
-				ndr_size_dom_sid(sid, 0));
-	if (out->data == NULL) {
-		return -1;
-	}
+	} else {
+		char p[in->length+1];
+		memcpy(p, in->data, in->length);
+		p[in->length] = '\0';
+		
+		ret = dom_sid_parse(p, &sid);
+		if (ret == false) {
+			return -1;
+		}
+		
+		*out = data_blob_talloc(mem_ctx, NULL,
+					ndr_size_dom_sid(&sid, 0));
+		if (out->data == NULL) {
+			return -1;
+		}
 	
-	ndr_err = ndr_push_struct_into_fixed_blob(out, sid,
-			(ndr_push_flags_fn_t)ndr_push_dom_sid);
-	talloc_free(sid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return -1;
+		ndr_err = ndr_push_struct_into_fixed_blob(out, &sid,
+				(ndr_push_flags_fn_t)ndr_push_dom_sid);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return -1;
+		}
 	}
 	return 0;
 }
