@@ -257,9 +257,9 @@ static uint32_t dos_mode_from_sbuf(connection_struct *conn,
  This can also pull the create time into the stat struct inside smb_fname.
 ****************************************************************************/
 
-static bool get_ea_dos_attribute(connection_struct *conn,
-				 struct smb_filename *smb_fname,
-				 uint32_t *pattr)
+bool get_ea_dos_attribute(connection_struct *conn,
+			  struct smb_filename *smb_fname,
+			  uint32_t *pattr)
 {
 	struct xattr_DOSATTRIB dosattrib;
 	enum ndr_err_code ndr_err;
