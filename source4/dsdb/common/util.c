@@ -3720,7 +3720,10 @@ NTSTATUS dsdb_get_extended_dn_uint64(struct ldb_dn *dn, uint64_t *val, const cha
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	{
+	/* Just check we don't allow the caller to fill our stack */
+	if (v->length >= 64) {
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
 		char s[v->length+1];
 		memcpy(s, v->data, v->length);
 		s[v->length] = 0;
@@ -3750,7 +3753,10 @@ NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const cha
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	{
+	/* Just check we don't allow the caller to fill our stack */
+	if (v->length >= 32) {
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
 		char s[v->length + 1];
 		memcpy(s, v->data, v->length);
 		s[v->length] = 0;
@@ -3790,13 +3796,13 @@ NTSTATUS dsdb_get_extended_dn_sid(struct ldb_dn *dn, struct dom_sid *sid, const 
  */
 uint32_t dsdb_dn_rmd_flags(struct ldb_dn *dn)
 {
-	const struct ldb_val *v;
-	char buf[32];
-	v = ldb_dn_get_extended_component(dn, "RMD_FLAGS");
-	if (!v || v->length > sizeof(buf)-1) return 0;
-	strncpy(buf, (const char *)v->data, v->length);
-	buf[v->length] = 0;
-	return strtoul(buf, NULL, 10);
+	uint32_t rmd_flags = 0;
+	NTSTATUS status = dsdb_get_extended_dn_uint32(dn, &rmd_flags,
+						      "RMD_FLAGS");
+	if (NT_STATUS_IS_OK(status)) {
+		return rmd_flags;
+	}
+	return 0;
 }
 
 /*
