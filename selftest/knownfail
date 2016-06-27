@@ -90,8 +90,6 @@
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.lock.valid-request
 ^samba4.ldap.python \(ad_dc_ntvfs\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID\(.*\)$
-# some operations don't work over the CIFS NTVFS backend yet (eg. root_fid)
-^samba4.ntvfs.cifs.*.base.createx_sharemodes_dir
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.raw.open.ntcreatex_supersede
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
