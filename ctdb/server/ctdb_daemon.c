@@ -1026,6 +1026,8 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		goto failed;
 	}
 
+	DEBUG(DEBUG_NOTICE, ("Listening to ctdb socket %s\n",
+			     ctdb->daemon.name));
 	return 0;
 
 failed:
