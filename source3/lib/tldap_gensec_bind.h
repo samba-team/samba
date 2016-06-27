@@ -24,13 +24,6 @@
 #include "tldap.h"
 #include "auth/credentials/credentials.h"
 
-struct tevent_req *tldap_gensec_bind_send(
-	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct tldap_context *ctx, struct cli_credentials *creds,
-	const char *target_service, const char *target_hostname,
-	const char *target_principal, struct loadparm_context *lp_ctx,
-	uint32_t gensec_features);
-TLDAPRC tldap_gensec_bind_recv(struct tevent_req *req);
 TLDAPRC tldap_gensec_bind(
 	struct tldap_context *ctx, struct cli_credentials *creds,
 	const char *target_service, const char *target_hostname,
