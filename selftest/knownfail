@@ -88,8 +88,6 @@
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT
 .*net.api.delshare.*				# DelShare isn't implemented yet
 ^samba4.smb2.oplock.doc
-^samba4.smb2.compound.related3
-^samba4.smb2.compound.compound-break
 ^samba4.smb2.lock.valid-request
 ^samba4.ldap.python \(ad_dc_ntvfs\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID\(.*\)$
 # some operations don't work over the CIFS NTVFS backend yet (eg. root_fid)
