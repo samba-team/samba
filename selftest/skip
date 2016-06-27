@@ -34,6 +34,25 @@
 ^samba3.smbtorture_s3.*.pipe_number
 ^samba3.smbtorture_s3.LOCAL-DBTRANS #hangs for some reason
 ^samba3.smbtorture_s3.*.DIR1 #loops on 64 bit linux with ext4
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).LOCK9 # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).OPLOCK2 # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).STREAMERROR # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).DIR1 # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).DIR-CREATETIME # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).DELETE-LN # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).UID-REGRESSION-TEST # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).SHORTNAME-TEST # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-APPEND # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-SYMLINK-ACL # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-SYMLINK-EA # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-OFD-LOCK # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).PIDHIGH # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).NTTRANS-FSCTL # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).SMB2-NEGPROT # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).BAD-NBT-SESSION # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).SMB2-SESSION-REAUTH # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).SMB2-SESSION-RECONNECT # Fails against the s4 ntvfs server
 ^samba3.*base.charset
 ^samba3.*raw.context
 ^samba3.*raw.ioctl
