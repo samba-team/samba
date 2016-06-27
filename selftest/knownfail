@@ -87,10 +87,6 @@
 ^samba4.base.charset.*.Testing partial surrogate
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT
 .*net.api.delshare.*				# DelShare isn't implemented yet
-^samba4.rap.*netservergetinfo
-^samba4.rap.*netsessionenum
-^samba4.rap.*netsessiongetinfo
-^samba4.rap.*netremotetod
 # SMB2 in s4 does not seem to support rename correctly
 ^samba4.smb2.rename.simple\(.*\)$
 ^samba4.smb2.rename.no_sharing\(.*\)$
