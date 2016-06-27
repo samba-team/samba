@@ -1981,6 +1981,15 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+static void pwd_timeout_debug(struct tevent_context *unused1,
+			      struct tevent_timer *unused2,
+			      struct timeval unused3,
+			      void *unused4)
+{
+	DEBUG(0, ("WARNING: check_password_complexity: password script "
+		  "took more than 1 second to run\n"));
+}
+
 
 /*
  * Performs checks on a user password (plaintext UNIX format - attribute
@@ -2032,12 +2041,18 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
 		}
 
-		req = samba_runcmd_send(mem_ctx, event_ctx,
-					tevent_timeval_current_ofs(0, 10000000),
+		/* Gives a warning after 1 second, terminates after 10 */
+		tevent_add_timer(event_ctx, event_ctx,
+				 tevent_timeval_current_ofs(1, 0),
+				 pwd_timeout_debug, NULL);
+
+		req = samba_runcmd_send(event_ctx, event_ctx,
+					tevent_timeval_current_ofs(10, 0),
 					100, 100, cmd, NULL);
 		run_cmd = tevent_req_data(req, struct samba_runcmd_state);
 		if (write(run_cmd->fd_stdin, utf8_pw, utf8_len) != utf8_len) {
 			TALLOC_FREE(password_script);
+			TALLOC_FREE(event_ctx);
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
 		}
 
@@ -2046,23 +2061,31 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 
 		if (!tevent_req_poll(req, event_ctx)) {
 			TALLOC_FREE(password_script);
+			TALLOC_FREE(event_ctx);
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
 		}
 
 		check_ret = samba_runcmd_recv(req, &error);
-		TALLOC_FREE(req);
+		TALLOC_FREE(event_ctx);
 
-		DEBUG(5,("check_password_complexity: check password script (%s) "
-			 "returned [%d]\n", password_script, check_ret));
-		TALLOC_FREE(password_script);
+		if (error == ETIMEDOUT) {
+			DEBUG(0, ("check_password_complexity: check password script took too long!\n"));
+			TALLOC_FREE(password_script);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		} else {
+			DEBUG(5,("check_password_complexity: check password script (%s) "
+				 "returned [%d]\n", password_script, check_ret));
 
-		if (check_ret != 0) {
-			DEBUG(1,("check_password_complexity: "
-				 "check password script said new password is not good "
-				 "enough!\n"));
-			return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+			if (check_ret != 0) {
+				DEBUG(1,("check_password_complexity: "
+					 "check password script said new password is not good "
+					 "enough!\n"));
+				TALLOC_FREE(password_script);
+				return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
+			}
 		}
 
+		TALLOC_FREE(password_script);
 		return SAMR_VALIDATION_STATUS_SUCCESS;
 	}
 
