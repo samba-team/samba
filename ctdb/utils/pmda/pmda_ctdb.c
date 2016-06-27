@@ -274,10 +274,6 @@ err_ev:
 static void
 pmda_ctdb_daemon_disconnect(void)
 {
-	if (ctdb->methods) {
-		ctdb->methods->shutdown(ctdb);
-	}
-
 	if (ctdb->daemon.sd != -1) {
 		close(ctdb->daemon.sd);
 	}
