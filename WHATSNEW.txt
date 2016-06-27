@@ -171,6 +171,12 @@ encrypted form by configuring the new "password hash gpg key ids"
 option. This requires gpgme devel and python packages to be installed
 (e.g. libgpgme11-dev and python-gpgme on debian/ubuntu).
 
+Python crypto requirements
+--------------------------
+
+Some samba-tool subcommands require python-crypto and/or
+python-m2crypto packages to be installed.
+
 
 REMOVED FEATURES
 ================
