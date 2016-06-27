@@ -150,6 +150,7 @@ def configure(conf):
             have_pmda = True
         else:
             Logs.error("PMDA support not available")
+            sys.exit(1)
     if have_pmda:
         Logs.info('Building with PMDA support')
         conf.define('HAVE_PMDA', 1)
@@ -170,6 +171,7 @@ def configure(conf):
             have_infiniband = True
         else:
             Logs.error("Infiniband support not available")
+            sys.exit(1)
     if have_infiniband:
         Logs.info('Building with Infiniband support')
         conf.define('HAVE_INFINIBAND', 1)
