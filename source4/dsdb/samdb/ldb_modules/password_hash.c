@@ -2210,7 +2210,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
-				"the password doesn't fit by a certain reason!",
+				"the password doesn't fit due to a miscellaneous restriction!",
 				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
 				ldb_strerror(ret));
 			return ret;
