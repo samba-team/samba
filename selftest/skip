@@ -68,6 +68,7 @@
 ^samba4.base.casetable
 ^samba4.base.nttrans
 ^samba4.base.scan.maxfid
+^samba4.raw.eas
 ^samba4.raw.hold-oplock 		# Not a test, but a way to block other clients for a test
 ^samba4.smb2.hold-oplock 		# Not a test, but a way to block other clients for a test
 ^samba4.raw.ping.pong		# Needs second server to test
