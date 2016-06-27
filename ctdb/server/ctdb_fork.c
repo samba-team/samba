@@ -91,7 +91,7 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 			close(ctdb->daemon.sd);
 			ctdb->daemon.sd = -1;
 		}
-		if (ctdb->methods != NULL) {
+		if (ctdb->methods != NULL && ctdb->methods->shutdown != NULL) {
 			ctdb->methods->shutdown(ctdb);
 		}
 

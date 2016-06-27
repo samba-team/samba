@@ -1821,7 +1821,7 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 	ctdb_stop_monitoring(ctdb);
 	ctdb_release_all_ips(ctdb);
 	ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
-	if (ctdb->methods != NULL) {
+	if (ctdb->methods != NULL && ctdb->methods->shutdown != NULL) {
 		ctdb->methods->shutdown(ctdb);
 	}
 
