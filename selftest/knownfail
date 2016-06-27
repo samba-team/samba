@@ -87,16 +87,6 @@
 ^samba4.base.charset.*.Testing partial surrogate
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT
 .*net.api.delshare.*				# DelShare isn't implemented yet
-# SMB2 in s4 does not seem to support rename correctly
-^samba4.smb2.rename.simple\(.*\)$
-^samba4.smb2.rename.no_sharing\(.*\)$
-^samba4.smb2.rename.share_delete_and_delete_access\(.*\)$
-^samba4.smb2.rename.no_share_delete_but_delete_access\(.*\)$
-^samba4.smb2.rename.share_delete_no_delete_access\(.*\)$
-^samba4.smb2.rename.no_share_delete_no_delete_access\(.*\)$
-^samba4.smb2.rename.msword
-^samba4.smb2.rename.rename_dir_bench\(ad_dc_ntvfs\)
-^samba4.smb2.rename.rename_dir_openfile\(.*\)$
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.compound.related3
 ^samba4.smb2.compound.compound-break
