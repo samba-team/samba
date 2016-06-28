@@ -201,6 +201,8 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 	/* Strip the range request from the attribute */
 	for (i = 0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
 		char *p;
+		size_t range_len = strlen(";range=");
+
 		new_attrs = talloc_realloc(req, new_attrs, const char *, i+2);
 		new_attrs[i] = req->op.search.attrs[i];
 		new_attrs[i+1] = NULL;
@@ -208,12 +210,12 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 		if (!p) {
 			continue;
 		}
-		if (strncasecmp(p, ";range=", strlen(";range=")) != 0) {
+		if (strncasecmp(p, ";range=", range_len) != 0) {
 			continue;
 		}
 		end = (unsigned int)-1;
-		if (sscanf(p, ";range=%u-*", &start) != 1) {
-			if (sscanf(p, ";range=%u-%u", &start, &end) != 2) {
+		if (sscanf(p + range_len, "%u-*", &start) != 1) {
+			if (sscanf(p + range_len, "%u-%u", &start, &end) != 2) {
 				ldb_asprintf_errstring(ldb,
 					"range request error: "
 					"range request malformed");
