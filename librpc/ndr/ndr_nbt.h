@@ -30,17 +30,6 @@
 
 NDR_SCALAR_PROTO(nbt_string, const char *)
 
-struct netlogon_samlogon_response
-{
-	uint32_t ntver;
-	union {
-		struct NETLOGON_SAM_LOGON_RESPONSE_NT40 nt4;
-		struct NETLOGON_SAM_LOGON_RESPONSE nt5;
-		struct NETLOGON_SAM_LOGON_RESPONSE_EX nt5_ex;
-	} data;
-
-};
-
 enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_REQUEST(struct ndr_push *ndr, int ndr_flags, const struct NETLOGON_SAM_LOGON_REQUEST *r);
 enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_REQUEST(struct ndr_pull *ndr, int ndr_flags, struct NETLOGON_SAM_LOGON_REQUEST *r);
 enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_push *ndr, int ndr_flags, const struct NETLOGON_SAM_LOGON_RESPONSE_EX *r);

@@ -482,6 +482,21 @@ interface nbt
 		uint16               lm20_token;
 	} NETLOGON_SAM_LOGON_RESPONSE_EX;
 
+	typedef [nopush,nopull] union {
+		[case(NETLOGON_NT_VERSION_1)] NETLOGON_SAM_LOGON_RESPONSE_NT40 nt4;
+		[case(NETLOGON_NT_VERSION_5)] NETLOGON_SAM_LOGON_RESPONSE nt5;
+		[case(NETLOGON_NT_VERSION_5EX)] NETLOGON_SAM_LOGON_RESPONSE_EX nt5_ex;
+	} netlogon_samlogon_response_union;
+
+	typedef [nopush,nopull] struct {
+		uint32 ntver;
+		[switch_is(ntver)] netlogon_samlogon_response_union data;
+	} netlogon_samlogon_response;
+
+	void decode_netlogon_samlogon_response_packet(
+		[in] netlogon_samlogon_response packet
+		);
+
 	/* query for pdc request */
 	typedef struct {
 		astring              computer_name;
