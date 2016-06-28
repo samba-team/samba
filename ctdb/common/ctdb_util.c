@@ -273,7 +273,7 @@ struct ctdb_rec_data_old *ctdb_marshall_record(TALLOC_CTX *mem_ctx,
 /* helper function for marshalling multiple records */
 struct ctdb_marshall_buffer *ctdb_marshall_add(TALLOC_CTX *mem_ctx,
 					       struct ctdb_marshall_buffer *m,
-					       uint64_t db_id,
+					       uint32_t db_id,
 					       uint32_t reqid,
 					       TDB_DATA key,
 					       struct ctdb_ltdb_header *header,
