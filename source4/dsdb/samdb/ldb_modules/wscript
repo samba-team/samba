@@ -27,6 +27,6 @@ def configure(conf):
 
         if not conf.CONFIG_SET('ENABLE_GPGME'):
             if Options.options.with_gpgme == True:
-                conf.fatal('GPGME support requested, but no suitable GPGME library found')
+                conf.fatal('GPGME support requested, but no suitable GPGME library found, eg libgpgme11-dev and python-gpgme')
             else:
                 Logs.warn('no suitable GPGME library found')
