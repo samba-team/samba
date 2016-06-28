@@ -727,6 +727,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	struct ldb_val val;
 	bool found_extensibleObject = false;
 	unsigned int i;
+	int ret;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -774,7 +775,11 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	}
 
 	/* Add new objectClass to remote message */
-	ldb_msg_add(remote, el, 0);
+	ret = ldb_msg_add(remote, el, 0);
+	if (ret != LDB_SUCCESS) {
+		ldb_oom(ldb);
+		return;
+	}
 }
 
 /* Map an objectClass into the local partition. */
