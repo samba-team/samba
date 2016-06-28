@@ -109,12 +109,11 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./buildtools/bin/waf configure \
 rm -rf $RPM_BUILD_ROOT
 
 # Create the target build directory hierarchy
-mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sudoers.d
 
 DESTDIR=$RPM_BUILD_ROOT ./buildtools/bin/waf install
 
-install -m644 config/ctdb.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
+install -m644 config/ctdbd.conf $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
 
 %if %{with_systemd}
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
@@ -145,7 +144,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 
-%config(noreplace) %{_sysconfdir}/sysconfig/ctdb
+%config(noreplace) %{_sysconfdir}/ctdb/ctdbd.conf
 %config(noreplace) %{_sysconfdir}/ctdb/notify.sh
 %config(noreplace) %{_sysconfdir}/ctdb/debug-hung-script.sh
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
