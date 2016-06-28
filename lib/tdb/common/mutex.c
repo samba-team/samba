@@ -925,7 +925,7 @@ _PUBLIC_ bool tdb_runtime_check_for_robust_mutexes(void)
 	}
 
 	ret = pthread_mutex_trylock(m);
-	if (ret != EDEADLK) {
+	if (ret != EDEADLK && ret != EBUSY) {
 		pthread_mutex_unlock(m);
 		goto cleanup;
 	}
