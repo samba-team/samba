@@ -414,7 +414,12 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			samdb_msg_add_delete(state->sam_ldb, mem_ctx, msg,  
 					     remote_attrs[i]); 
 		} else {
-			ldb_msg_add(msg, el, LDB_FLAG_MOD_REPLACE);
+			ret = ldb_msg_add(msg, el, LDB_FLAG_MOD_REPLACE);
+			if (ret != LDB_SUCCESS) {
+				*error_string = talloc_strdup(
+					mem_ctx, "ldb_msg_add failed");
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 	}
 
