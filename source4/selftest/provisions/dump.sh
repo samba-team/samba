@@ -25,7 +25,7 @@ cd $dirbase
 for f in $(find . -name '*.tdb'); do
     dname=$TARGETDIR/$(dirname $f)
     mkdir -p $dname
-    outname=$f.dump
+    outname=$dname/$(basename $f).dump
     echo "Dumping $f to $outname"
     $TDBDUMP $f > $outname || {
 	echo "Failed to dump to $outname"
@@ -37,7 +37,7 @@ done
 for f in $(find . -name '*.ldb'); do
     dname=$TARGETDIR/$(dirname $f)
     mkdir -p $dname
-    outname=$f.dump
+    outname=$dname/$(basename $f).dump
     echo "Dumping $f to $outname"
     $TDBDUMP $f > $outname || {
 	echo "Failed to dump to $outname"
