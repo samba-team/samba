@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+
+#default flex recepie doesn't create a header file
+bld.SAMBA_GENERATOR('wsp_flex',
+	source='wsp_aqs_lexer.l',
+	target='wsp_aqs_lexer.h wsp_aqs_lexer.c',
+	group='build_source',
+	rule='${FLEX} --header-file=${TGT[0].abspath(env)} --outfile=${TGT[1].abspath(env)} ${SRC[0].abspath(env)}',
+	enabled=bld.env.with_wsp
+	)
+
+# With centos7-o3 CI job (and gcc 4.8.5) we get
+# an error with -Wstrict-overflow.
+# Same code is good with gcc version
+# gcc 8.5.0 (centos8) and whatever versions of
+# gcc we have in the other XXXX-o3 images.
+# We turn off strict-overflow just for this generated
+# file
+parser_cflags=''
+if bld.CONFIG_SET('HAVE_WNO_STRICT_OVERFLOW'):
+    parser_cflags += ' -Wno-strict-overflow'
+
+bld.SAMBA_SUBSYSTEM('LIBSAMBA_WSP_PARSER',
+	source='wsp_aqs_parser.y',
+	deps='talloc wsp_flex',
+	cflags_end=parser_cflags,
+	enabled=bld.env.with_wsp
+	)
+bld.SAMBA_SUBSYSTEM('LIBSAMBA_WSP',
+	source='wsp_aqs.c wsp_aqs_lexer.c',
+	public_deps='LIBSAMBA_WSP_PARSER',
+	enabled=bld.env.with_wsp
+	)
