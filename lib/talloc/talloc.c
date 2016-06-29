@@ -637,6 +637,7 @@ static inline void *__talloc_with_prefix(const void *context,
 	struct talloc_chunk *tc = NULL;
 	struct talloc_memlimit *limit = NULL;
 	size_t total_len = TC_HDR_SIZE + size + prefix_len;
+	struct talloc_chunk *parent = NULL;
 
 	if (unlikely(context == NULL)) {
 		context = null_context;
@@ -650,14 +651,14 @@ static inline void *__talloc_with_prefix(const void *context,
 		return NULL;
 	}
 
-	if (context != NULL) {
-		struct talloc_chunk *ptc = talloc_chunk_from_ptr(context);
+	if (likely(context != NULL)) {
+		parent = talloc_chunk_from_ptr(context);
 
-		if (ptc->limit != NULL) {
-			limit = ptc->limit;
+		if (parent->limit != NULL) {
+			limit = parent->limit;
 		}
 
-		tc = tc_alloc_pool(ptc, TC_HDR_SIZE+size, prefix_len);
+		tc = tc_alloc_pool(parent, TC_HDR_SIZE+size, prefix_len);
 	}
 
 	if (tc == NULL) {
@@ -689,9 +690,7 @@ static inline void *__talloc_with_prefix(const void *context,
 	tc->name = NULL;
 	tc->refs = NULL;
 
-	if (likely(context)) {
-		struct talloc_chunk *parent = talloc_chunk_from_ptr(context);
-
+	if (likely(context != NULL)) {
 		if (parent->child) {
 			parent->child->parent = NULL;
 			tc->next = parent->child;
