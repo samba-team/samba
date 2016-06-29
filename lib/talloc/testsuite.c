@@ -1865,6 +1865,11 @@ static void test_magic_protection_abort(const char *reason)
 	}
 }
 
+static int test_magic_protection_destructor(int *ptr)
+{
+	_exit(404); /* Not 42 */
+}
+
 static bool test_magic_protection(void)
 {
 	void *pool = talloc_pool(NULL, 1024);
@@ -1883,6 +1888,7 @@ static bool test_magic_protection(void)
 	pid = fork();
 	if (pid == 0) {
 		talloc_set_abort_fn(test_magic_protection_abort);
+		talloc_set_destructor(p2, test_magic_protection_destructor);
 
 		/*
 		 * Simulate a security attack
