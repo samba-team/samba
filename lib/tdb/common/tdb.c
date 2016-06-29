@@ -59,6 +59,11 @@ static void tdb_increment_seqnum(struct tdb_context *tdb)
 		return;
 	}
 
+	if (tdb->transaction != NULL) {
+		tdb_increment_seqnum_nonblock(tdb);
+		return;
+	}
+
 	if (tdb_nest_lock(tdb, TDB_SEQNUM_OFS, F_WRLCK,
 			  TDB_LOCK_WAIT|TDB_LOCK_PROBE) != 0) {
 		return;
