@@ -5,9 +5,9 @@
 #
 
 [ -n "$CTDB_BASE" ] || \
-    export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
+    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
 
-. "$CTDB_BASE/functions"
+. "${CTDB_BASE}/functions"
 
 # If ctdb is running, just exit
 if service ctdb status >/dev/null 2>&1 ; then

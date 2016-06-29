@@ -2,9 +2,9 @@
 # script to manage nfs in a clustered environment
 
 [ -n "$CTDB_BASE" ] || \
-    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
 
-. $CTDB_BASE/functions
+. "${CTDB_BASE}/functions"
 
 service_name="nfs"
 loadconfig

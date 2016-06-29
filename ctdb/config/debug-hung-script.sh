@@ -4,9 +4,9 @@
 # for other operating systems.
 
 [ -n "$CTDB_BASE" ] || \
-    export CTDB_BASE=$(cd -P $(dirname "$0") ; echo "$PWD")
+    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
 
-. "$CTDB_BASE/functions"
+. "${CTDB_BASE}/functions"
 
 loadconfig ctdb
 

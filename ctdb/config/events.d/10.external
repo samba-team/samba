@@ -8,9 +8,10 @@
 # * For connection tracking/killing to work this script must be enabled.
 
 [ -n "$CTDB_BASE" ] || \
-    export CTDB_BASE=$(cd -P $(dirname "$0") ; dirname "$PWD")
+    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
 
-. $CTDB_BASE/functions
+. "${CTDB_BASE}/functions"
+
 loadconfig
 
 if [ -z "$CTDB_PUBLIC_ADDRESSES" ] ; then
