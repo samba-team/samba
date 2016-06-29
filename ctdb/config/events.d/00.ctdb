@@ -70,11 +70,10 @@ check_persistent_databases ()
 
     [ "${CTDB_MAX_PERSISTENT_CHECK_ERRORS:-0}" = "0" ] || return 0
 
-    for _db in $(ls "$_dir/"*.tdb.*[0-9] 2>/dev/null) ; do
-	check_tdb $_db || {
-	    echo "Persistent database $_db is corrupted! CTDB will not start."
-	    return 1
-	}
+    for _db in "$_dir/"*.tdb.*[0-9] ; do
+	[ -r "$_db" ] || continue
+	check_tdb "$_db" || \
+	    die "Persistent database $_db is corrupted! CTDB will not start."
     done
 }
 
@@ -83,8 +82,9 @@ check_non_persistent_databases ()
     _dir="${CTDB_DBDIR:-${CTDB_VARDIR}}"
     [ -d "$_dir" ] || return 0
 
-    for _db in $(ls "${_dir}/"*.tdb.*[0-9] 2>/dev/null) ; do
-	check_tdb $_db || {
+    for _db in "${_dir}/"*.tdb.*[0-9] ; do
+	[ -r "$_db" ] || continue
+	check_tdb "$_db" || {
 	    _backup="${_db}.$(date +'%Y%m%d.%H%M%S.%N').corrupt"
 	    cat <<EOF
 WARNING: database ${_db} is corrupted.
@@ -96,7 +96,6 @@ EOF
 	    ls -td "${_db}."*".corrupt" |
 	    tail -n +$((${CTDB_MAX_CORRUPT_DB_BACKUPS:-10} + 1)) |
 	    xargs rm -f
-	    
 	}
     done
 }
