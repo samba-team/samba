@@ -1567,7 +1567,7 @@ static inline void _tc_free_children_internal(struct talloc_chunk *tc,
 			struct talloc_chunk *p = talloc_parent_chunk(tc->child->refs);
 			if (p) new_parent = TC_PTR_FROM_CHUNK(p);
 		}
-		if (unlikely(_talloc_free_internal(child, location) == -1)) {
+		if (unlikely(_tc_free_internal(tc->child, location) == -1)) {
 			if (talloc_parent_chunk(child) != tc) {
 				/*
 				 * Destructor already reparented this child.
