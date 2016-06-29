@@ -1034,6 +1034,20 @@ static inline int _tc_free_internal(struct talloc_chunk *tc,
 
 	if (unlikely(tc->destructor)) {
 		talloc_destructor_t d = tc->destructor;
+
+		/*
+		 * Protect the destructor against some overwrite
+		 * attacks, by explicitly checking it has the right
+		 * magic here.
+		 */
+		if (talloc_chunk_from_ptr(ptr) != tc) {
+			/*
+			 * This can't actually happen, the
+			 * call itself will panic.
+			 */
+			TALLOC_ABORT("talloc_chunk_from_ptr failed!");
+		}
+
 		if (d == (talloc_destructor_t)-1) {
 			return -1;
 		}
