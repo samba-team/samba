@@ -250,7 +250,7 @@ static inline void talloc_memlimit_grow(struct talloc_memlimit *limit,
 				size_t size);
 static inline void talloc_memlimit_shrink(struct talloc_memlimit *limit,
 				size_t size);
-static inline void talloc_memlimit_update_on_free(struct talloc_chunk *tc);
+static inline void tc_memlimit_update_on_free(struct talloc_chunk *tc);
 
 static inline void _talloc_set_name_const(const void *ptr, const char *name);
 
@@ -572,7 +572,7 @@ static inline void tc_invalidate_pool(struct talloc_pool_hdr *pool_hdr)
   Allocate from a pool
 */
 
-static inline struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
+static inline struct talloc_chunk *tc_alloc_pool(struct talloc_chunk *parent,
 						     size_t size, size_t prefix_len)
 {
 	struct talloc_pool_hdr *pool_hdr = NULL;
@@ -651,7 +651,7 @@ static inline void *__talloc_with_prefix(const void *context, size_t size,
 			limit = ptc->limit;
 		}
 
-		tc = talloc_alloc_pool(ptc, TC_HDR_SIZE+size, prefix_len);
+		tc = tc_alloc_pool(ptc, TC_HDR_SIZE+size, prefix_len);
 	}
 
 	if (tc == NULL) {
@@ -905,7 +905,7 @@ _PUBLIC_ void *_talloc_reference_loc(const void *context, const void *ptr, const
 
 static void *_talloc_steal_internal(const void *new_ctx, const void *ptr);
 
-static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
+static inline void _tc_free_poolmem(struct talloc_chunk *tc,
 					const char *location)
 {
 	struct talloc_pool_hdr *pool;
@@ -956,15 +956,15 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 		pool_tc->name = location;
 
 		if (pool_tc->flags & TALLOC_FLAG_POOLMEM) {
-			_talloc_free_poolmem(pool_tc, location);
+			_tc_free_poolmem(pool_tc, location);
 		} else {
 			/*
-			 * The talloc_memlimit_update_on_free()
+			 * The tc_memlimit_update_on_free()
 			 * call takes into account the
 			 * prefix TP_HDR_SIZE allocated before
 			 * the pool talloc_chunk.
 			 */
-			talloc_memlimit_update_on_free(pool_tc);
+			tc_memlimit_update_on_free(pool_tc);
 			TC_INVALIDATE_FULL_CHUNK(pool_tc);
 			free(pool);
 		}
@@ -987,7 +987,7 @@ static inline void _talloc_free_poolmem(struct talloc_chunk *tc,
 	 */
 }
 
-static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
+static inline void _tc_free_children_internal(struct talloc_chunk *tc,
 						  void *ptr,
 						  const char *location);
 
@@ -1069,7 +1069,7 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 	tc->flags |= TALLOC_FLAG_LOOP;
 
-	_talloc_free_children_internal(tc, ptr, location);
+	_tc_free_children_internal(tc, ptr, location);
 
 	tc->flags |= TALLOC_FLAG_FREE;
 
@@ -1106,11 +1106,11 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	}
 
 	if (tc->flags & TALLOC_FLAG_POOLMEM) {
-		_talloc_free_poolmem(tc, location);
+		_tc_free_poolmem(tc, location);
 		return 0;
 	}
 
-	talloc_memlimit_update_on_free(tc);
+	tc_memlimit_update_on_free(tc);
 
 	TC_INVALIDATE_FULL_CHUNK(tc);
 	free(ptr_to_free);
@@ -1506,7 +1506,7 @@ _PUBLIC_ void *talloc_init(const char *fmt, ...)
 	return ptr;
 }
 
-static inline void _talloc_free_children_internal(struct talloc_chunk *tc,
+static inline void _tc_free_children_internal(struct talloc_chunk *tc,
 						  void *ptr,
 						  const char *location)
 {
@@ -1568,7 +1568,7 @@ _PUBLIC_ void talloc_free_children(void *ptr)
 		}
 	}
 
-	_talloc_free_children_internal(tc, ptr, __location__);
+	_tc_free_children_internal(tc, ptr, __location__);
 
 	/* .. so we put it back after all other children have been freed */
 	if (tc_name) {
@@ -1742,7 +1742,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 
 #if ALWAYS_REALLOC
 	if (pool_hdr) {
-		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
+		new_ptr = tc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
 		pool_hdr->object_count--;
 
 		if (new_ptr == NULL) {
@@ -1859,7 +1859,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 			}
 		}
 
-		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
+		new_ptr = tc_alloc_pool(tc, size + TC_HDR_SIZE, 0);
 
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
@@ -1870,7 +1870,7 @@ _PUBLIC_ void *_talloc_realloc(const void *context, void *ptr, size_t size, cons
 		if (new_ptr) {
 			memcpy(new_ptr, tc, MIN(tc->size,size) + TC_HDR_SIZE);
 
-			_talloc_free_poolmem(tc, __location__ "_talloc_realloc");
+			_tc_free_poolmem(tc, __location__ "_talloc_realloc");
 		}
 	}
 	else {
@@ -2772,7 +2772,7 @@ static inline bool talloc_memlimit_check(struct talloc_memlimit *limit, size_t s
 /*
   Update memory limits when freeing a talloc_chunk.
 */
-static void talloc_memlimit_update_on_free(struct talloc_chunk *tc)
+static void tc_memlimit_update_on_free(struct talloc_chunk *tc)
 {
 	size_t limit_shrink_size;
 
