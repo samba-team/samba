@@ -129,9 +129,23 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 	return (ipalloc_state->all_ips != NULL);
 }
 
+/* This can only return false if there are no available IPs *and*
+ * there are no IP addresses currently allocated.  If the latter is
+ * true then the cluster can clearly host IPs... just not necessarily
+ * right now... */
 bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 {
 	int i;
+	struct public_ip_list *ip_list;
+
+
+	for (ip_list = ipalloc_state->all_ips;
+	     ip_list != NULL;
+	     ip_list = ip_list->next) {
+		if (ip_list->pnn != -1) {
+			return true;
+		}
+	}
 
 	for (i=0; i < ipalloc_state->num; i++) {
 		if (ipalloc_state->available_public_ips[i].num != 0) {
