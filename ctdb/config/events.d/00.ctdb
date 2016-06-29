@@ -126,7 +126,7 @@ case "$1" in
         # make sure we have a blank state directory for the scripts to work with
 	rm -rf "$CTDB_SCRIPT_VARDIR"
 	mkdir -p "$CTDB_SCRIPT_VARDIR" || \
-	    die "mkdir -p ${CTDB_SCRIPT_VARDIR} - failed - ${ret}" $?
+	    die "mkdir -p ${CTDB_SCRIPT_VARDIR} - failed - $?" $?
 
 	if select_tdb_checker ; then
 	    check_persistent_databases || exit $?
