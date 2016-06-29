@@ -48,7 +48,7 @@ check_thresholds ()
         fi
     fi
 
-    if validate_percentage "$_warn_threshold" "$_what" ; then
+    if validate_percentage "$_warn_threshold" "$_thing" ; then
         if [ "$_usage" -ge "$_warn_threshold" ] ; then
 	    if [ -r "$_cache" ] ; then
 		read _prev <"$_cache"
