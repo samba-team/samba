@@ -327,7 +327,7 @@ static void kccsrv_task_init(struct task_server *task)
 	 * topology generation code.
 	 */
 	service->samba_kcc_code = lpcfg_parm_bool(task->lp_ctx, NULL,
-						"kccsrv", "samba_kcc", false);
+						"kccsrv", "samba_kcc", true);
 
 	status = kccsrv_periodic_schedule(service, periodic_startup_interval);
 	if (!W_ERROR_IS_OK(status)) {
