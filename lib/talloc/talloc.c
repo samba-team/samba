@@ -999,29 +999,16 @@ static inline void _tc_free_children_internal(struct talloc_chunk *tc,
 						  void *ptr,
 						  const char *location);
 
+static inline int _talloc_free_internal(void *ptr, const char *location);
+
 /*
-   internal talloc_free call
+   internal free call that takes a struct talloc_chunk *.
 */
-static inline int _talloc_free_internal(void *ptr, const char *location)
+static inline int _tc_free_internal(struct talloc_chunk *tc,
+				const char *location)
 {
-	struct talloc_chunk *tc;
 	void *ptr_to_free;
-
-	if (unlikely(ptr == NULL)) {
-		return -1;
-	}
-
-	/* possibly initialised the talloc fill value */
-	if (unlikely(!talloc_fill.initialised)) {
-		const char *fill = getenv(TALLOC_FILL_ENV);
-		if (fill != NULL) {
-			talloc_fill.enabled = true;
-			talloc_fill.fill_value = strtoul(fill, NULL, 0);
-		}
-		talloc_fill.initialised = true;
-	}
-
-	tc = talloc_chunk_from_ptr(ptr);
+	void *ptr = TC_PTR_FROM_CHUNK(tc);
 
 	if (unlikely(tc->refs)) {
 		int is_child;
@@ -1123,6 +1110,31 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 	TC_INVALIDATE_FULL_CHUNK(tc);
 	free(ptr_to_free);
 	return 0;
+}
+
+/*
+   internal talloc_free call
+*/
+static inline int _talloc_free_internal(void *ptr, const char *location)
+{
+	struct talloc_chunk *tc;
+
+	if (unlikely(ptr == NULL)) {
+		return -1;
+	}
+
+	/* possibly initialised the talloc fill value */
+	if (unlikely(!talloc_fill.initialised)) {
+		const char *fill = getenv(TALLOC_FILL_ENV);
+		if (fill != NULL) {
+			talloc_fill.enabled = true;
+			talloc_fill.fill_value = strtoul(fill, NULL, 0);
+		}
+		talloc_fill.initialised = true;
+	}
+
+	tc = talloc_chunk_from_ptr(ptr);
+	return _tc_free_internal(tc, location);
 }
 
 static inline size_t _talloc_total_limit_size(const void *ptr,
