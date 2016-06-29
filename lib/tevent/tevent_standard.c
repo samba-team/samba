@@ -112,6 +112,11 @@ static int std_event_loop_once(struct tevent_context *ev, const char *location)
 	int ret;
 
 	ret = glue->epoll_ops->loop_once(ev, location);
+	/*
+	 * If the above hasn't panicked due to an epoll interface failure,
+	 * std_fallback_to_poll() wasn't called, and hasn't cleared epoll_ops to
+	 * signify fallback to poll_ops.
+	 */
 	if (glue->epoll_ops != NULL) {
 		/* No fallback */
 		return ret;
@@ -138,6 +143,11 @@ static int std_event_loop_wait(struct tevent_context *ev, const char *location)
 	int ret;
 
 	ret = glue->epoll_ops->loop_wait(ev, location);
+	/*
+	 * If the above hasn't panicked due to an epoll interface failure,
+	 * std_fallback_to_poll() wasn't called, and hasn't cleared epoll_ops to
+	 * signify fallback to poll_ops.
+	 */
 	if (glue->epoll_ops != NULL) {
 		/* No fallback */
 		return ret;
