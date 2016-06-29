@@ -1111,30 +1111,38 @@ def setup_ad_dns(samdb, secretsdb, names, paths, lp, logger,
     dnsadmins_sid = get_dnsadmins_sid(samdb, domaindn)
     domainguid = get_domainguid(samdb, domaindn)
 
-    # Create CN=System
-    logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % domaindn)
-    create_dns_legacy(samdb, names.domainsid, domaindn, dnsadmins_sid)
+    samdb.transaction_start()
+    try:
+        # Create CN=System
+        logger.info("Creating CN=MicrosoftDNS,CN=System,%s" % domaindn)
+        create_dns_legacy(samdb, names.domainsid, domaindn, dnsadmins_sid)
 
-    if os_level == DS_DOMAIN_FUNCTION_2000:
-        # Populating legacy dns
-        logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
-        fill_dns_data_legacy(samdb, names.domainsid, domaindn, dnsdomain, site,
-                             hostname, hostip, hostip6, dnsadmins_sid)
+        if os_level == DS_DOMAIN_FUNCTION_2000:
+            # Populating legacy dns
+            logger.info("Populating CN=MicrosoftDNS,CN=System,%s" % domaindn)
+            fill_dns_data_legacy(samdb, names.domainsid, domaindn, dnsdomain, site,
+                                 hostname, hostip, hostip6, dnsadmins_sid)
 
-    elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
-            os_level >= DS_DOMAIN_FUNCTION_2003:
+        elif dns_backend in ("SAMBA_INTERNAL", "BIND9_DLZ") and \
+                os_level >= DS_DOMAIN_FUNCTION_2003:
 
-        # Create DNS partitions
-        logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
-        create_dns_partitions(samdb, names.domainsid, names, domaindn, forestdn,
-                              dnsadmins_sid, fill_level)
+            # Create DNS partitions
+            logger.info("Creating DomainDnsZones and ForestDnsZones partitions")
+            create_dns_partitions(samdb, names.domainsid, names, domaindn, forestdn,
+                                  dnsadmins_sid, fill_level)
 
-        # Populating dns partitions
-        logger.info("Populating DomainDnsZones and ForestDnsZones partitions")
-        fill_dns_data_partitions(samdb, names.domainsid, site, domaindn, forestdn,
-                                 dnsdomain, dnsforest, hostname, hostip, hostip6,
-                                 domainguid, names.ntdsguid, dnsadmins_sid,
-                                 fill_level=fill_level)
+            # Populating dns partitions
+            logger.info("Populating DomainDnsZones and ForestDnsZones partitions")
+            fill_dns_data_partitions(samdb, names.domainsid, site, domaindn, forestdn,
+                                     dnsdomain, dnsforest, hostname, hostip, hostip6,
+                                     domainguid, names.ntdsguid, dnsadmins_sid,
+                                     fill_level=fill_level)
+
+    except:
+        samdb.transaction_cancel()
+        raise
+    else:
+        samdb.transaction_commit()
 
     if dns_backend.startswith("BIND9_"):
         setup_bind9_dns(samdb, secretsdb, names, paths, lp, logger,

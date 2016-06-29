@@ -1259,223 +1259,209 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
     # before the provisioned tree exists and we connect
     samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
 
-    samdb.transaction_start()
-    try:
-        # Set the domain functionality levels onto the database.
-        # Various module (the password_hash module in particular) need
-        # to know what level of AD we are emulating.
+    # Set the domain functionality levels onto the database.
+    # Various module (the password_hash module in particular) need
+    # to know what level of AD we are emulating.
 
-        # These will be fixed into the database via the database
-        # modifictions below, but we need them set from the start.
-        samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
-        samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
-        samdb.set_opaque_integer("domainControllerFunctionality",
-            domainControllerFunctionality)
+    # These will be fixed into the database via the database
+    # modifictions below, but we need them set from the start.
+    samdb.set_opaque_integer("domainFunctionality", domainFunctionality)
+    samdb.set_opaque_integer("forestFunctionality", forestFunctionality)
+    samdb.set_opaque_integer("domainControllerFunctionality",
+        domainControllerFunctionality)
 
-        samdb.set_domain_sid(str(names.domainsid))
-        samdb.set_invocation_id(invocationid)
+    samdb.set_domain_sid(str(names.domainsid))
+    samdb.set_invocation_id(invocationid)
 
-        logger.info("Adding DomainDN: %s" % names.domaindn)
+    logger.info("Adding DomainDN: %s" % names.domaindn)
 
-        # impersonate domain admin
-        admin_session_info = admin_session(lp, str(names.domainsid))
-        samdb.set_session_info(admin_session_info)
-        if names.domainguid is not None:
-            domainguid_line = "objectGUID: %s\n-" % names.domainguid
-        else:
-            domainguid_line = ""
+    # impersonate domain admin
+    admin_session_info = admin_session(lp, str(names.domainsid))
+    samdb.set_session_info(admin_session_info)
+    if names.domainguid is not None:
+        domainguid_line = "objectGUID: %s\n-" % names.domainguid
+    else:
+        domainguid_line = ""
 
-        descr = b64encode(get_domain_descriptor(names.domainsid))
-        setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
-                "DOMAINDN": names.domaindn,
-                "DOMAINSID": str(names.domainsid),
+    descr = b64encode(get_domain_descriptor(names.domainsid))
+    setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
+            "DOMAINDN": names.domaindn,
+            "DOMAINSID": str(names.domainsid),
+            "DESCRIPTOR": descr,
+            "DOMAINGUID": domainguid_line
+            })
+
+    setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
+        "DOMAINDN": names.domaindn,
+        "CREATTIME": str(samba.unix2nttime(int(time.time()))),
+        "NEXTRID": str(next_rid),
+        "DEFAULTSITE": names.sitename,
+        "CONFIGDN": names.configdn,
+        "POLICYGUID": policyguid,
+        "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
+        "SAMBA_VERSION_STRING": version
+        })
+
+    # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
+    if fill == FILL_FULL:
+        logger.info("Adding configuration container")
+        descr = b64encode(get_config_descriptor(names.domainsid))
+        setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
+                "CONFIGDN": names.configdn,
                 "DESCRIPTOR": descr,
-                "DOMAINGUID": domainguid_line
                 })
 
-        setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
-            "DOMAINDN": names.domaindn,
-            "CREATTIME": str(samba.unix2nttime(int(time.time()))),
-            "NEXTRID": str(next_rid),
-            "DEFAULTSITE": names.sitename,
-            "CONFIGDN": names.configdn,
-            "POLICYGUID": policyguid,
-            "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
-            "SAMBA_VERSION_STRING": version
-            })
+        # The LDIF here was created when the Schema object was constructed
+        logger.info("Setting up sam.ldb schema")
+        samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])
+        samdb.modify_ldif(schema.schema_dn_modify)
+        samdb.write_prefixes_from_schema()
+        samdb.add_ldif(schema.schema_data, controls=["relax:0"])
+        setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"),
+                       {"SCHEMADN": names.schemadn})
 
-        # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
-        if fill == FILL_FULL:
-            logger.info("Adding configuration container")
-            descr = b64encode(get_config_descriptor(names.domainsid))
-            setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
-                    "CONFIGDN": names.configdn,
-                    "DESCRIPTOR": descr,
-                    })
+    # Now register this container in the root of the forest
+    msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
+    msg["subRefs"] = ldb.MessageElement(names.configdn , ldb.FLAG_MOD_ADD,
+                "subRefs")
 
-            # The LDIF here was created when the Schema object was constructed
-            logger.info("Setting up sam.ldb schema")
-            samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])
-            samdb.modify_ldif(schema.schema_dn_modify)
-            samdb.write_prefixes_from_schema()
-            samdb.add_ldif(schema.schema_data, controls=["relax:0"])
-            setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"),
-                           {"SCHEMADN": names.schemadn})
+    samdb.invocation_id = invocationid
 
-        # Now register this container in the root of the forest
-        msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
-        msg["subRefs"] = ldb.MessageElement(names.configdn , ldb.FLAG_MOD_ADD,
-                    "subRefs")
+    # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
+    if fill == FILL_FULL:
+        logger.info("Setting up sam.ldb configuration data")
 
-    except:
-        samdb.transaction_cancel()
-        raise
-    else:
-        samdb.transaction_commit()
+        partitions_descr = b64encode(get_config_partitions_descriptor(names.domainsid))
+        sites_descr = b64encode(get_config_sites_descriptor(names.domainsid))
+        ntdsquotas_descr = b64encode(get_config_ntds_quotas_descriptor(names.domainsid))
+        protected1_descr = b64encode(get_config_delete_protected1_descriptor(names.domainsid))
+        protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
+        protected2_descr = b64encode(get_config_delete_protected2_descriptor(names.domainsid))
 
-    samdb.transaction_start()
-    try:
-        samdb.invocation_id = invocationid
-
-        # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
-        if fill == FILL_FULL:
-            logger.info("Setting up sam.ldb configuration data")
-
-            partitions_descr = b64encode(get_config_partitions_descriptor(names.domainsid))
-            sites_descr = b64encode(get_config_sites_descriptor(names.domainsid))
-            ntdsquotas_descr = b64encode(get_config_ntds_quotas_descriptor(names.domainsid))
-            protected1_descr = b64encode(get_config_delete_protected1_descriptor(names.domainsid))
-            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
-            protected2_descr = b64encode(get_config_delete_protected2_descriptor(names.domainsid))
-
-            setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
-                    "CONFIGDN": names.configdn,
-                    "NETBIOSNAME": names.netbiosname,
-                    "DEFAULTSITE": names.sitename,
-                    "DNSDOMAIN": names.dnsdomain,
-                    "DOMAIN": names.domain,
-                    "SCHEMADN": names.schemadn,
-                    "DOMAINDN": names.domaindn,
-                    "SERVERDN": names.serverdn,
-                    "FOREST_FUNCTIONALITY": str(forestFunctionality),
-                    "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
-                    "NTDSQUOTAS_DESCRIPTOR": ntdsquotas_descr,
-                    "LOSTANDFOUND_DESCRIPTOR": protected1wd_descr,
-                    "SERVICES_DESCRIPTOR": protected1_descr,
-                    "PHYSICALLOCATIONS_DESCRIPTOR": protected1wd_descr,
-                    "FORESTUPDATES_DESCRIPTOR": protected1wd_descr,
-                    "EXTENDEDRIGHTS_DESCRIPTOR": protected2_descr,
-                    "PARTITIONS_DESCRIPTOR": partitions_descr,
-                    "SITES_DESCRIPTOR": sites_descr,
-                    })
-
-            logger.info("Setting up display specifiers")
-            display_specifiers_ldif = read_ms_ldif(
-                setup_path('display-specifiers/DisplaySpecifiers-Win2k8R2.txt'))
-            display_specifiers_ldif = substitute_var(display_specifiers_ldif,
-                                                     {"CONFIGDN": names.configdn})
-            check_all_substituted(display_specifiers_ldif)
-            samdb.add_ldif(display_specifiers_ldif)
-
-            logger.info("Modifying display specifiers")
-            setup_modify_ldif(samdb,
-                setup_path("provision_configuration_modify.ldif"), {
+        setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
                 "CONFIGDN": names.configdn,
-                "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
+                "NETBIOSNAME": names.netbiosname,
+                "DEFAULTSITE": names.sitename,
+                "DNSDOMAIN": names.dnsdomain,
+                "DOMAIN": names.domain,
+                "SCHEMADN": names.schemadn,
+                "DOMAINDN": names.domaindn,
+                "SERVERDN": names.serverdn,
+                "FOREST_FUNCTIONALITY": str(forestFunctionality),
+                "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
+                "NTDSQUOTAS_DESCRIPTOR": ntdsquotas_descr,
+                "LOSTANDFOUND_DESCRIPTOR": protected1wd_descr,
+                "SERVICES_DESCRIPTOR": protected1_descr,
+                "PHYSICALLOCATIONS_DESCRIPTOR": protected1wd_descr,
+                "FORESTUPDATES_DESCRIPTOR": protected1wd_descr,
+                "EXTENDEDRIGHTS_DESCRIPTOR": protected2_descr,
+                "PARTITIONS_DESCRIPTOR": partitions_descr,
+                "SITES_DESCRIPTOR": sites_descr,
                 })
 
-        logger.info("Adding users container")
-        users_desc = b64encode(get_domain_users_descriptor(names.domainsid))
-        setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
-                "DOMAINDN": names.domaindn,
-                "USERS_DESCRIPTOR": users_desc
-                })
-        logger.info("Modifying users container")
-        setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
-                "DOMAINDN": names.domaindn})
-        logger.info("Adding computers container")
-        computers_desc = b64encode(get_domain_computers_descriptor(names.domainsid))
-        setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
-                "DOMAINDN": names.domaindn,
-                "COMPUTERS_DESCRIPTOR": computers_desc
-                })
-        logger.info("Modifying computers container")
+        logger.info("Setting up display specifiers")
+        display_specifiers_ldif = read_ms_ldif(
+            setup_path('display-specifiers/DisplaySpecifiers-Win2k8R2.txt'))
+        display_specifiers_ldif = substitute_var(display_specifiers_ldif,
+                                                 {"CONFIGDN": names.configdn})
+        check_all_substituted(display_specifiers_ldif)
+        samdb.add_ldif(display_specifiers_ldif)
+
+        logger.info("Modifying display specifiers")
         setup_modify_ldif(samdb,
-            setup_path("provision_computers_modify.ldif"), {
-                "DOMAINDN": names.domaindn})
-        logger.info("Setting up sam.ldb data")
-        infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(names.domainsid))
-        lostandfound_desc = b64encode(get_domain_delete_protected2_descriptor(names.domainsid))
-        system_desc = b64encode(get_domain_delete_protected1_descriptor(names.domainsid))
-        builtin_desc = b64encode(get_domain_builtin_descriptor(names.domainsid))
-        controllers_desc = b64encode(get_domain_controllers_descriptor(names.domainsid))
-        setup_add_ldif(samdb, setup_path("provision.ldif"), {
-            "CREATTIME": str(samba.unix2nttime(int(time.time()))),
-            "DOMAINDN": names.domaindn,
-            "NETBIOSNAME": names.netbiosname,
-            "DEFAULTSITE": names.sitename,
+            setup_path("provision_configuration_modify.ldif"), {
             "CONFIGDN": names.configdn,
-            "SERVERDN": names.serverdn,
-            "RIDAVAILABLESTART": str(next_rid + 600),
-            "POLICYGUID_DC": policyguid_dc,
-            "INFRASTRUCTURE_DESCRIPTOR": infrastructure_desc,
-            "LOSTANDFOUND_DESCRIPTOR": lostandfound_desc,
-            "SYSTEM_DESCRIPTOR": system_desc,
-            "BUILTIN_DESCRIPTOR": builtin_desc,
-            "DOMAIN_CONTROLLERS_DESCRIPTOR": controllers_desc,
+            "DISPLAYSPECIFIERS_DESCRIPTOR": protected2_descr
             })
 
-        # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
-        if fill == FILL_FULL:
-            setup_modify_ldif(samdb,
-                              setup_path("provision_configuration_references.ldif"), {
-                    "CONFIGDN": names.configdn,
-                    "SCHEMADN": names.schemadn})
+    logger.info("Adding users container")
+    users_desc = b64encode(get_domain_users_descriptor(names.domainsid))
+    setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
+            "DOMAINDN": names.domaindn,
+            "USERS_DESCRIPTOR": users_desc
+            })
+    logger.info("Modifying users container")
+    setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
+            "DOMAINDN": names.domaindn})
+    logger.info("Adding computers container")
+    computers_desc = b64encode(get_domain_computers_descriptor(names.domainsid))
+    setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
+            "DOMAINDN": names.domaindn,
+            "COMPUTERS_DESCRIPTOR": computers_desc
+            })
+    logger.info("Modifying computers container")
+    setup_modify_ldif(samdb,
+        setup_path("provision_computers_modify.ldif"), {
+            "DOMAINDN": names.domaindn})
+    logger.info("Setting up sam.ldb data")
+    infrastructure_desc = b64encode(get_domain_infrastructure_descriptor(names.domainsid))
+    lostandfound_desc = b64encode(get_domain_delete_protected2_descriptor(names.domainsid))
+    system_desc = b64encode(get_domain_delete_protected1_descriptor(names.domainsid))
+    builtin_desc = b64encode(get_domain_builtin_descriptor(names.domainsid))
+    controllers_desc = b64encode(get_domain_controllers_descriptor(names.domainsid))
+    setup_add_ldif(samdb, setup_path("provision.ldif"), {
+        "CREATTIME": str(samba.unix2nttime(int(time.time()))),
+        "DOMAINDN": names.domaindn,
+        "NETBIOSNAME": names.netbiosname,
+        "DEFAULTSITE": names.sitename,
+        "CONFIGDN": names.configdn,
+        "SERVERDN": names.serverdn,
+        "RIDAVAILABLESTART": str(next_rid + 600),
+        "POLICYGUID_DC": policyguid_dc,
+        "INFRASTRUCTURE_DESCRIPTOR": infrastructure_desc,
+        "LOSTANDFOUND_DESCRIPTOR": lostandfound_desc,
+        "SYSTEM_DESCRIPTOR": system_desc,
+        "BUILTIN_DESCRIPTOR": builtin_desc,
+        "DOMAIN_CONTROLLERS_DESCRIPTOR": controllers_desc,
+        })
 
-            logger.info("Setting up well known security principals")
-            protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
-            setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
+    # If we are setting up a subdomain, then this has been replicated in, so we don't need to add it
+    if fill == FILL_FULL:
+        setup_modify_ldif(samdb,
+                          setup_path("provision_configuration_references.ldif"), {
                 "CONFIGDN": names.configdn,
-                "WELLKNOWNPRINCIPALS_DESCRIPTOR": protected1wd_descr,
-                })
+                "SCHEMADN": names.schemadn})
 
-        if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
-            setup_modify_ldif(samdb,
-                              setup_path("provision_basedn_references.ldif"),
-                              {"DOMAINDN": names.domaindn})
+        logger.info("Setting up well known security principals")
+        protected1wd_descr = b64encode(get_config_delete_protected1wd_descriptor(names.domainsid))
+        setup_add_ldif(samdb, setup_path("provision_well_known_sec_princ.ldif"), {
+            "CONFIGDN": names.configdn,
+            "WELLKNOWNPRINCIPALS_DESCRIPTOR": protected1wd_descr,
+            })
 
-            logger.info("Setting up sam.ldb users and groups")
-            setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
-                "DOMAINDN": names.domaindn,
-                "DOMAINSID": str(names.domainsid),
-                "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')),
-                "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le'))
-                })
+    if fill == FILL_FULL or fill == FILL_SUBDOMAIN:
+        setup_modify_ldif(samdb,
+                          setup_path("provision_basedn_references.ldif"),
+                          {"DOMAINDN": names.domaindn})
 
-            logger.info("Setting up self join")
-            setup_self_join(samdb, admin_session_info, names=names, fill=fill,
-                invocationid=invocationid,
-                dns_backend=dns_backend,
-                dnspass=dnspass,
-                machinepass=machinepass,
-                domainsid=names.domainsid,
-                next_rid=next_rid,
-                dc_rid=dc_rid,
-                policyguid=policyguid,
-                policyguid_dc=policyguid_dc,
-                domainControllerFunctionality=domainControllerFunctionality,
-                ntdsguid=ntdsguid)
+        logger.info("Setting up sam.ldb users and groups")
+        setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
+            "DOMAINDN": names.domaindn,
+            "DOMAINSID": str(names.domainsid),
+            "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')),
+            "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le'))
+            })
 
-            ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
-            names.ntdsguid = samdb.searchone(basedn=ntds_dn,
-                attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
-            assert isinstance(names.ntdsguid, str)
-    except:
-        samdb.transaction_cancel()
-        raise
-    else:
-        samdb.transaction_commit()
-        return samdb
+        logger.info("Setting up self join")
+        setup_self_join(samdb, admin_session_info, names=names, fill=fill,
+            invocationid=invocationid,
+            dns_backend=dns_backend,
+            dnspass=dnspass,
+            machinepass=machinepass,
+            domainsid=names.domainsid,
+            next_rid=next_rid,
+            dc_rid=dc_rid,
+            policyguid=policyguid,
+            policyguid_dc=policyguid_dc,
+            domainControllerFunctionality=domainControllerFunctionality,
+            ntdsguid=ntdsguid)
+
+        ntds_dn = "CN=NTDS Settings,%s" % names.serverdn
+        names.ntdsguid = samdb.searchone(basedn=ntds_dn,
+            attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
+        assert isinstance(names.ntdsguid, str)
+
+    return samdb
 
 
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
@@ -1783,15 +1769,23 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
     if dnspass is None:
         dnspass = samba.generate_random_password(128, 255)
 
-    samdb = fill_samdb(samdb, lp, names, logger=logger,
-                   schema=schema,
-                   policyguid=policyguid, policyguid_dc=policyguid_dc,
-                   fill=samdb_fill, adminpass=adminpass, krbtgtpass=krbtgtpass,
-                   invocationid=invocationid, machinepass=machinepass,
-                   dns_backend=dns_backend, dnspass=dnspass,
-                   ntdsguid=ntdsguid, serverrole=serverrole,
-                   dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
-                   next_rid=next_rid, dc_rid=dc_rid)
+    samdb.transaction_start()
+    try:
+        samdb = fill_samdb(samdb, lp, names, logger=logger,
+                       schema=schema,
+                       policyguid=policyguid, policyguid_dc=policyguid_dc,
+                       fill=samdb_fill, adminpass=adminpass, krbtgtpass=krbtgtpass,
+                       invocationid=invocationid, machinepass=machinepass,
+                       dns_backend=dns_backend, dnspass=dnspass,
+                       ntdsguid=ntdsguid, serverrole=serverrole,
+                       dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
+                       next_rid=next_rid, dc_rid=dc_rid)
+
+    except:
+        samdb.transaction_cancel()
+        raise
+    else:
+        samdb.transaction_commit()
 
     if serverrole == "active directory domain controller":
 
