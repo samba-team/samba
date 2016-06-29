@@ -3471,7 +3471,7 @@ NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const
 	struct winbind_cache *cache = get_cache(domain);
 	NTSTATUS status;
 	int ret;
-	struct cred_list *cred, *oldest = NULL;
+	struct cred_list *cred, *next, *oldest = NULL;
 
 	if (!cache->tdb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
@@ -3540,7 +3540,11 @@ NTSTATUS wcache_remove_oldest_cached_creds(struct winbindd_domain *domain, const
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 done:
-	SAFE_FREE(wcache_cred_list);
+	for (cred = wcache_cred_list; cred; cred = next) {
+		next = cred->next;
+		DLIST_REMOVE(wcache_cred_list, cred);
+		SAFE_FREE(cred);
+	}
 	SAFE_FREE(oldest);
 
 	return status;
