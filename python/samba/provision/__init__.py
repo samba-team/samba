@@ -1781,6 +1781,11 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                        dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                        next_rid=next_rid, dc_rid=dc_rid)
 
+        # Set up group policies (domain policy and domain controller
+        # policy)
+        if serverrole == "active directory domain controller":
+            create_default_gpo(paths.sysvol, names.dnsdomain, policyguid,
+                               policyguid_dc)
     except:
         samdb.transaction_cancel()
         raise
@@ -1788,11 +1793,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
         samdb.transaction_commit()
 
     if serverrole == "active directory domain controller":
-
-        # Set up group policies (domain policy and domain controller
-        # policy)
-        create_default_gpo(paths.sysvol, names.dnsdomain, policyguid,
-                           policyguid_dc)
+        # Continue setting up sysvol for GPO. This appears to require being
+        # outside a transaction.
         if not skip_sysvolacl:
             setsysvolacl(samdb, paths.netlogon, paths.sysvol, paths.root_uid,
                          paths.root_gid, names.domainsid, names.dnsdomain,
