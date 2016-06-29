@@ -6,7 +6,7 @@
 # This is script is invoked from ctdb when certain events happen.  See
 # /etc/ctdb/notify.d/README for more details.
 
-d=$(dirname $0)
+d=$(dirname "$0")
 nd="${d}/notify.d"
 
 ok=true

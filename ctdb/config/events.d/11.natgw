@@ -91,7 +91,7 @@ _natgw_clear ()
     _maskbits="${CTDB_NATGW_PUBLIC_IP#*/}"
 
     delete_ip_from_iface \
-	$CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits >/dev/null 2>&1
+	"$CTDB_NATGW_PUBLIC_IFACE" "$_ip" "$_maskbits" >/dev/null 2>&1
     for _net_gw in $CTDB_NATGW_STATIC_ROUTES ; do
 	_net="${_net_gw%@*}"
 	ip route del "$_net" metric 10 >/dev/null 2>/dev/null
@@ -100,16 +100,16 @@ _natgw_clear ()
     # Delete the masquerading setup from a previous iteration where we
     # were the NAT-GW
     iptables -D POSTROUTING -t nat \
-	-s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK \
+	-s "$CTDB_NATGW_PRIVATE_NETWORK" ! -d "$CTDB_NATGW_PRIVATE_NETWORK" \
 	-j MASQUERADE >/dev/null 2>/dev/null
 
-    iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
+    iptables -D INPUT -p tcp --syn -d "${_ip}/32" -j REJECT 2>/dev/null
 }
 
 natgw_clear ()
 {
     if [ -r "$natgw_cfg_old" ] ; then
-	(. $natgw_cfg_old ; _natgw_clear)
+	(. "$natgw_cfg_old" ; _natgw_clear)
     else
 	_natgw_clear
     fi
@@ -119,17 +119,17 @@ natgw_set_master ()
 {
     set_proc sys/net/ipv4/ip_forward 1
     iptables -A POSTROUTING -t nat \
-	-s $CTDB_NATGW_PRIVATE_NETWORK ! -d $CTDB_NATGW_PRIVATE_NETWORK \
+	-s "$CTDB_NATGW_PRIVATE_NETWORK" ! -d "$CTDB_NATGW_PRIVATE_NETWORK" \
 	-j MASQUERADE
 
     # block all incoming connections to the NATGW IP address
     ctdb_natgw_public_ip_host="${CTDB_NATGW_PUBLIC_IP%/*}/32"
     iptables -D INPUT -p tcp --syn \
-	-d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
+	-d "$ctdb_natgw_public_ip_host" -j REJECT 2>/dev/null
     iptables -I INPUT -p tcp --syn \
-	-d $ctdb_natgw_public_ip_host -j REJECT 2>/dev/null
+	-d "$ctdb_natgw_public_ip_host" -j REJECT 2>/dev/null
 
-    ip addr add $CTDB_NATGW_PUBLIC_IP dev $CTDB_NATGW_PUBLIC_IFACE
+    ip addr add "$CTDB_NATGW_PUBLIC_IP" dev "$CTDB_NATGW_PUBLIC_IFACE"
     for _net_gw in $CTDB_NATGW_STATIC_ROUTES ; do
 	_net="${_net_gw%@*}"
 	if [ "$_net" != "$_net_gw" ] ; then

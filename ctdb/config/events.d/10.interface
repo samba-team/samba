@@ -13,7 +13,7 @@
 loadconfig
 
 [ -z "$CTDB_PUBLIC_ADDRESSES" ] && {
-	CTDB_PUBLIC_ADDRESSES=$CTDB_BASE/public_addresses
+	CTDB_PUBLIC_ADDRESSES="${CTDB_BASE}/public_addresses"
 }
 
 [ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
@@ -27,7 +27,9 @@ loadconfig
 get_all_interfaces ()
 {
     # Get all the interfaces listed in the public_addresses file
-    all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" -e "s/,/ /g" -e "s/[\t ]*$//" $CTDB_PUBLIC_ADDRESSES)
+    all_interfaces=$(sed -e "s/^[^\t ]*[\t ]*//" \
+			 -e "s/,/ /g" \
+			 -e "s/[\t ]*$//" "$CTDB_PUBLIC_ADDRESSES")
 
     # Add some special interfaces if they're defined
     [ "$CTDB_PUBLIC_INTERFACE" ] && all_interfaces="$CTDB_PUBLIC_INTERFACE $all_interfaces"
@@ -161,7 +163,7 @@ case "$1" in
 	ip=$3
 	maskbits=$4
 
-	add_ip_to_iface $iface $ip $maskbits || {
+	add_ip_to_iface "$iface" "$ip" "$maskbits" || {
 		exit 1;
 	}
 
@@ -189,7 +191,7 @@ case "$1" in
 
 	kill_tcp_connections "$iface" "$ip"
 
-	delete_ip_from_iface $iface $ip $maskbits || {
+	delete_ip_from_iface "$iface" "$ip" "$maskbits" || {
 		ip_unblock "$ip" "$iface"
 		exit 1
 	}
@@ -221,10 +223,10 @@ case "$1" in
 
 	ip_block "$ip" "$oiface"
 
-	delete_ip_from_iface $oiface $ip $maskbits 2>/dev/null
-	delete_ip_from_iface $niface $ip $maskbits 2>/dev/null
+	delete_ip_from_iface "$oiface" "$ip" "$maskbits" 2>/dev/null
+	delete_ip_from_iface "$niface" "$ip" "$maskbits" 2>/dev/null
 
-	add_ip_to_iface $niface $ip $maskbits || {
+	add_ip_to_iface "$niface" "$ip" "$maskbits" || {
 		ip_unblock "$ip" "$oiface"
 		exit 1
 	}
@@ -234,11 +236,11 @@ case "$1" in
 	flush_route_cache
 
 	# propagate the new mac address
-	$CTDB gratiousarp $ip $niface
+	$CTDB gratiousarp "$ip" "$niface"
 
 	# tickle all existing connections, so that dropped packets
 	# are retransmited and the tcp streams work
-	tickle_tcp_connections $ip
+	tickle_tcp_connections "$ip"
 	;;
 
     monitor)

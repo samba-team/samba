@@ -24,7 +24,7 @@
 
 loadconfig
 
-[ -f $CTDB_BASE/static-routes ] || {
+[ -f "${CTDB_BASE}/static-routes" ] || {
     exit 0
 }
 

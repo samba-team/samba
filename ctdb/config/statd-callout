@@ -83,7 +83,7 @@ case "$1" in
 	ctdb_get_pnn
 	ctdb_ips=$($CTDB ip | tail -n +2)
 	sed_expr=$(echo "$ctdb_ips" |
-	    awk -v pnn=$pnn 'pnn == $2 { \
+	    awk -v pnn="$pnn" 'pnn == $2 { \
                 ip = $1; gsub(/\./, "\\.", ip); \
                 printf "/statd-state@%s@/p\n", ip }')
         if cat $files | sed -n "$sed_expr" | $CTDB ptrans "ctdb.tdb" ; then
@@ -161,7 +161,7 @@ case "$1" in
 	# but only for the server-IPs that are hosted on this node.
 	ctdb_all_ips=$($CTDB ip all | tail -n +2)
 	sed_expr=$(echo "$ctdb_all_ips" |
-	    awk -v pnn=$pnn 'pnn == $2 { \
+	    awk -v pnn="$pnn" 'pnn == $2 { \
                 ip = $1; gsub(/\./, "\\.", ip); \
                 printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }')
 
@@ -187,12 +187,16 @@ case "$1" in
 		# Reset stateval for each serverip
 		[ "$sip" = "$prev" ] || stateval="$state_even"
 		# Send notifies for server shutdown
-		"$smnotify" --client=$cip --ip=$sip --server=$sip --stateval=$stateval
-		"$smnotify" --client=$cip --ip=$sip --server=$NFS_HOSTNAME --stateval=$stateval
+		"$smnotify" --client="$cip" --ip="$sip" \
+			    --server="$sip" --stateval="$stateval"
+		"$smnotify" --client="$cip" --ip="$sip" \
+			    --server="$NFS_HOSTNAME" --stateval="$stateval"
 		# Send notifies for server startup
 		stateval=$(($stateval + 1))
-		"$smnotify" --client=$cip --ip=$sip --server=$sip --stateval=$stateval
-		"$smnotify" --client=$cip --ip=$sip --server=$NFS_HOSTNAME --stateval=$stateval
+		"$smnotify" --client="$cip" --ip="$sip" \
+			    --server="$sip" --stateval="$stateval"
+		"$smnotify" --client="$cip" --ip="$sip" \
+			    --server="$NFS_HOSTNAME" --stateval="$stateval"
 	    done
 
 	    echo "$items" | $CTDB ptrans "ctdb.tdb"
@@ -202,7 +206,7 @@ case "$1" in
 	# hosted on this node and created since the last "update").
 	# There's nothing else we can do with them at this stage.
 	echo "$ctdb_all_ips" |
-	    awk -v pnn=$pnn 'pnn != $2 { print $1 }' |
+	    awk -v pnn="$pnn" 'pnn != $2 { print $1 }' |
 	    while read sip ; do
 		rm -f "statd-state@${sip}@"*
 	    done

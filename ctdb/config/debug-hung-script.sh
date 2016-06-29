@@ -25,7 +25,7 @@ fi
     echo "===== Start of hung script debug for PID=\"$1\", event=\"$2\" ====="
 
     echo "pstree -p -a ${1}:"
-    out=$(pstree -p -a $1)
+    out=$(pstree -p -a "$1")
     echo "$out"
 
     # Check for processes matching a regular expression and print

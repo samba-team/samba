@@ -36,7 +36,7 @@ fi
 
 usage ()
 {
-    _c=$(basename $0)
+    _c=$(basename "$0")
     cat <<EOF
 usage: $_c { shutdown | startup }
        $_c { stop | start } { nfs | nlockmgr }

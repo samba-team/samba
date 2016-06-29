@@ -36,7 +36,7 @@ loadconfig ctdb
     grep -F "POSIX  ADVISORY  WRITE" |
     awk '{ if($2 == "->") { print $6, $7, $8, $9, "W" } else { print $5, $6, $7, $8 } }' |
     while read pid rest ; do
-	pname=$(readlink /proc/$pid/exe)
+	pname=$(readlink "/proc/${pid}/exe")
 	echo $pid $pname $rest
     done | sed -e "$sed_cmd" | grep "\.tdb" )
 
@@ -56,7 +56,7 @@ loadconfig ctdb
 	# For each process waiting, log stack trace
 	for pid in $pids ; do
 	    echo "----- Stack trace for PID=$pid -----"
-	    read x x state x </proc/$pid/stat
+	    read x x state x <"/proc/${pid}/stat"
 	    if [ "$state" = "D" ] ; then
 		# Don't run gstack on a process in D state since
 		# gstack will hang until the process exits D state.
@@ -68,9 +68,9 @@ loadconfig ctdb
 		# deadlock... but it will probably give us someone to
 		# blame!
 		echo "----- Process in D state, printing kernel stack only"
-		cat /proc/$pid/stack
+		cat "/proc/${pid}/stack"
 	    else
-		gstack $pid
+		gstack "$pid"
 		# gcore -o /var/log/core-deadlock-ctdb $pid
 	    fi
 	done

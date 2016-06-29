@@ -54,7 +54,7 @@ EOF
 	tgtd >/dev/null 2>&1
 
 	# Run a script for each currently hosted public IP address
-	ips=$(echo "$all_ips" | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
+	ips=$(echo "$all_ips" | awk -F'|' -v pnn="$pnn" '$3 == pnn {print $2}')
 	for ip in $ips ; do
 	    script="${CTDB_START_ISCSI_SCRIPTS}/${ip}.sh"
 	    if [ -x "$script" ] ; then

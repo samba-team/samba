@@ -199,8 +199,8 @@ ctdb_check_rpc ()
 	    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
     esac
 
-    if ! ctdb_check_rpc_out=$(rpcinfo -T $_family $_localhost \
-				      $_progname $_version 2>&1) ; then
+    if ! ctdb_check_rpc_out=$(rpcinfo -T "$_family" "$_localhost" \
+				      "$_progname" $_version 2>&1) ; then
 	ctdb_check_rpc_out="$_progname failed RPC check:
 $ctdb_check_rpc_out"
 	echo "$ctdb_check_rpc_out"
@@ -217,10 +217,10 @@ nfs_check_rpcinfo ()
     for _family in $_families ; do
 	if [ -n "$_versions" ] ; then
 	    for _version in $_versions ; do
-		ctdb_check_rpc $_progname $_version $_family || return $?
+		ctdb_check_rpc "$_progname" "$_version" "$_family" || return $?
 	    done
 	else
-	    ctdb_check_rpc $_progname "" $_family || return $?
+	    ctdb_check_rpc "$_progname" "" "$_family" || return $?
 	fi
     done
 }

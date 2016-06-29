@@ -70,12 +70,12 @@ _loadconfig() {
 	return
     fi
 
-    if [ -f $CTDB_SYS_ETCDIR/sysconfig/$1 ]; then
-	. $CTDB_SYS_ETCDIR/sysconfig/$1
-    elif [ -f $CTDB_SYS_ETCDIR/default/$1 ]; then
-	. $CTDB_SYS_ETCDIR/default/$1
-    elif [ -f $CTDB_BASE/sysconfig/$1 ]; then
-	. $CTDB_BASE/sysconfig/$1
+    if [ -f "${CTDB_SYS_ETCDIR}/sysconfig/$1" ]; then
+	. "${CTDB_SYS_ETCDIR}/sysconfig/$1"
+    elif [ -f "${CTDB_SYS_ETCDIR}/default/$1" ]; then
+	. "${CTDB_SYS_ETCDIR}/default/$1"
+    elif [ -f "${CTDB_BASE}/sysconfig/$1" ]; then
+	. "${CTDB_BASE}/sysconfig/$1"
     fi
 
     if [ "$1" = "ctdb" ] ; then
@@ -97,7 +97,7 @@ loadconfig () {
 # configuration file.
 debug ()
 {
-    if [ ${CTDB_SCRIPT_DEBUGLEVEL:-2} -ge 4 ] ; then
+    if [ "${CTDB_SCRIPT_DEBUGLEVEL:-2}" -ge 4 ] ; then
 	# If there are arguments then echo them.  Otherwise expect to
 	# use stdin, which allows us to pass lots of debug using a
 	# here document.
@@ -146,7 +146,7 @@ script_log ()
 	*)
 	    # Handle all syslog:* variants here too.  There's no tool to do
 	    # the lossy things, so just use logger.
-	    logger -t "ctdbd: ${_tag}" $*
+	    logger -t "ctdbd: ${_tag}" "$*"
 	    ;;
     esac
 }
@@ -217,10 +217,10 @@ _service ()
       $_nice /usr/sbin/service "$_service_name" "$_op"
   elif [ -x /bin/systemctl ]; then
       $_nice /bin/systemctl "$_op" "$_service_name"
-  elif [ -x $CTDB_SYS_ETCDIR/init.d/$_service_name ]; then
-      $_nice $CTDB_SYS_ETCDIR/init.d/$_service_name "$_op"
-  elif [ -x $CTDB_SYS_ETCDIR/rc.d/init.d/$_service_name ]; then
-      $_nice $CTDB_SYS_ETCDIR/rc.d/init.d/$_service_name "$_op"
+  elif [ -x "${CTDB_SYS_ETCDIR}/init.d/${_service_name}" ]; then
+      $_nice "${CTDB_SYS_ETCDIR}/init.d/${_service_name}" "$_op"
+  elif [ -x "${CTDB_SYS_ETCDIR}/rc.d/init.d/${_service_name}" ]; then
+      $_nice "${CTDB_SYS_ETCDIR}/rc.d/init.d/${_service_name}" "$_op"
   fi
 }
 
@@ -488,7 +488,7 @@ kill_tcp_connections ()
 		return
 	}
 
-	_remaining=$(get_tcp_connections_for_ip $_ip | wc -l)
+	_remaining=$(get_tcp_connections_for_ip "$_ip" | wc -l)
 
 	if [ $_remaining -eq 0 ] ; then
 		echo "Killed $_killcount TCP connections to released IP $_ip"
@@ -521,9 +521,9 @@ tickle_tcp_connections ()
 
 	while read dest src; do
 	    echo "Tickle TCP connection $src $dest"
-	    $CTDB tickle $src $dest >/dev/null 2>&1 || _failed=true
+	    $CTDB tickle "$src" "$dest" >/dev/null 2>&1 || _failed=true
 	    echo "Tickle TCP connection $dest $src"
-	    $CTDB tickle $dest $src >/dev/null 2>&1 || _failed=true
+	    $CTDB tickle "$dest" "$src" >/dev/null 2>&1 || _failed=true
 	done
 
 	if $_failed ; then
@@ -626,12 +626,12 @@ drop_ip ()
 {
     _addr="${1%/*}"  # Remove optional maskbits
 
-    set -- $(ip_maskbits_iface $_addr)
+    set -- $(ip_maskbits_iface "$_addr")
     if [ -n "$1" ] ; then
 	_maskbits="$1"
 	_iface="$2"
 	echo "Removing public address $_addr/$_maskbits from device $_iface"
-	delete_ip_from_iface $_iface $_addr $_maskbits >/dev/null 2>&1
+	delete_ip_from_iface "$_iface" "$_addr" "$_maskbits" >/dev/null 2>&1
     fi
 }
 
@@ -1244,7 +1244,7 @@ update_tickles ()
 	ctdb_get_pnn
 
 	# What public IPs do I hold?
-	_ips=$($CTDB -X ip | awk -F'|' -v pnn=$pnn '$3 == pnn {print $2}')
+	_ips=$($CTDB -X ip | awk -F'|' -v pnn="$pnn" '$3 == pnn {print $2}')
 
 	# IPs and port as ss filters
 	_ip_filter=""
@@ -1269,7 +1269,7 @@ update_tickles ()
 	# Record our current tickles in a temporary file
 	_my_tickles="${tickledir}/${_port}.tickles.$$"
 	for _i in $_ips ; do
-		$CTDB -X gettickles $_i $_port |
+		$CTDB -X gettickles "$_i" "$_port" |
 		awk -F'|' 'NR > 1 { printf "%s:%s %s:%s\n", $2, $3, $4, $5 }'
 	done |
 	sort >"$_my_tickles"
@@ -1277,13 +1277,13 @@ update_tickles ()
 	# Add tickles for connections that we haven't already got tickles for
 	comm -23 "$_my_connections" "$_my_tickles" |
 	while read _src _dst ; do
-		$CTDB addtickle $_src $_dst
+		$CTDB addtickle "$_src" "$_dst"
 	done
 
 	# Remove tickles for connections that are no longer there
 	comm -13 "$_my_connections" "$_my_tickles" |
 	while read _src _dst ; do
-		$CTDB deltickle $_src $_dst
+		$CTDB deltickle "$_src" "$_dst"
 	done
 
 	rm -f "$_my_connections" "$_my_tickles"
@@ -1300,12 +1300,12 @@ update_tickles ()
 	. "$CTDB_RC_LOCAL"
 }
 
-[ -x $CTDB_BASE/rc.local ] && {
-	. $CTDB_BASE/rc.local
+[ -x "${CTDB_BASE}/rc.local" ] && {
+	. "${CTDB_BASE}/rc.local"
 }
 
-[ -d $CTDB_BASE/rc.local.d ] && {
-	for i in $CTDB_BASE/rc.local.d/* ; do
+[ -d "${CTDB_BASE}/rc.local.d" ] && {
+	for i in "${CTDB_BASE}/rc.local.d"/* ; do
 		[ -x "$i" ] && . "$i"
 	done
 }

@@ -267,7 +267,7 @@ EOF
     # is invalid.  Therefore, go to a little bit of trouble to indent
     # the failure message so that it is associated with the above
     # warning message and doesn't look too nasty.
-    ip route flush table $_table_id 2>&1 | sed -e 's@^.@  &@'
+    ip route flush table "$_table_id" 2>&1 | sed -e 's@^.@  &@'
 }
 
 ######################################################################

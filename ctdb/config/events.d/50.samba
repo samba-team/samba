@@ -83,7 +83,7 @@ testparm_foreground_update ()
     _out="${smbconf_cache}.out"
     _err="${smbconf_cache}.err"
 
-    timeout $_timeout testparm -v -s >"$_out" 2>"$_err"
+    timeout "$_timeout" testparm -v -s >"$_out" 2>"$_err"
     case $? in
 	0) : ;;
 	124)
@@ -123,7 +123,7 @@ testparm_background_update ()
 {
     _timeout="$1"
 
-    testparm_foreground_update $_timeout >/dev/null 2>&1 </dev/null &
+    testparm_foreground_update "$_timeout" >/dev/null 2>&1 </dev/null &
 }
 
 testparm_cat ()

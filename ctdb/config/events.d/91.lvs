@@ -101,8 +101,8 @@ ipreallocated)
 	"${CTDB_HELPER_BINDIR}/ctdb_lvs" list |
 	awk -v pnn="$pnn" '$1 != pnn { print $2 }' |
 	while read ip ; do
-		ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r $ip -g
-		ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r $ip -g
+		ipvsadm -a -t "$CTDB_LVS_PUBLIC_IP" -r "$ip" -g
+		ipvsadm -a -u "$CTDB_LVS_PUBLIC_IP" -r "$ip" -g
 	done
 
 	# Add localhost too...

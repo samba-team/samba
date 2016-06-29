@@ -31,7 +31,7 @@ case "$1" in
 	# Try to stat the reclock file as a background process so that
 	# we don't block in case the cluster filesystem is unavailable
 	(
-	    if stat $CTDB_RECOVERY_LOCK ; then
+	    if stat "$CTDB_RECOVERY_LOCK" ; then
 		# We could stat the file, reset the counter
 		ctdb_counter_init
 	    fi
