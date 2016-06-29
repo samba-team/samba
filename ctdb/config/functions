@@ -6,6 +6,7 @@ if [ -z "$CTDB_BASE" ] ; then
     echo 'CTDB_BASE unset in CTDB functions file'
     exit 1
 fi
+export CTDB_BASE
 
 CTDB_VARDIR="/usr/local/var/lib/ctdb"
 ctdb_rundir="/usr/local/var/run/ctdb"
