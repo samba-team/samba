@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+bld.SAMBA_SUBSYSTEM('tstream_binding_handle',
+                    source='tstream_binding_handle.c',
+                    deps='tevent LIBTSOCKET')
