@@ -552,7 +552,7 @@ add_ip_to_iface ()
 	die "Failed to bringup interface $_iface"
 
     # Only need to define broadcast for IPv4
-    case "$ip" in
+    case "$_ip" in
         *:*) _bcast=""      ;;
 	*)   _bcast="brd +" ;;
     esac
