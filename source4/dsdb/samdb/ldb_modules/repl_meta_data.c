@@ -2173,7 +2173,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 {
 	unsigned int i;
 	struct parsed_dn *dns, *old_dns;
-	TALLOC_CTX *tmp_ctx = talloc_new(msg);
+	TALLOC_CTX *tmp_ctx = NULL;
 	int ret;
 	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
@@ -2189,6 +2189,11 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 
 	if (!old_el || old_el->num_values == 0) {
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	tmp_ctx = talloc_new(msg);
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = get_parsed_dns(module, tmp_ctx, el, &dns, schema_attr->syntax->ldap_oid, parent);
