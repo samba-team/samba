@@ -25,6 +25,16 @@ The ldap server has support for the LDAP_SERVER_NOTIFICATION_OID
 control. This can be used to monitor the active directory database
 for changes.
 
+KCC improvements for sparse network replication
+-----------------------------------------------
+
+The Samba KCC will now be the default knowledge consistency checker in
+Samba AD. Instead of using full mesh replication between every DC, the
+KCC will set up connections to optimize replication latency and cost
+(using site links to calculate the routes). This change should allow
+larger domains to function significantly better in terms of replication
+traffic and the time spent performing DRS replication.
+
 VLV - Virtual List View
 -----------------------
 
@@ -133,6 +143,7 @@ smb.conf changes
   --------------		-----------		-------
   only user			Removed
   username			Removed
+  kccsrv:samba_kcc		Changed default		true
 
 KNOWN ISSUES
 ============
