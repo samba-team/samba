@@ -1,0 +1,91 @@
+The way to recreate these dump file is to apply the patches below on a
+source tree that DOESN'T have the linked attribute fixes this is
+intended to test. The commit that introduces this file fits the
+requirements.
+
+  cd $(git rev-parse --show-toplevel)
+  patch -p1 < /tmp/change-blackbox-tests-to-make-dbcheck-test-env.txt
+
+Then return run (in a developer environment):
+
+make test TESTS="samba4.blackbox.group.py"
+
+This will create an environment in st/provision/simple-dc/. That has
+deleted groups, but we also want a deleted user case. For that, run
+add-deleted-user.sh in this directory.
+
+  ./source4/selftest/provisions/release-4-5-0-pre1/add-deleted-user.sh
+
+Then do the dump:
+
+./source4/selftest/provisions/dump.sh  st/provision/simple-dc/ \
+     ./source4/selftest/provisions/release-4-5-0-pre1 $(pwd)/bin/tdbdump
+
+Now you have the dump files. Now return to where you were with something like:
+
+  git reset --hard
+  git checkout -
+
+or you can use separate git trees, as I did.
+
+------Patches follow-------
+
+From 1eaf9094148030a5918f3b88bae41ba096f70980 Mon Sep 17 00:00:00 2001
+From: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+Date: Fri, 24 Jun 2016 10:03:35 +1200
+Subject: [PATCH 1/2] tests/blackbox_group.sh: modify for dbcheck linked
+ attributes test
+
+This is not a patch. It is a patch within a patch's comment,
+explaining how that patch came to exist.
+
+Signed-off-by: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+---
+ source4/setup/tests/blackbox_group.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/source4/setup/tests/blackbox_group.sh b/source4/setup/tests/blackbox_group.sh
+index ee344cf..29cf80f 100755
+--- a/source4/setup/tests/blackbox_group.sh
++++ b/source4/setup/tests/blackbox_group.sh
+@@ -14,7 +14,7 @@ shift 1
+ 
+ 
+ rm -rf $PREFIX/simple-dc
+-testit "simple-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --use-ntvfs
++testit "simple-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=release-4-5-0-pre1.samba.corp --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --use-ntvfs
+ samba_tool="./bin/samba-tool"
+ 
+ CONFIG="--configfile=$PREFIX/simple-dc/etc/smb.conf"
+-- 
+2.7.4
+
+
+From fed5c503edd8c4badf51b094a5548cc52cb342d0 Mon Sep 17 00:00:00 2001
+From: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+Date: Fri, 24 Jun 2016 11:02:19 +1200
+Subject: [PATCH 2/2] testprogs/blackbox/dbcheck-oldrelease.sh: don't clean up
+
+This is not a patch. It is a patch within a patch's comment,
+explaining how that patch came to exist.
+
+Signed-off-by: Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+---
+ testprogs/blackbox/dbcheck-oldrelease.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/testprogs/blackbox/dbcheck-oldrelease.sh b/testprogs/blackbox/dbcheck-oldrelease.sh
+index d2226c6..34610dd 100755
+--- a/testprogs/blackbox/dbcheck-oldrelease.sh
++++ b/testprogs/blackbox/dbcheck-oldrelease.sh
+@@ -442,7 +442,7 @@ EOF
+ fi
+ 
+ if [ -d $PREFIX_ABS/${RELEASE} ]; then
+-    rm -fr $PREFIX_ABS/${RELEASE}
++#    rm -fr $PREFIX_ABS/${RELEASE}
+ fi
+ 
+ if [ -d $PREFIX_ABS/${RELEASE}_reference ]; then
+-- 
+2.7.4
