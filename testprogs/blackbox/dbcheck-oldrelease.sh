@@ -192,7 +192,7 @@ dbcheck() {
 
 check_expected_after_values() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-before-dbcheck.ldif.tmp
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-replpropertymetadata-after-dbcheck.ldif.tmp
 	TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=ops_run_anything -s one -b OU=SUDOers,DC=release-4-1-0rc3,DC=samba,DC=corp \* replpropertymetadata --sorted --show-binary > $tmpldif
 	diff $tmpldif $release_dir/expected-replpropertymetadata-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
