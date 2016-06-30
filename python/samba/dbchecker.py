@@ -88,7 +88,7 @@ class dbcheck(object):
         self.fix_missing_deleted_objects = False
 
         self.dn_set = set()
-
+        self.link_id_cache = {}
         self.name_map = {}
         try:
             res = samdb.search(base="CN=DnsAdmins,CN=Users,%s" % samdb.domain_dn(), scope=ldb.SCOPE_BASE,
@@ -335,6 +335,17 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return False
         return True
 
+    def get_attr_linkID_and_reverse_name(self, attrname):
+        if attrname in self.link_id_cache:
+            return self.link_id_cache[attrname]
+        linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
+        if linkID:
+            revname = self.samdb_schema.get_backlink_from_lDAPDisplayName(attrname)
+        else:
+            revname = None
+        self.link_id_cache[attrname] = (linkID, revname)
+        return linkID, revname
+
     def err_empty_attribute(self, dn, attrname):
         '''fix empty attributes'''
         self.report("ERROR: Empty attribute %s in %s" % (attrname, dn))
@@ -448,7 +459,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_missing_dn_GUID(self, dn, attrname, val, dsdb_dn):
         """handle a missing target DN (both GUID and DN string form are missing)"""
         # check if its a backlink
-        linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
+        linkID, _ = self.get_attr_linkID_and_reverse_name(attrname)
         if (linkID & 1 == 0) and str(dsdb_dn).find('\\0ADEL') == -1:
             self.report("Not removing dangling forward link")
             return
@@ -745,8 +756,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             else:
                 fixing_msDS_HasInstantiatedNCs = False
 
-            linkID = self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)
-            reverse_link_name = self.samdb_schema.get_backlink_from_lDAPDisplayName(attrname)
+            linkID, reverse_link_name = self.get_attr_linkID_and_reverse_name(attrname)
             if reverse_link_name is not None:
                 attrs.append(reverse_link_name)
 
@@ -1583,10 +1593,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 error_count += 1
                 continue
 
+            linkID, reverse_link_name = self.get_attr_linkID_and_reverse_name(attrname)
+
             flag = self.samdb_schema.get_systemFlags_from_lDAPDisplayName(attrname)
             if (not flag & dsdb.DS_FLAG_ATTR_NOT_REPLICATED
                 and not flag & dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED
-                and not self.samdb_schema.get_linkId_from_lDAPDisplayName(attrname)):
+                and not linkID):
                 set_attrs_seen.add(str(attrname).lower())
 
             if syntax_oid in [ dsdb.DSDB_SYNTAX_BINARY_DN, dsdb.DSDB_SYNTAX_OR_NAME,
