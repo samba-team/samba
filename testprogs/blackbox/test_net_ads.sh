@@ -37,6 +37,14 @@ testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || fail
 
 testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
 
+testit "join+kerberos" $VALGRIND $net_tool ads join -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+
+testit "leave+kerberos" $VALGRIND $net_tool ads leave -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+testit_expect_failure "testjoin(not joined)" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed + 1`
+
 testit "join+server" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD -S$DC_SERVER || failed=`expr $failed + 1`
 
 testit "leave+server" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD -S$DC_SERVER || failed=`expr $failed + 1`
