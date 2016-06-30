@@ -3219,9 +3219,12 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 				 "objectclass", "classSchema") != NULL) {
 		ac->type = SAMLDB_TYPE_CLASS;
 
-		ret = samldb_schema_governsid_valid_check(ac);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+		/* If in provision, these checks are too slow to do */
+		if (!ldb_request_get_control(req, DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID)) {
+			ret = samldb_schema_governsid_valid_check(ac);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 
 		ret = samldb_schema_ldapdisplayname_valid_check(ac);
@@ -3242,9 +3245,12 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 				 "objectclass", "attributeSchema") != NULL) {
 		ac->type = SAMLDB_TYPE_ATTRIBUTE;
 
-		ret = samldb_schema_attributeid_valid_check(ac);
-		if (ret != LDB_SUCCESS) {
-			return ret;
+		/* If in provision, these checks are too slow to do */
+		if (!ldb_request_get_control(req, DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID)) {
+			ret = samldb_schema_attributeid_valid_check(ac);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 
 		ret = samldb_schema_ldapdisplayname_valid_check(ac);

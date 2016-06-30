@@ -38,6 +38,7 @@ import socket
 import urllib
 import string
 import tempfile
+import samba.dsdb
 
 import ldb
 
@@ -1312,13 +1313,17 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
                 })
 
         # The LDIF here was created when the Schema object was constructed
+        ignore_checks_oid = "local_oid:%s:0" % samba.dsdb.DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID
         logger.info("Setting up sam.ldb schema")
-        samdb.add_ldif(schema.schema_dn_add, controls=["relax:0"])
-        samdb.modify_ldif(schema.schema_dn_modify)
+        samdb.add_ldif(schema.schema_dn_add,
+                       controls=["relax:0", ignore_checks_oid])
+        samdb.modify_ldif(schema.schema_dn_modify,
+                          controls=[ignore_checks_oid])
         samdb.write_prefixes_from_schema()
-        samdb.add_ldif(schema.schema_data, controls=["relax:0"])
+        samdb.add_ldif(schema.schema_data, controls=["relax:0", ignore_checks_oid])
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"),
-                       {"SCHEMADN": names.schemadn})
+                       {"SCHEMADN": names.schemadn},
+                       controls=["relax:0", ignore_checks_oid])
 
     # Now register this container in the root of the forest
     msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
@@ -1864,6 +1869,9 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                                   'ipsecISAKMPReference',
                                   'ipsecNegotiationPolicyReference',
                                   'ipsecNFAReference'])
+        if chk.check_database(DN=names.schemadn, scope=ldb.SCOPE_SUBTREE,
+                attrs=['attributeId', 'governsId']) != 0:
+            raise ProvisioningError("Duplicate attributeId or governsId in schema. Must be fixed manually!!")
     except:
         samdb.transaction_cancel()
         raise

@@ -142,6 +142,8 @@ class dbcheck(object):
 
         error_count += self.check_deleted_objects_containers()
 
+        self.attribute_or_class_ids = set()
+
         for object in res:
             self.dn_set.add(str(object.dn))
             error_count += self.check_object(object.dn, attrs=attrs)
@@ -1556,6 +1558,14 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     error_count += 1
                     self.err_doubled_userParameters(obj, attrname, obj[attrname])
                     continue
+
+            if attrname.lower() == 'attributeid' or attrname.lower() == 'governsid':
+                if obj[attrname][0] in self.attribute_or_class_ids:
+                    error_count += 1
+                    self.report('Error: %s %s on %s already exists as an attributeId or governsId'
+                                % (attrname, obj.dn, obj[attrname][0]))
+                else:
+                    self.attribute_or_class_ids.add(obj[attrname][0])
 
             # check for empty attributes
             for val in obj[attrname]:

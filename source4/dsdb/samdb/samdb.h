@@ -175,6 +175,13 @@ struct dsdb_control_password_user_account_control {
 	uint32_t new_flags; /* the new flags stored */
 };
 
+/*
+ * Ignores strict checking when adding objects to samldb.
+ * This is used when provisioning, as checking all objects when added
+ * was slow due to an unindexed search.
+ */
+#define DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID "1.3.6.1.4.1.7165.4.3.28"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
