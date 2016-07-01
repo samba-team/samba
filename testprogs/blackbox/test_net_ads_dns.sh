@@ -44,7 +44,11 @@ export UID_WRAPPER_ROOT
 
 IPADDRESS=10.1.4.111
 IPADDRMAC=10.1.4.124
+UNPRIVIP=10.1.4.130
 NAME=testname
+UNPRIVNAME=unprivname
+UNPRIVUSER=unprivuser
+UNPRIVPASS=UnPrivPass1
 
 # These tests check that privileged users can add DNS names and that
 # unprivileged users cannot do so.
@@ -63,7 +67,17 @@ testit "We should be able to unregister the name $NAME.$REALM $IPADDRESS" $VALGR
 testit "The name $NAME.$REALM should not be there any longer" test X"`$net_tool ads dns gethostbyname $SERVER $NAME.$REALM -U$DC_USERNAME%$DC_PASSWORD | tr " " B | tr \! N`" != X"$IPADDRESS" || failed=`expr $failed + 1`
 
 # This should be an expect_failure test ...
-# testit "unprivileged users should not be able to add a DNS entry" $VALGRIND $net_tool ads dns register funnyname2.$REALM 10.1.4.112 -U$USERNAME%$PASSWORD && failed=`expr $failed + 1`
+testit "Adding an unprivileged user" $VALGRIND $net_tool user add $UNPRIVUSER $UNPRIVPASS -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+
+LDIF="dn: CN=$UNPRIVUSER,CN=users,DC=samba,DC=example,DC=com+changetype: modify+replace: userAccountControl+userAccountControl: 512"
+
+echo $LDIF | tr '+' '\n' | ./bin/ldbmodify -Uadministrator%locDCpass1 -H ldap://localdc.samba.example.com -i
+STATUS=$?
+
+testit "We should have enabled the account" test $STATUS -eq 0 || failed=`expr $failed + 1`
+
+#Unprivileged users should be able to add new names
+testit "Unprivileged users should be able to add new names" $net_tool ads dns register $UNPRIVNAME.$REALM $UNPRIVIP -U$UNPRIVUSER%$UNPRIVPASS || failed=`expr $failed + 1`
 
 # This should work as well
 testit "machine account should be able to add a DNS entry net ads dns register membername.$REALM $IPADDRMAC -P " $net_tool ads dns register membername.$REALM $IPADDRMAC -P || failed=`expr $failed + 1`
@@ -71,6 +85,9 @@ testit "machine account should be able to add a DNS entry net ads dns register m
 # The complicated pipeline is to ensure that we remove exclamation points
 # and spaces from the output. Thew will screw up the comparison syntax.
 testit "We should be able to see the new name membername.$REALM using -P" [ X"`$VALGRIND $net_tool ads dns gethostbyname $SERVER membername.$REALM -P | tr \! N | tr " " B`" = X"$IPADDRMAC" ] || failed=`expr $failed + 1`
+
+#Unprivileged users should not be able to overwrite other's names
+testit_expect_failure "Unprivileged users should not be able modify existing names" $net_tool ads dns register membername.$REALM $UNPRIVIP -U$UNPRIVUSER%$UNPRIVPASS || failed=`expr $failed + 1`
 
 testit "We should be able to unregister the name $NAME.$REALM $IPADDRESS" $VALGRIND $net_tool ads dns unregister $NAME.$REALM -P || failed=`expr $failed + 1`
 
