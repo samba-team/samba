@@ -486,7 +486,12 @@ class KCC(object):
 
         mydsa = self.my_dsa
 
-        self._ensure_connections_are_loaded(mydsa.connect_table.values())
+        try:
+            self._ensure_connections_are_loaded(mydsa.connect_table.values())
+        except KCCError:
+            # RODC never actually added any connections to begin with
+            if mydsa.is_ro():
+                return
 
         local_connections = []
 
@@ -518,6 +523,11 @@ class KCC(object):
 
         :return: None
         """
+        # TODO Figure out how best to handle the RODC case
+        # The RODC is ITSG, but shouldn't act on anyone's behalf.
+        if self.my_dsa.is_ro():
+            return
+
         # Find the intersite connections
         local_dsas = self.my_site.dsa_table
         connections_and_dsas = []
@@ -840,8 +850,12 @@ class KCC(object):
         """
         count = 0
 
+        ro = False
         if current_dsa is None:
             current_dsa = self.my_dsa
+
+        if current_dsa.is_ro():
+            ro = True
 
         if current_dsa.is_translate_ntdsconn_disabled():
             DEBUG_FN("skipping translate_ntdsconn() "
@@ -978,7 +992,7 @@ class KCC(object):
                 if t_repsFrom.is_modified():
                     n_rep.rep_repsFrom.append(t_repsFrom)
 
-            if self.readonly:
+            if self.readonly or ro:
                 # Display any to be deleted or modified repsFrom
                 text = n_rep.dumpstr_to_be_deleted()
                 if text:
@@ -1770,7 +1784,9 @@ class KCC(object):
         DEBUG_FN("intersite(): exit all_connected=%d" % all_connected)
         return all_connected
 
-    def update_rodc_connection(self):
+    # This function currently does no actions. The reason being that we cannot
+    # perform modifies in this way on the RODC.
+    def update_rodc_connection(self, ro=True):
         """Updates the RODC NTFRS connection object.
 
         If the local DSA is not an RODC, this does nothing.
@@ -1804,7 +1820,7 @@ class KCC(object):
                 con.schedule = cn2.schedule
                 con.to_be_modified = True
 
-            self.my_dsa.commit_connections(self.samdb, ro=self.readonly)
+            self.my_dsa.commit_connections(self.samdb, ro=ro)
 
     def intrasite_max_node_edges(self, node_count):
         """Find the maximum number of edges directed to an intrasite node
