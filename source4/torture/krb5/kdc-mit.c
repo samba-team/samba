@@ -44,6 +44,9 @@ enum torture_krb5_test {
 	TORTURE_KRB5_TEST_PAC_REQUEST,
 	TORTURE_KRB5_TEST_BREAK_PW,
 	TORTURE_KRB5_TEST_CLOCK_SKEW,
+	TORTURE_KRB5_TEST_AES,
+	TORTURE_KRB5_TEST_RC4,
+	TORTURE_KRB5_TEST_AES_RC4,
 };
 
 struct torture_krb5_context {
@@ -107,6 +110,9 @@ static krb5_error_code torture_krb5_pre_send_test(krb5_context context,
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 	case TORTURE_KRB5_TEST_BREAK_PW:
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+	case TORTURE_KRB5_TEST_AES:
+	case TORTURE_KRB5_TEST_RC4:
+	case TORTURE_KRB5_TEST_AES_RC4:
 		ok = torture_check_krb5_as_req(test_context,
 					       context,
 					       message);
@@ -208,6 +214,30 @@ static bool torture_check_krb5_as_rep(struct torture_krb5_context *test_context,
 					 0,
 					 "Unexpecedly got a RODC number in the KVNO");
 	}
+
+	return true;
+}
+
+static bool torture_check_krb5_as_rep_enctype(struct torture_krb5_context *test_context,
+					      krb5_context context,
+					      const krb5_data *reply,
+					      krb5_enctype expected_enctype)
+{
+	krb5_enctype reply_enctype;
+	bool ok;
+
+	ok = torture_check_krb5_as_rep(test_context,
+				       context,
+				       reply);
+	if (!ok) {
+		return false;
+	}
+
+	reply_enctype = test_context->as_rep->enc_part.enctype;
+
+	torture_assert_int_equal(test_context->tctx,
+				 reply_enctype, expected_enctype,
+				 "Ticket encrypted with invalid algorithm");
 
 	return true;
 }
@@ -398,6 +428,72 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 				    out,
 				    "Too many packets");
 		break;
+	case TORTURE_KRB5_TEST_AES:
+		torture_comment(test_context->tctx, "TORTURE_KRB5_TEST_AES\n");
+
+		if (test_context->recv_packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			if (!ok) {
+				goto out;
+			}
+		} else {
+			ok = torture_check_krb5_as_rep_enctype(test_context,
+							       context,
+							       reply,
+							       ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+			if (!ok) {
+				goto out;
+			}
+		}
+		break;
+	case TORTURE_KRB5_TEST_RC4:
+		torture_comment(test_context->tctx, "TORTURE_KRB5_TEST_RC4\n");
+
+		if (test_context->recv_packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			if (!ok) {
+				goto out;
+			}
+		} else {
+			ok = torture_check_krb5_as_rep_enctype(test_context,
+							       context,
+							       reply,
+							       ENCTYPE_ARCFOUR_HMAC);
+			if (!ok) {
+				goto out;
+			}
+		}
+		break;
+	case TORTURE_KRB5_TEST_AES_RC4:
+		torture_comment(test_context->tctx, "TORTURE_KRB5_TEST_AES_RC4\n");
+
+		if (test_context->recv_packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			if (!ok) {
+				goto out;
+			}
+		} else {
+			ok = torture_check_krb5_as_rep_enctype(test_context,
+							       context,
+							       reply,
+							       ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+			if (!ok) {
+				goto out;
+			}
+		}
+		break;
 	}
 
 	code = kdc_code;
@@ -501,6 +597,49 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 					 code, 0,
 					 "krb5_set_real_time failed");
 		break;
+	case TORTURE_KRB5_TEST_AES: {
+		krb5_enctype etype[] = { ENCTYPE_AES256_CTS_HMAC_SHA1_96 };
+
+		code = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						     &krb_options);
+		torture_assert_int_equal(tctx,
+					 code, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+		krb5_get_init_creds_opt_set_etype_list(krb_options,
+						       etype,
+						       1);
+		break;
+	}
+	case TORTURE_KRB5_TEST_RC4: {
+		krb5_enctype etype[] = { ENCTYPE_ARCFOUR_HMAC };
+
+		code = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						     &krb_options);
+		torture_assert_int_equal(tctx,
+					 code, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+		krb5_get_init_creds_opt_set_etype_list(krb_options,
+						       etype,
+						       1);
+		break;
+	}
+	case TORTURE_KRB5_TEST_AES_RC4: {
+		krb5_enctype etype[] = { ENCTYPE_AES256_CTS_HMAC_SHA1_96, ENCTYPE_ARCFOUR_HMAC };
+
+		code = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						     &krb_options);
+		torture_assert_int_equal(tctx,
+					 code, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+
+		krb5_get_init_creds_opt_set_etype_list(krb_options,
+						       etype,
+						       2);
+		break;
+	}
 	}
 
 	code = krb5_get_init_creds_password(smb_krb5_context->krb5_context,
@@ -519,6 +658,9 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
+	case TORTURE_KRB5_TEST_AES:
+	case TORTURE_KRB5_TEST_RC4:
+	case TORTURE_KRB5_TEST_AES_RC4:
 		torture_assert_int_equal(tctx,
 					 code,
 					 0,
@@ -583,6 +725,27 @@ static bool torture_krb5_as_req_clock_skew(struct torture_context *tctx)
 					 TORTURE_KRB5_TEST_CLOCK_SKEW);
 }
 
+static bool torture_krb5_as_req_aes(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_AES);
+}
+
+static bool torture_krb5_as_req_rc4(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_RC4);
+}
+
+static bool torture_krb5_as_req_aes_rc4(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_AES_RC4);
+}
+
 NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -611,6 +774,18 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 #if 0
 	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
 #endif
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-aes",
+				      torture_krb5_as_req_aes);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-rc4",
+				      torture_krb5_as_req_rc4);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-aes-rc4",
+				      torture_krb5_as_req_aes_rc4);
+
 	torture_suite_add_suite(suite, kdc_suite);
 
 	torture_register_suite(suite);
