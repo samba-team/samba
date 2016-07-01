@@ -2234,7 +2234,33 @@ bool ctdb_transaction_cancel_recv(struct tevent_req *req, int *perr)
 
 int ctdb_transaction_cancel(struct ctdb_transaction_handle *h)
 {
-	talloc_free(h);
+	struct tevent_context *ev = h->ev;
+	struct tevent_req *req;
+	TALLOC_CTX *mem_ctx;
+	int ret;
+	bool status;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return ENOMEM;
+	}
+
+	req = ctdb_transaction_cancel_send(mem_ctx, ev,
+					   tevent_timeval_zero(), h);
+	if (req == NULL) {
+		talloc_free(mem_ctx);
+		return ENOMEM;
+	}
+
+	tevent_req_poll(req, ev);
+
+	status = ctdb_transaction_cancel_recv(req, &ret);
+	if (! status) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	talloc_free(mem_ctx);
 	return 0;
 }
 
