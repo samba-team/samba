@@ -987,7 +987,7 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSEXECUTEKCC,
 				     &ndr_table_drsuapi, "kccsrv", "DsExecuteKCC",
 				     timeout);
-	DEBUG(0, ("Forwarded the call to execute the KCC\n"));
+	DEBUG(10, ("Forwarded the call to execute the KCC\n"));
 	return WERR_OK;
 }
 
