@@ -696,7 +696,7 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 	struct berval *scred=NULL;
 	int rc, i;
 	ADS_STATUS status;
-	DATA_BLOB blob;
+	DATA_BLOB blob = data_blob_null;
 	char *given_principal = NULL;
 	char *OIDs[ASN1_MAX_OIDS];
 #ifdef HAVE_KRB5
@@ -792,6 +792,9 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 done:
 	ads_free_service_principal(&p);
 	TALLOC_FREE(frame);
+	if (blob.data != NULL) {
+		data_blob_free(&blob);
+	}
 	return status;
 }
 
