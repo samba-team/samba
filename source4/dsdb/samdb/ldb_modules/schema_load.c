@@ -37,6 +37,8 @@
 struct schema_load_private_data {
 	bool in_transaction;
 	struct tdb_wrap *metadata;
+	uint64_t schema_seq_num_cache;
+	int tdb_seqnum;
 };
 
 static int dsdb_schema_from_db(struct ldb_module *module,
@@ -94,7 +96,7 @@ static int schema_metadata_open(struct ldb_module *module)
 				       struct loadparm_context);
 
 	data->metadata = tdb_wrap_open(data, filename, 10,
-				       lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT),
+				       lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT|TDB_SEQNUM),
 				       open_flags, 0660);
 	if (data->metadata == NULL) {
 		talloc_free(tmp_ctx);
@@ -114,9 +116,16 @@ static int schema_metadata_get_uint64(struct ldb_module *module,
 	TDB_DATA tdb_key, tdb_data;
 	char *value_str;
 	TALLOC_CTX *tmp_ctx;
+	int tdb_seqnum;
 
 	if (!data || !data->metadata) {
 		*value = default_value;
+		return LDB_SUCCESS;
+	}
+
+	tdb_seqnum = tdb_get_seqnum(data->metadata->tdb);
+	if (tdb_seqnum == data->tdb_seqnum) {
+		*value = data->schema_seq_num_cache;
 		return LDB_SUCCESS;
 	}
 
@@ -150,7 +159,15 @@ static int schema_metadata_get_uint64(struct ldb_module *module,
 		return ldb_module_oom(module);
 	}
 
-	*value = strtoull(value_str, NULL, 10);
+	/*
+	 * Now store it in the cache.  We don't mind that tdb_seqnum
+	 * may be stale now, that just means the cache won't be used
+	 * next time
+	 */
+	data->tdb_seqnum = tdb_seqnum;
+	data->schema_seq_num_cache = strtoull(value_str, NULL, 10);
+
+	*value = data->schema_seq_num_cache;
 
 	SAFE_FREE(tdb_data.dptr);
 	talloc_free(tmp_ctx);

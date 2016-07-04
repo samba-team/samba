@@ -242,7 +242,7 @@ static int partition_metadata_open(struct ldb_module *module, bool create)
 
 	data->metadata->db = tdb_wrap_open(
 		data->metadata, filename, 10,
-		lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT), open_flags, 0660);
+		lpcfg_tdb_flags(lp_ctx, TDB_DEFAULT|TDB_SEQNUM), open_flags, 0660);
 	if (data->metadata->db == NULL) {
 		talloc_free(tmp_ctx);
 		if (create) {
