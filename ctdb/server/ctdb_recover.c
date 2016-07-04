@@ -1213,7 +1213,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	struct recovery_callback_state *state;
 	uint32_t recmaster = c->hdr.srcnode;
 
-	DEBUG(DEBUG_NOTICE, ("Running startrecovery event\n"));
+	DEBUG(DEBUG_NOTICE, ("Recovery has started\n"));
 	gettimeofday(&ctdb->last_recovery_started, NULL);
 
 	state = talloc(ctdb, struct recovery_callback_state);
