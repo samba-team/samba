@@ -1214,6 +1214,14 @@ DB Statistics: locking.tdb
 	on the specified nodes.  When it completes addresses will be
 	reconfigured and reassigned across the cluster as necessary.
       </para>
+
+      <para>
+	This command is currently unable to make changes to the
+	netmask or interfaces associated with existing addresses.
+	Such changes must be made in 2 steps by deleting addresses in
+	question and re-adding then.  Unfortunately this will disrupt
+	connections to the changed addresses.
+      </para>
     </refsect2>
 
     <refsect2>
