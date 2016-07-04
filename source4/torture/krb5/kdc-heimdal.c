@@ -31,11 +31,20 @@
 #include "source4/auth/kerberos/kerberos_util.h"
 #include "lib/util/util_net.h"
 
+#define krb5_is_app_tag(dat,tag)                          \
+       ((dat != NULL) && (dat)->length &&                \
+        (((((char *)(dat)->data)[0] & ~0x20) == ((tag) | 0x40))))
+
+#define krb5_is_krb_error(dat)                krb5_is_app_tag(dat, 30)
+
 enum torture_krb5_test {
 	TORTURE_KRB5_TEST_PLAIN,
 	TORTURE_KRB5_TEST_PAC_REQUEST,
 	TORTURE_KRB5_TEST_BREAK_PW,
 	TORTURE_KRB5_TEST_CLOCK_SKEW,
+	TORTURE_KRB5_TEST_AES,
+	TORTURE_KRB5_TEST_RC4,
+	TORTURE_KRB5_TEST_AES_RC4,
 };
 
 struct torture_krb5_context {
@@ -64,6 +73,9 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 	case TORTURE_KRB5_TEST_BREAK_PW:
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+	case TORTURE_KRB5_TEST_AES:
+	case TORTURE_KRB5_TEST_RC4:
+	case TORTURE_KRB5_TEST_AES_RC4:
 		torture_assert_int_equal(test_context->tctx,
 					 decode_AS_REQ(send_buf->data, send_buf->length, &test_context->as_req, &used), 0,
 					 "decode_AS_REQ failed");
@@ -130,6 +142,43 @@ static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 	}
 
 	free_KRB_ERROR(&error);
+
+	return true;
+}
+
+static bool torture_check_krb5_as_rep_enctype(struct torture_krb5_context *test_context,
+					      const krb5_data *reply,
+					      krb5_enctype expected_enctype)
+{
+	ENCTYPE reply_enctype = { 0 };
+	size_t used = 0;
+	int rc;
+
+	rc = decode_AS_REP(reply->data,
+			   reply->length,
+			   &test_context->as_rep,
+			   &used);
+	torture_assert_int_equal(test_context->tctx,
+				 rc, 0,
+				 "decode_AS_REP failed");
+	torture_assert_int_equal(test_context->tctx,
+				 used, reply->length,
+				 "length mismatch");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->as_rep.pvno, 5,
+				 "Got wrong as_rep->pvno");
+	torture_assert_int_equal(test_context->tctx,
+				 test_context->as_rep.ticket.tkt_vno, 5,
+				 "Got wrong as_rep->ticket.tkt_vno");
+	torture_assert(test_context->tctx,
+		       test_context->as_rep.ticket.enc_part.kvno,
+		       "Did not get a KVNO in test_context->as_rep.ticket.enc_part.kvno");
+
+	reply_enctype = test_context->as_rep.enc_part.etype;
+
+	torture_assert_int_equal(test_context->tctx,
+				 reply_enctype, expected_enctype,
+				 "Ticket encrypted with invalid algorithm");
 
 	return true;
 }
@@ -283,6 +332,102 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
 		free_AS_REQ(&test_context->as_req);
 		break;
+	case TORTURE_KRB5_TEST_AES:
+		torture_comment(test_context->tctx, "TORTURE_KRB5_TEST_AES\n");
+
+		if (test_context->packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else if (krb5_is_krb_error(recv_buf)) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else {
+			ok = torture_check_krb5_as_rep_enctype(test_context,
+							       recv_buf,
+							       KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_as_rep_enctype failed");
+		}
+
+		torture_assert(test_context->tctx,
+			       test_context->packet_count < 3,
+			       "Too many packets");
+		break;
+	case TORTURE_KRB5_TEST_RC4:
+		torture_comment(test_context->tctx, "TORTURE_KRB5_TEST_RC4\n");
+
+		if (test_context->packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else if (krb5_is_krb_error(recv_buf)) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else {
+			ok = torture_check_krb5_as_rep_enctype(test_context,
+							       recv_buf,
+							       KRB5_ENCTYPE_ARCFOUR_HMAC_MD5);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_as_rep_enctype failed");
+		}
+
+		torture_assert(test_context->tctx,
+			       test_context->packet_count < 3,
+			       "Too many packets");
+		break;
+	case TORTURE_KRB5_TEST_AES_RC4:
+		torture_comment(test_context->tctx, "TORTURE_KRB5_TEST_AES_RC4\n");
+
+		if (test_context->packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else if (krb5_is_krb_error(recv_buf)) {
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
+		} else {
+			ok = torture_check_krb5_as_rep_enctype(test_context,
+							       recv_buf,
+							       KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_as_rep_enctype failed");
+		}
+
+		torture_assert(test_context->tctx,
+			       test_context->packet_count < 3,
+			       "Too many packets");
+		break;
 	}
 	return true;
 }
@@ -419,8 +564,52 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 					 0, "krb5_set_real_time failed");
 		break;
 
-	break;
+	case TORTURE_KRB5_TEST_AES: {
+		krb5_enctype etype_list[] = { KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96 };
+
+		k5ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						      &krb_options);
+		torture_assert_int_equal(tctx,
+					 k5ret, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+		krb5_get_init_creds_opt_set_etype_list(krb_options,
+						       etype_list,
+						       1);
+		break;
 	}
+	case TORTURE_KRB5_TEST_RC4: {
+		krb5_enctype etype_list[] = { KRB5_ENCTYPE_ARCFOUR_HMAC_MD5 };
+
+		k5ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						      &krb_options);
+		torture_assert_int_equal(tctx,
+					 k5ret, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+		krb5_get_init_creds_opt_set_etype_list(krb_options,
+						       etype_list,
+						       1);
+		break;
+	}
+	case TORTURE_KRB5_TEST_AES_RC4: {
+		krb5_enctype etype_list[] = { KRB5_ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+					      KRB5_ENCTYPE_ARCFOUR_HMAC_MD5 };
+
+		k5ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						      &krb_options);
+		torture_assert_int_equal(tctx,
+					 k5ret, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+		krb5_get_init_creds_opt_set_etype_list(krb_options,
+						       etype_list,
+						       2);
+		break;
+	}
+
+	} /* end switch */
+
 	k5ret = krb5_get_init_creds_password(smb_krb5_context->krb5_context, &my_creds, principal,
 					     password, NULL, NULL, 0,
 					     NULL, krb_options);
@@ -430,6 +619,9 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
+	case TORTURE_KRB5_TEST_AES:
+	case TORTURE_KRB5_TEST_RC4:
+	case TORTURE_KRB5_TEST_AES_RC4:
 		torture_assert_int_equal(tctx, k5ret, 0, "krb5_get_init_creds_password failed");
 		break;
 
@@ -472,6 +664,27 @@ static bool torture_krb5_as_req_clock_skew(struct torture_context *tctx)
 	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_CLOCK_SKEW);
 }
 
+static bool torture_krb5_as_req_aes(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_AES);
+}
+
+static bool torture_krb5_as_req_rc4(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_RC4);
+}
+
+static bool torture_krb5_as_req_aes_rc4(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_AES_RC4);
+}
+
 NTSTATUS torture_krb5_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "krb5");
@@ -490,6 +703,18 @@ NTSTATUS torture_krb5_init(void)
 
 	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew",
 				      torture_krb5_as_req_clock_skew);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-aes",
+				      torture_krb5_as_req_aes);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-rc4",
+				      torture_krb5_as_req_rc4);
+
+	torture_suite_add_simple_test(kdc_suite,
+				      "as-req-aes-rc4",
+				      torture_krb5_as_req_aes_rc4);
 
 	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
 	torture_suite_add_suite(suite, kdc_suite);

@@ -286,3 +286,6 @@
 # ad_dc requires signing
 #
 ^samba4.smb.signing.*disabled.*signing=off.*\(ad_dc\)
+
+# fl2000dc doesn't support AES
+^samba4.krb5.kdc.*as-req-aes.*fl2000dc
