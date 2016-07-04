@@ -74,6 +74,66 @@ static bool torture_krb5_pre_send_test(struct torture_krb5_context *test_context
 	return true;
 }
 
+static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
+				     const krb5_data *reply,
+				     krb5_error_code expected_error,
+				     bool check_pa_data)
+{
+	KRB_ERROR error = { 0 };
+	size_t used = 0;
+	int rc;
+
+	rc = decode_KRB_ERROR(reply->data, reply->length, &error, &used);
+	torture_assert_int_equal(test_context->tctx,
+				 rc, 0,
+				 "decode_AS_REP failed");
+
+	torture_assert_int_equal(test_context->tctx,
+				 used, reply->length,
+				 "length mismatch");
+	torture_assert_int_equal(test_context->tctx,
+				 error.pvno, 5,
+				 "Got wrong error.pvno");
+	torture_assert_int_equal(test_context->tctx,
+				 error.error_code, expected_error - KRB5KDC_ERR_NONE,
+				 "Got wrong error.error_code");
+
+	if (check_pa_data) {
+		METHOD_DATA m;
+		size_t len;
+		int i;
+		bool found = false;
+			torture_assert(test_context->tctx,
+				       error.e_data != NULL,
+				       "No e-data returned");
+
+			rc = decode_METHOD_DATA(error.e_data->data,
+						error.e_data->length,
+						&m,
+						&len);
+			torture_assert_int_equal(test_context->tctx,
+						 rc, 0,
+						 "Got invalid method data");
+
+			torture_assert(test_context->tctx,
+				       m.len > 0,
+				       "No PA_DATA given");
+			for (i = 0; i < m.len; i++) {
+				if (m.val[i].padata_type == KRB5_PADATA_ENC_TIMESTAMP) {
+					found = true;
+					break;
+				}
+			}
+			torture_assert(test_context->tctx,
+				       found,
+				       "Encrypted timestamp not found");
+	}
+
+	free_KRB_ERROR(&error);
+
+	return true;
+}
+
 /*
  * Confirm that the incoming packet from the KDC meets certain
  * expectations.  This uses a switch and the packet count to work out
@@ -86,18 +146,19 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 {
 	KRB_ERROR error;
 	size_t used;
+	bool ok;
+
 	switch (test_context->test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
 		if (test_context->packet_count == 0) {
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
 			   && (test_context->packet_count == 1)) {
 			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
@@ -139,23 +200,21 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		 */
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
 		if (test_context->packet_count == 0) {
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_ERR_RESPONSE_TOO_BIG - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		} else if (test_context->packet_count == 1) {
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		} else if ((decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used) == 0)
 			   && (test_context->packet_count == 2)) {
 			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
@@ -180,41 +239,21 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		 */
 	case TORTURE_KRB5_TEST_BREAK_PW:
 		if (test_context->packet_count == 0) {
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		} else if (test_context->packet_count == 1) {
-			METHOD_DATA m;
-			size_t len;
-			int i, ret = 0;
-			bool found = false;
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_FAILED - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			torture_assert(test_context->tctx, error.e_data != NULL, "No e-data returned");
-			ret = decode_METHOD_DATA(error.e_data->data, error.e_data->length, &m, &len);
-			torture_assert_int_equal(test_context->tctx, ret, 0,
-						 "Got invalid method data");
-
-			torture_assert(test_context->tctx, m.len > 0, "No PA_DATA given");
-			for (i = 0; i < m.len; i++) {
-				if (m.val[i].padata_type == KRB5_PADATA_ENC_TIMESTAMP) {
-					found = true;
-					break;
-				}
-			}
-			torture_assert(test_context->tctx, found, "Encrypted timestamp not found");
-
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_FAILED,
+						      true);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		}
 		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
 		free_AS_REQ(&test_context->as_req);
@@ -225,23 +264,21 @@ static bool torture_krb5_post_recv_test(struct torture_krb5_context *test_contex
 		 */
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		if (test_context->packet_count == 0) {
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KDC_ERR_PREAUTH_REQUIRED - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		} else if (test_context->packet_count == 1) {
-			torture_assert_int_equal(test_context->tctx,
-						 decode_KRB_ERROR(recv_buf->data, recv_buf->length, &error, &used), 0,
-						 "decode_AS_REP failed");
-			torture_assert_int_equal(test_context->tctx, used, recv_buf->length, "length mismatch");
-			torture_assert_int_equal(test_context->tctx, error.pvno, 5, "Got wrong error.pvno");
-			torture_assert_int_equal(test_context->tctx, error.error_code, KRB5KRB_AP_ERR_SKEW - KRB5KDC_ERR_NONE,
-						 "Got wrong error.error_code");
-			free_KRB_ERROR(&error);
+			ok = torture_check_krb5_error(test_context,
+						      recv_buf,
+						      KRB5KRB_AP_ERR_SKEW,
+						      false);
+			torture_assert(test_context->tctx,
+				       ok,
+				       "torture_check_krb5_error failed");
 		}
 		torture_assert(test_context->tctx, test_context->packet_count < 2, "too many packets");
 		free_AS_REQ(&test_context->as_req);
