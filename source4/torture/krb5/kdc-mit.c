@@ -240,6 +240,53 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 
 		break;
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
+		if (test_context->recv_packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+		} else if (test_context->recv_packet_count == 1) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+		} else if (krb5_is_krb_error(reply)) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+		} else {
+			ok = torture_check_krb5_as_rep(test_context,
+						       context,
+						       reply);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_as_rep failed");
+		}
+
+		torture_assert_goto(test_context->tctx,
+				    test_context->recv_packet_count < 3,
+				    ok,
+				    out,
+				    "Too many packets");
+		break;
 	case TORTURE_KRB5_TEST_BREAK_PW:
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		break;
@@ -316,7 +363,23 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 	switch (test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
+		break;
 	case TORTURE_KRB5_TEST_PAC_REQUEST:
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
+		code = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context,
+						     &krb_options);
+		torture_assert_int_equal(tctx,
+					 code, 0,
+					 "krb5_get_init_creds_opt_alloc failed");
+
+		code = krb5_get_init_creds_opt_set_pac_request(smb_krb5_context->krb5_context,
+							       krb_options,
+							       1);
+		torture_assert_int_equal(tctx,
+					 code, 0,
+					 "krb5_get_init_creds_opt_set_pac_request failed");
+#endif
+		break;
 	case TORTURE_KRB5_TEST_BREAK_PW:
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		break;
@@ -363,6 +426,22 @@ static bool torture_krb5_as_req_cmdline(struct torture_context *tctx)
 					 TORTURE_KRB5_TEST_PLAIN);
 }
 
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
+static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
+{
+	bool ok;
+
+	ok = torture_setting_bool(tctx, "expect_rodc", false);
+	if (ok) {
+		torture_skip(tctx,
+			     "This test needs further investigation in the "
+			     "RODC case against a Windows DC, in particular "
+			     "with non-cached users");
+	}
+	return torture_krb5_as_req_creds(tctx, cmdline_credentials, TORTURE_KRB5_TEST_PAC_REQUEST);
+}
+#endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST */
+
 NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -375,10 +454,13 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 				      "as-req-cmdline",
 				      torture_krb5_as_req_cmdline);
 
-#if 0
+#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST
+	/* Only available with MIT Kerveros 1.15 and newer */
 	torture_suite_add_simple_test(kdc_suite, "as-req-pac-request",
 				      torture_krb5_as_req_pac_request);
+#endif
 
+#if 0
 	torture_suite_add_simple_test(kdc_suite, "as-req-break-pw",
 				      torture_krb5_as_req_break_pw);
 
