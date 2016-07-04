@@ -1606,12 +1606,14 @@ int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, T
 
 	if (ctdb->pnn != new_recmaster && ctdb->recovery_master == ctdb->pnn) {
 		DEBUG(DEBUG_NOTICE,
-		      ("This node (%u) is no longer the recovery master\n", ctdb->pnn));
+		      ("Remote node (%u) is now the recovery master\n",
+		       new_recmaster));
 	}
 
 	if (ctdb->pnn == new_recmaster && ctdb->recovery_master != new_recmaster) {
 		DEBUG(DEBUG_NOTICE,
-		      ("This node (%u) is now the recovery master\n", ctdb->pnn));
+		      ("This node (%u) is now the recovery master\n",
+		       ctdb->pnn));
 	}
 
 	ctdb->recovery_master = new_recmaster;
