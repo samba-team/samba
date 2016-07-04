@@ -59,8 +59,11 @@ krb5_error_code decode_krb5_error(const krb5_data *output, krb5_error **rep);
 krb5_error_code decode_krb5_as_req(const krb5_data *output, krb5_kdc_req **req);
 krb5_error_code decode_krb5_as_rep(const krb5_data *output, krb5_kdc_rep **rep);
 
+krb5_error_code decode_krb5_padata_sequence(const krb5_data *output, krb5_pa_data ***rep);
+
 void krb5_free_kdc_req(krb5_context ctx, krb5_kdc_req *req);
 void krb5_free_kdc_rep(krb5_context ctx, krb5_kdc_rep *rep);
+void krb5_free_pa_data(krb5_context ctx, krb5_pa_data **data);
 
 static bool torture_check_krb5_as_req(struct torture_krb5_context *test_context,
 				      krb5_context context,
@@ -122,7 +125,8 @@ static krb5_error_code torture_krb5_pre_send_test(krb5_context context,
 static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 				     krb5_context context,
 				     const krb5_data *reply,
-				     krb5_error_code error_code)
+				     krb5_error_code error_code,
+				     bool check_pa_data)
 
 {
 	krb5_error *krb_error;
@@ -138,6 +142,34 @@ static bool torture_check_krb5_error(struct torture_krb5_context *test_context,
 				 krb_error->error,
 				 error_code - KRB5KDC_ERR_NONE,
 				 "Got wrong error code");
+
+	if (check_pa_data) {
+		krb5_pa_data **d, **pa_data = NULL;
+		bool timestamp_found = false;
+
+		torture_assert_int_not_equal(test_context->tctx,
+					     krb_error->e_data.length, 0,
+					     "No e-data returned");
+
+		code = decode_krb5_padata_sequence(&krb_error->e_data,
+						   &pa_data);
+		torture_assert_int_equal(test_context->tctx,
+					 code,
+					 0,
+					 "decode_krb5_padata_sequence failed");
+
+		for (d = pa_data; d != NULL; d++) {
+			if ((*d)->pa_type == KRB5_PADATA_ENC_TIMESTAMP) {
+				timestamp_found = true;
+				break;
+			}
+		}
+		torture_assert(test_context->tctx,
+			       timestamp_found,
+			       "Encrypted timestamp not found");
+
+		krb5_free_pa_data(context, pa_data);
+	}
 
 	krb5_free_error(context, krb_error);
 
@@ -215,7 +247,8 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 			ok = torture_check_krb5_error(test_context,
 						      context,
 						      reply,
-						      KRB5KDC_ERR_PREAUTH_REQUIRED);
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
 			torture_assert_goto(test_context->tctx,
 					    ok,
 					    ok,
@@ -244,7 +277,8 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 			ok = torture_check_krb5_error(test_context,
 						      context,
 						      reply,
-						      KRB5KRB_ERR_RESPONSE_TOO_BIG);
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
+						      false);
 			torture_assert_goto(test_context->tctx,
 					    ok,
 					    ok,
@@ -254,7 +288,8 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 			ok = torture_check_krb5_error(test_context,
 						      context,
 						      reply,
-						      KRB5KDC_ERR_PREAUTH_REQUIRED);
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
 			torture_assert_goto(test_context->tctx,
 					    ok,
 					    ok,
@@ -264,7 +299,8 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 			ok = torture_check_krb5_error(test_context,
 						      context,
 						      reply,
-						      KRB5KRB_ERR_RESPONSE_TOO_BIG);
+						      KRB5KRB_ERR_RESPONSE_TOO_BIG,
+						      false);
 			torture_assert_goto(test_context->tctx,
 					    ok,
 					    ok,
@@ -288,6 +324,39 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 				    "Too many packets");
 		break;
 	case TORTURE_KRB5_TEST_BREAK_PW:
+		if (test_context->recv_packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+			if (!ok) {
+				goto out;
+			}
+		} else if (test_context->recv_packet_count == 1) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_FAILED,
+						      true);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+		}
+
+		torture_assert_goto(test_context->tctx,
+				    test_context->recv_packet_count < 2,
+				    ok,
+				    out,
+				    "Too many packets");
+		break;
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		break;
 	}
@@ -360,6 +429,8 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 					  &error_string);
 	torture_assert_int_equal(tctx, code, 0, error_string);
 
+	password = cli_credentials_get_password(credentials);
+
 	switch (test)
 	{
 	case TORTURE_KRB5_TEST_PLAIN:
@@ -381,11 +452,11 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 #endif
 		break;
 	case TORTURE_KRB5_TEST_BREAK_PW:
+		password = "NOT the password";
+		break;
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		break;
 	}
-
-	password = cli_credentials_get_password(credentials);
 
 	code = krb5_get_init_creds_password(smb_krb5_context->krb5_context,
 					    &my_creds,
@@ -409,6 +480,12 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 					 "krb5_get_init_creds_password failed");
 		break;
 	case TORTURE_KRB5_TEST_BREAK_PW:
+		torture_assert_int_equal(tctx,
+					 code,
+					 KRB5KDC_ERR_PREAUTH_FAILED,
+					 "krb5_get_init_creds_password should "
+					 "have failed");
+		return true;
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
 		break;
 	}
@@ -442,6 +519,13 @@ static bool torture_krb5_as_req_pac_request(struct torture_context *tctx)
 }
 #endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_SET_PAC_REQUEST */
 
+static bool torture_krb5_as_req_break_pw(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_BREAK_PW);
+}
+
 NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -460,10 +544,10 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 				      torture_krb5_as_req_pac_request);
 #endif
 
-#if 0
 	torture_suite_add_simple_test(kdc_suite, "as-req-break-pw",
 				      torture_krb5_as_req_break_pw);
 
+#if 0
 	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew",
 				      torture_krb5_as_req_clock_skew);
 
