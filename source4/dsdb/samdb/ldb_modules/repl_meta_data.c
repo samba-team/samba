@@ -2210,6 +2210,7 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 
 	invocation_id = samdb_ntds_invocation_id(ldb);
 	if (!invocation_id) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -2234,8 +2235,10 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			ldb_asprintf_errstring(ldb, "Attribute %s doesn't exist for target GUID %s",
 					       el->name, GUID_buf_string(&p->guid, &buf));
 			if (ldb_attr_cmp(el->name, "member") == 0) {
+				talloc_free(tmp_ctx);
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			} else {
+				talloc_free(tmp_ctx);
 				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}
 		}
@@ -2245,8 +2248,10 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
 					       el->name, GUID_buf_string(&p->guid, &buf));
 			if (ldb_attr_cmp(el->name, "member") == 0) {
+				talloc_free(tmp_ctx);
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			} else {
+				talloc_free(tmp_ctx);
 				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}
 		}
