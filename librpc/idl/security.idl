@@ -288,6 +288,15 @@ interface security
 	const string SID_AUTHENTICATION_AUTHORITY_ASSERTED_IDENTITY = "S-1-18-1";
 	const string SID_SERVICE_ASSERTED_IDENTITY = "S-1-18-2";
 
+	/*
+	 * http://technet.microsoft.com/en-us/library/hh509017(v=ws.10).aspx
+	 */
+	const string SID_NT_NFS_SUBSYSTEM         = "S-1-5-88";
+	const string SID_NT_NFS_USER              = "S-1-5-88-1";
+	const string SID_NT_NFS_GROUP             = "S-1-5-88-2";
+	const string SID_NT_NFS_MASK              = "S-1-5-88-3";
+	const string SID_NT_NFS_OTHERS            = "S-1-5-88-4";
+
 	/* well-known domain RIDs */
 	const int DOMAIN_RID_LOGON                   = 9;
 	const int DOMAIN_RID_ENTERPRISE_READONLY_DCS = 498;
