@@ -39,6 +39,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "system/locale.h"
+#include "system/filesys.h"
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
 #include "lib/socket/socket.h"
