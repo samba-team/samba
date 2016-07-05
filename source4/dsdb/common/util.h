@@ -26,22 +26,23 @@
    flags for dsdb_request_add_controls(). For the module functions,
    the upper 16 bits are in dsdb/samdb/ldb_modules/util.h
 */
-#define DSDB_SEARCH_SEARCH_ALL_PARTITIONS     0x0001
-#define DSDB_SEARCH_SHOW_DELETED              0x0002
-#define DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT 0x0004
-#define DSDB_SEARCH_REVEAL_INTERNALS          0x0008
-#define DSDB_SEARCH_SHOW_EXTENDED_DN          0x0010
-#define DSDB_MODIFY_RELAX		      0x0020
-#define DSDB_MODIFY_PERMISSIVE		      0x0040
-#define DSDB_FLAG_AS_SYSTEM		      0x0080
-#define DSDB_TREE_DELETE		      0x0100
-#define DSDB_SEARCH_ONE_ONLY		      0x0200 /* give an error unless 1 record */
-#define DSDB_SEARCH_SHOW_RECYCLED	      0x0400
-#define DSDB_PROVISION			      0x0800
-#define DSDB_BYPASS_PASSWORD_HASH	      0x1000
-#define DSDB_SEARCH_NO_GLOBAL_CATALOG	      0x2000
-#define DSDB_MODIFY_PARTIAL_REPLICA	      0x4000
-#define DSDB_PASSWORD_BYPASS_LAST_SET         0x8000
+#define DSDB_SEARCH_SEARCH_ALL_PARTITIONS     0x00001
+#define DSDB_SEARCH_SHOW_DELETED              0x00002
+#define DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT 0x00004
+#define DSDB_SEARCH_REVEAL_INTERNALS          0x00008
+#define DSDB_SEARCH_SHOW_EXTENDED_DN          0x00010
+#define DSDB_MODIFY_RELAX		      0x00020
+#define DSDB_MODIFY_PERMISSIVE		      0x00040
+#define DSDB_FLAG_AS_SYSTEM		      0x00080
+#define DSDB_TREE_DELETE		      0x00100
+#define DSDB_SEARCH_ONE_ONLY		      0x00200 /* give an error unless 1 record */
+#define DSDB_SEARCH_SHOW_RECYCLED	      0x00400
+#define DSDB_PROVISION			      0x00800
+#define DSDB_BYPASS_PASSWORD_HASH	      0x01000
+#define DSDB_SEARCH_NO_GLOBAL_CATALOG	      0x02000
+#define DSDB_MODIFY_PARTIAL_REPLICA	      0x04000
+#define DSDB_PASSWORD_BYPASS_LAST_SET         0x08000
+#define DSDB_REPLMD_VANISH_LINKS              0x10000
 
 bool is_attr_in_list(const char * const * attrs, const char *attr);
 

@@ -2177,6 +2177,9 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	int ret;
 	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_control *vanish_links_ctrl = NULL;
+	bool vanish_links = false;
+	unsigned int num_to_delete = el->num_values;
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
@@ -2220,11 +2223,20 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		return ret;
 	}
 
+	if (parent) {
+		vanish_links_ctrl = ldb_request_get_control(parent, DSDB_CONTROL_REPLMD_VANISH_LINKS);
+		if (vanish_links_ctrl) {
+			vanish_links = true;
+			vanish_links_ctrl->critical = false;
+		}
+	}
+
+	el->num_values = 0;
 	el->values = NULL;
 
 	/* see if we are being asked to delete any links that
 	   don't exist or are already deleted */
-	for (i=0; i<el->num_values; i++) {
+	for (i=0; i < num_to_delete; i++) {
 		struct parsed_dn *p = &dns[i];
 		struct parsed_dn *p2;
 		uint32_t rmd_flags;
@@ -2245,8 +2257,15 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		rmd_flags = dsdb_dn_rmd_flags(p2->dsdb_dn->dn);
 		if (rmd_flags & DSDB_RMD_FLAG_DELETED) {
 			struct GUID_txt_buf buf;
+			const char *guid_str = GUID_buf_string(&p->guid, &buf);
+			if (vanish_links) {
+				DEBUG(0, ("Deleting deleted linked attribute %s to %s, "
+					  "because vanish_links control is set\n",
+					  el->name, guid_str));
+				continue;
+			}
 			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
-					       el->name, GUID_buf_string(&p->guid, &buf));
+					       el->name, guid_str);
 			if (ldb_attr_cmp(el->name, "member") == 0) {
 				talloc_free(tmp_ctx);
 				return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -2257,34 +2276,75 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		}
 	}
 
-	/* for each new value, see if it exists already with the same GUID
-	   if it is not already deleted and matches the delete list then delete it
-	*/
-	for (i=0; i<old_el->num_values; i++) {
-		struct parsed_dn *p = &old_dns[i];
-		uint32_t rmd_flags;
+	if (vanish_links) {
+		if (num_to_delete == old_el->num_values || num_to_delete == 0) {
+			el->flags = LDB_FLAG_MOD_REPLACE;
 
-		if (el->num_values && parsed_dn_find(dns, el->num_values, &p->guid, NULL) == NULL) {
-			continue;
-		}
-
-		rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
-		if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
-
-		ret = replmd_update_la_val(old_el->values, p->v, p->dsdb_dn, p->dsdb_dn,
-					   invocation_id, seq_num, seq_num, now, 0, true);
-		if (ret != LDB_SUCCESS) {
+			for (i = 0; i < old_el->num_values; i++) {
+				ret = replmd_add_backlink(module, schema, msg_guid, &old_dns[i].guid, false, schema_attr, true);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return ret;
+				}
+			}
 			talloc_free(tmp_ctx);
-			return ret;
+			return LDB_SUCCESS;
+		} else {
+			unsigned int num_values = 0;
+			unsigned int j = 0;
+			for (i = 0; i < old_el->num_values; i++) {
+				if (parsed_dn_find(dns, num_to_delete, &old_dns[i].guid, NULL) != NULL) {
+					/* The element is in the delete list. mark it dead. */
+					ret = replmd_add_backlink(module, schema, msg_guid, &old_dns[i].guid, false, schema_attr, true);
+					if (ret != LDB_SUCCESS) {
+						talloc_free(tmp_ctx);
+						return ret;
+					}
+					old_dns[i].v->length = 0;
+				} else {
+					num_values++;
+				}
+			}
+			for (i = 0; i < old_el->num_values; i++) {
+				if (old_el->values[i].length != 0) {
+					old_el->values[j] = old_el->values[i];
+					j++;
+					if (j == num_values) {
+						break;
+					}
+				}
+			}
+			old_el->num_values = num_values;
 		}
+	} else {
 
-		ret = replmd_add_backlink(module, schema, msg_guid, &old_dns[i].guid, false, schema_attr, true);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
+		/* for each new value, see if it exists already with the same GUID
+		   if it is not already deleted and matches the delete list then delete it
+		*/
+		for (i=0; i<old_el->num_values; i++) {
+			struct parsed_dn *p = &old_dns[i];
+			uint32_t rmd_flags;
+
+			if (num_to_delete && parsed_dn_find(dns, num_to_delete, &p->guid, NULL) == NULL) {
+				continue;
+			}
+
+			rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
+			if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
+
+			ret = replmd_update_la_val(old_el->values, p->v, p->dsdb_dn, p->dsdb_dn,
+						   invocation_id, seq_num, seq_num, now, 0, true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			ret = replmd_add_backlink(module, schema, msg_guid, &old_dns[i].guid, false, schema_attr, true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
 		}
 	}
-
 	el->values = talloc_steal(msg->elements, old_el->values);
 	el->num_values = old_el->num_values;
 
@@ -2476,7 +2536,16 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	}
 
 	if (dsdb_functional_level(ldb) == DS_DOMAIN_FUNCTION_2000) {
-		/* don't do anything special for linked attributes */
+		/*
+		 * Nothing special is required for modifying or vanishing links
+		 * in fl2000 since they are just strings in a multi-valued
+		 * attribute.
+		 */
+		struct ldb_control *ctrl = ldb_request_get_control(parent,
+								   DSDB_CONTROL_REPLMD_VANISH_LINKS);
+		if (ctrl) {
+			ctrl->critical = false;
+		}
 		return LDB_SUCCESS;
 	}
 
@@ -3015,6 +3084,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		const struct dsdb_attribute *target_attr;
 		struct ldb_message_element *el2;
 		struct ldb_val dn_val;
+		uint32_t dsdb_flags = 0;
 
 		if (dsdb_dn_is_deleted_val(&el->values[i])) {
 			continue;
@@ -3058,7 +3128,13 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		el2->values = &dn_val;
 		el2->num_values = 1;
 
-		ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE, parent);
+		/*
+		 * Ensure that we tell the modification to vanish any linked
+		 * attributes (not simply mark them as isDeleted = TRUE)
+		 */
+		dsdb_flags |= DSDB_REPLMD_VANISH_LINKS;
+
+		ret = dsdb_module_modify(module, msg, dsdb_flags|DSDB_FLAG_OWN_MODULE, parent);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -3146,6 +3222,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		NULL
 	};
 	unsigned int i, el_count = 0;
+	uint32_t dsdb_flags = 0;
 	enum deletion_state deletion_state, next_deletion_state;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
@@ -3505,6 +3582,12 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				if (sa->searchFlags & SEARCH_FLAG_PRESERVEONDELETE) {
 					continue;
 				}
+			} else {
+				/*
+				 * Ensure that we tell the modification to vanish any linked
+				 * attributes (not simply mark them as isDeleted = TRUE)
+				 */
+				dsdb_flags |= DSDB_REPLMD_VANISH_LINKS;
 			}
 			ret = ldb_msg_add_empty(msg, el->name, LDB_FLAG_MOD_DELETE, &el);
 			if (ret != LDB_SUCCESS) {
@@ -3602,7 +3685,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		msg->dn = new_dn;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_OWN_MODULE, req);
+	ret = dsdb_module_modify(module, msg, dsdb_flags|DSDB_FLAG_OWN_MODULE, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
 				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));

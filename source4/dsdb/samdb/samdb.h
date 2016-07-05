@@ -182,6 +182,9 @@ struct dsdb_control_password_user_account_control {
  */
 #define DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID "1.3.6.1.4.1.7165.4.3.28"
 
+/* passed when we want to thoroughly delete linked attributes */
+#define DSDB_CONTROL_REPLMD_VANISH_LINKS "1.3.6.1.4.1.7165.4.3.29"
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;
