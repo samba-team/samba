@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "system/time.h"
 #include "torture/smbtorture.h"
 #include "torture/winbind/proto.h"
 #include "torture/krb5/proto.h"
@@ -358,6 +359,44 @@ static krb5_error_code torture_krb5_post_recv_test(krb5_context context,
 				    "Too many packets");
 		break;
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+		if (test_context->recv_packet_count == 0) {
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KDC_ERR_PREAUTH_REQUIRED,
+						      false);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+			if (!ok) {
+				goto out;
+			}
+		} else if (test_context->recv_packet_count == 1) {
+			/*
+			 * This only works if kdc_timesync 0 is set in krb5.conf
+			 *
+			 * See commit 5f39a4438eafd693a3eb8366bbc3901efe62e538
+			 * in the MIT Kerberos source tree.
+			 */
+			ok = torture_check_krb5_error(test_context,
+						      context,
+						      reply,
+						      KRB5KRB_AP_ERR_SKEW,
+						      false);
+			torture_assert_goto(test_context->tctx,
+					    ok,
+					    ok,
+					    out,
+					    "torture_check_krb5_error failed");
+		}
+
+		torture_assert_goto(test_context->tctx,
+				    test_context->recv_packet_count < 2,
+				    ok,
+				    out,
+				    "Too many packets");
 		break;
 	}
 
@@ -455,6 +494,12 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 		password = "NOT the password";
 		break;
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
+		code = krb5_set_real_time(smb_krb5_context->krb5_context,
+					  time(NULL) + 3600,
+					  0);
+		torture_assert_int_equal(tctx,
+					 code, 0,
+					 "krb5_set_real_time failed");
 		break;
 	}
 
@@ -487,7 +532,12 @@ static bool torture_krb5_as_req_creds(struct torture_context *tctx,
 					 "have failed");
 		return true;
 	case TORTURE_KRB5_TEST_CLOCK_SKEW:
-		break;
+		torture_assert_int_equal(tctx,
+					 code,
+					 KRB5KRB_AP_ERR_SKEW,
+					 "krb5_get_init_creds_password should "
+					 "have failed");
+		return true;
 	}
 
 	krb5_free_cred_contents(smb_krb5_context->krb5_context,
@@ -526,6 +576,13 @@ static bool torture_krb5_as_req_break_pw(struct torture_context *tctx)
 					 TORTURE_KRB5_TEST_BREAK_PW);
 }
 
+static bool torture_krb5_as_req_clock_skew(struct torture_context *tctx)
+{
+	return torture_krb5_as_req_creds(tctx,
+					 cmdline_credentials,
+					 TORTURE_KRB5_TEST_CLOCK_SKEW);
+}
+
 NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -547,10 +604,11 @@ NTSTATUS torture_krb5_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(kdc_suite, "as-req-break-pw",
 				      torture_krb5_as_req_break_pw);
 
-#if 0
+	/* This only works if kdc_timesync 0 is set in krb5.conf */
 	torture_suite_add_simple_test(kdc_suite, "as-req-clock-skew",
 				      torture_krb5_as_req_clock_skew);
 
+#if 0
 	torture_suite_add_suite(kdc_suite, torture_krb5_canon(kdc_suite));
 #endif
 	torture_suite_add_suite(suite, kdc_suite);
