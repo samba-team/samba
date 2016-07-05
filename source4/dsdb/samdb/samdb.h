@@ -257,7 +257,6 @@ struct dsdb_openldap_dereference_result_control {
 
 struct samldb_msds_intid_persistant {
 	uint32_t msds_intid;
-	uint64_t usn;
 };
 
 #define SAMLDB_MSDS_INTID_OPAQUE "SAMLDB_MSDS_INTID_OPAQUE"
