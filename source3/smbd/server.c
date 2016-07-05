@@ -396,7 +396,7 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive)
 		return true;
 	}
 
-	status = reinit_after_fork(msg, ev, true, "smbd-notifyd");
+	status = smbd_reinit_after_fork(msg, ev, true, "smbd-notifyd");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("%s: reinit_after_fork failed: %s\n",
 			  __func__, nt_errstr(status)));
