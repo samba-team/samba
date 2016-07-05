@@ -769,7 +769,11 @@ ctdb_check_counter () {
     _msg="${1:-error}"  # "error"  - anything else is silent on fail
     _op="${2:--ge}"  # an integer operator supported by test
     _limit="${3:-${service_fail_limit}}"
-    shift 3
+    if [ $# -le 3 ] ; then
+	    shift $#
+    else
+	    shift 3
+    fi
 
     _size=$(ctdb_counter_get "$1")
 
