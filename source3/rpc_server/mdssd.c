@@ -667,7 +667,7 @@ void start_mdssd(struct tevent_context *ev_ctx,
 		return;
 	}
 
-	status = reinit_after_fork(msg_ctx, ev_ctx, true, "mdssd-master");
+	status = smbd_reinit_after_fork(msg_ctx, ev_ctx, true, "mdssd-master");
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		smb_panic("reinit_after_fork() failed");
