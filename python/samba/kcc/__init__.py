@@ -885,8 +885,23 @@ class KCC(object):
         # If we have the replica and its not needed
         # then we add it to the "to be deleted" list.
         for dnstr in current_rep_table:
-            if dnstr not in needed_rep_table:
-                delete_reps.add(dnstr)
+            # If we're on the RODC, hardcode the update flags
+            if ro:
+                c_rep = current_rep_table[dnstr]
+                c_rep.load_repsFrom(self.samdb)
+                for t_repsFrom in c_rep.rep_repsFrom:
+                    replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                                     drsuapi.DRSUAPI_DRS_PER_SYNC |
+                                     drsuapi.DRSUAPI_DRS_ADD_REF |
+                                     drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
+                                     drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP |
+                                     drsuapi.DRSUAPI_DRS_NONGC_RO_REP)
+                    if t_repsFrom.replica_flags != replica_flags:
+                        t_repsFrom.replica_flags = replica_flags
+                c_rep.commit_repsFrom(self.samdb)
+            else:
+                if dnstr not in needed_rep_table:
+                    delete_reps.add(dnstr)
 
         DEBUG_FN('current %d needed %d delete %d' % (len(current_rep_table),
                  len(needed_rep_table), len(delete_reps)))
