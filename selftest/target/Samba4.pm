@@ -728,7 +728,7 @@ sub provision_raw_step2($$$)
 	my $samba_tool_cmd = "";
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
-	    . " user add --configfile=$ctx->{smb_conf} $testallowed_account $ctx->{password}";
+	    . " user create --configfile=$ctx->{smb_conf} $testallowed_account $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testallowed user: \n$samba_tool_cmd\n");
 		return undef;
@@ -768,7 +768,7 @@ servicePrincipalName: host/testallowed
 	$samba_tool_cmd = "";
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
-	    . " user add --configfile=$ctx->{smb_conf} testdenied $ctx->{password}";
+	    . " user create --configfile=$ctx->{smb_conf} testdenied $ctx->{password}";
 	unless (system($samba_tool_cmd) == 0) {
 		warn("Unable to add testdenied user: \n$samba_tool_cmd\n");
 		return undef;
