@@ -1,4 +1,77 @@
                    ==============================
+                   Release Notes for Samba 4.3.11
+                            July 07, 2016
+                   ==============================
+
+
+This is a security release in order to address the following defect:
+
+o  CVE-2016-2119 (Client side SMB2/3 required signing can be downgraded)
+
+=======
+Details
+=======
+
+o  CVE-2016-2119:
+   It's possible for an attacker to downgrade the required signing for
+   an SMB2/3 client connection, by injecting the SMB2_SESSION_FLAG_IS_GUEST
+   or SMB2_SESSION_FLAG_IS_NULL flags.
+
+   This means that the attacker can impersonate a server being connected to by
+   Samba, and return malicious results.
+
+   The primary concern is with winbindd, as it uses DCERPC over SMB2 when talking
+   to domain controllers as a member server, and trusted domains as a domain
+   controller.  These DCE/RPC connections were intended to protected by the
+   combination of "client ipc signing" and
+   "client ipc max protocol" in their effective default settings
+   ("mandatory" and "SMB3_11").
+
+   Additionally, management tools like net, samba-tool and rpcclient use DCERPC
+   over SMB2/3 connections.
+
+   By default, other tools in Samba are unprotected, but rarely they are
+   configured to use smb signing, via the "client signing" parameter (the default
+   is "if_required").  Even more rarely the "client max protocol" is set to SMB2,
+   rather than the NT1 default.
+
+   If both these conditions are met, then this issue would also apply to these
+   other tools, including command line tools like smbcacls, smbcquota, smbclient,
+   smbget and applications using libsmbclient.
+
+
+Changes since 4.3.10:
+--------------------
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11860: CVE-2016-2119: Fix client side SMB2 signing downgrade.
+   * BUG 11948: Total dcerpc response payload more than 0x400000.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.3.10
                             June 15, 2016
                    ==============================
@@ -96,8 +169,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.3.9
