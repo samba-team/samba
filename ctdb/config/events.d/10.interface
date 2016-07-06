@@ -39,6 +39,8 @@ get_all_interfaces ()
     ctdb_ifaces=$($CTDB -X ifaces | sed -e '1d' -e 's@^|@@' -e 's@|.*@@')
 
     # Add $ctdb_interfaces and uniquify
+    # Use word splitting to squash whitespace
+    # shellcheck disable=SC2086
     all_interfaces=$(echo $all_interfaces $ctdb_ifaces | tr ' ' '\n' | sort -u)
 }
 
@@ -84,6 +86,8 @@ get_iface_ip_maskbits ()
     ip="$2"
     _maskbits_in="$3"
 
+    # Intentional word splitting here
+    # shellcheck disable=SC2046
     set -- $(ip_maskbits_iface "$ip")
     if [ -n "$1" ] ; then
 	maskbits="$1"

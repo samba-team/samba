@@ -23,7 +23,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, see <http://www.gnu.org/licenses/>.
 
-prog=$(basename $0)
+prog=$(basename "$0")
 
 usage ()
 {
@@ -111,11 +111,11 @@ echo_nth ()
 {
     local n="$1" ; shift
 
-    shift $n
+    shift "$n"
     local node="$1"
 
     if [ -n "$node" -a "$node" != "#DEAD" ] ; then
-	echo $node
+	echo "$node"
     else
 	echo "${prog}: \"node ${n}\" does not exist" >&2
 	exit 1
@@ -132,8 +132,8 @@ parse_nodespec ()
 		*-*) seq "${i%-*}" "${i#*-}" 2>/dev/null || invalid_nodespec ;;
 		all|any|ok|healthy|con|connected) echo "$i" ;;
 		*)
-		    [ $i -gt -1 ] 2>/dev/null || $names_ok || invalid_nodespec
-		    echo $i
+		    [ "$i" -gt -1 ] 2>/dev/null || $names_ok || invalid_nodespec
+		    echo "$i"
 	    esac
 	done
     )
@@ -162,6 +162,8 @@ get_nodes_with_status ()
 	IFS="${IFS}|"
 	while IFS="" read i ; do
 
+	    # Intentional word splitting
+	    # shellcheck disable=SC2086
 	    set -- $i # split line on colons
 	    shift     # line starts with : so 1st field is empty
 	    local pnn="$1" ; shift
@@ -183,6 +185,8 @@ get_nodes_with_status ()
 		    invalid_nodespec
 	    esac
 
+	    # Intentional multi-word expansion
+	    # shellcheck disable=SC2086
 	    echo_nth "$pnn" $all_nodes
 	done <<<"$ctdb_status_output"
     )
@@ -193,11 +197,13 @@ get_any_available_node ()
     local all_nodes="$1"
 
     # We do a recursive onnode to find which nodes are up and running.
-    local out=$($0 -pq all ctdb pnn 2>&1)
+    local out=$("$0" -pq all ctdb pnn 2>&1)
     local line
     while read line ; do 
 	local pnn="${line#PNN:}"
 	if [ "$pnn" != "$line" ] ; then
+	    # Intentional multi-word expansion
+	    # shellcheck disable=SC2086
 	    echo_nth "$pnn" $all_nodes
 	    return 0
 	fi
@@ -250,11 +256,13 @@ get_nodes ()
 		get_nodes_with_status "$all_nodes" "connected" || exit 1
 		;;
 	    [0-9]|[0-9][0-9]|[0-9][0-9][0-9])
-		echo_nth $n $all_nodes
+		# Intentional multi-word expansion
+		# shellcheck disable=SC2086
+		echo_nth "$n" $all_nodes
 		;;
 	    *)
 		$names_ok || invalid_nodespec
-		echo $n
+		echo "$n"
 	esac
     done
 }
@@ -342,6 +350,8 @@ else
 fi
 
 pids=""
+# Intentional multi-word expansion
+# shellcheck disable=SC2086
 trap 'kill -TERM $pids 2>/dev/null' INT TERM
 # There's a small race here where the kill can fail if no processes
 # have been added to $pids and the script is interrupted.  However,
@@ -350,21 +360,21 @@ retcode=0
 for n in $nodes ; do
     set -o pipefail 2>/dev/null
     if $parallel ; then
-	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; } &
+	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; } &
 	pids="${pids} $!"
     else
 	if $verbose ; then
 	    echo >&2 ; echo ">> NODE: $n <<" >&2
 	fi
 
-	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS $n "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; }
+	{ exec 3>&1 ; { $SSH $ssh_opts $EXTRA_SSH_OPTS "$n" "$command" | stdout_filter >&3 ; } 2>&1 | stderr_filter ; }
 	[ $? = 0 ] || retcode=$?
     fi
 done
 
 $parallel && {
     for p in $pids; do
-	wait $p
+	wait "$p"
 	[ $? = 0 ] || retcode=$?
     done
 }

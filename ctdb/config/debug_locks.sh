@@ -37,7 +37,7 @@ loadconfig ctdb
     awk '{ if($2 == "->") { print $6, $7, $8, $9, "W" } else { print $5, $6, $7, $8 } }' |
     while read pid rest ; do
 	pname=$(readlink "/proc/${pid}/exe")
-	echo $pid $pname $rest
+	echo "$pid $pname $rest"
     done | sed -e "$sed_cmd" | grep "\.tdb" )
 
     if [ -n "$out" ]; then
@@ -51,6 +51,8 @@ loadconfig ctdb
 	    pids=$(echo "$out" | grep -v "W$" | grep "$db" | grep -v ctdbd | awk '{print $1}')
 	    all_pids="$all_pids $pids"
 	done
+	# Use word splitting to squash whitespace
+	# shellcheck disable=SC2086
 	pids=$(echo $all_pids | tr " " "\n" | sort -u)
 
 	# For each process waiting, log stack trace

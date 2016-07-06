@@ -28,7 +28,7 @@ esac
 cleanup_httpd_semaphore_leak() {
     killall -q -0 "$service_name" ||
     for i in $(ipcs -s | awk '$3 == "apache" { print $2 }') ; do
-	ipcrm -s $i
+	ipcrm -s "$i"
     done
 }
 

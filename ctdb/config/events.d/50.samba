@@ -172,6 +172,8 @@ monitor)
 	    smb_ports=$(list_samba_ports)
 	    [ -n "$smb_ports" ] || die "Failed to set smb ports"
 	fi
+	# Intentionally unquoted multi-word value here
+	# shellcheck disable=SC2086
 	ctdb_check_tcp_ports $smb_ports || exit $?
 
 	if [ "$CTDB_SAMBA_SKIP_SHARE_CHECK" != "yes" ] ; then

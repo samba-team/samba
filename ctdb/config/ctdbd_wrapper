@@ -62,13 +62,15 @@ ctdbd_is_running ()
 	    echo "$_pid"
 
 	    # Return value of kill is used
-	    kill -0 $_pid 2>/dev/null
+	    kill -0 "$_pid" 2>/dev/null
 	else
 	    # Missing/empty PID file
 	    return 1
 	fi
     else
 	if _pid=$(pgrep -f "${ctdbd}\>") ; then
+		# Use word splitting to squash whitespace
+		# shellcheck disable=SC2086
 	    echo $_pid | sed -e 's@ @,@g'
 	    return 0
 	else
@@ -211,7 +213,7 @@ start()
     fi
 
     if [ -n "$CTDB_MAX_OPEN_FILES" ]; then
-	ulimit -n $CTDB_MAX_OPEN_FILES
+	ulimit -n "$CTDB_MAX_OPEN_FILES"
     fi
 
     _d=$(dirname "$pidfile")
@@ -244,7 +246,7 @@ start()
     _pid=""
     _timeout="${CTDB_STARTUP_TIMEOUT:-10}"
     _count=0
-    while [ $_count -lt $_timeout ] ; do
+    while [ "$_count" -lt "$_timeout" ] ; do
 	# If we don't have the PID then try to read it.
 	[ -n "$_pid" ] || read _pid 2>/dev/null <"$pidfile"
 
@@ -286,7 +288,7 @@ stop()
     _timeout=${CTDB_SHUTDOWN_TIMEOUT:-30}
     _count=0
     _terminated=false
-    while [ $_count -lt $_timeout ] ; do
+    while [ "$_count" -lt "$_timeout" ] ; do
 	if ! pkill -0 -s "$_session" 2>/dev/null ; then
 	    _terminated=true
 	    break

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This must run as root as CTDB tool commands need to access CTDB socket
-[ $(id -u) -eq 0 ] || exec sudo "$0" "$@"
+[ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 
 # this script needs to be installed so that statd points to it with the -H 
 # command line argument. The easiest way to do that is to put something like this in 
@@ -90,6 +90,8 @@ case "$1" in
 	    awk -v pnn="$pnn" 'pnn == $2 { \
                 ip = $1; gsub(/\./, "\\.", ip); \
                 printf "/statd-state@%s@/p\n", ip }')
+	# Intentional multi-word expansion for multiple files
+	# shellcheck disable=SC2086
         if cat $files | sed -n "$sed_expr" | $CTDB ptrans "ctdb.tdb" ; then
             rm $files
 	fi

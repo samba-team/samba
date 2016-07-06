@@ -123,7 +123,7 @@ die ()
     _rc="${2:-1}"
 
     echo "$_msg" >&2
-    exit $_rc
+    exit "$_rc"
 }
 
 # Log given message or stdin to either syslog or a CTDB log file
@@ -305,7 +305,7 @@ program_stack_traces ()
 
     _count=1
     for _pid in $(pidof "$_prog") ; do
-	[ $_count -le $_max ] || break
+	[ "$_count" -le "$_max" ] || break
 
 	# Do this first to avoid racing with process exit
 	_stack=$(get_proc "${_pid}/stack" 2>/dev/null)
@@ -496,7 +496,7 @@ kill_tcp_connections ()
 
 	_remaining=$(get_tcp_connections_for_ip "$_ip" | wc -l)
 
-	if [ $_remaining -eq 0 ] ; then
+	if [ "$_remaining" -eq 0 ] ; then
 		echo "Killed $_killcount TCP connections to released IP $_ip"
 		return
 	fi
@@ -563,6 +563,8 @@ add_ip_to_iface ()
 	*)   _bcast="brd +" ;;
     esac
 
+    # Intentionally unquoted multi-word value here
+    # shellcheck disable=SC2086
     ip addr add "$_ip/$_maskbits" $_bcast dev "$_iface" || {
 	echo "Failed to add $_ip/$_maskbits on dev $_iface"
 	return 1
@@ -632,6 +634,8 @@ drop_ip ()
 {
     _addr="${1%/*}"  # Remove optional maskbits
 
+    # Intentional word splitting here
+    # shellcheck disable=SC2046
     set -- $(ip_maskbits_iface "$_addr")
     if [ -n "$1" ] ; then
 	_maskbits="$1"
@@ -897,6 +901,8 @@ ctdb_replay_monitor_status ()
     # Output looks like this:
     # |monitor|60.nfs|1|ERROR|1314764004.030861|1314764004.035514|foo bar|
     # This is the cheapest way of getting fields in the middle.
+    # Intentional word splitting here
+    # shellcheck disable=SC2046,2086
     set -- $(IFS="|" ; echo $_out)
     _code="$3"
     _status="$4"

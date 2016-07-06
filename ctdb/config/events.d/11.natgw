@@ -157,6 +157,8 @@ natgw_set_slave ()
 
 natgw_ensure_master ()
 {
+    # Intentional word splitting here
+    # shellcheck disable=SC2046
     set -- $("${CTDB_HELPER_BINDIR}/ctdb_natgw" master)
     natgwmaster="${1:--1}" # Default is -1, for failure above
     natgwip="$2"

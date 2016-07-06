@@ -32,7 +32,8 @@ takeover_assigned_ips ()
     $CTDB -X ip |
     awk -F'|' '{print $2}' |
     while read ip ; do
-	if [ -n "$(ip_maskbits_iface $ip)" ] ; then
+	_ip_details=$(ip_maskbits_iface "$ip")
+	if [ -n "$_ip_details" ] ; then
 	    echo "Assigning $ip to this node ($pnn)"
 	    $CTDB moveip "$ip" "$pnn"
 	fi

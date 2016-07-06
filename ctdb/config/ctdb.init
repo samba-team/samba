@@ -121,7 +121,8 @@ check_status ()
     # status.  Note that this probably won't work if
     # $CTDB_VALGRIND="yes" but this doesn't need full backward
     # compatibility because it is a debug option.
-    if [ -d $(dirname "$pidfile") ] ; then
+    _d=$(dirname "$pidfile")
+    if [ -d "$_d" ] ; then
 	_pf_opt="-p $pidfile"
     else
 	_pf_opt=""

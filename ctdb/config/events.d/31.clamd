@@ -45,7 +45,7 @@ shutdown)
         ;;
 
 monitor)
-        ctdb_check_unix_socket ${CTDB_CLAMD_SOCKET} || exit $?
+        ctdb_check_unix_socket "$CTDB_CLAMD_SOCKET" || exit $?
         ;;
 esac
 

@@ -135,6 +135,8 @@ monitor_memory_usage ()
     fi
 
     _meminfo=$(get_proc "meminfo")
+    # Intentional word splitting here
+    # shellcheck disable=SC2046
     set -- $(echo "$_meminfo" | awk '
 $1 == "MemAvailable:" { memavail += $2 }
 $1 == "MemFree:"      { memfree  += $2 }

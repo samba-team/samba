@@ -137,6 +137,8 @@ nodes_list ()
 {
     get_natgw_nodes || \
 	die "${prog}: NAT gateway nodes file \"$CTDB_NATGW_NODES\" not found"
+    # Intentional word splitting here
+    # shellcheck disable=SC2046
     set -- $(find_master)  || \
 	die "${prog}: Unable to determine NAT gateway master node"
     _master_ip="$2"

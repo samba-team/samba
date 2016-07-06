@@ -44,6 +44,8 @@ ipv4_is_valid_addr()
 
     _count=0
     # Get the shell to break up the address into 1 word per octet 
+    # Intentional word splitting here
+    # shellcheck disable=SC2086
     for _o in $(export IFS="." ; echo $_ip) ; do
 	# The 2>/dev/null stops output from failures where an "octet"
 	# is not numeric.  The test will still fail.
@@ -76,6 +78,8 @@ ipv4_host_addr_to_net ()
     # Convert the host address to an unsigned long by splitting out
     # the octets and doing the math.
     _host_ul=0
+    # Intentional word splitting here
+    # shellcheck disable=SC2086
     for _o in $(export IFS="." ; echo $_host) ; do
 	_host_ul=$(( (_host_ul << 8) + _o)) # work around Emacs color bug
     done
@@ -130,7 +134,7 @@ ensure_table_id_for_ip ()
 	flock --timeout 30 0 || \
 	    die "ensure_table_id_for_ip: failed to lock file $rt_tables"
 
-	_new=$CTDB_PER_IP_ROUTING_TABLE_ID_LOW
+	_new="$CTDB_PER_IP_ROUTING_TABLE_ID_LOW"
 	while read _t _l ; do
 	    # Skip comments
 	    case "$_t" in
@@ -142,15 +146,15 @@ ensure_table_id_for_ip ()
 	    fi
 	    # Potentially update the new table id to be used.  The
 	    # redirect stops error spam for a non-numeric value.
-	    if [ $_new -le $_t -a \
-		$_t -le $CTDB_PER_IP_ROUTING_TABLE_ID_HIGH ] 2>/dev/null ; then
+	    if [ "$_new" -le "$_t" -a \
+		"$_t" -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null ; then
 		_new=$((_t + 1))
 	    fi
 	done
 
 	# If the new table id is legal then add it to the file and
 	# print it.
-	if [ $_new -le $CTDB_PER_IP_ROUTING_TABLE_ID_HIGH ] ; then
+	if [ "$_new" -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] ; then
 	    printf "%d\t%s\n" "$_new" "$_label" >>"$rt_tables"
 	    return 0
 	else
@@ -215,7 +219,8 @@ ip_has_configuration ()
 {
     _ip="$1"
 
-    [ -n "$(get_config_for_ip $_ip)" ]
+    _conf=$(get_config_for_ip "$_ip")
+    [ -n "$_conf" ]
 }
 
 add_routing_for_ip ()
@@ -241,6 +246,8 @@ add_routing_for_ip ()
     get_config_for_ip "$_ip" |
     while read _i _dest _gw ; do
 	_r="$_dest ${_gw:+via} $_gw dev $_iface table $_table_id"
+	# Intentionally unquoted multi-word value here
+	# shellcheck disable=SC2086
 	ip route add $_r || \
 	    die "add_routing_for_ip: failed to add route: $_r"
     done
@@ -306,9 +313,9 @@ add_missing_routes ()
 	# not.
 	while IFS="|" read _x _ip _x _iface _x ; do
 	    [ -n "$_iface" ] || continue
-	    
+
 	    _table_id="${table_id_prefix}${_ip}"
-	    if [ -z "$(ip route show table $_table_id 2>/dev/null)" -o \
+	    if [ -z "$(ip route show table "$_table_id" 2>/dev/null)" -o \
 		"$1" = "force" ]  ; then
 		add_routing_for_ip "$_iface" "$_ip"
 	    fi

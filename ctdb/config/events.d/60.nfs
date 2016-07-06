@@ -148,14 +148,14 @@ nfs_check_service ()
 	_failcount=$(ctdb_counter_get "$_service_name")
 
 	_unhealthy=false
-	if [ $unhealthy_after -gt 0 ] ; then
-	    if [ $_failcount -ge $unhealthy_after ] ; then
+	if [ "$unhealthy_after" -gt 0 ] ; then
+	    if [ "$_failcount" -ge "$unhealthy_after" ] ; then
 		_unhealthy=true
 		echo "ERROR: $_err"
 	    fi
 	fi
 
-	if [ $restart_every -gt 0 ] ; then
+	if [ "$restart_every" -gt 0 ] ; then
 	    if [ $((_failcount % restart_every)) -eq 0 ] ; then
 		if ! $_unhealthy ; then
 		    echo "WARNING: $_err"
@@ -208,6 +208,8 @@ ctdb_check_rpc ()
 	    _localhost="${CTDB_RPCINFO_LOCALHOST:-127.0.0.1}"
     esac
 
+    # $_version is not quoted because it is optional
+    # shellcheck disable=SC2086
     if ! ctdb_check_rpc_out=$(rpcinfo -T "$_family" "$_localhost" \
 				      "$_progname" $_version 2>&1) ; then
 	ctdb_check_rpc_out="$_progname failed RPC check:
