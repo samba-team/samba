@@ -95,6 +95,9 @@ stop()
 	redhat)
 	    "$ctdbd_wrapper" "$pidfile" "stop"
 	    RETVAL=$?
+	    # Common idiom in Red Hat init scripts - success() always
+	    # succeeds so this does behave like if-then-else
+	    # shellcheck disable=SC2015
             [ $RETVAL -eq 0 ] && success || failure
 	    echo ""
 	    [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
