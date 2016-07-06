@@ -759,6 +759,8 @@ _ctdb_counter_common () {
     _counter_file="${CTDB_SCRIPT_VARDIR}/failcount/${_service_name}"
     mkdir -p "${_counter_file%/*}" # dirname
 }
+# Some code passes an argument
+# shellcheck disable=SC2120
 ctdb_counter_init () {
     _ctdb_counter_common "$1"
 
@@ -849,6 +851,8 @@ ctdb_service_reconfigure ()
     echo "Reconfiguring service \"${service_name}\"..."
     ctdb_service_unset_reconfigure
     service_reconfigure || return $?
+    # Intentionally have this use $service_name as default
+    # shellcheck disable=SC2119
     ctdb_counter_init
 }
 
@@ -1085,6 +1089,8 @@ ctdb_service_start ()
 
     service_start || return $?
 
+    # Intentionally have this use $service_name as default
+    # shellcheck disable=SC2119
     ctdb_counter_init
     ctdb_check_tcp_init
 }

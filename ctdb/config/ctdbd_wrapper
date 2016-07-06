@@ -114,6 +114,8 @@ dbdir_tmpfs_stop ()
     fi
 }
 
+# Only the nested function references its arguments
+# shellcheck disable=SC2120
 build_ctdb_options ()
 {
     ctdb_options=""
@@ -202,6 +204,8 @@ start()
 
     dbdir_tmpfs_start
 
+    # build_ctdb_options() takes no arguments
+    # shellcheck disable=SC2119
     build_ctdb_options
 
     export_debug_variables
