@@ -26,6 +26,7 @@
 #include "smb_krb5.h"
 #include "system/gssapi.h"
 #include "lib/param/loadparm.h"
+#include "krb5_env.h"
 
 #ifdef HAVE_LDAP
 
@@ -1015,21 +1016,29 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
 	ADS_STATUS status;
 	struct ads_service_principal p;
+	const char *ccache_name = "MEMORY:ads_sasl_gssapi_do_bind";
 
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
 
-	status = ads_sasl_gssapi_do_bind(ads, p.name);
-	if (ADS_ERR_OK(status)) {
-		ads_free_service_principal(&p);
-		return status;
+	if (ads->auth.password == NULL ||
+	    ads->auth.password[0] == '\0') {
+		status = ads_sasl_gssapi_do_bind(ads, p.name);
+		if (ADS_ERR_OK(status)) {
+			ads_free_service_principal(&p);
+			return status;
+		}
+
+		DEBUG(10,("ads_sasl_gssapi_do_bind failed with: %s, "
+			  "calling kinit\n", ads_errstr(status)));
 	}
 
-	DEBUG(10,("ads_sasl_gssapi_do_bind failed with: %s, "
-		  "calling kinit\n", ads_errstr(status)));
-
+	if (ads->auth.ccache_name != NULL) {
+		ccache_name = ads->auth.ccache_name;
+	}
+	setenv(KRB5_ENV_CCNAME, ccache_name, 1);
 	status = ADS_ERROR_KRB5(ads_kinit_password(ads));
 
 	if (ADS_ERR_OK(status)) {
