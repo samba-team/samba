@@ -1129,6 +1129,16 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 
 ######################################################################
 
+# Recovery lock fakery
+
+setup_reclock ()
+{
+	CTDB_RECOVERY_LOCK=$(mktemp --tmpdir="$EVENTSCRIPTS_TESTS_VAR_DIR")
+	export CTDB_RECOVERY_LOCK
+}
+
+######################################################################
+
 # VSFTPD fakery
 
 setup_vsftpd ()

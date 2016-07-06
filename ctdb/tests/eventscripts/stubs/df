@@ -2,20 +2,19 @@
 
 usage ()
 {
-    echo "usage: df -kP <mount-point>"
+    echo "usage: df [-kP] [<mount-point>]"
     exit 1
 }
 
-if [ "$1" != "-kP" ] ; then
-    usage
+if [ "$1" = "-kP" ] ; then
+    shift
 fi
 
-shift
-if [ -z "$1" ] ; then
-    usage
-fi
+case "$1" in
+     -*) usage ;;
+esac
 
-fs="$1"
+fs="${1:-/}"
 
 # Anything starting with CTDB_DBDIR gets canonicalised to CTDB_DBDIR.
 # This helps with the setting of defaults for the filesystem checks.
