@@ -86,8 +86,8 @@ case "$1" in
 	# hosted public IP addresses.
 	ctdb_ips=$($CTDB ip | tail -n +2)
 	sed_expr=$(echo "$ctdb_ips" |
-	    awk -v pnn="$pnn" 'pnn == $2 { \
-                ip = $1; gsub(/\./, "\\.", ip); \
+	    awk -v pnn="$pnn" 'pnn == $2 {
+                ip = $1; gsub(/\./, "\\.", ip);
                 printf "/statd-state@%s@/p\n", ip }')
 	# Intentional multi-word expansion for multiple files
 	# shellcheck disable=SC2086
@@ -165,8 +165,8 @@ case "$1" in
 	# but only for the server-IPs that are hosted on this node.
 	ctdb_all_ips=$($CTDB ip all | tail -n +2)
 	sed_expr=$(echo "$ctdb_all_ips" |
-	    awk -v pnn="$pnn" 'pnn == $2 { \
-                ip = $1; gsub(/\./, "\\.", ip); \
+	    awk -v pnn="$pnn" 'pnn == $2 {
+                ip = $1; gsub(/\./, "\\.", ip);
                 printf "s/^key.*=.*statd-state@\\(%s\\)@\\([^\"]*\\).*/\\1 \\2/p\n", ip }')
 
 	statd_state=$($CTDB catdb ctdb.tdb | sed -n "$sed_expr" | sort)

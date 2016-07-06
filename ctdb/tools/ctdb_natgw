@@ -107,7 +107,7 @@ EOF
     # BANNED or STOPPED)
     awk -F '|' -v ms="$_ms" \
 	'BEGIN { ret = 2 }
-	 ms ~ "@" $2 "@" && \
+	 ms ~ "@" $2 "@" &&
 	     $5 == 0 && $6 == 0 && $8 == 0 { print $1, $2 ; ret=0 ; exit }
 	 END { exit ret }' <<EOF ||
 $nodestatus_X
@@ -116,7 +116,7 @@ EOF
     # DISCONNECTED, DISABLED or STOPPED
     awk -F '|' -v ms="$_ms" \
 	'BEGIN { ret = 2 }
-	 ms ~ "@" $2 "@" && \
+	 ms ~ "@" $2 "@" &&
 	     $3 == 0 && $5 == 0 && $7 == 0 { print $1, $2 ; ret=0 ; exit }
 	 END { exit ret }' <<EOF ||
 $nodestatus_X
@@ -125,7 +125,7 @@ EOF
     # DISABLED
     awk -F '|' -v ms="$_ms" \
 	'BEGIN { ret = 2 }
-	 ms ~ "@" $2 "@" && \
+	 ms ~ "@" $2 "@" &&
 	     $3 == 0 && $5 == 0 { print $1, $2 ; ret=0 ; exit }
 	 END { exit ret }' <<EOF
 $nodestatus_X

@@ -621,11 +621,10 @@ ip_maskbits_iface ()
 	*:*) _bits=128 ;;
 	*)   _bits=32  ;;
     esac
-
     ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
-	awk 'NR == 1 { iface = $2; sub(":$", "", iface) ; \
-		       sub("@.*", "", iface) } \
-             $1 ~ /inet/ { mask = $2; sub(".*/", "", mask); \
+	awk 'NR == 1 { iface = $2; sub(":$", "", iface) ;
+		       sub("@.*", "", iface) }
+             $1 ~ /inet/ { mask = $2; sub(".*/", "", mask);
                            print mask, iface }'
 }
 
@@ -671,7 +670,7 @@ interface_get_real ()
 
     # Extract the full interface description to see if it is a VLAN
     _t=$(echo "$_iface_info" |
-		awk 'NR == 1 { iface = $2; sub(":$", "", iface) ; \
+		awk 'NR == 1 { iface = $2; sub(":$", "", iface) ;
 			       print iface }')
     case "$_t" in
 	*@*)
