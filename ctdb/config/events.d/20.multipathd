@@ -19,7 +19,7 @@ loadconfig
 
 [ -n "$CTDB_MONITOR_MPDEVICES" ] || exit 0
 
-ctdb_setup_service_state_dir
+service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
 
 multipath_fail="${service_state_dir}/fail"
 

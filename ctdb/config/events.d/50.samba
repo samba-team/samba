@@ -30,7 +30,7 @@ service_name="samba"
 
 loadconfig
 
-ctdb_setup_service_state_dir
+service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
 
 service_start ()
 {

@@ -11,7 +11,7 @@
 service_name="nfs"
 
 loadconfig
-ctdb_setup_service_state_dir
+service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
 
 ######################################################################
 
@@ -248,7 +248,7 @@ nfs_update_lock_info ()
 
 ######################################################################
 
-nfs_callout_init
+nfs_callout_init "$service_state_dir"
 
 ctdb_start_stop_service
 

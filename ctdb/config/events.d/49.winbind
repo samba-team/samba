@@ -14,8 +14,6 @@ service_name="winbind"
 
 loadconfig
 
-ctdb_setup_service_state_dir
-
 service_start ()
 {
     service "$CTDB_SERVICE_WINBIND" stop >/dev/null 2>&1

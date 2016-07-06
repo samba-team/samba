@@ -19,7 +19,7 @@ loadconfig
 [ -n "$CTDB_NATGW_NODES" ] || exit 0
 export CTDB_NATGW_NODES
 
-ctdb_setup_service_state_dir
+service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
 
 natgw_cfg_new="${service_state_dir}/cfg_new"
 natgw_cfg_old="${service_state_dir}/cfg_old"
@@ -27,9 +27,9 @@ natgw_master_old="${service_state_dir}/master_old"
 
 ctdb_natgw_slave_only ()
 {
-    ctdb_get_ip_address
+    _ip_address=$(ctdb_get_ip_address)
 
-    awk -v my_ip="$ip_address" \
+    awk -v my_ip="$_ip_address" \
 	'$1 == my_ip { if ($2 ~ "slave-only") { exit 0 } else { exit 1 } }' \
 	"$CTDB_NATGW_NODES"
 }
@@ -209,14 +209,13 @@ startup)
 updatenatgw|ipreallocated)
 	natgw_check_config
 
-	ctdb_get_pnn
-
 	natgw_ensure_master
 
 	natgw_config_has_changed || natgw_master_has_changed || exit 0
 
 	natgw_clear
 
+	pnn=$(ctdb_get_pnn)
 	if [ "$pnn" = "$natgwmaster" ]; then
 	    natgw_set_master
 	else

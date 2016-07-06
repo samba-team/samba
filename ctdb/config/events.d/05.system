@@ -8,7 +8,7 @@
 
 loadconfig
 
-ctdb_setup_service_state_dir "system-monitoring"
+service_state_dir=$(ctdb_setup_service_state_dir "system-monitoring") || exit $?
 
 validate_percentage ()
 {

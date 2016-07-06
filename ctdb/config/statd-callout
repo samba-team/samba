@@ -30,10 +30,12 @@ loadconfig nfs
 nl="
 "
 
-ctdb_setup_service_state_dir "statd-callout"
+service_state_dir=$(ctdb_setup_service_state_dir "statd-callout") || exit $?
 
 cd "$service_state_dir" || \
     die "Failed to change directory to \"${service_state_dir}\""
+
+pnn=$(ctdb_get_pnn)
 
 case "$1" in
     # Keep a single file to keep track of the last "add-client" or
@@ -47,7 +49,6 @@ case "$1" in
 	# statd does not tell us to which IP the client connected so
 	# we must add it to all the IPs that we serve
 	cip="$2"
-	ctdb_get_pnn
 	date=$(date '+%s')
 	# x is intentionally ignored
 	# shellcheck disable=SC2034
@@ -64,7 +65,6 @@ case "$1" in
 	# statd does not tell us from which IP the client disconnected
 	# so we must add it to all the IPs that we serve
 	cip="$2"
-	ctdb_get_pnn
 	# x is intentionally ignored
 	# shellcheck disable=SC2034
 	$CTDB ip -X |
@@ -84,7 +84,6 @@ case "$1" in
 	fi
 	# Filter out lines for any IP addresses that are not currently
 	# hosted public IP addresses.
-	ctdb_get_pnn
 	ctdb_ips=$($CTDB ip | tail -n +2)
 	sed_expr=$(echo "$ctdb_ips" |
 	    awk -v pnn="$pnn" 'pnn == $2 { \
@@ -160,7 +159,6 @@ case "$1" in
 	# probability that the client will accept the statd notify packet and
 	# not just ignore it.
 	# For all IPs we serve, collect info and push to the config database
-	ctdb_get_pnn
 
 	# Construct a sed expression to take catdb output and produce pairs of:
 	#   server-IP client-IP

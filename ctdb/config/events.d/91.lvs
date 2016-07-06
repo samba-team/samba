@@ -19,9 +19,8 @@ fi
 
 lvs_slave_only ()
 {
-	ctdb_get_ip_address
-
-	awk -v my_ip="$ip_address" \
+	_ip_address=$(ctdb_get_ip_address)
+	awk -v my_ip="$_ip_address" \
 	    '$1 == my_ip { if ($2 ~ "slave-only") { exit 0 } else { exit 1 } }' \
 	    "$CTDB_LVS_NODES"
 }
@@ -80,7 +79,7 @@ ipreallocated)
 	kill_tcp_connections_local_only \
 		"$CTDB_LVS_PUBLIC_IFACE" "$CTDB_LVS_PUBLIC_IP"
 
-	ctdb_get_pnn
+	pnn=$(ctdb_get_pnn)
 	lvsmaster=$("${CTDB_HELPER_BINDIR}/ctdb_lvs" master)
 	if [ "$pnn" != "$lvsmaster" ] ; then
 	    # This node is not the LVS master so change the IP address

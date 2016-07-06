@@ -245,7 +245,6 @@ nice_service()
 ######################################################
 # Cached retrieval of PNN from local node.  This never changes so why
 # open a client connection to the server each time this is needed?
-# This sets $pnn - this avoid an unnecessary subprocess.
 ctdb_get_pnn ()
 {
     _pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
@@ -253,11 +252,11 @@ ctdb_get_pnn ()
 	$CTDB pnn | sed -e 's@.*:@@' >"$_pnn_file"
     fi
 
-    read pnn <"$_pnn_file"
+    cat "$_pnn_file"
 }
 
 # Cached retrieval of private IP address from local node.  This never
-# changes.  Sets $ip_address to avoid an unnecessary subprocess.
+# changes.
 ctdb_get_ip_address ()
 {
     _ip_addr_file="${CTDB_SCRIPT_VARDIR}/my-ip-address"
@@ -268,7 +267,7 @@ ctdb_get_ip_address ()
 
     # ip_address is used by caller
     # shellcheck disable=SC2034
-    read ip_address <"$_ip_addr_file"
+    cat "$_ip_addr_file"
 }
 
 ######################################################
@@ -782,11 +781,13 @@ ctdb_counter_get () {
 
 ctdb_setup_service_state_dir ()
 {
-    service_state_dir="${CTDB_SCRIPT_VARDIR}/service_state/${1:-${service_name}}"
-    mkdir -p "$service_state_dir" || {
-	echo "Error creating state dir \"$service_state_dir\""
-	exit 1
-    }
+	_s="${1:-${service_name}}"
+
+	_service_state_dir="${CTDB_SCRIPT_VARDIR}/service_state/${_s}"
+	mkdir -p "$_service_state_dir" ||
+		die "Error creating state dir \"${_service_state_dir}\""
+
+	echo "$_service_state_dir"
 }
 
 ########################################################
@@ -1161,6 +1162,8 @@ fi
 
 nfs_callout_init ()
 {
+	_state_dir="$1"
+
 	if [ -z "$CTDB_NFS_CALLOUT" ] ; then
 		CTDB_NFS_CALLOUT="${CTDB_BASE}/nfs-linux-kernel-callout"
 	fi
@@ -1168,7 +1171,7 @@ nfs_callout_init ()
 	export CTDB_NFS_CALLOUT
 
 	# If the callout wants to use this then it must create it
-	export CTDB_NFS_CALLOUT_STATE_DIR="${service_state_dir}/callout-state"
+	export CTDB_NFS_CALLOUT_STATE_DIR="${_state_dir}/callout-state"
 
 	# Export, if set, for use by clustered NFS callouts
 	if [ -n "$CTDB_NFS_STATE_FS_TYPE" ] ; then
@@ -1178,7 +1181,7 @@ nfs_callout_init ()
 		export CTDB_NFS_STATE_MNT
 	fi
 
-	nfs_callout_cache="${service_state_dir}/nfs_callout_cache"
+	nfs_callout_cache="${_state_dir}/nfs_callout_cache"
 	nfs_callout_cache_callout="${nfs_callout_cache}/CTDB_NFS_CALLOUT"
 	nfs_callout_cache_ops="${nfs_callout_cache}/ops"
 }
@@ -1230,10 +1233,9 @@ update_tickles ()
 	tickledir="${CTDB_SCRIPT_VARDIR}/tickles"
 	mkdir -p "$tickledir"
 
-	ctdb_get_pnn
-
 	# What public IPs do I hold?
-	_ips=$($CTDB -X ip | awk -F'|' -v pnn="$pnn" '$3 == pnn {print $2}')
+	_pnn=$(ctdb_get_pnn)
+	_ips=$($CTDB -X ip | awk -F'|' -v pnn="$_pnn" '$3 == pnn {print $2}')
 
 	# IPs and port as ss filters
 	_ip_filter=""

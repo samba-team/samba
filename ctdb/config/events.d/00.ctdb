@@ -10,8 +10,6 @@
 
 loadconfig
 
-ctdb_setup_service_state_dir "ctdb"
-
 ############################################################
 
 select_tdb_checker ()

@@ -51,7 +51,7 @@ EOF
 	# Stop iSCSI daemon
 	killall -9 tgtd >/dev/null 2>/dev/null
 
-	ctdb_get_pnn
+	pnn=$(ctdb_get_pnn)
 	[ -n "$pnn" ] || die "Failed to get node pnn"
 
 	# Start iSCSI daemon
