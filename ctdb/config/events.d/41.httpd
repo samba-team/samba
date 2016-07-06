@@ -58,22 +58,21 @@ shutdown)
 
 monitor)
 	if ctdb_check_tcp_ports 80 >/dev/null 2>/dev/null ; then
-	    ctdb_counter_init
+		ctdb_counter_init
 	else
-	    ctdb_counter_incr
-
-	    ctdb_check_counter warn -eq 2 || {
-		echo "HTTPD is not running. Trying to restart HTTPD."
-		service_stop
-		service_start
-		exit 0
-	    }
-            ctdb_check_counter warn -ge 5 || {
-		echo "HTTPD is not running. Trying to restart HTTPD."
-		service_stop
-		service_start
-		exit 1
-	    }
+		ctdb_counter_incr
+		num_fails=$(ctdb_counter_get)
+		if [ "$num_fails" -eq 2 ] ; then
+			echo "HTTPD is not running. Trying to restart HTTPD."
+			service_stop
+			service_start
+			exit 0
+		elif [ "$num_fails" -ge 5 ] ; then
+			echo "HTTPD is not running. Trying to restart HTTPD."
+			service_stop
+			service_start
+			exit 1
+		fi
 	fi
 	;;
 esac
