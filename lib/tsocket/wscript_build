@@ -4,6 +4,7 @@
 bld.SAMBA_SUBSYSTEM('LIBTSOCKET',
 	source='tsocket.c tsocket_helpers.c tsocket_bsd.c',
 	public_deps='talloc tevent iov_buf socket-blocking',
-	public_headers='tsocket.h tsocket_internal.h',
+	public_headers='tsocket.h',
+	private_headers='tsocket_internal.h',
 	)
 

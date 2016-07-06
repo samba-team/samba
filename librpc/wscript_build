@@ -10,8 +10,6 @@ bld.SAMBA_SUBSYSTEM('NDR_AUDIOSRV',
 
 bld.SAMBA_SUBSYSTEM('NDR_AUTH',
     source='gen_ndr/ndr_auth.c ndr/ndr_auth.c',
-    public_headers='gen_ndr/auth.h',
-    header_path='gen_ndr',
     public_deps='ndr NDR_SECURITY ndr-krb5pac'
     )
 
@@ -350,24 +348,18 @@ bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
 bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',
     source='ndr/ndr_drsuapi.c gen_ndr/ndr_drsuapi.c',
     public_deps='ndr NDR_COMPRESSION NDR_SECURITY ndr-standard asn1util',
-    public_headers='gen_ndr/ndr_drsuapi.h gen_ndr/drsuapi.h ndr/ndr_drsuapi.h',
-    header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
+    private_headers='gen_ndr/ndr_drsuapi.h gen_ndr/drsuapi.h ndr/ndr_drsuapi.h',
     )
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
     source='ndr/ndr_drsblobs.c gen_ndr/ndr_drsblobs.c',
     public_deps='ndr NDR_DRSUAPI',
-    public_headers='gen_ndr/ndr_drsblobs.h gen_ndr/drsblobs.h ndr/ndr_drsblobs.h',
-    header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')]
+    private_headers='gen_ndr/ndr_drsblobs.h gen_ndr/drsblobs.h ndr/ndr_drsblobs.h',
     )
 
-bld.SAMBA_LIBRARY('ndr-krb5pac',
+bld.SAMBA_SUBSYSTEM('ndr-krb5pac',
     source='ndr/ndr_krb5pac.c gen_ndr/ndr_krb5pac.c',
     public_deps='ndr ndr-standard NDR_SECURITY',
-    public_headers='gen_ndr/krb5pac.h gen_ndr/ndr_krb5pac.h',
-    header_path='gen_ndr',
-    pc_files='ndr_krb5pac.pc',
-    vnum='0.0.1'
     )
 
 bld.SAMBA_LIBRARY('ndr-standard',
@@ -399,13 +391,9 @@ bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
     public_deps='ndr ndr_nbt'
     )
 
-bld.SAMBA_LIBRARY('ndr_nbt',
+bld.SAMBA_SUBSYSTEM('ndr_nbt',
     source='gen_ndr/ndr_nbt.c ndr/ndr_nbt.c',
     public_deps='ndr NDR_NBT_BUF NDR_SECURITY',
-    public_headers='gen_ndr/nbt.h gen_ndr/ndr_nbt.h ndr/ndr_nbt.h',
-    header_path=[ ('gen_ndr*', 'gen_ndr'), ('ndr*', 'ndr')],
-    pc_files='ndr_nbt.pc',
-    vnum='0.0.1'
 )
 
 bld.SAMBA_SUBSYSTEM('NDR_BACKUPKEY',

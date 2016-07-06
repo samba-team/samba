@@ -24,6 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "libcli/security/session.h"
+#include "librpc/gen_ndr/auth.h"
 #include "param/param.h"
 #include "auth/session.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"

@@ -21,13 +21,14 @@
 #ifndef _SAMBA_AUTH_SESSION_H
 #define _SAMBA_AUTH_SESSION_H
 
-#include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/netlogon.h"
-#include "librpc/gen_ndr/auth.h"
-
 struct tevent_context;
 struct ldb_context;
 struct ldb_dn;
+struct auth_user_info_dc;
+struct auth_session_info;
+struct auth_session_info_transport;
+struct dom_sid;
+
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials */
