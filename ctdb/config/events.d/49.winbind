@@ -40,16 +40,16 @@ is_ctdb_managed_service || exit 0
 
 ###########################
 
-case "$1" in 
-     startup)
+case "$1" in
+startup)
 	ctdb_service_start
 	;;
-	
-     shutdown)
+
+shutdown)
 	ctdb_service_stop
 	;;
 
-     monitor)
+monitor)
 	ctdb_check_command wbinfo -p
 	;;
 esac

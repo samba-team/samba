@@ -29,13 +29,13 @@ loadconfig
 }
 
 case "$1" in
-    ipreallocated)
+ipreallocated)
         while read iface dest gw; do
             ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
         done <"${CTDB_BASE}/static-routes"
         ;;
 
-    updateip)
+updateip)
 	oiface=$2
 	niface=$3
 	while read iface dest gw; do

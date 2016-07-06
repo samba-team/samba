@@ -246,25 +246,25 @@ is_ctdb_managed_service || exit 0
 ctdb_service_check_reconfigure
 
 case "$1" in
-    startup)
+startup)
 	nfs_callout "$@"
 	;;
 
-    shutdown)
+shutdown)
 	 nfs_callout "$@"
 	;;
 
-    takeip)
+takeip)
 	nfs_callout "$@"
 	ctdb_service_set_reconfigure
 	;;
 
-    releaseip)
+releaseip)
 	nfs_callout "$@"
 	ctdb_service_set_reconfigure
 	;;
 
-    monitor)
+monitor)
 	nfs_callout "monitor-pre" || exit $?
 
 	# Check that directories for shares actually exist

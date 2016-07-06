@@ -121,7 +121,7 @@ set_ctdb_variables ()
 ctdb_check_args "$@"
 
 case "$1" in
-     init)
+init)
         # make sure we have a blank state directory for the scripts to work with
 	rm -rf "$CTDB_SCRIPT_VARDIR"
 	mkdir -p "$CTDB_SCRIPT_VARDIR" || \
@@ -133,13 +133,13 @@ case "$1" in
 	fi
 	;;
 
-    setup)
+setup)
 	# Set any tunables from the config file
 	set_ctdb_variables || \
 	    die "Aborting setup due to invalid configuration - fix typos, remove unknown tunables"
 	;;
 
-    startup)
+startup)
 	$CTDB attach ctdb.tdb persistent
 	;;
 esac

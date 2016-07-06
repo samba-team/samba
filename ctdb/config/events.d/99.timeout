@@ -14,7 +14,7 @@ loadconfig ctdb
 [ "$CTDB_RUN_TIMEOUT_MONITOR" = "yes" ] || exit 0
 
 case "$1" in
-    monitor)
+monitor)
 	TIMEOUT=$($CTDB getvar EventScriptTimeout | awk '{print $3}')
 	echo "sleeping for $((TIMEOUT * 2)) seconds..."
 	sleep $((TIMEOUT * 2))

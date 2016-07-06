@@ -15,7 +15,7 @@ case "$CTDB_RECOVERY_LOCK" in
 esac
 
 case "$1" in
-    init)
+init)
 	ctdb_counter_init
 
 	if [ -n "$CTDB_RECOVERY_LOCK" ] ; then
@@ -24,7 +24,7 @@ case "$1" in
 	fi
 	;;
 
-    monitor)
+monitor)
 	# Early exit if not using a reclock file
 	[ -n "$CTDB_RECOVERY_LOCK" ] || exit 0
 

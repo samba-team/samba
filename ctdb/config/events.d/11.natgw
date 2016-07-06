@@ -184,11 +184,11 @@ natgw_save_state ()
 
 
 case "$1" in
-    setup)
+setup)
 	natgw_check_config
 	;;
 
-    startup)
+startup)
 	natgw_check_config
 
 	# Error if CTDB_NATGW_PUBLIC_IP is listed in public addresses
@@ -202,7 +202,7 @@ case "$1" in
 	set_proc sys/net/ipv4/conf/all/arp_announce 2
 	;;
 
-    updatenatgw|ipreallocated)
+updatenatgw|ipreallocated)
 	natgw_check_config
 
 	ctdb_get_pnn
@@ -226,12 +226,12 @@ case "$1" in
 	natgw_save_state
 	;;
 
-    shutdown|removenatgw)
+shutdown|removenatgw)
 	natgw_check_config
 	natgw_clear
 	;;
 
-    monitor)
+monitor)
 	natgw_check_config
 
 	if [ -n "$CTDB_NATGW_PUBLIC_IFACE" ] ; then

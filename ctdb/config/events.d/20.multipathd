@@ -72,7 +72,7 @@ multipathd_check()
 }
 
 case "$1" in
-    monitor)
+monitor)
 	multipathd_check || die "multipath monitoring failed"
 	;;
 esac

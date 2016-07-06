@@ -357,7 +357,7 @@ ctdb_check_args "$@"
 ctdb_service_check_reconfigure
 
 case "$1" in
-    startup)
+startup)
 	flush_rules_and_routes
 
 	# make sure that we only respond to ARP messages from the NIC
@@ -367,12 +367,12 @@ case "$1" in
 	}
 	;;
 
-    shutdown)
+shutdown)
 	flush_rules_and_routes
 	clean_up_table_ids
 	;;
 
-    takeip)
+takeip)
 	iface=$2
 	ip=$3
 	maskbits=$4
@@ -386,7 +386,7 @@ case "$1" in
 	$CTDB gratiousarp "$ip" "$iface"
 	;;
 
-    updateip)
+updateip)
 	oiface=$2
 	niface=$3
 	ip=$4
@@ -402,7 +402,7 @@ case "$1" in
 	tickle_tcp_connections "$ip"
 	;;
 
-    releaseip)
+releaseip)
 	iface=$2
 	ip=$3
 	maskbits=$4
@@ -411,7 +411,7 @@ case "$1" in
 	del_routing_for_ip "$ip"
 	;;
 
-    ipreallocated)
+ipreallocated)
 	add_missing_routes
 	remove_bogus_routes
 	;;

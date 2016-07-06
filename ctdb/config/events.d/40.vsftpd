@@ -34,20 +34,20 @@ is_ctdb_managed_service || exit 0
 
 ctdb_service_check_reconfigure
 
-case "$1" in 
-    startup)
+case "$1" in
+startup)
 	ctdb_service_start
 	;;
 
-    shutdown)
+shutdown)
 	ctdb_service_stop
 	;;
 
-    takeip|releaseip)
+takeip|releaseip)
 	ctdb_service_set_reconfigure
 	;;
 
-    monitor)
+monitor)
 	if [ -n "$service_tcp_ports" ] ; then
 	    if ctdb_check_tcp_ports $service_tcp_ports ; then
 		ctdb_counter_init

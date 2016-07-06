@@ -21,7 +21,7 @@ is_ctdb_managed_service || exit 0
 }
 
 case "$1" in
-    ipreallocated)
+ipreallocated)
 	all_ips=$($CTDB -X ip | tail -n +2)
 
 	# Block the iSCSI port.  Only block for the address families
@@ -74,12 +74,12 @@ EOF
 
 	;;
 
-    shutdown)
+shutdown)
 	# Shutdown iSCSI daemon when ctdb goes down
 	killall -9 tgtd >/dev/null 2>&1
 	;;
 
-    monitor)
+monitor)
 	ctdb_check_tcp_ports 3260 || exit $?
 	;;
 esac

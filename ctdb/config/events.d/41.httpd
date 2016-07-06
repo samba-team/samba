@@ -9,11 +9,11 @@
 detect_init_style
 
 case $CTDB_INIT_STYLE in
-    redhat)
+redhat)
 	service_name="httpd"
 	service_config="http"
 	;;
-    suse|debian|*)
+suse|debian|*)
 	service_name="apache2"
 	service_config="apache2"
 	;;
@@ -48,15 +48,15 @@ ctdb_start_stop_service
 is_ctdb_managed_service || exit 0
 
 case "$1" in
-    startup)
+startup)
 	ctdb_service_start
 	;;
 
-    shutdown)
+shutdown)
 	ctdb_service_stop
 	;;
 
-    monitor)
+monitor)
 	if ctdb_check_tcp_ports 80 >/dev/null 2>/dev/null ; then
 	    ctdb_counter_init
 	else

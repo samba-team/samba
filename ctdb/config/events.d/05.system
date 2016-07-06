@@ -164,7 +164,7 @@ END {
 
 
 case "$1" in
-    monitor)
+monitor)
 	monitor_filesystem_usage
 	monitor_memory_usage
 	;;

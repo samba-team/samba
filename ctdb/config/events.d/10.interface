@@ -138,7 +138,7 @@ ip_unblock ()
 ctdb_check_args "$@"
 
 case "$1" in
-    init)
+init)
 	# make sure that we only respond to ARP messages from the NIC where
 	# a particular ip address is associated.
 	get_proc sys/net/ipv4/conf/all/arp_filter >/dev/null 2>&1 && {
@@ -154,11 +154,11 @@ case "$1" in
 	drop_all_public_ips
 	;;
 
-    startup)
+startup)
 	monitor_interfaces
 	;;
 
-    takeip)
+takeip)
 	iface=$2
 	ip=$3
 	maskbits=$4
@@ -173,7 +173,7 @@ case "$1" in
 	flush_route_cache
 	;;
 
-    releaseip)
+releaseip)
 	# releasing an IP is a bit more complex than it seems. Once the IP
 	# is released, any open tcp connections to that IP on this host will end
 	# up being stuck. Some of them (such as NFS connections) will be unkillable
@@ -201,7 +201,7 @@ case "$1" in
 	flush_route_cache
 	;;
 
-    updateip)
+updateip)
 	# moving an IP is a bit more complex than it seems.
 	# First we drop all traffic on the old interface.
 	# Then we try to add the ip to the new interface and before
@@ -243,7 +243,7 @@ case "$1" in
 	tickle_tcp_connections "$ip"
 	;;
 
-    monitor)
+monitor)
 	monitor_interfaces || exit 1
 	;;
 esac
