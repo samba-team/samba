@@ -1226,10 +1226,7 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 {
 	unsigned int i;
 	struct ldap_message *msg = call->request;
-	struct ldb_context *samdb = call->conn->ldb;
 	NTSTATUS status;
-	time_t *lastts;
-	bool recheck_schema = false;
 
 	/* Check for undecoded critical extensions */
 	for (i=0; msg->controls && msg->controls[i]; i++) {
@@ -1249,11 +1246,9 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	case LDAP_TAG_SearchRequest:
 		return ldapsrv_SearchRequest(call);
 	case LDAP_TAG_ModifyRequest:
-		recheck_schema = true;
 		status = ldapsrv_ModifyRequest(call);
 		break;
 	case LDAP_TAG_AddRequest:
-		recheck_schema = true;
 		status = ldapsrv_AddRequest(call);
 		break;
 	case LDAP_TAG_DelRequest:
@@ -1271,23 +1266,6 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 		break;
 	default:
 		return ldapsrv_unwilling(call, LDAP_PROTOCOL_ERROR);
-	}
-
-	if (NT_STATUS_IS_OK(status) && recheck_schema) {
-		lastts = (time_t *)ldb_get_opaque(samdb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME);
-		if (lastts && !*lastts) {
-			DEBUG(10, ("Schema update now was requested, "
-				"fullfilling the request ts = %d\n",
-				(int)*lastts));
-			/*
-			* Just requesting the schema will do the trick
-			* as the delay for reload is experied, we will have a reload
-			* from the schema as expected as we are not yet in a transaction!
-			*/
-			dsdb_get_schema(samdb, NULL);
-			*lastts = time(NULL);
-			ldb_set_opaque(samdb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME, lastts);
-		}
 	}
 
 	if (NT_STATUS_IS_OK(status)) {

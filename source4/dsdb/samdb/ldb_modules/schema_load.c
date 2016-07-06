@@ -496,20 +496,13 @@ static int schema_load_del_transaction(struct ldb_module *module)
 
 static int schema_load_extended(struct ldb_module *module, struct ldb_request *req)
 {
-	time_t *lastts;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID) != 0) {
 		return ldb_next_request(module, req);
 	}
-	lastts = (time_t *)ldb_get_opaque(ldb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME);
-	if (!lastts) {
-		lastts = talloc(ldb, time_t);
-	}
 	/* Force a refresh */
 	dsdb_get_schema(ldb, NULL);
-	*lastts = 0;
-	ldb_set_opaque(ldb, DSDB_OPAQUE_LAST_SCHEMA_UPDATE_MSG_OPAQUE_NAME, lastts);
 
 	/* Pass to next module, the partition one should finish the chain */
 	return ldb_next_request(module, req);
