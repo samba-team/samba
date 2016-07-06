@@ -32,8 +32,7 @@ loadconfig ctdb
 
     # Parse /proc/locks and extract following information
     #    pid process_name tdb_name offsets [W]
-    out=$( cat /proc/locks |
-    grep -F "POSIX  ADVISORY  WRITE" |
+    out=$( grep -F "POSIX  ADVISORY  WRITE" /proc/locks |
     awk '{ if($2 == "->") { print $6, $7, $8, $9, "W" } else { print $5, $6, $7, $8 } }' |
     while read pid rest ; do
 	pname=$(readlink "/proc/${pid}/exe")

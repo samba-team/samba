@@ -106,7 +106,7 @@ show_file() {
     echo "  ================================"
     echo "  File: $fname"
     echo "  $_fdetails"
-    cat "$fname" 2>&1 | sed 's/^/  /'
+    sed 's/^/  /' "$fname" 2>&1
     echo "  ================================"
 }
 
@@ -138,7 +138,7 @@ show_and_compare_files () {
 		echo "  ================================"
 		echo "  File (on node $n): $f"
 		echo "  `onnode $n ls -l $f 2>&1`"
-		cat "$fstf" | sed 's/^/  /'
+		sed 's/^/  /' "$fstf"
 		echo "  ================================"
 		first=false
 	    else

@@ -91,7 +91,7 @@ case "$1" in
                 printf "/statd-state@%s@/p\n", ip }')
 	# Intentional multi-word expansion for multiple files
 	# shellcheck disable=SC2086
-        if cat $files | sed -n "$sed_expr" | $CTDB ptrans "ctdb.tdb" ; then
+        if sed -n "$sed_expr" $files | $CTDB ptrans "ctdb.tdb" ; then
             rm $files
 	fi
         ;;
