@@ -80,6 +80,9 @@ nfs_check_service ()
 {
     _progname="$1"
 
+    # This sub-shell is created to intentionally limit the scope of
+    # variable values read from the .check files.
+    # shellcheck disable=SC2030
     (
 	# Subshell to restrict scope variables...
 
@@ -166,7 +169,10 @@ nfs_check_service ()
     ) || exit 1
 }
 
-# Uses: stop_service, start_service, debug_stuck_threads
+# Uses: service_stop_cmd, service_start_cmd, service_debug_cmd
+# This function is called within the sub-shell that shellcheck thinks
+# loses the above variable values.
+# shellcheck disable=SC2031
 nfs_restart_service ()
 {
     if [ -z "$service_stop_cmd" -o -z "$service_start_cmd" ] ; then
