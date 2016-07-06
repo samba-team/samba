@@ -8,6 +8,8 @@
 
 CTDB_SERVICE_WINBIND=${CTDB_SERVICE_WINBIND:-winbind}
 
+# service_name is used by various functions
+# shellcheck disable=SC2034
 service_name="winbind"
 
 loadconfig

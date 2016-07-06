@@ -7,6 +7,8 @@
 
 . "${CTDB_BASE}/functions"
 
+# service_name is used by various functions
+# shellcheck disable=SC2034
 service_name="iscsi"
 
 loadconfig
@@ -29,6 +31,8 @@ ipreallocated)
 	# being unavailable on an IPv4-only system.
 	have_ipv4=false
 	have_ipv6=false
+	# x is intentionally ignored
+	# shellcheck disable=SC2034
 	while IFS='|' read x ip pnn x ; do
 	    case "$ip" in
 		*:*) have_ipv6=true ;;

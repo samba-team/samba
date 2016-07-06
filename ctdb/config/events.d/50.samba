@@ -24,6 +24,8 @@ case $CTDB_INIT_STYLE in
 		;;
 esac
 
+# service_name is used by various functions
+# shellcheck disable=SC2034
 service_name="samba"
 
 loadconfig

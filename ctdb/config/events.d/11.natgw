@@ -10,6 +10,8 @@
 
 . "${CTDB_BASE}/functions"
 
+# service_name is used by various functions
+# shellcheck disable=SC2034
 service_name=natgw
 
 loadconfig

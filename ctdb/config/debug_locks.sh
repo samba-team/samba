@@ -56,6 +56,8 @@ loadconfig ctdb
 	# For each process waiting, log stack trace
 	for pid in $pids ; do
 	    echo "----- Stack trace for PID=$pid -----"
+	    # x is intentionally ignored
+	    # shellcheck disable=SC2034
 	    read x x state x <"/proc/${pid}/stat"
 	    if [ "$state" = "D" ] ; then
 		# Don't run gstack on a process in D state since

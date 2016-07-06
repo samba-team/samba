@@ -49,6 +49,8 @@ case "$1" in
 	cip="$2"
 	ctdb_get_pnn
 	date=$(date '+%s')
+	# x is intentionally ignored
+	# shellcheck disable=SC2034
 	$CTDB ip -X |
 	tail -n +2 |
 	while IFS="|" read x sip node x ; do
@@ -63,6 +65,8 @@ case "$1" in
 	# so we must add it to all the IPs that we serve
 	cip="$2"
 	ctdb_get_pnn
+	# x is intentionally ignored
+	# shellcheck disable=SC2034
 	$CTDB ip -X |
 	tail -n +2 |
 	while IFS="|" read x sip node x ; do

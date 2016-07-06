@@ -11,10 +11,14 @@ detect_init_style
 case $CTDB_INIT_STYLE in
 redhat)
 	service_name="httpd"
+	# service_config is used by loadconfig()
+	# shellcheck disable=SC2034
 	service_config="http"
 	;;
 suse|debian|*)
 	service_name="apache2"
+	# service_config is used by loadconfig()
+	# shellcheck disable=SC2034
 	service_config="apache2"
 	;;
 esac

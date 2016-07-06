@@ -8,6 +8,8 @@ if [ -z "$CTDB_BASE" ] ; then
 fi
 export CTDB_BASE
 
+# CTDB_VARDIR is used elsewhere
+# shellcheck disable=SC2034
 CTDB_VARDIR="/usr/local/var/lib/ctdb"
 ctdb_rundir="/usr/local/var/run/ctdb"
 
@@ -41,13 +43,15 @@ rewrite_ctdb_options ()
 	    else
 		_opts="${CTDB_DBDIR#tmpfs:}"
 	    fi
-	    # This is an internal variable, only used by ctdbd_wrapper.
-	    # It is OK to repeat mount options - last value wins
+	    # It is OK to repeat mount options - last value wins.
+	    # CTDB_DBDIR_TMPFS_OPTIONS is used by ctdbd_wrapper
+	    # shellcheck disable=SC2034
 	    CTDB_DBDIR_TMPFS_OPTIONS="${_opts_defaults}${_opts:+,}${_opts}"
 
 	    CTDB_DBDIR="${ctdb_rundir}/CTDB_DBDIR"
 	    ;;
 	*)
+	    # shellcheck disable=SC2034
 	    CTDB_DBDIR_TMPFS_OPTIONS=""
     esac
 }
@@ -262,6 +266,8 @@ ctdb_get_ip_address ()
 	    awk -F '|' 'NR == 2 { print $3 }' >"$_ip_addr_file"
     fi
 
+    # ip_address is used by caller
+    # shellcheck disable=SC2034
     read ip_address <"$_ip_addr_file"
 }
 
@@ -637,9 +643,11 @@ drop_ip ()
 
 drop_all_public_ips ()
 {
-    while read _ip _x ; do
-	drop_ip "$_ip"
-    done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
+	# _x is intentionally ignored
+	# shellcheck disable=SC2034
+	while read _ip _x ; do
+		drop_ip "$_ip"
+	done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
 }
 
 flush_route_cache ()

@@ -7,6 +7,8 @@
 
 loadconfig
 
+# service_name is used by various functions
+# shellcheck disable=SC2034
 service_name=per_ip_routing
 
 # Do nothing if unconfigured 
@@ -322,6 +324,8 @@ remove_bogus_routes ()
     # Get a IPs current hosted by this node, each anchored with '@'.
     _ips=$($CTDB ip -v -X | awk -F'|' 'NR > 1 && $4 != "" {printf "@%s@\n", $2}')
 
+    # x is intentionally ignored
+    # shellcheck disable=SC2034
     ip rule show |
     while read _p _x _i _x _t ; do
 	# Remove trailing colon after priority/preference.
@@ -375,6 +379,8 @@ shutdown)
 takeip)
 	iface=$2
 	ip=$3
+	# maskbits included here so argument order is obvious
+	# shellcheck disable=SC2034
 	maskbits=$4
 
 	ensure_ipv4_is_valid_addr "$1" "$ip"
@@ -387,9 +393,12 @@ takeip)
 	;;
 
 updateip)
+	# oiface, maskbits included here so argument order is obvious
+	# shellcheck disable=SC2034
 	oiface=$2
 	niface=$3
 	ip=$4
+	# shellcheck disable=SC2034
 	maskbits=$5
 
 	ensure_ipv4_is_valid_addr "$1" "$ip"
@@ -405,6 +414,8 @@ updateip)
 releaseip)
 	iface=$2
 	ip=$3
+	# maskbits included here so argument order is obvious
+	# shellcheck disable=SC2034
 	maskbits=$4
 
 	ensure_ipv4_is_valid_addr "$1" "$ip"

@@ -165,7 +165,7 @@ get_nodes_with_status ()
 	    set -- $i # split line on colons
 	    shift     # line starts with : so 1st field is empty
 	    local pnn="$1" ; shift
-	    local ip="$1" ; shift
+	    shift # ignore IP address but need status bits below
 
 	    case "$status" in
 		healthy)
