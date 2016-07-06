@@ -13,6 +13,6 @@ simple_test
 simple_test
 
 required_result 1 <<EOF
-ERROR: 4 consecutive failures for 01.reclock, marking node unhealthy
+ERROR: 4 consecutive failures checking reclock
 EOF
 simple_test

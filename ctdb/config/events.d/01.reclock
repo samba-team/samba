@@ -38,14 +38,16 @@ monitor)
 	) >/dev/null 2>&1 &
 
 	ctdb_counter_incr
-	if ! ctdb_check_counter "quiet" -ge 200 ; then
+	num_fails=$(ctdb_counter_get)
+	if [ "$num_fails" -ge 200 ] ; then
 	    echo "Reclock file \"$CTDB_RECOVERY_LOCK\" can not be accessed. Shutting down."
 	    df
 	    sleep 1
 	    $CTDB shutdown
+	    exit 1
+	elif [ "$num_fails" -ge 4 ] ; then
+		die "ERROR: ${num_fails} consecutive failures checking reclock"
 	fi
-
-	ctdb_check_counter "error" -gt 3
 	;;
 esac
 

@@ -14,7 +14,7 @@ done
 
 for i in $(seq 4 199) ; do
 	required_result 1 <<EOF
-ERROR: ${i} consecutive failures for 01.reclock, marking node unhealthy
+ERROR: ${i} consecutive failures checking reclock
 EOF
 	simple_test
 done
@@ -24,6 +24,5 @@ Reclock file "${CTDB_RECOVERY_LOCK}" can not be accessed. Shutting down.
 Filesystem             1024-blocks      Used Available Capacity Mounted on
 /dev/sda1                               1000000     100000     900000         10% /
 CTDB says BYE!
-ERROR: 200 consecutive failures for 01.reclock, marking node unhealthy
 EOF
 simple_test
