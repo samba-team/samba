@@ -119,6 +119,8 @@ case "$1" in
 	# We use epoch and hope the nodes are close enough in clock.
 	# Even numbers mean service is shut down, odd numbers mean
 	# service is started.
+	# Intentionally round to an even number
+	# shellcheck disable=SC2017
 	state_even=$(( $(date '+%s') / 2 * 2))
 
 	# We must also let some time pass between stopping and
