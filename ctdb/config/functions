@@ -769,8 +769,8 @@ ctdb_counter_init () {
 ctdb_counter_incr () {
     _ctdb_counter_common "$1"
 
-    # unary counting!
-    echo -n 1 >> "$_counter_file"
+    # unary counting using newlines!
+    echo >>"$_counter_file"
 }
 ctdb_counter_get () {
     _ctdb_counter_common "$1"

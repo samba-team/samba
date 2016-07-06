@@ -29,13 +29,15 @@ multipathd_check_background()
 	# Check multipath knows about the device
 	_out=$(multipath -ll "$_device")
 	if [ -z "$_out" ] ; then
-	    echo "device \"${_device}\" not known to multipathd" >"$multipath_fail"
+	    echo "ERROR: device \"${_device}\" not known to multipathd" \
+		 >"$multipath_fail"
 	    exit 1
 	fi
 
 	# Check for at least 1 active path
 	if ! echo "$_out" | grep 'prio=.* status=active' >/dev/null 2>&1 ; then
-	    echo "multipath device \"${_device}\" has no active paths" >"$multipath_fail"
+	    echo "ERROR: multipath device \"${_device}\" has no active paths" \
+		 >"$multipath_fail"
 	    exit 1
 	fi
     done
@@ -58,7 +60,6 @@ multipathd_check()
 	    if wait $_pid ; then
 		return 0
 	    else
-		echo -n "ERROR: "
 		cat "$multipath_fail"
 		rm -f "$multipath_fail"
 		return 1

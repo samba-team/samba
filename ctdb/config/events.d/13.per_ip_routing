@@ -203,7 +203,7 @@ get_config_for_ip ()
 	# that we get the maskbits as item #2 without further parsing.
 	while IFS="/$IFS" read _i _maskbits _x ; do
 	    if [ "$_ip" = "$_i" ] ; then
-		echo -n "$_ip "; ipv4_host_addr_to_net "$_ip" "$_maskbits"
+		printf "%s" "$_ip "; ipv4_host_addr_to_net "$_ip" "$_maskbits"
 	    fi
 	done <"${CTDB_PUBLIC_ADDRESSES:-/dev/null}"
     else

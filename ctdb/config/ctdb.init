@@ -60,7 +60,7 @@ pidfile="${CTDB_PIDFILE:-/var/run/ctdb/ctdbd.pid}"
 
 start()
 {
-    echo -n "Starting ctdbd service: "
+    printf "Starting ctdbd service: "
 
     case "$CTDB_INIT_STYLE" in
 	suse)
@@ -85,7 +85,7 @@ start()
 
 stop()
 {
-    echo -n "Shutting down ctdbd service: "
+    printf "Shutting down ctdbd service: "
 
     case "$CTDB_INIT_STYLE" in
 	suse)
