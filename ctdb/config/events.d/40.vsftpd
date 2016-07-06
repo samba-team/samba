@@ -23,8 +23,6 @@ service_reconfigure ()
     service $service_name restart
 }
 
-service_fail_limit=2
-
 loadconfig
 
 ctdb_start_stop_service
@@ -51,9 +49,12 @@ monitor)
 		ctdb_counter_init
 	else
 		ctdb_counter_incr
-		ctdb_check_counter
-		ctdb_check_counter "quiet" -ge 1 || \
-		    echo "WARNING: vsftpd not listening but less than $service_fail_limit consecutive failures, not unhealthy yet"
+		num_fails=$(ctdb_counter_get)
+		if [ "$num_fails" -ge 2 ] ; then
+			die "ERROR: ${num_fails} consecutive failures for vsftpd, marking node unhealthy"
+		elif [ "$num_fails" -eq 1 ] ; then
+			echo "WARNING: vsftpd not listening but less than 2 consecutive failures, not unhealthy yet"
+		fi
 	fi
 	;;
 esac
