@@ -263,7 +263,7 @@ start()
 	    fi
 	fi
 
-	_count=$(($_count + 1))
+	_count=$((_count + 1))
 	sleep 1
     done
 
@@ -292,7 +292,7 @@ stop()
 	    break
 	fi
 
-	_count=$(($_count + 1))
+	_count=$((_count + 1))
 	sleep 1
     done
 

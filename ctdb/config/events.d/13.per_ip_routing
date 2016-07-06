@@ -48,7 +48,7 @@ ipv4_is_valid_addr()
 	if ! [ 0 -le $_o -a $_o -le 255 ] 2>/dev/null ; then
 	    return 1
 	fi
-	_count=$(($_count + 1))
+	_count=$((_count + 1))
     done
 
     # A valid IPv4 address has 4 octets
@@ -75,18 +75,18 @@ ipv4_host_addr_to_net ()
     # the octets and doing the math.
     _host_ul=0
     for _o in $(export IFS="." ; echo $_host) ; do
-	_host_ul=$(( ($_host_ul << 8) + $_o)) # work around Emacs color bug
+	_host_ul=$(( (_host_ul << 8) + _o)) # work around Emacs color bug
     done
 
     # Calculate the mask and apply it.
-    _mask_ul=$(( 0xffffffff << (32 - $_maskbits) ))
-    _net_ul=$(( $_host_ul & $_mask_ul ))
+    _mask_ul=$(( 0xffffffff << (32 - _maskbits) ))
+    _net_ul=$(( _host_ul & _mask_ul ))
  
     # Now convert to a network address one byte at a time.
     _net=""
     for _o in $(seq 1 4) ; do
-	_net="$(($_net_ul & 255))${_net:+.}${_net}"
-	_net_ul=$(($_net_ul >> 8))
+	_net="$((_net_ul & 255))${_net:+.}${_net}"
+	_net_ul=$((_net_ul >> 8))
     done
 
     echo "${_net}/${_maskbits}"
@@ -142,7 +142,7 @@ ensure_table_id_for_ip ()
 	    # redirect stops error spam for a non-numeric value.
 	    if [ $_new -le $_t -a \
 		$_t -le $CTDB_PER_IP_ROUTING_TABLE_ID_HIGH ] 2>/dev/null ; then
-		_new=$(($_t + 1))
+		_new=$((_t + 1))
 	    fi
 	done
 

@@ -49,7 +49,7 @@ multipathd_check()
     _timeleft=10
 
     while [ $_timeleft -gt 0 ]; do
-	_timeleft=$(($_timeleft - 1))
+	_timeleft=$((_timeleft - 1))
 
 	# see if the process still exists
 	kill -0 $_pid >/dev/null 2>&1 || {

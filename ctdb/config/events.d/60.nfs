@@ -153,7 +153,7 @@ nfs_check_service ()
 	fi
 
 	if [ $restart_every -gt 0 ] ; then
-	    if [ $(($_failcount % $restart_every)) -eq 0 ] ; then
+	    if [ $((_failcount % restart_every)) -eq 0 ] ; then
 		if ! $_unhealthy ; then
 		    echo "WARNING: $_err"
 		fi

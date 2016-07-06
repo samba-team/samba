@@ -192,7 +192,7 @@ case "$1" in
 		"$smnotify" --client="$cip" --ip="$sip" \
 			    --server="$NFS_HOSTNAME" --stateval="$stateval"
 		# Send notifies for server startup
-		stateval=$(($stateval + 1))
+		stateval=$((stateval + 1))
 		"$smnotify" --client="$cip" --ip="$sip" \
 			    --server="$sip" --stateval="$stateval"
 		"$smnotify" --client="$cip" --ip="$sip" \

@@ -306,7 +306,7 @@ program_stack_traces ()
 	if [ -n "$_stack" ] ; then
 	    echo "Stack trace for ${_prog}[${_pid}]:"
 	    echo "$_stack"
-	    _count=$(($_count + 1))
+	    _count=$((_count + 1))
 	fi
     done
 }
@@ -475,7 +475,7 @@ kill_tcp_connections ()
 		_connections="${_connections}${_nl}${_dst} ${_src}"
 	    fi
 
-	    _killcount=$(($_killcount + 1))
+	    _killcount=$((_killcount + 1))
 	done
 
 	if [ $_killcount -eq 0 ] ; then
