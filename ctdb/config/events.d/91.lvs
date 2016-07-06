@@ -11,6 +11,8 @@ loadconfig ctdb
 [ -n "$CTDB_LVS_NODES" ] || exit 0
 export CTDB_LVS_NODES
 
+# type is commonly supported and more portable than which(1)
+# shellcheck disable=SC2039
 if ! type ipvsadm >/dev/null 2>&1 ; then
 	echo "LVS configured but ipvsadm not found"
 	exit 0

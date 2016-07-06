@@ -12,6 +12,8 @@ loadconfig
 
 ############################################################
 
+# type is commonly supported and more portable than which(1)
+# shellcheck disable=SC2039
 select_tdb_checker ()
 {
     # Find the best TDB consistency check available.

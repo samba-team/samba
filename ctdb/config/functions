@@ -1137,6 +1137,8 @@ iptables_wrapper ()
 }
 
 # AIX (and perhaps others?) doesn't have mktemp
+# type is commonly supported and more portable than which(1)
+# shellcheck disable=SC2039
 if ! type mktemp >/dev/null 2>&1 ; then
     mktemp ()
     {
