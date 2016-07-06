@@ -765,37 +765,6 @@ ctdb_counter_get () {
     # unary counting!
     stat -c "%s" "$_counter_file" 2>/dev/null || echo 0
 }
-ctdb_check_counter () {
-    _msg="${1:-error}"  # "error"  - anything else is silent on fail
-    _op="${2:--ge}"  # an integer operator supported by test
-    _limit="${3:-${service_fail_limit}}"
-    if [ $# -le 3 ] ; then
-	    shift $#
-    else
-	    shift 3
-    fi
-
-    _size=$(ctdb_counter_get "$1")
-
-    _hit=false
-    if [ "$_op" != "%" ] ; then
-	if [ $_size $_op $_limit ] ; then
-	    _hit=true
-	fi
-    else
-	if [ $(($_size $_op $_limit)) -eq 0 ] ; then
-	    _hit=true
-	fi
-    fi
-    if $_hit ; then
-	if [ "$_msg" = "error" ] ; then
-	    echo "ERROR: $_size consecutive failures for $_service_name, marking node unhealthy"
-	    exit 1		
-	else
-	    return 1
-	fi
-    fi
-}
 
 ########################################################
 
@@ -1317,5 +1286,4 @@ update_tickles ()
 }
 
 script_name="${0##*/}"       # basename
-service_fail_limit=1
 event_name="$1"
