@@ -1027,7 +1027,7 @@ ctdb_start_stop_service ()
 		die 'service-start event not permitted when service is managed'
 	    fi
 	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
-		die 'service-start event not permitted with $CTDB_SERVICE_AUTOSTARTSTOP = yes'
+		die 'service-start event not permitted with CTDB_SERVICE_AUTOSTARTSTOP=yes'
 	    fi
 	    ctdb_service_start
 	    exit $?
@@ -1037,7 +1037,7 @@ ctdb_start_stop_service ()
 		die 'service-stop event not permitted when service is managed'
 	    fi
 	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
-		die 'service-stop event not permitted with $CTDB_SERVICE_AUTOSTARTSTOP = yes'
+		die 'service-stop event not permitted with CTDB_SERVICE_AUTOSTARTSTOP=yes'
 	    fi
 	    ctdb_service_stop
 	    exit $?
