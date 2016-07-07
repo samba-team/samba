@@ -596,7 +596,9 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		if ((handle->status != LDB_SUCCESS) &&
 		    (handle->ldb->err_string == NULL)) {
 			/* if no error string was setup by the backend */
-			ldb_asprintf_errstring(handle->ldb, "ldb_wait: %s (%d)",
+			ldb_asprintf_errstring(handle->ldb,
+					       "ldb_wait from %s with LDB_ASYNC_DONE: %s (%d)",
+					       handle->location,
 					       ldb_strerror(handle->status),
 					       handle->status);
 		}
@@ -614,19 +616,21 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		if (ret != 0) {
 			return ldb_operr(handle->ldb);
 		}
-		if (handle->status != LDB_SUCCESS) {
-			if (handle->ldb->err_string == NULL) {
-				/*
-				 * if no error string was setup by the backend
-				 */
-				ldb_asprintf_errstring(handle->ldb,
-						       "ldb_wait: %s (%d)",
-						       ldb_strerror(handle->status),
-						       handle->status);
-			}
+		if (handle->status == LDB_SUCCESS) {
+			return LDB_SUCCESS;
+		}
+		if (handle->ldb->err_string != NULL) {
 			return handle->status;
 		}
-		break;
+		/*
+		 * if no error string was setup by the backend
+		 */
+		ldb_asprintf_errstring(handle->ldb,
+				       "ldb_wait from %s with LDB_WAIT_NONE: %s (%d)",
+				       handle->location,
+				       ldb_strerror(handle->status),
+				       handle->status);
+		return handle->status;
 
 	case LDB_WAIT_ALL:
 		while (handle->state != LDB_ASYNC_DONE) {
@@ -635,32 +639,38 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 				return ldb_operr(handle->ldb);
 			}
 			if (handle->status != LDB_SUCCESS) {
-				if  (handle->ldb->err_string == NULL) {
-					/*
-					 * if no error string was setup by the
-					 * backend
-					 */
-					ldb_asprintf_errstring(handle->ldb,
-							       "ldb_wait: %s (%d)",
-							       ldb_strerror(handle->status),
-							       handle->status);
+				if (handle->ldb->err_string != NULL) {
+					return handle->status;
 				}
+				/*
+				 * if no error string was setup by the
+				 * backend
+				 */
+				ldb_asprintf_errstring(handle->ldb,
+						       "ldb_wait from %s with "
+						       "LDB_WAIT_ALL: %s (%d)",
+						       handle->location,
+						       ldb_strerror(handle->status),
+						       handle->status);
 				return handle->status;
 			}
 		}
-		if (handle->status != LDB_SUCCESS) {
-			if (handle->ldb->err_string == NULL) {
-				/*
-				 * if no error string was setup by the backend
-				 */
-				ldb_asprintf_errstring(handle->ldb,
-						       "ldb_wait: %s (%d)",
-						       ldb_strerror(handle->status),
-						       handle->status);
-			}
+		if (handle->status == LDB_SUCCESS) {
+			return LDB_SUCCESS;
+		}
+		if (handle->ldb->err_string != NULL) {
 			return handle->status;
 		}
-		break;
+		/*
+		 * if no error string was setup by the backend
+		 */
+		ldb_asprintf_errstring(handle->ldb,
+				       "ldb_wait from %s with LDB_WAIT_ALL,"
+				       " LDB_ASYNC_DONE: %s (%d)",
+				       handle->location,
+				       ldb_strerror(handle->status),
+				       handle->status);
+		return handle->status;
 	}
 
 	return LDB_SUCCESS;
