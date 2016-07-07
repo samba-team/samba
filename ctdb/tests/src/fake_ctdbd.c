@@ -1607,6 +1607,73 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static void control_set_iface_link_state(TALLOC_CTX *mem_ctx,
+					 struct tevent_req *req,
+					 struct ctdb_req_header *header,
+					 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct ctdb_iface *in_iface;
+	struct interface *iface = NULL;
+	bool link_up = false;
+	int i;
+
+	reply.rdata.opcode = request->opcode;
+
+	in_iface = request->rdata.data.iface;
+
+	if (in_iface->name[CTDB_IFACE_SIZE] != '\0') {
+		reply.errmsg = "interface name not terminated";
+		goto fail;
+	}
+
+	switch (in_iface->link_state) {
+		case 0:
+			link_up = false;
+			break;
+
+		case 1:
+			link_up = true;
+			break;
+
+		default:
+			reply.errmsg = "invalid link state";
+			goto fail;
+	}
+
+	if (in_iface->references != 0) {
+		reply.errmsg = "references should be 0";
+		goto fail;
+	}
+
+	for (i=0; i<ctdb->iface_map->num; i++) {
+		if (strcmp(ctdb->iface_map->iface[i].name,
+			   in_iface->name) == 0) {
+			iface = &ctdb->iface_map->iface[i];
+			break;
+		}
+	}
+
+	if (iface == NULL) {
+		reply.errmsg = "interface not found";
+		goto fail;
+	}
+
+	iface->link_up = link_up;
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+	client_send_control(req, header, &reply);
+	return;
+
+fail:
+	reply.status = -1;
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_runstate(TALLOC_CTX *mem_ctx,
 				 struct tevent_req *req,
 				 struct ctdb_req_header *header,
@@ -2068,6 +2135,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_IFACES:
 		control_get_ifaces(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
+		control_set_iface_link_state(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
