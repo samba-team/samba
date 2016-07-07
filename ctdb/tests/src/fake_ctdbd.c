@@ -38,6 +38,7 @@
 #include "common/comm.h"
 #include "common/system.h"
 #include "common/logging.h"
+#include "common/tunable.h"
 
 
 #define CTDB_PORT 4379
@@ -97,6 +98,7 @@ struct ctdbd_context {
 	bool takeover_disabled;
 	enum debug_level log_level;
 	enum ctdb_runstate runstate;
+	struct ctdb_tunable_list tun_list;
 };
 
 /*
@@ -606,6 +608,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 
 	ctdb->log_level = DEBUG_ERR;
 	ctdb->runstate = CTDB_RUNSTATE_RUNNING;
+
+	ctdb_tunable_set_defaults(&ctdb->tun_list);
 
 	return ctdb;
 
@@ -1265,6 +1269,102 @@ static void control_shutdown(TALLOC_CTX *mem_ctx,
 		req, struct client_state);
 
 	state->status = 99;
+}
+
+static void control_set_tunable(TALLOC_CTX *mem_ctx,
+				struct tevent_req *req,
+				struct ctdb_req_header *header,
+				struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	bool ret, obsolete;
+
+	reply.rdata.opcode = request->opcode;
+	reply.errmsg = NULL;
+
+	ret = ctdb_tunable_set_value(&ctdb->tun_list,
+				     request->rdata.data.tunable->name,
+				     request->rdata.data.tunable->value,
+				     &obsolete);
+	if (! ret) {
+		reply.status = -1;
+	} else if (obsolete) {
+		reply.status = 1;
+	} else {
+		reply.status = 0;
+	}
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_get_tunable(TALLOC_CTX *mem_ctx,
+				struct tevent_req *req,
+				struct ctdb_req_header *header,
+				struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	uint32_t value;
+	bool ret;
+
+	reply.rdata.opcode = request->opcode;
+	reply.errmsg = NULL;
+
+	ret = ctdb_tunable_get_value(&ctdb->tun_list,
+				     request->rdata.data.tun_var, &value);
+	if (! ret) {
+		reply.status = -1;
+	} else {
+		reply.rdata.data.tun_value = value;
+		reply.status = 0;
+	}
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_list_tunables(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct ctdb_reply_control reply;
+	struct ctdb_var_list *var_list;
+
+	reply.rdata.opcode = request->opcode;
+	reply.errmsg = NULL;
+
+	var_list = ctdb_tunable_names(mem_ctx);
+	if (var_list == NULL) {
+		reply.status = -1;
+	} else {
+		reply.rdata.data.tun_var_list = var_list;
+		reply.status = 0;
+	}
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_get_all_tunables(TALLOC_CTX *mem_ctx,
+				     struct tevent_req *req,
+				     struct ctdb_req_header *header,
+				     struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+	reply.rdata.data.tun_list = &ctdb->tun_list;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
 }
 
 static void control_uptime(TALLOC_CTX *mem_ctx,
@@ -1932,6 +2032,22 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_SHUTDOWN:
 		control_shutdown(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_SET_TUNABLE:
+		control_set_tunable(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_TUNABLE:
+		control_get_tunable(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_LIST_TUNABLES:
+		control_list_tunables(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_ALL_TUNABLES:
+		control_get_all_tunables(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_UPTIME:
