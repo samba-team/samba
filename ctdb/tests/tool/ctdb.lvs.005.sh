@@ -10,23 +10,12 @@ setup_lvs <<EOF
 192.168.20.43
 EOF
 
-ctdb_state="\
+setup_ctdbd <<EOF
 NODEMAP
 0       192.168.20.41   0x2	CURRENT RECMASTER
 1       192.168.20.42   0x2
 2       192.168.20.43   0x2
-
-IFACES
-:Name:LinkStatus:References:
-:eth2:1:2:
-:eth1:1:4:
-
-VNNMAP
-654321
-0
-1
-2
-"
+EOF
 
 #####
 
@@ -34,9 +23,7 @@ required_result 0 <<EOF
 0
 EOF
 
-simple_test master <<EOF
-$ctdb_state
-EOF
+simple_test master
 
 #####
 
@@ -46,9 +33,7 @@ required_result 0 <<EOF
 2 192.168.20.43
 EOF
 
-simple_test list <<EOF
-$ctdb_state
-EOF
+simple_test list
 
 #####
 
@@ -58,6 +43,4 @@ pnn:1 192.168.20.42    UNHEALTHY
 pnn:2 192.168.20.43    UNHEALTHY
 EOF
 
-simple_test status <<EOF
-$ctdb_state
-EOF
+simple_test status

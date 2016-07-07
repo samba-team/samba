@@ -16,19 +16,15 @@ setup_nodes 1 <<EOF
 192.168.20.43
 EOF
 
-required_result 255 <<EOF
-ERROR: Node file on node 1 differs from current node (0)
-EOF
-
-simple_test <<EOF
+setup_ctdbd <<EOF
 NODEMAP
 0       192.168.20.41   0x0     CURRENT RECMASTER
 1       192.168.20.42   0x0
 2       192.168.20.43   0x0
-
-VNNMAP
-654321
-0
-1
-2
 EOF
+
+required_result 255 <<EOF
+ERROR: Node file on node 1 differs from current node (0)
+EOF
+
+simple_test

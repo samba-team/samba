@@ -11,6 +11,13 @@ setup_nodes <<EOF
 192.168.20.44
 EOF
 
+setup_ctdbd <<EOF
+NODEMAP
+0       192.168.20.41   0x0     CURRENT RECMASTER
+1       192.168.20.42   0x1
+2       192.168.20.43   0x0
+EOF
+
 required_result 0 <<EOF
 Node 0 is unchanged
 Node 1 is unchanged
@@ -21,14 +28,4 @@ Reloading nodes file on node 0
 Reloading nodes file on node 2
 EOF
 
-simple_test <<EOF
-NODEMAP
-0       192.168.20.41   0x0     CURRENT RECMASTER
-1       192.168.20.42   0x1
-2       192.168.20.43   0x0
-
-VNNMAP
-654321
-0
-2
-EOF
+simple_test

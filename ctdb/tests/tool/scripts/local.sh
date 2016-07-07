@@ -46,8 +46,8 @@ setup_ctdbd ()
 {
 	debug "Setting up fake ctdbd"
 
-	cat | fake_ctdbd -s "$ctdbd_socket" -p "$ctdbd_pidfile"
-	#test_cleanup cleanup_ctdbd
+	fake_ctdbd -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+	test_cleanup cleanup_ctdbd
 }
 
 setup_natgw ()
@@ -124,9 +124,7 @@ setup_nodes ()
 
 simple_test ()
 {
-    setup_ctdbd
     (unit_test $CTDB -d $CTDB_DEBUGLEVEL $test_args "$@")
     status=$?
-    cleanup_ctdbd
     [ $status -eq 0 ] || exit $status
 }

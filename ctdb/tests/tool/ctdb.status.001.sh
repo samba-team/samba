@@ -4,21 +4,7 @@
 
 define_test "all, 3 nodes, all ok"
 
-required_result 0 <<EOF
-Number of nodes:3
-pnn:0 192.168.20.41    OK (THIS NODE)
-pnn:1 192.168.20.42    OK
-pnn:2 192.168.20.43    OK
-Generation:654321
-Size:3
-hash:0 lmaster:0
-hash:1 lmaster:1
-hash:2 lmaster:2
-Recovery mode:NORMAL (0)
-Recovery master:0
-EOF
-
-simple_test all <<EOF
+setup_ctdbd <<EOF
 NODEMAP
 0       192.168.20.41   0x0     CURRENT RECMASTER
 1       192.168.20.42   0x0
@@ -35,3 +21,19 @@ VNNMAP
 1
 2
 EOF
+
+required_result 0 <<EOF
+Number of nodes:3
+pnn:0 192.168.20.41    OK (THIS NODE)
+pnn:1 192.168.20.42    OK
+pnn:2 192.168.20.43    OK
+Generation:654321
+Size:3
+hash:0 lmaster:0
+hash:1 lmaster:1
+hash:2 lmaster:2
+Recovery mode:NORMAL (0)
+Recovery master:0
+EOF
+
+simple_test all

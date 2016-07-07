@@ -16,5 +16,4 @@ required_result 255 <<EOF
 ${TEST_DATE_STAMP}Failed to read nodes file "${CTDB_NODES}"
 EOF
 
-simple_test <<EOF
-EOF
+simple_test

@@ -16,5 +16,4 @@ required_result 0 <<EOF
 192.168.20.43
 EOF
 
-simple_test <<EOF
-EOF
+simple_test
