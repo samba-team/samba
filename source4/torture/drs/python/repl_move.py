@@ -103,28 +103,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
     def _check_metadata(self, user_dn, sam_ldb, drs, metadata, expected):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, str(metadata[0]))
 
-        # We should assert the entire array, but windows and Samba disagree
-        # both on sorting, and internal implementation behaviours show up in
-        # terms of the version.
-        #
-        # In particular, Windows seems to add password attributes that
-        # Samba doesn't add until they are actually needed.  So we
-        # optionally permit that all the password attributes are omited
-
-        password_attids = set([DRSUAPI_ATTID_dBCSPwd,
-                               DRSUAPI_ATTID_unicodePwd,
-                               DRSUAPI_ATTID_lmPwdHistory,
-                               DRSUAPI_ATTID_ntPwdHistory,
-                               DRSUAPI_ATTID_logonHours])
-
-        if len(repl.ctr.array) != len(expected):
-            new_expected = []
-            for e in expected:
-                (attid, orig_dsa, version) = e
-                if attid not in password_attids:
-                    new_expected.append(e)
-            expected = new_expected
-
         self.assertEqual(len(repl.ctr.array), len(expected))
 
         i = 0
