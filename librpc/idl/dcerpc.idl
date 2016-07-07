@@ -535,7 +535,23 @@ interface dcerpc
 	const uint32 DCERPC_FRAG_MAX_SIZE  = 5840;
 	const uint8 DCERPC_AUTH_LEN_OFFSET = 10;
 	const uint8 DCERPC_NCACN_PAYLOAD_OFFSET = 16;
-	const uint32 DCERPC_NCACN_PAYLOAD_MAX_SIZE = 0x400000; /* 4 MByte */
+
+	/*
+	 * See [MS-RPCE] 3.3.3.5.4 Maximum Server Input Data Size
+	 * 4 MByte is the default limit of reassembled request payload
+	 */
+	const uint32 DCERPC_NCACN_REQUEST_DEFAULT_MAX_SIZE = 0x400000;
+
+	/*
+	 * See [MS-RPCE] 3.3.2.5.2 Handling Responses
+	 *
+	 * Indicates that Windows accepts up to 0x7FFFFFFF ~2 GByte
+	 *
+	 * talloc has a limit of 256 MByte, so we need to use something smaller.
+	 *
+	 * For now we try our luck with 240 MByte.
+	 */
+	const uint32 DCERPC_NCACN_RESPONSE_DEFAULT_MAX_SIZE = 0xf000000; /* 240 MByte */
 
 	/* little-endian flag */
 	const uint8 DCERPC_DREP_LE  = 0x10;

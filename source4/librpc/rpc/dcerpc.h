@@ -107,6 +107,9 @@ struct dcecli_connection {
 
 	/* the next context_id to be assigned */
 	uint32_t next_context_id;
+
+	/* The maximum total payload of reassembled response pdus */
+	size_t max_total_response_size;
 };
 
 /*

@@ -156,7 +156,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		ip4pkt.tcp.check    = tcp_checksum((uint16_t *)&ip4pkt.tcp, sizeof(ip4pkt.tcp), &ip4pkt.ip);
 
 		/* open a raw socket to send this segment from */
-		s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+		s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 		if (s == -1) {
 			DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
 				 strerror(errno)));
@@ -203,7 +203,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		ip6pkt.tcp.window   = htons(1234);
 		ip6pkt.tcp.check    = tcp_checksum6((uint16_t *)&ip6pkt.tcp, sizeof(ip6pkt.tcp), &ip6pkt.ip6);
 
-		s = socket(PF_INET6, SOCK_RAW, IPPROTO_RAW);
+		s = socket(AF_INET6, SOCK_RAW, IPPROTO_RAW);
 		if (s == -1) {
 			DEBUG(DEBUG_CRIT, (__location__ " Failed to open sending socket\n"));
 			return -1;

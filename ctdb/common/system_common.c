@@ -85,7 +85,7 @@ char *ctdb_sys_find_ifname(ctdb_sock_addr *addr)
 	struct ifconf ifc;
 	char *ptr;
 
-	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 	if (s == -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
 			 strerror(errno)));

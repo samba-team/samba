@@ -44,7 +44,7 @@ int ctdb_sys_open_sending_socket(void)
 	int s, ret;
 	uint32_t one = 1;
 
-	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 	if (s == -1) {
 		DEBUG(DEBUG_CRIT,(" failed to open raw socket (%s)\n",
 			 strerror(errno)));
@@ -121,7 +121,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 
 
 
-	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
+	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
 	if (s == -1) {
 		DEBUG(DEBUG_CRIT,(" failed to open raw socket (%s)\n",
 			 strerror(errno)));
