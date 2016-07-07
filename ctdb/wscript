@@ -345,7 +345,7 @@ def build(bld):
                         source=bld.SUBDIR('common',
                                           '''db_hash.c srvid.c reqid.c
                                              pkt_read.c pkt_write.c comm.c
-                                             logging.c rb_tree.c'''),
+                                             logging.c rb_tree.c tunable.c'''),
                         deps='''samba-util tevent-util
                                 replace talloc tevent tdb''')
 
