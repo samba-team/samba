@@ -95,6 +95,7 @@ struct ctdbd_context {
 	struct timeval recovery_start_time;
 	struct timeval recovery_end_time;
 	bool takeover_disabled;
+	enum debug_level log_level;
 };
 
 /*
@@ -602,6 +603,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 	}
 	ctdb->recovery_end_time = tevent_timeval_current();
 
+	ctdb->log_level = DEBUG_ERR;
+
 	return ctdb;
 
 fail:
@@ -993,6 +996,43 @@ static void control_getvnnmap(TALLOC_CTX *mem_ctx,
 		reply.status = 0;
 		reply.errmsg = NULL;
 	}
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_get_debug(TALLOC_CTX *mem_ctx,
+			      struct tevent_req *req,
+			      struct ctdb_req_header *header,
+			      struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+	reply.rdata.data.loglevel = debug_level_to_int(ctdb->log_level);
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_set_debug(TALLOC_CTX *mem_ctx,
+			      struct tevent_req *req,
+			      struct ctdb_req_header *header,
+			      struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	ctdb->log_level = debug_level_from_int(request->rdata.data.loglevel);
+
+	reply.rdata.opcode = request->opcode;
+	reply.status = 0;
+	reply.errmsg = NULL;
 
 	client_send_control(req, header, &reply);
 }
@@ -1832,6 +1872,14 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GETVNNMAP:
 		control_getvnnmap(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_DEBUG:
+		control_get_debug(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_SET_DEBUG:
+		control_set_debug(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_RECMODE:
