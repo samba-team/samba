@@ -193,6 +193,10 @@ class TestDnsForwarding(DNSTest):
             except socket.error, e:
                 if e.errno in (errno.ECONNREFUSED, errno.EHOSTUNREACH):
                     continue
+
+            if p.returncode is not None:
+                self.fail("Toy server has managed to die already!")
+
             return s
 
     def tearDown(self):
