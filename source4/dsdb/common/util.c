@@ -739,6 +739,7 @@ static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
 					  struct ldb_message *msg,
 					  const char *name,
 					  const char *set_value,
+					  unsigned attr_flags,
 					  bool *added)
 {
 	int ret;
@@ -753,11 +754,22 @@ static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	ret = ldb_msg_add_string(msg, name, set_value);
+	SMB_ASSERT(set_value != NULL || attr_flags != 0);
+
+	ret = ldb_msg_add_empty(msg, name,
+				LDB_FLAG_MOD_ADD | attr_flags,
+				&el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+
+	if (set_value != NULL) {
+		ret = ldb_msg_add_string(msg, name, set_value);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	if (added != NULL) {
 		*added = true;
 	}
@@ -766,7 +778,7 @@ static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
 
 int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
 {
-	return samdb_find_or_add_attribute_ex(ldb, msg, name, set_value, NULL);
+	return samdb_find_or_add_attribute_ex(ldb, msg, name, set_value, 0, NULL);
 }
 
 /*
@@ -5294,6 +5306,7 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 		const char *name;
 		const char *value;
 		const char *add_control;
+		unsigned attr_flags;
 	} map[] = {
 		{
 			.name = "accountExpires",
@@ -5328,6 +5341,10 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 			.value = "0"
 		},
 		{
+			.name = "logonHours",
+			.attr_flags = DSDB_FLAG_INTERNAL_FORCE_META_DATA,
+		},
+		{
 			.name = "pwdLastSet",
 			.value = "0",
 			.add_control = DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID,
@@ -5340,6 +5357,7 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 		ret = samdb_find_or_add_attribute_ex(ldb, usr_obj,
 						     map[i].name,
 						     map[i].value,
+						     map[i].attr_flags,
 						     &added);
 		if (ret != LDB_SUCCESS) {
 			return ret;
