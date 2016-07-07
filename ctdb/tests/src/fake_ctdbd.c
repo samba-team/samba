@@ -96,6 +96,7 @@ struct ctdbd_context {
 	struct timeval recovery_end_time;
 	bool takeover_disabled;
 	enum debug_level log_level;
+	enum ctdb_runstate runstate;
 };
 
 /*
@@ -604,6 +605,7 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 	ctdb->recovery_end_time = tevent_timeval_current();
 
 	ctdb->log_level = DEBUG_ERR;
+	ctdb->runstate = CTDB_RUNSTATE_RUNNING;
 
 	return ctdb;
 
@@ -1505,6 +1507,24 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static void control_get_runstate(TALLOC_CTX *mem_ctx,
+				 struct tevent_req *req,
+				 struct ctdb_req_header *header,
+				 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+	reply.rdata.data.runstate = ctdb->runstate;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_nodes_file(TALLOC_CTX *mem_ctx,
 				   struct tevent_req *req,
 				   struct ctdb_req_header *header,
@@ -1932,6 +1952,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_IFACES:
 		control_get_ifaces(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_RUNSTATE:
+		control_get_runstate(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_NODES_FILE:
