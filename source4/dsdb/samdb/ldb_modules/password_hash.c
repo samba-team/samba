@@ -1799,7 +1799,10 @@ static int setup_last_set_field(struct setup_password_fields_io *io)
 		}
 		/* fall through */
 	case UINT64_MAX:
-		if (!io->ac->update_password && io->u.pwdLastSet != 0) {
+		if (!io->ac->update_password &&
+		    io->u.pwdLastSet != 0 &&
+		    io->u.pwdLastSet != UINT64_MAX)
+		{
 			/*
 			 * Just setting pwdLastSet to -1, while not changing
 			 * any password field has no effect if pwdLastSet
@@ -2532,8 +2535,12 @@ static int setup_io(struct ph_context *ac,
 		/*
 		 * We only take pwdLastSet from the existing object
 		 * otherwise we leave it as 0.
+		 *
+		 * If no attribute is available, e.g. on deleted objects
+		 * we remember that as UINT64_MAX.
 		 */
-		io->u.pwdLastSet = samdb_result_nttime(info_msg, "pwdLastSet", 0);
+		io->u.pwdLastSet = samdb_result_nttime(info_msg, "pwdLastSet",
+						       UINT64_MAX);
 	}
 	io->u.sAMAccountName		= ldb_msg_find_attr_as_string(info_msg,
 								      "sAMAccountName", NULL);
@@ -3454,6 +3461,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_message_element *passwordAttr;
 	struct ldb_message *msg;
 	struct ldb_request *down_req;
+	struct ldb_control *restore = NULL;
 	int ret;
 	unsigned int i = 0;
 
@@ -3541,7 +3549,19 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	ldb_msg_remove_attr(msg, "pwdLastSet");
+	restore = ldb_request_get_control(req,
+					DSDB_CONTROL_RESTORE_TOMBSTONE_OID);
+	if (restore == NULL) {
+		/*
+		 * A tomstone reanimation generates a double update
+		 * of pwdLastSet.
+		 *
+		 * So we only remove it without the
+		 * DSDB_CONTROL_RESTORE_TOMBSTONE_OID control.
+		 */
+		ldb_msg_remove_attr(msg, "pwdLastSet");
+	}
+
 
 	/* if there was nothing else to be modified skip to next step */
 	if (msg->num_elements == 0) {
