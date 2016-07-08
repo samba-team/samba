@@ -233,7 +233,7 @@ static struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct
 			return schema;
 		}
 	} else {
-		DEBUG(3, ("Initial schema load needed, as we have no existing schema, seq_num: %lld\n",
+		DEBUG(10, ("Initial schema load needed, as we have no existing schema, seq_num: %lld\n",
 			  (unsigned long long)schema_seq_num));
 	}
 
