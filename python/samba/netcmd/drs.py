@@ -276,6 +276,8 @@ def drs_local_replicate(self, SOURCE_DC, NC):
         raise CommandError("Error replicating DN %s" % NC, e)
     self.samdb.transaction_commit()
 
+    self.message("Replicate from %s to %s was successful." % (SOURCE_DC, self.local_samdb.url))
+
 
 
 class cmd_drs_replicate(Command):
