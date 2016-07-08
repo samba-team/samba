@@ -555,6 +555,213 @@ class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
         self._check_metadata(obj_restore_rmd["replPropertyMetaData"],
                              self._expected_user_restore_metadata())
 
+class RestoreUserPwdObjectTestCase(RestoredObjectAttributesBaseTestCase):
+    """Test cases for delete/reanimate user objects with password"""
+
+    def _expected_userpw_add_attributes(self, username, user_dn, category):
+        return {'dn': user_dn,
+                'objectClass': '**',
+                'cn': username,
+                'distinguishedName': user_dn,
+                'instanceType': '4',
+                'whenCreated': '**',
+                'whenChanged': '**',
+                'uSNCreated': '**',
+                'uSNChanged': '**',
+                'name': username,
+                'objectGUID': '**',
+                'userAccountControl': '546',
+                'badPwdCount': '0',
+                'badPasswordTime': '0',
+                'codePage': '0',
+                'countryCode': '0',
+                'lastLogon': '0',
+                'lastLogoff': '0',
+                'pwdLastSet': '**',
+                'primaryGroupID': '513',
+                'objectSid': '**',
+                'accountExpires': '9223372036854775807',
+                'logonCount': '0',
+                'sAMAccountName': username,
+                'sAMAccountType': '805306368',
+                'objectCategory': 'CN=%s,%s' % (category, self.schema_dn)
+                }
+
+    def _expected_userpw_add_metadata(self):
+        return [
+            (DRSUAPI_ATTID_objectClass, 1),
+            (DRSUAPI_ATTID_cn, 1),
+            (DRSUAPI_ATTID_instanceType, 1),
+            (DRSUAPI_ATTID_whenCreated, 1),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, 1),
+            (DRSUAPI_ATTID_name, 1),
+            (DRSUAPI_ATTID_userAccountControl, None),
+            (DRSUAPI_ATTID_codePage, 1),
+            (DRSUAPI_ATTID_countryCode, 1),
+            (DRSUAPI_ATTID_dBCSPwd, 1),
+            (DRSUAPI_ATTID_logonHours, 1),
+            (DRSUAPI_ATTID_unicodePwd, 1),
+            (DRSUAPI_ATTID_ntPwdHistory, 1),
+            (DRSUAPI_ATTID_pwdLastSet, 1),
+            (DRSUAPI_ATTID_primaryGroupID, 1),
+            (DRSUAPI_ATTID_supplementalCredentials, 1),
+            (DRSUAPI_ATTID_objectSid, 1),
+            (DRSUAPI_ATTID_accountExpires, 1),
+            (DRSUAPI_ATTID_lmPwdHistory, 1),
+            (DRSUAPI_ATTID_sAMAccountName, 1),
+            (DRSUAPI_ATTID_sAMAccountType, 1),
+            (DRSUAPI_ATTID_objectCategory, 1)]
+
+    def _expected_userpw_del_attributes(self, username, _guid, _sid):
+        guid = ndr_unpack(misc.GUID, _guid)
+        dn = "CN=%s\\0ADEL:%s,CN=Deleted Objects,%s" % (username, guid, self.base_dn)
+        cn = "%s\nDEL:%s" % (username, guid)
+        return {'dn': dn,
+                'objectClass': '**',
+                'cn': cn,
+                'distinguishedName': dn,
+                'isDeleted': 'TRUE',
+                'isRecycled': 'TRUE',
+                'instanceType': '4',
+                'whenCreated': '**',
+                'whenChanged': '**',
+                'uSNCreated': '**',
+                'uSNChanged': '**',
+                'name': cn,
+                'objectGUID': _guid,
+                'userAccountControl': '546',
+                'objectSid': _sid,
+                'sAMAccountName': username,
+                'lastKnownParent': 'CN=Users,%s' % self.base_dn,
+                }
+
+    def _expected_userpw_del_metadata(self):
+        return [
+            (DRSUAPI_ATTID_objectClass, 1),
+            (DRSUAPI_ATTID_cn, 2),
+            (DRSUAPI_ATTID_instanceType, 1),
+            (DRSUAPI_ATTID_whenCreated, 1),
+            (DRSUAPI_ATTID_isDeleted, 1),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, 1),
+            (DRSUAPI_ATTID_name, 2),
+            (DRSUAPI_ATTID_userAccountControl, None),
+            (DRSUAPI_ATTID_codePage, 2),
+            (DRSUAPI_ATTID_countryCode, 2),
+            (DRSUAPI_ATTID_dBCSPwd, 1),
+            (DRSUAPI_ATTID_logonHours, 1),
+            (DRSUAPI_ATTID_unicodePwd, 2),
+            (DRSUAPI_ATTID_ntPwdHistory, 2),
+            (DRSUAPI_ATTID_pwdLastSet, 2),
+            (DRSUAPI_ATTID_primaryGroupID, 2),
+            (DRSUAPI_ATTID_supplementalCredentials, 2),
+            (DRSUAPI_ATTID_objectSid, 1),
+            (DRSUAPI_ATTID_accountExpires, 2),
+            (DRSUAPI_ATTID_lmPwdHistory, 2),
+            (DRSUAPI_ATTID_sAMAccountName, 1),
+            (DRSUAPI_ATTID_sAMAccountType, 2),
+            (DRSUAPI_ATTID_lastKnownParent, 1),
+            (DRSUAPI_ATTID_objectCategory, 2),
+            (DRSUAPI_ATTID_isRecycled, 1)]
+
+    def _expected_userpw_restore_attributes(self, username, guid, sid, user_dn, category):
+        return {'dn': user_dn,
+                'objectClass': '**',
+                'cn': username,
+                'distinguishedName': user_dn,
+                'instanceType': '4',
+                'whenCreated': '**',
+                'whenChanged': '**',
+                'uSNCreated': '**',
+                'uSNChanged': '**',
+                'name': username,
+                'objectGUID': guid,
+                'userAccountControl': '546',
+                'badPwdCount': '0',
+                'badPasswordTime': '0',
+                'codePage': '0',
+                'countryCode': '0',
+                'lastLogon': '0',
+                'lastLogoff': '0',
+                'pwdLastSet': '**',
+                'primaryGroupID': '513',
+                'operatorCount': '0',
+                'objectSid': sid,
+                'adminCount': '0',
+                'accountExpires': '0',
+                'logonCount': '0',
+                'sAMAccountName': username,
+                'sAMAccountType': '805306368',
+                'lastKnownParent': 'CN=Users,%s' % self.base_dn,
+                'objectCategory': 'CN=%s,%s' % (category, self.schema_dn)
+                }
+
+    def _expected_userpw_restore_metadata(self):
+        return [
+            (DRSUAPI_ATTID_objectClass, 1),
+            (DRSUAPI_ATTID_cn, 3),
+            (DRSUAPI_ATTID_instanceType, 1),
+            (DRSUAPI_ATTID_whenCreated, 1),
+            (DRSUAPI_ATTID_isDeleted, 2),
+            (DRSUAPI_ATTID_ntSecurityDescriptor, 1),
+            (DRSUAPI_ATTID_name, 3),
+            (DRSUAPI_ATTID_userAccountControl, None),
+            (DRSUAPI_ATTID_codePage, 3),
+            (DRSUAPI_ATTID_countryCode, 3),
+            (DRSUAPI_ATTID_dBCSPwd, 2),
+            (DRSUAPI_ATTID_logonHours, 1),
+            (DRSUAPI_ATTID_unicodePwd, 3),
+            (DRSUAPI_ATTID_ntPwdHistory, 3),
+            (DRSUAPI_ATTID_pwdLastSet, 4),
+            (DRSUAPI_ATTID_primaryGroupID, 3),
+            (DRSUAPI_ATTID_supplementalCredentials, 3),
+            (DRSUAPI_ATTID_operatorCount, 1),
+            (DRSUAPI_ATTID_objectSid, 1),
+            (DRSUAPI_ATTID_adminCount, 1),
+            (DRSUAPI_ATTID_accountExpires, 3),
+            (DRSUAPI_ATTID_lmPwdHistory, 3),
+            (DRSUAPI_ATTID_sAMAccountName, 1),
+            (DRSUAPI_ATTID_sAMAccountType, 3),
+            (DRSUAPI_ATTID_lastKnownParent, 1),
+            (DRSUAPI_ATTID_objectCategory, 3),
+            (DRSUAPI_ATTID_isRecycled, 2)]
+
+    def test_restorepw_user(self):
+        print "Test restored user attributes"
+        username = "restorepw_user"
+        usr_dn = "CN=%s,CN=Users,%s" % (username, self.base_dn)
+        samba.tests.delete_force(self.samdb, usr_dn)
+        self.samdb.add({
+            "dn": usr_dn,
+            "objectClass": "user",
+            "userPassword": "thatsAcomplPASS0",
+            "sAMAccountName": username})
+        obj = self.search_dn(usr_dn)
+        guid = obj["objectGUID"][0]
+        sid = obj["objectSID"][0]
+        obj_rmd = self.search_guid(guid, attrs=["replPropertyMetaData"])
+        self.assertAttributesExists(self._expected_userpw_add_attributes(username, usr_dn, "Person"), obj)
+        self._check_metadata(obj_rmd["replPropertyMetaData"],
+                             self._expected_userpw_add_metadata())
+        self.samdb.delete(usr_dn)
+        obj_del = self.search_guid(guid)
+        obj_del_rmd = self.search_guid(guid, attrs=["replPropertyMetaData"])
+        orig_attrs = set(obj.keys())
+        del_attrs = set(obj_del.keys())
+        self.assertAttributesExists(self._expected_userpw_del_attributes(username, guid, sid), obj_del)
+        self._check_metadata(obj_del_rmd["replPropertyMetaData"],
+                             self._expected_userpw_del_metadata())
+        # restore the user and fetch what's restored
+        self.restore_deleted_object(self.samdb, obj_del.dn, usr_dn, {"userPassword": ["thatsAcomplPASS1"]})
+        obj_restore = self.search_guid(guid)
+        obj_restore_rmd = self.search_guid(guid, attrs=["replPropertyMetaData"])
+        # check original attributes and restored one are same
+        orig_attrs = set(obj.keys())
+        # windows restore more attributes that originally we have
+        orig_attrs.update(['adminCount', 'operatorCount', 'lastKnownParent'])
+        rest_attrs = set(obj_restore.keys())
+        self.assertAttributesExists(self._expected_userpw_restore_attributes(username, guid, sid, usr_dn, "Person"), obj_restore)
+        self._check_metadata(obj_restore_rmd["replPropertyMetaData"],
+                             self._expected_userpw_restore_metadata())
 
 class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test different scenarios for delete/reanimate group objects"""
