@@ -635,7 +635,7 @@ plantestsuite("samba4.blackbox.renamedc.sh", "none", ["PYTHON=%s" % python, os.p
 for env in ['vampire_dc', 'promoted_dc']:
 
     # DRS python tests
-    planoldpythontestsuite(env, "samba.tests.blackbox.samba_tool_drs",
+    planoldpythontestsuite("%s:local" % env, "samba.tests.blackbox.samba_tool_drs",
                            environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite("%s:local" % env, "replica_sync",

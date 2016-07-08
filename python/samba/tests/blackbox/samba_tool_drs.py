@@ -103,6 +103,51 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was successful" in out)
 
+    def test_samba_tool_replicate_local_online(self):
+        """Tests 'samba-tool drs replicate --local-online' command."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate --local-online %s %s %s" % (self.dc1,
+                                                                                      self.dc2,
+                                                                                      nc_name))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was successful" in out)
+
+    def test_samba_tool_replicate_local_machine_creds(self):
+        """Tests 'samba-tool drs replicate --local -P' command (uses machine creds)."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate -P --local %s %s %s" % (self.dc1,
+                                                                                  self.dc2,
+                                                                                  nc_name))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was successful" in out)
+
+    def test_samba_tool_replicate_local(self):
+        """Tests 'samba-tool drs replicate --local' command (uses machine creds)."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate --local %s %s %s %s" % (self.dc1,
+                                                                                  self.dc2,
+                                                                                  nc_name,
+                                                                                  self.cmdline_creds))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was successful" in out)
+
+    def test_samba_tool_replicate_machine_creds(self):
+        """Tests 'samba-tool drs replicate -P' command with machine creds."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate -P %s %s %s" % (self.dc1,
+                                                                          self.dc2,
+                                                                          nc_name))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was successful" in out)
+
     def test_samba_tool_drs_clone_dc(self):
         """Tests 'samba-tool drs clone-dc-database' command."""
         server_rootdse = self._get_rootDSE(self.dc1)
