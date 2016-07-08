@@ -361,7 +361,7 @@ class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # windows restore more attributes that originally we have
         orig_attrs.update(['adminCount', 'operatorCount', 'lastKnownParent'])
         rest_attrs = set(obj_restore.keys())
-        self.assertEqual(orig_attrs, rest_attrs, "Actual object does not have expected attributes")
+        self.assertAttributesEqual(obj, orig_attrs, obj_restore, rest_attrs)
         self.assertAttributesExists(self._expected_user_attributes(username, usr_dn, "Person"), obj_restore)
 
 
