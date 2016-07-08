@@ -82,10 +82,13 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         self.samdb.add(msg)
         return self.search_dn(msg['dn'])
 
-    def assertAttributesEqual(self, obj_orig, attrs_orig, obj_restored, attrs_rest):
-        self.assertEqual(attrs_orig, attrs_rest,
+    def assertNamesEqual(self, attrs_expected, attrs_extra):
+        self.assertEqual(attrs_expected, attrs_extra,
                          "Actual object does not have expected attributes, missing from expected (%s), extra (%s)"
-                         % (str(attrs_orig.difference(attrs_rest)), str(attrs_rest.difference(attrs_orig))))
+                         % (str(attrs_expected.difference(attrs_extra)), str(attrs_extra.difference(attrs_expected))))
+
+    def assertAttributesEqual(self, obj_orig, attrs_orig, obj_restored, attrs_rest):
+        self.assertNamesEqual(attrs_orig, attrs_rest)
         # remove volatile attributes, they can't be equal
         attrs_orig -= set(["uSNChanged", "dSCorePropagationData", "whenChanged"])
         for attr in attrs_orig:
@@ -107,7 +110,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
             m.add(rest_val)
             rest_ldif = self.samdb.write_ldif(m, 0)
             # compare generated ldif's
-            self.assertEqual(orig_ldif.lower(), rest_ldif.lower())
+            self.assertEqual(orig_ldif, rest_ldif)
 
     def assertAttributesExists(self, attr_expected, obj_msg):
         """Check object contains at least expected attrbigutes
@@ -117,7 +120,8 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         actual_names = set(obj_msg.keys())
         # Samba does not use 'dSCorePropagationData', so skip it
         actual_names -= set(['dSCorePropagationData'])
-        self.assertEqual(set(attr_expected.keys()), actual_names, "Actual object does not have expected attributes")
+        expected_names = set(attr_expected.keys())
+        self.assertNamesEqual(expected_names, actual_names)
         for name in attr_expected.keys():
             expected_val = attr_expected[name]
             actual_val = obj_msg.get(name)
@@ -125,8 +129,10 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
             if expected_val == "**":
                 # "**" values means "any"
                 continue
-            self.assertEqual(expected_val.lower(), str(actual_val).lower(),
-                             "Unexpected value for '%s'" % name)
+            self.assertEqual(expected_val, str(actual_val),
+                             "Unexpected value (%s) for '%s', expected (%s)" % (
+                             str(actual_val), name, expected_val))
+
 
     @staticmethod
     def restore_deleted_object(samdb, del_dn, new_dn, new_attrs=None):
@@ -343,7 +349,7 @@ class RestoreUserObjectTestCase(RestoredObjectAttributesBaseTestCase):
     def test_restore_user(self):
         print "Test restored user attributes"
         username = "restore_user"
-        usr_dn = "cn=%s,cn=users,%s" % (username, self.base_dn)
+        usr_dn = "CN=%s,CN=Users,%s" % (username, self.base_dn)
         samba.tests.delete_force(self.samdb, usr_dn)
         self.samdb.add({
             "dn": usr_dn,
@@ -369,7 +375,7 @@ class RestoreGroupObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test different scenarios for delete/reanimate group objects"""
 
     def _make_object_dn(self, name):
-        return "cn=%s,cn=users,%s" % (name, self.base_dn)
+        return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
     def _create_test_user(self, user_name):
         user_dn = self._make_object_dn(user_name)
@@ -469,7 +475,7 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
     """Test different scenarios for delete/reanimate OU/container objects"""
 
     def _expected_container_attributes(self, rdn, name, dn, category):
-        if rdn == 'ou':
+        if rdn == 'OU':
             lastKnownParent = '%s' % self.base_dn
         else:
             lastKnownParent = 'CN=Users,%s' % self.base_dn
@@ -485,7 +491,7 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
                 'uSNCreated': '**',
                 'uSNChanged': '**',
                 'instanceType': '4',
-                rdn: name }
+                rdn.lower(): name }
 
     def _create_test_ou(self, rdn, name=None, description=None):
         ou_dn = "OU=%s,%s" % (rdn, self.base_dn)
@@ -516,7 +522,7 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # and does not restore following attributes
         attr_orig -= set(["description"])
         self.assertAttributesEqual(obj, attr_orig, obj_restore, attr_rest)
-        expected_attrs = self._expected_container_attributes("ou", "r_ou", str(obj.dn), "Organizational-Unit")
+        expected_attrs = self._expected_container_attributes("OU", "r_ou", str(obj.dn), "Organizational-Unit")
         self.assertAttributesExists(expected_attrs, obj_restore)
 
     def test_container(self):
@@ -541,8 +547,8 @@ class RestoreContainerObjectTestCase(RestoredObjectAttributesBaseTestCase):
         # and does not restore following attributes
         attr_orig -= set(["showInAdvancedViewOnly"])
         self.assertAttributesEqual(obj, attr_orig, obj_restore, attr_rest)
-        expected_attrs = self._expected_container_attributes("cn", "r_container",
-                                                             str(obj.dn), "container")
+        expected_attrs = self._expected_container_attributes("CN", "r_container",
+                                                             str(obj.dn), "Container")
         self.assertAttributesExists(expected_attrs, obj_restore)
 
 
