@@ -3084,17 +3084,52 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	struct ldb_message_element *el;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res, *parent_res;
-	const char *preserved_attrs[] = {
+	static const char * const preserved_attrs[] = {
 		/* yes, this really is a hard coded list. See MS-ADTS
 		   section 3.1.1.5.5.1.1 */
-		"nTSecurityDescriptor", "attributeID", "attributeSyntax", "dNReferenceUpdate", "dNSHostName",
-		"flatName", "governsID", "groupType", "instanceType", "lDAPDisplayName", "legacyExchangeDN",
-		"isDeleted", "isRecycled", "lastKnownParent", "msDS-LastKnownRDN", "mS-DS-CreatorSID",
-		"mSMQOwnerID", "nCName", "objectClass", "distinguishedName", "objectGUID", "objectSid",
-		"oMSyntax", "proxiedObjectName", "name", "replPropertyMetaData", "sAMAccountName",
-		"securityIdentifier", "sIDHistory", "subClassOf", "systemFlags", "trustPartner", "trustDirection",
-		"trustType", "trustAttributes", "userAccountControl", "uSNChanged", "uSNCreated", "whenCreated",
-		"whenChanged", NULL};
+		"attributeID",
+		"attributeSyntax",
+		"dNReferenceUpdate",
+		"dNSHostName",
+		"flatName",
+		"governsID",
+		"groupType",
+		"instanceType",
+		"lDAPDisplayName",
+		"legacyExchangeDN",
+		"isDeleted",
+		"isRecycled",
+		"lastKnownParent",
+		"msDS-LastKnownRDN",
+		"msDS-PortLDAP",
+		"mS-DS-CreatorSID",
+		"mSMQOwnerID",
+		"nCName",
+		"objectClass",
+		"distinguishedName",
+		"objectGUID",
+		"objectSid",
+		"oMSyntax",
+		"proxiedObjectName",
+		"name",
+		"nTSecurityDescriptor",
+		"replPropertyMetaData",
+		"sAMAccountName",
+		"securityIdentifier",
+		"sIDHistory",
+		"subClassOf",
+		"systemFlags",
+		"trustPartner",
+		"trustDirection",
+		"trustType",
+		"trustAttributes",
+		"userAccountControl",
+		"uSNChanged",
+		"uSNCreated",
+		"whenCreated",
+		"whenChanged",
+		NULL
+	};
 	unsigned int i, el_count = 0;
 	enum deletion_state deletion_state, next_deletion_state;
 
