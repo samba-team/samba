@@ -3130,6 +3130,11 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 		"whenChanged",
 		NULL
 	};
+	static const char * const all_attrs[] = {
+		DSDB_SECRET_ATTRIBUTES,
+		"*",
+		NULL
+	};
 	unsigned int i, el_count = 0;
 	enum deletion_state deletion_state, next_deletion_state;
 
@@ -3167,7 +3172,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 
 	/* we need the complete msg off disk, so we can work out which
 	   attributes need to be removed */
-	ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, NULL,
+	ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, all_attrs,
 	                            DSDB_FLAG_NEXT_MODULE |
 	                            DSDB_SEARCH_SHOW_RECYCLED |
 				    DSDB_SEARCH_REVEAL_INTERNALS |
