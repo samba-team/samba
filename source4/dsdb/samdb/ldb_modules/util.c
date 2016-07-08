@@ -1467,7 +1467,7 @@ int dsdb_fix_dn_rdncase(struct ldb_context *ldb, struct ldb_dn *dn)
  * @return LDB_SUCCESS or error including out of memory error
  */
 int dsdb_make_object_category(struct ldb_context *ldb, const struct dsdb_schema *schema,
-			      struct ldb_message *obj,
+			      const struct ldb_message *obj,
 			      TALLOC_CTX *mem_ctx, const char **pobjectcategory)
 {
 	const struct dsdb_class			*objectclass;
