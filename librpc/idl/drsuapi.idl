@@ -508,8 +508,10 @@ interface drsuapi
 		DRSUAPI_ATTID_trustAuthOutgoing			= 0x00090087,
 		DRSUAPI_ATTID_userParameters			= 0x0009008a,
 		DRSUAPI_ATTID_profilePath			= 0x0009008b,
+		DRSUAPI_ATTID_operatorCount			= 0x00090090,
 		DRSUAPI_ATTID_objectSid				= 0x00090092,
 		DRSUAPI_ATTID_schemaIDGUID			= 0x00090094,
+		DRSUAPI_ATTID_adminCount			= 0x00090096,
 		DRSUAPI_ATTID_comment				= 0x0009009C,/* User-Comment */
 		DRSUAPI_ATTID_accountExpires			= 0x0009009f,
 		DRSUAPI_ATTID_lmPwdHistory			= 0x000900a0,
