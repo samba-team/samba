@@ -66,6 +66,7 @@ struct results_store {
 	struct referral_store *last_ref;
 
 	struct ldb_control **controls;
+	struct ldb_control **down_controls;
 	struct ldb_vlv_req_control *vlv_details;
 	struct ldb_server_sort_control *sort_details;
 };
@@ -119,7 +120,7 @@ struct vlv_sort_context {
 	struct ldb_context *ldb;
 	ldb_attr_comparison_t comparison_fn;
 	const char *attr;
-	TALLOC_CTX *mem_ctx;
+	struct vlv_context *ac;
 	int status;
 	struct ldb_val value;
 };
@@ -130,6 +131,66 @@ struct referral_store {
 	char *ref;
 	struct referral_store *next;
 };
+
+/*
+  search for attrs on one DN, by the GUID of the DN, with true
+  LDB controls
+ */
+
+static int vlv_search_by_dn_guid(struct ldb_module *module,
+				 struct vlv_context *ac,
+				 struct ldb_result **result,
+				 const struct GUID *guid,
+				 const char * const *attrs)
+{
+	struct ldb_dn *dn;
+	struct ldb_request *req;
+	struct ldb_result *res;
+	int ret;
+	struct GUID_txt_buf guid_str;
+	struct ldb_control **controls = ac->store->down_controls;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	dn = ldb_dn_new_fmt(ac, ldb, "<GUID=%s>",
+			    GUID_buf_string(guid, &guid_str));
+	if (dn == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	res = talloc_zero(ac, struct ldb_result);
+	if (res == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	ret = ldb_build_search_req(&req, ldb, ac,
+				   dn,
+				   LDB_SCOPE_BASE,
+				   NULL,
+				   attrs,
+				   controls,
+				   res,
+				   ldb_search_default_callback,
+				   ac->req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+
+	ret = ldb_request(ldb, req);
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		return ret;
+	}
+
+	*result = res;
+	return ret;
+}
+
 
 static int save_referral(struct results_store *store, char *ref)
 {
@@ -175,14 +236,14 @@ static int vlv_value_compare(struct vlv_sort_context *target,
 {
 	struct ldb_result *result = NULL;
 	struct ldb_message_element *el = NULL;
+	struct vlv_context *ac = target->ac;
 	int ret;
 	const char *attrs[2] = {
 		target->attr,
 		NULL
 	};
 
-	ret = dsdb_search_by_dn_guid(target->ldb, target->mem_ctx,
-				     &result, &guid, attrs, 0);
+	ret = vlv_search_by_dn_guid(ac->module, ac, &result, &guid, attrs);
 
 	if (ret != LDB_SUCCESS) {
 		target->status = ret;
@@ -191,7 +252,7 @@ static int vlv_value_compare(struct vlv_sort_context *target,
 	}
 
 	el = ldb_msg_find_element(result->msgs[0], target->attr);
-	return target->comparison_fn(target->ldb, target->mem_ctx,
+	return target->comparison_fn(target->ldb, ac,
 				     &target->value, &el->values[0]);
 
 }
@@ -240,7 +301,7 @@ static int vlv_gt_eq_to_index(struct vlv_context *ac,
 		.ldb = ldb,
 		.comparison_fn = a->syntax->comparison_fn,
 		.attr = sort_details->attributeName,
-		.mem_ctx = ac,
+		.ac = ac,
 		.status = LDB_SUCCESS,
 		.value = value
 	};
@@ -334,7 +395,6 @@ static int vlv_results(struct vlv_context *ac)
 	struct ldb_vlv_req_control *vlv_details;
 	struct ldb_server_sort_control *sort_details;
 	int target = 0;
-	struct ldb_context *ldb = NULL;
 
 	if (ac->store == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -349,8 +409,6 @@ static int vlv_results(struct vlv_context *ac)
 			return ret;
 		}
 	}
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	vlv_details = ac->store->vlv_details;
 	sort_details = ac->store->sort_details;
@@ -380,11 +438,9 @@ static int vlv_results(struct vlv_context *ac)
 		for (i = first_i; i <= last_i; i++) {
 			struct ldb_result *result;
 			struct GUID *guid = &ac->store->results[i];
-			ret =  dsdb_search_by_dn_guid(ldb, ac,
-						      &result,
-						      guid,
-						      ac->req->op.search.attrs,
-						      0);
+
+			ret = vlv_search_by_dn_guid(ac->module, ac, &result, guid,
+						    ac->req->op.search.attrs);
 
 			if (ret == LDAP_NO_SUCH_OBJECT) {
 				/* The thing isn't there, which we quietly
@@ -604,6 +660,39 @@ static int copy_search_details(struct results_store *store,
 }
 
 
+static struct ldb_control **
+vlv_copy_down_controls(TALLOC_CTX *mem_ctx, struct ldb_control **controls)
+{
+
+	struct ldb_control **new_controls;
+	unsigned int i, j, num_ctrls;
+	if (controls == NULL) {
+		return NULL;
+	}
+
+	for (num_ctrls = 0; controls[num_ctrls]; num_ctrls++);
+
+	new_controls = talloc_array(mem_ctx, struct ldb_control *, num_ctrls);
+	if (new_controls == NULL) {
+		return NULL;
+	}
+
+	for (j = 0, i = 0; i < (num_ctrls); i++) {
+		struct ldb_control *control = controls[i];
+		if (control->oid == NULL) {
+			break;
+		}
+		if (strncmp(control->oid, LDB_CONTROL_VLV_REQ_OID, sizeof(LDB_CONTROL_VLV_REQ_OID)) == 0 ||
+		    strncmp(control->oid, LDB_CONTROL_SERVER_SORT_OID, sizeof(LDB_CONTROL_SERVER_SORT_OID)) == 0) {
+			continue;
+		}
+		new_controls[j] = talloc_steal(new_controls, control);
+		j++;
+	}
+	new_controls[j] = NULL;
+	return new_controls;
+}
+
 static int vlv_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -659,7 +748,7 @@ static int vlv_search(struct ldb_module *module, struct ldb_request *req)
 	 * saved search.
 	 */
 	if (vlv_ctrl->ctxid_len == 0) {
-		const char * const attrs[2] = {
+		static const char * const attrs[2] = {
 			"objectGUID", NULL
 		};
 
@@ -691,6 +780,14 @@ static int vlv_search(struct ldb_module *module, struct ldb_request *req)
 		if (!ldb_save_controls(control, search_req, NULL)) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+
+		ac->store->down_controls = vlv_copy_down_controls(ac->store,
+								  req->controls);
+
+		if (ac->store->down_controls == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		return ldb_next_request(module, search_req);
 
 	} else {
