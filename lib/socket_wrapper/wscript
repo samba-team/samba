@@ -96,8 +96,8 @@ def configure(conf):
                                    define='HAVE_EVENTFD_UNSIGNED_INT', headers='sys/eventfd.h')
 
         # Create full path to socket_wrapper
-        srcdir = os.path.realpath(conf.srcdir)
-        libsocket_wrapper_so_path = srcdir + '/bin/default/lib/socket_wrapper/libsocket-wrapper.so'
+        blddir = os.path.realpath(conf.blddir)
+        libsocket_wrapper_so_path = blddir + '/default/lib/socket_wrapper/libsocket-wrapper.so'
 
     conf.DEFINE('LIBSOCKET_WRAPPER_SO_PATH', libsocket_wrapper_so_path)
     conf.DEFINE('SOCKET_WRAPPER', 1)
