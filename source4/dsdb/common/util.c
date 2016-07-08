@@ -745,6 +745,8 @@ static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
 	int ret;
 	struct ldb_message_element *el;
 
+	SMB_ASSERT(attr_flags != 0);
+
        	el = ldb_msg_find_element(msg, name);
 	if (el) {
 		if (added != NULL) {
@@ -754,10 +756,8 @@ static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
 		return LDB_SUCCESS;
 	}
 
-	SMB_ASSERT(set_value != NULL || attr_flags != 0);
-
 	ret = ldb_msg_add_empty(msg, name,
-				LDB_FLAG_MOD_ADD | attr_flags,
+				attr_flags,
 				&el);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -778,7 +778,7 @@ static int samdb_find_or_add_attribute_ex(struct ldb_context *ldb,
 
 int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg, const char *name, const char *set_value)
 {
-	return samdb_find_or_add_attribute_ex(ldb, msg, name, set_value, 0, NULL);
+	return samdb_find_or_add_attribute_ex(ldb, msg, name, set_value, LDB_FLAG_MOD_ADD, NULL);
 }
 
 /*
@@ -5305,12 +5305,16 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 	const struct attribute_values {
 		const char *name;
 		const char *value;
-		const char *add_control;
-		unsigned attr_flags;
+		const char *add_value;
+		const char *mod_value;
+		const char *control;
+		unsigned add_flags;
+		unsigned mod_flags;
 	} map[] = {
 		{
 			.name = "accountExpires",
-			.value = "9223372036854775807"
+			.add_value = "9223372036854775807",
+			.mod_value = "0",
 		},
 		{
 			.name = "badPasswordTime",
@@ -5342,30 +5346,59 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 		},
 		{
 			.name = "logonHours",
-			.attr_flags = DSDB_FLAG_INTERNAL_FORCE_META_DATA,
+			.add_flags = DSDB_FLAG_INTERNAL_FORCE_META_DATA,
 		},
 		{
 			.name = "pwdLastSet",
 			.value = "0",
-			.add_control = DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID,
-		}
+			.control = DSDB_CONTROL_PASSWORD_DEFAULT_LAST_SET_OID,
+		},
+		{
+			.name = "adminCount",
+			.mod_value = "0",
+		},
+		{
+			.name = "operatorCount",
+			.mod_value = "0",
+		},
 	};
 
 	for (i = 0; i < ARRAY_SIZE(map); i++) {
 		bool added = false;
+		const char *value = NULL;
+		unsigned flags = 0;
+
+		if (req != NULL && req->operation == LDB_ADD) {
+			value = map[i].add_value;
+			flags = map[i].add_flags;
+		} else {
+			value = map[i].mod_value;
+			flags = map[i].mod_flags;
+		}
+
+		if (value == NULL) {
+			value = map[i].value;
+		}
+
+		if (value != NULL) {
+			flags |= LDB_FLAG_MOD_ADD;
+		}
+
+		if (flags == 0) {
+			continue;
+		}
 
 		ret = samdb_find_or_add_attribute_ex(ldb, usr_obj,
 						     map[i].name,
-						     map[i].value,
-						     map[i].attr_flags,
+						     value, flags,
 						     &added);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 
-		if (req != NULL && added && map[i].add_control != NULL) {
+		if (req != NULL && added && map[i].control != NULL) {
 			ret = ldb_request_add_control(req,
-						      map[i].add_control,
+						      map[i].control,
 						      false, NULL);
 			if (ret != LDB_SUCCESS) {
 				return ret;
