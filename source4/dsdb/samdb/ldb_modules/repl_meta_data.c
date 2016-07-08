@@ -5296,9 +5296,10 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 	char *tmp_str;
 	char *filter;
 	struct ldb_request *search_req;
-	static const char *attrs[] = { "*", "parentGUID", "instanceType",
+	static const char *attrs[] = { "repsFrom", "replUpToDateVector",
+				       "parentGUID", "instanceType",
 				       "replPropertyMetaData", "nTSecurityDescriptor",
-				       NULL };
+				       "isDeleted", NULL };
 	struct GUID_txt_buf guid_str_buf;
 
 	if (ar->index_current >= ar->objs->num_objects) {
