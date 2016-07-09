@@ -83,6 +83,13 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	return ENOSYS;
 }
 
+int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
+			   TALLOC_CTX *mem_ctx,
+			   struct messaging_backend *backend)
+{
+	return ENOSYS;
+}
+
 struct ctdbd_connection *messaging_ctdbd_connection(void)
 {
 	return NULL;

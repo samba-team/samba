@@ -79,6 +79,9 @@ struct messaging_backend {
 int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			 TALLOC_CTX *mem_ctx,
 			 struct messaging_backend **presult);
+int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
+			   TALLOC_CTX *mem_ctx,
+			   struct messaging_backend *backend);
 struct ctdbd_connection *messaging_ctdbd_connection(void);
 
 bool message_send_all(struct messaging_context *msg_ctx,

@@ -268,3 +268,19 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 	*presult = result;
 	return 0;
 }
+
+int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
+			   TALLOC_CTX *mem_ctx,
+			   struct messaging_backend *backend)
+{
+	struct messaging_ctdbd_context *ctx = talloc_get_type_abort(
+		backend->private_data, struct messaging_ctdbd_context);
+	int ret;
+
+	ret = messaging_ctdbd_init_internal(msg_ctx, mem_ctx, ctx, true);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return 0;
+}
