@@ -416,11 +416,9 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 		return map_nt_error_from_unix(ret);
 	}
 
-	TALLOC_FREE(msg_ctx->remote);
-
 	if (lp_clustering()) {
-		ret = messaging_ctdbd_init(msg_ctx, msg_ctx,
-					   &msg_ctx->remote);
+		ret = messaging_ctdbd_reinit(msg_ctx, msg_ctx,
+					     msg_ctx->remote);
 
 		if (ret != 0) {
 			DEBUG(1, ("messaging_ctdbd_init failed: %s\n",
