@@ -477,6 +477,31 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+int ctdbd_reinit_connection(TALLOC_CTX *mem_ctx,
+			    const char *sockname, int timeout,
+			    struct ctdbd_connection *conn)
+{
+	int ret;
+
+	ret = ctdbd_connection_destructor(conn);
+	if (ret != 0) {
+		DBG_ERR("ctdbd_connection_destructor failed\n");
+		return ret;
+	}
+
+	ret = ctdbd_init_connection_internal(mem_ctx,
+					     sockname,
+					     timeout,
+					     conn);
+	if (ret != 0) {
+		DBG_ERR("ctdbd_init_connection_internal failed (%s)\n",
+			strerror(ret));
+		return ret;
+	}
+
+	return 0;
+}
+
 int ctdbd_conn_get_fd(struct ctdbd_connection *conn)
 {
 	return conn->fd;
