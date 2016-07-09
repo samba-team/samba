@@ -174,14 +174,76 @@ static void messaging_ctdbd_readable(struct tevent_context *ev,
 	ctdbd_socket_readable(conn);
 }
 
+static int messaging_ctdbd_init_internal(struct messaging_context *msg_ctx,
+					 TALLOC_CTX *mem_ctx,
+					 struct messaging_ctdbd_context *ctx,
+					 bool reinit)
+{
+	struct tevent_context *ev;
+	int ret, ctdb_fd;
+
+	if (reinit) {
+		ret = ctdbd_reinit_connection(ctx,
+					      lp_ctdbd_socket(),
+					      lp_ctdb_timeout(),
+					      ctx->conn);
+		if (ret != 0) {
+			DBG_ERR("ctdbd_reinit_connection failed: %s\n",
+				strerror(ret));
+			return ret;
+		}
+	} else {
+		ret = ctdbd_init_connection(ctx,
+					    lp_ctdbd_socket(),
+					    lp_ctdb_timeout(),
+					    &ctx->conn);
+		if (ret != 0) {
+			DBG_ERR("ctdbd_init_connection failed: %s\n",
+				strerror(ret));
+			return ret;
+		}
+	}
+
+	ret = register_with_ctdbd(ctx->conn, MSG_SRVID_SAMBA, NULL, NULL);
+	if (ret != 0) {
+		DBG_DEBUG("Could not register MSG_SRVID_SAMBA: %s\n",
+			  strerror(ret));
+		return ret;
+	}
+
+	ret = register_with_ctdbd(ctx->conn, getpid(),
+				  messaging_ctdb_recv, msg_ctx);
+	if (ret != 0) {
+		DEBUG(10, ("register_with_ctdbd failed: %s\n",
+			   strerror(ret)));
+		return ret;
+	}
+
+	ctdb_fd = ctdbd_conn_get_fd(ctx->conn);
+	ev = messaging_tevent_context(msg_ctx);
+
+	ctx->fde = tevent_add_fd(ev, ctx, ctdb_fd, TEVENT_FD_READ,
+				 messaging_ctdbd_readable, ctx->conn);
+	if (ctx->fde == NULL) {
+		return ENOMEM;
+	}
+
+	global_ctdb_connection_pid = getpid();
+	global_ctdbd_connection = ctx->conn;
+	talloc_set_destructor(ctx, messaging_ctdbd_destructor);
+
+	set_my_vnn(ctdbd_vnn(ctx->conn));
+
+	return 0;
+}
+
 int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 			 TALLOC_CTX *mem_ctx,
 			 struct messaging_backend **presult)
 {
 	struct messaging_backend *result;
 	struct messaging_ctdbd_context *ctx;
-	struct tevent_context *ev;
-	int ret, ctdb_fd;
+	int ret;
 
 	if (!(result = talloc(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -194,48 +256,11 @@ int messaging_ctdbd_init(struct messaging_context *msg_ctx,
 		return ENOMEM;
 	}
 
-	ret = ctdbd_init_connection(ctx, lp_ctdbd_socket(),
-				    lp_ctdb_timeout(), &ctx->conn);
-
+	ret = messaging_ctdbd_init_internal(msg_ctx, mem_ctx, ctx, false);
 	if (ret != 0) {
-		DBG_DEBUG("ctdbd_init_connection failed: %s\n",
-			  strerror(ret));
 		TALLOC_FREE(result);
 		return ret;
 	}
-
-	ret = register_with_ctdbd(ctx->conn, MSG_SRVID_SAMBA, NULL, NULL);
-	if (ret != 0) {
-		DBG_DEBUG("Could not register MSG_SRVID_SAMBA: %s\n",
-			  strerror(ret));
-		TALLOC_FREE(result);
-		return ret;
-	}
-
-	ret = register_with_ctdbd(ctx->conn, getpid(),
-				  messaging_ctdb_recv, msg_ctx);
-	if (ret != 0) {
-		DEBUG(10, ("register_with_ctdbd failed: %s\n",
-			   strerror(ret)));
-		TALLOC_FREE(result);
-		return ret;
-	}
-
-	ctdb_fd = ctdbd_conn_get_fd(ctx->conn);
-	ev = messaging_tevent_context(msg_ctx);
-
-	ctx->fde = tevent_add_fd(ev, ctx, ctdb_fd, TEVENT_FD_READ,
-				 messaging_ctdbd_readable, ctx->conn);
-	if (ctx->fde == NULL) {
-		TALLOC_FREE(result);
-		return ENOMEM;
-	}
-
-	global_ctdb_connection_pid = getpid();
-	global_ctdbd_connection = ctx->conn;
-	talloc_set_destructor(ctx, messaging_ctdbd_destructor);
-
-	set_my_vnn(ctdbd_vnn(ctx->conn));
 
 	result->send_fn = messaging_ctdb_send;
 	result->private_data = (void *)ctx;
