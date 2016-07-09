@@ -99,11 +99,12 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	const char *binding_string;
 	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None, *py_basis = Py_None;
 	NTSTATUS status;
+	unsigned int timeout = (unsigned int)-1;
 	const char *kwnames[] = {
-		"binding", "lp_ctx", "credentials", "basis_connection", NULL
+		"binding", "lp_ctx", "credentials", "timeout", "basis_connection", NULL
 	};
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO:samr", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &py_basis)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOIO:samr", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &timeout, &py_basis)) {
 		return NULL;
 	}
 
@@ -231,6 +232,12 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 		ret->binding_handle = ret->pipe->binding_handle;
 	}
+
+	/* reset timeout for the handle */
+	if (timeout != ((unsigned int)-1)) {
+		dcerpc_binding_handle_set_timeout(ret->binding_handle, timeout);
+	}
+
 	return (PyObject *)ret;
 }
 

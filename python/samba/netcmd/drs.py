@@ -34,6 +34,7 @@ from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
 import common
 from samba.join import join_clone
+from samba.messaging import IRPC_CALL_TIMEOUT_INF
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
