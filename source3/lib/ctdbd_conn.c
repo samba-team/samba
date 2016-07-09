@@ -405,6 +405,48 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
  * Get us a ctdbd connection
  */
 
+static int ctdbd_init_connection_internal(TALLOC_CTX *mem_ctx,
+					  const char *sockname, int timeout,
+					  struct ctdbd_connection *conn)
+{
+	int ret;
+
+	conn->timeout = timeout;
+	if (conn->timeout == 0) {
+		conn->timeout = -1;
+	}
+
+	ret = ctdbd_connect(sockname, &conn->fd);
+	if (ret != 0) {
+		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
+		return ret;
+	}
+	talloc_set_destructor(conn, ctdbd_connection_destructor);
+
+	ret = get_cluster_vnn(conn, &conn->our_vnn);
+	if (ret != 0) {
+		DEBUG(10, ("get_cluster_vnn failed: %s\n", strerror(ret)));
+		return ret;
+	}
+
+	if (!ctdbd_working(conn, conn->our_vnn)) {
+		DEBUG(2, ("Node is not working, can not connect\n"));
+		return EIO;
+	}
+
+	generate_random_buffer((unsigned char *)&conn->rand_srvid,
+			       sizeof(conn->rand_srvid));
+
+	ret = register_with_ctdbd(conn, conn->rand_srvid, NULL, NULL);
+	if (ret != 0) {
+		DEBUG(5, ("Could not register random srvid: %s\n",
+			  strerror(ret)));
+		return ret;
+	}
+
+	return 0;
+}
+
 int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 			  const char *sockname, int timeout,
 			  struct ctdbd_connection **pconn)
@@ -417,40 +459,13 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	conn->timeout = timeout;
-
-	if (conn->timeout == 0) {
-		conn->timeout = -1;
-	}
-
-	ret = ctdbd_connect(sockname, &conn->fd);
+	ret = ctdbd_init_connection_internal(mem_ctx,
+					     sockname,
+					     timeout,
+					     conn);
 	if (ret != 0) {
-		DEBUG(1, ("ctdbd_connect failed: %s\n", strerror(ret)));
-		goto fail;
-	}
-	talloc_set_destructor(conn, ctdbd_connection_destructor);
-
-	ret = get_cluster_vnn(conn, &conn->our_vnn);
-
-	if (ret != 0) {
-		DEBUG(10, ("get_cluster_vnn failed: %s\n", strerror(ret)));
-		goto fail;
-	}
-
-	if (!ctdbd_working(conn, conn->our_vnn)) {
-		DEBUG(2, ("Node is not working, can not connect\n"));
-		ret = EIO;
-		goto fail;
-	}
-
-	generate_random_buffer((unsigned char *)&conn->rand_srvid,
-			       sizeof(conn->rand_srvid));
-
-	ret = register_with_ctdbd(conn, conn->rand_srvid, NULL, NULL);
-
-	if (ret != 0) {
-		DEBUG(5, ("Could not register random srvid: %s\n",
-			  strerror(ret)));
+		DBG_ERR("ctdbd_init_connection_internal failed (%s)\n",
+			strerror(ret));
 		goto fail;
 	}
 
