@@ -158,8 +158,7 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 	source='eventlog/dcesrv_eventlog6.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_eventlog6_init',
-	deps='DCERPC_COMMON',
-	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
+	deps='DCERPC_COMMON'
 	)
 
 bld.SAMBA_MODULE('dcerpc_dnsserver',
