@@ -318,7 +318,8 @@ class cmd_drs_replicate(Command):
             return
 
         if local_online:
-            server_bind = drsuapi.drsuapi("irpc:dreplsrv", self.lp)
+            server_bind = drsuapi.drsuapi("irpc:dreplsrv", lp_ctx=self.lp,
+                                          timeout=IRPC_CALL_TIMEOUT_INF)
             server_bind_handle = misc.policy_handle()
         else:
             drsuapi_connect(self)
