@@ -21,7 +21,7 @@ bld.SAMBA_BINARY('samba',
 	source='server.c',
 	subsystem_name='service',
 	deps='''events process_model service samba-hostconfig samba-util POPT_SAMBA
-                popt gensec registry ntptr ntvfs share cluster COMMON_SCHANNEL SECRETS''',
+                popt gensec registry ntvfs share cluster COMMON_SCHANNEL SECRETS''',
 	pyembed=True,
 	install_path='${SBINDIR}',
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()

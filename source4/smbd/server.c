@@ -28,7 +28,6 @@
 #include "lib/cmdline/popt_common.h"
 #include "system/dir.h"
 #include "system/filesys.h"
-#include "ntptr/ntptr.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/auth/schannel.h"
 #include "smbd/process_model.h"
@@ -405,9 +404,6 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	}
 
 	gensec_init(); /* FIXME: */
-
-	ntptr_init();	/* FIXME: maybe run this in the initialization function 
-						of the spoolss RPC server instead? */
 
 	process_model_init(cmdline_lp_ctx); 
 

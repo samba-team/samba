@@ -129,16 +129,6 @@ else:
 		)
 
 
-bld.SAMBA_MODULE('dcerpc_spoolss',
-	source='spoolss/dcesrv_spoolss.c',
-	subsystem='dcerpc_server',
-	init_function='dcerpc_server_spoolss_init',
-	deps='DCERPC_COMMON NDR_SPOOLSS ntptr RPC_NDR_SPOOLSS',
-	internal_module=True,
-	enabled=bld.CONFIG_SET('WITH_NTVFS_FILESERVER')
-	)
-
-
 bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
 	subsystem='dcerpc_server',
