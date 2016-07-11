@@ -2239,6 +2239,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 	io->ntcreatex.in.ea_list          = NULL;
 	io->ntcreatex.in.sec_desc         = NULL;
 	io->ntcreatex.in.query_maximal_access = false;
+	io->ntcreatex.in.query_on_disk_id = false;
 	io->ntcreatex.in.private_flags    = 0;
 
 	/* we need a neater way to handle this alignment */
