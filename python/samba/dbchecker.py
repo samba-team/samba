@@ -280,14 +280,14 @@ systemFlags: -1946157056%s""" % (dn, guid_suffix),
         '''confirm a change with support for "all" '''
         if not self.fix:
             return False
-        if self.quiet:
-            return self.yes
         if getattr(self, all_attr) == 'NONE':
             return False
         if getattr(self, all_attr) == 'ALL':
             forced = True
         else:
             forced = self.yes
+        if self.quiet:
+            return forced
         c = common.confirm(msg, forced=forced, allow_all=True)
         if c == 'ALL':
             setattr(self, all_attr, 'ALL')

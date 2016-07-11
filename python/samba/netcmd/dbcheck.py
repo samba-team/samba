@@ -38,6 +38,21 @@ class cmd_dbcheck(Command):
         "credopts": options.CredentialsOptionsDouble,
     }
 
+    def process_yes(option, opt, value, parser):
+        assert value is None
+        done = 0
+        rargs = parser.rargs
+        if rargs:
+            arg = rargs[0]
+            if ((arg[:2] == "--" and len(arg) > 2) or
+                (arg[:1] == "-" and len(arg) > 1 and arg[1] != "-")):
+                setattr(parser.values, "yes", True)
+            else:
+                setattr(parser.values, "yes_rules", arg.split())
+                del rargs[0]
+        else:
+            setattr(parser.values, "yes", True)
+
     takes_args = ["DN?"]
 
     takes_options = [
@@ -45,7 +60,7 @@ class cmd_dbcheck(Command):
             help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         Option("--fix", dest="fix", default=False, action='store_true',
                help='Fix any errors found'),
-        Option("--yes", dest="yes", default=False, action='store_true',
+        Option("--yes", action='callback', callback=process_yes,
                help="don't confirm changes, just do them all as a single transaction"),
         Option("--cross-ncs", dest="cross_ncs", default=False, action='store_true',
                help="cross naming context boundaries"),
@@ -65,7 +80,7 @@ class cmd_dbcheck(Command):
             cross_ncs=False, quiet=False,
             scope="SUB", credopts=None, sambaopts=None, versionopts=None,
             attrs=None, reindex=False, force_modules=False,
-            reset_well_known_acls=False):
+            reset_well_known_acls=False, yes_rules=[]):
 
         lp = sambaopts.get_loadparm()
 
@@ -118,6 +133,12 @@ class cmd_dbcheck(Command):
             chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
                           fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction,
                           reset_well_known_acls=reset_well_known_acls)
+
+            for option in yes_rules:
+                if hasattr(chk, option):
+                    setattr(chk, option, 'ALL')
+                else:
+                    raise CommandError("Invalid fix rule %s" % option)
 
             if reindex:
                 self.outf.write("Re-indexing...\n")
