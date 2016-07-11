@@ -50,6 +50,15 @@ struct shadow_copy2_config {
 	char *snapshot_basepath; /* the absolute version of snapdir */
 };
 
+
+/*
+ * shadow_copy2 private structure. This structure will be
+ * used to keep module specific information
+ */
+struct shadow_copy2_private {
+	struct shadow_copy2_config 	*config;
+};
+
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 				      size_t **poffsets,
 				      unsigned *pnum_offsets)
@@ -96,9 +105,12 @@ static ssize_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
 	struct tm snap_tm;
 	ssize_t snaptime_len;
 	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return 0);
+
+	config = priv->config;
 
 	if (config->use_sscanf) {
 		snaptime_len = snprintf(snaptime_string,
@@ -153,9 +165,12 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 	ssize_t snaptime_len = 0;
 	char *result = NULL;
 	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
+
+	config = priv->config;
 
 	snaptime_len = shadow_copy2_posix_gmt_string(handle,
 						     snapshot,
@@ -194,9 +209,9 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
 	fstring snaptime_string;
 	ssize_t snaptime_len = 0;
 	char *result = NULL;
-	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
 
 	snaptime_len = shadow_copy2_posix_gmt_string(handle,
@@ -208,7 +223,7 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
 	}
 
 	result = talloc_asprintf(mem_ctx, "%s/%s",
-				 config->snapshot_basepath, snaptime_string);
+				 priv->config->snapshot_basepath, snaptime_string);
 	if (result == NULL) {
 		DEBUG(1, (__location__ " talloc_asprintf failed\n"));
 	}
@@ -233,12 +248,12 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	char *q;
 	char *stripped;
 	size_t rest_len, dst_len;
-	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 	const char *snapdir;
 	ssize_t snapdirlen;
 	ptrdiff_t len_before_gmt;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return false);
 
 	DEBUG(10, (__location__ ": enter path '%s'\n", name));
@@ -320,7 +335,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	rest_len = strlen(q);
 	dst_len = (p-name) + rest_len;
 
-	if (config->snapdirseverywhere) {
+	if (priv->config->snapdirseverywhere) {
 		char *insert;
 		bool have_insert;
 		insert = shadow_copy2_insert_string(talloc_tos(), handle,
@@ -453,10 +468,13 @@ static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
 	int i, saved_errno;
 	size_t min_offset;
 	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 	size_t in_share_offset = 0;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
+
+	config = priv->config;
 
 	DEBUG(10, ("converting '%s'\n", name));
 
@@ -661,12 +679,12 @@ static char *shadow_copy2_convert(TALLOC_CTX *mem_ctx,
 static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 			 SMB_STRUCT_STAT *sbuf)
 {
-	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return);
 
-	if (config->fixinodes) {
+	if (priv->config->fixinodes) {
 		/* some snapshot systems, like GPFS, return the name
 		   device:inode for the snapshot files as the current
 		   files. That breaks the 'restore' button in the shadow copy
@@ -1218,14 +1236,14 @@ static char *have_snapdir(struct vfs_handle_struct *handle,
 {
 	struct smb_filename smb_fname;
 	int ret;
-	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
 
 	ZERO_STRUCT(smb_fname);
 	smb_fname.base_name = talloc_asprintf(talloc_tos(), "%s/%s",
-					      path, config->snapdir);
+					      path, priv->config->snapdir);
 	if (smb_fname.base_name == NULL) {
 		return NULL;
 	}
@@ -1285,9 +1303,12 @@ static const char *shadow_copy2_find_snapdir(TALLOC_CTX *mem_ctx,
 	char *path, *p;
 	const char *snapdir;
 	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
+
+	config = priv->config;
 
 	/*
 	 * If the non-snapdisrseverywhere mode, we should not search!
@@ -1332,9 +1353,12 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 	unsigned long int timestamp_long;
 	const char *fmt;
 	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
+
+	config = priv->config;
 
 	fmt = config->gmt_format;
 
@@ -1387,12 +1411,12 @@ static void shadow_copy2_sort_data(vfs_handle_struct *handle,
 {
 	int (*cmpfunc)(const void *, const void *);
 	const char *sort;
-	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return);
 
-	sort = config->sort_order;
+	sort = priv->config->sort_order;
 	if (sort == NULL) {
 		return;
 	}
@@ -2034,6 +2058,7 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 				const char *service, const char *user)
 {
 	struct shadow_copy2_config *config;
+	struct shadow_copy2_private *priv;
 	int ret;
 	const char *snapdir;
 	const char *gmt_format;
@@ -2051,12 +2076,21 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	config = talloc_zero(handle->conn, struct shadow_copy2_config);
+	priv = talloc_zero(handle->conn, struct shadow_copy2_private);
+	if (priv == NULL) {
+		DEBUG(0, ("talloc_zero() failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	config = talloc_zero(priv, struct shadow_copy2_config);
 	if (config == NULL) {
 		DEBUG(0, ("talloc_zero() failed\n"));
 		errno = ENOMEM;
 		return -1;
 	}
+
+	priv->config = config;
 
 	gmt_format = lp_parm_const_string(SNUM(handle->conn),
 					  "shadow", "format",
@@ -2286,8 +2320,8 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		   ));
 
 
-	SMB_VFS_HANDLE_SET_DATA(handle, config,
-				NULL, struct shadow_copy2_config,
+	SMB_VFS_HANDLE_SET_DATA(handle, priv,
+				NULL, struct shadow_copy2_private,
 				return -1);
 
 	return 0;
