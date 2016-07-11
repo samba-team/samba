@@ -8,7 +8,8 @@ import sys
 import difflib
 
 exceptions = ['BUILD_DIRECTORY', 'CROSS_COMPILE', 'CROSS_ANSWERS',
-              'CROSS_EXECUTE', 'SELFTEST_PREFIX']
+              'CROSS_EXECUTE', 'SELFTEST_PREFIX', 'LIBSOCKET_WRAPPER_SO_PATH',
+              'defines' ]
 
 base_lines = list()
 base_fname = ''
