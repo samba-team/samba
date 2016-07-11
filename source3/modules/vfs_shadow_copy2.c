@@ -88,13 +88,13 @@ static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
  * Given a timestamp, build the posix level GMT-tag string
  * based on the configurable format.
  */
-static size_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
+static ssize_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
 					    time_t snapshot,
 					    char *snaptime_string,
 					    size_t len)
 {
 	struct tm snap_tm;
-	size_t snaptime_len;
+	ssize_t snaptime_len;
 	struct shadow_copy2_config *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct shadow_copy2_config,
@@ -107,7 +107,7 @@ static size_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
 					(unsigned long)snapshot);
 		if (snaptime_len <= 0) {
 			DEBUG(10, ("snprintf failed\n"));
-			return snaptime_len;
+			return -1;
 		}
 	} else {
 		if (config->use_localtime) {
@@ -127,7 +127,7 @@ static size_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
 					&snap_tm);
 		if (snaptime_len == 0) {
 			DEBUG(10, ("strftime failed\n"));
-			return 0;
+			return -1;
 		}
 	}
 
@@ -150,7 +150,7 @@ static char *shadow_copy2_insert_string(TALLOC_CTX *mem_ctx,
 					time_t snapshot)
 {
 	fstring snaptime_string;
-	size_t snaptime_len = 0;
+	ssize_t snaptime_len = 0;
 	char *result = NULL;
 	struct shadow_copy2_config *config;
 
@@ -192,7 +192,7 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
 					time_t snapshot)
 {
 	fstring snaptime_string;
-	size_t snaptime_len = 0;
+	ssize_t snaptime_len = 0;
 	char *result = NULL;
 	struct shadow_copy2_config *config;
 
