@@ -36,6 +36,8 @@ if ! have_link_local_config && [ ! -r "$CTDB_PER_IP_ROUTING_CONF" ] ; then
     die "error: CTDB_PER_IP_ROUTING_CONF=$CTDB_PER_IP_ROUTING_CONF file not found"
 fi
 
+service_state_dir=$(ctdb_setup_service_state_dir) || exit $?
+
 ######################################################################
 
 ipv4_is_valid_addr()
@@ -103,6 +105,7 @@ ipv4_host_addr_to_net ()
 ensure_rt_tables ()
 {
     rt_tables="$CTDB_SYS_ETCDIR/iproute2/rt_tables"
+    rt_tables_lock="${service_state_dir}/rt_tables_lock"
 
     # This file should always exist.  Even if this didn't exist on the
     # system, adding a route will have created it.  What if we startup
@@ -131,7 +134,7 @@ ensure_table_id_for_ip ()
     # range).
     (
 	# Note that die() just gets us out of the subshell...
-	flock --timeout 30 0 || \
+	flock --timeout 30 9 || \
 	    die "ensure_table_id_for_ip: failed to lock file $rt_tables"
 
 	_new="$CTDB_PER_IP_ROUTING_TABLE_ID_LOW"
@@ -150,7 +153,7 @@ ensure_table_id_for_ip ()
 		"$_t" -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null ; then
 		_new=$((_t + 1))
 	    fi
-	done
+	done <"$rt_tables"
 
 	# If the new table id is legal then add it to the file and
 	# print it.
@@ -160,7 +163,7 @@ ensure_table_id_for_ip ()
 	else
 	    return 1
 	fi
-    ) <"$rt_tables"
+    ) 9>"$rt_tables_lock"
 }
 
 # Clean up all the table ids that we might own.
@@ -170,7 +173,7 @@ clean_up_table_ids ()
 
     (
 	# Note that die() just gets us out of the subshell...
-	flock --timeout 30 0 || \
+	flock --timeout 30 9 || \
 	    die "clean_up_table_ids: failed to lock file $rt_tables"
 
 	# Delete any items from the file that have a table id in our
@@ -185,8 +188,7 @@ clean_up_table_ids ()
 	     { print $0 }' "$rt_tables" >"$_tmp"
 
 	mv "$_tmp" "$rt_tables"
-	# The lock is gone - don't do anything else here
-    ) <"$rt_tables"
+    ) 9>"$rt_tables_lock"
 }
 
 ######################################################################

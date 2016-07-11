@@ -864,29 +864,32 @@ service_reconfigure ()
 
 ctdb_reconfigure_take_lock ()
 {
-    _ctdb_service_reconfigure_common
-    _lock="${_d}/reconfigure_lock"
-    mkdir -p "${_lock%/*}" # dirname
-    touch "$_lock"
+	_ctdb_service_reconfigure_common
+	_lock="${_d}/reconfigure_lock"
+	mkdir -p "${_lock%/*}" # dirname
+	touch "$_lock"
 
-    (
-	flock 0
-	# This is overkill but will work if we need to extend this to
-	# allow certain events to run multiple times in parallel
-	# (e.g. takeip) and write multiple PIDs to the file.
-	read _locker_event 
-	if [ -n "$_locker_event" ] ; then
-	    while read _pid ; do
-		if [ -n "$_pid" -a "$_pid" != $$ ] && \
-		    kill -0 "$_pid" 2>/dev/null ; then
-		    exit 1
-		fi
-	    done
-	fi
+	(
+		flock 9
+		# This is overkill but will work if we need to extend
+		# this to allow certain events to run multiple times
+		# in parallel (e.g. takeip) and write multiple PIDs to
+		# the file.
+		{
+			read _locker_event
+			if [ -n "$_locker_event" ] ; then
+				while read _pid ; do
+					if [ -n "$_pid" -a "$_pid" != $$ ] && \
+					   kill -0 "$_pid" 2>/dev/null ; then
+						exit 1
+					fi
+				done
+			fi
+		} <"$_lock"
 
-	printf "%s\n%s\n" "$event_name" $$ >"$_lock"
-	exit 0
-    ) <"$_lock"
+		printf "%s\n%s\n" "$event_name" $$ >"$_lock"
+		exit 0
+    ) 9>"${_lock}.flock"
 }
 
 ctdb_reconfigure_release_lock ()
