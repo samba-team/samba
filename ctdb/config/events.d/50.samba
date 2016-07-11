@@ -180,10 +180,6 @@ case "$1" in
 	    testparm_background_update 10
 	fi
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

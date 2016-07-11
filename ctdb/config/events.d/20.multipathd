@@ -75,10 +75,6 @@ case "$1" in
     monitor)
 	multipathd_check || die "multipath monitoring failed"
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

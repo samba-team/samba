@@ -142,10 +142,6 @@ case "$1" in
     startup)
 	$CTDB attach ctdb.tdb persistent
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 # all OK

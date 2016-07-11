@@ -1127,6 +1127,8 @@ service_stop ()
 
 ##################################################################
 
+# This exists only for backward compatibility with 3rd party scripts
+# that call it
 ctdb_standard_event_handler ()
 {
     :

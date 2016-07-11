@@ -82,10 +82,6 @@ EOF
     monitor)
 	ctdb_check_tcp_ports 3260 || exit $?
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

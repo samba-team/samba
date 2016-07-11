@@ -43,10 +43,6 @@ case "$1" in
     monitor)
         ctdb_check_unix_socket ${CTDB_CLAMD_SOCKET} || exit $?
         ;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

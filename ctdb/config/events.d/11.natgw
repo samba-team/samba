@@ -238,10 +238,6 @@ case "$1" in
 	    interface_monitor "$CTDB_NATGW_PUBLIC_IFACE" || exit 1
 	fi
 	;;
-
-    *)
-	ctdb_standard_event_handler "@"
-	;;
 esac
 
 exit 0

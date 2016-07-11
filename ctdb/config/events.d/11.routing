@@ -44,10 +44,6 @@ case "$1" in
 	    fi
 	done <"${CTDB_BASE}/static-routes"
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

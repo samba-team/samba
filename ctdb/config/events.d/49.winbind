@@ -52,10 +52,6 @@ case "$1" in
      monitor)
 	ctdb_check_command wbinfo -p
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

@@ -19,11 +19,6 @@ case "$1" in
 	echo "sleeping for $((TIMEOUT * 2)) seconds..."
 	sleep $((TIMEOUT * 2))
 	;;
-
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

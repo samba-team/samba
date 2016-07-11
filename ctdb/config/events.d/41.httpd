@@ -76,10 +76,6 @@ case "$1" in
 	    }
 	fi
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

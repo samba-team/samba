@@ -280,10 +280,6 @@ case "$1" in
 
 	nfs_callout "monitor-post" || exit $?
        	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

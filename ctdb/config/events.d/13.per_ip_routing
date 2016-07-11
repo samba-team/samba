@@ -415,10 +415,6 @@ case "$1" in
 	add_missing_routes
 	remove_bogus_routes
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

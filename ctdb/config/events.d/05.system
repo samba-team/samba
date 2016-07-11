@@ -168,10 +168,6 @@ case "$1" in
 	monitor_filesystem_usage
 	monitor_memory_usage
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0

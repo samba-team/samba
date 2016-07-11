@@ -47,10 +47,6 @@ case "$1" in
 
 	ctdb_check_counter "error" -gt 3
 	;;
-
-    *)
-	ctdb_standard_event_handler "$@"
-	;;
 esac
 
 exit 0
