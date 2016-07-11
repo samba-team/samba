@@ -26,19 +26,19 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
         super(SambaDnsUpdateTests, self).setUp()
         try:
             out = self.check_output("samba_dnsupdate --verbose")
-            self.assertTrue("Looking for DNS entry" in out)
+            self.assertTrue("Looking for DNS entry" in out, out)
         except samba.tests.BlackboxProcessError:
             pass
 
     def test_samba_dnsupate_no_change(self):
         out = self.check_output("samba_dnsupdate --verbose")
-        self.assertTrue("No DNS updates needed" in out)
+        self.assertTrue("No DNS updates needed" in out, out)
 
     def test_samba_dnsupate_set_ip(self):
         try:
             out = self.check_output("samba_dnsupdate --verbose --current-ip=10.0.0.1")
-            self.assertTrue(" DNS updates and" in out)
-            self.assertTrue(" DNS deletes needed" in out)
+            self.assertTrue(" DNS updates and" in out, out)
+            self.assertTrue(" DNS deletes needed" in out, out)
         except samba.tests.BlackboxProcessError:
             pass
 
@@ -47,13 +47,13 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
         except samba.tests.BlackboxProcessError:
             self.fail("Error calling samba_dnsupdate")
 
-        self.assertTrue("No DNS updates needed" in out)
+        self.assertTrue("No DNS updates needed" in out, out)
         try:
             out = self.check_output("samba_dnsupdate --verbose --use-samba-tool --rpc-server-ip=%s" % self.server_ip)
         except samba.tests.BlackboxProcessError:
             self.fail("Error calling samba_dnsupdate")
 
-        self.assertTrue(" DNS updates and" in out)
-        self.assertTrue(" DNS deletes needed" in out)
+        self.assertTrue(" DNS updates and" in out, out)
+        self.assertTrue(" DNS deletes needed" in out, out)
         out = self.check_output("samba_dnsupdate --verbose")
-        self.assertTrue("No DNS updates needed" in out)
+        self.assertTrue("No DNS updates needed" in out, out)
