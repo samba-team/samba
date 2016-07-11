@@ -1464,9 +1464,10 @@ union smb_open {
 			   NTTRANS varient of the call */
 			struct security_descriptor *sec_desc;
 			struct smb_ea_list *ea_list;
-			
+
 			/* some optional parameters from the SMB2 varient */
 			bool query_maximal_access;
+			bool query_on_disk_id;
 
 			/* private flags for internal use only */
 			uint8_t private_flags;
@@ -1489,6 +1490,7 @@ union smb_open {
 			/* optional return values matching SMB2 tagged
 			   values in the call */
 			uint32_t maximal_access;
+			uint8_t on_disk_id[32];
 		} out;
 	} ntcreatex, nttrans, generic;
 
