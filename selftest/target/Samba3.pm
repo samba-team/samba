@@ -553,6 +553,10 @@ sub setup_simpleserver($$)
 	vfs objects = xattr_tdb streams_depot time_audit full_audit
 	change notify = no
 
+	full_audit:syslog = no
+	full_audit:success = none
+	full_audit:failure = none
+
 [vfs_aio_fork]
 	path = $prefix_abs/share
         vfs objects = aio_fork
