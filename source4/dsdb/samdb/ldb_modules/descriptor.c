@@ -1144,7 +1144,11 @@ static int descriptor_sd_propagation_object(struct ldb_module *module,
 		ret = ldb_wait(sub_req->handle, LDB_WAIT_ALL);
 	}
 	if (ret != LDB_SUCCESS) {
-		return ldb_module_operr(module);
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "descriptor_modify on %s failed: %s",
+				       ldb_dn_get_linearized(msg->dn),
+				       ldb_errstring(ldb_module_get_ctx(module)));
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (sd_propagation_control->critical != 0) {
