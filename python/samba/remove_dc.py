@@ -176,19 +176,18 @@ def remove_dns_references(samdb, logger, dnsHostName):
                                attrs=["dnsRecord"])
         for record in records:
             try:
-                values = record["dnsRecord"]
+                orig_values = record["dnsRecord"]
             except KeyError:
-                next
-            orig_num_values = len(values)
+                continue
 
             # Remove references to dnsHostName in A, AAAA, NS, CNAME and SRV
             values = [ ndr_unpack(dnsp.DnssrvRpcRecord, v)
-                       for v in values if not to_remove(v) ]
+                       for v in orig_values if not to_remove(v) ]
 
-            if len(values) != orig_num_values:
+            if len(values) != len(orig_values):
                 logger.info("updating %s keeping %d values, removing %s values" \
                             % (record.dn, len(values),
-                               orig_num_values - len(values)))
+                               len(orig_values) - len(values)))
 
                 # This requires the values to be unpacked, so this
                 # has been done in the list comprehension above
