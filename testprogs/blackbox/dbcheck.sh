@@ -16,6 +16,11 @@ dbcheck() {
 	$BINDIR/samba-tool dbcheck --cross-ncs $@
 }
 
+# This list of attributes can be freely extended
+dbcheck_fix_one_way_links() {
+	$BINDIR/samba-tool dbcheck --quiet --fix --yes fix_all_string_dn_component_mismatch --attrs="lastKnownParent defaultObjectCategory" --cross-ncs $@
+}
+
 # This test shows that this does not do anything to a current
 # provision (that would be a bug)
 dbcheck_reset_well_known_acls() {
@@ -34,6 +39,7 @@ force_modules() {
 	$BINDIR/samba-tool dbcheck --force-modules
 }
 
+dbcheck_fix_one_way_links
 testit "dbcheck" dbcheck
 testit "reindex" reindex
 testit "fixed_attrs" fixed_attrs
