@@ -1907,11 +1907,11 @@ sub wait_for_start($$$$$)
 	    do {
 		$ret = system(Samba::bindir_path($self, "smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER} -U% -p 139");
 		if ($ret != 0) {
-		    sleep(2);
+		    sleep(1);
 		}
 		$count++
-	    } while ($ret != 0 && $count < 10);
-	    if ($count == 10) {
+	    } while ($ret != 0 && $count < 20);
+	    if ($count == 20) {
 		print "SMBD failed to start up in a reasonable time (20sec)\n";
 		teardown_env($self, $envvars);
 		return 0;
