@@ -527,6 +527,9 @@ sub get_interface($)
 		proclimitdc       => 47,
 		liveupgrade1dc    => 48,
 		liveupgrade2dc    => 49,
+		ctdb0             => 50,
+		ctdb1             => 51,
+		ctdb2             => 52,
 
 		rootdnsforwarder  => 64,
 

@@ -68,6 +68,19 @@ sub new($$) {
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
+
+	if (defined($envvars->{CTDB_PREFIX})) {
+		$self->teardown_env_ctdb($envvars);
+	} else {
+		$self->teardown_env_samba($envvars);
+	}
+
+	return;
+}
+
+sub teardown_env_samba($$)
+{
+	my ($self, $envvars) = @_;
 	my $count = 0;
 
 	# This should cause smbd to terminate gracefully
@@ -121,6 +134,31 @@ sub teardown_env($$)
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
 	$self->stop_sig_kill($winbinddpid);
+
+	return 0;
+}
+
+sub teardown_env_ctdb($$)
+{
+	my ($self, $data) = @_;
+
+	if (defined($data->{SAMBA_NODES})) {
+		my $num_nodes = $data->{NUM_NODES};
+		my $nodes = $data->{SAMBA_NODES};
+
+		for (my $i = 0; $i < $num_nodes; $i++) {
+			if (defined($nodes->[$i])) {
+				$self->teardown_env_samba($nodes->[$i]);
+			}
+		}
+	}
+
+	close($data->{CTDB_STDIN_PIPE});
+
+	if (not defined($data->{SAMBA_NODES})) {
+		# Give waiting children time to exit
+		sleep(5);
+	}
 
 	return 0;
 }
@@ -187,6 +225,8 @@ sub check_env($$)
 	ad_member_rfc2307   => ["ad_dc_ntvfs"],
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
+
+	clusteredmember     => ["nt4_dc"],
 );
 
 %Samba3::ENV_DEPS_POST = ();
@@ -376,6 +416,141 @@ sub setup_nt4_member
 		winbindd => "yes",
 		smbd => "yes")) {
 	       return undef;
+	}
+
+	$ret->{DOMSID} = $nt4_dc_vars->{DOMSID};
+	$ret->{DC_SERVER} = $nt4_dc_vars->{SERVER};
+	$ret->{DC_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
+	$ret->{DC_SERVER_IPV6} = $nt4_dc_vars->{SERVER_IPV6};
+	$ret->{DC_NETBIOSNAME} = $nt4_dc_vars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $nt4_dc_vars->{USERNAME};
+	$ret->{DC_PASSWORD} = $nt4_dc_vars->{PASSWORD};
+
+	return $ret;
+}
+
+sub setup_clusteredmember
+{
+	my ($self, $prefix, $nt4_dc_vars) = @_;
+	my $count = 0;
+	my $rc;
+	my @retvals = ();
+	my $ret;
+
+	print "PROVISIONING CLUSTEREDMEMBER...\n";
+
+	my $prefix_abs = abs_path($prefix);
+	mkdir($prefix_abs, 0777);
+
+	my $server_name = "CLUSTEREDMEMBER";
+
+	my $ctdb_data = $self->setup_ctdb($prefix);
+
+	if (not $ctdb_data) {
+		print "No ctdb data\n";
+		return undef;
+	}
+
+	print "PROVISIONING CLUSTERED SAMBA...\n";
+
+	my $num_nodes = $ctdb_data->{NUM_NODES};
+	my $nodes = $ctdb_data->{CTDB_NODES};
+
+	# Enable cleanup of earlier nodes if a later node fails
+	$ctdb_data->{SAMBA_NODES} = \@retvals;
+
+	for (my $i = 0; $i < $num_nodes; $i++) {
+		my $node = $nodes->[$i];
+		my $socket = $node->{SOCKET_FILE};
+		my $server_name = $node->{SERVER_NAME};
+		my $pub_iface = $node->{SOCKET_WRAPPER_DEFAULT_IFACE};
+		my $node_prefix = $node->{NODE_PREFIX};
+
+		print "NODE_PREFIX=${node_prefix}\n";
+		print "SOCKET=${socket}\n";
+
+		my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
+		if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} // '' eq "1") {
+			$require_mutexes = "" ;
+		}
+
+		my $member_options = "
+       security = domain
+       server signing = on
+       clustering = yes
+       ctdbd socket = ${socket}
+       dbwrap_tdb_mutexes:* = yes
+       ${require_mutexes}
+";
+
+		my $node_ret = $self->provision(
+		    prefix => "$node_prefix",
+		    domain => $nt4_dc_vars->{DOMAIN},
+		    server => "$server_name",
+		    password => "clustermember8pass",
+		    netbios_name => "CLUSTEREDMEMBER",
+		    share_dir => "${prefix_abs}/shared",
+		    extra_options => $member_options,
+		    no_delete_prefix => 1);
+		if (not $node_ret) {
+			print "Provision node $i failed\n";
+			teardown_env($self, $ctdb_data);
+			return undef;
+		}
+
+		my $nmblookup = Samba::bindir_path($self, "nmblookup");
+		do {
+			print "Waiting for the LOGON SERVER registration ...\n";
+			$rc = system("$nmblookup $node_ret->{CONFIGURATION} " .
+				     "$node_ret->{DOMAIN}\#1c");
+			if ($rc != 0) {
+				sleep(1);
+			}
+			$count++;
+		} while ($rc != 0 && $count < 10);
+
+		if ($count == 10) {
+			print "NMBD not reachable after 10 retries\n";
+			teardown_env($self, $node_ret);
+			teardown_env($self, $ctdb_data);
+			return undef;
+		}
+
+		push(@retvals, $node_ret);
+	}
+
+	$ret = {%$ctdb_data, %{$retvals[0]}};
+
+	my $net = Samba::bindir_path($self, "net");
+	my $cmd = "";
+	$cmd .= "UID_WRAPPER_ROOT=1 ";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION} $nt4_dc_vars->{DOMAIN} member";
+	$cmd .= " -U$nt4_dc_vars->{USERNAME}\%$nt4_dc_vars->{PASSWORD}";
+
+	if (system($cmd) != 0) {
+		warn("Join failed\n$cmd");
+		teardown_env($self, $ret);
+		return undef;
+	}
+
+	for (my $i=0; $i<@retvals; $i++) {
+		my $node_provision = $retvals[$i];
+		my $ok;
+		$ok = $self->check_or_start(
+		    env_vars => $node_provision,
+		    winbindd => "yes",
+		    smbd => "yes",
+		    child_cleanup => sub {
+			map {
+			    my $fh = $_->{STDIN_PIPE};
+			    close($fh) if defined($fh);
+			} @retvals });
+		if (not $ok) {
+			teardown_env($self, $ret);
+			return undef;
+		}
 	}
 
 	$ret->{DOMSID} = $nt4_dc_vars->{DOMSID};
@@ -2665,6 +2840,7 @@ sub wait_for_start($$$$$)
 		$cmd .= " $envvars->{CONFIGURATION}";
 		$cmd .= " -L $envvars->{SERVER}";
 		$cmd .= " -U%";
+		$cmd .= " -I $envvars->{SERVER_IP}";
 		$cmd .= " -p 139";
 		$ret = system($cmd);
 		if ($ret != 0) {
@@ -2682,6 +2858,7 @@ sub wait_for_start($$$$$)
 	# Ensure we have domain users mapped.
 	$netcmd = "NSS_WRAPPER_PASSWD='$envvars->{NSS_WRAPPER_PASSWD}' ";
 	$netcmd .= "NSS_WRAPPER_GROUP='$envvars->{NSS_WRAPPER_GROUP}' ";
+	$netcmd .= "UID_WRAPPER_ROOT='1' ";
 	$netcmd .= Samba::bindir_path($self, "net") ." $envvars->{CONFIGURATION} ";
 
 	$cmd = $netcmd . "groupmap delete ntgroup=domusers";
@@ -2765,6 +2942,253 @@ sub wait_for_start($$$$$)
 	}
 
 	print $self->getlog_env($envvars);
+
+	return 1;
+}
+
+##
+## provision and start of ctdb
+##
+sub setup_ctdb($$)
+{
+	my ($self, $prefix) = @_;
+	my $num_nodes = 3;
+
+	my $data = $self->provision_ctdb($prefix, $num_nodes);
+	$data or return undef;
+
+	my $rc = $self->check_or_start_ctdb($data);
+	if (not $rc) {
+		print("check_or_start_ctdb() failed\n");
+		return undef;
+	}
+
+	$rc = $self->wait_for_start_ctdb($data);
+	if (not $rc) {
+		print "Cluster startup failed\n";
+		return undef;
+	}
+
+	return $data;
+}
+
+sub provision_ctdb($$$$)
+{
+	my ($self, $prefix, $num_nodes, $no_delete_prefix) = @_;
+	my $rc;
+
+	print "PROVISIONING CTDB...\n";
+
+	my $prefix_abs = abs_path($prefix);
+
+	#
+	# check / create directories:
+	#
+	die ("prefix_abs = ''") if $prefix_abs eq "";
+	die ("prefix_abs = '/'") if $prefix_abs eq "/";
+
+	mkdir ($prefix_abs, 0777);
+
+	print "CREATE CTDB TEST ENVIRONMENT in '$prefix_abs'...\n";
+
+	if (not defined($no_delete_prefix) or not $no_delete_prefix) {
+		system("rm -rf $prefix_abs/*");
+	}
+
+	#
+	# Per-node data
+	#
+	my @nodes = ();
+	for (my $i = 0; $i < $num_nodes; $i++) {
+		my %node = ();
+		my $server_name = "ctdb${i}";
+		my $pub_iface = Samba::get_interface($server_name);
+		my $ip = "127.0.0.${pub_iface}";
+
+		$node{NODE_NUMBER} = "$i";
+		$node{SERVER_NAME} = "$server_name";
+		$node{SOCKET_WRAPPER_DEFAULT_IFACE} = "$pub_iface";
+		$node{IP} = "$ip";
+
+		push(@nodes, \%node);
+	}
+
+	#
+	# nodes
+	#
+	my $nodes_file = "$prefix/nodes.in";
+	unless (open(NODES, ">$nodes_file")) {
+		warn("Unable to open nodesfile '$nodes_file'");
+		return undef;
+	}
+	for (my $i = 0; $i < $num_nodes; $i++) {
+		my $ip = $nodes[$i]->{IP};
+		print NODES "${ip}\n";
+	}
+	close(NODES);
+
+	#
+	# local_daemons.sh setup
+	#
+	# Socket wrapper setup is done by selftest.pl, so don't use
+	# the CTDB-specific setup
+	#
+	my $cmd;
+	$cmd .= "ctdb/tests/local_daemons.sh " . $prefix_abs . " setup";
+	$cmd .= " -n " . $num_nodes;
+	$cmd .= " -N " . $nodes_file;
+	# CTDB should not attempt to manage public addresses -
+	# clients should just connect to CTDB private addresses
+	$cmd .= " -P " . "/dev/null";
+
+	my $ret = system($cmd);
+	if ($ret != 0) {
+		print("\"$cmd\" failed\n");
+		return undef;
+	}
+
+	#
+	# Unix domain socket and node directory for each daemon
+	#
+	for (my $i = 0; $i < $num_nodes; $i++) {
+		my ($cmd, $ret, $out);
+
+		my $cmd_prefix = "ctdb/tests/local_daemons.sh ${prefix_abs}";
+
+		#
+		# socket
+		#
+
+		$cmd = "${cmd_prefix} print-socket ${i}";
+
+		$out = `$cmd`;
+		$ret = $?;
+		if ($ret != 0) {
+		    print("\"$cmd\" failed\n");
+		    return undef;
+		}
+		chomp $out;
+		$nodes[$i]->{SOCKET_FILE} = "$out";
+
+		#
+		# node directory
+		#
+
+		$cmd = "${cmd_prefix} onnode ${i} 'echo \$CTDB_BASE'";
+
+		$out = `$cmd`;
+		$ret = $?;
+		if ($ret != 0) {
+		    print("\"$cmd\" failed\n");
+		    return undef;
+		}
+		chomp $out;
+		$nodes[$i]->{NODE_PREFIX} = "$out";
+	}
+
+	my %ret = ();
+
+	$ret{CTDB_PREFIX} = "$prefix";
+	$ret{NUM_NODES} = $num_nodes;
+	$ret{CTDB_NODES} = \@nodes;
+
+	return \%ret;
+}
+
+sub check_or_start_ctdb($$) {
+	my ($self, $data) = @_;
+
+	my $prefix = $data->{CTDB_PREFIX};
+	my $num_nodes = $data->{NUM_NODES};
+	my $nodes = $data->{CTDB_NODES};
+	my $STDIN_READER;
+
+	# Share a single stdin pipe for all nodes
+	pipe($STDIN_READER, $data->{CTDB_STDIN_PIPE});
+
+	for (my $i = 0; $i < $num_nodes; $i++) {
+		my $node = $nodes->[$i];
+
+		$node->{STDIN_PIPE} = $data->{CTDB_STDIN_PIPE};
+
+		my $cmd = "ctdb/tests/local_daemons.sh";
+		my @full_cmd = ("$cmd", "$prefix", "start", "$i");
+		# Dummy environment variables to avoid
+		# Samba3::get_env_for_process() from generating them
+		# and including UID_WRAPPER_ROOT=1, which causes
+		# "Unable to secure ctdb socket" error.
+		my $env_vars = {
+			CTDB_DUMMY => "1",
+		};
+		my $daemon_ctx = {
+			NAME => "ctdbd",
+			BINARY_PATH => $cmd,
+			FULL_CMD => [ @full_cmd ],
+			TEE_STDOUT => 1,
+			LOG_FILE => "/dev/null",
+			ENV_VARS => $env_vars,
+		};
+
+		print "STARTING CTDBD (node ${i})\n";
+
+		# This does magic with $STDIN_READER, so use it
+		my $ret = Samba::fork_and_exec($self,
+					       $node,
+					       $daemon_ctx,
+					       $STDIN_READER);
+
+		if ($ret == 0) {
+			print("\"$cmd\" failed\n");
+			teardown_env_ctdb($self, $data);
+			return 0;
+		}
+	}
+
+	close($STDIN_READER);
+
+	return 1;
+}
+
+sub wait_for_start_ctdb($$)
+{
+	my ($self, $data) = @_;
+
+	my $prefix = $data->{CTDB_PREFIX};
+
+	print "Wait for ctdbd...\n";
+
+	my $ctdb = Samba::bindir_path($self, "ctdb");
+	my $cmd;
+	$cmd .= "ctdb/tests/local_daemons.sh ${prefix} onnode all";
+	$cmd .= " ${ctdb} nodestatus all 2>&1";
+
+	my $count = 0;
+	my $wait_seconds = 60;
+	my $out;
+
+	until ($count > $wait_seconds) {
+		$out = `$cmd`;
+		my $ret = $?;
+		if ($ret == 0) {
+			print "\ncluster became healthy\n";
+			last;
+		}
+		print "Waiting for CTDB...\n";
+		sleep(1);
+		$count++;
+	}
+
+	if ($count > $wait_seconds) {
+		print "\nGiving up to wait for CTDB...\n";
+		print "${out}\n\n";
+		print "CTDB log:\n";
+		$cmd = "ctdb/tests/local_daemons.sh ${prefix} print-log all >&2";
+		system($cmd);
+		teardown_env_ctdb($self, $data);
+		return 0;
+	}
+
+	print "\nCTDB initialized\n";
 
 	return 1;
 }
