@@ -317,6 +317,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                    lib/id_cache.c
                    lib/talloc_dict.c
                    lib/serverid.c
+                   lib/server_id_watch.c
                    lib/server_id_db_util.c
                    lib/addrchange.c
                    ../lib/util/debug_s3.c
