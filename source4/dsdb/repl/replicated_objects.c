@@ -891,9 +891,12 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		 * unable to operate for other users from this
 		 * point... */
 		if (new_schema == NULL || new_schema == working_schema) {
-			DEBUG(0,("Failed to re-load schema after commit of transaction (working: %p/%llu, new: %p/%llu)\n",
-				 new_schema, (unsigned long long)new_schema->metadata_usn,
-				 working_schema, (unsigned long long)working_schema->metadata_usn));
+			DBG_ERR("Failed to re-load schema after commit of "
+				"transaction (working: %p/%"PRIu64", new: "
+				"%p/%"PRIu64")\n", new_schema,
+				new_schema != NULL ?
+				new_schema->metadata_usn : 0,
+				working_schema, working_schema->metadata_usn);
 			dsdb_reference_schema(ldb, cur_schema, false);
 			if (used_global_schema) {
 				dsdb_set_global_schema(ldb);
