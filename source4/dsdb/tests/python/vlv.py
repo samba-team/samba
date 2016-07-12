@@ -356,8 +356,8 @@ class VLVTests(samba.tests.TestCase):
             sort_control = "server_sort:1:0:%s" % attr
             res = None
             n = len(self.users)
-            for before in range(0, 9):
-                for after in range(0, 9):
+            for before in [10, 0, 3, 1, 4, 5, 2]:
+                for after in [0, 3, 1, 4, 5, 2, 7]:
                     for offset in range(max(1, before - 2),
                                         min(n - after + 2, n)):
                         if res is None:
@@ -774,8 +774,8 @@ class VLVTests(samba.tests.TestCase):
             random.shuffle(gte_tests)
             res = None
             sort_control = "server_sort:1:0:%s" % attr
-            for before in range(0, 5):
-                for after in range(0, 7):
+            for before in [0, 1, 2, 4]:
+                for after in [0, 1, 3, 6]:
                     for gte in gte_tests:
                         if res is not None:
                             cookie = get_cookie(res.controls, len(self.users))
@@ -816,8 +816,8 @@ class VLVTests(samba.tests.TestCase):
             random.shuffle(gte_tests)
 
             sort_control = "server_sort:1:0:%s" % attr
-            for before in range(0, 4):
-                for after in range(0, 5):
+            for before in [0, 1, 3]:
+                for after in [0, 4]:
                     for gte in gte_tests:
                         if attr == 'audio' and 0:
                             import pdb
