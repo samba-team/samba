@@ -64,7 +64,6 @@ static PyObject *py_creds_get_password(PyObject *self, PyObject *unused)
 	return PyString_FromStringOrNULL(cli_credentials_get_password(PyCredentials_AsCliCredentials(self)));
 }
 
-
 static PyObject *py_creds_set_password(PyObject *self, PyObject *args)
 {
 	char *newval;
@@ -77,6 +76,25 @@ static PyObject *py_creds_set_password(PyObject *self, PyObject *args)
 	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_password(PyCredentials_AsCliCredentials(self), newval, obt));
+}
+
+static PyObject *py_creds_get_old_password(PyObject *self, PyObject *unused)
+{
+	return PyString_FromStringOrNULL(cli_credentials_get_old_password(PyCredentials_AsCliCredentials(self)));
+}
+
+static PyObject *py_creds_set_old_password(PyObject *self, PyObject *args)
+{
+	char *oldval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &oldval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	return PyBool_FromLong(cli_credentials_set_old_password(PyCredentials_AsCliCredentials(self), oldval, obt));
 }
 
 static PyObject *py_creds_get_domain(PyObject *self, PyObject *unused)
@@ -398,6 +416,12 @@ static PyMethodDef py_creds_methods[] = {
 	{ "set_password", py_creds_set_password, METH_VARARGS,
 		"S.set_password(password, obtained=CRED_SPECIFIED) -> None\n"
 		"Change password." },
+	{ "get_old_password", py_creds_get_old_password, METH_NOARGS,
+		"S.get_old_password() -> password\n"
+		"Obtain old password." },
+	{ "set_old_password", py_creds_set_old_password, METH_VARARGS,
+		"S.set_old_password(password, obtained=CRED_SPECIFIED) -> None\n"
+		"Change old password." },
 	{ "get_domain", py_creds_get_domain, METH_NOARGS,
 		"S.get_domain() -> domain\n"
 		"Obtain domain name." },
