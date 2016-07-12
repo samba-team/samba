@@ -65,7 +65,9 @@ testrenamedc2() {
 }
 
 dbcheck_fix() {
-	$BINDIR/samba-tool dbcheck --cross-ncs -s $PREFIX/renamedc_test/etc/smb.conf --fix --yes
+	$BINDIR/samba-tool dbcheck --cross-ncs -s $PREFIX/renamedc_test/etc/smb.conf --fix \
+		--quiet --yes fix_all_string_dn_component_mismatch \
+		--attrs="fsmoRoleOwner interSiteTopologyGenerator msDS-NC-Replica-Locations"
 }
 
 dbcheck() {
