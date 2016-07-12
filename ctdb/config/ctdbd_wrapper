@@ -210,12 +210,16 @@ start()
 
     export_debug_variables
 
+    # Explicitly trying to disable core files, no other way
+    # shellcheck disable=SC2039
     if [ "$CTDB_SUPPRESS_COREFILE" = "yes" ]; then
 	ulimit -c 0
     else
 	ulimit -c unlimited
     fi
 
+    # Unsupported option easily avoided by not using configuration variable
+    # shellcheck disable=SC2039
     if [ -n "$CTDB_MAX_OPEN_FILES" ]; then
 	ulimit -n "$CTDB_MAX_OPEN_FILES"
     fi
