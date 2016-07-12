@@ -93,9 +93,12 @@ EOF
 	    mv "$_db" "$_backup"
 
 	    # Now remove excess backups
-	    ls -td "${_db}."*".corrupt" |
-	    tail -n +$((${CTDB_MAX_CORRUPT_DB_BACKUPS:-10} + 1)) |
-	    xargs rm -f
+	    _max="${CTDB_MAX_CORRUPT_DB_BACKUPS:-10}"
+	    _bdb="${_db##*/}" # basename
+	    find "$_dir" -name "${_bdb}.*.corrupt" |
+		    sort -r |
+		    tail -n +$((_max + 1)) |
+		    xargs rm -f
 	}
     done
 }
