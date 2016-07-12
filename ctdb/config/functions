@@ -1290,7 +1290,9 @@ update_tickles ()
 	rm -f "$_my_connections" "$_my_tickles"
 
 	# Remove stale files from killed scripts
-	find "$tickledir" -type f -mmin +10 | xargs -r rm
+	# Files can't have spaces in name, more portable than -print0/-0
+	# shellcheck disable=SC2038
+	(cd "$tickledir" && find . -type f -mmin +10 | xargs -r rm)
 }
 
 ########################################################
