@@ -1694,6 +1694,50 @@ sub provision($$$$$$$$)
 	shadow:snapdir = $shadow_tstdir/.snapshots
 	shadow:snapsharepath = share
 
+[shadow_fmt0]
+	comment = Testing shadow:format with default option
+	vfs object = shadow_copy2
+	path = $shadow_shrdir
+	read only = no
+	guest ok = yes
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+	shadow:format = \@GMT-%Y.%m.%d-%H.%M.%S
+
+[shadow_fmt1]
+	comment = Testing shadow:format with only date component
+	vfs object = shadow_copy2
+	path = $shadow_shrdir
+	read only = no
+	guest ok = yes
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+	shadow:format = \@GMT-%Y-%m-%d
+
+[shadow_fmt2]
+	comment = Testing shadow:format with some hardcoded prefix
+	vfs object = shadow_copy2
+	path = $shadow_shrdir
+	read only = no
+	guest ok = yes
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+	shadow:format = snap\@GMT-%Y.%m.%d-%H.%M.%S
+
+[shadow_fmt3]
+	comment = Testing shadow:format with modified format
+	vfs object = shadow_copy2
+	path = $shadow_shrdir
+	read only = no
+	guest ok = yes
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+	shadow:format = \@GMT-%Y.%m.%d-%H_%M_%S-snap
+
 [shadow_wl]
 	path = $shadow_shrdir
 	comment = previous versions with wide links allowed

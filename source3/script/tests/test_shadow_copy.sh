@@ -34,6 +34,12 @@ SNAPSHOTS[6]='@GMT-2021.10.31-19.40.30'
 SNAPSHOTS[7]='@GMT-2022.10.31-19.40.30'
 SNAPSHOTS[8]='@GMT-2023.10.31-19.40.30'
 SNAPSHOTS[9]='@GMT-2024.10.31-19.40.30'
+SNAPSHOTS[10]='@GMT-2010-11-11'
+SNAPSHOTS[11]='@GMT-2011.11.11-11.40.30'
+SNAPSHOTS[12]='snap@GMT-2012.11.11-11.40.30'
+SNAPSHOTS[13]='@GMT-2013.11.11-11_40_33-snap'
+SNAPSHOTS[14]='@GMT-2014.11.11-11.40.30'
+SNAPSHOTS[15]='daily@GMT-2015.11.11-11.40.30'
 
 # build a hierarchy of files, symlinks, and directories
 build_files()
@@ -261,6 +267,29 @@ test_shadow_copy_everywhere()
 
 }
 
+test_shadow_copy_format()
+{
+    local share     #share to contact
+    local where     #where to place snapshots
+    local prefix    #prefix to files inside snapshot
+    local ncopies_allowd
+    local msg
+
+    share=$1
+    where=$2
+    prefix=$3
+    ncopies_allowed=$4
+    msg=$5
+
+    #delete snapshots from previous tests
+    find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
+    build_snapshots $WORKDIR/$where "$prefix" 10 15
+
+    testit "$msg - regular file" \
+        test_count_versions $share foo $ncopies_allowed || \
+        failed=`expr $failed + 1`
+}
+
 #build "latest" files
 build_files $WORKDIR/mount base/share "latest"
 
@@ -287,5 +316,11 @@ test_shadow_copy_fixed shadow7 mount/base/share "" "'everywhere' share snapshots
 
 # a test for snapshots everywhere - multiple snapshot locations
 test_shadow_copy_everywhere shadow7
+
+# tests for testing snapshot selection via shadow:format
+test_shadow_copy_format shadow_fmt0 mount/base share 3 "basic shadow:format test"
+test_shadow_copy_format shadow_fmt1 mount/base share 2 "shadow:format with only date"
+test_shadow_copy_format shadow_fmt2 mount/base share 2 "shadow:format with some prefix"
+test_shadow_copy_format shadow_fmt3 mount/base share 2 "shadow:format with modified format"
 
 exit $failed
