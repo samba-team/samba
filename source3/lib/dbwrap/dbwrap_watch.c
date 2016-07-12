@@ -46,9 +46,9 @@ static struct db_context *dbwrap_record_watchers_db(void)
 	return watchers_db;
 }
 
-static size_t dbwrap_record_watchers_key(struct db_context *db,
-					 struct db_record *rec,
-					 uint8_t *wkey, size_t wkey_len)
+static ssize_t dbwrap_record_watchers_key(struct db_context *db,
+					  struct db_record *rec,
+					  uint8_t *wkey, size_t wkey_len)
 {
 	size_t db_id_len = dbwrap_db_id(db, NULL, 0);
 	uint8_t db_id[db_id_len];
@@ -59,7 +59,15 @@ static size_t dbwrap_record_watchers_key(struct db_context *db,
 
 	key = dbwrap_record_get_key(rec);
 
-	needed = sizeof(uint32_t) + db_id_len + key.dsize;
+	needed = sizeof(uint32_t) + db_id_len;
+	if (needed < sizeof(uint32_t)) {
+		return -1;
+	}
+
+	needed += key.dsize;
+	if (needed < key.dsize) {
+		return -1;
+	}
 
 	if (wkey_len >= needed) {
 		SIVAL(wkey, 0, db_id_len);
@@ -221,6 +229,7 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 	struct dbwrap_record_watch_state *state;
 	struct db_context *watchers_db;
 	NTSTATUS status;
+	ssize_t needed;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct dbwrap_record_watch_state);
@@ -239,8 +248,12 @@ struct tevent_req *dbwrap_record_watch_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->w_key.dsize = dbwrap_record_watchers_key(
-		state->db, rec, NULL, 0);
+	needed = dbwrap_record_watchers_key(state->db, rec, NULL, 0);
+	if (needed == -1) {
+		tevent_req_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
+		return tevent_req_post(req, ev);
+	}
+	state->w_key.dsize = needed;
 
 	state->w_key.dptr = talloc_array(state, uint8_t, state->w_key.dsize);
 	if (tevent_req_nomem(state->w_key.dptr, req)) {
