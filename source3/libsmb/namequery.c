@@ -3173,7 +3173,7 @@ static NTSTATUS get_dc_list(const char *domain,
 			next_token_talloc(ctx, &p, &name, LIST_SEP)) {
 		struct sockaddr_storage name_ss;
 
-		/* copy any addersses from the auto lookup */
+		/* copy any addresses from the auto lookup */
 
 		if (strequal(name, "*")) {
 			for (j=0; j<auto_count; j++) {
