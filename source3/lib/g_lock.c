@@ -111,7 +111,8 @@ static bool g_lock_parse(TALLOC_CTX *mem_ctx, TDB_DATA data,
 }
 
 static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
-			       enum g_lock_type type)
+			       enum g_lock_type type,
+			       struct server_id *blocker)
 {
 	TDB_DATA data;
 	unsigned i, num_locks;
@@ -142,6 +143,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 			if (serverid_exists(&pid)) {
 				status = NT_STATUS_LOCK_NOT_GRANTED;
+				*blocker = locks[i].pid;
 				goto done;
 			}
 
@@ -203,7 +205,7 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct g_lock_lock_state *state;
 	struct db_record *rec;
-	struct server_id self;
+	struct server_id self, blocker;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state, struct g_lock_lock_state);
@@ -225,7 +227,7 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 
 	self = messaging_server_id(state->ctx->msg);
 
-	status = g_lock_trylock(rec, self, state->type);
+	status = g_lock_trylock(rec, self, state->type, &blocker);
 	if (NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(rec);
 		tevent_req_done(req);
@@ -237,8 +239,7 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	subreq = dbwrap_record_watch_send(state, state->ev, rec,
-					  state->ctx->msg,
-					  (struct server_id){0});
+					  state->ctx->msg, blocker);
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -260,6 +261,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	struct g_lock_lock_state *state = tevent_req_data(
 		req, struct g_lock_lock_state);
 	struct server_id self = messaging_server_id(state->ctx->msg);
+	struct server_id blocker;
 	struct db_record *rec;
 	NTSTATUS status;
 
@@ -281,7 +283,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	status = g_lock_trylock(rec, self, state->type);
+	status = g_lock_trylock(rec, self, state->type, &blocker);
 	if (NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(rec);
 		tevent_req_done(req);
@@ -293,8 +295,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 		return;
 	}
 	subreq = dbwrap_record_watch_send(state, state->ev, rec,
-					  state->ctx->msg,
-					  (struct server_id){0});
+					  state->ctx->msg, blocker);
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
