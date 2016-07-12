@@ -98,11 +98,10 @@ char *sitename_fetch(TALLOC_CTX *mem_ctx, const char *realm)
 	ret = gencache_get( key, mem_ctx, &sitename, &timeout );
 	SAFE_FREE(key);
 	if ( !ret ) {
-		DEBUG(5,("sitename_fetch: No stored sitename for %s\n",
-			query_realm));
+		DBG_INFO("No stored sitename for realm '%s'\n", query_realm);
 	} else {
-		DEBUG(5,("sitename_fetch: Returning sitename for %s: \"%s\"\n",
-			query_realm, sitename ));
+		DBG_INFO("Returning sitename for realm '%s': \"%s\"\n",
+			 query_realm, sitename);
 	}
 	return sitename;
 }
