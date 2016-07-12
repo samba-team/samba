@@ -45,5 +45,17 @@ void dbwrap_watchers_traverse_read(
 
 void dbwrap_watchers_wakeall(struct messaging_context *msg);
 
+struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
+				   struct db_context *backend,
+				   struct messaging_context *msg);
+struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct db_record *rec,
+					     struct server_id blocker);
+NTSTATUS dbwrap_watched_watch_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   struct db_record **prec,
+				   bool *blockerdead,
+				   struct server_id *blocker);
 
 #endif /* __DBWRAP_WATCH_H__ */

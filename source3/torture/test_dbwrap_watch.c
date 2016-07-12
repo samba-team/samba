@@ -29,6 +29,7 @@ bool run_dbwrap_watch1(int dummy)
 {
 	struct tevent_context *ev = NULL;
 	struct messaging_context *msg = NULL;
+	struct db_context *backend = NULL;
 	struct db_context *db = NULL;
 	const char *keystr = "key";
 	TDB_DATA key = string_term_tdb_data(keystr);
@@ -47,21 +48,23 @@ bool run_dbwrap_watch1(int dummy)
 		fprintf(stderr, "messaging_init failed\n");
 		goto fail;
 	}
-	db = db_open(msg, "test_watch.tdb", 0, TDB_DEFAULT,
-		     O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
-		     DBWRAP_FLAG_NONE);
-	if (db == NULL) {
+	backend = db_open(msg, "test_watch.tdb", 0, TDB_DEFAULT,
+			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
+			  DBWRAP_FLAG_NONE);
+	if (backend == NULL) {
 		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
 		goto fail;
 	}
-	dbwrap_watch_db(db, msg);
+
+	db = db_open_watched(ev, backend, msg);
+
 	rec = dbwrap_fetch_locked(db, db, key);
 	if (rec == NULL) {
 		fprintf(stderr, "dbwrap_fetch_locked failed\n");
 		goto fail;
 	}
-	req = dbwrap_record_watch_send(talloc_tos(), ev, rec, msg,
-				       (struct server_id){0});
+	req = dbwrap_watched_watch_send(talloc_tos(), ev, rec,
+					(struct server_id){0});
 	if (req == NULL) {
 		fprintf(stderr, "dbwrap_record_watch_send failed\n");
 		goto fail;
@@ -87,8 +90,8 @@ bool run_dbwrap_watch1(int dummy)
 		goto fail;
 	}
 
-	status = dbwrap_record_watch_recv(req, talloc_tos(), &rec, NULL,
-					  NULL);
+	status = dbwrap_watched_watch_recv(req, talloc_tos(), &rec, NULL,
+					   NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "dbwrap_record_watch_recv failed: %s\n",
 			nt_errstr(status));
