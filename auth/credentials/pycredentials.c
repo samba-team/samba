@@ -78,6 +78,34 @@ static PyObject *py_creds_set_password(PyObject *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_password(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
+static PyObject *py_creds_set_utf16_password(PyObject *self, PyObject *args)
+{
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+	PyObject *newval = NULL;
+	DATA_BLOB blob = data_blob_null;
+	Py_ssize_t size =  0;
+	int result;
+	bool ok;
+
+	if (!PyArg_ParseTuple(args, "O|i", &newval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	result = PyBytes_AsStringAndSize(newval, (char **)&blob.data, &size);
+	if (result != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to convert passed value to Bytes");
+		return NULL;
+	}
+	blob.length = size;
+
+	ok = cli_credentials_set_utf16_password(PyCredentials_AsCliCredentials(self),
+						&blob, obt);
+
+	return PyBool_FromLong(ok);
+}
+
 static PyObject *py_creds_get_old_password(PyObject *self, PyObject *unused)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_old_password(PyCredentials_AsCliCredentials(self)));
@@ -95,6 +123,31 @@ static PyObject *py_creds_set_old_password(PyObject *self, PyObject *args)
 	obt = _obt;
 
 	return PyBool_FromLong(cli_credentials_set_old_password(PyCredentials_AsCliCredentials(self), oldval, obt));
+}
+
+static PyObject *py_creds_set_old_utf16_password(PyObject *self, PyObject *args)
+{
+	PyObject *oldval = NULL;
+	DATA_BLOB blob = data_blob_null;
+	Py_ssize_t size =  0;
+	int result;
+	bool ok;
+
+	if (!PyArg_ParseTuple(args, "O", &oldval)) {
+		return NULL;
+	}
+
+	result = PyBytes_AsStringAndSize(oldval, (char **)&blob.data, &size);
+	if (result != 0) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to convert passed value to Bytes");
+		return NULL;
+	}
+	blob.length = size;
+
+	ok = cli_credentials_set_old_utf16_password(PyCredentials_AsCliCredentials(self),
+						    &blob);
+
+	return PyBool_FromLong(ok);
 }
 
 static PyObject *py_creds_get_domain(PyObject *self, PyObject *unused)
@@ -416,11 +469,17 @@ static PyMethodDef py_creds_methods[] = {
 	{ "set_password", py_creds_set_password, METH_VARARGS,
 		"S.set_password(password, obtained=CRED_SPECIFIED) -> None\n"
 		"Change password." },
+	{ "set_utf16_password", py_creds_set_utf16_password, METH_VARARGS,
+		"S.set_utf16_password(password, obtained=CRED_SPECIFIED) -> None\n"
+		"Change password." },
 	{ "get_old_password", py_creds_get_old_password, METH_NOARGS,
 		"S.get_old_password() -> password\n"
 		"Obtain old password." },
 	{ "set_old_password", py_creds_set_old_password, METH_VARARGS,
 		"S.set_old_password(password, obtained=CRED_SPECIFIED) -> None\n"
+		"Change old password." },
+	{ "set_old_utf16_password", py_creds_set_old_utf16_password, METH_VARARGS,
+		"S.set_old_utf16_password(password, obtained=CRED_SPECIFIED) -> None\n"
 		"Change old password." },
 	{ "get_domain", py_creds_get_domain, METH_NOARGS,
 		"S.get_domain() -> domain\n"
