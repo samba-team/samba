@@ -434,7 +434,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
         """handle a DN pointing to a deleted object"""
         self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
-        self.report("Target GUID points at deleted DN %s" % correct_dn)
+        self.report("Target GUID points at deleted DN %r" % str(correct_dn))
         if not self.confirm_all('Remove DN link?', 'remove_all_deleted_DN_links'):
             self.report("Not removing")
             return
