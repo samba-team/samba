@@ -1582,7 +1582,7 @@ extern void build_options(bool screen);
 		exit_daemon("Samba cannot init server context", EACCES);
 	}
 
-	status = smbXsrv_session_global_init();
+	status = smbXsrv_session_global_init(msg_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Samba cannot init session context", EACCES);
 	}

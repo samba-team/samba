@@ -554,7 +554,7 @@ NTSTATUS smb2srv_client_connection_pass(struct smbd_smb2_request *smb2req,
 NTSTATUS smbXsrv_connection_init_tables(struct smbXsrv_connection *conn,
 					enum protocol_types protocol);
 
-NTSTATUS smbXsrv_session_global_init(void);
+NTSTATUS smbXsrv_session_global_init(struct messaging_context *msg_ctx);
 NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 				NTTIME now,
 				struct smbXsrv_session **_session);

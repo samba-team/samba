@@ -53,9 +53,10 @@ struct smbXsrv_session_table {
 
 static struct db_context *smbXsrv_session_global_db_ctx = NULL;
 
-NTSTATUS smbXsrv_session_global_init(void)
+NTSTATUS smbXsrv_session_global_init(struct messaging_context *msg_ctx)
 {
 	char *global_path = NULL;
+	struct db_context *backend = NULL;
 	struct db_context *db_ctx = NULL;
 
 	if (smbXsrv_session_global_db_ctx != NULL) {
@@ -70,21 +71,27 @@ NTSTATUS smbXsrv_session_global_init(void)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	db_ctx = db_open(NULL, global_path,
-			 0, /* hash_size */
-			 TDB_DEFAULT |
-			 TDB_CLEAR_IF_FIRST |
-			 TDB_INCOMPATIBLE_HASH,
-			 O_RDWR | O_CREAT, 0600,
-			 DBWRAP_LOCK_ORDER_1,
-			 DBWRAP_FLAG_NONE);
+	backend = db_open(NULL, global_path,
+			  0, /* hash_size */
+			  TDB_DEFAULT |
+			  TDB_CLEAR_IF_FIRST |
+			  TDB_INCOMPATIBLE_HASH,
+			  O_RDWR | O_CREAT, 0600,
+			  DBWRAP_LOCK_ORDER_1,
+			  DBWRAP_FLAG_NONE);
 	TALLOC_FREE(global_path);
-	if (db_ctx == NULL) {
+	if (backend == NULL) {
 		NTSTATUS status;
 
 		status = map_nt_error_from_unix_common(errno);
 
 		return status;
+	}
+
+	db_ctx = db_open_watched(NULL, backend, server_messaging_context());
+	if (db_ctx == NULL) {
+		TALLOC_FREE(backend);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	smbXsrv_session_global_db_ctx = db_ctx;
@@ -242,15 +249,13 @@ static NTSTATUS smbXsrv_session_table_init(struct smbXsrv_connection *conn,
 	table->local.highest_id = highest_id;
 	table->local.max_sessions = max_sessions;
 
-	status = smbXsrv_session_global_init();
+	status = smbXsrv_session_global_init(client->msg_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(table);
 		return status;
 	}
 
 	table->global.db_ctx = smbXsrv_session_global_db_ctx;
-
-	dbwrap_watch_db(table->global.db_ctx, client->msg_ctx);
 
 	subreq = messaging_read_send(table, client->ev_ctx, client->msg_ctx,
 				     MSG_SMBXSRV_SESSION_CLOSE);
@@ -1065,9 +1070,8 @@ static void smb2srv_session_close_previous_check(struct tevent_req *req)
 		return;
 	}
 
-	subreq = dbwrap_record_watch_send(state, state->ev,
-					  state->db_rec, conn->msg_ctx,
-					  (struct server_id){0});
+	subreq = dbwrap_watched_watch_send(state, state->ev, state->db_rec,
+					   (struct server_id){0});
 	if (tevent_req_nomem(subreq, req)) {
 		TALLOC_FREE(state->db_rec);
 		return;
@@ -1121,8 +1125,8 @@ static void smb2srv_session_close_previous_modified(struct tevent_req *subreq)
 		struct smb2srv_session_close_previous_state);
 	NTSTATUS status;
 
-	status = dbwrap_record_watch_recv(subreq, state, &state->db_rec, NULL,
-					  NULL);
+	status = dbwrap_watched_watch_recv(subreq, state, &state->db_rec, NULL,
+					   NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -1931,7 +1935,7 @@ NTSTATUS smbXsrv_session_global_traverse(
 	};
 
 	become_root();
-	status = smbXsrv_session_global_init();
+	status = smbXsrv_session_global_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		unbecome_root();
 		DEBUG(0, ("Failed to initialize session_global: %s\n",
