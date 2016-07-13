@@ -52,7 +52,8 @@ class dbcheck(object):
         self.fix_all_duplicates = False
         self.fix_all_DN_GUIDs = False
         self.fix_all_binary_dn = False
-        self.remove_all_deleted_DN_links = False
+        self.remove_implausible_deleted_DN_links = False
+        self.remove_plausible_deleted_DN_links = False
         self.fix_all_string_dn_component_mismatch = False
         self.fix_all_GUID_dn_component_mismatch = False
         self.fix_all_SID_dn_component_mismatch = False
@@ -445,13 +446,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to remove DN %s" % dn):
             self.report("Removed DN %s" % dn)
 
-    def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn):
+    def err_deleted_dn(self, dn, attrname, val, dsdb_dn, correct_dn, remove_plausible=False):
         """handle a DN pointing to a deleted object"""
         self.report("ERROR: target DN is deleted for %s in object %s - %s" % (attrname, dn, val))
         self.report("Target GUID points at deleted DN %r" % str(correct_dn))
-        if not self.confirm_all('Remove DN link?', 'remove_all_deleted_DN_links'):
-            self.report("Not removing")
-            return
+        if not remove_plausible:
+            if not self.confirm_all('Remove DN link?', 'remove_implausible_deleted_DN_links'):
+                self.report("Not removing")
+                return
+        else:
+            if not self.confirm_all('Remove stale DN link?', 'remove_plausible_deleted_DN_links'):
+                self.report("Not removing")
+                return
+
         m = ldb.Message()
         m.dn = dn
         m['old_value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
@@ -467,7 +474,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         if (linkID & 1 == 0) and str(dsdb_dn).find('\\0ADEL') == -1:
             self.report("Not removing dangling forward link")
             return
-        self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn)
+        self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn, False)
 
     def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
         """handle a missing GUID extended DN component"""
@@ -770,7 +777,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 continue
 
             guidstr = str(misc.GUID(guid))
-            attrs = ['isDeleted']
+            attrs = ['isDeleted', 'replPropertyMetaData']
 
             if (str(attrname).lower() == 'msds-hasinstantiatedncs') and (obj.dn == self.ntds_dsa):
                 fixing_msDS_HasInstantiatedNCs = True
@@ -819,7 +826,27 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 # the target DN is not allowed to be deleted, unless the target DN is the
                 # special Deleted Objects container
                 error_count += 1
-                self.err_deleted_dn(obj.dn, attrname, val, dsdb_dn, res[0].dn)
+                local_usn = dsdb_dn.dn.get_extended_component("RMD_LOCAL_USN")
+                if local_usn:
+                    if 'replPropertyMetaData' in res[0]:
+                        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
+                                          str(res[0]['replPropertyMetadata']))
+                        found_data = False
+                        for o in repl.ctr.array:
+                            if o.attid == drsuapi.DRSUAPI_ATTID_isDeleted:
+                                deleted_usn = o.local_usn
+                                if deleted_usn >= int(local_usn):
+                                    # If the object was deleted after the link
+                                    # was last modified then, clean it up here
+                                    found_data = True
+                                    break
+
+                        if found_data:
+                            self.err_deleted_dn(obj.dn, attrname,
+                                                val, dsdb_dn, res[0].dn, True)
+                            continue
+
+                self.err_deleted_dn(obj.dn, attrname, val, dsdb_dn, res[0].dn, False)
                 continue
 
             # check the DN matches in string form
