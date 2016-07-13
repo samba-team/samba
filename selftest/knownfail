@@ -285,6 +285,3 @@
 
 # fl2000dc doesn't support AES
 ^samba4.krb5.kdc.*as-req-aes.*fl2000dc
-
-^samba4.ldap.linked_attributes.python\(ad_dc_ntvfs\).__main__.LATests.test_one_way_attributes\(ad_dc_ntvfs:local\)
-^samba4.ldap.linked_attributes.python\(ad_dc_ntvfs\).__main__.LATests.test_pretend_one_way_attributes\(ad_dc_ntvfs:local\)
