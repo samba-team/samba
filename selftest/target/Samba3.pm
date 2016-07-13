@@ -1738,6 +1738,31 @@ sub provision($$$$$$$$)
 	shadow:snapdir = $shadow_basedir/.snapshots
 	shadow:format = \@GMT-%Y.%m.%d-%H_%M_%S-snap
 
+[shadow_fmt4]
+	comment = Testing shadow:snapprefix regex
+	vfs object = shadow_copy2
+	path = $shadow_shrdir
+	read only = no
+	guest ok = yes
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+	shadow:snapprefix = \^s[a-z]*p\$
+	shadow:format = _GMT-%Y.%m.%d-%H.%M.%S
+
+[shadow_fmt5]
+	comment = Testing shadow:snapprefix with delim regex
+	vfs object = shadow_copy2
+	path = $shadow_shrdir
+	read only = no
+	guest ok = yes
+	shadow:mountpoint = $shadow_mntdir
+	shadow:basedir = $shadow_basedir
+	shadow:snapdir = $shadow_basedir/.snapshots
+	shadow:delimiter = \@GMT
+	shadow:snapprefix = [a-z]*
+	shadow:format = \@GMT-%Y.%m.%d-%H.%M.%S
+
 [shadow_wl]
 	path = $shadow_shrdir
 	comment = previous versions with wide links allowed

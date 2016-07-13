@@ -40,6 +40,10 @@ SNAPSHOTS[12]='snap@GMT-2012.11.11-11.40.30'
 SNAPSHOTS[13]='@GMT-2013.11.11-11_40_33-snap'
 SNAPSHOTS[14]='@GMT-2014.11.11-11.40.30'
 SNAPSHOTS[15]='daily@GMT-2015.11.11-11.40.30'
+SNAPSHOTS[16]='snap_GMT-2016.11.11-11.40.30'
+SNAPSHOTS[17]='sysp_GMT-2017.11.11-11.40.30'
+SNAPSHOTS[18]='monthly@GMT-2018.11.11-11.40.30'
+SNAPSHOTS[19]='straps_GMT-2019.11.11-11.40.33'
 
 # build a hierarchy of files, symlinks, and directories
 build_files()
@@ -283,7 +287,7 @@ test_shadow_copy_format()
 
     #delete snapshots from previous tests
     find $WORKDIR -name ".snapshots" -exec rm -rf {} \; 1>/dev/null 2>&1
-    build_snapshots $WORKDIR/$where "$prefix" 10 15
+    build_snapshots $WORKDIR/$where "$prefix" 10 19
 
     testit "$msg - regular file" \
         test_count_versions $share foo $ncopies_allowed || \
@@ -322,5 +326,7 @@ test_shadow_copy_format shadow_fmt0 mount/base share 3 "basic shadow:format test
 test_shadow_copy_format shadow_fmt1 mount/base share 2 "shadow:format with only date"
 test_shadow_copy_format shadow_fmt2 mount/base share 2 "shadow:format with some prefix"
 test_shadow_copy_format shadow_fmt3 mount/base share 2 "shadow:format with modified format"
+test_shadow_copy_format shadow_fmt4 mount/base share 3 "shadow:format with snapprefix"
+test_shadow_copy_format shadow_fmt5 mount/base share 6 "shadow:format with delimiter"
 
 exit $failed
