@@ -48,6 +48,7 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg)
 {
 	struct g_lock_ctx *result;
+	struct db_context *backend;
 	char *db_path;
 
 	result = talloc(mem_ctx, struct g_lock_ctx);
@@ -62,18 +63,24 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	result->db = db_open(result, db_path, 0,
-			     TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-			     O_RDWR|O_CREAT, 0600,
-			     DBWRAP_LOCK_ORDER_2,
-			     DBWRAP_FLAG_NONE);
+	backend = db_open(result, db_path, 0,
+			  TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+			  O_RDWR|O_CREAT, 0600,
+			  DBWRAP_LOCK_ORDER_2,
+			  DBWRAP_FLAG_NONE);
 	TALLOC_FREE(db_path);
-	if (result->db == NULL) {
+	if (backend == NULL) {
 		DEBUG(1, ("g_lock_init: Could not open g_lock.tdb\n"));
 		TALLOC_FREE(result);
 		return NULL;
 	}
-	dbwrap_watch_db(result->db, msg);
+
+	result->db = db_open_watched(result, backend, msg);
+	if (result->db == NULL) {
+		DBG_WARNING("g_lock_init: db_open_watched failed\n");
+		TALLOC_FREE(result);
+		return NULL;
+	}
 	return result;
 }
 
@@ -238,8 +245,7 @@ struct tevent_req *g_lock_lock_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
-	subreq = dbwrap_record_watch_send(state, state->ev, rec,
-					  state->ctx->msg, blocker);
+	subreq = dbwrap_watched_watch_send(state, state->ev, rec, blocker);
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -265,8 +271,8 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 	struct db_record *rec;
 	NTSTATUS status;
 
-	status = dbwrap_record_watch_recv(subreq, talloc_tos(), &rec, NULL,
-					  NULL);
+	status = dbwrap_watched_watch_recv(subreq, talloc_tos(), &rec, NULL,
+					   NULL);
 	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
@@ -294,8 +300,7 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	subreq = dbwrap_record_watch_send(state, state->ev, rec,
-					  state->ctx->msg, blocker);
+	subreq = dbwrap_watched_watch_send(state, state->ev, rec, blocker);
 	TALLOC_FREE(rec);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
