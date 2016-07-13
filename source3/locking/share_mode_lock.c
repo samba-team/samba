@@ -60,6 +60,7 @@ static struct db_context *lock_db;
 
 static bool locking_init_internal(bool read_only)
 {
+	struct db_context *backend;
 	char *db_path;
 
 	brl_init(read_only);
@@ -72,21 +73,28 @@ static bool locking_init_internal(bool read_only)
 		return false;
 	}
 
-	lock_db = db_open(NULL, db_path,
+	backend = db_open(NULL, db_path,
 			  SMB_OPEN_DATABASE_TDB_HASH_SIZE,
 			  TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644,
 			  DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	TALLOC_FREE(db_path);
-	if (!lock_db) {
+	if (!backend) {
 		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
 	}
 
-	if (!posix_locking_init(read_only))
-		return False;
+	lock_db = db_open_watched(NULL, backend, server_messaging_context());
+	if (lock_db == NULL) {
+		DBG_ERR("db_open_watched failed\n");
+		TALLOC_FREE(backend);
+		return false;
+	}
 
-	dbwrap_watch_db(lock_db, server_messaging_context());
+	if (!posix_locking_init(read_only)) {
+		TALLOC_FREE(lock_db);
+		return False;
+	}
 
 	return True;
 }
