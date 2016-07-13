@@ -83,6 +83,9 @@ do { \
 */
 #define DLIST_REMOVE(list, p) \
 do { \
+	_Pragma ("GCC diagnostic push") \
+	_Pragma ("GCC diagnostic ignored \"-Wpragmas\"") \
+	_Pragma ("GCC diagnostic ignored \"-Wtautological-compare\"") \
 	if ((p) == (list)) { \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 		(list) = (p)->next; \
@@ -94,6 +97,7 @@ do { \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 	} \
 	if ((p) != (list)) (p)->next = (p)->prev = NULL;	\
+	_Pragma ("GCC diagnostic pop") \
 } while (0)
 
 /*
@@ -124,7 +128,11 @@ do { \
 		(p)->next = (el)->next;		\
 		(el)->next = (p);		\
 		if ((p)->next) (p)->next->prev = (p);	\
+		_Pragma ("GCC diagnostic push") \
+		_Pragma ("GCC diagnostic ignored \"-Wpragmas\"") \
+		_Pragma ("GCC diagnostic ignored \"-Wtautological-compare\"") \
 		if ((list)->prev == (el)) (list)->prev = (p); \
+		_Pragma ("GCC diagnostic pop") \
 	}\
 } while (0)
 
