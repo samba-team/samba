@@ -34,7 +34,9 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 	const char *dname = "smb2_maxfid";
 	int i, maxfid;
 	struct smb2_handle *handles,  dir_handle = { };
-	const size_t max_handles = 0x41000; /* Windows 8.1 allowed 0x40000 */
+	size_t max_handles;
+
+	max_handles = torture_setting_int(tctx, "maxopenfiles", 0x11000);
 
 	if (!torture_smb2_connection(tctx, &tree)) {
 		return false;
@@ -117,7 +119,11 @@ bool torture_smb2_maxfid(struct torture_context *tctx)
 	}
 
 	maxfid = i;
-	torture_comment(tctx, "Maximum number of open files: %d\n", maxfid);
+	if (maxfid == max_handles) {
+		torture_comment(tctx, "Reached test limit of %d open files. "
+				"Adjust to higher test with "
+				"--option=torture:maxopenfiles=NNN\n", maxfid);
+	}
 
 	torture_comment(tctx, "Cleanup open files\n");
 
