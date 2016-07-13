@@ -6,6 +6,7 @@
  * Copyright (C) Volker Lendecke   2011
  * Copyright (C) Christian Ambach  2011
  * Copyright (C) Michael Adam      2013
+ * Copyright (C) Rajesh Joseph     2016
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +41,7 @@ struct shadow_copy2_config {
 	bool use_sscanf;
 	bool use_localtime;
 	char *snapdir;
+	char *delimiter;
 	bool snapdirseverywhere;
 	bool crossmountpoints;
 	bool fixinodes;
@@ -50,14 +52,163 @@ struct shadow_copy2_config {
 	char *snapshot_basepath; /* the absolute version of snapdir */
 };
 
+/* Data-structure to hold the list of snap entries */
+struct shadow_copy2_snapentry {
+	char *snapname;
+	char *time_fmt;
+	struct shadow_copy2_snapentry *next;
+	struct shadow_copy2_snapentry *prev;
+};
+
+struct shadow_copy2_snaplist_info {
+	struct shadow_copy2_snapentry *snaplist; /* snapshot list */
+	regex_t *regex; /* Regex to filter snaps */
+	time_t fetch_time; /* snaplist update time */
+};
+
 
 /*
  * shadow_copy2 private structure. This structure will be
  * used to keep module specific information
  */
 struct shadow_copy2_private {
-	struct shadow_copy2_config 	*config;
+	struct shadow_copy2_config *config;
+	struct shadow_copy2_snaplist_info *snaps;
 };
+
+static int shadow_copy2_get_shadow_copy_data(
+	vfs_handle_struct *handle, files_struct *fsp,
+	struct shadow_copy_data *shadow_copy2_data,
+	bool labels);
+
+/**
+ *This function will create a new snapshot list entry and
+ * return to the caller. This entry will also be added to
+ * the global snapshot list.
+ *
+ * @param[in]   priv	shadow_copy2 specific data structure
+ * @return	Newly   created snapshot entry or NULL on failure
+ */
+static struct shadow_copy2_snapentry *shadow_copy2_create_snapentry(
+					struct shadow_copy2_private *priv)
+{
+	struct shadow_copy2_snapentry *tmpentry = NULL;
+
+	tmpentry = talloc_zero(priv->snaps, struct shadow_copy2_snapentry);
+	if (tmpentry == NULL) {
+		DBG_ERR("talloc_zero() failed\n");
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	DLIST_ADD(priv->snaps->snaplist, tmpentry);
+
+	return tmpentry;
+}
+
+/**
+ *This function will delete the entire snaplist and reset
+ * priv->snaps->snaplist to NULL.
+ *
+ * @param[in] priv shadow_copye specific data structure
+ */
+static void shadow_copy2_delete_snaplist(struct shadow_copy2_private *priv)
+{
+	struct shadow_copy2_snapentry *tmp = NULL;
+
+	while ((tmp = priv->snaps->snaplist) != NULL) {
+		DLIST_REMOVE(priv->snaps->snaplist, tmp);
+		talloc_free(tmp);
+	}
+}
+
+/**
+ * Given a timestamp this function searches the global snapshot list
+ * and returns the complete snapshot directory name saved in the entry.
+ *
+ * @param[in]   priv		shadow_copy2 specific structure
+ * @param[in]   timestamp	timestamp corresponding to one of the snapshot
+ * @param[out]  snap_str	buffer to copy the actual snapshot name
+ * @param[in]   len		length of snap_str buffer
+ *
+ * @return 	Length of actual snapshot name, and -1 on failure
+ */
+static ssize_t shadow_copy2_saved_snapname(struct shadow_copy2_private *priv,
+					  struct tm *timestamp,
+					  char *snap_str, size_t len)
+{
+	ssize_t snaptime_len = -1;
+	struct shadow_copy2_snapentry *entry = NULL;
+
+	snaptime_len = strftime(snap_str, len, GMT_FORMAT, timestamp);
+	if (snaptime_len == 0) {
+		DBG_ERR("strftime failed\n");
+		return -1;
+	}
+
+	snaptime_len = -1;
+
+	for (entry = priv->snaps->snaplist; entry; entry = entry->next) {
+		if (strcmp(entry->time_fmt, snap_str) == 0) {
+			snaptime_len = snprintf(snap_str, len, "%s",
+						entry->snapname);
+			return snaptime_len;
+		}
+	}
+
+	snap_str[0] = 0;
+	return snaptime_len;
+}
+
+
+/**
+ * This function will check if snaplist is updated or not. If snaplist
+ * is empty then it will create a new list. Each time snaplist is updated
+ * the time is recorded. If the snapshot time is greater than the snaplist
+ * update time then chances are we are working on an older list. Then discard
+ * the old list and fetch a new snaplist.
+ *
+ * @param[in]   handle		VFS handle struct
+ * @param[in]   snap_time	time of snapshot
+ *
+ * @return 	true if the list is updated else false
+ */
+static bool shadow_copy2_update_snaplist(struct vfs_handle_struct *handle,
+		time_t snap_time)
+{
+	int ret = -1;
+	bool snaplist_updated = false;
+	struct files_struct fsp = {0};
+	struct smb_filename smb_fname = {0};
+	double seconds = 0.0;
+	struct shadow_copy2_private *priv = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return false);
+
+	seconds = difftime(snap_time, priv->snaps->fetch_time);
+
+	/*
+	 * Fetch the snapshot list if either the snaplist is empty or the
+	 * required snapshot time is greater than the last fetched snaplist
+	 * time.
+	 */
+	if (seconds > 0 || (priv->snaps->snaplist == NULL)) {
+		smb_fname.base_name = ".";
+		fsp.fsp_name = &smb_fname;
+
+		ret = shadow_copy2_get_shadow_copy_data(handle, &fsp,
+							NULL, false);
+		if (ret == 0) {
+			snaplist_updated = true;
+		} else {
+			DBG_ERR("Failed to get shadow copy data\n");
+		}
+
+	}
+
+	return snaplist_updated;
+}
 
 static bool shadow_copy2_find_slashes(TALLOC_CTX *mem_ctx, const char *str,
 				      size_t **poffsets,
@@ -133,6 +284,28 @@ static ssize_t shadow_copy2_posix_gmt_string(struct vfs_handle_struct *handle,
 				return -1;
 			}
 		}
+
+		if (priv->snaps->regex != NULL) {
+			snaptime_len = shadow_copy2_saved_snapname(priv,
+						&snap_tm, snaptime_string, len);
+			if (snaptime_len >= 0)
+				return snaptime_len;
+
+			/*
+			 * If we fail to find the snapshot name, chances are
+			 * that we have not updated our snaplist. Make sure the
+			 * snaplist is updated.
+			 */
+			if (!shadow_copy2_update_snaplist(handle, snapshot)) {
+				DBG_DEBUG("shadow_copy2_update_snaplist "
+					  "failed\n");
+				return -1;
+			}
+
+			return shadow_copy2_saved_snapname(priv,
+						&snap_tm, snaptime_string, len);
+		}
+
 		snaptime_len = strftime(snaptime_string,
 					len,
 					config->gmt_format,
@@ -1354,6 +1527,10 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 	const char *fmt;
 	struct shadow_copy2_config *config;
 	struct shadow_copy2_private *priv;
+	char *tmpstr = NULL;
+	char *tmp = NULL;
+	bool converted = false;
+	int ret = -1;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return NULL);
@@ -1362,13 +1539,38 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 
 	fmt = config->gmt_format;
 
+	/*
+	 * If regex is provided, then we will have to parse the
+	 * filename which will contain both the prefix and the time format.
+	 * e.g. <prefix><delimiter><time_format>
+	 */
+	if (priv->snaps->regex != NULL) {
+		tmpstr = talloc_strdup(talloc_tos(), name);
+		/* point "name" to the time format */
+		name = strstr(name, priv->config->delimiter);
+		if (name == NULL) {
+			goto done;
+		}
+		/* Extract the prefix */
+		tmp = strstr(tmpstr, priv->config->delimiter);
+		*tmp = '\0';
+
+		/* Parse regex */
+		ret = regexec(priv->snaps->regex, tmpstr, 0, NULL, 0);
+		if (ret) {
+			DBG_DEBUG("shadow_copy2_snapshot_to_gmt: "
+				  "no regex match for %s\n", tmpstr);
+			goto done;
+		}
+	}
+
 	ZERO_STRUCT(timestamp);
 	if (config->use_sscanf) {
 		if (sscanf(name, fmt, &timestamp_long) != 1) {
 			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: "
 				   "no sscanf match %s: %s\n",
 				   fmt, name));
-			return false;
+			goto done;
 		}
 		timestamp_t = timestamp_long;
 		gmtime_r(&timestamp_t, &timestamp);
@@ -1377,7 +1579,7 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 			DEBUG(10, ("shadow_copy2_snapshot_to_gmt: "
 				   "no match %s: %s\n",
 				   fmt, name));
-			return false;
+			goto done;
 		}
 		DEBUG(10, ("shadow_copy2_snapshot_to_gmt: match %s: %s\n",
 			   fmt, name));
@@ -1390,7 +1592,11 @@ static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
 	}
 
 	strftime(gmt, gmt_len, GMT_FORMAT, &timestamp);
-	return true;
+	converted = true;
+
+done:
+	TALLOC_FREE(tmpstr);
+	return converted;
 }
 
 static int shadow_copy2_label_cmp_asc(const void *x, const void *y)
@@ -1448,6 +1654,9 @@ static int shadow_copy2_get_shadow_copy_data(
 	struct smb_filename *snapdir_smb_fname = NULL;
 	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct shadow_copy2_private *priv = NULL;
+	struct shadow_copy2_snapentry *tmpentry = NULL;
+	bool get_snaplist = false;
 	bool ret;
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle, fsp->fsp_name);
@@ -1487,8 +1696,32 @@ static int shadow_copy2_get_shadow_copy_data(
 		return -1;
 	}
 
-	shadow_copy2_data->num_volumes = 0;
-	shadow_copy2_data->labels      = NULL;
+	if (shadow_copy2_data != NULL) {
+		shadow_copy2_data->num_volumes = 0;
+		shadow_copy2_data->labels      = NULL;
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return -1);
+
+	/*
+	 * Normally this function is called twice once with labels = false and
+	 * then with labels = true. When labels is false it will return the
+	 * number of volumes so that the caller can allocate memory for that
+	 * many labels. Therefore to eliminate snaplist both the times it is
+	 * good to check if labels is set or not.
+	 *
+	 * shadow_copy2_data is NULL when we only want to update the list and
+	 * don't want any labels.
+	 */
+	if ((priv->snaps->regex != NULL) && (labels || shadow_copy2_data == NULL)) {
+		get_snaplist = true;
+		/* Reset the global snaplist */
+		shadow_copy2_delete_snaplist(priv);
+
+		/* Set the current time as snaplist update time */
+		time(&(priv->snaps->fetch_time));
+	}
 
 	while ((d = SMB_VFS_NEXT_READDIR(handle, p, NULL))) {
 		char snapshot[GMT_NAME_LEN+1];
@@ -1508,6 +1741,25 @@ static int shadow_copy2_get_shadow_copy_data(
 		}
 		DEBUG(6,("shadow_copy2_get_shadow_copy_data: %s -> %s\n",
 			 d->d_name, snapshot));
+
+		if (get_snaplist) {
+			/*
+			 * Create a snap entry for each successful
+			 * pattern match.
+			 */
+			tmpentry = shadow_copy2_create_snapentry(priv);
+			if (tmpentry == NULL) {
+				DBG_ERR("talloc_zero() failed\n");
+				talloc_free(tmp_ctx);
+				return -1;
+			}
+			tmpentry->snapname = talloc_strdup(tmpentry, d->d_name);
+			tmpentry->time_fmt = talloc_strdup(tmpentry, snapshot);
+		}
+
+		if (shadow_copy2_data == NULL) {
+			continue;
+		}
 
 		if (!labels) {
 			/* the caller doesn't want the labels */
@@ -2061,6 +2313,8 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 	struct shadow_copy2_private *priv;
 	int ret;
 	const char *snapdir;
+	const char *snapprefix = NULL;
+	const char *delimiter;
 	const char *gmt_format;
 	const char *sort_order;
 	const char *basedir = NULL;
@@ -2078,7 +2332,14 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 
 	priv = talloc_zero(handle->conn, struct shadow_copy2_private);
 	if (priv == NULL) {
-		DEBUG(0, ("talloc_zero() failed\n"));
+		DBG_ERR("talloc_zero() failed\n");
+		errno = ENOMEM;
+		return -1;
+	}
+
+	priv->snaps = talloc_zero(priv, struct shadow_copy2_snaplist_info);
+	if (priv->snaps == NULL) {
+		DBG_ERR("talloc_zero() failed\n");
 		errno = ENOMEM;
 		return -1;
 	}
@@ -2117,6 +2378,37 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		DEBUG(0, ("talloc_strdup() failed\n"));
 		errno = ENOMEM;
 		return -1;
+	}
+
+	snapprefix = lp_parm_const_string(SNUM(handle->conn),
+				       "shadow", "snapprefix",
+				       NULL);
+	if (snapprefix != NULL) {
+		priv->snaps->regex = talloc_zero(priv->snaps, regex_t);
+		if (priv->snaps->regex == NULL) {
+			DBG_ERR("talloc_zero() failed\n");
+			errno = ENOMEM;
+			return -1;
+		}
+
+		/* pre-compute regex rule for matching pattern later */
+		ret = regcomp(priv->snaps->regex, snapprefix, 0);
+		if (ret) {
+			DBG_ERR("Failed to create regex object\n");
+			return -1;
+		}
+	}
+
+	delimiter = lp_parm_const_string(SNUM(handle->conn),
+				       "shadow", "delimiter",
+				       "_GMT");
+	if (delimiter != NULL) {
+		priv->config->delimiter = talloc_strdup(priv->config, delimiter);
+		if (priv->config->delimiter == NULL) {
+			DBG_ERR("talloc_strdup() failed\n");
+			errno = ENOMEM;
+			return -1;
+		}
 	}
 
 	config->snapdirseverywhere = lp_parm_bool(SNUM(handle->conn),
@@ -2298,6 +2590,8 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		   "  mountpoint: '%s'\n"
 		   "  rel share root: '%s'\n"
 		   "  snapdir: '%s'\n"
+		   "  snapprefix: '%s'\n"
+		   "  delimiter: '%s'\n"
 		   "  snapshot base path: '%s'\n"
 		   "  format: '%s'\n"
 		   "  use sscanf: %s\n"
@@ -2310,6 +2604,8 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		   config->mount_point,
 		   config->rel_connectpath,
 		   config->snapdir,
+		   snapprefix,
+		   config->delimiter,
 		   config->snapshot_basepath,
 		   config->gmt_format,
 		   config->use_sscanf ? "yes" : "no",
