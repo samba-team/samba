@@ -34,6 +34,7 @@
 #undef TRUE
 #undef FALSE
 /* allow building with --picky-developer */
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #include <gio/gio.h>
 #include <tracker-sparql.h>
