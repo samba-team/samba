@@ -203,7 +203,7 @@ struct dsdb_extended_replicated_objects {
 	 * this is the version of the dsdb_extended_replicated_objects
 	 * version 0: initial implementation
 	 */
-#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 2
+#define DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION 3
 	uint32_t version;
 
 	/* DSDB_REPL_FLAG_* flags */
@@ -221,6 +221,8 @@ struct dsdb_extended_replicated_objects {
 	const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 
 	WERROR error;
+
+	bool originating_updates;
 };
 
 #define DSDB_EXTENDED_CREATE_PARTITION_OID "1.3.6.1.4.1.7165.4.4.4"

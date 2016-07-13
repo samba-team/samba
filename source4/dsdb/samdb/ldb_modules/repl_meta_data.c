@@ -68,6 +68,7 @@ struct replmd_private {
 		uint64_t mod_usn_urgent;
 	} *ncs;
 	struct ldb_dn *schema_dn;
+	bool originating_updates;
 };
 
 struct la_entry {
@@ -524,6 +525,9 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 			if (ac->is_urgent) {
 				modified_partition->mod_usn_urgent = ac->seq_num;
 			}
+		}
+		if (!ac->apply_mode) {
+			replmd_private->originating_updates = true;
 		}
 	}
 
@@ -5828,7 +5832,10 @@ static int replmd_replicated_uptodate_search_callback(struct ldb_request *req,
 
 static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *ar)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(ar->module);
+	struct replmd_private *replmd_private =
+		talloc_get_type_abort(ldb_module_get_private(ar->module),
+		struct replmd_private);
 	int ret;
 	static const char *attrs[] = {
 		"replUpToDateVector",
@@ -5838,8 +5845,12 @@ static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *a
 	};
 	struct ldb_request *search_req;
 
-	ldb = ldb_module_get_ctx(ar->module);
 	ar->search_msg = NULL;
+
+	/*
+	 * Let the caller know that we did an originating updates
+	 */
+	ar->objs->originating_updates = replmd_private->originating_updates;
 
 	ret = ldb_build_search_req(&search_req,
 				   ldb,
@@ -6387,6 +6398,8 @@ static int replmd_start_transaction(struct ldb_module *module)
 		DLIST_REMOVE(replmd_private->ncs, e);
 		talloc_free(e);
 	}
+
+	replmd_private->originating_updates = false;
 
 	return ldb_next_start_trans(module);
 }
