@@ -24,11 +24,13 @@ loadconfig ctdb
 
     echo "===== Start of debug locks PID=$$ ====="
 
-    # Create sed expression to convert inodes to names
-    sed_cmd=$( ls -li "$CTDB_DBDIR"/*.tdb.* "$CTDB_DBDIR_PERSISTENT"/*.tdb.* |
-	   sed -e "s#${CTDB_DBDIR}/\(.*\)#\1#" \
-	       -e "s#${CTDB_DBDIR_PERSISTENT}/\(.*\)#\1#" |
-	   awk '{printf "s#[0-9a-f]*:[0-9a-f]*:%s #%s #\n", $1, $10}' )
+    # Create sed expression to convert inodes to names.
+    # Filenames don't contain dashes and we want basenames
+    # shellcheck disable=SC2035
+    sed_cmd=$(cd "$CTDB_DBDIR" &&
+		  stat -c "s#[0-9a-f]*:[0-9a-f]*:%i #%n #" *.tdb.* 2>/dev/null ;
+	      cd "$CTDB_DBDIR_PERSISTENT" &&
+		  stat -c "s#[0-9a-f]*:[0-9a-f]*:%i #%n #" *.tdb.* 2>/dev/null)
 
     # Parse /proc/locks and extract following information
     #    pid process_name tdb_name offsets [W]
