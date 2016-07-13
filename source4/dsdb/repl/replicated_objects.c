@@ -866,10 +866,22 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 
-	/* if this replication partner didn't need to be notified
-	   before this transaction then it still doesn't need to be
-	   notified, as the changes came from this server */
-	if (seq_num2 > seq_num1 && seq_num1 <= *notify_uSN) {
+	if (seq_num1 > *notify_uSN) {
+		/*
+		 * A notify was already required before
+		 * the current transaction.
+		 */
+	} else if (objects->originating_updates) {
+		/*
+		 * Applying the replicated changes
+		 * required originating updates,
+		 * so a notify is required.
+		 */
+	} else {
+		/*
+		 * There's no need to notify the
+		 * server about the change we just from it.
+		 */
 		*notify_uSN = seq_num2;
 	}
 
