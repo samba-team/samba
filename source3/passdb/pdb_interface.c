@@ -25,6 +25,7 @@
 #include "passdb.h"
 #include "secrets.h"
 #include "messages.h"
+#include "serverid.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "../librpc/gen_ndr/drsblobs.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"

@@ -36,17 +36,6 @@
 #define MSG_FLAG_LOWPRIORITY		0x80000000
 
 
-/* Flags to classify messages - used in message_send_all() */
-/* Sender will filter by flag. */
-
-#define FLAG_MSG_GENERAL		0x0001
-#define FLAG_MSG_SMBD			0x0002
-#define FLAG_MSG_NMBD			0x0004
-#define FLAG_MSG_WINBIND		0x0008
-#define FLAG_MSG_PRINT_GENERAL		0x0010
-/* dbwrap messages 4001-4999 */
-#define FLAG_MSG_DBWRAP			0x0020
-
 /*
  * ctdb gives us 64-bit server ids for messaging_send. This is done to avoid
  * pid clashes and to be able to register for special messages like "all
@@ -84,10 +73,6 @@ int messaging_ctdbd_reinit(struct messaging_context *msg_ctx,
 			   struct messaging_backend *backend);
 struct ctdbd_connection *messaging_ctdbd_connection(void);
 
-bool message_send_all(struct messaging_context *msg_ctx,
-		      int msg_type,
-		      const void *buf, size_t len,
-		      int *n_sent);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev);
 

@@ -24,6 +24,7 @@
 #include "../lib/util/memcache.h"
 #include "smbd/smbd.h"
 #include "messages.h"
+#include "serverid.h"
 #include "smbprofile.h"
 #include <tdb.h>
 
