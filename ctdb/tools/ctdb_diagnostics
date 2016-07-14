@@ -96,7 +96,7 @@ date
 error() {
     msg="$1"
     echo "ERROR: $msg"
-    NUM_ERRORS=`expr $NUM_ERRORS + 1`
+    NUM_ERRORS=$((NUM_ERRORS + 1))
     echo " ERROR[$NUM_ERRORS]: $msg" >> "$ERRORS"
 }
 
@@ -137,9 +137,10 @@ show_and_compare_files () {
 		fstf="${tmpdir}/${_bf}.node${n}"
 		onnode "$n" cat "$f" >"$fstf" 2>&1
 
+		_fdetails=$(onnode "$n" ls -l "$f" 2>&1)
 		echo "  ================================"
 		echo "  File (on node $n): $f"
-		echo "  `onnode $n ls -l $f 2>&1`"
+		echo "  $_fdetails"
 		sed 's/^/  /' "$fstf"
 		echo "  ================================"
 		first=false
@@ -210,10 +211,10 @@ cat <<EOF
 --------------------------------------------------------------------
 Checking for clock drift
 EOF
-t=`date +%s`
+t=$(date +%s)
 for i in $nodes; do
-    t2=`onnode "$i" date +%s`
-    d=`expr $t2 - $t`
+    t2=$(onnode "$i" date +%s)
+    d=$((t2 - t))
     if [ "$d" -gt 30 -o "$d" -lt -30 ]; then
 	error "time on node $i differs by $d seconds"
     fi
@@ -325,7 +326,7 @@ else
 fi
 show_all "date"
 show_all "smbclient -U% -L 127.0.0.1"
-WORKGROUP=`testparm -s --parameter-name=WORKGROUP 2> /dev/null`
+WORKGROUP=$(testparm -s --parameter-name=WORKGROUP 2> /dev/null)
 show_all id "$WORKGROUP/Administrator"
 show_all "wbinfo -p"
 show_all "wbinfo --online-status"
