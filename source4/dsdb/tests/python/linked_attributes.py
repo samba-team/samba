@@ -352,6 +352,74 @@ class LATests(samba.tests.TestCase):
         self.assert_back_links(u2, [g3, g2], sorted=True)
         self.assert_back_links(u3, [g3, g2, g1], sorted=True)
 
+    def test_one_way_attributes(self):
+        e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
+                                  'e_one_way')
+        guid = self.get_object_guid(e2)
+
+        self.add_linked_attribute(e1, e2, attr="addressBookRoots")
+        self.assert_forward_links(e1, [e2], attr='addressBookRoots')
+
+        self.samdb.delete(e2)
+
+        res = self.samdb.search("<GUID=%s>" % guid,
+                                scope=ldb.SCOPE_BASE,
+                                controls=['show_deleted:1',
+                                          'show_recycled:1'])
+
+        new_dn = str(res[0].dn)
+        self.assert_forward_links(e1, [new_dn], attr='addressBookRoots')
+        self.assert_forward_links(e1, [new_dn],
+                                  attr='addressBookRoots',
+                                  show_deactivated_link=0)
+
+    def test_one_way_attributes_delete_link(self):
+        e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
+                                  'e_one_way')
+        guid = self.get_object_guid(e2)
+
+        self.add_linked_attribute(e1, e2, attr="addressBookRoots")
+        self.assert_forward_links(e1, [e2], attr='addressBookRoots')
+
+        self.remove_linked_attribute(e1, e2, attr="addressBookRoots")
+
+        self.assert_forward_links(e1, [], attr='addressBookRoots')
+        self.assert_forward_links(e1, [], attr='addressBookRoots',
+                                  show_deactivated_link=0)
+
+    def test_pretend_one_way_attributes(self):
+        e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
+                                  'e_one_way')
+        guid = self.get_object_guid(e2)
+
+        self.add_linked_attribute(e1, e2, attr="addressBookRoots2")
+        self.assert_forward_links(e1, [e2], attr='addressBookRoots2')
+
+        self.samdb.delete(e2)
+        res = self.samdb.search("<GUID=%s>" % guid,
+                                scope=ldb.SCOPE_BASE,
+                                controls=['show_deleted:1',
+                                          'show_recycled:1'])
+
+        new_dn = str(res[0].dn)
+
+        self.assert_forward_links(e1, [], attr='addressBookRoots2')
+        self.assert_forward_links(e1, [], attr='addressBookRoots2',
+                                  show_deactivated_link=0)
+
+    def test_pretend_one_way_attributes_delete_link(self):
+        e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
+                                  'e_one_way')
+        guid = self.get_object_guid(e2)
+
+        self.add_linked_attribute(e1, e2, attr="addressBookRoots2")
+        self.assert_forward_links(e1, [e2], attr='addressBookRoots2')
+
+        self.remove_linked_attribute(e1, e2, attr="addressBookRoots2")
+
+        self.assert_forward_links(e1, [], attr='addressBookRoots2')
+        self.assert_forward_links(e1, [], attr='addressBookRoots2',
+                                  show_deactivated_link=0)
 
 if "://" not in host:
     if os.path.isfile(host):
