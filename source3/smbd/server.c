@@ -542,6 +542,89 @@ static void cleanupd_stopped(struct tevent_req *req)
 	DBG_WARNING("cleanupd stopped: %s\n", nt_errstr(status));
 }
 
+static void cleanupd_init_trigger(struct tevent_req *req);
+
+struct cleanup_init_state {
+	bool ok;
+	struct tevent_context *ev;
+	struct messaging_context *msg;
+	struct server_id *ppid;
+};
+
+static struct tevent_req *cleanupd_init_send(struct tevent_context *ev,
+					     TALLOC_CTX *mem_ctx,
+					     struct messaging_context *msg,
+					     struct server_id *ppid)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct cleanup_init_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cleanup_init_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	*state = (struct cleanup_init_state) {
+		.msg = msg,
+		.ev = ev,
+		.ppid = ppid
+	};
+
+	subreq = tevent_wakeup_send(req, ev, tevent_timeval_current_ofs(0, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, cleanupd_init_trigger, req);
+	return req;
+}
+
+static void cleanupd_init_trigger(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cleanup_init_state *state = tevent_req_data(
+		req, struct cleanup_init_state);
+	bool ok;
+
+	DBG_NOTICE("Triggering cleanupd startup\n");
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
+	state->ok = cleanupd_init(state->msg, false, state->ppid);
+	if (state->ok) {
+		DBG_WARNING("cleanupd restarted\n");
+		tevent_req_done(req);
+		return;
+	}
+
+	DBG_NOTICE("cleanupd startup failed, rescheduling\n");
+
+	subreq = tevent_wakeup_send(req, state->ev,
+				    tevent_timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		DBG_ERR("scheduling cleanupd restart failed, giving up\n");
+		return;
+	}
+
+	tevent_req_set_callback(subreq, cleanupd_init_trigger, req);
+	return;
+}
+
+static bool cleanupd_init_recv(struct tevent_req *req)
+{
+	struct cleanup_init_state *state = tevent_req_data(
+		req, struct cleanup_init_state);
+
+	return state->ok;
+}
+
 /*
   at most every smbd:cleanuptime seconds (default 20), we scan the BRL
   and locking database for entries to cleanup. As a side effect this
@@ -566,6 +649,18 @@ static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 
 	messaging_send_buf(parent->msg_ctx, parent->cleanupd,
 			   MSG_SMB_UNLOCK, NULL, 0);
+}
+
+static void cleanupd_started(struct tevent_req *req)
+{
+	bool ok;
+
+	ok = cleanupd_init_recv(req);
+	TALLOC_FREE(req);
+	if (!ok) {
+		DBG_ERR("Failed to restart cleanupd, giving up\n");
+		return;
+	}
 }
 
 static void remove_child_pid(struct smbd_parent_context *parent,
@@ -593,13 +688,20 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	}
 
 	if (pid == procid_to_pid(&parent->cleanupd)) {
-		bool ok;
+		struct tevent_req *req;
+
+		server_id_set_disconnected(&parent->cleanupd);
 
 		DBG_WARNING("Restarting cleanupd\n");
-		ok = cleanupd_init(parent->msg_ctx, false, &parent->cleanupd);
-		if (!ok) {
+		req = cleanupd_init_send(messaging_tevent_context(parent->msg_ctx),
+					 parent,
+					 parent->msg_ctx,
+					 &parent->cleanupd);
+		if (req == NULL) {
 			DBG_ERR("Failed to restart cleanupd\n");
+			return;
 		}
+		tevent_req_set_callback(req, cleanupd_started, parent);
 		return;
 	}
 
