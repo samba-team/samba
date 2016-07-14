@@ -731,6 +731,7 @@ def build(bld):
         'events.d',
         'eventscripts',
         'onnode',
+        'shellcheck',
         'simple',
         'takeover',
         'tool'

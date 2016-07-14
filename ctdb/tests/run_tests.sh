@@ -255,7 +255,7 @@ export TEST_SCRIPTS_DIR="${test_dir}/scripts"
 # If no tests specified then run some defaults
 if [ -z "$1" ] ; then
     if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
-	set -- onnode takeover tool eventscripts cunit simple
+	set -- onnode takeover tool eventscripts cunit shellcheck simple
     else
 	set -- simple complex
     fi
