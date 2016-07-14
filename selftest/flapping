@@ -32,3 +32,4 @@
 #
 ^samba4.ldap.notification.python\(.*\).__main__.LDAPNotificationTest.test_max_search
 ^samba3.blackbox.smbclient_tar.* # fails very, very often on sn-devel
+^samba4.blackbox.dbcheck\(
