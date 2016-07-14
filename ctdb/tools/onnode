@@ -197,8 +197,8 @@ get_any_available_node ()
     local all_nodes="$1"
 
     # We do a recursive onnode to find which nodes are up and running.
-    local out=$("$0" -pq all ctdb pnn 2>&1)
-    local line
+    local out line
+    out=$("$0" -pq all ctdb pnn 2>&1)
     while read line ; do 
 	local pnn="${line#PNN:}"
 	if [ "$pnn" != "$line" ] ; then
