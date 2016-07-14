@@ -763,6 +763,14 @@ def build(bld):
     bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR+"/scripts", 'test_wrap',
                       destname='test_wrap', chmod=0755)
 
+    bld.SAMBA_GENERATOR('ctdb-test-script-install-paths',
+                        source='tests/scripts/script_install_paths.sh',
+                        target='script_install_paths.sh',
+                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+    bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR+"/scripts",
+                      'script_install_paths.sh',
+                      destname='script_install_paths.sh', chmod=0644)
+
     sed_expr1 = 's@^test_dir=.*@test_dir=%s\\nexport TEST_BIN_DIR=\"%s\"@' % (
                 bld.env.CTDB_TEST_DATADIR, bld.env.CTDB_TEST_LIBDIR)
     sed_expr2 = 's@^\(export CTDB_TESTS_ARE_INSTALLED\)=false@\\1=true@'
