@@ -148,7 +148,15 @@ nodes_list ()
 	if [ "$_ip" = "$_master_ip" ] ; then
 	    _options="MASTER${_options:+,}${_options}"
 	fi
-	printf "${_ip}${_options:+\t}${_options}\n"
+	# There is no other way to do this and keep shellcheck happy.
+	# The tab character must be in the format string and the
+	# format string must contain no variables.  Some shells will
+	# expand a tab if it is in an argument but others won't.
+	if [ -n "$_options" ] ; then
+		printf "%s\t%s\n" "$_ip" "$_options"
+	else
+		echo "$_ip"
+	fi
     done <<EOF
 $natgw_nodes
 EOF

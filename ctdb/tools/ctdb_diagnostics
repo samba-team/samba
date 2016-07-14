@@ -127,6 +127,8 @@ show_and_compare_files () {
 
 	    if $first ; then
 		onnode "$n" [ -r "$f" ] || {
+		    # This function takes a format string
+		    # shellcheck disable=SC2059
 		    msg=$(printf "$fmt" "$f" "$n")
 		    error "$msg"
 		    continue 2;
