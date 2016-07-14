@@ -104,7 +104,7 @@ parse_options ()
     [ $# -lt 2 ] && usage
 
     nodespec="$1" ; shift
-    command="$@"
+    command="$*"
 }
 
 echo_nth ()
