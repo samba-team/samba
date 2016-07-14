@@ -167,8 +167,6 @@ static NTSTATUS smbXsrv_client_table_create(TALLOC_CTX *mem_ctx,
 
 	table->global.db_ctx = smbXsrv_client_global_db_ctx;
 
-	dbwrap_watch_db(table->global.db_ctx, msg_ctx);
-
 	*_table = table;
 	return NT_STATUS_OK;
 }
