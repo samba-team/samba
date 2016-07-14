@@ -140,7 +140,8 @@ static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct messaging_reclog *log);
 #endif
 static void notifyd_sys_callback(struct sys_notify_context *ctx,
-				 void *private_data, struct notify_event *ev);
+				 void *private_data, struct notify_event *ev,
+				 uint32_t filter);
 
 #ifdef CLUSTER_SUPPORT
 static struct tevent_req *notifyd_broadcast_reclog_send(
@@ -163,7 +164,8 @@ static int sys_notify_watch_dummy(
 	uint32_t *subdir_filter,
 	void (*callback)(struct sys_notify_context *ctx,
 			 void *private_data,
-			 struct notify_event *ev),
+			 struct notify_event *ev,
+			 uint32_t filter),
 	void *private_data,
 	void *handle_p)
 {
@@ -513,7 +515,8 @@ fail:
 }
 
 static void notifyd_sys_callback(struct sys_notify_context *ctx,
-				 void *private_data, struct notify_event *ev)
+				 void *private_data, struct notify_event *ev,
+				 uint32_t filter)
 {
 	struct messaging_context *msg_ctx = talloc_get_type_abort(
 		private_data, struct messaging_context);
@@ -524,7 +527,7 @@ static void notifyd_sys_callback(struct sys_notify_context *ctx,
 	msg = (struct notify_trigger_msg) {
 		.when = timespec_current(),
 		.action = ev->action,
-		.filter = UINT32_MAX
+		.filter = filter,
 	};
 
 	iov[0].iov_base = &msg;

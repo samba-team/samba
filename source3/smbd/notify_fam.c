@@ -52,7 +52,8 @@ struct fam_watch_context {
 	struct sys_notify_context *sys_ctx;
 	void (*callback)(struct sys_notify_context *ctx,
 			 void *private_data,
-			 struct notify_event *ev);
+			 struct notify_event *ev,
+			 uint32_t filter);
 	void *private_data;
 	uint32_t mask; /* the inotify mask */
 	uint32_t filter; /* the windows completion filter */
@@ -205,7 +206,7 @@ static void fam_handler(struct tevent_context *event_ctx,
 	}
 	ne.dir = ctx->path;
 
-	ctx->callback(ctx->sys_ctx, ctx->private_data, &ne);
+	ctx->callback(ctx->sys_ctx, ctx->private_data, &ne, UINT32_MAX);
 }
 
 static int fam_watch_context_destructor(struct fam_watch_context *ctx)
@@ -228,7 +229,8 @@ int fam_watch(TALLOC_CTX *mem_ctx,
 	      uint32_t *subdir_filter,
 	      void (*callback)(struct sys_notify_context *ctx,
 			       void *private_data,
-			       struct notify_event *ev),
+			       struct notify_event *ev,
+			       uint32_t filter),
 	      void *private_data,
 	      void *handle_p)
 {

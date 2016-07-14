@@ -48,7 +48,8 @@ struct inotify_watch_context {
 	int wd;
 	void (*callback)(struct sys_notify_context *ctx, 
 			 void *private_data,
-			 struct notify_event *ev);
+			 struct notify_event *ev,
+			 uint32_t filter);
 	void *private_data;
 	uint32_t mask; /* the inotify mask */
 	uint32_t filter; /* the windows completion filter */
@@ -164,7 +165,7 @@ static void inotify_dispatch(struct inotify_private *in,
 		next = w->next;
 		if (w->wd == e->wd && filter_match(w, e)) {
 			ne.dir = w->path;
-			w->callback(in->ctx, w->private_data, &ne);
+			w->callback(in->ctx, w->private_data, &ne, UINT32_MAX);
 		}
 	}
 
@@ -185,7 +186,8 @@ static void inotify_dispatch(struct inotify_private *in,
 			if (w->wd == e->wd && filter_match(w, e) &&
 			    !(w->filter & FILE_NOTIFY_CHANGE_CREATION)) {
 				ne.dir = w->path;
-				w->callback(in->ctx, w->private_data, &ne);
+				w->callback(in->ctx, w->private_data, &ne,
+					    UINT32_MAX);
 			}
 		}
 	}
@@ -355,7 +357,8 @@ int inotify_watch(TALLOC_CTX *mem_ctx,
 		  uint32_t *subdir_filter,
 		  void (*callback)(struct sys_notify_context *ctx,
 				   void *private_data,
-				   struct notify_event *ev),
+				   struct notify_event *ev,
+				   uint32_t filter),
 		  void *private_data,
 		  void *handle_p)
 {
