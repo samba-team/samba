@@ -722,7 +722,7 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn).lower() for res in res1]
         self.assertTrue(("CN=e1,%s" % self.ou).lower() in dn_list)
-        self.assertTrue(("CN=e1,%s" % self.ou).lower() in dn_list)
+        self.assertTrue(("CN=e2,%s" % self.ou).lower() in dn_list)
 
         res1 = self.ldb.search(self.ou,
                         scope=SCOPE_ONELEVEL,
@@ -730,7 +730,7 @@ class MatchRulesTests(samba.tests.TestCase):
         self.assertEqual(len(res1), 2)
         dn_list = [str(res.dn).lower() for res in res1]
         self.assertTrue(("CN=e1,%s" % self.ou).lower() in dn_list)
-        self.assertTrue(("CN=e1,%s" % self.ou).lower() in dn_list)
+        self.assertTrue(("CN=e2,%s" % self.ou).lower() in dn_list)
 
     def test_not_linked_attrs(self):
         res1 = self.ldb.search(self.base_dn,
