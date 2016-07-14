@@ -33,6 +33,12 @@ interface krb5pac
 
 	typedef struct {
 		netr_SamInfo3 info3;
+		/*
+		 * On ndr_push:
+		 * Pointers values of info3.sids[*].sid
+		 * should be allocated before the following ones?
+		 * (just the 0x30 0x00 0x02 0x00 value).
+		 */
 		PAC_DOMAIN_GROUP_MEMBERSHIP resource_groups;
 	} PAC_LOGON_INFO;
 
