@@ -20,25 +20,28 @@
 from samba import getopt as options
 
 from samba.netcmd import SuperCommand
-from samba.netcmd.dbcheck import cmd_dbcheck
-from samba.netcmd.delegation import cmd_delegation
-from samba.netcmd.dns import cmd_dns
-from samba.netcmd.domain import cmd_domain
-from samba.netcmd.drs import cmd_drs
-from samba.netcmd.dsacl import cmd_dsacl
-from samba.netcmd.fsmo import cmd_fsmo
-from samba.netcmd.gpo import cmd_gpo
-from samba.netcmd.group import cmd_group
-from samba.netcmd.ldapcmp import cmd_ldapcmp
-from samba.netcmd.ntacl import cmd_ntacl
-from samba.netcmd.rodc import cmd_rodc
-from samba.netcmd.sites import cmd_sites
-from samba.netcmd.spn import cmd_spn
-from samba.netcmd.testparm import cmd_testparm
-from samba.netcmd.nettime import cmd_time
-from samba.netcmd.user import cmd_user
-from samba.netcmd.processes import cmd_processes
 
+class cache_loader(dict):
+    """
+    We only load subcommand tools if they are actually used.
+    This significantly reduces the amount of time spent starting up
+    samba-tool
+    """
+    def __getitem__(self, attr):
+        item = dict.__getitem__(self, attr)
+        if item is None:
+            package = 'nettime' if attr == 'time' else attr
+            self[attr] = getattr(__import__('samba.netcmd.%s' % package,
+                                            fromlist=['cmd_%s' % attr]),
+                                 'cmd_%s' % attr)()
+        return dict.__getitem__(self, attr)
+
+    def iteritems(self):
+        for key in self:
+            yield (key, self[key])
+
+    def items(self):
+        return list(self.iteritems())
 
 class cmd_sambatool(SuperCommand):
     """Main samba administration tool."""
@@ -47,22 +50,23 @@ class cmd_sambatool(SuperCommand):
         "versionopts": options.VersionOptions,
         }
 
-    subcommands = {}
-    subcommands["dbcheck"] =  cmd_dbcheck()
-    subcommands["delegation"] = cmd_delegation()
-    subcommands["dns"] = cmd_dns()
-    subcommands["domain"] = cmd_domain()
-    subcommands["drs"] = cmd_drs()
-    subcommands["dsacl"] = cmd_dsacl()
-    subcommands["fsmo"] = cmd_fsmo()
-    subcommands["gpo"] = cmd_gpo()
-    subcommands["group"] = cmd_group()
-    subcommands["ldapcmp"] = cmd_ldapcmp()
-    subcommands["ntacl"] = cmd_ntacl()
-    subcommands["rodc"] = cmd_rodc()
-    subcommands["sites"] = cmd_sites()
-    subcommands["spn"] = cmd_spn()
-    subcommands["testparm"] =  cmd_testparm()
-    subcommands["time"] = cmd_time()
-    subcommands["user"] = cmd_user()
-    subcommands["processes"] = cmd_processes()
+    subcommands = cache_loader()
+
+    subcommands["dbcheck"] = None
+    subcommands["delegation"] = None
+    subcommands["dns"] = None
+    subcommands["domain"] = None
+    subcommands["drs"] = None
+    subcommands["dsacl"] = None
+    subcommands["fsmo"] = None
+    subcommands["gpo"] = None
+    subcommands["group"] = None
+    subcommands["ldapcmp"] = None
+    subcommands["ntacl"] = None
+    subcommands["rodc"] = None
+    subcommands["sites"] = None
+    subcommands["spn"] = None
+    subcommands["testparm"] = None
+    subcommands["time"] = None
+    subcommands["user"] = None
+    subcommands["processes"] = None
