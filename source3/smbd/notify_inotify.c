@@ -58,6 +58,36 @@ struct inotify_watch_context {
 
 
 /*
+  map from a change notify mask to a inotify mask. Remove any bits
+  which we can handle
+*/
+static const struct {
+	uint32_t notify_mask;
+	uint32_t inotify_mask;
+} inotify_mapping[] = {
+	{FILE_NOTIFY_CHANGE_FILE_NAME,   IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
+	{FILE_NOTIFY_CHANGE_DIR_NAME,    IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
+	{FILE_NOTIFY_CHANGE_ATTRIBUTES,  IN_ATTRIB|IN_MOVED_TO|IN_MOVED_FROM|IN_MODIFY},
+	{FILE_NOTIFY_CHANGE_LAST_WRITE,  IN_ATTRIB},
+	{FILE_NOTIFY_CHANGE_LAST_ACCESS, IN_ATTRIB},
+	{FILE_NOTIFY_CHANGE_EA,          IN_ATTRIB},
+	{FILE_NOTIFY_CHANGE_SECURITY,    IN_ATTRIB}
+};
+
+static uint32_t inotify_map(uint32_t *filter)
+{
+	int i;
+	uint32_t out=0;
+	for (i=0;i<ARRAY_SIZE(inotify_mapping);i++) {
+		if (inotify_mapping[i].notify_mask & *filter) {
+			out |= inotify_mapping[i].inotify_mask;
+			*filter &= ~inotify_mapping[i].notify_mask;
+		}
+	}
+	return out;
+}
+
+/*
   destroy the inotify private context
 */
 static int inotify_destructor(struct inotify_private *in)
@@ -286,37 +316,6 @@ static int inotify_setup(struct sys_notify_context *ctx)
 		return ENOMEM;
 	}
 	return 0;
-}
-
-
-/*
-  map from a change notify mask to a inotify mask. Remove any bits
-  which we can handle
-*/
-static const struct {
-	uint32_t notify_mask;
-	uint32_t inotify_mask;
-} inotify_mapping[] = {
-	{FILE_NOTIFY_CHANGE_FILE_NAME,   IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
-	{FILE_NOTIFY_CHANGE_DIR_NAME,    IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO},
-	{FILE_NOTIFY_CHANGE_ATTRIBUTES,  IN_ATTRIB|IN_MOVED_TO|IN_MOVED_FROM|IN_MODIFY},
-	{FILE_NOTIFY_CHANGE_LAST_WRITE,  IN_ATTRIB},
-	{FILE_NOTIFY_CHANGE_LAST_ACCESS, IN_ATTRIB},
-	{FILE_NOTIFY_CHANGE_EA,          IN_ATTRIB},
-	{FILE_NOTIFY_CHANGE_SECURITY,    IN_ATTRIB}
-};
-
-static uint32_t inotify_map(uint32_t *filter)
-{
-	int i;
-	uint32_t out=0;
-	for (i=0;i<ARRAY_SIZE(inotify_mapping);i++) {
-		if (inotify_mapping[i].notify_mask & *filter) {
-			out |= inotify_mapping[i].inotify_mask;
-			*filter &= ~inotify_mapping[i].notify_mask;
-		}
-	}
-	return out;
 }
 
 /*
