@@ -780,10 +780,6 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,
 			     uint32_t security_info_wanted,
 			     struct security_descriptor **sd);
-NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
-					const char *name,
-					SMB_STRUCT_STAT *psbuf,
-					struct security_descriptor **ppdesc);
 int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
 				const char *path_p,
 				TALLOC_CTX *mem_ctx,
