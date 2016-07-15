@@ -30,7 +30,7 @@
 #include "util_tdb.h"
 
 enum dbwrap_op { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS,
-		 OP_LISTWATCHERS, OP_EXISTS };
+		 OP_EXISTS };
 
 enum dbwrap_type { TYPE_INT32, TYPE_UINT32, TYPE_STRING, TYPE_HEX, TYPE_NONE };
 
@@ -342,33 +342,6 @@ static int dbwrap_tool_listkeys(struct db_context *db,
 	return 0;
 }
 
-static int dbwrap_tool_listwatchers_cb(const uint8_t *db_id, size_t db_id_len,
-				       const TDB_DATA key,
-				       const struct server_id *watchers,
-				       size_t num_watchers,
-				       void *private_data)
-{
-	uint32_t i;
-	dump_data_file(db_id, db_id_len, false, stdout);
-	dump_data_file(key.dptr, key.dsize, false, stdout);
-
-	for (i=0; i<num_watchers; i++) {
-		struct server_id_buf idbuf;
-		printf("%s\n", server_id_str_buf(watchers[i], &idbuf));
-	}
-	printf("\n");
-	return 0;
-}
-
-
-static int dbwrap_tool_listwatchers(struct db_context *db,
-				    const char *keyname,
-				    const char *data)
-{
-	dbwrap_watchers_traverse_read(dbwrap_tool_listwatchers_cb, NULL);
-	return 0;
-}
-
 struct dbwrap_op_dispatch_table {
 	enum dbwrap_op op;
 	enum dbwrap_type type;
@@ -389,7 +362,6 @@ struct dbwrap_op_dispatch_table dispatch_table[] = {
 	{ OP_DELETE, TYPE_INT32,  dbwrap_tool_delete },
 	{ OP_ERASE,  TYPE_INT32,  dbwrap_tool_erase },
 	{ OP_LISTKEYS, TYPE_INT32, dbwrap_tool_listkeys },
-	{ OP_LISTWATCHERS, TYPE_NONE, dbwrap_tool_listwatchers },
 	{ OP_EXISTS, TYPE_STRING, dbwrap_tool_exists },
 	{ 0, 0, NULL },
 };
@@ -523,14 +495,6 @@ int main(int argc, const char **argv)
 			goto done;
 		}
 		op = OP_LISTKEYS;
-	} else if (strcmp(opname, "listwatchers") == 0) {
-		if (extra_argc != 2) {
-			d_fprintf(stderr, "ERROR: operation 'listwatchers' "
-				  "does not take an argument\n");
-			goto done;
-		}
-		op = OP_LISTWATCHERS;
-		keytype = "none";
 	} else if (strcmp(opname, "exists") == 0) {
 		if (extra_argc != 3) {
 			d_fprintf(stderr, "ERROR: operation 'exists' does "
