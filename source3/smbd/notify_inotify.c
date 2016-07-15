@@ -88,6 +88,30 @@ static uint32_t inotify_map(uint32_t *filter)
 }
 
 /*
+ * Map inotify mask back to filter. This returns all filters that
+ * could have created the inotify watch.
+ */
+static uint32_t inotify_map_mask_to_filter(uint32_t mask)
+{
+	int i;
+	uint32_t filter = 0;
+
+	for (i = 0; i < ARRAY_SIZE(inotify_mapping); i++) {
+		if (inotify_mapping[0].inotify_mask & mask) {
+			filter |= inotify_mapping[i].notify_mask;
+		}
+	}
+
+	if (mask & IN_ISDIR) {
+		filter &= ~FILE_NOTIFY_CHANGE_FILE_NAME;
+	} else {
+		filter &= ~FILE_NOTIFY_CHANGE_DIR_NAME;
+	}
+
+	return filter;
+}
+
+/*
   destroy the inotify private context
 */
 static int inotify_destructor(struct inotify_private *in)
@@ -153,6 +177,7 @@ static void inotify_dispatch(struct inotify_private *in,
 {
 	struct inotify_watch_context *w, *next;
 	struct notify_event ne;
+	uint32_t filter;
 
 	DEBUG(10, ("inotify_dispatch called with mask=%x, name=[%s]\n",
 		   e->mask, e->len ? e->name : ""));
@@ -187,15 +212,17 @@ static void inotify_dispatch(struct inotify_private *in,
 	}
 	ne.path = e->name;
 
-	DEBUG(10, ("inotify_dispatch: ne.action = %d, ne.path = %s\n",
-		   ne.action, ne.path));
+	filter = inotify_map_mask_to_filter(e->mask);
+
+	DBG_DEBUG("ne.action = %d, ne.path = %s, filter = %d\n",
+		  ne.action, ne.path, filter);
 
 	/* find any watches that have this watch descriptor */
 	for (w=in->watches;w;w=next) {
 		next = w->next;
 		if (w->wd == e->wd && filter_match(w, e)) {
 			ne.dir = w->path;
-			w->callback(in->ctx, w->private_data, &ne, UINT32_MAX);
+			w->callback(in->ctx, w->private_data, &ne, filter);
 		}
 	}
 
@@ -217,7 +244,7 @@ static void inotify_dispatch(struct inotify_private *in,
 			    !(w->filter & FILE_NOTIFY_CHANGE_CREATION)) {
 				ne.dir = w->path;
 				w->callback(in->ctx, w->private_data, &ne,
-					    UINT32_MAX);
+					    filter);
 			}
 		}
 	}
