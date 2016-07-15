@@ -72,7 +72,7 @@ static int server_id_db_check_exclusive(
 	unsigned num_servers, struct server_id *servers)
 {
 	struct server_id me = server_id_db_pid(db);
-	int i;
+	unsigned i;
 
 	for (i=0; i<num_servers; i++) {
 		int ret;
