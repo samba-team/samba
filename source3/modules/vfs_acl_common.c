@@ -24,6 +24,7 @@
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../lib/util/bitmap.h"
+#include "passdb/lookup_sid.h"
 
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 			DATA_BLOB *pblob,
@@ -378,12 +379,10 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 	gid_to_sid(&group_sid, psbuf->st_ex_gid);
 
 	/*
-	 We provide up to 4 ACEs
-		- Owner
-		- Group
-		- Everyone
-		- NT System
-	*/
+	 * We provide 2 ACEs:
+	 * - Owner
+	 * - NT System
+	 */
 
 	if (mode & S_IRUSR) {
 		if (mode & S_IWUSR) {
@@ -402,39 +401,6 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 			access_mask,
 			0);
 	idx++;
-
-	access_mask = 0;
-	if (mode & S_IRGRP) {
-		access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
-	}
-	if (mode & S_IWGRP) {
-		/* note that delete is not granted - this matches posix behaviour */
-		access_mask |= SEC_RIGHTS_FILE_WRITE;
-	}
-	if (access_mask) {
-		init_sec_ace(&aces[idx],
-			&group_sid,
-			SEC_ACE_TYPE_ACCESS_ALLOWED,
-			access_mask,
-			0);
-		idx++;
-	}
-
-	access_mask = 0;
-	if (mode & S_IROTH) {
-		access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
-	}
-	if (mode & S_IWOTH) {
-		access_mask |= SEC_RIGHTS_FILE_WRITE;
-	}
-	if (access_mask) {
-		init_sec_ace(&aces[idx],
-			&global_sid_World,
-			SEC_ACE_TYPE_ACCESS_ALLOWED,
-			access_mask,
-			0);
-		idx++;
-	}
 
 	init_sec_ace(&aces[idx],
 			&global_sid_System,
