@@ -119,9 +119,14 @@ setup_nodes ()
     fi
 }
 
+simple_test_other ()
+{
+	(unit_test $CTDB -d $CTDB_DEBUGLEVEL "$@")
+	status=$?
+	[ $status -eq 0 ] || exit $status
+}
+
 simple_test ()
 {
-    (unit_test $CTDB -d $CTDB_DEBUGLEVEL $test_args "$@")
-    status=$?
-    [ $status -eq 0 ] || exit $status
+	simple_test_other $test_args "$@"
 }
