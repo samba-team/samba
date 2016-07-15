@@ -180,6 +180,60 @@ static bool trust_domain_passwords_check_in(struct torture_context *tctx,
 	return true;
 }
 
+static const uint8_t supplementalCredentials_empty1[] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static bool supplementalCredentials_empty1_check(struct torture_context *tctx,
+					struct supplementalCredentialsBlob *r)
+{
+	torture_assert_int_equal(tctx, r->unknown1, 0, "unknown1");
+	torture_assert_int_equal(tctx, r->__ndr_size, 0, "__ndr_size");
+	torture_assert_int_equal(tctx, r->unknown2, 0, "unknown2");
+	torture_assert(tctx, r->sub.prefix == NULL, "prefix");
+	torture_assert_int_equal(tctx, r->sub.signature, 0, "signature");
+	torture_assert_int_equal(tctx, r->sub.num_packages, 0, "num_packages");
+	torture_assert_int_equal(tctx, r->unknown3, 0, "unknown3");
+
+	return true;
+}
+
+static const uint8_t supplementalCredentials_empty2[] = {
+	0x00, 0x00, 0x00, 0x00, 0x62, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x20, 0x00, 0x20, 0x00,
+	0x20, 0x00, 0x20, 0x00, 0x50, 0x00, 0x00 /* was 0x30 */
+	/*
+	 * I've changed the last byte as Samba sets it to 0x00
+	 * and it's random on Windows.
+	 */
+};
+
+static bool supplementalCredentials_empty2_check(struct torture_context *tctx,
+					struct supplementalCredentialsBlob *r)
+{
+	torture_assert_int_equal(tctx, r->unknown1, 0, "unknown1");
+	torture_assert_int_equal(tctx, r->__ndr_size, 0x62, "__ndr_size");
+	torture_assert_int_equal(tctx, r->unknown2, 0, "unknown2");
+	torture_assert_str_equal(tctx, r->sub.prefix, SUPPLEMENTAL_CREDENTIALS_PREFIX, "prefix");
+	torture_assert_int_equal(tctx, r->sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE, "signature");
+	torture_assert_int_equal(tctx, r->sub.num_packages, 0, "num_packages");
+	torture_assert_int_equal(tctx, r->unknown3, 0x00, "unknown3"); /* This is typically not initialized */
+
+	return true;
+}
+
 struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "drsblobs");
@@ -196,6 +250,16 @@ struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 					    trustAuthInOutBlob,
 					    base64_decode_data_blob_talloc(suite, trustAuthOutgoing),
 					    NULL);
+
+	torture_suite_add_ndr_pull_validate_test(suite, supplementalCredentialsBlob,
+					data_blob_const(supplementalCredentials_empty1,
+						sizeof(supplementalCredentials_empty1)),
+					supplementalCredentials_empty1_check);
+
+	torture_suite_add_ndr_pull_validate_test(suite, supplementalCredentialsBlob,
+					data_blob_const(supplementalCredentials_empty2,
+						sizeof(supplementalCredentials_empty2)),
+					supplementalCredentials_empty2_check);
 
 	return suite;
 }
