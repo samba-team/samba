@@ -110,7 +110,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",
-				 ldb_dn_get_linearized(do_dn)));	
+				 ldb_dn_get_linearized(do_dn)));
 			TALLOC_FREE(tmp_ctx);
 			continue;
 		}
