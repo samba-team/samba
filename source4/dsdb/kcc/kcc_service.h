@@ -98,6 +98,8 @@ struct kccsrv_service {
 
 struct kcc_connection_list;
 
+NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx);
+
 #include "dsdb/kcc/kcc_service_proto.h"
 
 #endif /* _DSDB_REPL_KCC_SERVICE_H_ */
