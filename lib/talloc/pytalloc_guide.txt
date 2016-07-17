@@ -182,6 +182,8 @@ This enables tracking of the NULL memory context without enabling leak
 reporting on exit. Useful for when you want to do your own leak
 reporting call via talloc_report_null_full().
 
+This must be done in the top level script, not an imported module.
+
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 pytalloc_total_blocks(obj?)
 
