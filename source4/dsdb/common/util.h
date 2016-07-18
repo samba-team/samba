@@ -80,4 +80,14 @@ int dsdb_werror_at(struct ldb_context *ldb, int ldb_ecode, WERROR werr,
 	dsdb_werror_at(ldb_module_get_ctx(module), ldb_ecode, werr, \
 		       __location__, __func__, reason)
 
+
+struct dsdb_ldb_dn_list_node {
+	struct dsdb_ldb_dn_list_node *prev, *next;
+
+	/* the dn of the partition */
+	struct ldb_dn *dn;
+};
+
+
+
 #endif /* __DSDB_COMMON_UTIL_H__ */
