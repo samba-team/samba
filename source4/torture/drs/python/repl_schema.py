@@ -53,6 +53,13 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplSchemaTestCase, self).setUp()
 
+        # disable automatic replication temporary
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
+
+        # make sure DCs are synchronized before the test
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
         # initialize objects prefix if not done yet
         if self.obj_prefix is None:
             t = time.strftime("%s", time.gmtime())
@@ -142,7 +149,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         # add new classSchema object
         (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-S", 0)
         # force replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
         # check object is replicated
         self._check_object(c_dn)
 
@@ -166,7 +173,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
             # store last class ldapDisplayName
             c_ldn_last = c_ldn
         # force replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
         # check objects are replicated
         for c_dn in c_dn_list:
             self._check_object(c_dn)
@@ -190,7 +197,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                                                {"objectClass": ["top", "classSchema", c_ldn],
                                                 a_ldn: "test_classWithCustomAttribute"})
         # force replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
         # check objects are replicated
         self._check_object(c_dn)
         self._check_object(a_dn)
@@ -200,7 +207,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         # add new attributeSchema object
         (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-S", 2)
         # force replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
         # check object is replicated
         self._check_object(a_dn)
 
@@ -228,7 +235,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.add(rec)
 
         # force replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.domain_dn)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.domain_dn, forced=True)
         # check objects are replicated
         self._check_object(c_dn)
         self._check_object(a_dn)
@@ -253,7 +260,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self.ldb_dc1.modify(m)
 
         # force replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
         
         # check objects are replicated
         self._check_object(c_dn)
