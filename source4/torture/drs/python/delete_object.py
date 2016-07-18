@@ -41,15 +41,15 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsDeleteObjectTestCase, self).setUp()
         # disable automatic replication temporary
-        self._disable_inbound_repl(self.dnsname_dc1)
-        self._disable_inbound_repl(self.dnsname_dc2)
+        self._disable_all_repl(self.dnsname_dc1)
+        self._disable_all_repl(self.dnsname_dc2)
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
 
     def tearDown(self):
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
+        self._enable_all_repl(self.dnsname_dc1)
+        self._enable_all_repl(self.dnsname_dc2)
         super(DrsDeleteObjectTestCase, self).tearDown()
 
     def _make_username(self):

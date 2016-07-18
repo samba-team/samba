@@ -55,8 +55,8 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsMoveObjectTestCase, self).setUp()
         # disable automatic replication temporary
-        self._disable_inbound_repl(self.dnsname_dc1)
-        self._disable_inbound_repl(self.dnsname_dc2)
+        self._disable_all_repl(self.dnsname_dc1)
+        self._disable_all_repl(self.dnsname_dc2)
 
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -94,8 +94,8 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                 pass
 
         self.ldb_dc1.delete(self.ou2_dn, ["tree_delete:1"])
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
+        self._enable_all_repl(self.dnsname_dc1)
+        self._enable_all_repl(self.dnsname_dc2)
         super(DrsMoveObjectTestCase, self).tearDown()
 
     def _make_username(self):
@@ -1830,8 +1830,8 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsMoveBetweenTreeOfObjectTestCase, self).setUp()
         # disable automatic replication temporary
-        self._disable_inbound_repl(self.dnsname_dc1)
-        self._disable_inbound_repl(self.dnsname_dc2)
+        self._disable_all_repl(self.dnsname_dc1)
+        self._disable_all_repl(self.dnsname_dc2)
 
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -1892,8 +1892,8 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
     def tearDown(self):
         self.ldb_dc1.delete(self.ou1_dn, ["tree_delete:1"])
-        self._enable_inbound_repl(self.dnsname_dc1)
-        self._enable_inbound_repl(self.dnsname_dc2)
+        self._enable_all_repl(self.dnsname_dc1)
+        self._enable_all_repl(self.dnsname_dc2)
         super(DrsMoveBetweenTreeOfObjectTestCase, self).tearDown()
 
     def _make_username(self):
