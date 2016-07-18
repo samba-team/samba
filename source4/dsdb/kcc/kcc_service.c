@@ -110,18 +110,17 @@ static WERROR kccsrv_load_partitions(struct kccsrv_service *s)
 	for (i=0; i < el->num_values; i++) {
 		const char *v = (const char *)el->values[i].data;
 		struct ldb_dn *pdn;
-		struct kccsrv_partition *p;
+		struct dsdb_ldb_dn_list_node *p;
 
 		pdn = ldb_dn_new(s, s->samdb, v);
 		if (!ldb_dn_validate(pdn)) {
 			return WERR_FOOBAR;
 		}
 
-		p = talloc_zero(s, struct kccsrv_partition);
+		p = talloc_zero(s, struct dsdb_ldb_dn_list_node);
 		W_ERROR_HAVE_NO_MEMORY(p);
 
 		p->dn = talloc_steal(p, pdn);
-		p->service = s;
 
 		DLIST_ADD(s->partitions, p);
 

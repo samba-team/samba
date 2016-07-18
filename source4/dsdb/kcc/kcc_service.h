@@ -25,15 +25,7 @@
 #define _DSDB_REPL_KCC_SERVICE_H_
 
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
-
-struct kccsrv_partition {
-	struct kccsrv_partition *prev, *next;
-	struct kccsrv_service *service;
-
-	/* the dn of the partition */
-	struct ldb_dn *dn;
-};
-
+#include "dsdb/common/util.h"
 
 struct kccsrv_service {
 	/* the whole kcc service is in one task */
@@ -52,7 +44,7 @@ struct kccsrv_service {
 	struct auth_session_info *system_session_info;
 
 	/* list of local partitions */
-	struct kccsrv_partition *partitions;
+	struct dsdb_ldb_dn_list_node *partitions;
 
 	/*
 	 * a connection to the local samdb
@@ -98,8 +90,7 @@ struct kccsrv_service {
 
 struct kcc_connection_list;
 
-NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx);
-
+#include "dsdb/kcc/garbage_collect_tombstones.h"
 #include "dsdb/kcc/kcc_service_proto.h"
 
 #endif /* _DSDB_REPL_KCC_SERVICE_H_ */

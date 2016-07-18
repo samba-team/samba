@@ -64,7 +64,7 @@ static bool reps_in_list(struct repsFromToBlob *r, struct repsFromToBlob *reps, 
   make sure we only add repsFrom entries for DCs who are masters for
   the partition
  */
-static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
+static bool check_MasterNC(struct kccsrv_service *service, struct dsdb_ldb_dn_list_node *p, struct repsFromToBlob *r,
 			   struct ldb_result *res)
 {
 	struct repsFromTo1 *r1 = &r->ctr.ctr1;
@@ -99,7 +99,7 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 			}
 		}
 		for (j=0; j<el->num_values; j++) {
-			dn = ldb_dn_from_ldb_val(tmp_ctx, p->service->samdb, &el->values[j]);
+			dn = ldb_dn_from_ldb_val(tmp_ctx, service->samdb, &el->values[j]);
 			if (!ldb_dn_validate(dn)) {
 				talloc_free(dn);
 				continue;
@@ -194,7 +194,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 			    struct repsFromToBlob *reps, uint32_t count,
 			    struct ldb_result *res)
 {
-	struct kccsrv_partition *p;
+	struct dsdb_ldb_dn_list_node *p;
 	bool notify_dreplsrv = false;
 	uint32_t replica_flags = kccsrv_replica_flags(s);
 
@@ -233,7 +233,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 				/* we don't have the new one - add it
 				 * if it is a master
 				 */
-				if (res && !check_MasterNC(p, &reps[i], res)) {
+				if (res && !check_MasterNC(s, p, &reps[i], res)) {
 					/* its not a master, we don't
 					   want to pull from it */
 					continue;
@@ -253,7 +253,7 @@ NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ctx,
 		/* remove any stale ones */
 		for (i=0; i<our_count; i++) {
 			if (!reps_in_list(&our_reps[i], reps, count) ||
-			    (res && !check_MasterNC(p, &our_reps[i], res))) {
+			    (res && !check_MasterNC(s, p, &our_reps[i], res))) {
 				DEBUG(4,(__location__ ": Removed repsFrom for %s\n",
 					 our_reps[i].ctr.ctr1.other_info->dns_name));
 				memmove(&our_reps[i], &our_reps[i+1], (our_count-(i+1))*sizeof(our_reps[0]));
@@ -594,6 +594,17 @@ WERROR kccsrv_periodic_schedule(struct kccsrv_service *service, uint32_t next_in
 	service->periodic.te = new_te;
 
 	return WERR_OK;
+}
+
+/*
+  check to see if any deleted objects need scavenging
+ */
+static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
+{
+	time_t current = time(NULL);
+	return dsdb_garbage_collect_tombstones(mem_ctx, s->task->lp_ctx, s->samdb,
+					       s->partitions, current, &s->last_deleted_check,
+					       &s->last_full_scan_deleted_check);
 }
 
 static void kccsrv_periodic_run(struct kccsrv_service *service)
