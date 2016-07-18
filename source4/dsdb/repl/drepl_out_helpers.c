@@ -462,6 +462,10 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		replica_flags |= DRSUAPI_DRS_GET_ANC;
 	}
 
+	if (state->op->options & DRSUAPI_DRS_SYNC_FORCED) {
+		replica_flags |= DRSUAPI_DRS_SYNC_FORCED;
+	}
+
 	if (partition->partial_replica) {
 		status = dreplsrv_get_gc_partial_attribute_set(service, r, &pas);
 		if (!NT_STATUS_IS_OK(status)) {
