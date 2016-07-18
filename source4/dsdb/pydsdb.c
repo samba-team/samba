@@ -28,6 +28,9 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/rpc/pyrpc_util.h"
 #include "lib/policy/policy.h"
+#include "param/pyparam.h"
+#include "lib/util/dlinklist.h"
+#include "dsdb/kcc/garbage_collect_tombstones.h"
 
 void initdsdb(void);
 
@@ -1075,6 +1078,97 @@ static PyObject *py_dsdb_am_pdc(PyObject *self, PyObject *args)
 	return PyBool_FromLong(am_pdc);
 }
 
+static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb, *py_list_dn;
+	struct ldb_context *ldb = NULL;
+        Py_ssize_t i;
+        Py_ssize_t length;
+	long long _current_time, _tombstone_lifetime = LLONG_MAX;
+	uint32_t tombstone_lifetime32;
+	struct dsdb_ldb_dn_list_node *part = NULL;
+	time_t current_time, tombstone_lifetime;
+	TALLOC_CTX *mem_ctx = NULL;
+	NTSTATUS status;
+	unsigned int num_objects_removed = 0;
+	unsigned int num_links_removed = 0;
+
+	if (!PyArg_ParseTuple(args, "OOL|L", &py_ldb,
+			      &py_list_dn, &_current_time, &_tombstone_lifetime)) {
+		return NULL;
+	}
+
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	mem_ctx = talloc_new(ldb);
+	if (mem_ctx == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	current_time = _current_time;
+
+	if (_tombstone_lifetime == LLONG_MAX) {
+		int ret = dsdb_tombstone_lifetime(ldb, &tombstone_lifetime32);
+		if (ret != LDB_SUCCESS) {
+			PyErr_Format(PyExc_RuntimeError,
+				     "Failed to get tombstone lifetime: %s",
+				     ldb_errstring(ldb));
+			TALLOC_FREE(mem_ctx);
+			return NULL;
+		}
+		tombstone_lifetime = tombstone_lifetime32;
+	} else {
+		tombstone_lifetime = _tombstone_lifetime;
+	}
+
+	if (!PyList_Check(py_list_dn)) {
+		PyErr_SetString(PyExc_TypeError, "A list of DNs were expected");
+		TALLOC_FREE(mem_ctx);
+		return NULL;
+	}
+
+	length = PyList_GET_SIZE(py_list_dn);
+
+	for (i = 0; i < length; i++) {
+		char *part_str = PyString_AsString(PyList_GetItem(py_list_dn, i));
+		struct ldb_dn *p;
+		struct dsdb_ldb_dn_list_node *node;
+
+		if (part_str == NULL) {
+			TALLOC_FREE(mem_ctx);
+			return PyErr_NoMemory();
+		}
+
+		p = ldb_dn_new(mem_ctx, ldb, part_str);
+		if (p == NULL) {
+			PyErr_Format(PyExc_RuntimeError, "Failed to parse DN %s", part_str);
+			TALLOC_FREE(mem_ctx);
+			return NULL;
+		}
+		node = talloc_zero(mem_ctx, struct dsdb_ldb_dn_list_node);
+		node->dn = p;
+
+		DLIST_ADD_END(part, node);
+	}
+
+	status = dsdb_garbage_collect_tombstones(mem_ctx, ldb,
+						 part, current_time,
+						 tombstone_lifetime,
+						 &num_objects_removed,
+						 &num_links_removed);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	TALLOC_FREE(mem_ctx);
+
+	return Py_BuildValue("(II)", num_objects_removed,
+			    num_links_removed);
+}
+
 
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
@@ -1141,6 +1235,9 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_get_wellknown_dn", (PyCFunction)py_dsdb_get_wellknown_dn, METH_VARARGS, NULL },
 	{ "_dsdb_DsReplicaAttribute", (PyCFunction)py_dsdb_DsReplicaAttribute, METH_VARARGS, NULL },
 	{ "_dsdb_normalise_attributes", (PyCFunction)py_dsdb_normalise_attributes, METH_VARARGS, NULL },
+	{ "_dsdb_garbage_collect_tombstones", (PyCFunction)py_dsdb_garbage_collect_tombstones, METH_VARARGS,
+		"_dsdb_kcc_check_deleted(samdb, [dn], current_time, tombstone_lifetime)"
+		" -> (num_objects_expunged, num_links_expunged)" },
 	{ NULL }
 };
 

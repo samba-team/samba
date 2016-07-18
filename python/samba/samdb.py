@@ -949,3 +949,17 @@ accountExpires: %u
         is removed, this routine will put a tombstone in the record.
         '''
         return dsdb_dns.replace_by_dn(self, dn, new_records)
+
+    def garbage_collect_tombstones(self, dn, current_time,
+                                   tombstone_lifetime=None):
+        '''garbage_collect_tombstones(lp, samdb, [dn], current_time, tombstone_lifetime)
+        -> (num_objects_expunged, num_links_expunged)'''
+
+
+        if tombstone_lifetime is None:
+            return dsdb._dsdb_garbage_collect_tombstones(self, dn,
+                                                         current_time)
+        else:
+            return dsdb._dsdb_garbage_collect_tombstones(self, dn,
+                                                         current_time,
+                                                         tombstone_lifetime)
