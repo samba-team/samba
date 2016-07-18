@@ -285,4 +285,3 @@
 
 # fl2000dc doesn't support AES
 ^samba4.krb5.kdc.*as-req-aes.*fl2000dc
-^samba4.blackbox.dbcheck.release-4-1-0rc3.check_expected_after_values

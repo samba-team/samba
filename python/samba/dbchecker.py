@@ -90,6 +90,7 @@ class dbcheck(object):
         self.wellknown_sds = get_wellknown_sds(self.samdb)
         self.fix_all_missing_objectclass = False
         self.fix_missing_deleted_objects = False
+        self.fix_replica_locations = False
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -123,6 +124,7 @@ class dbcheck(object):
         res = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=['namingContexts'])
         self.deleted_objects_containers = []
         self.ncs_lacking_deleted_containers = []
+        self.dns_partitions = []
         try:
             self.ncs = res[0]["namingContexts"]
         except KeyError:
@@ -137,6 +139,23 @@ class dbcheck(object):
                 self.deleted_objects_containers.append(dn)
             except KeyError:
                 self.ncs_lacking_deleted_containers.append(ldb.Dn(self.samdb, nc))
+
+        domaindns_zone = 'DC=DomainDnsZones,%s' % self.samdb.get_default_basedn()
+        forestdns_zone = 'DC=ForestDnsZones,%s' % self.samdb.get_root_basedn()
+        domain = self.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+                                   attrs=["msDS-NC-Replica-Locations", "msDS-NC-RO-Replica-Locations"],
+                                   base=self.samdb.get_partitions_dn(),
+                                   expression="(&(objectClass=crossRef)(ncName=%s))" % domaindns_zone)
+        if len(domain) == 1:
+            self.dns_partitions.append((ldb.Dn(self.samdb, forestdns_zone), domain[0]))
+
+        forest = self.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+                                   attrs=["msDS-NC-Replica-Locations", "msDS-NC-RO-Replica-Locations"],
+                                   base=self.samdb.get_partitions_dn(),
+                                   expression="(&(objectClass=crossRef)(ncName=%s))" % forestdns_zone)
+        if len(forest) == 1:
+            self.dns_partitions.append((ldb.Dn(self.samdb, domaindns_zone), forest[0]))
+
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -160,7 +179,6 @@ class dbcheck(object):
 
         self.report('Checked %u objects (%u errors)' % (len(res), error_count))
         return error_count
-
 
     def check_deleted_objects_containers(self):
         """This function only fixes conflicts on the Deleted Objects
@@ -1382,6 +1400,23 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to fix Deleted Objects container  %s" % dn):
             self.report("Fixed Deleted Objects container '%s'\n" % (dn))
 
+    def err_replica_locations(self, obj, cross_ref, attr):
+        nmsg = ldb.Message()
+        nmsg.dn = cross_ref
+        target = self.samdb.get_dsServiceName()
+
+        if self.samdb.am_rodc():
+            self.report('Not fixing %s for the RODC' % (attr, obj.dn))
+            return
+
+        if not self.confirm_all('Add yourself to the replica locations for %s?'
+                                % (obj.dn), 'fix_replica_locations'):
+            self.report('Not fixing missing/incorrect attributes on %s\n' % (obj.dn))
+            return
+
+        nmsg[attr] = ldb.MessageElement(target, ldb.FLAG_MOD_ADD, attr)
+        if self.do_modify(nmsg, [], "Failed to add %s for %s" % (attr, obj.dn)):
+            self.report("Fixed %s for %s" % (attr, obj.dn))
 
     def is_fsmo_role(self, dn):
         if dn == self.samdb.domain_dn:
@@ -1783,6 +1818,27 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if self.is_deleted_deleted_objects(obj):
                 self.err_deleted_deleted_objects(obj)
                 error_count += 1
+
+        for (dns_part, msg) in self.dns_partitions:
+            if dn == dns_part and 'repsFrom' in obj:
+                location = "msDS-NC-Replica-Locations"
+                if self.samdb.am_rodc():
+                    location = "msDS-NC-RO-Replica-Locations"
+
+                if location not in msg:
+                    # There are no replica locations!
+                    self.err_replica_locations(obj, msg.dn, location)
+                    error_count += 1
+                    continue
+
+                found = False
+                for loc in msg[location]:
+                    if loc == self.samdb.get_dsServiceName():
+                        found = True
+                if not found:
+                    # This DC is not in the replica locations
+                    self.err_replica_locations(obj, msg.dn, location)
+                    error_count += 1
 
         return error_count
 
