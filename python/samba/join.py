@@ -39,9 +39,6 @@ import talloc
 import random
 import time
 
-# this makes debugging easier
-talloc.enable_null_tracking()
-
 class DCJoinException(Exception):
 
     def __init__(self, msg):
