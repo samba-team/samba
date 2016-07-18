@@ -67,7 +67,7 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         cmd = cmd_sambatool.subcommands[name]
         cmd.outf = StringIO()
         cmd.errf = StringIO()
-        result = cmd._run(name, *args)
+        result = cmd._run("samba-tool %s" % name, *args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
     def runsubcmd(self, name, sub, *args):
@@ -78,7 +78,7 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         cmd = cmd_sambatool.subcommands[name].subcommands[sub]
         cmd.outf = StringIO()
         cmd.errf = StringIO()
-        result = cmd._run(name, *args)
+        result = cmd._run("samba-tool %s %s" % (name, sub), *args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
     def assertCmdSuccess(self, val, msg=""):
