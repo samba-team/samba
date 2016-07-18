@@ -67,6 +67,6 @@ bld.SAMBA_PYTHON('python_dsdb',
 	# the dependency on dcerpc here is because gensec
 	# depends on dcerpc but the waf circular dependency finder
 	# removes it so we end up with unresolved symbols.
-	deps='samdb pyldb-util dcerpc com_err pyrpc_util pyparam_util',
+	deps='samdb pyldb-util dcerpc com_err pyrpc_util pyparam_util dsdb_garbage_collect_tombstones',
 	realname='samba/dsdb.so'
 	)
