@@ -24,9 +24,10 @@
 #include "dsdb/common/util.h"
 
 
-NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *samdb,
 					 struct dsdb_ldb_dn_list_node *part,
 					 time_t current_time,
-					 bool do_fs,
-					 uint32_t tombstoneLifetime);
+					 uint32_t tombstoneLifetime,
+					 unsigned int *num_objects_removed,
+					 unsigned int *num_links_removed);

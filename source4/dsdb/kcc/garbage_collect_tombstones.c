@@ -30,22 +30,85 @@
 #include "lib/util/dlinklist.h"
 #include "ldb.h"
 #include "dsdb/kcc/garbage_collect_tombstones.h"
+#include "lib/ldb-samba/ldb_matching_rules.h"
+#include "lib/util/time.h"
 
 
-NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *samdb,
 					 struct dsdb_ldb_dn_list_node *part,
 					 time_t current_time,
-					 bool do_fs,
-					 uint32_t tombstoneLifetime)
+					 uint32_t tombstoneLifetime,
+					 unsigned int *num_objects_removed,
+					 unsigned int *num_links_removed)
 {
 	int ret;
+
+	const char **attrs = NULL;
+	char *filter = NULL;
+
+	unsigned int i;
+	struct dsdb_attribute *next_attr;
+	unsigned int num_link_attrs;
+	struct dsdb_schema *schema = dsdb_get_schema(samdb, mem_ctx);
+	unsigned long long expunge_time = current_time - tombstoneLifetime*60*60*24;
+	NTTIME expunge_time_nttime;
+	unix_to_nt_time(&expunge_time_nttime, expunge_time);
+
+	*num_objects_removed = 0;
+	*num_links_removed = 0;
+
+	num_link_attrs = 0;
+
+	/*
+	 * This filter is a bit strange, but the idea is to filter for
+	 * objects that need to have tombstones expunged without
+	 * bringing a potentially large databse all into memory.  To
+	 * do that, we could use callbacks, but instead we use a
+	 * custom match rule to triage the objects during the search,
+	 * and ideally avoid memory allocation for most of the
+	 * un-matched objects.
+	 *
+	 * The parameter to DSDB_MATCH_FOR_EXPUNGE is the NTTIME, we
+	 * return records with deleted links deleted before this time.
+	 *
+	 * We also return all isDeleted records
+	 *
+	 * TODO: Add date-comparison to LDB and use < on then
+	 * whenChanged for the isDeleted case.
+	 */
+
+	filter = talloc_asprintf(mem_ctx, "(|");
+	for (next_attr = schema->attributes; next_attr != NULL; next_attr = next_attr->next) {
+		if (next_attr->linkID != 0 && ((next_attr->linkID & 1) == 0)) {
+			num_link_attrs++;
+			filter = talloc_asprintf_append(filter,
+							"(%s:" DSDB_MATCH_FOR_EXPUNGE ":=%llu)",
+							next_attr->lDAPDisplayName,
+							(unsigned long long)expunge_time_nttime);
+		}
+	}
+
+	attrs = talloc_array(mem_ctx, const char *, num_link_attrs + 3);
+	i = 0;
+	for (next_attr = schema->attributes; next_attr != NULL; next_attr = next_attr->next) {
+		if (next_attr->linkID != 0 && ((next_attr->linkID & 1) == 0)) {
+			attrs[i++] = next_attr->lDAPDisplayName;
+		}
+	}
+	attrs[i] = "isDeleted";
+	attrs[i+1] = "whenChanged";
+	attrs[i+2] = NULL;
+
+	filter = talloc_asprintf_append(filter, "(isDeleted=TRUE))");
+
+	schema = dsdb_get_schema(samdb, mem_ctx);
 
 	for (; part != NULL; part = part->next) {
 		struct ldb_dn *do_dn;
 		struct ldb_result *res;
-		const char *attrs[] = { "whenChanged", NULL };
-		unsigned int i;
+		unsigned int j, k;
+		uint32_t flags;
 		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 		if (!tmp_ctx) {
 			return NT_STATUS_NO_MEMORY;
@@ -59,50 +122,142 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx, struct loadparm_co
 			continue;
 		}
 
-		if (!do_fs && ldb_dn_compare(ldb_get_config_basedn(samdb), part->dn)) {
-			ret = dsdb_search(samdb, tmp_ctx, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
-					DSDB_SEARCH_SHOW_RECYCLED, NULL);
-		} else {
-			if (do_fs) {
-				DEBUG(1, ("Doing a full scan on %s and looking for deleted object\n",
-						ldb_dn_get_linearized(part->dn)));
-			}
-			ret = dsdb_search(samdb, tmp_ctx, &res, part->dn, LDB_SCOPE_SUBTREE, attrs,
-					DSDB_SEARCH_SHOW_RECYCLED, "(|(isDeleted=TRUE))");
-		}
+		DEBUG(1, ("Doing a full scan on %s and looking for deleted object\n",
+			  ldb_dn_get_linearized(part->dn)));
+
+		flags = DSDB_SEARCH_SHOW_RECYCLED |
+			DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
+			DSDB_SEARCH_REVEAL_INTERNALS;
+		ret = dsdb_search(samdb, tmp_ctx, &res, part->dn, LDB_SCOPE_SUBTREE,
+				  attrs, flags, filter);
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",
 				 ldb_dn_get_linearized(do_dn)));
 			TALLOC_FREE(tmp_ctx);
-			continue;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		for (i=0; i<res->count; i++) {
-			const char *tstring;
-			time_t whenChanged = 0;
+			struct ldb_message *cleanup_msg = NULL;
+			unsigned int num_modified = 0;
 
-			if (ldb_dn_compare(do_dn, res->msgs[i]->dn) == 0) {
-				/* Skip the Deleted Object Container */
+			bool isDeleted = ldb_msg_find_attr_as_bool(res->msgs[i], "isDeleted", false);
+			if (isDeleted) {
+				const char *tstring;
+				time_t whenChanged = 0;
+
+				if (ldb_dn_compare(do_dn, res->msgs[i]->dn) == 0) {
+					/* Skip the Deleted Object Container */
+					continue;
+				}
+
+				tstring = ldb_msg_find_attr_as_string(res->msgs[i], "whenChanged", NULL);
+				whenChanged = ldb_string_to_time(tstring);
+
+				if (whenChanged != 0 && whenChanged < expunge_time) {
+					ret = dsdb_delete(samdb, res->msgs[i]->dn, DSDB_SEARCH_SHOW_RECYCLED|DSDB_MODIFY_RELAX);
+					if (ret != LDB_SUCCESS) {
+						DEBUG(1,(__location__ ": Failed to remove deleted object %s\n",
+							 ldb_dn_get_linearized(res->msgs[i]->dn)));
+					} else {
+						DEBUG(4,("Removed deleted object %s\n",
+							 ldb_dn_get_linearized(res->msgs[i]->dn)));
+						(*num_objects_removed)++;
+					}
+				}
 				continue;
 			}
-			tstring = ldb_msg_find_attr_as_string(res->msgs[i], "whenChanged", NULL);
-			if (tstring) {
-				whenChanged = ldb_string_to_time(tstring);
+
+			/* This must have a linked attribute */
+			for (j=0; j < res->msgs[i]->num_elements; j++) {
+				struct ldb_message_element *element = &res->msgs[i]->elements[j];
+				/* TODO this is O(log n) per attribute with deleted values */
+				const struct dsdb_attribute *attrib
+					= dsdb_attribute_by_lDAPDisplayName(schema, element->name);
+
+				for (k = 0; k < element->num_values; k++) {
+					struct ldb_val *value = &element->values[k];
+					uint64_t whenChanged = 0;
+					NTSTATUS status;
+					struct dsdb_dn *dn;
+					struct ldb_message_element *cleanup_elem = NULL;
+					char *guid_search_str = NULL, *guid_buf_str = NULL;
+					struct ldb_val cleanup_val;
+					struct GUID_txt_buf buf_guid;
+					struct GUID guid;
+					const struct ldb_val *guid_blob;
+
+					if (dsdb_dn_is_deleted_val(value) == false) {
+						continue;
+					}
+
+					dn = dsdb_dn_parse(tmp_ctx, samdb, &element->values[k],
+							   attrib->syntax->ldap_oid);
+					if (dn == NULL) {
+						DEBUG(1, ("Failed to parse linked attribute blob of %s on %s while expunging expired links\n", element->name,
+							  ldb_dn_get_linearized(res->msgs[i]->dn)));
+						continue;
+					}
+
+					status = dsdb_get_extended_dn_uint64(dn->dn, &whenChanged, "RMD_CHANGETIME");
+					if (!NT_STATUS_IS_OK(status)) {
+						DEBUG(1, ("Error: RMD_CHANGETIME is missing on a forward link.\n"));
+						talloc_free(dn);
+						continue;
+					}
+
+					if (whenChanged >= expunge_time_nttime) {
+						talloc_free(dn);
+						continue;
+					}
+
+					guid_blob = ldb_dn_get_extended_component(dn->dn, "GUID");
+					status = GUID_from_ndr_blob(guid_blob, &guid);
+					if (!NT_STATUS_IS_OK(status)) {
+						DEBUG(1, ("Error: Invalid GUID on link target.\n"));
+						talloc_free(dn);
+						continue;
+					}
+
+					guid_buf_str = GUID_buf_string(&guid, &buf_guid);
+					guid_search_str = talloc_asprintf(mem_ctx, "<GUID=%s>", guid_buf_str);
+					cleanup_val = data_blob_string_const(guid_search_str);
+
+					talloc_free(dn);
+
+					if (cleanup_msg == NULL) {
+						cleanup_msg = ldb_msg_new(mem_ctx);
+						if (cleanup_msg == NULL) {
+							return NT_STATUS_NO_MEMORY;
+						}
+						cleanup_msg->dn = res->msgs[i]->dn;
+					}
+
+					ret = ldb_msg_add_value(cleanup_msg, element->name, &cleanup_val, &cleanup_elem);
+					if (ret != LDB_SUCCESS) {
+						return NT_STATUS_NO_MEMORY;
+					}
+					cleanup_elem->flags = LDB_FLAG_MOD_DELETE;
+					num_modified++;
+				}
 			}
-			if (current_time - whenChanged > tombstoneLifetime*60*60*24) {
-				ret = dsdb_delete(samdb, res->msgs[i]->dn, DSDB_SEARCH_SHOW_RECYCLED|DSDB_MODIFY_RELAX);
+
+			if (num_modified > 0) {
+				ret = dsdb_modify(samdb, cleanup_msg, DSDB_REPLMD_VANISH_LINKS);
 				if (ret != LDB_SUCCESS) {
 					DEBUG(1,(__location__ ": Failed to remove deleted object %s\n",
 						 ldb_dn_get_linearized(res->msgs[i]->dn)));
 				} else {
 					DEBUG(4,("Removed deleted object %s\n",
 						 ldb_dn_get_linearized(res->msgs[i]->dn)));
+					*num_links_removed = *num_links_removed + num_modified;
 				}
+
 			}
 		}
-
 		TALLOC_FREE(tmp_ctx);
+
 	}
 
 	return NT_STATUS_OK;
