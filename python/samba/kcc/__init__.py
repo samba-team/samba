@@ -2235,9 +2235,9 @@ class KCC(object):
 
                 while candidates and not tnode.has_sufficient_edges():
                     other = random.choice(candidates)
-                    DEBUG("trying to add candidate %s" % other.dsa_dstr)
+                    DEBUG("trying to add candidate %s" % other.dsa_dnstr)
                     if not tnode.add_edge_from(other):
-                        debug.DEBUG_RED("could not add %s" % other.dsa_dstr)
+                        debug.DEBUG_RED("could not add %s" % other.dsa_dnstr)
                     candidates.remove(other)
             else:
                 DEBUG_FN("not adding links to %s: nodes %s, links is %s/%s" %
