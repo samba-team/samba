@@ -600,6 +600,32 @@ class dc_join(object):
         if ctx.ntds_dn:
             ctx.join_add_ntdsdsa()
 
+            # Add the Replica-Locations or RO-Replica-Locations attributes
+            # TODO Is this supposed to be for the schema partition too?
+            expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.domaindns_zone)
+            domain = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+                                      attrs=[],
+                                      base=ctx.samdb.get_partitions_dn(),
+                                      expression=expr)
+
+            expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.forestdns_zone)
+            forest = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+                                      attrs=[],
+                                      base=ctx.samdb.get_partitions_dn(),
+                                      expression=expr)
+
+            for part in (domain, forest):
+                if len(part) == 1:
+                    m = ldb.Message()
+                    m.dn = part[0].dn
+                    attr = "msDS-NC-Replica-Locations"
+                    if ctx.RODC:
+                        attr = "msDS-NC-RO-Replica-Locations"
+
+                    m[attr] = ldb.MessageElement(ctx.ntds_dn,
+                                                 ldb.FLAG_MOD_ADD, attr)
+                    ctx.samdb.modify(m)
+
         if ctx.connection_dn is not None:
             print "Adding %s" % ctx.connection_dn
             rec = {
@@ -867,16 +893,17 @@ class dc_join(object):
                                replica_flags=ctx.domain_replica_flags)
             print "Done with always replicated NC (base, config, schema)"
 
+            # At this point we should already have an entry in the ForestDNS
+            # and DomainDNS NC (those under CN=Partions,DC=...) in order to
+            # indicate that we hold a replica for this NC.
+            #
+            # FIXME make this optional based on --dns-backend=
             for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
                 if nc in ctx.nc_list:
                     print "Replicating %s" % (str(nc))
                     repl.replicate(nc, source_dsa_invocation_id,
                                     destination_dsa_guid, rodc=ctx.RODC,
                                     replica_flags=ctx.replica_flags)
-
-            # FIXME At this point we should add an entry in the forestdns and domaindns NC
-            # (those under CN=Partions,DC=...)
-            # in order to indicate that we hold a replica for this NC
 
             if ctx.RODC:
                 repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
