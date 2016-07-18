@@ -54,9 +54,14 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsMoveObjectTestCase, self).setUp()
+        # disable automatic replication temporary
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
+
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
+
         self.ou1_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU1")
         self.ou1_dn.add_base(self.ldb_dc1.get_default_basedn())
         ou1 = {}
@@ -72,10 +77,6 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ou2["objectclass"] = "organizationalUnit"
         ou2["ou"] = self.ou2_dn.get_component_value(0)
         self.ldb_dc1.add(ou2)
-
-        # disable automatic replication temporary
-        self._disable_inbound_repl(self.dnsname_dc1)
-        self._disable_inbound_repl(self.dnsname_dc2)
 
         # trigger replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
@@ -1828,9 +1829,14 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsMoveBetweenTreeOfObjectTestCase, self).setUp()
+        # disable automatic replication temporary
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
+
         # make sure DCs are synchronized before the test
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
+
         self.ou1_dn = ldb.Dn(self.ldb_dc1, "OU=DrsOU1")
         self.ou1_dn.add_base(self.ldb_dc1.get_default_basedn())
         self.ou1 = {}
@@ -1882,10 +1888,6 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self.ou6["dn"] = self.ou6_dn
         self.ou6["objectclass"] = "organizationalUnit"
         self.ou6["ou"] = self.ou6_dn.get_component_value(0)
-
-        # disable automatic replication temporary
-        self._disable_inbound_repl(self.dnsname_dc1)
-        self._disable_inbound_repl(self.dnsname_dc2)
 
 
     def tearDown(self):
