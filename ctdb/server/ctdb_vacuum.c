@@ -1445,12 +1445,10 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 
 	/* we don't vacuum if we are in recovery mode, or db frozen */
 	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ||
-	    ctdb->freeze_mode[ctdb_db->priority] != CTDB_FREEZE_NONE) {
+	    ctdb_db_frozen(ctdb_db)) {
 		DEBUG(DEBUG_INFO, ("Not vacuuming %s (%s)\n", ctdb_db->db_name,
-				   ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ? "in recovery"
-				   : ctdb->freeze_mode[ctdb_db->priority] == CTDB_FREEZE_PENDING
-				   ? "freeze pending"
-				   : "frozen"));
+				   ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ?
+					"in recovery" : "frozen"));
 		tevent_add_timer(ctdb->ev, vacuum_handle,
 				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
 				 ctdb_vacuum_event, vacuum_handle);
