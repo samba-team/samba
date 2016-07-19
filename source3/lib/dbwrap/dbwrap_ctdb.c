@@ -1596,7 +1596,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct db_ctdb_ctx *db_ctdb;
 	char *db_path;
 	struct loadparm_context *lp_ctx;
-	struct ctdb_db_priority prio;
 	int32_t cstatus;
 	int ret;
 
@@ -1644,21 +1643,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	/* only pass through specific flags */
 	tdb_flags &= TDB_SEQNUM|TDB_VOLATILE|
 		TDB_MUTEX_LOCKING|TDB_CLEAR_IF_FIRST;
-
-	prio.db_id = db_ctdb->db_id;
-	prio.priority = lock_order;
-
-	ret = ctdbd_control_local(
-		db_ctdb->conn, CTDB_CONTROL_SET_DB_PRIORITY, 0, 0,
-		make_tdb_data((uint8_t *)&prio, sizeof(prio)),
-		NULL, NULL, &cstatus);
-
-	if ((ret != 0) || (cstatus != 0)) {
-		DEBUG(1, ("CTDB_CONTROL_SET_DB_PRIORITY failed: %s, "
-			  "%"PRIi32"\n", strerror(ret), cstatus));
-		TALLOC_FREE(result);
-		return NULL;
-	}
 
 	if (!result->persistent &&
 	    (dbwrap_flags & DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS))
