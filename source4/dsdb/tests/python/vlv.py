@@ -988,9 +988,6 @@ class VLVTests(samba.tests.TestCase):
             for before in [0, 1, 3]:
                 for after in [0, 4]:
                     for gte in gte_tests:
-                        if attr == 'audio' and 0:
-                            import pdb
-                            pdb.set_trace()
                         vlv_search = encode_vlv_control(before=before,
                                                         after=after,
                                                         gte=gte)
