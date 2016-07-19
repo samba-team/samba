@@ -144,7 +144,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         req8.highwatermark.reserved_usn = 0
         req8.highwatermark.highest_usn = 0
         req8.uptodateness_vector = None
-        req8.replica_flags = 0
+        req8.replica_flags = DRSUAPI_DRS_SYNC_FORCED
         req8.max_object_count = 1
         req8.max_ndr_size = 402116
         req8.extended_op = DRSUAPI_EXOP_REPL_OBJ
