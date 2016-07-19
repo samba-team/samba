@@ -416,6 +416,10 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	}
 	tevent_req_set_callback(req, notifyd_stopped, msg);
 
+	/* Block those signals that we are not handling */
+	BlockSignals(True, SIGHUP);
+	BlockSignals(True, SIGUSR1);
+
 	messaging_send(msg, pid_to_procid(getppid()), MSG_SMB_NOTIFY_STARTED,
 		       NULL);
 
