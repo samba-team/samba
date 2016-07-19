@@ -64,7 +64,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
                   ndr/krb5pac.c
 		  ''',
 	autoproto='ndr/proto.h',
-	deps='torture'
+	deps='torture krb5samba'
 	)
 
 torture_rpc_backupkey = ''
