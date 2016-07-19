@@ -90,7 +90,7 @@ static const struct {
 	{ "DBSizeWarn",        100000000,  offsetof(struct ctdb_tunable_list, db_size_warn), false },
 	{ "PullDBPreallocation", 10*1024*1024,  offsetof(struct ctdb_tunable_list, pulldb_preallocation_size), false },
 	{ "NoIPHostOnAllDisabled",    0,  offsetof(struct ctdb_tunable_list, no_ip_host_on_all_disabled), false },
-	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable_list, samba3_hack), false },
+	{ "Samba3AvoidDeadlocks", 0, offsetof(struct ctdb_tunable_list, samba3_hack), true },
 	{ "TDBMutexEnabled", 0, offsetof(struct ctdb_tunable_list, mutex_enabled), false },
 	{ "LockProcessesPerDB", 200, offsetof(struct ctdb_tunable_list, lock_processes_per_db), false },
 	{ "RecBufferSizeLimit", 1000000, offsetof(struct ctdb_tunable_list, rec_buffer_size_limit), false },
