@@ -852,7 +852,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 				 const char **errormsg)
 {
 	uint32_t recmode = *(uint32_t *)indata.dptr;
-	int i;
 	struct ctdb_db_context *ctdb_db;
 	struct set_recmode_state *state;
 	struct ctdb_cluster_mutex_handle *h;
@@ -896,10 +895,8 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	}
 
 	/* force the databases to thaw */
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb_db_prio_frozen(ctdb, i)) {
-			ctdb_control_thaw(ctdb, i, false);
-		}
+	if (ctdb_db_all_frozen(ctdb)) {
+		ctdb_control_thaw(ctdb, false);
 	}
 
 	if (ctdb->recovery_lock == NULL) {

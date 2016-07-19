@@ -296,8 +296,8 @@ struct ctdb_context {
 	TALLOC_CTX *keepalive_ctx;
 	TALLOC_CTX *check_public_ifaces_ctx;
 	struct ctdb_tunable_list tunable;
-	enum ctdb_freeze_mode freeze_mode[NUM_DB_PRIORITIES+1];
-	struct ctdb_freeze_handle *freeze_handles[NUM_DB_PRIORITIES+1];
+	enum ctdb_freeze_mode freeze_mode;
+	struct ctdb_freeze_handle *freeze_handle;
 	bool freeze_transaction_started;
 	uint32_t freeze_transaction_id;
 	ctdb_sock_addr *address;
@@ -658,8 +658,7 @@ int32_t ctdb_control_db_thaw(struct ctdb_context *ctdb, uint32_t db_id);
 
 int32_t ctdb_control_freeze(struct ctdb_context *ctdb,
 			    struct ctdb_req_control_old *c, bool *async_reply);
-int32_t ctdb_control_thaw(struct ctdb_context *ctdb, uint32_t priority,
-			  bool check_recmode);
+int32_t ctdb_control_thaw(struct ctdb_context *ctdb, bool check_recmode);
 
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
 
