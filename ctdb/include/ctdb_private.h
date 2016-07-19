@@ -675,7 +675,6 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 
 bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
-bool ctdb_db_prio_frozen(struct ctdb_context *ctdb, uint32_t priority);
 bool ctdb_db_all_frozen(struct ctdb_context *ctdb);
 
 /* from server/ctdb_keepalive.c */
