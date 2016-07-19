@@ -25,6 +25,92 @@ The ldap server has support for the LDAP_SERVER_NOTIFICATION_OID
 control. This can be used to monitor the active directory database
 for changes.
 
+VLV - Virtual List View
+-----------------------
+
+The VLV Control allows applications to page the LDAP directory in the
+way you might expect a live phone book application to operate, without
+first downloading the entire directory.
+
+DRS Replication for the AD DC
+-----------------------------
+
+DRS Replication in Samba 4.5 is now much more efficient in handling
+linked attributes, particularly in large domains with over 1000 group
+memberships or other links.
+
+Replication is also much more reliable in the handling of tree
+renames, such as the rename of an organizational unit containing many
+users.  Extensive tests have been added to ensure this code remains
+reliable, particularly in the case of conflicts between objects added
+with the same name on different servers.
+
+Schema updates are also handled much more reliably.
+
+replPropertyMetaData Changes
+----------------------------
+
+During the development of the DRS replication, tests showed that Samba
+stores the replPropertyMetaData object incorrectly.  To address this,
+be aware that dbcheck will now detect and offer to fix all objects in
+the domain for this error.
+
+Linked attributes on deleted objects
+------------------------------------
+
+In Active Directory, an object that has been tombstoned or recycled
+has no linked attributes.  However, Samba incorrectly maintained such
+links, slowing replication and run-time performance.  dbcheck now
+offers to remove such links, and they are no longer kept after the
+object is tombstoned or recycled.
+
+Improved AD DC performance
+--------------------------
+
+Many other improvements have been made to our LDAP database layer in
+the AD DC, to improve performance, both during samba-tool domain
+provision and at runtime.
+
+Other dbcheck improvements
+--------------------------
+
+ - samba-tool dbcheck can now find and fix a missing or corrupted
+   'deleted objects' container.
+ - BUG 11433: samba-dbcheck no longer offers to resort auxiliary class values
+   in objectClass as these were then re-sorted at the next dbcheck indefinitely.
+
+Tombstone Reanimation
+---------------------
+
+Samba now supports tombstone reanimation, a feature in the AD DC
+allowing tombstones, that is objects which have been deleted, to be
+restored with the original SID and GUID still in place.
+
+Multiple DNS Forwarders on the AD DC
+------------------------------------
+
+Multiple DNS forwarders are now supported on the AD DC, allowing
+samba to fall back between two different DNS servers for forwarded queries.
+
+Password quality plugin support in the AD DC
+--------------------------------------------
+
+The check password script now operates correctly in the AD DC (this
+was silently ignored in past releases)
+
+pwdLastSet is now correctly honoured
+------------------------------------
+
+BUG 9654: the pwdLastSet attribute is now correctly handled (this previously
+permitted passwords that next expire).
+
+net ads dns unregister
+----------------------
+
+It is now possible to remove the DNS entries created with 'net ads register'
+with the matching 'net ads unregister' command.
+
+
 
 REMOVED FEATURES
 ================
