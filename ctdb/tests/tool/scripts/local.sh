@@ -50,6 +50,11 @@ setup_ctdbd ()
 	test_cleanup cleanup_ctdbd
 }
 
+ctdbd_getpid ()
+{
+	cat "$ctdbd_pidfile"
+}
+
 setup_natgw ()
 {
 	debug "Setting up NAT gateway"
