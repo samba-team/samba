@@ -47,7 +47,6 @@
  * ctdb_lock_record()      - get a lock on a record
  * ctdb_lock_db()          - get a lock on a DB
  * ctdb_lock_alldb_prio()  - get a lock on all DBs with given priority
- * ctdb_lock_alldb()       - get a lock on all DBs
  *
  *  auto_mark              - whether to mark/unmark DBs in before/after callback
  *                           = false is used for freezing databases for
@@ -60,14 +59,12 @@ enum lock_type {
 	LOCK_RECORD,
 	LOCK_DB,
 	LOCK_ALLDB_PRIO,
-	LOCK_ALLDB,
 };
 
 static const char * const lock_type_str[] = {
 	"lock_record",
 	"lock_db",
 	"lock_alldb_prio",
-	"lock_alldb",
 };
 
 struct lock_request;
@@ -186,24 +183,6 @@ int ctdb_lockall_mark_prio(struct ctdb_context *ctdb, uint32_t priority)
 	return ctdb_db_prio_iterator(ctdb, priority, db_lock_mark_handler, NULL);
 }
 
-static int ctdb_lockall_mark(struct ctdb_context *ctdb)
-{
-	uint32_t priority;
-
-	for (priority=1; priority<=NUM_DB_PRIORITIES; priority++) {
-		int ret;
-
-		ret = ctdb_db_prio_iterator(ctdb, priority,
-					    db_lock_mark_handler, NULL);
-		if (ret != 0) {
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
-
 /*
  * lock all databases - unmark only
  */
@@ -256,24 +235,6 @@ int ctdb_lockall_unmark_prio(struct ctdb_context *ctdb, uint32_t priority)
 	return ctdb_db_prio_iterator(ctdb, priority, db_lock_unmark_handler,
 				     NULL);
 }
-
-static int ctdb_lockall_unmark(struct ctdb_context *ctdb)
-{
-	uint32_t priority;
-
-	for (priority=NUM_DB_PRIORITIES; priority>0; priority--) {
-		int ret;
-
-		ret = ctdb_db_prio_iterator(ctdb, priority,
-					    db_lock_unmark_handler, NULL);
-		if (ret != 0) {
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
 
 static void ctdb_lock_schedule(struct ctdb_context *ctdb);
 
@@ -355,10 +316,6 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 		case LOCK_ALLDB_PRIO:
 			ctdb_lockall_mark_prio(lock_ctx->ctdb, lock_ctx->priority);
 			break;
-
-		case LOCK_ALLDB:
-			ctdb_lockall_mark(lock_ctx->ctdb);
-			break;
 		}
 	}
 
@@ -391,10 +348,6 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 
 		case LOCK_ALLDB_PRIO:
 			ctdb_lockall_unmark_prio(lock_ctx->ctdb, lock_ctx->priority);
-			break;
-
-		case LOCK_ALLDB:
-			ctdb_lockall_unmark(lock_ctx->ctdb);
 			break;
 		}
 	}
@@ -609,7 +562,6 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 	struct ctdb_context *ctdb = lock_ctx->ctdb;
 	const char **args = NULL;
 	int nargs, i;
-	int priority;
 	struct db_namelist list;
 
 	switch (lock_ctx->type) {
@@ -625,14 +577,6 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		nargs = 3;
 		ctdb_db_prio_iterator(ctdb, lock_ctx->priority,
 				      db_count_handler, &nargs);
-		break;
-
-	case LOCK_ALLDB:
-		nargs = 3;
-		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
-			ctdb_db_prio_iterator(ctdb, priority,
-					      db_count_handler, &nargs);
-		}
 		break;
 	}
 
@@ -673,16 +617,6 @@ static bool lock_helper_args(TALLOC_CTX *mem_ctx,
 		list.n = 3;
 		ctdb_db_prio_iterator(ctdb, lock_ctx->priority,
 				      db_name_handler, &list);
-		break;
-
-	case LOCK_ALLDB:
-		args[2] = talloc_strdup(args, "DB");
-		list.names = args;
-		list.n = 3;
-		for (priority=1; priority<NUM_DB_PRIORITIES; priority++) {
-			ctdb_db_prio_iterator(ctdb, priority,
-					      db_name_handler, &list);
-		}
 		break;
 	}
 
@@ -1035,25 +969,3 @@ struct lock_request *ctdb_lock_alldb_prio(TALLOC_CTX *mem_ctx,
 				  LOCK_ALLDB_PRIO,
 				  auto_mark);
 }
-
-
-/*
- * obtain locks on all databases
- */
-struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
-				     struct ctdb_context *ctdb,
-				     bool auto_mark,
-				     void (*callback)(void *, bool),
-				     void *private_data)
-{
-	return ctdb_lock_internal(mem_ctx,
-				  ctdb,
-				  NULL,
-				  tdb_null,
-				  0,
-				  callback,
-				  private_data,
-				  LOCK_ALLDB,
-				  auto_mark);
-}
-

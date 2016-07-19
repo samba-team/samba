@@ -721,12 +721,6 @@ struct lock_request *ctdb_lock_alldb_prio(TALLOC_CTX *mem_ctx,
 					  void (*callback)(void *, bool),
 					  void *private_data);
 
-struct lock_request *ctdb_lock_alldb(TALLOC_CTX *mem_ctx,
-				     struct ctdb_context *ctdb,
-				     bool auto_mark,
-				     void (*callback)(void *, bool),
-				     void *private_data);
-
 /* from ctdb_logging.c */
 
 extern const char *debug_extra;
