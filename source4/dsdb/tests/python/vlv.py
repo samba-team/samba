@@ -340,7 +340,9 @@ class VLVTests(samba.tests.TestCase):
             return
 
         if expected_order is not None:
-            print "expected order: %s" % expected_order
+            print "expected order: %s" % expected_order[:20]
+            if len(expected_order) > 20:
+                print "... and %d more not shown" % (len(expected_order) - 20)
 
         print "offset %d before %d after %d" % (offset, before, after)
         print "start %d end %d" % (start, end)
@@ -761,6 +763,173 @@ class VLVTests(samba.tests.TestCase):
                         results = [x[attr][0] for x in res]
                         self.assertCorrectResults(results, expected_order,
                                                   offset, before, after)
+
+    def get_expected_order_showing_deleted(self, attr,
+                                           expression="(|(cn=vlvtest*)(cn=vlv-deleted*))",
+                                           base=None,
+                                           scope=ldb.SCOPE_SUBTREE
+                                           ):
+        """Fetch the whole list sorted on the attribute, using sort only,
+        searching in the entire tree, not just our OU. This is the
+        way to find deleted objects.
+        """
+        t = time.time()
+        if base is None:
+            base = self.base_dn
+        sort_control = "server_sort:1:0:%s" % attr
+        controls = [sort_control, "show_deleted:1"]
+
+        res = self.ldb.search(base,
+                              scope=scope,
+                              expression=expression,
+                              attrs=[attr],
+                              controls=controls)
+        results = [x[attr][0] for x in res]
+        print "get_expected_order_showing_deleted took %.1f" % (time.time() - t)
+        return results
+
+    def add_deleted_users(self, n):
+        deleted_users = [self.create_user(i, n, prefix='vlv-deleted')
+                         for i in range(n)]
+
+        for user in deleted_users:
+            self.delete_user(user)
+
+    def test_server_vlv_no_cookie_show_deleted(self):
+        """What do we see with the show_deleted control?"""
+        attrs = ['objectGUID',
+                 'cn',
+                 'sAMAccountName',
+                 'objectSid',
+                 'name',
+                 'whenChanged',
+                 'usnChanged'
+        ]
+
+        # add some deleted users first, just in case there are none
+        self.add_deleted_users(6)
+        random.seed(22)
+        expression = "(|(cn=vlvtest*)(cn=vlv-deleted*))"
+
+        for attr in attrs:
+            show_deleted_control = "show_deleted:1"
+            expected_order = self.get_expected_order_showing_deleted(attr,
+                                                                     expression)
+            n = len(expected_order)
+            sort_control = "server_sort:1:0:%s" % attr
+            for before in [3, 1, 0]:
+                for after in [0, 2]:
+                    # don't test every position, because there could be hundreds.
+                    # jump back and forth instead
+                    for i in range(20):
+                        offset = random.randrange(max(1, before - 2),
+                                                  min(n - after + 2, n))
+                        res = self.ldb.search(self.base_dn,
+                                              expression=expression,
+                                              scope=ldb.SCOPE_SUBTREE,
+                                              attrs=[attr],
+                                              controls=[sort_control,
+                                                        show_deleted_control,
+                                                        "vlv:1:%d:%d:%d:0" %
+                                                        (before, after,
+                                                         offset)
+                                              ]
+                        )
+                        results = [x[attr][0] for x in res]
+                        self.assertCorrectResults(results, expected_order,
+                                                  offset, before, after)
+
+    def test_server_vlv_no_cookie_show_deleted_only(self):
+        """What do we see with the show_deleted control when we're not looking
+        at any non-deleted things"""
+        attrs = ['objectGUID',
+                 'cn',
+                 'sAMAccountName',
+                 'objectSid',
+                 'whenChanged',
+        ]
+
+        # add some deleted users first, just in case there are none
+        self.add_deleted_users(4)
+        base = 'CN=Deleted Objects,%s' % self.base_dn
+        expression = "(cn=vlv-deleted*)"
+        for attr in attrs:
+            show_deleted_control = "show_deleted:1"
+            expected_order = self.get_expected_order_showing_deleted(attr,
+                                                    expression=expression,
+                                                    base=base,
+                                                    scope=ldb.SCOPE_ONELEVEL)
+            print ("searching for attr %s amongst %d deleted objects" %
+                   (attr, len(expected_order)))
+            sort_control = "server_sort:1:0:%s" % attr
+            step = max(len(expected_order) // 10, 1)
+            for before in [3, 0]:
+                for after in [0, 2]:
+                    for offset in range(1 + before,
+                                        len(expected_order) - after,
+                                        step):
+                        res = self.ldb.search(base,
+                                              expression=expression,
+                                              scope=ldb.SCOPE_ONELEVEL,
+                                              attrs=[attr],
+                                              controls=[sort_control,
+                                                        show_deleted_control,
+                                                        "vlv:1:%d:%d:%d:0" %
+                                                        (before, after,
+                                                         offset)])
+                        results = [x[attr][0] for x in res]
+                        self.assertCorrectResults(results, expected_order,
+                                                  offset, before, after)
+
+
+
+    def test_server_vlv_with_cookie_show_deleted(self):
+        """What do we see with the show_deleted control?"""
+        attrs = ['objectGUID',
+                 'cn',
+                 'sAMAccountName',
+                 'objectSid',
+                 'name',
+                 'whenChanged',
+                 'usnChanged'
+        ]
+        self.add_deleted_users(6)
+        random.seed(23)
+        for attr in attrs:
+            expected_order = self.get_expected_order(attr)
+            sort_control = "server_sort:1:0:%s" % attr
+            res = None
+            show_deleted_control = "show_deleted:1"
+            expected_order = self.get_expected_order_showing_deleted(attr)
+            n = len(expected_order)
+            expression = "(|(cn=vlvtest*)(cn=vlv-deleted*))"
+            for before in [3, 2, 1, 0]:
+                after = before
+                for i in range(20):
+                    offset = random.randrange(max(1, before - 2),
+                                              min(n - after + 2, n))
+                    if res is None:
+                        vlv_search = "vlv:1:%d:%d:%d:0" % (before, after,
+                                                           offset)
+                    else:
+                        cookie = get_cookie(res.controls, n)
+                        vlv_search = ("vlv:1:%d:%d:%d:%s:%s" %
+                                      (before, after, offset, n,
+                                       cookie))
+
+                    res = self.ldb.search(self.base_dn,
+                                          expression=expression,
+                                          scope=ldb.SCOPE_SUBTREE,
+                                          attrs=[attr],
+                                          controls=[sort_control,
+                                                    vlv_search,
+                                                    show_deleted_control])
+
+                    results = [x[attr][0] for x in res]
+
+                    self.assertCorrectResults(results, expected_order,
+                                              offset, before, after)
+
 
     def test_server_vlv_gte_with_cookie(self):
         attrs = [x for x in self.users[0].keys() if x not in
