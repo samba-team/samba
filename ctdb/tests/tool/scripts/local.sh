@@ -67,9 +67,8 @@ setup_natgw ()
 	natgw_config_dir="${TEST_VAR_DIR}/natgw_config"
 	mkdir -p "$natgw_config_dir"
 
-	# These will accumulate, 1 per test... but will be cleaned up
-	# at the end.
 	export CTDB_NATGW_NODES=$(mktemp --tmpdir="$natgw_config_dir")
+	test_cleanup "rm -f $CTDB_NATGW_NODES"
 
 	cat >"$CTDB_NATGW_NODES"
 }
@@ -91,9 +90,8 @@ setup_lvs ()
 	lvs_config_dir="${TEST_VAR_DIR}/lvs_config"
 	mkdir -p "$lvs_config_dir"
 
-	# These will accumulate, 1 per test... but will be cleaned up
-	# at the end.
 	export CTDB_LVS_NODES=$(mktemp --tmpdir="$lvs_config_dir")
+	test_cleanup "rm -f ${CTDB_LVS_NODES}"
 
 	cat >"$CTDB_LVS_NODES"
 }
@@ -105,11 +103,10 @@ setup_nodes ()
     _v="CTDB_NODES${_pnn:+_}${_pnn}"
     debug "Setting up ${_v}"
 
-    # These will accumulate, 1 per test... but will be cleaned up at
-    # the end.
     eval export "${_v}"=$(mktemp --tmpdir="$TEST_VAR_DIR")
 
     eval _f="\${${_v}}"
+    test_cleanup "rm -f ${_f}"
     cat >"$_f"
 
     # You can't be too careful about what might be in the
