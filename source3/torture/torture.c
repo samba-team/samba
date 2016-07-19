@@ -6014,6 +6014,151 @@ static bool run_acl_symlink_test(int dummy)
 }
 
 /*
+  Test POSIX can delete a file containing streams.
+ */
+static bool run_posix_stream_delete(int dummy)
+{
+	struct cli_state *cli1 = NULL;
+	struct cli_state *cli2 = NULL;
+	const char *fname = "streamfile";
+	const char *stream_fname = "streamfile:Zone.Identifier:$DATA";
+	uint16_t fnum1 = (uint16_t)-1;
+	bool correct = false;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX stream delete test\n");
+
+	if (!torture_open_connection(&cli1, 0) ||
+			!torture_open_connection(&cli2, 1)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli2);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create the file. */
+	status = cli_ntcreate(cli1,
+			fname,
+			0,
+			READ_CONTROL_ACCESS,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_CREATE,
+			0x0,
+			0x0,
+			&fnum1,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+	fnum1 = (uint16_t)-1;
+
+	/* Now create the stream. */
+	status = cli_ntcreate(cli1,
+			stream_fname,
+			0,
+			FILE_WRITE_DATA,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE,
+			FILE_CREATE,
+			0x0,
+			0x0,
+			&fnum1,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_ntcreate of %s failed (%s)\n",
+			stream_fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Leave the stream handle open... */
+
+	/* POSIX unlink should fail. */
+	status = cli_posix_unlink(cli2, fname);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_unlink of %s succeeded, should have failed\n",
+			fname);
+		goto out;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		printf("cli_posix_unlink of %s failed with (%s) "
+			"should have been NT_STATUS_SHARING_VIOLATION\n",
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/* Close the stream handle. */
+	status = cli_close(cli1, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close of %s failed (%s)\n",
+			stream_fname,
+			nt_errstr(status));
+		goto out;
+	}
+	fnum1 = (uint16_t)-1;
+
+	/* POSIX unlink after stream handle closed should succeed. */
+	status = cli_posix_unlink(cli2, fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_unlink of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		goto out;
+	}
+
+	printf("POSIX stream delete test passed\n");
+	correct = true;
+
+  out:
+
+	if (fnum1 != (uint16_t)-1) {
+		cli_close(cli1, fnum1);
+		fnum1 = (uint16_t)-1;
+	}
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	if (!torture_close_connection(cli1)) {
+		correct = false;
+	}
+	if (!torture_close_connection(cli2)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
+/*
   Test setting EA's are rejected on symlinks.
  */
 static bool run_ea_symlink_test(int dummy)
@@ -10297,6 +10442,7 @@ static struct {
 	{"POSIX-APPEND", run_posix_append, 0},
 	{"POSIX-SYMLINK-ACL", run_acl_symlink_test, 0},
 	{"POSIX-SYMLINK-EA", run_ea_symlink_test, 0},
+	{"POSIX-STREAM-DELETE", run_posix_stream_delete, 0},
 	{"POSIX-OFD-LOCK", run_posix_ofd_lock_test, 0},
 	{"CASE-INSENSITIVE-CREATE", run_case_insensitive_create, 0},
 	{"ASYNC-ECHO", run_async_echo, 0},

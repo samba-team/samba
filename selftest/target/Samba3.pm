@@ -1590,7 +1590,7 @@ sub provision($$$$$$$$)
 	force create mode = 0
 	directory mask = 0777
 	force directory mode = 0
-	vfs objects = xattr_tdb
+	vfs objects = xattr_tdb streams_depot
 [aio]
 	copy = tmp
 	aio read size = 1
