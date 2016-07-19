@@ -388,7 +388,6 @@ struct ctdb_db_context {
 	struct ctdb_db_context *next, *prev;
 	struct ctdb_context *ctdb;
 	uint32_t db_id;
-	uint32_t priority;
 	bool persistent;
 	bool readonly; /* Do we support read-only delegations ? */
 	bool sticky; /* Do we support sticky records ? */

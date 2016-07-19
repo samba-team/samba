@@ -767,7 +767,6 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	ctdb_db = talloc_zero(ctdb, struct ctdb_db_context);
 	CTDB_NO_MEMORY(ctdb, ctdb_db);
 
-	ctdb_db->priority = 1;
 	ctdb_db->ctdb = ctdb;
 	ctdb_db->db_name = talloc_strdup(ctdb_db, db_name);
 	CTDB_NO_MEMORY(ctdb, ctdb_db->db_name);
