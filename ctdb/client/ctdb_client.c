@@ -4420,59 +4420,6 @@ int ctdb_ctrl_get_ban(struct ctdb_context *ctdb, struct timeval timeout,
 	return 0;
 }
 
-
-int ctdb_ctrl_set_db_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, struct ctdb_db_priority *db_prio)
-{
-	int ret;
-	int32_t res;
-	TDB_DATA data;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-
-	data.dptr = (uint8_t*)db_prio;
-	data.dsize = sizeof(*db_prio);
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_SET_DB_PRIORITY, 0, data,
-			   tmp_ctx, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set_db_priority failed\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	talloc_free(tmp_ctx);
-
-	return 0;
-}
-
-int ctdb_ctrl_get_db_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t db_id, uint32_t *priority)
-{
-	int ret;
-	int32_t res;
-	TDB_DATA data;
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-
-	data.dptr = (uint8_t*)&db_id;
-	data.dsize = sizeof(db_id);
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_DB_PRIORITY, 0, data,
-			   tmp_ctx, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res < 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get_db_priority failed\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
-
-	if (priority) {
-		*priority = res;
-	}
-
-	talloc_free(tmp_ctx);
-
-	return 0;
-}
-
 int ctdb_ctrl_getstathistory(struct ctdb_context *ctdb,
 			     struct timeval timeout, uint32_t destnode,
 			     TALLOC_CTX *mem_ctx,
