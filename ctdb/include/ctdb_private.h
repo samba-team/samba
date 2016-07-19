@@ -689,8 +689,6 @@ struct lock_request;
 typedef int (*ctdb_db_handler_t)(struct ctdb_db_context *ctdb_db,
 				 void *private_data);
 
-int ctdb_db_prio_iterator(struct ctdb_context *ctdb, uint32_t priority,
-			  ctdb_db_handler_t handler, void *private_data);
 int ctdb_db_iterator(struct ctdb_context *ctdb, ctdb_db_handler_t handler,
 		     void *private_data);
 

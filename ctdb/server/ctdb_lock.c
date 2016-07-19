@@ -93,25 +93,6 @@ struct lock_request {
 };
 
 
-int ctdb_db_prio_iterator(struct ctdb_context *ctdb, uint32_t priority,
-			  ctdb_db_handler_t handler, void *private_data)
-{
-	struct ctdb_db_context *ctdb_db;
-	int ret;
-
-	for (ctdb_db = ctdb->db_list; ctdb_db; ctdb_db = ctdb_db->next) {
-		if (ctdb_db->priority != priority) {
-			continue;
-		}
-		ret = handler(ctdb_db, private_data);
-		if (ret != 0) {
-			return -1;
-		}
-	}
-
-	return 0;
-}
-
 int ctdb_db_iterator(struct ctdb_context *ctdb, ctdb_db_handler_t handler,
 		     void *private_data)
 {
