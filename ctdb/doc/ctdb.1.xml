@@ -1660,14 +1660,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     </refsect2>
 
     <refsect2>
-      <title>thaw</title>
-      <para>
-	Thaw a previously frozen node.
-      </para>
-    </refsect2>
-
-
-    <refsect2>
       <title>eventscript <parameter>ARGUMENTS</parameter></title>
       <para>
 	This is a debugging command. This command can be used to manually

@@ -4309,30 +4309,6 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
-
-/*
-  thaw a node
- */
-static int control_thaw(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	uint32_t priority;
-	
-	if (argc == 1) {
-		priority = strtol(argv[0], NULL, 0);
-	} else {
-		priority = 0;
-	}
-	DEBUG(DEBUG_ERR,("Thaw by priority %u\n", priority));
-
-	ret = ctdb_ctrl_thaw_priority(ctdb, TIMELIMIT(), options.pnn, priority);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to thaw node %u\n", options.pnn));
-	}		
-	return 0;
-}
-
-
 /*
   attach to a database
  */
@@ -5767,7 +5743,6 @@ static const struct {
 	{ "recover",         control_recover,           true,	false,  "force recovery" },
 	{ "sync", 	     control_ipreallocate,      false,	false,  "wait until ctdbd has synced all state changes" },
 	{ "ipreallocate",    control_ipreallocate,      false,	false,  "force the recovery daemon to perform a ip reallocation procedure" },
-	{ "thaw",            control_thaw,              true,	false,  "thaw databases", "[priority:1-3]" },
 	{ "isnotrecmaster",  control_isnotrecmaster,    false,	false,  "check if the local node is recmaster or not" },
 	{ "gratiousarp",     control_gratious_arp,      false,	false, "send a gratious arp", "<ip> <interface>" },
 	{ "tickle",          tickle_tcp,                false,	false, "send a tcp tickle ack", "<srcip:port> <dstip:port>" },
