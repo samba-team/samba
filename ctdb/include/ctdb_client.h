@@ -325,11 +325,6 @@ int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode);
 
-int ctdb_ctrl_thaw_priority(struct ctdb_context *ctdb, struct timeval timeout,
-			    uint32_t destnode, uint32_t priority);
-int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout,
-		   uint32_t destnode);
-
 int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode);
 

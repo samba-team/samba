@@ -2486,31 +2486,6 @@ int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 }
 
 /*
-  thaw databases of a certain priority
- */
-int ctdb_ctrl_thaw_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t priority)
-{
-	int ret;
-	int32_t res;
-
-	ret = ctdb_control(ctdb, destnode, priority, 
-			   CTDB_CONTROL_THAW, 0, tdb_null, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control thaw failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/* thaw all databases */
-int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
-{
-	return ctdb_ctrl_thaw_priority(ctdb, timeout, destnode, 0);
-}
-
-/*
   get pnn of a node, or -1
  */
 int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
