@@ -302,25 +302,47 @@ struct torture_suite *ndr_krb5pac_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "krb5pac");
 
-	torture_suite_add_ndr_pull_test(suite,
+	torture_suite_add_ndr_pull_validate_test(suite,
 					PAC_DATA_RAW,
-					PAC_DATA_data,
+					data_blob_const(PAC_DATA_data,
+							sizeof(PAC_DATA_data)),
 					NULL);
+	/*
+	 * We can't use torture_suite_add_ndr_pull_validate_test()
+	 * here with PAC_DATA, as we don't match the unique
+	 * pointer values inside PAC_LOGON_INFO, for these
+	 * case where we have S-1-5-18-1, as extra sid.
+	 */
 	torture_suite_add_ndr_pull_test(suite,
 					PAC_DATA,
 					PAC_DATA_data,
 					PAC_DATA_check);
-	torture_suite_add_ndr_pull_test(suite,
+
+	torture_suite_add_ndr_pull_validate_test(suite,
 					PAC_DATA_RAW,
-					PAC_DATA_data2,
+					data_blob_const(PAC_DATA_data2,
+							sizeof(PAC_DATA_data2)),
 					NULL);
+	/*
+	 * We can't use torture_suite_add_ndr_pull_validate_test()
+	 * here with PAC_DATA, as we don't match the unique
+	 * pointer values inside PAC_LOGON_INFO, for these
+	 * case where we have S-1-5-18-1, as extra sid.
+	 */
 	torture_suite_add_ndr_pull_test(suite,
 					PAC_DATA,
 					PAC_DATA_data2,
 					PAC_DATA_check2);
-	torture_suite_add_ndr_pull_test(suite,
+
+	torture_suite_add_ndr_pull_validate_test(suite,
 					PAC_DATA_RAW,
-					PAC_DATA_data3,
+					data_blob_const(PAC_DATA_data3,
+							sizeof(PAC_DATA_data3)),
+					NULL);
+	torture_suite_add_ndr_pull_validate_test(suite,
+					PAC_DATA,
+					data_blob_const(PAC_DATA_data3,
+							sizeof(PAC_DATA_data3)),
 					NULL);
 
 	return suite;
