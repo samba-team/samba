@@ -569,19 +569,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_get_ban_state(ctdb, outdata);
 
 	case CTDB_CONTROL_SET_DB_PRIORITY:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_db_priority));
-		return ctdb_control_set_db_priority(ctdb, indata, client_id);
+		return control_not_implemented("SET_DB_PRIORITY", "");
 
-	case CTDB_CONTROL_GET_DB_PRIORITY: {
-		uint32_t db_id;
-		struct ctdb_db_context *ctdb_db;
-
-		CHECK_CONTROL_DATA_SIZE(sizeof(db_id));
-		db_id = *(uint32_t *)indata.dptr;
-		ctdb_db = find_ctdb_db(ctdb, db_id);
-		if (ctdb_db == NULL) return -1;
-		return ctdb_db->priority;
-	}
+	case CTDB_CONTROL_GET_DB_PRIORITY:
+		return control_not_implemented("GET_DB_PRIORITY", "");
 
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		CHECK_CONTROL_DATA_SIZE(0);

@@ -1572,40 +1572,6 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	return 0;
 }
 
-int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
-				     uint32_t client_id)
-{
-	struct ctdb_db_priority *db_prio = (struct ctdb_db_priority *)indata.dptr;
-	struct ctdb_db_context *ctdb_db;
-
-	ctdb_db = find_ctdb_db(ctdb, db_prio->db_id);
-	if (!ctdb_db) {
-		if (!(ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE)) {
-			DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_set_db_priority\n",
-					 db_prio->db_id));
-		}
-		return 0;
-	}
-
-	if ((db_prio->priority<1) || (db_prio->priority>NUM_DB_PRIORITIES)) {
-		DEBUG(DEBUG_ERR,("Trying to set invalid priority : %u\n", db_prio->priority));
-		return 0;
-	}
-
-	ctdb_db->priority = db_prio->priority;
-	DEBUG(DEBUG_INFO,("Setting DB priority to %u for db 0x%08x\n", db_prio->priority, db_prio->db_id));
-
-	if (client_id != 0) {
-		/* Broadcast the update to the rest of the cluster */
-		ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_ALL, 0,
-					 CTDB_CONTROL_SET_DB_PRIORITY, 0,
-					 CTDB_CTRL_FLAG_NOREPLY, indata,
-					 NULL, NULL);
-	}
-	return 0;
-}
-
-
 int ctdb_set_db_sticky(struct ctdb_context *ctdb, struct ctdb_db_context *ctdb_db)
 {
 	if (ctdb_db->sticky) {

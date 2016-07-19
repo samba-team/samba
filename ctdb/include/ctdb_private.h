@@ -806,9 +806,6 @@ int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id,
 				uint32_t srcnode);
 int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id);
 
-int32_t ctdb_control_set_db_priority(struct ctdb_context *ctdb, TDB_DATA indata,
-				     uint32_t client_id);
-
 int ctdb_set_db_sticky(struct ctdb_context *ctdb,
 		       struct ctdb_db_context *ctdb_db);
 
