@@ -3936,7 +3936,8 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 					smb_fname->base_name,
 					stream_info[i].name,
 					NULL,
-					smb_fname->flags);
+					(smb_fname->flags &
+						~SMB_FILENAME_POSIX_PATH));
 		if (smb_fname_cp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;

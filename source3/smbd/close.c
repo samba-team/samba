@@ -205,7 +205,8 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 					smb_fname->base_name,
 					stream_info[i].name,
 					NULL,
-					smb_fname->flags);
+					(smb_fname->flags &
+						~SMB_FILENAME_POSIX_PATH));
 
 		if (smb_fname_stream == NULL) {
 			DEBUG(0, ("talloc_aprintf failed\n"));
