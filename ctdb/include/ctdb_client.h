@@ -312,8 +312,6 @@ int ctdb_dump_db(struct ctdb_db_context *ctdb_db,
 int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode, uint32_t *pid);
 
-int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout,
-			      uint32_t destnode, uint32_t priority);
 int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode);
 

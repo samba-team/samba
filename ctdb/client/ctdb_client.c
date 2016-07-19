@@ -2430,9 +2430,9 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 /*
   freeze databases of a certain priority
  */
-int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb,
-			      struct timeval timeout,
-			      uint32_t destnode, uint32_t priority)
+static int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb,
+				     struct timeval timeout,
+				     uint32_t destnode, uint32_t priority)
 {
 	int ret;
 	int32_t res;
