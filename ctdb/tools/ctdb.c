@@ -4445,57 +4445,6 @@ static int control_detach(struct ctdb_context *ctdb, int argc,
 }
 
 /*
-  set db priority
- */
-static int control_setdbprio(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	struct ctdb_db_priority db_prio;
-	int ret;
-
-	if (argc < 2) {
-		usage();
-	}
-
-	db_prio.db_id    = strtoul(argv[0], NULL, 0);
-	db_prio.priority = strtoul(argv[1], NULL, 0);
-
-	ret = ctdb_ctrl_set_db_priority(ctdb, TIMELIMIT(), options.pnn, &db_prio);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Unable to set db prio\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
-  get db priority
- */
-static int control_getdbprio(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	uint32_t db_id, priority;
-	int ret;
-
-	if (argc < 1) {
-		usage();
-	}
-
-	if (!db_exists(ctdb, argv[0], &db_id, NULL, NULL)) {
-		return -1;
-	}
-
-	ret = ctdb_ctrl_get_db_priority(ctdb, TIMELIMIT(), options.pnn, db_id, &priority);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Unable to get db prio\n"));
-		return -1;
-	}
-
-	DEBUG(DEBUG_ERR,("Priority:%u\n", priority));
-
-	return 0;
-}
-
-/*
   set the sticky records capability for a database
  */
 static int control_setdbsticky(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -5770,8 +5719,6 @@ static const struct {
 	{ "getreclock",       control_getreclock,	true,	false, "Show the reclock file of a node"},
 	{ "setlmasterrole",   control_setlmasterrole,	false,	false, "Set LMASTER role to on/off", "{on|off}"},
 	{ "setrecmasterrole", control_setrecmasterrole,	false,	false, "Set RECMASTER role to on/off", "{on|off}"},
-	{ "setdbprio",        control_setdbprio,	false,	false, "Set DB priority", "<dbname|dbid> <prio:1-3>"},
-	{ "getdbprio",        control_getdbprio,	false,	false, "Get DB priority", "<dbname|dbid>"},
 	{ "setdbreadonly",    control_setdbreadonly,	false,	false, "Set DB readonly capable", "<dbname|dbid>"},
 	{ "setdbsticky",      control_setdbsticky,	false,	false, "Set DB sticky-records capable", "<dbname|dbid>"},
 	{ "msglisten",        control_msglisten,	false,	false, "Listen on a srvid port for messages", "<msg srvid>"},

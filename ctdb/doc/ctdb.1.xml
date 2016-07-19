@@ -1721,7 +1721,7 @@ Server id 0:14765 exists
 
   <!-- UNDOCUMENTED: showban stats disablemonitor enablemonitor
        isnotrecmaster addtickle deltickle
-       setdbprio getdbprio msglisten msgsend
+       msglisten msgsend
        tfetch tstore readkey writekey
        checktcpport getdbseqnum ipiface
   -->
