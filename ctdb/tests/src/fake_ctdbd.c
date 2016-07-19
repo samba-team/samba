@@ -100,6 +100,7 @@ struct ctdbd_context {
 	enum ctdb_runstate runstate;
 	struct ctdb_tunable_list tun_list;
 	int monitoring_mode;
+	char *reclock;
 };
 
 /*
@@ -530,6 +531,40 @@ fail:
 	return false;
 }
 
+static bool reclock_parse(struct ctdbd_context *ctdb)
+{
+	char line[1024];
+	char *t;
+
+	if (fgets(line, sizeof(line), stdin) == NULL) {
+		goto fail;
+	}
+
+	if (line[0] == '\n') {
+		/* Recovery lock remains unset */
+		goto ok;
+	}
+
+	/* Get rid of pesky newline */
+	if ((t = strchr(line, '\n')) != NULL) {
+		*t = '\0';
+	}
+
+	ctdb->reclock = talloc_strdup(ctdb, line);
+	if (ctdb->reclock == NULL) {
+		goto fail;
+	}
+ok:
+	/* Swallow possible blank line following section */
+	fgets(line, sizeof(line), stdin);
+	DEBUG(DEBUG_INFO, ("Parsing reclock done\n"));
+	return true;
+
+fail:
+	fprintf(stderr, "Parsing reclock failed\n");
+	return false;
+}
+
 /*
  * CTDB context setup
  */
@@ -588,6 +623,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 			status = interfaces_parse(ctdb->iface_map);
 		} else if (strcmp(line, "VNNMAP") == 0) {
 			status = vnnmap_parse(ctdb->vnn_map);
+		} else if (strcmp(line, "RECLOCK") == 0) {
+			status = reclock_parse(ctdb);
 		} else {
 			fprintf(stderr, "Unknown line %s\n", line);
 			status = false;
@@ -1614,6 +1651,36 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static void control_get_reclock_file(TALLOC_CTX *mem_ctx,
+				     struct tevent_req *req,
+				     struct ctdb_req_header *header,
+				     struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+	if (ctdb->reclock != NULL) {
+		reply.rdata.data.reclock_file =
+			talloc_strdup(mem_ctx, ctdb->reclock);
+		if (reply.rdata.data.reclock_file == NULL) {
+			reply.status = ENOMEM;
+			reply.errmsg = "Memory error";
+			goto done;
+		}
+	} else {
+		reply.rdata.data.reclock_file = NULL;
+	}
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+done:
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_ifaces(TALLOC_CTX *mem_ctx,
 			       struct tevent_req *req,
 			       struct ctdb_req_header *header,
@@ -2199,6 +2266,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_NODEMAP:
 		control_get_nodemap(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_RECLOCK_FILE:
+		control_get_reclock_file(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:
