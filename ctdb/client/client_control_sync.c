@@ -1990,68 +1990,6 @@ int ctdb_ctrl_get_ban_state(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return 0;
 }
 
-int ctdb_ctrl_set_db_priority(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout,
-			      uint32_t db_id, int priority)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	struct ctdb_db_priority db_prio;
-	int ret;
-
-	db_prio.db_id = db_id;
-	db_prio.priority = priority;
-
-	ctdb_req_control_set_db_priority(&request, &db_prio);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control SET_DB_PRIORITY failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_set_db_priority(reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control SET_DB_PRIORITY failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
-int ctdb_ctrl_get_db_priority(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout,
-			      uint32_t db_id, uint32_t *priority)
-{
-	struct ctdb_req_control request;
-	struct ctdb_reply_control *reply;
-	int ret;
-
-	ctdb_req_control_get_db_priority(&request, db_id);
-	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
-				  &request, &reply);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_DB_PRIORITY failed to node %u, ret=%d\n",
-		       destnode, ret));
-		return ret;
-	}
-
-	ret = ctdb_reply_control_get_db_priority(reply, priority);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Control GET_DB_PRIORITY failed, ret=%d\n", ret));
-		return ret;
-	}
-
-	return 0;
-}
-
 int ctdb_ctrl_transaction_cancel(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				 struct ctdb_client_context *client,
 				 int destnode, struct timeval timeout,

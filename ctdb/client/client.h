@@ -548,16 +548,6 @@ int ctdb_ctrl_get_ban_state(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    int destnode, struct timeval timeout,
 			    struct ctdb_ban_state **ban_state);
 
-int ctdb_ctrl_set_db_priority(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout,
-			      uint32_t db_id, int priority);
-
-int ctdb_ctrl_get_db_priority(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			      struct ctdb_client_context *client,
-			      int destnode, struct timeval timeout,
-			      uint32_t db_id, uint32_t *priority);
-
 int ctdb_ctrl_transaction_cancel(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 struct ctdb_client_context *client,
