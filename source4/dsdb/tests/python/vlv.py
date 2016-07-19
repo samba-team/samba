@@ -499,7 +499,7 @@ class VLVTests(samba.tests.TestCase):
         """What happens if we add or remove items in the middle of the VLV?
 
         Nothing. The search and the sort is not repeated, and we only
-        deal with ther objects originally found.
+        deal with the objects originally found.
         """
         attrs = ['cn'] + [x for x in self.users[0].keys() if x not in
                  ('dn', 'objectclass')]
