@@ -835,7 +835,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			}
 		}
 
-		/* Find schmea naming context to be synchronized first */
+		/* Find schema naming context to be synchronized first */
 		status = dreplsrv_partition_find_for_nc(service,
 							NULL, NULL,
 							ldb_dn_get_linearized(schema_dn),
