@@ -1681,6 +1681,51 @@ done:
 	client_send_control(req, header, &reply);
 }
 
+static void control_stop_node(TALLOC_CTX *mem_ctx,
+			      struct tevent_req *req,
+			      struct ctdb_req_header *header,
+			      struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+
+	DEBUG(DEBUG_INFO, ("Stopping node\n"));
+	ctdb->monitoring_mode = CTDB_MONITORING_DISABLED;
+	ctdb->node_map->node[header->destnode].flags |= NODE_FLAGS_STOPPED;
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+	return;
+}
+
+static void control_continue_node(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+
+	reply.rdata.opcode = request->opcode;
+
+	DEBUG(DEBUG_INFO, ("Continue node\n"));
+	ctdb->node_map->node[header->destnode].flags &= ~NODE_FLAGS_STOPPED;
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+	return;
+}
+
 static void control_get_ifaces(TALLOC_CTX *mem_ctx,
 			       struct tevent_req *req,
 			       struct ctdb_req_header *header,
@@ -2270,6 +2315,14 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		control_get_reclock_file(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_STOP_NODE:
+		control_stop_node(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_CONTINUE_NODE:
+		control_continue_node(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:
