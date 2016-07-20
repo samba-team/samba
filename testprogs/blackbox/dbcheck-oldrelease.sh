@@ -208,6 +208,19 @@ check_expected_after_values() {
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
+	# Check DomainDNS partition for replica locations
+	tmpldif=$PREFIX_ABS/$RELEASE/expected-replica-locations-after-dbcheck.ldif.tmp
+	$ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=49a69498-9a85-48af-9be4-aa0b3e0054f9 -s one -b CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp msDS-NC-Replica-Locations > $tmpldif
+	diff $tmpldif $release_dir/expected-replica-locations-after-dbcheck.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
+	# Check ForestDNS partition for replica locations
+	$ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=7d2a15af-c0d4-487c-847e-e036292bcc65 -s one -b CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp msDS-NC-Replica-Locations > $tmpldif
+	diff $tmpldif $release_dir/expected-replica-locations-after-dbcheck2.ldif
+	if [ "$?" != "0" ]; then
+	    return 1
+	fi
     elif [ x$RELEASE = x"release-4-5-0-pre1" ]; then
         echo  $RELEASE  checking after values
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-dbcheck.ldif.tmp

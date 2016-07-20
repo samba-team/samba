@@ -1,0 +1,11 @@
+# record 1
+dn: CN=49a69498-9a85-48af-9be4-aa0b3e0054f9,CN=Partitions,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=LOCALDC,CN=Servers,CN=Default-F
+ irst-Site-Name,CN=Sites,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=corp
+msDS-NC-Replica-Locations: CN=NTDS Settings,CN=PROMOTEDVDC,CN=Servers,CN=Defau
+ lt-First-Site-Name,CN=Sites,CN=Configuration,DC=release-4-1-0rc3,DC=samba,DC=
+ corp
+
+# returned 1 records
+# 1 entries
+# 0 referrals
