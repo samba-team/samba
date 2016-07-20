@@ -1985,6 +1985,36 @@ fail:
 	client_send_message(req, header, &reply);
 }
 
+static void message_takeover_run(TALLOC_CTX *mem_ctx,
+				 struct tevent_req *req,
+				 struct ctdb_req_header *header,
+				 struct ctdb_req_message *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_srvid_message *srvid = request->data.msg;
+	struct ctdb_req_message_data reply;
+	int ret = -1;
+	TDB_DATA data;
+
+	if (header->destnode != ctdb->node_map->recmaster) {
+		/* No reply! Only recmaster replies... */
+		return;
+	}
+
+	DEBUG(DEBUG_INFO, ("IP takover run on node %u\n",
+			   header->destnode));
+	ret = header->destnode;
+
+	reply.srvid = srvid->srvid;
+	data.dptr = (uint8_t *)&ret;
+	data.dsize = sizeof(int);
+	reply.data = data;
+
+	client_send_message(req, header, &reply);
+}
+
 /*
  * Handle a single client
  */
@@ -2172,6 +2202,8 @@ static void client_process_message(struct tevent_req *req,
 
 	if (srvid == CTDB_SRVID_DISABLE_RECOVERIES) {
 		message_disable_recoveries(mem_ctx, req, &header, &request);
+	} else if (srvid == CTDB_SRVID_TAKEOVER_RUN) {
+		message_takeover_run(mem_ctx, req, &header, &request);
 	}
 
 	/* check srvid */
