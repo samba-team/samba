@@ -1652,6 +1652,7 @@ sub provision_ad_dc($$)
 
 	kernel oplocks = no
 	kernel change notify = no
+	smb2 leases = no
 
 	logging = file
 	printing = bsd
