@@ -628,6 +628,12 @@ class KCC(object):
         if times != t_repsFrom.schedule:
             t_repsFrom.schedule = times
 
+        # Bit DRS_ADD_REF is set in replicaFlags unconditionally
+        # Samba ONLY:
+        if ((t_repsFrom.replica_flags &
+             drsuapi.DRSUAPI_DRS_ADD_REF) == 0x0):
+            t_repsFrom.replica_flags |= drsuapi.DRSUAPI_DRS_ADD_REF
+
         # Bit DRS_PER_SYNC is set in replicaFlags if and only
         # if nTDSConnection schedule has a value v that specifies
         # scheduled replication is to be performed at least once
