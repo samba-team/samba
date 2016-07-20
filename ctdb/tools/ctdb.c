@@ -1904,8 +1904,6 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	struct srvid_reply_handler_data reply_data;
 	struct timeval tv;
 
-	ZERO_STRUCT(request);
-
 	/* Time ticks to enable timeouts to be processed */
 	tevent_add_timer(ctdb->ev, ctdb, timeval_current_ofs(1, 0),
 			 ctdb_every_second, ctdb);
@@ -1914,12 +1912,16 @@ static int srvid_broadcast(struct ctdb_context *ctdb,
 	reply_srvid = getpid();
 
 	if (arg == NULL) {
+		ZERO_STRUCT(request);
+
 		request.pnn = pnn;
 		request.srvid = reply_srvid;
 
 		data.dptr = (uint8_t *)&request;
 		data.dsize = sizeof(request);
 	} else {
+		ZERO_STRUCT(request_data);
+
 		request_data.pnn = pnn;
 		request_data.srvid = reply_srvid;
 		request_data.timeout = *arg;
