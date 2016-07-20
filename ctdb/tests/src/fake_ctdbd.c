@@ -1800,7 +1800,8 @@ static void client_process_control(struct tevent_req *req,
 
 	header_fix_pnn(&header, ctdb);
 
-	DEBUG(DEBUG_INFO, ("request opcode = %u\n", request.opcode));
+	DEBUG(DEBUG_INFO, ("request opcode = %u, reqid = %u\n",
+			   request.opcode, header.reqid));
 
 	switch (request.opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
