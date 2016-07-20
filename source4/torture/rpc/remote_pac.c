@@ -43,6 +43,7 @@
 #define TEST_MACHINE_NAME_S2U4SELF_WKSTA "tests2u4selfwk"
 
 struct pac_data {
+	DATA_BLOB pac_blob;
 	struct PAC_SIGNATURE_DATA *pac_srv_sig;
 	struct PAC_SIGNATURE_DATA *pac_kdc_sig;
 };
@@ -68,6 +69,12 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	auth_ctx->private_data = pac_data = talloc_zero(auth_ctx, struct pac_data);
+
+	pac_data->pac_blob = data_blob_dup_talloc(pac_data, *pac_blob);
+	if (pac_data->pac_blob.length != pac_blob->length) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	pac_data->pac_srv_sig = talloc(tmp_ctx, struct PAC_SIGNATURE_DATA);
 	if (!pac_data->pac_srv_sig) {
@@ -125,6 +132,9 @@ static bool test_PACVerify(struct torture_context *tctx,
 			   uint32_t negotiate_flags)
 {
 	NTSTATUS status;
+	bool pkinit_in_use = torture_setting_bool(tctx, "pkinit_in_use", false);
+	bool expect_pac_upn_dns_info = torture_setting_bool(tctx, "expect_pac_upn_dns_info", false);
+	size_t num_pac_buffers;
 
 	struct netr_LogonSamLogon r;
 
@@ -144,12 +154,14 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	DATA_BLOB client_to_server, server_to_client, pac_wrapped, payload;
 	struct PAC_Validate pac_wrapped_struct;
+	struct PAC_DATA pac_data_struct;
 
 	enum ndr_err_code ndr_err;
 
 	struct auth4_context *auth_context;
 	struct auth_session_info *session_info;
 	struct pac_data *pac_data;
+	const struct PAC_BUFFER *pac_buf = NULL;
 
 	struct dcerpc_pipe *p = NULL;
 	struct dcerpc_binding_handle *b = NULL;
@@ -169,8 +181,10 @@ static bool test_PACVerify(struct torture_context *tctx,
 	client_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    cmdline_credentials);
 	torture_assert(tctx, client_creds, "Failed to copy of credentials");
-	/* Invalidate the gss creds container to allocate a new MEMORY ccache */
-	cli_credentials_invalidate_ccache(client_creds, CRED_SPECIFIED);
+	if (!pkinit_in_use) {
+		/* Invalidate the gss creds container to allocate a new MEMORY ccache */
+		cli_credentials_invalidate_ccache(client_creds, CRED_SPECIFIED);
+	}
 
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    credentials);
@@ -244,6 +258,58 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, pac_data != NULL, "gensec_update failed to fill in pac_data in auth_context");
 	torture_assert(tctx, pac_data->pac_srv_sig != NULL, "pac_srv_sig not present");
 	torture_assert(tctx, pac_data->pac_kdc_sig != NULL, "pac_kdc_sig not present");
+
+	ndr_err = ndr_pull_struct_blob(&pac_data->pac_blob, tmp_ctx, &pac_data_struct,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_pull_struct_blob of PAC_DATA structure failed");
+
+	num_pac_buffers = 4;
+	if (expect_pac_upn_dns_info) {
+		num_pac_buffers += 1;
+	}
+	if (pkinit_in_use) {
+		num_pac_buffers += 1;
+	}
+
+	torture_assert_int_equal(tctx, pac_data_struct.version, 0, "version");
+	torture_assert_int_equal(tctx, pac_data_struct.num_buffers, num_pac_buffers, "num_buffers");
+
+	pac_buf = pac_data_struct.buffers;
+	torture_assert_int_equal(tctx, pac_buf->type,
+				 PAC_TYPE_LOGON_INFO, "PAC_TYPE_LOGON_INFO");
+	torture_assert(tctx, pac_buf->info != NULL,
+		       "PAC_TYPE_LOGON_INFO info");
+	pac_buf++;
+	if (pkinit_in_use) {
+		torture_assert_int_equal(tctx, pac_buf->type,
+					 PAC_TYPE_CREDENTIAL_INFO,
+					 "PAC_TYPE_CREDENTIAL_INFO");
+		torture_assert(tctx, pac_buf->info != NULL,
+			       "PAC_TYPE_CREDENTIAL_INFO info");
+		pac_buf++;
+	}
+	torture_assert_int_equal(tctx, pac_buf->type,
+				 PAC_TYPE_LOGON_NAME, "PAC_TYPE_LOGON_NAME");
+	torture_assert(tctx, pac_buf->info != NULL,
+		       "PAC_TYPE_LOGON_NAME info");
+	pac_buf++;
+	if (expect_pac_upn_dns_info) {
+		torture_assert_int_equal(tctx, pac_buf->type,
+					 PAC_TYPE_UPN_DNS_INFO, "PAC_TYPE_UPN_DNS_INFO");
+		torture_assert(tctx, pac_buf->info != NULL,
+			       "PAC_TYPE_UPN_DNS_INFO info");
+		pac_buf++;
+	}
+	torture_assert_int_equal(tctx, pac_buf->type,
+				 PAC_TYPE_SRV_CHECKSUM, "PAC_TYPE_SRV_CHECKSUM");
+	torture_assert(tctx, pac_buf->info != NULL,
+		       "PAC_TYPE_SRV_CHECKSUM info");
+	pac_buf++;
+	torture_assert_int_equal(tctx, pac_buf->type,
+				 PAC_TYPE_KDC_CHECKSUM, "PAC_TYPE_KDC_CHECKSUM");
+	torture_assert(tctx, pac_buf->info != NULL,
+		       "PAC_TYPE_KDC_CHECKSUM info");
+	pac_buf++;
 
 	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
 	pac_wrapped_struct.SignatureType = pac_data->pac_kdc_sig->type;
