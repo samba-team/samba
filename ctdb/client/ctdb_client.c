@@ -1170,6 +1170,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 	}
 
 	if (state->errormsg) {
+		int s = (state->status == 0 ? -1 : state->status);
 		DEBUG(DEBUG_ERR,("ctdb_control error: '%s'\n", state->errormsg));
 		if (errormsg) {
 			(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
@@ -1178,7 +1179,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 			state->async.fn(state);
 		}
 		talloc_free(tmp_ctx);
-		return (state->status == 0 ? -1 : state->status);
+		return s;
 	}
 
 	if (outdata) {
