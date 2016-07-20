@@ -336,11 +336,6 @@ int ctdb_ctrl_freeze(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		     int destnode, struct timeval timeout,
 		     int priority);
 
-int ctdb_ctrl_thaw(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		   struct ctdb_client_context *client,
-		   int destnode, struct timeval timeout,
-		   int priority);
-
 int ctdb_ctrl_get_pnn(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		      struct ctdb_client_context *client,
 		      int destnode, struct timeval timeout,
