@@ -338,6 +338,105 @@ static bool xattr_tdb_init(int snum, TALLOC_CTX *mem_ctx, struct db_context **p_
 	return true;
 }
 
+static int xattr_tdb_open(vfs_handle_struct *handle,
+			struct smb_filename *smb_fname,
+			files_struct *fsp,
+			int flags,
+			mode_t mode)
+{
+	struct db_context *db = NULL;
+	TALLOC_CTX *frame = NULL;
+	int ret;
+
+	fsp->fh->fd = SMB_VFS_NEXT_OPEN(handle,
+				smb_fname, fsp,
+				flags,
+				mode);
+
+	if (fsp->fh->fd < 0) {
+		return fsp->fh->fd;
+	}
+
+	if ((flags & (O_CREAT|O_EXCL)) != (O_CREAT|O_EXCL)) {
+		return fsp->fh->fd;
+	}
+
+	/*
+	 * We know we used O_CREAT|O_EXCL and it worked.
+	 * We must have created the file.
+	 */
+
+	ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
+	if (ret == -1) {
+		/* Can't happen... */
+		DBG_WARNING("SMB_VFS_FSTAT failed on file %s (%s)\n",
+			smb_fname_str_dbg(smb_fname),
+			strerror(errno));
+		return -1;
+	}
+	fsp->file_id = SMB_VFS_FILE_ID_CREATE(fsp->conn, &smb_fname->st);
+
+	frame = talloc_stackframe();
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
+				if (!xattr_tdb_init(-1, frame, &db))
+				{
+					TALLOC_FREE(frame); return -1;
+				});
+
+	xattr_tdb_remove_all_attrs(db, &fsp->file_id);
+	TALLOC_FREE(frame);
+	return fsp->fh->fd;
+}
+
+static int xattr_tdb_mkdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
+{
+	struct db_context *db = NULL;
+	TALLOC_CTX *frame = NULL;
+	struct file_id fileid;
+	int ret;
+	struct smb_filename *smb_fname_tmp = NULL;
+
+	ret = SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
+	if (ret < 0) {
+		return ret;
+	}
+
+	frame = talloc_stackframe();
+	smb_fname_tmp = cp_smb_filename(frame, smb_fname);
+	if (smb_fname_tmp == NULL) {
+		TALLOC_FREE(frame);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/* Always use LSTAT here - we just creaded the directory. */
+	ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
+	if (ret == -1) {
+		/* Rename race. Let upper level take care of it. */
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	if (!S_ISDIR(smb_fname_tmp->st.st_ex_mode)) {
+		/* Rename race. Let upper level take care of it. */
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	fileid = SMB_VFS_FILE_ID_CREATE(handle->conn, &smb_fname_tmp->st);
+
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
+				if (!xattr_tdb_init(-1, frame, &db))
+				{
+					TALLOC_FREE(frame); return -1;
+				});
+
+	xattr_tdb_remove_all_attrs(db, &fileid);
+	TALLOC_FREE(frame);
+	return 0;
+}
+
 /*
  * On unlink we need to delete the tdb record
  */
@@ -490,6 +589,8 @@ static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.flistxattr_fn = xattr_tdb_flistxattr,
 	.removexattr_fn = xattr_tdb_removexattr,
 	.fremovexattr_fn = xattr_tdb_fremovexattr,
+	.open_fn = xattr_tdb_open,
+	.mkdir_fn = xattr_tdb_mkdir,
 	.unlink_fn = xattr_tdb_unlink,
 	.rmdir_fn = xattr_tdb_rmdir,
 	.connect_fn = xattr_tdb_connect,
