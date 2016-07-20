@@ -234,7 +234,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	}
 
 	/* reset timeout for the handle */
-	if (timeout != ((unsigned int)-1)) {
+	if ((timeout != ((unsigned int)-1)) && (ret->binding_handle != NULL)) {
 		dcerpc_binding_handle_set_timeout(ret->binding_handle, timeout);
 	}
 
