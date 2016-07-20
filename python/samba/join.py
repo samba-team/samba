@@ -140,10 +140,11 @@ class dc_join(object):
         ctx.domaindns_zone = 'DC=DomainDnsZones,%s' % ctx.base_dn
         ctx.forestdns_zone = 'DC=ForestDnsZones,%s' % ctx.root_dn
 
+        expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.domaindns_zone)
         res_domaindns = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
                                          attrs=[],
                                          base=ctx.samdb.get_partitions_dn(),
-                                         expression="(&(objectClass=crossRef)(ncName=%s))" % ctx.domaindns_zone)
+                                         expression=expr)
         if dns_backend is None:
             ctx.dns_backend = "NONE"
         else:
@@ -320,21 +321,22 @@ class dc_join(object):
         '''get netbios name of the domain from the partitions record'''
         partitions_dn = ctx.samdb.get_partitions_dn()
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
-                               expression='ncName=%s' % ctx.samdb.get_default_basedn())
+                               expression='ncName=%s' % ldb.binary_encode(str(ctx.samdb.get_default_basedn())))
         return res[0]["nETBIOSName"][0]
 
     def get_forest_domain_name(ctx):
         '''get netbios name of the domain from the partitions record'''
         partitions_dn = ctx.samdb.get_partitions_dn()
         res = ctx.samdb.search(base=partitions_dn, scope=ldb.SCOPE_ONELEVEL, attrs=["nETBIOSName"],
-                               expression='ncName=%s' % ctx.samdb.get_root_basedn())
+                               expression='ncName=%s' % ldb.binary_encode(str(ctx.samdb.get_root_basedn())))
         return res[0]["nETBIOSName"][0]
 
     def get_parent_partition_dn(ctx):
         '''get the parent domain partition DN from parent DNS name'''
         res = ctx.samdb.search(base=ctx.config_dn, attrs=[],
                                expression='(&(objectclass=crossRef)(dnsRoot=%s)(systemFlags:%s:=%u))' %
-                               (ctx.parent_dnsdomain, ldb.OID_COMPARATOR_AND, samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN))
+                               (ldb.binary_encode(ctx.parent_dnsdomain),
+                                ldb.OID_COMPARATOR_AND, samba.dsdb.SYSTEM_FLAG_CR_NTDS_DOMAIN))
         return str(res[0].dn)
 
     def get_naming_master(ctx):
