@@ -620,6 +620,12 @@ static void fetch_share_mode_unlocked_parser(
 	struct share_mode_lock *lck = talloc_get_type_abort(
 		private_data, struct share_mode_lock);
 
+	if (data.dsize == 0) {
+		/* Likely a ctdb tombstone record, ignore it */
+		lck->data = NULL;
+		return;
+	}
+
 	lck->data = parse_share_modes(lck, key, data);
 }
 
