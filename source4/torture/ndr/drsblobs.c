@@ -234,10 +234,125 @@ static bool supplementalCredentials_empty2_check(struct torture_context *tctx,
 	return true;
 }
 
+static const char *alpha13_supplementalCredentials =
+	"AAAAAPgFAAAAAAAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAg"
+	"ACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAI"
+	"AAgACAAIAAgACAAUAADACAANAEBAFAAcgBpAG0AYQByAHkAOgBLAGUAcgBiAGUAcgBvAHMAMDMwMD"
+	"AwMDAwMjAwMDAwMDNFMDAzRTAwNEMwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDMwMDAwMDAwODAwMDA"
+	"wMDhBMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMDAwMDAwMDgwMDAwMDA5MjAwMDAwMDAwMDAwMDAw"
+	"MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA0MTAwNEMwMDUwMDA0ODAwNDEwMDMxMDAzM"
+	"zAwMkUwMDUzMDA0MTAwNEQwMDQyMDA0MTAwMkUwMDQzMDA0RjAwNTIwMDUwMDA0MTAwNjQwMDZEMD"
+	"A2OTAwNkUwMDY5MDA3MzAwNzQwMDcyMDA2MTAwNzQwMDZGMDA3MjAwMkMwREQ2QzRFQzJGMDhDQjJ"
+	"DMERENkM0RUMyRjA4Q0IQAEAAAgBQAGEAYwBrAGEAZwBlAHMANEIwMDY1MDA3MjAwNjIwMDY1MDA3"
+	"MjAwNkYwMDczMDAwMDAwNTcwMDQ0MDA2OTAwNjcwMDY1MDA3MzAwNzQwMB4AwAMBAFAAcgBpAG0AY"
+	"QByAHkAOgBXAEQAaQBnAGUAcwB0ADMxMDAwMTFEMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDQ1OE"
+	"FFNDY1NjY0NkVENUIxRTZCRUQ3NjBGMzZCMUM1RDBEMzRDNDE2MERBOEQ0QzM4M0U1OTQxMzM3MDl"
+	"COUQyMDYzMTUxQTI3ODBFODkzMDQ1OTg3N0IyRURGMUU0MDQ1OEFFNDY1NjY0NkVENUIxRTZCRUQ3"
+	"NjBGMzZCMUMzOTAyNDNBNENBQUUxNDUzMEVERDMwRTUyRjg1OTREQkEzNDBEMUExQzEyNkQ5QUVDN"
+	"kI3MDE3QzEzRTFEODY0NzNDQTk4RUZCOUI2OTRBODFEMjUyNkIwNzc1ODYzNUQ2MUE2MEMxNjIyMD"
+	"kxRDE2RDY4NEE1RTk2QzI0QkIwOENBMzQzNjI3M0E3Mzk0NTA1QkZEOUI1NTMzRUMwOUE3M0MyMDF"
+	"EQTA5RTVBREZEOUMwMzExRTZEMUJBNEIzNEEzN0FFODMyMUE5RTZFREMyQzA5NERBMDcwRUI4NTgz"
+	"QTYxQTYwQzE2MjIwOTFEMTZENjg0QTVFOTZDMjRCQjA4RTgzRENFNUNBOTJERkI4ODNFQTYwNUM4M"
+	"jc1OTVGRDE0QjBBM0M2RkRCOTQ2QjM5MkYxMDgzNjEyM0NGQjVFQThFNEZFNjAxNzBFRTA4OTQ2N0"
+	"MyNUJEMEY0OTAxMDc3MzYyNTk4RUFGRUI5MjAzNEJFMjEyRDVDNTM5MTdBQzE0RTRDM0RFRTcwQjh"
+	"BRDU2QUQ5NUMwNkNGNzU3M0VDOTY5MzlGOTYzNDQzNkFDQzY4QjYzRUFEM0ZDRDQ0QUM2RjY5QzND"
+	"MTdDQjlBODA5MDA5M0M0NDQyOERDQTg0ODNERTU5M0JDQUM5NThDNUE0Rjg4NTVDODY5QjAzMTlFR"
+	"jVCMUM3OTkyQTc5Q0I4N0I3NjFBMEU0QjUzQkYzNTQ0REQxNTQ0OEUwMTAzREJBMkMyRjZDMUVDNE"
+	"IwMjU5REZCODdFQTNDMDVDRjNEMUY2QzIwNkFDQkZGNTZDOUVGRDI3QUY2NTBDRjJGQjgxRThERTA"
+	"1QzVGQzE5QjE0QkE4M0UwN0ZCRkM0MUM5RENFQTlFNDY1RTBEODVDNDg2MUZCQTBGQzQyNDI0REEx"
+	"OTU4Mzk5REE3QTY3MTE3RUM5NTUxQTI1QzBFMzg1OEM2OUZFREFGRjUwRjUwQ0RFQzA0MTdFMUQ0M"
+	"UJFRjlBNzM5QzM0QzBDOTk3NzI5MERGRTIyNzJCQzVDOTMyMTVGMzkwRUE4QzYxRTIzQ0UwMDBDNg"
+	"A=";
+	
+static bool alpha13_supplementalCredentials_check(struct torture_context *tctx,
+						  struct supplementalCredentialsBlob *r)
+{
+	torture_assert_int_equal(tctx, r->unknown1, 0, "unknown1");
+	torture_assert_int_equal(tctx, r->__ndr_size, 0x5F8, "__ndr_size");
+	torture_assert_int_equal(tctx, r->unknown2, 0, "unknown2");
+	torture_assert_str_equal(tctx, r->sub.prefix, SUPPLEMENTAL_CREDENTIALS_PREFIX, "prefix");
+	torture_assert_int_equal(tctx, r->sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE, "signature");
+	torture_assert_int_equal(tctx, r->sub.num_packages, 3, "num_packages");
+	torture_assert_str_equal(tctx, r->sub.packages[0].name, "Primary:Kerberos", "name of package 0");
+	torture_assert_str_equal(tctx, r->sub.packages[1].name, "Packages", "name of package 1");
+	torture_assert_str_equal(tctx, r->sub.packages[2].name, "Primary:WDigest", "name of package 2");
+	torture_assert_int_equal(tctx, r->unknown3, 0x00, "unknown3"); /* This is typically not initialized */
+
+	return true;
+}
+
+static const char *release_4_1_0rc3_supplementalCredentials =
+	"AAAAALgIAAAAAAAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAg"
+	"ACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAI"
+	"AAgACAAIAAgACAAUAAEADYAEAIBAFAAcgBpAG0AYQByAHkAOgBLAGUAcgBiAGUAcgBvAHMALQBOAG"
+	"UAdwBlAHIALQBLAGUAeQBzADA0MDAwMDAwMDQwMDAwMDAwMDAwMDAwMDUwMDA1MDAwNzgwMDAwMDA"
+	"wMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMDAwMDEyMDAwMDAwMjAwMDAwMDBDODAwMDAwMDAw"
+	"MDAwMDAwMDAwMDAwMDAwMDEwMDAwMDExMDAwMDAwMTAwMDAwMDBFODAwMDAwMDAwMDAwMDAwMDAwM"
+	"DAwMDAwMDEwMDAwMDAzMDAwMDAwMDgwMDAwMDBGODAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMD"
+	"AwMDAxMDAwMDAwMDgwMDAwMDAwMDAxMDAwMDUyMDA0NTAwNEMwMDQ1MDA0MTAwNTMwMDQ1MDAyRDA"
+	"wMzQwMDJEMDAzMTAwMkQwMDMwMDA1MjAwNDMwMDMzMDAyRTAwNTMwMDQxMDA0RDAwNDIwMDQxMDAy"
+	"RTAwNDMwMDRGMDA1MjAwNTAwMDQxMDA2NDAwNkQwMDY5MDA2RTAwNjkwMDczMDA3NDAwNzIwMDYxM"
+	"DA3NDAwNkYwMDcyMDA2MTQzNDMxNERDMjZFNzM0MTBERkQ2OUVENDc1Mjk1QTU1RjJGREUyNEQ2Qj"
+	"FEMEMzMzk4QkY2NDI3OUI4REMwNjg0Nzc5ODgzNkUwOTE1NTMwMjYwMDlCMkUzMzBDQjBBNzFBOTQ"
+	"xRjdGOEY3OTYyQTcxQTk0MUY3RjhGNzk2MiAAWAEBAFAAcgBpAG0AYQByAHkAOgBLAGUAcgBiAGUA"
+	"cgBvAHMAMDMwMDAwMDAwMjAwMDAwMDUwMDA1MDAwNEMwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDMwM"
+	"DAwMDAwODAwMDAwMDlDMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMDAwMDAwMDgwMDAwMDBBNDAwMD"
+	"AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA1MjAwNDUwMDRDMDA0NTA"
+	"wNDEwMDUzMDA0NTAwMkQwMDM0MDAyRDAwMzEwMDJEMDAzMDAwNTIwMDQzMDAzMzAwMkUwMDUzMDA0"
+	"MTAwNEQwMDQyMDA0MTAwMkUwMDQzMDA0RjAwNTIwMDUwMDA0MTAwNjQwMDZEMDA2OTAwNkUwMDY5M"
+	"DA3MzAwNzQwMDcyMDA2MTAwNzQwMDZGMDA3MjAwQTcxQTk0MUY3RjhGNzk2MkE3MUE5NDFGN0Y4Rj"
+	"c5NjIQAJAAAgBQAGEAYwBrAGEAZwBlAHMANEIwMDY1MDA3MjAwNjIwMDY1MDA3MjAwNkYwMDczMDA"
+	"yRDAwNEUwMDY1MDA3NzAwNjUwMDcyMDAyRDAwNEIwMDY1MDA3OTAwNzMwMDAwMDA0QjAwNjUwMDcy"
+	"MDA2MjAwNjUwMDcyMDA2RjAwNzMwMDAwMDA1NzAwNDQwMDY5MDA2NzAwNjUwMDczMDA3NDAwHgDAA"
+	"wEAUAByAGkAbQBhAHIAeQA6AFcARABpAGcAZQBzAHQAMzEwMDAxMUQwMDAwMDAwMDAwMDAwMDAwMD"
+	"AwMDAwMDBFNDUwOUQ2MERDRDZERkIxOTlBMDY5QjU4NUUyOTdCMEU0RTgwMzc4QUQxMDhFQjdENUJ"
+	"COUQwNjBDMEVFRURBOUNEMzhGQTk3RjBERUJGNkRCMTkxNDA4RkIwQTQ2OThFNDUwOUQ2MERDRDZE"
+	"RkIxOTlBMDY5QjU4NUUyOTdCMDg2NjhCREI1QjM4ODg1M0Y5NDc0OTI0RjQzRkYzMEY0NDBFREJEN"
+	"UU3MUU0Mjg4QjNFRkYyRUFEQUQyQjcwMTNBRTEwODQ0MjlCQTc4RTUwRkYyMTAxRkFEQzEwMEI1Mz"
+	"NGODYwNzYyQzc1OTU0MTNEMENCRUNEODNDODJDRUE3Njk3MjgxQjI5QTU5M0U3MzRFQUQzMEZBMkE"
+	"3N0EzQkVERjA4MjEzMDNGMTUwOThFMUM1RkMzNjhDQzY2MTZEMTI1MDU4NzQ4RTUyRkMzM0YzQ0ZC"
+	"MUE0NUIzMzNEMUJDM0Y4NjA3NjJDNzU5NTQxM0QwQ0JFQ0Q4M0M4MkNFQTczNDk4MDNFN0FEODUyN"
+	"zEyMTlBNzEyMEQ4MkE4NjA2RDlERUQxMDA2NDk2MTkyQjZEQTM0RkQxMDdGOThDMjdDOTUyQzMwND"
+	"Q0MUFDODcwMTYwODdGNDU0ODUwMTRCQ0Q1QTNDNUU4NjBFQ0Y5RTQzMzJCODI1OTUyOTJFODYxNkF"
+	"DREU1RUJERjFFMkIzNDZCNTcyRUE2RjM4MkQyOTJCNkE4MDk3NzY1RDMyMTI0M0Y4QjFCRjAzNEFB"
+	"MjZGNEI3ODYwRUJGMzY4NDc5MTExRjQzRkMyRTVFQkUzQkNGRkE3N0RDOTdEQTJBQ0I0ODQ1NjIwQ"
+	"zg3QkNFMTYwQkE3RTEyOTFFQ0MwODdFQkE4Qzg1QkNDQjc4MzVGRTYyRUU4RTA0QTBBNzQwOENDQT"
+	"MxRkVDRjdFQTQ0MjI4QjJCRjVFQjg5MEQ2QjBEODgwNzVEMzhFREYxQzc5NEY1MDgxNUE2MzcxNTM"
+	"5QURCQTEyNkFDODc0Q0EyNzNBMzgwRTM0NjRFQkZERDE4MTgzRDY1MDlDOTJEQzVCQzhCNTg4M0Iy"
+	"QTlGRTcyMUQ0RkQ0MEQ3QkI0QzlENjcxOTYxNTRFRTQ4QkIzMDkxNEE3QkREODcyOTMyMjc1M0JDR"
+	"Dk2QkI5QzY1MzdFQjc1ODg3MUZDQzhGMEUxQjkyRTgyNEIxQTBDMjU1NjE2QURCMzYyMDc5NTQ5OT"
+	"Q5MUJCRTY5NTA0AA==";
+
+static bool release_4_1_0rc3_supplementalCredentials_check(struct torture_context *tctx,
+						  struct supplementalCredentialsBlob *r)
+{
+	torture_assert_int_equal(tctx, r->unknown1, 0, "unknown1");
+	torture_assert_int_equal(tctx, r->__ndr_size, 0x8b8, "__ndr_size");
+	torture_assert_int_equal(tctx, r->unknown2, 0, "unknown2");
+	torture_assert_str_equal(tctx, r->sub.prefix, SUPPLEMENTAL_CREDENTIALS_PREFIX, "prefix");
+	torture_assert_int_equal(tctx, r->sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE, "signature");
+	torture_assert_int_equal(tctx, r->sub.num_packages, 4, "num_packages");
+	torture_assert_str_equal(tctx, r->sub.packages[0].name, "Primary:Kerberos-Newer-Keys", "name of package 0");
+	torture_assert_str_equal(tctx, r->sub.packages[1].name, "Primary:Kerberos", "name of package 0");
+	torture_assert_str_equal(tctx, r->sub.packages[2].name, "Packages", "name of package 1");
+	torture_assert_str_equal(tctx, r->sub.packages[3].name, "Primary:WDigest", "name of package 2");
+	torture_assert_int_equal(tctx, r->unknown3, 0x00, "unknown3"); /* This is typically not initialized */
+
+	return true;
+}
+
 struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "drsblobs");
-
+	struct torture_suite *empty1_suite = torture_suite_create(ctx, "empty1");
+	struct torture_suite *empty2_suite = torture_suite_create(ctx, "empty2");
+	struct torture_suite *alpha13_suite = torture_suite_create(ctx, "alpha13");
+	struct torture_suite *release_4_1_0rc3_suite = torture_suite_create(ctx, "release-4-1-0rc3");
+	torture_suite_add_suite(suite, empty1_suite);
+	torture_suite_add_suite(suite, empty2_suite);
+	torture_suite_add_suite(suite, alpha13_suite);
+	torture_suite_add_suite(suite, release_4_1_0rc3_suite);
+	
 	torture_suite_add_ndr_pull_test(suite, ForestTrustInfo, forest_trust_info_data_out, forest_trust_info_check_out);
 	torture_suite_add_ndr_pull_test(suite, trustDomainPasswords, trust_domain_passwords_in, trust_domain_passwords_check_in);
 
@@ -251,15 +366,25 @@ struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 					    base64_decode_data_blob_talloc(suite, trustAuthOutgoing),
 					    NULL);
 
-	torture_suite_add_ndr_pull_validate_test(suite, supplementalCredentialsBlob,
+	torture_suite_add_ndr_pull_validate_test(empty1_suite, supplementalCredentialsBlob,
 					data_blob_const(supplementalCredentials_empty1,
 						sizeof(supplementalCredentials_empty1)),
 					supplementalCredentials_empty1_check);
 
-	torture_suite_add_ndr_pull_validate_test(suite, supplementalCredentialsBlob,
+	torture_suite_add_ndr_pull_validate_test(empty2_suite, supplementalCredentialsBlob,
 					data_blob_const(supplementalCredentials_empty2,
 						sizeof(supplementalCredentials_empty2)),
 					supplementalCredentials_empty2_check);
+
+	torture_suite_add_ndr_pull_validate_test(alpha13_suite,
+						 supplementalCredentialsBlob,
+						 base64_decode_data_blob_talloc(suite, alpha13_supplementalCredentials),
+						 alpha13_supplementalCredentials_check);
+
+	torture_suite_add_ndr_pull_validate_test(release_4_1_0rc3_suite,
+						 supplementalCredentialsBlob,
+						 base64_decode_data_blob_talloc(suite, release_4_1_0rc3_supplementalCredentials),
+						 release_4_1_0rc3_supplementalCredentials_check);
 
 	return suite;
 }
