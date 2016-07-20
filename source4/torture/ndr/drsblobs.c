@@ -341,17 +341,78 @@ static bool release_4_1_0rc3_supplementalCredentials_check(struct torture_contex
 	return true;
 }
 
+static const char *win2012R2_supplementalCredentials =
+	"AAAAACgIAAAAAAAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAg"
+	"ACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAI"
+	"AAgACAAIAAgACAAUAAEADYA3AEBAFAAcgBpAG0AYQByAHkAOgBLAGUAcgBiAGUAcgBvAHMALQBOAG"
+	"UAdwBlAHIALQBLAGUAeQBzADA0MDAwMDAwMDMwMDAwMDAwMDAwMDAwMDNlMDAzZTAwNzgwMDAwMDA"
+	"wMDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDEwMDAwMDEyMDAwMDAwMjAwMDAwMDBiNjAwMDAwMDAw"
+	"MDAwMDAwMDAwMDAwMDAwMDEwMDAwMDExMDAwMDAwMTAwMDAwMDBkNjAwMDAwMDAwMDAwMDAwMDAwM"
+	"DAwMDAwMDEwMDAwMDAzMDAwMDAwMDgwMDAwMDBlNjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD"
+	"AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDMyMDAzMDAwMzAwMDM4MDA1MjAwMzIwMDJlMDA0ODA"
+	"wNGYwMDU3MDA1NDAwNGYwMDJlMDA0MTAwNDIwMDQxMDA1MjAwNTQwMDRjMDA0NTAwNTQwMDJlMDA0"
+	"ZTAwNDUwMDU0MDA2YjAwNzIwMDYyMDA3NDAwNjcwMDc0MDAwNzNhYTVmMjVmZjU2MzUyZTI2ZWYxZ"
+	"DMxMGJhZjAzMWY0MWZmMmFkNzZlNzA1YzgzNTQyZmJlZGJhNjY0ZjM0YTBmYTAyYzQxNWE3MmFiNj"
+	"JkYjdlNzliNDBmNjJhNjhjMjVlZjc0YzE5ZDM1OGZkIAD8AAEAUAByAGkAbQBhAHIAeQA6AEsAZQB"
+	"yAGIAZQByAG8AcwAwMzAwMDAwMDAxMDAwMDAwM2UwMDNlMDAzODAwMDAwMDAwMDAwMDAwMDAwMDAw"
+	"MDAwMzAwMDAwMDA4MDAwMDAwNzYwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM"
+	"DAwMDAwMDAwMzIwMDMwMDAzMDAwMzgwMDUyMDAzMjAwMmUwMDQ4MDA0ZjAwNTcwMDU0MDA0ZjAwMm"
+	"UwMDQxMDA0MjAwNDEwMDUyMDA1NDAwNGMwMDQ1MDA1NDAwMmUwMDRlMDA0NTAwNTQwMDZiMDA3MjA"
+	"wNjIwMDc0MDA2NzAwNzQwMGMyNWVmNzRjMTlkMzU4ZmQQAJAAAgBQAGEAYwBrAGEAZwBlAHMANGIw"
+	"MDY1MDA3MjAwNjIwMDY1MDA3MjAwNmYwMDczMDAyZDAwNGUwMDY1MDA3NzAwNjUwMDcyMDAyZDAwN"
+	"GIwMDY1MDA3OTAwNzMwMDAwMDA0YjAwNjUwMDcyMDA2MjAwNjUwMDcyMDA2ZjAwNzMwMDAwMDA1Nz"
+	"AwNDQwMDY5MDA2NzAwNjUwMDczMDA3NDAwHgDAAwEAUAByAGkAbQBhAHIAeQA6AFcARABpAGcAZQB"
+	"zAHQAMzEwMDAxMWQwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA3ZGE1MjA2NjllNTdkYzhjMzI1NDQ0"
+	"Y2ZkYjU5ZjkxZGZiZDE1MzZhNDIxMjgyNjc4MjE4MWI5OTM2ZjczYWIzOWYyN2QxYjM4YmRlNzhiO"
+	"TVhOTJmNDM1YWQyNDAzNDU3ZGE1MjA2NjllNTdkYzhjMzI1NDQ0Y2ZkYjU5ZjkxZGZiZDE1MzZhND"
+	"IxMjgyNjc4MjE4MWI5OTM2ZjczYWIzNjFjNTgyZGY1NWZiOGZmMzMyMzc0ZDU4NDExNWI2Y2U3ZGE"
+	"1MjA2NjllNTdkYzhjMzI1NDQ0Y2ZkYjU5ZjkxZDU3NGM4MmQxMWZjNzcyOGNiYmY0NWI1Yjc0NmMx"
+	"NmY0NjhhZmFhYTI0OTEwODM2ZWMyMGYyMTBjNmQ1ODZmZTE3ZjQxN2RkOWIzMjE5OWJiOTkzZmMxN"
+	"mQ3NzA5MjFiMDU3NGM4MmQxMWZjNzcyOGNiYmY0NWI1Yjc0NmMxNmY0NjhhZmFhYTI0OTEwODM2ZW"
+	"MyMGYyMTBjNmQ1ODZmZTE5ODZlNWM1ZDM2NjllZDI0ZDgyM2RlNWYyZmZhNjk1ZTU3NGM4MmQxMWZ"
+	"jNzcyOGNiYmY0NWI1Yjc0NmMxNmY0OGNjZGJjMWZhZWM0OWFmOGY2ZGQ0N2M5MmViM2JmNjMwMzAy"
+	"Njc2NmI4ZWQzYjU0ZTQyNGU1ZDNlNDVkNjlkNmIwYzI3Y2ZhMzZmNjliN2NmNDVjMGNhYjU3NmY1M"
+	"zRiOWU3NTJhOWUyNTYzMmU4M2FkMmE5MDBmMWUyOGY5ZjE0MjFkYzUwODMyMjQ1Nzc3NTg5ODIyZT"
+	"EwNGY2NjNkNjY3YzJiZTc3Y2E4MzMwNzVkZmRlZTRlYTUwZWIxNzc3YjMxOGNmZTJlMzQzOTg0ZDU"
+	"xOTBlODAwMzA4ZmMxODBiMzE4Y2ZlMmUzNDM5ODRkNTE5MGU4MDAzMDhmYzE4MDRhYmIyZDQzMjE0"
+	"ZGQxNGFkNDA0YzdiYzE4ZGI0NzFjNDRjZjcyZmI2YmUwM2IwZWRiZjNhNzYyNTgwZGIzOTYzZjk5M"
+	"zVjNmM4N2Q2NWJhZmU0NGY4Zjc2NzViODE3NjgwN2RmZThiZGZlYjJiMTcyMzc4MWQzMThhZGRkZW"
+	"NmNzQ5MmIwZjE3ZmIwZmRmMjhkN2E2MWMzNTFlYTRkYWU2MDc0MzMxMTAwYjk5YWJiOTY1NTk5ZDY"
+	"1NjkxNDVjOWM5MTJjOWI2Yzk0ZjNiMDA3ZmM5YTA2OGFiMDhkNTA5gA==";
+
+
+static bool win2012R2_supplementalCredentials_check(struct torture_context *tctx,
+						  struct supplementalCredentialsBlob *r)
+{
+	torture_assert_int_equal(tctx, r->unknown1, 0, "unknown1");
+	torture_assert_int_equal(tctx, r->__ndr_size, 0x828, "__ndr_size");
+	torture_assert_int_equal(tctx, r->unknown2, 0, "unknown2");
+	torture_assert_str_equal(tctx, r->sub.prefix, SUPPLEMENTAL_CREDENTIALS_PREFIX, "prefix");
+	torture_assert_int_equal(tctx, r->sub.signature, SUPPLEMENTAL_CREDENTIALS_SIGNATURE, "signature");
+	torture_assert_int_equal(tctx, r->sub.num_packages, 4, "num_packages");
+	torture_assert_str_equal(tctx, r->sub.packages[0].name, "Primary:Kerberos-Newer-Keys", "name of package 0");
+	torture_assert_str_equal(tctx, r->sub.packages[1].name, "Primary:Kerberos", "name of package 0");
+	torture_assert_str_equal(tctx, r->sub.packages[2].name, "Packages", "name of package 1");
+	torture_assert_str_equal(tctx, r->sub.packages[3].name, "Primary:WDigest", "name of package 2");
+	torture_assert_int_equal(tctx, r->unknown3, 0x00, "unknown3"); /* This is typically not initialized, we force to 0 */
+
+	return true;
+}
+
 struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 {
+	DATA_BLOB win2012R2_supplementalCredentials_blob;
 	struct torture_suite *suite = torture_suite_create(ctx, "drsblobs");
 	struct torture_suite *empty1_suite = torture_suite_create(ctx, "empty1");
 	struct torture_suite *empty2_suite = torture_suite_create(ctx, "empty2");
 	struct torture_suite *alpha13_suite = torture_suite_create(ctx, "alpha13");
 	struct torture_suite *release_4_1_0rc3_suite = torture_suite_create(ctx, "release-4-1-0rc3");
+	struct torture_suite *win2012R2_suite = torture_suite_create(ctx, "win2012R2_suite");
 	torture_suite_add_suite(suite, empty1_suite);
 	torture_suite_add_suite(suite, empty2_suite);
 	torture_suite_add_suite(suite, alpha13_suite);
 	torture_suite_add_suite(suite, release_4_1_0rc3_suite);
+	torture_suite_add_suite(suite, win2012R2_suite);
 	
 	torture_suite_add_ndr_pull_test(suite, ForestTrustInfo, forest_trust_info_data_out, forest_trust_info_check_out);
 	torture_suite_add_ndr_pull_test(suite, trustDomainPasswords, trust_domain_passwords_in, trust_domain_passwords_check_in);
@@ -385,6 +446,14 @@ struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 						 supplementalCredentialsBlob,
 						 base64_decode_data_blob_talloc(suite, release_4_1_0rc3_supplementalCredentials),
 						 release_4_1_0rc3_supplementalCredentials_check);
+
+	/* This last byte is typically not initialized, we force to zero to allow pull/push */
+	win2012R2_supplementalCredentials_blob = base64_decode_data_blob_talloc(suite, win2012R2_supplementalCredentials);
+	win2012R2_supplementalCredentials_blob.data[win2012R2_supplementalCredentials_blob.length-1] = 0;
+	torture_suite_add_ndr_pull_validate_test(win2012R2_suite,
+						 supplementalCredentialsBlob,
+						 win2012R2_supplementalCredentials_blob,
+						 win2012R2_supplementalCredentials_check);
 
 	return suite;
 }
