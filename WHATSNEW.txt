@@ -135,6 +135,17 @@ by SMB 1 oplocks. This feature was disabled in previous releases, but
 the SMB2 leasing code is now considered mature and stable enough to be
 enabled by default.
 
+Open File Description (OFD) Locks
+---------------------------------
+
+On systems that support them (currently only Linux), the fileserver now
+uses Open File Description (OFD) locks instead of POSIX locks to implement
+client byte range locks. As these locks are associated with a specific
+file descriptor on a file this allows more efficient use when multiple
+descriptors having file locks are opened onto the same file. An internal
+tunable "smbd:force process locks = true" may be used to turn off OFD
+locks if there appear to be problems with them.
+
 REMOVED FEATURES
 ================
 
