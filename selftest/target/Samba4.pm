@@ -2117,7 +2117,7 @@ sub setup_vampire_dc($$$)
 		$cmd .= " $env->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc\n$cmd");
+			warn("Failed to exec kcc on remote DC\n$cmd");
 			return undef;
 		}
 
@@ -2175,7 +2175,7 @@ sub setup_promoted_dc($$$)
 		$cmd .= " $env->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc\n$cmd");
+			warn("Failed to exec kcc on remote DC\n$cmd");
 			return undef;
 		}
 
@@ -2187,7 +2187,7 @@ sub setup_promoted_dc($$$)
 		$cmd .= " $env->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc\n$cmd");
+			warn("Failed to exec kcc on promoted DC\n$cmd");
 			return undef;
 		}
 
@@ -2239,7 +2239,7 @@ sub setup_subdom_dc($$$)
 		$cmd .= " $env->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD} --realm=$dc_vars->{DC_REALM}";
 		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc\n$cmd");
+			warn("Failed to exec kcc on remote DC\n$cmd");
 			return undef;
 		}
 
