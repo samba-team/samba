@@ -301,6 +301,14 @@ void torture_result(struct torture_context *test,
 	} \
 	} while (0)
 
+#define torture_assert_krb5_error_equal(torture_ctx, got, expected, cmt) \
+	do { krb5_error_code __got = got, __expected = expected; \
+	if (__got != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, __location__": "#got" was %d (%s), expected %d (%s): %s", __got, error_message(__got), __expected, error_message(__expected), cmt); \
+		return false; \
+	} \
+	} while (0)
+
 #define torture_assert_casestr_equal(torture_ctx,got,expected,cmt) \
 	do { const char *__got = (got), *__expected = (expected); \
 	if (!strequal(__got, __expected)) { \
