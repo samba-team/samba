@@ -2459,17 +2459,22 @@ int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 /*
   freeze databases of a certain priority
  */
-int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t priority)
+int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb,
+			      struct timeval timeout,
+			      uint32_t destnode, uint32_t priority)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
-	struct ctdb_client_control_state *state;
 	int ret;
+	int32_t res;
 
-	state = ctdb_ctrl_freeze_send(ctdb, tmp_ctx, timeout, destnode, priority);
-	ret = ctdb_ctrl_freeze_recv(ctdb, tmp_ctx, state);
-	talloc_free(tmp_ctx);
+	ret = ctdb_control(ctdb, destnode, priority,
+			   CTDB_CONTROL_FREEZE, 0, tdb_null,
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR, ("ctdb_ctrl_freeze_priority failed\n"));
+		return -1;
+	}
 
-	return ret;
+	return 0;
 }
 
 /* Freeze all databases */
