@@ -316,7 +316,6 @@ sub setup_nt4_member($$$)
 	my $member_options = "
 	security = domain
 	dbwrap_tdb_mutexes:* = yes
-	ntlm auth = yes
 	${require_mutexes}
 ";
 	my $ret = $self->provision($prefix,
@@ -383,7 +382,6 @@ sub setup_admember($$$$)
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
-	ntlm auth = yes
 ";
 
 	my $ret = $self->provision($prefix,
