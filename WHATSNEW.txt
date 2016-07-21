@@ -12,7 +12,19 @@ Samba 4.5 will be the next version of the Samba suite.
 UPGRADING
 =========
 
-Nothing special.
+NTLMv1 authentication disabled by default
+-----------------------------------------
+
+In order to improve security we have changed
+the default value for the "ntlm auth" option from
+"yes" to "no". This may have impact on very old
+client which doesn't support NTLMv2 yet.
+
+The primary user of NTLMv1 is MSCHAPv2 for VPNs and 802.1x.
+
+By default Samba will only allow NTLMv2 via NTLMSSP now,
+as we have the following default "lanman auth = no",
+"ntlm auth = no" and "raw NTLMv2 auth = no".
 
 
 NEW FEATURES/CHANGES
@@ -159,6 +171,7 @@ smb.conf changes
 
   Parameter Name		Description		Default
   --------------		-----------		-------
+  ntlm auth			Changed default 	no
   only user			Removed
   username			Removed
   kccsrv:samba_kcc		Changed default		true
