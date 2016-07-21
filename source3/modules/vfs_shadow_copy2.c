@@ -1657,22 +1657,22 @@ static int shadow_copy2_get_shadow_copy_data(
 	struct shadow_copy2_private *priv = NULL;
 	struct shadow_copy2_snapentry *tmpentry = NULL;
 	bool get_snaplist = false;
-	bool ret;
+	bool access_granted = false;
+	int ret = -1;
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle, fsp->fsp_name);
 	if (snapdir == NULL) {
 		DEBUG(0,("shadow:snapdir not found for %s in get_shadow_copy_data\n",
 			 handle->conn->connectpath));
 		errno = EINVAL;
-		talloc_free(tmp_ctx);
-		return -1;
+		goto done;
 	}
-	ret = check_access_snapdir(handle, snapdir);
-	if (!ret) {
+
+	access_granted = check_access_snapdir(handle, snapdir);
+	if (!access_granted) {
 		DEBUG(0,("access denied on listing snapdir %s\n", snapdir));
 		errno = EACCES;
-		talloc_free(tmp_ctx);
-		return -1;
+		goto done;
 	}
 
 	snapdir_smb_fname = synthetic_smb_fname(talloc_tos(),
@@ -1682,8 +1682,7 @@ static int shadow_copy2_get_shadow_copy_data(
 					fsp->fsp_name->flags);
 	if (snapdir_smb_fname == NULL) {
 		errno = ENOMEM;
-		talloc_free(tmp_ctx);
-		return -1;
+		goto done;
 	}
 
 	p = SMB_VFS_NEXT_OPENDIR(handle, snapdir_smb_fname, NULL, 0);
@@ -1691,9 +1690,8 @@ static int shadow_copy2_get_shadow_copy_data(
 	if (!p) {
 		DEBUG(2,("shadow_copy2: SMB_VFS_NEXT_OPENDIR() failed for '%s'"
 			 " - %s\n", snapdir, strerror(errno)));
-		talloc_free(tmp_ctx);
 		errno = ENOSYS;
-		return -1;
+		goto done;
 	}
 
 	if (shadow_copy2_data != NULL) {
@@ -1702,7 +1700,7 @@ static int shadow_copy2_get_shadow_copy_data(
 	}
 
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
-				return -1);
+				goto done);
 
 	/*
 	 * Normally this function is called twice once with labels = false and
@@ -1750,8 +1748,7 @@ static int shadow_copy2_get_shadow_copy_data(
 			tmpentry = shadow_copy2_create_snapentry(priv);
 			if (tmpentry == NULL) {
 				DBG_ERR("talloc_zero() failed\n");
-				talloc_free(tmp_ctx);
-				return -1;
+				goto done;
 			}
 			tmpentry->snapname = talloc_strdup(tmpentry, d->d_name);
 			tmpentry->time_fmt = talloc_strdup(tmpentry, snapshot);
@@ -1774,8 +1771,7 @@ static int shadow_copy2_get_shadow_copy_data(
 		if (tlabels == NULL) {
 			DEBUG(0,("shadow_copy2: out of memory\n"));
 			SMB_VFS_NEXT_CLOSEDIR(handle, p);
-			talloc_free(tmp_ctx);
-			return -1;
+			goto done;
 		}
 
 		strlcpy(tlabels[shadow_copy2_data->num_volumes], snapshot,
@@ -1788,9 +1784,11 @@ static int shadow_copy2_get_shadow_copy_data(
 	SMB_VFS_NEXT_CLOSEDIR(handle,p);
 
 	shadow_copy2_sort_data(handle, shadow_copy2_data);
+	ret = 0;
 
-	talloc_free(tmp_ctx);
-	return 0;
+done:
+	TALLOC_FREE(tmp_ctx);
+	return ret;
 }
 
 static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
