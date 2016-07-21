@@ -496,7 +496,7 @@ static NTSTATUS kcctpl_create_graph(TALLOC_CTX *mem_ctx,
 				    struct GUID_list guids,
 				    struct kcctpl_graph **_graph)
 {
-	struct kcctpl_graph *graph;
+	struct kcctpl_graph *graph = NULL;
 	uint32_t i;
 
 	graph = talloc_zero(mem_ctx, struct kcctpl_graph);
@@ -3470,7 +3470,7 @@ static NTSTATUS kcctpl_create_intersite_connections(struct kccsrv_service *servi
 		struct ldb_message *cross_ref;
 		unsigned int cr_enabled;
 		int64_t cr_flags;
-		struct kcctpl_graph *graph;
+		struct kcctpl_graph *graph = NULL;
 		bool found_failed_dc, connected;
 		NTSTATUS status;
 
