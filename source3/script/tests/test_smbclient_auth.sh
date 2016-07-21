@@ -27,18 +27,18 @@ echo "${SERVER_IP}" | grep -q ':.*:' && {
 	# we also try
 	# fd00-0000-0000-0000-0000-0000-5357-5f03.ipv6-literal.net
 	IPV6LITERAL=$(echo "${SERVER_IP}.ipv6-literal.net" | sed -e 's!:!-!g' -e 's!%!s!')
-	testit "smbclient //${IPV6LITERAL}/tmpguest" $SMBCLIENT //${IPV6LITERAL}/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -c quit $ADDARGS
-	testit "smbclient //${IPV6LITERAL}./tmpguest" $SMBCLIENT //${IPV6LITERAL}./tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -c quit $ADDARGS
+	testit "smbclient //${IPV6LITERAL}/tmpguest as user" $SMBCLIENT //${IPV6LITERAL}/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -c quit $ADDARGS
+	testit "smbclient //${IPV6LITERAL}./tmpguest as user" $SMBCLIENT //${IPV6LITERAL}./tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -c quit $ADDARGS
 }
-testit "smbclient //${SERVER_IP}/tmpguest" $SMBCLIENT //${SERVER_IP}/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -p 139 -c quit $ADDARGS
+testit "smbclient //${SERVER_IP}/tmpguest as user" $SMBCLIENT //${SERVER_IP}/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -p 139 -c quit $ADDARGS
 
-testit "smbclient //$SERVER/guestonly" $SMBCLIENT //$SERVER/guestonly $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/guestonly as user" $SMBCLIENT //$SERVER/guestonly $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
 testit "smbclient //$SERVER/guestonly as anon" $SMBCLIENT //$SERVER/guestonly $CONFIGURATION -U% -I $SERVER_IP -p 139 -c quit $ADDARGS
-testit "smbclient //$SERVER/tmpguest" $SMBCLIENT //$SERVER/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/tmpguest as user" $SMBCLIENT //$SERVER/tmpguest $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
 testit "smbclient //$SERVER/tmpguest as anon" $SMBCLIENT //$SERVER/tmpguest $CONFIGURATION -U% -I $SERVER_IP -p 139 -c quit $ADDARGS
-testit "smbclient //$SERVER/forceuser" $SMBCLIENT //$SERVER/forceuser $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/forceuser as user" $SMBCLIENT //$SERVER/forceuser $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
 testit "smbclient //$SERVER/forceuser as anon" $SMBCLIENT //$SERVER/forceuser $CONFIGURATION -U% -I $SERVER_IP -p 139 -c quit $ADDARGS
-testit "smbclient //$SERVER/forceuser_unixonly" $SMBCLIENT //$SERVER/forceuser_unixonly $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
-testit "smbclient //$SERVER/forceuser_wkngroup" $SMBCLIENT //$SERVER/forceuser_wkngroup $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
-testit "smbclient //$SERVER/forcegroup" $SMBCLIENT //$SERVER/forcegroup $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/forceuser_unixonly as user" $SMBCLIENT //$SERVER/forceuser_unixonly $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/forceuser_wkngroup as user" $SMBCLIENT //$SERVER/forceuser_wkngroup $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
+testit "smbclient //$SERVER/forcegroup as user" $SMBCLIENT //$SERVER/forcegroup $CONFIGURATION -U$USERNAME%$PASSWORD -I $SERVER_IP -p 139 -c quit $ADDARGS
 testit "smbclient //$SERVER/forcegroup as anon" $SMBCLIENT //$SERVER/forcegroup $CONFIGURATION -U% -I $SERVER_IP -p 139 -c quit $ADDARGS
