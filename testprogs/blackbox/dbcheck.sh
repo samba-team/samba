@@ -24,7 +24,7 @@ dbcheck_fix_one_way_links() {
 
 # This list of attributes can be freely extended
 dbcheck_fix_stale_links() {
-	$BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member" --cross-ncs $ARGS
+	$BINDIR/samba-tool dbcheck --quiet --fix --yes remove_plausible_deleted_DN_links --attrs="member msDS-NC-Replica-Locations msDS-NC-RO-Replica-Locations" --cross-ncs $ARGS
 }
 
 # This test shows that this does not do anything to a current
