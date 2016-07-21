@@ -286,10 +286,6 @@ void ctdb_req_control_freeze(struct ctdb_req_control *request,
 			     uint32_t priority);
 int ctdb_reply_control_freeze(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_thaw(struct ctdb_req_control *request,
-			   uint32_t priority);
-int ctdb_reply_control_thaw(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_get_pnn(struct ctdb_req_control *request);
 int ctdb_reply_control_get_pnn(struct ctdb_reply_control *reply,
 			       uint32_t *pnn);

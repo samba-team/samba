@@ -158,9 +158,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_FREEZE:
 		break;
 
-	case CTDB_CONTROL_THAW:
-		break;
-
 	case CTDB_CONTROL_GET_PNN:
 		break;
 
@@ -1243,9 +1240,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_FREEZE:
-		break;
-
-	case CTDB_CONTROL_THAW:
 		break;
 
 	case CTDB_CONTROL_GET_PNN:

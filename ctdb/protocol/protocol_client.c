@@ -673,25 +673,6 @@ int ctdb_reply_control_freeze(struct ctdb_reply_control *reply)
 	return ctdb_reply_control_generic(reply, CTDB_CONTROL_FREEZE);
 }
 
-/* CTDB_CONTROL_THAW */
-
-void ctdb_req_control_thaw(struct ctdb_req_control *request,
-			   uint32_t priority)
-{
-	request->opcode = CTDB_CONTROL_THAW;
-	request->pad = 0;
-	request->srvid = priority;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_THAW;
-}
-
-int ctdb_reply_control_thaw(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply, CTDB_CONTROL_THAW);
-}
-
 /* CTDB_CONTROL_GET_PNN */
 
 void ctdb_req_control_get_pnn(struct ctdb_req_control *request)

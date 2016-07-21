@@ -252,9 +252,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_FREEZE:
 		break;
 
-	case CTDB_CONTROL_THAW:
-		break;
-
 	case CTDB_CONTROL_GET_PNN:
 		break;
 
@@ -750,9 +747,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 	case CTDB_CONTROL_FREEZE:
 		break;
 
-	case CTDB_CONTROL_THAW:
-		break;
-
 	case CTDB_CONTROL_GET_PNN:
 		break;
 
@@ -1213,9 +1207,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_FREEZE:
 		break;
 
-	case CTDB_CONTROL_THAW:
-		break;
-
 	case CTDB_CONTROL_GET_PNN:
 		break;
 
@@ -1614,9 +1605,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_FREEZE:
-		break;
-
-	case CTDB_CONTROL_THAW:
 		break;
 
 	case CTDB_CONTROL_GET_PNN:
