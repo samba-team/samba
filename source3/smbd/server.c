@@ -51,6 +51,7 @@
 #include "smbd/notifyd/notifyd.h"
 #include "smbd/smbd_cleanupd.h"
 #include "lib/util/sys_rw.h"
+#include "cleanupdb.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -654,12 +655,24 @@ static void cleanup_timeout_fn(struct tevent_context *event_ctx,
 static void cleanupd_started(struct tevent_req *req)
 {
 	bool ok;
+	NTSTATUS status;
+	struct smbd_parent_context *parent = tevent_req_callback_data(
+		req, struct smbd_parent_context);
 
 	ok = cleanupd_init_recv(req);
 	TALLOC_FREE(req);
 	if (!ok) {
 		DBG_ERR("Failed to restart cleanupd, giving up\n");
 		return;
+	}
+
+	status = messaging_send(parent->msg_ctx,
+				parent->cleanupd,
+				MSG_SMB_NOTIFY_CLEANUP,
+				&data_blob_null);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("messaging_send returned %s\n",
+			nt_errstr(status));
 	}
 }
 
@@ -668,8 +681,8 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 			     bool unclean_shutdown)
 {
 	struct smbd_child_pid *child;
-	struct iovec iov[2];
 	NTSTATUS status;
+	bool ok;
 
 	for (child = parent->children; child != NULL; child = child->next) {
 		if (child->pid == pid) {
@@ -706,8 +719,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	}
 
 	if (pid == procid_to_pid(&parent->notifyd)) {
-		bool ok;
-
 		DBG_WARNING("Restarting notifyd\n");
 		ok = smbd_notifyd_init(parent->msg_ctx, false,
 				       &parent->notifyd);
@@ -717,15 +728,22 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		return;
 	}
 
-	iov[0] = (struct iovec) { .iov_base = (uint8_t *)&pid,
-				  .iov_len = sizeof(pid) };
-	iov[1] = (struct iovec) { .iov_base = (uint8_t *)&unclean_shutdown,
-				  .iov_len = sizeof(bool) };
+	ok = cleanupdb_store_child(pid, unclean_shutdown);
+	if (!ok) {
+		DBG_ERR("cleanupdb_store_child failed\n");
+		return;
+	}
 
-	status = messaging_send_iov(parent->msg_ctx, parent->cleanupd,
-				    MSG_SMB_NOTIFY_CLEANUP,
-				    iov, ARRAY_SIZE(iov), NULL, 0);
-	DEBUG(10, ("messaging_send_iov returned %s\n", nt_errstr(status)));
+	if (!server_id_is_disconnected(&parent->cleanupd)) {
+		status = messaging_send(parent->msg_ctx,
+					parent->cleanupd,
+					MSG_SMB_NOTIFY_CLEANUP,
+					&data_blob_null);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("messaging_send returned %s\n",
+				nt_errstr(status));
+		}
+	}
 
 	if (unclean_shutdown) {
 		/* a child terminated uncleanly so tickle all

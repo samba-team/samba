@@ -25,6 +25,7 @@
 #include "smbprofile.h"
 #include "serverid.h"
 #include "locking/proto.h"
+#include "cleanupdb.h"
 
 struct smbd_cleanupd_state {
 	pid_t parent_pid;
@@ -102,6 +103,39 @@ static void smbd_cleanupd_unlock(struct messaging_context *msg,
 	brl_revalidate(msg, private_data, msg_type, server_id, data);
 }
 
+struct cleanup_child {
+	struct cleanup_child *prev, *next;
+	pid_t pid;
+	bool unclean;
+};
+
+struct cleanupdb_traverse_state {
+	TALLOC_CTX *mem_ctx;
+	bool ok;
+	struct cleanup_child *childs;
+};
+
+static int cleanupdb_traverse_fn(const pid_t pid,
+				 const bool unclean,
+				 void *private_data)
+{
+	struct cleanupdb_traverse_state *cleanup_state =
+		(struct cleanupdb_traverse_state *)private_data;
+	struct cleanup_child *child = NULL;
+
+	child = talloc_zero(cleanup_state->mem_ctx, struct cleanup_child);
+	if (child == NULL) {
+		DBG_ERR("talloc_zero failed\n");
+		return -1;
+	}
+
+	child->pid = pid;
+	child->unclean = unclean;
+	DLIST_ADD(cleanup_state->childs, child);
+
+	return 0;
+}
+
 static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 					 void *private_data, uint32_t msg_type,
 					 struct server_id server_id,
@@ -111,43 +145,73 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 		private_data, struct tevent_req);
 	struct smbd_cleanupd_state *state = tevent_req_data(
 		req, struct smbd_cleanupd_state);
-	pid_t pid;
-	struct server_id child_id;
-	bool unclean_shutdown;
 	int ret;
+	struct cleanupdb_traverse_state cleanup_state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct cleanup_child *child = NULL;
 
-	if (data->length != (sizeof(pid) + sizeof(unclean_shutdown))) {
-		DBG_WARNING("Got invalid length: %zu\n", data->length);
+	cleanup_state = (struct cleanupdb_traverse_state) {
+		.mem_ctx = frame
+	};
+
+	/*
+	 * This merely collect childs in a list, whatever we're
+	 * supposed to cleanup for every child, it has to take place
+	 * *after* the db traverse in a list loop. This is to minimize
+	 * locking interaction between the traverse and writers (ie
+	 * the parent smbd).
+	 */
+	ret = cleanupdb_traverse_read(cleanupdb_traverse_fn, &cleanup_state);
+	if (ret < 0) {
+		DBG_ERR("cleanupdb_traverse_read failed\n");
+		TALLOC_FREE(frame);
 		return;
 	}
 
-	memcpy(&pid, data->data, sizeof(pid));
-	memcpy(&unclean_shutdown, data->data + sizeof(pid),
-	       sizeof(unclean_shutdown));
-
-	DBG_DEBUG("%d exited %sclean\n", (int)pid,
-		  unclean_shutdown ? "un" : "");
-
-	/*
-	 * Get child_id before messaging_cleanup which wipes the
-	 * unique_id. Not that it really matters here for functionality (the
-	 * child should have properly cleaned up :-)) though, but it looks
-	 * nicer.
-	 */
-	child_id = pid_to_procid(pid);
-
-	smbprofile_cleanup(pid, state->parent_pid);
-
-	ret = messaging_cleanup(msg, pid);
-
-	if ((ret != 0) && (ret != ENOENT)) {
-		DBG_DEBUG("messaging_cleanup returned %s\n", strerror(ret));
+	if (ret == 0) {
+		DBG_ERR("got 0 cleanup events, expected at least 1\n");
+		TALLOC_FREE(frame);
+		return;
 	}
 
-	if (!serverid_deregister(child_id)) {
-		DEBUG(1, ("Could not remove pid %d from serverid.tdb\n",
-			  (int)pid));
+	for (child = cleanup_state.childs;
+	     child != NULL;
+	     child = child->next)
+	{
+		struct server_id child_id;
+		bool ok;
+
+		ok = cleanupdb_delete_child(child->pid);
+		if (!ok) {
+			DBG_ERR("failed to delete pid %d\n", (int)child->pid);
+		}
+
+		/*
+		 * Get child_id before messaging_cleanup which wipes
+		 * the unique_id. Not that it really matters here for
+		 * functionality (the child should have properly
+		 * cleaned up :-)) though, but it looks nicer.
+		 */
+		child_id = pid_to_procid(child->pid);
+
+		smbprofile_cleanup(child->pid, state->parent_pid);
+
+		ret = messaging_cleanup(msg, child->pid);
+
+		if ((ret != 0) && (ret != ENOENT)) {
+			DBG_DEBUG("messaging_cleanup returned %s\n",
+				  strerror(ret));
+		}
+
+		if (!serverid_deregister(child_id)) {
+			DBG_ERR("Could not remove pid %d from serverid.tdb\n",
+				(int)child->pid);
+		}
+
+		DBG_DEBUG("cleaned up pid %d\n", (int)child->pid);
 	}
+
+	TALLOC_FREE(frame);
 }
 
 NTSTATUS smbd_cleanupd_recv(struct tevent_req *req)
