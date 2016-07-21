@@ -330,14 +330,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 	case CTDB_CONTROL_GET_BAN_STATE:
 		break;
 
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		len = ctdb_db_priority_len(cd->data.db_prio);
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
-		len = ctdb_uint32_len(cd->data.db_id);
-		break;
-
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
@@ -647,14 +639,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_SET_BAN_STATE:
 		ctdb_ban_state_push(cd->data.ban_state, buf);
-		break;
-
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		ctdb_db_priority_push(cd->data.db_prio, buf);
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
-		ctdb_uint32_push(cd->data.db_id, buf);
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -991,16 +975,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_SET_BAN_STATE:
 		ret = ctdb_ban_state_pull(buf, buflen, mem_ctx,
 					  &cd->data.ban_state);
-		break;
-
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		ret = ctdb_db_priority_pull(buf, buflen, mem_ctx,
-					    &cd->data.db_prio);
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:

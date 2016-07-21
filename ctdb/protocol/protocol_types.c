@@ -1974,34 +1974,6 @@ int ctdb_ban_state_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-size_t ctdb_db_priority_len(struct ctdb_db_priority *db_prio)
-{
-	return sizeof(struct ctdb_db_priority);
-}
-
-void ctdb_db_priority_push(struct ctdb_db_priority *db_prio, uint8_t *buf)
-{
-	memcpy(buf, db_prio, sizeof(struct ctdb_db_priority));
-}
-
-int ctdb_db_priority_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_db_priority **out)
-{
-	struct ctdb_db_priority *db_prio;
-
-	if (buflen < sizeof(struct ctdb_db_priority)) {
-		return EMSGSIZE;
-	}
-
-	db_prio = talloc_memdup(mem_ctx, buf, sizeof(struct ctdb_db_priority));
-	if (db_prio == NULL) {
-		return ENOMEM;
-	}
-
-	*out = db_prio;
-	return 0;
-}
-
 struct ctdb_notify_data_wire {
 	uint64_t srvid;
 	uint32_t len;

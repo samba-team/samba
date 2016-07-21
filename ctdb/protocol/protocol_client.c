@@ -1737,54 +1737,6 @@ int ctdb_reply_control_get_ban_state(struct ctdb_reply_control *reply,
 	return reply->status;
 }
 
-/* CTDB_CONTROL_SET_DB_PRIORITY */
-
-void ctdb_req_control_set_db_priority(struct ctdb_req_control *request,
-				      struct ctdb_db_priority *db_prio)
-{
-	request->opcode = CTDB_CONTROL_SET_DB_PRIORITY;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_SET_DB_PRIORITY;
-	request->rdata.data.db_prio = db_prio;
-}
-
-int ctdb_reply_control_set_db_priority(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply, CTDB_CONTROL_SET_DB_PRIORITY);
-}
-
-/* CTDB_CONTROL_GET_DB_PRIORITY */
-
-void ctdb_req_control_get_db_priority(struct ctdb_req_control *request,
-				      uint32_t db_id)
-{
-	request->opcode = CTDB_CONTROL_GET_DB_PRIORITY;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_GET_DB_PRIORITY;
-	request->rdata.data.db_id = db_id;
-}
-
-int ctdb_reply_control_get_db_priority(struct ctdb_reply_control *reply,
-				       uint32_t *priority)
-{
-	if (reply->rdata.opcode != CTDB_CONTROL_GET_DB_PRIORITY) {
-		return EPROTO;
-	}
-
-	*priority = reply->status;
-	reply->status = 0;
-
-	return reply->status;
-}
-
 /* CTDB_CONTROL_TRANSACTION_CANCEL */
 
 void ctdb_req_control_transaction_cancel(struct ctdb_req_control *request,

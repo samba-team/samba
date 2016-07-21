@@ -205,11 +205,6 @@ void ctdb_ban_state_push(struct ctdb_ban_state *ban_state, uint8_t *buf);
 int ctdb_ban_state_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			struct ctdb_ban_state **out);
 
-size_t ctdb_db_priority_len(struct ctdb_db_priority *db_prio);
-void ctdb_db_priority_push(struct ctdb_db_priority *db_prio, uint8_t *buf);
-int ctdb_db_priority_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
-			  struct ctdb_db_priority **out);
-
 size_t ctdb_notify_data_len(struct ctdb_notify_data *notify);
 void ctdb_notify_data_push(struct ctdb_notify_data *notify, uint8_t *buf);
 int ctdb_notify_data_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

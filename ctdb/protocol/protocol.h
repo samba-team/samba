@@ -749,11 +749,6 @@ struct ctdb_ban_state {
 	uint32_t time;
 };
 
-struct ctdb_db_priority {
-	uint32_t db_id;
-	uint32_t priority;
-};
-
 struct ctdb_notify_data {
 	uint64_t srvid;
 	TDB_DATA data;
@@ -868,7 +863,6 @@ struct ctdb_req_control_data {
 		uint32_t role;
 		const char *script;
 		struct ctdb_ban_state *ban_state;
-		struct ctdb_db_priority *db_prio;
 		struct ctdb_notify_data *notify;
 		uint64_t srvid;
 		struct ctdb_iface *iface;

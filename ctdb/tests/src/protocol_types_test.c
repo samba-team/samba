@@ -709,20 +709,6 @@ static void verify_ctdb_ban_state(struct ctdb_ban_state *p1,
 	assert(p1->time == p2->time);
 }
 
-static void fill_ctdb_db_priority(TALLOC_CTX *mem_ctx,
-				  struct ctdb_db_priority *p)
-{
-	p->db_id = rand32();
-	p->priority = rand32();
-}
-
-static void verify_ctdb_db_priority(struct ctdb_db_priority *p1,
-				    struct ctdb_db_priority *p2)
-{
-	assert(p1->db_id == p2->db_id);
-	assert(p1->priority == p2->priority);
-}
-
 static void fill_ctdb_notify_data(TALLOC_CTX *mem_ctx,
 				  struct ctdb_notify_data *p)
 {
@@ -1206,7 +1192,6 @@ DEFINE_TEST(struct ctdb_node_map, ctdb_node_map);
 DEFINE_TEST(struct ctdb_script, ctdb_script);
 DEFINE_TEST(struct ctdb_script_list, ctdb_script_list);
 DEFINE_TEST(struct ctdb_ban_state, ctdb_ban_state);
-DEFINE_TEST(struct ctdb_db_priority, ctdb_db_priority);
 DEFINE_TEST(struct ctdb_notify_data, ctdb_notify_data);
 DEFINE_TEST(struct ctdb_iface, ctdb_iface);
 DEFINE_TEST(struct ctdb_iface_list, ctdb_iface_list);
@@ -1313,7 +1298,6 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_script)();
 	TEST_FUNC(ctdb_script_list)();
 	TEST_FUNC(ctdb_ban_state)();
-	TEST_FUNC(ctdb_db_priority)();
 	TEST_FUNC(ctdb_notify_data)();
 	TEST_FUNC(ctdb_iface)();
 	TEST_FUNC(ctdb_iface_list)();

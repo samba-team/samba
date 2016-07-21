@@ -484,15 +484,6 @@ int ctdb_reply_control_get_ban_state(struct ctdb_reply_control *reply,
 				     TALLOC_CTX *mem_ctx,
 				     struct ctdb_ban_state **ban_state);
 
-void ctdb_req_control_set_db_priority(struct ctdb_req_control *request,
-				      struct ctdb_db_priority *db_prio);
-int ctdb_reply_control_set_db_priority(struct ctdb_reply_control *reply);
-
-void ctdb_req_control_get_db_priority(struct ctdb_req_control *request,
-				      uint32_t db_id);
-int ctdb_reply_control_get_db_priority(struct ctdb_reply_control *reply,
-				       uint32_t *priority);
-
 void ctdb_req_control_transaction_cancel(struct ctdb_req_control *request,
 					 uint32_t tid);
 int ctdb_reply_control_transaction_cancel(struct ctdb_reply_control *reply);

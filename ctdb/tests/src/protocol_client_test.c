@@ -469,18 +469,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_GET_BAN_STATE:
 		break;
 
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		cd->data.db_prio = talloc(mem_ctx, struct ctdb_db_priority);
-		assert(cd->data.db_prio != NULL);
-		fill_ctdb_db_priority(mem_ctx, cd->data.db_prio);
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
-		cd->data.db_prio = talloc(mem_ctx, struct ctdb_db_priority);
-		assert(cd->data.db_prio != NULL);
-		fill_ctdb_db_priority(mem_ctx, cd->data.db_prio);
-		break;
-
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
@@ -925,14 +913,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
-		break;
-
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		verify_ctdb_db_priority(cd->data.db_prio, cd2->data.db_prio);
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
-		assert(cd->data.db_id == cd2->data.db_id);
 		break;
 
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
@@ -1388,12 +1368,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_ban_state(mem_ctx, cd->data.ban_state);
 		break;
 
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
-		break;
-
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
@@ -1765,12 +1739,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_GET_BAN_STATE:
 		verify_ctdb_ban_state(cd->data.ban_state, cd2->data.ban_state);
-		break;
-
-	case CTDB_CONTROL_SET_DB_PRIORITY:
-		break;
-
-	case CTDB_CONTROL_GET_DB_PRIORITY:
 		break;
 
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
