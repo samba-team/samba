@@ -603,18 +603,21 @@ class dc_join(object):
             # Add the Replica-Locations or RO-Replica-Locations attributes
             # TODO Is this supposed to be for the schema partition too?
             expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.domaindns_zone)
-            domain = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+            domain = (ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
                                       attrs=[],
                                       base=ctx.samdb.get_partitions_dn(),
-                                      expression=expr)
+                                      expression=expr), ctx.domaindns_zone)
 
             expr = "(&(objectClass=crossRef)(ncName=%s))" % ldb.binary_encode(ctx.forestdns_zone)
-            forest = ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
+            forest = (ctx.samdb.search(scope=ldb.SCOPE_ONELEVEL,
                                       attrs=[],
                                       base=ctx.samdb.get_partitions_dn(),
-                                      expression=expr)
+                                      expression=expr), ctx.forestdns_zone)
 
-            for part in (domain, forest):
+            for part, zone in (domain, forest):
+                if zone not in ctx.nc_list:
+                    continue
+
                 if len(part) == 1:
                     m = ldb.Message()
                     m.dn = part[0].dn
@@ -896,8 +899,6 @@ class dc_join(object):
             # At this point we should already have an entry in the ForestDNS
             # and DomainDNS NC (those under CN=Partions,DC=...) in order to
             # indicate that we hold a replica for this NC.
-            #
-            # FIXME make this optional based on --dns-backend=
             for nc in (ctx.domaindns_zone, ctx.forestdns_zone):
                 if nc in ctx.nc_list:
                     print "Replicating %s" % (str(nc))
