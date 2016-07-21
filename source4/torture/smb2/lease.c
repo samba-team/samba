@@ -3744,7 +3744,9 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	options2_1.max_protocol = PROTOCOL_SMB2_10;
 	/* create a new connection (same client_guid) */
 	if (!torture_smb2_connection_ext(tctx, 0, &options2_1, &tree_2_1)) {
-		torture_warning(tctx, "couldn't reconnect max protocol 2.1, bailing\n");
+		torture_result(tctx,  TORTURE_FAIL,
+			__location__ "couldn't reconnect "
+			"max protocol 2.1, bailing\n");
 		ret = false;
 		goto done;
 	}
@@ -3760,7 +3762,9 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 	options3_0.max_protocol = PROTOCOL_SMB3_00;
 	/* create a new connection (same client_guid) */
 	if (!torture_smb2_connection_ext(tctx, 0, &options3_0, &tree_3_0)) {
-		torture_warning(tctx, "couldn't reconnect max protocol 3.0, bailing\n");
+		torture_result(tctx,  TORTURE_FAIL,
+			__location__ "couldn't reconnect "
+			"max protocol 3.0, bailing\n");
 		ret = false;
 		goto done;
 	}
@@ -3867,12 +3871,16 @@ static bool test_lease_dynamic_share(struct torture_context *tctx,
 
  done:
 
-	smb2_util_close(tree_2_1, h);
-	smb2_util_close(tree_3_0, h1);
-	smb2_util_close(tree_3_0, h2);
+	if (tree_2_1 != NULL) {
+		smb2_util_close(tree_2_1, h);
+		smb2_util_unlink(tree_2_1, fname);
+	}
+	if (tree_3_0 != NULL) {
+		smb2_util_close(tree_3_0, h1);
+		smb2_util_close(tree_3_0, h2);
 
-	smb2_util_unlink(tree_2_1, fname);
-	smb2_util_unlink(tree_3_0, fname);
+		smb2_util_unlink(tree_3_0, fname);
+	}
 
 	/* Set sharename back. */
 	lpcfg_set_cmdline(tctx->lp_ctx, "torture:share", orig_share);
