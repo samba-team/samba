@@ -337,6 +337,23 @@ bld.SAMBA3_BINARY('mdsearch',
                  mdssvc
                  ''')
 
+bld.SAMBA3_BINARY('wspsearch',
+                 source='wspsearch.c',
+                 deps='''
+                 talloc
+                 tevent
+                 smbconf
+                 CMDLINE_S3
+                 cmdline_contexts
+                 libsmb
+                 msrpc3
+                 LIBSAMBA_WSP
+                 RPCCLI_WSP
+                 WSP_UTIL
+                 dcerpc
+                 ''',
+                  enabled=bld.env.with_wsp)
+
 pytalloc_util = bld.pyembed_libname('pytalloc-util')
 pyrpc_util = bld.pyembed_libname('pyrpc_util')
 bld.SAMBA3_PYTHON('python_net_s3',
