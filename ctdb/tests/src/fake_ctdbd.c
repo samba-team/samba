@@ -80,6 +80,18 @@ struct vnn_map {
 	uint32_t *map;
 };
 
+struct database {
+	const char *name;
+	uint32_t id;
+	uint8_t flags;
+	uint64_t seq_num;
+};
+
+struct database_map {
+	int num_dbs;
+	struct database *db;
+};
+
 struct srvid_register_state {
 	struct srvid_register_state *prev, *next;
 	struct ctdbd_context *ctdb;
@@ -90,6 +102,7 @@ struct ctdbd_context {
 	struct node_map *node_map;
 	struct interface_map *iface_map;
 	struct vnn_map *vnn_map;
+	struct database_map *db_map;
 	struct srvid_register_state *rstate;
 	int num_clients;
 	struct timeval start_time;
@@ -565,6 +578,127 @@ fail:
 	return false;
 }
 
+static struct database_map *dbmap_init(TALLOC_CTX *mem_ctx)
+{
+	struct database_map *db_map;
+
+	db_map = talloc_zero(mem_ctx, struct database_map);
+	if (db_map == NULL) {
+		return NULL;
+	}
+
+	return db_map;
+}
+
+/* Read a database map from stdin.  Each line looks like:
+ *  <ID> <NAME> [FLAGS] [SEQ_NUM]
+ * EOF or a blank line terminates input.
+ *
+ * By default, flags and seq_num are 0
+ */
+
+static bool dbmap_parse(struct database_map *db_map)
+{
+	char line[1024];
+
+	while ((fgets(line, sizeof(line), stdin) != NULL)) {
+		uint32_t id;
+		uint8_t flags = 0;
+		uint32_t seq_num = 0;
+		char *tok, *t;
+		char *name;
+		struct database *db;
+
+		if (line[0] == '\n') {
+			break;
+		}
+
+		/* Get rid of pesky newline */
+		if ((t = strchr(line, '\n')) != NULL) {
+			*t = '\0';
+		}
+
+		/* Get ID */
+		tok = strtok(line, " \t");
+		if (tok == NULL) {
+			fprintf(stderr, "bad line (%s) - missing ID\n", line);
+			continue;
+		}
+		id = (uint32_t)strtoul(tok, NULL, 0);
+
+		/* Get NAME */
+		tok = strtok(NULL, " \t");
+		if (tok == NULL) {
+			fprintf(stderr, "bad line (%s) - missing NAME\n", line);
+			continue;
+		}
+		name = talloc_strdup(db_map, tok);
+		if (name == NULL) {
+			goto fail;
+		}
+
+		/* Get flags */
+		tok = strtok(NULL, " \t");
+		while (tok != NULL) {
+			if (strcmp(tok, "PERSISTENT") == 0) {
+				flags |= CTDB_DB_FLAGS_PERSISTENT;
+			} else if (strcmp(tok, "STICKY") == 0) {
+				flags |= CTDB_DB_FLAGS_STICKY;
+			} else if (strcmp(tok, "READONLY") == 0) {
+				flags |= CTDB_DB_FLAGS_READONLY;
+			} else if (tok[0] >= '0'&& tok[0] <= '9') {
+				if ((flags & CTDB_DB_FLAGS_PERSISTENT) == 0) {
+					fprintf(stderr,
+						"seq_num for volatile db\n");
+					goto fail;
+				}
+				seq_num = (uint64_t)strtoull(tok, NULL, 0);
+			}
+
+			tok = strtok(NULL, " \t");
+		}
+
+		db_map->db = talloc_realloc(db_map, db_map->db,
+					    struct database,
+					    db_map->num_dbs + 1);
+		if (db_map->db == NULL) {
+			goto fail;
+		}
+		db = &db_map->db[db_map->num_dbs];
+
+		db->id = id;
+		db->name = name;
+		db->flags = flags;
+		db->seq_num = seq_num;
+
+		db_map->num_dbs += 1;
+	}
+
+	DEBUG(DEBUG_INFO, ("Parsing dbmap done\n"));
+	return true;
+
+fail:
+	DEBUG(DEBUG_INFO, ("Parsing dbmap failed\n"));
+	return false;
+
+}
+
+static struct database *database_find(struct database_map *map,
+				      uint32_t db_id)
+{
+	int i;
+
+	for (i = 0; i < map->num_dbs; i++) {
+		struct database *db = &map->db[i];
+
+		if (db->id == db_id) {
+			return db;
+		}
+	}
+
+	return NULL;
+}
+
 /*
  * CTDB context setup
  */
@@ -610,6 +744,11 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 		goto fail;
 	}
 
+	ctdb->db_map = dbmap_init(ctdb);
+	if (ctdb->db_map == NULL) {
+		goto fail;
+	}
+
 	while (fgets(line, sizeof(line), stdin) != NULL) {
 		char *t;
 
@@ -623,6 +762,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 			status = interfaces_parse(ctdb->iface_map);
 		} else if (strcmp(line, "VNNMAP") == 0) {
 			status = vnnmap_parse(ctdb->vnn_map);
+		} else if (strcmp(line, "DBMAP") == 0) {
+			status = dbmap_parse(ctdb->db_map);
 		} else if (strcmp(line, "RECLOCK") == 0) {
 			status = reclock_parse(ctdb);
 		} else {
@@ -1016,6 +1157,45 @@ static void control_ping(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
+static void control_getdbpath(TALLOC_CTX *mem_ctx,
+			      struct tevent_req *req,
+			      struct ctdb_req_header *header,
+			      struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+	} else {
+		const char *base;
+		if (db->flags & CTDB_DB_FLAGS_PERSISTENT) {
+			base = "/var/lib/ctdb/persistent";
+		} else {
+			base = "/var/run/ctdb/DB_DIR";
+		}
+		reply.rdata.data.db_path =
+			talloc_asprintf(mem_ctx, "%s/%s.%u",
+					base, db->name, header->destnode);
+		if (reply.rdata.data.db_path == NULL) {
+			reply.status = ENOMEM;
+			reply.errmsg = "Memory error";
+		} else {
+			reply.status = 0;
+			reply.errmsg = NULL;
+		}
+	}
+
+	client_send_control(req, header, &reply);
+}
+
 static void control_getvnnmap(TALLOC_CTX *mem_ctx,
 			      struct tevent_req *req,
 			      struct ctdb_req_header *header,
@@ -1080,6 +1260,51 @@ static void control_set_debug(TALLOC_CTX *mem_ctx,
 	reply.status = 0;
 	reply.errmsg = NULL;
 
+	client_send_control(req, header, &reply);
+}
+
+static void control_get_dbmap(TALLOC_CTX *mem_ctx,
+			      struct tevent_req *req,
+			       struct ctdb_req_header *header,
+			      struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct ctdb_dbid_map *dbmap;
+	int i;
+
+	reply.rdata.opcode = request->opcode;
+
+	dbmap = talloc_zero(mem_ctx, struct ctdb_dbid_map);
+	if (dbmap == NULL) {
+		goto fail;
+	}
+
+	dbmap->num = ctdb->db_map->num_dbs;
+	dbmap->dbs = talloc_array(dbmap, struct ctdb_dbid, dbmap->num);
+	if (dbmap->dbs == NULL) {
+		goto fail;
+	}
+
+	for (i = 0; i < dbmap->num; i++) {
+		struct database *db = &ctdb->db_map->db[i];
+		dbmap->dbs[i] = (struct ctdb_dbid) {
+			.db_id = db->id,
+			.flags = db->flags,
+		};
+	}
+
+	reply.rdata.data.dbmap = dbmap;
+	reply.status = 0;
+	reply.errmsg = NULL;
+	client_send_control(req, header, &reply);
+	return;
+
+fail:
+	reply.status = -1;
+	reply.errmsg = "Memory error";
 	client_send_control(req, header, &reply);
 }
 
@@ -1252,6 +1477,37 @@ static void control_deregister_srvid(TALLOC_CTX *mem_ctx,
 
 fail:
 	TALLOC_FREE(rstate);
+	client_send_control(req, header, &reply);
+}
+
+static void control_get_dbname(TALLOC_CTX *mem_ctx,
+			       struct tevent_req *req,
+			       struct ctdb_req_header *header,
+			       struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+	} else {
+		reply.rdata.data.db_name = talloc_strdup(mem_ctx, db->name);
+		if (reply.rdata.data.db_name == NULL) {
+			reply.status = ENOMEM;
+			reply.errmsg = "Memory error";
+		} else {
+			reply.status = 0;
+			reply.errmsg = NULL;
+		}
+	}
+
 	client_send_control(req, header, &reply);
 }
 
@@ -1715,6 +1971,7 @@ static void control_get_reclock_file(TALLOC_CTX *mem_ctx,
 	struct ctdb_reply_control reply;
 
 	reply.rdata.opcode = request->opcode;
+
 	if (ctdb->reclock != NULL) {
 		reply.rdata.data.reclock_file =
 			talloc_strdup(mem_ctx, ctdb->reclock);
@@ -1847,6 +2104,57 @@ done:
 
 fail:
 	reply.errmsg = "Failed to ban node";
+}
+
+static void control_get_db_seqnum(TALLOC_CTX *mem_ctx,
+			       struct tevent_req *req,
+			       struct ctdb_req_header *header,
+			       struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+	} else {
+		reply.rdata.data.seqnum = db->seq_num;
+		reply.status = 0;
+		reply.errmsg = NULL;
+	}
+
+	client_send_control(req, header, &reply);
+}
+
+static void control_db_get_health(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+	} else {
+		reply.rdata.data.reason = NULL;
+		reply.status = 0;
+		reply.errmsg = NULL;
+	}
+
 	client_send_control(req, header, &reply);
 }
 
@@ -1963,6 +2271,74 @@ static void control_set_iface_link_state(TALLOC_CTX *mem_ctx,
 
 fail:
 	reply.status = -1;
+	client_send_control(req, header, &reply);
+}
+
+static void control_set_db_readonly(TALLOC_CTX *mem_ctx,
+				    struct tevent_req *req,
+				    struct ctdb_req_header *header,
+				    struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+		goto done;
+	}
+
+	if (db->flags & CTDB_DB_FLAGS_PERSISTENT) {
+		reply.status = EINVAL;
+		reply.errmsg = "Can not set READONLY on persistent db";
+		goto done;
+	}
+
+	db->flags |= CTDB_DB_FLAGS_READONLY;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+done:
+	client_send_control(req, header, &reply);
+}
+
+static void control_set_db_sticky(TALLOC_CTX *mem_ctx,
+				    struct tevent_req *req,
+				    struct ctdb_req_header *header,
+				    struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct database *db;
+
+	reply.rdata.opcode = request->opcode;
+
+	db = database_find(ctdb->db_map, request->rdata.data.db_id);
+	if (db == NULL) {
+		reply.status = ENOENT;
+		reply.errmsg = "Database not found";
+		goto done;
+	}
+
+	if (db->flags & CTDB_DB_FLAGS_PERSISTENT) {
+		reply.status = EINVAL;
+		reply.errmsg = "Can not set STICKY on persistent db";
+		goto done;
+	}
+
+	db->flags |= CTDB_DB_FLAGS_STICKY;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+done:
 	client_send_control(req, header, &reply);
 }
 
@@ -2381,6 +2757,10 @@ static void client_process_control(struct tevent_req *req,
 		control_ping(mem_ctx, req, &header, &request);
 		break;
 
+	case CTDB_CONTROL_GETDBPATH:
+		control_getdbpath(mem_ctx, req, &header, &request);
+		break;
+
 	case CTDB_CONTROL_GETVNNMAP:
 		control_getvnnmap(mem_ctx, req, &header, &request);
 		break;
@@ -2391,6 +2771,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_SET_DEBUG:
 		control_set_debug(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_DBMAP:
+		control_get_dbmap(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_RECMODE:
@@ -2407,6 +2791,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_DEREGISTER_SRVID:
 		control_deregister_srvid(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_DBNAME:
+		control_get_dbname(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_PID:
@@ -2489,12 +2877,28 @@ static void client_process_control(struct tevent_req *req,
 		control_set_ban_state(mem_ctx, req, &header, &request);
 		break;
 
+	case CTDB_CONTROL_GET_DB_SEQNUM:
+		control_get_db_seqnum(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_DB_GET_HEALTH:
+		control_db_get_health(mem_ctx, req, &header, &request);
+		break;
+
 	case CTDB_CONTROL_GET_IFACES:
 		control_get_ifaces(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_SET_IFACE_LINK_STATE:
 		control_set_iface_link_state(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_SET_DB_READONLY:
+		control_set_db_readonly(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_SET_DB_STICKY:
+		control_set_db_sticky(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
