@@ -731,6 +731,73 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	return ret;
 }
 
+static int cli_credentials_shallow_ccache(struct cli_credentials *cred)
+{
+	krb5_error_code ret;
+	const struct ccache_container *old_ccc = NULL;
+	struct ccache_container *ccc = NULL;
+	char *ccache_name = NULL;
+
+	old_ccc = cred->ccache;
+	if (old_ccc == NULL) {
+		return 0;
+	}
+
+	ccc = talloc(cred, struct ccache_container);
+	if (ccc == NULL) {
+		return ENOMEM;
+	}
+	*ccc = *old_ccc;
+	ccc->ccache = NULL;
+
+	ccache_name = talloc_asprintf(ccc, "MEMORY:%p", ccc);
+
+	ret = krb5_cc_resolve(ccc->smb_krb5_context->krb5_context,
+			      ccache_name, &ccc->ccache);
+	if (ret != 0) {
+		TALLOC_FREE(ccc);
+		return ret;
+	}
+
+	talloc_set_destructor(ccc, free_mccache);
+
+	TALLOC_FREE(ccache_name);
+
+	ret = krb5_cc_copy_cache(ccc->smb_krb5_context->krb5_context,
+				 old_ccc->ccache, ccc->ccache);
+	if (ret != 0) {
+		TALLOC_FREE(ccc);
+		return ret;
+	}
+
+	cred->ccache = ccc;
+	cred->client_gss_creds = NULL;
+	cred->client_gss_creds_obtained = CRED_UNINITIALISED;
+	return ret;
+}
+
+_PUBLIC_ struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ctx,
+						struct cli_credentials *src)
+{
+	struct cli_credentials *dst;
+	int ret;
+
+	dst = talloc(mem_ctx, struct cli_credentials);
+	if (dst == NULL) {
+		return NULL;
+	}
+
+	*dst = *src;
+
+	ret = cli_credentials_shallow_ccache(dst);
+	if (ret != 0) {
+		TALLOC_FREE(dst);
+		return NULL;
+	}
+
+	return dst;
+}
+
 static int smb_krb5_create_salt_principal(TALLOC_CTX *mem_ctx,
 					  const char *samAccountName,
 					  const char *realm,

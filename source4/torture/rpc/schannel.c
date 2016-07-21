@@ -24,6 +24,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "../libcli/auth/schannel.h"

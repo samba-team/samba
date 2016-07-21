@@ -27,6 +27,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "libcli/security/security.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"

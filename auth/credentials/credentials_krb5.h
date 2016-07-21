@@ -38,4 +38,8 @@ int cli_credentials_set_client_gss_creds(struct cli_credentials *cred,
 					 enum credentials_obtained obtained,
 					 const char **error_string);
 
+struct cli_credentials *cli_credentials_shallow_copy(TALLOC_CTX *mem_ctx,
+						struct cli_credentials *src);
+
+
 #endif /* __CREDENTIALS_KRB5_H__ */
