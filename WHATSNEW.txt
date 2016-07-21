@@ -126,7 +126,14 @@ Samba-tool improvements
 Running samba-tool on the command line should now be a lot snappier. The tool
 now only loads the code specific to the subcommand that you wish to run.
 
+SMB 2.1 Leases enabled by default
+---------------------------------
 
+Leasing is an SMB 2.1 (and higher) feature which allows clients to
+aggressively cache files locally above and beyond the caching allowed
+by SMB 1 oplocks. This feature was disabled in previous releases, but
+the SMB2 leasing code is now considered mature and stable enough to be
+enabled by default.
 
 REMOVED FEATURES
 ================
@@ -144,6 +151,7 @@ smb.conf changes
   only user			Removed
   username			Removed
   kccsrv:samba_kcc		Changed default		true
+  smb2 leases			Changed default		yes
 
 KNOWN ISSUES
 ============
