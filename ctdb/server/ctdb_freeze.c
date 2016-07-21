@@ -605,21 +605,6 @@ bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
 	return true;
 }
 
-
-static void thaw_priority(struct ctdb_context *ctdb)
-{
-	DEBUG(DEBUG_ERR,("Thawing all\n"));
-
-	/* cancel any pending transactions */
-	if (ctdb->freeze_transaction_started) {
-		ctdb_db_iterator(ctdb, db_transaction_cancel_handler, NULL);
-		ctdb->freeze_transaction_started = false;
-	}
-
-	ctdb_db_iterator(ctdb, db_thaw, NULL);
-	TALLOC_FREE(ctdb->freeze_handle);
-}
-
 /*
   thaw the databases
  */
@@ -631,7 +616,16 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb, bool check_recmode)
 		return -1;
 	}
 
-	thaw_priority(ctdb);
+	DEBUG(DEBUG_ERR,("Thawing all\n"));
+
+	/* cancel any pending transactions */
+	if (ctdb->freeze_transaction_started) {
+		ctdb_db_iterator(ctdb, db_transaction_cancel_handler, NULL);
+		ctdb->freeze_transaction_started = false;
+	}
+
+	ctdb_db_iterator(ctdb, db_thaw, NULL);
+	TALLOC_FREE(ctdb->freeze_handle);
 
 	ctdb_call_resend_all(ctdb);
 	return 0;
