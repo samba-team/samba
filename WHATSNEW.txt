@@ -110,6 +110,12 @@ net ads dns unregister
 It is now possible to remove the DNS entries created with 'net ads register'
 with the matching 'net ads unregister' command.
 
+Samba-tool improvements
+------------------------
+
+Running samba-tool on the command line should now be a lot snappier. The tool
+now only loads the code specific to the subcommand that you wish to run.
+
 
 
 REMOVED FEATURES
