@@ -1406,6 +1406,59 @@ static void control_list_tunables(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
+static void control_modify_flags(TALLOC_CTX *mem_ctx,
+				 struct tevent_req *req,
+				 struct ctdb_req_header *header,
+				 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_node_flag_change *change = request->rdata.data.flag_change;
+	struct ctdb_reply_control reply;
+	struct node *node;
+
+	reply.rdata.opcode = request->opcode;
+
+	if ((change->old_flags & ~NODE_FLAGS_PERMANENTLY_DISABLED) ||
+	    (change->new_flags & ~NODE_FLAGS_PERMANENTLY_DISABLED) != 0) {
+		DEBUG(DEBUG_INFO,
+		      ("MODIFY_FLAGS control not for PERMANENTLY_DISABLED\n"));
+		reply.status = EINVAL;
+		reply.errmsg = "Failed to MODIFY_FLAGS";
+		client_send_control(req, header, &reply);
+		return;
+	}
+
+	/* There's all sorts of broadcast weirdness here.  Only change
+	 * the specified node, not the destination node of the
+	 * control. */
+	node = &ctdb->node_map->node[change->pnn];
+
+	if ((node->flags &
+	     change->old_flags & NODE_FLAGS_PERMANENTLY_DISABLED) == 0 &&
+	    (change->new_flags & NODE_FLAGS_PERMANENTLY_DISABLED) != 0) {
+		DEBUG(DEBUG_INFO,("Disabling node %d\n", header->destnode));
+		node->flags |= NODE_FLAGS_PERMANENTLY_DISABLED;
+		goto done;
+	}
+
+	if ((node->flags &
+	     change->old_flags & NODE_FLAGS_PERMANENTLY_DISABLED) != 0 &&
+	    (change->new_flags & NODE_FLAGS_PERMANENTLY_DISABLED) == 0) {
+		DEBUG(DEBUG_INFO,("Enabling node %d\n", header->destnode));
+		node->flags &= ~NODE_FLAGS_PERMANENTLY_DISABLED;
+		goto done;
+	}
+
+	DEBUG(DEBUG_INFO, ("Flags unchanged for node %d\n", header->destnode));
+
+done:
+	reply.status = 0;
+	reply.errmsg = NULL;
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_all_tunables(TALLOC_CTX *mem_ctx,
 				     struct tevent_req *req,
 				     struct ctdb_req_header *header,
@@ -2386,6 +2439,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_LIST_TUNABLES:
 		control_list_tunables(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_MODIFY_FLAGS:
+		control_modify_flags(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_ALL_TUNABLES:
