@@ -2427,35 +2427,6 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 	return 0;
 }
 
-
-/*
-  async freeze send control
- */
-struct ctdb_client_control_state *
-ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, uint32_t priority)
-{
-	return ctdb_control_send(ctdb, destnode, priority, 
-			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
-			   mem_ctx, &timeout, NULL);
-}
-
-/* 
-   async freeze recv control
-*/
-int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state)
-{
-	int ret;
-	int32_t res;
-
-	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
-	if ( (ret != 0) || (res != 0) ){
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_freeze_recv failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
 /*
   freeze databases of a certain priority
  */
