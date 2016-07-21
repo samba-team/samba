@@ -1726,6 +1726,77 @@ static void control_continue_node(TALLOC_CTX *mem_ctx,
 	return;
 }
 
+static void set_ban_state_callback(struct tevent_req *subreq)
+{
+	struct node *node = tevent_req_callback_data(
+		subreq, struct node);
+	bool status;
+
+	status = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		DEBUG(DEBUG_INFO, ("tevent_wakeup_recv failed\n"));
+	}
+
+	node->flags &= ~NODE_FLAGS_BANNED;
+}
+
+static void control_set_ban_state(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct tevent_req *subreq;
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_ban_state *ban = request->rdata.data.ban_state;
+	struct ctdb_reply_control reply;
+	struct node *node;
+
+	reply.rdata.opcode = request->opcode;
+
+	if (ban->pnn != header->destnode) {
+		DEBUG(DEBUG_INFO,
+		      ("SET_BAN_STATE control for PNN %d rejected\n",
+		       ban->pnn));
+		reply.status = EINVAL;
+		goto fail;
+	}
+
+	node = &ctdb->node_map->node[header->destnode];
+
+	if (ban->time == 0) {
+		DEBUG(DEBUG_INFO,("Unbanning this node\n"));
+		node->flags &= ~NODE_FLAGS_BANNED;
+		goto done;
+	}
+
+	subreq = tevent_wakeup_send(ctdb->node_map, state->ev,
+				    tevent_timeval_current_ofs(
+					    ban->time, 0));
+	if (subreq == NULL) {
+		reply.status = ENOMEM;
+		goto fail;
+	}
+	tevent_req_set_callback(subreq, set_ban_state_callback, node);
+
+	DEBUG(DEBUG_INFO, ("Banning this node for %d seconds\n", ban->time));
+	node->flags |= NODE_FLAGS_BANNED;
+	ctdb->vnn_map->generation = INVALID_GENERATION;
+
+done:
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+	return;
+
+fail:
+	reply.errmsg = "Failed to ban node";
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_ifaces(TALLOC_CTX *mem_ctx,
 			       struct tevent_req *req,
 			       struct ctdb_req_header *header,
@@ -2355,6 +2426,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_CONTINUE_NODE:
 		control_continue_node(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_SET_BAN_STATE:
+		control_set_ban_state(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:
