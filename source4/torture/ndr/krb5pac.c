@@ -434,7 +434,7 @@ static bool PAC_DATA_pkinit(struct torture_context *tctx,
 	DATA_BLOB reply_key_blob = data_blob_null;
 	krb5_context ctx;
 	krb5_keyblock reply_key;
-	krb5_crypto crypto;
+	krb5_enc_data input;
 	krb5_data plain_data;
 	DATA_BLOB plain_data_blob = data_blob_null;
 
@@ -474,21 +474,33 @@ static bool PAC_DATA_pkinit(struct torture_context *tctx,
 					reply_key_blob.data, reply_key_blob.length,
 					&reply_key), 0,
 				"smb_krb5_keyblock_init_contents");
-	torture_assert_int_equal(tctx, krb5_crypto_init(ctx,
-					&reply_key, ETYPE_NULL,
-					&crypto), 0,
-				"krb5_crypto_init");
-	torture_assert_int_equal(tctx, krb5_decrypt(ctx, crypto,
+
+	ZERO_STRUCT(input);
+
+	input.ciphertext.data = (char *)r->buffers[1].info->credential_info.encrypted_data.data;
+	input.ciphertext.length = r->buffers[1].info->credential_info.encrypted_data.length;
+	input.enctype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+
+	plain_data.data = malloc(r->buffers[1].info->credential_info.encrypted_data.length);
+	plain_data.length = r->buffers[1].info->credential_info.encrypted_data.length;
+	torture_assert(tctx, plain_data.data, "malloc failed");
+
+	torture_assert_krb5_error_equal(tctx, krb5_c_decrypt(ctx,
+#ifdef SAMBA4_USES_HEIMDAL
+					reply_key,
+#else
+					&reply_key,
+#endif
 					KRB5_KU_OTHER_ENCRYPTED,
-					r->buffers[1].info->credential_info.encrypted_data.data,
-					r->buffers[1].info->credential_info.encrypted_data.length,
+					NULL,
+					&input,
 					&plain_data), 0,
 				"krb5_decrypt");
+
 	torture_assert_int_equal(tctx, plain_data.length, 112, "plain_data.length");
 	plain_data_blob = data_blob_talloc(tctx, plain_data.data, plain_data.length);
 	torture_assert_int_equal(tctx, plain_data_blob.length, 112, "plain_data_blob.length");
-	krb5_data_free(&plain_data);
-	krb5_crypto_destroy(ctx, crypto);
+	kerberos_free_data_contents(ctx, &plain_data);
 	krb5_free_keyblock_contents(ctx, &reply_key);
 	krb5_free_context(ctx);
 	torture_assert_data_blob_equal(tctx,
