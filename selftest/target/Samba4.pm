@@ -574,6 +574,7 @@ sub provision_raw_step1($$)
 	log file = $ctx->{logdir}/log.\%m
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
+	ntlm auth = Yes
 	rndc command = true
 	dns update command = $ctx->{samba_dnsupdate}
 	spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}

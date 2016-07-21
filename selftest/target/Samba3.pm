@@ -213,6 +213,7 @@ sub setup_nt4_dc($$)
 	domain master = yes
 	domain logons = yes
 	lanman auth = yes
+	ntlm auth = yes
 	raw NTLMv2 auth = yes
 
 	rpc_server:epmapper = external
@@ -315,6 +316,7 @@ sub setup_nt4_member($$$)
 	my $member_options = "
 	security = domain
 	dbwrap_tdb_mutexes:* = yes
+	ntlm auth = yes
 	${require_mutexes}
 ";
 	my $ret = $self->provision($prefix,
@@ -381,6 +383,7 @@ sub setup_admember($$$$)
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
+	ntlm auth = yes
 ";
 
 	my $ret = $self->provision($prefix,
@@ -550,6 +553,7 @@ sub setup_simpleserver($$)
 
 	my $simpleserver_options = "
 	lanman auth = yes
+	ntlm auth = yes
 	vfs objects = xattr_tdb streams_depot time_audit full_audit
 	change notify = no
 
@@ -842,6 +846,7 @@ sub setup_maptoguest($$)
 
 	my $options = "
 map to guest = bad user
+ntlm auth = yes
 ";
 
 	my $vars = $self->provision($path,
