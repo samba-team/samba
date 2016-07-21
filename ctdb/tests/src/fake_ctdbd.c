@@ -1764,6 +1764,14 @@ static void client_process_message(struct tevent_req *req,
 
 	header_fix_pnn(&header, ctdb);
 
+	if (header.destnode >= ctdb->node_map->num_nodes) {
+		/* Many messages are not replied to, so just behave as
+		 * though this message was not received */
+		fprintf(stderr, "Invalid node %d\n", header.destnode);
+		talloc_free(mem_ctx);
+		return;
+	}
+
 	srvid = request.srvid;
 	DEBUG(DEBUG_INFO, ("request srvid = 0x%"PRIx64"\n", srvid));
 
@@ -1799,6 +1807,16 @@ static void client_process_control(struct tevent_req *req,
 	}
 
 	header_fix_pnn(&header, ctdb);
+
+	if (header.destnode >= ctdb->node_map->num_nodes) {
+		struct ctdb_reply_control reply;
+
+		reply.rdata.opcode = request.opcode;
+		reply.errmsg = "Invalid node";
+		reply.status = -1;
+		client_send_control(req, &header, &reply);
+		return;
+	}
 
 	DEBUG(DEBUG_INFO, ("request opcode = %u, reqid = %u\n",
 			   request.opcode, header.reqid));
