@@ -423,22 +423,19 @@ fail:
  */
 static int control_process_exists(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	uint32_t pnn, pid;
+	pid_t pid;
 	int ret;
 	if (argc < 1) {
 		usage();
 	}
 
-	if (sscanf(argv[0], "%u:%u", &pnn, &pid) != 2) {
-		DEBUG(DEBUG_ERR, ("Badly formed pnn:pid\n"));
-		return -1;
-	}
+	pid = atoi(argv[0]);
 
-	ret = ctdb_ctrl_process_exists(ctdb, pnn, pid);
+	ret = ctdb_ctrl_process_exists(ctdb, options.pnn, pid);
 	if (ret == 0) {
-		printf("%u:%u exists\n", pnn, pid);
+		printf("PID %u exists\n", pid);
 	} else {
-		printf("%u:%u does not exist\n", pnn, pid);
+		printf("PID %u does not exist\n", pid);
 	}
 	return ret;
 }
