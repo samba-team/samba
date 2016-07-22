@@ -4507,7 +4507,7 @@ static int control_getdbseqnum(struct ctdb_context *ctdb, int argc, const char *
 		return -1;
 	}
 
-	printf("Sequence number:%lld\n", (long long)seqnum);
+	printf("0x%"PRIx64"\n", seqnum);
 
 	return 0;
 }
