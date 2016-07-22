@@ -790,7 +790,7 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 
 	ctdb_tunable_set_defaults(&ctdb->tun_list);
 
-	ctdb->monitoring_mode = CTDB_MONITORING_ACTIVE;
+	ctdb->monitoring_mode = CTDB_MONITORING_ENABLED;
 
 	return ctdb;
 
@@ -1778,7 +1778,7 @@ static void control_enable_monitor(TALLOC_CTX *mem_ctx,
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
 
-	ctdb->monitoring_mode = CTDB_MONITORING_ACTIVE;
+	ctdb->monitoring_mode = CTDB_MONITORING_ENABLED;
 
 	reply.rdata.opcode = request->opcode;
 	reply.status = 0;

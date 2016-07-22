@@ -242,7 +242,7 @@ static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p
 	ctdb->monitor->next_interval = 2;
 	ctdb_run_notification_script(ctdb, "startup");
 
-	ctdb->monitor->monitoring_mode = CTDB_MONITORING_ACTIVE;
+	ctdb->monitor->monitoring_mode = CTDB_MONITORING_ENABLED;
 
 	tevent_add_timer(ctdb->ev, ctdb->monitor->monitor_context,
 			 timeval_current_ofs(ctdb->monitor->next_interval, 0),
@@ -436,7 +436,7 @@ void ctdb_disable_monitoring(struct ctdb_context *ctdb)
  */
 void ctdb_enable_monitoring(struct ctdb_context *ctdb)
 {
-	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
+	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ENABLED;
 	ctdb->monitor->next_interval = 5;
 	DEBUG(DEBUG_INFO,("Monitoring has been enabled\n"));
 }

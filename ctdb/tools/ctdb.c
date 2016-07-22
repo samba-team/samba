@@ -2954,7 +2954,7 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 		return ret;
 	}
 	printf("%s\n",
-	       monmode==CTDB_MONITORING_ACTIVE ? "ENABLED" : "DISABLED");
+	       monmode==CTDB_MONITORING_ENABLED ? "ENABLED" : "DISABLED");
 
 	return 0;
 }
