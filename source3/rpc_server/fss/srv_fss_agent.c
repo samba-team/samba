@@ -63,7 +63,7 @@ static const struct {
 
 static uint32_t fss_ntstatus_map(NTSTATUS status)
 {
-	int i;
+	size_t i;
 
 	if (NT_STATUS_IS_OK(status))
 		return 0;
