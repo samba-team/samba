@@ -36,4 +36,4 @@ Recovery mode:NORMAL (0)
 Recovery master:0
 EOF
 
-simple_test all
+simple_test
