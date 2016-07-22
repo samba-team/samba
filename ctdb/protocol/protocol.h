@@ -472,8 +472,6 @@ struct ctdb_pulldb_ext {
 #define CTDB_RECOVERY_NORMAL		0
 #define CTDB_RECOVERY_ACTIVE		1
 
-#define CTDB_NUM_DB_PRIORITIES		3
-
 /*
   the extended header for records in the ltdb
 */
