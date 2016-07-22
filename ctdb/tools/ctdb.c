@@ -4283,7 +4283,7 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	}
 
 	if (!debug_level_parse(argv[0], &log_level)) {
-		printf("Invalid debug level, must be one of\n");
+		printf("Invalid debug level '%s'. Valid levels are:\n", argv[0]);
 		printf("\tERROR | WARNING | NOTICE | INFO | DEBUG\n");
 		return -1;
 	}
