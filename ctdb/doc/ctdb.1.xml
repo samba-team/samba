@@ -1601,16 +1601,11 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
     <refsect2>
       <title>getmonmode</title>
       <para>
-	This command returns the monutoring mode of a node. The monitoring mode is either ACTIVE or DISABLED. Normally a node will continuously monitor that all other nodes that are expected are in fact connected and that they respond to commands.
-      </para>
-      <para>
-	ACTIVE - This is the normal mode. The node is actively monitoring all other nodes, both that the transport is connected and also that the node responds to commands. If a node becomes unavailable, it will be marked as DISCONNECTED and a recovery is initiated to restore the cluster.
-      </para>
-      <para>
-	DISABLED - This node is not monitoring that other nodes are available. In this mode a node failure will not be detected and no recovery will be performed. This mode is useful when for debugging purposes one wants to attach GDB to a ctdb process but wants to prevent the rest of the cluster from marking this node as DISCONNECTED and do a recovery.
+	This command prints the monitoring mode of a node.  This
+	indicates when CTDB is monitoring services on the node. The
+	monitoring mode is either ENABLED or DISABLED.
       </para>
     </refsect2>
-
 
     <refsect2>
       <title>attach <parameter>DBNAME</parameter> [persistent]</title>

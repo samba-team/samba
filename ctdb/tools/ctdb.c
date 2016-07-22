@@ -2949,15 +2949,13 @@ static int control_getmonmode(struct ctdb_context *ctdb, int argc, const char **
 
 	ret = ctdb_ctrl_getmonmode(ctdb, TIMELIMIT(), options.pnn, &monmode);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get monmode from node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR, ("Unable to get monmode from node %u\n",
+				  options.pnn));
 		return ret;
 	}
-	if (!options.machinereadable){
-		printf("Monitoring mode:%s (%d)\n",monmode==CTDB_MONITORING_ACTIVE?"ACTIVE":"DISABLED",monmode);
-	} else {
-		printm(":mode:\n");
-		printm(":%d:\n",monmode);
-	}
+	printf("%s\n",
+	       monmode==CTDB_MONITORING_ACTIVE ? "ENABLED" : "DISABLED");
+
 	return 0;
 }
 
@@ -3025,7 +3023,6 @@ static int control_disable_monmode(struct ctdb_context *ctdb, int argc, const ch
 		DEBUG(DEBUG_ERR, ("Unable to disable monmode on node %u\n", options.pnn));
 		return ret;
 	}
-	printf("Monitoring mode:%s\n","DISABLED");
 
 	return 0;
 }
@@ -3043,7 +3040,6 @@ static int control_enable_monmode(struct ctdb_context *ctdb, int argc, const cha
 		DEBUG(DEBUG_ERR, ("Unable to enable monmode on node %u\n", options.pnn));
 		return ret;
 	}
-	printf("Monitoring mode:%s\n","ACTIVE");
 
 	return 0;
 }
