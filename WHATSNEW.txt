@@ -177,6 +177,28 @@ Python crypto requirements
 Some samba-tool subcommands require python-crypto and/or
 python-m2crypto packages to be installed.
 
+SmartCard/PKINIT improvements
+-----------------------------
+
+"samba-tool user create" accepts --smartcard-required
+and "samba-tool user setpassword" accepts --smartcard-required
+and --clear-smartcard-required.
+
+Specifying --smartcard-required results in the UF_SMARTCARD_REQUIRED
+flags being set in the userAccountControl attribute.
+At the same time the account password is reset to a random
+NTHASH value.
+
+Interactive password logons are rejected, if the UF_SMARTCARD_REQUIRED
+bit is set in the userAccountControl attribute of a user.
+
+When doing a PKINIT based kerberos logon the KDC adds the
+required PAC_CREDENTIAL_INFO element to the authorization data.
+That means the NTHASH is shared between the PKINIT based client and
+the domain controller, which allows the client to do NTLM based
+authentication on behalf of the user. It also allows on offline
+logon using a smartcard to work on Windows clients.
+
 
 REMOVED FEATURES
 ================
