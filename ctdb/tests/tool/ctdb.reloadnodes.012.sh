@@ -18,11 +18,7 @@ NODEMAP
 EOF
 
 required_result 0 <<EOF
-Node 0 is unchanged
-Node 1 is unchanged
 Node 2 is DELETED
-Reloading nodes file on node 0
-Reloading nodes file on node 1
 EOF
 
 simple_test

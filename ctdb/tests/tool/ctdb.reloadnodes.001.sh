@@ -18,9 +18,6 @@ NODEMAP
 EOF
 
 ok <<EOF
-Node 0 is unchanged
-Node 1 is unchanged
-Node 2 is unchanged
 No change in nodes file, skipping unnecessary reload
 EOF
 

@@ -20,7 +20,7 @@ define_test ()
 	    _cmd="${_f#ctdb.}"
 	    _cmd="${_cmd%.*}" # Strip test number
 	    export CTDB="$VALGRIND ctdb --socket $ctdbd_socket"
-	    export CTDB_DEBUGLEVEL=3
+	    export CTDB_DEBUGLEVEL=2
 	    test_args="$_cmd"
 	    ;;
 	*)

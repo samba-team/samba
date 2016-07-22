@@ -18,8 +18,6 @@ NODEMAP
 EOF
 
 required_result 1 <<EOF
-Node 0 is unchanged
-Node 1 is unchanged
 Node 2 is DELETED
 ERROR: Node 2 is still connected
 ERROR: Nodes will not be reloaded due to previous error

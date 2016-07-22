@@ -19,13 +19,8 @@ NODEMAP
 EOF
 
 required_result 0 <<EOF
-Node 0 is unchanged
-Node 1 is unchanged
 WARNING: Node 1 is disconnected. You MUST fix this node manually!
-Node 2 is unchanged
 Node 3 is NEW
-Reloading nodes file on node 0
-Reloading nodes file on node 2
 EOF
 
 simple_test

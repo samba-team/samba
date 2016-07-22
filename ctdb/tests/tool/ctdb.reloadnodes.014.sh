@@ -19,10 +19,6 @@ EOF
 
 required_result 0 <<EOF
 Node 0 is DELETED
-Node 1 is unchanged
-Node 2 is unchanged
-Reloading nodes file on node 1
-Reloading nodes file on node 2
 EOF
 
 simple_test

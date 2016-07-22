@@ -18,11 +18,7 @@ NODEMAP
 EOF
 
 ok <<EOF
-Node 0 is unchanged
 Node 1 is UNDELETED
-Node 2 is unchanged
-Reloading nodes file on node 0
-Reloading nodes file on node 2
 EOF
 
 simple_test
