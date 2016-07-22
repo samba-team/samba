@@ -427,6 +427,101 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	return tevent_req_poll(req, ev);
 }
 
+static void notifyd_init_trigger(struct tevent_req *req);
+
+struct notifyd_init_state {
+	bool ok;
+	struct tevent_context *ev;
+	struct messaging_context *msg;
+	struct server_id *ppid;
+};
+
+static struct tevent_req *notifyd_init_send(struct tevent_context *ev,
+					    TALLOC_CTX *mem_ctx,
+					    struct messaging_context *msg,
+					    struct server_id *ppid)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct notifyd_init_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct notifyd_init_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	*state = (struct notifyd_init_state) {
+		.msg = msg,
+		.ev = ev,
+		.ppid = ppid
+	};
+
+	subreq = tevent_wakeup_send(req, ev, tevent_timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, notifyd_init_trigger, req);
+	return req;
+}
+
+static void notifyd_init_trigger(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct notifyd_init_state *state = tevent_req_data(
+		req, struct notifyd_init_state);
+	bool ok;
+
+	DBG_NOTICE("Triggering notifyd startup\n");
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_error(req, ENOMEM);
+		return;
+	}
+
+	state->ok = smbd_notifyd_init(state->msg, false, state->ppid);
+	if (state->ok) {
+		DBG_WARNING("notifyd restarted\n");
+		tevent_req_done(req);
+		return;
+	}
+
+	DBG_NOTICE("notifyd startup failed, rescheduling\n");
+
+	subreq = tevent_wakeup_send(req, state->ev,
+				    tevent_timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		DBG_ERR("scheduling notifyd restart failed, giving up\n");
+		return;
+	}
+
+	tevent_req_set_callback(subreq, notifyd_init_trigger, req);
+	return;
+}
+
+static bool notifyd_init_recv(struct tevent_req *req)
+{
+	struct notifyd_init_state *state = tevent_req_data(
+		req, struct notifyd_init_state);
+
+	return state->ok;
+}
+
+static void notifyd_started(struct tevent_req *req)
+{
+	bool ok;
+
+	ok = notifyd_init_recv(req);
+	TALLOC_FREE(req);
+	if (!ok) {
+		DBG_ERR("Failed to restart notifyd, giving up\n");
+		return;
+	}
+}
+
 static void cleanupd_stopped(struct tevent_req *req);
 
 static bool cleanupd_init(struct messaging_context *msg, bool interactive,
@@ -719,12 +814,22 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 	}
 
 	if (pid == procid_to_pid(&parent->notifyd)) {
+		struct tevent_req *req;
+		struct tevent_context *ev = messaging_tevent_context(
+			parent->msg_ctx);
+
+		server_id_set_disconnected(&parent->notifyd);
+
 		DBG_WARNING("Restarting notifyd\n");
-		ok = smbd_notifyd_init(parent->msg_ctx, false,
-				       &parent->notifyd);
-		if (!ok) {
+		req = notifyd_init_send(ev,
+					parent,
+					parent->msg_ctx,
+					&parent->notifyd);
+		if (req == NULL) {
 			DBG_ERR("Failed to restart notifyd\n");
+			return;
 		}
+		tevent_req_set_callback(req, notifyd_started, parent);
 		return;
 	}
 
