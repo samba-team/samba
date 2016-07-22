@@ -936,7 +936,7 @@ class KCC(object):
             n_rep.load_repsFrom(self.samdb)
             n_rep.load_fsmo_roles(self.samdb)
 
-            # Loop thru the existing repsFrom tupples (if any)
+            # Loop thru the existing repsFrom tuples (if any)
             # XXX This is a list and could contain duplicates
             #     (multiple load_repsFrom calls)
             for t_repsFrom in n_rep.rep_repsFrom:
@@ -995,7 +995,7 @@ class KCC(object):
                 if s_dsa is None:
                     continue
 
-                # Loop thru the existing repsFrom tupples (if any) and
+                # Loop thru the existing repsFrom tuples (if any) and
                 # if we already have a tuple for this connection then
                 # no need to proceed to add.  It will have been changed
                 # to have the correct attributes above
