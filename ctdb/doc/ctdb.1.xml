@@ -1615,13 +1615,6 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/usr/local/var/li
 
 
     <refsect2>
-      <title>setmonmode 0|1</title>
-      <para>
-	This command can be used to explicitly disable/enable monitoring mode on a node. The main purpose is if one wants to attach GDB to a running ctdb daemon but wants to prevent the other nodes from marking it as DISCONNECTED and issuing a recovery. To do this, set monitoring mode to 0 on all nodes before attaching with GDB. Remember to set monitoring mode back to 1 afterwards.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>attach <parameter>DBNAME</parameter> [persistent]</title>
       <para>
 	Create a new CTDB database called DBNAME and attach to it on
