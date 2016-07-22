@@ -37,6 +37,10 @@ bool debug_level_parse(const char *log_string, enum debug_level *log_level)
 {
 	int i;
 
+	if (log_string == NULL) {
+		return false;
+	}
+
 	if (isdigit(log_string[0])) {
 		int level = atoi(log_string);
 
