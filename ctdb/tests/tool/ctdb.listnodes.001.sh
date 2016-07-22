@@ -12,7 +12,7 @@ EOF
 
 rm -f "$CTDB_NODES"
 
-required_result 255 <<EOF
+required_result 1 <<EOF
 ${TEST_DATE_STAMP}Failed to read nodes file "${CTDB_NODES}"
 EOF
 

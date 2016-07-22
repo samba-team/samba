@@ -23,7 +23,7 @@ NODEMAP
 2       192.168.20.43   0x0
 EOF
 
-required_result 255 <<EOF
+required_result 1 <<EOF
 ERROR: Node file on node 1 differs from current node (0)
 EOF
 

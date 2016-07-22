@@ -25,7 +25,7 @@ NODEMAP
 2       192.168.20.43   0x0
 EOF
 
-required_result 255 <<EOF
+required_result 1 <<EOF
 ctdb_control error: 'Failed to read nodes file'
 ctdb_control error: 'Failed to read nodes file'
 ERROR: Failed to get nodes file from node 1

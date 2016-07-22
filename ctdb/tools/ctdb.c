@@ -5886,7 +5886,11 @@ int main(int argc, const char *argv[])
 			DEBUG(DEBUG_ERR, ("Can't specify node(s) with \"ctdb %s\"\n", control));
 			exit(1);
 		}
-		return ctdb_commands[i].fn(NULL, extra_argc-1, extra_argv+1);
+		ret = ctdb_commands[i].fn(NULL, extra_argc-1, extra_argv+1);
+		if (ret == -1) {
+			ret = 1;
+		}
+		return ret;
 	}
 
 	/* initialise ctdb */
@@ -5932,6 +5936,8 @@ int main(int argc, const char *argv[])
 	talloc_free(ev);
 	(void)poptFreeContext(pc);
 
+	if (ret == -1) {
+		ret = 1;
+	}
 	return ret;
-
 }
