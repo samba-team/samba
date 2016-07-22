@@ -922,6 +922,7 @@ class KCC(object):
                  len(needed_rep_table), len(delete_reps)))
 
         if delete_reps:
+            # TODO Must delete repsFrom/repsTo for these replicas
             DEBUG('deleting these reps: %s' % delete_reps)
             for dnstr in delete_reps:
                 del current_rep_table[dnstr]
