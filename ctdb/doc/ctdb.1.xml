@@ -971,7 +971,7 @@ DB Statistics: locking.tdb
 	The list of debug levels from highest to lowest are :
       </para>
       <para>
-	ERR WARNING NOTICE INFO DEBUG
+	ERROR WARNING NOTICE INFO DEBUG
       </para>
     </refsect2>
 
@@ -981,7 +981,7 @@ DB Statistics: locking.tdb
 	Set the debug level of a node. This controls what information will be logged.
       </para>
       <para>
-	The debuglevel is one of ERR WARNING NOTICE INFO DEBUG
+	The debuglevel is one of ERROR WARNING NOTICE INFO DEBUG
       </para>
     </refsect2>
 
