@@ -496,9 +496,16 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 {
 	struct messaging_rec *result;
 	size_t fds_size = sizeof(int64_t) * rec->num_fds;
+	size_t payload_len;
+
+	payload_len = rec->buf.length + fds_size;
+	if (payload_len < rec->buf.length) {
+		/* overflow */
+		return NULL;
+	}
 
 	result = talloc_pooled_object(mem_ctx, struct messaging_rec, 2,
-				      rec->buf.length + fds_size);
+				      payload_len);
 	if (result == NULL) {
 		return NULL;
 	}
