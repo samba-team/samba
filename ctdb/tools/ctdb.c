@@ -2630,7 +2630,7 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 		DEBUG(DEBUG_ERR, ("Unable to get daemon pid from node %u\n", options.pnn));
 		return ret;
 	}
-	printf("Pid:%d\n", pid);
+	printf("%u\n", pid);
 
 	return 0;
 }

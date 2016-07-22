@@ -59,8 +59,7 @@ echo "Checking each PID for validity"
 
 n=0
 while [ $n -lt $num_nodes ] ; do
-    read line
-    pid=${line#Pid:}
+    read pid
     try_command_on_node $n "ls -l /proc/${pid}/exe | sed -e 's@.*/@@'"
     echo -n "Node ${n}, PID ${pid} looks to be running \"$out\" - "
     if [ "$out" = "ctdbd" ] ; then
