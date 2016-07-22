@@ -231,7 +231,7 @@ get_test_ip_mask_and_iface ()
 
 ctdb_get_all_pnns ()
 {
-    try_command_on_node -q all "$CTDB pnn | sed -e 's@PNN:@@'"
+    try_command_on_node -q all "$CTDB pnn"
     all_pnns="$out"
 }
 

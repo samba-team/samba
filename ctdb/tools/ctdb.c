@@ -873,7 +873,7 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	mypnn = getpnn(ctdb);
 
-	printf("PNN:%d\n", mypnn);
+	printf("%u\n", mypnn);
 	return 0;
 }
 

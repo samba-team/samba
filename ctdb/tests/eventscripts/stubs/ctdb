@@ -66,8 +66,7 @@ parse_nodespec ()
     elif [ -n "$nodespec" ] ; then
 	nodes="$(echo $nodespec | sed -e 's@,@ @g')"
     else
-	_t=$(ctdb_pnn)
-	nodes="${_t#PNN:}"
+	node=$(ctdb_pnn)
     fi
 }
 
@@ -81,7 +80,7 @@ done
 ctdb_pnn ()
 {
     # Defaults to 0
-    echo "PNN:${FAKE_CTDB_PNN:-0}"
+    echo "${FAKE_CTDB_PNN:-0}"
 }
 
 ######################################################################
@@ -139,7 +138,7 @@ ctdb_ip ()
     # If nobody has done any IP-fu then generate a layout.
     [ -f "$FAKE_CTDB_IP_LAYOUT" ] || ip_reallocate
 
-    _mypnn=$(ctdb_pnn | sed -e 's@PNN:@@')
+    _mypnn=$(ctdb_pnn)
 
     if $machine_readable ; then
 	if $verbose ; then

@@ -199,9 +199,9 @@ get_any_available_node ()
     # We do a recursive onnode to find which nodes are up and running.
     local out line
     out=$("$0" -pq all ctdb pnn 2>&1)
-    while read line ; do 
-	local pnn="${line#PNN:}"
-	if [ "$pnn" != "$line" ] ; then
+    while read line ; do
+	if [[ "$line" =~ ^[0-9]+$ ]] ; then
+	    local pnn="$line"
 	    # Intentional multi-word expansion
 	    # shellcheck disable=SC2086
 	    echo_nth "$pnn" $all_nodes

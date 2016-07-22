@@ -249,7 +249,7 @@ ctdb_get_pnn ()
 {
     _pnn_file="${CTDB_SCRIPT_VARDIR}/my-pnn"
     if [ ! -f "$_pnn_file" ] ; then
-	$CTDB pnn | sed -e 's@.*:@@' >"$_pnn_file"
+	$CTDB pnn >"$_pnn_file"
     fi
 
     cat "$_pnn_file"
