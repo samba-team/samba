@@ -24,7 +24,7 @@ NODEMAP
 EOF
 
 required_result 1 <<EOF
-ERROR: Node file on node 1 differs from current node (0)
+ERROR: Nodes file on node 1 differs from current node (0)
 EOF
 
 simple_test

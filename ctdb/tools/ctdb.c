@@ -5461,7 +5461,7 @@ static bool check_all_node_files_are_identical(struct ctdb_context *ctdb,
 		}
 		if (!node_files_are_identical(file_nodemap, maps[i])) {
 			DEBUG(DEBUG_ERR,
-			      ("ERROR: Node file on node %u differs from current node (%u)\n",
+			      ("ERROR: Nodes file on node %u differs from current node (%u)\n",
 			       i, ctdb_get_pnn(ctdb)));
 			ret = false;
 		}
