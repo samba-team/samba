@@ -5612,8 +5612,8 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	/* Now make the changes */
 	conn = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
 	for (i = 0; i < talloc_array_length(conn); i++) {
-		DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n",
-				     conn[i]));
+		DEBUG(DEBUG_INFO, ("Reloading nodes file on node %u\n",
+				   conn[i]));
 	}
 
 	/* Another timeout could be used, such as ReRecoveryTimeout or
