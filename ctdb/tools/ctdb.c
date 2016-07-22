@@ -837,7 +837,8 @@ static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv
 		return 0;
 	}
 
-	printf("Current time of node          :                %s", ctime(&uptime->current_time.tv_sec));
+	printf("Current time of node %-4u     :                %s",
+	       options.pnn, ctime(&uptime->current_time.tv_sec));
 
 	tmp = uptime->current_time.tv_sec - uptime->ctdbd_start_time.tv_sec;
 	seconds = tmp%60;
