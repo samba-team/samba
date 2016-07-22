@@ -62,6 +62,13 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	void **ppdata = (void **)pdata;
 	void *data;
+	size_t payload;
+
+	payload = sizeof(struct tevent_immediate) + data_size;
+	if (payload < sizeof(struct tevent_immediate)) {
+		/* overflow */
+		return NULL;
+	}
 
 	req = talloc_pooled_object(
 		mem_ctx, struct tevent_req, 2,
