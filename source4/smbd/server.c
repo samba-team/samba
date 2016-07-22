@@ -223,7 +223,7 @@ static NTSTATUS setup_parent_messaging(struct tevent_context *event_ctx,
 
 	msg = imessaging_init(talloc_autofree_context(),
 			      lp_ctx,
-			      cluster_id(0, SAMBA_PARENT_TASKID), event_ctx, false);
+			      cluster_id(0, SAMBA_PARENT_TASKID), event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	status = irpc_add_name(msg, "samba");

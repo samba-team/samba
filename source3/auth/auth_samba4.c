@@ -231,7 +231,7 @@ static NTSTATUS prepare_gensec(const struct auth_context *auth_context,
 	msg_ctx = imessaging_init(frame,
 				  lp_ctx,
 				  *server_id,
-				  event_ctx, true);
+				  event_ctx);
 	if (msg_ctx == NULL) {
 		DEBUG(1, ("imessaging_init failed\n"));
 		TALLOC_FREE(frame);
@@ -322,7 +322,7 @@ static NTSTATUS make_auth4_context_s4(const struct auth_context *auth_context,
 	msg_ctx = imessaging_init(frame,
 				  lp_ctx,
 				  *server_id,
-				  event_ctx, true);
+				  event_ctx);
 	if (msg_ctx == NULL) {
 		DEBUG(1, ("imessaging_init failed\n"));
 		TALLOC_FREE(frame);

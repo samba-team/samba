@@ -280,7 +280,6 @@ NTSTATUS imessaging_send_ptr(struct imessaging_context *msg, struct server_id se
 
 
 /*
-  remove our messaging socket and database entry
 */
 int imessaging_cleanup(struct imessaging_context *msg)
 {
@@ -296,17 +295,11 @@ static void imessaging_dgm_recv(const uint8_t *buf, size_t buf_len,
 
 /*
   create the listening socket and setup the dispatcher
-
-  use auto_remove=true when you want a destructor to remove the
-  associated messaging socket and database entry on talloc free. Don't
-  use this in processes that may fork and a child may talloc free this
-  memory
 */
 struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
 					   struct server_id server_id,
-					   struct tevent_context *ev,
-					   bool auto_remove)
+					   struct tevent_context *ev)
 {
 	struct imessaging_context *msg;
 	bool ok;
@@ -374,10 +367,6 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	msg->names = server_id_db_init(msg, server_id, lock_dir, 0, tdb_flags);
 	if (msg->names == NULL) {
 		goto fail;
-	}
-
-	if (auto_remove) {
-		talloc_set_destructor(msg, imessaging_cleanup);
 	}
 
 	imessaging_register(msg, NULL, MSG_PING, ping_message);
@@ -452,7 +441,7 @@ struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 	/* This is because we are not in the s3 serverid database */
 	id.unique_id = SERVERID_UNIQUE_ID_NOT_TO_VERIFY;
 
-	return imessaging_init(mem_ctx, lp_ctx, id, ev, true);
+	return imessaging_init(mem_ctx, lp_ctx, id, ev);
 }
 /*
   a list of registered irpc server functions

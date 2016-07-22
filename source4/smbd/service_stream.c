@@ -194,7 +194,7 @@ static void stream_new_connection(struct tevent_context *ev,
 	/* setup to receive internal messages on this connection */
 	srv_conn->msg_ctx = imessaging_init(srv_conn,
 					    lp_ctx,
-					    srv_conn->server_id, ev, false);
+					    srv_conn->server_id, ev);
 	if (!srv_conn->msg_ctx) {
 		stream_terminate_connection(srv_conn, "imessaging_init() failed");
 		return;

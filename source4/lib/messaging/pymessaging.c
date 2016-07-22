@@ -115,7 +115,7 @@ static PyObject *py_imessaging_connect(PyTypeObject *self, PyObject *args, PyObj
 		ret->msg_ctx = imessaging_init(ret->mem_ctx,
 					       lp_ctx,
 					       server_id,
-					       ev, true);
+					       ev);
 	} else {
 		ret->msg_ctx = imessaging_client_init(ret->mem_ctx,
 						      lp_ctx,
