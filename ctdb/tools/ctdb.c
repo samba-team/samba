@@ -4184,13 +4184,7 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 			/* This should never happen */
 			desc = "Unknown";
 		}
-		if (options.machinereadable){
-			printm(":Name:Level:\n");
-			printm(":%s:%d:\n", desc, level);
-		} else {
-			printf("Node %u is at debug level %s (%d)\n",
-			       options.pnn, desc, level);
-		}
+		printf("%s\n", desc);
 	}
 	return 0;
 }

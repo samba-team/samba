@@ -27,10 +27,9 @@ get_debug ()
     local node="$1"
 
     local out
-    
+
     try_command_on_node -v $node "$CTDB getdebug"
-    check_debug=$(echo "$out" |
-	sed -r -e 's@Node [[:digit:]]+ is at debug level ([[:alpha:]]+) \(-?[[:digit:]]+\)$@\1@')
+    check_debug="$out"
 }
 
 set_and_check_debug ()

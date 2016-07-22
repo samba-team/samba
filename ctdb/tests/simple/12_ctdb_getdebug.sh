@@ -36,7 +36,7 @@ getdebug_onnode="$out"
 
 sanity_check_output \
     $num_nodes \
-    '^Node [[:digit:]]+ is at debug level [[:alpha:]]+ \([[:digit:]]+\)$' \
+    '^(ERROR|WARNING|NOTICE|INFO|DEBUG)$' \
     "$out"
 
 cmd=""
@@ -62,15 +62,3 @@ while read line ; do
     t=$(echo "$line" | sed -r -e 's@Node [[:digit:]]+ is at debug level ([[:alpha:]]+) \((-?[[:digit:]]+)\)$@\|\1\|\2|@')
     seps="${seps}${seps:+${nl}}|Name|Level|${nl}${t}"
 done <<<"$getdebug_onnode"
-
-cmd="onnode -q all $CTDB -X getdebug"
-echo "Checking that \"$cmd\" produces expected output..."
-
-try_command_on_node 1 "$cmd"
-if [ "$out" = "$seps" ] ; then
-    echo "Yep, looks good!"
-else
-    echo "Nope, it looks like this:"
-    echo "$out"
-    testfailures=1
-fi
