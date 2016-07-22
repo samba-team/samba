@@ -77,16 +77,14 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 		.internal.trigger		= tevent_create_immediate(req)
 	};
 
-	if (!req->internal.trigger) {
-		talloc_free(req);
-		return NULL;
-	}
-
 	data = talloc_zero_size(req, data_size);
-	if (data == NULL) {
-		talloc_free(req);
-		return NULL;
-	}
+
+	/*
+	 * No need to check for req->internal.trigger!=NULL or
+	 * data!=NULL, this can't fail: talloc_pooled_object has
+	 * already allocated sufficient memory.
+	 */
+
 	talloc_set_name_const(data, type);
 
 	req->data = data;
