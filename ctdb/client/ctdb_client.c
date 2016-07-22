@@ -2427,17 +2427,14 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 	return 0;
 }
 
-/*
-  freeze databases of a certain priority
- */
-static int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb,
-				     struct timeval timeout,
-				     uint32_t destnode, uint32_t priority)
+/* Freeze all databases */
+int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout,
+		     uint32_t destnode)
 {
 	int ret;
 	int32_t res;
 
-	ret = ctdb_control(ctdb, destnode, priority,
+	ret = ctdb_control(ctdb, destnode, 0,
 			   CTDB_CONTROL_FREEZE, 0, tdb_null,
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
@@ -2445,19 +2442,6 @@ static int ctdb_ctrl_freeze_priority(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	return 0;
-}
-
-/* Freeze all databases */
-int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
-{
-	int i;
-
-	for (i=1; i<=NUM_DB_PRIORITIES; i++) {
-		if (ctdb_ctrl_freeze_priority(ctdb, timeout, destnode, i) != 0) {
-			return -1;
-		}
-	}
 	return 0;
 }
 
