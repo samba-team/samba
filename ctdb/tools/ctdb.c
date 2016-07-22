@@ -45,10 +45,6 @@
 #include "common/common.h"
 #include "common/logging.h"
 
-#define ERR_TIMEOUT	20	/* timed out trying to reach node */
-#define ERR_NONODE	21	/* node does not exist */
-#define ERR_DISNODE	22	/* node is disconnected */
-
 static void usage(void);
 
 static struct {
@@ -295,19 +291,19 @@ static bool parse_nodestring(struct ctdb_context *ctdb,
 					DEBUG(DEBUG_ERR,
 					      ("Invalid node %s\n", tok));
 					talloc_free(tmp_ctx);
-					exit(ERR_NONODE);
+					exit(1);
 				}
 				if (i >= nodemap->num) {
 					DEBUG(DEBUG_ERR, ("Node %u does not exist\n", i));
 					talloc_free(tmp_ctx);
-					exit(ERR_NONODE);
+					exit(1);
 				}
 				if ((nodemap->nodes[i].flags & 
 				     (NODE_FLAGS_DISCONNECTED |
 				      NODE_FLAGS_DELETED)) && !dd_ok) {
 					DEBUG(DEBUG_ERR, ("Node %u has status %s\n", i, pretty_print_flags(nodemap->nodes[i].flags)));
 					talloc_free(tmp_ctx);
-					exit(ERR_DISNODE);
+					exit(1);
 				}
 				if ((pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), i)) < 0) {
 					DEBUG(DEBUG_ERR, ("Can not access node %u. Node is not operational.\n", i));
@@ -5767,7 +5763,7 @@ static void usage(void)
 static void ctdb_alarm(int sig)
 {
 	printf("Maximum runtime exceeded - exiting\n");
-	_exit(ERR_TIMEOUT);
+	_exit(1);
 }
 
 /*
