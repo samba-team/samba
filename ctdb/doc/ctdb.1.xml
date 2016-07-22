@@ -239,16 +239,6 @@
     </refsect2>
 
     <refsect2>
-      <title>xpnn</title>
-      <para>
-	This command displays the PNN of the current node without
-	contacting the CTDB daemon.  It parses the nodes file
-	directly, so can produce unexpected output if the nodes file
-	has been edited but has not been reloaded.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>status</title>
       <para>
 	This command shows the current status of all CTDB nodes based
