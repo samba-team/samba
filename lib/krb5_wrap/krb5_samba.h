@@ -396,6 +396,9 @@ int smb_krb5_principal_get_type(krb5_context context,
 krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...);
 #endif
 
+krb5_error_code smb_krb5_cc_copy_creds(krb5_context context,
+				       krb5_ccache incc, krb5_ccache outcc);
+
 #endif /* HAVE_KRB5 */
 
 int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,

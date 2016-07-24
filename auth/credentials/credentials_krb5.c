@@ -763,8 +763,8 @@ static int cli_credentials_shallow_ccache(struct cli_credentials *cred)
 
 	TALLOC_FREE(ccache_name);
 
-	ret = krb5_cc_copy_cache(ccc->smb_krb5_context->krb5_context,
-				 old_ccc->ccache, ccc->ccache);
+	ret = smb_krb5_cc_copy_creds(ccc->smb_krb5_context->krb5_context,
+				     old_ccc->ccache, ccc->ccache);
 	if (ret != 0) {
 		TALLOC_FREE(ccc);
 		return ret;

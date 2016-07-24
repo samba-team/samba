@@ -3039,6 +3039,18 @@ krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
 }
 #endif
 
+krb5_error_code smb_krb5_cc_copy_creds(krb5_context context,
+				       krb5_ccache incc, krb5_ccache outcc)
+{
+#ifdef HAVE_KRB5_CC_COPY_CACHE /* Heimdal */
+	return krb5_cc_copy_cache(context, incc, outcc);
+#elif defined(HAVE_KRB5_CC_COPY_CREDS)
+	return krb5_cc_copy_creds(context, incc, outcc);
+#else
+#error UNKNOWN_KRB5_CC_COPY_CACHE_OR_CREDS_FUNCTION
+#endif
+}
+
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
  int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
