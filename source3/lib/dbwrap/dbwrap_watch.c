@@ -66,13 +66,13 @@ static bool dbwrap_record_watchers_key_parse(
 	size_t db_id_len;
 
 	if (wkey.dsize < sizeof(uint32_t)) {
-		DEBUG(1, ("Invalid watchers key\n"));
+		DBG_WARNING("Invalid watchers key, dsize=%zu\n", wkey.dsize);
 		return false;
 	}
 	db_id_len = IVAL(wkey.dptr, 0);
 	if (db_id_len > (wkey.dsize - sizeof(uint32_t))) {
-		DEBUG(1, ("Invalid watchers key, wkey.dsize=%d, "
-			  "db_id_len=%d\n", (int)wkey.dsize, (int)db_id_len));
+		DBG_WARNING("Invalid watchers key, wkey.dsize=%zu, "
+			    "db_id_len=%zu\n", wkey.dsize, db_id_len);
 		return false;
 	}
 	if (p_db_id != NULL) {
