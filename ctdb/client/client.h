@@ -412,17 +412,6 @@ int ctdb_ctrl_send_gratuitous_arp(TALLOC_CTX *mem_ctx,
 				  int destnode, struct timeval timeout,
 				  struct ctdb_addr_info *addr_info);
 
-int ctdb_ctrl_transaction_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-				struct ctdb_client_context *client,
-				int destnode, struct timeval timeout,
-				uint32_t tid);
-
-int ctdb_ctrl_transaction_commit(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 struct ctdb_client_context *client,
-				 int destnode, struct timeval timeout,
-				 uint32_t tid);
-
 int ctdb_ctrl_wipe_database(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    struct ctdb_client_context *client,
 			    int destnode, struct timeval timeout,
@@ -547,12 +536,6 @@ int ctdb_ctrl_get_ban_state(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    struct ctdb_client_context *client,
 			    int destnode, struct timeval timeout,
 			    struct ctdb_ban_state **ban_state);
-
-int ctdb_ctrl_transaction_cancel(TALLOC_CTX *mem_ctx,
-				 struct tevent_context *ev,
-				 struct ctdb_client_context *client,
-				 int destnode, struct timeval timeout,
-				 uint32_t tid);
 
 int ctdb_ctrl_register_notify(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			      struct ctdb_client_context *client,
