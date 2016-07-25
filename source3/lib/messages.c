@@ -117,12 +117,12 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 	size_t i;
 
 	if (msg_len < MESSAGE_HDR_LENGTH) {
-		DEBUG(1, ("message too short: %u\n", (unsigned)msg_len));
+		DBG_WARNING("message too short: %zu\n", msg_len);
 		goto close_fail;
 	}
 
 	if (num_fds > INT8_MAX) {
-		DEBUG(1, ("too many fds: %u\n", (unsigned)num_fds));
+		DBG_WARNING("too many fds: %zu\n", num_fds);
 		goto close_fail;
 	}
 
@@ -145,11 +145,9 @@ static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
 
 	message_hdr_get(&rec.msg_type, &rec.src, &rec.dest, msg);
 
-	DEBUG(10, ("%s: Received message 0x%x len %u (num_fds:%u) from %s\n",
-		   __func__, (unsigned)rec.msg_type,
-		   (unsigned)rec.buf.length,
-		   (unsigned)num_fds,
-		   server_id_str_buf(rec.src, &idbuf)));
+	DBG_DEBUG("Received message 0x%x len %zu (num_fds:%zu) from %s\n",
+		  (unsigned)rec.msg_type, rec.buf.length, num_fds,
+		  server_id_str_buf(rec.src, &idbuf));
 
 	messaging_dispatch_rec(msg_ctx, &rec);
 	return;
