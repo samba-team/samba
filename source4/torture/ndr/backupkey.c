@@ -156,8 +156,7 @@ struct torture_suite *ndr_backupkey_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_validate_test(suite,
 					    bkrp_exported_RSA_key_pair,
-					    data_blob_const(exported_rsa_ndr,
-							    sizeof(exported_rsa_ndr)),
+					    exported_rsa_ndr,
 					    NULL);
 
 	return suite;

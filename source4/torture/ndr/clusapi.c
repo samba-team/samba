@@ -371,12 +371,12 @@ struct torture_suite *ndr_clusapi_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_validate_test(suite,
 					    clusapi_PROPERTY_LIST,
-					    data_blob_const(clusapi_PROPERTY_LIST_data,sizeof(clusapi_PROPERTY_LIST_data)),
+					    clusapi_PROPERTY_LIST_data,
 					    clusapi_PROPERTY_LIST_check);
 
 	torture_suite_add_ndr_pull_validate_test(suite,
 					    clusapi_PROPERTY_LIST,
-					    data_blob_const(clusapi_PROPERTY_LIST_data2,sizeof(clusapi_PROPERTY_LIST_data2)),
+					    clusapi_PROPERTY_LIST_data2,
 					    clusapi_PROPERTY_LIST_check2);
 
 	return suite;

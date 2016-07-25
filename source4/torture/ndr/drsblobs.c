@@ -513,37 +513,35 @@ struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_test(suite, ForestTrustInfo, forest_trust_info_data_out, forest_trust_info_check_out);
 	torture_suite_add_ndr_pull_test(suite, trustDomainPasswords, trust_domain_passwords_in, trust_domain_passwords_check_in);
 
-	torture_suite_add_ndr_pull_validate_test(suite,
+	torture_suite_add_ndr_pull_validate_test_blob(suite,
 					    trustAuthInOutBlob,
 					    base64_decode_data_blob_talloc(suite, trustAuthIncoming),
 					    NULL);
 
-	torture_suite_add_ndr_pull_validate_test(suite,
+	torture_suite_add_ndr_pull_validate_test_blob(suite,
 					    trustAuthInOutBlob,
 					    base64_decode_data_blob_talloc(suite, trustAuthOutgoing),
 					    NULL);
 
 	torture_suite_add_ndr_pull_validate_test(empty1_suite, supplementalCredentialsBlob,
-					data_blob_const(supplementalCredentials_empty1,
-						sizeof(supplementalCredentials_empty1)),
+					supplementalCredentials_empty1,
 					supplementalCredentials_empty1_check);
 
 	torture_suite_add_ndr_pull_validate_test(empty2_suite, supplementalCredentialsBlob,
-					data_blob_const(supplementalCredentials_empty2,
-						sizeof(supplementalCredentials_empty2)),
+					supplementalCredentials_empty2,
 					supplementalCredentials_empty2_check);
 
-	torture_suite_add_ndr_pull_validate_test(alpha13_suite,
+	torture_suite_add_ndr_pull_validate_test_blob(alpha13_suite,
 						 supplementalCredentialsBlob,
 						 base64_decode_data_blob_talloc(suite, alpha13_supplementalCredentials),
 						 alpha13_supplementalCredentials_check);
 
-	torture_suite_add_ndr_pull_validate_test(release_4_1_0rc3_suite,
+	torture_suite_add_ndr_pull_validate_test_blob(release_4_1_0rc3_suite,
 						 supplementalCredentialsBlob,
 						 base64_decode_data_blob_talloc(suite, release_4_1_0rc3_supplementalCredentials),
 						 release_4_1_0rc3_supplementalCredentials_check);
 
-	torture_suite_add_ndr_pull_validate_test(release_4_5_0pre_GPG_suite,
+	torture_suite_add_ndr_pull_validate_test_blob(release_4_5_0pre_GPG_suite,
 						 supplementalCredentialsBlob,
 						 base64_decode_data_blob_talloc(suite, release_4_5_0pre_GPG_supplementalCredentials),
 						 release_4_5_0pre_GPG_supplementalCredentials_check);
@@ -551,7 +549,7 @@ struct torture_suite *ndr_drsblobs_suite(TALLOC_CTX *ctx)
 	/* This last byte is typically not initialized, we force to zero to allow pull/push */
 	win2012R2_supplementalCredentials_blob = base64_decode_data_blob_talloc(suite, win2012R2_supplementalCredentials);
 	win2012R2_supplementalCredentials_blob.data[win2012R2_supplementalCredentials_blob.length-1] = 0;
-	torture_suite_add_ndr_pull_validate_test(win2012R2_suite,
+	torture_suite_add_ndr_pull_validate_test_blob(win2012R2_suite,
 						 supplementalCredentialsBlob,
 						 win2012R2_supplementalCredentials_blob,
 						 win2012R2_supplementalCredentials_check);

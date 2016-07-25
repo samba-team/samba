@@ -284,12 +284,12 @@ struct torture_suite *ndr_ntlmssp_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_validate_test(suite,
 					    NEGOTIATE_MESSAGE,
-					    data_blob_const(ntlmssp_NEGOTIATE_MESSAGE_data, sizeof(ntlmssp_NEGOTIATE_MESSAGE_data)),
+					    ntlmssp_NEGOTIATE_MESSAGE_data,
 					    ntlmssp_NEGOTIATE_MESSAGE_check);
 
 	torture_suite_add_ndr_pull_validate_test(suite,
 					    CHALLENGE_MESSAGE,
-					    data_blob_const(ntlmssp_CHALLENGE_MESSAGE_data, sizeof(ntlmssp_CHALLENGE_MESSAGE_data)),
+					    ntlmssp_CHALLENGE_MESSAGE_data,
 					    ntlmssp_CHALLENGE_MESSAGE_check);
 
 	return suite;
