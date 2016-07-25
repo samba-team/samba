@@ -855,7 +855,6 @@ struct ctdb_req_control_data {
 		struct ctdb_tickle_list *tickles;
 		struct ctdb_client_id *cid;
 		struct ctdb_addr_info *addr_info;
-		uint32_t tid;
 		struct ctdb_transdb *transdb;
 		const char *event_str;
 		struct ctdb_public_ip *pubip;

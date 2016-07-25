@@ -220,14 +220,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		len = ctdb_addr_info_len(cd->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_TRANSACTION_START:
-		len = ctdb_uint32_len(cd->data.tid);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		len = ctdb_uint32_len(cd->data.tid);
-		break;
-
 	case CTDB_CONTROL_WIPE_DATABASE:
 		len = ctdb_transdb_len(cd->data.transdb);
 		break;
@@ -328,9 +320,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -571,14 +560,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		ctdb_addr_info_push(cd->data.addr_info, buf);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_START:
-		ctdb_uint32_push(cd->data.tid, buf);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		ctdb_uint32_push(cd->data.tid, buf);
 		break;
 
 	case CTDB_CONTROL_WIPE_DATABASE:
@@ -890,16 +871,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		ret = ctdb_addr_info_pull(buf, buflen, mem_ctx,
 					  &cd->data.addr_info);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_START:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.tid);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				     &cd->data.tid);
 		break;
 
 	case CTDB_CONTROL_WIPE_DATABASE:
@@ -1272,12 +1243,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		break;
 
-	case CTDB_CONTROL_TRANSACTION_START:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		break;
-
 	case CTDB_CONTROL_WIPE_DATABASE:
 		break;
 
@@ -1377,9 +1342,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DB_PRIORITY:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:

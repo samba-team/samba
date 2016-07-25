@@ -334,14 +334,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_addr_info(mem_ctx, cd->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_TRANSACTION_START:
-		cd->data.tid = rand32();
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		cd->data.tid = rand32();
-		break;
-
 	case CTDB_CONTROL_WIPE_DATABASE:
 		cd->data.transdb = talloc(mem_ctx, struct ctdb_transdb);
 		assert(cd->data.transdb != NULL);
@@ -467,9 +459,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -798,14 +787,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		verify_ctdb_addr_info(cd->data.addr_info, cd2->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_TRANSACTION_START:
-		assert(cd->data.tid == cd2->data.tid);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		assert(cd->data.tid == cd2->data.tid);
-		break;
-
 	case CTDB_CONTROL_WIPE_DATABASE:
 		verify_ctdb_transdb(cd->data.transdb, cd2->data.transdb);
 		break;
@@ -913,9 +894,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_BAN_STATE:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -1248,12 +1226,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		break;
 
-	case CTDB_CONTROL_TRANSACTION_START:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		break;
-
 	case CTDB_CONTROL_WIPE_DATABASE:
 		break;
 
@@ -1366,9 +1338,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		cd->data.ban_state = talloc(mem_ctx, struct ctdb_ban_state);
 		assert(cd->data.ban_state != NULL);
 		fill_ctdb_ban_state(mem_ctx, cd->data.ban_state);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
@@ -1637,12 +1606,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 	case CTDB_CONTROL_SEND_GRATUITOUS_ARP:
 		break;
 
-	case CTDB_CONTROL_TRANSACTION_START:
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		break;
-
 	case CTDB_CONTROL_WIPE_DATABASE:
 		break;
 
@@ -1739,9 +1702,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_GET_BAN_STATE:
 		verify_ctdb_ban_state(cd->data.ban_state, cd2->data.ban_state);
-		break;
-
-	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		break;
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:

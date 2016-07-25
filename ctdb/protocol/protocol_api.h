@@ -359,14 +359,6 @@ void ctdb_req_control_send_gratuitous_arp(struct ctdb_req_control *request,
 					  struct ctdb_addr_info *addr_info);
 int ctdb_reply_control_send_gratuitous_arp(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_transaction_start(struct ctdb_req_control *request,
-					uint32_t tid);
-int ctdb_reply_control_transaction_start(struct ctdb_reply_control *reply);
-
-void ctdb_req_control_transaction_commit(struct ctdb_req_control *request,
-					 uint32_t tid);
-int ctdb_reply_control_transaction_commit(struct ctdb_reply_control *reply);
-
 void ctdb_req_control_wipe_database(struct ctdb_req_control *request,
 				    struct ctdb_transdb *transdb);
 int ctdb_reply_control_wipe_database(struct ctdb_reply_control *reply);
@@ -483,10 +475,6 @@ void ctdb_req_control_get_ban_state(struct ctdb_req_control *request);
 int ctdb_reply_control_get_ban_state(struct ctdb_reply_control *reply,
 				     TALLOC_CTX *mem_ctx,
 				     struct ctdb_ban_state **ban_state);
-
-void ctdb_req_control_transaction_cancel(struct ctdb_req_control *request,
-					 uint32_t tid);
-int ctdb_reply_control_transaction_cancel(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_register_notify(struct ctdb_req_control *request,
 				      struct ctdb_notify_data *notify);

@@ -1066,48 +1066,6 @@ int ctdb_reply_control_send_gratuitous_arp(struct ctdb_reply_control *reply)
 					  CTDB_CONTROL_SEND_GRATUITOUS_ARP);
 }
 
-/* CTDB_CONTROL_TRANSACTION_START */
-
-void ctdb_req_control_transaction_start(struct ctdb_req_control *request,
-					uint32_t tid)
-{
-	request->opcode = CTDB_CONTROL_TRANSACTION_START;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_TRANSACTION_START;
-	request->rdata.data.tid = tid;
-}
-
-int ctdb_reply_control_transaction_start(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply,
-					  CTDB_CONTROL_TRANSACTION_START);
-}
-
-/* CTDB_CONTROL_TRANSACTION_COMMIT */
-
-void ctdb_req_control_transaction_commit(struct ctdb_req_control *request,
-					 uint32_t tid)
-{
-	request->opcode = CTDB_CONTROL_TRANSACTION_COMMIT;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_TRANSACTION_COMMIT;
-	request->rdata.data.tid = tid;
-}
-
-int ctdb_reply_control_transaction_commit(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply,
-					  CTDB_CONTROL_TRANSACTION_COMMIT);
-}
-
 /* CTDB_CONTROL_WIPE_DATABASE */
 
 void ctdb_req_control_wipe_database(struct ctdb_req_control *request,
@@ -1735,27 +1693,6 @@ int ctdb_reply_control_get_ban_state(struct ctdb_reply_control *reply,
 					  reply->rdata.data.ban_state);
 	}
 	return reply->status;
-}
-
-/* CTDB_CONTROL_TRANSACTION_CANCEL */
-
-void ctdb_req_control_transaction_cancel(struct ctdb_req_control *request,
-					 uint32_t tid)
-{
-	request->opcode = CTDB_CONTROL_TRANSACTION_CANCEL;
-	request->pad = 0;
-	request->srvid = 0;
-	request->client_id = 0;
-	request->flags = 0;
-
-	request->rdata.opcode = CTDB_CONTROL_TRANSACTION_CANCEL;
-	request->rdata.data.tid = tid;
-}
-
-int ctdb_reply_control_transaction_cancel(struct ctdb_reply_control *reply)
-{
-	return ctdb_reply_control_generic(reply,
-					  CTDB_CONTROL_TRANSACTION_CANCEL);
 }
 
 /* CTDB_CONTROL_REGISTER_NOTIFY */
