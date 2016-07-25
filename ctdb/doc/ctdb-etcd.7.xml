@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<refentry id="ctdb-etcd.7">
+
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by
+	Jose A. Rivera
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2016</year>
+      <holder>Jose A. Rivera</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
+
+  <refmeta>
+    <refentrytitle>ctdb-etcd</refentrytitle>
+    <manvolnum>7</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>ctdb-etcd</refname>
+    <refpurpose>CTDB etcd integration</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>ctdb_etcd_lock</command>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      ctdb_etcd_lock is intended to be run as a mutex helper for CTDB. It
+      will try to connect to an existing etcd cluster and grab a lock in that
+      cluster to function as CTDB's recovery lock. Please see
+      <emphasis>ctdb/doc/cluster_mutex_helper.txt</emphasis> for details on
+      the mutex helper API. To use this, include the following line in your
+      CTDB config file:
+    </para>
+    <screen format="linespecific">
+CTDB_RECOVERY_LOCK="!/usr/local/usr/libexec/ctdb/ctdb_etcd_lock"
+    </screen>
+    <para>
+      You can also pass "-v", "-vv", or "-vvv" to include verbose output in
+      the CTDB log. Additional "v"s indicate increases in verbosity.
+    </para>
+    <para>
+      This mutex helper expects the system Python interpreter to have access
+      to the etcd Python module. It also expects an etcd cluster to be
+      configured and running. To integrate with this, there is an optional
+      config file of the following format:
+    </para>
+    <screen format="linespecific">
+key = value
+    </screen>
+    <para>
+      The following configuration parameters (and their defaults) are defined
+      for use by ctdb_etcd_lock:
+    </para>
+    <screen format="linespecific">
+port      = 2379   # connecting port for the etcd cluster
+lock_ttl  = 9      # seconds for TTL
+refresh   = 2      # seconds between attempts to maintain lock
+locks_dir = _ctdb  # where to store CTDB locks in etcd
+                   # The final etcd directory for any given lock looks like:
+                   #   /_locks/{locks_dir}/{netbios name}/
+    </screen>
+    <para>
+      In addition, any keyword parameter that can be used to configure an
+      etcd client may be specified and modified here. For more documentation
+      on these parameters, see here: https://github.com/jplana/python-etcd/
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdbd</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <ulink url="http://ctdb.samba.org/"/>
+    </para>
+  </refsect1>
+
+
+</refentry>

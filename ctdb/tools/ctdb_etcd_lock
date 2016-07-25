@@ -1,0 +1,208 @@
+#!/usr/bin/python
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    Copyright (C) 2016 Jose A. Rivera <jarrpa@samba.org>
+#    Copyright (C) 2016 Ira Cooper <ira@samba.org>
+"""CTDB mutex helper using etcd.
+
+This script is intended to be run as a mutex helper for CTDB. It will try to
+connect to an existing etcd cluster and grab an etcd.Lock() to function as
+CTDB's recovery lock. Please see ctdb/doc/cluster_mutex_helper.txt for
+details on what we're SUPPOSED to be doing. :) To use this, include the
+following line in your CTDB config file:
+
+CTDB_RECOVERY_LOCK="!/path/to/script"
+
+You can also pass "-v", "-vv", or "-vvv" to include verbose output in the
+CTDB log. Additional "v"s indicate increases in verbosity.
+
+This mutex helper expects the system Python interpreter to have access to the
+etcd Python module. It also expects an etcd cluster to be configured and
+running. To integrate with this, there is an optional config file of the
+following format:
+
+key = value
+
+The following configuration variables (and their defaults) are defined for
+use by this script:
+
+port      = 2379   # connecting port for the etcd cluster
+lock_ttl  = 9      # seconds for TTL
+refresh   = 2      # seconds between attempts to maintain lock
+locks_dir = _ctdb  # where to store CTDB locks in etcd
+                   # The final etcd directory for any given lock looks like:
+                   #   /_locks/{locks_dir}/{netbios name}/
+
+In addition, any keyword parameter that can be used to configure an etcd
+client may be specified and modified here. For more documentation on these
+parameters, see here: https://github.com/jplana/python-etcd/
+
+"""
+import signal
+import time
+import etcd
+import sys
+import os
+import argparse
+import logging
+import subprocess
+
+# Globals ---------------------------------------------------------------------
+#
+defaults = { 'config': os.path.join(
+                         os.getenv('CTDB_BASE', '/usr/local/etc/ctdb'),
+                         'etcd'),
+             'verbose' : 0,
+           }
+helpmsg  = { 'config': 'Configuration file to use. The default behavior ' + \
+                       'is to look is the base CTDB configuration ' + \
+                       'directory, which can be overwritten by setting the' + \
+                       'CTDB_BASE environment variable, for a file called' + \
+                       '\'etcd\'. Default value is ' + defaults['config'],
+             'verbose' : 'Display verbose output to stderr. Default is no output.',
+           }
+
+log_levels = { 0: logging.ERROR,
+               1: logging.WARNING,
+               2: logging.DEBUG,
+             }
+
+config_file = defaults['config']
+verbose = defaults['verbose']
+
+# Helper Functions ------------------------------------------------------------
+#
+def sigterm_handler(signum, frame):
+  """Handler for SIGTERM signals.
+  """
+  sys.exit()
+
+def print_nonl(out):
+  """Dumb shortcut for printing to stdout with no newline.
+  """
+  sys.stdout.write(str(out))
+  sys.stdout.flush()
+
+def int_or_not(s):
+  """Try to convert input to an integer.
+  """
+  try:
+    return int(s)
+  except ValueError:
+    return s
+
+# Mainline --------------------------------------------------------------------
+#
+def main():
+  global config_file
+  global verbose
+
+  logging.basicConfig(level=log_levels[verbose])
+
+  # etcd config defaults
+  etcd_config = {
+    'port'        : 2379,
+    'locks_dir'   : '_ctdb',
+    'lock_ttl'    : 9,
+    'lock_refresh': 2,
+  }
+  # Find and read etcd config file
+  etcd_client_params = (
+    'host',
+    'port',
+    'srv_domain',
+    'version_prefix',
+    'read_timeout',
+    'allow_redirect',
+    'protocol',
+    'cert',
+    'ca_cert',
+    'username',
+    'password',
+    'allow_reconnect',
+    'use_proxies',
+    'expected_cluster_id',
+    'per_host_pool_size',
+  )
+  if os.path.isfile(config_file):
+    f = open(config_file, 'r')
+    for line in f:
+      (key, value) = line.split("=",1)
+      etcd_config[key.strip()] = int_or_not(value.strip())
+
+  # Minor hack: call out to shell to retrieve CTDB netbios name and PNN.
+  tmp = subprocess.Popen("testparm -s --parameter-name 'netbios name'; \
+                          ctdb pnn",
+                         shell=True,
+                         universal_newlines=True,
+                         stdout=subprocess.PIPE
+                        ).stdout.read().strip()
+  nb_name, pnn = tmp.split()
+
+  # Try to get and hold the lock
+  try:
+    client = etcd.Client(**{k: etcd_config[k] for k in \
+                         set(etcd_client_params).intersection(etcd_config)})
+    lock = etcd.Lock(client, etcd_config['locks_dir'] + "/" + nb_name)
+    lock._uuid = lock._uuid + "_" + pnn
+    logging.debug("Updated lock UUID: " + lock.uuid)
+    ppid = os.getppid()
+    while True:
+      lock.acquire(blocking=False, lock_ttl=etcd_config['lock_ttl'])
+      if lock.is_acquired:
+        print_nonl(0)
+      else:
+        locks = "No locks found."
+        if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+          keys = client.read(lock.path, recursive=True)
+          if keys is not None:
+            locks = "Existing locks:\n  "
+            locks += '\n  '.join((child.key + ": " + child.value  for child in keys.children))
+        logging.debug("Lock contention. " + locks)
+        print_nonl(1)
+        break
+      os.kill(ppid, 0)
+      time.sleep(etcd_config['lock_refresh'])
+  except (OSError, SystemExit) as e:
+    if lock is not None and lock.is_acquired:
+      lock.release()
+  except:
+    print_nonl(3)
+    if logging.getLogger().getEffectiveLevel() == logging.DEBUG:
+      raise
+
+if __name__== "__main__":
+  signal.signal(signal.SIGTERM, sigterm_handler)
+
+  parser = argparse.ArgumentParser(
+                          description=__doc__,
+                          epilog='',
+                          formatter_class=argparse.RawDescriptionHelpFormatter )
+  parser.add_argument( '-v', '--verbose',
+                       action='count',
+                       help=helpmsg['verbose'],
+                       default=defaults['verbose'],
+                     )
+  parser.add_argument( '-c', '--config',
+                       action='store',
+                       help=helpmsg['config'],
+                       default=defaults['config'],
+                     )
+  args = parser.parse_args()
+
+  config_file = args.config
+  verbose     = args.verbose if args.verbose <= 2 else 2
+
+  main()
