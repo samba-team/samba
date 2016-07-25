@@ -23,6 +23,7 @@
 #include "torture/ndr/proto.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 struct ndr_pull_test_data {
 	DATA_BLOB data;
@@ -367,6 +368,106 @@ static bool test_guid_string2_valid(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_guid_into_blob(struct torture_context *tctx)
+{
+	enum ndr_err_code ndr_err;
+	static const char exp_guid[16] =
+		{ 0x1, 0x0, 0x0, 0x0,
+		  0x2, 0x0, 0x3, 0x0,
+		  0x4, 0x5, 0x6, 0x7,
+		  0x8, 0x9, 0xa, 0xb };
+	DATA_BLOB exp = data_blob_const(exp_guid, 16);
+	char ndr_guid[16] =
+		{ 0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0 };
+	DATA_BLOB b = data_blob_const(ndr_guid, 16);
+	struct GUID guid;
+	guid.time_low = 1;
+	guid.time_mid = 2;
+	guid.time_hi_and_version = 3;
+	guid.clock_seq[0] = 4;
+	guid.clock_seq[1] = 5;
+	guid.node[0] = 6;
+	guid.node[1] = 7;
+	guid.node[2] = 8;
+	guid.node[3] = 9;
+	guid.node[4] = 10;
+	guid.node[5] = 11;
+	
+	ndr_err = ndr_push_struct_into_fixed_blob(&b, &guid,
+						  (ndr_push_flags_fn_t)ndr_push_GUID);
+	torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_SUCCESS,
+				     "wrong NDR error");
+	torture_assert_data_blob_equal(tctx, b, exp,
+				       "GUID packed wrongly");
+
+	return true;
+}
+
+/* Really a test of ndr_push_struct_into_fixed_blob error handling */
+static bool test_guid_into_long_blob(struct torture_context *tctx)
+{
+	enum ndr_err_code ndr_err;
+	char ndr_guid[17] =
+		{ 0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0, 0x0 };
+	DATA_BLOB b = data_blob_const(ndr_guid, 17);
+	struct GUID guid;
+	guid.time_low = 1;
+	guid.time_mid = 2;
+	guid.time_hi_and_version = 3;
+	guid.clock_seq[0] = 4;
+	guid.clock_seq[1] = 5;
+	guid.node[0] = 6;
+	guid.node[1] = 7;
+	guid.node[2] = 8;
+	guid.node[3] = 9;
+	guid.node[4] = 10;
+	guid.node[5] = 11;
+
+	torture_assert(tctx, b.data != NULL, "data_blob_talloc failed");
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&b, &guid, (ndr_push_flags_fn_t)ndr_push_GUID);
+	torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_BUFSIZE,
+				     "wrong NDR error");
+
+	return true;
+}
+
+static bool test_guid_into_short_blob(struct torture_context *tctx)
+{
+	enum ndr_err_code ndr_err;
+	char ndr_guid[15] =
+		{ 0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0, 0x0,
+		  0x0, 0x0, 0x0 };
+	DATA_BLOB b = data_blob_const(ndr_guid, 15);
+	struct GUID guid;
+	guid.time_low = 1;
+	guid.time_mid = 2;
+	guid.time_hi_and_version = 3;
+	guid.clock_seq[0] = 4;
+	guid.clock_seq[1] = 5;
+	guid.node[0] = 6;
+	guid.node[1] = 7;
+	guid.node[2] = 8;
+	guid.node[3] = 9;
+	guid.node[4] = 10;
+	guid.node[5] = 11;
+
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&b, &guid, (ndr_push_flags_fn_t)ndr_push_GUID);
+	torture_assert_ndr_err_equal(tctx, ndr_err, NDR_ERR_BUFSIZE,
+				     "wrong NDR error");
+
+	return true;
+}
+
 static bool test_compare_uuid(struct torture_context *tctx)
 {
 	struct GUID g1, g2;
@@ -445,6 +546,15 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_test(suite, "compare_uuid",
 				      test_compare_uuid);
+
+	torture_suite_add_simple_test(suite, "guid_into_blob",
+				      test_guid_into_blob);
+
+	torture_suite_add_simple_test(suite, "guid_into_short_blob",
+				      test_guid_into_short_blob);
+
+	torture_suite_add_simple_test(suite, "guid_into_long_blob",
+				      test_guid_into_long_blob);
 
 	return suite;
 }
