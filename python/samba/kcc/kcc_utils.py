@@ -1368,7 +1368,7 @@ class Site(object):
         self.nt_now = nt_now
 
     def load_site(self, samdb):
-        """Loads the NTDS Site Settions options attribute for the site
+        """Loads the NTDS Site Settings options attribute for the site
         as well as querying and loading all DSAs that appear within
         the site.
         """
