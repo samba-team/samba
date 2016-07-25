@@ -479,6 +479,59 @@ NTSTATUS messaging_send_buf(struct messaging_context *msg_ctx,
 	return messaging_send(msg_ctx, server, msg_type, &blob);
 }
 
+struct messaging_post_state {
+	struct messaging_context *msg_ctx;
+	struct messaging_rec *rec;
+};
+
+static void messaging_post_handler(struct tevent_context *ev,
+				   struct tevent_immediate *ti,
+				   void *private_data);
+
+static int messaging_post_self(struct messaging_context *msg_ctx,
+			       struct server_id src, struct server_id dst,
+			       uint32_t msg_type,
+			       const struct iovec *iov, int iovlen,
+			       const int *fds, size_t num_fds)
+{
+	struct tevent_immediate *ti;
+	struct messaging_post_state *state;
+
+	state = talloc(msg_ctx, struct messaging_post_state);
+	if (state == NULL) {
+		return ENOMEM;
+	}
+	state->msg_ctx = msg_ctx;
+
+	ti = tevent_create_immediate(state);
+	if (ti == NULL) {
+		goto fail;
+	}
+	state->rec = messaging_rec_create(
+		state, src, dst, msg_type, iov, iovlen, fds, num_fds);
+	if (state->rec == NULL) {
+		goto fail;
+	}
+
+	tevent_schedule_immediate(ti, msg_ctx->event_ctx,
+				  messaging_post_handler, state);
+	return 0;
+
+fail:
+	TALLOC_FREE(state);
+	return ENOMEM;
+}
+
+static void messaging_post_handler(struct tevent_context *ev,
+				   struct tevent_immediate *ti,
+				   void *private_data)
+{
+	struct messaging_post_state *state = talloc_get_type_abort(
+		private_data, struct messaging_post_state);
+	messaging_dispatch_rec(state->msg_ctx, state->rec);
+	TALLOC_FREE(state);
+}
+
 int messaging_send_iov_from(struct messaging_context *msg_ctx,
 			    struct server_id src, struct server_id dst,
 			    uint32_t msg_type,
@@ -506,6 +559,12 @@ int messaging_send_iov_from(struct messaging_context *msg_ctx,
 					       msg_type, iov, iovlen,
 					       NULL, 0,
 					       msg_ctx->remote);
+		return ret;
+	}
+
+	if (server_id_equal(&dst, &msg_ctx->id)) {
+		ret = messaging_post_self(msg_ctx, src, dst, msg_type,
+					  iov, iovlen, fds, num_fds);
 		return ret;
 	}
 
