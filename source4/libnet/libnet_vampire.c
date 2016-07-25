@@ -238,7 +238,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	uint32_t i;
 	int ret;
 	bool ok;
-	uint64_t seq_num;
+	uint64_t seq_num = 0;
 	uint32_t cycle_before_switching;
 
 	DEBUG(0,("Analyze and apply schema objects\n"));
