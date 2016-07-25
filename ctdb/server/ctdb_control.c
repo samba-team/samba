@@ -439,12 +439,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_send_gratious_arp(ctdb, indata);
 
 	case CTDB_CONTROL_TRANSACTION_START:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_transaction_start(ctdb, *(uint32_t *)indata.dptr);
+		return control_not_implemented("TRANSACTION_START", NULL);
 
 	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_transaction_commit(ctdb, *(uint32_t *)indata.dptr);
+		return control_not_implemented("TRANSACTION_COMMIT", NULL);
 
 	case CTDB_CONTROL_WIPE_DATABASE:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_transdb));
@@ -573,8 +571,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return control_not_implemented("GET_DB_PRIORITY", "");
 
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
-		CHECK_CONTROL_DATA_SIZE(0);
-		return ctdb_control_transaction_cancel(ctdb);
+		return control_not_implemented("TRANSACTION_CANCEL", NULL);
 
 	case CTDB_CONTROL_REGISTER_NOTIFY:
 		return ctdb_control_register_notify(ctdb, client_id, indata);

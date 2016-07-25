@@ -635,10 +635,6 @@ int32_t ctdb_control_db_transaction_cancel(struct ctdb_context *ctdb,
 int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
 					   TDB_DATA indata);
 
-int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
-int32_t ctdb_control_transaction_cancel(struct ctdb_context *ctdb);
-int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
-
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 
 bool ctdb_db_frozen(struct ctdb_db_context *ctdb_db);
