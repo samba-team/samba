@@ -421,13 +421,6 @@ def build(bld):
                      install_path='${SBINDIR}',
                      manpages='ctdbd.1')
 
-    bld.SAMBA_BINARY('ctdb',
-                     source='tools/ctdb.c',
-                     deps='ctdb-client ctdb-common ctdb-system ctdb-util',
-                     includes='include',
-                     install_path='${BINDIR}',
-                     manpages='ctdb.1')
-
     bld.SAMBA_BINARY('ctdb_killtcp',
                      source='tools/ctdb_killtcp.c',
                      deps='''ctdb-protocol ctdb-util ctdb-system
