@@ -69,6 +69,7 @@ def set_options(opt):
                    action="store", dest='libcephfs_dir', default=None)
 
     opt.SAMBA3_ADD_OPTION('glusterfs', with_name="enable", without_name="disable", default=True)
+    opt.SAMBA3_ADD_OPTION('cephfs', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--enable-vxfs',
                   help=("enable support for VxFS (default=no)"),
