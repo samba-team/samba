@@ -101,7 +101,8 @@ int ltdb_index_transaction_cancel(struct ldb_module *module);
 int ltdb_has_wildcard(struct ldb_module *module, const char *attr_name, 
 		      const struct ldb_val *val);
 void ltdb_search_dn1_free(struct ldb_module *module, struct ldb_message *msg);
-int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg);
+int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
+		    unsigned int unpack_flags);
 int ltdb_add_attr_results(struct ldb_module *module,
  			  TALLOC_CTX *mem_ctx, 
 			  struct ldb_message *msg,

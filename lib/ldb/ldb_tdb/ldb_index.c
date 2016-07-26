@@ -178,7 +178,9 @@ normal_index:
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_search_dn1(module, dn, msg);
+	ret = ltdb_search_dn1(module, dn, msg,
+			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+			      |LDB_UNPACK_DATA_FLAG_NO_DN);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return ret;
@@ -949,7 +951,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ltdb_search_dn1(ac->module, dn, msg);
+		ret = ltdb_search_dn1(ac->module, dn, msg, 0);
 		talloc_free(dn);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */

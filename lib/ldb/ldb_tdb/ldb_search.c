@@ -238,16 +238,50 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 struct ltdb_parse_data_unpack_ctx {
 	struct ldb_message *msg;
 	struct ldb_module *module;
+	unsigned int unpack_flags;
 };
 
 static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
 				  void *private_data)
 {
 	struct ltdb_parse_data_unpack_ctx *ctx = private_data;
-
+	unsigned int nb_elements_in_db;
+	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
-	int ret = ldb_unpack_data(ldb, (struct ldb_val *)&data, ctx->msg);
+	struct ldb_val data_parse = {
+		.data = data.dptr,
+		.length = data.dsize
+	};
+
+	if (ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
+		/*
+		 * If we got LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+		 * we need at least do a memdup on the whole
+		 * data buffer as that may change later
+		 * and the caller needs a stable result.
+		 */
+		data_parse.data = talloc_memdup(ctx->msg,
+						data.dptr,
+						data.dsize);
+		if (data_parse.data == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Unable to allocate data(%d) for %*.*s\n",
+				  (int)data.dsize,
+				  (int)key.dsize, (int)key.dsize, key.dptr);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	ret = ldb_unpack_data_only_attr_list_flags(ldb, &data_parse,
+						   ctx->msg,
+						   NULL, 0,
+						   ctx->unpack_flags,
+						   &nb_elements_in_db);
 	if (ret == -1) {
+		if (data_parse.data != data.dptr) {
+			talloc_free(data_parse.data);
+		}
+
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %*.*s\n",
 			  (int)key.dsize, (int)key.dsize, key.dptr);
 		return LDB_ERR_OPERATIONS_ERROR;		
@@ -262,7 +296,8 @@ static int ltdb_parse_data_unpack(TDB_DATA key, TDB_DATA data,
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
   and LDB_SUCCESS on success
 */
-int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg)
+int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg,
+		    unsigned int unpack_flags)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -270,7 +305,8 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	TDB_DATA tdb_key;
 	struct ltdb_parse_data_unpack_ctx ctx = {
 		.msg = msg,
-		.module = module
+		.module = module,
+		.unpack_flags = unpack_flags
 	};
 
 	/* form the key */
@@ -296,12 +332,14 @@ int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_mes
 	} else if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	
-	if (!msg->dn) {
-		msg->dn = ldb_dn_copy(msg, dn);
-	}
-	if (!msg->dn) {
-		return LDB_ERR_OPERATIONS_ERROR;
+
+	if ((unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DN) == 0) {
+		if (!msg->dn) {
+			msg->dn = ldb_dn_copy(msg, dn);
+		}
+		if (!msg->dn) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	return LDB_SUCCESS;

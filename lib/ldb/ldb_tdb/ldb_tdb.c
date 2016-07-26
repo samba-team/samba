@@ -449,7 +449,7 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
-	ret = ltdb_search_dn1(module, dn, msg);
+	ret = ltdb_search_dn1(module, dn, msg, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
 		goto done;
@@ -1033,7 +1033,8 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	}
 
 	/* we need to fetch the old record to re-add under the new name */
-	ret = ltdb_search_dn1(module, req->op.rename.olddn, msg);
+	ret = ltdb_search_dn1(module, req->op.rename.olddn, msg,
+			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
 		return ret;
@@ -1232,7 +1233,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 		goto done;
 	}
 
-	ret = ltdb_search_dn1(module, dn, msg);
+	ret = ltdb_search_dn1(module, dn, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}

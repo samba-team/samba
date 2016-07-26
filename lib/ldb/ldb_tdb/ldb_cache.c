@@ -126,7 +126,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
-	r = ltdb_search_dn1(module, dn, msg);
+	r = ltdb_search_dn1(module, dn, msg, 0);
 	talloc_free(dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
@@ -301,7 +301,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	baseinfo_dn = ldb_dn_new(baseinfo, ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
-	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo);
+	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
@@ -319,7 +319,7 @@ int ltdb_cache_load(struct ldb_module *module)
 
 		tdb_transaction_commit(ltdb->tdb);
 
-		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo) != LDB_SUCCESS) {
+		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -341,7 +341,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	options_dn = ldb_dn_new(options, ldb, LTDB_OPTIONS);
 	if (options_dn == NULL) goto failed;
 
-	r= ltdb_search_dn1(module, options_dn, options);
+	r= ltdb_search_dn1(module, options_dn, options, 0);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
@@ -374,7 +374,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	indexlist_dn = ldb_dn_new(module, ldb, LTDB_INDEXLIST);
 	if (indexlist_dn == NULL) goto failed;
 
-	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist);
+	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist, 0);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
