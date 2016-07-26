@@ -813,6 +813,11 @@ static int replmd_add_fix_la(struct ldb_module *module, struct ldb_message_eleme
 		NTSTATUS status;
 		int ret;
 
+		if (dsdb_dn == NULL) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
+
 		/* note that the DN already has the extended
 		   components from the extended_dn_store module */
 		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &target_guid, "GUID");
