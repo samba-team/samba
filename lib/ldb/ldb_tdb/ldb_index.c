@@ -1108,7 +1108,8 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
  * @return                  An ldb error code
  */
 static int ltdb_index_add1(struct ldb_module *module, const char *dn,
-			   struct ldb_message_element *el, int v_idx)
+			   struct ldb_message_element *el, int v_idx,
+			   bool is_new)
 {
 	struct ldb_context *ldb;
 	struct ldb_dn *dn_key;
@@ -1137,17 +1138,22 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 		return ret;
 	}
 
-	if (ltdb_dn_list_find_str(list, dn) != -1) {
-		talloc_free(list);
-		return LDB_SUCCESS;
-	}
-
 	if (list->count > 0 &&
 	    a->flags & LDB_ATTR_FLAG_UNIQUE_INDEX) {
 		talloc_free(list);
 		ldb_asprintf_errstring(ldb, __location__ ": unique index violation on %s in %s",
 				       el->name, dn);
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;		
+	}
+
+	/* If we are doing an ADD, then this can not already be in the index,
+	   as it was not already in the database, and this has already been
+	   checked because the store succeeded */
+	if (! is_new) {
+		if (ltdb_dn_list_find_str(list, dn) != -1) {
+			talloc_free(list);
+			return LDB_SUCCESS;
+		}
 	}
 
 	/* overallocate the list a bit, to reduce the number of
@@ -1173,11 +1179,11 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
   add index entries for one elements in a message
  */
 static int ltdb_index_add_el(struct ldb_module *module, const char *dn,
-			     struct ldb_message_element *el)
+			     struct ldb_message_element *el, bool is_new)
 {
 	unsigned int i;
 	for (i = 0; i < el->num_values; i++) {
-		int ret = ltdb_index_add1(module, dn, el, i);
+		int ret = ltdb_index_add1(module, dn, el, i, is_new);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -1190,7 +1196,8 @@ static int ltdb_index_add_el(struct ldb_module *module, const char *dn,
   add index entries for all elements in a message
  */
 static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
-			      struct ldb_message_element *elements, int num_el)
+			      struct ldb_message_element *elements, int num_el,
+			      bool is_new)
 {
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
 	unsigned int i;
@@ -1209,7 +1216,7 @@ static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
 		if (!ltdb_is_indexed(ltdb->cache->indexlist, elements[i].name)) {
 			continue;
 		}
-		ret = ltdb_index_add_el(module, dn, &elements[i]);
+		ret = ltdb_index_add_el(module, dn, &elements[i], is_new);
 		if (ret != LDB_SUCCESS) {
 			struct ldb_context *ldb = ldb_module_get_ctx(module);
 			ldb_asprintf_errstring(ldb,
@@ -1263,7 +1270,7 @@ static int ltdb_index_onelevel(struct ldb_module *module, const struct ldb_messa
 	el.num_values = 1;
 
 	if (add) {
-		ret = ltdb_index_add1(module, dn, &el, 0);
+		ret = ltdb_index_add1(module, dn, &el, 0, add);
 	} else { /* delete */
 		ret = ltdb_index_del_value(module, msg->dn, &el, 0);
 	}
@@ -1287,7 +1294,7 @@ int ltdb_index_add_element(struct ldb_module *module, struct ldb_dn *dn,
 	if (!ltdb_is_indexed(ltdb->cache->indexlist, el->name)) {
 		return LDB_SUCCESS;
 	}
-	return ltdb_index_add_el(module, ldb_dn_get_linearized(dn), el);
+	return ltdb_index_add_el(module, ldb_dn_get_linearized(dn), el, true);
 }
 
 /*
@@ -1307,7 +1314,8 @@ int ltdb_index_add_new(struct ldb_module *module, const struct ldb_message *msg)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements);
+	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements,
+				 true);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1566,7 +1574,8 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return -1;
 	}
 
-	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements);
+	ret = ltdb_index_add_all(module, dn, msg->elements, msg->num_elements,
+				 false);
 
 	if (ret != LDB_SUCCESS) {
 		ctx->error = ret;
