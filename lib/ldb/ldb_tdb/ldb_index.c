@@ -1384,7 +1384,12 @@ int ltdb_index_del_value(struct ldb_module *module, struct ldb_dn *dn,
 		memmove(&list->dn[j], &list->dn[j+1], sizeof(list->dn[0])*(list->count - (j+1)));
 	}
 	list->count--;
-	list->dn = talloc_realloc(list, list->dn, struct ldb_val, list->count);
+	if (list->count == 0) {
+		talloc_free(list->dn);
+		list->dn = NULL;
+	} else {
+		list->dn = talloc_realloc(list, list->dn, struct ldb_val, list->count);
+	}
 
 	ret = ltdb_dn_list_store(module, dn_key, list);
 
