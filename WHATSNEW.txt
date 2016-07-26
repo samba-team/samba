@@ -202,6 +202,13 @@ logon using a smartcard to work on Windows clients.
 CTDB changes
 ------------
 
+* New improved ctdb tool
+
+  ctdb tool has been completely rewritten using new client API.
+  Usage messages are much improved.
+
+* Sample CTDB configuration file is installed as ctdbd.conf.
+
 * The use of real-time scheduling when taking locks has been narrowed
   to limit potential performance impacts on nodes
 
