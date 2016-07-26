@@ -16,14 +16,7 @@ IFACES
 :eth1:0:4:
 EOF
 
-result_filter ()
-{
-	sed -e 's|^[^:]*:[0-9][0-9]* |FILE:LINE |'
-}
-
 required_result 1 <<EOF
-ctdb_control error: 'interface not found'
-FILE:LINE ctdb_control for set iface link failed ret:-1 res:-1
-Unable to set link state for interfaces eth0 node 0
+Interface eth0 not configured on node 0
 EOF
 simple_test eth0 down

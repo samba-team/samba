@@ -18,11 +18,10 @@ NODEMAP
 EOF
 
 required_result 1 <<EOF
-../client/ctdb_client.c:293 Failed to connect client socket to daemon. Errno:No such file or directory(2)
-../common/cmdline.c:167 Failed to connect to daemon
-Failed to init ctdb
-Failed to detect which PNN this node is
-Is this node part of a CTDB cluster?
+connect() failed, errno=2
+Failed to connect to CTDB daemon ($ctdbd_socket)
+Failed to detect PNN of the current node.
+Is this node part of CTDB cluster?
 EOF
 
 simple_test

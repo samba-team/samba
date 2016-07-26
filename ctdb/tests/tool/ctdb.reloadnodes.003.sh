@@ -26,8 +26,7 @@ NODEMAP
 EOF
 
 required_result 1 <<EOF
-ctdb_control error: 'Failed to read nodes file'
-ctdb_control error: 'Failed to read nodes file'
+Control GET_NODES_FILE failed, ret=-1
 ERROR: Failed to get nodes file from node 1
 EOF
 

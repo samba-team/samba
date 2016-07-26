@@ -11,13 +11,7 @@ NODEMAP
 2       192.168.20.43   0x0
 EOF
 
-result_filter ()
-{
-	sed -e 's|^[^:]*:[0-9][0-9]* |FILE:LINE |'
-}
-
 required_result 1 <<EOF
-FILE:LINE ctdb_control for set_tunable failed
-Unable to set tunable variable 'TheQuickBrownFoxJumpsOverTheLazyDog'
+No such tunable TheQuickBrownFoxJumpsOverTheLazyDog
 EOF
 simple_test "TheQuickBrownFoxJumpsOverTheLazyDog" 42

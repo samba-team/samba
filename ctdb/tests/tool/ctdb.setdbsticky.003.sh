@@ -18,15 +18,8 @@ DBMAP
 0x6cf2837d registry.tdb PERSISTENT 42
 EOF
 
-result_filter ()
-{
-	sed -e 's|^[^:]*:[0-9][0-9]* |FILE:LINE |'
-}
-
 required_result 1 <<EOF
-ctdb_control error: 'Can not set STICKY on persistent db'
-FILE:LINE ctdb_ctrl_set_db_sticky_recv failed  ret:22 res:-1
-Unable to set db to support sticky records
+Cannot set STICKY on persistent DB
 EOF
 simple_test secrets.tdb
 
