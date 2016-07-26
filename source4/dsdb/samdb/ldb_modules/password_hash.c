@@ -2215,9 +2215,8 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 static int setup_smartcard_reset(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
-	struct loadparm_context *lp_ctx =
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
+	struct loadparm_context *lp_ctx = talloc_get_type(
+		ldb_get_opaque(ldb, "loadparm"), struct loadparm_context);
 	struct supplementalCredentialsBlob scb = { .__ndr_size = 0 };
 	enum ndr_err_code ndr_err;
 
