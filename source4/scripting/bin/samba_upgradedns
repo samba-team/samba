@@ -413,13 +413,17 @@ if __name__ == '__main__':
     if opts.dns_backend == "BIND9_DLZ":
         # Check if dns-HOSTNAME account exists and create it if required
         secrets_msgs = ldbs.secrets.search(expression='(samAccountName=dns-%s)' % hostname, attrs=['secret'])
-        if len(secrets_msgs) == 0:
+        msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
+                              expression='(sAMAccountName=dns-%s)' % (hostname),
+                              attrs=[])
 
+        if len(secrets_msgs) == 0 or len(msg) == 0:
             logger.info("Adding dns-%s account" % hostname)
 
-            msg = ldbs.sam.search(base=domaindn, scope=ldb.SCOPE_DEFAULT,
-                                  expression='(sAMAccountName=dns-%s)' % (hostname),
-                                  attrs=[])
+            if len(secrets_msgs) == 1:
+                dn = secrets_msgs[0].dn
+                ldbs.secrets.delete(dn)
+
             if len(msg) == 1:
                 dn = msg[0].dn
                 ldbs.sam.delete(dn)
