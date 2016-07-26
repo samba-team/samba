@@ -395,10 +395,17 @@
 
     <refsect2>
       <title>QueueBufferSize</title>
-      <para>Default: 16*1024</para>
+      <para>Default: 1024</para>
       <para>
 	This is the maximum amount of data (in bytes) ctdb will read
 	from a socket at a time.
+      </para>
+      <para>
+	For a busy setup, if ctdb is not able to process the TCP sockets
+	fast enough (large amount of data in Recv-Q for tcp sockets),
+	then this tunable value should be increased.  However, large
+	values can keep ctdb busy processing packets and prevent ctdb
+	from handling other events.
       </para>
     </refsect2>
 

@@ -151,7 +151,7 @@ static struct {
 		offsetof(struct ctdb_tunable_list, lock_processes_per_db) },
 	{ "RecBufferSizeLimit", 1000*1000, false,
 		offsetof(struct ctdb_tunable_list, rec_buffer_size_limit) },
-	{ "QueueBufferSize", 16*1024, false,
+	{ "QueueBufferSize", 1024, false,
 		offsetof(struct ctdb_tunable_list, queue_buffer_size) },
 	{ NULL, 0, true, }
 };
