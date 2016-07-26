@@ -1102,6 +1102,54 @@ static bool torture_ldb_unpack(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_ldb_unpack_flags(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	struct ldb_context *ldb;
+	struct ldb_val data = data_blob_const(dda1d01d_bin, sizeof(dda1d01d_bin));
+	struct ldb_message *msg = ldb_msg_new(mem_ctx);
+	const char *ldif_text = dda1d01d_ldif;
+	struct ldb_ldif ldif;
+	unsigned int nb_elements_in_db;
+
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL);
+	torture_assert(torture,
+		       ldb != NULL,
+		       "Failed to init ldb");
+
+	torture_assert_int_equal(torture,
+				 ldb_unpack_data_only_attr_list_flags(ldb, &data,
+								      msg,
+								      NULL, 0,
+								      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC,
+								      &nb_elements_in_db),
+				 0,
+				 "ldb_unpack_data failed");
+
+	ldif.changetype = LDB_CHANGETYPE_NONE;
+	ldif.msg = msg;
+	ldif_text = ldb_ldif_write_string(ldb, mem_ctx, &ldif);
+
+	torture_assert_int_equal(torture,
+				 strcmp(ldif_text, dda1d01d_ldif), 0,
+				 "ldif form differs from binary form");
+
+	torture_assert_int_equal(torture,
+				 ldb_unpack_data_only_attr_list_flags(ldb, &data,
+								      msg,
+								      NULL, 0,
+								      LDB_UNPACK_DATA_FLAG_NO_DN,
+								      &nb_elements_in_db),
+				 0,
+				 "ldb_unpack_data failed");
+
+	torture_assert(torture,
+		       msg->dn == NULL,
+		       "msg->dn should be NULL");
+
+	return true;
+}
+
 static bool torture_ldb_parse_ldif(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
@@ -1265,6 +1313,8 @@ struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "dn", torture_ldb_dn);
 	torture_suite_add_simple_test(suite, "unpack-data",
 				      torture_ldb_unpack);
+	torture_suite_add_simple_test(suite, "unpack-data-flags",
+				      torture_ldb_unpack_flags);
 	torture_suite_add_simple_test(suite, "parse-ldif",
 				      torture_ldb_parse_ldif);
 	torture_suite_add_simple_test(suite, "unpack-data-only-attr-list",

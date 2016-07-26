@@ -390,6 +390,12 @@ int ldb_register_extended_match_rule(struct ldb_context *ldb,
 int ldb_pack_data(struct ldb_context *ldb,
 		  const struct ldb_message *message,
 		  struct ldb_val *data);
+/*
+ * Unpack a ldb message from a linear buffer in ldb_val
+ *
+ * Providing a list of attributes to this function allows selective unpacking.
+ * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
+ */
 int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 				   const struct ldb_val *data,
 				   struct ldb_message *message,
@@ -399,5 +405,27 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message);
+/*
+ * Unpack a ldb message from a linear buffer in ldb_val
+ *
+ * Providing a list of attributes to this function allows selective unpacking.
+ * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
+ *
+ * Flags allow control of allocation, so that if
+ * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC is specified, then values are
+ * not allocate, instead they point into the supplier constant buffer.
+ *
+ * Likewise if LDB_UNPACK_DATA_FLAG_NO_DN is specified, the DN is omitted.
+ */
+int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
+					 const struct ldb_val *data,
+					 struct ldb_message *message,
+					 const char * const *list,
+					 unsigned int list_size,
+					 unsigned int flags,
+					 unsigned int *nb_elements_in_db);
+
+#define LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC 0x0001
+#define LDB_UNPACK_DATA_FLAG_NO_DN         0x0002
 
 #endif

@@ -211,20 +211,20 @@ static bool ldb_consume_element_data(uint8_t **pp, size_t *premaining)
 	return true;
 }
 
+
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
  *
  * Providing a list of attributes to this function allows selective unpacking.
  * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
- *
- * Free with ldb_unpack_data_free()
  */
-int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
-				   const struct ldb_val *data,
-				   struct ldb_message *message,
-				   const char * const *list,
-				   unsigned int list_size,
-				   unsigned int *nb_elements_in_db)
+int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
+					 const struct ldb_val *data,
+					 struct ldb_message *message,
+					 const char * const *list,
+					 unsigned int list_size,
+					 unsigned int flags,
+					 unsigned int *nb_elements_in_db)
 {
 	uint8_t *p;
 	size_t remaining;
@@ -271,10 +271,14 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			errno = EIO;
 			goto failed;
 		}
-		message->dn = ldb_dn_new(message, ldb, (char *)p);
-		if (message->dn == NULL) {
-			errno = ENOMEM;
-			goto failed;
+		if (flags & LDB_UNPACK_DATA_FLAG_NO_DN) {
+			message->dn = NULL;
+		} else {
+			message->dn = ldb_dn_new(message, ldb, (char *)p);
+			if (message->dn == NULL) {
+				errno = ENOMEM;
+				goto failed;
+			}
 		}
 		/*
 		 * Redundant: by definition, remaining must be more
@@ -373,11 +377,15 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 		}
 		element = &message->elements[nelem];
-		element->name = talloc_memdup(message->elements, attr, attr_len+1);
+		if (flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
+			element->name = attr;
+		} else {
+			element->name = talloc_memdup(message->elements, attr, attr_len+1);
 
-		if (element->name == NULL) {
-			errno = ENOMEM;
-			goto failed;
+			if (element->name == NULL) {
+				errno = ENOMEM;
+				goto failed;
+			}
 		}
 		element->flags = 0;
 
@@ -422,15 +430,18 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 			}
 
 			element->values[j].length = len;
-			element->values[j].data = talloc_size(element->values, len+1);
-			if (element->values[j].data == NULL) {
-				errno = ENOMEM;
-				goto failed;
+			if (flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
+				element->values[j].data = p + 4;
+			} else {
+				element->values[j].data = talloc_size(element->values, len+1);
+				if (element->values[j].data == NULL) {
+					errno = ENOMEM;
+					goto failed;
+				}
+				memcpy(element->values[j].data, p + 4,
+				       len);
+				element->values[j].data[len] = 0;
 			}
-			memcpy(element->values[j].data, p + 4,
-			       len);
-			element->values[j].data[len] = 0;
-
 			remaining -= len;
 			p += len+4+1;
 		}
@@ -461,6 +472,30 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 failed:
 	talloc_free(message->elements);
 	return -1;
+}
+
+/*
+ * Unpack a ldb message from a linear buffer in ldb_val
+ *
+ * Providing a list of attributes to this function allows selective unpacking.
+ * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
+ *
+ * Free with ldb_unpack_data_free()
+ */
+int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
+				   const struct ldb_val *data,
+				   struct ldb_message *message,
+				   const char * const *list,
+				   unsigned int list_size,
+				   unsigned int *nb_elements_in_db)
+{
+	return ldb_unpack_data_only_attr_list_flags(ldb,
+						    data,
+						    message,
+						    list,
+						    list_size,
+						    0,
+						    nb_elements_in_db);
 }
 
 int ldb_unpack_data(struct ldb_context *ldb,
