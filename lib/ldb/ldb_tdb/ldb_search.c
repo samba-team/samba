@@ -470,6 +470,10 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	struct ldb_context *ldb;
 	struct ltdb_context *ac;
 	struct ldb_message *msg;
+	const struct ldb_val val = {
+		.data = data.dptr,
+		.length = data.dsize,
+	};
 	int ret;
 	bool matched;
 
@@ -488,7 +492,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* unpack the record */
-	ret = ldb_unpack_data(ldb, (struct ldb_val *)&data, msg);
+	ret = ldb_unpack_data(ldb, &val, msg);
 	if (ret == -1) {
 		talloc_free(msg);
 		ac->error = LDB_ERR_OPERATIONS_ERROR;

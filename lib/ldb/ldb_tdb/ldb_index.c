@@ -1534,6 +1534,10 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 	struct ltdb_reindex_context *ctx = (struct ltdb_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
+	const struct ldb_val val = {
+		.data = data.dptr,
+		.length = data.dsize,
+	};
 	const char *dn = NULL;
 	int ret;
 	TDB_DATA key2;
@@ -1550,7 +1554,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 		return -1;
 	}
 
-	ret = ldb_unpack_data(ldb, (struct ldb_val *)&data, msg);
+	ret = ldb_unpack_data(ldb, &val, msg);
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
 						ldb_dn_get_linearized(msg->dn));
