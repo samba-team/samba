@@ -1056,6 +1056,9 @@ CTDB_CAPABILITY_RECMASTER=no
       <citerefentry><refentrytitle>ctdbd_wrapper</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
 
+      <citerefentry><refentrytitle>ctdb_diagnostics</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
       <citerefentry><refentrytitle>ltdbtool</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
 

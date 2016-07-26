@@ -13,7 +13,7 @@
 
   <refnamediv>
     <refname>ctdb_diagnostics</refname>
-    <refpurpose>test CTDB/Samba installation</refpurpose>
+    <refpurpose>dump diagnostic information about CTDB/Samba installation</refpurpose>
   </refnamediv>
 
   <refsynopsisdiv>
@@ -27,7 +27,11 @@
   <refsect1>
     <title>DESCRIPTION</title>
     <para>
-      A script to test the basic setup of a CTDB/Samba install
+      ctdb_diagnostics is used to dump diagnostic information about a
+      clustered Samba installation.  This includes configuration
+      files, output of relevant commands and logs.  This information
+      can be used to check the correctness of the configuration and to
+      diagnose problems.
     </para>
   </refsect1>
 
@@ -81,6 +85,8 @@
     <para>
       <citerefentry><refentrytitle>ctdb</refentrytitle>
       <manvolnum>1</manvolnum></citerefentry>,
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
       <ulink url="https://ctdb.samba.org/"/>
     </para>
   </refsect1>
