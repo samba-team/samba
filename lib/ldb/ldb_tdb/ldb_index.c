@@ -192,10 +192,18 @@ normal_index:
 		return LDB_SUCCESS;
 	}
 
-	/* we avoid copying the strings by stealing the list */
+	/*
+	 * we avoid copying the strings by stealing the list.  We have
+	 * to steal msg onto el->values (which looks odd) because we
+	 * asked for the memory to be allocated on msg, not on each
+	 * value with LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC above
+	 */
+	talloc_steal(el->values, msg);
 	list->dn = talloc_steal(list, el->values);
 	list->count = el->num_values;
 
+	/* We don't need msg->elements any more */
+	talloc_free(msg->elements);
 	return LDB_SUCCESS;
 }
 
