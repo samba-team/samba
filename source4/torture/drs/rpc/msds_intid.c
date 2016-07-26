@@ -100,12 +100,36 @@ struct DsIntIdTestCtx {
 		"-\n" \
 		"\n" \
 		"###########################################################\n" \
+		"# Update schema (with linked attribute)\n" \
+		"###########################################################\n" \
+		"dn: CN=msds-intid-link-%1$d,CN=Schema,CN=Configuration,%2$s\n" \
+		"changetype: add\n" \
+		"objectClass: top\n" \
+		"objectClass: attributeSchema\n" \
+		"cn: msds-intid-link-%1$d\n" \
+		"attributeID: 1.3.6.1.4.1.7165.4.6.1.%1$d.1.5.9941\n" \
+		"attributeSyntax: 2.5.5.1\n" \
+		"omSyntax: 127\n" \
+		"instanceType: 4\n" \
+		"isSingleValued: TRUE\n" \
+		"systemOnly: FALSE\n" \
+		"linkID: 88880\n" \
+		"\n" \
+		"# schemaUpdateNow\n" \
+		"DN:\n" \
+		"changeType: modify\n" \
+		"add: schemaUpdateNow\n" \
+		"schemaUpdateNow: 1\n" \
+		"-\n" \
+		"\n" \
+		"###########################################################\n" \
 		"# Update User class\n" \
 		"###########################################################\n" \
 		"dn: CN=User,CN=Schema,CN=Configuration,%2$s\n" \
 		"changetype: modify\n" \
 		"add: mayContain\n" \
 		"mayContain: msdsIntid%1$d\n" \
+		"mayContain: msdsIntidLink%1$d\n" \
 		"-\n" \
 		"\n" \
 		"# schemaUpdateNow\n" \
@@ -126,6 +150,7 @@ struct DsIntIdTestCtx {
 		"displayName: dsIntId_usr_%1$d\n" \
 		"sAMAccountName: dsIntId_usr_%1$d\n" \
 		"msdsIntid%1$d: msDS-IntId-%1$d attribute value\n" \
+		"msdsIntidLink%1$d: %2$s\n" \
 		"\n"
 
 
@@ -467,7 +492,15 @@ static bool _test_GetNCChanges(struct torture_context *tctx,
 			for (cur = ctr6.first_object; cur->next_object; cur = cur->next_object) {}
 			cur->next_object = ctr6_chunk->first_object;
 
-			/* TODO: store the chunk of linked_attributes if needed */
+			if (ctr6_chunk->linked_attributes_count != 0) {
+				uint32_t i;
+				ctr6.linked_attributes = talloc_realloc(mem_ctx, ctr6.linked_attributes,
+								       struct drsuapi_DsReplicaLinkedAttribute,
+								       ctr6.linked_attributes_count + ctr6_chunk->linked_attributes_count);
+				for (i = 0; i < ctr6_chunk->linked_attributes_count; i++) {
+					ctr6.linked_attributes[ctr6.linked_attributes_count++] = ctr6_chunk->linked_attributes[i];
+				}
+			}
 		}
 
 		/* prepare for next request */
