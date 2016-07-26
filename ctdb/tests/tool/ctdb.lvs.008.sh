@@ -13,7 +13,7 @@ EOF
 setup_lvs <<EOF
 EOF
 
-setup_ctdb <<EOF
+setup_ctdbd <<EOF
 NODEMAP
 0       192.168.20.41   0x1     CURRENT RECMASTER
 1       192.168.20.42   0x0
