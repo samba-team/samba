@@ -410,7 +410,8 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 				    struct ldb_message *msg,
 				    struct dsdb_dn *dsdb_dn,
 				    struct drsuapi_DsReplicaLinkedAttribute **la_list,
-				    uint32_t *la_count)
+				    uint32_t *la_count,
+				    bool is_schema_nc)
 {
 	struct drsuapi_DsReplicaLinkedAttribute *la;
 	bool active;
@@ -482,7 +483,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 			return WERR_OK;
 		}
 	}
-	la->attid = dsdb_attribute_get_attid(sa, false);
+	la->attid = dsdb_attribute_get_attid(sa, is_schema_nc);
 	la->flags = active?DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE:0;
 
 	status = dsdb_get_extended_dn_uint32(dsdb_dn->dn, &la->meta_data.version, "RMD_VERSION");
@@ -531,6 +532,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       TALLOC_CTX *mem_ctx,
 				       struct ldb_dn *ncRoot_dn,
+				       bool is_schema_nc,
 				       struct dsdb_schema *schema,
 				       uint64_t highest_usn,
 				       uint32_t replica_flags,
@@ -594,8 +596,9 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				continue;
 			}
 
-			werr = get_nc_changes_add_la(mem_ctx, sam_ctx, schema, sa, msg,
-						     dsdb_dn, la_list, la_count);
+			werr = get_nc_changes_add_la(mem_ctx, sam_ctx, schema,
+						     sa, msg, dsdb_dn, la_list,
+						     la_count, is_schema_nc);
 			if (!W_ERROR_IS_OK(werr)) {
 				talloc_free(tmp_ctx);
 				return werr;
@@ -2097,6 +2100,7 @@ allowed:
 
 		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
 						getnc_state->ncRoot_dn,
+						getnc_state->is_schema_nc,
 						schema, getnc_state->min_usn,
 						req10->replica_flags,
 						msg,
