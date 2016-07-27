@@ -20,5 +20,4 @@ pnn:0 192.168.20.41    OK (THIS NODE)
 pnn:1 192.168.20.42    OK
 pnn:2 192.168.20.43    STOPPED|INACTIVE
 EOF
-EOF
 simple_test_other nodestatus all
