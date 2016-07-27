@@ -1231,6 +1231,23 @@ bld.SAMBA3_BINARY('test_mdsparser_es',
                  enabled=bld.env.spotlight_backend_es,
                  for_selftest=True)
 
+wsp_to_deps = '''
+              talloc
+              CMDLINE_S3
+              smbd_base
+              NDR_WSP_DATA
+              WSP_UTIL
+              RPCCLI_WSP
+              WSP_BACKEND
+              LIBSAMBA_WSP
+              WSP_GSS
+              '''
+
+bld.SAMBA3_BINARY('wsp-to',
+                 source='utils/wsp-to.c',
+                 deps=wsp_to_deps,
+                 enabled=bld.env.with_wsp)
+
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
                  deps='''
