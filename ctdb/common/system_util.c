@@ -434,11 +434,13 @@ int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
 
 		if (! parse_ip_port(src, &conn[num].src)) {
 			DEBUG(DEBUG_ERR, ("Invalid IP address %s\n", src));
+			talloc_free(conn);
 			return EINVAL;
 		}
 
 		if (! parse_ip_port(dst, &conn[num].dst)) {
 			DEBUG(DEBUG_ERR, ("Invalid IP address %s\n", dst));
+			talloc_free(conn);
 			return EINVAL;
 		}
 
