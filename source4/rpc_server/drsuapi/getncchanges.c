@@ -1804,8 +1804,9 @@ allowed:
 		getnc_state->ncRoot_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
 
 		/* find out if we are to replicate Schema NC */
-		ret = ldb_dn_compare(getnc_state->ncRoot_dn,
-				     ldb_get_schema_basedn(b_state->sam_ctx));
+		ret = ldb_dn_compare_base(ldb_get_schema_basedn(b_state->sam_ctx),
+					  getnc_state->ncRoot_dn);
+
 		getnc_state->is_schema_nc = (0 == ret);
 
 		if (req10->extended_op != DRSUAPI_EXOP_NONE) {
