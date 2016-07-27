@@ -568,8 +568,13 @@ static bool reclock_parse(struct ctdbd_context *ctdb)
 		goto fail;
 	}
 ok:
-	/* Swallow possible blank line following section */
-	fgets(line, sizeof(line), stdin);
+	/* Swallow possible blank line following section.  Picky
+	 * compiler settings don't allow the return value to be
+	 * ignored, so make the compiler happy.
+	 */
+	if (fgets(line, sizeof(line), stdin) == NULL) {
+		;
+	}
 	DEBUG(DEBUG_INFO, ("Parsing reclock done\n"));
 	return true;
 
