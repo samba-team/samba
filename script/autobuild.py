@@ -28,6 +28,7 @@ builddirs = {
     "samba-ctdb" : ".",
     "samba-libs"  : ".",
     "samba-static"  : ".",
+    "samba-test-only"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "talloc"  : "lib/talloc",
@@ -74,6 +75,10 @@ tasks = {
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain") ],
+
+    "samba-test-only" : [ ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
+                          ("make", "make -j", "text/plain"),
+                          ("test", "make test FAIL_IMMEDIATELY=1 TESTS=${TESTS}", "text/plain") ],
 
     # Test cross-compile infrastructure
     "samba-xc" : [ ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
@@ -278,6 +283,7 @@ class builder(object):
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
+        self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
@@ -298,7 +304,10 @@ class buildlist(object):
         self.tail_proc = None
         self.retry = None
         if tasknames == []:
-            tasknames = defaulttasks
+            if options.restrict_tests:
+                tasknames = ["samba-test-only"]
+            else:
+                tasknames = defaulttasks
         else:
             # If we are only running one test,
             # do not sleep randomly to wait for it to start
@@ -555,6 +564,8 @@ parser.add_option("", "--log-base", help="location where the logs can be found (
                   default=gitroot, type='str')
 parser.add_option("", "--attach-logs", help="Attach logs to mails sent on success/failure?",
                   default=False, action="store_true")
+parser.add_option("", "--restrict-tests", help="run as make test with this TESTS= regex",
+                  default='')
 
 def send_email(subject, text, log_tar):
     outer = MIMEMultipart()
@@ -598,6 +609,10 @@ A summary of the autobuild process is here:
 
   %s/autobuild.log
 ''' % (platform.node(), elapsed_minutes, failed_task, errstr, log_base)
+
+    if options.restrict_tests:
+        text += """
+The build was restricted to tests matching %s\n""" % options.restrict_tests
 
     if failed_task != 'rebase':
         text += '''
@@ -649,6 +664,10 @@ Dear Developer,
 Your autobuild on %s has succeeded after %.1f minutes.
 
 ''' % (platform.node(), elapsed_time / 60.)
+
+    if options.restrict_tests:
+        text += """
+The build was restricted to tests matching %s\n""" % options.restrict_tests
 
     if options.keeplogs:
         text += '''
