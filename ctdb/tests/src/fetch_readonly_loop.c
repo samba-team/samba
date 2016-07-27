@@ -233,8 +233,7 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_client_init(mem_ctx, ev, opts->socket, &client);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to initialize client, %s\n",
-			strerror(ret));
+		fprintf(stderr, "Failed to initialize client, ret=%d\n", ret);
 		exit(1);
 	}
 
