@@ -142,7 +142,9 @@ static void ping_pong(int fd, int num_locks)
 	val = (unsigned char *)calloc(num_locks+1, sizeof(unsigned char));
 	if (val == NULL) {
 		printf("calloc failed\n");
-		munmap(p, num_locks+1);
+		if (use_mmap) {
+			munmap(p, num_locks+1);
+		}
 		return;
 	}
 
