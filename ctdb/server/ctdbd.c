@@ -178,6 +178,10 @@ int main(int argc, const char *argv[])
 	fault_setup();
 
 	ev = tevent_context_init(NULL);
+	if (ev == NULL) {
+		DEBUG(DEBUG_ALERT,("tevent_context_init() failed\n"));
+		exit(1);
+	}
 	tevent_loop_allow_nesting(ev);
 
 	ctdb = ctdb_cmdline_init(ev);

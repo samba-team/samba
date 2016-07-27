@@ -1260,6 +1260,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 
 	ctdb->ev = tevent_context_init(NULL);
+	if (ctdb->ev == NULL) {
+		DEBUG(DEBUG_ALERT,("tevent_context_init() failed\n"));
+		exit(1);
+	}
 	tevent_loop_allow_nesting(ctdb->ev);
 	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
 	ret = ctdb_init_tevent_logging(ctdb);
@@ -1845,6 +1849,10 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 
 	/* get a new event context */
 	ctdb->ev = tevent_context_init(ctdb);
+	if (ctdb->ev == NULL) {
+		DEBUG(DEBUG_ALERT,("tevent_context_init() failed\n"));
+		exit(1);
+	}
 	tevent_loop_allow_nesting(ctdb->ev);
 
 	/* Connect to main CTDB daemon */
