@@ -1106,7 +1106,8 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 	    echo 0 >"$_rc_file"
 	fi
 
-	if [ $restart_every -gt 0 -a $(($_numfails % $restart_every)) -eq 0 ] ; then
+	if [ $restart_every -gt 0 ] && \
+		   [ $(($_numfails % $restart_every)) -eq 0 ] ; then
 	    if ! $_unhealthy ; then
 		echo "WARNING: ${_rpc_check_out}" >>"$_out"
 	    fi
