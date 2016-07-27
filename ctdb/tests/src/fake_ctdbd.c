@@ -1283,7 +1283,7 @@ static void control_get_dbmap(TALLOC_CTX *mem_ctx,
 	}
 
 	dbmap->num = ctdb->db_map->num_dbs;
-	dbmap->dbs = talloc_array(dbmap, struct ctdb_dbid, dbmap->num);
+	dbmap->dbs = talloc_zero_array(dbmap, struct ctdb_dbid, dbmap->num);
 	if (dbmap->dbs == NULL) {
 		goto fail;
 	}
