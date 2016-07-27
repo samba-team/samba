@@ -4383,6 +4383,10 @@ int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...
 
 	/* get a new event context */
 	ctdb->ev = event_context_init(ctdb);
+	if (ctdb->ev == NULL) {
+		DEBUG(DEBUG_ALERT,("tevent_context_init() failed\n"));
+		exit(1);
+	}
 	tevent_loop_allow_nesting(ctdb->ev);
 
 	/* Connect to main CTDB daemon */

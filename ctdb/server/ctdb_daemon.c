@@ -1241,6 +1241,10 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 
 	ctdb->ev = event_context_init(NULL);
+	if (ctdb->ev == NULL) {
+		DEBUG(DEBUG_ALERT,("tevent_context_init() failed\n"));
+		exit(1);
+	}
 	tevent_loop_allow_nesting(ctdb->ev);
 	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
 	ret = ctdb_init_tevent_logging(ctdb);
