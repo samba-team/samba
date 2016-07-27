@@ -66,9 +66,6 @@ struct dsdb_control_current_partition {
 
 
 #define DSDB_CONTROL_REPLICATED_UPDATE_OID "1.3.6.1.4.1.7165.4.3.3"
-struct dsdb_control_replicated_update {
-	uint32_t dsdb_repl_flags;
-};
 
 #define DSDB_CONTROL_DN_STORAGE_FORMAT_OID "1.3.6.1.4.1.7165.4.3.4"
 /* DSDB_CONTROL_DN_STORAGE_FORMAT_OID has NULL data and behaves very

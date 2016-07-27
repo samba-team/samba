@@ -5886,7 +5886,6 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 	uint32_t i;
 	struct replmd_private *replmd_private =
 		talloc_get_type(ldb_module_get_private(module), struct replmd_private);
-	struct dsdb_control_replicated_update *rep_update;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -5927,15 +5926,7 @@ static int replmd_extended_replicated_objects(struct ldb_module *module, struct 
 		if (!req->controls) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 	}
 
-	/* This allows layers further down to know if a change came in
-	   over replication and what the replication flags were */
-	rep_update = talloc_zero(ar, struct dsdb_control_replicated_update);
-	if (rep_update == NULL) {
-		return ldb_module_oom(module);
-	}
-	rep_update->dsdb_repl_flags = objs->dsdb_repl_flags;
-
-	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, rep_update);
+	ret = ldb_request_add_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID, false, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
