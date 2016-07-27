@@ -11,7 +11,8 @@ remove_socket ()
 
 test_cleanup remove_socket
 
-if [ $EUID -eq 0 ] ; then
+uid=$(id -u)
+if [ "$uid" -eq 0 ] ; then
     ok "../common/system_linux.c:607 interface 'fake' not found"
 else
     ok "../common/system_linux.c:601 failed to open raw socket"
