@@ -292,7 +292,7 @@ class builder(object):
 class buildlist(object):
     '''handle build of multiple directories'''
 
-    def __init__(self, tasklist, tasknames, rebase_url, rebase_branch="master"):
+    def __init__(self, tasknames, rebase_url, rebase_branch="master"):
         global tasks
         self.tlist = []
         self.tail_proc = None
@@ -718,7 +718,7 @@ while True:
                           'rebase on %s failed' % options.branch,
                           elapsed_time, log_base=options.log_base)
             sys.exit(1)
-        blist = buildlist(tasks, args, options.rebase, rebase_branch=options.branch)
+        blist = buildlist(args, options.rebase, rebase_branch=options.branch)
         if options.tail:
             blist.start_tail()
         (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
