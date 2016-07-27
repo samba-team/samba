@@ -272,6 +272,55 @@ struct la_backlink {
 };
 
 /*
+  a ldb_modify request operating on modules below the
+  current module
+ */
+static int linked_attr_modify(struct ldb_module *module,
+			      const struct ldb_message *message,
+			      struct ldb_request *parent)
+{
+	struct ldb_request *mod_req;
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	struct ldb_result *res;
+
+	res = talloc_zero(tmp_ctx, struct ldb_result);
+	if (!res) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+
+	ret = ldb_build_mod_req(&mod_req, ldb, tmp_ctx,
+				message,
+				NULL,
+				res,
+				ldb_modify_default_callback,
+				parent);
+	LDB_REQ_SET_LOCATION(mod_req);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = ldb_request_add_control(mod_req, DSDB_CONTROL_REPLICATED_UPDATE_OID,
+				      false, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Run the new request */
+	ret = ldb_next_request(module, mod_req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(mod_req->handle, LDB_WAIT_ALL);
+	}
+
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/*
   process a backlinks we accumulated during a transaction, adding and
   deleting the backlinks from the target objects
  */
@@ -6349,7 +6398,7 @@ linked_attributes[0]:
 
 	old_el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
+	ret = linked_attr_modify(module, msg, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),
