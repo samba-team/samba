@@ -158,7 +158,7 @@ static int socket_client_close(int client)
 static int fork_helper(void)
 {
 	pid_t pid;
-	int i, client, max_rounds = 10;
+	int client;
 
 	pid = fork();
 	assert(pid != -1);
@@ -166,9 +166,6 @@ static int fork_helper(void)
 	if (pid == 0) { // Child
 		client = socket_client_connect();
 		socket_client_write(client);
-		for (i = 1 ; i <= max_rounds ; i++ ) {
-			sleep(1);
-		}
 		socket_client_close(client);
 		exit(0);
 	} else {
@@ -249,13 +246,13 @@ int main(int argc, const char *argv[])
 	ret = socket_server_create();
 	assert(ret == 0);
 
-	ret = fork_helper();
-	assert(ret == 0);
-
 	/* FIXME: Test tcp_checksum6, tcp_checksum */
 	/* FIXME: Test ctdb_sys_send_arp, ctdb_sys_send_tcp */
 	/* FIXME: Test ctdb_sys_{open,close}_capture_socket, ctdb_sys_read_tcp_packet */
 	test_ctdb_sys_check_iface_exists();
+
+	ret = fork_helper();
+	assert(ret == 0);
 	test_ctdb_get_peer_pid();
 
 	ret = socket_server_close();
