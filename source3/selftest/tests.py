@@ -206,6 +206,7 @@ for env in ["fileserver"]:
     try:
         config_h = os.environ["CONFIG_H"]
     except KeyError:
+        samba4bindir = bindir()
         config_h = os.path.join(samba4bindir, "default/include/config.h")
 
     # see if libarchive is supported

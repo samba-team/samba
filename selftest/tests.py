@@ -23,6 +23,7 @@ from selftesthelpers import *
 try:
     config_h = os.environ["CONFIG_H"]
 except KeyError:
+    samba4bindir = bindir()
     config_h = os.path.join(samba4bindir, "default/include/config.h")
 
 # define here var to check what we support
