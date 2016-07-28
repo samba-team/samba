@@ -69,6 +69,17 @@ with the same name on different servers.
 
 Schema updates are also handled much more reliably.
 
+samba-tool drs replicate with new options
+-----------------------------------------
+
+samba-tool drs replicate got two new options:
+
+The option '--local-online' will do the DsReplicaSync() via IRPC
+to the local dreplsrv service.
+
+The option '--async-op' will add DRSUAPI_DRS_ASYNC_OP to the
+DsReplicaSync(), which won't wait for the replication result.
+
 replPropertyMetaData Changes
 ----------------------------
 
