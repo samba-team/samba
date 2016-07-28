@@ -286,6 +286,28 @@ CTDB changes
 
 * Improved sample NFS Ganesha call-out
 
+New shadow_copy2 options
+------------------------
+
+shadow:snapprefix
+
+  With growing number of snapshots file-systems need some mechanism to
+  differentiate one set of snapshots from other, e.g. monthly, weekly, manual,
+  special events, etc. Therefore these file-systems provide different ways to tag
+  snapshots, e.g. provide a configurable way to name snapshots, which is not just
+  based on time.  With only shadow:format it is very difficult to filter these
+  snapshots. With this optional parameter, one can specify a variable prefix
+  component for names of the snapshot directories in the file-system. If this
+  parameter is set, together with the shadow:format and shadow:delimiter
+  parameters it determines the possible names of snapshot directories in the
+  file-system. The option only supports Basic Regular Expression (BRE).
+
+shadow:delimiter
+
+  This optional parameter is used as a delimiter between shadow:snapprefix and
+  shadow:format This parameter is used only when shadow:snapprefix is set.
+
+  Default: shadow:delimiter = "_GMT"
 
 
 REMOVED FEATURES
@@ -306,6 +328,8 @@ smb.conf changes
   ntlm auth                     Changed default         no
   only user                     Removed
   password hash gpg key ids     New
+  shadow:snapprefix             New
+  shadow:delimiter              New                     _GMT
   smb2 leases                   Changed default         yes
   username                      Removed
 
