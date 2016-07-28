@@ -137,7 +137,7 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was successful" in out)
 
-    def test_samba_tool_replicate_machine_creds(self):
+    def test_samba_tool_replicate_machine_creds_P(self):
         """Tests 'samba-tool drs replicate -P' command with machine creds."""
 
         # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
@@ -145,6 +145,17 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         out = self.check_output("samba-tool drs replicate -P %s %s %s" % (self.dc1,
                                                                           self.dc2,
                                                                           nc_name))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was successful" in out)
+
+    def test_samba_tool_replicate_machine_creds(self):
+        """Tests 'samba-tool drs replicate' command with implicit machine creds."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was successful.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate %s %s %s" % (self.dc1,
+                                                                       self.dc2,
+                                                                       nc_name))
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was successful" in out)
 
