@@ -34,7 +34,6 @@ from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
 import common
 from samba.join import join_clone
-from samba.messaging import IRPC_CALL_TIMEOUT_INF
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -318,13 +317,15 @@ class cmd_drs_replicate(Command):
             return
 
         if local_online:
-            server_bind = drsuapi.drsuapi("irpc:dreplsrv", lp_ctx=self.lp,
-                                          timeout=IRPC_CALL_TIMEOUT_INF)
+            server_bind = drsuapi.drsuapi("irpc:dreplsrv", lp_ctx=self.lp)
             server_bind_handle = misc.policy_handle()
         else:
             drsuapi_connect(self)
             server_bind = self.drsuapi
             server_bind_handle = self.drsuapi_handle
+
+        # Give the sync replication 5 minutes time
+        server_bind.request_timeout = 5 * 60
 
         samdb_connect(self)
 
