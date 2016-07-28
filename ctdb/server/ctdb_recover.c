@@ -1492,6 +1492,7 @@ int32_t ctdb_control_receive_records(struct ctdb_context *ctdb,
 		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 			DEBUG(DEBUG_CRIT, (__location__ " bad ltdb record "
 					   "in indata\n"));
+			talloc_free(records);
 			return -1;
 		}
 
