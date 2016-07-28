@@ -172,6 +172,31 @@ static PyObject *py_iface_user_session_key(PyObject *obj, void *closure)
 	return session_key_obj;
 }
 
+static PyObject *py_iface_get_timeout(PyObject *obj, void *closure)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
+	uint32_t timeout;
+
+	timeout = dcerpc_binding_handle_set_timeout(iface->binding_handle, 0);
+	dcerpc_binding_handle_set_timeout(iface->binding_handle, timeout);
+
+	return PyLong_FromUnsignedLong(timeout);
+}
+
+static int py_iface_set_timeout(PyObject *obj, PyObject *value, void *closure)
+{
+	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)obj;
+	uint32_t timeout;
+
+	timeout = PyLong_AsUnsignedLong(value);
+	if (PyErr_Occurred() != NULL) {
+		return -1;
+	}
+
+	dcerpc_binding_handle_set_timeout(iface->binding_handle, timeout);
+	return 0;
+}
+
 static PyGetSetDef dcerpc_interface_getsetters[] = {
 	{ discard_const_p(char, "server_name"), py_iface_server_name, NULL,
 	  discard_const_p(char, "name of the server, if connected over SMB") },
@@ -183,12 +208,7 @@ static PyGetSetDef dcerpc_interface_getsetters[] = {
 	  discard_const_p(char, "session key (as used for blob encryption on LSA and SAMR)") },
 	{ discard_const_p(char, "user_session_key"), py_iface_user_session_key, NULL,
 	  discard_const_p(char, "user_session key (as used for blob encryption on DRSUAPI)") },
-	{ NULL }
-};
-
-static PyMemberDef dcerpc_interface_members[] = {
-	{ discard_const_p(char, "request_timeout"), T_INT, 
-	  offsetof(struct dcerpc_pipe, request_timeout), 0,
+	{ discard_const_p(char, "request_timeout"), py_iface_get_timeout, py_iface_set_timeout,
 	  discard_const_p(char, "request timeout, in seconds") },
 	{ NULL }
 };
@@ -322,7 +342,6 @@ static PyTypeObject dcerpc_InterfaceType = {
 	.tp_basicsize = sizeof(dcerpc_InterfaceObject),
 	.tp_dealloc = dcerpc_interface_dealloc,
 	.tp_getset = dcerpc_interface_getsetters,
-	.tp_members = dcerpc_interface_members,
 	.tp_methods = dcerpc_interface_methods,
 	.tp_doc = "ClientConnection(binding, syntax, lp_ctx=None, credentials=None) -> connection\n"
 "\n"
