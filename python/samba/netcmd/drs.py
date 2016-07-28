@@ -300,11 +300,12 @@ class cmd_drs_replicate(Command):
         Option("--full-sync", help="resync all objects", action="store_true"),
         Option("--local", help="pull changes directly into the local database (destination DC is ignored)", action="store_true"),
         Option("--local-online", help="pull changes into the local database (destination DC is ignored) as a normal online replication", action="store_true"),
+        Option("--async-op", help="use ASYNC_OP for the replication", action="store_true"),
         ]
 
     def run(self, DEST_DC, SOURCE_DC, NC,
             add_ref=False, sync_forced=False, sync_all=False, full_sync=False,
-            local=False, local_online=False,
+            local=False, local_online=False, async_op=False,
             sambaopts=None, credopts=None, versionopts=None, server=None):
 
         self.server = DEST_DC
@@ -324,8 +325,9 @@ class cmd_drs_replicate(Command):
             server_bind = self.drsuapi
             server_bind_handle = self.drsuapi_handle
 
-        # Give the sync replication 5 minutes time
-        server_bind.request_timeout = 5 * 60
+        if not async_op:
+            # Give the sync replication 5 minutes time
+            server_bind.request_timeout = 5 * 60
 
         samdb_connect(self)
 
@@ -359,12 +361,17 @@ class cmd_drs_replicate(Command):
             req_options |= drsuapi.DRSUAPI_DRS_SYNC_ALL
         if full_sync:
             req_options |= drsuapi.DRSUAPI_DRS_FULL_SYNC_NOW
+        if async_op:
+            req_options |= drsuapi.DRSUAPI_DRS_ASYNC_OP
 
         try:
             drs_utils.sendDsReplicaSync(server_bind, server_bind_handle, source_dsa_guid, NC, req_options)
         except drs_utils.drsException, estr:
             raise CommandError("DsReplicaSync failed", estr)
-        self.message("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
+        if async_op:
+            self.message("Replicate from %s to %s was started." % (SOURCE_DC, DEST_DC))
+        else:
+            self.message("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
 
 
 
