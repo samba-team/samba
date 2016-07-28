@@ -27,7 +27,7 @@
 
 static char *progname = NULL;
 
-static char fcntl_lock(const char *file)
+static char fcntl_lock(const char *file, int *outfd)
 {
 	int fd;
 	struct flock lock;
@@ -62,6 +62,8 @@ static char fcntl_lock(const char *file)
 		return '3';
 	}
 
+	*outfd = fd;
+
 	return '0';
 }
 
@@ -70,6 +72,7 @@ int main(int argc, char *argv[])
 	char result;
 	int ppid;
 	const char *file = NULL;
+	int fd = -1;
 
 	progname = argv[0];
 
@@ -81,10 +84,14 @@ int main(int argc, char *argv[])
 	ppid = getppid();
 	file = argv[1];
 
-	result = fcntl_lock(file);
+	result = fcntl_lock(file, &fd);
 	sys_write(STDOUT_FILENO, &result, 1);
 
 	ctdb_wait_for_process_to_exit(ppid);
+
+	if (fd != -1) {
+		close(fd);
+	}
 
 	return 0;
 }
