@@ -103,6 +103,18 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was successful" in out)
 
+    def test_samba_tool_replicate_async(self):
+        """Tests 'samba-tool drs replicate --async-op' command."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was started.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate --async-op %s %s %s %s" % (self.dc1,
+                                                                          self.dc2,
+                                                                          nc_name,
+                                                                          self.cmdline_creds))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was started" in out)
+
     def test_samba_tool_replicate_local_online(self):
         """Tests 'samba-tool drs replicate --local-online' command."""
 
@@ -113,6 +125,17 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
                                                                                       nc_name))
         self.assertTrue("Replicate from" in out)
         self.assertTrue("was successful" in out)
+
+    def test_samba_tool_replicate_local_online_async(self):
+        """Tests 'samba-tool drs replicate --local-online --async-op' command."""
+
+        # Output should be like 'Replicate from <DC-SRC> to <DC-DEST> was started.'
+        nc_name = self._get_rootDSE(self.dc1)["defaultNamingContext"]
+        out = self.check_output("samba-tool drs replicate --local-online --async-op %s %s %s" % (self.dc1,
+                                                                                      self.dc2,
+                                                                                      nc_name))
+        self.assertTrue("Replicate from" in out)
+        self.assertTrue("was started" in out)
 
     def test_samba_tool_replicate_local_machine_creds(self):
         """Tests 'samba-tool drs replicate --local -P' command (uses machine creds)."""
