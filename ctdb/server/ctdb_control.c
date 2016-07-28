@@ -565,10 +565,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_get_ban_state(ctdb, outdata);
 
 	case CTDB_CONTROL_SET_DB_PRIORITY:
-		return control_not_implemented("SET_DB_PRIORITY", "");
+		return control_not_implemented("SET_DB_PRIORITY", NULL);
 
 	case CTDB_CONTROL_GET_DB_PRIORITY:
-		return control_not_implemented("GET_DB_PRIORITY", "");
+		return control_not_implemented("GET_DB_PRIORITY", NULL);
 
 	case CTDB_CONTROL_TRANSACTION_CANCEL:
 		return control_not_implemented("TRANSACTION_CANCEL", NULL);
