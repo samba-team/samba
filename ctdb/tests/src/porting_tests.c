@@ -132,16 +132,6 @@ static int socket_client_connect(void)
 	return client;
 }
 
-static int socket_client_write(int client)
-{
-	int ret;
-
-	ret = sys_write(client, "\0", 1);
-	assert(ret == 1);
-
-	return 0;
-}
-
 static int socket_client_close(int client)
 {
 	int ret;
@@ -164,8 +154,11 @@ static int fork_helper(void)
 	assert(pid != -1);
 
 	if (pid == 0) { // Child
+		pid = getppid();
 		client = socket_client_connect();
-		socket_client_write(client);
+		while (kill(pid, 0) == 0) {
+			sleep(1);
+		}
 		socket_client_close(client);
 		exit(0);
 	} else {
@@ -203,6 +196,8 @@ static int test_ctdb_get_peer_pid(void)
 	assert(ret == 0);
 
 	assert(peer_pid == globals.helper_pid);
+
+	kill(peer_pid, SIGTERM);
 
 	close(fd);
 	return 0;
