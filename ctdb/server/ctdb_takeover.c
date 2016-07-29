@@ -763,12 +763,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (vnn->iface == NULL && vnn->pnn == -1 && have_ip && best_iface != NULL) {
-		DEBUG(DEBUG_ERR,("Taking over newly created ip\n"));
-		have_ip = false;
-	}
-
-
 	if (vnn->iface == NULL && have_ip) {
 		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
 				  "but we have no interface assigned, has someone manually configured it? Ignore for now.\n",
