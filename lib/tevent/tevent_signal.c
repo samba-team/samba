@@ -95,7 +95,6 @@ static uint32_t tevent_sig_count(struct tevent_sigcounter s)
 */
 static void tevent_common_signal_handler(int signum)
 {
-	char c = 0;
 	struct tevent_common_signal_list *sl;
 	struct tevent_context *ev = NULL;
 	int saved_errno = errno;
@@ -106,13 +105,8 @@ static void tevent_common_signal_handler(int signum)
 	/* Write to each unique event context. */
 	for (sl = sig_state->sig_handlers[signum]; sl; sl = sl->next) {
 		if (sl->se->event_ctx && sl->se->event_ctx != ev) {
-			ssize_t ret;
-
 			ev = sl->se->event_ctx;
-			/* doesn't matter if this pipe overflows */
-			do {
-				ret = write(ev->pipe_fds[1], &c, 1);
-			} while (ret == -1 && errno == EINTR);
+			tevent_common_wakeup(ev);
 		}
 	}
 
@@ -198,16 +192,6 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 		struct tevent_context *ev = se->event_ctx;
 
 		DLIST_REMOVE(ev->signal_events, se);
-
-		if (ev->signal_events == NULL && ev->pipe_fde != NULL) {
-			/*
-			 * This was the last signal. Destroy the pipe.
-			 */
-			TALLOC_FREE(ev->pipe_fde);
-
-			close(ev->pipe_fds[0]);
-			close(ev->pipe_fds[1]);
-		}
 	}
 
 	talloc_free(sl);
@@ -233,21 +217,6 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 }
 
 /*
-  this is part of the pipe hack needed to avoid the signal race condition
-*/
-static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-				uint16_t flags, void *_private)
-{
-	ssize_t ret;
-
-	char c[16];
-	/* its non-blocking, doesn't matter if we read too much */
-	do {
-		ret = read(fde->fd, c, sizeof(c));
-	} while (ret == -1 && errno == EINTR);
-}
-
-/*
   add a signal event
   return NULL on failure (memory allocation error)
 */
@@ -263,6 +232,13 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	struct tevent_signal *se;
 	struct tevent_common_signal_list *sl;
 	sigset_t set, oldset;
+	int ret;
+
+	ret = tevent_common_wakeup_init(ev);
+	if (ret != 0) {
+		errno = ret;
+		return NULL;
+	}
 
 	if (signum >= TEVENT_NUM_SIGNALS) {
 		errno = EINVAL;
@@ -302,26 +278,6 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	if (!talloc_reference(se, sig_state)) {
 		talloc_free(se);
 		return NULL;
-	}
-
-	/* we need to setup the pipe hack handler if not already
-	   setup */
-	if (ev->pipe_fde == NULL) {
-		if (pipe(ev->pipe_fds) == -1) {
-			talloc_free(se);
-			return NULL;
-		}
-		ev_set_blocking(ev->pipe_fds[0], false);
-		ev_set_blocking(ev->pipe_fds[1], false);
-		ev->pipe_fde = tevent_add_fd(ev, ev, ev->pipe_fds[0],
-					     TEVENT_FD_READ,
-					     signal_pipe_handler, NULL);
-		if (!ev->pipe_fde) {
-			close(ev->pipe_fds[0]);
-			close(ev->pipe_fds[1]);
-			talloc_free(se);
-			return NULL;
-		}
 	}
 
 	/* only install a signal handler if not already installed */

@@ -620,6 +620,28 @@ done:
 	return ret;
 }
 
+bool tevent_common_have_events(struct tevent_context *ev)
+{
+	if (ev->fd_events != NULL) {
+		if (ev->fd_events != ev->pipe_fde) {
+			return true;
+		}
+		if (ev->fd_events->next != NULL) {
+			return true;
+		}
+
+		/*
+		 * At this point we just have the wakeup pipe event as
+		 * the only fd_event. That one does not count as a
+		 * regular event, so look at the other event types.
+		 */
+	}
+
+	return ((ev->timer_events != NULL) ||
+		(ev->immediate_events != NULL) ||
+		(ev->signal_events != NULL));
+}
+
 /*
   return on failure or (with 0) if all fd events are removed
 */
@@ -629,10 +651,7 @@ int tevent_common_loop_wait(struct tevent_context *ev,
 	/*
 	 * loop as long as we have events pending
 	 */
-	while (ev->fd_events ||
-	       ev->timer_events ||
-	       ev->immediate_events ||
-	       ev->signal_events) {
+	while (tevent_common_have_events(ev)) {
 		int ret;
 		ret = _tevent_loop_once(ev, location);
 		if (ret != 0) {
@@ -669,4 +688,64 @@ int tevent_re_initialise(struct tevent_context *ev)
 	tevent_common_context_destructor(ev);
 
 	return ev->ops->context_init(ev);
+}
+
+static void wakeup_pipe_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags, void *_private)
+{
+	ssize_t ret;
+
+	char c[16];
+	/* its non-blocking, doesn't matter if we read too much */
+	do {
+		ret = read(fde->fd, c, sizeof(c));
+	} while (ret == -1 && errno == EINTR);
+}
+
+/*
+ * Initialize the wakeup pipe and pipe fde
+ */
+
+int tevent_common_wakeup_init(struct tevent_context *ev)
+{
+	int ret;
+
+	if (ev->pipe_fde != NULL) {
+		return 0;
+	}
+
+	ret = pipe(ev->pipe_fds);
+	if (ret == -1) {
+		return errno;
+	}
+	ev_set_blocking(ev->pipe_fds[0], false);
+	ev_set_blocking(ev->pipe_fds[1], false);
+
+	ev->pipe_fde = tevent_add_fd(ev, ev, ev->pipe_fds[0],
+				     TEVENT_FD_READ,
+				     wakeup_pipe_handler, NULL);
+	if (ev->pipe_fde == NULL) {
+		close(ev->pipe_fds[0]);
+		close(ev->pipe_fds[1]);
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
+int tevent_common_wakeup(struct tevent_context *ev)
+{
+	ssize_t ret;
+
+	if (ev->pipe_fds[1] == -1) {
+		return ENOTCONN;
+	}
+
+	do {
+		char c = '\0';
+		ret = write(ev->pipe_fds[1], &c, 1);
+	} while ((ret == -1) && (errno == EINTR));
+
+	return 0;
 }

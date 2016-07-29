@@ -328,6 +328,10 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 				      const char *location);
 bool tevent_common_loop_immediate(struct tevent_context *ev);
 
+bool tevent_common_have_events(struct tevent_context *ev);
+int tevent_common_wakeup_init(struct tevent_context *ev);
+int tevent_common_wakeup(struct tevent_context *ev);
+
 struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 					       TALLOC_CTX *mem_ctx,
 					       int signum,
