@@ -861,7 +861,8 @@ static NTSTATUS ipv6_sendto(struct socket_context *sock,
 		
 		ZERO_STRUCT(srv_addr);
 		addr                     = interpret_addr6(dest_addr->addr);
-		if (addr.s6_addr == 0) {
+		if (memcmp(&addr.s6_addr, &in6addr_any,
+			   sizeof(addr.s6_addr)) == 0) {
 			return NT_STATUS_HOST_UNREACHABLE;
 		}
 		srv_addr.sin6_addr = addr;
