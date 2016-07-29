@@ -1699,7 +1699,7 @@ bool ldb_dn_remove_child_components(struct ldb_dn *dn, unsigned int num)
  */
 bool ldb_dn_replace_components(struct ldb_dn *dn, struct ldb_dn *new_dn)
 {
-	int i;
+	unsigned int i;
 
 	if ( ! ldb_dn_validate(dn) || ! ldb_dn_validate(new_dn)) {
 		return false;
@@ -1904,11 +1904,11 @@ int ldb_dn_set_component(struct ldb_dn *dn, int num,
 		return LDB_ERR_OTHER;
 	}
 
-	if (num >= dn->comp_num) {
+	if (num < 0) {
 		return LDB_ERR_OTHER;
 	}
 
-	if (num < 0) {
+	if ((unsigned)num >= dn->comp_num) {
 		return LDB_ERR_OTHER;
 	}
 
