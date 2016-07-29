@@ -225,6 +225,13 @@ updateip)
 	get_iface_ip_maskbits "$_oiface" "$_ip" "$_maskbits"
 	oiface="$iface"
 
+	# Could check maskbits too.  However, that should never change
+	# so we want to notice if it does.
+	if [ "$oiface" = "$niface" ] ; then
+		echo "Redundant \"updateip\" - ${ip} already on ${niface}"
+		exit 0
+	fi
+
 	ip_block "$ip" "$oiface"
 
 	delete_ip_from_iface "$oiface" "$ip" "$maskbits" 2>/dev/null
