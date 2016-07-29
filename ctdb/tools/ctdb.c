@@ -4951,7 +4951,7 @@ static int control_setlmasterrole(TALLOC_CTX *mem_ctx,
 				  struct ctdb_context *ctdb,
 				  int argc, const char **argv)
 {
-	uint32_t lmasterrole;
+	uint32_t lmasterrole = 0;
 	int ret;
 
 	if (argc != 1) {
@@ -4979,7 +4979,7 @@ static int control_setrecmasterrole(TALLOC_CTX *mem_ctx,
 				    struct ctdb_context *ctdb,
 				    int argc, const char **argv)
 {
-	uint32_t recmasterrole;
+	uint32_t recmasterrole = 0;
 	int ret;
 
 	if (argc != 1) {
