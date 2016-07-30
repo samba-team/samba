@@ -2,11 +2,11 @@
 
 if bld.env.WITH_PTHREADPOOL:
     bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
-                         source='pthreadpool.c',
+                         source='pthreadpool.c pthreadpool_pipe.c',
                          deps='pthread rt replace')
 else:
     bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
-                         source='pthreadpool_sync.c',
+                         source='pthreadpool_sync.c pthreadpool_pipe.c',
                          deps='replace')
 
 
