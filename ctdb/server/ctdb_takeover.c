@@ -2147,9 +2147,21 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 				    ctdb_vnn_iface_string(vnn)));
 
 		ctdb_event_script_args(ctdb, CTDB_EVENT_RELEASE_IP, "%s %s %u",
-				  ctdb_vnn_iface_string(vnn),
-				  ctdb_addr_to_str(&vnn->public_address),
-				  vnn->public_netmask_bits);
+				       ctdb_vnn_iface_string(vnn),
+				       ctdb_addr_to_str(&vnn->public_address),
+				       vnn->public_netmask_bits);
+		/* releaseip timeouts are converted to success, so to
+		 * detect failures just check if the IP address is
+		 * still there...
+		 */
+		if (ctdb_sys_have_ip(&vnn->public_address)) {
+			DEBUG(DEBUG_ERR,
+			      (__location__
+			       " IP address %s not released\n",
+			       ctdb_addr_to_str(&vnn->public_address)));
+			vnn->update_in_flight = false;
+			continue;
+		}
 
 		data.dptr = (uint8_t *)talloc_strdup(
 				vnn, ctdb_addr_to_str(&vnn->public_address));
