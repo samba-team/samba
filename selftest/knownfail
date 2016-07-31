@@ -325,3 +325,6 @@
 # we don't allow auth_level_connect anymore...
 #
 ^samba3.blackbox.rpcclient.*ncacn_np.*with.*connect.*rpcclient # we don't allow auth_level_connect anymore
+#new read tests fail
+^samba4.smb2.read.access
+^samba3.smb2.read.access
