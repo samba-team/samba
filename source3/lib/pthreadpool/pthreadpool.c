@@ -17,21 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.h"
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
-#include <assert.h>
-#include <fcntl.h>
+#include "replace.h"
 #include "system/time.h"
 #include "system/filesys.h"
-#include "replace.h"
-
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
+#include "system/threads.h"
+#include <assert.h>
 
 struct pthreadpool_job {
 	int id;
