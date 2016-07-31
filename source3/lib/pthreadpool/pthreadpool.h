@@ -44,8 +44,11 @@ struct pthreadpool;
  * care to not overload the system.
  */
 int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
-		     int (*signal_fn)(int jobid, void *private_data),
-		     void *signal_private_data);
+		     int (*signal_fn)(int jobid,
+				      void (*job_fn)(void *private_data),
+				      void *job_fn_private_data,
+				      void *private_data),
+		     void *signal_fn_private_data);
 
 /**
  * @brief Destroy a pthreadpool

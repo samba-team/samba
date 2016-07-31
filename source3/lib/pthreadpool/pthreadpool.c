@@ -59,8 +59,11 @@ struct pthreadpool {
 	/*
 	 * Indicate job completion
 	 */
-	int (*signal_fn)(int jobid, void *private_data);
-	void *signal_private_data;
+	int (*signal_fn)(int jobid,
+			 void (*job_fn)(void *private_data),
+			 void *job_fn_private_data,
+			 void *private_data);
+	void *signal_fn_private_data;
 
 	/*
 	 * indicator to worker threads that they should shut down
@@ -100,8 +103,11 @@ static void pthreadpool_prep_atfork(void);
  */
 
 int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
-		     int (*signal_fn)(int jobid, void *private_data),
-		     void *signal_private_data)
+		     int (*signal_fn)(int jobid,
+				      void (*job_fn)(void *private_data),
+				      void *job_fn_private_data,
+				      void *private_data),
+		     void *signal_fn_private_data)
 {
 	struct pthreadpool *pool;
 	int ret;
@@ -111,7 +117,7 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		return ENOMEM;
 	}
 	pool->signal_fn = signal_fn;
-	pool->signal_private_data = signal_private_data;
+	pool->signal_fn_private_data = signal_fn_private_data;
 
 	pool->jobs_array_len = 4;
 	pool->jobs = calloc(
@@ -484,7 +490,8 @@ static void *pthreadpool_server(void *arg)
 			assert(res == 0);
 
 			ret = pool->signal_fn(job.id,
-					      pool->signal_private_data);
+					      job.fn, job.private_data,
+					      pool->signal_fn_private_data);
 			if (ret != 0) {
 				pthreadpool_server_exit(pool);
 				pthread_mutex_unlock(&pool->mutex);

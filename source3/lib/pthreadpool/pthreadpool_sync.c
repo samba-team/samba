@@ -26,14 +26,18 @@ struct pthreadpool {
 	 * Indicate job completion
 	 */
 	int (*signal_fn)(int jobid,
+			 void (*job_fn)(void *private_data),
+			 void *job_fn_private_data,
 			 void *private_data);
-	void *signal_private_data;
+	void *signal_fn_private_data;
 };
 
 int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		     int (*signal_fn)(int jobid,
+				      void (*job_fn)(void *private_data),
+				      void *job_fn_private_data,
 				      void *private_data),
-		     void *signal_private_data)
+		     void *signal_fn_private_data)
 {
 	struct pthreadpool *pool;
 
@@ -42,7 +46,7 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		return ENOMEM;
 	}
 	pool->signal_fn = signal_fn;
-	pool->signal_private_data = signal_private_data;
+	pool->signal_fn_private_data = signal_fn_private_data;
 
 	*presult = pool;
 	return 0;
@@ -53,7 +57,8 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 {
 	fn(private_data);
 
-	return pool->signal_fn(job_id, pool->signal_private_data);
+	return pool->signal_fn(job_id, fn, private_data,
+			       pool->signal_fn_private_data);
 }
 
 int pthreadpool_destroy(struct pthreadpool *pool)

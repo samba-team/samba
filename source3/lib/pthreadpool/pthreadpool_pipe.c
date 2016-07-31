@@ -28,7 +28,10 @@ struct pthreadpool_pipe {
 	int pipe_fds[2];
 };
 
-static int pthreadpool_pipe_signal(int jobid, void *private_data);
+static int pthreadpool_pipe_signal(int jobid,
+				   void (*job_fn)(void *private_data),
+				   void *job_private_data,
+				   void *private_data);
 
 int pthreadpool_pipe_init(unsigned max_threads,
 			  struct pthreadpool_pipe **presult)
@@ -62,7 +65,10 @@ int pthreadpool_pipe_init(unsigned max_threads,
 	return 0;
 }
 
-static int pthreadpool_pipe_signal(int jobid, void *private_data)
+static int pthreadpool_pipe_signal(int jobid,
+				   void (*job_fn)(void *private_data),
+				   void *job_private_data,
+				   void *private_data)
 {
 	struct pthreadpool_pipe *pool = private_data;
 	ssize_t written;
