@@ -428,19 +428,20 @@ bool torture_smb2_con_sopt(struct torture_context *tctx,
 	return true;
 }
 
-
 /*
   create and return a handle to a test file
+  with a specific access mask
 */
-NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname, 
-			       struct smb2_handle *handle)
+NTSTATUS torture_smb2_testfile_access(struct smb2_tree *tree, const char *fname,
+				      struct smb2_handle *handle,
+				      uint32_t desired_access)
 {
 	struct smb2_create io;
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
 	io.in.oplock_level = 0;
-	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.desired_access = desired_access;
 	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.share_access = 
@@ -459,17 +460,29 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 }
 
 /*
-  create and return a handle to a test directory
+  create and return a handle to a test file
 */
-NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname, 
-			      struct smb2_handle *handle)
+NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
+			       struct smb2_handle *handle)
+{
+	return torture_smb2_testfile_access(tree, fname, handle,
+					    SEC_RIGHTS_FILE_ALL);
+}
+
+/*
+  create and return a handle to a test directory
+  with specific desired access
+*/
+NTSTATUS torture_smb2_testdir_access(struct smb2_tree *tree, const char *fname,
+				     struct smb2_handle *handle,
+				     uint32_t desired_access)
 {
 	struct smb2_create io;
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
 	io.in.oplock_level = 0;
-	io.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	io.in.desired_access = desired_access;
 	io.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
 	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE;
@@ -484,6 +497,15 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	return NT_STATUS_OK;
 }
 
+/*
+  create and return a handle to a test directory
+*/
+NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
+			      struct smb2_handle *handle)
+{
+	return torture_smb2_testdir_access(tree, fname, handle,
+					   SEC_RIGHTS_DIR_ALL);
+}
 
 /*
   create a complex file using SMB2, to make it easier to
