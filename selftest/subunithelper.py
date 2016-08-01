@@ -24,7 +24,11 @@ from samba.subunit.run import TestProtocolClient
 from samba.subunit import iso8601
 import unittest
 
-VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error', 'uxsuccess', 'testsuite-uxsuccess']
+VALID_RESULTS = set(['success', 'successful', 'failure', 'fail', 'skip',
+                     'knownfail', 'error', 'xfail', 'skip-testsuite',
+                     'testsuite-failure', 'testsuite-xfail',
+                     'testsuite-success', 'testsuite-error',
+                     'uxsuccess', 'testsuite-uxsuccess'])
 
 class TestsuiteEnabledTestResult(unittest.TestResult):
 
