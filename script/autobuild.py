@@ -41,6 +41,9 @@ builddirs = {
 
 defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
+if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
+    defaulttasks.remove("samba-o3")
+
 samba_configure_params = " --picky-developer ${PREFIX} ${EXTRA_PYTHON} --with-profiling-data"
 
 samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
