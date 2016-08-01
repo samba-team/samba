@@ -162,6 +162,7 @@ static void transaction_loop_started(struct tevent_req *subreq)
 	ret = ctdb_transaction_fetch_record(state->h, state->key,
 					    state, &data);
 	if (ret != 0) {
+		fprintf(stderr, "transaction fetch record failed\n");
 		tevent_req_error(req, ret);
 		return;
 	}
@@ -246,6 +247,7 @@ static void transaction_loop_each_second(struct tevent_req *subreq)
 	status = tevent_wakeup_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (! status) {
+		fprintf(stderr, "tevent wakeup failed\n");
 		tevent_req_error(req, EIO);
 		return;
 	}
@@ -390,7 +392,7 @@ int main(int argc, const char *argv[])
 
 	status = transaction_loop_recv(req, &ret);
 	if (! status) {
-		fprintf(stderr, "transaction loop test failed\n");
+		fprintf(stderr, "transaction loop test failed, ret=%d\n", ret);
 		exit(1);
 	}
 
