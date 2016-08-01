@@ -287,14 +287,7 @@ class FilterOps(unittest.TestResult):
         self._ops.startTest(test)
 
     def _add_prefix(self, test):
-        prefix = ""
-        suffix = ""
-        if self.prefix is not None:
-            prefix = self.prefix
-        if self.suffix is not None:
-            suffix = self.suffix
-
-        return subunit.RemotedTestCase(prefix + test.id() + suffix)
+        return subunit.RemotedTestCase(self.prefix + test.id() + self.suffix)
 
     def addError(self, test, err=None):
         test = self._add_prefix(test)
