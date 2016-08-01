@@ -116,7 +116,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		}
 
 		/* get the mac address */
-		strncpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name)-1);
+		strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
 		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
 		if ( ret < 0 ) {
 			close(s);
@@ -210,7 +210,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 		}
 
 		/* get the mac address */
-		strncpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name)-1);
+		strlcpy(if_hwaddr.ifr_name, iface, sizeof(if_hwaddr.ifr_name));
 		ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
 		if ( ret < 0 ) {
 			close(s);
@@ -602,7 +602,7 @@ bool ctdb_sys_check_iface_exists(const char *iface)
 		return true;
 	}
 
-	strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name)-1);
+	strlcpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name));
 	if (ioctl(s, SIOCGIFINDEX, &ifr) < 0 && errno == ENODEV) {
 		DEBUG(DEBUG_CRIT,(__location__ " interface '%s' not found\n", iface));
 		close(s);
