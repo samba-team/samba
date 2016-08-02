@@ -2360,16 +2360,9 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 		} else {
 			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
 				DEBUG(DEBUG_ERR,
-				      ("IP %s incorrectly on an interface - releasing\n",
+				      ("IP %s incorrectly on an interface\n",
 				       ctdb_addr_to_str(&ips->ips[j].addr)));
-				ret = ctdb_ctrl_release_ip(ctdb,
-							   CONTROL_TIMEOUT(),
-							   CTDB_CURRENT_NODE,
-							   &ips->ips[j]);
-				if (ret != 0) {
-					DEBUG(DEBUG_ERR,
-					      ("Failed to release IP address\n"));
-				}
+				need_takeover_run = true;
 			}
 		}
 	}
