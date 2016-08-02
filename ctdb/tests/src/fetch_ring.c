@@ -270,7 +270,8 @@ static void fetch_ring_finish(struct tevent_req *subreq)
 
 	t = timeval_elapsed(&state->start_time);
 
-	printf("Fetch: %.2f msgs/sec\n", state->msg_count / t);
+	printf("Fetch[%u]: %.2f msgs/sec\n", ctdb_client_pnn(state->client),
+	       state->msg_count / t);
 
 	subreq = ctdb_fetch_lock_send(state, state->ev, state->client,
 				      state->ctdb_db, state->key, false);
