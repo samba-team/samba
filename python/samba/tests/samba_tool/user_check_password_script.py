@@ -54,12 +54,12 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("user", "delete", user["name"],
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Should delete user with bad password.")
+        self.assertCmdSuccess(result, out, err, "Should delete user with bad password.")
 
         (result, out, err) = self.runsubcmd("user", "add", user["name"], good_password,
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Should succeed adding a user with good password.")
+        self.assertCmdSuccess(result, out, err, "Should succeed adding a user with good password.")
 
         # Set password
         (result, out, err) = self.runsubcmd("user", "setpassword", user["name"],
@@ -72,7 +72,7 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
                                             "--newpassword=%s" % good_password,
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Should succeed setting a user's password to a good one.")
+        self.assertCmdSuccess(result, out, err, "Should succeed setting a user's password to a good one.")
 
         # Password=
 
@@ -86,7 +86,7 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
                                             "--newpassword=%s" % good_password + 'XYZ',
                                             "--ipaddress", os.environ["DC_SERVER_IP"],
                                             "-U%s%%%s" % (user["name"], good_password))
-        self.assertCmdSuccess(result, "A user setting their own password to a good one should succeed.")
+        self.assertCmdSuccess(result, out, err, "A user setting their own password to a good one should succeed.")
 
     def _randomUser(self, base={}):
         """create a user with random attribute values, you can specify base attributes"""

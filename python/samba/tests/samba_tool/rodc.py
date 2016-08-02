@@ -66,26 +66,26 @@ class RodcCmdTestCase(SambaToolCmdTest):
     def test_single_by_account_name(self):
         (result, out, err) = self.runsubcmd("rodc", "preload", "sambatool1",
                                             "--server", os.environ["DC_SERVER"])
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool1,CN=Users,%s\n" % self.base_dn)
         self.assertEqual(err, "")
 
     def test_single_by_dn(self):
         (result, out, err) = self.runsubcmd("rodc", "preload", "cn=sambatool2,cn=users,%s" % self.base_dn,
                                             "--server", os.environ["DC_SERVER"])
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool2,CN=Users,%s\n" % self.base_dn)
 
     def test_multi_by_account_name(self):
         (result, out, err) = self.runsubcmd("rodc", "preload", "sambatool1", "sambatool2",
                                             "--server", os.environ["DC_SERVER"])
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool1,CN=Users,%s\nReplicating DN CN=sambatool2,CN=Users,%s\n" % (self.base_dn, self.base_dn))
 
     def test_multi_by_dn(self):
         (result, out, err) = self.runsubcmd("rodc", "preload", "cn=sambatool3,cn=users,%s" % self.base_dn, "cn=sambatool4,cn=users,%s" % self.base_dn,
                                             "--server", os.environ["DC_SERVER"])
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool3,CN=Users,%s\nReplicating DN CN=sambatool4,CN=Users,%s\n" % (self.base_dn, self.base_dn))
 
     def test_multi_in_file(self):
@@ -93,7 +93,7 @@ class RodcCmdTestCase(SambaToolCmdTest):
         open(tempf, 'w').write("sambatool1\nsambatool2")
         (result, out, err) = self.runsubcmd("rodc", "preload", "--file", tempf,
                                             "--server", os.environ["DC_SERVER"])
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool1,CN=Users,%s\nReplicating DN CN=sambatool2,CN=Users,%s\n" % (self.base_dn, self.base_dn))
         os.unlink(tempf)
 
@@ -103,7 +103,7 @@ class RodcCmdTestCase(SambaToolCmdTest):
                                             "nonexistentuser2",
                                             "--server", os.environ["DC_SERVER"],
                                             "--ignore-errors")
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool5,CN=Users,%s\n" % self.base_dn)
 
     def test_multi_with_missing_name_failure(self):
@@ -118,7 +118,7 @@ class RodcCmdTestCase(SambaToolCmdTest):
                                             "sambatool6", "sambatool5",
                                             "--server", os.environ["DC_SERVER"],
                                             "--ignore-errors")
-        self.assertCmdSuccess(result, "ensuring rodc prefetch ran successfully")
+        self.assertCmdSuccess(result, out, err, "ensuring rodc prefetch ran successfully")
         self.assertEqual(out, "Replicating DN CN=sambatool6,CN=Users,%s\nReplicating DN CN=sambatool5,CN=Users,%s\n" % (self.base_dn, self.base_dn))
 
     def test_multi_without_group_failure(self):

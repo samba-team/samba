@@ -25,7 +25,7 @@ class FsmoCmdTestCase(SambaToolCmdTest):
         """Run fsmo show to see if it errors"""
         (result, out, err) = self.runsubcmd("fsmo", "show")
 
-        self.assertCmdSuccess(result)
+        self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
 
         # Check that the output is sensible

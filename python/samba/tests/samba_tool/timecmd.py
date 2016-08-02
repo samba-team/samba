@@ -25,7 +25,7 @@ class TimeCmdTestCase(SambaToolCmdTest):
     def test_timeget(self):
         """Run time against the server and make sure it looks accurate"""
         (result, out, err) = self.runcmd("time", os.environ["SERVER"])
-        self.assertCmdSuccess(result, "Ensuring time ran successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring time ran successfully")
 
         timefmt = strptime(out, "%a %b %d %H:%M:%S %Y %Z\n")
         servertime = int(mktime(timefmt))

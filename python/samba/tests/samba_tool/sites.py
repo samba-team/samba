@@ -44,7 +44,7 @@ class SitesCmdTestCase(BaseSitesCmdTestCase):
 
         result, out, err = self.runsubcmd("sites", "create", sitename,
                                           "-H", self.dburl, self.creds_string)
-        self.assertCmdSuccess(result)
+        self.assertCmdSuccess(result, out, err)
 
         dnsites = ldb.Dn(self.samdb, "CN=Sites,%s" % self.config_dn)
         dnsite = ldb.Dn(self.samdb, "CN=%s,%s" % (sitename, dnsites))
@@ -89,7 +89,7 @@ class SitesSubnetCmdTestCase(BaseSitesCmdTestCase):
                                               cidr, sitename,
                                               "-H", self.dburl,
                                               self.creds_string)
-            self.assertCmdSuccess(result)
+            self.assertCmdSuccess(result, out, err)
 
             ret = self.samdb.search(base=self.config_dn,
                                     scope=ldb.SCOPE_SUBTREE,

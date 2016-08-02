@@ -27,9 +27,9 @@ class ProcessCmdTestCase(SambaToolCmdTest):
     def test_name(self):
         """Run processes command"""
         (result, out, err) = self.runcmd("processes", "--name", "samba")
-        self.assertCmdSuccess(result, "Ensuring processes ran successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring processes ran successfully")
 
     def test_all(self):
         """Run processes command"""
         (result, out, err) = self.runcmd("processes")
-        self.assertCmdSuccess(result, "Ensuring processes ran successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring processes ran successfully")

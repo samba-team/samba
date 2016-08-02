@@ -30,7 +30,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_gpo_list(self):
         """Run gpo list against the server and make sure it looks accurate"""
         (result, out, err) = self.runsubcmd("gpo", "listall", "-H", "ldap://%s" % os.environ["SERVER"])
-        self.assertCmdSuccess(result, "Ensuring gpo listall ran successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo listall ran successfully")
 
     def test_fetchfail(self):
         """Run against a non-existent GPO, and make sure it fails (this hard-coded UUID is very unlikely to exist"""
@@ -40,23 +40,23 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def test_fetch(self):
         """Run against a real GPO, and make sure it passes"""
         (result, out, err) = self.runsubcmd("gpo", "fetch", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "--tmpdir", self.tempdir)
-        self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo fetched successfully")
         shutil.rmtree(os.path.join(self.tempdir, "policy"))
 
     def test_show(self):
         """Show a real GPO, and make sure it passes"""
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"])
-        self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo fetched successfully")
 
     def test_show_as_admin(self):
         """Show a real GPO, and make sure it passes"""
         (result, out, err) = self.runsubcmd("gpo", "show", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
-        self.assertCmdSuccess(result, "Ensuring gpo fetched successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo fetched successfully")
 
     def test_aclcheck(self):
         """Check all the GPOs on the remote server have correct ACLs"""
         (result, out, err) = self.runsubcmd("gpo", "aclcheck", "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
-        self.assertCmdSuccess(result, "Ensuring gpo checked successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo checked successfully")
 
     def setUp(self):
         """set up a temporary GPO to work with"""
@@ -66,7 +66,7 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                             "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]),
                                             "--tmpdir", self.tempdir)
         shutil.rmtree(os.path.join(self.tempdir, "policy"))
-        self.assertCmdSuccess(result, "Ensuring gpo created successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo created successfully")
         try:
             self.gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
         except IndexError:
@@ -75,5 +75,5 @@ class GpoCmdTestCase(SambaToolCmdTest):
     def tearDown(self):
         """remove the temporary GPO to work with"""
         (result, out, err) = self.runsubcmd("gpo", "del", self.gpo_guid, "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
-        self.assertCmdSuccess(result, "Ensuring gpo deleted successfully")
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo deleted successfully")
         super(GpoCmdTestCase, self).tearDown()
