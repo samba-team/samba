@@ -6096,7 +6096,11 @@ linked_attributes[0]:
 	/* find the attribute being modified */
 	attr = dsdb_attribute_by_attributeID_id(schema, la->attid);
 	if (attr == NULL) {
-		DEBUG(0, (__location__ ": Unable to find attributeID 0x%x\n", la->attid));
+		struct GUID_txt_buf guid_str;
+		ldb_asprintf_errstring(ldb, "Unable to find attributeID 0x%x for link on <GUID=%s>",
+				       la->attid,
+				       GUID_buf_string(&la->identifier->guid,
+						       &guid_str));
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
