@@ -3,22 +3,11 @@
 test_info()
 {
     cat <<EOF
-Verify that the ctdb_transaction test succeeds.
+Verify that the transaction_loop test succeeds with recoveries.
 
 Prerequisites:
 
 * An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Run two copies of ctdb_transaction on each node with a 30 second
-   timeout.
-3. Ensure that all ctdb_transaction processes complete successfully.
-
-Expected results:
-
-* ctdb_transaction runs without error.
 EOF
 }
 
@@ -49,6 +38,8 @@ set -e
 
 cluster_is_healthy
 
+ctdb_restart_when_done
+
 try_command_on_node 0 "$CTDB attach transaction_loop.tdb persistent"
 try_command_on_node 0 "$CTDB wipedb transaction_loop.tdb"
 
@@ -65,6 +56,5 @@ t="$CTDB_TEST_WRAPPER $VALGRIND transaction_loop \
 echo "Starting recovery loop"
 recovery_loop_start
 
-echo "Running ctdb_transaction on all $num_nodes nodes."
+echo "Running transaction_loop on all $num_nodes nodes."
 try_command_on_node -v -p all "$t"
-
