@@ -120,7 +120,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "objectClass": ["top", "classSchema"],
                "cn": class_name,
                "lDAPDisplayName": class_ldn,
-               "governsId": "1.3.6.1.4.1.7165.4.6.2." \
+               "governsId": "1.3.6.1.4.1.7165.4.6.2.5." \
                 + str((100000 * base_int) + random.randint(1,100000)) + ".1.5.13",
                "instanceType": "4",
                "objectClassCategory": "%d" % oc_cat,
@@ -144,7 +144,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
                "objectClass": ["top", "attributeSchema"],
                "cn": attr_name,
                "lDAPDisplayName": attr_ldn,
-               "attributeId": "1.3.6.1.4.1.7165.4.6.1." \
+               "attributeId": "1.3.6.1.4.1.7165.4.6.1.5." \
                 + str((100000 * base_int) + random.randint(1,100000)) + ".1.5.13",
                "attributeSyntax": "2.5.5.12",
                "omSyntax": "64",
@@ -217,15 +217,15 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
            This should check code path that searches for
            AttributeID_id in Schema cache"""
         # add new attributeSchema object
-        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A", 1)
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A", 7)
         # add a base classSchema class so we can use our new
         # attribute in class definition in a sibling class
-        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A", 7,
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A", 8,
                                                1,
                                                {"systemMayContain": a_ldn,
                                                 "subClassOf": "classSchema"})
         # add new classSchema object with value for a_ldb attribute
-        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B", 8,
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B", 9,
                                                1,
                                                {"objectClass": ["top", "classSchema", c_ldn],
                                                 a_ldn: "test_classWithCustomAttribute"})
@@ -241,18 +241,18 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
            This should check code path that searches for
            AttributeID_id in Schema cache"""
         # add new attributeSchema object
-        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-Link-X", 1,
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-Link-X", 10,
                                               attrs={'linkID':"99990",
                                                      "attributeSyntax": "2.5.5.1",
                                                      "omSyntax": "127"})
         # add a base classSchema class so we can use our new
         # attribute in class definition in a sibling class
-        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-Link-Y", 7,
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-Link-Y", 11,
                                                1,
                                                {"systemMayContain": a_ldn,
                                                 "subClassOf": "classSchema"})
         # add new classSchema object with value for a_ldb attribute
-        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-Link-Z", 8,
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-Link-Z", 12,
                                                1,
                                                {"objectClass": ["top", "classSchema", c_ldn],
                                                 a_ldn: self.schema_dn})
@@ -290,7 +290,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
     def test_attribute(self):
         """Simple test for attributeSchema replication"""
         # add new attributeSchema object
-        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-S", 2)
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-S", 13)
         # force replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn, forced=True)
         # check object is replicated
@@ -306,8 +306,8 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         self._disable_all_repl(self.dnsname_dc2)
 
        # add new attributeSchema object
-        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-OU-S", 3)
-        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-OU-A", 8,
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-OU-S", 14)
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-OU-A", 15,
                                                3,
                                                {"mayContain": a_ldn})
         ou_dn = ldb.Dn(self.ldb_dc1, "ou=X")
@@ -333,9 +333,9 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
            and then check all objects are replicated correctly"""
 
         # add new classSchema object
-        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A", 9)
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A", 16)
         # add new attributeSchema object
-        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A", 3)
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A", 17)
 
         # add attribute to the class we have
         m = Message.from_dict(self.ldb_dc1,
