@@ -39,6 +39,8 @@ static struct poptOption options_basic[] = {
 		"Number of cluster nodes" },
 	{ "debug", 'd', POPT_ARG_STRING, &_values.debugstr, 0,
 		"Debug level" },
+	{ "interactive", 'i', POPT_ARG_NONE, &_values.interactive, 0,
+		"Interactive output" },
 	{ NULL }
 };
 
@@ -69,6 +71,7 @@ static void set_defaults_basic(struct test_options *opts)
 	opts->timelimit = 10;
 	opts->num_nodes = 1;
 	opts->debugstr = "ERR";
+	opts->interactive = 0;
 
 	ctdb_socket = getenv("CTDB_SOCKET");
 	if (ctdb_socket != NULL) {
