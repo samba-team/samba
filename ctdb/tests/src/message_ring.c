@@ -34,6 +34,7 @@ struct message_ring_state {
 	struct ctdb_client_context *client;
 	int num_nodes;
 	int timelimit;
+	int interactive;
 	int msg_count;
 	int msg_plus, msg_minus;
 	struct timeval start_time;
@@ -50,7 +51,8 @@ static void message_ring_finish(struct tevent_req *subreq);
 static struct tevent_req *message_ring_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct ctdb_client_context *client,
-					    int num_nodes, int timelimit)
+					    int num_nodes, int timelimit,
+					    int interactive)
 {
 	struct tevent_req *req, *subreq;
 	struct message_ring_state *state;
@@ -64,6 +66,7 @@ static struct tevent_req *message_ring_send(TALLOC_CTX *mem_ctx,
 	state->client = client;
 	state->num_nodes = num_nodes;
 	state->timelimit = timelimit;
+	state->interactive = interactive;
 
 	subreq = ctdb_client_set_message_handler_send(
 					state, state->ev, state->client,
@@ -162,12 +165,12 @@ static void message_ring_each_second(struct tevent_req *subreq)
 	}
 
 	pnn = ctdb_client_pnn(state->client);
-	if (pnn == 0) {
+	if (pnn == 0 && state->interactive == 1) {
 		double t;
 
 		t = timeval_elapsed(&state->start_time);
-		printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r",
-		       state->msg_count / t,
+		printf("Ring[%u]: %.2f msgs/sec (+ve=%d -ve=%d)\n",
+		       pnn, state->msg_count / t,
 		       state->msg_plus, state->msg_minus);
 		fflush(stdout);
 	}
@@ -342,7 +345,8 @@ int main(int argc, const char *argv[])
 	}
 
 	req = message_ring_send(mem_ctx, ev, client,
-			      opts->num_nodes, opts->timelimit);
+				opts->num_nodes, opts->timelimit,
+				opts->interactive);
 	if (req == NULL) {
 		fprintf(stderr, "Memory allocation error\n");
 		exit(1);
