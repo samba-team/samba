@@ -81,8 +81,9 @@ class SambaToolCmdTest(samba.tests.BlackboxTestCase):
         result = cmd._run("samba-tool %s %s" % (name, sub), *args)
         return (result, cmd.outf.getvalue(), cmd.errf.getvalue())
 
-    def assertCmdSuccess(self, val, msg=""):
-        self.assertIsNone(val, msg)
+    def assertCmdSuccess(self, exit, out, err, msg=""):
+        self.assertIsNone(exit, msg="exit[%s] stdout[%s] stderr[%s]: %s" % (
+                          exit, out, err, msg))
 
     def assertCmdFail(self, val, msg=""):
         self.assertIsNotNone(val, msg)

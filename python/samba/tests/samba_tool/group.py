@@ -43,7 +43,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         for group in self.groups:
             (result, out, err) = self._create_group(group)
 
-            self.assertCmdSuccess(result)
+            self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "There shouldn't be any error message")
             self.assertIn("Added group %s" % group["name"], out)
 
@@ -73,7 +73,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         # try to delete all the groups we just added
         for group in self.groups:
             (result, out, err) = self.runsubcmd("group", "delete", group["name"])
-            self.assertCmdSuccess(result,
+            self.assertCmdSuccess(result, out, err,
                                   "Failed to delete group '%s'" % group["name"])
             found = self._find_group(group["name"])
             self.assertIsNone(found,
@@ -87,7 +87,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                                  "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                  os.environ["DC_PASSWORD"]))
 
-            self.assertCmdSuccess(result)
+            self.assertCmdSuccess(result, out, err)
             self.assertEquals(err,"","There shouldn't be any error message")
             self.assertIn("Added group %s" % group["name"], out)
 
@@ -102,7 +102,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                           os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Error running list")
+        self.assertCmdSuccess(result, out, err, "Error running list")
 
         search_filter = "(objectClass=group)"
 
@@ -123,7 +123,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                           os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Error running listmembers")
+        self.assertCmdSuccess(result, out, err, "Error running listmembers")
 
         search_filter = "(|(primaryGroupID=513)(memberOf=CN=Domain Users,CN=Users,%s))" % self.samdb.domain_dn()
 

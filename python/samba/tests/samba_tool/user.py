@@ -51,7 +51,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         for user in self.users:
             (result, out, err) = user["createUserFn"](user)
 
-            self.assertCmdSuccess(result)
+            self.assertCmdSuccess(result, out, err)
             self.assertEquals(err,"","Shouldn't be any error messages")
             self.assertIn("User '%s' created successfully" % user["name"], out)
 
@@ -76,7 +76,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         # try to delete all the 4 users we just added
         for user in self.users:
             (result, out, err) = self.runsubcmd("user", "delete", user["name"])
-            self.assertCmdSuccess(result, "Can we delete users")
+            self.assertCmdSuccess(result, out, err, "Can we delete users")
             found = self._find_user(user["name"])
             self.assertIsNone(found)
 
@@ -93,7 +93,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                  "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                  "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
-            self.assertCmdSuccess(result)
+            self.assertCmdSuccess(result, out, err)
             self.assertEquals(err,"","Shouldn't be any error messages")
             self.assertIn("User '%s' created successfully" % user["name"], out)
 
@@ -193,7 +193,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--newpassword=%s" % newpasswd,
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-            # self.assertCmdSuccess(result, "Ensure setpassword runs")
+            self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
             self.assertEquals(err,"","setpassword with url")
             self.assertMatch(out, "Changed password OK", "setpassword with url")
 
@@ -202,7 +202,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                             "--cache-ldb-initialize",
                                             "--attributes=%s" % attributes,
                                             "--decrypt-samba-gpg")
-        self.assertCmdSuccess(result, "Ensure syncpasswords --cache-ldb-initialize runs")
+        self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --cache-ldb-initialize runs")
         self.assertEqual(err,"","getpassword without url")
         cache_attrs = {
             "objectClass": { "value": "userSyncPasswords" },
@@ -220,7 +220,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                 "syncpasswords --cache-ldb-initialize: %s: %s out[%s]" % (a, v, out))
 
         (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
-        self.assertCmdSuccess(result, "Ensure syncpasswords --no-wait runs")
+        self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --no-wait runs")
         self.assertEqual(err,"","syncpasswords --no-wait")
         self.assertMatch(out, "dirsync_loop(): results 0",
             "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
@@ -241,12 +241,12 @@ class UserCmdTestCase(SambaToolCmdTest):
             (result, out, err) = self.runsubcmd("user", "setpassword",
                                                 user["name"],
                                                 "--newpassword=%s" % newpasswd)
-            self.assertCmdSuccess(result, "Ensure setpassword runs")
+            self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
             self.assertEquals(err,"","setpassword without url")
             self.assertMatch(out, "Changed password OK", "setpassword without url")
 
             (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
-            self.assertCmdSuccess(result, "Ensure syncpasswords --no-wait runs")
+            self.assertCmdSuccess(result, out, err, "Ensure syncpasswords --no-wait runs")
             self.assertEqual(err,"","syncpasswords --no-wait")
             self.assertMatch(out, "dirsync_loop(): results 0",
                 "syncpasswords --no-wait: 'dirsync_loop(): results 0': out[%s]" % (out))
@@ -272,7 +272,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 user["name"],
                                                 "--attributes=%s" % attributes,
                                                 "--decrypt-samba-gpg")
-            self.assertCmdSuccess(result, "Ensure getpassword runs")
+            self.assertCmdSuccess(result, out, err, "Ensure getpassword runs")
             self.assertEqual(err,"","getpassword without url")
             self.assertMatch(out, "Got password OK", "getpassword without url")
             self.assertMatch(out, "sAMAccountName: %s" % (user["name"]),
@@ -298,7 +298,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--must-change-at-next-login",
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-            # self.assertCmdSuccess(result, "Ensure setpassword runs")
+            self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
             self.assertEquals(err,"","setpassword with forced change")
             self.assertMatch(out, "Changed password OK", "setpassword with forced change")
 
@@ -313,7 +313,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--days=2",
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-            self.assertCmdSuccess(result, "Can we run setexpiry with names")
+            self.assertCmdSuccess(result, out, err, "Can we run setexpiry with names")
             self.assertIn("Expiry for user '%s' set to 2 days." % user["name"], out)
 
         for user in self.users:
@@ -333,7 +333,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "--days=4",
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Can we run setexpiry with a filter")
+        self.assertCmdSuccess(result, out, err, "Can we run setexpiry with a filter")
 
         for user in self.users:
             found = self._find_user(user["name"])
@@ -350,7 +350,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                           os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, "Error running list")
+        self.assertCmdSuccess(result, out, err, "Error running list")
 
         search_filter = ("(&(objectClass=user)(userAccountControl:%s:=%u))" %
                          (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT))
@@ -410,8 +410,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
-        msg = "command should return %s" % err
-        self.assertCmdSuccess(result, msg)
+        self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
@@ -440,8 +439,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
-        msg = "command should return %s" % err
-        self.assertCmdSuccess(result, msg)
+        self.assertCmdSuccess(result, out, err)
         self.assertEquals(err,"","Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
