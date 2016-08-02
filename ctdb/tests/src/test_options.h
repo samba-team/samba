@@ -26,6 +26,7 @@ struct test_options {
 	int timelimit;
 	int num_nodes;
 	const char *debugstr;
+	int interactive;
 
 	/* Database options */
 	const char *dbname;
