@@ -34,6 +34,9 @@
 #include "includes.h"
 #include "system/locale.h"
 
+static int d_vfprintf(FILE *f, const char *format, va_list ap)
+		      PRINTF_ATTRIBUTE(2,0);
+
 static int d_vfprintf(FILE *f, const char *format, va_list ap) 
 {
 	return vfprintf(f, format, ap);

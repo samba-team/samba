@@ -27,6 +27,10 @@
 
 static char *talloc_vasprintf_append_largebuf(char *buf, ssize_t *pstr_len,
 					      const char *fmt, va_list ap)
+					      PRINTF_ATTRIBUTE(3,0);
+
+static char *talloc_vasprintf_append_largebuf(char *buf, ssize_t *pstr_len,
+					      const char *fmt, va_list ap)
 {
 	ssize_t str_len = *pstr_len;
 	size_t buflen, needed, space;
@@ -86,6 +90,10 @@ fail:
 	*pstr_len = -1;
 	return buf;
 }
+
+static char *talloc_asprintf_append_largebuf(char *buf, ssize_t *pstr_len,
+					     const char *fmt, ...)
+					     PRINTF_ATTRIBUTE(3,4);
 
 static char *talloc_asprintf_append_largebuf(char *buf, ssize_t *pstr_len,
 					     const char *fmt, ...)
