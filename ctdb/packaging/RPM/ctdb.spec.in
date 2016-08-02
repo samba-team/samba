@@ -115,6 +115,15 @@ DESTDIR=$RPM_BUILD_ROOT ./buildtools/bin/waf install
 
 install -m644 config/ctdbd.conf $RPM_BUILD_ROOT%{_sysconfdir}/ctdb
 
+# Add a pointer to modern location for configuration file.  Allow with
+# "noreplace" in the files section, this stops RPM moving aside a
+# working configuration.
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig
+cat >$RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb <<EOF
+# CTDB configuration is now in %{_sysconfdir}/ctdb/ctdbd.conf
+EOF
+chmod 644 $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/ctdb
+
 %if %{with_systemd}
 mkdir -p $RPM_BUILD_ROOT%{_unitdir}
 install -m 755 config/ctdb.service $RPM_BUILD_ROOT%{_unitdir}
@@ -150,6 +159,8 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{_sysconfdir}/ctdb/ctdb-crash-cleanup.sh
 %config(noreplace) %{_sysconfdir}/ctdb/gcore_trace.sh
 %config(noreplace) %{_sysconfdir}/ctdb/debug_locks.sh
+
+%config(noreplace, missingok) %{_sysconfdir}/sysconfig/ctdb
 
 %if %{with_systemd}
 %{_unitdir}/ctdb.service
