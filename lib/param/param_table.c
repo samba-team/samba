@@ -308,6 +308,12 @@ static const struct enum_list enum_case[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_inherit_owner_vals[] = {
+    {INHERIT_OWNER_NO, "no"},
+    {INHERIT_OWNER_WINDOWS_AND_UNIX, "windows and unix"},
+    {INHERIT_OWNER_WINDOWS_AND_UNIX, "yes"},
+    {INHERIT_OWNER_UNIX_ONLY, "unix only"},
+    {-1, NULL}};
 
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *

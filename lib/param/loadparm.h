@@ -229,6 +229,13 @@ enum mapreadonly_options {MAP_READONLY_NO, MAP_READONLY_YES, MAP_READONLY_PERMIS
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};
 
+/* inherit owner options */
+enum inheritowner_options {
+	INHERIT_OWNER_NO,
+	INHERIT_OWNER_WINDOWS_AND_UNIX,
+	INHERIT_OWNER_UNIX_ONLY
+};
+
 /*
  * Default passwd chat script.
  */

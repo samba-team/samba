@@ -930,7 +930,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			}
 
 			/* Change the owner if required. */
-			if (lp_inherit_owner(SNUM(conn))) {
+			if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
 				change_file_owner_to_parent(conn, parent_dir,
 							    fsp);
 				need_re_stat = true;
@@ -3375,7 +3375,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	}
 
 	/* Change the owner if required. */
-	if (lp_inherit_owner(SNUM(conn))) {
+	if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO) {
 		change_dir_owner_to_parent(conn, parent_dir,
 					   smb_dname->base_name,
 					   &smb_dname->st);
@@ -4017,7 +4017,8 @@ static NTSTATUS inherit_new_acl(files_struct *fsp)
 	const struct dom_sid *group_sid = NULL;
 	uint32_t security_info_sent = (SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL);
 	struct security_token *token = fsp->conn->session_info->security_token;
-	bool inherit_owner = lp_inherit_owner(SNUM(fsp->conn));
+	bool inherit_owner =
+	    (lp_inherit_owner(SNUM(fsp->conn)) == INHERIT_OWNER_WINDOWS_AND_UNIX);
 	bool inheritable_components = false;
 	bool try_builtin_administrators = false;
 	const struct dom_sid *BA_U_sid = NULL;

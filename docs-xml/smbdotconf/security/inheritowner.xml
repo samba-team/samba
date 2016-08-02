@@ -1,6 +1,7 @@
 <samba:parameter name="inherit owner"
                  context="S"
-                 type="boolean"
+                 type="enum"
+		 enumlist="enum_inherit_owner_vals"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>The ownership of new files and directories 
@@ -8,11 +9,47 @@
 	This option allows the Samba administrator to specify that
 	the ownership for new files and directories should be controlled
 	by the ownership of the parent directory.</para>
-	
+
+	<para>Valid options are:</para>
+	<itemizedlist>
+	<listitem><para><constant>no</constant> -
+	Both the Windows (SID) owner and the UNIX (uid) owner of the file are
+	governed by the identity of the user that created the file.
+	</para></listitem>
+
+	<listitem><para><constant>windows and unix</constant> -
+	The Windows (SID) owner and the UNIX (uid) owner of new files and
+	directories are set to the respective owner of the parent directory.
+	</para></listitem>
+
+	<listitem><para><constant>yes</constant> - a synonym for
+	<constant>windows and unix</constant>.
+	</para></listitem>
+
+	<listitem><para><constant>unix only</constant> -
+	Only the UNIX owner is set to the UNIX owner of the parent directory.
+	</para></listitem>
+	</itemizedlist>
+
 	<para>Common scenarios where this behavior is useful is in 
 	implementing drop-boxes, where users can create and edit files but
 	not delete them and ensuring that newly created files in a user's
 	roaming profile directory are actually owned by the user.</para>
+
+	<para>The <constant>unix only</constant> option effectively
+	breaks the tie between the Windows owner of a file and the
+	UNIX owner. As a logical consequence, in this mode,
+	setting the the Windows owner of a file does not modify the UNIX
+	owner. Using this mode should typically be combined with a
+	backing store that can emulate the full NT ACL model without
+	affecting the POSIX permissions, such as the acl_xattr
+	VFS module, coupled with
+	<smbconfoption name="acl_xattr:ignore system acls">yes</smbconfoption>.
+	This can be used to emulate folder quotas, when files are
+	exposed only via SMB (without UNIX extensions).
+	The UNIX owner of a directory is locally set
+	and inherited by all subdirectories and files, and they all
+	consume the same quota.</para>
 </description>
 
 <related>inherit permissions</related>

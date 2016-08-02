@@ -3754,6 +3754,14 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32_t security_info_sent, const struct
 		security_info_sent &= ~SECINFO_GROUP;
 	}
 
+	/* If UNIX owner is inherited and Windows isn't, then
+	 * setting the UNIX owner based on Windows owner conflicts
+	 * with the inheritance rule
+	 */
+	if (lp_inherit_owner(SNUM(conn)) == INHERIT_OWNER_UNIX_ONLY) {
+		security_info_sent &= ~SECINFO_OWNER;
+	}
+
 	status = unpack_nt_owners( conn, &user, &grp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
