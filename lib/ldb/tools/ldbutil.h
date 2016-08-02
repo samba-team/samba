@@ -43,4 +43,4 @@ int ldb_search_ctrl(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		    struct ldb_result **result, struct ldb_dn *base,
 		    enum ldb_scope scope, const char * const *attrs,
 		    struct ldb_control **controls,
-		    const char *exp_fmt, ...);
+		    const char *exp_fmt, ...) PRINTF_ATTRIBUTE(8,9);

@@ -110,6 +110,9 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA _dbuf, void *sta
 }
 
 static void log_stderr(struct tdb_context *tdb, enum tdb_debug_level level,
+		       const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+
+static void log_stderr(struct tdb_context *tdb, enum tdb_debug_level level,
 		       const char *fmt, ...)
 {
 	va_list ap;
