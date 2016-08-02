@@ -290,8 +290,9 @@ static void message_ring_finish(struct tevent_req *subreq)
 
 	t = timeval_elapsed(&state->start_time);
 
-	printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\n",
-	       state->msg_count / t, state->msg_plus, state->msg_minus);
+	printf("Ring[%u]: %.2f msgs/sec (+ve=%d -ve=%d)\n",
+	       ctdb_client_pnn(state->client), state->msg_count / t,
+	       state->msg_plus, state->msg_minus);
 
 	tevent_req_done(req);
 }
