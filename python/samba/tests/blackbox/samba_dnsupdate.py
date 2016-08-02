@@ -44,14 +44,14 @@ class SambaDnsUpdateTests(samba.tests.BlackboxTestCase):
 
         try:
             out = self.check_output("samba_dnsupdate --verbose --use-nsupdate --current-ip=10.0.0.1")
-        except samba.tests.BlackboxProcessError:
-            self.fail("Error calling samba_dnsupdate")
+        except samba.tests.BlackboxProcessError as e:
+            self.fail("Error calling samba_dnsupdate: %s" % e)
 
         self.assertTrue("No DNS updates needed" in out, out)
         try:
             out = self.check_output("samba_dnsupdate --verbose --use-samba-tool --rpc-server-ip=%s" % self.server_ip)
-        except samba.tests.BlackboxProcessError:
-            self.fail("Error calling samba_dnsupdate")
+        except samba.tests.BlackboxProcessError as e:
+            self.fail("Error calling samba_dnsupdate: %s" % e)
 
         self.assertTrue(" DNS updates and" in out, out)
         self.assertTrue(" DNS deletes needed" in out, out)
