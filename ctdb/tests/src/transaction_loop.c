@@ -36,6 +36,7 @@ struct transaction_loop_state {
 	struct ctdb_db_context *ctdb_db;
 	int num_nodes;
 	int timelimit;
+	int interactive;
 	TDB_DATA key;
 	uint32_t pnn;
 	struct ctdb_transaction_handle *h;
@@ -55,7 +56,7 @@ static struct tevent_req *transaction_loop_send(
 				struct tevent_context *ev,
 				struct ctdb_client_context *client,
 				struct ctdb_db_context *ctdb_db,
-				int num_nodes, int timelimit)
+				int num_nodes, int timelimit, int interactive)
 {
 	struct tevent_req *req, *subreq;
 	struct transaction_loop_state *state;
@@ -71,6 +72,7 @@ static struct tevent_req *transaction_loop_send(
 	state->ctdb_db = ctdb_db;
 	state->num_nodes = num_nodes;
 	state->timelimit = timelimit;
+	state->interactive = interactive;
 	state->key.dptr = discard_const(TESTKEY);
 	state->key.dsize = strlen(TESTKEY);
 	state->pnn = ctdb_client_pnn(client);
@@ -248,11 +250,14 @@ static void transaction_loop_each_second(struct tevent_req *subreq)
 		return;
 	}
 
-	for (i=0; i<state->num_nodes; i++) {
-		printf("%6u ", state->counter[i]);
+	if (state->interactive == 1) {
+		printf("Transaction[%u]: ", ctdb_client_pnn(state->client));
+		for (i=0; i<state->num_nodes; i++) {
+			printf("%6u ", state->counter[i]);
+		}
+		printf("\n");
+		fflush(stdout);
 	}
-	printf("\n");
-	fflush(stdout);
 
 	subreq = tevent_wakeup_send(state, state->ev,
 				    tevent_timeval_current_ofs(1, 0));
@@ -304,6 +309,7 @@ static void transaction_loop_finish(struct tevent_req *subreq)
 		return;
 	}
 
+	printf("Transaction[%u]: ", ctdb_client_pnn(state->client));
 	for (i=0; i<state->num_nodes; i++) {
 		printf("%6u ", state->counter[i]);
 	}
@@ -373,7 +379,8 @@ int main(int argc, const char *argv[])
 	}
 
 	req = transaction_loop_send(mem_ctx, ev, client, ctdb_db,
-				    opts->num_nodes, opts->timelimit);
+				    opts->num_nodes, opts->timelimit,
+				    opts->interactive);
 	if (req == NULL) {
 		fprintf(stderr, "Memory allocation error\n");
 		exit(1);
