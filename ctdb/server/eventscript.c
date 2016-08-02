@@ -709,6 +709,14 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 					void *private_data,
 					enum ctdb_event call,
 					const char *fmt, va_list ap)
+					PRINTF_ATTRIBUTE(6,0);
+
+static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
+					const void *mem_ctx,
+					void (*callback)(struct ctdb_context *, int, void *),
+					void *private_data,
+					enum ctdb_event call,
+					const char *fmt, va_list ap)
 {
 	struct ctdb_event_script_state *state;
 
