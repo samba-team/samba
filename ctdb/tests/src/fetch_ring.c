@@ -43,6 +43,7 @@ struct fetch_ring_state {
 	struct ctdb_db_context *ctdb_db;
 	int num_nodes;
 	int timelimit;
+	int interactive;
 	TDB_DATA key;
 	int msg_count;
 	struct timeval start_time;
@@ -61,7 +62,8 @@ static struct tevent_req *fetch_ring_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct ctdb_client_context *client,
 					  struct ctdb_db_context *ctdb_db,
-					  int num_nodes, int timelimit)
+					  int num_nodes, int timelimit,
+					  int interactive)
 {
 	struct tevent_req *req, *subreq;
 	struct fetch_ring_state *state;
@@ -76,6 +78,7 @@ static struct tevent_req *fetch_ring_send(TALLOC_CTX *mem_ctx,
 	state->ctdb_db = ctdb_db;
 	state->num_nodes = num_nodes;
 	state->timelimit = timelimit;
+	state->interactive = interactive;
 	state->key.dptr = discard_const(TESTKEY);
 	state->key.dsize = strlen(TESTKEY);
 
@@ -294,7 +297,9 @@ static void fetch_ring_final_read(struct tevent_req *subreq)
 		return;
 	}
 
-	printf("DATA:\n%s\n", (char *)data.dptr);
+	if (state->interactive == 1) {
+		printf("DATA:\n%s\n", (char *)data.dptr);
+	}
 	talloc_free(data.dptr);
 	talloc_free(h);
 
@@ -361,7 +366,8 @@ int main(int argc, const char *argv[])
 	}
 
 	req = fetch_ring_send(mem_ctx, ev, client, ctdb_db,
-			       opts->num_nodes, opts->timelimit);
+			      opts->num_nodes, opts->timelimit,
+			      opts->interactive);
 	if (req == NULL) {
 		fprintf(stderr, "Memory allocation error\n");
 		exit(1);
