@@ -340,7 +340,7 @@ static int ibw_refill_cq_recv(struct ibw_conn *conn)
 	rc = ibv_post_recv(pconn->cm_id->qp, &wr, &bad_wr);
 	if (rc) {
 		sprintf(ibw_lasterr, "refill/ibv_post_recv failed with %d\n", rc);
-		DEBUG(DEBUG_ERR, (ibw_lasterr));
+		DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 		return -2;
 	}
 
@@ -374,7 +374,7 @@ static int ibw_fill_cq(struct ibw_conn *conn)
 		rc = ibv_post_recv(pconn->cm_id->qp, &wr, &bad_wr);
 		if (rc) {
 			sprintf(ibw_lasterr, "fill/ibv_post_recv failed with %d\n", rc);
-			DEBUG(DEBUG_ERR, (ibw_lasterr));
+			DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 			return -2;
 		}
 	}
@@ -651,7 +651,7 @@ static void ibw_event_handler_verbs(struct tevent_context *ev,
 error:
 	ibv_ack_cq_events(pconn->cq, 1);
 
-	DEBUG(DEBUG_ERR, (ibw_lasterr));
+	DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 	
 	if (conn->state!=IBWC_ERROR) {
 		conn->state = IBWC_ERROR;
@@ -991,7 +991,7 @@ struct ibw_ctx *ibw_init(struct ibw_initattr *attr, int nattr,
 	return ctx;
 	/* don't put code here */
 cleanup:
-	DEBUG(DEBUG_ERR, (ibw_lasterr));
+	DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 
 	if (ctx)
 		talloc_free(ctx);
@@ -1029,7 +1029,7 @@ int ibw_bind(struct ibw_ctx *ctx, struct sockaddr_in *my_addr)
 	rc = rdma_bind_addr(pctx->cm_id, (struct sockaddr *) my_addr);
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_bind_addr error %d\n", rc);
-		DEBUG(DEBUG_ERR, (ibw_lasterr));
+		DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 		return rc;
 	}
 	DEBUG(DEBUG_DEBUG, ("rdma_bind_addr successful\n"));
@@ -1046,7 +1046,7 @@ int ibw_listen(struct ibw_ctx *ctx, int backlog)
 	rc = rdma_listen(pctx->cm_id, backlog);
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_listen failed: %d\n", rc);
-		DEBUG(DEBUG_ERR, (ibw_lasterr));
+		DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 		return rc;
 	}
 
@@ -1068,7 +1068,7 @@ int ibw_accept(struct ibw_ctx *ctx, struct ibw_conn *conn, void *conn_userdata)
 	rc = rdma_accept(pconn->cm_id, &conn_param);
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_accept failed %d\n", rc);
-		DEBUG(DEBUG_ERR, (ibw_lasterr));
+		DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 		return -1;;
 	}
 
@@ -1115,7 +1115,7 @@ int ibw_connect(struct ibw_conn *conn, struct sockaddr_in *serv_addr, void *conn
 	rc = rdma_resolve_addr(pconn->cm_id, NULL, (struct sockaddr *) serv_addr, 2000);
 	if (rc) {
 		sprintf(ibw_lasterr, "rdma_resolve_addr error %d\n", rc);
-		DEBUG(DEBUG_ERR, (ibw_lasterr));
+		DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 		talloc_free(conn);
 		return -1;
 	}
@@ -1142,7 +1142,7 @@ int ibw_disconnect(struct ibw_conn *conn)
 		rc = rdma_disconnect(pconn->cm_id);
 		if (rc) {
 			sprintf(ibw_lasterr, "ibw_disconnect failed with %d\n", rc);
-			DEBUG(DEBUG_ERR, (ibw_lasterr));
+			DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 			return rc;
 		}
 		break;
@@ -1280,7 +1280,7 @@ static int ibw_send_packet(struct ibw_conn *conn, void *buf, struct ibw_wr *p, u
 
 	return 0;
 error:
-	DEBUG(DEBUG_ERR, (ibw_lasterr));
+	DEBUG(DEBUG_ERR, ("%s", ibw_lasterr));
 	return -1;
 }
 
