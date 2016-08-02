@@ -2217,10 +2217,12 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 					  WERR_INVALID_ACCESS,
 					  "decrypt should fail with WERR_INVALID_ACCESS");
 	} else {
-		torture_assert_werr_equal(tctx,
-					  r.out.result,
-					  WERR_INVALID_PARAM,
-					  "decrypt should fail with WERR_INVALID_PARAM");
+		if (!W_ERROR_EQUAL(r.out.result, WERR_INVALID_ACCESS)
+		    && !W_ERROR_EQUAL(r.out.result, WERR_INVALID_PARAM)) {
+			torture_assert_werr_equal(tctx, r.out.result,
+						  WERR_INVALID_DATA,
+						  "decrypt should fail with WERR_INVALID_ACCESS, WERR_INVALID_PARAM or WERR_INVALID_DATA");
+		}
 	}
 
 	/* Decrypt */
