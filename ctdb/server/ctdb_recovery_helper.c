@@ -40,6 +40,8 @@ static int recover_timeout = 30;
 
 #define TIMEOUT()	timeval_current_ofs(recover_timeout, 0)
 
+static void LOG(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
+
 static void LOG(const char *fmt, ...)
 {
 	va_list ap;
@@ -1683,7 +1685,7 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 						       state->count,
 						       err_list, &pnn);
 		if (ret2 != 0) {
-			LOG("control TRANSACTION_DB failed for db=%s,"
+			LOG("control TRANSACTION_DB failed for db=%s on node %u,"
 			    " ret=%d\n", state->db_name, pnn, ret2);
 		} else {
 			LOG("control TRANSACTION_DB failed for db=%s,"
@@ -1777,7 +1779,7 @@ static void recover_db_wipedb_done(struct tevent_req *subreq)
 			    " ret=%d\n", state->db_name, pnn, ret2);
 		} else {
 			LOG("control WIPEDB failed for db %s, ret=%d\n",
-			    state->db_name, pnn, ret);
+			    state->db_name, ret);
 		}
 		tevent_req_error(req, ret);
 		return;
