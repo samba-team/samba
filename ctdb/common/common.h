@@ -76,7 +76,8 @@ int ctdb_fetch_with_header_func(struct ctdb_call_info *call);
 
 const char *ctdb_errstr(struct ctdb_context *ctdb);
 
-void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...);
+void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
+		    PRINTF_ATTRIBUTE(2,3);
 
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
 
