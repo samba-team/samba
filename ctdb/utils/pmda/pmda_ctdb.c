@@ -441,7 +441,6 @@ static int
 pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
 {
 	int ret;
-	struct timeval ctdb_timeout;
 
 	if (client == NULL) {
 		fprintf(stderr, "attempting reconnect to ctdbd\n");
@@ -453,7 +452,7 @@ pmda_ctdb_fetch(int numpmid, pmID pmidlist[], pmResult **resp, pmdaExt *pmda)
 	}
 
 	ret = ctdb_ctrl_statistics(client, ev, client, CTDB_CURRENT_NODE,
-				   ctdb_timeout, &stats);
+				   tevent_timeval_current_ofs(1,0), &stats);
 	if (ret != 0) {
 		fprintf(stderr, "ctdb control for statistics failed, reconnecting\n");
 		pmda_ctdb_daemon_disconnect();
