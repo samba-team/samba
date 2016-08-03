@@ -401,7 +401,6 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 	char *qualified_name;
 	const char *p;
 
-	/* NB. No winbindd_separator here as lookup_name needs \\' */
 	if ((p = strchr_m(full_name, *lp_winbind_separator())) != NULL) {
 
 		/* The name is already qualified with a domain. */
