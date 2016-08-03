@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.5.  This is *not*
+This is the second release candidate of Samba 4.5.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -18,11 +18,11 @@ NTLMv1 authentication disabled by default
 In order to improve security we have changed
 the default value for the "ntlm auth" option from
 "yes" to "no". This may have impact on very old
-client which doesn't support NTLMv2 yet.
+clients which doesn't support NTLMv2 yet.
 
 The primary user of NTLMv1 is MSCHAPv2 for VPNs and 802.1x.
 
-By default Samba will only allow NTLMv2 via NTLMSSP now,
+By default, Samba will only allow NTLMv2 via NTLMSSP now,
 as we have the following default "lanman auth = no",
 "ntlm auth = no" and "raw NTLMv2 auth = no".
 
@@ -34,7 +34,7 @@ Support for LDAP_SERVER_NOTIFICATION_OID
 ----------------------------------------
 
 The ldap server has support for the LDAP_SERVER_NOTIFICATION_OID
-control. This can be used to monitor the active directory database
+control. This can be used to monitor the Active Directory database
 for changes.
 
 KCC improvements for sparse network replication
@@ -72,7 +72,7 @@ Schema updates are also handled much more reliably.
 samba-tool drs replicate with new options
 -----------------------------------------
 
-samba-tool drs replicate got two new options:
+'samba-tool drs replicate' got two new options:
 
 The option '--local-online' will do the DsReplicaSync() via IRPC
 to the local dreplsrv service.
@@ -85,7 +85,7 @@ replPropertyMetaData Changes
 
 During the development of the DRS replication, tests showed that Samba
 stores the replPropertyMetaData object incorrectly.  To address this,
-be aware that dbcheck will now detect and offer to fix all objects in
+be aware that 'dbcheck' will now detect and offer to fix all objects in
 the domain for this error.
 
 Linked attributes on deleted objects
@@ -93,7 +93,7 @@ Linked attributes on deleted objects
 
 In Active Directory, an object that has been tombstoned or recycled
 has no linked attributes.  However, Samba incorrectly maintained such
-links, slowing replication and run-time performance.  dbcheck now
+links, slowing replication and run-time performance.  'dbcheck' now
 offers to remove such links, and they are no longer kept after the
 object is tombstoned or recycled.
 
@@ -101,13 +101,13 @@ Improved AD DC performance
 --------------------------
 
 Many other improvements have been made to our LDAP database layer in
-the AD DC, to improve performance, both during samba-tool domain
-provision and at runtime.
+the AD DC, to improve performance, both during 'samba-tool domain
+provision' and at runtime.
 
 Other dbcheck improvements
 --------------------------
 
- - samba-tool dbcheck can now find and fix a missing or corrupted
+ - 'samba-tool dbcheck' can now find and fix a missing or corrupted
    'deleted objects' container.
  - BUG 11433: samba-dbcheck no longer offers to resort auxiliary class values
    in objectClass as these were then re-sorted at the next dbcheck indefinitely.
@@ -123,19 +123,18 @@ Multiple DNS Forwarders on the AD DC
 ------------------------------------
 
 Multiple DNS forwarders are now supported on the AD DC, allowing
-samba to fall back between two different DNS servers for forwarded queries.
+Samba to fall back between two different DNS servers for forwarded queries.
 
 Password quality plugin support in the AD DC
 --------------------------------------------
 
-The check password script now operates correctly in the AD DC (this
-was silently ignored in past releases)
+The check password script now operates correctly in the AD DC.
 
 pwdLastSet is now correctly honoured
 ------------------------------------
 
-BUG 9654: the pwdLastSet attribute is now correctly handled (this previously
-permitted passwords that next expire).
+BUG 9654: The pwdLastSet attribute is now correctly handled (this previously
+permitted passwords that expire next).
 
 net ads dns unregister
 ----------------------
@@ -143,10 +142,10 @@ net ads dns unregister
 It is now possible to remove the DNS entries created with 'net ads register'
 with the matching 'net ads unregister' command.
 
-Samba-tool improvements
+samba-tool improvements
 ------------------------
 
-Running samba-tool on the command line should now be a lot snappier. The tool
+Running 'samba-tool' on the command line should now be a lot snappier. The tool
 now only loads the code specific to the subcommand that you wish to run.
 
 SMB 2.1 Leases enabled by default
@@ -169,7 +168,7 @@ descriptors having file locks are opened onto the same file. An internal
 tunable "smbd:force process locks = true" may be used to turn off OFD
 locks if there appear to be problems with them.
 
-Password sync as active directory domain controller
+Password sync as Active Directory domain controller
 ---------------------------------------------------
 
 The new commands 'samba-tool user getpassword'
@@ -180,71 +179,71 @@ If compiled with GPGME support (--with-gpgme) it's
 possible to store cleartext passwords in a PGP/OpenGPG
 encrypted form by configuring the new "password hash gpg key ids"
 option. This requires gpgme devel and python packages to be installed
-(e.g. libgpgme11-dev and python-gpgme on debian/ubuntu).
+(e.g. libgpgme11-dev and python-gpgme on Debian/Ubuntu).
 
 Python crypto requirements
 --------------------------
 
-Some samba-tool subcommands require python-crypto and/or
+Some 'samba-tool' subcommands require python-crypto and/or
 python-m2crypto packages to be installed.
 
 SmartCard/PKINIT improvements
 -----------------------------
 
-"samba-tool user create" accepts --smartcard-required
-and "samba-tool user setpassword" accepts --smartcard-required
-and --clear-smartcard-required.
+'samba-tool user create' accepts "--smartcard-required"
+and 'samba-tool user setpassword' accepts "--smartcard-required"
+and "--clear-smartcard-required".
 
-Specifying --smartcard-required results in the UF_SMARTCARD_REQUIRED
+Specifying "--smartcard-required" results in the UF_SMARTCARD_REQUIRED
 flags being set in the userAccountControl attribute.
-At the same time the account password is reset to a random
+At the same time, the account password is reset to a random
 NTHASH value.
 
 Interactive password logons are rejected, if the UF_SMARTCARD_REQUIRED
 bit is set in the userAccountControl attribute of a user.
 
-When doing a PKINIT based kerberos logon the KDC adds the
+When doing a PKINIT based Kerberos logon the KDC adds the
 required PAC_CREDENTIAL_INFO element to the authorization data.
 That means the NTHASH is shared between the PKINIT based client and
 the domain controller, which allows the client to do NTLM based
-authentication on behalf of the user. It also allows on offline
+authentication on behalf of the user. It also allows an offline
 logon using a smartcard to work on Windows clients.
 
 CTDB changes
 ------------
 
-* New improved ctdb tool
+* New improved 'ctdb tool'
 
-  ctdb tool has been completely rewritten using new client API.
+  'ctdb tool' has been completely rewritten using new client API.
   Usage messages are much improved.
 
 * Sample CTDB configuration file is installed as ctdbd.conf.
 
 * The use of real-time scheduling when taking locks has been narrowed
-  to limit potential performance impacts on nodes
+  to limit potential performance impacts on nodes.
 
 * CTDB_RECOVERY_LOCK now supports specification of an external helper
-  to take and hold the recovery lock
+  to take and hold the recovery lock.
 
   See the RECOVERY LOCK section in ctdb(7) for details.  Documentation
   for writing helpers is provided in doc/cluster_mutex_helper.txt.
 
 * "ctdb natgwlist" has been replaced by a top level "ctdb natgw"
-  command that has "master", "list" and "status" subcommands
+  command that has "master", "list" and "status" subcommands.
 
-* The onnode command no longer supports the "recmaster", "lvs" and
-  "natgw" node specifications
+* The 'onnode' command no longer supports the "recmaster", "lvs" and
+  "natgw" node specifications.
 
 * Faster resetting of TCP connections to public IP addresses during
-  failover
+  failover.
 
 * Tunables MaxRedirectCount, ReclockPingPeriod,
-  DeferredRebalanceOnNodeAdd are now obsolete/ignored
+  DeferredRebalanceOnNodeAdd are now obsolete/ignored.
 
-* "ctdb listvars" now lists all variables, including the first one
+* "ctdb listvars" now lists all variables, including the first one.
 
 * "ctdb xpnn", "ctdb rebalanceip" and "ctdb rebalancenode" have been
-  removed
+  removed.
 
   These are not needed because "ctdb reloadips" should do the correct
   rebalancing.
@@ -270,30 +269,30 @@ CTDB changes
   ctdb setdebug
   ctdb uptime
 
-* "ctdb process-exists" has been updated to only take a PID argument
+* 'ctdb process-exists' has been updated to only take a PID argument.
 
   The PNN can be specified with -n <PNN>.  Output also cleaned up.
 
 * LVS support has been reworked - related commands and configuration
-  variables have changed
+  variables have changed.
 
-  "ctdb lvsmaster" and "ctdb lvs" have been replaced by a top level
-  "ctdb lvs" command that has "master", "list" and "status"
+  'ctdb lvsmaster' and 'ctdb lvs' have been replaced by a top level
+  'ctdb lvs' command that has 'master', 'list' and 'status'
   subcommands.
 
   See the LVS sections in ctdb(7) and ctdbd.conf(5) for details,
   including configuration changes.
 
-* Improved sample NFS Ganesha call-out
+* Improved sample NFS Ganesha call-out.
 
 New shadow_copy2 options
 ------------------------
 
-shadow:snapprefix
+* shadow:snapprefix
 
   With growing number of snapshots file-systems need some mechanism to
   differentiate one set of snapshots from other, e.g. monthly, weekly, manual,
-  special events, etc. Therefore these file-systems provide different ways to tag
+  special events, etc. Therefore, these file-systems provide different ways to tag
   snapshots, e.g. provide a configurable way to name snapshots, which is not just
   based on time.  With only shadow:format it is very difficult to filter these
   snapshots. With this optional parameter, one can specify a variable prefix
@@ -302,10 +301,10 @@ shadow:snapprefix
   parameters it determines the possible names of snapshot directories in the
   file-system. The option only supports Basic Regular Expression (BRE).
 
-shadow:delimiter
+* shadow:delimiter
 
-  This optional parameter is used as a delimiter between shadow:snapprefix and
-  shadow:format This parameter is used only when shadow:snapprefix is set.
+  This optional parameter is used as a delimiter between "shadow:snapprefix" and
+  "shadow:format". This parameter is used only when "shadow:snapprefix" is set.
 
   Default: shadow:delimiter = "_GMT"
 
@@ -315,6 +314,7 @@ REMOVED FEATURES
 
 only user and username parameters
 ---------------------------------
+
 These two parameters have long been deprecated and superseded by
 "valid users" and "invalid users".
 
@@ -338,6 +338,12 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.5.0rc1
+======================
+
+
 
 #######################################
 Reporting bugs & Development Discussion
