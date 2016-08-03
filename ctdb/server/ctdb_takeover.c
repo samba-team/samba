@@ -768,13 +768,6 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (vnn->iface == NULL && have_ip) {
-		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
-				  "but we have no interface assigned, has someone manually configured it? Ignore for now.\n",
-				 ctdb_addr_to_str(&vnn->public_address)));
-		return 0;
-	}
-
 	if (vnn->pnn != ctdb->pnn && have_ip && vnn->pnn != -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
 				  "and we have it on iface[%s], but it was assigned to node %d"
@@ -786,12 +779,16 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	}
 
 	if (vnn->pnn == -1 && have_ip) {
-		vnn->pnn = ctdb->pnn;
-		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
-				  "and we already have it on iface[%s], update local daemon\n",
-				 ctdb_addr_to_str(&vnn->public_address),
-				  ctdb_vnn_iface_string(vnn)));
-		return 0;
+		/* This will cause connections to be reset and
+		 * reestablished.  However, this is a very unusual
+		 * situation and doing this will completely repair the
+		 * inconsistency in the VNN.
+		 */
+		DEBUG(DEBUG_WARNING,
+		      (__location__
+		       " Doing updateip for IP %s already on an interface\n",
+		       ctdb_addr_to_str(&vnn->public_address)));
+		do_updateip = true;
 	}
 
 	if (vnn->iface) {
