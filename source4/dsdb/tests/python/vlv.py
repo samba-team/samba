@@ -773,7 +773,6 @@ class VLVTests(samba.tests.TestCase):
         searching in the entire tree, not just our OU. This is the
         way to find deleted objects.
         """
-        t = time.time()
         if base is None:
             base = self.base_dn
         sort_control = "server_sort:1:0:%s" % attr
@@ -785,7 +784,6 @@ class VLVTests(samba.tests.TestCase):
                               attrs=[attr],
                               controls=controls)
         results = [x[attr][0] for x in res]
-        print "get_expected_order_showing_deleted took %.1f" % (time.time() - t)
         return results
 
     def add_deleted_users(self, n):
