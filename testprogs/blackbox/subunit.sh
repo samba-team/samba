@@ -18,14 +18,23 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
+timestamp() {
+  # mark the start time. With Gnu date, you get nanoseconds from %N
+  # (here truncated to microseconds with %6N), but not on BSDs,
+  # Solaris, etc, which will apparently leave either %N or N at the end.
+  date -u +'time: %Y-%m-%d %H:%M:%S.%6NZ' | sed 's/%\?NZ$/000000Z/'
+}
+
 subunit_start_test () {
   # emit the current protocol start-marker for test $1
+  timestamp
   echo "test: $1"
 }
 
 
 subunit_pass_test () {
   # emit the current protocol test passed marker for test $1
+  timestamp
   echo "success: $1"
 }
 
@@ -38,6 +47,7 @@ subunit_fail_test () {
   # the error text.
   # we use stdin because the failure message can be arbitrarily long, and this
   # makes it convenient to write in scripts (using <<END syntax.
+  timestamp
   echo "failure: $1 ["
   cat -
   echo "]"
@@ -49,6 +59,7 @@ subunit_error_test () {
   # the error text.
   # we use stdin because the failure message can be arbitrarily long, and this
   # makes it convenient to write in scripts (using <<END syntax.
+  timestamp
   echo "error: $1 ["
   cat -
   echo "]"
