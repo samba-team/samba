@@ -208,7 +208,7 @@ def configure(conf):
 
     conf.env.CTDB_TEST_DATADIR = os.path.join(conf.env.EXEC_PREFIX,
                                               'share/ctdb-tests')
-    conf.env.CTDB_TEST_LIBDIR = os.path.join(conf.env.LIBDIR, 'ctdb-tests')
+    conf.env.CTDB_TEST_LIBEXECDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb/tests')
 
     # Allow unified compilation and separate compilation of utilities
     # to find includes
@@ -637,12 +637,12 @@ def build(bld):
         bld.SAMBA_BINARY(target,
                          source=src,
                          deps='talloc tevent tdb tevent-util',
-                         install_path='${CTDB_TEST_LIBDIR}')
+                         install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('reqid_test',
                      source='tests/src/reqid_test.c',
                      deps='samba-util',
-                     install_path='${CTDB_TEST_LIBDIR}')
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     # Test binaries
     ctdb_tests = [
@@ -671,7 +671,7 @@ def build(bld):
                          source=src,
                          includes='include',
                          deps='ctdb-client ctdb-common ctdb-util',
-                         install_path='${CTDB_TEST_LIBDIR}')
+                         install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('ctdb_takeover_tests',
                      source='tests/src/ctdb_takeover_tests.c',
@@ -680,21 +680,21 @@ def build(bld):
                              ctdb-protocol''' +
                           ib_deps,
                      includes='include',
-                     install_path='${CTDB_TEST_LIBDIR}')
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('ctdb_functest',
                      source='tests/src/ctdb_functest.c',
                      deps='''replace tdb tevent talloc popt ctdb-system
                              samba-util tdb-wrap''',
                      includes='include',
-                     install_path='${CTDB_TEST_LIBDIR}')
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('ctdb_stubtest',
                      source='tests/src/ctdb_test.c',
                      deps='''replace tdb tevent talloc popt ctdb-system
                              samba-util tdb-wrap''',
                      includes='include',
-                     install_path='${CTDB_TEST_LIBDIR}')
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     if bld.env.HAVE_INFINIBAND:
         bld.SAMBA_BINARY('ibwrapper_test',
@@ -702,7 +702,7 @@ def build(bld):
                          includes='include',
                          deps='replace talloc ctdb-client ctdb-common' +
                               ib_deps,
-                         install_path='${CTDB_TEST_LIBDIR}')
+                         install_path='${CTDB_TEST_LIBEXECDIR}')
 
     test_subdirs = [
         'complex',
@@ -734,7 +734,7 @@ def build(bld):
                           destname=os.path.join('scripts', t))
 
     sed_expr = 's@^TEST_SCRIPTS_DIR=.*@&\\nexport TEST_BIN_DIR=\"%s\"@' % (
-               bld.env.CTDB_TEST_LIBDIR)
+               bld.env.CTDB_TEST_LIBEXECDIR)
     bld.SAMBA_GENERATOR('ctdb-test-wrap',
                         source='tests/scripts/test_wrap',
                         target='test_wrap',
@@ -743,7 +743,7 @@ def build(bld):
                       destname='test_wrap', chmod=0755)
 
     sed_expr1 = 's@^test_dir=.*@test_dir=%s\\nexport TEST_BIN_DIR=\"%s\"@' % (
-                bld.env.CTDB_TEST_DATADIR, bld.env.CTDB_TEST_LIBDIR)
+                bld.env.CTDB_TEST_DATADIR, bld.env.CTDB_TEST_LIBEXECDIR)
     sed_expr2 = 's@^\(export CTDB_TESTS_ARE_INSTALLED\)=false@\\1=true@'
     bld.SAMBA_GENERATOR('ctdb-test-runner',
                         source='tests/run_tests.sh',
