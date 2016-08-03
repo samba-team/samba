@@ -456,7 +456,7 @@ void standard_sub_basic(const char *smb_name, const char *domain_name,
 
 /****************************************************************************
  Do some standard substitutions in a string.
- This function will return an talloced string that has to be freed.
+ This function will return a talloced string that has to be freed.
 ****************************************************************************/
 
 char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
