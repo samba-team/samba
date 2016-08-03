@@ -91,8 +91,6 @@ static bool token_contains_name(TALLOC_CTX *mem_ctx,
 		smb_panic("substitutions failed");
 	}
 
-	/* check to see is we already have a SID */
-
 	if ( string_to_sid( &sid, name ) ) {
 		DEBUG(5,("token_contains_name: Checking for SID [%s] in token\n", name));
 		return nt_token_check_sid( &sid, token );
