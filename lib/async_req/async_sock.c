@@ -128,11 +128,21 @@ struct tevent_req *async_connect_send(
 	}
 
 	/*
-	 * The only errno indicating that the connect is still in
-	 * flight is EINPROGRESS, everything else is an error
+	 * The only errno indicating that an initial connect is still
+	 * in flight is EINPROGRESS.
+	 *
+	 * We get EALREADY when someone calls us a second time for a
+	 * given fd and the connect is still in flight (and returned
+	 * EINPROGRESS the first time).
+	 *
+	 * This allows callers like open_socket_out_send() to reuse
+	 * fds and call us with an fd for which the connect is still
+	 * in flight. The proper thing to do for callers would be
+	 * closing the fd and starting from scratch with a fresh
+	 * socket.
 	 */
 
-	if (errno != EINPROGRESS) {
+	if (errno != EINPROGRESS && errno != EALREADY) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
 	}
