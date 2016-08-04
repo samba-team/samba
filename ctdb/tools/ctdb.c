@@ -5737,6 +5737,7 @@ static int control_checktcpport(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	v = fcntl(s, F_GETFL, 0);
 	if (v == -1 || fcntl(s, F_SETFL, v | O_NONBLOCK)) {
 		fprintf(stderr, "Unable to set socket non-blocking\n");
+		close(s);
 		return errno;
 	}
 
