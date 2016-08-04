@@ -204,8 +204,17 @@ WERROR dsdb_schema_info_cmp(const struct dsdb_schema *schema,
 		return werr;
 	}
 
-	if (schema->schema_info->revision != schema_info->revision) {
+	if (schema->schema_info->revision > schema_info->revision) {
+		/*
+		 * It's ok if our schema is newer than the remote one
+		 */
+		werr = WERR_OK;
+	} else if (schema->schema_info->revision < schema_info->revision) {
 		werr = WERR_DS_DRA_SCHEMA_MISMATCH;
+	} else if (!GUID_equal(&schema->schema_info->invocation_id,
+		   &schema_info->invocation_id))
+	{
+		werr = WERR_DS_DRA_SCHEMA_CONFLICT;
 	} else {
 		werr = WERR_OK;
 	}
