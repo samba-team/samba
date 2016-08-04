@@ -446,6 +446,8 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed to convert UDV for %s : %s\n",
 				 ldb_dn_get_linearized(partition->dn), win_errstr(werr)));
+			tevent_req_nterror(req, werror_to_ntstatus(werr));
+			return;
 		}
 	}
 
@@ -470,6 +472,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		status = dreplsrv_get_gc_partial_attribute_set(service, r, &pas);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,(__location__ ": Failed to construct GC partial attribute set : %s\n", nt_errstr(status)));
+			tevent_req_nterror(req, status);
 			return;
 		}
 		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
@@ -482,6 +485,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		status = dreplsrv_get_rodc_partial_attribute_set(service, r, &pas, for_schema);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,(__location__ ": Failed to construct RODC partial attribute set : %s\n", nt_errstr(status)));
+			tevent_req_nterror(req, status);
 			return;
 		}
 		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
