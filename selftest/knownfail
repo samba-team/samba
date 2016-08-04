@@ -286,10 +286,7 @@
 ^samba4.krb5.kdc.*as-req-aes.*fl2000dc
 # nt4_member and ad_member don't support ntlmv1
 ^samba3.blackbox.smbclient_auth.plain.*_member.*option=clientntlmv2auth=no.member.creds.*as.user
-#new read tests fail
+#nt-vfs server blocks read with execute access
 ^samba4.smb2.read.access
-^samba3.smb2.read.access
-#new copychunk tests fail
+#ntvfs server blocks copychunk with execute access on read handle
 ^samba4.smb2.ioctl.copy_chunk_bad_access
-^samba3.smb2.ioctl.copy_chunk_bad_access
-^samba3.smb2.ioctl fs_specific.copy_chunk_bad_access
