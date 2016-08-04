@@ -2563,6 +2563,8 @@ static void wait_for_flags(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		if (nodemap == NULL) {
 			fprintf(stderr,
 				"Failed to get nodemap, trying again\n");
+			sleep(1);
+			continue;
 		}
 
 		flag_is_set = nodemap->node[ctdb->cmd_pnn].flags & flag;
