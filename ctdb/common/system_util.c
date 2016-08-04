@@ -420,6 +420,7 @@ int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,
 		if (ret != 2) {
 			DEBUG(DEBUG_ERR, ("Bad line [%d]: %s\n",
 					  line_num, line));
+			talloc_free(conn);
 			return EINVAL;
 		}
 
