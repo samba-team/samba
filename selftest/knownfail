@@ -289,3 +289,7 @@
 #new read tests fail
 ^samba4.smb2.read.access
 ^samba3.smb2.read.access
+#new copychunk tests fail
+^samba4.smb2.ioctl.copy_chunk_bad_access
+^samba3.smb2.ioctl.copy_chunk_bad_access
+^samba3.smb2.ioctl fs_specific.copy_chunk_bad_access
