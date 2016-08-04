@@ -3023,6 +3023,8 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			}
 		}
 
+		TALLOC_FREE(clist);
+
 		if (num_failed > 0) {
 			fprintf(stderr, "Failed to send %d tickles\n",
 				num_failed);
