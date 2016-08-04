@@ -332,7 +332,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 						 "become dc",
 						 "schema convert retrial", 1);
 
-	status = dsdb_repl_resolve_working_schema(s->ldb, s,
+	status = dsdb_repl_resolve_working_schema(s->ldb,
 						  pfm_remote,
 						  cycle_before_switching,
 						  provision_schema,

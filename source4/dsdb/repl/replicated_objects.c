@@ -103,7 +103,6 @@ static WERROR dsdb_repl_merge_working_schema(struct ldb_context *ldb,
 }
 
 WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
-					TALLOC_CTX *mem_ctx,
 					struct dsdb_schema_prefixmap *pfm_remote,
 					uint32_t cycle_before_switching,
 					struct dsdb_schema *initial_schema,
@@ -129,10 +128,11 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 			DRSUAPI_ATTID_systemPossSuperiors,
 			DRSUAPI_ATTID_INVALID
 	};
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* create a list of objects yet to be converted */
 	for (cur = first_object; cur; cur = cur->next_object) {
-		schema_list_item = talloc(mem_ctx, struct schema_list);
+		schema_list_item = talloc(frame, struct schema_list);
 		if (schema_list_item == NULL) {
 			return WERR_NOMEM;
 		}
@@ -164,6 +164,7 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 							working_schema,
 							resulting_schema);
 			if (!W_ERROR_IS_OK(werr)) {
+				talloc_free(frame);
 				return werr;
 			}
 		}
@@ -242,6 +243,7 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 				 "all %d remaining of %d objects "
 				 "failed to convert\n",
 				 failed_obj_count, object_count));
+			talloc_free(frame);
 			return WERR_INTERNAL_ERROR;
 		}
 
@@ -257,12 +259,14 @@ WERROR dsdb_repl_resolve_working_schema(struct ldb_context *ldb,
 			ret = dsdb_setup_sorted_accessors(ldb, working_schema);
 			if (LDB_SUCCESS != ret) {
 				DEBUG(0,("Failed to create schema-cache indexes!\n"));
+				talloc_free(frame);
 				return WERR_INTERNAL_ERROR;
 			}
 		}
 		pass_no++;
 	}
 
+	talloc_free(frame);
 	return WERR_OK;
 }
 
@@ -298,14 +302,15 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 
 	/* we are going to need remote prefixMap for decoding */
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
-						mem_ctx, &pfm_remote, NULL);
+						working_schema, &pfm_remote, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
 			 win_errstr(werr)));
+		talloc_free(working_schema);
 		return werr;
 	}
 
-	werr = dsdb_repl_resolve_working_schema(ldb, mem_ctx,
+	werr = dsdb_repl_resolve_working_schema(ldb,
 						pfm_remote,
 						0, /* cycle_before_switching */
 						working_schema,
@@ -315,6 +320,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s",
 			  __location__, win_errstr(werr)));
+		talloc_free(working_schema);
 		return werr;
 	}
 
