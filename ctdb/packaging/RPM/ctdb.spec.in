@@ -248,8 +248,8 @@ test suite for ctdb
 %defattr(-,root,root)
 %dir %{_datadir}/%{name}-tests
 %{_datadir}/%{name}-tests/*
-%dir %{_libdir}/%{name}-tests
-%{_libdir}/%{name}-tests/*
+%dir %{_libexecdir}/%{name}/tests
+%{_libexecdir}/%{name}/tests/*
 %{_bindir}/ctdb_run_tests
 %{_bindir}/ctdb_run_cluster_tests
 %doc tests/README
