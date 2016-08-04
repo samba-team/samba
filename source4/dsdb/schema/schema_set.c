@@ -566,6 +566,8 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 {
 	int ret;
 	void *use_global_schema = (void *)1;
+	struct dsdb_schema *old_schema = ldb_get_opaque(ldb, "dsdb_schema");
+
 	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", use_global_schema);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -574,6 +576,16 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	if (global_schema == NULL) {
 		return LDB_SUCCESS;
 	}
+
+	/* Remove any pointer to a previous schema */
+	ret = ldb_set_opaque(ldb, "dsdb_schema", NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* Remove the reference to the schema we just overwrote - if there was
+	 * none, NULL is harmless here */
+	talloc_unlink(ldb, old_schema);
 
 	/* Set the new attributes based on the new schema */
 	ret = dsdb_schema_set_indices_and_attributes(ldb, global_schema, false /* Don't write indices and attributes, it's expensive */);
