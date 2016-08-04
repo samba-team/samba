@@ -276,9 +276,7 @@ int dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 {
 	int ret;
 	const struct GUID *invocation_id;
-	DATA_BLOB ndr_blob;
 	struct dsdb_schema_info *schema_info;
-	const char *schema_info_str;
 	WERROR werr;
 	TALLOC_CTX *temp_ctx = talloc_new(schema);
 	if (temp_ctx == NULL) {
@@ -321,22 +319,26 @@ int dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 		return ret;
 	}
 
-	/* finally, update schema_info in the cache */
-	werr = dsdb_blob_from_schema_info(schema_info, temp_ctx, &ndr_blob);
-	if (!W_ERROR_IS_OK(werr)) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_module), "Failed to get schema info");
-		talloc_free(temp_ctx);
-		return ldb_operr(ldb_module_get_ctx(ldb_module));
-	}
-
-	schema_info_str = hex_encode_talloc(schema, ndr_blob.data, ndr_blob.length);
-	if (!schema_info_str) {
-		talloc_free(temp_ctx);
-		return ldb_module_oom(ldb_module);
-	}
-
-	talloc_unlink(schema, discard_const(schema->schema_info));
-	schema->schema_info = schema_info_str;
+	/*
+	 * We don't update the schema->schema_info!
+	 * as that would not represent the other information
+	 * in schema->*
+	 *
+	 * We're not sure if the current transaction will go through!
+	 * E.g. schema changes are only allowed on the schema master,
+	 * otherwise they result in a UNWILLING_TO_PERFORM and a
+	 *
+	 * Note that schema might a global variable shared between
+	 * multiple ldb_contexts. With process model "single" it
+	 * means the drsuapi server also uses it.
+	 *
+	 * We keep it simple and just try to update the
+	 * stored value.
+	 *
+	 * The next schema reload will pick it up, which
+	 * then works for originating and replicated changes
+	 * in the same way.
+	 */
 
 	talloc_free(temp_ctx);
 	return LDB_SUCCESS;
