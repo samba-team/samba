@@ -340,10 +340,7 @@
 # we don't allow auth_level_connect anymore...
 #
 ^samba3.blackbox.rpcclient.*ncacn_np.*with.*connect.*rpcclient # we don't allow auth_level_connect anymore
-#new read tests fail
+#nt-vfs server blocks read with execute access
 ^samba4.smb2.read.access
-^samba3.smb2.read.access
-#new copychunk tests fail
+#ntvfs server blocks copychunk with execute access on read handle
 ^samba4.smb2.ioctl.copy_chunk_bad_access
-^samba3.smb2.ioctl.copy_chunk_bad_access
-^samba3.smb2.ioctl fs_specific.copy_chunk_bad_access
