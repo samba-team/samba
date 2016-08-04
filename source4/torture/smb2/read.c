@@ -27,21 +27,13 @@
 #include "torture/smb2/proto.h"
 
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		printf("(%s) Incorrect status %s - should be %s\n", \
-		       __location__, nt_errstr(status), nt_errstr(correct)); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_STATUS(_status, _expected) \
+	torture_assert_ntstatus_equal_goto(torture, _status, _expected, \
+		 ret, done, "Incorrect status")
 
-#define CHECK_VALUE(v, correct) do { \
-	if ((v) != (correct)) { \
-		printf("(%s) Incorrect value %s=%u - should be %u\n", \
-		       __location__, #v, (unsigned)v, (unsigned)correct); \
-		ret = false; \
-		goto done; \
-	}} while (0)
+#define CHECK_VALUE(v, correct) \
+	torture_assert_int_equal_goto(torture, v, correct, \
+		 ret, done, "Incorrect value")
 
 #define FNAME "smb2_readtest.dat"
 #define DNAME "smb2_readtest.dir"
