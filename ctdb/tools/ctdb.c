@@ -6269,7 +6269,7 @@ static const struct ctdb_cmd {
 		"check if local node is the recmaster", NULL },
 	{ "gratarp", control_gratarp, false, true,
 		"send a gratuitous arp", "<ip> <interface>" },
-	{ "tickle", control_tickle, false, false,
+	{ "tickle", control_tickle, true, false,
 		"send a tcp tickle ack", "<srcip:port> <dstip:port>" },
 	{ "gettickles", control_gettickles, false, true,
 		"get the list of tickles", "<ip> [<port>]" },
