@@ -4457,6 +4457,7 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		fprintf(stderr,
 			"Wrong version of backup file, expected %u, got %lu\n",
 			DB_VERSION, db_hdr.version);
+		close(fd);
 		return EINVAL;
 	}
 
@@ -4474,6 +4475,7 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		ret = ctdb_rec_buffer_read(fd, mem_ctx, &recbuf);
 		if (ret != 0) {
 			fprintf(stderr, "Failed to read records\n");
+			close(fd);
 			return ret;
 		}
 
@@ -4481,10 +4483,12 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 					       &state);
 		if (ret != 0) {
 			fprintf(stderr, "Failed to dump records\n");
+			close(fd);
 			return ret;
 		}
 	}
 
+	close(fd);
 	printf("Dumped %u record(s)\n", state.sub_state.count);
 	return 0;
 }
