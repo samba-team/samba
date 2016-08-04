@@ -64,7 +64,11 @@ struct dsdb_schema *dsdb_schema_copy_shallow(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	schema_copy->schema_info = talloc_strdup(schema_copy, schema->schema_info);
+	schema_copy->schema_info = talloc(schema_copy, struct dsdb_schema_info);
+	if (!schema_copy->schema_info) {
+		goto failed;
+	}
+	*schema_copy->schema_info = *schema->schema_info;
 
 	/* copy classes and attributes*/
 	for (cls = schema->classes; cls; cls = cls->next) {
@@ -107,8 +111,8 @@ WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
 					const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
 	WERROR werr;
-	const char *schema_info;
-	struct dsdb_schema_prefixmap *pfm;
+	struct dsdb_schema_info *schema_info = NULL;
+	struct dsdb_schema_prefixmap *pfm = NULL;
 
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(ctr, true, schema, &pfm, &schema_info);
 	W_ERROR_NOT_OK_RETURN(werr);
@@ -117,7 +121,7 @@ WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
 	talloc_free(schema->prefixmap);
 	schema->prefixmap = pfm;
 
-	talloc_free(discard_const(schema->schema_info));
+	talloc_free(schema->schema_info);
 	schema->schema_info = schema_info;
 
 	return WERR_OK;
@@ -169,8 +173,8 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 				  const struct ldb_val *schemaInfo)
 {
 	WERROR werr;
-	const char *schema_info;
-	struct dsdb_schema_prefixmap *pfm;
+	struct dsdb_schema_info *schema_info = NULL;
+	struct dsdb_schema_prefixmap *pfm = NULL;
 	TALLOC_CTX *mem_ctx;
 
 	/* verify schemaInfo blob is valid one */
@@ -192,19 +196,18 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	}
 
 	/* decode schema_info */
-	schema_info = hex_encode_talloc(mem_ctx,
-					schemaInfo->data,
-					schemaInfo->length);
-	if (!schema_info) {
+	werr = dsdb_schema_info_from_blob(schemaInfo, mem_ctx, &schema_info);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, (__location__ " dsdb_schema_info_from_blob failed: %s\n", win_errstr(werr)));
 		talloc_free(mem_ctx);
-		return WERR_NOMEM;
+		return werr;
 	}
 
 	/* store prefixMap and schema_info into cached Schema */
 	talloc_free(schema->prefixmap);
 	schema->prefixmap = talloc_steal(schema, pfm);
 
-	talloc_free(discard_const(schema->schema_info));
+	talloc_free(schema->schema_info);
 	schema->schema_info = talloc_steal(schema, schema_info);
 
 	/* clean up locally allocated mem */
@@ -257,8 +260,8 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 	talloc_free(ctr);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*schemaInfo = strhex_to_data_blob(mem_ctx, schema->schema_info);
-	W_ERROR_HAVE_NO_MEMORY(schemaInfo->data);
+	status = dsdb_blob_from_schema_info(schema->schema_info, mem_ctx, schemaInfo);
+	W_ERROR_NOT_OK_RETURN(status);
 
 	return WERR_OK;
 }
