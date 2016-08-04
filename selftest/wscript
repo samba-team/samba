@@ -118,7 +118,10 @@ def cmd_testonly(opt):
 
     env.SUBUNIT_FORMATTER = os.getenv('SUBUNIT_FORMATTER')
     if not env.SUBUNIT_FORMATTER:
-        env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
+        if Options.options.PERF_TEST:
+            env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit-json --prefix=${SELFTEST_PREFIX}'
+        else:
+            env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
     env.FILTER_XFAIL = '${PYTHON} -u ${srcdir}/selftest/filter-subunit --expected-failures=${srcdir}/selftest/knownfail --flapping=${srcdir}/selftest/flapping'
 
     if Options.options.FAIL_IMMEDIATELY:
