@@ -4248,18 +4248,21 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	nodemap = get_nodemap(ctdb, false);
 	if (nodemap == NULL) {
 		fprintf(stderr, "Failed to get nodemap\n");
+		close(fd);
 		return ENOMEM;
 	}
 
 	ret = get_generation(mem_ctx, ctdb, &generation);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to get current generation\n");
+		close(fd);
 		return ret;
 	}
 
 	count = list_of_active_nodes(nodemap, CTDB_UNKNOWN_PNN, mem_ctx,
 				     &pnn_list);
 	if (count <= 0) {
+		close(fd);
 		return ENOMEM;
 	}
 
@@ -4390,6 +4393,7 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 
 failed:
+	close(fd);
 	ctdb_ctrl_set_recmode(mem_ctx, ctdb->ev, ctdb->client,
 			      ctdb->pnn, TIMEOUT(), CTDB_RECOVERY_ACTIVE);
 	return ret;
