@@ -344,14 +344,14 @@ static bool test_dsdb_schema_info_cmp(struct torture_context *tctx,
 				  WERR_INVALID_PARAMETER,
 				  "dsdb_schema_info_cmp(): unexpected result");
 
-	/* test with valid schemaInfo, but not correct one */
+	/* test with valid schemaInfo, but older one should be ok */
 	blob = strhex_to_data_blob(ctr, "FF0000000000000000000000000000000000000000");
 	torture_assert(tctx, blob.data, "Not enough memory!");
 	ctr->mappings[0].oid.length     = blob.length;
 	ctr->mappings[0].oid.binary_oid = blob.data;
 	torture_assert_werr_equal(tctx,
 				  dsdb_schema_info_cmp(priv->schema, ctr),
-				  WERR_DS_DRA_SCHEMA_MISMATCH,
+				  WERR_OK,
 				  "dsdb_schema_info_cmp(): unexpected result");
 
 	/* test with correct schemaInfo, but invalid ATTID */
@@ -372,6 +372,73 @@ static bool test_dsdb_schema_info_cmp(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx,
 			       dsdb_schema_info_cmp(priv->schema, ctr),
 			       "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo, but older revision */
+	schema_info = *priv->schema->schema_info;
+	schema_info.revision -= 1;
+	torture_assert_werr_ok(tctx,
+		dsdb_blob_from_schema_info(&schema_info, tctx, &blob),
+		"dsdb_blob_from_schema_info() failed");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_OK,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo, but newer revision */
+	schema_info = *priv->schema->schema_info;
+	schema_info.revision += 1;
+	torture_assert_werr_ok(tctx,
+		dsdb_blob_from_schema_info(&schema_info, tctx, &blob),
+		"dsdb_blob_from_schema_info() failed");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_DS_DRA_SCHEMA_MISMATCH,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo, but newer revision and other invocationId */
+	schema_info = *priv->schema->schema_info;
+	schema_info.revision += 1;
+	schema_info.invocation_id.time_mid += 1;
+	torture_assert_werr_ok(tctx,
+		dsdb_blob_from_schema_info(&schema_info, tctx, &blob),
+		"dsdb_blob_from_schema_info() failed");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_DS_DRA_SCHEMA_MISMATCH,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo, but older revision and other invocationId */
+	schema_info = *priv->schema->schema_info;
+	schema_info.revision -= 1;
+	schema_info.invocation_id.time_mid += 1;
+	torture_assert_werr_ok(tctx,
+		dsdb_blob_from_schema_info(&schema_info, tctx, &blob),
+		"dsdb_blob_from_schema_info() failed");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_OK,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo, but same revision and other invocationId */
+	schema_info = *priv->schema->schema_info;
+	schema_info.invocation_id.time_mid += 1;
+	torture_assert_werr_ok(tctx,
+		dsdb_blob_from_schema_info(&schema_info, tctx, &blob),
+		"dsdb_blob_from_schema_info() failed");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_DS_DRA_SCHEMA_CONFLICT,
+				  "dsdb_schema_info_cmp(): unexpected result");
 
 	talloc_free(ctr);
 	return true;
