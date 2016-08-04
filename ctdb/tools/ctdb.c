@@ -5362,7 +5362,7 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			  db_flags, &db);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
-		return ret;
+		goto done;
 	}
 
 	ret = ctdb_transaction_start(mem_ctx, ctdb->ev, ctdb->client,
@@ -5370,7 +5370,7 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to start transaction on db %s\n",
 			db_name);
-		return ret;
+		goto done;
 	}
 
 	while (ptrans_get_key_value(mem_ctx, file, &key, &value)) {
@@ -5379,7 +5379,7 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			if (ret != 0) {
 				fprintf(stderr, "Failed to store record\n");
 				ctdb_transaction_cancel(h);
-				return 1;
+				goto done;
 			}
 			talloc_free(key.dptr);
 			talloc_free(value.dptr);
@@ -5390,14 +5390,13 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to commit transaction on db %s\n",
 			db_name);
-		return ret;
 	}
 
+done:
 	if (file != stdin) {
 		fclose(file);
 	}
-
-	return 0;
+	return ret;
 }
 
 static int control_tfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
