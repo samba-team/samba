@@ -212,7 +212,7 @@ struct dsdb_schema {
 	 * this is the content of the schemaInfo attribute of the
 	 * Schema-Partition head object.
 	 */
-	const char *schema_info;
+	struct dsdb_schema_info *schema_info;
 
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;

@@ -304,6 +304,7 @@ static bool test_dsdb_schema_info_cmp(struct torture_context *tctx,
 {
 	DATA_BLOB blob;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+	struct dsdb_schema_info schema_info;
 
 	ctr = talloc_zero(priv, struct drsuapi_DsReplicaOIDMapping_Ctr);
 	torture_assert(tctx, ctr, "Not enough memory!");
@@ -354,8 +355,10 @@ static bool test_dsdb_schema_info_cmp(struct torture_context *tctx,
 				  "dsdb_schema_info_cmp(): unexpected result");
 
 	/* test with correct schemaInfo, but invalid ATTID */
-	blob = strhex_to_data_blob(ctr, priv->schema->schema_info);
-	torture_assert(tctx, blob.data, "Not enough memory!");
+	schema_info = *priv->schema->schema_info;
+	torture_assert_werr_ok(tctx,
+		dsdb_blob_from_schema_info(&schema_info, tctx, &blob),
+		"dsdb_blob_from_schema_info() failed");
 	ctr->mappings[0].id_prefix	= 1;
 	ctr->mappings[0].oid.length     = blob.length;
 	ctr->mappings[0].oid.binary_oid = blob.data;
@@ -365,7 +368,6 @@ static bool test_dsdb_schema_info_cmp(struct torture_context *tctx,
 				  "dsdb_schema_info_cmp(): unexpected result");
 
 	/* test with valid schemaInfo */
-	blob = strhex_to_data_blob(ctr, priv->schema->schema_info);
 	ctr->mappings[0].id_prefix	= 0;
 	torture_assert_werr_ok(tctx,
 			       dsdb_schema_info_cmp(priv->schema, ctr),
@@ -595,7 +597,9 @@ static bool torture_drs_unit_schemainfo_setup(struct torture_context *tctx,
 	priv->schema = dsdb_new_schema(priv);
 
 	/* set schema_info in dsdb_schema for testing */
-	priv->schema->schema_info = talloc_strdup(priv->schema, SCHEMA_INFO_DEFAULT_STR);
+	torture_assert(tctx,
+		       _drsut_schemainfo_new(tctx, SCHEMA_INFO_DEFAULT_STR, &priv->schema->schema_info),
+		       "Failed to create schema_info test object");
 
 	/* pre-cache invocationId for samdb_ntds_invocation_id()
 	 * to work with our mock ldb */

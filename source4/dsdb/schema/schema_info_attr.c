@@ -175,10 +175,11 @@ WERROR dsdb_blob_from_schema_info(const struct dsdb_schema_info *schema_info,
 WERROR dsdb_schema_info_cmp(const struct dsdb_schema *schema,
 			    const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
 {
-	bool bres;
-	DATA_BLOB blob;
-	char *schema_info_str;
-	struct drsuapi_DsReplicaOIDMapping *mapping;
+	TALLOC_CTX *frame = NULL;
+	DATA_BLOB blob = data_blob_null;
+	struct dsdb_schema_info *schema_info = NULL;
+	const struct drsuapi_DsReplicaOIDMapping *mapping = NULL;
+	WERROR werr;
 
 	/* we should have at least schemaInfo element */
 	if (ctr->num_mappings < 1) {
@@ -196,13 +197,21 @@ WERROR dsdb_schema_info_cmp(const struct dsdb_schema *schema,
 		return WERR_INVALID_PARAMETER;
 	}
 
-	schema_info_str = hex_encode_talloc(NULL, blob.data, blob.length);
-	W_ERROR_HAVE_NO_MEMORY(schema_info_str);
+	frame = talloc_stackframe();
+	werr = dsdb_schema_info_from_blob(&blob, frame, &schema_info);
+	if (!W_ERROR_IS_OK(werr)) {
+		TALLOC_FREE(frame);
+		return werr;
+	}
 
-	bres = strequal(schema->schema_info, schema_info_str);
-	talloc_free(schema_info_str);
+	if (schema->schema_info->revision != schema_info->revision) {
+		werr = WERR_DS_DRA_SCHEMA_MISMATCH;
+	} else {
+		werr = WERR_OK;
+	}
 
-	return bres ? WERR_OK : WERR_DS_DRA_SCHEMA_MISMATCH;
+	TALLOC_FREE(frame);
+	return werr;
 }
 
 
