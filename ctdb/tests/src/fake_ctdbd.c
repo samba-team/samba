@@ -2196,8 +2196,8 @@ static void control_get_ifaces(TALLOC_CTX *mem_ctx,
 			.link_state = iface->link_up,
 			.references = iface->references,
 		};
-		strncpy(iface_list->iface[i].name, iface->name,
-			CTDB_IFACE_SIZE+2);
+		strlcpy(iface_list->iface[i].name, iface->name,
+			sizeof(iface_list->iface[i].name));
 	}
 
 	reply.rdata.data.iface_list = iface_list;
