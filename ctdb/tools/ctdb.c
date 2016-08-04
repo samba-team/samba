@@ -5450,11 +5450,13 @@ static int control_tfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		nwritten = sys_write(fd, data.dptr, data.dsize);
 		if (nwritten != data.dsize) {
 			fprintf(stderr, "Failed to write record to file\n");
+			close(fd);
 			goto fail;
 		}
 
 		close(fd);
 	}
+
 fail:
 	ret = ctdb_ltdb_header_extract(&data, &header);
 	if (ret != 0) {
