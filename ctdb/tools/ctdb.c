@@ -5136,6 +5136,7 @@ static int control_pfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to read record for key %s\n",
 			argv[1]);
+		ctdb_transaction_cancel(h);
 		return ret;
 	}
 
@@ -5200,6 +5201,7 @@ static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to store record for key %s\n",
 			argv[1]);
+		ctdb_transaction_cancel(h);
 		return ret;
 	}
 
@@ -5207,6 +5209,7 @@ static int control_pstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to commit transaction on db %s\n",
 			db_name);
+		ctdb_transaction_cancel(h);
 		return ret;
 	}
 
@@ -5262,6 +5265,7 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to delete record for key %s\n",
 			argv[1]);
+		ctdb_transaction_cancel(h);
 		return ret;
 	}
 
@@ -5269,6 +5273,7 @@ static int control_pdelete(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to commit transaction on db %s\n",
 			db_name);
+		ctdb_transaction_cancel(h);
 		return ret;
 	}
 
@@ -5412,6 +5417,7 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		fprintf(stderr, "Failed to commit transaction on db %s\n",
 			db_name);
+		ctdb_transaction_cancel(h);
 	}
 
 done:
