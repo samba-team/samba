@@ -3238,10 +3238,12 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				 ctdb_req_control_tcp_add_delayed_update,
 				 ctdb_reply_control_tcp_add_delayed_update);
 		if (req == NULL) {
+			talloc_free(clist);
 			return ENOMEM;
 		}
 
 		tevent_req_poll(req, ctdb->ev);
+		talloc_free(clist);
 
 		ret = process_clist_recv(req);
 		if (ret != 0) {
@@ -3299,10 +3301,12 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 					 ctdb_req_control_tcp_remove,
 					 ctdb_reply_control_tcp_remove);
 		if (req == NULL) {
+			talloc_free(clist);
 			return ENOMEM;
 		}
 
 		tevent_req_poll(req, ctdb->ev);
+		talloc_free(clist);
 
 		ret = process_clist_recv(req);
 		if (ret != 0) {
