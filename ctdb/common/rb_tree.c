@@ -223,7 +223,7 @@ static inline void trbt_set_color(trbt_node_t *node, int color)
 }
 static inline void trbt_set_color_left(trbt_node_t *node, int color)
 {
-	if ( ((node==NULL)||(node->left==NULL)) && (color==TRBT_BLACK) ) {
+	if (node == NULL || node->left == NULL) {
 		return;
 	}
 	node->left->rb_color = color;
