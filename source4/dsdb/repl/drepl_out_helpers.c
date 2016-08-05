@@ -241,6 +241,13 @@ struct dreplsrv_op_pull_source_state {
 	struct tevent_context *ev;
 	struct dreplsrv_out_operation *op;
 	void *ndr_struct_ptr;
+	/*
+	 * Used when we have to re-try with a different NC, eg for
+	 * EXOP retry or to get a current schema first
+	 */
+	struct dreplsrv_partition_source_dsa *source_dsa_retry;
+	enum drsuapi_DsExtendedOperation extended_op_retry;
+	bool retry_started;
 };
 
 static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq);
@@ -785,9 +792,16 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 						 dsdb_repl_flags,
 						 state, &objects);
 
-	if (W_ERROR_EQUAL(status, WERR_DS_DRA_SCHEMA_MISMATCH)
-	    && state->op->source_dsa_retry == NULL) {
+	if (W_ERROR_EQUAL(status, WERR_DS_DRA_SCHEMA_MISMATCH)) {
 		struct dreplsrv_partition *p;
+
+		if (state->retry_started) {
+			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+			DEBUG(0,("Failed to convert objects after retry: %s/%s\n",
+				  win_errstr(status), nt_errstr(nt_status)));
+			tevent_req_nterror(req, nt_status);
+			return;
+		}
 
 		/*
 		 * Change info sync or extended operation into a fetch
@@ -802,14 +816,14 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 
 
 		if (state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
-			state->op->extended_op_retry = state->op->extended_op;
+			state->extended_op_retry = state->op->extended_op;
 		} else {
-			state->op->extended_op_retry = DRSUAPI_EXOP_NONE;
+			state->extended_op_retry = DRSUAPI_EXOP_NONE;
 		}
 		state->op->extended_op = DRSUAPI_EXOP_NONE;
 
 		if (ldb_dn_compare(nc_root, partition->dn) == 0) {
-			state->op->source_dsa_retry = state->op->source_dsa;
+			state->source_dsa_retry = state->op->source_dsa;
 		} else {
 			status = dreplsrv_partition_find_for_nc(service,
 								NULL, NULL,
@@ -825,7 +839,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			}
 			status = dreplsrv_partition_source_dsa_by_guid(p,
 								       &state->op->source_dsa->repsFrom1->source_dsa_obj_guid,
-								       &state->op->source_dsa_retry);
+								       &state->source_dsa_retry);
 
 			if (!W_ERROR_IS_OK(status)) {
 				struct GUID_txt_buf str;
@@ -867,6 +881,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		}
 		DEBUG(4,("Wrong schema when applying reply GetNCChanges, retrying\n"));
 
+		state->retry_started = true;
 		dreplsrv_op_pull_source_get_changes_trigger(req);
 		return;
 
@@ -930,10 +945,10 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	 * pulling the schema, then go back and do the original
 	 * operation once we are done.
 	 */
-	if (state->op->source_dsa_retry != NULL) {
-		state->op->source_dsa = state->op->source_dsa_retry;
-		state->op->extended_op = state->op->extended_op_retry;
-		state->op->source_dsa_retry = NULL;
+	if (state->source_dsa_retry != NULL) {
+		state->op->source_dsa = state->source_dsa_retry;
+		state->op->extended_op = state->extended_op_retry;
+		state->source_dsa_retry = NULL;
 		dreplsrv_op_pull_source_get_changes_trigger(req);
 		return;
 	}
