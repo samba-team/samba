@@ -2876,7 +2876,7 @@ again:
 		return ret;
 	}
 
-	if (vnnmap->generation == 1) {
+	if (vnnmap->generation == INVALID_GENERATION) {
 		talloc_free(vnnmap);
 		sleep(1);
 		goto again;
