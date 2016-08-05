@@ -64,7 +64,8 @@ Valid status codes are:
 If a 0 status code is sent then it the helper should periodically
 check if the (original) parent processes still exists while awaiting
 termination.  If the parent process disappears then the helper should
-release the mutex and exit.  This avoids stale mutexes.
+release the mutex and exit.  This avoids stale mutexes.  Note that a
+helper should never wait for parent process ID 1!
 
 If a non-0 status code is sent then the helper can exit immediately.
 However, if the helper does not exit then it must terminate if it

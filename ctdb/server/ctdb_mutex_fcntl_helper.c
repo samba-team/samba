@@ -82,6 +82,19 @@ int main(int argc, char *argv[])
 	}
 
 	ppid = getppid();
+
+	if (ppid == 1) {
+		/* The original parent is gone and the process has
+		 * been reparented to init.  This can happen if the
+		 * helper is started just as the parent is killed
+		 * during shutdown.  The error message doesn't need to
+		 * be stellar, since there won't be anything around to
+		 * capture and log it...
+		 */
+		fprintf(stderr, "%s: PPID == 1\n", progname);
+		exit(1);
+	}
+
 	file = argv[1];
 
 	result = fcntl_lock(file, &fd);
