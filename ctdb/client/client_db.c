@@ -2304,6 +2304,7 @@ static void ctdb_transaction_cancel_done(struct tevent_req *subreq)
 		DEBUG(DEBUG_ERR,
 		      ("transaction_cancel: %s g_lock unlock failed, ret=%d\n",
 		       state->h->db->db_name, ret));
+		talloc_free(state->h);
 		tevent_req_error(req, ret);
 		return;
 	}
@@ -2336,6 +2337,7 @@ int ctdb_transaction_cancel(struct ctdb_transaction_handle *h)
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
+		talloc_free(h);
 		return ENOMEM;
 	}
 
@@ -2343,6 +2345,7 @@ int ctdb_transaction_cancel(struct ctdb_transaction_handle *h)
 					   tevent_timeval_zero(), h);
 	if (req == NULL) {
 		talloc_free(mem_ctx);
+		talloc_free(h);
 		return ENOMEM;
 	}
 
