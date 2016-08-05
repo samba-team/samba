@@ -3119,6 +3119,7 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
+	talloc_free(tickles);
 	return 0;
 }
 
