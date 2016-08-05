@@ -5442,17 +5442,20 @@ static int control_tfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ret = str_to_data(argv[1], strlen(argv[1]), mem_ctx, &key);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse key %s\n", argv[1]);
+		tdb_close(tdb);
 		return ret;
 	}
 
 	data = tdb_fetch(tdb, key);
 	if (data.dptr == NULL) {
 		fprintf(stderr, "No record for key %s\n", argv[1]);
+		tdb_close(tdb);
 		return 1;
 	}
 
 	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		fprintf(stderr, "Invalid record for key %s\n", argv[1]);
+		tdb_close(tdb);
 		return 1;
 	}
 
@@ -5514,12 +5517,14 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ret = str_to_data(argv[1], strlen(argv[1]), mem_ctx, &key);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse key %s\n", argv[1]);
+		tdb_close(tdb);
 		return ret;
 	}
 
 	ret = str_to_data(argv[2], strlen(argv[2]), mem_ctx, &value);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to parse value %s\n", argv[2]);
+		tdb_close(tdb);
 		return ret;
 	}
 
@@ -5540,6 +5545,7 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	data.dptr = talloc_size(mem_ctx, data.dsize);
 	if (data.dptr == NULL) {
 		fprintf(stderr, "Memory allocation error\n");
+		tdb_close(tdb);
 		return 1;
 	}
 
