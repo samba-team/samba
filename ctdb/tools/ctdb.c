@@ -2038,6 +2038,7 @@ static void traverse_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	}
 
 	if (rec->data.dsize == 0) {
+		talloc_free(rec);
 		return;
 	}
 
