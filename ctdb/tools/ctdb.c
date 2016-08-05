@@ -6454,7 +6454,9 @@ static int process_command(const struct ctdb_cmd *cmd, int argc,
 			goto fail;
 		}
 
-		return cmd->fn(tmp_ctx, NULL, argc-1, argv+1);
+		ret = cmd->fn(tmp_ctx, NULL, argc-1, argv+1);
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
 	ctdb = talloc_zero(tmp_ctx, struct ctdb_context);
