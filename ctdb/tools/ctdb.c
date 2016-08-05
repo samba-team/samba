@@ -3230,6 +3230,9 @@ static int control_addtickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		if (ret != 0) {
 			return ret;
 		}
+		if (count == 0) {
+			return 0;
+		}
 
 		req = process_clist_send(mem_ctx, ctdb, clist, count,
 				 ctdb_req_control_tcp_add_delayed_update,
@@ -3287,6 +3290,9 @@ static int control_deltickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		ret = ctdb_parse_connections(stdin, mem_ctx, &count, &clist);
 		if (ret != 0) {
 			return ret;
+		}
+		if (count == 0) {
+			return 0;
 		}
 
 		req = process_clist_send(mem_ctx, ctdb, clist, count,
