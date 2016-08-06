@@ -780,6 +780,21 @@ static int vfswrap_asys_state_destructor(struct vfswrap_asys_state *s)
 	return 0;
 }
 
+struct vfswrap_pread_state {
+	ssize_t ret;
+	int err;
+	int fd;
+	void *buf;
+	size_t count;
+	off_t offset;
+
+	struct vfs_aio_state vfs_aio_state;
+	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
+};
+
+static void vfs_pread_do(void *private_data);
+static void vfs_pread_done(struct tevent_req *subreq);
+
 static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 					     TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
@@ -787,31 +802,98 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 					     void *data,
 					     size_t n, off_t offset)
 {
-	struct tevent_req *req;
-	struct vfswrap_asys_state *state;
+	struct tevent_req *req, *subreq;
+	struct vfswrap_pread_state *state;
 	int ret;
 
-	req = tevent_req_create(mem_ctx, &state, struct vfswrap_asys_state);
+	req = tevent_req_create(mem_ctx, &state, struct vfswrap_pread_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	if (!vfswrap_init_asys_ctx(handle->conn->sconn)) {
-		tevent_req_oom(req);
+
+	ret = vfswrap_init_pool(handle->conn->sconn);
+	if (tevent_req_error(req, ret)) {
 		return tevent_req_post(req, ev);
 	}
-	state->asys_ctx = handle->conn->sconn->asys_ctx;
-	state->req = req;
+
+	state->ret = -1;
+	state->fd = fsp->fh->fd;
+	state->buf = data;
+	state->count = n;
+	state->offset = offset;
 
 	SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
 				     state->profile_bytes, n);
-	ret = asys_pread(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
-	if (ret != 0) {
-		tevent_req_error(req, ret);
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
+
+	subreq = pthreadpool_tevent_job_send(
+		state, ev, handle->conn->sconn->pool,
+		vfs_pread_do, state);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	talloc_set_destructor(state, vfswrap_asys_state_destructor);
+	tevent_req_set_callback(subreq, vfs_pread_done, req);
 
 	return req;
+}
+
+static void vfs_pread_do(void *private_data)
+{
+	struct vfswrap_pread_state *state = talloc_get_type_abort(
+		private_data, struct vfswrap_pread_state);
+	struct timespec start_time;
+	struct timespec end_time;
+
+	SMBPROFILE_BYTES_ASYNC_SET_BUSY(state->profile_bytes);
+
+	PROFILE_TIMESTAMP(&start_time);
+
+	do {
+		state->ret = pread(state->fd, state->buf, state->count,
+				   state->offset);
+	} while ((state->ret == -1) && (errno == EINTR));
+
+	state->err = errno;
+
+	PROFILE_TIMESTAMP(&end_time);
+
+	state->vfs_aio_state.duration = nsec_time_diff(&end_time, &start_time);
+
+	SMBPROFILE_BYTES_ASYNC_SET_IDLE(state->profile_bytes);
+}
+
+static void vfs_pread_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+#ifdef WITH_PROFILE
+	struct vfswrap_pread_state *state = tevent_req_data(
+		req, struct vfswrap_pread_state);
+#endif
+	int ret;
+
+	ret = pthreadpool_tevent_job_recv(subreq);
+	TALLOC_FREE(subreq);
+	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
+	if (tevent_req_error(req, ret)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static ssize_t vfswrap_pread_recv(struct tevent_req *req,
+				  struct vfs_aio_state *vfs_aio_state)
+{
+	struct vfswrap_pread_state *state = tevent_req_data(
+		req, struct vfswrap_pread_state);
+
+	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
+		return -1;
+	}
+
+	*vfs_aio_state = state->vfs_aio_state;
+	return state->ret;
 }
 
 static struct tevent_req *vfswrap_pwrite_send(struct vfs_handle_struct *handle,
@@ -2660,7 +2742,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.read_fn = vfswrap_read,
 	.pread_fn = vfswrap_pread,
 	.pread_send_fn = vfswrap_pread_send,
-	.pread_recv_fn = vfswrap_asys_ssize_t_recv,
+	.pread_recv_fn = vfswrap_pread_recv,
 	.write_fn = vfswrap_write,
 	.pwrite_fn = vfswrap_pwrite,
 	.pwrite_send_fn = vfswrap_pwrite_send,
