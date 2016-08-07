@@ -2126,9 +2126,6 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 			ctdb_vnn_unassign_iface(ctdb, vnn);
 			continue;
 		}
-		if (!vnn->iface) {
-			continue;
-		}
 
 		/* Don't allow multiple releases at once.  Some code,
 		 * particularly ctdb_tickle_sentenced_connections() is
