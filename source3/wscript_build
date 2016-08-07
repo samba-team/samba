@@ -629,7 +629,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    RPC_SERVICE
                    NDR_SMBXSRV
                    LEASES_DB
-                   LIBASYS
                    sysquotas
                    NDR_SMB_ACL
                    netapi
@@ -1513,7 +1512,6 @@ bld.SAMBA3_BINARY('spotlight2sparql',
 bld.RECURSE('auth')
 bld.RECURSE('libgpo/gpext')
 bld.RECURSE('lib/pthreadpool')
-bld.RECURSE('lib/asys')
 bld.RECURSE('lib/unix_msg')
 bld.RECURSE('librpc')
 bld.RECURSE('librpc/idl')
