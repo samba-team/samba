@@ -181,7 +181,7 @@ int cbuf_putdw(cbuf* b, uint32_t u);
  *
  * @return number of characters written, negative on error
  */
-int cbuf_printf(cbuf* b, const char* fmt, ...);
+int cbuf_printf(cbuf* b, const char* fmt, ...) PRINTF_ATTRIBUTE(2,3);
 
 
 /**
