@@ -297,6 +297,9 @@ int tdb_unpack(const uint8_t *buf, int bufsize, const char *fmt, ...)
  Log tdb messages via DEBUG().
 ****************************************************************************/
 
+static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
+		    const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+
 static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *format, ...)
 {
 	va_list ap;
