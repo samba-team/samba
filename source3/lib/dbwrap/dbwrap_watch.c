@@ -534,7 +534,8 @@ static NTSTATUS dbwrap_watched_parse_record(
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	struct dbwrap_watched_parse_record_state state = {
-		.parser = parser, private_data = private_data,
+		.parser = parser,
+		.private_data = private_data,
 		.deleted = false
 	};
 	NTSTATUS status;
