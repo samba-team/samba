@@ -431,7 +431,7 @@ char *tdb_data_string(TALLOC_CTX *mem_ctx, TDB_DATA d)
 		return NULL;
 	}
 
-	len = cbuf_printf(ost, "%d:");
+	len = cbuf_printf(ost, "%zu:", d.dsize);
 	if (len == -1) {
 		goto done;
 	}
