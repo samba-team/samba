@@ -30,7 +30,6 @@
 #include "source3/include/msdfs.h"
 #include "librpc/gen_ndr/ndr_dfsblobs.h"
 #include "lib/util/tevent_unix.h"
-#include "lib/asys/asys.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/sys_rw.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
@@ -706,51 +705,6 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	return result;
 }
 
-static void vfswrap_asys_finished(struct tevent_context *ev,
-				  struct tevent_fd *fde,
-				  uint16_t flags, void *p);
-
-static bool vfswrap_init_asys_ctx(struct smbd_server_connection *conn)
-{
-	struct asys_context *ctx;
-	struct tevent_fd *fde;
-	int ret;
-	int fd;
-
-	if (conn->asys_ctx != NULL) {
-		return true;
-	}
-
-	ret = asys_context_init(&ctx, lp_aio_max_threads());
-	if (ret != 0) {
-		DEBUG(1, ("asys_context_init failed: %s\n", strerror(ret)));
-		return false;
-	}
-
-	fd = asys_signalfd(ctx);
-
-	ret = set_blocking(fd, false);
-	if (ret != 0) {
-		DBG_WARNING("set_blocking failed: %s\n", strerror(errno));
-		goto fail;
-	}
-
-	fde = tevent_add_fd(conn->ev_ctx, conn, fd, TEVENT_FD_READ,
-			    vfswrap_asys_finished, ctx);
-	if (fde == NULL) {
-		DEBUG(1, ("tevent_add_fd failed\n"));
-		goto fail;
-	}
-
-	conn->asys_ctx = ctx;
-	conn->asys_fde = fde;
-	return true;
-
-fail:
-	asys_context_destroy(ctx);
-	return false;
-}
-
 static int vfswrap_init_pool(struct smbd_server_connection *conn)
 {
 	int ret;
@@ -762,22 +716,6 @@ static int vfswrap_init_pool(struct smbd_server_connection *conn)
 	ret = pthreadpool_tevent_init(conn, lp_aio_max_threads(),
 				      &conn->pool);
 	return ret;
-}
-
-
-struct vfswrap_asys_state {
-	struct asys_context *asys_ctx;
-	struct tevent_req *req;
-	ssize_t ret;
-	struct vfs_aio_state vfs_aio_state;
-	SMBPROFILE_BASIC_ASYNC_STATE(profile_basic);
-	SMBPROFILE_BYTES_ASYNC_STATE(profile_bytes);
-};
-
-static int vfswrap_asys_state_destructor(struct vfswrap_asys_state *s)
-{
-	asys_cancel(s->asys_ctx, s->req);
-	return 0;
 }
 
 struct vfswrap_pread_state {
@@ -1109,75 +1047,6 @@ static int vfswrap_fsync_recv(struct tevent_req *req,
 		return -1;
 	}
 
-	*vfs_aio_state = state->vfs_aio_state;
-	return state->ret;
-}
-
-static void vfswrap_asys_finished(struct tevent_context *ev,
-					struct tevent_fd *fde,
-					uint16_t flags, void *p)
-{
-	struct asys_context *asys_ctx = (struct asys_context *)p;
-	struct asys_result results[get_outstanding_aio_calls()];
-	int i, ret;
-
-	if ((flags & TEVENT_FD_READ) == 0) {
-		return;
-	}
-
-	ret = asys_results(asys_ctx, results, get_outstanding_aio_calls());
-	if (ret < 0) {
-		DEBUG(1, ("asys_results returned %s\n", strerror(-ret)));
-		return;
-	}
-
-	for (i=0; i<ret; i++) {
-		struct asys_result *result = &results[i];
-		struct tevent_req *req;
-		struct vfswrap_asys_state *state;
-
-		if ((result->ret == -1) && (result->err == ECANCELED)) {
-			continue;
-		}
-
-		req = talloc_get_type_abort(result->private_data,
-					    struct tevent_req);
-		state = tevent_req_data(req, struct vfswrap_asys_state);
-
-		talloc_set_destructor(state, NULL);
-
-		SMBPROFILE_BASIC_ASYNC_END(state->profile_basic);
-		SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
-		state->ret = result->ret;
-		state->vfs_aio_state.error = result->err;
-		state->vfs_aio_state.duration = result->duration;
-		tevent_req_defer_callback(req, ev);
-		tevent_req_done(req);
-	}
-}
-
-static ssize_t vfswrap_asys_ssize_t_recv(struct tevent_req *req,
-					 struct vfs_aio_state *vfs_aio_state)
-{
-	struct vfswrap_asys_state *state = tevent_req_data(
-		req, struct vfswrap_asys_state);
-
-	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
-		return -1;
-	}
-	*vfs_aio_state = state->vfs_aio_state;
-	return state->ret;
-}
-
-static int vfswrap_asys_int_recv(struct tevent_req *req,
-				 struct vfs_aio_state *vfs_aio_state)
-{
-	struct vfswrap_asys_state *state = tevent_req_data(
-		req, struct vfswrap_asys_state);
-
-	if (tevent_req_is_unix_error(req, &vfs_aio_state->error)) {
-		return -1;
-	}
 	*vfs_aio_state = state->vfs_aio_state;
 	return state->ret;
 }
