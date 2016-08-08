@@ -55,7 +55,9 @@ struct libnetapi_private_ctx {
 
 NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx, char **password);
 NET_API_STATUS libnetapi_get_username(struct libnetapi_ctx *ctx, char **username);
-NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx, const char *format, ...);
+NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
+					  const char *format, ...)
+					  PRINTF_ATTRIBUTE(2,3);
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, char **debuglevel);
 
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx);
