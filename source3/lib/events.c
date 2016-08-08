@@ -188,6 +188,10 @@ bool run_events_poll(struct tevent_context *ev, int pollrtn,
 		return true;
 	}
 
+	if (ev->threaded_contexts != NULL) {
+		tevent_common_threaded_activate_immediate(ev);
+	}
+
 	if (ev->immediate_events &&
 	    tevent_common_loop_immediate(ev)) {
 		return true;
