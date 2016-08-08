@@ -660,7 +660,13 @@ static NTSTATUS pdb_samba_dsdb_getsamupriv(struct pdb_samba_dsdb_state *state,
 static NTSTATUS pdb_samba_dsdb_getsampwfilter(struct pdb_methods *m,
 					  struct pdb_samba_dsdb_state *state,
 					  struct samu *sam_acct,
-					  const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(4, 5)
+					  const char *exp_fmt, ...)
+					  PRINTF_ATTRIBUTE(4,5);
+
+static NTSTATUS pdb_samba_dsdb_getsampwfilter(struct pdb_methods *m,
+					  struct pdb_samba_dsdb_state *state,
+					  struct samu *sam_acct,
+					  const char *exp_fmt, ...)
 {
 	struct ldb_message *priv;
 	NTSTATUS status;
@@ -885,8 +891,13 @@ static NTSTATUS pdb_samba_dsdb_update_login_attempts(struct pdb_methods *m,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m,
+					   GROUP_MAP *map,
+					   const char *exp_fmt, ...)
+					   PRINTF_ATTRIBUTE(3,4);
+
 static NTSTATUS pdb_samba_dsdb_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
-				    const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(4, 5)
+				    const char *exp_fmt, ...)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
@@ -1014,7 +1025,7 @@ static NTSTATUS pdb_samba_dsdb_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_samba_dsdb_getgrfilter(m, map, filter);
+	status = pdb_samba_dsdb_getgrfilter(m, map, "%s", filter);
 	TALLOC_FREE(filter);
 	return status;
 }
@@ -1058,7 +1069,7 @@ static NTSTATUS pdb_samba_dsdb_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_samba_dsdb_getgrfilter(m, map, filter);
+	status = pdb_samba_dsdb_getgrfilter(m, map, "%s", filter);
 	TALLOC_FREE(filter);
 	return status;
 }
@@ -1898,9 +1909,15 @@ static void pdb_samba_dsdb_search_end(struct pdb_search *search)
 }
 
 static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
+					 struct pdb_search *search,
+					 struct pdb_samba_dsdb_search_state **pstate,
+					 const char *exp_fmt, ...)
+					 PRINTF_ATTRIBUTE(4, 5);
+
+static bool pdb_samba_dsdb_search_filter(struct pdb_methods *m,
 				     struct pdb_search *search,
 				     struct pdb_samba_dsdb_search_state **pstate,
-				     const char *exp_fmt, ...) _PRINTF_ATTRIBUTE(4, 5)
+				     const char *exp_fmt, ...)
 {
 	struct pdb_samba_dsdb_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_samba_dsdb_state);
