@@ -300,6 +300,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 		DEBUG(0,(__location__ ": schema copy failed!\n"));
 		return WERR_NOMEM;
 	}
+	working_schema->resolving_in_progress = true;
 
 	/* we are going to need remote prefixMap for decoding */
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
@@ -358,6 +359,8 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 		talloc_free(working_schema);
 		return werr;
 	}
+
+	working_schema->resolving_in_progress = false;
 
 	*_schema_out = working_schema;
 

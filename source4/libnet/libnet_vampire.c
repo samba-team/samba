@@ -332,6 +332,9 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 						 "become dc",
 						 "schema convert retrial", 1);
 
+	provision_schema->resolving_in_progress = true;
+	s->self_made_schema->resolving_in_progress = true;
+
 	status = dsdb_repl_resolve_working_schema(s->ldb,
 						  pfm_remote,
 						  cycle_before_switching,
@@ -347,6 +350,8 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 
 	/* free temp objects for 1st conversion phase */
 	talloc_unlink(s, provision_schema);
+
+	s->self_made_schema->resolving_in_progress = false;
 
 	/*
 	 * attach the schema we just brought over DRS to the ldb,
