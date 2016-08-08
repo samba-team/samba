@@ -1148,6 +1148,101 @@ static bool test_multi_tevent_threaded_1(struct torture_context *test,
 	talloc_free(master_ev);
 	return true;
 }
+
+struct threaded_test_2 {
+	struct tevent_threaded_context *tctx;
+	struct tevent_immediate *im;
+	pthread_t thread_id;
+};
+
+static void master_callback_2(struct tevent_context *ev,
+			      struct tevent_immediate *im,
+			      void *private_data);
+
+static void *thread_fn_2(void *private_data)
+{
+	struct threaded_test_2 *state = private_data;
+
+	state->thread_id = pthread_self();
+
+	usleep(random() % 7000);
+
+	tevent_threaded_schedule_immediate(
+		state->tctx, state->im, master_callback_2, state);
+
+	return NULL;
+}
+
+static void master_callback_2(struct tevent_context *ev,
+			      struct tevent_immediate *im,
+			      void *private_data)
+{
+	struct threaded_test_2 *state = private_data;
+	int i;
+
+	for (i = 0; i < NUM_TEVENT_THREADS; i++) {
+		if (pthread_equal(state->thread_id, thread_map[i])) {
+			break;
+		}
+	}
+	torture_comment(thread_test_ctx,
+			"Callback_2 %u from thread %u\n",
+			thread_counter,
+			i);
+	thread_counter++;
+}
+
+static bool test_multi_tevent_threaded_2(struct torture_context *test,
+					 const void *test_data)
+{
+	unsigned i;
+
+	struct tevent_context *ev;
+	struct tevent_threaded_context *tctx;
+	int ret;
+
+	thread_test_ctx = test;
+	thread_counter = 0;
+
+	ev = tevent_context_init(test);
+	torture_assert(test, ev != NULL, "tevent_context_init failed");
+
+	tctx = tevent_threaded_context_create(ev, ev);
+	torture_assert(test, tctx != NULL,
+		       "tevent_threaded_context_create failed");
+
+	for (i=0; i<NUM_TEVENT_THREADS; i++) {
+		struct threaded_test_2 *state;
+
+		state = talloc(ev, struct threaded_test_2);
+		torture_assert(test, state != NULL, "talloc failed");
+
+		state->tctx = tctx;
+		state->im = tevent_create_immediate(state);
+		torture_assert(test, state->im != NULL,
+			       "tevent_create_immediate failed");
+
+		ret = pthread_create(&thread_map[i], NULL, thread_fn_2, state);
+		torture_assert(test, ret == 0, "pthread_create failed");
+	}
+
+	while (thread_counter < NUM_TEVENT_THREADS) {
+		ret = tevent_loop_once(ev);
+		torture_assert(test, ret == 0, "tevent_loop_once failed");
+	}
+
+	/* Wait for all the threads to finish - join 'em. */
+	for (i = 0; i < NUM_TEVENT_THREADS; i++) {
+		void *retval;
+		ret = pthread_join(thread_map[i], &retval);
+		torture_assert(test, ret == 0, "pthread_join failed");
+		/* Free the child thread event context. */
+	}
+
+	talloc_free(tctx);
+	talloc_free(ev);
+	return true;
+}
 #endif
 
 struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
@@ -1188,6 +1283,10 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 
 	torture_suite_add_simple_tcase_const(suite, "multi_tevent_threaded_1",
 					     test_multi_tevent_threaded_1,
+					     NULL);
+
+	torture_suite_add_simple_tcase_const(suite, "multi_tevent_threaded_2",
+					     test_multi_tevent_threaded_2,
 					     NULL);
 
 #endif
