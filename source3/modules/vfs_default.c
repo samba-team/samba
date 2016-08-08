@@ -33,6 +33,7 @@
 #include "lib/asys/asys.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "lib/util/sys_rw.h"
+#include "lib/pthreadpool/pthreadpool_tevent.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -749,6 +750,20 @@ fail:
 	asys_context_destroy(ctx);
 	return false;
 }
+
+static int vfswrap_init_pool(struct smbd_server_connection *conn)
+{
+	int ret;
+
+	if (conn->pool != NULL) {
+		return 0;
+	}
+
+	ret = pthreadpool_tevent_init(conn, lp_aio_max_threads(),
+				      &conn->pool);
+	return ret;
+}
+
 
 struct vfswrap_asys_state {
 	struct asys_context *asys_ctx;
