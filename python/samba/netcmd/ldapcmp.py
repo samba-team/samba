@@ -438,7 +438,7 @@ class LDAPObject(object):
                 "uSNChanged",
                 "uSNCreated",
                 "uSNLastObjRem",
-                # "whenChanged", # This is implicitly replicated
+                "whenChanged", # This is implicitly replicated, but may diverge on updates of non-replicated attributes
         ]
         self.ignore_attributes = self.non_replicated_attributes
         self.ignore_attributes += ["msExchServer1HighestUSN"]
