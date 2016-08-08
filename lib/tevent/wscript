@@ -99,9 +99,13 @@ def build(bld):
         private_library = True
 
     if not bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
+        tevent_deps = 'replace talloc'
+        if bld.CONFIG_SET('HAVE_PTHREAD'):
+            tevent_deps += ' pthread'
+
         bld.SAMBA_LIBRARY('tevent',
                           SRC,
-                          deps='replace talloc',
+                          deps=tevent_deps,
                           enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
                           includes='.',
                           abi_directory='ABI',

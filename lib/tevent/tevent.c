@@ -59,10 +59,15 @@
 */
 #include "replace.h"
 #include "system/filesys.h"
+#ifdef HAVE_PTHREAD
+#include "system/threads.h"
+#endif
 #define TEVENT_DEPRECATED 1
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
+
+static void tevent_abort(struct tevent_context *ev, const char *reason);
 
 struct tevent_ops_list {
 	struct tevent_ops_list *next, *prev;
@@ -173,12 +178,124 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 	return list;
 }
 
+#ifdef HAVE_PTHREAD
+
+static pthread_mutex_t tevent_contexts_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct tevent_context *tevent_contexts = NULL;
+static pthread_once_t tevent_atfork_initialized = PTHREAD_ONCE_INIT;
+
+static void tevent_atfork_prepare(void)
+{
+	struct tevent_context *ev;
+	int ret;
+
+	ret = pthread_mutex_lock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+	for (ev = tevent_contexts; ev != NULL; ev = ev->next) {
+		ret = pthread_mutex_lock(&ev->scheduled_mutex);
+		if (ret != 0) {
+			tevent_abort(ev, "pthread_mutex_lock failed");
+		}
+	}
+}
+
+static void tevent_atfork_parent(void)
+{
+	struct tevent_context *ev;
+	int ret;
+
+	for (ev = DLIST_TAIL(tevent_contexts); ev != NULL;
+	     ev = DLIST_PREV(ev)) {
+		ret = pthread_mutex_unlock(&ev->scheduled_mutex);
+		if (ret != 0) {
+			tevent_abort(ev, "pthread_mutex_unlock failed");
+		}
+	}
+
+	ret = pthread_mutex_unlock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+}
+
+static void tevent_atfork_child(void)
+{
+	struct tevent_context *ev;
+	int ret;
+
+	for (ev = DLIST_TAIL(tevent_contexts); ev != NULL;
+	     ev = DLIST_PREV(ev)) {
+		struct tevent_threaded_context *tctx;
+
+		for (tctx = ev->threaded_contexts; tctx != NULL;
+		     tctx = tctx->next) {
+			tctx->event_ctx = NULL;
+		}
+
+		ev->threaded_contexts = NULL;
+
+		ret = pthread_mutex_unlock(&ev->scheduled_mutex);
+		if (ret != 0) {
+			tevent_abort(ev, "pthread_mutex_unlock failed");
+		}
+	}
+
+	ret = pthread_mutex_unlock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+}
+
+static void tevent_prep_atfork(void)
+{
+	int ret;
+
+	ret = pthread_atfork(tevent_atfork_prepare,
+			     tevent_atfork_parent,
+			     tevent_atfork_child);
+	if (ret != 0) {
+		abort();
+	}
+}
+
+#endif
+
 int tevent_common_context_destructor(struct tevent_context *ev)
 {
 	struct tevent_fd *fd, *fn;
 	struct tevent_timer *te, *tn;
 	struct tevent_immediate *ie, *in;
 	struct tevent_signal *se, *sn;
+
+#ifdef HAVE_PTHREAD
+	int ret;
+
+	ret = pthread_mutex_lock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+	DLIST_REMOVE(tevent_contexts, ev);
+
+	ret = pthread_mutex_unlock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+#endif
+
+	if (ev->threaded_contexts != NULL) {
+		/*
+		 * Threaded contexts are indicators that threads are
+		 * about to send us immediates via
+		 * tevent_threaded_schedule_immediate. The caller
+		 * needs to make sure that the tevent context lives
+		 * long enough to receive immediates from all threads.
+		 */
+		tevent_abort(ev, "threaded contexts exist");
+	}
 
 	if (ev->pipe_fde) {
 		talloc_free(ev->pipe_fde);
@@ -254,6 +371,36 @@ struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 
 	ev = talloc_zero(mem_ctx, struct tevent_context);
 	if (!ev) return NULL;
+
+#ifdef HAVE_PTHREAD
+
+	ret = pthread_once(&tevent_atfork_initialized, tevent_prep_atfork);
+	if (ret != 0) {
+		talloc_free(ev);
+		return NULL;
+	}
+
+	ret = pthread_mutex_init(&ev->scheduled_mutex, NULL);
+	if (ret != 0) {
+		talloc_free(ev);
+		return NULL;
+	}
+
+	ret = pthread_mutex_lock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		pthread_mutex_destroy(&ev->scheduled_mutex);
+		talloc_free(ev);
+		return NULL;
+	}
+
+	DLIST_ADD(tevent_contexts, ev);
+
+	ret = pthread_mutex_unlock(&tevent_contexts_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+#endif
 
 	talloc_set_destructor(ev, tevent_common_context_destructor);
 

@@ -40,6 +40,7 @@ struct tevent_timer;
 struct tevent_immediate;
 struct tevent_signal;
 struct tevent_thread_proxy;
+struct tevent_threaded_context;
 
 /**
  * @defgroup tevent The tevent API
@@ -1749,6 +1750,79 @@ void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
 				  struct tevent_immediate **pp_im,
 				  tevent_immediate_handler_t handler,
 				  void *pp_private_data);
+
+/*
+ * @brief Create a context for threaded activation of immediates
+ *
+ * A tevent_treaded_context provides a link into an event
+ * context. Using tevent_threaded_schedule_immediate, it is possible
+ * to activate an immediate event from within a thread.
+ *
+ * It is the duty of the caller of tevent_threaded_context_create() to
+ * keep the event context around longer than any
+ * tevent_threaded_context. tevent will abort if ev is talllc_free'ed
+ * with an active tevent_threaded_context.
+ *
+ * If tevent is build without pthread support, this always returns
+ * NULL with errno=ENOSYS.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ * @param[in]  ev       The event context to link this to.
+ * @return              The threaded context, or NULL with errno set.
+ *
+ * @see tevent_threaded_schedule_immediate()
+ *
+ * @note Available as of tevent 0.9.30
+ */
+struct tevent_threaded_context *tevent_threaded_context_create(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev);
+
+#ifdef DOXYGEN
+/*
+ * @brief Activate an immediate from a thread
+ *
+ * Activate an immediate from within a thread.
+ *
+ * This routine does not watch out for talloc hierarchies. This means
+ * that it is highly recommended to create the tevent_immediate in the
+ * thread owning tctx, allocate a threaded job description for the
+ * thread, hand over both pointers to a helper thread and not touch it
+ * in the main thread at all anymore.
+ *
+ * tevent_threaded_schedule_immediate is intended as a job completion
+ * indicator for simple threaded helpers.
+ *
+ * Please be aware that tevent_threaded_schedule_immediate is very
+ * picky about its arguments: An immediate may not already be
+ * activated and the handler must exist. With
+ * tevent_threaded_schedule_immediate memory ownership is transferred
+ * to the main thread holding the tevent context behind tctx, the
+ * helper thread can't access it anymore.
+ *
+ * @param[in]  tctx     The threaded context to go through
+ * @param[in]  im       The immediate event to activate
+ * @param[in]  handler  The immediate handler to call in the main thread
+ * @param[in]  private_data Pointer for the immediate handler
+ *
+ * @see tevent_threaded_context_create()
+ *
+ * @note Available as of tevent 0.9.30
+ */
+void tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
+					struct tevent_immediate *im,
+					tevent_immediate_handler_t handler,
+					void *private_data);
+#else
+void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
+					 struct tevent_immediate *im,
+					 tevent_immediate_handler_t handler,
+					 void *private_data,
+					 const char *handler_name,
+					 const char *location);
+#define tevent_threaded_schedule_immediate(tctx, im, handler, private_data) \
+	_tevent_threaded_schedule_immediate(tctx, im, handler, private_data, \
+				   #handler, __location__);
+#endif
 
 #ifdef TEVENT_DEPRECATED
 #ifndef _DEPRECATED_

@@ -228,6 +228,11 @@ struct tevent_signal {
 	void *additional_data;
 };
 
+struct tevent_threaded_context {
+	struct tevent_threaded_context *next, *prev;
+	struct tevent_context *event_ctx;
+};
+
 struct tevent_debug_ops {
 	void (*debug)(void *context, enum tevent_debug_level level,
 		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
@@ -246,6 +251,13 @@ struct tevent_context {
 
 	/* list of timed events - used by common code */
 	struct tevent_timer *timer_events;
+
+	/* List of threaded job indicators */
+	struct tevent_threaded_context *threaded_contexts;
+
+	/* List of scheduled immediates */
+	pthread_mutex_t scheduled_mutex;
+	struct tevent_immediate *scheduled_immediates;
 
 	/* list of immediate events - used by common code */
 	struct tevent_immediate *immediate_events;
@@ -282,6 +294,10 @@ struct tevent_context {
 	 * tevent_common_add_timer_v2()
 	 */
 	struct tevent_timer *last_zero_timer;
+
+#ifdef HAVE_PTHREAD
+	struct tevent_context *prev, *next;
+#endif
 };
 
 const struct tevent_ops *tevent_find_ops_byname(const char *name);
@@ -327,6 +343,7 @@ void tevent_common_schedule_immediate(struct tevent_immediate *im,
 				      const char *handler_name,
 				      const char *location);
 bool tevent_common_loop_immediate(struct tevent_context *ev);
+void tevent_common_threaded_activate_immediate(struct tevent_context *ev);
 
 bool tevent_common_have_events(struct tevent_context *ev);
 int tevent_common_wakeup_init(struct tevent_context *ev);

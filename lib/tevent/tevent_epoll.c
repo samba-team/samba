@@ -903,6 +903,10 @@ static int epoll_event_loop_once(struct tevent_context *ev, const char *location
 		return 0;
 	}
 
+	if (ev->threaded_contexts != NULL) {
+		tevent_common_threaded_activate_immediate(ev);
+	}
+
 	if (ev->immediate_events &&
 	    tevent_common_loop_immediate(ev)) {
 		return 0;
