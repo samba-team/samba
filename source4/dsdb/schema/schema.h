@@ -256,6 +256,14 @@ struct dsdb_schema {
 
 	/* Should the syntax handlers in this case handle all incoming OIDs automatically, assigning them as an OID if no text name is known? */
 	bool relax_OID_conversions;
+
+	/*
+	 * we're currently trying to construct a working_schema
+	 * in order to replicate the schema partition.
+	 *
+	 * We use this in order to avoid temporary failure DEBUG messages
+	 */
+	bool resolving_in_progress;
 };
 
 enum dsdb_attr_list_query {

@@ -996,7 +996,7 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		uint32_t v;
+		uint32_t v, vo;
 		const struct dsdb_class *c;
 		const char *str;
 
@@ -1009,6 +1009,7 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 		}
 
 		v = IVAL(in->value_ctr.values[i].blob->data, 0);
+		vo = v;
 
 		/* convert remote ATTID to local ATTID */
 		if (!dsdb_syntax_attid_from_remote_attid(ctx, mem_ctx, v, &v)) {
@@ -1018,8 +1019,11 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 
 		c = dsdb_class_by_governsID_id(ctx->schema, v);
 		if (!c) {
-			DEBUG(1,(__location__ ": Unknown governsID 0x%08X\n", v));
-			return WERR_FOOBAR;
+			int dbg_level = ctx->schema->resolving_in_progress ? 10 : 0;
+			DEBUG(dbg_level,(__location__ ": %s unknown local governsID 0x%08X remote 0x%08X%s\n",
+			      attr->lDAPDisplayName, v, vo,
+			      ctx->schema->resolving_in_progress ? "resolving in progress" : ""));
+			return WERR_DS_OBJ_CLASS_NOT_DEFINED;
 		}
 
 		str = talloc_strdup(out->values, c->lDAPDisplayName);
@@ -1049,7 +1053,7 @@ static WERROR _dsdb_syntax_OID_attr_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 	W_ERROR_HAVE_NO_MEMORY(out->values);
 
 	for (i=0; i < out->num_values; i++) {
-		uint32_t v;
+		uint32_t v, vo;
 		const struct dsdb_attribute *a;
 		const char *str;
 
@@ -1064,6 +1068,7 @@ static WERROR _dsdb_syntax_OID_attr_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 		}
 
 		v = IVAL(in->value_ctr.values[i].blob->data, 0);
+		vo = v;
 
 		/* convert remote ATTID to local ATTID */
 		if (!dsdb_syntax_attid_from_remote_attid(ctx, mem_ctx, v, &v)) {
@@ -1073,8 +1078,11 @@ static WERROR _dsdb_syntax_OID_attr_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 
 		a = dsdb_attribute_by_attributeID_id(ctx->schema, v);
 		if (!a) {
-			DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", v));
-			return WERR_FOOBAR;
+			int dbg_level = ctx->schema->resolving_in_progress ? 10 : 0;
+			DEBUG(dbg_level,(__location__ ": %s unknown local attributeID_id 0x%08X remote 0x%08X%s\n",
+			      attr->lDAPDisplayName, v, vo,
+			      ctx->schema->resolving_in_progress ? "resolving in progress" : ""));
+			return WERR_DS_ATT_NOT_DEF_IN_SCHEMA;
 		}
 
 		str = talloc_strdup(out->values, a->lDAPDisplayName);
@@ -2738,7 +2746,10 @@ WERROR dsdb_attribute_drsuapi_remote_to_local(const struct dsdb_syntax_ctx *ctx,
 
 	sa = dsdb_attribute_by_attributeID_id(ctx->schema, attid_local);
 	if (!sa) {
-		DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", in->attid));
+		int dbg_level = ctx->schema->resolving_in_progress ? 10 : 0;
+		DEBUG(dbg_level,(__location__ ": Unknown local attributeID_id 0x%08X remote 0x%08X%s\n",
+		      attid_local, remote_attid_as_enum,
+		      ctx->schema->resolving_in_progress ? "resolving in progress" : ""));
 		TALLOC_FREE(frame);
 		return WERR_DS_ATT_NOT_DEF_IN_SCHEMA;
 	}
