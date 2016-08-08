@@ -639,7 +639,7 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 		/* set an invalid value */
 		attr->attributeID_id = DRSUAPI_ATTID_INVALID;
 	} else {
-		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
+		status = dsdb_schema_pfm_attid_from_oid(schema->prefixmap,
 						    attr->attributeID_oid,
 						    &attr->attributeID_id);
 		if (!W_ERROR_IS_OK(status)) {
@@ -793,9 +793,9 @@ WERROR dsdb_set_class_from_ldb_dups(struct dsdb_schema *schema,
 		/* set an invalid value */
 		obj->governsID_id = DRSUAPI_ATTID_INVALID;
 	} else {
-		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
-						    obj->governsID_oid,
-						    &obj->governsID_id);
+		status = dsdb_schema_pfm_attid_from_oid(schema->prefixmap,
+							obj->governsID_oid,
+							&obj->governsID_id);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,("%s: '%s': unable to map governsID %s: %s\n",
 				__location__, obj->lDAPDisplayName, obj->governsID_oid,

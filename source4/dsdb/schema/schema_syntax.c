@@ -97,7 +97,7 @@ static bool dsdb_syntax_attid_from_remote_attid(const struct dsdb_syntax_ctx *ct
 		return false;
 	}
 
-	werr = dsdb_schema_pfm_make_attid(ctx->schema->prefixmap, oid, id_local);
+	werr = dsdb_schema_pfm_attid_from_oid(ctx->schema->prefixmap, oid, id_local);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("OID->ATTID failed (%s) for: %s\n", win_errstr(werr), oid));
 		return false;
