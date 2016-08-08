@@ -38,7 +38,7 @@ def configure(conf):
             addmain=False,
             msg='Checking for library destructor support')
 
-        # check HAVE_FUNCTION_ATTRIBUTE_FORMAT
+        # check HAVE_ATTRIBUTE_PRINTF_FORMAT
         conf.CHECK_CODE('''
             void log_fn(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 
@@ -46,7 +46,7 @@ def configure(conf):
                 return 0;
             }
             ''',
-            'HAVE_FUNCTION_ATTRIBUTE_FORMAT',
+            'HAVE_ATTRIBUTE_PRINTF_FORMAT',
             addmain=False,
             msg='Checking for printf format validation support')
 
