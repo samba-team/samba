@@ -256,6 +256,10 @@ done:
      SID:xxxx
      ERR:xxxx
  */
+static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx,
+				  struct id_map *map, const char *fmt, ...)
+				  PRINTF_ATTRIBUTE(3,4);
+
 static NTSTATUS idmap_tdb2_script(struct idmap_tdb2_context *ctx, struct id_map *map,
 				  const char *fmt, ...)
 {
