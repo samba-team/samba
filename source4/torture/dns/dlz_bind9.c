@@ -33,6 +33,9 @@
 struct torture_context *tctx_static;
 
 static void dlz_bind9_log_wrapper(int level, const char *fmt, ...)
+				  PRINTF_ATTRIBUTE(2,3);
+
+static void dlz_bind9_log_wrapper(int level, const char *fmt, ...)
 {
 	va_list ap;
 	char *msg;
