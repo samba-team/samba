@@ -148,7 +148,10 @@ struct dsdb_schema_prefixmap *dsdb_schema_pfm_copy_shallow(TALLOC_CTX *mem_ctx,
  * \param bin_oid OID prefix to be added to prefixMap
  * \param pfm_id Location where to store prefixMap entry ID
  */
-static WERROR _dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm, DATA_BLOB bin_oid, uint32_t *_idx)
+WERROR dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm,
+				 DATA_BLOB bin_oid,
+				 const uint32_t *remote_id,
+				 uint32_t *_idx)
 {
 	uint32_t i;
 	struct dsdb_schema_prefixmap_oid * pfm_entry;
@@ -170,15 +173,34 @@ static WERROR _dsdb_schema_pfm_add_entry(struct dsdb_schema_prefixmap *pfm, DATA
 	pfm_entry = &pfm->prefixes[pfm->length];
 	pfm_entry->id = 0;
 	for (i = 0; i < pfm->length; i++) {
-		if (pfm_entry->id < pfm->prefixes[i].id)
+		if (pfm_entry->id < pfm->prefixes[i].id) {
 			pfm_entry->id = pfm->prefixes[i].id;
+		}
+
+		if (remote_id == NULL) {
+			continue;
+		}
+
+		if (pfm->prefixes[i].id == *remote_id) {
+			/*
+			 * We can't use the remote id.
+			 * it's already in use.
+			 */
+			remote_id = NULL;
+		}
 	}
 
 	/* add new bin-oid prefix */
-	pfm_entry->id++;
+	if (remote_id != NULL) {
+		pfm_entry->id = *remote_id;
+	} else {
+		pfm_entry->id++;
+	}
 	pfm_entry->bin_oid = bin_oid;
 
-	*_idx = pfm->length;
+	if (_idx != NULL) {
+		*_idx = pfm->length;
+	}
 	pfm->length++;
 
 	return WERR_OK;
@@ -316,7 +338,7 @@ static WERROR dsdb_schema_pfm_make_attid_impl(struct dsdb_schema_prefixmap *pfm,
 		}
 
 		/* entry does not exists, add it */
-		werr = _dsdb_schema_pfm_add_entry(pfm, bin_oid, &idx);
+		werr = dsdb_schema_pfm_add_entry(pfm, bin_oid, NULL, &idx);
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
