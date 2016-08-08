@@ -276,6 +276,7 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 	uint32_t attid;
 	TALLOC_CTX *mem_ctx;
 	struct dsdb_schema_prefixmap *pfm;
+	struct dsdb_schema_prefixmap *orig_pfm = NULL;
 
 	mem_ctx = talloc_new(ldb);
 	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
@@ -312,8 +313,11 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 		return status;
 	}
 
-	talloc_unlink(schema, schema->prefixmap);
-	schema->prefixmap = talloc_steal(schema, pfm);
+	/*
+	 * We temporary replcate schema->prefixmap.
+	 */
+	orig_pfm = schema->prefixmap;
+	schema->prefixmap = pfm;
 
 	/* Update prefixMap in ldb*/
 	status = dsdb_write_prefixes_from_schema_to_ldb(mem_ctx, ldb, schema);
@@ -326,6 +330,13 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 
 	DEBUG(2,(__location__ " Added prefixMap %s - now have %u prefixes\n",
 		 full_oid, schema->prefixmap->length));
+
+	/*
+	 * We restore the original prefix map.
+	 *
+	 * The next schema reload should get an updated prefix map!
+	 */
+	schema->prefixmap = orig_pfm;
 
 	talloc_free(mem_ctx);
 	return status;
