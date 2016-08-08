@@ -121,5 +121,6 @@ bool run_messaging_fdpass2(int dummy);
 bool run_messaging_fdpass2a(int dummy);
 bool run_messaging_fdpass2b(int dummy);
 bool run_oplock_cancel(int dummy);
+bool run_pthreadpool_tevent(int dummy);
 
 #endif /* __TORTURE_H__ */
