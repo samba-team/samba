@@ -2,12 +2,18 @@
 
 if bld.env.WITH_PTHREADPOOL:
     bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
-                         source='pthreadpool.c pthreadpool_pipe.c',
-                         deps='pthread rt replace')
+                         source='''pthreadpool.c
+                                   pthreadpool_pipe.c
+                                   pthreadpool_tevent.c
+                                ''',
+                         deps='pthread rt replace tevent-util')
 else:
     bld.SAMBA3_SUBSYSTEM('PTHREADPOOL',
-                         source='pthreadpool_sync.c pthreadpool_pipe.c',
-                         deps='replace')
+                         source='''pthreadpool_sync.c
+                                   pthreadpool_pipe.c
+                                   pthreadpool_tevent.c
+                                ''',
+                         deps='replace tevent-util')
 
 
 bld.SAMBA3_BINARY('pthreadpooltest',
