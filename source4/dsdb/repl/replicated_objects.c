@@ -291,6 +291,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 {
 	WERROR werr;
 	struct dsdb_schema_prefixmap *pfm_remote;
+	uint32_t r;
 	struct dsdb_schema *working_schema;
 
 	/* make a copy of the iniatial_scheam so we don't mess with it */
@@ -308,6 +309,40 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 			 win_errstr(werr)));
 		talloc_free(working_schema);
 		return werr;
+	}
+
+	for (r=0; r < pfm_remote->length; r++) {
+		const struct dsdb_schema_prefixmap_oid *rm = &pfm_remote->prefixes[r];
+		bool found_oid = false;
+		uint32_t l;
+
+		for (l=0; l < working_schema->prefixmap->length; l++) {
+			const struct dsdb_schema_prefixmap_oid *lm = &working_schema->prefixmap->prefixes[l];
+			int cmp;
+
+			cmp = data_blob_cmp(&rm->bin_oid, &lm->bin_oid);
+			if (cmp == 0) {
+				found_oid = true;
+				break;
+			}
+		}
+
+		if (found_oid) {
+			continue;
+		}
+
+		/*
+		 * We prefer the same is as we got from the remote peer
+		 * if there's no conflict.
+		 */
+		werr = dsdb_schema_pfm_add_entry(working_schema->prefixmap,
+						 rm->bin_oid, &rm->id, NULL);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Failed to merge remote prefixMap: %s",
+				 win_errstr(werr)));
+			talloc_free(working_schema);
+			return werr;
+		}
 	}
 
 	werr = dsdb_repl_resolve_working_schema(ldb,
