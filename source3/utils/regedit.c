@@ -157,7 +157,7 @@ static void add_reg_key(struct regedit *regedit, struct tree_node *node,
 	if (subkey) {
 		msg = "Enter name of new subkey";
 	}
-	dialog_input(regedit, &name, "New Key", msg);
+	dialog_input(regedit, &name, "New Key", "%s", msg);
 	if (name) {
 		WERROR rv;
 		struct registry_key *new_key;

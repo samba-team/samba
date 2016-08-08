@@ -1762,6 +1762,12 @@ static int dialog_input_internal(TALLOC_CTX *ctx, void *output,
 				 enum input_type type,
 				 const char *title,
 				 const char *msg, va_list ap)
+				 PRINTF_ATTRIBUTE(5,0);
+
+static int dialog_input_internal(TALLOC_CTX *ctx, void *output,
+				 enum input_type type,
+				 const char *title,
+				 const char *msg, va_list ap)
 {
 	WERROR err;
 	struct input_req req;

@@ -147,9 +147,12 @@ void dialog_modal_loop(struct dialog *dia, WERROR *err,
 		       enum dialog_action *action);
 
 struct dialog_section *dialog_section_label_new_va(TALLOC_CTX *ctx,
-						   const char *msg, va_list ap);
+						   const char *msg,
+						   va_list ap)
+						   PRINTF_ATTRIBUTE(2,0);
 struct dialog_section *dialog_section_label_new(TALLOC_CTX *ctx,
-						const char *msg, ...);
+						const char *msg, ...)
+						PRINTF_ATTRIBUTE(2,3);
 
 struct dialog_section *dialog_section_hsep_new(TALLOC_CTX *ctx, int sep);
 
@@ -208,14 +211,17 @@ enum dialog_type {
 };
 
 int dialog_notice(TALLOC_CTX *ctx, enum dialog_type type,
-		  const char *title, const char *msg, ...);
+		  const char *title, const char *msg, ...)
+		  PRINTF_ATTRIBUTE(4,5);
 
 int dialog_input(TALLOC_CTX *ctx, const char **output, const char *title,
-		 const char *msg, ...);
+		 const char *msg, ...) PRINTF_ATTRIBUTE(4,5);
 int dialog_input_long(TALLOC_CTX *ctx, long *output,
-		      const char *title, const char *msg, ...);
+		      const char *title, const char *msg, ...)
+		      PRINTF_ATTRIBUTE(4,5);
 int dialog_input_ulong(TALLOC_CTX *ctx, unsigned long *output,
-		       const char *title, const char *msg, ...);
+		       const char *title, const char *msg, ...)
+		       PRINTF_ATTRIBUTE(4,5);
 
 struct registry_key;
 struct value_item;
