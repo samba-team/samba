@@ -3108,11 +3108,15 @@ static struct tevent_req *cli_connect_nb_send(
 		}
 
 		state->desthost = host;
-	} else {
+	} else if (dest_ss != NULL) {
 		state->desthost = print_canonical_sockaddr(state, dest_ss);
 		if (tevent_req_nomem(state->desthost, req)) {
 			return tevent_req_post(req, ev);
 		}
+	} else {
+		/* No host or dest_ss given. Error out. */
+		tevent_req_error(req, EINVAL);
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = cli_connect_sock_send(state, ev, host, name_type, dest_ss,
