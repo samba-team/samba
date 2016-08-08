@@ -215,7 +215,7 @@ struct dsdb_extended_replicated_objects {
 	struct dsdb_extended_replicated_object *objects;
 
 	uint32_t linked_attributes_count;
-	const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
 
 	WERROR error;
 

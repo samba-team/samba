@@ -649,6 +649,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	struct dsdb_schema_prefixmap *pfm_remote;
 	struct dsdb_extended_replicated_objects *out;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
+	struct dsdb_syntax_ctx syntax_ctx;
 	uint32_t i;
 
 	out = talloc_zero(mem_ctx, struct dsdb_extended_replicated_objects);
@@ -671,6 +672,10 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		talloc_free(out);
 		return status;
 	}
+
+	/* use default syntax conversion context */
+	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
+	syntax_ctx.pfm_remote = pfm_remote;
 
 	if (ldb_dn_compare(partition_dn, ldb_get_schema_basedn(ldb)) != 0) {
 		/*
@@ -696,11 +701,6 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 					       struct dsdb_extended_replicated_object,
 					       object_count);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(out->objects, out);
-
-	/* pass the linked attributes down to the repl_meta_data
-	   module */
-	out->linked_attributes_count = linked_attributes_count;
-	out->linked_attributes       = linked_attributes;
 
 	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
 		if (i == object_count) {
@@ -749,6 +749,58 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
+
+	out->linked_attributes = talloc_array(out,
+					      struct drsuapi_DsReplicaLinkedAttribute,
+					      linked_attributes_count);
+	W_ERROR_HAVE_NO_MEMORY_AND_FREE(out->linked_attributes, out);
+
+	for (i=0; i < linked_attributes_count; i++) {
+		const struct drsuapi_DsReplicaLinkedAttribute *ra = &linked_attributes[i];
+		struct drsuapi_DsReplicaLinkedAttribute *la = &out->linked_attributes[i];
+
+		if (ra->identifier == NULL) {
+			talloc_free(out);
+			return WERR_BAD_NET_RESP;
+		}
+
+		*la = *ra;
+
+		la->identifier = talloc_zero(out->linked_attributes,
+					     struct drsuapi_DsReplicaObjectIdentifier);
+		W_ERROR_HAVE_NO_MEMORY_AND_FREE(la->identifier, out);
+
+		/*
+		 * We typically only get the guid filled
+		 * and the repl_meta_data module only cares abouf
+		 * the guid.
+		 */
+		la->identifier->guid = ra->identifier->guid;
+
+		if (ra->value.blob != NULL) {
+			la->value.blob = talloc_zero(out->linked_attributes,
+						     DATA_BLOB);
+			W_ERROR_HAVE_NO_MEMORY_AND_FREE(la->value.blob, out);
+
+			if (ra->value.blob->length != 0) {
+				*la->value.blob = data_blob_dup_talloc(la->value.blob,
+								       *ra->value.blob);
+				W_ERROR_HAVE_NO_MEMORY_AND_FREE(la->value.blob->data, out);
+			}
+		}
+
+		status = dsdb_attribute_drsuapi_remote_to_local(&syntax_ctx,
+								ra->attid,
+								&la->attid,
+								NULL);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,(__location__": linked_attribute[%u] attid 0x%08X not found: %s\n",
+				 i, ra->attid, win_errstr(status)));
+			return status;
+		}
+	}
+
+	out->linked_attributes_count = linked_attributes_count;
 
 	/* free pfm_remote, we won't need it anymore */
 	talloc_free(pfm_remote);
