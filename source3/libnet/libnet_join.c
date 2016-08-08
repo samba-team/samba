@@ -79,6 +79,11 @@
 static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
 					 struct libnet_JoinCtx *r,
 					 const char *format, ...)
+					 PRINTF_ATTRIBUTE(3,4);
+
+static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinCtx *r,
+					 const char *format, ...)
 {
 	va_list args;
 
@@ -93,6 +98,11 @@ static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
 
 /****************************************************************
 ****************************************************************/
+
+static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
+					   struct libnet_UnjoinCtx *r,
+					   const char *format, ...)
+					   PRINTF_ATTRIBUTE(3,4);
 
 static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 					   struct libnet_UnjoinCtx *r,

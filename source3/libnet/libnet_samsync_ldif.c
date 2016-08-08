@@ -511,6 +511,9 @@ static NTSTATUS map_populate_groups(TALLOC_CTX *mem_ctx,
  */
 
 static int fprintf_attr(FILE *add_fd, const char *attr_name,
+			const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
+
+static int fprintf_attr(FILE *add_fd, const char *attr_name,
 			const char *fmt, ...)
 {
 	va_list ap;
