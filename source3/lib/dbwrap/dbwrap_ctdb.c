@@ -1216,6 +1216,7 @@ struct db_ctdb_parse_record_state {
 	void *private_data;
 	bool ask_for_readonly_copy;
 	bool done;
+	bool empty_record;
 };
 
 static void db_ctdb_parse_record_parser(
@@ -1235,7 +1236,16 @@ static void db_ctdb_parse_record_parser_nonpersistent(
 		(struct db_ctdb_parse_record_state *)private_data;
 
 	if (db_ctdb_can_use_local_hdr(header, true)) {
-		state->parser(key, data, state->private_data);
+		/*
+		 * A record consisting only of the ctdb header can be
+		 * a validly created empty record or a tombstone
+		 * record of a deleted record (not vacuumed yet). Mark
+		 * it accordingly.
+		 */
+		state->empty_record = (data.dsize == 0);
+		if (!state->empty_record) {
+			state->parser(key, data, state->private_data);
+		}
 		state->done = true;
 	} else {
 		/*
@@ -1261,6 +1271,7 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 
 	state.parser = parser;
 	state.private_data = private_data;
+	state.empty_record = false;
 
 	if (ctx->transaction != NULL) {
 		struct db_ctdb_transaction_handle *h = ctx->transaction;
@@ -1292,6 +1303,20 @@ static NTSTATUS db_ctdb_parse_record(struct db_context *db, TDB_DATA key,
 	status = db_ctdb_ltdb_parse(
 		ctx, key, db_ctdb_parse_record_parser_nonpersistent, &state);
 	if (NT_STATUS_IS_OK(status) && state.done) {
+		if (state.empty_record) {
+			/*
+			 * We know authoritatively, that this is an empty
+			 * record. Since ctdb does not distinguish between empty
+			 * and deleted records, this can be a record stored as
+			 * empty or a not-yet-vacuumed tombstone record of a
+			 * deleted record. Now Samba right now can live without
+			 * empty records, so we can safely report this record
+			 * as non-existing.
+			 *
+			 * See bugs 10008 and 12005.
+			 */
+			return NT_STATUS_NOT_FOUND;
+		}
 		return NT_STATUS_OK;
 	}
 
