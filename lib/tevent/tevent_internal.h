@@ -246,24 +246,31 @@ struct tevent_context {
 	/* the specific events implementation */
 	const struct tevent_ops *ops;
 
+	/*
+	 * The following three pointers are queried on every loop_once
+	 * in the order in which they appear here. Not measured, but
+	 * hopefully putting them at the top together with "ops"
+	 * should make tevent a *bit* more cache-friendly than before.
+	 */
+
+	/* list of signal events - used by common code */
+	struct tevent_signal *signal_events;
+
+	/* List of threaded job indicators */
+	struct tevent_threaded_context *threaded_contexts;
+
+	/* list of immediate events - used by common code */
+	struct tevent_immediate *immediate_events;
+
 	/* list of fd events - used by common code */
 	struct tevent_fd *fd_events;
 
 	/* list of timed events - used by common code */
 	struct tevent_timer *timer_events;
 
-	/* List of threaded job indicators */
-	struct tevent_threaded_context *threaded_contexts;
-
 	/* List of scheduled immediates */
 	pthread_mutex_t scheduled_mutex;
 	struct tevent_immediate *scheduled_immediates;
-
-	/* list of immediate events - used by common code */
-	struct tevent_immediate *immediate_events;
-
-	/* list of signal events - used by common code */
-	struct tevent_signal *signal_events;
 
 	/* this is private for the events_ops implementation */
 	void *additional_data;
