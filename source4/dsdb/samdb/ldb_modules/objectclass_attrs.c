@@ -437,13 +437,25 @@ static int attr_handler2(struct oc_context *ac)
 		struct dsdb_attribute *att = talloc(ac, struct dsdb_attribute);
 		const struct dsdb_syntax *attrSyntax;
 		WERROR status;
+		struct dsdb_schema *tmp_schema = NULL;
 
-		status= dsdb_attribute_from_ldb(ac->schema, msg, att);
+		/*
+		 * We temporary remove the prefix map from the schema,
+		 * a new prefix map is added by dsdb_create_prefix_mapping()
+		 * via the "schema_data" module.
+		 */
+		tmp_schema = dsdb_schema_copy_shallow(ac, ldb, ac->schema);
+		if (tmp_schema == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+		TALLOC_FREE(tmp_schema->prefixmap);
+		status= dsdb_attribute_from_ldb(tmp_schema, msg, att);
 		if (!W_ERROR_IS_OK(status)) {
 			ldb_set_errstring(ldb,
 						"objectclass: failed to translate the schemaAttribute to a dsdb_attribute");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
+		TALLOC_FREE(tmp_schema);
 
 		attrSyntax = dsdb_syntax_for_attribute(att);
 		if (!attrSyntax) {
