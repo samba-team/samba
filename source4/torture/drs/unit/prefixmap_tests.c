@@ -692,6 +692,7 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 	uint32_t i;
 	struct dsdb_schema *schema;
 	TALLOC_CTX *mem_ctx;
+	struct dsdb_schema_prefixmap *pfm_ldb = NULL;
 
 	mem_ctx = talloc_new(tctx);
 	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
@@ -708,44 +709,58 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 	werr = dsdb_write_prefixes_from_schema_to_ldb(mem_ctx, priv->ldb_ctx, schema);
 	torture_assert_werr_ok(tctx, werr, "dsdb_write_prefixes_from_schema_to_ldb() failed");
 
-	for (i = 0; i < ARRAY_SIZE(_prefixmap_test_data); i++) {
-		struct dsdb_schema_prefixmap *pfm_ldb;
-		struct dsdb_schema_prefixmap *pfm_prev;
+	/* read from ldb what we have written */
+	werr = dsdb_read_prefixes_from_ldb(priv->ldb_ctx, mem_ctx, &pfm_ldb);
+	torture_assert_werr_ok(tctx, werr, "dsdb_read_prefixes_from_ldb() failed");
+	/* compare data written/read */
+	if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, pfm_ldb, true)) {
+		torture_fail(tctx, "pfm in LDB is different");
+	}
+	TALLOC_FREE(pfm_ldb);
 
-		/* add ref to prefixMap so we can use it later */
-		pfm_prev = talloc_reference(schema, schema->prefixmap);
+	for (i = 0; i < ARRAY_SIZE(_prefixmap_test_data); i++) {
+		struct dsdb_schema_prefixmap *pfm_prev;
+		struct dsdb_schema_prefixmap *pfm_new;
+
+		pfm_prev = schema->prefixmap;
+
+		pfm_new = dsdb_schema_pfm_copy_shallow(schema, pfm_prev);
+		torture_assert(tctx, pfm_new != NULL, "dsdb_schema_pfm_copy_shallow() failed");
+
+		if (!_prefixmap_test_data[i].exists) {
+			uint32_t attid;
+
+			werr = dsdb_schema_pfm_make_attid(pfm_new,
+							  _prefixmap_test_data[i].oid,
+							  &attid);
+			torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_make_attid() failed");
+		}
 
 		/* call dsdb_create_prefix_mapping() and check result accordingly */
 		werr = dsdb_create_prefix_mapping(priv->ldb_ctx, schema, _prefixmap_test_data[i].oid);
 		torture_assert_werr_ok(tctx, werr, "dsdb_create_prefix_mapping() failed");
 
-		/* verify pfm has been altered or not if needed */
-		if (_prefixmap_test_data[i].exists) {
-			torture_assert(tctx, pfm_prev == schema->prefixmap,
-				       "schema->prefixmap has been reallocated!");
-			if (!_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap, true)) {
-				torture_fail(tctx, "schema->prefixmap has changed");
-			}
-		} else {
-			torture_assert(tctx, pfm_prev != schema->prefixmap,
-				       "schema->prefixmap should be reallocated!");
-			if (_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap, true)) {
-				torture_fail(tctx, "schema->prefixmap should be changed");
-			}
+		/*
+		 * The prefix should not change, only on reload
+		 */
+		torture_assert(tctx, pfm_prev == schema->prefixmap,
+			       "schema->prefixmap has been reallocated!");
+		if (!_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap, true)) {
+			torture_fail(tctx, "schema->prefixmap has changed");
 		}
 
 		/* read from ldb what we have written */
 		werr = dsdb_read_prefixes_from_ldb(priv->ldb_ctx, mem_ctx, &pfm_ldb);
 		torture_assert_werr_ok(tctx, werr, "dsdb_read_prefixes_from_ldb() failed");
 		/* compare data written/read */
-		if (!_torture_drs_pfm_compare_same(tctx, schema->prefixmap, pfm_ldb, true)) {
-			torture_fail(tctx, "schema->prefixmap and pfm in LDB are different");
+		if (!_torture_drs_pfm_compare_same(tctx, pfm_new, pfm_ldb, true)) {
+			torture_fail(tctx, talloc_asprintf(tctx, "%u: pfm in LDB is different", i));
 		}
 		/* free mem for pfm read from LDB */
-		talloc_free(pfm_ldb);
+		TALLOC_FREE(pfm_ldb);
 
-		/* release prefixMap pointer */
-		talloc_unlink(schema, pfm_prev);
+		/* prepare for the next round */
+		schema->prefixmap = pfm_new;
 	}
 
 	talloc_free(mem_ctx);
