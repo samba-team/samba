@@ -2697,45 +2697,49 @@ const struct dsdb_syntax *dsdb_syntax_for_attribute(const struct dsdb_attribute 
 	return NULL;
 }
 
-WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
-				     const struct dsdb_schema *schema,
-				     const struct dsdb_schema_prefixmap *pfm_remote,
-				     const struct drsuapi_DsReplicaAttribute *in,
-				     TALLOC_CTX *mem_ctx,
-				     struct ldb_message_element *out,
-				     enum drsuapi_DsAttributeId *local_attid_as_enum)
+WERROR dsdb_attribute_drsuapi_remote_to_local(const struct dsdb_syntax_ctx *ctx,
+					      enum drsuapi_DsAttributeId remote_attid_as_enum,
+					      enum drsuapi_DsAttributeId *local_attid_as_enum,
+					      const struct dsdb_attribute **_sa)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	const struct dsdb_attribute *sa;
-	struct dsdb_syntax_ctx syntax_ctx;
 	uint32_t attid_local;
+	bool ok;
 
-	/* use default syntax conversion context */
-	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
-	syntax_ctx.pfm_remote = pfm_remote;
+	if (ctx->pfm_remote == NULL) {
+		smb_panic(__location__);
+	}
 
-	switch (dsdb_pfm_get_attid_type(in->attid)) {
+	switch (dsdb_pfm_get_attid_type(remote_attid_as_enum)) {
 	case DSDB_ATTID_TYPE_PFM:
 		/* map remote ATTID to local ATTID */
-		if (!dsdb_syntax_attid_from_remote_attid(&syntax_ctx, mem_ctx, in->attid, &attid_local)) {
+		ok = dsdb_syntax_attid_from_remote_attid(ctx, frame,
+							 remote_attid_as_enum,
+							 &attid_local);
+		if (!ok) {
 			DEBUG(0,(__location__ ": Can't find local ATTID for 0x%08X\n",
-				 in->attid));
+				 remote_attid_as_enum));
+			TALLOC_FREE(frame);
 			return WERR_DS_ATT_NOT_DEF_IN_SCHEMA;
 		}
 		break;
 	case DSDB_ATTID_TYPE_INTID:
 		/* use IntId value directly */
-		attid_local = in->attid;
+		attid_local = remote_attid_as_enum;
 		break;
 	default:
 		/* we should never get here */
 		DEBUG(0,(__location__ ": Invalid ATTID type passed for conversion - 0x%08X\n",
-			 in->attid));
+			 remote_attid_as_enum));
+		TALLOC_FREE(frame);
 		return WERR_INVALID_PARAMETER;
 	}
 
-	sa = dsdb_attribute_by_attributeID_id(schema, attid_local);
+	sa = dsdb_attribute_by_attributeID_id(ctx->schema, attid_local);
 	if (!sa) {
 		DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", in->attid));
+		TALLOC_FREE(frame);
 		return WERR_DS_ATT_NOT_DEF_IN_SCHEMA;
 	}
 
@@ -2746,6 +2750,38 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 	 */
 	if (local_attid_as_enum != NULL) {
 		*local_attid_as_enum = (enum drsuapi_DsAttributeId)attid_local;
+	}
+
+	if (_sa != NULL) {
+		*_sa = sa;
+	}
+
+	TALLOC_FREE(frame);
+	return WERR_OK;
+}
+
+WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
+				     const struct dsdb_schema *schema,
+				     const struct dsdb_schema_prefixmap *pfm_remote,
+				     const struct drsuapi_DsReplicaAttribute *in,
+				     TALLOC_CTX *mem_ctx,
+				     struct ldb_message_element *out,
+				     enum drsuapi_DsAttributeId *local_attid_as_enum)
+{
+	struct dsdb_syntax_ctx syntax_ctx;
+	const struct dsdb_attribute *sa = NULL;
+	WERROR werr;
+
+	/* use default syntax conversion context */
+	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
+	syntax_ctx.pfm_remote = pfm_remote;
+
+	werr = dsdb_attribute_drsuapi_remote_to_local(&syntax_ctx,
+						      in->attid,
+						      local_attid_as_enum,
+						      &sa);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	return sa->syntax->drsuapi_to_ldb(&syntax_ctx, sa, in, mem_ctx, out);
