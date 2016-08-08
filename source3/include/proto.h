@@ -660,9 +660,12 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
 void ipstr_list_free(char* ipstr_list);
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 uint64_t conv_str_size(const char * str);
-int asprintf_strupper_m(char **strp, const char *fmt, ...);
-char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...);
-char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...);
+int asprintf_strupper_m(char **strp, const char *fmt, ...)
+			PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...)
+				 PRINTF_ATTRIBUTE(2,3);
+char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...)
+				 PRINTF_ATTRIBUTE(2,3);
 bool validate_net_name( const char *name,
 		const char *invalid_chars,
 		int max_len);
