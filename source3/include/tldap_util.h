@@ -45,18 +45,19 @@ bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			 const char *attrib, DATA_BLOB newval);
 bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			struct tldap_mod **pmods, int *pnum_mods,
-			const char *attrib, const char *fmt, ...);
+			const char *attrib, const char *fmt, ...)
+			PRINTF_ATTRIBUTE(6,7);
 
 const char *tldap_errstr(TALLOC_CTX *mem_ctx, struct tldap_context *ld,
 			 TLDAPRC rc);
 TLDAPRC tldap_search_va(struct tldap_context *ld, const char *base, int scope,
 			const char *attrs[], int num_attrs, int attrsonly,
 			TALLOC_CTX *mem_ctx, struct tldap_message ***res,
-		    const char *fmt, va_list ap);
+			const char *fmt, va_list ap) PRINTF_ATTRIBUTE(9,0);
 TLDAPRC tldap_search_fmt(struct tldap_context *ld, const char *base, int scope,
 			 const char *attrs[], int num_attrs, int attrsonly,
 			 TALLOC_CTX *mem_ctx, struct tldap_message ***res,
-			 const char *fmt, ...);
+			 const char *fmt, ...) PRINTF_ATTRIBUTE(9,10);
 bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 		       uint64_t *presult);
 bool tldap_pull_uint32(struct tldap_message *msg, const char *attr,
