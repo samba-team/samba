@@ -235,6 +235,7 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 
 	status = smb_get_nt_acl_nfs4(handle->conn,
 					smb_fname,
+					NULL,
 					security_info,
 					mem_ctx,
 					ppdesc,

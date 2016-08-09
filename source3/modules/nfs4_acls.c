@@ -559,6 +559,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 
 NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 			     const struct smb_filename *smb_fname,
+			     const struct smbacl4_vfs_params *pparams,
 			     uint32_t security_info,
 			     TALLOC_CTX *mem_ctx,
 			     struct security_descriptor **ppdesc,
