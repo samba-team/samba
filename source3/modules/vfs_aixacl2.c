@@ -446,7 +446,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(vfs_handle_struct *handle, files_struc
 	if (rc==0)
 	{
 		result = smb_set_nt_acl_nfs4(handle,
-			fsp, security_info_sent, psd,
+			fsp, NULL, security_info_sent, psd,
 			aixjfs2_process_smbacl);
 	} else if (rc==1) { /* assume POSIX ACL - by default... */
 		result = set_nt_acl(fsp, security_info_sent, psd);

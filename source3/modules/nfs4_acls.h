@@ -151,6 +151,7 @@ typedef bool (*set_nfs4acl_native_fn_t)(vfs_handle_struct *handle,
 					struct SMB4ACL_T *);
 
 NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
+	const struct smbacl4_vfs_params *pparams,
 	uint32_t security_info_sent,
 	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native);
