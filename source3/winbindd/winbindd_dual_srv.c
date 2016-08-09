@@ -189,6 +189,10 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 	for (i=0; i<num_ids; i++) {
 		struct id_map *m = id_map_ptrs[i];
 
+		if (!idmap_unix_id_is_in_range(m->xid.id, dom)) {
+			m->status = ID_UNMAPPED;
+		}
+
 		if (m->status == ID_MAPPED) {
 			ids[i].xid = m->xid;
 		} else {
