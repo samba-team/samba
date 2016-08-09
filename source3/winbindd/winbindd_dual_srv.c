@@ -203,6 +203,10 @@ NTSTATUS _wbint_Sids2UnixIDs(struct pipes_struct *p,
 		for (j=0; j<num_ids; j++) {
 			struct wbint_TransID *id = &r->in.ids->ids[id_idx[j]];
 
+			if (!idmap_unix_id_is_in_range(ids[j].xid.id, dom)) {
+				ids[j].status = ID_UNMAPPED;
+			}
+
 			if (ids[j].status != ID_MAPPED) {
 				id->xid.id = UINT32_MAX;
 				id->xid.type = ID_TYPE_NOT_SPECIFIED;
