@@ -39,6 +39,7 @@
 #endif
 
 struct gpfs_config_data {
+	struct smbacl4_vfs_params nfs4_params;
 	bool sharemodes;
 	bool leases;
 	bool hsm;
@@ -589,7 +590,8 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	result = gpfs_get_nfs4_acl(frame, fsp->fsp_name->base_name, &pacl);
 
 	if (result == 0) {
-		status = smb_fget_nt_acl_nfs4(fsp, NULL, security_info,
+		status = smb_fget_nt_acl_nfs4(fsp, &config->nfs4_params,
+					      security_info,
 					      mem_ctx, ppdesc, pacl);
 		TALLOC_FREE(frame);
 		return status;
@@ -638,7 +640,8 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	result = gpfs_get_nfs4_acl(frame, smb_fname->base_name, &pacl);
 
 	if (result == 0) {
-		status = smb_get_nt_acl_nfs4(handle->conn, smb_fname, NULL,
+		status = smb_get_nt_acl_nfs4(handle->conn, smb_fname,
+					     &config->nfs4_params,
 					     security_info, mem_ctx, ppdesc,
 					     pacl);
 		TALLOC_FREE(frame);
@@ -801,6 +804,8 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_str
 	}
 
 	if (acl->acl_version == GPFS_ACL_VERSION_NFS4) {
+		struct gpfs_config_data *config;
+
 		if (lp_parm_bool(fsp->conn->params->service, "gpfs",
 				 "refuse_dacl_protected", false)
 		    && (psd->type&SEC_DESC_DACL_PROTECTED)) {
@@ -809,8 +814,12 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(vfs_handle_struct *handle, files_str
 			return NT_STATUS_NOT_SUPPORTED;
 		}
 
+		SMB_VFS_HANDLE_GET_DATA(handle, config,
+					struct gpfs_config_data,
+					return NT_STATUS_INTERNAL_ERROR);
+
 		result = smb_set_nt_acl_nfs4(handle,
-			fsp, NULL, security_info_sent, psd,
+			fsp, &config->nfs4_params, security_info_sent, psd,
 			gpfsacl_process_smbacl);
 	} else { /* assume POSIX ACL - by default... */
 		result = set_nt_acl(fsp, security_info_sent, psd);
@@ -2075,6 +2084,12 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 	}
 
 	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		TALLOC_FREE(config);
+		return ret;
+	}
+
+	ret = smbacl4_get_vfs_params(handle->conn, &config->nfs4_params);
 	if (ret < 0) {
 		TALLOC_FREE(config);
 		return ret;
