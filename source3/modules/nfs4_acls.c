@@ -54,19 +54,19 @@ struct SMB4ACL_T
 enum smbacl4_mode_enum {e_simple=0, e_special=1};
 enum smbacl4_acedup_enum {e_dontcare=0, e_reject=1, e_ignore=2, e_merge=3};
 
-typedef struct _smbacl4_vfs_params {
+struct smbacl4_vfs_params {
 	enum smbacl4_mode_enum mode;
 	bool do_chown;
 	enum smbacl4_acedup_enum acedup;
 	bool map_full_control;
-} smbacl4_vfs_params;
+};
 
 /*
  * Gather special parameters for NFS4 ACL handling
  */
 static int smbacl4_get_vfs_params(
 	struct connection_struct *conn,
-	smbacl4_vfs_params *params
+	struct smbacl4_vfs_params *params
 )
 {
 	static const struct enum_list enum_smbacl4_modes[] = {
@@ -303,7 +303,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 }
 
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
-	smbacl4_vfs_params *params,
+	struct smbacl4_vfs_params *params,
 	struct SMB4ACL_T *acl, /* in */
 	struct dom_sid *psid_owner, /* in */
 	struct dom_sid *psid_group, /* in */
@@ -472,7 +472,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
-					   smbacl4_vfs_params *params,
+					   struct smbacl4_vfs_params *params,
 					   uint32_t security_info,
 					   TALLOC_CTX *mem_ctx,
 					   struct security_descriptor **ppdesc,
@@ -539,7 +539,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 			      struct SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
-	smbacl4_vfs_params params;
+	struct smbacl4_vfs_params params;
 
 	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
@@ -564,7 +564,7 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 			     struct SMB4ACL_T *theacl)
 {
 	SMB_STRUCT_STAT sbuf;
-	smbacl4_vfs_params params;
+	struct smbacl4_vfs_params params;
 
 	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n",
 		smb_fname->base_name));
@@ -648,7 +648,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 static bool smbacl4_fill_ace4(
 	const struct smb_filename *filename,
-	smbacl4_vfs_params *params,
+	struct smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
 	const struct security_ace *ace_nt, /* input */
@@ -853,7 +853,7 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 	TALLOC_CTX *mem_ctx,
 	const files_struct *fsp,
 	const struct security_acl *dacl,
-	smbacl4_vfs_params *pparams,
+	struct smbacl4_vfs_params *pparams,
 	uid_t ownerUID,
 	gid_t ownerGID
 )
@@ -907,7 +907,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	const struct security_descriptor *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native)
 {
-	smbacl4_vfs_params params;
+	struct smbacl4_vfs_params params;
 	struct SMB4ACL_T *theacl = NULL;
 	bool	result;
 
