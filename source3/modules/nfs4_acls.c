@@ -303,7 +303,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 }
 
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
-	struct smbacl4_vfs_params *params,
+	const struct smbacl4_vfs_params *params,
 	struct SMB4ACL_T *acl, /* in */
 	struct dom_sid *psid_owner, /* in */
 	struct dom_sid *psid_group, /* in */
@@ -472,7 +472,7 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
-					   struct smbacl4_vfs_params *params,
+					   const struct smbacl4_vfs_params *params,
 					   uint32_t security_info,
 					   TALLOC_CTX *mem_ctx,
 					   struct security_descriptor **ppdesc,
@@ -648,7 +648,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 static bool smbacl4_fill_ace4(
 	const struct smb_filename *filename,
-	struct smbacl4_vfs_params *params,
+	const struct smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
 	const struct security_ace *ace_nt, /* input */
@@ -853,7 +853,7 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 	TALLOC_CTX *mem_ctx,
 	const files_struct *fsp,
 	const struct security_acl *dacl,
-	struct smbacl4_vfs_params *pparams,
+	const struct smbacl4_vfs_params *pparams,
 	uid_t ownerUID,
 	gid_t ownerGID
 )
