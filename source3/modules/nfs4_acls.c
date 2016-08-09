@@ -536,12 +536,15 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 		return map_nt_error_from_unix(errno);
 	}
 
-	/* Special behaviours */
-	if (smbacl4_get_vfs_params(fsp->conn, &params)) {
-		return NT_STATUS_NO_MEMORY;
+	if (pparams == NULL) {
+		/* Special behaviours */
+		if (smbacl4_get_vfs_params(fsp->conn, &params)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		pparams = &params;
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, &params, security_info,
+	return smb_get_nt_acl_nfs4_common(&sbuf, pparams, security_info,
 					  mem_ctx, ppdesc, theacl);
 }
 
@@ -563,12 +566,15 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	/* Special behaviours */
-	if (smbacl4_get_vfs_params(conn, &params)) {
-		return NT_STATUS_NO_MEMORY;
+	if (pparams == NULL) {
+		/* Special behaviours */
+		if (smbacl4_get_vfs_params(conn, &params)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		pparams = &params;
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, &params, security_info,
+	return smb_get_nt_acl_nfs4_common(&sbuf, pparams, security_info,
 					  mem_ctx, ppdesc, theacl);
 }
 
@@ -921,10 +927,13 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 				      * refined... */
 	}
 
-	/* Special behaviours */
-	if (smbacl4_get_vfs_params(fsp->conn, &params)) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+	if (pparams == NULL) {
+		/* Special behaviours */
+		if (smbacl4_get_vfs_params(fsp->conn, &params)) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		pparams = &params;
 	}
 
 	if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
@@ -932,7 +941,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (params.do_chown) {
+	if (pparams->do_chown) {
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
 		NTSTATUS status = unpack_nt_owners(fsp->conn, &newUID, &newGID,
 						   security_info_sent, psd);
@@ -979,7 +988,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	theacl = smbacl4_win2nfs4(frame, fsp, psd->dacl, &params,
+	theacl = smbacl4_win2nfs4(frame, fsp, psd->dacl, pparams,
 				  sbuf.st_ex_uid, sbuf.st_ex_gid);
 	if (!theacl) {
 		TALLOC_FREE(frame);
