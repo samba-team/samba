@@ -533,6 +533,7 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 }
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
+			      const struct smbacl4_vfs_params *pparams,
 			      uint32_t security_info,
 			      TALLOC_CTX *mem_ctx,
 			      struct security_descriptor **ppdesc,

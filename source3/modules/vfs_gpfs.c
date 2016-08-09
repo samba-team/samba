@@ -589,8 +589,8 @@ static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
 	result = gpfs_get_nfs4_acl(frame, fsp->fsp_name->base_name, &pacl);
 
 	if (result == 0) {
-		status = smb_fget_nt_acl_nfs4(fsp, security_info, mem_ctx,
-					      ppdesc, pacl);
+		status = smb_fget_nt_acl_nfs4(fsp, NULL, security_info,
+					      mem_ctx, ppdesc, pacl);
 		TALLOC_FREE(frame);
 		return status;
 	}

@@ -109,6 +109,7 @@ typedef struct _SMB_ACE4PROP_T {
 
 struct SMB4ACL_T;
 struct SMB4ACE_T;
+struct smbacl4_vfs_params;
 
 struct SMB4ACL_T *smb_create_smb4acl(TALLOC_CTX *mem_ctx);
 
@@ -131,6 +132,7 @@ uint16_t smbacl4_get_controlflags(struct SMB4ACL_T *theacl);
 bool smbacl4_set_controlflags(struct SMB4ACL_T *theacl, uint16_t controlflags);
 
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
+	const struct smbacl4_vfs_params *pparams,
 	uint32_t security_info,
 	TALLOC_CTX *mem_ctx,
 	struct security_descriptor **ppdesc, struct SMB4ACL_T *theacl);
