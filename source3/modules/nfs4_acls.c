@@ -51,23 +51,11 @@ struct SMB4ACL_T
 	struct SMB4ACE_T	*last;
 };
 
-enum smbacl4_mode_enum {e_simple=0, e_special=1};
-enum smbacl4_acedup_enum {e_dontcare=0, e_reject=1, e_ignore=2, e_merge=3};
-
-struct smbacl4_vfs_params {
-	enum smbacl4_mode_enum mode;
-	bool do_chown;
-	enum smbacl4_acedup_enum acedup;
-	bool map_full_control;
-};
-
 /*
  * Gather special parameters for NFS4 ACL handling
  */
-static int smbacl4_get_vfs_params(
-	struct connection_struct *conn,
-	struct smbacl4_vfs_params *params
-)
+int smbacl4_get_vfs_params(struct connection_struct *conn,
+			   struct smbacl4_vfs_params *params)
 {
 	static const struct enum_list enum_smbacl4_modes[] = {
 		{ e_simple, "simple" },
