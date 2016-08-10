@@ -616,8 +616,8 @@ The last 50 lines of log messages:
         f.close()
 
     logs = os.path.join(gitroot, 'logs.tar.gz')
-    send_email('autobuild failure on %s for task %s during %s'
-               % (platform.node(), failed_task, failed_stage),
+    send_email('autobuild[%s] failure on %s for task %s during %s'
+               % (options.branch, platform.node(), failed_task, failed_stage),
                text, logs)
 
 def email_success(elapsed_time, log_base=None):
@@ -648,7 +648,7 @@ The top commit for the tree that was built was:
 ''' % top_commit_msg
 
     logs = os.path.join(gitroot, 'logs.tar.gz')
-    send_email('autobuild success on %s' % platform.node(),
+    send_email('autobuild[%s] success on %s' % (options.branch, platform.node()),
                text, logs)
 
 
@@ -750,7 +750,7 @@ else:
 
 AUTOBUILD FAILURE
 
-Your autobuild on %s failed after %.1f minutes
+Your autobuild[%s] on %s failed after %.1f minutes
 when trying to test %s with the following error:
 
    %s
@@ -759,7 +759,7 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 
 ####################################################################
 
-''' % (platform.node(), elapsed_minutes, failed_task, errstr)
+''' % (options.branch, platform.node(), elapsed_minutes, failed_task, errstr)
 
 cleanup()
 print(errstr)
