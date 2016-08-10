@@ -2364,7 +2364,7 @@ int32_t ctdb_control_set_iface_link(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	DEBUG(iface->link_up?DEBUG_ERR:DEBUG_NOTICE,
+	DEBUG(DEBUG_ERR,
 	      ("iface[%s] has changed it's link status %s => %s\n",
 	       iface->name,
 	       iface->link_up?"up":"down",
