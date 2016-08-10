@@ -32,6 +32,16 @@ This can solves some corner cases of mixed environments with Server 2003R2 and
 newer DCs.
 
 
+new option for owner inheritance
+--------------------------------
+The "inherit owner" smb.conf parameter instructs smbd to set the
+owner of files to be the same as the parent directory's owner.
+Up until now, this parameter could be set to "yes" or "no".
+A new option, "unix only", enables this feature only for the UNIX owner
+of the file, not affecting the SID owner in the Windows NT ACL of the
+file. This can be used to emulate something very similar to folder quotas.
+
+
 REMOVED FEATURES
 ================
 
@@ -42,6 +52,7 @@ smb.conf changes
   Parameter Name                Description             Default
   --------------                -----------             -------
   kerberos encryption types     New                     all
+  inherit owner                 New option
 
 
 KNOWN ISSUES
