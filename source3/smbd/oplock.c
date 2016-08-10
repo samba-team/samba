@@ -233,32 +233,31 @@ bool remove_oplock(files_struct *fsp)
 	bool ret;
 	struct share_mode_lock *lck;
 
-	DEBUG(10, ("remove_oplock called for %s\n",
-		   fsp_str_dbg(fsp)));
+	DBG_DEBUG("remove_oplock called for %s\n", fsp_str_dbg(fsp));
 
 	/* Remove the oplock flag from the sharemode. */
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
-		DEBUG(0,("remove_oplock: failed to lock share entry for "
-			 "file %s\n", fsp_str_dbg(fsp)));
-		return False;
+		DBG_ERR("failed to lock share entry for "
+			 "file %s\n", fsp_str_dbg(fsp));
+		return false;
 	}
 
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
-		DEBUG(0,("remove_oplock: failed to remove share oplock for "
+		DBG_ERR("failed to remove share oplock for "
 			 "file %s, %s, %s\n",
 			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id)));
+			 file_id_string_tos(&fsp->file_id));
 	}
 	release_file_oplock(fsp);
 
 	ret = update_num_read_oplocks(fsp, lck);
 	if (!ret) {
-		DEBUG(0, ("%s: update_num_read_oplocks failed for "
+		DBG_ERR("update_num_read_oplocks failed for "
 			 "file %s, %s, %s\n",
-			  __func__, fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id)));
+			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+			 file_id_string_tos(&fsp->file_id));
 	}
 
 	TALLOC_FREE(lck);
