@@ -790,7 +790,7 @@ static int tdb_free_region(struct tdb_context *tdb, tdb_off_t offset, ssize_t le
  */
 _PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 {
-	int i;
+	uint32_t i;
 	tdb_off_t offset = 0;
 	ssize_t data_len;
 	tdb_off_t recovery_head;
