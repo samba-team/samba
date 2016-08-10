@@ -128,22 +128,14 @@ static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
 				   struct ctdb_ltdb_header *header,
 				   TDB_DATA data)
 {
-	TDB_DATA rec;
+	TDB_DATA recs[2];
 	int ret;
 
-	rec.dsize = data.dsize + sizeof(struct ctdb_ltdb_header);
-	rec.dptr = (uint8_t *)talloc_size(talloc_tos(), rec.dsize);
+	recs[0] = (TDB_DATA) { .dptr = (uint8_t *)header,
+			       .dsize = sizeof(struct ctdb_ltdb_header) };
+	recs[1] = data;
 
-	if (rec.dptr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	memcpy(rec.dptr, header, sizeof(struct ctdb_ltdb_header));
-	memcpy(sizeof(struct ctdb_ltdb_header) + (uint8_t *)rec.dptr, data.dptr, data.dsize);
-
-	ret = tdb_store(db->wtdb->tdb, key, rec, TDB_REPLACE);
-
-	talloc_free(rec.dptr);
+	ret = tdb_storev(db->wtdb->tdb, key, recs, 2, TDB_REPLACE);
 
 	return (ret == 0) ? NT_STATUS_OK
 			  : tdb_error_to_ntstatus(db->wtdb->tdb);
