@@ -699,7 +699,7 @@ _PUBLIC_ int tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 _PUBLIC_ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 {
 	uint32_t hash;
-	TDB_DATA dbuf;
+	TDB_DATA dbufs[2];
 	int ret = -1;
 
 	/* find which hash bucket it is in */
@@ -707,38 +707,14 @@ _PUBLIC_ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf
 	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
 		return -1;
 
-	dbuf = _tdb_fetch(tdb, key);
+	dbufs[0] = _tdb_fetch(tdb, key);
+	dbufs[1] = new_dbuf;
 
-	if (dbuf.dptr == NULL) {
-		dbuf.dptr = (unsigned char *)malloc(new_dbuf.dsize);
-	} else {
-		unsigned int new_len = dbuf.dsize + new_dbuf.dsize;
-		unsigned char *new_dptr;
+	ret = _tdb_storev(tdb, key, dbufs, 2, 0, hash);
+	tdb_trace_2rec_retrec(tdb, "tdb_append", key, dbufs[0], dbufs[1]);
 
-		/* realloc '0' is special: don't do that. */
-		if (new_len == 0)
-			new_len = 1;
-		new_dptr = (unsigned char *)realloc(dbuf.dptr, new_len);
-		if (new_dptr == NULL) {
-			free(dbuf.dptr);
-		}
-		dbuf.dptr = new_dptr;
-	}
-
-	if (dbuf.dptr == NULL) {
-		tdb->ecode = TDB_ERR_OOM;
-		goto failed;
-	}
-
-	memcpy(dbuf.dptr + dbuf.dsize, new_dbuf.dptr, new_dbuf.dsize);
-	dbuf.dsize += new_dbuf.dsize;
-
-	ret = _tdb_store(tdb, key, dbuf, 0, hash);
-	tdb_trace_2rec_retrec(tdb, "tdb_append", key, new_dbuf, dbuf);
-
-failed:
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
-	SAFE_FREE(dbuf.dptr);
+	SAFE_FREE(dbufs[0].dptr);
 	return ret;
 }
 
