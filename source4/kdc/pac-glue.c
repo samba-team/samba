@@ -234,6 +234,7 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+#ifdef SAMBA4_USES_HEIMDAL
 krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 						  const krb5_keyblock *pkreplykey,
 						  const DATA_BLOB *cred_ndr_blob,
@@ -309,6 +310,106 @@ krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
 
 	return 0;
 }
+#else /* SAMBA4_USES_HEIMDAL */
+krb5_error_code samba_kdc_encrypt_pac_credentials(krb5_context context,
+						  const krb5_keyblock *pkreplykey,
+						  const DATA_BLOB *cred_ndr_blob,
+						  TALLOC_CTX *mem_ctx,
+						  DATA_BLOB *cred_info_blob)
+{
+	krb5_key cred_key;
+	krb5_enctype cred_enctype;
+	struct PAC_CREDENTIAL_INFO pac_cred_info = { .version = 0, };
+	krb5_error_code code;
+	const char *krb5err;
+	enum ndr_err_code ndr_err;
+	NTSTATUS nt_status;
+	krb5_data cred_ndr_data;
+	krb5_enc_data cred_ndr_crypt;
+	size_t enc_len = 0;
+
+	*cred_info_blob = data_blob_null;
+
+	code = krb5_k_create_key(context,
+				 pkreplykey,
+				 &cred_key);
+	if (code != 0) {
+		krb5err = krb5_get_error_message(context, code);
+		DEBUG(1, ("Failed initializing cred data crypto: %s\n", krb5err));
+		krb5_free_error_message(context, krb5err);
+		return code;
+	}
+
+	cred_enctype = krb5_k_key_enctype(context, cred_key);
+
+	DEBUG(10, ("Plain cred_ndr_blob (len %zu)\n",
+		  cred_ndr_blob->length));
+	dump_data_pw("PAC_CREDENTIAL_DATA_NDR",
+		     cred_ndr_blob->data, cred_ndr_blob->length);
+
+	pac_cred_info.encryption_type = cred_enctype;
+
+	cred_ndr_data.magic = 0;
+	cred_ndr_data.data = (char *)cred_ndr_blob->data;
+	cred_ndr_data.length = cred_ndr_blob->length;
+
+	code = krb5_c_encrypt_length(context,
+				     cred_enctype,
+				     cred_ndr_data.length,
+				     &enc_len);
+	if (code != 0) {
+		krb5err = krb5_get_error_message(context, code);
+		DEBUG(1, ("Failed initializing cred data crypto: %s\n", krb5err));
+		krb5_free_error_message(context, krb5err);
+		return code;
+	}
+
+	pac_cred_info.encrypted_data = data_blob_talloc_zero(mem_ctx, enc_len);
+	if (pac_cred_info.encrypted_data.data == NULL) {
+		DBG_ERR("Out of memory\n");
+		return ENOMEM;
+	}
+
+	cred_ndr_crypt.ciphertext.length = enc_len;
+	cred_ndr_crypt.ciphertext.data = (char *)pac_cred_info.encrypted_data.data;
+
+	code = krb5_k_encrypt(context,
+			      cred_key,
+			      KRB5_KU_OTHER_ENCRYPTED,
+			      NULL,
+			      &cred_ndr_data,
+			      &cred_ndr_crypt);
+	krb5_k_free_key(context, cred_key);
+	if (code != 0) {
+		krb5err = krb5_get_error_message(context, code);
+		DEBUG(1, ("Failed crypt of cred data: %s\n", krb5err));
+		krb5_free_error_message(context, krb5err);
+		return code;
+	}
+
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(PAC_CREDENTIAL_INFO, &pac_cred_info);
+	}
+
+	ndr_err = ndr_push_struct_blob(cred_info_blob, mem_ctx, &pac_cred_info,
+			(ndr_push_flags_fn_t)ndr_push_PAC_CREDENTIAL_INFO);
+	TALLOC_FREE(pac_cred_info.encrypted_data.data);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		nt_status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(1, ("PAC_CREDENTIAL_INFO (presig) push failed: %s\n",
+			  nt_errstr(nt_status)));
+		return KRB5KDC_ERR_SVC_UNAVAILABLE;
+	}
+
+	DEBUG(10, ("Encrypted credential BLOB (len %zu) with alg %d\n",
+		  cred_info_blob->length, (int)pac_cred_info.encryption_type));
+	dump_data_pw("PAC_CREDENTIAL_INFO",
+		      cred_info_blob->data, cred_info_blob->length);
+
+	return 0;
+}
+#endif /* SAMBA4_USES_HEIMDAL */
+
 
 krb5_error_code samba_make_krb5_pac(krb5_context context,
 				    const DATA_BLOB *logon_blob,
