@@ -276,6 +276,7 @@ done:
 int ctdb_socket_connect(struct ctdb_context *ctdb)
 {
 	struct sockaddr_un addr;
+	int ret;
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
@@ -294,7 +295,17 @@ int ctdb_socket_connect(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	set_blocking(ctdb->daemon.sd, false);
+	ret = set_blocking(ctdb->daemon.sd, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " failed to set socket non-blocking (%s)\n",
+		       strerror(errno)));
+		close(ctdb->daemon.sd);
+		ctdb->daemon.sd = -1;
+		return -1;
+	}
+
 	set_close_on_exec(ctdb->daemon.sd);
 
 	ctdb->daemon.queue = ctdb_queue_setup(ctdb, ctdb, ctdb->daemon.sd, 
