@@ -223,6 +223,34 @@ bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
 }
 
 /****************************************************************************
+ Remove a file oplock with lock already held. Copes with level II and exclusive.
+****************************************************************************/
+
+bool remove_oplock_under_lock(files_struct *fsp, struct share_mode_lock *lck)
+{
+	bool ret;
+
+	ret = remove_share_oplock(lck, fsp);
+	if (!ret) {
+		DBG_ERR("failed to remove share oplock for "
+			"file %s, %s, %s\n",
+			fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+			file_id_string_tos(&fsp->file_id));
+	}
+	release_file_oplock(fsp);
+
+	ret = update_num_read_oplocks(fsp, lck);
+	if (!ret) {
+		DBG_ERR("update_num_read_oplocks failed for "
+			"file %s, %s, %s\n",
+			fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+			file_id_string_tos(&fsp->file_id));
+	}
+
+	return ret;
+}
+
+/****************************************************************************
  Remove a file oplock. Copes with level II and exclusive.
  Locks then unlocks the share mode lock. Client can decide to go directly
  to none even if a "break-to-level II" was sent.
@@ -243,22 +271,7 @@ bool remove_oplock(files_struct *fsp)
 		return false;
 	}
 
-	ret = remove_share_oplock(lck, fsp);
-	if (!ret) {
-		DBG_ERR("failed to remove share oplock for "
-			 "file %s, %s, %s\n",
-			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id));
-	}
-	release_file_oplock(fsp);
-
-	ret = update_num_read_oplocks(fsp, lck);
-	if (!ret) {
-		DBG_ERR("update_num_read_oplocks failed for "
-			 "file %s, %s, %s\n",
-			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id));
-	}
+	ret = remove_oplock_under_lock(fsp, lck);
 
 	TALLOC_FREE(lck);
 	return ret;
