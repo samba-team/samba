@@ -312,8 +312,8 @@ New shadow_copy2 options
 REMOVED FEATURES
 ================
 
-only user and username parameters
----------------------------------
+"only user" and "username" parameters
+-------------------------------------
 
 These two parameters have long been deprecated and superseded by
 "valid users" and "invalid users".
@@ -337,12 +337,42 @@ smb.conf changes
 KNOWN ISSUES
 ============
 
-Currently none.
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.5#All_bugs
 
 
 CHANGES SINCE 4.5.0rc1
 ======================
 
+o   Ralph Boehme <slow@samba.org>
+    * BUG 12005: parse_share_modes() chokes on ctdb tombstone record from ltdb.
+    * BUG 12105: smbclient connection to not reachable IP eats 100% CPU.
+
+o   Ira Cooper <ira@samba.org>
+    * BUG 12133: source3/wscript: Add support for disabling vfs_cephfs.
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 12121: ctdb-tools: Fix numerous Coverity IDs and other issues.
+    * BUG 12122: If a transaction fails, it should be canceled and transaction
+      handle should be freed.
+    * BUG 12134: dbwrap: Fix structure initialization.
+
+o   Marc Muehlfeld <mmuehlfeld@samba.org>
+    * BUG 12023: man: Fix wrong option for parameter "ldap ssl" in smb.conf
+      man page.
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 12104: ctdb-waf: Move ctdb tests to libexec directory.
+
+o   Martin Schwenke <martin@meltin.net>
+    * BUG 12104: ctdb-packaging: Move ctdb tests to libexec directory.
+    * BUG 12109: Fixes several CTDB tests.
+    * BUG 12110: Fix numerous Coverity IDs.
+    * BUG 12113: ctdb-mutex: Avoid corner case where helper is already
+      reparented to init.
+    * BUG 12123: Fix ctdb tickle command and update documentation.
+    * BUG 12125: CTDB overwrites working configuration due to packaging
+      change.
+    * BUG 12126: Fix broken CTDB log messages.
 
 
 #######################################
