@@ -409,8 +409,12 @@ fix_transited_encoding(krb5_context context,
 		  "Decoding transited encoding");
 	return ret;
     }
+
+    /*
+     * If the realm of the presented tgt is neither the client nor the server
+     * realm, it is a transit realm and must be added to transited set.
+     */
     if(strcmp(client_realm, tgt_realm) && strcmp(server_realm, tgt_realm)) {
-	/* not us, so add the previous realm to transited set */
 	if (num_realms + 1 > UINT_MAX/sizeof(*realms)) {
 	    ret = ERANGE;
 	    goto free_realms;
@@ -492,6 +496,7 @@ tgs_make_reply(krb5_context context,
 	       const char *server_name,
 	       hdb_entry_ex *client,
 	       krb5_principal client_principal,
+               const char *tgt_realm,
 	       hdb_entry_ex *krbtgt,
 	       krb5_pac mspac,
 	       uint16_t rodc_id,
@@ -553,7 +558,7 @@ tgs_make_reply(krb5_context context,
 				 &tgt->transited, &et,
 				 krb5_principal_get_realm(context, client_principal),
 				 krb5_principal_get_realm(context, server->entry.principal),
-				 krb5_principal_get_realm(context, krbtgt->entry.principal));
+				 tgt_realm);
     if(ret)
 	goto out;
 
@@ -1292,13 +1297,14 @@ tgs_build_reply(krb5_context context,
     HDB *clientdb, *s4u2self_impersonated_clientdb;
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &ticket->ticket;
+    const char *tgt_realm = /* Realm of TGT issuer */
+        krb5_principal_get_realm(context, krbtgt->entry.principal);
     const EncryptionKey *ekey;
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
     krb5_pac mspac = NULL;
     uint16_t rodc_id;
     krb5_boolean add_ticket_sig = FALSE;
-
     hdb_entry_ex *krbtgt_out = NULL;
 
     METHOD_DATA enc_pa_data;
@@ -2036,6 +2042,7 @@ server_lookup:
 			 spn,
 			 client,
 			 cp,
+			 tgt_realm,
 			 krbtgt_out,
 			 mspac,
 			 rodc_id,
