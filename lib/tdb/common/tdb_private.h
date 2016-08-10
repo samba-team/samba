@@ -96,6 +96,10 @@ void tdb_trace_1rec_retrec(struct tdb_context *tdb, const char *op,
 void tdb_trace_2rec_flag_ret(struct tdb_context *tdb, const char *op,
 			     TDB_DATA rec1, TDB_DATA rec2, unsigned flag,
 			     int ret);
+void tdb_trace_1plusn_rec_flag_ret(struct tdb_context *tdb, const char *op,
+				   TDB_DATA rec,
+				   const TDB_DATA *recs, int num_recs,
+				   unsigned flag, int ret);
 void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
 			   TDB_DATA rec1, TDB_DATA rec2, TDB_DATA ret);
 #else
@@ -108,6 +112,7 @@ void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
 #define tdb_trace_1rec_ret(tdb, op, rec, ret)
 #define tdb_trace_1rec_retrec(tdb, op, rec, ret)
 #define tdb_trace_2rec_flag_ret(tdb, op, rec1, rec2, flag, ret)
+#define tdb_trace_1plusn_rec_flag_ret(tdb, op, rec, recs, num_recs, flag, ret);
 #define tdb_trace_2rec_retrec(tdb, op, rec1, rec2, ret)
 #endif /* !TDB_TRACE */
 

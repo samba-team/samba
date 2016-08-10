@@ -1214,6 +1214,25 @@ void tdb_trace_2rec_flag_ret(struct tdb_context *tdb, const char *op,
 	tdb_trace_end_ret(tdb, ret);
 }
 
+void tdb_trace_1plusn_rec_flag_ret(struct tdb_context *tdb, const char *op,
+				   TDB_DATA rec,
+				   const TDB_DATA *recs, int num_recs,
+				   unsigned flag, int ret)
+{
+	char msg[1 + sizeof(ret) * 4];
+	int i;
+
+	snprintf(msg, sizeof(msg), " %#x", flag);
+	tdb_trace_start(tdb);
+	tdb_trace_write(tdb, op);
+	tdb_trace_record(tdb, rec);
+	for (i=0; i<num_recs; i++) {
+		tdb_trace_record(tdb, recs[i]);
+	}
+	tdb_trace_write(tdb, msg);
+	tdb_trace_end_ret(tdb, ret);
+}
+
 void tdb_trace_2rec_retrec(struct tdb_context *tdb, const char *op,
 			   TDB_DATA rec1, TDB_DATA rec2, TDB_DATA ret)
 {
