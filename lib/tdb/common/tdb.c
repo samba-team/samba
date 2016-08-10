@@ -157,9 +157,7 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 
 	/* it could be an exact duplicate of what is there - this is
 	 * surprisingly common (eg. with a ldb re-index). */
-	if (rec.key_len == key.dsize &&
-	    rec.data_len == dbuf.dsize &&
-	    rec.full_hash == hash &&
+	if (rec.data_len == dbuf.dsize &&
 	    tdb_parse_record(tdb, key, tdb_update_hash_cmp, &dbuf) == 0) {
 		return 0;
 	}
