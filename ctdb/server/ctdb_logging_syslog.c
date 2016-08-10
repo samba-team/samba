@@ -216,7 +216,13 @@ static int ctdb_log_setup_syslog_un(TALLOC_CTX *mem_ctx,
 		talloc_free(state);
 		return save_errno;
 	}
-	set_blocking(state->fd, false);
+
+	ret = set_blocking(state->fd, false);
+	if (ret != 0) {
+		int save_errno = errno;
+		talloc_free(state);
+		return save_errno;
+	}
 
 	state->hostname = NULL; /* Make this explicit */
 	state->format = format_rfc3164;
