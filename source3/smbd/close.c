@@ -279,6 +279,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* Remove the oplock before potentially deleting the file. */
+	if(fsp->oplock_type) {
+		remove_oplock_under_lock(fsp, lck);
+	}
+
 	if (fsp->write_time_forced) {
 		DEBUG(10,("close_remove_share_mode: write time forced "
 			"for file %s\n",
@@ -741,11 +746,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		print_spool_end(fsp, close_type);
 		file_free(req, fsp);
 		return NT_STATUS_OK;
-	}
-
-	/* Remove the oplock before potentially deleting the file. */
-	if(fsp->oplock_type) {
-		remove_oplock(fsp);
 	}
 
 	/* If this is an old DOS or FCB open and we have multiple opens on
