@@ -16,6 +16,21 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+kerberos client encryption types
+--------------------------------
+Some parts of Samba (most notably winbindd) perform Kerberos client
+operations based on a Samba-generated krb5.conf file. A new
+parameter, "kerberos encryption types" allows configuring the
+encryption types set in this file, thereby allowing the user to
+enforce strong or legacy encryption in Kerberos exchanges.
+
+The default value of "all" is compatible with previous behavior, allowing
+all encryption algorithms to be negotiated. Setting the parameter to "strong"
+only allows AES-based algorithms to be negotiated. Setting the parameter to
+"legacy" allows only RC4-HMAC-MD5 - the legacy algorithm for Active Directory.
+This can solves some corner cases of mixed environments with Server 2003R2 and
+newer DCs.
+
 
 REMOVED FEATURES
 ================
@@ -26,6 +41,7 @@ smb.conf changes
 
   Parameter Name                Description             Default
   --------------                -----------             -------
+  kerberos encryption types     New                     all
 
 
 KNOWN ISSUES
