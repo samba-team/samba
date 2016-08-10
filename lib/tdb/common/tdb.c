@@ -162,10 +162,14 @@ static int tdb_update_hash_cmp(TDB_DATA key, TDB_DATA data, void *private_data)
    is <= the old data size and the key exists.
    on failure return -1.
 */
-static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash, TDB_DATA dbuf)
+static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key,
+			   uint32_t hash,
+			   const TDB_DATA *dbufs, int num_dbufs,
+			   tdb_len_t dbufs_len)
 {
 	struct tdb_record rec;
-	tdb_off_t rec_ptr;
+	tdb_off_t rec_ptr, ofs;
+	int i;
 
 	/* find entry */
 	if (!(rec_ptr = tdb_find(tdb, key, hash, &rec)))
@@ -173,10 +177,10 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 
 	/* it could be an exact duplicate of what is there - this is
 	 * surprisingly common (eg. with a ldb re-index). */
-	if (rec.data_len == dbuf.dsize) {
+	if (rec.data_len == dbufs_len) {
 		struct tdb_update_hash_state state = {
-			.dbufs = &dbuf, .num_dbufs = 1,
-			.dbufs_len = dbuf.dsize
+			.dbufs = dbufs, .num_dbufs = num_dbufs,
+			.dbufs_len = dbufs_len
 		};
 		int ret;
 
@@ -187,18 +191,27 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 	}
 
 	/* must be long enough key, data and tailer */
-	if (rec.rec_len < key.dsize + dbuf.dsize + sizeof(tdb_off_t)) {
+	if (rec.rec_len < key.dsize + dbufs_len + sizeof(tdb_off_t)) {
 		tdb->ecode = TDB_SUCCESS; /* Not really an error */
 		return -1;
 	}
 
-	if (tdb->methods->tdb_write(tdb, rec_ptr + sizeof(rec) + rec.key_len,
-		      dbuf.dptr, dbuf.dsize) == -1)
-		return -1;
+	ofs = rec_ptr + sizeof(rec) + rec.key_len;
 
-	if (dbuf.dsize != rec.data_len) {
+	for (i=0; i<num_dbufs; i++) {
+		TDB_DATA dbuf = dbufs[i];
+		int ret;
+
+		ret = tdb->methods->tdb_write(tdb, ofs, dbuf.dptr, dbuf.dsize);
+		if (ret == -1) {
+			return -1;
+		}
+		ofs += dbuf.dsize;
+	}
+
+	if (dbufs_len != rec.data_len) {
 		/* update size */
-		rec.data_len = dbuf.dsize;
+		rec.data_len = dbufs_len;
 		return tdb_rec_write(tdb, rec_ptr, &rec);
 	}
 
@@ -535,7 +548,8 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		}
 	} else {
 		/* first try in-place update, on modify or replace. */
-		if (tdb_update_hash(tdb, key, hash, dbuf) == 0) {
+		if (tdb_update_hash(tdb, key, hash, &dbuf, 1,
+				    dbuf.dsize) == 0) {
 			goto done;
 		}
 		if (tdb->ecode == TDB_ERR_NOEXIST &&
