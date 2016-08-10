@@ -455,7 +455,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
  */
 int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 {
-	int s;
+	int s, ret;
 
 	/* Open a socket to capture all traffic */
 	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
@@ -466,7 +466,16 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created RAW SOCKET FD:%d for tcp tickle\n", s));
 
-	set_blocking(s, false);
+	ret = set_blocking(s, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " failed to set socket non-blocking (%s)\n",
+		       strerror(errno)));
+		close(s);
+		return -1;
+	}
+
 	set_close_on_exec(s);
 
 	return s;
