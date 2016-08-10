@@ -526,16 +526,30 @@ tdb_off_t tdb_find_dead(struct tdb_context *tdb, uint32_t hash,
 	return best_rec_ptr;
 }
 
-static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
-		       TDB_DATA dbuf, int flag, uint32_t hash)
+static int _tdb_storev(struct tdb_context *tdb, TDB_DATA key,
+		       const TDB_DATA *dbufs, int num_dbufs,
+		       int flag, uint32_t hash)
 {
 	struct tdb_record rec;
-	tdb_off_t rec_ptr;
-	tdb_len_t rec_len;
+	tdb_off_t rec_ptr, ofs;
+	tdb_len_t rec_len, dbufs_len;
+	int i;
 	int ret = -1;
 
-	rec_len = key.dsize + dbuf.dsize;
-	if ((rec_len < key.dsize) || (rec_len < dbuf.dsize)) {
+	dbufs_len = 0;
+
+	for (i=0; i<num_dbufs; i++) {
+		size_t dsize = dbufs[i].dsize;
+
+		dbufs_len += dsize;
+		if (dbufs_len < dsize) {
+			tdb->ecode = TDB_ERR_OOM;
+			goto fail;
+		}
+	}
+
+	rec_len = key.dsize + dbufs_len;
+	if ((rec_len < key.dsize) || (rec_len < dbufs_len)) {
 		tdb->ecode = TDB_ERR_OOM;
 		goto fail;
 	}
@@ -548,8 +562,8 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		}
 	} else {
 		/* first try in-place update, on modify or replace. */
-		if (tdb_update_hash(tdb, key, hash, &dbuf, 1,
-				    dbuf.dsize) == 0) {
+		if (tdb_update_hash(tdb, key, hash, dbufs, num_dbufs,
+				    dbufs_len) == 0) {
 			goto done;
 		}
 		if (tdb->ecode == TDB_ERR_NOEXIST &&
@@ -580,17 +594,36 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		goto fail;
 
 	rec.key_len = key.dsize;
-	rec.data_len = dbuf.dsize;
+	rec.data_len = dbufs_len;
 	rec.full_hash = hash;
 	rec.magic = TDB_MAGIC;
 
+	ofs = rec_ptr;
+
 	/* write out and point the top of the hash chain at it */
-	if (tdb_rec_write(tdb, rec_ptr, &rec) == -1
-	    || tdb->methods->tdb_write(tdb, rec_ptr+sizeof(rec),
-				       key.dptr, key.dsize) == -1
-	    || tdb->methods->tdb_write(tdb, rec_ptr+sizeof(rec)+key.dsize,
-				       dbuf.dptr, dbuf.dsize) == -1
-	    || tdb_ofs_write(tdb, TDB_HASH_TOP(hash), &rec_ptr) == -1) {
+	ret = tdb_rec_write(tdb, ofs, &rec);
+	if (ret == -1) {
+		goto fail;
+	}
+	ofs += sizeof(rec);
+
+	ret = tdb->methods->tdb_write(tdb, ofs, key.dptr, key.dsize);
+	if (ret == -1) {
+		goto fail;
+	}
+	ofs += key.dsize;
+
+	for (i=0; i<num_dbufs; i++) {
+		ret = tdb->methods->tdb_write(tdb, ofs, dbufs[i].dptr,
+					      dbufs[i].dsize);
+		if (ret == -1) {
+			goto fail;
+		}
+		ofs += dbufs[i].dsize;
+	}
+
+	ret = tdb_ofs_write(tdb, TDB_HASH_TOP(hash), &rec_ptr);
+	if (ret == -1) {
 		/* Need to tdb_unallocate() here */
 		goto fail;
 	}
@@ -602,6 +635,12 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		tdb_increment_seqnum(tdb);
 	}
 	return ret;
+}
+
+static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
+		      TDB_DATA dbuf, int flag, uint32_t hash)
+{
+	return _tdb_storev(tdb, key, &dbuf, 1, flag, hash);
 }
 
 /* store an element in the database, replacing any existing element
