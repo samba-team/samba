@@ -984,6 +984,7 @@ static void ctdb_accept_client(struct tevent_context *ev,
 static int ux_socket_bind(struct ctdb_context *ctdb)
 {
 	struct sockaddr_un addr;
+	int ret;
 
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (ctdb->daemon.sd == -1) {
@@ -1007,7 +1008,15 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	unlink(ctdb->daemon.name);
 
 	set_close_on_exec(ctdb->daemon.sd);
-	set_blocking(ctdb->daemon.sd, false);
+
+	ret = set_blocking(ctdb->daemon.sd, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " failed to set socket non-blocking (%s)\n",
+		       strerror(errno)));
+		goto failed;
+	}
 
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
 		DEBUG(DEBUG_CRIT,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
