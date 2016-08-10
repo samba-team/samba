@@ -129,16 +129,32 @@ tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t has
 
 static TDB_DATA _tdb_fetch(struct tdb_context *tdb, TDB_DATA key);
 
+struct tdb_update_hash_state {
+	const TDB_DATA *dbufs;
+	int num_dbufs;
+	tdb_len_t dbufs_len;
+};
+
 static int tdb_update_hash_cmp(TDB_DATA key, TDB_DATA data, void *private_data)
 {
-	TDB_DATA *dbuf = (TDB_DATA *)private_data;
+	struct tdb_update_hash_state *state = private_data;
+	unsigned char *dptr = data.dptr;
+	int i;
 
-	if (dbuf->dsize != data.dsize) {
+	if (state->dbufs_len != data.dsize) {
 		return -1;
 	}
-	if (memcmp(dbuf->dptr, data.dptr, data.dsize) != 0) {
-		return -1;
+
+	for (i=0; i<state->num_dbufs; i++) {
+		TDB_DATA dbuf = state->dbufs[i];
+		int ret;
+		ret = memcmp(dptr, dbuf.dptr, dbuf.dsize);
+		if (ret != 0) {
+			return -1;
+		}
+		dptr += dbuf.dsize;
 	}
+
 	return 0;
 }
 
@@ -157,9 +173,17 @@ static int tdb_update_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 
 	/* it could be an exact duplicate of what is there - this is
 	 * surprisingly common (eg. with a ldb re-index). */
-	if (rec.data_len == dbuf.dsize &&
-	    tdb_parse_record(tdb, key, tdb_update_hash_cmp, &dbuf) == 0) {
-		return 0;
+	if (rec.data_len == dbuf.dsize) {
+		struct tdb_update_hash_state state = {
+			.dbufs = &dbuf, .num_dbufs = 1,
+			.dbufs_len = dbuf.dsize
+		};
+		int ret;
+
+		ret = tdb_parse_record(tdb, key, tdb_update_hash_cmp, &state);
+		if (ret == 0) {
+			return 0;
+		}
 	}
 
 	/* must be long enough key, data and tailer */
