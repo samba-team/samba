@@ -20,7 +20,7 @@
 	is turned on.
 	</para>
 	<para>
-	If is not recommended to enable this option unless you
+	It is not recommended to enable this option unless you
 	fully understand the implications of allowing the server to
 	follow symbolic links created by UNIX clients. For most
 	normal Samba configurations this would be considered a security
