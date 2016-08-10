@@ -670,6 +670,31 @@ _PUBLIC_ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int
 	return ret;
 }
 
+_PUBLIC_ int tdb_storev(struct tdb_context *tdb, TDB_DATA key,
+			const TDB_DATA *dbufs, int num_dbufs, int flag)
+{
+	uint32_t hash;
+	int ret;
+
+	if (tdb->read_only || tdb->traverse_read) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		tdb_trace_1plusn_rec_flag_ret(tdb, "tdb_storev", key,
+					      dbufs, num_dbufs, flag, -1);
+		return -1;
+	}
+
+	/* find which hash bucket it is in */
+	hash = tdb->hash_fn(&key);
+	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
+		return -1;
+
+	ret = _tdb_storev(tdb, key, dbufs, num_dbufs, flag, hash);
+	tdb_trace_1plusn_rec_flag_ret(tdb, "tdb_storev", key,
+				      dbufs, num_dbufs, flag, -1);
+	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
+	return ret;
+}
+
 /* Append to an entry. Create if not exist. */
 _PUBLIC_ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 {

@@ -357,6 +357,32 @@ int tdb_delete(struct tdb_context *tdb, TDB_DATA key);
  */
 int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag);
 
+
+/**
+ * @brief Store an element in the database.
+ *
+ * This replaces any existing element with the same key.
+ *
+ * @param[in]  tdb      The tdb to store the entry.
+ *
+ * @param[in]  key      The key to use to store the entry.
+ *
+ * @param[in]  dbufs    A vector of memory chunks to write
+ *
+ * @param[in]  num_dbufs Length of the dbufs vector
+ *
+ * @param[in]  flag     The flags to store the key:\n\n
+ *                      TDB_INSERT: Don't overwrite an existing entry.\n
+ *                      TDB_MODIFY: Don't create a new entry\n
+ *
+ * @return              0 on success, -1 on error with error code set.
+ *
+ * @see tdb_error()
+ * @see tdb_errorstr()
+ */
+int tdb_storev(struct tdb_context *tdb, TDB_DATA key,
+	       const TDB_DATA *dbufs, int num_dbufs, int flag);
+
 /**
  * @brief Append data to an entry.
  *
