@@ -630,7 +630,7 @@ int ctdb_recheck_persistent_health(struct ctdb_context *ctdb)
 				   ctdb_db->db_path,
 				   ctdb_db->unhealthy_reason));
 	}
-	DEBUG((fail!=0)?DEBUG_ALERT:DEBUG_NOTICE,
+	DEBUG(DEBUG_NOTICE,
 	      ("ctdb_recheck_persistent_health: OK[%d] FAIL[%d]\n",
 	       ok, fail));
 
