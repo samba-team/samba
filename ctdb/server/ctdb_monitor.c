@@ -354,7 +354,7 @@ static void ctdb_wait_until_recovered(struct tevent_context *ev,
 	if (ret != 0) {
 		ctdb->db_persistent_check_errors++;
 		if (ctdb->db_persistent_check_errors < ctdb->max_persistent_check_errors) {
-			DEBUG(ctdb->db_persistent_check_errors==1?DEBUG_ERR:DEBUG_WARNING,
+			DEBUG(DEBUG_ERR,
 			      (__location__ "ctdb_recheck_persistent_health() "
 			      "failed (%llu of %llu times) - retry later\n",
 			      (unsigned long long)ctdb->db_persistent_check_errors,
