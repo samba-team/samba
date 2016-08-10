@@ -930,6 +930,7 @@ static void ctdb_accept_client(struct tevent_context *ev,
 	struct ctdb_client *client;
 	struct ctdb_client_pid_list *client_pid;
 	pid_t peer_pid = 0;
+	int ret;
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
@@ -938,7 +939,16 @@ static void ctdb_accept_client(struct tevent_context *ev,
 		return;
 	}
 
-	set_blocking(fd, false);
+	ret = set_blocking(fd, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " failed to set socket non-blocking (%s)\n",
+		       strerror(errno)));
+		close(fd);
+		return;
+	}
+
 	set_close_on_exec(fd);
 
 	DEBUG(DEBUG_DEBUG,(__location__ " Created SOCKET FD:%d to connected child\n", fd));
