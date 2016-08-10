@@ -671,6 +671,10 @@ sub setup_fileserver($$)
 	path = $share_dir
 	comment = ignore system acls
 	acl_xattr:ignore system acls = yes
+[inherit_owner]
+	path = $share_dir
+	comment = inherit owner
+	inherit owner = yes
 ";
 
 	my $vars = $self->provision($path,
