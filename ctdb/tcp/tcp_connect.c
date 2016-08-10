@@ -139,6 +139,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 	int sockin_size;
 	int sockout_size;
         ctdb_sock_addr sock_out;
+	int ret;
 
 	ctdb_tcp_stop_connection(node);
 
@@ -149,7 +150,18 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 		DEBUG(DEBUG_ERR, (__location__ " Failed to create socket\n"));
 		return;
 	}
-	set_blocking(tnode->fd, false);
+
+	ret = set_blocking(tnode->fd, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " failed to set socket non-blocking (%s)\n",
+		       strerror(errno)));
+		close(tnode->fd);
+		tnode->fd = -1;
+		return;
+	}
+
 	set_close_on_exec(tnode->fd);
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created TCP SOCKET FD:%d\n", tnode->fd));
