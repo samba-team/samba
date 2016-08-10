@@ -243,6 +243,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	int fd, nodeid;
 	struct ctdb_incoming *in;
 	int one = 1;
+	int ret;
 
 	memset(&addr, 0, sizeof(addr));
 	len = sizeof(addr);
@@ -261,7 +262,17 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	in->fd = fd;
 	in->ctdb = ctdb;
 
-	set_blocking(in->fd, false);
+	ret = set_blocking(in->fd, false);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      (__location__
+		       " failed to set socket non-blocking (%s)\n",
+		       strerror(errno)));
+		close(in->fd);
+		in->fd = -1;
+		return;
+	}
+
 	set_close_on_exec(in->fd);
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));
