@@ -496,7 +496,14 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 {
 	struct tdb_record rec;
 	tdb_off_t rec_ptr;
+	tdb_len_t rec_len;
 	int ret = -1;
+
+	rec_len = key.dsize + dbuf.dsize;
+	if ((rec_len < key.dsize) || (rec_len < dbuf.dsize)) {
+		tdb->ecode = TDB_ERR_OOM;
+		goto fail;
+	}
 
 	/* check for it existing, on insert. */
 	if (flag == TDB_INSERT) {
@@ -526,7 +533,7 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 		tdb_delete_hash(tdb, key, hash);
 
 	/* we have to allocate some space */
-	rec_ptr = tdb_allocate(tdb, hash, key.dsize + dbuf.dsize, &rec);
+	rec_ptr = tdb_allocate(tdb, hash, rec_len, &rec);
 
 	if (rec_ptr == 0) {
 		goto fail;
