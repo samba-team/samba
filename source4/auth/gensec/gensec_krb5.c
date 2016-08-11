@@ -150,6 +150,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 	if (tlocal_addr) {
 		ssize_t socklen;
 		struct sockaddr_storage ss;
+		bool ok;
 
 		socklen = tsocket_address_bsd_sockaddr(tlocal_addr,
 				(struct sockaddr *) &ss,
@@ -158,12 +159,9 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context,
-				(const struct sockaddr *) &ss, &my_krb5_addr);
-		if (ret) {
-			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
-				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
-							    ret, gensec_krb5_state)));
+		ok = setup_kaddr(&my_krb5_addr, &ss);
+		if (!ok) {
+			DBG_WARNING("setup_kaddr (local) failed\n");
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
@@ -173,6 +171,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 	if (tremote_addr) {
 		ssize_t socklen;
 		struct sockaddr_storage ss;
+		bool ok;
 
 		socklen = tsocket_address_bsd_sockaddr(tremote_addr,
 				(struct sockaddr *) &ss,
@@ -181,12 +180,9 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		ret = krb5_sockaddr2address(gensec_krb5_state->smb_krb5_context->krb5_context,
-				(const struct sockaddr *) &ss, &peer_krb5_addr);
-		if (ret) {
-			DEBUG(1,("gensec_krb5_start: krb5_sockaddr2address (local) failed (%s)\n", 
-				 smb_get_krb5_error_message(gensec_krb5_state->smb_krb5_context->krb5_context, 
-							    ret, gensec_krb5_state)));
+		ok = setup_kaddr(&peer_krb5_addr, &ss);
+		if (!ok) {
+			DBG_WARNING("setup_kaddr (remote) failed\n");
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
