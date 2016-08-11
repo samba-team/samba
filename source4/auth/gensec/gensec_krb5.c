@@ -693,8 +693,9 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
 	krb5_auth_context auth_context = gensec_krb5_state->auth_context;
-	krb5_keyblock *skey;
 	krb5_error_code err = -1;
+	bool remote = false;
+	bool ok;
 
 	if (gensec_krb5_state->state_position != GENSEC_KRB5_DONE) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
@@ -702,25 +703,24 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 
 	switch (gensec_security->gensec_role) {
 	case GENSEC_CLIENT:
-		err = krb5_auth_con_getlocalsubkey(context, auth_context, &skey);
+		remote = false;
 		break;
 	case GENSEC_SERVER:
-		err = krb5_auth_con_getremotesubkey(context, auth_context, &skey);
+		remote = true;
 		break;
 	}
-	if (err == 0 && skey != NULL) {
-		DEBUG(10, ("Got KRB5 session key of length %d\n",  
-			   (int)KRB5_KEY_LENGTH(skey)));
-		*session_key = data_blob_talloc(mem_ctx,
-					       KRB5_KEY_DATA(skey), KRB5_KEY_LENGTH(skey));
-		dump_data_pw("KRB5 Session Key:\n", session_key->data, session_key->length);
 
-		krb5_free_keyblock(context, skey);
-		return NT_STATUS_OK;
-	} else {
+	ok = get_krb5_smb_session_key(mem_ctx,
+				      context,
+				      auth_context,
+				      session_key,
+				      remote);
+	if (!ok) {
 		DEBUG(10, ("KRB5 error getting session key %d\n", err));
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
