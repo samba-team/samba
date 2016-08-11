@@ -331,12 +331,45 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
 				      &target_principal);
 		if (ret == 0) {
-			ret = krb5_mk_req_exact(gensec_krb5_state->smb_krb5_context->krb5_context, 
-						&gensec_krb5_state->auth_context,
-						gensec_krb5_state->ap_req_options, 
-						target_principal,
-						in_data_p, ccache_container->ccache, 
-						&gensec_krb5_state->enc_ticket);
+			krb5_creds this_cred;
+			krb5_creds *cred;
+
+			ZERO_STRUCT(this_cred);
+			ret = krb5_cc_get_principal(gensec_krb5_state->smb_krb5_context->krb5_context,
+						    ccache_container->ccache,
+						    &this_cred.client);
+			if (ret != 0) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+
+			ret = krb5_copy_principal(gensec_krb5_state->smb_krb5_context->krb5_context,
+						  target_principal,
+						  &this_cred.server);
+			if (ret != 0) {
+				krb5_free_cred_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
+							&this_cred);
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			this_cred.times.endtime = 0;
+
+			ret = krb5_get_credentials(gensec_krb5_state->smb_krb5_context->krb5_context,
+						   0,
+						   ccache_container->ccache,
+						   &this_cred,
+						   &cred);
+			krb5_free_cred_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
+						&this_cred);
+			if (ret != 0) {
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+
+			ret = krb5_mk_req_extended(gensec_krb5_state->smb_krb5_context->krb5_context,
+						   &gensec_krb5_state->auth_context,
+						   gensec_krb5_state->ap_req_options,
+						   in_data_p,
+						   cred,
+						   &gensec_krb5_state->enc_ticket);
+
 			krb5_free_principal(gensec_krb5_state->smb_krb5_context->krb5_context, 
 					    target_principal);
 		}
