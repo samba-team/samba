@@ -180,9 +180,6 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			return -1;
 		}
 
-		set_blocking(s, false);
-		set_close_on_exec(s);
-
 		ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0,
 			     (const struct sockaddr *)&dest->ip,
 			     sizeof(dest->ip));
