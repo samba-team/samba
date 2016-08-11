@@ -641,7 +641,8 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		} else {
 			*out = data_blob_talloc(out_mem_ctx, outbuf.data, outbuf.length);
 		}
-		krb5_data_free(&outbuf);
+		kerberos_free_data_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
+					    &outbuf);
 		return NT_STATUS_OK;
 	}
 
@@ -820,7 +821,7 @@ static NTSTATUS gensec_krb5_wrap(struct gensec_security *gensec_security,
 		}
 		*out = data_blob_talloc(mem_ctx, output.data, output.length);
 		
-		krb5_data_free(&output);
+		kerberos_free_data_contents(context, &output);
 	} else {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -851,7 +852,7 @@ static NTSTATUS gensec_krb5_unwrap(struct gensec_security *gensec_security,
 		}
 		*out = data_blob_talloc(mem_ctx, output.data, output.length);
 		
-		krb5_data_free(&output);
+		kerberos_free_data_contents(context, &output);
 	} else {
 		return NT_STATUS_ACCESS_DENIED;
 	}
