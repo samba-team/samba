@@ -506,8 +506,25 @@ bool disk_quotas(connection_struct *conn, struct smb_filename *fname,
 	ZERO_STRUCT(D);
 	id.uid = geteuid();
 
-	r = SMB_VFS_GET_QUOTA(conn, fname->base_name, SMB_USER_QUOTA_TYPE, id,
-			      &D);
+	/* if new files created under this folder get this
+	 * folder's UID, then available space is governed by
+	 * the quota of the folder's UID, not the creating user.
+	 */
+	if (lp_inherit_owner(SNUM(conn)) != INHERIT_OWNER_NO &&
+	    id.uid != fname->st.st_ex_uid && id.uid != sec_initial_uid()) {
+		int save_errno;
+
+		id.uid = fname->st.st_ex_uid;
+		become_root();
+		r = SMB_VFS_GET_QUOTA(conn, fname->base_name,
+				      SMB_USER_QUOTA_TYPE, id, &D);
+		save_errno = errno;
+		unbecome_root();
+		errno = save_errno;
+	} else {
+		r = SMB_VFS_GET_QUOTA(conn, fname->base_name,
+				      SMB_USER_QUOTA_TYPE, id, &D);
+	}
 
 	if (r == -1) {
 		goto try_group_quota;
