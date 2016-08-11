@@ -283,7 +283,9 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 	const char *hostname;
 	krb5_data in_data = { .length = 0 };
 	krb5_data *in_data_p = NULL;
+#ifdef SAMBA4_USES_HEIMDAL
 	struct tevent_context *previous_ev;
+#endif
 
 	if (lpcfg_parm_bool(gensec_security->settings->lp_ctx,
 			    NULL, "gensec_krb5", "send_authenticator_checksum", true)) {
@@ -316,12 +318,14 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
+#ifdef SAMBA4_USES_HEIMDAL
 	/* Do this every time, in case we have weird recursive issues here */
 	ret = smb_krb5_context_set_event_ctx(gensec_krb5_state->smb_krb5_context, ev, &previous_ev);
 	if (ret != 0) {
 		DEBUG(1, ("gensec_krb5_start: Setting event context failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
+#endif
 	if (principal) {
 		krb5_principal target_principal;
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
@@ -346,7 +350,9 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 				  &gensec_krb5_state->enc_ticket);
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL
 	smb_krb5_context_remove_event_ctx(gensec_krb5_state->smb_krb5_context, previous_ev, ev);
+#endif
 
 	switch (ret) {
 	case 0:
