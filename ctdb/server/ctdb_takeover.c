@@ -823,6 +823,32 @@ static void do_delete_ip(struct ctdb_context *ctdb, struct ctdb_vnn *vnn)
 	talloc_free(vnn);
 }
 
+static struct ctdb_vnn *release_ip_post(struct ctdb_context *ctdb,
+					struct ctdb_vnn *vnn,
+					ctdb_sock_addr *addr)
+{
+	TDB_DATA data;
+
+	/* Send a message to all clients of this node telling them
+	 * that the cluster has been reconfigured and they should
+	 * close any connections on this IP address
+	 */
+	data.dptr = (uint8_t *)ctdb_addr_to_str(addr);
+	data.dsize = strlen((char *)data.dptr)+1;
+	DEBUG(DEBUG_INFO, ("Sending RELEASE_IP message for %s\n", data.dptr));
+	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
+
+	ctdb_vnn_unassign_iface(ctdb, vnn);
+
+	/* Process the IP if it has been marked for deletion */
+	if (vnn->delete_pending) {
+		do_delete_ip(ctdb, vnn);
+		return NULL;
+	}
+
+	return vnn;
+}
+
 /*
   called when releaseip event finishes
  */
@@ -831,7 +857,6 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 {
 	struct takeover_callback_state *state = 
 		talloc_get_type(private_data, struct takeover_callback_state);
-	TDB_DATA data;
 
 	if (status == -ETIME) {
 		ctdb_ban_self(ctdb);
@@ -849,23 +874,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 		}
 	}
 
-	/* send a message to all clients of this node telling them
-	   that the cluster has been reconfigured and they should
-	   release any sockets on this IP */
-	data.dptr = (uint8_t *) ctdb_addr_to_str(state->addr);
-	data.dsize = strlen((char *)data.dptr)+1;
-
-	DEBUG(DEBUG_INFO,(__location__ " sending RELEASE_IP for '%s'\n", data.dptr));
-
-	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_RELEASE_IP, data);
-
-	ctdb_vnn_unassign_iface(ctdb, state->vnn);
-
-	/* Process the IP if it has been marked for deletion */
-	if (state->vnn->delete_pending) {
-		do_delete_ip(ctdb, state->vnn);
-		state->vnn = NULL;
-	}
+	state->vnn = release_ip_post(ctdb, state->vnn, state->addr);
 
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
