@@ -143,9 +143,6 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		return -1;
 	}
 
-	set_blocking(s, false);
-	set_close_on_exec(s);
-
 	memset(&ip4pkt, 0, sizeof(ip4pkt));
 	ip4pkt.ip.ip_v     = 4;
 	ip4pkt.ip.ip_hl    = sizeof(ip4pkt.ip)/4;
