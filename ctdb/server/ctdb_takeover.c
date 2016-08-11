@@ -879,8 +879,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	/* send a message to all clients of this node telling them
 	   that the cluster has been reconfigured and they should
 	   release any sockets on this IP */
-	data.dptr = (uint8_t *)talloc_strdup(state, ctdb_addr_to_str(state->addr));
-	CTDB_NO_MEMORY_VOID(ctdb, data.dptr);
+	data.dptr = (uint8_t *) ctdb_addr_to_str(state->addr);
 	data.dsize = strlen((char *)data.dptr)+1;
 
 	DEBUG(DEBUG_INFO,(__location__ " sending RELEASE_IP for '%s'\n", data.dptr));
@@ -2163,14 +2162,10 @@ void ctdb_release_all_ips(struct ctdb_context *ctdb)
 			continue;
 		}
 
-		data.dptr = (uint8_t *)talloc_strdup(
-				vnn, ctdb_addr_to_str(&vnn->public_address));
-		if (data.dptr != NULL) {
-			data.dsize = strlen((char *)data.dptr) + 1;
-			ctdb_daemon_send_message(ctdb, ctdb->pnn,
-						 CTDB_SRVID_RELEASE_IP, data);
-			talloc_free(data.dptr);
-		}
+		data.dptr = (uint8_t *)ctdb_addr_to_str(&vnn->public_address);
+		data.dsize = strlen((char *)data.dptr) + 1;
+		ctdb_daemon_send_message(ctdb, ctdb->pnn,
+					 CTDB_SRVID_RELEASE_IP, data);
 
 		ctdb_vnn_unassign_iface(ctdb, vnn);
 		vnn->update_in_flight = false;
