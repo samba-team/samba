@@ -5,7 +5,7 @@
 
 if [ $# -lt 6 ]; then
 cat <<EOF
-Usage: test_dfree_quota.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCLIENT SMBCQUOTAS
+Usage: test_dfree_quota.sh SERVER DOMAIN USERNAME PASSWORD LOCAL_PATH SMBCLIENT SMBCQUOTAS SMBCACLS
 EOF
 exit 1;
 fi
@@ -18,7 +18,8 @@ ENVDIR=`dirname $5`
 WORKDIR=$5/dfree
 smbclient=$6
 smbcquotas=$7
-shift 7
+smbcacls=$8
+shift 8
 failed=0
 
 CONFFILE=$ENVDIR/lib/dfq.conf
@@ -35,6 +36,8 @@ conf_lines() {
     local gid
     uid=$(id -u $USERNAME)
     gid=$(id -g $USERNAME)
+    uid1=$(id -u user1)
+    uid2=$(id -u user2)
 cat <<ABC
 conf1:df:block size = 512:disk free = 10:disk size = 20
 conf2:df:block size = 1024:disk free = 10:disk size = 20
@@ -70,6 +73,9 @@ notenforce:udflt:block size = 4096:qflags = 0
 nfs:df:block size = 4096:disk free = 10:disk size = 80
 nfs:u$uid:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 37
 nfs:udflt:nosys = 1
+confdfqp:df:block size = 4096:disk free = 10:disk size = 80
+confdfqp:u$uid1:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 36
+confdfqp:u$uid2:block size = 4096:hard limit = 41:soft limit = 41:cur blocks = 36
 ABC
 }
 
@@ -182,6 +188,33 @@ test_smbclient_dfree "Test dfree share root quota not enforced" dfq "." "notenfo
 
 #FS quota not implemented (NFS case)
 test_smbclient_dfree "Test dfree share root FS quota not implemented" dfq "." "nfs ." "160 1024. 12" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+#test for dfree when owner is inherited
+#setup two folders with different owners
+rm -rf $WORKDIR/subdir3/*
+for d in / subdir3
+do
+    $VALGRIND $smbcacls -U$USERNAME%$PASSWORD -D "ACL:$SERVER\user1:ALLOWED/0x0/FULL" //$SERVER/dfq $d > /dev/null 2>&1
+    $VALGRIND $smbcacls -U$USERNAME%$PASSWORD -a "ACL:$SERVER\user1:ALLOWED/0x0/FULL" //$SERVER/dfq $d || failed=`expr $failed + 1`
+    $VALGRIND $smbcacls -U$USERNAME%$PASSWORD -D "ACL:$SERVER\user2:ALLOWED/0x0/FULL" //$SERVER/dfq $d > /dev/null 2>&1
+    $VALGRIND $smbcacls -U$USERNAME%$PASSWORD -a "ACL:$SERVER\user2:ALLOWED/0x0/FULL" //$SERVER/dfq $d || failed=`expr $failed + 1`
+done
+
+$VALGRIND $smbclient //$SERVER/dfq -c "cd subdir3; mkdir user1" -Uuser1%$PASSWORD --option=clientmaxprotocol=SMB3 > /dev/null 2>&1 || failed=`expr $failed + 1`
+$VALGRIND $smbclient //$SERVER/dfq -c "cd subdir3; mkdir user2" -Uuser2%$PASSWORD --option=clientmaxprotocol=SMB3 > /dev/null 2>&1 || failed=`expr $failed + 1`
+#test quotas
+test_smbclient_dfree "Test dfree without inherit owner - user1 at user1" \
+    dfq "subdir3/user1" "confdfqp subdir3/user1 confdfqp subdir3/user2" "160 1024. 16" \
+    -Uuser1%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+test_smbclient_dfree "Test dfree without inherit owner - user1 at user2" \
+    dfq "subdir3/user2" "confdfqp subdir3/user1 confdfqp subdir3/user2" "160 1024. 16" \
+    -Uuser1%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+test_smbclient_dfree "Test dfree with inherit owner - user1 at user1" \
+    dfq_owner "subdir3/user1" "confdfqp subdir3/user1 confdfqp subdir3/user2" "160 1024. 16" \
+    -Uuser1%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+test_smbclient_dfree "Test dfree with inherit owner - user1 at user2" \
+    dfq_owner "subdir3/user2" "confdfqp subdir3/user1 confdfqp subdir3/user2" "164 1024. 20" \
+    -Uuser1%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 
 setup_conf
 exit $failed
