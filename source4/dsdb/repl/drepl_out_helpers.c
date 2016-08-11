@@ -302,6 +302,7 @@ static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq);
 static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service *service,
 							TALLOC_CTX *mem_ctx,
 							struct drsuapi_DsPartialAttributeSet **_pas,
+							struct drsuapi_DsReplicaOIDMapping_Ctr **pfm,
 							bool for_schema)
 {
 	struct drsuapi_DsPartialAttributeSet *pas;
@@ -340,6 +341,11 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
 	}
 
 	*_pas = pas;
+
+	if (pfm != NULL) {
+		dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, pfm);
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -427,6 +433,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	uint32_t replica_flags;
 	struct drsuapi_DsReplicaHighWaterMark highwatermark;
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(service->samdb);
+	struct drsuapi_DsReplicaOIDMapping_Ctr *mappings = NULL;
 
 	r = talloc(state, struct drsuapi_DsGetNCChanges);
 	if (tevent_req_nomem(r, req)) {
@@ -488,8 +495,10 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		if (ldb_dn_compare_base(schema_dn, partition->dn) == 0) {
 			for_schema = true;
 		}
-
-		status = dreplsrv_get_rodc_partial_attribute_set(service, r, &pas, for_schema);
+		status = dreplsrv_get_rodc_partial_attribute_set(service, r,
+								 &pas,
+								 &mappings,
+								 for_schema);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,(__location__ ": Failed to construct RODC partial attribute set : %s\n", nt_errstr(status)));
 			tevent_req_nterror(req, status);
@@ -538,8 +547,8 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req8.fsmo_info		= state->op->fsmo_info;
 		r->in.req->req8.partial_attribute_set	= pas;
 		r->in.req->req8.partial_attribute_set_ex= NULL;
-		r->in.req->req8.mapping_ctr.num_mappings= 0;
-		r->in.req->req8.mapping_ctr.mappings	= NULL;
+		r->in.req->req8.mapping_ctr.num_mappings= mappings == NULL ? 0 : mappings->num_mappings;
+		r->in.req->req8.mapping_ctr.mappings	= mappings == NULL ? NULL : mappings->mappings;
 	} else {
 		r->in.level				= 5;
 		r->in.req->req5.destination_dsa_guid	= service->ntds_guid;
