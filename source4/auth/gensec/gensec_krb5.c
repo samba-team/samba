@@ -664,6 +664,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 					      &gensec_krb5_state->keyblock);
 
 		if (ret) {
+			DBG_WARNING("smb_krb5_rd_req_decoded failed\n");
 			return NT_STATUS_LOGON_FAILURE;
 		}
 		unwrapped_out.data = (uint8_t *)outbuf.data;

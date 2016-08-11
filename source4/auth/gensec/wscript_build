@@ -5,13 +5,17 @@ bld.SAMBA_SUBSYSTEM('gensec_util',
                     deps='tevent-util tevent samba-util LIBTSOCKET',
                     autoproto='gensec_proto.h')
 
+gensec_krb5_sources = 'gensec_krb5_heimdal.c'
+if bld.CONFIG_SET('SAMBA_USES_MITKDC'):
+    gensec_krb5_sources = 'gensec_krb5_mit.c'
+
 bld.SAMBA_MODULE('gensec_krb5',
-	source='gensec_krb5.c gensec_krb5_heimdal.c',
+	source='gensec_krb5.c ' + gensec_krb5_sources,
 	subsystem='gensec',
 	init_function='gensec_krb5_init',
 	deps='samba-credentials authkrb5 com_err gensec_util',
 	internal_module=False,
-        enabled=bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_SET('SAMBA4_USES_HEIMDAL')
+        enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)
 
 
