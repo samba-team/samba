@@ -564,7 +564,7 @@ class DirectoryServiceAgent(object):
         self.dsa_ivid = None
         self.dsa_is_ro = False
         self.dsa_is_istg = False
-        self.dsa_options = 0
+        self.options = 0
         self.dsa_behavior = 0
         self.default_dnstr = None  # default domain dn string for dsa
 
