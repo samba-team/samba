@@ -185,8 +185,7 @@ static bool ldb_consume_element_data(uint8_t **pp, size_t *premaining)
 	unsigned int remaining = *premaining;
 	uint8_t *p = *pp;
 	uint32_t num_values = pull_uint32(p, 0);
-	uint32_t len;
-	int j;
+	uint32_t j, len;
 
 	p += 4;
 	if (remaining < 4) {
@@ -348,7 +347,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 		 */
 		if (list_size != 0) {
 			bool keep = false;
-			int h;
+			unsigned int h;
 
 			/*
 			 * We know that p has a \0 terminator before the
