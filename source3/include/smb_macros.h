@@ -56,6 +56,14 @@
 			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
 			 (fsp->access_mask & FILE_EXECUTE))))
 
+/* An IOCTL readability check (validating read access
+ * when the IOCTL code requires it)
+ * http://social.technet.microsoft.com/wiki/contents/articles/24653.decoding-io-control-codes-ioctl-fsctl-and-deviceiocodes-with-table-of-known-values.aspx
+ * ). On Windows servers, this is done by the IO manager, which is unaware of
+ * the "if execute is granted then also grant read" arrangement.
+ */
+#define CHECK_READ_IOCTL(fsp, req) (((fsp)->fh->fd != -1) && ((fsp)->can_read))
+
 #define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fh->fd != -1))
 
 #define ERROR_WAS_LOCK_DENIED(status) (NT_STATUS_EQUAL((status), NT_STATUS_LOCK_NOT_GRANTED) || \
