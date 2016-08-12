@@ -178,6 +178,8 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 	return list;
 }
 
+static void tevent_common_wakeup_fini(struct tevent_context *ev);
+
 #ifdef HAVE_PTHREAD
 
 static pthread_mutex_t tevent_contexts_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -297,12 +299,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		tevent_abort(ev, "threaded contexts exist");
 	}
 
-	if (ev->pipe_fde) {
-		talloc_free(ev->pipe_fde);
-		close(ev->pipe_fds[0]);
-		close(ev->pipe_fds[1]);
-		ev->pipe_fde = NULL;
-	}
+	tevent_common_wakeup_fini(ev);
 
 	for (fd = ev->fd_events; fd; fd = fn) {
 		fn = fd->next;
@@ -895,4 +892,16 @@ int tevent_common_wakeup(struct tevent_context *ev)
 	} while ((ret == -1) && (errno == EINTR));
 
 	return 0;
+}
+
+static void tevent_common_wakeup_fini(struct tevent_context *ev)
+{
+	if (ev->pipe_fde == NULL) {
+		return;
+	}
+
+	TALLOC_FREE(ev->pipe_fde);
+
+	close(ev->pipe_fds[0]);
+	close(ev->pipe_fds[1]);
 }
