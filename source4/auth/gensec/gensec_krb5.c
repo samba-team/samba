@@ -724,6 +724,7 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 	return NT_STATUS_OK;
 }
 
+#ifdef SAMBA4_USES_HEIMDAL
 static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
 					 TALLOC_CTX *mem_ctx,
 					 struct auth_session_info **_session_info) 
@@ -734,7 +735,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	struct auth_session_info *session_info = NULL;
 
 	krb5_principal client_principal;
-	char *principal_string;
+	char *principal_string = NULL;
 	
 	DATA_BLOB pac_blob, *pac_blob_ptr = NULL;
 	krb5_data pac_data;
@@ -831,6 +832,125 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
+#else /* MIT KERBEROS */
+static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
+					 TALLOC_CTX *mem_ctx,
+					 struct auth_session_info **psession_info)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct gensec_krb5_state *gensec_krb5_state =
+		(struct gensec_krb5_state *)gensec_security->private_data;
+	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
+	struct auth_session_info *session_info = NULL;
+
+	krb5_principal client_principal;
+	char *principal_string = NULL;
+
+	krb5_authdata **auth_pac_data = NULL;
+	DATA_BLOB pac_blob, *pac_blob_ptr = NULL;
+
+	krb5_error_code code;
+
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	code = krb5_copy_principal(context,
+				   gensec_krb5_state->ticket->enc_part2->client,
+				   &client_principal);
+	if (code != 0) {
+		DBG_INFO("krb5_copy_principal failed to copy client "
+			 "principal: %s\n",
+			 smb_get_krb5_error_message(context, code, tmp_ctx));
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	code = krb5_unparse_name(context, client_principal, &principal_string);
+	if (code != 0) {
+		DBG_WARNING("Unable to parse client principal: %s\n",
+			    smb_get_krb5_error_message(context, code, tmp_ctx));
+		krb5_free_principal(context, client_principal);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	code = krb5_find_authdata(context,
+				  gensec_krb5_state->ticket->enc_part2->authorization_data,
+				  NULL,
+				  KRB5_AUTHDATA_WIN2K_PAC,
+				  &auth_pac_data);
+	if (code != 0) {
+		/* NO pac */
+		DBG_INFO("krb5_find_authdata failed to find PAC: %s\n",
+			 smb_get_krb5_error_message(context, code, tmp_ctx));
+	} else {
+		krb5_timestamp ticket_authtime =
+			gensec_krb5_state->ticket->enc_part2->times.authtime;
+
+		/* Found pac */
+		pac_blob = data_blob_talloc(tmp_ctx,
+					    auth_pac_data[0]->contents,
+					    auth_pac_data[0]->length);
+		krb5_free_authdata(context, auth_pac_data);
+		if (pac_blob.data == NULL) {
+			free(principal_string);
+			krb5_free_principal(context, client_principal);
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		/* decode and verify the pac */
+		status = kerberos_decode_pac(gensec_krb5_state,
+					     pac_blob,
+					     context,
+					     NULL,
+					     gensec_krb5_state->keyblock,
+					     client_principal,
+					     ticket_authtime,
+					     NULL);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			free(principal_string);
+			krb5_free_principal(context, client_principal);
+			talloc_free(tmp_ctx);
+			return status;
+		}
+
+		pac_blob_ptr = &pac_blob;
+	}
+	krb5_free_principal(context, client_principal);
+
+	status = gensec_generate_session_info_pac(tmp_ctx,
+						  gensec_security,
+						  gensec_krb5_state->smb_krb5_context,
+						  pac_blob_ptr,
+						  principal_string,
+						  gensec_get_remote_address(gensec_security),
+						  &session_info);
+	SAFE_FREE(principal_string);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	status = gensec_krb5_session_key(gensec_security,
+					 session_info,
+					 &session_info->session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	*psession_info = talloc_steal(mem_ctx, session_info);
+	talloc_free(tmp_ctx);
+
+	return NT_STATUS_OK;
+}
+#endif /* SAMBA4_USES_HEIMDAL */
 
 static NTSTATUS gensec_krb5_wrap(struct gensec_security *gensec_security, 
 				   TALLOC_CTX *mem_ctx, 
