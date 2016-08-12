@@ -913,14 +913,14 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 			TALLOC_FREE(fname);
 			fname = talloc_asprintf(state,
-					"@GMT-%04u.%02u.%02u-%02u.%02u.%02u\\%s",
+					"%s\\@GMT-%04u.%02u.%02u-%02u.%02u.%02u",
+					in_name,
 					tm->tm_year + 1900,
 					tm->tm_mon + 1,
 					tm->tm_mday,
 					tm->tm_hour,
 					tm->tm_min,
-					tm->tm_sec,
-					in_name);
+					tm->tm_sec);
 			if (tevent_req_nomem(fname, req)) {
 				return tevent_req_post(req, ev);
 			}
