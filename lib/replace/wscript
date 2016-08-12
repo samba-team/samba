@@ -483,6 +483,9 @@ removeea setea
     if conf.CONFIG_SET('HAVE_PORT_CREATE') and conf.CONFIG_SET('HAVE_PORT_H'):
         conf.DEFINE('HAVE_SOLARIS_PORTS', 1)
 
+    if conf.CHECK_FUNCS('eventfd', headers='sys/eventfd.h'):
+        conf.DEFINE('HAVE_EVENTFD', 1)
+
     conf.CHECK_HEADERS('poll.h')
     conf.CHECK_FUNCS('poll')
 
