@@ -40,7 +40,7 @@
 #include "gensec_krb5.h"
 
 /* Taken from  accept_sec_context.c,v 1.65 */
-krb5_error_code smb_rd_req_return_stuff(krb5_context context,
+krb5_error_code smb_krb5_rd_req_decoded(krb5_context context,
 					krb5_auth_context *auth_context,
 					const krb5_data *inbuf,
 					krb5_keytab keytab,

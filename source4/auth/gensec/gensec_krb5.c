@@ -618,11 +618,13 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 			inbuf.length = in.length;
 		}
 
-		ret = smb_rd_req_return_stuff(gensec_krb5_state->smb_krb5_context->krb5_context,
-					      &gensec_krb5_state->auth_context, 
-					      &inbuf, keytab->keytab, server_in_keytab,  
-					      &outbuf, 
-					      &gensec_krb5_state->ticket, 
+		ret = smb_krb5_rd_req_decoded(gensec_krb5_state->smb_krb5_context->krb5_context,
+					      &gensec_krb5_state->auth_context,
+					      &inbuf,
+					      keytab->keytab,
+					      server_in_keytab,
+					      &outbuf,
+					      &gensec_krb5_state->ticket,
 					      &gensec_krb5_state->keyblock);
 
 		if (ret) {
