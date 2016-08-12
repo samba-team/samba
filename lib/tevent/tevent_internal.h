@@ -276,8 +276,11 @@ struct tevent_context {
 	void *additional_data;
 
 	/* pipe hack used with signal handlers */
-	struct tevent_fd *pipe_fde;
-	int pipe_fds[2];
+	struct tevent_fd *wakeup_fde;
+	int wakeup_fd;
+#ifndef HAVE_EVENT_FD
+	int wakeup_write_fd;
+#endif
 
 	/* debugging operations */
 	struct tevent_debug_ops debug_ops;

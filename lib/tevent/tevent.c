@@ -66,6 +66,9 @@
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
+#ifdef HAVE_EVENTFD
+#include <sys/eventfd.h>
+#endif
 
 static void tevent_abort(struct tevent_context *ev, const char *reason);
 
@@ -767,7 +770,7 @@ done:
 bool tevent_common_have_events(struct tevent_context *ev)
 {
 	if (ev->fd_events != NULL) {
-		if (ev->fd_events != ev->pipe_fde) {
+		if (ev->fd_events != ev->wakeup_fde) {
 			return true;
 		}
 		if (ev->fd_events->next != NULL) {
@@ -840,10 +843,14 @@ static void wakeup_pipe_handler(struct tevent_context *ev,
 {
 	ssize_t ret;
 
-	/* its non-blocking, doesn't matter if we read too much */
 	do {
-		char c[16];
-		ret = read(fde->fd, c, sizeof(c));
+		/*
+		 * This is the boilerplate for eventfd, but it works
+		 * for pipes too. And as we don't care about the data
+		 * we read, we're fine.
+		 */
+		uint64_t val;
+		ret = read(fde->fd, &val, sizeof(val));
 	} while (ret == -1 && errno == EINTR);
 }
 
@@ -855,23 +862,39 @@ int tevent_common_wakeup_init(struct tevent_context *ev)
 {
 	int ret;
 
-	if (ev->pipe_fde != NULL) {
+	if (ev->wakeup_fde != NULL) {
 		return 0;
 	}
 
-	ret = pipe(ev->pipe_fds);
+#ifdef HAVE_EVENTFD
+	ret = eventfd(0, EFD_NONBLOCK);
 	if (ret == -1) {
 		return errno;
 	}
-	ev_set_blocking(ev->pipe_fds[0], false);
-	ev_set_blocking(ev->pipe_fds[1], false);
+	ev->wakeup_fd = ret;
+#else
+	{
+		int pipe_fds[2];
+		ret = pipe(pipe_fds);
+		if (ret == -1) {
+			return errno;
+		}
+		ev->wakeup_fd = pipe_fds[0];
+		ev->wakeup_write_fd = pipe_fds[1];
 
-	ev->pipe_fde = tevent_add_fd(ev, ev, ev->pipe_fds[0],
+		ev_set_blocking(ev->wakeup_fd, false);
+		ev_set_blocking(ev->wakeup_write_fd, false);
+	}
+#endif
+
+	ev->wakeup_fde = tevent_add_fd(ev, ev, ev->wakeup_fd,
 				     TEVENT_FD_READ,
 				     wakeup_pipe_handler, NULL);
-	if (ev->pipe_fde == NULL) {
-		close(ev->pipe_fds[0]);
-		close(ev->pipe_fds[1]);
+	if (ev->wakeup_fde == NULL) {
+		close(ev->wakeup_fd);
+#ifndef HAVE_EVENTFD
+		close(ev->wakeup_write_fd);
+#endif
 		return ENOMEM;
 	}
 
@@ -882,13 +905,18 @@ int tevent_common_wakeup(struct tevent_context *ev)
 {
 	ssize_t ret;
 
-	if (ev->pipe_fds[1] == -1) {
+	if (ev->wakeup_fde == NULL) {
 		return ENOTCONN;
 	}
 
 	do {
+#ifdef HAVE_EVENTFD
+		uint64_t val = 1;
+		ret = write(ev->wakeup_fd, &val, sizeof(val));
+#else
 		char c = '\0';
-		ret = write(ev->pipe_fds[1], &c, 1);
+		ret = write(ev->wakeup_write_fd, &c, 1);
+#endif
 	} while ((ret == -1) && (errno == EINTR));
 
 	return 0;
@@ -896,12 +924,14 @@ int tevent_common_wakeup(struct tevent_context *ev)
 
 static void tevent_common_wakeup_fini(struct tevent_context *ev)
 {
-	if (ev->pipe_fde == NULL) {
+	if (ev->wakeup_fde == NULL) {
 		return;
 	}
 
-	TALLOC_FREE(ev->pipe_fde);
+	TALLOC_FREE(ev->wakeup_fde);
 
-	close(ev->pipe_fds[0]);
-	close(ev->pipe_fds[1]);
+	close(ev->wakeup_fd);
+#ifndef HAVE_EVENTFD
+	close(ev->wakeup_write_fd);
+#endif
 }
