@@ -840,9 +840,9 @@ static void wakeup_pipe_handler(struct tevent_context *ev,
 {
 	ssize_t ret;
 
-	char c[16];
 	/* its non-blocking, doesn't matter if we read too much */
 	do {
+		char c[16];
 		ret = read(fde->fd, c, sizeof(c));
 	} while (ret == -1 && errno == EINTR);
 }
