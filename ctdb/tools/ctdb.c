@@ -4761,6 +4761,8 @@ static int control_scriptstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	valid = false;
+	end = 0;
+
 	for (i=0; i<ARRAY_SIZE(all_events); i++) {
 		if (strcmp(event_str, all_events[i]) == 0) {
 			valid = true;
