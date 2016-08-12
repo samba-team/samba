@@ -20,9 +20,10 @@
 #include "replace.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "system/wait.h"
+#include "system/threads.h"
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
-#include "system/threads.h"
 #include <assert.h>
 
 struct pthreadpool_job {
