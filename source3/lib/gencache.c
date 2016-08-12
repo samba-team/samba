@@ -278,9 +278,9 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 	int ret;
 	fstring hdr;
 	int hdr_len;
-	char* val;
 	time_t last_stabilize;
 	static int writecount;
+	TDB_DATA dbufs[2];
 
 	if (tdb_data_cmp(string_term_tdb_data(keystr),
 			 last_stabilize_key()) == 0) {
@@ -311,13 +311,8 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		return false;
 	}
 
-	val = talloc_array(talloc_tos(), char, hdr_len + blob->length);
-	if (val == NULL) {
-		return false;
-	}
-
-	memcpy(val, hdr, hdr_len);
-	memcpy(val+hdr_len, blob->data, blob->length);
+	dbufs[0] = (TDB_DATA) { .dptr = (uint8_t *)hdr, .dsize = hdr_len };
+	dbufs[1] = (TDB_DATA) { .dptr = blob->data, .dsize = blob->length };
 
 	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
 	           "[%s] (%d seconds %s)\n", keystr,
@@ -325,12 +320,8 @@ bool gencache_set_data_blob(const char *keystr, const DATA_BLOB *blob,
 		   (int)(timeout - time(NULL)), 
 		   timeout > time(NULL) ? "ahead" : "in the past"));
 
-	ret = tdb_store_bystring(
-		cache_notrans->tdb, keystr,
-		make_tdb_data((uint8_t *)val, talloc_array_length(val)),
-		0);
-	TALLOC_FREE(val);
-
+	ret = tdb_storev(cache_notrans->tdb, string_term_tdb_data(keystr),
+			 dbufs, 2, 0);
 	if (ret != 0) {
 		return false;
 	}
