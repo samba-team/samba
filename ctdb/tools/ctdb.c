@@ -4203,7 +4203,8 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ret = ctdb_attach(ctdb->ev, ctdb->client, TIMEOUT(), db_name,
 			  db_hdr.flags, &db);
 	if (ret != 0) {
-		fprintf(stderr, "Failed to attach to DB %s\n", db_hdr.name);
+		fprintf(stderr, "Failed to attach to DB %s\n", db_name);
+		close(fd);
 		return ret;
 	}
 
