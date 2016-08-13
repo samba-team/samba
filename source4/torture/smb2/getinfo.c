@@ -126,6 +126,49 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 	return true;
 }
 
+/*
+  test granted access when desired access includes
+  FILE_EXECUTE and does not include FILE_READ_DATA
+*/
+static bool torture_smb2_fileinfo_grant_read(struct torture_context *tctx)
+{
+	struct smb2_tree *tree;
+	bool ret;
+	struct smb2_handle hfile, hdir;
+	NTSTATUS status;
+	uint32_t file_granted_access, dir_granted_access;
+
+	ret = torture_smb2_connection(tctx, &tree);
+	torture_assert(tctx, ret, "connection failed");
+
+	status = torture_smb2_testfile_access(
+	    tree, FNAME, &hfile, SEC_FILE_EXECUTE | SEC_FILE_READ_ATTRIBUTE);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Unable to create test file " FNAME "\n");
+	status =
+	    torture_smb2_get_allinfo_access(tree, hfile, &file_granted_access);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Unable to query test file access ");
+	torture_assert_int_equal(tctx, file_granted_access,
+				 SEC_FILE_EXECUTE | SEC_FILE_READ_ATTRIBUTE,
+				 "granted file access ");
+	smb2_util_close(tree, hfile);
+
+	status = torture_smb2_testdir_access(
+	    tree, DNAME, &hdir, SEC_FILE_EXECUTE | SEC_FILE_READ_ATTRIBUTE);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Unable to create test dir " DNAME "\n");
+	status =
+	    torture_smb2_get_allinfo_access(tree, hdir, &dir_granted_access);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "Unable to query test dir access ");
+	torture_assert_int_equal(tctx, dir_granted_access,
+				 SEC_FILE_EXECUTE | SEC_FILE_READ_ATTRIBUTE,
+				 "granted dir access ");
+	smb2_util_close(tree, hdir);
+
+	return true;
+}
 
 /*
   test fsinfo levels
@@ -444,5 +487,7 @@ struct torture_suite *torture_smb2_getinfo_init(void)
 				      torture_smb2_qfile_buffercheck);
 	torture_suite_add_simple_test(suite, "qsec_buffercheck",
 				      torture_smb2_qsec_buffercheck);
+	torture_suite_add_simple_test(suite, "granted",
+				      torture_smb2_fileinfo_grant_read);
 	return suite;
 }
