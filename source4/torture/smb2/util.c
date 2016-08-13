@@ -261,6 +261,33 @@ void torture_smb2_all_info(struct smb2_tree *tree, struct smb2_handle handle)
 	talloc_free(tmp_ctx);	
 }
 
+/*
+  get granted access of a file handle
+*/
+NTSTATUS torture_smb2_get_allinfo_access(struct smb2_tree *tree,
+					 struct smb2_handle handle,
+					 uint32_t *granted_access)
+{
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	union smb_fileinfo io;
+
+	io.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION;
+	io.generic.in.file.handle = handle;
+
+	status = smb2_getinfo_file(tree, tmp_ctx, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("getinfo failed - %s\n", nt_errstr(status)));
+		goto out;
+	}
+
+	*granted_access = io.all_info2.out.access_mask;
+
+out:
+	talloc_free(tmp_ctx);
+	return status;
+}
+
 /**
  * open a smb2 tree connect
  */
