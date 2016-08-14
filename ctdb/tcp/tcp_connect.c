@@ -194,6 +194,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
 			sock_in.sa.sa_family));
 		close(tnode->fd);
+		tnode->fd = -1;
 		return;
 	}
 
@@ -201,6 +202,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 		DEBUG(DEBUG_ERR, (__location__ " Failed to bind socket %s(%d)\n",
 				  strerror(errno), errno));
 		close(tnode->fd);
+		tnode->fd = -1;
 		return;
 	}
 
