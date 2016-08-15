@@ -5731,22 +5731,6 @@ static int control_checktcpport(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_rebalancenode(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				 int argc, const char **argv)
-{
-	if (argc != 0) {
-		usage("rebalancenode");
-	}
-
-	if (! rebalancenode(mem_ctx, ctdb, ctdb->cmd_pnn)) {
-		fprintf(stderr, "Failed to rebalance IPs on node %u\n",
-			ctdb->cmd_pnn);
-		return 1;
-	}
-
-	return 0;
-}
-
 static int control_getdbseqnum(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			       int argc, const char **argv)
 {
@@ -6289,8 +6273,6 @@ static const struct ctdb_cmd {
 		"delete a database key", "<dbname|dbid> <key>" },
 	{ "checktcpport", control_checktcpport, true, false,
 		"check if a service is bound to a specific tcp port or not", "<port>" },
-	{ "rebalancenode", control_rebalancenode, false, true,
-		"mark nodes as forced IP rebalancing targets", NULL },
 	{ "getdbseqnum", control_getdbseqnum, false, false,
 		"get database sequence number", "<dbname|dbid>" },
 	{ "nodestatus", control_nodestatus, false, true,
