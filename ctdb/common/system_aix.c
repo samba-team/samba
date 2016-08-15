@@ -118,7 +118,7 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 		struct ip ip;
 		struct tcphdr tcp;
 	} ip4pkt;
-
+	int saved_errno;
 
 	/* for now, we only handle AF_INET addresses */
 	if (src->ip.sin_family != AF_INET || dest->ip.sin_family != AF_INET) {
@@ -165,9 +165,13 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 	ip4pkt.tcp.th_win   = htons(1234);
 	ip4pkt.tcp.th_sum    = tcp_checksum((uint16_t *)&ip4pkt.tcp, sizeof(ip4pkt.tcp), &ip4pkt.ip);
 
-	ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0, (struct sockaddr *)dest, sizeof(*dest));
+	ret = sendto(s, &ip4pkt, sizeof(ip4pkt), 0,
+		     (struct sockaddr *)dest, sizeof(*dest));
+	saved_errno = errno;
+	close(s);
 	if (ret != sizeof(ip4pkt)) {
-		DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_ERR,
+		      ("Failed sendto (%s)\n", strerror(saved_errno)));
 		return -1;
 	}
 
