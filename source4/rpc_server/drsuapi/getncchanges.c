@@ -1606,7 +1606,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	DATA_BLOB session_key;
 	WERROR werr;
 	struct dcesrv_handle *h;
-	struct drsuapi_bind_state *b_state;	
+	struct drsuapi_bind_state *b_state;
 	struct drsuapi_getncchanges_state *getnc_state;
 	struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t options;
@@ -1688,7 +1688,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	if (samdb_ntds_options(sam_ctx, &options) != LDB_SUCCESS) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
-	
+
 	if ((options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) &&
 	    !(req10->replica_flags & DRSUAPI_DRS_SYNC_FORCED)) {
 		return WERR_DS_DRA_SOURCE_DISABLED;
