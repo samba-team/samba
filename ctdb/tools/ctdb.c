@@ -3830,59 +3830,6 @@ static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_rebalanceip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			       int argc, const char **argv)
-{
-	ctdb_sock_addr addr;
-	struct ctdb_node_map *nodemap;
-	struct ctdb_public_ip pubip;
-	struct ctdb_req_control request;
-	uint32_t *pnn_list;
-	int ret, count;
-
-	if (argc != 1) {
-		usage("rebalanceip");
-	}
-
-	if (parse_ip(argv[0], NULL, 0, &addr)) {
-		fprintf(stderr, "Invalid IP address %s\n", argv[0]);
-		return 1;
-	}
-
-	ret = ctdb_message_disable_ip_check(mem_ctx, ctdb->ev, ctdb->client,
-					    CTDB_BROADCAST_CONNECTED,
-					    2*options.timelimit);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to disable IP check\n");
-		return 1;
-	}
-
-	nodemap = get_nodemap(ctdb, false);
-	if (nodemap == NULL) {
-		return 1;
-	}
-
-	count = list_of_active_nodes(nodemap, -1, mem_ctx, &pnn_list);
-	if (count <= 0) {
-		fprintf(stderr, "Memory allocation error\n");
-		return 1;
-	}
-
-	pubip.pnn = CTDB_UNKNOWN_PNN;
-	pubip.addr = addr;
-
-	ctdb_req_control_release_ip(&request, &pubip);
-	ret = ctdb_client_control_multi(mem_ctx, ctdb->ev, ctdb->client,
-					pnn_list, count, TIMEOUT(),
-					&request, NULL, NULL);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to release IP from nodes\n");
-		return 1;
-	}
-
-	return ipreallocate(mem_ctx, ctdb);
-}
-
 static int rebalancenode(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			 uint32_t pnn)
 {
@@ -6285,8 +6232,6 @@ static const struct ctdb_cmd {
 		"reload the nodes file all nodes", NULL },
 	{ "moveip", control_moveip, false, false,
 		"move an ip address to another node", "<ip> <node>" },
-	{ "rebalanceip", control_rebalanceip, false, false,
-		"move an ip address optimally to another node", "<ip>" },
 	{ "addip", control_addip, false, true,
 		"add an ip address to a node", "<ip/mask> <iface>" },
 	{ "delip", control_delip, false, true,
