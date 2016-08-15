@@ -133,24 +133,57 @@ static bool udv_filter(const struct drsuapi_DsReplicaCursorCtrEx *udv,
 
 }
 
-static int attid_cmp(enum drsuapi_DsAttributeId a1, enum drsuapi_DsAttributeId a2)
+static int uint32_t_cmp(uint32_t a1, uint32_t a2)
 {
 	if (a1 == a2) return 0;
-	return ((uint32_t)a1) > ((uint32_t)a2) ? 1 : -1;
+	return a1 > a2 ? 1 : -1;
 }
 
-/*
-  check if an attribute is in a partial_attribute_set
- */
-static bool check_partial_attribute_set(const struct dsdb_attribute *sa,
-					struct drsuapi_DsPartialAttributeSet *pas)
+static int uint32_t_ptr_cmp(uint32_t *a1, uint32_t *a2, void *unused)
 {
-	enum drsuapi_DsAttributeId *result;
-	BINARY_ARRAY_SEARCH_V(pas->attids, pas->num_attids, (enum drsuapi_DsAttributeId)sa->attributeID_id,
-			      attid_cmp, result);
-	return result != NULL;
+	if (*a1 == *a2) return 0;
+	return *a1 > *a2 ? 1 : -1;
 }
 
+static WERROR getncchanges_attid_remote_to_local(const struct dsdb_schema *schema,
+						 const struct dsdb_syntax_ctx *ctx,
+						 enum drsuapi_DsAttributeId remote_attid_as_enum,
+						 enum drsuapi_DsAttributeId *local_attid_as_enum,
+						 const struct dsdb_attribute **_sa)
+{
+	WERROR werr;
+	const struct dsdb_attribute *sa = NULL;
+
+	if (ctx->pfm_remote == NULL) {
+		DEBUG(7, ("No prefixMap supplied, falling back to local prefixMap.\n"));
+		goto fail;
+	}
+
+	werr = dsdb_attribute_drsuapi_remote_to_local(ctx,
+						      remote_attid_as_enum,
+						      local_attid_as_enum,
+						      _sa);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(3, ("WARNING: Unable to resolve remote attid, falling back to local prefixMap.\n"));
+		goto fail;
+	}
+
+	return werr;
+fail:
+
+	sa = dsdb_attribute_by_attributeID_id(schema, remote_attid_as_enum);
+	if (sa == NULL) {
+		return WERR_DS_DRA_SCHEMA_MISMATCH;
+	} else {
+		if (local_attid_as_enum != NULL) {
+			*local_attid_as_enum = sa->attributeID_id;
+		}
+		if (_sa != NULL) {
+			*_sa = sa;
+		}
+		return WERR_OK;
+	}
+}
 
 /* 
   drsuapi_DsGetNCChanges for one object
@@ -167,7 +200,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set,
 					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
 					  enum drsuapi_DsExtendedOperation extended_op,
-					  bool force_object_return)
+					  bool force_object_return,
+					  uint32_t *local_pas)
 {
 	const struct ldb_val *md_value;
 	uint32_t i, n;
@@ -294,8 +328,13 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		}
 
 		/* filter by partial_attribute_set */
-		if (partial_attribute_set && !check_partial_attribute_set(sa, partial_attribute_set)) {
-			continue;
+		if (partial_attribute_set) {
+			uint32_t *result = NULL;
+			BINARY_ARRAY_SEARCH_V(local_pas, partial_attribute_set->num_attids, sa->attributeID_id,
+					      uint32_t_cmp, result);
+			if (result == NULL) {
+				continue;
+			}
 		}
 
 		obj->meta_data_ctr->meta_data[n].originating_change_time = md.ctr.ctr1.array[i].originating_change_time;
@@ -1185,11 +1224,13 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
  */
 static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state *b_state,
 						       struct drsuapi_DsGetNCChangesRequest10 *req10,
+						       struct dsdb_schema_prefixmap *pfm_remote,
 						       bool *is_secret_request)
 {
 	enum drsuapi_DsExtendedOperation exop;
 	uint32_t i;
 	struct dsdb_schema *schema;
+	struct dsdb_syntax_ctx syntax_ctx;
 
 	*is_secret_request = true;
 
@@ -1223,14 +1264,24 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 	}
 
 	schema = dsdb_get_schema(b_state->sam_ctx, NULL);
+	dsdb_syntax_ctx_init(&syntax_ctx, b_state->sam_ctx, schema);
+	syntax_ctx.pfm_remote = pfm_remote;
 
 	/* check the attributes they asked for */
 	for (i=0; i<req10->partial_attribute_set->num_attids; i++) {
 		const struct dsdb_attribute *sa;
-		sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set->attids[i]);
-		if (sa == NULL) {
-			return WERR_DS_DRA_SCHEMA_MISMATCH;
+		WERROR werr = getncchanges_attid_remote_to_local(schema,
+								 &syntax_ctx,
+								 req10->partial_attribute_set->attids[i],
+								 NULL,
+								 &sa);
+
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__": attid 0x%08X not found: %s\n",
+				 req10->partial_attribute_set->attids[i], win_errstr(werr)));
+			return werr;
 		}
+
 		if (!dsdb_attr_in_rodc_fas(sa)) {
 			*is_secret_request = true;
 			return WERR_OK;
@@ -1241,10 +1292,18 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 		/* check the extended attributes they asked for */
 		for (i=0; i<req10->partial_attribute_set_ex->num_attids; i++) {
 			const struct dsdb_attribute *sa;
-			sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set_ex->attids[i]);
-			if (sa == NULL) {
-				return WERR_DS_DRA_SCHEMA_MISMATCH;
+			WERROR werr = getncchanges_attid_remote_to_local(schema,
+									 &syntax_ctx,
+									 req10->partial_attribute_set_ex->attids[i],
+									 NULL,
+									 &sa);
+
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,(__location__": attid 0x%08X not found: %s\n",
+					 req10->partial_attribute_set_ex->attids[i], win_errstr(werr)));
+				return werr;
 			}
+
 			if (!dsdb_attr_in_rodc_fas(sa)) {
 				*is_secret_request = true;
 				return WERR_OK;
@@ -1262,11 +1321,13 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
  */
 static WERROR dcesrv_drsuapi_is_gc_pas_request(struct drsuapi_bind_state *b_state,
 					       struct drsuapi_DsGetNCChangesRequest10 *req10,
+					       struct dsdb_schema_prefixmap *pfm_remote,
 					       bool *is_gc_pas_request)
 {
 	enum drsuapi_DsExtendedOperation exop;
 	uint32_t i;
 	struct dsdb_schema *schema;
+	struct dsdb_syntax_ctx syntax_ctx;
 
 	exop = req10->extended_op;
 
@@ -1291,14 +1352,24 @@ static WERROR dcesrv_drsuapi_is_gc_pas_request(struct drsuapi_bind_state *b_stat
 	}
 
 	schema = dsdb_get_schema(b_state->sam_ctx, NULL);
+	dsdb_syntax_ctx_init(&syntax_ctx, b_state->sam_ctx, schema);
+	syntax_ctx.pfm_remote = pfm_remote;
 
 	/* check the attributes they asked for */
 	for (i=0; i<req10->partial_attribute_set->num_attids; i++) {
 		const struct dsdb_attribute *sa;
-		sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set->attids[i]);
-		if (sa == NULL) {
-			return WERR_DS_DRA_SCHEMA_MISMATCH;
+		WERROR werr = getncchanges_attid_remote_to_local(schema,
+								 &syntax_ctx,
+								 req10->partial_attribute_set->attids[i],
+								 NULL,
+								 &sa);
+
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__": attid 0x%08X not found: %s\n",
+				 req10->partial_attribute_set->attids[i], win_errstr(werr)));
+			return werr;
 		}
+
 		if (!sa->isMemberOfPartialAttributeSet) {
 			*is_gc_pas_request = false;
 			return WERR_OK;
@@ -1309,10 +1380,18 @@ static WERROR dcesrv_drsuapi_is_gc_pas_request(struct drsuapi_bind_state *b_stat
 		/* check the extended attributes they asked for */
 		for (i=0; i<req10->partial_attribute_set_ex->num_attids; i++) {
 			const struct dsdb_attribute *sa;
-			sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set_ex->attids[i]);
-			if (sa == NULL) {
-				return WERR_DS_DRA_SCHEMA_MISMATCH;
+			WERROR werr = getncchanges_attid_remote_to_local(schema,
+									 &syntax_ctx,
+									 req10->partial_attribute_set_ex->attids[i],
+									 NULL,
+									 &sa);
+
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,(__location__": attid 0x%08X not found: %s\n",
+					 req10->partial_attribute_set_ex->attids[i], win_errstr(werr)));
+				return werr;
 			}
+
 			if (!sa->isMemberOfPartialAttributeSet) {
 				*is_gc_pas_request = false;
 				return WERR_OK;
@@ -1629,6 +1708,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	bool has_get_all_changes = false;
 	struct GUID invocation_id;
 	static const struct drsuapi_DsReplicaLinkedAttribute no_linked_attr;
+	struct dsdb_schema_prefixmap *pfm_remote = NULL;
+	bool full = true;
+	uint32_t *local_pas = NULL;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1706,9 +1788,35 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return werr;
 	}
 
+	if (dsdb_functional_level(sam_ctx) >= DS_DOMAIN_FUNCTION_2008) {
+		full = req10->partial_attribute_set == NULL &&
+		       req10->partial_attribute_set_ex == NULL;
+	} else {
+		full = (options & DRSUAPI_DRS_WRIT_REP) != 0;
+	}
+
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(&req10->mapping_ctr, true,
+						mem_ctx, &pfm_remote, NULL);
+
+	/* We were supplied a partial attribute set, without the prefix map! */
+	if (!full && !W_ERROR_IS_OK(werr)) {
+		if (req10->mapping_ctr.num_mappings == 0) {
+			/*
+			 * Despite the fact MS-DRSR specifies that this shouldn't
+			 * happen, Windows RODCs will in fact not provide a prefixMap.
+			 */
+			DEBUG(5,(__location__ ": Failed to provide a remote prefixMap,"
+				 " falling back to local prefixMap\n"));
+		} else {
+			DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s\n",
+				 win_errstr(werr)));
+			return werr;
+		}
+	}
+
 	/* allowed if the GC PAS and client has
 	   GUID_DRS_GET_FILTERED_ATTRIBUTES */
-	werr = dcesrv_drsuapi_is_gc_pas_request(b_state, req10, &is_gc_pas_request);
+	werr = dcesrv_drsuapi_is_gc_pas_request(b_state, req10, pfm_remote, &is_gc_pas_request);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -1723,7 +1831,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 	}
 
-	werr = dcesrv_drsuapi_is_reveal_secrets_request(b_state, req10, &is_secret_request);
+	werr = dcesrv_drsuapi_is_reveal_secrets_request(b_state, req10,
+							pfm_remote,
+							&is_secret_request);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -2040,6 +2150,30 @@ allowed:
 	 * 10 seconds by default.
 	 */
 	max_wait = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max work time", 10);
+
+	if (req10->partial_attribute_set != NULL) {
+		struct dsdb_syntax_ctx syntax_ctx;
+		uint32_t j = 0;
+
+		dsdb_syntax_ctx_init(&syntax_ctx, b_state->sam_ctx, schema);
+		syntax_ctx.pfm_remote = pfm_remote;
+
+		local_pas = talloc_array(b_state, uint32_t, req10->partial_attribute_set->num_attids);
+
+		for (j = 0; j < req10->partial_attribute_set->num_attids; j++) {
+			getncchanges_attid_remote_to_local(schema,
+							   &syntax_ctx,
+							   req10->partial_attribute_set->attids[j],
+							   (enum drsuapi_DsAttributeId *)&local_pas[j],
+							   NULL);
+		}
+
+		LDB_TYPESAFE_QSORT(local_pas,
+				   req10->partial_attribute_set->num_attids,
+				   NULL,
+				   uint32_t_ptr_cmp);
+	}
+
 	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
 		     !null_scope &&
@@ -2093,7 +2227,8 @@ allowed:
 						   req10->partial_attribute_set,
 						   req10->uptodateness_vector,
 						   req10->extended_op,
-						   max_wait_reached);
+						   max_wait_reached,
+						   local_pas);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
