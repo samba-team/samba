@@ -306,7 +306,7 @@ WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
 	werr = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
 						working_schema, &pfm_remote, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
+		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s\n",
 			 win_errstr(werr)));
 		talloc_free(working_schema);
 		return werr;
@@ -667,7 +667,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
 						  out, &pfm_remote, NULL);
 	if (!W_ERROR_IS_OK(status)) {
-		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
+		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s\n",
 			 win_errstr(status)));
 		talloc_free(out);
 		return status;
