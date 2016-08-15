@@ -273,20 +273,36 @@ static bool test_setup_create_fill(struct torture_context *torture,
 				   uint32_t file_attributes)
 {
 	bool ok;
+	uint32_t initial_access = desired_access;
+
+	if (size > 0) {
+		initial_access |= SEC_FILE_APPEND_DATA;
+	}
 
 	smb2_util_unlink(tree, fname);
 
 	ok = test_setup_open(torture, tree, mem_ctx,
 			     fname,
 			     fh,
-			     desired_access,
+			     initial_access,
 			     file_attributes);
-	torture_assert(torture, ok, "file open");
+	torture_assert(torture, ok, "file create");
 
 	if (size > 0) {
 		ok = write_pattern(torture, tree, mem_ctx, *fh, 0, size, 0);
 		torture_assert(torture, ok, "write pattern");
 	}
+
+	if (initial_access != desired_access) {
+		smb2_util_close(tree, *fh);
+		ok = test_setup_open(torture, tree, mem_ctx,
+				     fname,
+				     fh,
+				     desired_access,
+				     file_attributes);
+		torture_assert(torture, ok, "file open");
+	}
+
 	return true;
 }
 
