@@ -3907,7 +3907,7 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	return ipreallocate(mem_ctx, ctdb);
+	return 0;
 }
 
 static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,

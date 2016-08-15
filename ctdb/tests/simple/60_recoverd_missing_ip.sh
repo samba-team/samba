@@ -63,6 +63,7 @@ try_command_on_node $test_node $CTDB setifacelink $iface down
 
 echo "Adding IP $test_ip to node $test_node"
 try_command_on_node $test_node $CTDB addip $test_ip/$mask $iface
+try_command_on_node $test_node $CTDB ipreallocate
 
 echo "Wait long enough for IP verification to have taken place"
 sleep_for 15
