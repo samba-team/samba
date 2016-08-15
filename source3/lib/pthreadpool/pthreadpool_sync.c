@@ -17,165 +17,47 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <sys/time.h>
 
+#include "replace.h"
 #include "pthreadpool.h"
 
 struct pthreadpool {
 	/*
-	 * pipe for signalling
+	 * Indicate job completion
 	 */
-	int sig_pipe[2];
-
-	/*
-	 * Have we sent something into the pipe that has not been
-	 * retrieved yet?
-	 */
-	int pipe_busy;
-
-	/*
-	 * Jobids that we have not sent into the pipe yet
-	 */
-	size_t num_ids;
-	int *ids;
+	int (*signal_fn)(int jobid,
+			 void *private_data);
+	void *signal_private_data;
 };
 
-int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
+int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
+		     int (*signal_fn)(int jobid,
+				      void *private_data),
+		     void *signal_private_data)
 {
 	struct pthreadpool *pool;
-	int ret;
 
 	pool = (struct pthreadpool *)calloc(1, sizeof(struct pthreadpool));
 	if (pool == NULL) {
 		return ENOMEM;
 	}
-	ret = pipe(pool->sig_pipe);
-	if (ret == -1) {
-		int err = errno;
-		free(pool);
-		return err;
-	}
+	pool->signal_fn = signal_fn;
+	pool->signal_private_data = signal_private_data;
+
 	*presult = pool;
-	return 0;
-}
-
-int pthreadpool_signal_fd(struct pthreadpool *pool)
-{
-	return pool->sig_pipe[0];
-}
-
-static int pthreadpool_write_to_pipe(struct pthreadpool *pool)
-{
-	ssize_t written;
-
-	if (pool->pipe_busy) {
-		return 0;
-	}
-	if (pool->num_ids == 0) {
-		return 0;
-	}
-
-	written = -1;
-	errno = EINTR;
-
-	while ((written == -1) && (errno == EINTR)) {
-		written = write(pool->sig_pipe[1], &pool->ids[0], sizeof(int));
-	}
-	if (written == -1) {
-		return errno;
-	}
-	if (written != sizeof(int)) {
-		/*
-		 * If a single int only partially fits into the pipe,
-		 * we can assume ourselves pretty broken
-		 */
-		close(pool->sig_pipe[1]);
-		pool->sig_pipe[1] = -1;
-		return EIO;
-	}
-
-	if (pool->num_ids > 1) {
-		memmove(pool->ids, pool->ids+1, sizeof(int) * (pool->num_ids-1));
-	}
-	pool->num_ids -= 1;
-	pool->pipe_busy = 1;
 	return 0;
 }
 
 int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 			void (*fn)(void *private_data), void *private_data)
 {
-	int *tmp;
-
-	if (pool->sig_pipe[1] == -1) {
-		return EIO;
-	}
-
 	fn(private_data);
 
-	tmp = realloc(pool->ids, sizeof(int) * (pool->num_ids+1));
-	if (tmp == NULL) {
-		return ENOMEM;
-	}
-	pool->ids = tmp;
-	pool->ids[pool->num_ids] = job_id;
-	pool->num_ids += 1;
-
-	return pthreadpool_write_to_pipe(pool);
-
-}
-
-int pthreadpool_finished_jobs(struct pthreadpool *pool, int *jobids,
-			      unsigned num_jobids)
-{
-	ssize_t to_read, nread;
-	int ret;
-
-	nread = -1;
-	errno = EINTR;
-
-	to_read = sizeof(int) * num_jobids;
-
-	while ((nread == -1) && (errno == EINTR)) {
-		nread = read(pool->sig_pipe[0], jobids, to_read);
-	}
-	if (nread == -1) {
-		return -errno;
-	}
-	if ((nread % sizeof(int)) != 0) {
-		return -EINVAL;
-	}
-
-	pool->pipe_busy = 0;
-
-	ret = pthreadpool_write_to_pipe(pool);
-	if (ret != 0) {
-		return -ret;
-	}
-
-	return nread / sizeof(int);
+	return pool->signal_fn(job_id, pool->signal_private_data);
 }
 
 int pthreadpool_destroy(struct pthreadpool *pool)
 {
-	if (pool->sig_pipe[0] != -1) {
-		close(pool->sig_pipe[0]);
-		pool->sig_pipe[0] = -1;
-	}
-
-	if (pool->sig_pipe[1] != -1) {
-		close(pool->sig_pipe[1]);
-		pool->sig_pipe[1] = -1;
-	}
-	free(pool->ids);
 	free(pool);
 	return 0;
 }

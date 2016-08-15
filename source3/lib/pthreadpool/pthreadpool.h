@@ -43,7 +43,9 @@ struct pthreadpool;
  * max_threads=0 means unlimited parallelism. The caller has to take
  * care to not overload the system.
  */
-int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult);
+int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
+		     int (*signal_fn)(int jobid, void *private_data),
+		     void *signal_private_data);
 
 /**
  * @brief Destroy a pthreadpool
@@ -60,8 +62,8 @@ int pthreadpool_destroy(struct pthreadpool *pool);
  * @brief Add a job to a pthreadpool
  *
  * This adds a job to a pthreadpool. The job can be identified by
- * job_id. This integer will be returned from
- * pthreadpool_finished_jobs() then the job is completed.
+ * job_id. This integer will be passed to signal_fn() when the
+ * job is completed.
  *
  * @param[in]	pool		The pool to run the job on
  * @param[in]	job_id		A custom identifier
@@ -71,31 +73,5 @@ int pthreadpool_destroy(struct pthreadpool *pool);
  */
 int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 			void (*fn)(void *private_data), void *private_data);
-
-/**
- * @brief Get the signalling fd from a pthreadpool
- *
- * Completion of a job is indicated by readability of the fd returned
- * by pthreadpool_signal_fd().
- *
- * @param[in]	pool		The pool in question
- * @return			The fd to listen on for readability
- */
-int pthreadpool_signal_fd(struct pthreadpool *pool);
-
-/**
- * @brief Get the job_ids of finished jobs
- *
- * This blocks until a job has finished unless the fd returned by
- * pthreadpool_signal_fd() is readable.
- *
- * @param[in]	pool		The pool to query for finished jobs
- * @param[out]  jobids		The job_ids of the finished job
- * @param[int]  num_jobids      The job_ids array size
- * @return			success: >=0, number of finished jobs
- *                              failure: -errno
- */
-int pthreadpool_finished_jobs(struct pthreadpool *pool, int *jobids,
-			      unsigned num_jobids);
 
 #endif

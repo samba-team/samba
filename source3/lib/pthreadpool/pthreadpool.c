@@ -19,7 +19,6 @@
 
 #include "replace.h"
 #include "system/time.h"
-#include "system/filesys.h"
 #include "system/wait.h"
 #include "system/threads.h"
 #include "pthreadpool.h"
@@ -58,9 +57,10 @@ struct pthreadpool {
 	size_t num_jobs;
 
 	/*
-	 * pipe for signalling
+	 * Indicate job completion
 	 */
-	int sig_pipe[2];
+	int (*signal_fn)(int jobid, void *private_data);
+	void *signal_private_data;
 
 	/*
 	 * indicator to worker threads that they should shut down
@@ -99,7 +99,9 @@ static void pthreadpool_prep_atfork(void);
  * Initialize a thread pool
  */
 
-int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
+int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
+		     int (*signal_fn)(int jobid, void *private_data),
+		     void *signal_private_data)
 {
 	struct pthreadpool *pool;
 	int ret;
@@ -108,6 +110,8 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 	if (pool == NULL) {
 		return ENOMEM;
 	}
+	pool->signal_fn = signal_fn;
+	pool->signal_private_data = signal_private_data;
 
 	pool->jobs_array_len = 4;
 	pool->jobs = calloc(
@@ -120,18 +124,8 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 
 	pool->head = pool->num_jobs = 0;
 
-	ret = pipe(pool->sig_pipe);
-	if (ret == -1) {
-		int err = errno;
-		free(pool->jobs);
-		free(pool);
-		return err;
-	}
-
 	ret = pthread_mutex_init(&pool->mutex, NULL);
 	if (ret != 0) {
-		close(pool->sig_pipe[0]);
-		close(pool->sig_pipe[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -140,8 +134,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 	ret = pthread_cond_init(&pool->condvar, NULL);
 	if (ret != 0) {
 		pthread_mutex_destroy(&pool->mutex);
-		close(pool->sig_pipe[0]);
-		close(pool->sig_pipe[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -158,8 +150,6 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult)
 	if (ret != 0) {
 		pthread_cond_destroy(&pool->condvar);
 		pthread_mutex_destroy(&pool->mutex);
-		close(pool->sig_pipe[0]);
-		close(pool->sig_pipe[1]);
 		free(pool->jobs);
 		free(pool);
 		return ret;
@@ -218,12 +208,6 @@ static void pthreadpool_child(void)
 	     pool != NULL;
 	     pool = DLIST_PREV(pool)) {
 
-		close(pool->sig_pipe[0]);
-		close(pool->sig_pipe[1]);
-
-		ret = pipe(pool->sig_pipe);
-		assert(ret == 0);
-
 		pool->num_threads = 0;
 
 		pool->num_exited = 0;
@@ -246,16 +230,6 @@ static void pthreadpool_prep_atfork(void)
 {
 	pthread_atfork(pthreadpool_prepare, pthreadpool_parent,
 		       pthreadpool_child);
-}
-
-/*
- * Return the file descriptor which becomes readable when a job has
- * finished
- */
-
-int pthreadpool_signal_fd(struct pthreadpool *pool)
-{
-	return pool->sig_pipe[0];
 }
 
 /*
@@ -284,32 +258,6 @@ static void pthreadpool_join_children(struct pthreadpool *pool)
 	 * Deliberately not free and NULL pool->exited. That will be
 	 * re-used by realloc later.
 	 */
-}
-
-/*
- * Fetch a finished job number from the signal pipe
- */
-
-int pthreadpool_finished_jobs(struct pthreadpool *pool, int *jobids,
-			      unsigned num_jobids)
-{
-	ssize_t to_read, nread;
-
-	nread = -1;
-	errno = EINTR;
-
-	to_read = sizeof(int) * num_jobids;
-
-	while ((nread == -1) && (errno == EINTR)) {
-		nread = read(pool->sig_pipe[0], jobids, to_read);
-	}
-	if (nread == -1) {
-		return -errno;
-	}
-	if ((nread % sizeof(int)) != 0) {
-		return -EINVAL;
-	}
-	return nread / sizeof(int);
 }
 
 /*
@@ -389,12 +337,6 @@ int pthreadpool_destroy(struct pthreadpool *pool)
 	DLIST_REMOVE(pthreadpools, pool);
 	ret = pthread_mutex_unlock(&pthreadpools_mutex);
 	assert(ret == 0);
-
-	close(pool->sig_pipe[0]);
-	pool->sig_pipe[0] = -1;
-
-	close(pool->sig_pipe[1]);
-	pool->sig_pipe[1] = -1;
 
 	free(pool->exited);
 	free(pool->jobs);
@@ -527,8 +469,7 @@ static void *pthreadpool_server(void *arg)
 		}
 
 		if (pthreadpool_get_job(pool, &job)) {
-			ssize_t written;
-			int sig_pipe = pool->sig_pipe[1];
+			int ret;
 
 			/*
 			 * Do the work with the mutex unlocked
@@ -542,8 +483,9 @@ static void *pthreadpool_server(void *arg)
 			res = pthread_mutex_lock(&pool->mutex);
 			assert(res == 0);
 
-			written = write(sig_pipe, &job.id, sizeof(job.id));
-			if (written != sizeof(int)) {
+			ret = pool->signal_fn(job.id,
+					      pool->signal_private_data);
+			if (ret != 0) {
 				pthreadpool_server_exit(pool);
 				pthread_mutex_unlock(&pool->mutex);
 				return NULL;
