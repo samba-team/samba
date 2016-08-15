@@ -19,7 +19,7 @@
 #include "asys.h"
 #include <stdlib.h>
 #include <errno.h>
-#include "../pthreadpool/pthreadpool.h"
+#include "../pthreadpool/pthreadpool_pipe.h"
 #include "lib/util/time.h"
 #include "smbprofile.h"
 
@@ -59,8 +59,8 @@ struct asys_job {
 };
 
 struct asys_context {
-	struct pthreadpool *pool;
-	int pthreadpool_fd;
+	struct pthreadpool_pipe *pool;
+	int pthreadpool_pipe_fd;
 
 	unsigned num_jobs;
 	struct asys_job **jobs;
@@ -79,12 +79,12 @@ int asys_context_init(struct asys_context **pctx, unsigned max_parallel)
 	if (ctx == NULL) {
 		return ENOMEM;
 	}
-	ret = pthreadpool_init(max_parallel, &ctx->pool);
+	ret = pthreadpool_pipe_init(max_parallel, &ctx->pool);
 	if (ret != 0) {
 		free(ctx);
 		return ret;
 	}
-	ctx->pthreadpool_fd = pthreadpool_signal_fd(ctx->pool);
+	ctx->pthreadpool_pipe_fd = pthreadpool_pipe_signal_fd(ctx->pool);
 
 	*pctx = ctx;
 	return 0;
@@ -92,7 +92,7 @@ int asys_context_init(struct asys_context **pctx, unsigned max_parallel)
 
 int asys_signalfd(struct asys_context *ctx)
 {
-	return ctx->pthreadpool_fd;
+	return ctx->pthreadpool_pipe_fd;
 }
 
 int asys_context_destroy(struct asys_context *ctx)
@@ -106,7 +106,7 @@ int asys_context_destroy(struct asys_context *ctx)
 		}
 	}
 
-	ret = pthreadpool_destroy(ctx->pool);
+	ret = pthreadpool_pipe_destroy(ctx->pool);
 	if (ret != 0) {
 		return ret;
 	}
@@ -179,7 +179,7 @@ int asys_pwrite(struct asys_context *ctx, int fildes, const void *buf,
 	args->nbyte = nbyte;
 	args->offset = offset;
 
-	ret = pthreadpool_add_job(ctx->pool, jobid, asys_pwrite_do, job);
+	ret = pthreadpool_pipe_add_job(ctx->pool, jobid, asys_pwrite_do, job);
 	if (ret != 0) {
 		return ret;
 	}
@@ -224,7 +224,7 @@ int asys_pread(struct asys_context *ctx, int fildes, void *buf,
 	args->nbyte = nbyte;
 	args->offset = offset;
 
-	ret = pthreadpool_add_job(ctx->pool, jobid, asys_pread_do, job);
+	ret = pthreadpool_pipe_add_job(ctx->pool, jobid, asys_pread_do, job);
 	if (ret != 0) {
 		return ret;
 	}
@@ -265,7 +265,7 @@ int asys_fsync(struct asys_context *ctx, int fildes, void *private_data)
 	args = &job->args.fsync_args;
 	args->fildes = fildes;
 
-	ret = pthreadpool_add_job(ctx->pool, jobid, asys_fsync_do, job);
+	ret = pthreadpool_pipe_add_job(ctx->pool, jobid, asys_fsync_do, job);
 	if (ret != 0) {
 		return ret;
 	}
@@ -307,7 +307,7 @@ int asys_results(struct asys_context *ctx, struct asys_result *results,
 	int jobids[num_results];
 	int i, ret;
 
-	ret = pthreadpool_finished_jobs(ctx->pool, jobids, num_results);
+	ret = pthreadpool_pipe_finished_jobs(ctx->pool, jobids, num_results);
 	if (ret <= 0) {
 		return ret;
 	}

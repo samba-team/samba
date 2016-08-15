@@ -19,7 +19,7 @@
  */
 
 #include "includes.h"
-#include "lib/pthreadpool/pthreadpool.h"
+#include "lib/pthreadpool/pthreadpool_pipe.h"
 #include "proto.h"
 
 extern int torture_numops;
@@ -31,12 +31,12 @@ static void null_job(void *private_data)
 
 bool run_bench_pthreadpool(int dummy)
 {
-	struct pthreadpool *pool;
+	struct pthreadpool_pipe *pool;
 	int i, ret;
 
-	ret = pthreadpool_init(1, &pool);
+	ret = pthreadpool_pipe_init(1, &pool);
 	if (ret != 0) {
-		d_fprintf(stderr, "pthreadpool_init failed: %s\n",
+		d_fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			  strerror(ret));
 		return false;
 	}
@@ -44,21 +44,21 @@ bool run_bench_pthreadpool(int dummy)
 	for (i=0; i<torture_numops; i++) {
 		int jobid;
 
-		ret = pthreadpool_add_job(pool, 0, null_job, NULL);
+		ret = pthreadpool_pipe_add_job(pool, 0, null_job, NULL);
 		if (ret != 0) {
-			d_fprintf(stderr, "pthreadpool_add_job failed: %s\n",
-				  strerror(ret));
+			d_fprintf(stderr, "pthreadpool_pipe_add_job "
+				  "failed: %s\n", strerror(ret));
 			break;
 		}
-		ret = pthreadpool_finished_jobs(pool, &jobid, 1);
+		ret = pthreadpool_pipe_finished_jobs(pool, &jobid, 1);
 		if (ret < 0) {
-			d_fprintf(stderr, "pthreadpool_finished_job failed: %s\n",
-				  strerror(-ret));
+			d_fprintf(stderr, "pthreadpool_pipe_finished_job "
+				  "failed: %s\n", strerror(-ret));
 			break;
 		}
 	}
 
-	pthreadpool_destroy(pool);
+	pthreadpool_pipe_destroy(pool);
 
 	return (ret == 1);
 }

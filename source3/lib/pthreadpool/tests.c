@@ -7,22 +7,22 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include "pthreadpool.h"
+#include "pthreadpool_pipe.h"
 
 static int test_init(void)
 {
-	struct pthreadpool *p;
+	struct pthreadpool_pipe *p;
 	int ret;
 
-	ret = pthreadpool_init(1, &p);
+	ret = pthreadpool_pipe_init(1, &p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_init failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
-	ret = pthreadpool_destroy(p);
+	ret = pthreadpool_pipe_destroy(p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_init failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
@@ -43,7 +43,7 @@ static void test_sleep(void *ptr)
 static int test_jobs(int num_threads, int num_jobs)
 {
 	char *finished;
-	struct pthreadpool *p;
+	struct pthreadpool_pipe *p;
 	int timeout = 1;
 	int i, ret;
 
@@ -53,25 +53,25 @@ static int test_jobs(int num_threads, int num_jobs)
 		return -1;
 	}
 
-	ret = pthreadpool_init(num_threads, &p);
+	ret = pthreadpool_pipe_init(num_threads, &p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_init failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
 
 	for (i=0; i<num_jobs; i++) {
-		ret = pthreadpool_add_job(p, i, test_sleep, &timeout);
+		ret = pthreadpool_pipe_add_job(p, i, test_sleep, &timeout);
 		if (ret != 0) {
-			fprintf(stderr, "pthreadpool_add_job failed: %s\n",
-				strerror(ret));
+			fprintf(stderr, "pthreadpool_pipe_add_job failed: "
+				"%s\n", strerror(ret));
 			return -1;
 		}
 	}
 
 	for (i=0; i<num_jobs; i++) {
 		int jobid = -1;
-		ret = pthreadpool_finished_jobs(p, &jobid, 1);
+		ret = pthreadpool_pipe_finished_jobs(p, &jobid, 1);
 		if ((ret != 1) || (jobid >= num_jobs)) {
 			fprintf(stderr, "invalid job number %d\n", jobid);
 			return -1;
@@ -87,9 +87,9 @@ static int test_jobs(int num_threads, int num_jobs)
 		}
 	}
 
-	ret = pthreadpool_destroy(p);
+	ret = pthreadpool_pipe_destroy(p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_destroy failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_destroy failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
@@ -100,37 +100,37 @@ static int test_jobs(int num_threads, int num_jobs)
 
 static int test_busydestroy(void)
 {
-	struct pthreadpool *p;
+	struct pthreadpool_pipe *p;
 	int timeout = 50;
 	struct pollfd pfd;
 	int ret;
 
-	ret = pthreadpool_init(1, &p);
+	ret = pthreadpool_pipe_init(1, &p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_init failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
-	ret = pthreadpool_add_job(p, 1, test_sleep, &timeout);
+	ret = pthreadpool_pipe_add_job(p, 1, test_sleep, &timeout);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_add_job failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_add_job failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
-	ret = pthreadpool_destroy(p);
+	ret = pthreadpool_pipe_destroy(p);
 	if (ret != EBUSY) {
 		fprintf(stderr, "Could destroy a busy pool\n");
 		return -1;
 	}
 
-	pfd.fd = pthreadpool_signal_fd(p);
+	pfd.fd = pthreadpool_pipe_signal_fd(p);
 	pfd.events = POLLIN|POLLERR;
 
 	poll(&pfd, 1, -1);
 
-	ret = pthreadpool_destroy(p);
+	ret = pthreadpool_pipe_destroy(p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_destroy failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_destroy failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
@@ -139,7 +139,7 @@ static int test_busydestroy(void)
 
 struct threaded_state {
 	pthread_t tid;
-	struct pthreadpool *p;
+	struct pthreadpool_pipe *p;
 	int start_job;
 	int num_jobs;
 	int timeout;
@@ -151,11 +151,12 @@ static void *test_threaded_worker(void *p)
 	int i;
 
 	for (i=0; i<state->num_jobs; i++) {
-		int ret = pthreadpool_add_job(state->p, state->start_job + i,
-					      test_sleep, &state->timeout);
+		int ret = pthreadpool_pipe_add_job(
+			state->p, state->start_job + i,
+			test_sleep, &state->timeout);
 		if (ret != 0) {
-			fprintf(stderr, "pthreadpool_add_job failed: %s\n",
-				strerror(ret));
+			fprintf(stderr, "pthreadpool_pipe_add_job failed: "
+				"%s\n", strerror(ret));
 			return NULL;
 		}
 	}
@@ -165,7 +166,7 @@ static void *test_threaded_worker(void *p)
 static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 				int num_jobs)
 {
-	struct pthreadpool **pools;
+	struct pthreadpool_pipe **pools;
 	struct threaded_state *states;
 	struct threaded_state *state;
 	struct pollfd *pfds;
@@ -186,7 +187,7 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 		return -1;
 	}
 
-	pools = calloc(num_pools, sizeof(struct pthreadpool *));
+	pools = calloc(num_pools, sizeof(struct pthreadpool_pipe *));
 	if (pools == NULL) {
 		fprintf(stderr, "calloc failed\n");
 		return -1;
@@ -199,13 +200,13 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 	}
 
 	for (i=0; i<num_pools; i++) {
-		ret = pthreadpool_init(poolsize, &pools[i]);
+		ret = pthreadpool_pipe_init(poolsize, &pools[i]);
 		if (ret != 0) {
-			fprintf(stderr, "pthreadpool_init failed: %s\n",
+			fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 				strerror(ret));
 			return -1;
 		}
-		pfds[i].fd = pthreadpool_signal_fd(pools[i]);
+		pfds[i].fd = pthreadpool_pipe_signal_fd(pools[i]);
 		pfds[i].events = POLLIN|POLLHUP;
 	}
 
@@ -241,10 +242,10 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 	}
 	if (child == 0) {
 		for (i=0; i<num_pools; i++) {
-			ret = pthreadpool_destroy(pools[i]);
+			ret = pthreadpool_pipe_destroy(pools[i]);
 			if (ret != 0) {
-				fprintf(stderr, "pthreadpool_destroy failed: "
-					"%s\n", strerror(ret));
+				fprintf(stderr, "pthreadpool_pipe_destroy "
+					"failed: %s\n", strerror(ret));
 				exit(1);
 			}
 		}
@@ -284,7 +285,8 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 				continue;
 			}
 
-			ret = pthreadpool_finished_jobs(pools[j], &jobid, 1);
+			ret = pthreadpool_pipe_finished_jobs(
+				pools[j], &jobid, 1);
 			if ((ret != 1) || (jobid >= num_jobs * num_threads)) {
 				fprintf(stderr, "invalid job number %d\n",
 					jobid);
@@ -304,10 +306,10 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 	}
 
 	for (i=0; i<num_pools; i++) {
-		ret = pthreadpool_destroy(pools[i]);
+		ret = pthreadpool_pipe_destroy(pools[i]);
 		if (ret != 0) {
-			fprintf(stderr, "pthreadpool_destroy failed: %s\n",
-				strerror(ret));
+			fprintf(stderr, "pthreadpool_pipe_destroy failed: "
+				"%s\n",	strerror(ret));
 			return -1;
 		}
 	}
@@ -322,19 +324,19 @@ static int test_threaded_addjob(int num_pools, int num_threads, int poolsize,
 
 static int test_fork(void)
 {
-	struct pthreadpool *p;
+	struct pthreadpool_pipe *p;
 	pid_t child, waited;
 	int status, ret;
 
-	ret = pthreadpool_init(1, &p);
+	ret = pthreadpool_pipe_init(1, &p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_init failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			strerror(ret));
 		return -1;
 	}
-	ret = pthreadpool_destroy(p);
+	ret = pthreadpool_pipe_destroy(p);
 	if (ret != 0) {
-		fprintf(stderr, "pthreadpool_destroy failed: %s\n",
+		fprintf(stderr, "pthreadpool_pipe_destroy failed: %s\n",
 			strerror(ret));
 		return -1;
 	}

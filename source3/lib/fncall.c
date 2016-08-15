@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "../lib/util/tevent_unix.h"
 
-#include "lib/pthreadpool/pthreadpool.h"
+#include "lib/pthreadpool/pthreadpool_pipe.h"
 
 struct fncall_state {
 	struct fncall_context *ctx;
@@ -32,7 +32,7 @@ struct fncall_state {
 };
 
 struct fncall_context {
-	struct pthreadpool *pool;
+	struct pthreadpool_pipe *pool;
 	int next_job_id;
 	int sig_fd;
 	struct tevent_req **pending;
@@ -61,7 +61,7 @@ static int fncall_context_destructor(struct fncall_context *ctx)
 		fncall_handler(NULL, NULL, TEVENT_FD_READ, ctx);
 	}
 
-	pthreadpool_destroy(ctx->pool);
+	pthreadpool_pipe_destroy(ctx->pool);
 	ctx->pool = NULL;
 
 	return 0;
@@ -78,14 +78,14 @@ struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = pthreadpool_init(max_threads, &ctx->pool);
+	ret = pthreadpool_pipe_init(max_threads, &ctx->pool);
 	if (ret != 0) {
 		TALLOC_FREE(ctx);
 		return NULL;
 	}
 	talloc_set_destructor(ctx, fncall_context_destructor);
 
-	ctx->sig_fd = pthreadpool_signal_fd(ctx->pool);
+	ctx->sig_fd = pthreadpool_pipe_signal_fd(ctx->pool);
 	if (ctx->sig_fd == -1) {
 		TALLOC_FREE(ctx);
 		return NULL;
@@ -266,8 +266,8 @@ struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->private_parent = talloc_parent(private_data);
 	state->job_private = talloc_move(state, &private_data);
 
-	ret = pthreadpool_add_job(state->ctx->pool, state->job_id, fn,
-				  state->job_private);
+	ret = pthreadpool_pipe_add_job(state->ctx->pool, state->job_id, fn,
+				       state->job_private);
 	if (ret == -1) {
 		tevent_req_error(req, errno);
 		return tevent_req_post(req, ev);
@@ -287,7 +287,7 @@ static void fncall_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	int i, num_pending;
 	int job_id;
 
-	if (pthreadpool_finished_jobs(ctx->pool, &job_id, 1) < 0) {
+	if (pthreadpool_pipe_finished_jobs(ctx->pool, &job_id, 1) < 0) {
 		return;
 	}
 

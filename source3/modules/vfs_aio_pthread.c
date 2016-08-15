@@ -26,7 +26,7 @@
 #include "system/shmem.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
-#include "lib/pthreadpool/pthreadpool.h"
+#include "lib/pthreadpool/pthreadpool_pipe.h"
 #ifdef HAVE_LINUX_FALLOC_H
 #include <linux/falloc.h>
 #endif
@@ -38,7 +38,7 @@
 ***********************************************************************/
 
 static bool init_aio_threadpool(struct tevent_context *ev_ctx,
-				struct pthreadpool **pp_pool,
+				struct pthreadpool_pipe **pp_pool,
 				void (*completion_fn)(struct tevent_context *,
 						struct tevent_fd *,
 						uint16_t,
@@ -51,19 +51,19 @@ static bool init_aio_threadpool(struct tevent_context *ev_ctx,
 		return true;
 	}
 
-	ret = pthreadpool_init(lp_aio_max_threads(), pp_pool);
+	ret = pthreadpool_pipe_init(lp_aio_max_threads(), pp_pool);
 	if (ret) {
 		errno = ret;
 		return false;
 	}
 	sock_event = tevent_add_fd(ev_ctx,
 				NULL,
-				pthreadpool_signal_fd(*pp_pool),
+				pthreadpool_pipe_signal_fd(*pp_pool),
 				TEVENT_FD_READ,
 				completion_fn,
 				NULL);
 	if (sock_event == NULL) {
-		pthreadpool_destroy(*pp_pool);
+		pthreadpool_pipe_destroy(*pp_pool);
 		*pp_pool = NULL;
 		return false;
 	}
@@ -87,7 +87,7 @@ static bool init_aio_threadpool(struct tevent_context *ev_ctx,
  * process, as is the current jobid.
  */
 
-static struct pthreadpool *open_pool;
+static struct pthreadpool_pipe *open_pool;
 static int aio_pthread_open_jobid;
 
 struct aio_open_private_data {
@@ -167,7 +167,7 @@ static void aio_open_handle_completion(struct tevent_context *event_ctx,
 		return;
 	}
 
-	ret = pthreadpool_finished_jobs(open_pool, &jobid, 1);
+	ret = pthreadpool_pipe_finished_jobs(open_pool, &jobid, 1);
 	if (ret != 1) {
 		smb_panic("aio_open_handle_completion");
 		/* notreached. */
@@ -368,10 +368,10 @@ static int open_async(const files_struct *fsp,
 		return -1;
 	}
 
-	ret = pthreadpool_add_job(open_pool,
-				opd->jobid,
-				aio_open_worker,
-				(void *)opd);
+	ret = pthreadpool_pipe_add_job(open_pool,
+				       opd->jobid,
+				       aio_open_worker,
+				       (void *)opd);
 	if (ret) {
 		errno = ret;
 		return -1;

@@ -22,7 +22,7 @@
 #include "system/time.h"
 #include "system/network.h"
 #include "lib/util/dlinklist.h"
-#include "pthreadpool/pthreadpool.h"
+#include "pthreadpool/pthreadpool_pipe.h"
 #include "lib/util/iov_buf.h"
 #include "lib/util/msghdr.h"
 #include <fcntl.h>
@@ -69,7 +69,7 @@ struct unix_dgram_ctx {
 	struct poll_watch *sock_read_watch;
 	struct unix_dgram_send_queue *send_queues;
 
-	struct pthreadpool *send_pool;
+	struct pthreadpool_pipe *send_pool;
 	struct poll_watch *pool_read_watch;
 
 	uint8_t *recv_buf;
@@ -341,18 +341,18 @@ static int unix_dgram_init_pthreadpool(struct unix_dgram_ctx *ctx)
 		return 0;
 	}
 
-	ret = pthreadpool_init(0, &ctx->send_pool);
+	ret = pthreadpool_pipe_init(0, &ctx->send_pool);
 	if (ret != 0) {
 		return ret;
 	}
 
-	signalfd = pthreadpool_signal_fd(ctx->send_pool);
+	signalfd = pthreadpool_pipe_signal_fd(ctx->send_pool);
 
 	ctx->pool_read_watch = ctx->ev_funcs->watch_new(
 		ctx->ev_funcs, signalfd, POLLIN,
 		unix_dgram_job_finished, ctx);
 	if (ctx->pool_read_watch == NULL) {
-		pthreadpool_destroy(ctx->send_pool);
+		pthreadpool_pipe_destroy(ctx->send_pool);
 		ctx->send_pool = NULL;
 		return ENOMEM;
 	}
@@ -525,7 +525,7 @@ static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
 	struct unix_dgram_msg *msg;
 	int ret, job;
 
-	ret = pthreadpool_finished_jobs(ctx->send_pool, &job, 1);
+	ret = pthreadpool_pipe_finished_jobs(ctx->send_pool, &job, 1);
 	if (ret != 1) {
 		return;
 	}
@@ -547,8 +547,8 @@ static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
 	free(msg);
 
 	if (q->msgs != NULL) {
-		ret = pthreadpool_add_job(ctx->send_pool, q->sock,
-					  unix_dgram_send_job, q->msgs);
+		ret = pthreadpool_pipe_add_job(ctx->send_pool, q->sock,
+					       unix_dgram_send_job, q->msgs);
 		if (ret == 0) {
 			return;
 		}
@@ -654,8 +654,8 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 		unix_dgram_send_queue_free(q);
 		return ret;
 	}
-	ret = pthreadpool_add_job(ctx->send_pool, q->sock,
-				  unix_dgram_send_job, q->msgs);
+	ret = pthreadpool_pipe_add_job(ctx->send_pool, q->sock,
+				       unix_dgram_send_job, q->msgs);
 	if (ret != 0) {
 		unix_dgram_send_queue_free(q);
 		return ret;
@@ -675,7 +675,7 @@ static int unix_dgram_free(struct unix_dgram_ctx *ctx)
 	}
 
 	if (ctx->send_pool != NULL) {
-		int ret = pthreadpool_destroy(ctx->send_pool);
+		int ret = pthreadpool_pipe_destroy(ctx->send_pool);
 		if (ret != 0) {
 			return ret;
 		}
