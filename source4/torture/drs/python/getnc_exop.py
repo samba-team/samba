@@ -79,7 +79,7 @@ class AbstractLink:
 
 class ExopBaseTest:
     def _exop_req8(self, dest_dsa, invocation_id, nc_dn_str, exop,
-                   replica_flags=0, max_objects=0):
+                   replica_flags=0, max_objects=0, partial_attribute_set=None):
         req8 = drsuapi.DsGetNCChangesRequest8()
 
         req8.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
@@ -96,7 +96,7 @@ class ExopBaseTest:
         req8.max_ndr_size = 402116
         req8.extended_op = exop
         req8.fsmo_info = 0
-        req8.partial_attribute_set = None
+        req8.partial_attribute_set = partial_attribute_set
         req8.partial_attribute_set_ex = None
         req8.mapping_ctr.num_mappings = 0
         req8.mapping_ctr.mappings = None
@@ -284,6 +284,55 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
         self.assertEqual(ctr6.drs_error[0], 0)
         # We don't check the linked_attributes_count as if the domain
         # has an RODC, it can gain links on the server account object
+
+class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+    def setUp(self):
+        super(DrsReplicaPrefixMapTestCase, self).setUp()
+        self.base_dn = self.ldb_dc1.get_default_basedn()
+        self.ou = "ou=pfm_exop,%s" % self.base_dn
+        self.ldb_dc1.add({
+            "dn": self.ou,
+            "objectclass": "organizationalUnit"})
+        self.user = "cn=testuser,%s" % self.ou
+        self.ldb_dc1.add({
+            "dn": self.user,
+            "objectclass": "user"})
+
+    def tearDown(self):
+        super(DrsReplicaPrefixMapTestCase, self).tearDown()
+        try:
+            self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
+        except ldb.LdbError as (enum, string):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                pass
+
+    def get_partial_attribute_set(self):
+        partial_attribute_set = drsuapi.DsPartialAttributeSet()
+        attids = [drsuapi.DRSUAPI_ATTID_objectClass,
+                  drsuapi.DRSUAPI_ATTID_description,
+                  drsuapi.DRSUAPI_ATTID_displayName]
+        partial_attribute_set.attids = attids
+        partial_attribute_set.num_attids = len(attids)
+        return partial_attribute_set
+
+    def test_missing_prefix_map_dsa(self):
+        partial_attribute_set = self.get_partial_attribute_set()
+
+        dc_guid_1 = self.ldb_dc1.get_invocation_id()
+
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=dc_guid_1,
+                               nc_dn_str=self.user,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               partial_attribute_set=partial_attribute_set)
+
+        try:
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+            self.assertEqual(ctr.extended_ret, drsuapi.DRSUAPI_EXOP_ERR_SUCCESS)
+        except Exception:
+            self.fail("Missing prefixmap shouldn't have triggered an error")
 
 class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
     def setUp(self):
