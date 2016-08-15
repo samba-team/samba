@@ -1031,13 +1031,16 @@ DB Statistics: locking.tdb
     <refsect2>
       <title>addip <parameter>IPADDR</parameter>/<parameter>mask</parameter> <parameter>IFACE</parameter></title>
       <para>
-	This command is used to add a new public ip to a node during runtime.
-	This allows public addresses to be added to a cluster without having
-	to restart the ctdb daemons.
+	This command is used to add a new public ip to a node
+	during runtime.  It should be followed by a <command>ctdb
+	ipreallocate</command>.  This allows public addresses to be
+	added to a cluster without having to restart the ctdb daemons.
       </para>
       <para>
-	Note that this only updates the runtime instance of ctdb. Any changes will be lost next time ctdb is restarted and the public addresses file is re-read.
-	If you want this change to be permanent you must also update the public addresses file manually.
+	Note that this only updates the runtime instance of ctdb. Any
+	changes will be lost next time ctdb is restarted and the public
+	addresses file is re-read.  If you want this change to be
+	permanent you must also update the public addresses file manually.
       </para>
     </refsect2>
 

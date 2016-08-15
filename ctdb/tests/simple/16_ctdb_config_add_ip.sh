@@ -34,4 +34,5 @@ try_command_on_node -v all $CTDB ip
 
 echo "Adding IP ${test_ip}/${mask} on ${iface}, node ${test_node}"
 try_command_on_node $test_node $CTDB addip ${test_ip}/${mask} $iface
+try_command_on_node $test_node $CTDB ipreallocate
 wait_until_ips_are_on_node $test_node $test_ip
