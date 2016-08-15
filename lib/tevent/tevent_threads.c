@@ -108,7 +108,7 @@ static void schedule_immediate_functions(struct tevent_thread_proxy *tp)
 	if (tp->tofree_im_list != NULL) {
 		/*
 		 * Once the current immediate events
-		 * are processed, we need to reshedule
+		 * are processed, we need to reschedule
 		 * ourselves to free them. This works
 		 * as tevent_schedule_immediate()
 		 * always adds events to the *END* of
