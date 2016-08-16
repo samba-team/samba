@@ -44,6 +44,9 @@
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
+static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
+				uint32_t result,
+				uint32_t reason);
 
 /*
   find an association group given a assoc_group_id
@@ -1013,74 +1016,6 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint16_
 }
 
 /* setup and send an alter_resp */
-static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
-				uint32_t result,
-				uint32_t reason)
-{
-	struct ncacn_packet pkt;
-	uint32_t extra_flags = 0;
-	struct data_blob_list_item *rep = NULL;
-	NTSTATUS status;
-
-	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
-	pkt.auth_length = 0;
-	pkt.call_id = call->pkt.call_id;
-	pkt.ptype = DCERPC_PKT_ALTER_RESP;
-	if (result == 0) {
-		if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
-				call->context->conn->state_flags &
-					DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
-			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
-		}
-		if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
-			call->context->conn->state_flags |=
-				DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
-		}
-	}
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
-	pkt.u.alter_resp.max_xmit_frag = call->conn->max_xmit_frag;
-	pkt.u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
-	pkt.u.alter_resp.assoc_group_id = call->conn->assoc_group->id;
-	pkt.u.alter_resp.num_results = 1;
-	pkt.u.alter_resp.ctx_list = talloc_zero(call, struct dcerpc_ack_ctx);
-	if (!pkt.u.alter_resp.ctx_list) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	pkt.u.alter_resp.ctx_list[0].result = result;
-	pkt.u.alter_resp.ctx_list[0].reason.value = reason;
-	pkt.u.alter_resp.ctx_list[0].syntax = ndr_transfer_syntax_ndr;
-	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
-	pkt.u.alter_resp.secondary_address = "";
-
-	status = dcesrv_auth_alter_ack(call, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
-	}
-
-	rep = talloc_zero(call, struct data_blob_list_item);
-	if (!rep) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ncacn_push_auth(&rep->blob, call, &pkt, call->out_auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
-
-	DLIST_ADD_END(call->replies, rep);
-	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
-
-	if (call->conn->call_list && call->conn->call_list->replies) {
-		if (call->conn->transport.report_output_data) {
-			call->conn->transport.report_output_data(call->conn);
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
 /*
   handle a alter context request
 */
@@ -1171,6 +1106,74 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	return dcesrv_alter_resp(call,
 				DCERPC_BIND_ACK_RESULT_ACCEPTANCE,
 				DCERPC_BIND_ACK_REASON_NOT_SPECIFIED);
+}
+
+static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
+				uint32_t result,
+				uint32_t reason)
+{
+	struct ncacn_packet pkt;
+	uint32_t extra_flags = 0;
+	struct data_blob_list_item *rep = NULL;
+	NTSTATUS status;
+
+	dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+	pkt.auth_length = 0;
+	pkt.call_id = call->pkt.call_id;
+	pkt.ptype = DCERPC_PKT_ALTER_RESP;
+	if (result == 0) {
+		if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
+				call->context->conn->state_flags &
+					DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
+			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
+		}
+		if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
+			call->context->conn->state_flags |=
+				DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
+		}
+	}
+	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
+	pkt.u.alter_resp.max_xmit_frag = call->conn->max_xmit_frag;
+	pkt.u.alter_resp.max_recv_frag = call->conn->max_recv_frag;
+	pkt.u.alter_resp.assoc_group_id = call->conn->assoc_group->id;
+	pkt.u.alter_resp.num_results = 1;
+	pkt.u.alter_resp.ctx_list = talloc_zero(call, struct dcerpc_ack_ctx);
+	if (!pkt.u.alter_resp.ctx_list) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	pkt.u.alter_resp.ctx_list[0].result = result;
+	pkt.u.alter_resp.ctx_list[0].reason.value = reason;
+	pkt.u.alter_resp.ctx_list[0].syntax = ndr_transfer_syntax_ndr;
+	pkt.u.alter_resp.auth_info = data_blob(NULL, 0);
+	pkt.u.alter_resp.secondary_address = "";
+
+	status = dcesrv_auth_alter_ack(call, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return dcesrv_fault_disconnect(call, DCERPC_FAULT_SEC_PKG_ERROR);
+	}
+
+	rep = talloc_zero(call, struct data_blob_list_item);
+	if (!rep) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ncacn_push_auth(&rep->blob, call, &pkt, call->out_auth_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	dcerpc_set_frag_length(&rep->blob, rep->blob.length);
+
+	DLIST_ADD_END(call->replies, rep);
+	dcesrv_call_set_list(call, DCESRV_LIST_CALL_LIST);
+
+	if (call->conn->call_list && call->conn->call_list->replies) {
+		if (call->conn->transport.report_output_data) {
+			call->conn->transport.report_output_data(call->conn);
+		}
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
