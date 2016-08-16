@@ -39,6 +39,7 @@
 #include "../libcli/security/security.h"
 #include "lib/util_ea.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
+#include "ntioctl.h"
 
 struct smb2_hnd {
 	uint64_t fid_persistent;
@@ -2872,4 +2873,232 @@ NTSTATUS cli_smb2_splice_recv(struct tevent_req *req, off_t *written)
 	state->cli->raw_status = NT_STATUS_OK;
 	tevent_req_received(req);
 	return NT_STATUS_OK;
+}
+
+/***************************************************************
+ SMB2 enum shadow copy data.
+***************************************************************/
+
+struct cli_smb2_shadow_copy_data_fnum_state {
+	struct cli_state *cli;
+	uint16_t fnum;
+	struct smb2_hnd *ph;
+	DATA_BLOB out_input_buffer;
+	DATA_BLOB out_output_buffer;
+};
+
+static void cli_smb2_shadow_copy_data_fnum_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_smb2_shadow_copy_data_fnum_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					uint16_t fnum,
+					bool get_names)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_smb2_close_fnum_state *state;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_smb2_shadow_copy_data_fnum_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	state->cli = cli;
+	state->fnum = fnum;
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &state->ph);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * TODO. Under SMB2 we should send a zero max_output_length
+	 * ioctl to get the required size, then send another ioctl
+	 * to get the data, but the current SMB1 implementation just
+	 * does one roundtrip with a 64K buffer size. Do the same
+	 * for now. JRA.
+	 */
+
+	subreq = smb2cli_ioctl_send(state, ev, state->cli->conn,
+			state->cli->timeout,
+			state->cli->smb2.session,
+			state->cli->smb2.tcon,
+			state->ph->fid_persistent, /* in_fid_persistent */
+			state->ph->fid_volatile, /* in_fid_volatile */
+			FSCTL_GET_SHADOW_COPY_DATA,
+			0, /* in_max_input_length */
+			NULL, /* in_input_buffer */
+			get_names ?
+				CLI_BUFFER_SIZE : 16, /* in_max_output_length */
+			NULL, /* in_output_buffer */
+			SMB2_IOCTL_FLAG_IS_FSCTL);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				cli_smb2_shadow_copy_data_fnum_done,
+				req);
+
+	return req;
+}
+
+static void cli_smb2_shadow_copy_data_fnum_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_shadow_copy_data_fnum_state *state = tevent_req_data(
+		req, struct cli_smb2_shadow_copy_data_fnum_state);
+	NTSTATUS status;
+
+	status = smb2cli_ioctl_recv(subreq, state,
+				&state->out_input_buffer,
+				&state->out_output_buffer);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_smb2_shadow_copy_data_fnum_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				bool get_names,
+				char ***pnames,
+				int *pnum_names)
+{
+	struct cli_smb2_shadow_copy_data_fnum_state *state = tevent_req_data(
+		req, struct cli_smb2_shadow_copy_data_fnum_state);
+	char **names = NULL;
+	uint32_t num_names = 0;
+	uint32_t num_names_returned = 0;
+	uint32_t dlength = 0;
+	uint32_t i;
+	uint8_t *endp = NULL;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (state->out_output_buffer.length < 16) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	num_names = IVAL(state->out_output_buffer.data, 0);
+	num_names_returned = IVAL(state->out_output_buffer.data, 4);
+	dlength = IVAL(state->out_output_buffer.data, 8);
+
+	if (num_names > 0x7FFFFFFF) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	if (get_names == false) {
+		*pnum_names = (int)num_names;
+		return NT_STATUS_OK;
+	}
+	if (num_names != num_names_returned) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (dlength + 12 < 12) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	/*
+	 * NB. The below is an allowable return if there are
+	 * more snapshots than the buffer size we told the
+	 * server we can receive. We currently don't support
+	 * this.
+	 */
+	if (dlength + 12 > state->out_output_buffer.length) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (state->out_output_buffer.length +
+			(2 * sizeof(SHADOW_COPY_LABEL)) <
+				state->out_output_buffer.length) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	names = talloc_array(mem_ctx, char *, num_names_returned);
+	if (names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	endp = state->out_output_buffer.data +
+			state->out_output_buffer.length;
+
+	for (i=0; i<num_names_returned; i++) {
+		bool ret;
+		uint8_t *src;
+		size_t converted_size;
+
+		src = state->out_output_buffer.data + 12 +
+			(i * 2 * sizeof(SHADOW_COPY_LABEL));
+
+		if (src + (2 * sizeof(SHADOW_COPY_LABEL)) > endp) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+		ret = convert_string_talloc(
+			names, CH_UTF16LE, CH_UNIX,
+			src, 2 * sizeof(SHADOW_COPY_LABEL),
+			&names[i], &converted_size);
+		if (!ret) {
+			TALLOC_FREE(names);
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+	}
+	*pnum_names = num_names;
+	*pnames = names;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_smb2_shadow_copy_data(TALLOC_CTX *mem_ctx,
+				struct cli_state *cli,
+				uint16_t fnum,
+				bool get_names,
+				char ***pnames,
+				int *pnum_names)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_shadow_copy_data_fnum_send(frame,
+					ev,
+					cli,
+					fnum,
+					get_names);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_smb2_shadow_copy_data_fnum_recv(req,
+						mem_ctx,
+						get_names,
+						pnames,
+						pnum_names);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
