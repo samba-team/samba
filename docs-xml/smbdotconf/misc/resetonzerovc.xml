@@ -4,7 +4,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	This boolean option controls whether an incoming session setup
+	This boolean option controls whether an incoming SMB1 session setup
 	should kill other connections coming from the same IP. This matches
         the default Windows 2003 behaviour.
 
@@ -17,8 +17,9 @@
 	kills all other connections coming from the same IP. This way the
 	locked files are accessible again.
 
-	Please be aware that enabling this option will kill connections behind
-	a masquerading router.
+	Please be aware that enabling this option will kill
+	connections behind a masquerading router, and will not trigger
+	for clients that only use SMB2 or SMB3.
 
 	</para>
 </description>
