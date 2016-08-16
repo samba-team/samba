@@ -486,6 +486,13 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		 * with a path prefix.
 		 */
 		if (pstripped != NULL) {
+			if (len_before_gmt > 0) {
+				/*
+				 * There is a slash before
+				 * the @GMT-. Remove it.
+				 */
+				len_before_gmt -= 1;
+			}
 			stripped = talloc_strndup(mem_ctx, name,
 					len_before_gmt);
 			if (stripped == NULL) {
