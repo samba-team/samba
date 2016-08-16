@@ -5,7 +5,7 @@
 
 if [ $# -lt 7 ]; then
 cat <<EOF
-Usage: test_shadow_copy SERVER SERVER_IP DOMAIN USERNAME PASSWORD WORKDIR SMBCLIENT
+Usage: test_shadow_copy SERVER SERVER_IP DOMAIN USERNAME PASSWORD WORKDIR SMBCLIENT PARAMS
 EOF
 exit 1;
 fi
@@ -18,8 +18,8 @@ PASSWORD=${5}
 WORKDIR=${6}
 SMBCLIENT=${7}
 shift 7
-SMBCLIENT="$VALGRIND ${SMBCLIENT}"
 ADDARGS="$*"
+SMBCLIENT="$VALGRIND ${SMBCLIENT} ${ADDARGS}"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
