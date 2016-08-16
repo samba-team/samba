@@ -17,6 +17,7 @@
 
 __all__ = ['parse_results']
 
+import datetime
 import re
 import sys
 from samba import subunit
@@ -427,6 +428,73 @@ class FilterOps(unittest.TestResult):
         self.total_uxsuccess = 0
         self.error_added = 0
         self.fail_immediately = fail_immediately
+
+
+class PerfFilterOps(unittest.TestResult):
+
+    def progress(self, delta, whence):
+        pass
+
+    def output_msg(self, msg):
+        pass
+
+    def control_msg(self, msg):
+        pass
+
+    def skip_testsuite(self, name, reason=None):
+        self._ops.skip_testsuite(name, reason)
+
+    def start_testsuite(self, name):
+        self.suite_has_time = False
+
+    def end_testsuite(self, name, result, reason=None):
+        pass
+
+    def _add_prefix(self, test):
+        return subunit.RemotedTestCase(self.prefix + test.id() + self.suffix)
+
+    def time(self, time):
+        self.latest_time = time
+        #self._ops.output_msg("found time %s\n" % time)
+        self.suite_has_time = True
+
+    def get_time(self):
+        if self.suite_has_time:
+            return self.latest_time
+        return datetime.datetime.utcnow()
+
+    def startTest(self, test):
+        self.seen_output = True
+        test = self._add_prefix(test)
+        self.starts[test.id()] = self.get_time()
+
+    def addSuccess(self, test):
+        test = self._add_prefix(test)
+        tid = test.id()
+        if tid not in self.starts:
+            self._ops.addError(test, "%s succeeded without ever starting!" % tid)
+        delta = self.get_time() - self.starts[tid]
+        self._ops.output_msg("elapsed-time: %s: %f\n" % (tid, delta.total_seconds()))
+
+    def addFailure(self, test, err=''):
+        tid = test.id()
+        delta = self.get_time() - self.starts[tid]
+        self._ops.output_msg("failure: %s failed after %f seconds (%s)\n" %
+                             (tid, delta.total_seconds(), err))
+
+    def addError(self, test, err=''):
+        tid = test.id()
+        delta = self.get_time() - self.starts[tid]
+        self._ops.output_msg("error: %s failed after %f seconds (%s)\n" %
+                             (tid, delta.total_seconds(), err))
+
+    def __init__(self, out, prefix='', suffix=''):
+        self._ops = out
+        self.prefix = prefix or ''
+        self.suffix = suffix or ''
+        self.starts = {}
+        self.seen_output = False
+        self.suite_has_time = False
 
 
 class PlainFormatter(TestsuiteEnabledTestResult):

@@ -79,6 +79,8 @@ def set_options(opt):
                   action="store_true", dest='SOCKET_WRAPPER_KEEP_PCAP', default=False)
     gr.add_option('--random-order', dest='RANDOM_ORDER', default=False,
                   action="store_true", help="Run testsuites in random order")
+    gr.add_option('--perf-test', dest='PERF_TEST', default=False,
+                  action="store_true", help="run performance tests only")
 
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
@@ -145,7 +147,10 @@ def cmd_testonly(opt):
         env.OPTIONS += ' --socket-wrapper-keep-pcap'
     if Options.options.RANDOM_ORDER:
         env.OPTIONS += ' --random-order'
-    if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
+    if Options.options.PERF_TEST:
+        env.FILTER_OPTIONS = ('${PYTHON} -u ${srcdir}/selftest/filter-subunit '
+                              '--perf-test-output')
+    elif os.environ.get('RUN_FROM_BUILD_FARM') is not None:
         env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
     else:
         env.FILTER_OPTIONS = '${FILTER_XFAIL}'
@@ -193,9 +198,12 @@ def cmd_testonly(opt):
     if not os.path.isdir(env.SELFTEST_PREFIX):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
-    env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/selftest/tests.py|" ' +
-                     '--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
-                     '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
+    if Options.options.PERF_TEST:
+        env.TESTLISTS = '--testlist="${PYTHON} ${srcdir}/selftest/perf_tests.py|" '
+    else:
+        env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/selftest/tests.py|" ' +
+                         '--testlist="${PYTHON} ${srcdir}/source3/selftest/tests.py|" ' +
+                         '--testlist="${PYTHON} ${srcdir}/source4/selftest/tests.py|"')
 
     if CONFIG_SET(opt, 'AD_DC_BUILD_IS_ENABLED'):
         env.SELFTEST_TARGET = "samba"

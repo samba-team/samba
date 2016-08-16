@@ -16,6 +16,9 @@ uninstall:
 test:
 	$(WAF) test $(TEST_OPTIONS)
 
+perftest:
+	$(WAF) test --perf-test $(TEST_OPTIONS)
+
 help:
 	@echo NOTE: to run extended waf options use $(WAF_BINARY) or modify your PATH
 	$(WAF) --help
