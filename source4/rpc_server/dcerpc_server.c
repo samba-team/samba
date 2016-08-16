@@ -795,12 +795,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
 	    (call->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
-		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
+		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
 		extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 	}
 
 	if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
-		call->context->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
+		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 	}
 
 	/* handle any authentication that is being requested */
@@ -1123,12 +1123,12 @@ static NTSTATUS dcesrv_alter_resp(struct dcesrv_call_state *call,
 	pkt.ptype = DCERPC_PKT_ALTER_RESP;
 	if (result == 0) {
 		if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
-				call->context->conn->state_flags &
+		    call->conn->state_flags &
 					DCESRV_CALL_STATE_FLAG_MULTIPLEXED) {
 			extra_flags |= DCERPC_PFC_FLAG_CONC_MPX;
 		}
 		if (call->state_flags & DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL) {
-			call->context->conn->state_flags |=
+			call->conn->state_flags |=
 				DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 		}
 	}
