@@ -486,7 +486,8 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 		 * with a path prefix.
 		 */
 		if (pstripped != NULL) {
-			stripped = talloc_strndup(mem_ctx, name, p - name);
+			stripped = talloc_strndup(mem_ctx, name,
+					len_before_gmt);
 			if (stripped == NULL) {
 				return false;
 			}
