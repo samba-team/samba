@@ -199,11 +199,6 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 			     char ***strings,
 			     size_t *num_strings);
 
-/* The following definitions come from libads/ndr.c  */
-
-struct ndr_print;
-void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct ads_struct *r);
-
 /* The following definitions come from libads/sasl.c  */
 
 ADS_STATUS ads_sasl_bind(ADS_STRUCT *ads);

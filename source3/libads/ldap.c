@@ -33,6 +33,7 @@
 #include "../librpc/gen_ndr/netlogon.h"
 #include "lib/param/loadparm.h"
 #include "libsmb/namequery.h"
+#include "../librpc/gen_ndr/ndr_ads.h"
 
 #ifdef HAVE_LDAP
 
@@ -259,6 +260,7 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 	bool ret = false;
 	char addr[INET6_ADDRSTRLEN];
 	ADS_STATUS status;
+	char *dn;
 
 	print_sockaddr(addr, sizeof(addr), ss);
 
@@ -273,12 +275,12 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 
 	/* Fill in the ads->config values */
 
-	TALLOC_FREE(ads->config.realm);
-	TALLOC_FREE(ads->config.bind_path);
-	TALLOC_FREE(ads->config.ldap_server_name);
-	TALLOC_FREE(ads->config.server_site_name);
-	TALLOC_FREE(ads->config.client_site_name);
-	TALLOC_FREE(ads->server.workgroup);
+	ADS_TALLOC_CONST_FREE(ads->config.realm);
+	ADS_TALLOC_CONST_FREE(ads->config.bind_path);
+	ADS_TALLOC_CONST_FREE(ads->config.ldap_server_name);
+	ADS_TALLOC_CONST_FREE(ads->config.server_site_name);
+	ADS_TALLOC_CONST_FREE(ads->config.client_site_name);
+	ADS_TALLOC_CONST_FREE(ads->server.workgroup);
 
 	if (!check_cldap_reply_required_flags(cldap_reply->server_type,
 					      ads->config.flags)) {
@@ -303,13 +305,14 @@ static bool ads_fill_cldap_reply(ADS_STRUCT *ads,
 		goto out;
 	}
 
-	status = ads_build_dn(ads->config.realm, ads, &ads->config.bind_path);
+	status = ads_build_dn(ads->config.realm, ads, &dn);
 	if (!ADS_ERR_OK(status)) {
 		DBG_DEBUG("Failed to build bind path: %s\n",
 			  ads_errstr(status));
 		ret = false;
 		goto out;
 	}
+	ads->config.bind_path = dn;
 
 	if (*cldap_reply->server_site) {
 		ads->config.server_site_name =

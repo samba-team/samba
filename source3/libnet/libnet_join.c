@@ -171,7 +171,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	}
 
 	if (user_name) {
-		TALLOC_FREE(my_ads->auth.user_name);
+		ADS_TALLOC_CONST_FREE(my_ads->auth.user_name);
 		my_ads->auth.user_name = talloc_strdup(my_ads, user_name);
 		if (my_ads->auth.user_name == NULL) {
 			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -179,7 +179,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		}
 		if ((cp = strchr_m(my_ads->auth.user_name, '@'))!=0) {
 			*cp++ = '\0';
-			TALLOC_FREE(my_ads->auth.realm);
+			ADS_TALLOC_CONST_FREE(my_ads->auth.realm);
 			my_ads->auth.realm = talloc_asprintf_strupper_m(my_ads, "%s", cp);
 			if (my_ads->auth.realm == NULL) {
 				status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
@@ -189,7 +189,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	}
 
 	if (password) {
-		TALLOC_FREE(my_ads->auth.password);
+		ADS_TALLOC_CONST_FREE(my_ads->auth.password);
 		my_ads->auth.password = talloc_strdup(my_ads, password);
 		if (my_ads->auth.password == NULL) {
 			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -198,7 +198,7 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 	}
 
 	if (ccname != NULL) {
-		TALLOC_FREE(my_ads->auth.ccache_name);
+		ADS_TALLOC_CONST_FREE(my_ads->auth.ccache_name);
 		my_ads->auth.ccache_name = talloc_strdup(my_ads, ccname);
 		if (my_ads->auth.ccache_name == NULL) {
 			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -1045,7 +1045,7 @@ static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
 
 		if (r->in.ads->auth.ccache_name != NULL) {
 			ads_kdestroy(r->in.ads->auth.ccache_name);
-			TALLOC_FREE(r->in.ads->auth.ccache_name);
+			ADS_TALLOC_CONST_FREE(r->in.ads->auth.ccache_name);
 		}
 
 		TALLOC_FREE(r->in.ads);

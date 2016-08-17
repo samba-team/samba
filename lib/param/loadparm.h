@@ -203,17 +203,6 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 
 
 
-/* ads auth control flags */
-#define ADS_AUTH_DISABLE_KERBEROS 0x0001
-#define ADS_AUTH_NO_BIND          0x0002
-#define ADS_AUTH_ANON_BIND        0x0004
-#define ADS_AUTH_SIMPLE_BIND      0x0008
-#define ADS_AUTH_ALLOW_NTLMSSP    0x0010
-#define ADS_AUTH_SASL_SIGN        0x0020
-#define ADS_AUTH_SASL_SEAL        0x0040
-#define ADS_AUTH_SASL_FORCE       0x0080
-#define ADS_AUTH_USER_CREDS       0x0100
-
 enum ldap_server_require_strong_auth {
 	LDAP_SERVER_REQUIRE_STRONG_AUTH_NO,
 	LDAP_SERVER_REQUIRE_STRONG_AUTH_ALLOW_SASL_OVER_TLS,

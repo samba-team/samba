@@ -22,3 +22,12 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     options='--includedir=%s --header --ndr-parser' % topinclude,
                     output_dir='../gen_ndr',
                     generate_tables=False)
+
+absinclude=os.path.join(bld.srcnode.abspath(), 'bin/default/include')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''
+                       ads.idl
+                    ''',
+                    options='--includedir=%s --includedir=%s --header --ndr-parser' % (topinclude, absinclude),
+                    output_dir='../gen_ndr')

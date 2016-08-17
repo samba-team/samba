@@ -58,7 +58,7 @@ static int ads_saslwrap_setup(Sockbuf_IO_Desc *sbiod, void *arg)
 {
 	struct ads_saslwrap *wrap = (struct ads_saslwrap *)arg;
 
-	wrap->sbiod	= sbiod;
+	wrap->sbiod	= (struct Sockbuf_IO_Desc *)sbiod;
 
 	sbiod->sbiod_pvt = wrap;
 
@@ -336,7 +336,7 @@ ADS_STATUS ads_setup_sasl_wrapping(struct ads_saslwrap *wrap, LDAP *ld,
 		return status;
 	}
 
-	wrap->wrap_ops		= ops;
+	wrap->wrap_ops		= discard_const(ops);
 	wrap->wrap_private_data	= private_data;
 
 	return ADS_SUCCESS;

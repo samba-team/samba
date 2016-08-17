@@ -33,6 +33,7 @@
 #include "libcli/security/dom_sid.h"
 #include "source3/libads/sitename_cache.h"
 #include "source3/libads/kerberos_proto.h"
+#include "source3/librpc/gen_ndr/ads.h"
 
 struct idmap_ad_schema_names;
 

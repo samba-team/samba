@@ -663,7 +663,7 @@ retry:
 
 	if (c->opt_password) {
 		use_in_memory_ccache();
-		TALLOC_FREE(ads->auth.password);
+		ADS_TALLOC_CONST_FREE(ads->auth.password);
 		ads->auth.password = talloc_strdup(ads, c->opt_password);
 		if (ads->auth.password == NULL) {
 			TALLOC_FREE(ads);
@@ -671,7 +671,7 @@ retry:
 		}
 	}
 
-	TALLOC_FREE(ads->auth.user_name);
+	ADS_TALLOC_CONST_FREE(ads->auth.user_name);
 	ads->auth.user_name = talloc_strdup(ads, c->opt_user_name);
 	if (ads->auth.user_name == NULL) {
 		TALLOC_FREE(ads);
@@ -704,7 +704,7 @@ retry:
         */
        if ((cp = strchr_m(ads->auth.user_name, '@'))!=0) {
 		*cp++ = '\0';
-		TALLOC_FREE(ads->auth.realm);
+		ADS_TALLOC_CONST_FREE(ads->auth.realm);
 		ads->auth.realm = talloc_asprintf_strupper_m(ads, "%s", cp);
 		if (ads->auth.realm == NULL) {
 			TALLOC_FREE(ads);

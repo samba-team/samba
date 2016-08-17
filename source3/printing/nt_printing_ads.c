@@ -235,7 +235,7 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	TALLOC_FREE(ads->auth.password);
+	ADS_TALLOC_CONST_FREE(ads->auth.password);
 	machine_password = secrets_fetch_machine_password(lp_workgroup(),
 							    NULL, NULL);
 	if (machine_password != NULL) {
@@ -698,7 +698,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	TALLOC_FREE(ads->auth.password);
+	ADS_TALLOC_CONST_FREE(ads->auth.password);
 	machine_password = secrets_fetch_machine_password(lp_workgroup(),
 		NULL, NULL);
 	if (machine_password != NULL) {
@@ -768,7 +768,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	}
 	old_krb5ccname = getenv(KRB5_ENV_CCNAME);
 	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
-	TALLOC_FREE(ads->auth.password);
+	ADS_TALLOC_CONST_FREE(ads->auth.password);
 	machine_password = secrets_fetch_machine_password(lp_workgroup(),
 		NULL, NULL);
 	if (machine_password != NULL) {

@@ -434,7 +434,7 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 		goto out;
 	}
 
-	TALLOC_FREE(ads->auth.user_name);
+	ADS_TALLOC_CONST_FREE(ads->auth.user_name);
 	if (r->in.account) {
 		ads->auth.user_name = talloc_strdup(ads, r->in.account);
 		if (ads->auth.user_name == NULL) {
@@ -454,7 +454,7 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	TALLOC_FREE(ads->auth.password);
+	ADS_TALLOC_CONST_FREE(ads->auth.password);
 	if (r->in.password) {
 		ads->auth.password = talloc_strdup(ads, r->in.password);
 		if (ads->auth.password == NULL) {

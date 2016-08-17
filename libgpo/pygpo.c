@@ -229,9 +229,9 @@ static PyObject* py_ads_connect(ADS *self,
 		PyErr_SetString(PyExc_RuntimeError, "Uninitialized");
 		return NULL;
 	}
-	TALLOC_FREE(self->ads_ptr->auth.user_name);
-	TALLOC_FREE(self->ads_ptr->auth.password);
-	TALLOC_FREE(self->ads_ptr->auth.realm);
+	ADS_TALLOC_CONST_FREE(self->ads_ptr->auth.user_name);
+	ADS_TALLOC_CONST_FREE(self->ads_ptr->auth.password);
+	ADS_TALLOC_CONST_FREE(self->ads_ptr->auth.realm);
 	if (self->cli_creds) {
 		self->ads_ptr->auth.user_name = talloc_strdup(self->ads_ptr,
 			cli_credentials_get_username(self->cli_creds));

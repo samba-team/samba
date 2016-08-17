@@ -1,0 +1,128 @@
+#include "idl_types.h"
+#include "config.h"
+
+/*
+  ads interface definition
+*/
+
+cpp_quote("#include <system/network.h>")
+
+[
+	pointer_default(unique)
+]
+interface ads
+{
+	typedef [public] enum {
+		ADS_SASLWRAP_TYPE_PLAIN = 1,
+		ADS_SASLWRAP_TYPE_SIGN = 2,
+		ADS_SASLWRAP_TYPE_SEAL = 4
+	} ads_saslwrap_type;
+
+	/* ads auth control flags */
+	typedef [public] bitmap {
+		ADS_AUTH_DISABLE_KERBEROS	= 0x0001,
+		ADS_AUTH_NO_BIND		= 0x0002,
+		ADS_AUTH_ANON_BIND		= 0x0004,
+		ADS_AUTH_SIMPLE_BIND		= 0x0008,
+		ADS_AUTH_ALLOW_NTLMSSP		= 0x0010,
+		ADS_AUTH_SASL_SIGN		= 0x0020,
+		ADS_AUTH_SASL_SEAL		= 0x0040,
+		ADS_AUTH_SASL_FORCE		= 0x0080,
+		ADS_AUTH_USER_CREDS		= 0x0100
+	} ads_auth_flags;
+
+	const int ADS_SASL_WRAPPING_IN_MAX_WRAPPED = 0x0FFFFFFF;
+	const int ADS_SASL_WRAPPING_OUT_MAX_WRAPPED = 0x00A00000;
+
+	typedef [nopull,nopush] struct {
+		string realm;
+		string workgroup;
+		string ldap_server;
+		boolean8 gc;     /* Is this a global catalog server? */
+		boolean8 no_fallback; /* Bail if the ldap_server is not available */
+	} ads_server;
+
+	typedef [nopull,nopush] struct {
+		string realm;
+		string password;
+		string user_name;
+		string kdc_server;
+		ads_auth_flags flags;
+		int time_offset;
+		string ccache_name;
+		time_t tgt_expire;
+		time_t tgs_expire;
+		time_t renewable;
+	} ads_auth;
+
+	typedef [nopull,nopush] struct {
+		uint32 flags; /* cldap flags identifying the services. */
+		string realm;
+		string bind_path;
+		string ldap_server_name;
+		string server_site_name;
+		string client_site_name;
+		time_t current_time;
+		string schema_path;
+		string config_path;
+		int ldap_page_size;
+	} ads_config;
+
+	typedef [nopull,nopush] struct {
+		uint32 ofs;
+		uint32 needed;
+		uint32 left;
+		uint32 max_wrapped;
+		uint32 min_wrapped;
+		uint32 size;
+		uint8 *buf;
+	} ads_ldap_buf_in;
+
+	typedef [nopull,nopush] struct {
+		uint32 ofs;
+		uint32 left;
+		uint32 max_unwrapped;
+		uint32 sig_size;
+		uint32 size;
+		uint8 *buf;
+	} ads_ldap_buf_out;
+
+	typedef [nopull,nopush] struct {
+		ads_saslwrap_type wrap_type;
+		[ignore] ads_saslwrap_ops *wrap_ops;
+#ifdef HAVE_LDAP_SASL_WRAPPING
+		[ignore] Sockbuf_IO_Desc *sbiod; /* lowlevel state for LDAP wrapping */
+#endif /* HAVE_LDAP_SASL_WRAPPING */
+		[ignore] TALLOC_CTX *mem_ctx;
+		[ignore] void *wrap_private_data;
+		ads_ldap_buf_in in;
+		ads_ldap_buf_out out;
+	} ads_saslwrap;
+
+	typedef [nopull,nopush] struct {
+		[ignore] ldap *ld;
+		sockaddr_storage ss; /* the ip of the active connection, if any */
+		time_t last_attempt; /* last attempt to reconnect, monotonic clock */
+		int port;
+	} ads_ldap;
+
+	typedef [public,nopull,nopush] struct {
+		/* info needed to find the server */
+		ads_server server;
+
+		/* info needed to authenticate */
+		ads_auth auth;
+
+		/* info derived from the servers config */
+		ads_config config;
+
+#ifdef HAVE_LDAP
+		ads_saslwrap ldap_wrap_data;
+		/* info about the current LDAP connection */
+		ads_ldap ldap;
+#endif /* HAVE_LDAP */
+
+	} ads_struct;
+}
+
+

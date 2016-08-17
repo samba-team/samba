@@ -504,7 +504,6 @@ bld.SAMBA3_LIBRARY('ads',
                           libads/ldap_utils.c
                           libads/ldap_schema.c
                           libads/util.c
-                          libads/ndr.c
                           libads/net_ads_setspn.c
                           ''',
                    deps='''
@@ -520,6 +519,7 @@ bld.SAMBA3_LIBRARY('ads',
                         DCUTIL
                         smbldap
                         trusts_util
+                        NDR_ADS
                         ''',
                    private_library=True)
 

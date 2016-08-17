@@ -33,6 +33,7 @@
 #include "lib/stream/packet.h"
 #include "param/param.h"
 #include "param/loadparm.h"
+#include "librpc/gen_ndr/ads.h"
 
 struct ldap_simple_creds {
 	const char *dn;

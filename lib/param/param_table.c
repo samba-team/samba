@@ -36,6 +36,7 @@
 #include "libds/common/roles.h"
 #include "source4/lib/tls/tls.h"
 #include "auth/credentials/credentials.h"
+#include "source3/librpc/gen_ndr/ads.h"
 
 #ifndef N_
 #define N_(x) x

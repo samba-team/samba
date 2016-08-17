@@ -1,14 +1,13 @@
 #include "idl_types.h"
 
-import "wkssvc.idl", "security.idl", "misc.idl", "netlogon.idl", "ODJ.idl";
+import "wkssvc.idl", "security.idl", "misc.idl", "netlogon.idl", "ODJ.idl", "ads.idl";
 
 /*
   libnetjoin interface definition
 */
 
 [
-	pointer_default(unique),
-	helper("ads.h")
+	pointer_default(unique)
 ]
 interface libnetjoin
 {

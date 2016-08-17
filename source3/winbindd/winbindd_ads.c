@@ -125,8 +125,8 @@ static ADS_STATUS ads_cached_connection_connect(const char *target_realm,
 		goto out;
 	}
 
-	TALLOC_FREE(ads->auth.password);
-	TALLOC_FREE(ads->auth.realm);
+	ADS_TALLOC_CONST_FREE(ads->auth.password);
+	ADS_TALLOC_CONST_FREE(ads->auth.realm);
 
 	ads->auth.renewable = renewable;
 	ads->auth.password = talloc_strdup(ads, password);

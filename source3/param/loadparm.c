@@ -78,6 +78,7 @@
 #include "lib/util/string_wrappers.h"
 #include "auth/credentials/credentials.h"
 #include "source3/lib/substitute.h"
+#include "source3/librpc/gen_ndr/ads.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
