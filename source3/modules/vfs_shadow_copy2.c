@@ -514,7 +514,7 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 	q += 1;
 
 	rest_len = strlen(q);
-	dst_len = (p-name) + rest_len;
+	dst_len = len_before_gmt + rest_len;
 
 	if (priv->config->snapdirseverywhere) {
 		char *insert;
@@ -580,10 +580,10 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 			return false;
 		}
 		if (p > name) {
-			memcpy(stripped, name, p-name);
+			memcpy(stripped, name, len_before_gmt);
 		}
 		if (rest_len > 0) {
-			memcpy(stripped + (p-name), q, rest_len);
+			memcpy(stripped + len_before_gmt, q, rest_len);
 		}
 		stripped[dst_len] = '\0';
 		*pstripped = stripped;
