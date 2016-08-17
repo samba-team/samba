@@ -440,6 +440,79 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
 
         self.assertTrue(found, "Ensure we get the unicodePwd attribute back")
 
+    def test_regular_prefix_map_attid(self):
+        # Request for a regular (non-secret) attid
+        partial_attribute_set = self.get_partial_attribute_set([drsuapi.DRSUAPI_ATTID_name])
+
+        dc_guid_1 = self.ldb_dc1.get_invocation_id()
+        drs, drs_handle = self._ds_bind(self.dnsname_dc1)
+
+        try:
+            pfm = self._samdb_fetch_pfm_and_schi()
+        except KeyError:
+            # On Windows, prefixMap isn't available over LDAP
+            req8 = self._exop_req8(dest_dsa=None,
+                                   invocation_id=dc_guid_1,
+                                   nc_dn_str=self.user,
+                                   exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ)
+            (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+            pfm = ctr.mapping_ctr
+
+
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=dc_guid_1,
+                               nc_dn_str=self.user,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               partial_attribute_set=partial_attribute_set,
+                               mapping_ctr=pfm)
+
+        (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+
+        found = False
+        for attr in ctr.first_object.object.attribute_ctr.attributes:
+            if attr.attid == drsuapi.DRSUAPI_ATTID_name:
+                found = True
+                break
+
+        self.assertTrue(found, "Ensure we get the name attribute back")
+
+        for i, mapping in enumerate(pfm.mappings):
+            # OID: 2.5.4.*
+            # objectClass: 2.5.4.0
+            if mapping.oid.binary_oid == [85, 4]:
+                idx1 = i
+            # OID: 1.2.840.113556.1.4.*
+            # name: 1.2.840.113556.1.4.1
+            elif mapping.oid.binary_oid == [42, 134, 72, 134, 247, 20, 1, 4]:
+                idx2 = i
+
+        (pfm.mappings[idx1].id_prefix,
+         pfm.mappings[idx2].id_prefix) = (pfm.mappings[idx2].id_prefix,
+                                          pfm.mappings[idx1].id_prefix)
+
+        tmp = pfm.mappings
+        tmp[idx1], tmp[idx2] = tmp[idx2], tmp[idx1]
+        pfm.mappings = tmp
+
+        # 1 for name (with new prefix = 0)
+        partial_attribute_set = self.get_partial_attribute_set([1])
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=dc_guid_1,
+                               nc_dn_str=self.user,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               partial_attribute_set=partial_attribute_set,
+                               mapping_ctr=pfm)
+
+        (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+
+        found = False
+        for attr in ctr.first_object.object.attribute_ctr.attributes:
+            if attr.attid == drsuapi.DRSUAPI_ATTID_name:
+                found = True
+                break
+
+        self.assertTrue(found, "Ensure we get the name attribute back")
+
     def _samdb_fetch_pfm_and_schi(self):
         """Fetch prefixMap and schemaInfo stored in SamDB using LDB connection"""
         samdb = self.ldb_dc1
