@@ -1748,9 +1748,23 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 	if (timestamp == (time_t)-1) {
 		goto no_snapshot;
 	}
-	if ((p == name) && (q[0] == '\0')) {
+	if (q[0] == '\0') {
+		/*
+		 * The name consists of only the GMT token or the GMT
+		 * token is at the end of the path. XP seems to send
+		 * @GMT- at the end under certain circumstances even
+		 * with a path prefix.
+		 */
 		if (pstripped != NULL) {
-			stripped = talloc_strdup(mem_ctx, "");
+			if (len_before_gmt > 0) {
+				/*
+				 * There is a slash before
+				 * the @GMT-. Remove it.
+				 */
+				len_before_gmt -= 1;
+			}
+			stripped = talloc_strndup(mem_ctx, name,
+					len_before_gmt);
 			if (stripped == NULL) {
 				return false;
 			}
@@ -1760,6 +1774,10 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 		return true;
 	}
 	if (q[0] != '/') {
+		/*
+		 * It is not a complete path component, i.e. the path
+		 * component continues after the gmt-token.
+		 */
 		goto no_snapshot;
 	}
 	q += 1;
