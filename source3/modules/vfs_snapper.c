@@ -1729,6 +1729,7 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 	char *q;
 	char *stripped;
 	size_t rest_len, dst_len;
+	ptrdiff_t len_before_gmt;
 
 	p = strstr_m(name, "@GMT-");
 	if (p == NULL) {
@@ -1737,6 +1738,7 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 	if ((p > name) && (p[-1] != '/')) {
 		goto no_snapshot;
 	}
+	len_before_gmt = p - name;
 	q = strptime(p, GMT_FORMAT, &tm);
 	if (q == NULL) {
 		goto no_snapshot;
@@ -1763,7 +1765,7 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 	q += 1;
 
 	rest_len = strlen(q);
-	dst_len = (p-name) + rest_len;
+	dst_len = len_before_gmt + rest_len;
 
 	if (pstripped != NULL) {
 		stripped = talloc_array(mem_ctx, char, dst_len+1);
@@ -1772,10 +1774,10 @@ static bool snapper_gmt_strip_snapshot(TALLOC_CTX *mem_ctx,
 			return false;
 		}
 		if (p > name) {
-			memcpy(stripped, name, p-name);
+			memcpy(stripped, name, len_before_gmt);
 		}
 		if (rest_len > 0) {
-			memcpy(stripped + (p-name), q, rest_len);
+			memcpy(stripped + len_before_gmt, q, rest_len);
 		}
 		stripped[dst_len] = '\0';
 		*pstripped = stripped;
