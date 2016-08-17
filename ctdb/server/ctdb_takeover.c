@@ -1080,12 +1080,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
-	if (check_address) {
-		if (ctdb_sys_have_ip(addr)) {
-			DEBUG(DEBUG_ERR,("We are already hosting public address '%s'. setting PNN to ourself:%d\n", ctdb_addr_to_str(addr), ctdb->pnn));
-			vnn->pnn = ctdb->pnn;
-		}
-	}
 
 	for (i=0; vnn->ifaces[i]; i++) {
 		ret = ctdb_add_local_iface(ctdb, vnn->ifaces[i]);
