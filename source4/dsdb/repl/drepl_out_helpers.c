@@ -355,7 +355,8 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
  */
 static NTSTATUS dreplsrv_get_gc_partial_attribute_set(struct dreplsrv_service *service,
 						      TALLOC_CTX *mem_ctx,
-						      struct drsuapi_DsPartialAttributeSet **_pas)
+						      struct drsuapi_DsPartialAttributeSet **_pas,
+						      struct drsuapi_DsReplicaOIDMapping_Ctr **pfm)
 {
 	struct drsuapi_DsPartialAttributeSet *pas;
 	struct dsdb_schema *schema;
@@ -389,6 +390,11 @@ static NTSTATUS dreplsrv_get_gc_partial_attribute_set(struct dreplsrv_service *s
 	}
 
 	*_pas = pas;
+
+	if (pfm != NULL) {
+		dsdb_get_oid_mappings_drsuapi(schema, true, mem_ctx, pfm);
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -483,7 +489,9 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	}
 
 	if (partition->partial_replica) {
-		status = dreplsrv_get_gc_partial_attribute_set(service, r, &pas);
+		status = dreplsrv_get_gc_partial_attribute_set(service, r,
+							       &pas,
+							       &mappings);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,(__location__ ": Failed to construct GC partial attribute set : %s\n", nt_errstr(status)));
 			tevent_req_nterror(req, status);
