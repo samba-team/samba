@@ -1782,6 +1782,20 @@ static int do_allinfo(const char *name)
 		 */
 		return 0;
 	}
+	/*
+	 * In order to get shadow copy data over SMB1 we
+	 * must call twice, once with 'get_names = false'
+	 * to get the size, then again with 'get_names = true'
+	 * to get the data or a Windows server fails to return
+	 * valid info. Samba doesn't have this bug. JRA.
+	 */
+
+	status = cli_shadow_copy_data(talloc_tos(), cli, fnum,
+				      false, &snapshots, &num_snapshots);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_close(cli, fnum);
+		return 0;
+	}
 	status = cli_shadow_copy_data(talloc_tos(), cli, fnum,
 				      true, &snapshots, &num_snapshots);
 	if (!NT_STATUS_IS_OK(status)) {
