@@ -1267,6 +1267,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_ntrename_internal_state *state = NULL;
 	uint8_t additional_flags = 0;
+	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1289,6 +1290,10 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (clistr_is_previous_version_path(fname_src)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
 	bytes = talloc_realloc(state, bytes, uint8_t,
 			talloc_get_size(bytes)+1);
 	if (tevent_req_nomem(bytes, req)) {
@@ -1302,8 +1307,9 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBntrename, additional_flags, 0,
-			      4, state->vwv, talloc_get_size(bytes), bytes);
+	subreq = cli_smb_send(state, ev, cli, SMBntrename, additional_flags,
+			additional_flags2,
+			4, state->vwv, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
