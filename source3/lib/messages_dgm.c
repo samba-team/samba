@@ -20,15 +20,11 @@
 #include "replace.h"
 #include "system/network.h"
 #include "system/filesys.h"
-#include <dirent.h>
-#include "lib/util/data_blob.h"
+#include "system/dir.h"
 #include "lib/util/debug.h"
 #include "lib/unix_msg/unix_msg.h"
-#include "system/filesys.h"
 #include "lib/messages_dgm.h"
-#include "lib/param/param.h"
 #include "poll_funcs/poll_funcs_tevent.h"
-#include "unix_msg/unix_msg.h"
 #include "lib/util/genrand.h"
 
 struct sun_path_buf {
