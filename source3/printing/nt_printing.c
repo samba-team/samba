@@ -952,6 +952,15 @@ WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 						    &r->info.info6->help_file,
 						    r->info.info6->dependent_files,
 						    &r->info.info6->version);
+	case 8:
+		return clean_up_driver_struct_level(mem_ctx, session_info,
+						    r->info.info8->architecture,
+						    &r->info.info8->driver_path,
+						    &r->info.info8->data_file,
+						    &r->info.info8->config_file,
+						    &r->info.info8->help_file,
+						    r->info.info8->dependent_files,
+						    &r->info.info8->version);
 	default:
 		return WERR_NOT_SUPPORTED;
 	}
@@ -968,6 +977,23 @@ static void convert_level_6_to_level3(struct spoolss_AddDriverInfo3 *dst,
 
 	dst->driver_name	= src->driver_name;
 	dst->architecture 	= src->architecture;
+	dst->driver_path	= src->driver_path;
+	dst->data_file		= src->data_file;
+	dst->config_file	= src->config_file;
+	dst->help_file		= src->help_file;
+	dst->monitor_name	= src->monitor_name;
+	dst->default_datatype	= src->default_datatype;
+	dst->_ndr_size_dependent_files = src->_ndr_size_dependent_files;
+	dst->dependent_files	= src->dependent_files;
+}
+
+static void convert_level_8_to_level3(struct spoolss_AddDriverInfo3 *dst,
+				      const struct spoolss_AddDriverInfo8 *src)
+{
+	dst->version		= src->version;
+
+	dst->driver_name	= src->driver_name;
+	dst->architecture	= src->architecture;
 	dst->driver_path	= src->driver_path;
 	dst->data_file		= src->data_file;
 	dst->config_file	= src->config_file;
@@ -1073,6 +1099,10 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 		break;
 	case 6:
 		convert_level_6_to_level3(&converted_driver, r->info.info6);
+		driver = &converted_driver;
+		break;
+	case 8:
+		convert_level_8_to_level3(&converted_driver, r->info.info8);
 		driver = &converted_driver;
 		break;
 	default:

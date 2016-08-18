@@ -8466,10 +8466,9 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	}
 
 	/* FIXME */
-	if (r->in.info_ctr->level != 3 && r->in.info_ctr->level != 6) {
-		/* Clever hack from Martin Zielinski <mz@seh.de>
-		 * to allow downgrade from level 8 (Vista).
-		 */
+	if (r->in.info_ctr->level != 3 &&
+	    r->in.info_ctr->level != 6 &&
+	    r->in.info_ctr->level != 8) {
 		DEBUG(0,("%s: level %d not yet implemented\n", fn,
 			r->in.info_ctr->level));
 		return WERR_UNKNOWN_LEVEL;
