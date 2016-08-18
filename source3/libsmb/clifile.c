@@ -1943,6 +1943,7 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 	uint16_t *vwv;
 	uint8_t *bytes;
 	size_t converted_len;
+	uint16_t additional_flags2 = 0;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_ntcreate1_state);
 	if (req == NULL) {
@@ -1977,6 +1978,10 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 				   fname, strlen(fname)+1,
 				   &converted_len);
 
+	if (clistr_is_previous_version_path(fname)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
 	/* sigh. this copes with broken netapp filer behaviour */
 	bytes = smb_bytes_push_str(bytes, smbXcli_conn_use_unicode(cli->conn), "", 1, NULL);
 
@@ -1986,8 +1991,9 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 
 	SSVAL(vwv+2, 1, converted_len);
 
-	subreq = cli_smb_send(state, ev, cli, SMBntcreateX, 0, 0, 24, vwv,
-			      talloc_get_size(bytes), bytes);
+	subreq = cli_smb_send(state, ev, cli, SMBntcreateX, 0,
+			additional_flags2, 24, vwv,
+			talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
