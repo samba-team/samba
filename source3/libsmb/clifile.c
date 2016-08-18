@@ -2440,6 +2440,7 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 	unsigned openfn;
 	unsigned accessmode;
 	uint8_t additional_flags;
+	uint16_t additional_flags2 = 0;
 	uint8_t *bytes;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_openx_state);
@@ -2507,11 +2508,15 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (clistr_is_previous_version_path(fname)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
 	state->bytes.iov_base = (void *)bytes;
 	state->bytes.iov_len = talloc_get_size(bytes);
 
 	subreq = cli_smb_req_create(state, ev, cli, SMBopenX, additional_flags,
-				    0, 15, state->vwv, 1, &state->bytes);
+			additional_flags2, 15, state->vwv, 1, &state->bytes);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
