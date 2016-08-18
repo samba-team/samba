@@ -4023,6 +4023,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_setatr_state *state = NULL;
 	uint8_t additional_flags = 0;
+	uint16_t additional_flags2 = 0;
 	uint8_t *bytes = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_setatr_state);
@@ -4056,8 +4057,13 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBsetatr, additional_flags, 0,
-			      8, state->vwv, talloc_get_size(bytes), bytes);
+	if (clistr_is_previous_version_path(fname)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
+	subreq = cli_smb_send(state, ev, cli, SMBsetatr, additional_flags,
+			additional_flags2,
+			8, state->vwv, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
