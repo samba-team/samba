@@ -6043,29 +6043,49 @@ NTSTATUS cli_shadow_copy_data_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 {
 	struct cli_shadow_copy_data_state *state = tevent_req_data(
 		req, struct cli_shadow_copy_data_state);
-	char **names;
-	int i, num_names;
+	char **names = NULL;
+	uint32_t i, num_names;
 	uint32_t dlength;
+	uint8_t *endp = NULL;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+
+	if (state->num_data < 16) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	num_names = IVAL(state->data, 4);
 	dlength = IVAL(state->data, 8);
 
+	if (num_names > 0x7FFFFFFF) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	if (!state->get_names) {
-		*pnum_names = num_names;
+		*pnum_names = (int)num_names;
 		return NT_STATUS_OK;
 	}
 
-	if (dlength+12 > state->num_data) {
+	if (dlength + 12 < 12) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
+	if (dlength + 12 > state->num_data) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	if (state->num_data + (2 * sizeof(SHADOW_COPY_LABEL)) <
+			state->num_data) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
 	names = talloc_array(mem_ctx, char *, num_names);
 	if (names == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	endp = state->data + state->num_data;
 
 	for (i=0; i<num_names; i++) {
 		bool ret;
@@ -6073,6 +6093,11 @@ NTSTATUS cli_shadow_copy_data_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		size_t converted_size;
 
 		src = state->data + 12 + i * 2 * sizeof(SHADOW_COPY_LABEL);
+
+		if (src + (2 * sizeof(SHADOW_COPY_LABEL)) > endp) {
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+
 		ret = convert_string_talloc(
 			names, CH_UTF16LE, CH_UNIX,
 			src, 2 * sizeof(SHADOW_COPY_LABEL),
@@ -6082,7 +6107,7 @@ NTSTATUS cli_shadow_copy_data_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_NETWORK_RESPONSE;
 		}
 	}
-	*pnum_names = num_names;
+	*pnum_names = (int)num_names;
 	*pnames = names;
 	return NT_STATUS_OK;
 }
