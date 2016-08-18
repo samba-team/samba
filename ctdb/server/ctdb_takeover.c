@@ -1539,16 +1539,9 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	/* Each of the later stages (RELEASE_IP, TAKEOVER_IP,
-	 * IPREALLOCATED) notionally has a timeout of TakeoverTimeout
-	 * seconds.  However, RELEASE_IP can take longer due to TCP
-	 * connection killing, so sometimes needs more time.
-	 * Therefore, use a cumulative timeout of TakeoverTimeout * 3
-	 * seconds across all 3 stages.  No explicit expiry checks are
-	 * needed before each stage because tevent is smart enough to
-	 * fire the timeouts even if they are in the past.  Initialise
-	 * this here to cope with early jumps to IPREALLOCATED. */
-	timeout = timeval_current_ofs(3 * ctdb->tunable.takeover_timeout,0);
+	/* Default timeout for early jump to IPREALLOCATED.  See below
+	 * for explanation of 3 times... */
+	timeout = timeval_current_ofs(3 * ctdb->tunable.takeover_timeout, 0);
 
 	/*
 	 * ip failover is completely disabled, just send out the 
@@ -1621,6 +1614,20 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 	async_data->callback_data = takeover_data;
 
 	ZERO_STRUCT(ip); /* Avoid valgrind warnings for union */
+
+	/* Each of the following stages (RELEASE_IP, TAKEOVER_IP,
+	 * IPREALLOCATED) notionally has a timeout of TakeoverTimeout
+	 * seconds.  However, RELEASE_IP can take longer due to TCP
+	 * connection killing, so sometimes needs more time.
+	 * Therefore, use a cumulative timeout of TakeoverTimeout * 3
+	 * seconds across all 3 stages.  No explicit expiry checks are
+	 * needed before each stage because tevent is smart enough to
+	 * fire the timeouts even if they are in the past.  Initialise
+	 * this here so it explicitly covers the stages we're
+	 * interested in but, in particular, not the time taken by the
+	 * ipalloc().
+	 */
+	timeout = timeval_current_ofs(3 * ctdb->tunable.takeover_timeout, 0);
 
 	/* Send a RELEASE_IP to all nodes that should not be hosting
 	 * each IP.  For each IP, all but one of these will be
