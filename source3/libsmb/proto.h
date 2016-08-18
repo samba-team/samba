@@ -873,7 +873,7 @@ size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 
 struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct cli_state *cli, uint8_t cmd,
+	struct cli_state *cli, uint16_t additional_flags2, uint8_t cmd,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 	uint8_t *param, uint32_t num_param, uint32_t max_param,

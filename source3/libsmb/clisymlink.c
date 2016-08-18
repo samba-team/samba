@@ -108,7 +108,7 @@ static void cli_symlink_create_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = cli_trans_send(state, state->ev, state->cli, SMBnttrans,
+	subreq = cli_trans_send(state, state->ev, state->cli, 0, SMBnttrans,
 				NULL, -1, /* name, fid */
 				NT_TRANSACT_IOCTL, 0,
 				state->setup, 4, 0, /* setup */
@@ -286,7 +286,7 @@ static void cli_readlink_opened(struct tevent_req *subreq)
 	SCVAL(state->setup, 6, 1); /* IsFcntl */
 	SCVAL(state->setup, 7, 0); /* IsFlags */
 
-	subreq = cli_trans_send(state, state->ev, state->cli, SMBnttrans,
+	subreq = cli_trans_send(state, state->ev, state->cli, 0, SMBnttrans,
 				NULL, -1, /* name, fid */
 				NT_TRANSACT_IOCTL, 0,
 				state->setup, 4, 0, /* setup */

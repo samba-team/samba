@@ -61,7 +61,7 @@ struct tevent_req *cli_unix_extensions_version_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(state->param, 0, SMB_QUERY_CIFS_UNIX_INFO);
 
-	subreq = cli_trans_send(state, ev, cli, SMBtrans2,
+	subreq = cli_trans_send(state, ev, cli, 0, SMBtrans2,
 				NULL, 0, 0, 0,
 				state->setup, 1, 0,
 				state->param, 2, 0,
@@ -198,7 +198,7 @@ struct tevent_req *cli_set_unix_extensions_capabilities_send(
 	SIVAL(state->data, 4, caplow);
 	SIVAL(state->data, 8, caphigh);
 
-	subreq = cli_trans_send(state, ev, cli, SMBtrans2,
+	subreq = cli_trans_send(state, ev, cli, 0, SMBtrans2,
 				NULL, 0, 0, 0,
 				state->setup, 1, 0,
 				state->param, 4, 0,
@@ -284,7 +284,7 @@ struct tevent_req *cli_get_fs_attr_info_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->setup+0, 0, TRANSACT2_QFSINFO);
 	SSVAL(state->param+0, 0, SMB_QUERY_FS_ATTRIBUTE_INFO);
 
-	subreq = cli_trans_send(state, ev, cli, SMBtrans2,
+	subreq = cli_trans_send(state, ev, cli, 0, SMBtrans2,
 				NULL, 0, 0, 0,
 				state->setup, 1, 0,
 				state->param, 2, 0,
@@ -815,6 +815,7 @@ struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_trans_send(state,                  /* mem ctx. */
 				ev,                     /* event ctx. */
 				cli,                    /* cli_state. */
+				0,			/* additional_flags2 */
 				SMBtrans2,              /* cmd. */
 				NULL,                   /* pipe name. */
 				-1,                     /* fid. */
