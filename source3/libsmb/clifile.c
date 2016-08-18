@@ -6008,7 +6008,8 @@ struct tevent_req *cli_shadow_copy_data_send(TALLOC_CTX *mem_ctx,
 
 	subreq = cli_trans_send(
 		state, ev, cli, 0, SMBnttrans, NULL, 0, NT_TRANSACT_IOCTL, 0,
-		state->setup, ARRAY_SIZE(state->setup), 0,
+		state->setup, ARRAY_SIZE(state->setup),
+		ARRAY_SIZE(state->setup),
 		NULL, 0, 0,
 		NULL, 0, ret_size);
 	if (tevent_req_nomem(subreq, req)) {
