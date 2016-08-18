@@ -120,11 +120,14 @@ NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
 		pkt.u.fault.context_id = 0;
 		break;
 	}
-	if (fault_code == DCERPC_NCA_S_PROTO_ERROR) {
+	switch (fault_code) {
+	case DCERPC_NCA_S_PROTO_ERROR:
+	case DCERPC_NCA_S_UNKNOWN_IF:
 		/*
 		 * context_id = 0 is forced on protocol errors.
 		 */
 		pkt.u.fault.context_id = 0;
+		break;
 	}
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.flags = 0;

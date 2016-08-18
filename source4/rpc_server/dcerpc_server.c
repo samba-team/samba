@@ -1254,7 +1254,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	context = dcesrv_find_context(call->conn, call->pkt.u.request.context_id);
 	if (context == NULL) {
-		return dcesrv_fault(call, DCERPC_FAULT_UNK_IF);
+		return dcesrv_fault_with_flags(call, DCERPC_NCA_S_UNKNOWN_IF,
+					DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 	}
 
 	switch (call->conn->auth_state.auth_level) {
