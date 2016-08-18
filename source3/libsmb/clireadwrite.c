@@ -162,7 +162,7 @@ struct tevent_req *cli_read_andx_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	subreq = cli_smb_req_create(state, ev, cli, SMBreadX, 0, wct,
+	subreq = cli_smb_req_create(state, ev, cli, SMBreadX, 0, 0, wct,
 				    state->vwv, 0, NULL);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);
@@ -863,7 +863,7 @@ struct tevent_req *cli_write_andx_create(TALLOC_CTX *mem_ctx,
 	state->iov[1].iov_base = discard_const_p(void, buf);
 	state->iov[1].iov_len = state->size;
 
-	subreq = cli_smb_req_create(state, ev, cli, SMBwriteX, 0, wct, vwv,
+	subreq = cli_smb_req_create(state, ev, cli, SMBwriteX, 0, 0, wct, vwv,
 				    2, state->iov);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

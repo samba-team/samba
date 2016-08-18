@@ -54,13 +54,13 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 				      struct cli_state *cli,
 				      uint8_t smb_command,
 				      uint8_t additional_flags,
+				      uint16_t additional_flags2,
 				      uint8_t wct, uint16_t *vwv,
 				      int iov_count,
 				      struct iovec *bytes_iov)
 {
 	struct cli_smb_req_state *state;
 	uint8_t clear_flags = 0;
-	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
 
 	state = talloc_zero(mem_ctx, struct cli_smb_req_state);

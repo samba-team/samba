@@ -386,8 +386,8 @@ struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
 	state->bytes.iov_base = (void *)bytes;
 	state->bytes.iov_len = talloc_get_size(bytes);
 
-	subreq = cli_smb_req_create(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
-				    1, &state->bytes);
+	subreq = cli_smb_req_create(state, ev, cli, SMBsesssetupX, 0, 0, 13,
+			vwv, 1, &state->bytes);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
@@ -2549,7 +2549,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 	state->bytes.iov_base = (void *)bytes;
 	state->bytes.iov_len = talloc_get_size(bytes);
 
-	subreq = cli_smb_req_create(state, ev, cli, SMBtconX, 0, 4, vwv,
+	subreq = cli_smb_req_create(state, ev, cli, SMBtconX, 0, 0, 4, vwv,
 				    1, &state->bytes);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);

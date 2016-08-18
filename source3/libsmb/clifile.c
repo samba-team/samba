@@ -2464,7 +2464,7 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 	state->bytes.iov_len = talloc_get_size(bytes);
 
 	subreq = cli_smb_req_create(state, ev, cli, SMBopenX, additional_flags,
-				    15, state->vwv, 1, &state->bytes);
+				    0, 15, state->vwv, 1, &state->bytes);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
@@ -2726,8 +2726,8 @@ struct tevent_req *cli_close_create(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv+0, 0, fnum);
 	SIVALS(state->vwv+1, 0, -1);
 
-	subreq = cli_smb_req_create(state, ev, cli, SMBclose, 0, 3, state->vwv,
-				    0, NULL);
+	subreq = cli_smb_req_create(state, ev, cli, SMBclose, 0, 0,
+				3, state->vwv, 0, NULL);
 	if (subreq == NULL) {
 		TALLOC_FREE(req);
 		return NULL;
