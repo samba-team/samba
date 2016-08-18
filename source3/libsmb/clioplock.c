@@ -146,7 +146,7 @@ struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
 	SSVAL(state->vwv+6, 0, 0); /* unlockcount */
 	SSVAL(state->vwv+7, 0, 0); /* lockcount */
 
-	subreq = cli_smb_send(state, ev, cli, SMBlockingX, 0, 8, state->vwv,
+	subreq = cli_smb_send(state, ev, cli, SMBlockingX, 0, 0, 8, state->vwv,
 			      0, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

@@ -204,7 +204,7 @@ static struct tevent_req *cli_session_setup_lanman2_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 10, vwv,
+	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 0, 10, vwv,
 			      talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -569,7 +569,7 @@ static struct tevent_req *cli_session_setup_plain_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
+	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 0, 13, vwv,
 			      talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -880,7 +880,7 @@ static struct tevent_req *cli_session_setup_nt1_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 13, vwv,
+	subreq = cli_smb_send(state, ev, cli, SMBsesssetupX, 0, 0, 13, vwv,
 			      talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -1111,7 +1111,7 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 	if (state->buf == NULL) {
 		return false;
 	}
-	subreq = cli_smb_send(state, state->ev, state->cli, SMBsesssetupX, 0,
+	subreq = cli_smb_send(state, state->ev, state->cli, SMBsesssetupX, 0, 0,
 			      12, state->vwv,
 			      talloc_get_size(state->buf), state->buf);
 	if (subreq == NULL) {
@@ -2331,7 +2331,7 @@ static struct tevent_req *cli_ulogoff_send(TALLOC_CTX *mem_ctx,
 	SCVAL(state->vwv+1, 0, 0);
 	SSVAL(state->vwv+2, 0, 0);
 
-	subreq = cli_smb_send(state, ev, cli, SMBulogoffX, 0, 2, state->vwv,
+	subreq = cli_smb_send(state, ev, cli, SMBulogoffX, 0, 0, 2, state->vwv,
 			      0, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -2877,7 +2877,7 @@ static struct tevent_req *cli_tdis_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	subreq = cli_smb_send(state, ev, cli, SMBtdis, 0, 0, NULL, 0, NULL);
+	subreq = cli_smb_send(state, ev, cli, SMBtdis, 0, 0, 0, NULL, 0, NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -3594,7 +3594,7 @@ static struct tevent_req *cli_raw_tcon_send(
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, ev, cli, SMBtcon, 0, 0, NULL,
+	subreq = cli_smb_send(state, ev, cli, SMBtcon, 0, 0, 0, NULL,
 			      talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
