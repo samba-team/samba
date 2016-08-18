@@ -2448,7 +2448,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_join_set_error_string(mem_ctx, r,
-				"failed to find DC for domain %s",
+				"failed to find DC for domain %s - %s",
 				r->in.domain_name,
 				get_friendly_nt_error_msg(status));
 			return WERR_DCNOTFOUND;
@@ -2712,7 +2712,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
-				"failed to find DC for domain %s",
+				"failed to find DC for domain %s - %s",
 				r->in.domain_name,
 				get_friendly_nt_error_msg(status));
 			return WERR_DCNOTFOUND;
