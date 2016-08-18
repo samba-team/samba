@@ -10365,7 +10365,6 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 			switch (levels[i]) {
 			case 2:
 			case 4:
-			case 8:
 				torture_comment(tctx, "skipping level %d against samba\n", levels[i]);
 				continue;
 			default:
@@ -10409,8 +10408,6 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 			switch (levels[i]) {
 			case 2:
 			case 4:
-			case 8:
-				torture_comment(tctx, "skipping level %d against samba\n", levels[i]);
 				continue;
 			default:
 				break;
