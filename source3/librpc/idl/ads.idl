@@ -5,6 +5,8 @@
   ads interface definition
 */
 
+import "nbt.idl";
+
 cpp_quote("#include <system/network.h>")
 
 [
@@ -56,7 +58,7 @@ interface ads
 	} ads_auth;
 
 	typedef [nopull,nopush] struct {
-		uint32 flags; /* cldap flags identifying the services. */
+		nbt_server_type flags; /* cldap flags identifying the services. */
 		string realm;
 		string bind_path;
 		string ldap_server_name;

@@ -43,6 +43,6 @@ bld.SAMBA3_SUBSYSTEM('NDR_PERFCOUNT',
 
 bld.SAMBA3_SUBSYSTEM('NDR_ADS',
 	source='gen_ndr/ndr_ads.c ndr/ndr_ads.c',
-	public_deps='ndr'
+	public_deps='ndr NDR_NBT'
 	)
 
