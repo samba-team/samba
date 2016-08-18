@@ -2241,6 +2241,7 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 	size_t secdesc_len;
 	NTSTATUS status;
 	size_t converted_len;
+	uint16_t additional_flags2 = 0;
 
 	req = tevent_req_create(mem_ctx,
 				&state, struct cli_nttrans_create_state);
@@ -2281,6 +2282,10 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (clistr_is_previous_version_path(fname)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
 	SIVAL(param, 0, CreatFlags);
 	SIVAL(param, 4, 0x0);	/* RootDirectoryFid */
 	SIVAL(param, 8, DesiredAccess);
@@ -2298,7 +2303,7 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 	SCVAL(param, 52, SecurityFlags);
 
 	subreq = cli_trans_send(state, ev, cli,
-				0, /* additional_flags2 */
+				additional_flags2, /* additional_flags2 */
 				SMBnttrans,
 				NULL, -1, /* name, fid */
 				NT_TRANSACT_CREATE, 0,
