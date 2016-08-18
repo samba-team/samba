@@ -50,7 +50,7 @@ static int cli_trans_state_ptr_destructor(struct cli_trans_state **ptr)
 
 struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-	struct cli_state *cli, uint8_t cmd,
+	struct cli_state *cli, uint16_t additional_flags2, uint8_t cmd,
 	const char *pipe_name, uint16_t fid, uint16_t function, int flags,
 	uint16_t *setup, uint8_t num_setup, uint8_t max_setup,
 	uint8_t *param, uint32_t num_param, uint32_t max_param,
@@ -59,7 +59,6 @@ struct tevent_req *cli_trans_send(
 	struct cli_trans_state *state;
 	uint8_t additional_flags = 0;
 	uint8_t clear_flags = 0;
-	uint16_t additional_flags2 = 0;
 	uint16_t clear_flags2 = 0;
 
 	state = talloc_zero(mem_ctx, struct cli_trans_state);

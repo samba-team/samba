@@ -200,6 +200,7 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 		state,			/* mem ctx. */
 		ev,			/* event ctx. */
 		cli,			/* cli_state. */
+		0,			/* additional_flags2 */
 		SMBtrans2,		/* cmd. */
 		NULL,			/* pipe name. */
 		-1,			/* fid. */
@@ -1809,6 +1810,7 @@ struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_trans_send(state,			/* mem ctx. */
 				ev,			/* event ctx. */
 				cli,			/* cli_state. */
+				0,			/* additional_flags2 */
 				SMBtrans2,		/* cmd. */
 				NULL,			/* pipe name. */
 				-1,			/* fid. */
@@ -2253,7 +2255,9 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 	SIVAL(param, 48, 0x02); /* ImpersonationLevel */
 	SCVAL(param, 52, SecurityFlags);
 
-	subreq = cli_trans_send(state, ev, cli, SMBnttrans,
+	subreq = cli_trans_send(state, ev, cli,
+				0, /* additional_flags2 */
+				SMBnttrans,
 				NULL, -1, /* name, fid */
 				NT_TRANSACT_CREATE, 0,
 				NULL, 0, 0, /* setup */
@@ -2860,6 +2864,7 @@ struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_trans_send(state,			/* mem ctx. */
 				ev,			/* event ctx. */
 				cli,			/* cli_state. */
+				0,			/* additional_flags2 */
 				SMBtrans2,		/* cmd. */
 				NULL,			/* pipe name. */
 				-1,			/* fid. */
@@ -3344,6 +3349,7 @@ static struct tevent_req *cli_posix_lock_internal_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_trans_send(state,                  /* mem ctx. */
 				ev,                     /* event ctx. */
 				cli,                    /* cli_state. */
+				0,			/* additional_flags2 */
 				SMBtrans2,              /* cmd. */
 				NULL,                   /* pipe name. */
 				-1,                     /* fid. */
@@ -5017,6 +5023,7 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 	subreq = cli_trans_send(state,			/* mem ctx. */
 				ev,			/* event ctx. */
 				cli,			/* cli_state. */
+				0,			/* additional_flags2 */
 				SMBtrans2,		/* cmd. */
 				NULL,			/* pipe name. */
 				-1,			/* fid. */
@@ -5372,6 +5379,7 @@ struct tevent_req *cli_notify_send(TALLOC_CTX *mem_ctx,
 		state,			/* mem ctx. */
 		ev,			/* event ctx. */
 		cli,			/* cli_state. */
+		0,			/* additional_flags2 */
 		SMBnttrans,		/* cmd. */
 		NULL,			/* pipe name. */
 		-1,			/* fid. */
@@ -5561,6 +5569,7 @@ struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 		state,			/* mem ctx. */
 		ev,			/* event ctx. */
 		cli,			/* cli_state. */
+		0,			/* additional_flags2 */
 		SMBtrans2,		/* cmd. */
 		NULL,			/* pipe name. */
 		-1,			/* fid. */
@@ -5691,6 +5700,7 @@ struct tevent_req *cli_qfileinfo_send(TALLOC_CTX *mem_ctx,
 		state,			/* mem ctx. */
 		ev,			/* event ctx. */
 		cli,			/* cli_state. */
+		0,			/* additional_flags2 */
 		SMBtrans2,		/* cmd. */
 		NULL,			/* pipe name. */
 		-1,			/* fid. */
@@ -5906,7 +5916,7 @@ struct tevent_req *cli_shadow_copy_data_send(TALLOC_CTX *mem_ctx,
 	SCVAL(state->setup + 3, 1, 0); /* compfilter, isFlags (WSSP) */
 
 	subreq = cli_trans_send(
-		state, ev, cli, SMBnttrans, NULL, 0, NT_TRANSACT_IOCTL, 0,
+		state, ev, cli, 0, SMBnttrans, NULL, 0, NT_TRANSACT_IOCTL, 0,
 		state->setup, ARRAY_SIZE(state->setup), 0,
 		NULL, 0, 0,
 		NULL, 0, ret_size);

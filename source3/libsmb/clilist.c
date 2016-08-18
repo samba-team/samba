@@ -600,7 +600,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	}
 	param_len = talloc_get_size(state->param);
 
-	subreq = cli_trans_send(state, state->ev, state->cli,
+	subreq = cli_trans_send(state, state->ev, state->cli, 0,
 				SMBtrans2, NULL, -1, 0, 0,
 				state->setup, 1, 0,
 				state->param, param_len, 10,
@@ -785,7 +785,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	}
 	param_len = talloc_get_size(state->param);
 
-	subreq = cli_trans_send(state, state->ev, state->cli,
+	subreq = cli_trans_send(state, state->ev, state->cli, 0,
 				SMBtrans2, NULL, -1, 0, 0,
 				state->setup, 1, 0,
 				state->param, param_len, 10,
