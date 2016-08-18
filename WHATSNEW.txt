@@ -122,8 +122,11 @@ restored with the original SID and GUID still in place.
 Multiple DNS Forwarders on the AD DC
 ------------------------------------
 
-Multiple DNS forwarders are now supported on the AD DC, allowing
-Samba to fall back between two different DNS servers for forwarded queries.
+Previously, the Samba internal DNS server supported only one DNS forwarder.
+The "dns forwarder" option has been enhanced and now supports a space-separated
+list of multiple DNS server IP addresses. As a result, Samba is now able to
+fall back to alternative DNS servers. In case that a DNS query to the first
+server timed out, it is sent to the next DNS server listed in the option.
 
 Password quality plugin support in the AD DC
 --------------------------------------------
