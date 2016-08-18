@@ -173,6 +173,7 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_setpathinfo_state *state;
+	uint16_t additional_flags2 = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_setpathinfo_state);
@@ -196,11 +197,16 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (clistr_is_previous_version_path(path) &&
+			!INFO_LEVEL_IS_UNIX(level)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
 	subreq = cli_trans_send(
 		state,			/* mem ctx. */
 		ev,			/* event ctx. */
 		cli,			/* cli_state. */
-		0,			/* additional_flags2 */
+		additional_flags2,	/* additional_flags2 */
 		SMBtrans2,		/* cmd. */
 		NULL,			/* pipe name. */
 		-1,			/* fid. */
