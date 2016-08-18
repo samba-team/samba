@@ -4672,6 +4672,15 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 		memcpy(p+4+ea_namelen+1, ea_val, ea_len);
 	}
 
+	/*
+	 * FIXME - if we want to do previous version path
+	 * processing on an EA set call we need to turn this
+	 * into calls to cli_trans_send()/cli_trans_recv()
+	 * with a temporary event context, as cli_trans_send()
+	 * have access to the additional_flags2 needed to
+	 * send @GMT- paths. JRA.
+	 */
+
 	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, -1, 0, 0,
 			   setup, 1, 0,
 			   param, param_len, 2,
