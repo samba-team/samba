@@ -557,6 +557,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_list_trans_state *state;
 	size_t param_len;
+	uint16_t additional_flags2 = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_list_trans_state);
@@ -598,9 +599,14 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	if (clistr_is_previous_version_path(state->mask)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
 	param_len = talloc_get_size(state->param);
 
-	subreq = cli_trans_send(state, state->ev, state->cli, 0,
+	subreq = cli_trans_send(state, state->ev, state->cli, additional_flags2,
 				SMBtrans2, NULL, -1, 0, 0,
 				state->setup, 1, 0,
 				state->param, param_len, 10,
@@ -636,6 +642,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	DATA_BLOB last_name_raw;
 	struct file_info *finfo = NULL;
 	size_t param_len;
+	uint16_t additional_flags2 = 0;
 
 	min_param = (state->first ? 6 : 4);
 
@@ -785,7 +792,11 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	}
 	param_len = talloc_get_size(state->param);
 
-	subreq = cli_trans_send(state, state->ev, state->cli, 0,
+	if (clistr_is_previous_version_path(state->mask)) {
+		additional_flags2 = FLAGS2_REPARSE_PATH;
+	}
+
+	subreq = cli_trans_send(state, state->ev, state->cli, additional_flags2,
 				SMBtrans2, NULL, -1, 0, 0,
 				state->setup, 1, 0,
 				state->param, param_len, 10,
