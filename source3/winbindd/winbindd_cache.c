@@ -111,6 +111,15 @@ void (*smb_panic_fn)(const char *const why) = smb_panic;
 
 static struct winbind_cache *wcache;
 
+static char *wcache_path(void)
+{
+	/*
+	 * Data needs to be kept persistent in state directory for
+	 * running with "winbindd offline logon".
+	 */
+	return state_path("winbindd_cache.tdb");
+}
+
 /* get the winbind_cache structure */
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
@@ -3195,7 +3204,7 @@ bool init_wcache(void)
 	if (wcache->tdb != NULL)
 		return true;
 
-	db_path = state_path("winbindd_cache.tdb");
+	db_path = wcache_path();
 	if (db_path == NULL) {
 		return false;
 	}
@@ -3247,7 +3256,7 @@ bool initialize_winbindd_cache(void)
 		tdb_close(wcache->tdb);
 		wcache->tdb = NULL;
 
-		db_path = state_path("winbindd_cache.tdb");
+		db_path = wcache_path();
 		if (db_path == NULL) {
 			return false;
 		}
@@ -3384,7 +3393,7 @@ void wcache_flush_cache(void)
 		return;
 	}
 
-	db_path = state_path("winbindd_cache.tdb");
+	db_path = wcache_path();
 	if (db_path == NULL) {
 		return;
 	}
@@ -4281,7 +4290,7 @@ int winbindd_validate_cache(void)
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
 
-	tdb_path = state_path("winbindd_cache.tdb");
+	tdb_path = wcache_path();
 	if (tdb_path == NULL) {
 		goto done;
 	}
@@ -4352,7 +4361,7 @@ int winbindd_validate_cache_nobackup(void)
 	DEBUG(10, ("winbindd_validate_cache: replacing panic function\n"));
 	smb_panic_fn = validate_panic;
 
-	tdb_path = state_path("winbindd_cache.tdb");
+	tdb_path = wcache_path();
 	if (tdb_path == NULL) {
 		goto err_panic_restore;
 	}
