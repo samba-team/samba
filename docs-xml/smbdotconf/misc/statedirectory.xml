@@ -13,7 +13,7 @@
 	</para>
 
 	<para> This option specifies the directory where TDB files containing
-	persistent data will be stored.
+	important persistent data will be stored.
 	</para>
 </description>
 

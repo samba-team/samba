@@ -14,6 +14,10 @@
 		Note: This option can not be set inside registry
 		configurations.
 	</para>
+	<para>The files placed in this directory are not required
+	across service restarts and can be safely placed on volatile
+	storage (e.g. tmpfs in Linux)</para>
+
 </description>
 
 <value type="default">&pathconfig.LOCKDIR;</value>

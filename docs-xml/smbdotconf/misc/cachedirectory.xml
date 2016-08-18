@@ -12,8 +12,11 @@
 	<parameter moreinfo="none">cache directory</parameter> options.
 	</para>
 
-	<para> This option specifies the directory where TDB files containing
-	non-persistent data will be stored.
+	<para>This option specifies the directory for storing TDB
+	files containing non-persistent data that will be kept across
+	service restarts. The directory should be placed on persistent
+	storage, but the data can be safely deleted by an
+	administrator.
 	</para>
 </description>
 
