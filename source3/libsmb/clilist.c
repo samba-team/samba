@@ -334,8 +334,8 @@ static struct tevent_req *cli_list_old_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = cli_smb_send(state, state->ev, state->cli, SMBsearch,
-			      0, 2, state->vwv, talloc_get_size(bytes), bytes);
+	subreq = cli_smb_send(state, state->ev, state->cli, SMBsearch, 0, 0,
+			2, state->vwv, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -437,7 +437,7 @@ static void cli_list_old_done(struct tevent_req *subreq)
 	if (tevent_req_nomem(bytes, req)) {
 		return;
 	}
-	subreq = cli_smb_send(state, state->ev, state->cli, cmd, 0,
+	subreq = cli_smb_send(state, state->ev, state->cli, cmd, 0, 0,
 			      2, state->vwv, talloc_get_size(bytes), bytes);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

@@ -32,7 +32,9 @@ struct tevent_req *cli_smb_req_create(TALLOC_CTX *mem_ctx,
 				      struct iovec *bytes_iov);
 struct tevent_req *cli_smb_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct cli_state *cli,
-				uint8_t smb_command, uint8_t additional_flags,
+				uint8_t smb_command,
+				uint8_t additional_flags,
+				uint16_t additional_flags2,
 				uint8_t wct, uint16_t *vwv,
 				uint32_t num_bytes,
 				const uint8_t *bytes);

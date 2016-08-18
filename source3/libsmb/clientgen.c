@@ -592,7 +592,7 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
         if (ev == NULL) {
                 goto fail;
         }
-        req = cli_smb_send(mem_ctx, ev, cli, smb_command, additional_flags,
+        req = cli_smb_send(mem_ctx, ev, cli, smb_command, additional_flags, 0,
 			   wct, vwv, num_bytes, bytes);
         if (req == NULL) {
                 goto fail;
