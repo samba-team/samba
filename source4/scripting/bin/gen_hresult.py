@@ -50,6 +50,8 @@ def parseErrorDescriptions( input_file, isWinError ):
     for line in fileContents:
         content = line.strip().split(None,1)
         # start new error definition ?
+        if len(content) == 0:
+            continue
         if line.startswith("0x"):
             newError = ErrorDef()
             newError.err_code = content[0]
