@@ -113,6 +113,7 @@ struct tevent_req *smb2cli_create_send(
 	blobs_offset = ((blobs_offset + 3) & ~3);
 
 	if (blob.length > 0) {
+		blobs_offset = ((blobs_offset + 7) & ~7);
 		SIVAL(fixed, 48, blobs_offset + SMB2_HDR_BODY + 56);
 		SIVAL(fixed, 52, blob.length);
 	}
