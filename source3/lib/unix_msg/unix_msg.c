@@ -26,6 +26,7 @@
 #include "lib/util/iov_buf.h"
 #include "lib/util/msghdr.h"
 #include <fcntl.h>
+#include "lib/util/time.h"
 
 /*
  * This file implements two abstractions: The "unix_dgram" functions implement
@@ -51,6 +52,7 @@ struct unix_dgram_send_queue {
 	struct unix_dgram_ctx *ctx;
 	int sock;
 	struct unix_dgram_msg *msgs;
+	struct poll_timeout *timeout;
 	char path[];
 };
 
@@ -364,6 +366,8 @@ static int unix_dgram_init_pthreadpool(struct unix_dgram_ctx *ctx)
 	return 0;
 }
 
+static int unix_dgram_sendq_schedule_free(struct unix_dgram_send_queue *q);
+
 static int unix_dgram_send_queue_init(
 	struct unix_dgram_ctx *ctx, const struct sockaddr_un *dst,
 	struct unix_dgram_send_queue **result)
@@ -380,6 +384,7 @@ static int unix_dgram_send_queue_init(
 	}
 	q->ctx = ctx;
 	q->msgs = NULL;
+	q->timeout = NULL;
 	memcpy(q->path, dst->sun_path, pathlen);
 
 	q->sock = socket(AF_UNIX, SOCK_DGRAM, 0);
@@ -411,6 +416,12 @@ static int unix_dgram_send_queue_init(
 
 	DLIST_ADD(ctx->send_queues, q);
 
+	ret = unix_dgram_sendq_schedule_free(q);
+	if (ret != 0) {
+		err = ENOMEM;
+		goto fail_close;
+	}
+
 	*result = q;
 	return 0;
 
@@ -434,7 +445,57 @@ static void unix_dgram_send_queue_free(struct unix_dgram_send_queue *q)
 	}
 	close(q->sock);
 	DLIST_REMOVE(ctx->send_queues, q);
+	ctx->ev_funcs->timeout_free(q->timeout);
 	free(q);
+}
+
+static void unix_dgram_sendq_scheduled_free_handler(
+	struct poll_timeout *t, void *private_data);
+
+static int unix_dgram_sendq_schedule_free(struct unix_dgram_send_queue *q)
+{
+	struct unix_dgram_ctx *ctx = q->ctx;
+	struct timeval timeout;
+
+	if (q->timeout != NULL) {
+		return 0;
+	}
+
+	GetTimeOfDay(&timeout);
+	timeout.tv_sec += SENDQ_CACHE_TIME_SECS;
+
+	q->timeout = ctx->ev_funcs->timeout_new(
+		ctx->ev_funcs,
+		timeout,
+		unix_dgram_sendq_scheduled_free_handler,
+		q);
+	if (q->timeout == NULL) {
+		unix_dgram_send_queue_free(q);
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
+static void unix_dgram_sendq_scheduled_free_handler(struct poll_timeout *t,
+						    void *private_data)
+{
+	struct unix_dgram_send_queue *q = private_data;
+	int ret;
+
+	q->ctx->ev_funcs->timeout_free(q->timeout);
+	q->timeout = NULL;
+
+	if (q->msgs == NULL) {
+		unix_dgram_send_queue_free(q);
+		return;
+	}
+
+	ret = unix_dgram_sendq_schedule_free(q);
+	if (ret != 0) {
+		unix_dgram_send_queue_free(q);
+		return;
+	}
 }
 
 static int find_send_queue(struct unix_dgram_ctx *ctx,
@@ -555,12 +616,12 @@ static void unix_dgram_job_finished(struct poll_watch *w, int fd, short events,
 	if (q->msgs != NULL) {
 		ret = pthreadpool_pipe_add_job(ctx->send_pool, q->sock,
 					       unix_dgram_send_job, q->msgs);
-		if (ret == 0) {
+		if (ret != 0) {
+			unix_dgram_send_queue_free(q);
 			return;
 		}
+		return;
 	}
-
-	unix_dgram_send_queue_free(q);
 }
 
 static int unix_dgram_send(struct unix_dgram_ctx *ctx,

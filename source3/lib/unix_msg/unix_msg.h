@@ -116,4 +116,6 @@ int unix_msg_send(struct unix_msg_ctx *ctx, const struct sockaddr_un *dst,
  */
 int unix_msg_free(struct unix_msg_ctx *ctx);
 
+#define SENDQ_CACHE_TIME_SECS 10
+
 #endif
