@@ -403,12 +403,6 @@ static int32_t ctdb_announce_vnn_iface(struct ctdb_context *ctdb,
 	return 0;
 }
 
-struct takeover_callback_state {
-	struct ctdb_req_control_old *c;
-	ctdb_sock_addr *addr;
-	struct ctdb_vnn *vnn;
-};
-
 struct ctdb_do_takeip_state {
 	struct ctdb_req_control_old *c;
 	struct ctdb_vnn *vnn;
@@ -849,14 +843,20 @@ static struct ctdb_vnn *release_ip_post(struct ctdb_context *ctdb,
 	return vnn;
 }
 
+struct release_ip_callback_state {
+	struct ctdb_req_control_old *c;
+	ctdb_sock_addr *addr;
+	struct ctdb_vnn *vnn;
+};
+
 /*
   called when releaseip event finishes
  */
-static void release_ip_callback(struct ctdb_context *ctdb, int status, 
+static void release_ip_callback(struct ctdb_context *ctdb, int status,
 				void *private_data)
 {
-	struct takeover_callback_state *state = 
-		talloc_get_type(private_data, struct takeover_callback_state);
+	struct release_ip_callback_state *state =
+		talloc_get_type(private_data, struct release_ip_callback_state);
 
 	if (status == -ETIME) {
 		ctdb_ban_self(ctdb);
@@ -881,7 +881,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 	talloc_free(state);
 }
 
-static int ctdb_releaseip_destructor(struct takeover_callback_state *state)
+static int ctdb_releaseip_destructor(struct release_ip_callback_state *state)
 {
 	if (state->vnn != NULL) {
 		state->vnn->update_in_flight = false;
@@ -898,7 +898,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				bool *async_reply)
 {
 	int ret;
-	struct takeover_callback_state *state;
+	struct release_ip_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
 	char *iface;
@@ -960,7 +960,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		iface,
 		pip->pnn));
 
-	state = talloc(ctdb, struct takeover_callback_state);
+	state = talloc(ctdb, struct release_ip_callback_state);
 	if (state == NULL) {
 		ctdb_set_error(ctdb, "Out of memory at %s:%d",
 			       __FILE__, __LINE__);
