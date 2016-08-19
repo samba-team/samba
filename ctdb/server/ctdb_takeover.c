@@ -847,6 +847,7 @@ struct release_ip_callback_state {
 	struct ctdb_req_control_old *c;
 	ctdb_sock_addr *addr;
 	struct ctdb_vnn *vnn;
+	uint32_t target_pnn;
 };
 
 /*
@@ -874,6 +875,7 @@ static void release_ip_callback(struct ctdb_context *ctdb, int status,
 		}
 	}
 
+	state->vnn->pnn = state->target_pnn;
 	state->vnn = release_ip_post(ctdb, state->vnn, state->addr);
 
 	/* the control succeeded */
@@ -910,16 +912,20 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 			ctdb_addr_to_str(&pip->addr)));
 		return 0;
 	}
-	vnn->pnn = pip->pnn;
 
 	/* stop any previous arps */
 	talloc_free(vnn->takeover_ctx);
 	vnn->takeover_ctx = NULL;
 
-	/* Some ctdb tool commands (e.g. moveip, rebalanceip) send
-	 * lazy multicast to drop an IP from any node that isn't the
-	 * intended new node.  The following causes makes ctdbd ignore
-	 * a release for any address it doesn't host.
+	/* RELEASE_IP controls are sent to all nodes that should not
+	 * be hosting a particular IP.  This serves 2 purposes.  The
+	 * first is to help resolve any inconsistencies.  If a node
+	 * does unexpectly host an IP then it will be released.  The
+	 * 2nd is to use a "redundant release" to tell non-takeover
+	 * nodes where an IP is moving to.  This is how "ctdb ip" can
+	 * report the (likely) location of an IP by only asking the
+	 * local node.  Redundant releases need to update the PNN but
+	 * are otherwise ignored.
 	 */
 	if (ctdb->tunable.disable_ip_failover == 0 && ctdb->do_checkpublicip) {
 		if (!ctdb_sys_have_ip(&pip->addr)) {
@@ -927,6 +933,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				ctdb_addr_to_str(&pip->addr),
 				vnn->public_netmask_bits,
 				ctdb_vnn_iface_string(vnn)));
+			vnn->pnn = pip->pnn;
 			ctdb_vnn_unassign_iface(ctdb, vnn);
 			return 0;
 		}
@@ -935,6 +942,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 			DEBUG(DEBUG_DEBUG,("Redundant release of IP %s/%u (ip not held)\n",
 					   ctdb_addr_to_str(&pip->addr),
 					   vnn->public_netmask_bits));
+			vnn->pnn = pip->pnn;
 			return 0;
 		}
 	}
@@ -978,6 +986,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 	*state->addr = pip->addr;
+	state->target_pnn = pip->pnn;
 	state->vnn   = vnn;
 
 	vnn->update_in_flight = true;
