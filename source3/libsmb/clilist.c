@@ -600,7 +600,7 @@ static struct tevent_req *cli_list_trans_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(state->mask)) {
+	if (clistr_is_previous_version_path(state->mask, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -792,7 +792,7 @@ static void cli_list_trans_done(struct tevent_req *subreq)
 	}
 	param_len = talloc_get_size(state->param);
 
-	if (clistr_is_previous_version_path(state->mask)) {
+	if (clistr_is_previous_version_path(state->mask, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
