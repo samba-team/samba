@@ -3307,7 +3307,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x68 */
-	WERROR spoolss_GetPrinterDriverPackagePath(
+	HRESULT spoolss_GetPrinterDriverPackagePath(
 		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in,ref] [string,charset(UTF16)] uint16 *architecture,
 		[in,unique] [string,charset(UTF16)] uint16 *language,

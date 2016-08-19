@@ -11199,11 +11199,11 @@ WERROR _spoolss_67(struct pipes_struct *p,
  _spoolss_GetPrinterDriverPackagePath
 ****************************************************************/
 
-WERROR _spoolss_GetPrinterDriverPackagePath(struct pipes_struct *p,
-					    struct spoolss_GetPrinterDriverPackagePath *r)
+HRESULT _spoolss_GetPrinterDriverPackagePath(struct pipes_struct *p,
+					     struct spoolss_GetPrinterDriverPackagePath *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return WERR_NOT_SUPPORTED;
+	return HRES_ERROR_NOT_SUPPORTED;
 }
 
 /****************************************************************
