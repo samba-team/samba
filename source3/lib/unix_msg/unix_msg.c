@@ -434,12 +434,12 @@ static void unix_dgram_send_queue_free(struct unix_dgram_send_queue *q)
 }
 
 static struct unix_dgram_send_queue *find_send_queue(
-	struct unix_dgram_ctx *ctx, const char *dst_sock)
+	struct unix_dgram_ctx *ctx, const struct sockaddr_un *dst)
 {
 	struct unix_dgram_send_queue *s;
 
 	for (s = ctx->send_queues; s != NULL; s = s->next) {
-		if (strcmp(s->path, dst_sock) == 0) {
+		if (strcmp(s->path, dst->sun_path) == 0) {
 			return s;
 		}
 	}
@@ -604,7 +604,7 @@ static int unix_dgram_send(struct unix_dgram_ctx *ctx,
 	 * To preserve message ordering, we have to queue a message when
 	 * others are waiting in line already.
 	 */
-	q = find_send_queue(ctx, dst->sun_path);
+	q = find_send_queue(ctx, dst);
 	if (q != NULL) {
 		return queue_msg(q, iov, iovlen, fds, num_fds);
 	}
