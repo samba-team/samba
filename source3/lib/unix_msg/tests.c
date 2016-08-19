@@ -126,6 +126,36 @@ int main(void)
 
 	expect_messages(ev, &state, 1);
 
+	printf("test send queue caching\n");
+
+	/*
+	 * queues are cached for some time, so this tests sending
+	 * still works after the cache expires and the queue was
+	 * freed.
+	 */
+	sleep(SENDQ_CACHE_TIME_SECS + 1);
+	ret = tevent_loop_once(ev);
+	if (ret == -1) {
+		fprintf(stderr, "tevent_loop_once failed: %s\n",
+			strerror(errno));
+		exit(1);
+	}
+
+	msg = random();
+	iov.iov_base = &msg;
+	iov.iov_len = sizeof(msg);
+	state.buf = &msg;
+	state.buflen = sizeof(msg);
+
+	ret = unix_msg_send(ctx1, &addr2, &iov, 1, NULL, 0);
+	if (ret != 0) {
+		fprintf(stderr, "unix_msg_send failed: %s\n",
+			strerror(ret));
+		return 1;
+	}
+
+	expect_messages(ev, &state, 1);
+
 	printf("sending six large, interleaved messages\n");
 
 	for (i=0; i<sizeof(buf); i++) {
