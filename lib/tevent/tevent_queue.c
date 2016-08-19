@@ -187,7 +187,7 @@ static struct tevent_queue_entry *tevent_queue_add_internal(
 
 	if (req->async.fn != NULL) {
 		/*
-		 * If the callers wants to optimize for the
+		 * If the caller wants to optimize for the
 		 * empty queue case, call the trigger only
 		 * if there is no callback defined for the
 		 * request yet.
