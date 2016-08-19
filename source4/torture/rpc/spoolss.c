@@ -7874,6 +7874,116 @@ static bool test_architecture_buffer(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_get_core_printer_drivers_arch_guid(struct torture_context *tctx,
+						    struct dcerpc_pipe *p,
+						    const char *architecture,
+						    const char *guid_str,
+						    const char **package_id)
+{
+	struct spoolss_GetCorePrinterDrivers r;
+	struct spoolss_CorePrinterDriver core_printer_drivers;
+	DATA_BLOB blob;
+	const char **s;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct GUID guid;
+
+	s = talloc_zero_array(tctx, const char *, 2);
+
+	r.in.servername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.architecture = "foobar";
+	r.in.core_driver_size = 0;
+	r.in.core_driver_dependencies = "";
+	r.in.core_printer_driver_count = 0;
+	r.out.core_printer_drivers = &core_printer_drivers;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_GetCorePrinterDrivers_r(b, tctx, &r),
+		"spoolss_GetCorePrinterDrivers failed");
+	torture_assert_hresult_equal(tctx, r.out.result, HRES_E_INVALIDARG,
+		"spoolss_GetCorePrinterDrivers failed");
+
+	guid = GUID_random();
+	s[0] = GUID_string2(tctx, &guid);
+
+	torture_assert(tctx,
+		push_reg_multi_sz(tctx, &blob, s),
+		"push_reg_multi_sz failed");
+
+	r.in.core_driver_size = blob.length;
+	r.in.core_driver_dependencies = s[0];
+	r.in.core_printer_driver_count = 1;
+	r.out.core_printer_drivers = talloc_zero_array(tctx, struct spoolss_CorePrinterDriver, r.in.core_printer_driver_count);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_GetCorePrinterDrivers_r(b, tctx, &r),
+		"spoolss_GetCorePrinterDrivers failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_INVALID_ENVIRONMENT,
+		"spoolss_GetCorePrinterDrivers failed");
+
+	r.in.architecture = architecture;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_GetCorePrinterDrivers_r(b, tctx, &r),
+		"spoolss_GetCorePrinterDrivers failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_NOT_FOUND,
+		"spoolss_GetCorePrinterDrivers failed");
+
+	s[0] = talloc_strdup(s, guid_str);
+
+	torture_assert(tctx,
+		push_reg_multi_sz(tctx, &blob, s),
+		"push_reg_multi_sz failed");
+
+	r.in.core_driver_size = blob.length;
+	r.in.core_driver_dependencies = s[0];
+	r.in.core_printer_driver_count = 1;
+	r.out.core_printer_drivers = talloc_zero_array(tctx, struct spoolss_CorePrinterDriver, r.in.core_printer_driver_count);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_GetCorePrinterDrivers_r(b, tctx, &r),
+		"spoolss_GetCorePrinterDrivers failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"spoolss_GetCorePrinterDrivers failed");
+
+	if (package_id) {
+		*package_id = r.out.core_printer_drivers[0].szPackageID;
+	}
+
+	return true;
+}
+
+static bool test_get_core_printer_drivers(struct torture_context *tctx,
+					  void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
+	const char *architectures[] = {
+		SPOOLSS_ARCHITECTURE_NT_X86,
+		SPOOLSS_ARCHITECTURE_x64
+	};
+	int i;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+
+	for (i=0; i < ARRAY_SIZE(architectures); i++) {
+
+		torture_comment(tctx, "Testing GetCorePrinterDrivers(\"%s\",\"%s\")\n",
+			architectures[i],
+			SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV);
+
+		torture_assert(tctx,
+			test_get_core_printer_drivers_arch_guid(tctx, p,
+				architectures[i],
+				SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV,
+				NULL),
+			"");
+	}
+
+	return true;
+}
+
 static bool test_PrintServer_Forms_Winreg(struct torture_context *tctx,
 					  void *private_data)
 {
@@ -9049,6 +9159,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "enum_printers_servername", test_EnumPrinters_servername);
 	torture_tcase_add_simple_test(tcase, "enum_printer_drivers_old", test_EnumPrinterDrivers_old);
 	torture_tcase_add_simple_test(tcase, "architecture_buffer", test_architecture_buffer);
+	torture_tcase_add_simple_test(tcase, "get_core_printer_drivers", test_get_core_printer_drivers);
 
 	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 
