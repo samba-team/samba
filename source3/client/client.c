@@ -1696,7 +1696,7 @@ static int do_allinfo(const char *name)
 	unsigned int num_streams;
 	struct stream_struct *streams;
 	int num_snapshots;
-	char **snapshots;
+	char **snapshots = NULL;
 	unsigned int i;
 	NTSTATUS status;
 
