@@ -183,6 +183,7 @@
 ^samba3.rpc.spoolss.printer.*.publish_toggle\(.*\)$ # needs spoolss AD member env
 ^samba3.rpc.spoolss.printserver.*.add_processor\(.*\)$
 ^samba3.rpc.spoolss.printserver.*.get_core_printer_drivers\(.*\)$
+^samba3.rpc.spoolss.printserver.*.get_printer_driver_package_path\(.*\)$
 ^samba4.rpc.fsrvp	# fsrvp server only provided by smbd
 #
 # The following tests fail against ad_dc (aka s3fs) currently.

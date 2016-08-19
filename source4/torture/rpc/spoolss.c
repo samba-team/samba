@@ -7984,6 +7984,82 @@ static bool test_get_core_printer_drivers(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_get_printer_driver_package_path(struct torture_context *tctx,
+						 void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
+	const char *architectures[] = {
+		SPOOLSS_ARCHITECTURE_NT_X86,
+		SPOOLSS_ARCHITECTURE_x64
+	};
+	int i;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	for (i=0; i < ARRAY_SIZE(architectures); i++) {
+		struct spoolss_GetPrinterDriverPackagePath r;
+		uint32_t required = 0;
+		const char *package_id = NULL;
+
+		test_get_core_printer_drivers_arch_guid(tctx, p,
+			architectures[i],
+			SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV,
+			&package_id),
+
+		torture_comment(tctx, "Testing GetPrinterDriverPackagePath(\"%s\",\"%s\")\n",
+			architectures[i], package_id);
+
+		r.in.servername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.architecture = "foobar";
+		r.in.language = NULL;
+		r.in.package_id = "";
+		r.in.driver_package_cab_size = 0;
+		r.in.driver_package_cab = NULL;
+
+		r.out.required = &required;
+		r.out.driver_package_cab = NULL;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverPackagePath_r(b, tctx, &r),
+			"spoolss_GetPrinterDriverPackagePath failed");
+		torture_assert_werr_equal(tctx,
+			W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_INVALID_ENVIRONMENT,
+			"spoolss_GetPrinterDriverPackagePath failed");
+
+		r.in.architecture = architectures[i];
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverPackagePath_r(b, tctx, &r),
+			"spoolss_GetPrinterDriverPackagePath failed");
+		torture_assert_werr_equal(tctx,
+			W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_FILE_NOT_FOUND,
+			"spoolss_GetPrinterDriverPackagePath failed");
+
+		r.in.package_id = package_id;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverPackagePath_r(b, tctx, &r),
+			"spoolss_GetPrinterDriverPackagePath failed");
+		torture_assert_hresult_ok(tctx, r.out.result,
+			"spoolss_GetPrinterDriverPackagePath failed");
+
+		r.in.driver_package_cab_size = required;
+		r.in.driver_package_cab = talloc_zero_array(tctx, char, required);
+		r.out.driver_package_cab = talloc_zero_array(tctx, char, required);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverPackagePath_r(b, tctx, &r),
+			"spoolss_GetPrinterDriverPackagePath failed");
+		torture_assert_hresult_ok(tctx, r.out.result,
+			"spoolss_GetPrinterDriverPackagePath failed");
+
+	}
+
+	return true;
+}
+
 static bool test_PrintServer_Forms_Winreg(struct torture_context *tctx,
 					  void *private_data)
 {
@@ -9160,6 +9236,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "enum_printer_drivers_old", test_EnumPrinterDrivers_old);
 	torture_tcase_add_simple_test(tcase, "architecture_buffer", test_architecture_buffer);
 	torture_tcase_add_simple_test(tcase, "get_core_printer_drivers", test_get_core_printer_drivers);
+	torture_tcase_add_simple_test(tcase, "get_printer_driver_package_path", test_get_printer_driver_package_path);
 
 	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 
