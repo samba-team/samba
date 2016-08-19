@@ -38,7 +38,10 @@ size_t clistr_pull_talloc(TALLOC_CTX *ctx,
 				  flags);
 }
 
-bool clistr_is_previous_version_path(const char *path)
+bool clistr_is_previous_version_path(const char *path,
+		const char **startp,
+		const char **endp,
+		time_t *ptime)
 {
 	char *q;
 	time_t timestamp;
@@ -62,6 +65,18 @@ bool clistr_is_previous_version_path(const char *path)
 	}
 	if (q[0] != '\0' && q[0] != '\\') {
 		return false;
+	}
+	if (startp) {
+		*startp = p;
+	}
+	if (endp) {
+		if (q[0] == '\\') {
+			q++;
+		}
+		*endp = q;
+	}
+	if (ptime) {
+		*ptime = timestamp;
 	}
 	return true;
 }

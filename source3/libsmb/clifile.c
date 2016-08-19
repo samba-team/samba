@@ -197,7 +197,7 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(path) &&
+	if (clistr_is_previous_version_path(path, NULL, NULL, NULL) &&
 			!INFO_LEVEL_IS_UNIX(level)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
@@ -1155,7 +1155,7 @@ struct tevent_req *cli_rename_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname_src)) {
+	if (clistr_is_previous_version_path(fname_src, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -1290,7 +1290,7 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname_src)) {
+	if (clistr_is_previous_version_path(fname_src, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -1495,7 +1495,7 @@ struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -1610,7 +1610,7 @@ struct tevent_req *cli_mkdir_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(dname)) {
+	if (clistr_is_previous_version_path(dname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -1725,7 +1725,7 @@ struct tevent_req *cli_rmdir_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(dname)) {
+	if (clistr_is_previous_version_path(dname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -1978,7 +1978,7 @@ static struct tevent_req *cli_ntcreate1_send(TALLOC_CTX *mem_ctx,
 				   fname, strlen(fname)+1,
 				   &converted_len);
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -2282,7 +2282,7 @@ struct tevent_req *cli_nttrans_create_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -2508,7 +2508,7 @@ struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -3765,7 +3765,7 @@ struct tevent_req *cli_getatr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -4057,7 +4057,7 @@ struct tevent_req *cli_setatr_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -4178,7 +4178,7 @@ struct tevent_req *cli_chkpath_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname)) {
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -4489,7 +4489,7 @@ struct tevent_req *cli_ctemp_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(path)) {
+	if (clistr_is_previous_version_path(path, NULL, NULL, NULL)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
 
@@ -5651,7 +5651,7 @@ struct tevent_req *cli_qpathinfo_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (clistr_is_previous_version_path(fname) &&
+	if (clistr_is_previous_version_path(fname, NULL, NULL, NULL) &&
 			!INFO_LEVEL_IS_UNIX(level)) {
 		additional_flags2 = FLAGS2_REPARSE_PATH;
 	}
