@@ -11177,11 +11177,11 @@ WERROR _spoolss_65(struct pipes_struct *p,
  _spoolss_GetCorePrinterDrivers
 ****************************************************************/
 
-WERROR _spoolss_GetCorePrinterDrivers(struct pipes_struct *p,
-				      struct spoolss_GetCorePrinterDrivers *r)
+HRESULT _spoolss_GetCorePrinterDrivers(struct pipes_struct *p,
+				       struct spoolss_GetCorePrinterDrivers *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
-	return WERR_NOT_SUPPORTED;
+	return HRES_ERROR_NOT_SUPPORTED;
 }
 
 /****************************************************************

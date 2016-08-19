@@ -3288,10 +3288,10 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		GUID core_driver_guid;
 		NTTIME driver_date;
 		hyper driver_version;
-		[charset(UTF8)] uint8 formname[520];
+		[charset(UTF16)] uint16 szPackageID[260];
 	} spoolss_CorePrinterDriver;
 
-	[public] WERROR spoolss_GetCorePrinterDrivers(
+	[public] HRESULT spoolss_GetCorePrinterDrivers(
 		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in,ref] [string,charset(UTF16)] uint16 *architecture,
 		[in] uint32 core_driver_size,
