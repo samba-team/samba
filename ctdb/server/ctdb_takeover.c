@@ -928,7 +928,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	struct release_ip_callback_state *state;
 	struct ctdb_public_ip *pip = (struct ctdb_public_ip *)indata.dptr;
 	struct ctdb_vnn *vnn;
-	char *iface;
+	const char *iface;
 
 	/* update our vnn list */
 	vnn = find_public_ip_vnn(ctdb, &pip->addr);
@@ -985,7 +985,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	iface = strdup(ctdb_vnn_iface_string(vnn));
+	iface = ctdb_vnn_iface_string(vnn);
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
 		ctdb_addr_to_str(&pip->addr),
@@ -997,7 +997,6 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	if (state == NULL) {
 		ctdb_set_error(ctdb, "Out of memory at %s:%d",
 			       __FILE__, __LINE__);
-		free(iface);
 		return -1;
 	}
 
@@ -1006,7 +1005,6 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	if (state->addr == NULL) {
 		ctdb_set_error(ctdb, "Out of memory at %s:%d",
 			       __FILE__, __LINE__);
-		free(iface);
 		talloc_free(state);
 		return -1;
 	}
@@ -1024,7 +1022,6 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 					 iface,
 					 ctdb_addr_to_str(&pip->addr),
 					 vnn->public_netmask_bits);
-	free(iface);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to release IP %s on interface %s\n",
 			ctdb_addr_to_str(&pip->addr),
