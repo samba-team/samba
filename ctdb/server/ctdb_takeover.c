@@ -1058,17 +1058,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		}
 	}
 
-	tmp = strdup(ifaces);
-	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
-		if (!ctdb_sys_check_iface_exists(iface)) {
-			DEBUG(DEBUG_CRIT,("Interface %s does not exist. Can not add public-address : %s\n", iface, ctdb_addr_to_str(addr)));
-			free(tmp);
-			return -1;
-		}
-	}
-	free(tmp);
-
-	/* create a new vnn structure for this ip address */
+	/* Create a new VNN structure for this IP address */
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
 	if (vnn == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
@@ -1087,6 +1077,13 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		return -1;
 	}
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
+		if (!ctdb_sys_check_iface_exists(iface)) {
+			DEBUG(DEBUG_ERR,
+			      ("Unknown interface %s for public address %s\n",
+			       iface, ctdb_addr_to_str(addr)));
+			talloc_free(vnn);
+			return -1;
+		}
 		vnn->ifaces = talloc_realloc(vnn, vnn->ifaces, const char *, num + 2);
 		if (vnn->ifaces == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
