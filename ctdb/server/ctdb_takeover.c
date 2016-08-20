@@ -1070,15 +1070,35 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 
 	/* create a new vnn structure for this ip address */
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
-	CTDB_NO_MEMORY_FATAL(ctdb, vnn);
+	if (vnn == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
 	vnn->ifaces = talloc_array(vnn, const char *, num + 2);
+	if (vnn->ifaces == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		talloc_free(vnn);
+		return -1;
+	}
 	tmp = talloc_strdup(vnn, ifaces);
-	CTDB_NO_MEMORY_FATAL(ctdb, tmp);
+	if (tmp == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		talloc_free(vnn);
+		return -1;
+	}
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
 		vnn->ifaces = talloc_realloc(vnn, vnn->ifaces, const char *, num + 2);
-		CTDB_NO_MEMORY_FATAL(ctdb, vnn->ifaces);
+		if (vnn->ifaces == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+			talloc_free(vnn);
+			return -1;
+		}
 		vnn->ifaces[num] = talloc_strdup(vnn, iface);
-		CTDB_NO_MEMORY_FATAL(ctdb, vnn->ifaces[num]);
+		if (vnn->ifaces[num] == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+			talloc_free(vnn);
+			return -1;
+		}
 		num++;
 	}
 	talloc_free(tmp);
