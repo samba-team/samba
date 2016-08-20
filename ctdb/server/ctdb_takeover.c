@@ -1048,6 +1048,16 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	int i;
 	int ret;
 
+	/* Verify that we don't have an entry for this IP yet */
+	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
+		if (ctdb_same_sockaddr(addr, &vnn->public_address)) {
+			DEBUG(DEBUG_ERR,
+			      ("Duplicate public IP address '%s'\n",
+			       ctdb_addr_to_str(addr)));
+			return -1;
+		}
+	}
+
 	tmp = strdup(ifaces);
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
 		if (!ctdb_sys_check_iface_exists(iface)) {
@@ -1057,15 +1067,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		}
 	}
 	free(tmp);
-
-	/* Verify that we don't have an entry for this ip yet */
-	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
-		if (ctdb_same_sockaddr(addr, &vnn->public_address)) {
-			DEBUG(DEBUG_CRIT,("Same ip '%s' specified multiple times in the public address list \n", 
-				ctdb_addr_to_str(addr)));
-			return -1;
-		}		
-	}
 
 	/* create a new vnn structure for this ip address */
 	vnn = talloc_zero(ctdb, struct ctdb_vnn);
