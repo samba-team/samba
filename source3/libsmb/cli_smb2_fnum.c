@@ -178,6 +178,10 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_smb2_create_fnum_state *state;
 	size_t fname_len = 0;
+	const char *startp = NULL;
+	const char *endp = NULL;
+	time_t tstamp = (time_t)0;
+	struct smb2_create_blobs *cblobs = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb2_create_fnum_state);
@@ -195,14 +199,51 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 		create_options |= FILE_OPEN_FOR_BACKUP_INTENT;
 	}
 
+	/* Check for @GMT- paths. Remove the @GMT and turn into TWrp if so. */
+	fname_len = strlen(fname);
+	if (clistr_is_previous_version_path(fname, &startp, &endp, &tstamp)) {
+		size_t len_before_gmt = startp - fname;
+		size_t len_after_gmt = fname + fname_len - endp;
+		DATA_BLOB twrp_blob;
+		NTTIME ntt;
+		NTSTATUS status;
+
+		char *new_fname = talloc_array(state, char,
+				len_before_gmt + len_after_gmt + 1);
+
+		if (tevent_req_nomem(new_fname, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		memcpy(new_fname, fname, len_before_gmt);
+		memcpy(new_fname + len_before_gmt, endp, len_after_gmt + 1);
+		fname = new_fname;
+		fname_len = len_before_gmt + len_after_gmt;
+
+		unix_to_nt_time(&ntt, tstamp);
+		twrp_blob = data_blob_const((const void *)&ntt, 8);
+
+		cblobs = talloc_zero(state, struct smb2_create_blobs);
+		if (tevent_req_nomem(cblobs, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		status = smb2_create_blob_add(state, cblobs,
+				SMB2_CREATE_TAG_TWRP, twrp_blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
+	}
+
 	/* SMB2 is pickier about pathnames. Ensure it doesn't
 	   start in a '\' */
 	if (*fname == '\\') {
 		fname++;
+		fname_len--;
 	}
 
 	/* Or end in a '\' */
-	fname_len = strlen(fname);
 	if (fname_len > 0 && fname[fname_len-1] == '\\') {
 		char *new_fname = talloc_strdup(state, fname);
 		if (tevent_req_nomem(new_fname, req)) {
@@ -225,7 +266,7 @@ struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
 				     share_access,
 				     create_disposition,
 				     create_options,
-				     NULL);
+				     cblobs);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
