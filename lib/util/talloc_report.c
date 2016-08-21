@@ -146,18 +146,18 @@ static void talloc_report_str_helper(const void *ptr, int depth, int max_depth,
 		state->s = talloc_asprintf_append_largebuf(
 			state->s, &state->str_len,
 			"%*s%-30s contains %6lu bytes in %3lu blocks "
-			"(ref %d): %*s\n", depth*4, "",	name,
+			"(ref %zu): %*s\n", depth*4, "", name,
 			(unsigned long)talloc_total_size(ptr),
 			(unsigned long)talloc_total_blocks(ptr),
 			talloc_reference_count(ptr),
-			MIN(50, talloc_get_size(ptr)),
+			(int)MIN(50, talloc_get_size(ptr)),
 			(const char *)ptr);
 		return;
 	}
 
 	state->s = talloc_asprintf_append_largebuf(
 		state->s, &state->str_len,
-		"%*s%-30s contains %6lu bytes in %3lu blocks (ref %d) %p\n",
+		"%*s%-30s contains %6lu bytes in %3lu blocks (ref %zu) %p\n",
 		depth*4, "", name,
 		(unsigned long)talloc_total_size(ptr),
 		(unsigned long)talloc_total_blocks(ptr),
