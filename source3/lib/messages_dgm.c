@@ -76,7 +76,10 @@ static int messaging_dgm_lockfile_create(struct messaging_dgm_context *ctx,
 
 	ret = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf),
 		       "%s/%u", ctx->lockfile_dir.buf, (unsigned)pid);
-	if (ret >= sizeof(lockfile_name.buf)) {
+	if (ret < 0) {
+		return errno;
+	}
+	if ((unsigned)ret >= sizeof(lockfile_name.buf)) {
 		return ENAMETOOLONG;
 	}
 
@@ -272,7 +275,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 
 		ret = snprintf(name.buf, sizeof(name.buf), "%s/%u",
 			       c->lockfile_dir.buf, (unsigned)c->pid);
-		if (ret >= sizeof(name.buf)) {
+		if ((ret < 0) || ((size_t)ret >= sizeof(name.buf))) {
 			/*
 			 * We've checked the length when creating, so this
 			 * should never happen
@@ -312,7 +315,10 @@ int messaging_dgm_send(pid_t pid,
 
 	dst_pathlen = snprintf(dst.sun_path, sizeof(dst.sun_path),
 			       "%s/%u", ctx->socket_dir.buf, (unsigned)pid);
-	if (dst_pathlen >= sizeof(dst.sun_path)) {
+	if (dst_pathlen < 0) {
+		return errno;
+	}
+	if ((size_t)dst_pathlen >= sizeof(dst.sun_path)) {
 		return ENAMETOOLONG;
 	}
 
@@ -381,7 +387,10 @@ int messaging_dgm_get_unique(pid_t pid, uint64_t *unique)
 
 	ret = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf),
 		       "%s/%u", ctx->lockfile_dir.buf, (int)pid);
-	if (ret >= sizeof(lockfile_name.buf)) {
+	if (ret < 0) {
+		return errno;
+	}
+	if ((size_t)ret >= sizeof(lockfile_name.buf)) {
 		return ENAMETOOLONG;
 	}
 
@@ -408,13 +417,19 @@ int messaging_dgm_cleanup(pid_t pid)
 
 	len = snprintf(socket_name.buf, sizeof(socket_name.buf), "%s/%u",
 		       ctx->socket_dir.buf, (unsigned)pid);
-	if (len >= sizeof(socket_name.buf)) {
+	if (len < 0) {
+		return errno;
+	}
+	if ((size_t)len >= sizeof(socket_name.buf)) {
 		return ENAMETOOLONG;
 	}
 
 	len = snprintf(lockfile_name.buf, sizeof(lockfile_name.buf), "%s/%u",
 		       ctx->lockfile_dir.buf, (unsigned)pid);
-	if (len >= sizeof(lockfile_name.buf)) {
+	if (len < 0) {
+		return errno;
+	}
+	if ((size_t)len >= sizeof(lockfile_name.buf)) {
 		return ENAMETOOLONG;
 	}
 
@@ -485,7 +500,7 @@ int messaging_dgm_wipe(void)
 			 */
 			continue;
 		}
-		if (pid == our_pid) {
+		if ((pid_t)pid == our_pid) {
 			/*
 			 * fcntl(F_GETLK) will succeed for ourselves, we hold
 			 * that lock ourselves.
