@@ -422,7 +422,9 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
         pfm.mappings = tmp
 
         # 90 for unicodePwd (with new prefix = 0)
-        partial_attribute_set = self.get_partial_attribute_set([90])
+        # 589824, 589827 for objectClass and CN
+        # Use of three ensures sorting is correct
+        partial_attribute_set = self.get_partial_attribute_set([90, 589824, 589827])
         req8 = self._exop_req8(dest_dsa=None,
                                invocation_id=dc_guid_1,
                                nc_dn_str=self.user,
