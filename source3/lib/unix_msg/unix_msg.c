@@ -80,7 +80,7 @@ static void unix_dgram_recv_handler(struct poll_watch *w, int fd, short events,
 				    void *private_data);
 
 /* Set socket non blocking. */
-static int prepare_socket_nonblock(int sock)
+static int prepare_socket_nonblock(int sock, bool nonblock)
 {
 	int flags;
 #ifdef O_NONBLOCK
@@ -97,7 +97,11 @@ static int prepare_socket_nonblock(int sock)
 	if (flags == -1) {
 		return errno;
 	}
-	flags |= FLAG_TO_SET;
+	if (nonblock) {
+		flags |= FLAG_TO_SET;
+	} else {
+		flags &= ~FLAG_TO_SET;
+	}
 	if (fcntl(sock, F_SETFL, flags) == -1) {
 		return errno;
 	}
@@ -127,7 +131,7 @@ static int prepare_socket_cloexec(int sock)
 /* Set socket non blocking and close on exec. */
 static int prepare_socket(int sock)
 {
-	int ret = prepare_socket_nonblock(sock);
+	int ret = prepare_socket_nonblock(sock, true);
 
 	if (ret) {
 		return ret;
