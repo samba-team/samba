@@ -186,7 +186,7 @@ def generateSourceFile(out_file):
     out_file.write("\n")
     out_file.write("const char *hresult_errstr(HRESULT err_code)\n")
     out_file.write("{\n");
-    out_file.write("	static char msg[20];\n")
+    out_file.write("	static char msg[22];\n")
     out_file.write("	int i;\n")
     out_file.write("\n")
     out_file.write("	for (i = 0; i < ARRAY_SIZE(hresult_errs); i++) {\n")

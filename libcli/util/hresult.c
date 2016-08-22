@@ -14688,7 +14688,7 @@ const char *hresult_errstr_const(HRESULT err_code)
 
 const char *hresult_errstr(HRESULT err_code)
 {
-	static char msg[20];
+	static char msg[22];
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(hresult_errs); i++) {
