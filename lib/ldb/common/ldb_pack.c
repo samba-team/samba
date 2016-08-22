@@ -233,6 +233,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 	unsigned int nelem = 0;
 	size_t len;
 	unsigned int found = 0;
+	struct ldb_val *ldb_val_single_array = NULL;
 
 	if (list == NULL) {
 		list_size = 0;
@@ -311,6 +312,26 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 	if (!message->elements) {
 		errno = ENOMEM;
 		goto failed;
+	}
+
+	/*
+	 * In typical use, most values are single-valued.  This makes
+	 * it quite expensive to allocate an array of ldb_val for each
+	 * of these, just to then hold the pointer to the data buffer
+	 * (in the LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC we don't
+	 * allocate the data).  So with
+	 * LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC we allocate this ahead
+	 * of time and use it for the single values where possible.
+	 * (This is used the the normal search case, but not in the
+	 * index case because of caller requirements).
+	 */
+	if (flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) {
+		ldb_val_single_array = talloc_array(message->elements, struct ldb_val,
+						    message->num_elements);
+		if (ldb_val_single_array == NULL) {
+			errno = ENOMEM;
+			goto failed;
+		}
 	}
 
 	for (i=0;i<message->num_elements;i++) {
@@ -396,7 +417,9 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 		p += attr_len + 1;
 		element->num_values = pull_uint32(p, 0);
 		element->values = NULL;
-		if (element->num_values != 0) {
+		if ((flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) && element->num_values == 1) {
+			element->values = &ldb_val_single_array[nelem];
+		} else if (element->num_values != 0) {
 			element->values = talloc_array(message->elements,
 						       struct ldb_val,
 						       element->num_values);

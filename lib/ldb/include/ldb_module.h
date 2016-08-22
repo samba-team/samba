@@ -412,8 +412,15 @@ int ldb_unpack_data(struct ldb_context *ldb,
  * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
  *
  * Flags allow control of allocation, so that if
- * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC is specified, then values are
- * not allocate, instead they point into the supplier constant buffer.
+ * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC is specified, then data in values are
+ * not allocated, instead they point into the supplier constant buffer.
+ *
+ * If LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC is specified, then values
+ * array are not allocated individually (for single-valued
+ * attributes), instead they point into a single buffer per message.
+ *
+ * LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC is only valid when
+ * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC is also specified.
  *
  * Likewise if LDB_UNPACK_DATA_FLAG_NO_DN is specified, the DN is omitted.
  */
@@ -425,7 +432,8 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 					 unsigned int flags,
 					 unsigned int *nb_elements_in_db);
 
-#define LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC 0x0001
-#define LDB_UNPACK_DATA_FLAG_NO_DN         0x0002
+#define LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC   0x0001
+#define LDB_UNPACK_DATA_FLAG_NO_DN           0x0002
+#define LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC 0x0004
 
 #endif

@@ -1138,6 +1138,24 @@ static bool torture_ldb_unpack_flags(struct torture_context *torture)
 				 ldb_unpack_data_only_attr_list_flags(ldb, &data,
 								      msg,
 								      NULL, 0,
+								      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
+								      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
+								      &nb_elements_in_db),
+				 0,
+				 "ldb_unpack_data failed");
+
+	ldif.changetype = LDB_CHANGETYPE_NONE;
+	ldif.msg = msg;
+	ldif_text = ldb_ldif_write_string(ldb, mem_ctx, &ldif);
+
+	torture_assert_int_equal(torture,
+				 strcmp(ldif_text, dda1d01d_ldif), 0,
+				 "ldif form differs from binary form");
+
+	torture_assert_int_equal(torture,
+				 ldb_unpack_data_only_attr_list_flags(ldb, &data,
+								      msg,
+								      NULL, 0,
 								      LDB_UNPACK_DATA_FLAG_NO_DN,
 								      &nb_elements_in_db),
 				 0,

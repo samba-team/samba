@@ -952,7 +952,9 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ltdb_search_dn1(ac->module, dn, msg, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
+		ret = ltdb_search_dn1(ac->module, dn, msg,
+				      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
+				      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
 		talloc_free(dn);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */

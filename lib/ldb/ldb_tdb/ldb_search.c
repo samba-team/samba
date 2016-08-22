@@ -559,7 +559,8 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
 						   msg,
 						   NULL, 0,
-						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC,
+						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
+						   LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
 						   &nb_elements_in_db);
 	if (ret == -1) {
 		talloc_free(msg);
