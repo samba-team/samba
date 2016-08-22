@@ -3277,6 +3277,13 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x66 */
+
+	const string SPOOLSS_CORE_PRINT_PACKAGE_FILES_UNIDRV  = "{D20EA372-DD35-4950-9ED8-A6335AFE79F0}";
+	const string SPOOLSS_CORE_PRINT_PACKAGE_FILES_PSCRIPT = "{D20EA372-DD35-4950-9ED8-A6335AFE79F1}";
+	const string SPOOLSS_CORE_PRINT_PACKAGE_FILES_PCLXL   = "{D20EA372-DD35-4950-9ED8-A6335AFE79F2}";
+	const string SPOOLSS_CORE_PRINT_PACKAGE_FILES_PLOTTER = "{D20EA372-DD35-4950-9ED8-A6335AFE79F4}";
+	const string SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV  = "{D20EA372-DD35-4950-9ED8-A6335AFE79F5}";
+
 	typedef [public] struct {
 		GUID core_driver_guid;
 		NTTIME driver_date;
