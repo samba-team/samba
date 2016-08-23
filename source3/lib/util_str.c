@@ -909,65 +909,6 @@ uint64_t conv_str_size(const char * str)
 	return lval;
 }
 
-/* Append an sprintf'ed string. Double buffer size on demand. Usable without
- * error checking in between. The indication that something weird happened is
- * string==NULL */
-
-void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
-		    size_t *bufsize, const char *fmt, ...)
-{
-	va_list ap;
-	char *newstr;
-	int ret;
-	bool increased;
-
-	/* len<0 is an internal marker that something failed */
-	if (*len < 0)
-		goto error;
-
-	if (*string == NULL) {
-		if (*bufsize == 0)
-			*bufsize = 128;
-
-		*string = talloc_array(mem_ctx, char, *bufsize);
-		if (*string == NULL)
-			goto error;
-	}
-
-	va_start(ap, fmt);
-	ret = vasprintf(&newstr, fmt, ap);
-	va_end(ap);
-
-	if (ret < 0)
-		goto error;
-
-	increased = false;
-
-	while ((*len)+ret >= *bufsize) {
-		increased = true;
-		*bufsize *= 2;
-		if (*bufsize >= (1024*1024*256))
-			goto error;
-	}
-
-	if (increased) {
-		*string = talloc_realloc(mem_ctx, *string, char,
-					       *bufsize);
-		if (*string == NULL) {
-			goto error;
-		}
-	}
-
-	StrnCpy((*string)+(*len), newstr, ret);
-	(*len) += ret;
-	free(newstr);
-	return;
-
- error:
-	*len = -1;
-	*string = NULL;
-}
-
 /*
  * asprintf into a string and strupper_m it after that.
  */

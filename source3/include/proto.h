@@ -660,8 +660,6 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list);
 void ipstr_list_free(char* ipstr_list);
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr);
 uint64_t conv_str_size(const char * str);
-void sprintf_append(TALLOC_CTX *mem_ctx, char **string, ssize_t *len,
-		    size_t *bufsize, const char *fmt, ...);
 int asprintf_strupper_m(char **strp, const char *fmt, ...);
 char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...);
 char *talloc_asprintf_strlower_m(TALLOC_CTX *t, const char *fmt, ...);

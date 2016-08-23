@@ -10526,7 +10526,6 @@ static struct {
 	{ "LOCAL-TEVENT-SELECT", run_local_tevent_select, 0},
 	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
 	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
-	{ "LOCAL-sprintf_append", run_local_sprintf_append, 0},
 	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
 	{ "LOCAL-IDMAP-TDB-COMMON", run_idmap_tdb_common_test, 0},
 	{ "LOCAL-remove_duplicate_addrs2", run_local_remove_duplicate_addrs2, 0},
