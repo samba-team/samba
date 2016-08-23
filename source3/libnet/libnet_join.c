@@ -1138,9 +1138,11 @@ static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!r->in.machine_password) {
-		r->in.machine_password = generate_random_password(mem_ctx,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+		int security = r->in.ads ? SEC_ADS : SEC_DOMAIN;
+
+		r->in.machine_password = trust_pw_new_value(mem_ctx,
+						r->in.secure_channel_type,
+						security);
 		if (r->in.machine_password == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -1233,9 +1235,11 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!r->in.machine_password) {
-		r->in.machine_password = generate_random_password(mem_ctx,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+		int security = r->in.ads ? SEC_ADS : SEC_DOMAIN;
+
+		r->in.machine_password = trust_pw_new_value(mem_ctx,
+						r->in.secure_channel_type,
+						security);
 		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
 	}
 
