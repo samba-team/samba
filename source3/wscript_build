@@ -553,6 +553,7 @@ bld.SAMBA3_LIBRARY('ads',
                         libsmb
                         DCUTIL
                         smbldap
+                        trusts_util
                         ''',
                    private_library=True)
 
