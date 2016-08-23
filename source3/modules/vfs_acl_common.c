@@ -467,20 +467,32 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Pull a DATA_BLOB from an xattr given a pathname.
- If the hash doesn't match, or doesn't exist - return the underlying
- filesystem sd.
-*******************************************************************/
-
-static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
-				    files_struct *fsp,
-				    const struct smb_filename *smb_fname_in,
-				    uint32_t security_info,
-				    TALLOC_CTX *mem_ctx,
-				    struct security_descriptor **ppdesc)
+/**
+ * Validate an ACL blob
+ *
+ * This validates an ACL blob against the underlying filesystem ACL. If this
+ * function returns NT_STATUS_OK ppsd can be
+ *
+ * 1. the ACL from the blob (psd_from_fs=false), or
+ * 2. the ACL from the fs (psd_from_fs=true), or
+ * 3. NULL (!)
+ *
+ * If the return value is anything else then NT_STATUS_OK, ppsd is set to NULL
+ * and psd_from_fs set to false.
+ *
+ * Returning the underlying filesystem ACL in case no. 2 is really just an
+ * optimisation, because some validations have to fetch the filesytem ACL as
+ * part of the validation, so we already have it available and callers might
+ * need it as well.
+ **/
+static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
+				     vfs_handle_struct *handle,
+				     files_struct *fsp,
+				     const struct smb_filename *smb_fname,
+				     const DATA_BLOB *blob,
+				     struct security_descriptor **ppsd,
+				     bool *psd_is_from_fs)
 {
-	DATA_BLOB blob = data_blob_null;
 	NTSTATUS status;
 	uint16_t hash_type = XATTR_SD_HASH_TYPE_NONE;
 	uint16_t xattr_version = 0;
@@ -491,40 +503,27 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	struct security_descriptor *psd = NULL;
 	struct security_descriptor *psd_blob = NULL;
 	struct security_descriptor *psd_fs = NULL;
-	const struct smb_filename *smb_fname = NULL;
+	char *sys_acl_blob_description = NULL;
+	DATA_BLOB sys_acl_blob = { 0 };
 	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
 						ACL_MODULE_NAME,
 						"ignore system acls",
 						false);
-	char *sys_acl_blob_description = NULL;
-	DATA_BLOB sys_acl_blob = { 0 };
-	bool psd_is_from_fs = false;
 
-	if (fsp && smb_fname_in == NULL) {
-		smb_fname = fsp->fsp_name;
-	} else {
-		smb_fname = smb_fname_in;
-	}
+	*ppsd = NULL;
+	*psd_is_from_fs = false;
 
-	DEBUG(10, ("get_nt_acl_internal: name=%s\n", smb_fname->base_name));
-
-	status = get_acl_blob(mem_ctx, handle, fsp, smb_fname, &blob);
+	status = parse_acl_blob(blob,
+				mem_ctx,
+				&psd_blob,
+				&hash_type,
+				&xattr_version,
+				&hash[0],
+				&sys_acl_hash[0]);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("get_nt_acl_internal: get_acl_blob returned %s\n",
-			nt_errstr(status)));
-		goto out;
-	} else {
-		status = parse_acl_blob(&blob, mem_ctx, &psd_blob,
-					&hash_type, &xattr_version, &hash[0], &sys_acl_hash[0]);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("parse_acl_blob returned %s\n",
-				   nt_errstr(status)));
-			TALLOC_FREE(blob.data);
-			goto out;
-		}
+		DBG_DEBUG("parse_acl_blob returned %s\n", nt_errstr(status));
+		goto fail;
 	}
-
-	TALLOC_FREE(blob.data);
 
 	/* determine which type of xattr we got */
 	switch (xattr_version) {
@@ -534,35 +533,29 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		 * require confirmation of the hash.  In particular,
 		 * the NTVFS file server uses version 1, but
 		 * 'samba-tool ntacl' can set these as well */
-		psd = psd_blob;
-		psd_blob = NULL;
-		goto out;
+		*ppsd = psd_blob;
+		return NT_STATUS_OK;
 	case 3:
 	case 4:
 		if (ignore_file_system_acl) {
-			psd = psd_blob;
-			psd_blob = NULL;
-			goto out;
+			*ppsd = psd_blob;
+			return NT_STATUS_OK;
 		}
 
 		break;
 	default:
-		DEBUG(10, ("get_nt_acl_internal: ACL blob revision "
-			   "mismatch (%u) for file %s\n",
-			   (unsigned int)hash_type,
-			   smb_fname->base_name));
+		DBG_DEBUG("ACL blob revision mismatch (%u) for file %s\n",
+			  (unsigned int)hash_type, smb_fname->base_name);
 		TALLOC_FREE(psd_blob);
-		goto out;
+		return NT_STATUS_OK;
 	}
 
 	/* determine which type of xattr we got */
 	if (hash_type != XATTR_SD_HASH_TYPE_SHA256) {
-		DEBUG(10, ("get_nt_acl_internal: ACL blob hash type "
-			   "(%u) unexpected for file %s\n",
-			   (unsigned int)hash_type,
-			   smb_fname->base_name));
+		DBG_DEBUG("ACL blob hash type (%u) unexpected for file %s\n",
+			  (unsigned int)hash_type, smb_fname->base_name);
 		TALLOC_FREE(psd_blob);
-		goto out;
+		return NT_STATUS_OK;
 	}
 
 	/* determine which type of xattr we got */
@@ -600,12 +593,10 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			if (memcmp(&sys_acl_hash[0], &sys_acl_hash_tmp[0], 
 				   XATTR_SD_HASH_SIZE) == 0) {
 				/* Hash matches, return blob sd. */
-				DEBUG(10, ("get_nt_acl_internal: blob hash "
-					   "matches for file %s\n",
-					   smb_fname->base_name ));
-				psd = psd_blob;
-				psd_blob = NULL;
-				goto out;
+				DBG_DEBUG("blob hash matches for file %s\n",
+					  smb_fname->base_name);
+				*ppsd = psd_blob;
+				return NT_STATUS_OK;
 			}
 		}
 
@@ -629,51 +620,102 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
-				   "returned %s\n",
-				   smb_fname->base_name,
-				   nt_errstr(status)));
+			DBG_DEBUG("get_next_acl for file %s returned %s\n",
+				  smb_fname->base_name, nt_errstr(status));
 			goto fail;
 		}
 
 		status = hash_sd_sha256(psd_fs, hash_tmp);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(psd_blob);
-			psd = psd_fs;
-			psd_fs = NULL;
-			psd_is_from_fs = true;
-			goto out;
+			*ppsd = psd_fs;
+			*psd_is_from_fs = true;
+			return NT_STATUS_OK;
 		}
 
 		if (memcmp(&hash[0], &hash_tmp[0], XATTR_SD_HASH_SIZE) == 0) {
 			/* Hash matches, return blob sd. */
-			DEBUG(10, ("get_nt_acl_internal: blob hash "
-				   "matches for file %s\n",
-				   smb_fname->base_name ));
-			psd = psd_blob;
-			psd_blob = NULL;
-			goto out;
+			DBG_DEBUG("blob hash matches for file %s\n",
+				  smb_fname->base_name);
+			*ppsd = psd_blob;
+			return NT_STATUS_OK;
 		}
 
 		/* Hash doesn't match, return underlying sd. */
-		DEBUG(10, ("get_nt_acl_internal: blob hash "
-			   "does not match for file %s - returning "
-			   "file system SD mapping.\n",
-			   smb_fname->base_name ));
+		DBG_DEBUG("blob hash does not match for file %s - returning "
+			  "file system SD mapping.\n",
+			  smb_fname->base_name);
 
 		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("get_nt_acl_internal: acl for blob hash for %s is:\n",
-				  smb_fname->base_name ));
+			DBG_DEBUG("acl for blob hash for %s is:\n",
+				  smb_fname->base_name);
 			NDR_PRINT_DEBUG(security_descriptor, psd_fs);
 		}
 
 		TALLOC_FREE(psd_blob);
-		psd = psd_fs;
-		psd_fs = NULL;
-		psd_is_from_fs = true;
+		*ppsd = psd_fs;
+		*psd_is_from_fs = true;
 	}
 
-out:
+	return NT_STATUS_OK;
+
+fail:
+	TALLOC_FREE(psd);
+	TALLOC_FREE(psd_blob);
+	TALLOC_FREE(psd_fs);
+	TALLOC_FREE(sys_acl_blob_description);
+	TALLOC_FREE(sys_acl_blob.data);
+	return status;
+}
+
+/*******************************************************************
+ Pull a DATA_BLOB from an xattr given a pathname.
+ If the hash doesn't match, or doesn't exist - return the underlying
+ filesystem sd.
+*******************************************************************/
+
+static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    const struct smb_filename *smb_fname_in,
+				    uint32_t security_info,
+				    TALLOC_CTX *mem_ctx,
+				    struct security_descriptor **ppdesc)
+{
+	DATA_BLOB blob = data_blob_null;
+	NTSTATUS status;
+	struct security_descriptor *psd = NULL;
+	const struct smb_filename *smb_fname = NULL;
+	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
+						ACL_MODULE_NAME,
+						"ignore system acls",
+						false);
+	bool psd_is_from_fs = false;
+
+	if (fsp && smb_fname_in == NULL) {
+		smb_fname = fsp->fsp_name;
+	} else {
+		smb_fname = smb_fname_in;
+	}
+
+	DEBUG(10, ("get_nt_acl_internal: name=%s\n", smb_fname->base_name));
+
+	status = get_acl_blob(mem_ctx, handle, fsp, smb_fname, &blob);
+	if (NT_STATUS_IS_OK(status)) {
+		status = validate_nt_acl_blob(mem_ctx,
+					      handle,
+					      fsp,
+					      smb_fname,
+					      &blob,
+					      &psd,
+					      &psd_is_from_fs);
+		TALLOC_FREE(blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("ACL validation for [%s] failed\n",
+				  smb_fname->base_name);
+			goto fail;
+		}
+	}
+
 	if (psd == NULL) {
 		/* Get the full underlying sd, as we failed to get the
 		 * blob for the hash, or the revision/hash type wasn't
@@ -803,10 +845,6 @@ out:
 
 fail:
 	TALLOC_FREE(psd);
-	TALLOC_FREE(psd_blob);
-	TALLOC_FREE(psd_fs);
-	TALLOC_FREE(sys_acl_blob_description);
-	TALLOC_FREE(sys_acl_blob.data);
 	return status;
 }
 
