@@ -462,6 +462,65 @@ static bool test_SyncRegisterForRemoteNotifications(struct torture_context *tctx
 	return true;
 }
 
+static bool test_AsyncUploadPrinterDriverPackage(struct torture_context *tctx,
+						 void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	struct winspool_AsyncUploadPrinterDriverPackage r;
+	uint32_t pcchDestInfPath = 0;
+
+	r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.pszInfPath = "";
+	r.in.pszEnvironment = "";
+	r.in.dwFlags = 0;
+	r.in.pszDestInfPath = NULL;
+	r.in.pcchDestInfPath = &pcchDestInfPath;
+	r.out.pszDestInfPath = NULL;
+	r.out.pcchDestInfPath = &pcchDestInfPath;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncUploadPrinterDriverPackage_r(b, tctx, &r),
+		"AsyncUploadPrinterDriverPackage failed");
+	torture_assert_hresult_equal(tctx, r.out.result, HRES_E_INVALIDARG,
+		"AsyncUploadPrinterDriverPackage failed");
+
+	pcchDestInfPath = 260;
+	r.in.pszDestInfPath = talloc_zero_array(tctx, uint16_t, pcchDestInfPath);
+	r.out.pszDestInfPath = talloc_zero_array(tctx, uint16_t, pcchDestInfPath);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncUploadPrinterDriverPackage_r(b, tctx, &r),
+		"AsyncUploadPrinterDriverPackage failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_INVALID_ENVIRONMENT,
+		"AsyncUploadPrinterDriverPackage failed");
+
+	r.in.pszEnvironment = SPOOLSS_ARCHITECTURE_x64;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncUploadPrinterDriverPackage_r(b, tctx, &r),
+		"AsyncUploadPrinterDriverPackage failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_FILE_NOT_FOUND,
+		"AsyncUploadPrinterDriverPackage failed");
+
+	r.in.pszInfPath = "\\\\mthelena\\print$\\x64\\{BD443844-ED00-4D96-8CAE-95E49492312A}\\prnbrcl1.inf";
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncUploadPrinterDriverPackage_r(b, tctx, &r),
+		"AsyncUploadPrinterDriverPackage failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_FILE_NOT_FOUND,
+		"AsyncUploadPrinterDriverPackage failed");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool");
@@ -475,6 +534,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "SyncRegisterForRemoteNotifications", test_SyncRegisterForRemoteNotifications);
 	torture_tcase_add_simple_test(tcase, "SyncUnRegisterForRemoteNotifications", test_SyncUnRegisterForRemoteNotifications);
 	torture_tcase_add_simple_test(tcase, "AsyncClosePrinter", test_AsyncClosePrinter);
+	torture_tcase_add_simple_test(tcase, "AsyncUploadPrinterDriverPackage", test_AsyncUploadPrinterDriverPackage);
 
 	return suite;
 }
