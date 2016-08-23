@@ -129,18 +129,48 @@ test_count_versions()
     local share
     local path
     local expected_count
+    local skip_content
     local versions
+    local tstamps
+    local tstamp
+    local content
 
     share=$1
     path=$2
     expected_count=$3
+    skip_content=$4
     versions=`$SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "allinfo $path" | grep "^create_time:" | wc -l`
-    if [ "$versions" = "$expected_count" ] ; then
-        true
-    else
+    if [ "$versions" != "$expected_count" ] ; then
         echo "expected $expected_count versions of $path, got $versions"
-        false
+        return 1
     fi
+
+    #readable snapshots
+    tstamps=`$SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "allinfo $path" | awk '/^@GMT-/ {snapshot=$1} /^create_time:/ {printf "%s\n", snapshot}'`
+    for tstamp in $tstamps ; do
+        if ! $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "get $tstamp\\$path $WORKDIR/foo" ; then
+            echo "Failed getting \\\\$SERVER\\$share\\$tstamp\\$path"
+            return 1
+        fi
+        #also check the content, but not for wide links
+        if [ "x$skip_content" != "x1" ] ; then
+            content=`cat $WORKDIR/foo`
+            if [ "$content" != "$tstamp" ] ; then
+                echo "incorrect content of \\\\$SERVER\\$share\\$tstamp\\$path expected [$tstamp]  got [$content]"
+                return 1
+            fi
+        fi
+    done
+
+    #non-readable snapshots
+    tstamps=`$SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "allinfo $path" | \
+        awk '/^@GMT-/ {if (snapshot!=""){printf "%s\n", snapshot} ; snapshot=$1} /^create_time:/ {snapshot=""} END {if (snapshot!=""){printf "%s\n", snapshot}}'`
+    for tstamp in $tstamps ; do
+        if $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "get $tstamp\\$path $WORKDIR/foo" ; then
+            echo "Unexpected success getting \\\\$SERVER\\$share\\$tstamp\\$path"
+            return 1
+        fi
+    done
 }
 
 # Test fetching a previous version of a file
@@ -196,11 +226,11 @@ test_shadow_copy_fixed()
         failed=`expr $failed + 1`
 
     testit "$msg - abs symlink outside" \
-        test_count_versions $share bar/letcpasswd $ncopies_blocked || \
+        test_count_versions $share bar/letcpasswd $ncopies_blocked  1 || \
         failed=`expr $failed + 1`
 
     testit "$msg - rel symlink outside" \
-        test_count_versions $share bar/loutside $ncopies_blocked || \
+        test_count_versions $share bar/loutside $ncopies_blocked 1 || \
         failed=`expr $failed + 1`
 }
 
