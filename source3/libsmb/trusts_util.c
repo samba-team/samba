@@ -47,6 +47,62 @@ static int trust_pw_change_state_destructor(struct trust_pw_change_state *state)
 	return 0;
 }
 
+char *trust_pw_new_value(TALLOC_CTX *mem_ctx,
+			 enum netr_SchannelType sec_channel_type,
+			 int security)
+{
+	/*
+	 * use secure defaults.
+	 */
+	size_t min = 128;
+	size_t max = 255;
+
+	switch (sec_channel_type) {
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_BDC:
+		if (security == SEC_DOMAIN) {
+			/*
+			 * The maximum length of a trust account password.
+			 * Used when we randomly create it, 15 char passwords
+			 * exceed NT4's max password length.
+			 */
+			min = 14;
+			max = 14;
+		}
+		break;
+	case SEC_CHAN_DNS_DOMAIN:
+		/*
+		 * new_len * 2 = 498 bytes is the largest possible length
+		 * NL_PASSWORD_VERSION consumes the rest of the possible 512 bytes
+		 * and a confounder with at least 2 bytes is required.
+		 *
+		 * Windows uses new_len = 120 => 240 bytes (utf16)
+		 */
+		min = 120;
+		max = 120;
+		break;
+		/* fall through */
+	case SEC_CHAN_DOMAIN:
+		/*
+		 * The maximum length of a trust account password.
+		 * Used when we randomly create it, 15 char passwords
+		 * exceed NT4's max password length.
+		 */
+		min = 14;
+		max = 14;
+		break;
+	default:
+		break;
+	}
+
+	/*
+	 * Create a random machine account password
+	 * We create a random buffer and convert that to utf8.
+	 * This is similar to what windows is doing.
+	 */
+	return generate_random_machine_password(mem_ctx, min, max);
+}
+
 NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 struct messaging_context *msg_ctx,
 			 struct dcerpc_binding_handle *b,
