@@ -524,20 +524,8 @@ wait_until_node_has_some_ips ()
 
 #######################################
 
-_ctdb_hack_options ()
-{
-    local ctdb_options="$*"
-
-    case "$ctdb_options" in
-	*--start-as-stopped*)
-	    export CTDB_START_AS_STOPPED="yes"
-    esac
-}
-
 restart_ctdb_1 ()
 {
-    _ctdb_hack_options "$@"
-
     if [ -e /etc/redhat-release ] ; then
 	service ctdb restart
     else
