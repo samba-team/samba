@@ -880,6 +880,9 @@ void update_trustdom_cache( void );
 struct netlogon_creds_cli_context;
 struct messaging_context;
 struct dcerpc_binding_handle;
+char *trust_pw_new_value(TALLOC_CTX *mem_ctx,
+			 enum netr_SchannelType sec_channel_type,
+			 int security);
 NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 struct messaging_context *msg_ctx,
 			 struct dcerpc_binding_handle *b,
