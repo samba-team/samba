@@ -104,7 +104,7 @@ class dc_join(object):
         if machinepass is not None:
             ctx.acct_pass = machinepass
         else:
-            ctx.acct_pass = samba.generate_random_password(32, 40)
+            ctx.acct_pass = samba.generate_random_machine_password(128, 255)
 
         ctx.dnsdomain = ctx.samdb.domain_dns_name()
         if clone_only:
@@ -667,7 +667,7 @@ class dc_join(object):
                     pass
                 ctx.net.set_password(account_name=ctx.samname,
                                      domain_name=ctx.domain_name,
-                                     newpassword=ctx.acct_pass)
+                                     newpassword=ctx.acct_pass.encode('utf-8'))
 
             res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE,
                                    attrs=["msDS-KeyVersionNumber"])
