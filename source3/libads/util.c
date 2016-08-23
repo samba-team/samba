@@ -35,9 +35,12 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 		return ADS_ERROR_SYSTEM(ENOENT);
 	}
 
-	new_password = generate_random_password(talloc_tos(),
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
-				DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+	new_password = trust_pw_new_value(talloc_tos(), SEC_CHAN_WKSTA, SEC_ADS);
+	if (new_password == NULL) {
+		ret = ADS_ERROR_SYSTEM(errno);
+		DEBUG(1,("Failed to generate machine password\n"));
+		goto failed;
+	}
 
 	ret = kerberos_set_password(ads->auth.kdc_server, host_principal, password, host_principal, new_password, ads->auth.time_offset);
 
