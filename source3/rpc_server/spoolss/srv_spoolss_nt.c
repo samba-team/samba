@@ -11303,3 +11303,36 @@ WERROR _spoolss_RpcEnumJobNamedProperties(struct pipes_struct *p,
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
+
+/****************************************************************
+ _spoolss_72
+****************************************************************/
+
+WERROR _spoolss_72(struct pipes_struct *p,
+		   struct spoolss_72 *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_73
+****************************************************************/
+
+WERROR _spoolss_73(struct pipes_struct *p,
+		   struct spoolss_73 *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RpcLogJobInfoForBranchOffice
+****************************************************************/
+
+WERROR _spoolss_LogJobInfoForBranchOffice(struct pipes_struct *p,
+					  struct spoolss_LogJobInfoForBranchOffice *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}

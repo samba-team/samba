@@ -3413,4 +3413,101 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[out,ref] uint32 *pcProperties,
 		[out,ref,size_is(,*pcProperties)] RPC_PrintNamedProperty **ppProperties
 	);
+
+	/******************/
+	/* Function: 0x72 */
+	[todo] WERROR spoolss_72(
+	);
+
+	/******************/
+	/* Function: 0x73 */
+	[todo] WERROR spoolss_73(
+	);
+
+	/******************/
+	/* Function: 0x71 */
+	typedef enum {
+		kInvalidJobState = 0,
+		kLogJobPrinted = 1,
+		kLogJobRendered = 2,
+		kLogJobError = 3,
+		kLogJobPipelineError = 4,
+		kLogOfflineFileFull = 5
+	} EBranchOfficeJobEventType;
+
+	typedef struct {
+		DWORD Status;
+		[string,charset(UTF16)] uint16 *pDocumentName;
+		[string,charset(UTF16)] uint16 *pUserName;
+		[string,charset(UTF16)] uint16 *pMachineName;
+		[string,charset(UTF16)] uint16 *pPrinterName;
+		[string,charset(UTF16)] uint16 *pPortName;
+		hyper Size;
+		DWORD TotalPages;
+	} spoolss_BranchOfficeJobDataPrinted;
+
+	typedef struct {
+		hyper Size;
+		DWORD ICMMethod;
+		short Color;
+		short PrintQuality;
+		short YResolution;
+		short Copies;
+		short TTOption;
+	} spoolss_BranchOfficeJobDataRendered;
+
+	typedef struct {
+		WERROR LastError;
+		[string,charset(UTF16)] uint16 *pDocumentName;
+		[string,charset(UTF16)] uint16 *pUserName;
+		[string,charset(UTF16)] uint16 *pPrinterName;
+		[string,charset(UTF16)] uint16 *pDataType;
+		hyper TotalSize;
+		hyper PrintedSize;
+		DWORD TotalPages;
+		DWORD PrintedPages;
+		[string,charset(UTF16)] uint16 *pMachineName;
+		[string,charset(UTF16)] uint16 *pJobError;
+		[string,charset(UTF16)] uint16 *pErrorDescription;
+	} spoolss_BranchOfficeJobDataError;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *pDocumentName;
+		[string,charset(UTF16)] uint16 *pPrinterName;
+		[string,charset(UTF16)] uint16 *pExtraErrorInfo;
+	} spoolss_BranchOfficeJobDataPipelineFailed;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *pMachineName;
+	} spoolss_BranchOfficeLogOfflineFileFull;
+
+	typedef [ms_union,switch_type(EBranchOfficeJobEventType)] union {
+		[case(kLogJobPrinted)]
+			spoolss_BranchOfficeJobDataPrinted LogJobPrinted;
+		[case(kLogJobRendered)]
+			spoolss_BranchOfficeJobDataRendered LogJobRendered;
+		[case(kLogJobError)]
+			spoolss_BranchOfficeJobDataError LogJobError;
+		[case(kLogJobPipelineError)]
+			spoolss_BranchOfficeJobDataPipelineFailed LogPipelineFailed;
+		[case(kLogOfflineFileFull)]
+			spoolss_BranchOfficeLogOfflineFileFull LogOfflineFileFull;
+	} spoolss_BranchOfficeJobInfo;
+
+	typedef struct {
+		EBranchOfficeJobEventType eEventType;
+		DWORD JobId;
+		[switch_is(eEventType)] spoolss_BranchOfficeJobInfo JobInfo;
+	} spoolss_BranchOfficeJobData;
+
+	typedef struct {
+		DWORD cJobDataEntries;
+		[size_is(cJobDataEntries)] spoolss_BranchOfficeJobData JobData[];
+	} spoolss_BranchOfficeJobDataContainer;
+
+	WERROR spoolss_LogJobInfoForBranchOffice(
+		[in,ref] policy_handle *hPrinter,
+		[in,ref] spoolss_BranchOfficeJobDataContainer *pBranchOfficeJobDataContainer
+	);
+
 }
