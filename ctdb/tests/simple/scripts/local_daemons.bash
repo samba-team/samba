@@ -49,14 +49,12 @@ setup_ctdb ()
     mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
 
     local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
-    local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
-    rm -f $CTDB_NODES $public_addresses_all $no_public_addresses
+    rm -f $CTDB_NODES $public_addresses_all
 
     # If there are (strictly) greater than 2 nodes then we'll randomly
     # choose a node to have no public addresses.
     local no_public_ips=-1
     [ $TEST_LOCAL_DAEMONS -gt 2 ] && no_public_ips=$(($RANDOM % $TEST_LOCAL_DAEMONS))
-    echo "$no_public_ips" >$no_public_addresses
 
     # When running certain tests we add and remove eventscripts, so we
     # need to be able to modify the events.d/ directory.  Therefore,
@@ -90,33 +88,25 @@ setup_ctdb ()
 	    fi
 	fi
     done
-}
 
-daemons_start_1 ()
-{
-    local pnn="$1"
+    local pnn
+    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+	local public_addresses_mine="${TEST_VAR_DIR}/public_addresses.${pnn}"
+	local public_addresses
 
-    local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
-    local public_addresses_mine="${TEST_VAR_DIR}/public_addresses.${pnn}"
-    local no_public_addresses="${TEST_VAR_DIR}/no_public_addresses.txt"
-    local public_addresses
-
-    local no_public_ips=-1
-    [ -r $no_public_addresses ] && read no_public_ips <$no_public_addresses
-
-    if  [ "$no_public_ips" = $pnn ] ; then
+	if  [ "$no_public_ips" = $pnn ] ; then
 	    echo "Node $no_public_ips will have no public IPs."
 	    public_addresses="/dev/null"
-    else
+	else
 	    cp "$public_addresses_all" "$public_addresses_mine"
 	    public_addresses="$public_addresses_mine"
-    fi
+	fi
 
-    local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
+	local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
 
-    local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
-    local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
-    cat >"$conf" <<EOF
+	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
+	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+	cat >"$conf" <<EOF
 CTDB_RECOVERY_LOCK="${TEST_VAR_DIR}/rec.lock"
 CTDB_NODES="$CTDB_NODES"
 CTDB_NODE_ADDRESS="${node_ip}"
@@ -131,11 +121,20 @@ CTDB_SOCKET="${TEST_VAR_DIR}/sock.$pnn"
 CTDB_NOSETSCHED=yes
 EOF
 
-    # Override from the environment.  This would be easier if env was
-    # guaranteed to quote its output so it could be reused.
-    env |
-    grep '^CTDB_' |
-    sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@' >>"$conf"
+	# Override from the environment.  This would be easier if env was
+	# guaranteed to quote its output so it could be reused.
+	env |
+	grep '^CTDB_' |
+	sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@' >>"$conf"
+    done
+}
+
+daemons_start_1 ()
+{
+    local pnn="$1"
+
+    local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
+    local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
 
     # We'll use "pkill -f" to kill the daemons with
     # "ctdbd --sloppy-start --nopublicipcheck" as context.
