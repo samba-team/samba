@@ -5,16 +5,24 @@ EOF
 exit 1;
 fi
 
-#requires tshark
-which tshark > /dev/null 2>&1 || exit 0
-which sha1sum > /dev/null 2>&1 || exit 0
-
 DC_SERVER=$1
 DC_USERNAME=$2
 DC_PASSWORD=$3
 BASEDIR=$4
 ETYPE_CONF=$5
 EXPECTED_ETYPES="$6"
+
+# Load test functions
+. `dirname $0`/subunit.sh
+
+#requires tshark and sha1sum
+if ! which tshark > /dev/null 2>&1 || ! which sha1sum > /dev/null 2>&1 ; then
+    subunit_start_test "client encryption types"
+    subunit_skip_test "client encryption types" <<EOF
+Skipping tests - tshark or sha1sum not installed
+EOF
+    exit 0
+fi
 
 HOSTNAME=`dd if=/dev/urandom bs=1 count=32 2>/dev/null | sha1sum | cut -b 1-10`
 
@@ -32,9 +40,6 @@ failed=0
 
 net_tool="$BINDIR/net -s $BASEDIR/$WORKDIR/client.conf --option=security=ads --option=kerberosencryptiontypes=$ETYPE_CONF"
 pcap_file=$BASEDIR/$WORKDIR/test.pcap
-
-# Load test functions
-. `dirname $0`/subunit.sh
 
 export SOCKET_WRAPPER_PCAP_FILE=$pcap_file
 testit "join" $VALGRIND $net_tool ads join -kU$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
