@@ -489,7 +489,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	uint8_t hash_tmp[XATTR_SD_HASH_SIZE];
 	uint8_t sys_acl_hash_tmp[XATTR_SD_HASH_SIZE];
 	struct security_descriptor *psd_blob = NULL;
-	struct security_descriptor *pdesc_next = NULL;
+	struct security_descriptor *psd_fs = NULL;
 	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
 						ACL_MODULE_NAME,
 						"ignore system acls",
@@ -615,13 +615,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							  fsp,
 							  HASH_SECURITY_INFO,
 							  mem_ctx,
-							  &pdesc_next);
+							  &psd_fs);
 		} else {
 			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
 							 name,
 							 HASH_SECURITY_INFO,
 							 mem_ctx,
-							 &pdesc_next);
+							 &psd_fs);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -633,17 +633,17 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			return status;
 		}
 
-		/* Ensure we don't leak psd_next if we don't choose it.
+		/* Ensure we don't leak psd_fs if we don't choose it.
 		 *
 		 * We don't allocate it onto frame as it is preferred not to
 		 * steal from a talloc pool.
 		 */
-		talloc_steal(frame, pdesc_next);
+		talloc_steal(frame, psd_fs);
 
-		status = hash_sd_sha256(pdesc_next, hash_tmp);
+		status = hash_sd_sha256(psd_fs, hash_tmp);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(psd_blob);
-			psd_blob = pdesc_next;
+			psd_blob = psd_fs;
 			goto out;
 		}
 
@@ -663,12 +663,12 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 		if (DEBUGLEVEL >= 10) {
 			DEBUG(10,("get_nt_acl_internal: acl for blob hash for %s is:\n",
-				  name ));
-			NDR_PRINT_DEBUG(security_descriptor, pdesc_next);
+				  name));
+			NDR_PRINT_DEBUG(security_descriptor, psd_fs);
 		}
 
 		TALLOC_FREE(psd_blob);
-		psd_blob = pdesc_next;
+		psd_blob = psd_fs;
 	}
   out:
 
@@ -681,13 +681,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							  fsp,
 							  security_info,
 							  mem_ctx,
-							  &pdesc_next);
+							  &psd_fs);
 		} else {
 			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
 							 name,
 							 security_info,
 							 mem_ctx,
-							 &pdesc_next);
+							 &psd_fs);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -699,19 +699,19 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			return status;
 		}
 
-		/* Ensure we don't leak psd_next if we don't choose it.
+		/* Ensure we don't leak psd_fs if we don't choose it.
 		 *
 		 * We don't allocate it onto frame as it is preferred not to
 		 * steal from a talloc pool.
 		 */
-		talloc_steal(frame, pdesc_next);
-		psd_blob = pdesc_next;
+		talloc_steal(frame, psd_fs);
+		psd_blob = psd_fs;
 	}
 
-	if (psd_blob != pdesc_next) {
+	if (psd_blob != psd_fs) {
 		/* We're returning the blob, throw
  		 * away the filesystem SD. */
-		TALLOC_FREE(pdesc_next);
+		TALLOC_FREE(psd_fs);
 	} else {
 		SMB_STRUCT_STAT sbuf;
 		SMB_STRUCT_STAT *psbuf = &sbuf;
@@ -757,7 +757,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		is_directory = S_ISDIR(psbuf->st_ex_mode);
 
 		if (ignore_file_system_acl) {
-			TALLOC_FREE(pdesc_next);
+			TALLOC_FREE(psd_fs);
 			status = make_default_filesystem_acl(mem_ctx,
 						name,
 						psbuf,
