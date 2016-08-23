@@ -122,10 +122,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	struct timeval g_timeout = { 0, };
 	int timeout = 0;
 	struct timeval tv = { 0, };
-	size_t new_len = DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH;
-	uint8_t new_password_buffer[256 * 2] = { 0, };
 	char *new_trust_passwd = NULL;
-	size_t len = 0;
 	uint32_t new_version = 0;
 	uint32_t *new_trust_version = NULL;
 	NTSTATUS status;
@@ -191,16 +188,6 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	case SEC_CHAN_BDC:
 		break;
 	case SEC_CHAN_DNS_DOMAIN:
-		/*
-		 * new_len * 2 = 498 bytes is the largest possible length
-		 * NL_PASSWORD_VERSION consumes the rest of the possible 512 bytes
-		 * and a confounder with at least 2 bytes is required.
-		 *
-		 * Windows uses new_len = 120 => 240 bytes.
-		 */
-		new_len = 120;
-
-		/* fall through */
 	case SEC_CHAN_DOMAIN:
 		status = pdb_get_trusted_domain(frame, domain, &td);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -249,14 +236,10 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 * We create a random buffer and convert that to utf8.
 	 * This is similar to what windows is doing.
 	 */
-	generate_secret_buffer(new_password_buffer, new_len * 2);
-	ok = convert_string_talloc(frame,
-				   CH_UTF16MUNGED, CH_UTF8,
-				   new_password_buffer, new_len * 2,
-				   (void *)&new_trust_passwd, &len);
-	ZERO_STRUCT(new_password_buffer);
-	if (!ok) {
-		DEBUG(0, ("convert_string_talloc failed\n"));
+	new_trust_passwd = trust_pw_new_value(frame, sec_channel_type,
+					      lp_security());
+	if (new_trust_passwd == NULL) {
+		DEBUG(0, ("trust_pw_new_value() failed\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
