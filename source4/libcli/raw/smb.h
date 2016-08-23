@@ -297,13 +297,6 @@
 
 #define UID_FIELD_INVALID 0
 
-/* The maximum length of a trust account password.
-   Used when we randomly create it, 15 char passwords
-   exceed NT4's max password length */
-
-#define DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH 14
-
-
 /*
   filesystem attribute bits
 */
