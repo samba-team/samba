@@ -134,6 +134,7 @@ test_count_versions()
     local tstamps
     local tstamp
     local content
+    local is_dir
 
     share=$1
     path=$2
@@ -145,13 +146,28 @@ test_count_versions()
         return 1
     fi
 
+    is_dir=0
+    $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "allinfo $path" | grep "^attributes:.*D" && is_dir=1
+    if [ $is_dir = 1 ] ; then
+        skip_content=1
+    fi
+
     #readable snapshots
     tstamps=`$SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "allinfo $path" | awk '/^@GMT-/ {snapshot=$1} /^create_time:/ {printf "%s\n", snapshot}'`
     for tstamp in $tstamps ; do
-        if ! $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "get $tstamp\\$path $WORKDIR/foo" ; then
-            echo "Failed getting \\\\$SERVER\\$share\\$tstamp\\$path"
-            return 1
+        if [ $is_dir = 0 ] ;
+        then
+            if ! $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "get $tstamp\\$path $WORKDIR/foo" ; then
+                echo "Failed getting \\\\$SERVER\\$share\\$tstamp\\$path"
+                return 1
+            fi
+        else
+            if ! $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "ls $tstamp\\$path\\*" ; then
+                echo "Failed listing \\\\$SERVER\\$share\\$tstamp\\$path"
+                return 1
+            fi
         fi
+
         #also check the content, but not for wide links
         if [ "x$skip_content" != "x1" ] ; then
             content=`cat $WORKDIR/foo`
@@ -166,9 +182,17 @@ test_count_versions()
     tstamps=`$SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "allinfo $path" | \
         awk '/^@GMT-/ {if (snapshot!=""){printf "%s\n", snapshot} ; snapshot=$1} /^create_time:/ {snapshot=""} END {if (snapshot!=""){printf "%s\n", snapshot}}'`
     for tstamp in $tstamps ; do
-        if $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "get $tstamp\\$path $WORKDIR/foo" ; then
-            echo "Unexpected success getting \\\\$SERVER\\$share\\$tstamp\\$path"
-            return 1
+        if [ $is_dir = 0 ] ;
+        then
+            if $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "get $tstamp\\$path $WORKDIR/foo" ; then
+                echo "Unexpected success getting \\\\$SERVER\\$share\\$tstamp\\$path"
+                return 1
+            fi
+        else
+            if $SMBCLIENT -U$USERNAME%$PASSWORD "//$SERVER/$share" -I $SERVER_IP -c "ls $tstamp\\$path\\*" ; then
+                echo "Unexpected success listing \\\\$SERVER\\$share\\$tstamp\\$path"
+                return 1
+            fi
         fi
     done
 }
@@ -231,6 +255,10 @@ test_shadow_copy_fixed()
 
     testit "$msg - rel symlink outside" \
         test_count_versions $share bar/loutside $ncopies_blocked 1 || \
+        failed=`expr $failed + 1`
+
+    testit "$msg - list directory" \
+        test_count_versions $share bar $ncopies_allowed || \
         failed=`expr $failed + 1`
 }
 
