@@ -95,7 +95,6 @@ setup_ctdb ()
 daemons_start_1 ()
 {
     local pnn="$1"
-    shift # "$@" gets passed to ctdbd
 
     local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
     local public_addresses_mine="${TEST_VAR_DIR}/public_addresses.${pnn}"
@@ -147,12 +146,10 @@ EOF
 
 daemons_start ()
 {
-    # "$@" gets passed to ctdbd
-
     echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
 
     for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	daemons_start_1 $i "$@"
+	daemons_start_1 $i
     done
 }
 
@@ -166,5 +163,5 @@ maybe_stop_ctdb ()
 _restart_ctdb_all ()
 {
     daemons_stop
-    daemons_start "$@"
+    daemons_start
 }
