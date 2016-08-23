@@ -115,7 +115,6 @@ local_tests = [
     "LOCAL-MESSAGING-FDPASS2a",
     "LOCAL-MESSAGING-FDPASS2b",
     "LOCAL-hex_encode_buf",
-    "LOCAL-sprintf_append",
     "LOCAL-remove_duplicate_addrs2"]
 
 for t in local_tests:
