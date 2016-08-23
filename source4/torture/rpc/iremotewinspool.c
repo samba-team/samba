@@ -344,6 +344,53 @@ static struct spoolss_NotifyOption *setup_printserver_NotifyOption(struct tortur
 	return o;
 }
 
+static bool test_SyncUnRegisterForRemoteNotifications_args(struct torture_context *tctx,
+							   struct dcerpc_pipe *p,
+							   struct policy_handle *notify_handle)
+{
+	struct winspool_SyncUnRegisterForRemoteNotifications r;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	r.in.phRpcHandle = notify_handle;
+	r.out.phRpcHandle = notify_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_SyncUnRegisterForRemoteNotifications_r(b, tctx, &r),
+		"SyncUnRegisterForRemoteNotifications failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"SyncUnRegisterForRemoteNotifications failed");
+
+	return true;
+}
+
+static bool test_SyncRegisterForRemoteNotifications_args(struct torture_context *tctx,
+							 struct dcerpc_pipe *p,
+							 struct policy_handle *server_handle,
+							 struct policy_handle *notify_handle);
+
+static bool test_SyncUnRegisterForRemoteNotifications(struct torture_context *tctx,
+						      void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+	struct policy_handle notify_handle;
+
+	torture_assert(tctx,
+		test_SyncRegisterForRemoteNotifications_args(tctx,
+							     ctx->iremotewinspool_pipe,
+							     &ctx->server_handle,
+							     &notify_handle),
+		"failed to test SyncRegisterForRemoteNotifications");
+
+	torture_assert(tctx,
+		test_SyncUnRegisterForRemoteNotifications_args(tctx,
+							       ctx->iremotewinspool_pipe,
+							       &notify_handle),
+		"failed to test UnSyncRegisterForRemoteNotifications");
+
+	return true;
+}
+
 static bool test_SyncRegisterForRemoteNotifications_args(struct torture_context *tctx,
 							 struct dcerpc_pipe *p,
 							 struct policy_handle *server_handle,
@@ -410,6 +457,8 @@ static bool test_SyncRegisterForRemoteNotifications(struct torture_context *tctx
 							     &notify_handle),
 		"failed to test SyncRegisterForRemoteNotifications");
 
+	test_SyncUnRegisterForRemoteNotifications_args(tctx, ctx->iremotewinspool_pipe, &notify_handle);
+
 	return true;
 }
 
@@ -424,6 +473,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 
 	torture_tcase_add_simple_test(tcase, "AsyncOpenPrinter", test_AsyncOpenPrinter);
 	torture_tcase_add_simple_test(tcase, "SyncRegisterForRemoteNotifications", test_SyncRegisterForRemoteNotifications);
+	torture_tcase_add_simple_test(tcase, "SyncUnRegisterForRemoteNotifications", test_SyncUnRegisterForRemoteNotifications);
 	torture_tcase_add_simple_test(tcase, "AsyncClosePrinter", test_AsyncClosePrinter);
 
 	return suite;
