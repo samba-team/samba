@@ -488,6 +488,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	uint8_t sys_acl_hash[XATTR_SD_HASH_SIZE];
 	uint8_t hash_tmp[XATTR_SD_HASH_SIZE];
 	uint8_t sys_acl_hash_tmp[XATTR_SD_HASH_SIZE];
+	struct security_descriptor *psd = NULL;
 	struct security_descriptor *psd_blob = NULL;
 	struct security_descriptor *psd_fs = NULL;
 	const struct smb_filename *smb_fname = NULL;
@@ -495,7 +496,9 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 						ACL_MODULE_NAME,
 						"ignore system acls",
 						false);
-	TALLOC_CTX *frame = talloc_stackframe();
+	char *sys_acl_blob_description = NULL;
+	DATA_BLOB sys_acl_blob = { 0 };
+	bool psd_is_from_fs = false;
 
 	if (fsp && smb_fname_in == NULL) {
 		smb_fname = fsp->fsp_name;
@@ -505,11 +508,10 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	DEBUG(10, ("get_nt_acl_internal: name=%s\n", smb_fname->base_name));
 
-	status = get_acl_blob(frame, handle, fsp, smb_fname, &blob);
+	status = get_acl_blob(mem_ctx, handle, fsp, smb_fname, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("get_nt_acl_internal: get_acl_blob returned %s\n",
 			nt_errstr(status)));
-		psd_blob = NULL;
 		goto out;
 	} else {
 		status = parse_acl_blob(&blob, mem_ctx, &psd_blob,
@@ -517,17 +519,12 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("parse_acl_blob returned %s\n",
 				   nt_errstr(status)));
-			psd_blob = NULL;
+			TALLOC_FREE(blob.data);
 			goto out;
 		}
 	}
 
-	/* Ensure we don't leak psd_blob if we don't choose it.
-	 *
-	 * We don't allocate it onto frame as it is preferred not to
-	 * steal from a talloc pool.
-	 */
-	talloc_steal(frame, psd_blob);
+	TALLOC_FREE(blob.data);
 
 	/* determine which type of xattr we got */
 	switch (xattr_version) {
@@ -537,10 +534,14 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		 * require confirmation of the hash.  In particular,
 		 * the NTVFS file server uses version 1, but
 		 * 'samba-tool ntacl' can set these as well */
+		psd = psd_blob;
+		psd_blob = NULL;
 		goto out;
 	case 3:
 	case 4:
 		if (ignore_file_system_acl) {
+			psd = psd_blob;
+			psd_blob = NULL;
 			goto out;
 		}
 
@@ -569,20 +570,18 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	case 4:
 	{
 		int ret;
-		char *sys_acl_blob_description;
-		DATA_BLOB sys_acl_blob;
 		if (fsp) {
 			/* Get the full underlying sd, then hash. */
 			ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FD(handle,
 							       fsp,
-							       frame,
+							       mem_ctx,
 							       &sys_acl_blob_description,
 							       &sys_acl_blob);
 		} else {
 			/* Get the full underlying sd, then hash. */
 			ret = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle,
 						 smb_fname->base_name,
-						 frame,
+						 mem_ctx,
 						 &sys_acl_blob_description,
 						 &sys_acl_blob);
 		}
@@ -592,9 +591,11 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		if (ret == 0) {
 			status = hash_blob_sha256(sys_acl_blob, sys_acl_hash_tmp);
 			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(frame);
-				return status;
+				goto fail;
 			}
+
+			TALLOC_FREE(sys_acl_blob_description);
+			TALLOC_FREE(sys_acl_blob.data);
 
 			if (memcmp(&sys_acl_hash[0], &sys_acl_hash_tmp[0], 
 				   XATTR_SD_HASH_SIZE) == 0) {
@@ -602,6 +603,8 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				DEBUG(10, ("get_nt_acl_internal: blob hash "
 					   "matches for file %s\n",
 					   smb_fname->base_name ));
+				psd = psd_blob;
+				psd_blob = NULL;
 				goto out;
 			}
 		}
@@ -630,21 +633,15 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				   "returned %s\n",
 				   smb_fname->base_name,
 				   nt_errstr(status)));
-			TALLOC_FREE(frame);
-			return status;
+			goto fail;
 		}
-
-		/* Ensure we don't leak psd_fs if we don't choose it.
-		 *
-		 * We don't allocate it onto frame as it is preferred not to
-		 * steal from a talloc pool.
-		 */
-		talloc_steal(frame, psd_fs);
 
 		status = hash_sd_sha256(psd_fs, hash_tmp);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(psd_blob);
-			psd_blob = psd_fs;
+			psd = psd_fs;
+			psd_fs = NULL;
+			psd_is_from_fs = true;
 			goto out;
 		}
 
@@ -653,6 +650,8 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			DEBUG(10, ("get_nt_acl_internal: blob hash "
 				   "matches for file %s\n",
 				   smb_fname->base_name ));
+			psd = psd_blob;
+			psd_blob = NULL;
 			goto out;
 		}
 
@@ -669,11 +668,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		}
 
 		TALLOC_FREE(psd_blob);
-		psd_blob = psd_fs;
+		psd = psd_fs;
+		psd_fs = NULL;
+		psd_is_from_fs = true;
 	}
-  out:
 
-	if (psd_blob == NULL) {
+out:
+	if (psd == NULL) {
 		/* Get the full underlying sd, as we failed to get the
 		 * blob for the hash, or the revision/hash type wasn't
 		 * known */
@@ -682,13 +683,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							  fsp,
 							  security_info,
 							  mem_ctx,
-							  &psd_fs);
+							  &psd);
 		} else {
 			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
 							 smb_fname,
 							 security_info,
 							 mem_ctx,
-							 &psd_fs);
+							 &psd);
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -696,24 +697,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 				   "returned %s\n",
 				   smb_fname->base_name,
 				   nt_errstr(status)));
-			TALLOC_FREE(frame);
-			return status;
+			goto fail;
 		}
 
-		/* Ensure we don't leak psd_fs if we don't choose it.
-		 *
-		 * We don't allocate it onto frame as it is preferred not to
-		 * steal from a talloc pool.
-		 */
-		talloc_steal(frame, psd_fs);
-		psd_blob = psd_fs;
+		psd_is_from_fs = true;
 	}
 
-	if (psd_blob != psd_fs) {
-		/* We're returning the blob, throw
- 		 * away the filesystem SD. */
-		TALLOC_FREE(psd_fs);
-	} else {
+	if (psd_is_from_fs) {
 		SMB_STRUCT_STAT sbuf;
 		SMB_STRUCT_STAT *psbuf = &sbuf;
 		bool is_directory = false;
@@ -725,8 +715,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		if (fsp) {
 			status = vfs_stat_fsp(fsp);
 			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(frame);
-				return status;
+				goto fail;
 			}
 			psbuf = &fsp->fsp_name->st;
 		} else {
@@ -751,72 +740,74 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 						smb_fname,
 						&sbuf);
 			if (ret == -1) {
-				TALLOC_FREE(frame);
-				return map_nt_error_from_unix(errno);
+				status = map_nt_error_from_unix(errno);
+				goto fail;
 			}
 		}
 		is_directory = S_ISDIR(psbuf->st_ex_mode);
 
 		if (ignore_file_system_acl) {
-			TALLOC_FREE(psd_fs);
+			TALLOC_FREE(psd);
 			status = make_default_filesystem_acl(mem_ctx,
 						smb_fname->base_name,
 						psbuf,
-						&psd_blob);
+						&psd);
 			if (!NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(frame);
-				return status;
+				goto fail;
 			}
 		} else {
 			if (is_directory &&
-				!sd_has_inheritable_components(psd_blob,
+				!sd_has_inheritable_components(psd,
 							true)) {
 				status = add_directory_inheritable_components(
 							handle,
 							smb_fname->base_name,
 							psbuf,
-							psd_blob);
+							psd);
 				if (!NT_STATUS_IS_OK(status)) {
-					TALLOC_FREE(frame);
-					return status;
+					goto fail;
 				}
 			}
 			/* The underlying POSIX module always sets
 			   the ~SEC_DESC_DACL_PROTECTED bit, as ACLs
 			   can't be inherited in this way under POSIX.
 			   Remove it for Windows-style ACLs. */
-			psd_blob->type &= ~SEC_DESC_DACL_PROTECTED;
+			psd->type &= ~SEC_DESC_DACL_PROTECTED;
 		}
 	}
 
 	if (!(security_info & SECINFO_OWNER)) {
-		psd_blob->owner_sid = NULL;
+		psd->owner_sid = NULL;
 	}
 	if (!(security_info & SECINFO_GROUP)) {
-		psd_blob->group_sid = NULL;
+		psd->group_sid = NULL;
 	}
 	if (!(security_info & SECINFO_DACL)) {
-		psd_blob->type &= ~SEC_DESC_DACL_PRESENT;
-		psd_blob->dacl = NULL;
+		psd->type &= ~SEC_DESC_DACL_PRESENT;
+		psd->dacl = NULL;
 	}
 	if (!(security_info & SECINFO_SACL)) {
-		psd_blob->type &= ~SEC_DESC_SACL_PRESENT;
-		psd_blob->sacl = NULL;
+		psd->type &= ~SEC_DESC_SACL_PRESENT;
+		psd->sacl = NULL;
 	}
-
-	TALLOC_FREE(blob.data);
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("get_nt_acl_internal: returning acl for %s is:\n",
 			smb_fname->base_name ));
-		NDR_PRINT_DEBUG(security_descriptor, psd_blob);
+		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
-	/* The VFS API is that the ACL is expected to be on mem_ctx */
-	*ppdesc = talloc_move(mem_ctx, &psd_blob);
+	*ppdesc = psd;
 
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
+
+fail:
+	TALLOC_FREE(psd);
+	TALLOC_FREE(psd_blob);
+	TALLOC_FREE(psd_fs);
+	TALLOC_FREE(sys_acl_blob_description);
+	TALLOC_FREE(sys_acl_blob.data);
+	return status;
 }
 
 /*********************************************************************
