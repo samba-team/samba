@@ -2254,33 +2254,14 @@ class cmd_domain_trust_create(DomainTrustCommand):
             # needs to pass the NL_PASSWORD_VERSION structure within the
             # 512 bytes and a 2 bytes confounder is required.
             #
-            def random_trust_secret(length, use_aes_keys=True):
-                secret = [0] * length
-
-                pw1 = samba.generate_random_password(length/2, length/2)
-                if not use_aes_keys:
-                    # With arcfour-hmac-md5 we have to use valid utf16
-                    # in order to generate the correct pre-auth key
-                    # based on a utf8 password.
-                    #
-                    # We can remove this once our client libraries
-                    # support using the correct NTHASH.
-                    return string_to_byte_array(pw1.encode('utf-16-le'))
-
-                # We mix characters from generate_random_password
-                # with random numbers from random.randint()
-                for i in range(len(secret)):
-                    if len(pw1) > i:
-                        secret[i] = ord(pw1[i])
-                    else:
-                        secret[i] = random.randint(0, 255)
-
-                return secret
+            def random_trust_secret(length):
+                pw = samba.generate_random_machine_password(length/2, length/2)
+                return string_to_byte_array(pw.encode('utf-16-le'))
 
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_INBOUND:
-                incoming_secret = random_trust_secret(240, use_aes_keys=use_aes_keys)
+                incoming_secret = random_trust_secret(240)
             if local_trust_info.trust_direction & lsa.LSA_TRUST_DIRECTION_OUTBOUND:
-                outgoing_secret = random_trust_secret(240, use_aes_keys=use_aes_keys)
+                outgoing_secret = random_trust_secret(240)
 
             remote_policy_access |= lsa.LSA_POLICY_TRUST_ADMIN
             remote_policy_access |= lsa.LSA_POLICY_CREATE_SECRET
