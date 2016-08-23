@@ -493,7 +493,11 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		bool differ;
 
 		ndr_v_push = ndr_push_init_ctx(mem_ctx);
-		
+
+		if (assume_ndr64) {
+			ndr_v_push->flags |= LIBNDR_FLAG_NDR64;
+		}
+
 		ndr_err = f->ndr_push(ndr_v_push, flags, st);
 		status = ndr_map_error2ntstatus(ndr_err);
 		printf("push returned %s\n", nt_errstr(status));
