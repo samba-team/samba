@@ -22,28 +22,6 @@ export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
 
 #######################################
 
-daemons_stop ()
-{
-    echo "Attempting to politely shutdown daemons..."
-    onnode -q all $CTDB shutdown || true
-
-    echo "Sleeping for a while..."
-    sleep_for 1
-
-    local pat="ctdbd --sloppy-start --nopublicipcheck"
-    if pgrep -f "$pat" >/dev/null ; then
-	echo "Killing remaining daemons..."
-	pkill -f "$pat"
-
-	if pgrep -f "$pat" >/dev/null ; then
-	    echo "Once more with feeling.."
-	    pkill -9 -f "$pat"
-	fi
-    fi
-
-    rm -rf "${TEST_VAR_DIR}/test.db"
-}
-
 setup_ctdb ()
 {
     mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
@@ -138,12 +116,26 @@ daemons_start ()
 	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
 	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
 
-	# We'll use "pkill -f" to kill the daemons with
-	# "ctdbd --sloppy-start --nopublicipcheck" as context.
 	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
 	     CTDBD_CONF="$conf" \
 	     ctdbd_wrapper "$pidfile" start
     done
+}
+
+daemons_stop ()
+{
+    echo "Stopping $TEST_LOCAL_DAEMONS ctdb daemons..."
+
+    local pnn
+    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
+	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+
+	CTDBD_CONF="$conf" \
+	     ctdbd_wrapper "$pidfile" stop
+    done
+
+    rm -rf "${TEST_VAR_DIR}/test.db"
 }
 
 maybe_stop_ctdb ()
