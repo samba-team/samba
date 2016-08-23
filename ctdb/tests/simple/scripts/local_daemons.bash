@@ -129,26 +129,20 @@ EOF
     done
 }
 
-daemons_start_1 ()
-{
-    local pnn="$1"
-
-    local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
-    local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
-
-    # We'll use "pkill -f" to kill the daemons with
-    # "ctdbd --sloppy-start --nopublicipcheck" as context.
-    CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
-	 CTDBD_CONF="$conf" \
-	 ctdbd_wrapper "$pidfile" start
-}
-
 daemons_start ()
 {
     echo "Starting $TEST_LOCAL_DAEMONS ctdb daemons..."
 
-    for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	daemons_start_1 $i
+    local pnn
+    for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
+	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+
+	# We'll use "pkill -f" to kill the daemons with
+	# "ctdbd --sloppy-start --nopublicipcheck" as context.
+	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
+	     CTDBD_CONF="$conf" \
+	     ctdbd_wrapper "$pidfile" start
     done
 }
 
