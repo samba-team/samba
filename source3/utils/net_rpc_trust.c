@@ -518,9 +518,9 @@ static int rpc_trust_common(struct net_context *net_ctx, int argc,
 			}
 
 			DEBUG(0, ("Using random trust password.\n"));
-			trust_pw = generate_random_password(mem_ctx,
-					DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH,
-					DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+			trust_pw = trust_pw_new_value(mem_ctx,
+						      SEC_CHAN_DOMAIN,
+						      SEC_DOMAIN);
 			if (trust_pw == NULL) {
 				DEBUG(0, ("generate_random_password failed.\n"));
 				goto done;
