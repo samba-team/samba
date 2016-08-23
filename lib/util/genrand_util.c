@@ -210,7 +210,7 @@ again:
 }
 
 /**
- * Generate a random text password.
+ * Generate a random text password (based on printable ascii characters).
  */
 
 _PUBLIC_ char *generate_random_password(TALLOC_CTX *mem_ctx, size_t min, size_t max)
@@ -255,6 +255,172 @@ again:
 	}
 
 	return retstr;
+}
+
+/**
+ * Generate a random machine password (based on random utf16 characters,
+ * converted to utf8). min must be at least 14, max must be at most 255.
+ *
+ * If 'unix charset' is not utf8, the password consist of random ascii
+ * values!
+ */
+
+_PUBLIC_ char *generate_random_machine_password(TALLOC_CTX *mem_ctx, size_t min, size_t max)
+{
+	TALLOC_CTX *frame = NULL;
+	struct generate_random_machine_password_state {
+		uint8_t password_buffer[256 * 2];
+		uint8_t tmp;
+	} *state;
+	char *new_pw = NULL;
+	size_t len = max;
+	char *utf8_pw = NULL;
+	size_t utf8_len = 0;
+	char *unix_pw = NULL;
+	size_t unix_len = 0;
+	size_t diff;
+	size_t i;
+	bool ok;
+	int cmp;
+
+	if (max > 255) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (min < 14) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (min > max) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	frame = talloc_stackframe_pool(2048);
+	state = talloc_zero(frame, struct generate_random_machine_password_state);
+
+	diff = max - min;
+
+	if (diff > 0) {
+		size_t tmp;
+
+		generate_random_buffer((uint8_t *)&tmp, sizeof(tmp));
+
+		tmp %= diff;
+
+		len = min + tmp;
+	}
+
+	/*
+	 * Create a random machine account password
+	 * We create a random buffer and convert that to utf8.
+	 * This is similar to what windows is doing.
+	 *
+	 * In future we may store the raw random buffer,
+	 * but for now we need to pass the password as
+	 * char pointer through some layers.
+	 *
+	 * As most kerberos keys are derived from the
+	 * utf8 password we need to fallback to
+	 * ASCII passwords if "unix charset" is not utf8.
+	 */
+	generate_secret_buffer(state->password_buffer, len * 2);
+	for (i = 0; i < len; i++) {
+		size_t idx = i*2;
+		uint16_t c;
+
+		/*
+		 * both MIT krb5 and HEIMDAL only
+		 * handle codepoints up to 0xffff.
+		 *
+		 * It means we need to avoid
+		 * 0xD800 - 0xDBFF (high surrogate)
+		 * and
+		 * 0xDC00 - 0xDFFF (low surrogate)
+		 * in the random utf16 data.
+		 *
+		 * 55296 0xD800 0154000 0b1101100000000000
+		 * 57343 0xDFFF 0157777 0b1101111111111111
+		 * 8192  0x2000  020000   0b10000000000000
+		 *
+		 * The above values show that we can check
+		 * for 0xD800 and just add 0x2000 to avoid
+		 * the surrogate ranges.
+		 *
+		 * The rest will be handled by CH_UTF16MUNGED
+		 * see utf16_munged_pull().
+		 */
+		c = SVAL(state->password_buffer, idx);
+		if (c & 0xD800) {
+			c |= 0x2000;
+		}
+		SSVAL(state->password_buffer, idx, c);
+	}
+	ok = convert_string_talloc(frame,
+				   CH_UTF16MUNGED, CH_UTF8,
+				   state->password_buffer, len * 2,
+				   (void *)&utf8_pw, &utf8_len);
+	if (!ok) {
+		DEBUG(0, ("%s: convert_string_talloc() failed\n",
+			  __func__));
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	ok = convert_string_talloc(frame,
+				   CH_UTF16MUNGED, CH_UNIX,
+				   state->password_buffer, len * 2,
+				   (void *)&unix_pw, &unix_len);
+	if (!ok) {
+		goto ascii_fallback;
+	}
+
+	if (utf8_len != unix_len) {
+		goto ascii_fallback;
+	}
+
+	cmp = memcmp((const uint8_t *)utf8_pw,
+		     (const uint8_t *)unix_pw,
+		     utf8_len);
+	if (cmp != 0) {
+		goto ascii_fallback;
+	}
+
+	new_pw = talloc_strdup(mem_ctx, utf8_pw);
+	if (new_pw == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	talloc_set_name_const(new_pw, __func__);
+	TALLOC_FREE(frame);
+	return new_pw;
+
+ascii_fallback:
+	for (i = 0; i < len; i++) {
+		/*
+		 * truncate to ascii
+		 */
+		state->tmp = state->password_buffer[i] & 0x7f;
+		if (state->tmp == 0) {
+			state->tmp = state->password_buffer[i] >> 1;
+		}
+		if (state->tmp == 0) {
+			state->tmp = 0x01;
+		}
+		state->password_buffer[i] = state->tmp;
+	}
+	state->password_buffer[i] = '\0';
+
+	new_pw = talloc_strdup(mem_ctx, (const char *)state->password_buffer);
+	if (new_pw == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	talloc_set_name_const(new_pw, __func__);
+	TALLOC_FREE(frame);
+	return new_pw;
 }
 
 /**
