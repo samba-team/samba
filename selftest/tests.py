@@ -37,7 +37,6 @@ planpythontestsuite("none", "samba.tests.source")
 if have_man_pages_support:
     planpythontestsuite("none", "samba.tests.docs")
 
-planpythontestsuite("none", "selftest.tests.test_suite", extra_path=[srcdir()])
 try:
     import testscenarios
 except ImportError:
