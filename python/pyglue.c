@@ -60,6 +60,23 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 	return ret;
 }
 
+static PyObject *py_generate_random_machine_password(PyObject *self, PyObject *args)
+{
+	int min, max;
+	PyObject *ret;
+	char *retstr;
+	if (!PyArg_ParseTuple(args, "ii", &min, &max))
+		return NULL;
+
+	retstr = generate_random_machine_password(NULL, min, max);
+	if (retstr == NULL) {
+		return NULL;
+	}
+	ret = PyUnicode_FromString(retstr);
+	talloc_free(retstr);
+	return ret;
+}
+
 static PyObject *py_unix2nttime(PyObject *self, PyObject *args)
 {
 	time_t t;
@@ -261,7 +278,14 @@ static PyMethodDef py_misc_methods[] = {
 		"Generate random string with specified length." },
 	{ "generate_random_password", (PyCFunction)py_generate_random_password,
 		METH_VARARGS, "generate_random_password(min, max) -> string\n"
-		"Generate random password with a length >= min and <= max." },
+		"Generate random password (based on printable ascii characters) "
+		"with a length >= min and <= max." },
+	{ "generate_random_machine_password", (PyCFunction)py_generate_random_machine_password,
+		METH_VARARGS, "generate_random_machine_password(min, max) -> string\n"
+		"Generate random password "
+		"(based on random utf16 characters converted to utf8 or "
+		"random ascii characters if 'unix charset' is not 'utf8')"
+		"with a length >= min (at least 14) and <= max (at most 255)." },
 	{ "unix2nttime", (PyCFunction)py_unix2nttime, METH_VARARGS,
 		"unix2nttime(timestamp) -> nttime" },
 	{ "nttime2unix", (PyCFunction)py_nttime2unix, METH_VARARGS,
