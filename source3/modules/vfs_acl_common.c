@@ -551,7 +551,6 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			   (unsigned int)hash_type,
 			   smb_fname->base_name));
 		TALLOC_FREE(psd_blob);
-		psd_blob = NULL;
 		goto out;
 	}
 
@@ -562,7 +561,6 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			   (unsigned int)hash_type,
 			   smb_fname->base_name));
 		TALLOC_FREE(psd_blob);
-		psd_blob = NULL;
 		goto out;
 	}
 
