@@ -42,9 +42,11 @@ build_files()
     local prefix
     local version
     local destdir
+    local content
     rootdir=$1
     prefix=$2
     version=$3
+    content=$4
     if [ -n "$prefix" ] ; then
         destdir=$rootdir/$prefix
     else
@@ -56,27 +58,27 @@ build_files()
         #non-snapshot files
         # for non-snapshot version, create legit files
         # so that wide-link checks focus on snapshot files
-        touch $destdir/foo
+        echo "$content" > $destdir/foo
         mkdir -p $destdir/bar
-        touch $destdir/bar/baz
-        touch $destdir/bar/lfoo
-        touch $destdir/bar/letcpasswd
-        touch $destdir/bar/loutside
+        echo "$content" > $destdir/bar/baz
+        echo "$content" > $destdir/bar/lfoo
+        echo "$content" > $destdir/bar/letcpasswd
+        echo "$content" > $destdir/bar/loutside
     elif [ "$version" = "fullsnap" ] ; then
         #snapshot files
-        touch $destdir/foo
+        echo "$content" > $destdir/foo
         mkdir -p $destdir/bar
-        touch $destdir/bar/baz
+        echo "$content" > $destdir/bar/baz
         ln -fs ../foo $destdir/bar/lfoo
         ln -fs /etc/passwd $destdir/bar/letcpasswd
         ln -fs ../../outside $destdir/bar/loutside
-        touch `dirname $destdir`/outside
+        echo "$content" > `dirname $destdir`/outside
     else #subshare snapshot - at bar
-        touch $destdir/baz
+        echo "$content" > $destdir/baz
         ln -fs ../foo $destdir/lfoo
         ln -fs /etc/passwd $destdir/letcpasswd
         ln -fs ../../outside $destdir/loutside
-        touch `dirname $destdir`/../outside
+        echo "$content" > `dirname $destdir`/../outside
     fi
 
 }
@@ -117,7 +119,7 @@ build_snapshots()
     for i in `seq $start $end` ; do
         snapname=${SNAPSHOTS[$i]}
         mkdir $snapdir/$snapname
-        build_files $snapdir/$snapname "$prefix" $version
+        build_files $snapdir/$snapname "$prefix" $version "$snapname"
     done
 }
 
@@ -262,7 +264,7 @@ test_shadow_copy_everywhere()
 }
 
 #build "latest" files
-build_files $WORKDIR/mount base/share "latest"
+build_files $WORKDIR/mount base/share "latest" "latest"
 
 failed=0
 
