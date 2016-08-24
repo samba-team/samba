@@ -379,10 +379,12 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 	gid_to_sid(&group_sid, psbuf->st_ex_gid);
 
 	/*
-	 * We provide 2 ACEs:
-	 * - Owner
-	 * - NT System
-	 */
+	 We provide up to 4 ACEs
+		- Owner
+		- Group
+		- Everyone
+		- NT System
+	*/
 
 	if (mode & S_IRUSR) {
 		if (mode & S_IWUSR) {
@@ -401,6 +403,39 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 			access_mask,
 			0);
 	idx++;
+
+	access_mask = 0;
+	if (mode & S_IRGRP) {
+		access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
+	}
+	if (mode & S_IWGRP) {
+		/* note that delete is not granted - this matches posix behaviour */
+		access_mask |= SEC_RIGHTS_FILE_WRITE;
+	}
+	if (access_mask) {
+		init_sec_ace(&aces[idx],
+			&group_sid,
+			SEC_ACE_TYPE_ACCESS_ALLOWED,
+			access_mask,
+			0);
+		idx++;
+	}
+
+	access_mask = 0;
+	if (mode & S_IROTH) {
+		access_mask |= SEC_RIGHTS_FILE_READ | SEC_FILE_EXECUTE;
+	}
+	if (mode & S_IWOTH) {
+		access_mask |= SEC_RIGHTS_FILE_WRITE;
+	}
+	if (access_mask) {
+		init_sec_ace(&aces[idx],
+			&global_sid_World,
+			SEC_ACE_TYPE_ACCESS_ALLOWED,
+			access_mask,
+			0);
+		idx++;
+	}
 
 	init_sec_ace(&aces[idx],
 			&global_sid_System,
