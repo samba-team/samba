@@ -116,9 +116,16 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 
 	/* create a new structure for this interface */
 	i = talloc_zero(ctdb, struct ctdb_interface);
-	CTDB_NO_MEMORY_FATAL(ctdb, i);
+	if (i == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
 	i->name = talloc_strdup(i, iface);
-	CTDB_NO_MEMORY(ctdb, i->name);
+	if (i->name == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		talloc_free(i);
+		return -1;
+	}
 
 	i->link_up = true;
 
