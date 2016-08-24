@@ -46,8 +46,16 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 				SECINFO_DACL | \
 				SECINFO_SACL)
 
+enum default_acl_style {DEFAULT_ACL_POSIX, DEFAULT_ACL_WINDOWS};
+
+static const struct enum_list default_acl_style[] = {
+	{DEFAULT_ACL_POSIX,	"posix"},
+	{DEFAULT_ACL_WINDOWS,	"windows"}
+};
+
 struct acl_common_config {
 	bool ignore_system_acls;
+	enum default_acl_style default_acl_style;
 };
 
 static bool init_acl_common_config(vfs_handle_struct *handle)
@@ -65,6 +73,11 @@ static bool init_acl_common_config(vfs_handle_struct *handle)
 						  ACL_MODULE_NAME,
 						  "ignore system acls",
 						  false);
+	config->default_acl_style = lp_parm_enum(SNUM(handle->conn),
+						 ACL_MODULE_NAME,
+						 "default acl style",
+						 default_acl_style,
+						 DEFAULT_ACL_POSIX);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config, NULL,
 				struct acl_common_config,
@@ -387,10 +400,10 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
-					    const char *name,
-					    SMB_STRUCT_STAT *psbuf,
-					    struct security_descriptor **ppdesc)
+static NTSTATUS make_default_acl_posix(TALLOC_CTX *ctx,
+				       const char *name,
+				       SMB_STRUCT_STAT *psbuf,
+				       struct security_descriptor **ppdesc)
 {
 	struct dom_sid owner_sid, group_sid;
 	size_t size = 0;
@@ -400,8 +413,7 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 	struct security_acl *new_dacl = NULL;
 	int idx = 0;
 
-	DEBUG(10,("make_default_filesystem_acl: file %s mode = 0%o\n",
-		name, (int)mode ));
+	DBG_DEBUG("file %s mode = 0%o\n",name, (int)mode);
 
 	uid_to_sid(&owner_sid, psbuf->st_ex_uid);
 	gid_to_sid(&group_sid, psbuf->st_ex_gid);
@@ -493,6 +505,29 @@ static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS make_default_filesystem_acl(TALLOC_CTX *ctx,
+					    struct acl_common_config *config,
+					    const char *name,
+					    SMB_STRUCT_STAT *psbuf,
+					    struct security_descriptor **ppdesc)
+{
+	NTSTATUS status;
+
+	switch (config->default_acl_style) {
+
+	case DEFAULT_ACL_POSIX:
+		status =  make_default_acl_posix(ctx, name, psbuf, ppdesc);
+		break;
+
+	default:
+		DBG_ERR("unknown acl style %d", config->default_acl_style);
+		status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+
+	return status;
 }
 
 /**
@@ -805,6 +840,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 			status = make_default_filesystem_acl(
 				mem_ctx,
+				config,
 				smb_fname->base_name,
 				psbuf,
 				&psd);
