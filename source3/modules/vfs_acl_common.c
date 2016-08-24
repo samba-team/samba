@@ -695,6 +695,48 @@ fail:
 	return status;
 }
 
+static NTSTATUS stat_fsp_or_name(vfs_handle_struct *handle,
+				 files_struct *fsp,
+				 const char *name,
+				 SMB_STRUCT_STAT *sbuf,
+				 SMB_STRUCT_STAT **psbuf)
+{
+	NTSTATUS status;
+	int ret;
+
+	if (fsp) {
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		*psbuf = &fsp->fsp_name->st;
+	} else {
+		/*
+		 * https://bugzilla.samba.org/show_bug.cgi?id=11249
+		 *
+		 * We are currently guaranteed that 'name' here is a
+		 * smb_fname->base_name, which *cannot* contain a stream name
+		 * (':'). vfs_stat_smb_fname() splits a name into a base name +
+		 * stream name, which when we get here we know we've already
+		 * done.  So we have to call the stat or lstat VFS calls
+		 * directly here. Else, a base_name that contains a ':' (from a
+		 * demangled name) will get split again.
+		 *
+		 * FIXME.
+		 * This uglyness will go away once smb_fname is fully plumbed
+		 * through the VFS.
+		 */
+		ret = vfs_stat_smb_basename(handle->conn,
+					    name,
+					    sbuf);
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  Pull a DATA_BLOB from an xattr given a pathname.
  If the hash doesn't match, or doesn't exist - return the underlying
@@ -777,38 +819,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		 * filesystem. If it's a directory, and has no
 		 * inheritable ACE entries we have to fake them.
 		 */
-		if (fsp) {
-			status = vfs_stat_fsp(fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-			psbuf = &fsp->fsp_name->st;
-		} else {
-			/*
-			 * https://bugzilla.samba.org/show_bug.cgi?id=11249
-			 *
-			 * We are currently guaranteed that 'name' here is
-			 * a smb_fname->base_name, which *cannot* contain
-			 * a stream name (':'). vfs_stat_smb_fname() splits
-			 * a name into a base name + stream name, which
-			 * when we get here we know we've already done.
-			 * So we have to call the stat or lstat VFS
-			 * calls directly here. Else, a base_name that
-			 * contains a ':' (from a demangled name) will
-			 * get split again.
-			 *
-			 * FIXME.
-			 * This uglyness will go away once smb_fname
-			 * is fully plumbed through the VFS.
-			 */
-			int ret = vfs_stat_smb_basename(handle->conn,
-						name,
-						&sbuf);
-			if (ret == -1) {
-				status = map_nt_error_from_unix(errno);
-				goto fail;
-			}
+
+		status = stat_fsp_or_name(handle, fsp, name,
+					  &sbuf, &psbuf);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
 		}
+
 		is_directory = S_ISDIR(psbuf->st_ex_mode);
 
 		if (config->ignore_system_acls) {
