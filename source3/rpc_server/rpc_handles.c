@@ -148,7 +148,7 @@ struct handle_list {
 #endif
 
 /****************************************************************************
- Hack as handles need to be persisant over lsa pipe closes so long as a samr
+ Hack as handles need to be persistent over lsa pipe closes so long as a samr
  pipe is open. JRA.
 ****************************************************************************/
 
