@@ -34,14 +34,14 @@ void initdsdb(void);
 /* FIXME: These should be in a header file somewhere */
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
 	if (!py_check_dcerpc_type(py_ldb, "ldb", "Ldb")) { \
-		PyErr_SetString(py_ldb_get_exception(), "Ldb connection object required"); \
+		PyErr_SetString(PyExc_TypeError, "Ldb connection object required"); \
 		return NULL; \
 	} \
 	ldb = pyldb_Ldb_AsLdbContext(py_ldb);
 
 #define PyErr_LDB_DN_OR_RAISE(py_ldb_dn, dn) \
 	if (!py_check_dcerpc_type(py_ldb_dn, "ldb", "Dn")) { \
-		PyErr_SetString(py_ldb_get_exception(), "ldb Dn object required"); \
+		PyErr_SetString(PyExc_TypeError, "ldb Dn object required"); \
 		return NULL; \
 	} \
 	dn = pyldb_Dn_AsDn(py_ldb_dn);
