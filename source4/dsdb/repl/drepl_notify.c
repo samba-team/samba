@@ -190,13 +190,13 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 	werr = ntstatus_to_werror(status);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(4,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
+		DBG_INFO("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name,
 			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
-			 nt_errstr(status), win_errstr(werr)));
+			 nt_errstr(status), win_errstr(werr));
 	} else {
-		DEBUG(2,("dreplsrv_notify: DsReplicaSync successfuly sent to %s\n",
-			 op->source_dsa->repsFrom1->other_info->dns_name));
+		DBG_INFO("dreplsrv_notify: DsReplicaSync successfuly sent to %s\n",
+			 op->source_dsa->repsFrom1->other_info->dns_name);
 		op->source_dsa->notify_uSN = op->uSN;
 	}
 
@@ -233,15 +233,15 @@ void dreplsrv_notify_run_ops(struct dreplsrv_service *s)
 
 	subreq = dreplsrv_op_notify_send(op, s->task->event_ctx, op);
 	if (!subreq) {
-		DEBUG(0,("dreplsrv_notify_run_ops: dreplsrv_op_notify_send[%s][%s] - no memory\n",
-			 op->source_dsa->repsFrom1->other_info->dns_name,
-			 ldb_dn_get_linearized(op->source_dsa->partition->dn)));
+		DBG_ERR("dreplsrv_notify_run_ops: dreplsrv_op_notify_send[%s][%s] - no memory\n",
+			op->source_dsa->repsFrom1->other_info->dns_name,
+			ldb_dn_get_linearized(op->source_dsa->partition->dn));
 		return;
 	}
 	tevent_req_set_callback(subreq, dreplsrv_notify_op_callback, op);
-	DEBUG(4,("started DsReplicaSync for %s to %s\n",
+	DBG_INFO("started DsReplicaSync for %s to %s\n",
 		 ldb_dn_get_linearized(op->source_dsa->partition->dn),
-		 op->source_dsa->repsFrom1->other_info->dns_name));
+		 op->source_dsa->repsFrom1->other_info->dns_name);
 }
 
 
@@ -286,8 +286,8 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 
 	s = dreplsrv_find_notify_dsa(p, &reps->ctr.ctr1.source_dsa_obj_guid);
 	if (s == NULL) {
-		DEBUG(0,(__location__ ": Unable to find source_dsa for %s\n",
-			 GUID_string(mem_ctx, &reps->ctr.ctr1.source_dsa_obj_guid)));
+		DBG_ERR("Unable to find source_dsa for %s\n",
+			GUID_string(mem_ctx, &reps->ctr.ctr1.source_dsa_obj_guid));
 		return WERR_DS_UNAVAILABLE;
 	}
 
@@ -346,8 +346,8 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 
 	werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &reps, &count);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,(__location__ ": Failed to load repsTo for %s\n",
-			 ldb_dn_get_linearized(p->dn)));
+		DBG_ERR("Failed to load repsTo for %s\n",
+			 ldb_dn_get_linearized(p->dn));
 		return werr;
 	}
 
@@ -374,17 +374,18 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 			werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
 							     uSNHighest, is_urgent, replica_flags);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0,(__location__ ": Failed to setup notify to %s for %s\n",
+				DBG_ERR("Failed to setup notify to %s for %s\n",
 					 reps[i].ctr.ctr1.other_info->dns_name,
-					 ldb_dn_get_linearized(p->dn)));
+					 ldb_dn_get_linearized(p->dn));
 				return werr;
 			}
-			DEBUG(4,("queued DsReplicaSync for %s to %s (urgent=%s) uSN=%llu:%llu\n",
-				 ldb_dn_get_linearized(p->dn),
-				 reps[i].ctr.ctr1.other_info->dns_name,
-				 is_urgent?"true":"false",
-				 (unsigned long long)sdsa->notify_uSN,
-				 (unsigned long long)uSNHighest));
+			DBG_DEBUG("queued DsReplicaSync for %s to %s "
+				  "(urgent=%s) uSN=%llu:%llu\n",
+				  ldb_dn_get_linearized(p->dn),
+				  reps[i].ctr.ctr1.other_info->dns_name,
+				  is_urgent?"true":"false",
+				  (unsigned long long)sdsa->notify_uSN,
+				  (unsigned long long)uSNHighest);
 		}
 	}
 
@@ -457,10 +458,10 @@ WERROR dreplsrv_notify_schedule(struct dreplsrv_service *service, uint32_t next_
 	W_ERROR_HAVE_NO_MEMORY(new_te);
 
 	tmp_mem = talloc_new(service);
-	DEBUG(4,("dreplsrv_notify_schedule(%u) %sscheduled for: %s\n",
-		next_interval,
-		(service->notify.te?"re":""),
-		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));
+	DBG_DEBUG("dreplsrv_notify_schedule(%u) %sscheduled for: %s\n",
+		  next_interval,
+		  (service->notify.te?"re":""),
+		  nt_time_string(tmp_mem, timeval_to_nttime(&next_time)));
 	talloc_free(tmp_mem);
 
 	talloc_free(service->notify.te);
