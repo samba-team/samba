@@ -1052,7 +1052,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	uint32_t num = 0;
 	char *tmp;
 	const char *iface;
-	int i;
 	int ret;
 
 	/* Verify that we don't have an entry for this IP yet */
@@ -1091,6 +1090,17 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 			talloc_free(vnn);
 			return -1;
 		}
+
+		ret = ctdb_add_local_iface(ctdb, iface);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to add interface '%s' "
+			       "for public address %s\n",
+			       iface, ctdb_addr_to_str(addr)));
+			talloc_free(vnn);
+			return -1;
+		}
+
 		vnn->ifaces = talloc_realloc(vnn, vnn->ifaces, const char *, num + 2);
 		if (vnn->ifaces == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
@@ -1110,17 +1120,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
-
-	for (i=0; vnn->ifaces[i]; i++) {
-		ret = ctdb_add_local_iface(ctdb, vnn->ifaces[i]);
-		if (ret != 0) {
-			DEBUG(DEBUG_CRIT, (__location__ " failed to add iface[%s] "
-					   "for public_address[%s]\n",
-					   vnn->ifaces[i], ctdb_addr_to_str(addr)));
-			talloc_free(vnn);
-			return -1;
-		}
-	}
 
 	DLIST_ADD(ctdb->vnn, vnn);
 
