@@ -174,7 +174,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
 	 * For a Windows acl mapped call on a symlink, we want to follow
 	 * it.
 	 */
-	ret = SMB_VFS_STAT(conn, &smb_fname);
+	ret = SMB_VFS_STAT(handle->conn, &smb_fname);
 	if (ret != 0) {
 		DEBUG(10, ("Error in stat call: %s\n", strerror(errno)));
 		goto done;
