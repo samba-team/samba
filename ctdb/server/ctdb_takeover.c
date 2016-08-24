@@ -140,13 +140,13 @@ ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	return i;
 }
 
-static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
-					const char *name)
+static bool vnn_has_interface(struct ctdb_vnn *vnn,
+			      const struct ctdb_interface *iface)
 {
 	struct vnn_interface *i;
 
 	for (i = vnn->ifaces; i != NULL; i = i->next) {
-		if (strcmp(name, i->iface->name) == 0) {
+		if (iface == i->iface) {
 			return true;
 		}
 	}
@@ -177,14 +177,14 @@ static void ctdb_remove_orphaned_ifaces(struct ctdb_context *ctdb,
 		next = i->next;
 
 		/* Only consider interfaces named in the given VNN. */
-		if (!vnn_has_interface_with_name(vnn, i->name)) {
+		if (!vnn_has_interface(vnn, i)) {
 			continue;
 		}
 
 		/* Search for a vnn with this interface. */
 		found = false;
 		for (tv=ctdb->vnn; tv; tv=tv->next) {
-			if (vnn_has_interface_with_name(tv, i->name)) {
+			if (vnn_has_interface(tv, i)) {
 				found = true;
 				break;
 			}
