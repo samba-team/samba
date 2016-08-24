@@ -98,19 +98,20 @@ static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
 	return iface_string(vnn->iface);
 }
 
-static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
+static struct ctdb_interface *
+ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 {
 	struct ctdb_interface *i;
 
 	if (strlen(iface) > CTDB_IFACE_SIZE) {
 		DEBUG(DEBUG_ERR, ("Interface name too long \"%s\"\n", iface));
-		return -1;
+		return NULL;
 	}
 
 	/* Verify that we don't have an entry for this ip yet */
 	for (i=ctdb->ifaces;i;i=i->next) {
 		if (strcmp(i->name, iface) == 0) {
-			return 0;
+			return i;
 		}
 	}
 
@@ -118,20 +119,20 @@ static int ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	i = talloc_zero(ctdb, struct ctdb_interface);
 	if (i == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		return -1;
+		return NULL;
 	}
 	i->name = talloc_strdup(i, iface);
 	if (i->name == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		talloc_free(i);
-		return -1;
+		return NULL;
 	}
 
 	i->link_up = true;
 
 	DLIST_ADD(ctdb->ifaces, i);
 
-	return 0;
+	return i;
 }
 
 static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
@@ -1052,7 +1053,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	uint32_t num = 0;
 	char *tmp;
 	const char *iface;
-	int ret;
 
 	/* Verify that we don't have an entry for this IP yet */
 	for (vnn = ctdb->vnn; vnn != NULL; vnn = vnn->next) {
@@ -1083,6 +1083,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		return -1;
 	}
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
+		struct ctdb_interface *i;
 		if (!ctdb_sys_check_iface_exists(iface)) {
 			DEBUG(DEBUG_ERR,
 			      ("Unknown interface %s for public address %s\n",
@@ -1091,8 +1092,8 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		ret = ctdb_add_local_iface(ctdb, iface);
-		if (ret != 0) {
+		i = ctdb_add_local_iface(ctdb, iface);
+		if (i == NULL) {
 			DEBUG(DEBUG_ERR,
 			      ("Failed to add interface '%s' "
 			       "for public address %s\n",
