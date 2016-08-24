@@ -180,9 +180,16 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 				const char *user)
 {
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	bool ok;
 
 	if (ret < 0) {
 		return ret;
+	}
+
+	ok = init_acl_common_config(handle);
+	if (!ok) {
+		DBG_ERR("init_acl_common_config failed\n");
+		return -1;
 	}
 
 	/* Ensure we have the parameters correct if we're
