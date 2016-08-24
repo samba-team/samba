@@ -55,12 +55,17 @@ struct ctdb_interface {
 	uint32_t references;
 };
 
+struct vnn_interface {
+	struct vnn_interface *prev, *next;
+	struct ctdb_interface *iface;
+};
+
 /* state associated with a public ip address */
 struct ctdb_vnn {
 	struct ctdb_vnn *prev, *next;
 
 	struct ctdb_interface *iface;
-	const char **ifaces;
+	struct vnn_interface *ifaces;
 	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
 
@@ -138,10 +143,10 @@ ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 static bool vnn_has_interface_with_name(struct ctdb_vnn *vnn,
 					const char *name)
 {
-	int n;
+	struct vnn_interface *i;
 
-	for (n = 0; vnn->ifaces[n] != NULL; n++) {
-		if (strcmp(name, vnn->ifaces[n]) == 0) {
+	for (i = vnn->ifaces; i != NULL; i = i->next) {
+		if (strcmp(name, i->iface->name) == 0) {
 			return true;
 		}
 	}
@@ -211,13 +216,13 @@ static struct ctdb_interface *ctdb_find_iface(struct ctdb_context *ctdb,
 static struct ctdb_interface *ctdb_vnn_best_iface(struct ctdb_context *ctdb,
 						  struct ctdb_vnn *vnn)
 {
-	int i;
+	struct vnn_interface *i;
 	struct ctdb_interface *cur = NULL;
 	struct ctdb_interface *best = NULL;
 
-	for (i=0; vnn->ifaces[i]; i++) {
+	for (i = vnn->ifaces; i != NULL; i = i->next) {
 
-		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
+		cur = ctdb_find_iface(ctdb, i->iface->name);
 		if (cur == NULL) {
 			continue;
 		}
@@ -293,7 +298,7 @@ static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
 static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 			       struct ctdb_vnn *vnn)
 {
-	int i;
+	struct vnn_interface *i;
 
 	/* Nodes that are not RUNNING can not host IPs */
 	if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
@@ -308,10 +313,10 @@ static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 		return true;
 	}
 
-	for (i=0; vnn->ifaces[i]; i++) {
+	for (i = vnn->ifaces; i != NULL; i = i->next) {
 		struct ctdb_interface *cur;
 
-		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
+		cur = ctdb_find_iface(ctdb, i->iface->name);
 		if (cur == NULL) {
 			continue;
 		}
@@ -1050,7 +1055,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 				   bool check_address)
 {
 	struct ctdb_vnn      *vnn;
-	uint32_t num = 0;
 	char *tmp;
 	const char *iface;
 
@@ -1070,12 +1074,6 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 		return -1;
 	}
-	vnn->ifaces = talloc_array(vnn, const char *, num + 2);
-	if (vnn->ifaces == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-		talloc_free(vnn);
-		return -1;
-	}
 	tmp = talloc_strdup(vnn, ifaces);
 	if (tmp == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
@@ -1083,6 +1081,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 		return -1;
 	}
 	for (iface = strtok(tmp, ","); iface; iface = strtok(NULL, ",")) {
+		struct vnn_interface *vnn_iface;
 		struct ctdb_interface *i;
 		if (!ctdb_sys_check_iface_exists(iface)) {
 			DEBUG(DEBUG_ERR,
@@ -1102,22 +1101,17 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		vnn->ifaces = talloc_realloc(vnn, vnn->ifaces, const char *, num + 2);
-		if (vnn->ifaces == NULL) {
+		vnn_iface = talloc_zero(vnn, struct vnn_interface);
+		if (vnn_iface == NULL) {
 			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
 			talloc_free(vnn);
 			return -1;
 		}
-		vnn->ifaces[num] = talloc_strdup(vnn, iface);
-		if (vnn->ifaces[num] == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
-			talloc_free(vnn);
-			return -1;
-		}
-		num++;
+
+		vnn_iface->iface = i;
+		DLIST_ADD_END(vnn->ifaces, vnn_iface);
 	}
 	talloc_free(tmp);
-	vnn->ifaces[num] = NULL;
 	vnn->public_address      = *addr;
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
@@ -2270,6 +2264,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 	ctdb_sock_addr *addr;
 	struct ctdb_public_ip_info_old *info;
 	struct ctdb_vnn *vnn;
+	struct vnn_interface *iface;
 
 	addr = (ctdb_sock_addr *)indata.dptr;
 
@@ -2283,7 +2278,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 
 	/* count how many public ip structures we have */
 	num = 0;
-	for (;vnn->ifaces[num];) {
+	for (iface = vnn->ifaces; iface != NULL; iface = iface->next) {
 		num++;
 	}
 
@@ -2296,13 +2291,14 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 	info->ip.pnn = vnn->pnn;
 	info->active_idx = 0xFFFFFFFF;
 
-	for (i=0; vnn->ifaces[i]; i++) {
+	i = 0;
+	for (iface = vnn->ifaces; iface != NULL; iface = iface->next) {
 		struct ctdb_interface *cur;
 
-		cur = ctdb_find_iface(ctdb, vnn->ifaces[i]);
+		cur = ctdb_find_iface(ctdb, iface->iface->name);
 		if (cur == NULL) {
 			DEBUG(DEBUG_CRIT, (__location__ " internal error iface[%s] unknown\n",
-					   vnn->ifaces[i]));
+					   iface->iface->name));
 			return -1;
 		}
 		if (vnn->iface == cur) {
@@ -2313,6 +2309,8 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 		info->ifaces[i].name[sizeof(info->ifaces[i].name)-1] = '\0';
 		info->ifaces[i].link_state = cur->link_up;
 		info->ifaces[i].references = cur->references;
+
+		i++;
 	}
 	info->num = i;
 	len = offsetof(struct ctdb_public_ip_info_old, ifaces) +
@@ -3014,7 +3012,7 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 			struct ctdb_addr_info_old *pub;
 			const char *ifaces = NULL;
 			uint32_t len;
-			int iface = 0;
+			struct vnn_interface *iface = NULL;
 
 			DEBUG(DEBUG_NOTICE,
 			      ("New IP %s configured, adding it\n",
@@ -3038,12 +3036,12 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 				first_add = false;
 			}
 
-			ifaces = vnn->ifaces[0];
-			iface = 1;
-			while (vnn->ifaces[iface] != NULL) {
+			ifaces = vnn->ifaces->iface->name;
+			iface = vnn->ifaces->next;
+			while (iface != NULL) {
 				ifaces = talloc_asprintf(vnn, "%s,%s", ifaces,
-							 vnn->ifaces[iface]);
-				iface++;
+							 iface->iface->name);
+				iface = iface->next;
 			}
 
 			len   = strlen(ifaces) + 1;
