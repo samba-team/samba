@@ -46,6 +46,34 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 				SECINFO_DACL | \
 				SECINFO_SACL)
 
+struct acl_common_config {
+	bool ignore_system_acls;
+};
+
+static bool init_acl_common_config(vfs_handle_struct *handle)
+{
+	struct acl_common_config *config = NULL;
+
+	config = talloc_zero(handle->conn, struct acl_common_config);
+	if (config == NULL) {
+		DBG_ERR("talloc_zero() failed\n");
+		errno = ENOMEM;
+		return false;
+	}
+
+	config->ignore_system_acls = lp_parm_bool(SNUM(handle->conn),
+						  ACL_MODULE_NAME,
+						  "ignore system acls",
+						  false);
+
+	SMB_VFS_HANDLE_SET_DATA(handle, config, NULL,
+				struct acl_common_config,
+				return false);
+
+	return true;
+}
+
+
 /*******************************************************************
  Hash a security descriptor.
 *******************************************************************/
@@ -505,13 +533,14 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 	struct security_descriptor *psd_fs = NULL;
 	char *sys_acl_blob_description = NULL;
 	DATA_BLOB sys_acl_blob = { 0 };
-	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
-						ACL_MODULE_NAME,
-						"ignore system acls",
-						false);
+	struct acl_common_config *config = NULL;
 
 	*ppsd = NULL;
 	*psd_is_from_fs = false;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return NT_STATUS_UNSUCCESSFUL);
 
 	status = parse_acl_blob(blob,
 				mem_ctx,
@@ -537,7 +566,7 @@ static NTSTATUS validate_nt_acl_blob(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	case 3:
 	case 4:
-		if (ignore_file_system_acl) {
+		if (config->ignore_system_acls) {
 			*ppsd = psd_blob;
 			return NT_STATUS_OK;
 		}
@@ -685,11 +714,12 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	NTSTATUS status;
 	struct security_descriptor *psd = NULL;
 	const struct smb_filename *smb_fname = NULL;
-	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
-						ACL_MODULE_NAME,
-						"ignore system acls",
-						false);
 	bool psd_is_from_fs = false;
+	struct acl_common_config *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return NT_STATUS_UNSUCCESSFUL);
 
 	if (fsp && smb_fname_in == NULL) {
 		smb_fname = fsp->fsp_name;
@@ -788,7 +818,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		}
 		is_directory = S_ISDIR(psbuf->st_ex_mode);
 
-		if (ignore_file_system_acl) {
+		if (config->ignore_system_acls) {
 			TALLOC_FREE(psd);
 			status = make_default_filesystem_acl(mem_ctx,
 						smb_fname->base_name,
