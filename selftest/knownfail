@@ -344,5 +344,3 @@
 ^samba4.smb2.read.access
 #ntvfs server blocks copychunk with execute access on read handle
 ^samba4.smb2.ioctl.copy_chunk_bad_access
-#new snapshot dir listing test fails on SMB1
-^samba3.blackbox.shadow_copy2(?!.*wide links).*- list directory
