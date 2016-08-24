@@ -792,35 +792,57 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		/* Get the full underlying sd, as we failed to get the
 		 * blob for the hash, or the revision/hash type wasn't
 		 * known */
-		if (fsp) {
-			status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
-							  fsp,
-							  security_info,
-							  mem_ctx,
-							  &psd);
+
+		if (config->ignore_system_acls) {
+			SMB_STRUCT_STAT sbuf;
+			SMB_STRUCT_STAT *psbuf = &sbuf;
+
+			status = stat_fsp_or_smb_fname(handle, fsp, smb_fname,
+						       &sbuf, &psbuf);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+
+			status = make_default_filesystem_acl(
+				mem_ctx,
+				smb_fname->base_name,
+				psbuf,
+				&psd);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
 		} else {
-			status = SMB_VFS_NEXT_GET_NT_ACL(handle,
-							 smb_fname,
-							 security_info,
-							 mem_ctx,
-							 &psd);
-		}
+			if (fsp) {
+				status = SMB_VFS_NEXT_FGET_NT_ACL(handle,
+								  fsp,
+								  security_info,
+								  mem_ctx,
+								  &psd);
+			} else {
+				status = SMB_VFS_NEXT_GET_NT_ACL(handle,
+								 smb_fname,
+								 security_info,
+								 mem_ctx,
+								 &psd);
+			}
 
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("get_nt_acl_internal: get_next_acl for file %s "
-				   "returned %s\n",
-				   smb_fname->base_name,
-				   nt_errstr(status)));
-			goto fail;
-		}
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_DEBUG("get_next_acl for file %s "
+					  "returned %s\n",
+					  smb_fname->base_name,
+					  nt_errstr(status));
+				goto fail;
+			}
 
-		psd_is_from_fs = true;
+			psd_is_from_fs = true;
+		}
 	}
 
 	if (psd_is_from_fs) {
 		SMB_STRUCT_STAT sbuf;
 		SMB_STRUCT_STAT *psbuf = &sbuf;
 		bool is_directory = false;
+
 		/*
 		 * We're returning the underlying ACL from the
 		 * filesystem. If it's a directory, and has no
@@ -835,34 +857,23 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 		is_directory = S_ISDIR(psbuf->st_ex_mode);
 
-		if (config->ignore_system_acls) {
-			TALLOC_FREE(psd);
-			status = make_default_filesystem_acl(mem_ctx,
-						smb_fname->base_name,
-						psbuf,
-						&psd);
+		if (is_directory && !sd_has_inheritable_components(psd, true)) {
+			status = add_directory_inheritable_components(
+				handle,
+				smb_fname->base_name,
+				psbuf,
+				psd);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto fail;
 			}
-		} else {
-			if (is_directory &&
-				!sd_has_inheritable_components(psd,
-							true)) {
-				status = add_directory_inheritable_components(
-							handle,
-							smb_fname->base_name,
-							psbuf,
-							psd);
-				if (!NT_STATUS_IS_OK(status)) {
-					goto fail;
-				}
-			}
-			/* The underlying POSIX module always sets
-			   the ~SEC_DESC_DACL_PROTECTED bit, as ACLs
-			   can't be inherited in this way under POSIX.
-			   Remove it for Windows-style ACLs. */
-			psd->type &= ~SEC_DESC_DACL_PROTECTED;
 		}
+
+		/*
+		 * The underlying POSIX module always sets the
+		 * ~SEC_DESC_DACL_PROTECTED bit, as ACLs can't be inherited in
+		 * this way under POSIX. Remove it for Windows-style ACLs.
+		 */
+		psd->type &= ~SEC_DESC_DACL_PROTECTED;
 	}
 
 	if (!(security_info & SECINFO_OWNER)) {
