@@ -222,10 +222,7 @@ static struct ctdb_interface *ctdb_vnn_best_iface(struct ctdb_context *ctdb,
 
 	for (i = vnn->ifaces; i != NULL; i = i->next) {
 
-		cur = ctdb_find_iface(ctdb, i->iface->name);
-		if (cur == NULL) {
-			continue;
-		}
+		cur = i->iface;
 
 		if (!cur->link_up) {
 			continue;
@@ -314,14 +311,7 @@ static bool ctdb_vnn_available(struct ctdb_context *ctdb,
 	}
 
 	for (i = vnn->ifaces; i != NULL; i = i->next) {
-		struct ctdb_interface *cur;
-
-		cur = ctdb_find_iface(ctdb, i->iface->name);
-		if (cur == NULL) {
-			continue;
-		}
-
-		if (cur->link_up) {
+		if (i->iface->link_up) {
 			return true;
 		}
 	}
@@ -2295,12 +2285,7 @@ int32_t ctdb_control_get_public_ip_info(struct ctdb_context *ctdb,
 	for (iface = vnn->ifaces; iface != NULL; iface = iface->next) {
 		struct ctdb_interface *cur;
 
-		cur = ctdb_find_iface(ctdb, iface->iface->name);
-		if (cur == NULL) {
-			DEBUG(DEBUG_CRIT, (__location__ " internal error iface[%s] unknown\n",
-					   iface->iface->name));
-			return -1;
-		}
+		cur = iface->iface;
 		if (vnn->iface == cur) {
 			info->active_idx = i;
 		}
