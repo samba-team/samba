@@ -50,7 +50,7 @@
 
 	To set one of these options use the follwing syntax:
 	<programlisting>
-	damonname:prefork_min_children = 5
+	daemonname:prefork_min_children = 5
 	</programlisting>
 	</para>
 
