@@ -305,6 +305,7 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 				const char *user)
 {
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	bool ok;
 
 	if (ret < 0) {
 		return ret;
@@ -312,6 +313,12 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 
 	if (!acl_tdb_init()) {
 		SMB_VFS_NEXT_DISCONNECT(handle);
+		return -1;
+	}
+
+	ok = init_acl_common_config(handle);
+	if (!ok) {
+		DBG_ERR("init_acl_common_config failed\n");
 		return -1;
 	}
 
