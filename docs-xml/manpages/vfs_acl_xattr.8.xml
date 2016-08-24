@@ -67,6 +67,31 @@
 		</para>
 		</listitem>
 		</varlistentry>
+
+		<varlistentry>
+		<term>acl_xattr:default acl style = [posix|windows]</term>
+		<listitem>
+		<para>
+		This parameter determines the type of ACL that is synthesized in
+		case a file or directory lacks an
+		<emphasis>security.NTACL</emphasis> xattr.
+		</para>
+		<para>
+		When set to <emphasis>posix</emphasis>, an ACL will be
+		synthesized based on the POSIX mode permissions for user, group
+		and others, with an additional ACE for <emphasis>NT
+		Authority\SYSTEM</emphasis> will full rights.
+		</para>
+		<para>
+		When set to <emphasis>windows</emphasis>, an ACL is synthesized
+		the same way Windows does it, only including permissions for the
+		owner and <emphasis>NT Authority\SYSTEM</emphasis>.
+		</para>
+		<para>
+		The default for this option is <emphasis>posix</emphasis>.
+		</para>
+		</listitem>
+		</varlistentry>
 	</variablelist>
 
 </refsect1>
