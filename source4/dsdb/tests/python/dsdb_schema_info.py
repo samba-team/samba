@@ -51,7 +51,7 @@ class SchemaInfoTestCase(samba.tests.TestCase):
 
         # connect SamDB if we haven't yet
         if self.sam_db is None:
-            ldb_url = samba.tests.env_get_var_value("DC_SERVER")
+            ldb_url = "ldap://%s" % samba.tests.env_get_var_value("DC_SERVER")
             SchemaInfoTestCase.sam_db = samba.tests.connect_samdb(ldb_url)
 
         # fetch rootDSE
