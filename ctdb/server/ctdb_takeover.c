@@ -655,9 +655,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	new_name = ctdb_vnn_iface_string(vnn);
-	if (old_name != NULL && new_name != NULL &&
-	    strcmp(old_name, new_name) == 0) {
+	if (old == vnn->iface) {
 		/* A benign update from one interface onto itself.
 		 * no need to run the eventscripts in this case, just return
 		 * success.
@@ -676,6 +674,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	vnn->update_in_flight = true;
 	talloc_set_destructor(state, ctdb_updateip_destructor);
 
+	new_name = ctdb_vnn_iface_string(vnn);
 	DEBUG(DEBUG_NOTICE,("Update of IP %s/%u from "
 			    "interface %s to %s\n",
 			    ctdb_addr_to_str(&vnn->public_address),
