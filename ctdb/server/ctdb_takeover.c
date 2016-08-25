@@ -103,6 +103,9 @@ static const char *ctdb_vnn_iface_string(const struct ctdb_vnn *vnn)
 	return iface_string(vnn->iface);
 }
 
+static struct ctdb_interface *ctdb_find_iface(struct ctdb_context *ctdb,
+					      const char *iface);
+
 static struct ctdb_interface *
 ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 {
@@ -114,10 +117,9 @@ ctdb_add_local_iface(struct ctdb_context *ctdb, const char *iface)
 	}
 
 	/* Verify that we don't have an entry for this ip yet */
-	for (i=ctdb->ifaces;i;i=i->next) {
-		if (strcmp(i->name, iface) == 0) {
-			return i;
-		}
+	i = ctdb_find_iface(ctdb, iface);
+	if (i != NULL) {
+		return i;
 	}
 
 	/* create a new structure for this interface */
