@@ -159,9 +159,9 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		ok = setup_kaddr(&my_krb5_addr, &ss);
+		ok = smb_krb5_sockaddr_to_kaddr(&ss, &my_krb5_addr);
 		if (!ok) {
-			DBG_WARNING("setup_kaddr (local) failed\n");
+			DBG_WARNING("smb_krb5_sockaddr_to_kaddr (local) failed\n");
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
@@ -180,9 +180,9 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		ok = setup_kaddr(&peer_krb5_addr, &ss);
+		ok = smb_krb5_sockaddr_to_kaddr(&ss, &peer_krb5_addr);
 		if (!ok) {
-			DBG_WARNING("setup_kaddr (remote) failed\n");
+			DBG_WARNING("smb_krb5_sockaddr_to_kaddr (remote) failed\n");
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
 		}

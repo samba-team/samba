@@ -162,7 +162,8 @@ void krb5_free_unparsed_name(krb5_context ctx, char *val);
 #endif
 
 /* Samba wrapper functions for krb5 functionality. */
-bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr);
+bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
+				krb5_address *pkaddr);
 
 krb5_error_code smb_krb5_mk_error(krb5_context context,
 				  krb5_error_code error_code,

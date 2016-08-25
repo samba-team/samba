@@ -94,7 +94,19 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
- bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
+
+/**
+ * @brief Stores the address of a 'struct sockaddr_storage' a krb5_address
+ *
+ * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
+ *                      address from.
+ *
+ * @param[out] pkaddr   A Kerberos address to store tha address in.
+ *
+ * @return True on success, false if an error occured.
+ */
+bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
+				krb5_address *pkaddr)
 {
 	memset(pkaddr, '\0', sizeof(krb5_address));
 #if defined(HAVE_IPV6) && defined(KRB5_ADDRESS_INET6)
@@ -115,7 +127,19 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 }
 #elif defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS)
 /* MIT */
-bool setup_kaddr( krb5_address *pkaddr, struct sockaddr_storage *paddr)
+
+/**
+ * @brief Stores the address of a 'struct sockaddr_storage' a krb5_address
+ *
+ * @param[in]  paddr    A pointer to a 'struct sockaddr_storage to extract the
+ *                      address from.
+ *
+ * @param[in]  pkaddr A Kerberos address to store tha address in.
+ *
+ * @return True on success, false if an error occured.
+ */
+bool smb_krb5_sockaddr_to_kaddr(struct sockaddr_storage *paddr,
+				krb5_address *pkaddr)
 {
 	memset(pkaddr, '\0', sizeof(krb5_address));
 #if defined(HAVE_IPV6) && defined(ADDRTYPE_INET6)
