@@ -521,6 +521,53 @@ static bool test_AsyncUploadPrinterDriverPackage(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_AsyncEnumPrinters(struct torture_context *tctx,
+				   void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	struct winspool_AsyncEnumPrinters r;
+	uint32_t levels[] = { 1, 2, /*3,*/ 4, 5 };
+	int i;
+
+	uint32_t needed;
+	uint32_t returned;
+
+	for (i = 0; i < ARRAY_SIZE(levels); i++) {
+
+		r.in.Flags = PRINTER_ENUM_LOCAL;
+		r.in.pName = NULL;
+		r.in.Level = levels[i];
+		r.in.cbBuf = 0;
+		r.in.pPrinterEnum = NULL;
+		r.out.pcbNeeded = &needed;
+		r.out.pcReturned = &returned;
+		r.out.pPrinterEnum = NULL;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winspool_AsyncEnumPrinters_r(b, tctx, &r),
+			"AsyncEnumPrinters failed");
+		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER,
+			"AsyncEnumPrinters failed");
+
+		r.in.cbBuf = needed;
+		r.in.pPrinterEnum = talloc_zero_array(tctx, uint8_t, r.in.cbBuf);
+		r.out.pPrinterEnum = r.in.pPrinterEnum;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winspool_AsyncEnumPrinters_r(b, tctx, &r),
+			"AsyncEnumPrinters failed");
+		torture_assert_werr_ok(tctx, r.out.result,
+			"AsyncEnumPrinters failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool");
@@ -535,6 +582,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "SyncUnRegisterForRemoteNotifications", test_SyncUnRegisterForRemoteNotifications);
 	torture_tcase_add_simple_test(tcase, "AsyncClosePrinter", test_AsyncClosePrinter);
 	torture_tcase_add_simple_test(tcase, "AsyncUploadPrinterDriverPackage", test_AsyncUploadPrinterDriverPackage);
+	torture_tcase_add_simple_test(tcase, "AsyncEnumPrinters", test_AsyncEnumPrinters);
 
 	return suite;
 }
