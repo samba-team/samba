@@ -105,7 +105,6 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 	static char *savedwg;
 	static char *savedun;
 	static char *savedpw;
-	char tmp[128];
 
 	if (hasasked) {
 		strncpy(wg, savedwg, wglen - 1);
@@ -115,23 +114,22 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 	}
 	hasasked = true;
 
-	if (!opt.nonprompt && !opt.username_specified) {
-		printf("Username for %s at %s [guest] ", shr, srv);
-		if (fgets(tmp, sizeof(tmp), stdin) == NULL) {
-			return;
-		}
-		if ((strlen(tmp) > 0) && (tmp[strlen(tmp) - 1] == '\n')) {
-			tmp[strlen(tmp) - 1] = '\0';
-		}
-		strncpy(un, tmp, unlen - 1);
-	} else if (opt.username != NULL) {
+	/*
+	 * If no user has been specified un is initialized with the current
+	 * username of the user who started smbget.
+	 */
+	if (opt.username_specified) {
 		strncpy(un, opt.username, unlen - 1);
 	}
 
-	if (!opt.nonprompt && !opt.password_specified) {
+	if (!opt.nonprompt && !opt.password_specified && pw[0] == '\0') {
 		char *prompt;
-		if (asprintf(&prompt, "Password for %s at %s: ", shr, srv) ==
-		    -1) {
+		int rc;
+
+		rc = asprintf(&prompt,
+			      "Password for [%s] connecting to //%s/%s: ",
+			      un, shr, srv);
+		if (rc == -1) {
 			return;
 		}
 		(void)samba_getpass(prompt, pw, pwlen, false, false);
