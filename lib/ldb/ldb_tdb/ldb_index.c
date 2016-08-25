@@ -931,6 +931,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
+	struct ldb_message *filtered_msg;
 	unsigned int i;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -951,7 +952,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ltdb_search_dn1(ac->module, dn, msg, 0);
+		ret = ltdb_search_dn1(ac->module, dn, msg, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
 		talloc_free(dn);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */
@@ -977,14 +978,15 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 		}
 
 		/* filter the attributes that the user wants */
-		ret = ltdb_filter_attrs(msg, ac->attrs);
+		ret = ltdb_filter_attrs(ac, msg, ac->attrs, &filtered_msg);
+
+		talloc_free(msg);
 
 		if (ret == -1) {
-			talloc_free(msg);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ldb_module_send_entry(ac->req, msg, NULL);
+		ret = ldb_module_send_entry(ac->req, filtered_msg, NULL);
 		if (ret != LDB_SUCCESS) {
 			/* Regardless of success or failure, the msg
 			 * is the callbacks responsiblity, and should
