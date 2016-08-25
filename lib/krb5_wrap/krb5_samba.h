@@ -321,11 +321,6 @@ char *smb_get_krb5_error_message(krb5_context context,
 				 krb5_error_code code,
 				 TALLOC_CTX *mem_ctx);
 
-bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
-			   DATA_BLOB *edata,
-			   DATA_BLOB *edata_out);
-
-
 krb5_error_code kt_copy(krb5_context context,
 			const char *from,
 			const char *to);

@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "krb5_samba.h"
-#include "lib/util/asn1.h"
 
 #ifdef HAVE_COM_ERR_H
 #include <com_err.h>
@@ -385,53 +384,6 @@ krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,
 #else
 #error UNKNOWN_GET_ENCTYPES_FUNCTIONS
 #endif
-
-bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
-			   DATA_BLOB *edata,
-			   DATA_BLOB *edata_out)
-{
-	DATA_BLOB edata_contents;
-	ASN1_DATA *data;
-	int edata_type;
-
-	if (!edata->length) {
-		return false;
-	}
-
-	data = asn1_init(mem_ctx);
-	if (data == NULL) {
-		return false;
-	}
-
-	if (!asn1_load(data, *edata)) goto err;
-	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) goto err;
-	if (!asn1_start_tag(data, ASN1_CONTEXT(1))) goto err;
-	if (!asn1_read_Integer(data, &edata_type)) goto err;
-
-	if (edata_type != KRB5_PADATA_PW_SALT) {
-		DEBUG(0,("edata is not of required type %d but of type %d\n",
-			KRB5_PADATA_PW_SALT, edata_type));
-		goto err;
-	}
-
-	if (!asn1_start_tag(data, ASN1_CONTEXT(2))) goto err;
-	if (!asn1_read_OctetString(data, talloc_tos(), &edata_contents)) goto err;
-	if (!asn1_end_tag(data)) goto err;
-	if (!asn1_end_tag(data)) goto err;
-	if (!asn1_end_tag(data)) goto err;
-	asn1_free(data);
-
-	*edata_out = data_blob_talloc(mem_ctx, edata_contents.data, edata_contents.length);
-
-	data_blob_free(&edata_contents);
-
-	return true;
-
-  err:
-
-	asn1_free(data);
-	return false;
-}
 
 
 /**

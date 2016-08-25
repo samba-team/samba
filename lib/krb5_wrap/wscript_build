@@ -6,6 +6,6 @@ if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
 
 bld.SAMBA_LIBRARY('krb5samba',
                   source='krb5_samba.c gss_samba.c keytab_util.c enctype_convert.c',
-                  deps='samba-util asn1util talloc krb5 com_err gssapi' + add_deps,
+                  deps='samba-util talloc krb5 com_err gssapi' + add_deps,
                   private_library=True
                  )
