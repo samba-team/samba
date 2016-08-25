@@ -424,9 +424,9 @@ uint32_t ndr_size_spoolss_EnumPrintProcessors_info(TALLOC_CTX *mem_ctx,
 /*
   spoolss_EnumPrintProcessors
 */
-enum ndr_err_code ndr_push_spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcDataTypes *r)
+enum ndr_err_code ndr_push_spoolss_EnumPrintProcessorDataTypes(struct ndr_push *ndr, int flags, const struct spoolss_EnumPrintProcessorDataTypes *r)
 {
-	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrintProcDataTypes,{
+	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPrintProcessorDataTypes,{
 		_r.in.servername		= r->in.servername;
 		_r.in.print_processor_name	= r->in.print_processor_name;
 	},{
@@ -436,9 +436,9 @@ enum ndr_err_code ndr_push_spoolss_EnumPrintProcDataTypes(struct ndr_push *ndr, 
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_pull_spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcDataTypes *r)
+enum ndr_err_code ndr_pull_spoolss_EnumPrintProcessorDataTypes(struct ndr_pull *ndr, int flags, struct spoolss_EnumPrintProcessorDataTypes *r)
 {
-	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrintProcDataTypes,{
+	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPrintProcessorDataTypes,{
 		r->in.servername		= _r.in.servername;
 		r->in.print_processor_name	= _r.in.print_processor_name;
 	},{
@@ -448,10 +448,10 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrintProcDataTypes(struct ndr_pull *ndr, 
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumPrintProcDataTypes_info(TALLOC_CTX *mem_ctx, 
+uint32_t ndr_size_spoolss_EnumPrintProcessorDataTypes_info(TALLOC_CTX *mem_ctx,
 						      uint32_t level, uint32_t count, union spoolss_PrintProcDataTypesInfo *info)
 {
-	NDR_SPOOLSS_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcDataTypes);
+	NDR_SPOOLSS_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcessorDataTypes);
 }
 
 /*

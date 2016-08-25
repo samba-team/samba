@@ -2425,7 +2425,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[default];
 	} spoolss_PrintProcDataTypesInfo;
 
-	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcDataTypes(
+	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcessorDataTypes(
 		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in,unique] [string,charset(UTF16)] uint16 *print_processor_name,
 		[in] uint32 level,
@@ -2435,12 +2435,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[out,ref] uint32 *needed,
 		[out,ref] uint32 *count
 	);
-	[public,noopnum,noprint] void __spoolss_EnumPrintProcDataTypes(
+	[public,noopnum,noprint] void __spoolss_EnumPrintProcessorDataTypes(
 		[in] uint32 level,
 		[in] uint32 count,
 		[out,switch_is(level)] spoolss_PrintProcDataTypesInfo info[count]
 	);
-	[nopull,nopush] WERROR spoolss_EnumPrintProcDataTypes(
+	[nopull,nopush] WERROR spoolss_EnumPrintProcessorDataTypes(
 		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in,unique] [string,charset(UTF16)] uint16 *print_processor_name,
 		[in] uint32 level,

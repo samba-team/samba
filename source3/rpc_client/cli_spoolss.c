@@ -490,7 +490,7 @@ WERROR rpccli_spoolss_enumprintprocessors(struct rpc_pipe_client *cli,
 }
 
 /**********************************************************************
- convencience wrapper around rpccli_spoolss_EnumPrintProcDataTypes
+ convencience wrapper around rpccli_spoolss_EnumPrintProcessorDataTypes
 **********************************************************************/
 
 WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
@@ -513,16 +513,16 @@ WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
 		W_ERROR_HAVE_NO_MEMORY(buffer.data);
 	}
 
-	status = dcerpc_spoolss_EnumPrintProcDataTypes(b, mem_ctx,
-						       servername,
-						       print_processor_name,
-						       level,
-						       (offered > 0) ? &buffer : NULL,
-						       offered,
-						       count,
-						       info,
-						       &needed,
-						       &werror);
+	status = dcerpc_spoolss_EnumPrintProcessorDataTypes(b, mem_ctx,
+							    servername,
+							    print_processor_name,
+							    level,
+							    (offered > 0) ? &buffer : NULL,
+							    offered,
+							    count,
+							    info,
+							    &needed,
+							    &werror);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
 	}
@@ -532,16 +532,16 @@ WERROR rpccli_spoolss_enumprintprocessordatatypes(struct rpc_pipe_client *cli,
 		buffer = data_blob_talloc_zero(mem_ctx, needed);
 		W_ERROR_HAVE_NO_MEMORY(buffer.data);
 
-		status = dcerpc_spoolss_EnumPrintProcDataTypes(b, mem_ctx,
-							       servername,
-							       print_processor_name,
-							       level,
-							       (offered > 0) ? &buffer : NULL,
-							       offered,
-							       count,
-							       info,
-							       &needed,
-							       &werror);
+		status = dcerpc_spoolss_EnumPrintProcessorDataTypes(b, mem_ctx,
+								    servername,
+								    print_processor_name,
+								    level,
+								    (offered > 0) ? &buffer : NULL,
+								    offered,
+								    count,
+								    info,
+								    &needed,
+								    &werror);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);

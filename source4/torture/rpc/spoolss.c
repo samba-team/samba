@@ -951,15 +951,15 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrintProcDataTypes_level(struct torture_context *tctx,
-					      struct dcerpc_binding_handle *b,
-					      const char *print_processor_name,
-					      uint32_t level,
-					      uint32_t *count_p,
-					      union spoolss_PrintProcDataTypesInfo **info_p,
-					      WERROR expected_result)
+static bool test_EnumPrintProcessorDataTypes_level(struct torture_context *tctx,
+						   struct dcerpc_binding_handle *b,
+						   const char *print_processor_name,
+						   uint32_t level,
+						   uint32_t *count_p,
+						   union spoolss_PrintProcDataTypesInfo **info_p,
+						   WERROR expected_result)
 {
-	struct spoolss_EnumPrintProcDataTypes r;
+	struct spoolss_EnumPrintProcessorDataTypes r;
 	DATA_BLOB blob;
 	uint32_t needed;
 	uint32_t count;
@@ -974,24 +974,24 @@ static bool test_EnumPrintProcDataTypes_level(struct torture_context *tctx,
 	r.out.count = &count;
 	r.out.info = &info;
 
-	torture_comment(tctx, "Testing EnumPrintProcDataTypes(%s) level %u\n",
+	torture_comment(tctx, "Testing EnumPrintProcessorDataTypes(%s) level %u\n",
 		r.in.print_processor_name, r.in.level);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_EnumPrintProcDataTypes_r(b, tctx, &r),
-		"EnumPrintProcDataTypes failed");
+		dcerpc_spoolss_EnumPrintProcessorDataTypes_r(b, tctx, &r),
+		"EnumPrintProcessorDataTypes failed");
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
 		blob = data_blob_talloc_zero(tctx, needed);
 		r.in.buffer = &blob;
 		r.in.offered = needed;
 		torture_assert_ntstatus_ok(tctx,
-			dcerpc_spoolss_EnumPrintProcDataTypes_r(b, tctx, &r),
-			"EnumPrintProcDataTypes failed");
+			dcerpc_spoolss_EnumPrintProcessorDataTypes_r(b, tctx, &r),
+			"EnumPrintProcessorDataTypes failed");
 	}
 	torture_assert_werr_equal(tctx, r.out.result, expected_result,
-		"EnumPrintProcDataTypes failed");
+		"EnumPrintProcessorDataTypes failed");
 
-	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcDataTypes, info, level, count, needed, 4);
+	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcessorDataTypes, info, level, count, needed, 4);
 
 	if (count_p) {
 		*count_p = count;
@@ -1003,8 +1003,8 @@ static bool test_EnumPrintProcDataTypes_level(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
-					void *private_data)
+static bool test_EnumPrintProcessorDataTypes(struct torture_context *tctx,
+					     void *private_data)
 {
 	struct test_spoolss_context *ctx =
 		talloc_get_type_abort(private_data, struct test_spoolss_context);
@@ -1016,12 +1016,12 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	torture_assert(tctx,
-		test_EnumPrintProcDataTypes_level(tctx, b, NULL, 1, NULL, NULL, WERR_UNKNOWN_PRINTPROCESSOR),
-		"test_EnumPrintProcDataTypes_level failed");
+		test_EnumPrintProcessorDataTypes_level(tctx, b, NULL, 1, NULL, NULL, WERR_UNKNOWN_PRINTPROCESSOR),
+		"test_EnumPrintProcessorDataTypes_level failed");
 
 	torture_assert(tctx,
-		test_EnumPrintProcDataTypes_level(tctx, b, "nonexisting", 1, NULL, NULL, WERR_UNKNOWN_PRINTPROCESSOR),
-		"test_EnumPrintProcDataTypes_level failed");
+		test_EnumPrintProcessorDataTypes_level(tctx, b, "nonexisting", 1, NULL, NULL, WERR_UNKNOWN_PRINTPROCESSOR),
+		"test_EnumPrintProcessorDataTypes_level failed");
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i];
@@ -1030,8 +1030,8 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 		WERROR expected_result = ok[i] ? WERR_OK : WERR_INVALID_LEVEL;
 
 		torture_assert(tctx,
-			test_EnumPrintProcDataTypes_level(tctx, b, "winprint", level, &count, &info, expected_result),
-			"test_EnumPrintProcDataTypes_level failed");
+			test_EnumPrintProcessorDataTypes_level(tctx, b, "winprint", level, &count, &info, expected_result),
+			"test_EnumPrintProcessorDataTypes_level failed");
 	}
 
 	{
@@ -1044,8 +1044,8 @@ static bool test_EnumPrintProcDataTypes(struct torture_context *tctx,
 
 		for (i=0; i < count; i++) {
 			torture_assert(tctx,
-				test_EnumPrintProcDataTypes_level(tctx, b, info[i].info1.print_processor_name, 1, NULL, NULL, WERR_OK),
-				"test_EnumPrintProcDataTypes_level failed");
+				test_EnumPrintProcessorDataTypes_level(tctx, b, info[i].info1.print_processor_name, 1, NULL, NULL, WERR_OK),
+				"test_EnumPrintProcessorDataTypes_level failed");
 		}
 	}
 
@@ -9313,7 +9313,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "enum_print_processors", test_EnumPrintProcessors);
 	torture_tcase_add_simple_test(tcase, "print_processors_winreg", test_print_processors_winreg);
 	torture_tcase_add_simple_test(tcase, "add_processor", test_add_print_processor);
-	torture_tcase_add_simple_test(tcase, "enum_printprocdata", test_EnumPrintProcDataTypes);
+	torture_tcase_add_simple_test(tcase, "enum_printprocdata", test_EnumPrintProcessorDataTypes);
 	torture_tcase_add_simple_test(tcase, "enum_printers", test_EnumPrinters);
 	torture_tcase_add_simple_test(tcase, "enum_ports_old", test_EnumPorts_old);
 	torture_tcase_add_simple_test(tcase, "enum_printers_old", test_EnumPrinters_old);

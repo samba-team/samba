@@ -9256,11 +9256,11 @@ static WERROR enumprintprocdatatypes_level_1(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
- _spoolss_EnumPrintProcDataTypes
+ _spoolss_EnumPrintProcessorDataTypes
 ****************************************************************/
 
-WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
-				       struct spoolss_EnumPrintProcDataTypes *r)
+WERROR _spoolss_EnumPrintProcessorDataTypes(struct pipes_struct *p,
+					    struct spoolss_EnumPrintProcessorDataTypes *r)
 {
 	WERROR result;
 
@@ -9270,7 +9270,7 @@ WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	DEBUG(5,("_spoolss_EnumPrintProcDataTypes\n"));
+	DEBUG(5,("_spoolss_EnumPrintProcessorDataTypes\n"));
 
 	*r->out.count = 0;
 	*r->out.needed = 0;
@@ -9295,7 +9295,7 @@ WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrintProcDataTypes,
+						     spoolss_EnumPrintProcessorDataTypes,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
