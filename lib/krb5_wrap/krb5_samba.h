@@ -171,7 +171,9 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 				  krb5_data *e_data,
 				  krb5_data *enc_err);
 
-krb5_error_code get_kerberos_allowed_etypes(krb5_context context, krb5_enctype **enctypes);
+krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,
+					    krb5_enctype **enctypes);
+
 bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
 			      krb5_context context,
 			      krb5_auth_context auth_context,

@@ -611,7 +611,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	 * and used for the AS-REQ, so it wasn't possible to disable the usage
 	 * of AES keys.
 	 */
-	min_stat = get_kerberos_allowed_etypes(ccache->smb_krb5_context->krb5_context,
+	min_stat = smb_krb5_get_allowed_etypes(ccache->smb_krb5_context->krb5_context,
 					       &etypes);
 	if (min_stat == 0) {
 		OM_uint32 num_ktypes;

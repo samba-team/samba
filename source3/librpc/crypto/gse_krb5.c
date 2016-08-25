@@ -123,7 +123,7 @@ static krb5_error_code fill_keytab_from_password(krb5_context krbctx,
 	krb5_keytab_entry kt_entry;
 	unsigned int i;
 
-	ret = get_kerberos_allowed_etypes(krbctx, &enctypes);
+	ret = smb_krb5_get_allowed_etypes(krbctx, &enctypes);
 	if (ret) {
 		DEBUG(1, (__location__
 			  ": Can't determine permitted enctypes!\n"));

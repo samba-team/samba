@@ -312,13 +312,27 @@ int smb_krb5_get_pw_salt(krb5_context context,
 #endif
 
 #if defined(HAVE_KRB5_GET_PERMITTED_ENCTYPES)
- krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
+/**
+ * @brief Get a list of encryption types allowed for session keys
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  enctypes An allocated, zero-terminated list of encryption types
+ *
+ * This function returns an allocated list of encryption types allowed for
+ * session keys.
+ *
+ * Use free() to free the enctypes when it is no longer needed.
+ *
+ * @retval 0 Success; otherwise - Kerberos error codes
+ */
+krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,
 					    krb5_enctype **enctypes)
 {
 	return krb5_get_permitted_enctypes(context, enctypes);
 }
 #elif defined(HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES)
- krb5_error_code get_kerberos_allowed_etypes(krb5_context context,
+krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,
 					    krb5_enctype **enctypes)
 {
 #ifdef HAVE_KRB5_PDU_NONE_DECL
