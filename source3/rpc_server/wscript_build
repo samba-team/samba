@@ -200,6 +200,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_IREMOTEWINSPOOL',
                     source='''
                     spoolss/srv_iremotewinspool_nt.c
                     spoolss/srv_iremotewinspool.c
+                    spoolss/iremotewinspool_util.c
                     ''',
                     deps='RPC_SPOOLSS')
 
