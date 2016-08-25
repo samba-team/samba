@@ -1792,6 +1792,14 @@ sub provision($$$$$$$$)
 	vfs objects = acl_xattr fake_acls xattr_tdb fake_dfq
 	inherit owner = yes
 	include = $dfqconffile
+[acl_xattr_ign_sysacl_posix]
+	copy = tmp
+	acl_xattr:ignore system acls = yes
+	acl_xattr:default acl style = posix
+[acl_xattr_ign_sysacl_windows]
+	copy = tmp
+	acl_xattr:ignore system acls = yes
+	acl_xattr:default acl style = windows
 	";
 	close(CONF);
 
