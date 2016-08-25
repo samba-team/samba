@@ -1819,9 +1819,8 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 				close_printer_handle(p, r->out.handle);
 				ZERO_STRUCTP(r->out.handle);
 				DEBUG(3,("access DENIED as user is not root, "
-					"has no printoperator privilege, "
-					"not a member of the printoperator builtin group and "
-					"is not in printer admin list"));
+					"has no printoperator privilege and is "
+					"not a member of the printoperator builtin group\n"));
 				return WERR_ACCESS_DENIED;
 			}
 
