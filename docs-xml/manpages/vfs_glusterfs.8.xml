@@ -131,7 +131,19 @@
 		<listitem>
 		<para>
 			Defines which volfile server to use, defaults to
-			localhost.
+			localhost. It could be list of white space
+			seperated elements where each element could be
+		</para>
+		<para>
+			1. unix+/path/to/socket/file
+		</para>
+		<para>
+			2. [tcp+]IP|hostname|\[IPv6\][:port]
+		</para>
+		<para>
+			Note the restriction on naming a IPv6 host, it follows
+			the same restriction that is based on IPv6 naming in
+			URL as per RFC 2732.
 		</para>
 		</listitem>
 		</varlistentry>
@@ -153,7 +165,7 @@
 	<title>VERSION</title>
 
 	<para>
-		This man page is correct for version 4.2.0 of the Samba suite.
+		This man page is correct for version 4.6.0 of the Samba suite.
 	</para>
 </refsect1>
 

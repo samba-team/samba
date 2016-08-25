@@ -157,13 +157,116 @@ static void glfs_clear_preopened(glfs_t *fs)
 	}
 }
 
+static int vfs_gluster_set_volfile_servers(glfs_t *fs,
+					   const char *volfile_servers)
+{
+	char *server = NULL;
+	int   server_count = 0;
+	int   server_success = 0;
+	int   ret = -1;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	DBG_INFO("servers list %s\n", volfile_servers);
+
+	while (next_token_talloc(frame, &volfile_servers, &server, " \t")) {
+		char *transport = NULL;
+		char *host = NULL;
+		int   port = 0;
+
+		server_count++;
+		DBG_INFO("server %d %s\n", server_count, server);
+
+		/* Determine the transport type */
+		if (strncmp(server, "unix+", 5) == 0) {
+			port = 0;
+			transport = talloc_strdup(frame, "unix");
+			if (!transport) {
+				errno = ENOMEM;
+				goto out;
+			}
+			host = talloc_strdup(frame, server + 5);
+			if (!host) {
+				errno = ENOMEM;
+				goto out;
+			}
+		} else {
+			char *p = NULL;
+			char *port_index = NULL;
+
+			if (strncmp(server, "tcp+", 4) == 0) {
+				server += 4;
+			}
+
+			/* IPv6 is enclosed in []
+			 * ':' before ']' is part of IPv6
+			 * ':' after  ']' indicates port
+			 */
+			p = server;
+			if (server[0] == '[') {
+				server++;
+				p = index(server, ']');
+				if (p == NULL) {
+					/* Malformed IPv6 */
+					continue;
+				}
+				p[0] = '\0';
+				p++;
+			}
+
+			port_index = index(p, ':');
+
+			if (port_index == NULL) {
+				port = 0;
+			} else {
+				port = atoi(port_index + 1);
+				port_index[0] = '\0';
+			}
+			transport = talloc_strdup(frame, "tcp");
+			if (!transport) {
+				errno = ENOMEM;
+				goto out;
+			}
+			host = talloc_strdup(frame, server);
+			if (!host) {
+				errno = ENOMEM;
+				goto out;
+			}
+		}
+
+		DBG_INFO("Calling set volfile server with params "
+			 "transport=%s, host=%s, port=%d\n", transport,
+			  host, port);
+
+		ret = glfs_set_volfile_server(fs, transport, host, port);
+		if (ret < 0) {
+			DBG_WARNING("Failed to set volfile_server "
+				    "transport=%s, host=%s, port=%d (%s)\n",
+				    transport, host, port, strerror(errno));
+		} else {
+			server_success++;
+		}
+	}
+
+out:
+	if (server_count == 0) {
+		ret = -1;
+	} else if (server_success < server_count) {
+		DBG_WARNING("Failed to set %d out of %d servers parsed\n",
+			    server_count - server_success, server_count);
+		ret = 0;
+	}
+
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 /* Disk Operations */
 
 static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 			       const char *service,
 			       const char *user)
 {
-	const char *volfile_server;
+	const char *volfile_servers;
 	const char *volume;
 	char *logfile;
 	int loglevel;
@@ -181,10 +284,11 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 
 	loglevel = lp_parm_int(SNUM(handle->conn), "glusterfs", "loglevel", -1);
 
-	volfile_server = lp_parm_const_string(SNUM(handle->conn), "glusterfs",
-					       "volfile_server", NULL);
-	if (volfile_server == NULL) {
-		volfile_server = DEFAULT_VOLFILE_SERVER;
+	volfile_servers = lp_parm_talloc_string(tmp_ctx, SNUM(handle->conn),
+					       "glusterfs", "volfile_server",
+					       NULL);
+	if (volfile_servers == NULL) {
+		volfile_servers = DEFAULT_VOLFILE_SERVER;
 	}
 
 	volume = lp_parm_const_string(SNUM(handle->conn), "glusterfs", "volume",
@@ -204,9 +308,10 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = glfs_set_volfile_server(fs, "tcp", volfile_server, 0);
+	ret = vfs_gluster_set_volfile_servers(fs, volfile_servers);
 	if (ret < 0) {
-		DEBUG(0, ("Failed to set volfile_server %s\n", volfile_server));
+		DBG_ERR("Failed to set volfile_servers from list %s\n",
+			volfile_servers);
 		goto done;
 	}
 
@@ -248,17 +353,16 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		goto done;
 	}
 done:
-	talloc_free(tmp_ctx);
 	if (ret < 0) {
 		if (fs)
 			glfs_fini(fs);
-		return -1;
 	} else {
-		DEBUG(0, ("%s: Initialized volume from server %s\n",
-                         volume, volfile_server));
+		DBG_ERR("%s: Initialized volume from servers %s\n",
+			volume, volfile_servers);
 		handle->data = fs;
-		return 0;
 	}
+	talloc_free(tmp_ctx);
+	return ret;
 }
 
 static void vfs_gluster_disconnect(struct vfs_handle_struct *handle)
