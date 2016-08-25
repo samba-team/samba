@@ -1574,6 +1574,15 @@ sub provision($$$$$$$$)
 	vfs objects = shadow_copy2
 	shadow:mountpoint = $shadow_mntdir
 	wide links = yes
+
+[acl_xattr_ign_sysacl_posix]
+	copy = tmp
+	acl_xattr:ignore system acls = yes
+	acl_xattr:default acl style = posix
+[acl_xattr_ign_sysacl_windows]
+	copy = tmp
+	acl_xattr:ignore system acls = yes
+	acl_xattr:default acl style = windows
 	";
 	close(CONF);
 
