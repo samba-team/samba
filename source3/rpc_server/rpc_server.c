@@ -33,6 +33,7 @@
 #include "rpc_server/rpc_ncacn_np.h"
 #include "rpc_server/srv_pipe_hnd.h"
 #include "rpc_server/srv_pipe.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -971,6 +972,9 @@ void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	}
 	DEBUG(10, ("PDU is in %s Endian format!\n",
 		   ncacn_conn->p->endian ? "Big" : "Little"));
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(ncacn_packet, pkt);
+	}
 	process_complete_pdu(ncacn_conn->p, pkt);
 
 	/* reset pipe state and free PDU */
