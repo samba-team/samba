@@ -197,15 +197,15 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
 
-	ret = cli_krb5_get_ticket(mem_ctx,
-				  local_service,
-				  time_offset,
-				  &tkt,
-				  &sesskey1,
-				  0,
-				  cc,
-				  NULL,
-				  impersonate_princ_s);
+	ret = ads_krb5_cli_get_ticket(mem_ctx,
+				      local_service,
+				      time_offset,
+				      &tkt,
+				      &sesskey1,
+				      0,
+				      cc,
+				      NULL,
+				      impersonate_princ_s);
 	if (ret) {
 		DEBUG(1,("failed to get ticket for %s: %s\n",
 			local_service, error_message(ret)));
