@@ -168,7 +168,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     krb5_error_code ret;
     krb5_context context = NULL;
     krb5_principal princ;
-    krb5_get_init_creds_opt opts;
+    krb5_get_init_creds_opt *opts = NULL;
     krb5_creds creds;
     char *chpw_princ = NULL, *password;
     char *realm = NULL;
@@ -191,12 +191,18 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 	return ADS_ERROR_KRB5(ret);
     }
 
-    krb5_get_init_creds_opt_init(&opts);
+	ret = krb5_get_init_creds_opt_alloc(context, &opts);
+	if (ret != 0) {
+		krb5_free_context(context);
+		DBG_WARNING("krb5_get_init_creds_opt_alloc failed: %s\n",
+			    error_message(ret));
+		return ADS_ERROR_KRB5(ret);
+	}
 
-    krb5_get_init_creds_opt_set_tkt_life(&opts, 5*60);
-    krb5_get_init_creds_opt_set_renew_life(&opts, 0);
-    krb5_get_init_creds_opt_set_forwardable(&opts, 0);
-    krb5_get_init_creds_opt_set_proxiable(&opts, 0);
+	krb5_get_init_creds_opt_set_tkt_life(opts, 5*60);
+	krb5_get_init_creds_opt_set_renew_life(opts, 0);
+	krb5_get_init_creds_opt_set_forwardable(opts, 0);
+	krb5_get_init_creds_opt_set_proxiable(opts, 0);
 
     /* note that heimdal will fill in the local addresses if the addresses
      * in the creds_init_opt are all empty and then later fail with invalid
@@ -205,15 +211,17 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     ret = smb_krb5_gen_netbios_krb5_address(&addr, lp_netbios_name());
     if (ret) {
         krb5_free_principal(context, princ);
+	krb5_get_init_creds_opt_free(context, opts);
         krb5_free_context(context);
         return ADS_ERROR_KRB5(ret);
     }
-    krb5_get_init_creds_opt_set_address_list(&opts, addr->addrs);
+	krb5_get_init_creds_opt_set_address_list(opts, addr->addrs);
 
     realm = smb_krb5_principal_get_realm(context, princ);
 
     /* We have to obtain an INITIAL changepw ticket for changing password */
     if (asprintf(&chpw_princ, "kadmin/changepw@%s", realm) == -1) {
+	krb5_get_init_creds_opt_free(context, opts);
 	krb5_free_context(context);
 	free(realm);
 	DEBUG(1,("ads_krb5_chg_password: asprintf fail\n"));
@@ -224,7 +232,8 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     password = SMB_STRDUP(oldpw);
     ret = krb5_get_init_creds_password(context, &creds, princ, password,
 					   kerb_prompter, NULL, 
-					   0, chpw_princ, &opts);
+					   0, chpw_princ, opts);
+	krb5_get_init_creds_opt_free(context, opts);
     SAFE_FREE(chpw_princ);
     SAFE_FREE(password);
 
