@@ -84,9 +84,12 @@ replPropertyMetaData Changes
 ----------------------------
 
 During the development of the DRS replication, tests showed that Samba
-stores the replPropertyMetaData object incorrectly.  To address this,
+stores the replPropertyMetaData object incorrectly. To address this,
 be aware that 'dbcheck' will now detect and offer to fix all objects in
 the domain for this error.
+
+For further information and instructions how to fix the problem, see
+https://wiki.samba.org/index.php/Updating_Samba#Fixing_replPropertyMetaData_Attributes
 
 Linked attributes on deleted objects
 ------------------------------------
