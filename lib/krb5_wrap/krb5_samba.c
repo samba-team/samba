@@ -836,10 +836,9 @@ void smb_krb5_free_data_contents(krb5_context context, krb5_data *pdata)
  *
  * Caller has to free krb5_data with smb_krb5_free_data_contents().
  */
-
-krb5_error_code krb5_copy_data_contents(krb5_data *p,
-					const void *data,
-					size_t len)
+krb5_error_code smb_krb5_copy_data_contents(krb5_data *p,
+					    const void *data,
+					    size_t len)
 {
 #if defined(HAVE_KRB5_DATA_COPY)
 	return krb5_data_copy(p, data, len);
@@ -2789,9 +2788,9 @@ krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 
 	old_data = krb5_princ_realm(context, principal);
 
-	ret = krb5_copy_data_contents(&data,
-				      realm,
-				      strlen(realm));
+	ret = smb_krb5_copy_data_contents(&data,
+					  realm,
+					  strlen(realm));
 	if (ret) {
 		return ret;
 	}

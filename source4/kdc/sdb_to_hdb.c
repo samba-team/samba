@@ -72,7 +72,7 @@ static int sdb_salt_to_Salt(const struct sdb_salt *s, Salt *h)
 	int ret;
 
 	h->type = s->type;
-	ret = krb5_copy_data_contents(&h->salt, s->salt.data, s->salt.length);
+	ret = smb_krb5_copy_data_contents(&h->salt, s->salt.data, s->salt.length);
 	if (ret != 0) {
 		free_Salt(h);
 		return ENOMEM;
@@ -97,9 +97,9 @@ static int sdb_key_to_Key(const struct sdb_key *s, Key *h)
 	}
 
 	h->key.keytype = s->key.keytype;
-	rc = krb5_copy_data_contents(&h->key.keyvalue,
-				      s->key.keyvalue.data,
-				      s->key.keyvalue.length);
+	rc = smb_krb5_copy_data_contents(&h->key.keyvalue,
+					 s->key.keyvalue.data,
+					 s->key.keyvalue.length);
 	if (rc != 0) {
 		goto error_nomem;
 	}

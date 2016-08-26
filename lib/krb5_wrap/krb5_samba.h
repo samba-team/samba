@@ -388,9 +388,9 @@ char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
 					 krb5_const_principal principal,
 					 unsigned int component);
 
-krb5_error_code krb5_copy_data_contents(krb5_data *p,
-					const void *data,
-					size_t len);
+krb5_error_code smb_krb5_copy_data_contents(krb5_data *p,
+					    const void *data,
+					    size_t len);
 
 int smb_krb5_principal_get_type(krb5_context context,
 				krb5_const_principal principal);

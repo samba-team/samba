@@ -432,18 +432,18 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		return 0;
 	}
 
-	ret = krb5_copy_data_contents(&logon_data,
-				      logon_blob->data,
-				      logon_blob->length);
+	ret = smb_krb5_copy_data_contents(&logon_data,
+					  logon_blob->data,
+					  logon_blob->length);
 	if (ret != 0) {
 		return ret;
 	}
 
 	ZERO_STRUCT(cred_data);
 	if (cred_blob != NULL) {
-		ret = krb5_copy_data_contents(&cred_data,
-					      cred_blob->data,
-					      cred_blob->length);
+		ret = smb_krb5_copy_data_contents(&cred_data,
+						  cred_blob->data,
+						  cred_blob->length);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &logon_data);
 			return ret;
@@ -452,9 +452,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 	ZERO_STRUCT(upn_data);
 	if (upn_blob != NULL) {
-		ret = krb5_copy_data_contents(&upn_data,
-					      upn_blob->data,
-					      upn_blob->length);
+		ret = smb_krb5_copy_data_contents(&upn_data,
+						  upn_blob->data,
+						  upn_blob->length);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &logon_data);
 			smb_krb5_free_data_contents(context, &cred_data);
@@ -464,9 +464,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 	ZERO_STRUCT(deleg_data);
 	if (deleg_blob != NULL) {
-		ret = krb5_copy_data_contents(&deleg_data,
-					      deleg_blob->data,
-					      deleg_blob->length);
+		ret = smb_krb5_copy_data_contents(&deleg_data,
+						  deleg_blob->data,
+						  deleg_blob->length);
 		if (ret != 0) {
 			smb_krb5_free_data_contents(context, &logon_data);
 			smb_krb5_free_data_contents(context, &cred_data);
