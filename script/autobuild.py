@@ -90,7 +90,7 @@ tasks = {
 
     # test build with -O3 -- catches extra warnings and bugs
     "samba-o3" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
-                   ("configure", "ADDITIONAL_CFLAGS='-O3' ./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                   ("configure", "ADDITIONAL_CFLAGS='-O3' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 TESTS='\(ad_dc\)'", "text/plain"),
                    ("install", "make install", "text/plain"),
