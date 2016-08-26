@@ -3133,10 +3133,12 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 failed:
 
 	if (context) {
-		if (ccdef)
+		if (ccdef) {
 			krb5_cc_close(context, ccdef);
-		if (auth_context)
+		}
+		if (auth_context) {
 			krb5_auth_con_free(context, auth_context);
+		}
 		krb5_free_context(context);
 	}
 
