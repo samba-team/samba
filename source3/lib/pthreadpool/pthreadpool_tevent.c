@@ -96,7 +96,8 @@ static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 					struct tevent_immediate *im,
 					void *private_data);
 
-static int pthreadpool_tevent_job_state_destructor(struct pthreadpool_tevent_job_state *state)
+static int pthreadpool_tevent_job_state_destructor(
+	struct pthreadpool_tevent_job_state *state)
 {
 	if (state->pool == NULL) {
 		return 0;
