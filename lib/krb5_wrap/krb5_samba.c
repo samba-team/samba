@@ -2767,8 +2767,8 @@ static krb5_error_code ads_setup_auth_context(krb5_context context,
 }
 
 #if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
-static krb5_error_code create_gss_checksum(krb5_data *in_data, /* [inout] */
-						uint32_t gss_flags)
+static krb5_error_code ads_create_gss_checksum(krb5_data *in_data, /* [inout] */
+					       uint32_t gss_flags)
 {
 	unsigned int orig_length = in_data->length;
 	unsigned int base_cksum_size = GSSAPI_CHECKSUM_SIZE;
@@ -2985,7 +2985,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		}
 
 		/* Frees and reallocates in_data into a GSS checksum blob. */
-		retval = create_gss_checksum(&in_data, gss_flags);
+		retval = ads_create_gss_checksum(&in_data, gss_flags);
 		if (retval) {
 			goto cleanup_data;
 		}
