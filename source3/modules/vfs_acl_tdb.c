@@ -306,6 +306,7 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 {
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 	bool ok;
+	struct acl_common_config *config = NULL;
 
 	if (ret < 0) {
 		return ret;
@@ -332,6 +333,26 @@ static int connect_acl_tdb(struct vfs_handle_struct *handle,
 	lp_do_parameter(SNUM(handle->conn), "inherit acls", "true");
 	lp_do_parameter(SNUM(handle->conn), "dos filemode", "true");
 	lp_do_parameter(SNUM(handle->conn), "force unknown acl user", "true");
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct acl_common_config,
+				return -1);
+
+	if (config->ignore_system_acls) {
+		DBG_NOTICE("setting 'create mask = 0666', "
+			   "'directory mask = 0777', "
+			   "'store dos attributes = yes' and all "
+			   "'map ...' options to 'no'\n");
+
+		lp_do_parameter(SNUM(handle->conn), "create mask", "0666");
+		lp_do_parameter(SNUM(handle->conn), "directory mask", "0777");
+		lp_do_parameter(SNUM(handle->conn), "map archive", "no");
+		lp_do_parameter(SNUM(handle->conn), "map hidden", "no");
+		lp_do_parameter(SNUM(handle->conn), "map readonly", "no");
+		lp_do_parameter(SNUM(handle->conn), "map system", "no");
+		lp_do_parameter(SNUM(handle->conn), "store dos attributes",
+				"yes");
+	}
 
 	return 0;
 }
