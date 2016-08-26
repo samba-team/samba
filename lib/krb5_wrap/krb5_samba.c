@@ -2744,8 +2744,8 @@ static bool ads_cleanup_expired_creds(krb5_context context,
 
 /* Allocate and setup the auth context into the state we need. */
 
-static krb5_error_code setup_auth_context(krb5_context context,
-			krb5_auth_context *auth_context)
+static krb5_error_code ads_setup_auth_context(krb5_context context,
+					      krb5_auth_context *auth_context)
 {
 	krb5_error_code retval;
 
@@ -2911,9 +2911,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	}
 
 	/* Allocate the auth_context. */
-	retval = setup_auth_context(context, auth_context);
+	retval = ads_setup_auth_context(context, auth_context);
 	if (retval) {
-		DEBUG(1,("setup_auth_context failed (%s)\n",
+		DEBUG(1,("ads_setup_auth_context failed (%s)\n",
 			error_message(retval)));
 		goto cleanup_creds;
 	}
@@ -2972,9 +2972,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				}
 				krb5_auth_con_free(context, *auth_context);
 				*auth_context = NULL;
-				retval = setup_auth_context(context, auth_context);
+				retval = ads_setup_auth_context(context, auth_context);
 				if (retval) {
-					DEBUG(1,("setup_auth_context failed (%s)\n",
+					DEBUG(1,("ads_setup_auth_context failed (%s)\n",
 						error_message(retval)));
 					goto cleanup_creds;
 				}
