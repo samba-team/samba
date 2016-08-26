@@ -174,10 +174,12 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,
 					    krb5_enctype **enctypes);
 
-bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
-			      krb5_context context,
-			      krb5_auth_context auth_context,
-			      DATA_BLOB *session_key, bool remote);
+bool smb_krb5_get_smb_session_key(TALLOC_CTX *mem_ctx,
+				  krb5_context context,
+				  krb5_auth_context auth_context,
+				  DATA_BLOB *session_key,
+				  bool remote);
+
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);

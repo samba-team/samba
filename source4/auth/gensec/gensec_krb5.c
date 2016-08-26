@@ -710,11 +710,11 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 		break;
 	}
 
-	ok = get_krb5_smb_session_key(mem_ctx,
-				      context,
-				      auth_context,
-				      session_key,
-				      remote);
+	ok = smb_krb5_get_smb_session_key(mem_ctx,
+					  context,
+					  auth_context,
+					  session_key,
+					  remote);
 	if (!ok) {
 		DEBUG(10, ("KRB5 error getting session key %d\n", err));
 		return NT_STATUS_NO_USER_SESSION_KEY;

@@ -543,10 +543,11 @@ krb5_error_code smb_krb5_copy_data_contents(krb5_data *p,
 #endif
 }
 
-bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
-			      krb5_context context,
-			      krb5_auth_context auth_context,
-			      DATA_BLOB *session_key, bool remote)
+bool smb_krb5_get_smb_session_key(TALLOC_CTX *mem_ctx,
+				  krb5_context context,
+				  krb5_auth_context auth_context,
+				  DATA_BLOB *session_key,
+				  bool remote)
 {
 	krb5_keyblock *skey = NULL;
 	krb5_error_code err = 0;
@@ -3116,11 +3117,11 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	ok = get_krb5_smb_session_key(mem_ctx,
-				      context,
-				      auth_context,
-				      session_key_krb5,
-				      false);
+	ok = smb_krb5_get_smb_session_key(mem_ctx,
+					  context,
+					  auth_context,
+					  session_key_krb5,
+					  false);
 	if (!ok) {
 		retval = ENOMEM;
 		goto failed;
