@@ -3074,12 +3074,13 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		ENCTYPE_DES_CBC_MD5,
 		ENCTYPE_DES_CBC_CRC,
 		ENCTYPE_NULL};
+	bool ok;
 
 	initialize_krb5_error_table();
 	retval = krb5_init_context(&context);
-	if (retval) {
-		DEBUG(1, ("krb5_init_context failed (%s)\n",
-			 error_message(retval)));
+	if (retval != 0) {
+		DBG_WARNING("krb5_init_context failed (%s)\n",
+			    error_message(retval));
 		goto failed;
 	}
 
@@ -3087,29 +3088,43 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 		krb5_set_real_time(context, time(NULL) + time_offset, 0);
 	}
 
-	if ((retval = krb5_cc_resolve(context, ccname ?
-			ccname : krb5_cc_default_name(context), &ccdef))) {
-		DEBUG(1, ("krb5_cc_default failed (%s)\n",
-			 error_message(retval)));
+	retval = krb5_cc_resolve(context,
+				 ccname ? ccname : krb5_cc_default_name(context),
+				 &ccdef);
+	if (retval != 0) {
+		DBG_WARNING("krb5_cc_default failed (%s)\n",
+			    error_message(retval));
 		goto failed;
 	}
 
-	if ((retval = krb5_set_default_tgs_ktypes(context, enc_types))) {
-		DEBUG(1, ("krb5_set_default_tgs_ktypes failed (%s)\n",
-			 error_message(retval)));
+	retval = krb5_set_default_tgs_ktypes(context, enc_types);
+	if (retval != 0) {
+		DBG_WARNING("krb5_set_default_tgs_ktypes failed (%s)\n",
+			    error_message(retval));
 		goto failed;
 	}
 
-	retval = ads_krb5_mk_req(context, &auth_context,
-				AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
-				principal, ccdef, &packet,
-				tgs_expire, impersonate_princ_s);
-	if (retval) {
+	retval = ads_krb5_mk_req(context,
+				 &auth_context,
+				 AP_OPTS_USE_SUBKEY | (krb5_flags)extra_ap_opts,
+				 principal,
+				 ccdef,
+				 &packet,
+				 tgs_expire,
+				 impersonate_princ_s);
+	if (retval != 0) {
 		goto failed;
 	}
 
-	get_krb5_smb_session_key(mem_ctx, context, auth_context,
-				 session_key_krb5, false);
+	ok = get_krb5_smb_session_key(mem_ctx,
+				      context,
+				      auth_context,
+				      session_key_krb5,
+				      false);
+	if (!ok) {
+		retval = ENOMEM;
+		goto failed;
+	}
 
 	*ticket = data_blob_talloc(mem_ctx, packet.data, packet.length);
 
