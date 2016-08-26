@@ -198,9 +198,9 @@ static bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 	return True;
 }
 
- static bool smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(krb5_context ctx, 
- 								  krb5_get_init_creds_opt *opt, 
-								  NTSTATUS *nt_status)
+static bool smb_krb5_get_ntstatus_from_init_creds(krb5_context ctx,
+						  krb5_get_init_creds_opt *opt,
+						  NTSTATUS *nt_status)
 {
 	bool ret = False;
 	krb5_error *error = NULL;
@@ -344,9 +344,16 @@ int kerberos_kinit_password_ext(const char *principal,
 		/* try to get ntstatus code out of krb5_error when we have it
 		 * inside the krb5_get_init_creds_opt - gd */
 
-		if (opt && smb_krb5_get_ntstatus_from_krb5_error_init_creds_opt(ctx, opt, &status)) {
-			*ntstatus = status;
-			goto cleanup;
+		if (opt != NULL) {
+			bool ok;
+
+			ok = smb_krb5_get_ntstatus_from_init_creds(ctx,
+								   opt,
+								   &status);
+			if (ok) {
+				*ntstatus = status;
+				goto cleanup;
+			}
 		}
 
 		/* fall back to self-made-mapping */
