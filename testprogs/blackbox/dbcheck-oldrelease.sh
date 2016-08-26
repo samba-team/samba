@@ -154,6 +154,15 @@ check_expected_before_values() {
 }
 
 # This should 'fail', because it returns the number of modified records
+dbcheck_objectclass() {
+    if [ x$RELEASE = x"release-4-1-6-partial-object" ]; then
+	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --attrs=objectclass $@
+    else
+	return 1
+    fi
+}
+
+# This should 'fail', because it returns the number of modified records
 dbcheck() {
        $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
@@ -229,6 +238,7 @@ if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "reindex" reindex
     testit "check_expected_before_values" check_expected_before_values
+    testit_expect_failure "dbcheck_objectclass" dbcheck_objectclass
     testit_expect_failure "dbcheck" dbcheck
     testit "check_expected_after_values" check_expected_after_values
     testit "dbcheck_clean" dbcheck_clean
