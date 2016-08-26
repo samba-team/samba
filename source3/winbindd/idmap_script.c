@@ -101,7 +101,7 @@ static struct tevent_req *idmap_script_xid2sid_send(
 		    return tevent_req_post(req, ev);
 	}
 
-	state->syscmd = talloc_asprintf(state, "%s %cID %lu", script, key,
+	state->syscmd = talloc_asprintf(state, "%s IDTOSID %cID %lu", script, key,
 					(unsigned long)xid.id);
 	if (tevent_req_nomem(state->syscmd, req)) {
 		return tevent_req_post(req, ev);
