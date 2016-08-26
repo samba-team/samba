@@ -63,6 +63,10 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 #define SMB_STRDUP(s) strdup(s)
 #endif
 
+/**********************************************************
+ * MISSING FUNCTIONS
+ **********************************************************/
+
 #if !defined(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES)
 
 #if defined(HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES)
@@ -91,6 +95,21 @@ krb5_error_code krb5_auth_con_set_req_cksumtype(
 #endif /* HAVE_KRB5_SET_DEFAULT_TGS_ENCTYPES */
 
 #endif /* HAVE_KRB5_SET_DEFAULT_TGS_KTYPES */
+
+
+#if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
+krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context,
+					     krb5_auth_context auth_context,
+					     krb5_keyblock *keyblock)
+{
+	return krb5_auth_con_setkey(context, auth_context, keyblock);
+}
+#endif
+
+
+/**********************************************************
+ * WRAPPING FUNCTIONS
+ **********************************************************/
 
 #if defined(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS)
 /* HEIMDAL */
@@ -343,15 +362,6 @@ krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,
 }
 #else
 #error UNKNOWN_GET_ENCTYPES_FUNCTIONS
-#endif
-
-#if defined(HAVE_KRB5_AUTH_CON_SETKEY) && !defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY)
- krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context,
-					krb5_auth_context auth_context,
-					krb5_keyblock *keyblock)
-{
-	return krb5_auth_con_setkey(context, auth_context, keyblock);
-}
 #endif
 
 bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
