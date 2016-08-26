@@ -44,6 +44,15 @@
 	</command>).
 	</para>
 
+	<para>
+	This module forces the following parameters:
+	<itemizedlist>
+	<listitem><para>inherit acls = true</para></listitem>
+	<listitem><para>dos filemode = true</para></listitem>
+	<listitem><para>force unknown acl user = true</para></listitem>
+	</itemizedlist>
+	</para>
+
 	<para>This module is stackable.</para>
 </refsect1>
 
