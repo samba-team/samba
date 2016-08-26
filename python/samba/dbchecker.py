@@ -31,6 +31,7 @@ from samba.common import dsdb_Dn
 from samba.dcerpc import security
 from samba.descriptor import get_wellknown_sds, get_diff_sds
 from samba.auth import system_session, admin_session
+from samba.netcmd import CommandError
 
 
 class dbcheck(object):
@@ -195,6 +196,8 @@ class dbcheck(object):
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.delete(dn, controls=controls)
         except Exception, err:
+            if self.in_transaction:
+                raise CommandError("%s : %s" % (msg, err))
             self.report("%s : %s" % (msg, err))
             return False
         return True
@@ -207,6 +210,8 @@ class dbcheck(object):
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.modify(m, controls=controls, validate=validate)
         except Exception, err:
+            if self.in_transaction:
+                raise CommandError("%s : %s" % (msg, err))
             self.report("%s : %s" % (msg, err))
             return False
         return True
@@ -224,6 +229,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             controls = controls + ["local_oid:%s:0" % dsdb.DSDB_CONTROL_DBCHECK]
             self.samdb.rename(from_dn, to_dn, controls=controls)
         except Exception, err:
+            if self.in_transaction:
+                raise CommandError("%s : %s" % (msg, err))
             self.report("%s : %s" % (msg, err))
             return False
         return True
