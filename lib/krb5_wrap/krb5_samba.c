@@ -2841,11 +2841,12 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	krb5_data in_data;
 	bool creds_ready = false;
 	int i = 0, maxtries = 3;
+	bool ok;
 
 	ZERO_STRUCT(in_data);
 
 	retval = smb_krb5_parse_name(context, principal, &server);
-	if (retval) {
+	if (retval != 0) {
 		DEBUG(1,("ads_krb5_mk_req: Failed to parse principal %s\n", principal));
 		return retval;
 	}
@@ -2867,7 +2868,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_princ;
 	}
 
-	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client))) {
+	retval = krb5_cc_get_principal(context, ccache, &creds.client);
+	if (retval != 0) {
 		/* This can commonly fail on smbd startup with no ticket in the cache.
 		 * Report at higher level than 1. */
 		DEBUG(3,("ads_krb5_mk_req: krb5_cc_get_principal failed (%s)\n",
@@ -2877,13 +2879,17 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 	while (!creds_ready && (i < maxtries)) {
 
-		if ((retval = smb_krb5_get_credentials(context, ccache,
-						       creds.client,
-						       creds.server,
-						       impersonate_princ,
-						       &credsp))) {
-			DEBUG(1,("ads_krb5_mk_req: smb_krb5_get_credentials failed for %s (%s)\n",
-				principal, error_message(retval)));
+		retval = smb_krb5_get_credentials(context,
+						  ccache,
+						  creds.client,
+						  creds.server,
+						  impersonate_princ,
+						  &credsp);
+		if (retval != 0) {
+			DBG_WARNING("smb_krb5_get_credentials failed for %s "
+				    "(%s)\n",
+				    principal,
+				    error_message(retval));
 			goto cleanup_creds;
 		}
 
@@ -2895,17 +2901,21 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			krb5_set_real_time(context, t + time_offset + 1, 0);
 		}
 
-		if (!ads_cleanup_expired_creds(context, ccache, credsp)) {
+		ok = ads_cleanup_expired_creds(context, ccache, credsp);
+		if (!ok) {
 			creds_ready = true;
 		}
 
 		i++;
 	}
 
-	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s:%s) is valid until: (%s - %u)\n",
-		  principal, krb5_cc_get_type(context, ccache), krb5_cc_get_name(context, ccache),
-		  http_timestring(talloc_tos(), (unsigned)credsp->times.endtime),
-		  (unsigned)credsp->times.endtime));
+	DBG_DEBUG("Ticket (%s) in ccache (%s:%s) is valid until: (%s - %u)\n",
+		  principal,
+		  krb5_cc_get_type(context, ccache),
+		  krb5_cc_get_name(context, ccache),
+		  http_timestring(talloc_tos(),
+				  (unsigned)credsp->times.endtime),
+		  (unsigned)credsp->times.endtime);
 
 	if (expire_time) {
 		*expire_time = (time_t)credsp->times.endtime;
@@ -2913,9 +2923,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 	/* Allocate the auth_context. */
 	retval = ads_setup_auth_context(context, auth_context);
-	if (retval) {
-		DEBUG(1,("ads_setup_auth_context failed (%s)\n",
-			error_message(retval)));
+	if (retval != 0) {
+		DBG_WARNING("ads_setup_auth_context failed (%s)\n",
+			    error_message(retval));
 		goto cleanup_creds;
 	}
 
@@ -2930,24 +2940,26 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			 * exchange.
 			 */
 
-			DEBUG( 3, ("ads_krb5_mk_req: server marked as OK to delegate to, building forwardable TGT\n")  );
+			DBG_INFO("Server marked as OK to delegate to, building "
+				 "forwardable TGT\n");
 
 			retval = krb5_auth_con_setuseruserkey(context,
 					*auth_context,
 					&credsp->keyblock );
-			if (retval) {
-				DEBUG(1,("krb5_auth_con_setuseruserkey failed (%s)\n",
-					error_message(retval)));
+			if (retval != 0) {
+				DBG_WARNING("krb5_auth_con_setuseruserkey "
+					    "failed (%s)\n",
+					    error_message(retval)));
 				goto cleanup_creds;
 			}
 
 			/* Must use a subkey for forwarded tickets. */
 			retval = krb5_auth_con_setflags(context,
-				*auth_context,
-				KRB5_AUTH_CONTEXT_USE_SUBKEY);
-			if (retval) {
-				DEBUG(1,("krb5_auth_con_setflags failed (%s)\n",
-					error_message(retval)));
+							*auth_context,
+							KRB5_AUTH_CONTEXT_USE_SUBKEY);
+			if (retval != 0) {
+				DBG_WARNING("krb5_auth_con_setflags failed (%s)\n",
+					    error_message(retval)));
 				goto cleanup_creds;
 			}
 
@@ -2961,8 +2973,8 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				&in_data );     /* Resulting response [out] */
 
 			if (retval) {
-				DEBUG( 3, ("krb5_fwd_tgt_creds failed (%s)\n",
-					   error_message( retval ) ) );
+				DBG_INFO("krb5_fwd_tgt_creds failed (%s)\n",
+					 error_message(retval));
 
 				/*
 				 * This is not fatal. Delete the *auth_context and continue
@@ -2977,9 +2989,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				krb5_auth_con_free(context, *auth_context);
 				*auth_context = NULL;
 				retval = ads_setup_auth_context(context, auth_context);
-				if (retval) {
-					DEBUG(1,("ads_setup_auth_context failed (%s)\n",
-						error_message(retval)));
+				if (retval != 0) {
+					DBG_WARNING("ads_setup_auth_context failed (%s)\n",
+						    error_message(retval)));
 					goto cleanup_creds;
 				}
 			} else {
@@ -2990,13 +3002,13 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 		/* Frees and reallocates in_data into a GSS checksum blob. */
 		retval = ads_create_gss_checksum(&in_data, gss_flags);
-		if (retval) {
+		if (retval != 0) {
 			goto cleanup_data;
 		}
 
 		/* We always want GSS-checksum types. */
 		retval = krb5_auth_con_set_req_cksumtype(context, *auth_context, GSSAPI_CHECKSUM );
-		if (retval) {
+		if (retval != 0) {
 			DEBUG(1,("krb5_auth_con_set_req_cksumtype failed (%s)\n",
 				error_message(retval)));
 			goto cleanup_data;
@@ -3006,9 +3018,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options,
 				      &in_data, credsp, outbuf);
-	if (retval) {
-		DEBUG(1,("ads_krb5_mk_req: krb5_mk_req_extended failed (%s)\n",
-			 error_message(retval)));
+	if (retval != 0) {
+		DBG_WARNING("krb5_mk_req_extended failed (%s)\n",
+			    error_message(retval));
 	}
 
 #if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
