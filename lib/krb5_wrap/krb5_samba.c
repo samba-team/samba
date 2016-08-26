@@ -2821,8 +2821,9 @@ static krb5_error_code ads_create_gss_checksum(krb5_data *in_data, /* [inout] */
 #endif
 
 /*
-  we can't use krb5_mk_req because w2k wants the service to be in a particular format
-*/
+ * We can't use krb5_mk_req because w2k wants the service to be in a particular
+ * format.
+ */
 static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				       krb5_auth_context *auth_context,
 				       const krb5_flags ap_req_options,
@@ -2832,11 +2833,11 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				       time_t *expire_time,
 				       const char *impersonate_princ_s)
 {
-	krb5_error_code 	  retval;
-	krb5_principal	  server;
+	krb5_error_code retval;
+	krb5_principal server;
 	krb5_principal impersonate_princ = NULL;
-	krb5_creds 		* credsp;
-	krb5_creds 		  creds;
+	krb5_creds *credsp;
+	krb5_creds creds;
 	krb5_data in_data;
 	bool creds_ready = false;
 	int i = 0, maxtries = 3;
@@ -2922,9 +2923,12 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	{
 		uint32_t gss_flags = 0;
 
-		if( credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE ) {
-			/* Fetch a forwarded TGT from the KDC so that we can hand off a 2nd ticket
-			 as part of the kerberos exchange. */
+		if (credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE) {
+			/*
+			 * Fetch a forwarded TGT from the KDC so that we can
+			 * hand off a 2nd ticket as part of the kerberos
+			 * exchange.
+			 */
 
 			DEBUG( 3, ("ads_krb5_mk_req: server marked as OK to delegate to, building forwardable TGT\n")  );
 
