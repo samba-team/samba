@@ -699,6 +699,62 @@ static int remove_callback(struct event_script_callback *callback)
 	return 0;
 }
 
+struct schedule_callback_state {
+	struct ctdb_context *ctdb;
+	void (*callback)(struct ctdb_context *, int, void *);
+	void *private_data;
+	int status;
+	struct tevent_immediate *im;
+};
+
+static void schedule_callback_handler(struct tevent_context *ctx,
+				      struct tevent_immediate *im,
+				      void *private_data)
+{
+	struct schedule_callback_state *state =
+		talloc_get_type_abort(private_data,
+				      struct schedule_callback_state);
+
+	if (state->callback != NULL) {
+		state->callback(state->ctdb, state->status,
+				state->private_data);
+	}
+	talloc_free(state);
+}
+
+static int
+schedule_callback_immediate(struct ctdb_context *ctdb,
+			    void (*callback)(struct ctdb_context *,
+					     int, void *),
+			    void *private_data,
+			    int status)
+{
+	struct schedule_callback_state *state;
+	struct tevent_immediate *im;
+
+	state = talloc_zero(ctdb, struct schedule_callback_state);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
+	im = tevent_create_immediate(state);
+	if (im == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	state->ctdb = ctdb;
+	state->callback = callback;
+	state->private_data = private_data;
+	state->status = status;
+	state->im = im;
+
+	tevent_schedule_immediate(im, ctdb->ev,
+				  schedule_callback_handler, state);
+	return 0;
+}
+
 /*
   run the event script in the background, calling the callback when
   finished
@@ -817,8 +873,14 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
-		callback(ctdb, 0, private_data);
+		int ret = schedule_callback_immediate(ctdb, callback,
+						      private_data, 0);
 		talloc_free(state);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,
+			      ("Unable to schedule callback for 0 scripts\n"));
+			return 1;
+		}
 		return 0;
 	}
 
