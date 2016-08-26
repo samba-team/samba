@@ -62,8 +62,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct ldb_message *msg;
 	struct ldb_result *res;
-	struct ldb_dn *domain_dn;
-	struct ldb_dn *system_dn;
+	struct ldb_dn *system_dn = NULL;
 	struct ldb_val val;
 	int ret;
 	char *name2;
@@ -72,12 +71,6 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 	const char *attrs[] = {
 		NULL
 	};
-
-	domain_dn = ldb_get_default_basedn(ldb);
-	if (!domain_dn) {
-		talloc_free(frame);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	msg = ldb_msg_new(frame);
 	if (msg == NULL) {
@@ -95,8 +88,13 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 	 * * taillor the function to the particular needs of backup protocol
 	 */
 
-	system_dn = samdb_search_dn(ldb, msg, domain_dn, "(&(objectClass=container)(cn=System))");
+	system_dn = ldb_dn_copy(frame, ldb_get_default_basedn(ldb));
 	if (system_dn == NULL) {
+		talloc_free(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
 		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -186,8 +184,7 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *tmp_mem;
 	struct ldb_result *res;
-	struct ldb_dn *domain_dn;
-	struct ldb_dn *system_dn;
+	struct ldb_dn *system_dn = NULL;
 	const struct ldb_val *val;
 	uint8_t *data;
 	const char *attrs[] = {
@@ -199,18 +196,18 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 	lsa_secret->data = NULL;
 	lsa_secret->length = 0;
 
-	domain_dn = ldb_get_default_basedn(ldb);
-	if (!domain_dn) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	tmp_mem = talloc_new(mem_ctx);
 	if (tmp_mem == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	system_dn = samdb_search_dn(ldb, tmp_mem, domain_dn, "(&(objectClass=container)(cn=System))");
+	system_dn = ldb_dn_copy(tmp_mem, ldb_get_default_basedn(ldb));
 	if (system_dn == NULL) {
+		talloc_free(tmp_mem);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
 		talloc_free(tmp_mem);
 		return NT_STATUS_NO_MEMORY;
 	}
