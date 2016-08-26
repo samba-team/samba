@@ -56,6 +56,7 @@
 #include "../lib/tsocket/tsocket.h"
 #include "rpc_client/cli_winreg_spoolss.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "rpc_server/spoolss/srv_spoolss_handle.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
@@ -79,47 +80,6 @@
 #define GLOBAL_SPOOLSS_OS_MAJOR_DEFAULT 5
 #define GLOBAL_SPOOLSS_OS_MINOR_DEFAULT 2
 #define GLOBAL_SPOOLSS_OS_BUILD_DEFAULT 3790
-
-struct notify_back_channel;
-
-/* structure to store the printer handles */
-/* and a reference to what it's pointing to */
-/* and the notify info asked about */
-/* that's the central struct */
-struct printer_handle {
-	struct printer_handle *prev, *next;
-	bool document_started;
-	bool page_started;
-	uint32_t jobid; /* jobid in printing backend */
-	int printer_type;
-	const char *servername;
-	fstring sharename;
-	uint32_t access_granted;
-	struct {
-		uint32_t flags;
-		uint32_t options;
-		fstring localmachine;
-		uint32_t printerlocal;
-		struct spoolss_NotifyOption *option;
-		struct policy_handle cli_hnd;
-		struct notify_back_channel *cli_chan;
-		uint32_t change;
-		/* are we in a FindNextPrinterChangeNotify() call? */
-		bool fnpcn;
-		struct messaging_context *msg_ctx;
-	} notify;
-	struct {
-		fstring machine;
-		fstring user;
-	} client;
-
-	/* devmode sent in the OpenPrinter() call */
-	struct spoolss_DeviceMode *devmode;
-
-	/* TODO cache the printer info2 structure */
-	struct spoolss_PrinterInfo2 *info2;
-
-};
 
 static struct printer_handle *printers_list;
 

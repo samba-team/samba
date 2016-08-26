@@ -97,11 +97,6 @@ typedef struct {
 	SPOOLSS_NOTIFY_MSG_GROUP	*msg_groups;
 } SPOOLSS_NOTIFY_MSG_CTR;
 
-#define SPLHND_PRINTER		1
-#define SPLHND_SERVER	 	2
-#define SPLHND_PORTMON_TCP	3
-#define SPLHND_PORTMON_LOCAL	4
-
 /*
  * The printer attributes.
  * I #defined all of them (grabbed form MSDN)
