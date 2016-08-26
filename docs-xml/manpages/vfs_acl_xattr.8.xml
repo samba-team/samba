@@ -74,6 +74,21 @@
 		access the data via Samba you might set this to yes to achieve
 		better NT ACL compatibility.
 		</para>
+
+		<para>
+		If <emphasis>acl_xattr:ignore system acls</emphasis>
+		is set to <emphasis>yes</emphasis>, the following
+		additional settings will be enforced:
+		<itemizedlist>
+		<listitem><para>create mask = 0666</para></listitem>
+		<listitem><para>directory mask = 0777</para></listitem>
+		<listitem><para>map archive = no</para></listitem>
+		<listitem><para>map hidden = no</para></listitem>
+		<listitem><para>map readonly = no</para></listitem>
+		<listitem><para>map system = no</para></listitem>
+		<listitem><para>store dos attributes = yes</para></listitem>
+		</itemizedlist>
+		</para>
 		</listitem>
 		</varlistentry>
 
