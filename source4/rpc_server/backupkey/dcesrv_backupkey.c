@@ -59,6 +59,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 			       const char *name,
 			       const DATA_BLOB *lsa_secret)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct ldb_message *msg;
 	struct ldb_result *res;
 	struct ldb_dn *domain_dn;
@@ -74,11 +75,13 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 
 	domain_dn = ldb_get_default_basedn(ldb);
 	if (!domain_dn) {
+		talloc_free(frame);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	msg = ldb_msg_new(mem_ctx);
+	msg = ldb_msg_new(frame);
 	if (msg == NULL) {
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -94,13 +97,13 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 
 	system_dn = samdb_search_dn(ldb, msg, domain_dn, "(&(objectClass=container)(cn=System))");
 	if (system_dn == NULL) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	name2 = talloc_asprintf(msg, "%s Secret", name);
 	if (name2 == NULL) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -110,7 +113,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 
 	if (ret != LDB_SUCCESS ||  res->count != 0 ) {
 		DEBUG(2, ("Secret %s already exists !\n", name2));
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
@@ -119,41 +122,41 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 	 * here only if the key didn't exists before
 	 */
 
-	msg->dn = ldb_dn_copy(mem_ctx, system_dn);
+	msg->dn = ldb_dn_copy(frame, system_dn);
 	if (msg->dn == NULL) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (!ldb_dn_add_child_fmt(msg->dn, "cn=%s", name2)) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ret = ldb_msg_add_string(msg, "cn", name2);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 	ret = ldb_msg_add_string(msg, "objectClass", "secret");
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = samdb_msg_add_uint64(ldb, mem_ctx, msg, "priorSetTime", nt_now);
+	ret = samdb_msg_add_uint64(ldb, frame, msg, "priorSetTime", nt_now);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 	val.data = lsa_secret->data;
 	val.length = lsa_secret->length;
 	ret = ldb_msg_add_value(msg, "currentValue", &val, NULL);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = samdb_msg_add_uint64(ldb, mem_ctx, msg, "lastSetTime", nt_now);
+	ret = samdb_msg_add_uint64(ldb, frame, msg, "lastSetTime", nt_now);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -167,11 +170,11 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 		DEBUG(2,("Failed to create secret record %s: %s\n",
 			ldb_dn_get_linearized(msg->dn),
 			ldb_errstring(ldb)));
-		talloc_free(msg);
+		talloc_free(frame);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	talloc_free(msg);
+	talloc_free(frame);
 	return NT_STATUS_OK;
 }
 
