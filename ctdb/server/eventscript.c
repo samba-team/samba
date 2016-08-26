@@ -863,14 +863,6 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 	state->current = 0;
 	state->child = 0;
 
-	if (call == CTDB_EVENT_MONITOR) {
-		ctdb->current_monitor = state;
-	}
-
-	talloc_set_destructor(state, event_script_destructor);
-
-	ctdb->active_events++;
-
 	/* Nothing to do? */
 	if (state->scripts->num_scripts == 0) {
 		int ret = schedule_callback_immediate(ctdb, callback,
@@ -886,10 +878,17 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 
  	state->scripts->scripts[0].status = fork_child_for_script(ctdb, state);
  	if (state->scripts->scripts[0].status != 0) {
- 		/* Callback is called from destructor, with fail result. */
  		talloc_free(state);
- 		return 0;
+		return -1;
  	}
+
+	if (call == CTDB_EVENT_MONITOR) {
+		ctdb->current_monitor = state;
+	}
+
+	ctdb->active_events++;
+
+	talloc_set_destructor(state, event_script_destructor);
 
 	if (!timeval_is_zero(&state->timeout)) {
 		tevent_add_timer(ctdb->ev, state,
