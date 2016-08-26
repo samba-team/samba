@@ -62,7 +62,7 @@ static void free_sdb_key(struct sdb_key *k)
 	/* keyblock not alloced */
 
 	if (k->salt) {
-		kerberos_free_data_contents(NULL, &k->salt->salt);
+		smb_krb5_free_data_contents(NULL, &k->salt->salt);
 	}
 
 	ZERO_STRUCTP(k);

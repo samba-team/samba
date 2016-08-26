@@ -445,7 +445,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 					      cred_blob->data,
 					      cred_blob->length);
 		if (ret != 0) {
-			kerberos_free_data_contents(context, &logon_data);
+			smb_krb5_free_data_contents(context, &logon_data);
 			return ret;
 		}
 	}
@@ -456,8 +456,8 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 					      upn_blob->data,
 					      upn_blob->length);
 		if (ret != 0) {
-			kerberos_free_data_contents(context, &logon_data);
-			kerberos_free_data_contents(context, &cred_data);
+			smb_krb5_free_data_contents(context, &logon_data);
+			smb_krb5_free_data_contents(context, &cred_data);
 			return ret;
 		}
 	}
@@ -468,28 +468,28 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 					      deleg_blob->data,
 					      deleg_blob->length);
 		if (ret != 0) {
-			kerberos_free_data_contents(context, &logon_data);
-			kerberos_free_data_contents(context, &cred_data);
-			kerberos_free_data_contents(context, &upn_data);
+			smb_krb5_free_data_contents(context, &logon_data);
+			smb_krb5_free_data_contents(context, &cred_data);
+			smb_krb5_free_data_contents(context, &upn_data);
 			return ret;
 		}
 	}
 
 	ret = krb5_pac_init(context, pac);
 	if (ret != 0) {
-		kerberos_free_data_contents(context, &logon_data);
-		kerberos_free_data_contents(context, &cred_data);
-		kerberos_free_data_contents(context, &upn_data);
-		kerberos_free_data_contents(context, &deleg_data);
+		smb_krb5_free_data_contents(context, &logon_data);
+		smb_krb5_free_data_contents(context, &cred_data);
+		smb_krb5_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
 	ret = krb5_pac_add_buffer(context, *pac, PAC_TYPE_LOGON_INFO, &logon_data);
-	kerberos_free_data_contents(context, &logon_data);
+	smb_krb5_free_data_contents(context, &logon_data);
 	if (ret != 0) {
-		kerberos_free_data_contents(context, &upn_data);
-		kerberos_free_data_contents(context, &cred_data);
-		kerberos_free_data_contents(context, &deleg_data);
+		smb_krb5_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &cred_data);
+		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
@@ -497,10 +497,10 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		ret = krb5_pac_add_buffer(context, *pac,
 					  PAC_TYPE_CREDENTIAL_INFO,
 					  &cred_data);
-		kerberos_free_data_contents(context, &cred_data);
+		smb_krb5_free_data_contents(context, &cred_data);
 		if (ret != 0) {
-			kerberos_free_data_contents(context, &upn_data);
-			kerberos_free_data_contents(context, &deleg_data);
+			smb_krb5_free_data_contents(context, &upn_data);
+			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
 	}
@@ -514,8 +514,8 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 				  PAC_TYPE_LOGON_NAME,
 				  &null_data);
 	if (ret != 0) {
-		kerberos_free_data_contents(context, &upn_data);
-		kerberos_free_data_contents(context, &deleg_data);
+		smb_krb5_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
 
@@ -523,9 +523,9 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		ret = krb5_pac_add_buffer(context, *pac,
 					  PAC_TYPE_UPN_DNS_INFO,
 					  &upn_data);
-		kerberos_free_data_contents(context, &upn_data);
+		smb_krb5_free_data_contents(context, &upn_data);
 		if (ret != 0) {
-			kerberos_free_data_contents(context, &deleg_data);
+			smb_krb5_free_data_contents(context, &deleg_data);
 			return ret;
 		}
 	}
@@ -534,7 +534,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		ret = krb5_pac_add_buffer(context, *pac,
 					  PAC_TYPE_CONSTRAINED_DELEGATION,
 					  &deleg_data);
-		kerberos_free_data_contents(context, &deleg_data);
+		smb_krb5_free_data_contents(context, &deleg_data);
 		if (ret != 0) {
 			return ret;
 		}
@@ -803,7 +803,7 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 				&info, PAC_TYPE_CONSTRAINED_DELEGATION,
 				(ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			kerberos_free_data_contents(context, &old_data);
+			smb_krb5_free_data_contents(context, &old_data);
 			nt_status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 			talloc_free(tmp_ctx);
@@ -813,7 +813,7 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(_d);
 		info.constrained_delegation.info = &_d;
 	}
-	kerberos_free_data_contents(context, &old_data);
+	smb_krb5_free_data_contents(context, &old_data);
 
 	ret = krb5_unparse_name(context, server_principal, &server);
 	if (ret) {
@@ -843,7 +843,7 @@ NTSTATUS samba_kdc_update_delegation_info_blob(TALLOC_CTX *mem_ctx,
 	SAFE_FREE(server);
 	SAFE_FREE(proxy);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		kerberos_free_data_contents(context, &old_data);
+		smb_krb5_free_data_contents(context, &old_data);
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
 		talloc_free(tmp_ctx);

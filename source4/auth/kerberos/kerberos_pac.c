@@ -313,7 +313,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_pull_union_blob(&pac_logon_info_in, tmp_ctx, &info,
 				      PAC_TYPE_LOGON_INFO,
 				      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
-	kerberos_free_data_contents(context, &k5pac_logon_info_in);
+	smb_krb5_free_data_contents(context, &k5pac_logon_info_in);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC LOGON_INFO: %s\n", nt_errstr(nt_status)));
@@ -345,7 +345,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 					      &_upn_dns_info,
 					      PAC_TYPE_UPN_DNS_INFO,
 					      (ndr_pull_flags_fn_t)ndr_pull_PAC_INFO);
-		kerberos_free_data_contents(context, &k5pac_upn_dns_info_in);
+		smb_krb5_free_data_contents(context, &k5pac_upn_dns_info_in);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			nt_status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(0,("can't parse the PAC UPN_DNS_INFO: %s\n",
@@ -378,7 +378,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&pac_srv_checksum_in, pac_srv_sig,
 					       pac_srv_sig,
 					       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
-		kerberos_free_data_contents(context, &k5pac_srv_checksum_in);
+		smb_krb5_free_data_contents(context, &k5pac_srv_checksum_in);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			nt_status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(0,("can't parse the KDC signature: %s\n",
@@ -399,7 +399,7 @@ krb5_error_code kerberos_pac_to_user_info_dc(TALLOC_CTX *mem_ctx,
 		ndr_err = ndr_pull_struct_blob(&pac_kdc_checksum_in, pac_kdc_sig,
 					       pac_kdc_sig,
 					       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
-		kerberos_free_data_contents(context, &k5pac_kdc_checksum_in);
+		smb_krb5_free_data_contents(context, &k5pac_kdc_checksum_in);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			nt_status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(0,("can't parse the KDC signature: %s\n",

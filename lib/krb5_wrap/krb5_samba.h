@@ -181,7 +181,7 @@ bool get_krb5_smb_session_key(TALLOC_CTX *mem_ctx,
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *kt_entry);
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
-void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
+void smb_krb5_free_data_contents(krb5_context context, krb5_data *pdata);
 krb5_error_code smb_krb5_parse_name_norealm(krb5_context context,
 					    const char *name,
 					    krb5_principal *principal);

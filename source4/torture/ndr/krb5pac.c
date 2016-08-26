@@ -500,7 +500,7 @@ static bool PAC_DATA_pkinit(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, plain_data.length, 112, "plain_data.length");
 	plain_data_blob = data_blob_talloc(tctx, plain_data.data, plain_data.length);
 	torture_assert_int_equal(tctx, plain_data_blob.length, 112, "plain_data_blob.length");
-	kerberos_free_data_contents(ctx, &plain_data);
+	smb_krb5_free_data_contents(ctx, &plain_data);
 	krb5_free_keyblock_contents(ctx, &reply_key);
 	krb5_free_context(ctx);
 	torture_assert_data_blob_equal(tctx,

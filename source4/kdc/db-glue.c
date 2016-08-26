@@ -523,7 +523,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 			}
 			if (ret) {
 				if (key.salt) {
-					kerberos_free_data_contents(context, &key.salt->salt);
+					smb_krb5_free_data_contents(context, &key.salt->salt);
 					free(key.salt);
 					key.salt = NULL;
 				}
@@ -573,7 +573,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 							      &key.key);
 			if (ret) {
 				if (key.salt) {
-					kerberos_free_data_contents(context, &key.salt->salt);
+					smb_krb5_free_data_contents(context, &key.salt->salt);
 					free(key.salt);
 					key.salt = NULL;
 				}
@@ -1367,7 +1367,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      ENCTYPE_AES256_CTS_HMAC_SHA1_96,
 							      &key.key);
 			if (ret != 0) {
-				kerberos_free_data_contents(context, &salt);
+				smb_krb5_free_data_contents(context, &salt);
 				goto out;
 			}
 
@@ -1383,7 +1383,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 							      ENCTYPE_AES128_CTS_HMAC_SHA1_96,
 							      &key.key);
 			if (ret != 0) {
-				kerberos_free_data_contents(context, &salt);
+				smb_krb5_free_data_contents(context, &salt);
 				goto out;
 			}
 
@@ -1391,7 +1391,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 			entry_ex->entry.keys.len++;
 		}
 
-		kerberos_free_data_contents(context, &salt);
+		smb_krb5_free_data_contents(context, &salt);
 	}
 
 	if (password_hash != NULL) {

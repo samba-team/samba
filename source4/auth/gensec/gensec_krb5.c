@@ -70,7 +70,7 @@ static int gensec_krb5_destroy(struct gensec_krb5_state *gensec_krb5_state)
 		return 0;
 	}
 	if (gensec_krb5_state->enc_ticket.length) { 
-		kerberos_free_data_contents(gensec_krb5_state->smb_krb5_context->krb5_context, 
+		smb_krb5_free_data_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
 					    &gensec_krb5_state->enc_ticket); 
 	}
 
@@ -674,7 +674,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		} else {
 			*out = data_blob_talloc(out_mem_ctx, outbuf.data, outbuf.length);
 		}
-		kerberos_free_data_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
+		smb_krb5_free_data_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
 					    &outbuf);
 		return NT_STATUS_OK;
 	}
@@ -777,7 +777,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	} else {
 		/* Found pac */
 		pac_blob = data_blob_talloc(tmp_ctx, pac_data.data, pac_data.length);
-		kerberos_free_data_contents(context, &pac_data);
+		smb_krb5_free_data_contents(context, &pac_data);
 		if (!pac_blob.data) {
 			free(principal_string);
 			krb5_free_principal(context, client_principal);
@@ -854,7 +854,7 @@ static NTSTATUS gensec_krb5_wrap(struct gensec_security *gensec_security,
 		}
 		*out = data_blob_talloc(mem_ctx, output.data, output.length);
 		
-		kerberos_free_data_contents(context, &output);
+		smb_krb5_free_data_contents(context, &output);
 	} else {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -885,7 +885,7 @@ static NTSTATUS gensec_krb5_unwrap(struct gensec_security *gensec_security,
 		}
 		*out = data_blob_talloc(mem_ctx, output.data, output.length);
 		
-		kerberos_free_data_contents(context, &output);
+		smb_krb5_free_data_contents(context, &output);
 	} else {
 		return NT_STATUS_ACCESS_DENIED;
 	}

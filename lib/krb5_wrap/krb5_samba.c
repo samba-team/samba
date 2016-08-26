@@ -277,7 +277,7 @@ int smb_krb5_create_key_from_string(krb5_context context,
 * @param host_princ	The krb5_principal to create the salt for
 * @param psalt		A pointer to a krb5_data struct
 *
-* caller has to free the contents of psalt with kerberos_free_data_contents
+* caller has to free the contents of psalt with smb_krb5_free_data_contents
 * when function has succeeded
 *
 * @return krb5_error_code, returns 0 on success, error code otherwise
@@ -804,7 +804,16 @@ cleanup_princ:
 	return retval;
 }
 
-void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
+/**
+ * @brief Free the contents of a krb5_data structure and zero the data field.
+ *
+ * @param[in]  context  The krb5 context
+ *
+ * @param[in]  pdata    The data structure to free contents of
+ *
+ * This function frees the contents, not the structure itself.
+ */
+void smb_krb5_free_data_contents(krb5_context context, krb5_data *pdata)
 {
 #if defined(HAVE_KRB5_FREE_DATA_CONTENTS)
 	if (pdata->data) {
@@ -825,7 +834,7 @@ void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
  * @param[in] length		The length of the data to copy
  * @return krb5_error_code
  *
- * Caller has to free krb5_data with kerberos_free_data_contents().
+ * Caller has to free krb5_data with smb_krb5_free_data_contents().
  */
 
 krb5_error_code krb5_copy_data_contents(krb5_data *p,
@@ -916,7 +925,7 @@ int cli_krb5_get_ticket(TALLOC_CTX *mem_ctx,
 
 	*ticket = data_blob_talloc(mem_ctx, packet.data, packet.length);
 
- 	kerberos_free_data_contents(context, &packet);
+	smb_krb5_free_data_contents(context, &packet);
 
 failed:
 

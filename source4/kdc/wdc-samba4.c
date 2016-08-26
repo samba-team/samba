@@ -451,7 +451,7 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 
 		ret = krb5_pac_add_buffer(context, new_pac,
 					  type, &type_data);
-		kerberos_free_data_contents(context, &type_data);
+		smb_krb5_free_data_contents(context, &type_data);
 		if (ret != 0) {
 			SAFE_FREE(types);
 			krb5_pac_free(context, new_pac);

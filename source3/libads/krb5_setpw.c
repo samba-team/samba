@@ -121,8 +121,8 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *principal,
 	aret = ADS_SUCCESS;
 
 done:
-	kerberos_free_data_contents(context, &result_code_string);
-	kerberos_free_data_contents(context, &result_string);
+	smb_krb5_free_data_contents(context, &result_code_string);
+	smb_krb5_free_data_contents(context, &result_string);
 	krb5_free_principal(context, princ);
 	krb5_cc_close(context, ccache);
 	krb5_free_context(context);
@@ -261,8 +261,8 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     aret = ADS_SUCCESS;
 
 done:
-    kerberos_free_data_contents(context, &result_code_string);
-    kerberos_free_data_contents(context, &result_string);
+    smb_krb5_free_data_contents(context, &result_code_string);
+    smb_krb5_free_data_contents(context, &result_string);
     krb5_free_principal(context, princ);
     krb5_free_context(context);
 
