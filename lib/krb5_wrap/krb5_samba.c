@@ -106,6 +106,13 @@ krb5_error_code krb5_auth_con_setuseruserkey(krb5_context context,
 }
 #endif
 
+#if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
+void krb5_free_unparsed_name(krb5_context context, char *val)
+{
+	SAFE_FREE(val);
+}
+#endif
+
 
 /**********************************************************
  * WRAPPING FUNCTIONS
@@ -434,13 +441,6 @@ krb5_error_code smb_krb5_parse_name(krb5_context context,
 	TALLOC_FREE(frame);
 	return ret;
 }
-
-#if !defined(HAVE_KRB5_FREE_UNPARSED_NAME)
-void krb5_free_unparsed_name(krb5_context context, char *val)
-{
-	SAFE_FREE(val);
-}
-#endif
 
 /**************************************************************
  krb5_parse_name that returns a UNIX charset name. Must
