@@ -146,10 +146,13 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call,
 
 	/* work out the system_dn - useful for so many calls its worth
 	   fetching here */
-	state->system_dn = samdb_search_dn(state->sam_ldb, state,
-					   state->domain_dn, "(&(objectClass=container)(cn=System))");
-	if (!state->system_dn) {
-		return NT_STATUS_NO_SUCH_DOMAIN;		
+	state->system_dn = ldb_dn_copy(state, state->domain_dn);
+	if (state->system_dn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_fmt(state->system_dn, "CN=System")) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	state->builtin_sid = dom_sid_parse_talloc(state, SID_BUILTIN);
