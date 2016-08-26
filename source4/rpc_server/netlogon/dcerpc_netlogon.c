@@ -3911,11 +3911,13 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_FLAGS;
 	}
 
-	system_dn = samdb_search_dn(sam_ctx, mem_ctx,
-				    ldb_get_default_basedn(sam_ctx),
-				    "(&(objectClass=container)(cn=System))");
-	if (!system_dn) {
-		return WERR_GEN_FAILURE;
+	system_dn = ldb_dn_copy(mem_ctx, ldb_get_default_basedn(sam_ctx));
+	if (system_dn == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	if (!ldb_dn_add_child_fmt(system_dn, "CN=System")) {
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	ret = gendb_search(sam_ctx, mem_ctx, system_dn,
