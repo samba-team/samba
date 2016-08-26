@@ -419,8 +419,15 @@ static int attr_handler2(struct oc_context *ac)
 		}
 	}
 
+	/*
+	 * We skip this check under dbcheck to allow fixing of other
+	 * attributes even if an attribute is missing.  This matters
+	 * for CN=RID Set as the required attribute rIDNextRid is not
+	 * replicated.
+	 */
 	if (found_must_contain[0] != NULL &&
-	    ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE") == 0) {
+	    ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE") == 0 &&
+	    ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) == NULL) {
 		ldb_asprintf_errstring(ldb, "objectclass_attrs: at least one mandatory attribute ('%s') on entry '%s' wasn't specified!",
 				       found_must_contain[0],
 				       ldb_dn_get_linearized(msg->dn));
