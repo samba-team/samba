@@ -487,6 +487,12 @@ def build(bld):
                      install_path='${BINDIR}',
                      manpages='ltdbtool.1')
 
+    bld.SAMBA_BINARY('ctdb_eventd',
+                     source='server/ctdb_eventd.c',
+                     deps='''ctdb-server-util ctdb-protocol ctdb-util
+                             samba-util LIBASYNC_REQ replace popt''',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
                      deps='samba-util sys_rw ctdb-system talloc tdb',

@@ -213,6 +213,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/ctdb_diagnostics
 %{_bindir}/onnode
 %dir %{_libexecdir}/ctdb
+%{_libexecdir}/ctdb/ctdb_eventd
 %{_libexecdir}/ctdb/ctdb_lock_helper
 %{_libexecdir}/ctdb/ctdb_event_helper
 %{_libexecdir}/ctdb/ctdb_recovery_helper
