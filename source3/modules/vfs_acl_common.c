@@ -144,8 +144,8 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(5, ("parse_acl_blob: ndr_pull_xattr_NTACL failed: %s\n",
-			ndr_errstr(ndr_err)));
+		DBG_INFO("ndr_pull_xattr_NTACL failed: %s\n",
+			 ndr_errstr(ndr_err));
 		TALLOC_FREE(frame);
 		return ndr_map_error2ntstatus(ndr_err);
 	}
@@ -241,8 +241,8 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 			(ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(5, ("create_acl_blob: ndr_push_xattr_NTACL failed: %s\n",
-			ndr_errstr(ndr_err)));
+		DBG_INFO("ndr_push_xattr_NTACL failed: %s\n",
+			 ndr_errstr(ndr_err));
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
@@ -287,8 +287,8 @@ static NTSTATUS create_sys_acl_blob(const struct security_descriptor *psd,
 			(ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(5, ("create_acl_blob: ndr_push_xattr_NTACL failed: %s\n",
-			ndr_errstr(ndr_err)));
+		DBG_INFO("ndr_push_xattr_NTACL failed: %s\n",
+			 ndr_errstr(ndr_err));
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
@@ -345,10 +345,7 @@ static NTSTATUS add_directory_inheritable_components(vfs_handle_struct *handle,
 
 	mode = dir_mode | file_mode;
 
-	DEBUG(10, ("add_directory_inheritable_components: directory %s, "
-		"mode = 0%o\n",
-		name,
-		(unsigned int)mode ));
+	DBG_DEBUG("directory %s, mode = 0%o\n", name, (unsigned int)mode);
 
 	if (num_aces) {
 		memcpy(new_ace_list, psd->dacl->aces,
@@ -880,7 +877,7 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		smb_fname = smb_fname_in;
 	}
 
-	DEBUG(10, ("get_nt_acl_internal: name=%s\n", smb_fname->base_name));
+	DBG_DEBUG("name=%s\n", smb_fname->base_name);
 
 	status = get_acl_blob(mem_ctx, handle, fsp, smb_fname, &blob);
 	if (NT_STATUS_IS_OK(status)) {
@@ -1004,8 +1001,8 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("get_nt_acl_internal: returning acl for %s is:\n",
-			smb_fname->base_name ));
+		DBG_DEBUG("returning acl for %s is:\n",
+			  smb_fname->base_name);
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
@@ -1072,9 +1069,8 @@ static NTSTATUS set_underlying_acl(vfs_handle_struct *handle, files_struct *fsp,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	DEBUG(10, ("fset_nt_acl_common: overriding chown on file %s "
-		   "for sid %s\n",
-		   fsp_str_dbg(fsp), sid_string_tos(psd->owner_sid)));
+	DBG_DEBUG("overriding chown on file %s for sid %s\n",
+		   fsp_str_dbg(fsp), sid_string_tos(psd->owner_sid));
 
 	/* Ok, we failed to chown and we have
 	   SEC_STD_WRITE_OWNER access - override. */
@@ -1097,27 +1093,25 @@ static NTSTATUS store_v3_blob(vfs_handle_struct *handle, files_struct *fsp,
 	DATA_BLOB blob;
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10, ("fset_nt_acl_xattr: storing xattr sd for file %s\n",
-			   fsp_str_dbg(fsp)));
+		DBG_DEBUG("storing xattr sd for file %s\n",
+			  fsp_str_dbg(fsp));
 		NDR_PRINT_DEBUG(
 		    security_descriptor,
 		    discard_const_p(struct security_descriptor, psd));
 
 		if (pdesc_next != NULL) {
-			DEBUG(10, ("fset_nt_acl_xattr: storing has in xattr sd "
-				   "based on \n"));
+			DBG_DEBUG("storing xattr sd based on \n");
 			NDR_PRINT_DEBUG(
 			    security_descriptor,
 			    discard_const_p(struct security_descriptor,
 					    pdesc_next));
 		} else {
-			DEBUG(10,
-			      ("fset_nt_acl_xattr: ignoring underlying sd\n"));
+			DBG_DEBUG("ignoring underlying sd\n");
 		}
 	}
 	status = create_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("fset_nt_acl_xattr: create_acl_blob failed\n"));
+		DBG_DEBUG("create_acl_blob failed\n");
 		return status;
 	}
 
@@ -1146,8 +1140,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	    SNUM(handle->conn), ACL_MODULE_NAME, "ignore system acls", false);
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
-			  fsp_str_dbg(fsp)));
+		DBG_DEBUG("incoming sd for file %s\n", fsp_str_dbg(fsp));
 		NDR_PRINT_DEBUG(security_descriptor,
 			discard_const_p(struct security_descriptor, orig_psd));
 	}
@@ -1265,12 +1258,12 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s based on system ACL\n",
-			  fsp_str_dbg(fsp)));
+		DBG_DEBUG("storing xattr sd for file %s based on system ACL\n",
+			  fsp_str_dbg(fsp));
 		NDR_PRINT_DEBUG(security_descriptor,
 				discard_const_p(struct security_descriptor, psd));
 
-		DEBUG(10,("fset_nt_acl_xattr: storing hash in xattr sd based on system ACL and:\n"));
+		DBG_DEBUG("storing hash in xattr sd based on system ACL and:\n");
 		NDR_PRINT_DEBUG(security_descriptor,
 				discard_const_p(struct security_descriptor, pdesc_next));
 	}
@@ -1282,7 +1275,7 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	status = create_sys_acl_blob(psd, &blob, XATTR_SD_HASH_TYPE_SHA256, hash, 
 				     sys_acl_description, sys_acl_hash);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("fset_nt_acl_xattr: create_sys_acl_blob failed\n"));
+		DBG_DEBUG("create_sys_acl_blob failed\n");
 		TALLOC_FREE(frame);
 		return status;
 	}
@@ -1319,9 +1312,8 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	DEBUG(10,("acl_common_remove_object: removing %s %s/%s\n",
-		is_directory ? "directory" : "file",
-		parent_dir, final_component ));
+	DBG_DEBUG("removing %s %s/%s\n", is_directory ? "directory" : "file",
+		  parent_dir, final_component);
 
  	/* cd into the parent dir to pin it. */
 	ret = vfs_ChDir(conn, parent_dir);
@@ -1354,10 +1346,9 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	}
 
 	if (!fsp) {
-		DEBUG(10,("acl_common_remove_object: %s %s/%s "
-			"not an open file\n",
-			is_directory ? "directory" : "file",
-			parent_dir, final_component ));
+		DBG_DEBUG("%s %s/%s not an open file\n",
+			  is_directory ? "directory" : "file",
+			  parent_dir, final_component);
 		saved_errno = EACCES;
 		goto out;
 	}
@@ -1405,9 +1396,9 @@ static int rmdir_acl_common(struct vfs_handle_struct *handle,
 						true);
 	}
 
-	DEBUG(10,("rmdir_acl_common: unlink of %s failed %s\n",
-		smb_fname->base_name,
-		strerror(errno) ));
+	DBG_DEBUG("unlink of %s failed %s\n",
+		  smb_fname->base_name,
+		  strerror(errno));
 	return -1;
 }
 
@@ -1434,9 +1425,9 @@ static int unlink_acl_common(struct vfs_handle_struct *handle,
 					false);
 	}
 
-	DEBUG(10,("unlink_acl_common: unlink of %s failed %s\n",
-		smb_fname->base_name,
-		strerror(errno) ));
+	DBG_DEBUG("unlink of %s failed %s\n",
+		  smb_fname->base_name,
+		  strerror(errno));
 	return -1;
 }
 
