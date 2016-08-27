@@ -122,7 +122,7 @@ _PUBLIC_ char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
  * Characters used are: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,
  */
 _PUBLIC_ char** generate_unique_strs(TALLOC_CTX *mem_ctx, size_t len,
-                                         uint32_t num);
+					 uint32_t num);
 
 /* The following definitions come from lib/util/dprintf.c  */
 
@@ -174,6 +174,11 @@ _PUBLIC_ size_t strhex_to_str(char *p, size_t p_len, const char *strhex, size_t 
  * Parse a hex string and return a data blob. 
  */
 _PUBLIC_ _PURE_ DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex) ;
+
+/**
+ * Parse a hex dump and return a data blob
+ */
+_PUBLIC_ _PURE_ DATA_BLOB hexdump_to_data_blob(TALLOC_CTX *mem_ctx, const char *hexdump, size_t len);
 
 /**
  * Print a buf in hex. Assumes dst is at least (srclen*2)+1 large.
@@ -587,7 +592,7 @@ _PUBLIC_ void daemon_status(const char *name, const char *msg);
  * @param[in]  prompt   The prompt to show to ask for the password.
  *
  * @param[out] buf    The buffer the password should be stored. It NEEDS to be
- *                      empty or filled out.
+ *		      empty or filled out.
  *
  * @param[in]  len      The length of the buffer.
  *
@@ -604,8 +609,8 @@ _PUBLIC_ int samba_getpass(const char *prompt, char *buf, size_t len,
  * Load a ini-style file.
  */
 bool pm_process( const char *fileName,
-                 bool (*sfunc)(const char *, void *),
-                 bool (*pfunc)(const char *, const char *, void *),
+		 bool (*sfunc)(const char *, void *),
+		 bool (*pfunc)(const char *, const char *, void *),
 				 void *userdata);
 bool pm_process_with_flags(const char *filename,
 			   bool allow_empty_values,

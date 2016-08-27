@@ -213,8 +213,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	bool dumpdata = false;
 	bool assume_ndr64 = false;
 	bool quiet = false;
+	bool hex_input = false;
 	int opt;
-	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO, OPT_NDR64, OPT_QUIET};
+	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO, OPT_NDR64, OPT_QUIET, OPT_HEX_INPUT};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
@@ -223,6 +224,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		{"load-dso", 'l', POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
 		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
 		{"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "Don't actually dump anything", NULL },
+		{"hex-input", 0, POPT_ARG_NONE, NULL, OPT_HEX_INPUT, "Read the input file in as a hex dump", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -231,7 +233,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	const struct ndr_interface_call_pipes *out_pipes = NULL;
 	uint32_t highest_ofs;
 	struct dcerpc_sec_verification_trailer *sec_vt = NULL;
-
+	
 	ndr_table_init();
 
 	/* Initialise samba stuff */
@@ -265,6 +267,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			break;
 		case OPT_QUIET:
 			quiet = true;
+			break;
+		case OPT_HEX_INPUT:
+			hex_input = true;
 			break;
 		}
 	}
@@ -381,7 +386,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			exit(1);
 		}
 		memcpy(v_st, st, f->struct_size);
-	} 
+	}
 
 	if (filename)
 		data = (uint8_t *)file_load(filename, &size, 0, mem_ctx);
@@ -395,9 +400,13 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			perror("stdin");
 		exit(1);
 	}
-
-	blob.data = data;
-	blob.length = size;
+	
+	if (hex_input) {
+		blob = hexdump_to_data_blob(mem_ctx, (char *)data, size);
+	} else {
+		blob.data = data;
+		blob.length = size;
+	}
 
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 	if (ndr_pull == NULL) {
@@ -584,7 +593,6 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	printf("dump OK\n");
-
 	talloc_free(mem_ctx);
 
 	poptFreeContext(pc);
