@@ -242,6 +242,7 @@ struct ctdb_daemon_data {
 
 
 struct ctdb_cluster_mutex_handle;
+struct eventd_context;
 
 enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN};
 
@@ -316,6 +317,8 @@ struct ctdb_context {
 
 	struct ctdb_event_script_state *current_monitor;
 	struct ctdb_script_list_old *last_status[CTDB_EVENT_MAX];
+
+	struct eventd_context *ectx;
 
 	TALLOC_CTX *banning_ctx;
 
@@ -994,6 +997,9 @@ void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 					 const TDB_DATA key);
 
 /* from eventscript.c */
+
+int ctdb_start_eventd(struct ctdb_context *ctdb);
+void ctdb_stop_eventd(struct ctdb_context *ctdb);
 
 int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,

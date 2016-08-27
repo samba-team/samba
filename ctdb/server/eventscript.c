@@ -24,6 +24,7 @@
 #include "system/dir.h"
 #include "system/locale.h"
 #include "system/time.h"
+#include "system/dir.h"
 
 #include <talloc.h>
 #include <tevent.h>
@@ -38,6 +39,592 @@
 #include "common/rb_tree.h"
 #include "common/common.h"
 #include "common/logging.h"
+#include "common/reqid.h"
+#include "common/sock_io.h"
+
+#include "protocol/protocol_api.h"
+
+/*
+ * Setting up event daemon
+ */
+
+struct eventd_context {
+	struct tevent_context *ev;
+	const char *path;
+	const char *script_dir;
+	const char *pidfile;
+	const char *socket;
+	const char *debug_hung_script;
+
+	/* server state */
+	pid_t eventd_pid;
+	struct tevent_fd *eventd_fde;
+
+	/* client state */
+	struct reqid_context *idr;
+	struct sock_queue *queue;
+	struct eventd_client_state *calls;
+};
+
+static bool eventd_context_init(TALLOC_CTX *mem_ctx,
+				struct ctdb_context *ctdb,
+				struct eventd_context **out)
+{
+	struct eventd_context *ectx;
+	const char *eventd = CTDB_HELPER_BINDIR "/ctdb_eventd";
+	const char *debug_hung_script = CTDB_ETCDIR "/debug-hung-script.sh";
+	const char *value;
+	char *socket;
+	int ret;
+
+	ectx = talloc_zero(mem_ctx, struct eventd_context);
+	if (ectx == NULL) {
+		return false;
+	}
+
+	ectx->ev = ctdb->ev;
+
+	value = getenv("CTDB_EVENTD");
+	if (value != NULL) {
+		eventd = value;
+	}
+
+	ectx->path = talloc_strdup(ectx, eventd);
+	if (ectx->path == NULL) {
+		talloc_free(ectx);
+		return false;
+	}
+
+	ectx->script_dir = ctdb->event_script_dir;
+
+	socket = talloc_strdup(ectx, ctdb_get_socketname(ctdb));
+	if (socket == NULL) {
+		talloc_free(ectx);
+		return NULL;
+	}
+
+	ectx->socket = talloc_asprintf(ectx, "%s/eventd.sock",
+				       dirname(socket));
+	if (ectx->socket == NULL) {
+		talloc_free(ectx);
+		return false;
+	}
+
+	talloc_free(socket);
+
+	value = getenv("CTDB_DEBUG_HUNG_SCRIPT");
+	if (value != NULL) {
+		if (value[0] == '\0') {
+			debug_hung_script = NULL;
+		} else {
+			debug_hung_script = value;
+		}
+	}
+
+	if (debug_hung_script != NULL) {
+		ectx->debug_hung_script = talloc_strdup(ectx,
+							debug_hung_script);
+		if (ectx->debug_hung_script == NULL) {
+			talloc_free(ectx);
+			return false;
+		}
+	}
+
+	ret = reqid_init(ectx, 1, &ectx->idr);
+	if (ret != 0) {
+		talloc_free(ectx);
+		return false;
+	}
+
+	ectx->eventd_pid = -1;
+
+	*out = ectx;
+	return true;
+}
+
+/*
+ * Start and stop event daemon
+ */
+
+static bool eventd_client_connect(struct eventd_context *ectx);
+static void eventd_dead_handler(struct tevent_context *ev,
+				struct tevent_fd *fde, uint16_t flags,
+				void *private_data);
+
+int ctdb_start_eventd(struct ctdb_context *ctdb)
+{
+	struct eventd_context *ectx;
+	const char **argv;
+	int fd[2];
+	pid_t pid;
+	int ret, i;
+	bool status;
+
+	if (ctdb->ectx == NULL) {
+		status = eventd_context_init(ctdb, ctdb, &ctdb->ectx);
+		if (! status) {
+			DEBUG(DEBUG_ERR,
+			      ("Failed to initialize eventd context\n"));
+			return -1;
+		}
+	}
+
+	ectx = ctdb->ectx;
+
+	argv = talloc_array(ectx, const char *, 14);
+	if (argv == NULL) {
+		return -1;
+	}
+
+	argv[0] = ectx->path;
+	argv[1] = "-e";
+	argv[2] = ectx->script_dir;
+	argv[3] = "-s";
+	argv[4] = ectx->socket;
+	argv[5] = "-P";
+	argv[6] = talloc_asprintf(argv, "%d", ctdb->ctdbd_pid);
+	argv[7] = "-l";
+	argv[8] = getenv("CTDB_LOGGING");
+	argv[9] = "-d";
+	argv[10] = debug_level_to_string(DEBUGLEVEL);
+	if (ectx->debug_hung_script == NULL) {
+		argv[11] = NULL;
+		argv[12] = NULL;
+	} else {
+		argv[11] = "-D";
+		argv[12] = ectx->debug_hung_script;
+	}
+	argv[13] = NULL;
+
+	if (argv[6] == NULL) {
+		talloc_free(argv);
+		return -1;
+	}
+
+	DEBUG(DEBUG_NOTICE,
+	      ("Starting event daemon %s %s %s %s %s %s %s %s %s %s %s\n",
+	       argv[0], argv[1], argv[2], argv[3], argv[4], argv[5],
+	       argv[6], argv[7], argv[8], argv[9], argv[10]));
+
+	ret = pipe(fd);
+	if (ret != 0) {
+		return -1;
+	}
+
+	pid = ctdb_fork(ctdb);
+	if (pid == -1) {
+		close(fd[0]);
+		close(fd[1]);
+		return -1;
+	}
+
+	if (pid == 0) {
+		close(fd[0]);
+		ret = execv(argv[0], discard_const(argv));
+		if (ret == -1) {
+			_exit(errno);
+		}
+		_exit(0);
+	}
+
+	talloc_free(argv);
+	close(fd[1]);
+
+	ectx->eventd_fde = tevent_add_fd(ctdb->ev, ectx, fd[0],
+					 TEVENT_FD_READ,
+					 eventd_dead_handler, ectx);
+	if (ectx->eventd_fde == NULL) {
+		ctdb_kill(ctdb, pid, SIGKILL);
+		close(fd[0]);
+		return -1;
+	}
+
+	tevent_fd_set_auto_close(ectx->eventd_fde);
+	ectx->eventd_pid = pid;
+
+	/* Wait to connect to eventd */
+	for (i=0; i<10; i++) {
+		status = eventd_client_connect(ectx);
+		if (status) {
+			break;
+		}
+		sleep(1);
+	}
+
+	if (! status) {
+		DEBUG(DEBUG_ERR, ("Failed to initialize event daemon\n"));
+		ctdb_stop_eventd(ctdb);
+		return -1;
+	}
+
+	return 0;
+}
+
+static void eventd_dead_handler(struct tevent_context *ev,
+				struct tevent_fd *fde, uint16_t flags,
+				void *private_data)
+{
+	struct eventd_context *ectx = talloc_get_type_abort(
+		private_data, struct eventd_context);
+
+	DEBUG(DEBUG_ERR, ("Eventd went away\n"));
+
+	TALLOC_FREE(ectx->eventd_fde);
+	ectx->eventd_pid = -1;
+}
+
+void ctdb_stop_eventd(struct ctdb_context *ctdb)
+{
+	struct eventd_context *ectx = ctdb->ectx;
+
+	if (ectx == NULL) {
+		return;
+	}
+
+	TALLOC_FREE(ectx->eventd_fde);
+	if (ectx->eventd_pid != -1) {
+		kill(ectx->eventd_pid, SIGTERM);
+		ectx->eventd_pid = -1;
+	}
+	TALLOC_FREE(ctdb->ectx);
+}
+
+/*
+ * Connect to event daemon
+ */
+
+struct eventd_client_state {
+	struct eventd_client_state *prev, *next;
+
+	struct eventd_context *ectx;
+	void (*callback)(struct ctdb_event_reply *reply, void *private_data);
+	void *private_data;
+
+	uint32_t reqid;
+	uint8_t *buf;
+	size_t buflen;
+};
+
+static void eventd_client_read(uint8_t *buf, size_t buflen,
+			       void *private_data);
+static int eventd_client_state_destructor(struct eventd_client_state *state);
+
+static bool eventd_client_connect(struct eventd_context *ectx)
+{
+	int fd;
+
+	if (ectx->queue != NULL) {
+		return true;
+	}
+
+	fd = sock_connect(ectx->socket);
+	if (fd == -1) {
+		return false;
+	}
+
+	ectx->queue = sock_queue_setup(ectx, ectx->ev, fd,
+				       eventd_client_read, ectx);
+	if (ectx->queue == NULL) {
+		close(fd);
+		return false;
+	}
+
+	return true;
+}
+
+static int eventd_client_write(struct eventd_context *ectx,
+			       TALLOC_CTX *mem_ctx,
+			       struct ctdb_event_request *request,
+			       void (*callback)(struct ctdb_event_reply *reply,
+						void *private_data),
+			       void *private_data)
+{
+	struct eventd_client_state *state;
+	int ret;
+
+	if (! eventd_client_connect(ectx)) {
+		return -1;
+	}
+
+	state = talloc_zero(mem_ctx, struct eventd_client_state);
+	if (state == NULL) {
+		return -1;
+	}
+
+	state->ectx = ectx;
+	state->callback = callback;
+	state->private_data = private_data;
+
+	state->reqid = reqid_new(ectx->idr, state);
+	if (state->reqid == REQID_INVALID) {
+		talloc_free(state);
+		return -1;
+	}
+
+	talloc_set_destructor(state, eventd_client_state_destructor);
+
+	ctdb_event_header_fill(&request->header, state->reqid);
+	state->buflen = ctdb_event_request_len(request);
+	state->buf = talloc_size(state, state->buflen);
+	if (state->buf == NULL) {
+		talloc_free(state);
+		return -1;
+	}
+
+	ret = ctdb_event_request_push(request, state->buf, &state->buflen);
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+
+	ret = sock_queue_write(ectx->queue, state->buf, state->buflen);
+	if (ret != 0) {
+		talloc_free(state);
+		return -1;
+	}
+
+	DLIST_ADD(ectx->calls, state);
+
+	return 0;
+}
+
+static int eventd_client_state_destructor(struct eventd_client_state *state)
+{
+	struct eventd_context *ectx = state->ectx;
+
+	reqid_remove(ectx->idr, state->reqid);
+	DLIST_REMOVE(ectx->calls, state);
+	return 0;
+}
+
+static void eventd_client_read(uint8_t *buf, size_t buflen,
+			       void *private_data)
+{
+	struct eventd_context *ectx = talloc_get_type_abort(
+		private_data, struct eventd_context);
+	struct eventd_client_state *state;
+	struct ctdb_event_reply *reply;
+	int ret;
+
+	if (buf == NULL) {
+		/* connection lost */
+		TALLOC_FREE(ectx->queue);
+		return;
+	}
+
+	reply = talloc_zero(ectx, struct ctdb_event_reply);
+	if (reply == NULL) {
+		return;
+	}
+
+	ret = ctdb_event_reply_pull(buf, buflen, reply, reply);
+	if (ret != 0) {
+		D_ERR("Invalid packet received, ret=%d\n", ret);
+		talloc_free(reply);
+		return;
+	}
+
+	if (buflen != reply->header.length) {
+		D_ERR("Packet size mismatch %zu != %"PRIu32"\n",
+		      buflen, reply->header.length);
+		talloc_free(reply);
+		return;
+	}
+
+	state = reqid_find(ectx->idr, reply->header.reqid,
+			   struct eventd_client_state);
+	if (state == NULL) {
+		talloc_free(reply);
+		return;
+	}
+
+	if (state->reqid != reply->header.reqid) {
+		talloc_free(reply);
+		return;
+	}
+
+	state = talloc_steal(reply, state);
+	state->callback(reply, state->private_data);
+	talloc_free(reply);
+}
+
+/*
+ * Run an event
+ */
+
+struct eventd_client_run_state {
+	struct eventd_context *ectx;
+	void (*callback)(int result, void *private_data);
+	void *private_data;
+};
+
+static void eventd_client_run_done(struct ctdb_event_reply *reply,
+				   void *private_data);
+
+static int eventd_client_run(struct eventd_context *ectx,
+			     TALLOC_CTX *mem_ctx,
+			     void (*callback)(int result,
+					      void *private_data),
+			     void *private_data,
+			     enum ctdb_event event,
+			     const char *arg_str,
+			     uint32_t timeout)
+{
+	struct eventd_client_run_state *state;
+	struct ctdb_event_request request;
+	struct ctdb_event_request_run rdata;
+	int ret;
+
+	state = talloc_zero(mem_ctx, struct eventd_client_run_state);
+	if (state == NULL) {
+		return -1;
+	}
+
+	state->ectx = ectx;
+	state->callback = callback;
+	state->private_data = private_data;
+
+	rdata.event = event;
+	rdata.timeout = timeout;
+	rdata.arg_str = arg_str;
+
+	request.rdata.command = CTDB_EVENT_COMMAND_RUN;
+	request.rdata.data.run = &rdata;
+
+	ret = eventd_client_write(ectx, state, &request,
+				  eventd_client_run_done, state);
+	if (ret != 0) {
+		talloc_free(state);
+		return ret;
+	}
+
+	return 0;
+}
+
+static void eventd_client_run_done(struct ctdb_event_reply *reply,
+				   void *private_data)
+{
+	struct eventd_client_run_state *state = talloc_get_type_abort(
+		private_data, struct eventd_client_run_state);
+
+	state = talloc_steal(state->ectx, state);
+	state->callback(reply->rdata.result, state->private_data);
+	talloc_free(state);
+}
+
+/*
+ * CTDB event script functions
+ */
+
+int ctdb_event_script_run(struct ctdb_context *ctdb,
+			  TALLOC_CTX *mem_ctx,
+			  void (*callback)(struct ctdb_context *ctdb,
+					   int result, void *private_data),
+			  void *private_data,
+			  enum ctdb_event event,
+			  const char *fmt, va_list ap)
+			  PRINTF_ATTRIBUTE(6,0);
+
+struct ctdb_event_script_run_state {
+	struct ctdb_context *ctdb;
+	void (*callback)(struct ctdb_context *ctdb, int result,
+			 void *private_data);
+	void *private_data;
+	enum ctdb_event event;
+};
+
+static bool event_allowed_during_recovery(enum ctdb_event event);
+static void ctdb_event_script_run_done(int result, void *private_data);
+static bool check_options(enum ctdb_event call, const char *options);
+
+int ctdb_event_script_run(struct ctdb_context *ctdb,
+			  TALLOC_CTX *mem_ctx,
+			  void (*callback)(struct ctdb_context *ctdb,
+					   int result, void *private_data),
+			  void *private_data,
+			  enum ctdb_event event,
+			  const char *fmt, va_list ap)
+{
+	struct ctdb_event_script_run_state *state;
+	char *arg_str;
+	int ret;
+
+	if ( (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) &&
+	     (! event_allowed_during_recovery(event)) ) {
+		DEBUG(DEBUG_ERR,
+		      ("Refusing to run event '%s' while in recovery\n",
+		       ctdb_eventscript_call_names[event]));
+	}
+
+	state = talloc_zero(mem_ctx, struct ctdb_event_script_run_state);
+	if (state == NULL) {
+		return -1;
+	}
+
+	state->ctdb = ctdb;
+	state->callback = callback;
+	state->private_data = private_data;
+	state->event = event;
+
+	if (fmt != NULL) {
+		arg_str = talloc_vasprintf(state, fmt, ap);
+		if (arg_str == NULL) {
+			talloc_free(state);
+			return -1;
+		}
+	} else {
+		arg_str = NULL;
+	}
+
+	if (! check_options(event, arg_str)) {
+		DEBUG(DEBUG_ERR,
+		      ("Bad event script arguments '%s' for '%s'\n",
+		       arg_str, ctdb_eventscript_call_names[event]));
+		talloc_free(arg_str);
+		return -1;
+	}
+
+	ret = eventd_client_run(ctdb->ectx, state,
+				ctdb_event_script_run_done, state,
+				event, arg_str, ctdb->tunable.script_timeout);
+	if (ret != 0) {
+		talloc_free(state);
+		return ret;
+	}
+
+	DEBUG(DEBUG_INFO,
+	      (__location__ " Running event %s with arguments %s\n",
+	       ctdb_eventscript_call_names[event], arg_str));
+
+	talloc_free(arg_str);
+	return 0;
+}
+
+static void ctdb_event_script_run_done(int result, void *private_data)
+{
+	struct ctdb_event_script_run_state *state = talloc_get_type_abort(
+		private_data, struct ctdb_event_script_run_state);
+
+	if (result == -ETIME) {
+		switch (state->event) {
+		case CTDB_EVENT_START_RECOVERY:
+		case CTDB_EVENT_RECOVERED:
+		case CTDB_EVENT_TAKE_IP:
+		case CTDB_EVENT_RELEASE_IP:
+			DEBUG(DEBUG_ERR,
+			      ("Ignoring hung script for %s event\n",
+			       ctdb_eventscript_call_names[state->event]));
+			result = 0;
+			break;
+
+		default:
+			break;
+		}
+	}
+
+	state->callback(state->ctdb, result, state->private_data);
+	talloc_free(state);
+}
 
 
 static void ctdb_event_script_timeout(struct tevent_context *ev,
