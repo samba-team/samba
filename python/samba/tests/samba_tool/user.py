@@ -82,7 +82,7 @@ class UserCmdTestCase(SambaToolCmdTest):
 
         # test adding users with --use-username-as-cn
         for user in self.users:
-            (result, out, err) =  self.runsubcmd("user", "add", user["name"], user["password"],
+            (result, out, err) =  self.runsubcmd("user", "create", user["name"], user["password"],
                                                  "--use-username-as-cn",
                                                  "--surname=%s" % user["surname"],
                                                  "--given-name=%s" % user["given-name"],
@@ -382,7 +382,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             return
 
 
-# samba-tool user add command didn't support users with empty gecos if none is
+# samba-tool user create command didn't support users with empty gecos if none is
 # specified on the command line and the user hasn't one in the passwd file it
 # will fail, so let's add some contents
 
@@ -398,7 +398,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                         "loginShell": u[6],
                         })
         # check if --rfc2307-from-nss sets the same values as we got from pwd.getpwuid()
-        (result, out, err) = self.runsubcmd("user", "add", user["name"], user["password"],
+        (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
                                                 "--surname=%s" % user["surname"],
                                                 "--given-name=%s" % user["given-name"],
                                                 "--job-title=%s" % user["job-title"],
@@ -423,7 +423,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         user = self._randomPosixUser({"name": u[0]})
         # create a user with posix attributes from nss but override all of them with the
         # random ones just obtained
-        (result, out, err) = self.runsubcmd("user", "add", user["name"], user["password"],
+        (result, out, err) = self.runsubcmd("user", "create", user["name"], user["password"],
                                                 "--surname=%s" % user["surname"],
                                                 "--given-name=%s" % user["given-name"],
                                                 "--job-title=%s" % user["job-title"],
@@ -503,7 +503,7 @@ class UserCmdTestCase(SambaToolCmdTest):
         self._check_user(user)
 
     def _create_user(self, user):
-        return self.runsubcmd("user", "add", user["name"], user["password"],
+        return self.runsubcmd("user", "create", user["name"], user["password"],
                                                 "--surname=%s" % user["surname"],
                                                 "--given-name=%s" % user["given-name"],
                                                 "--job-title=%s" % user["job-title"],
