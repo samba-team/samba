@@ -2536,18 +2536,17 @@ char *smb_krb5_principal_get_realm(krb5_context context,
 #endif
 }
 
-/*
- * smb_krb5_principal_set_realm
- *
+/**
  * @brief Get realm of a principal
  *
- * @param[in] context		The krb5_context
- * @param[in] principal		The principal
- * @param[in] realm		The realm
- * @return			0 on success, a krb5_error_code on error.
+ * @param[in] context   The library context
  *
+ * @param[in] principal The principal to set the realm
+ *
+ * @param[in] realm     The realm as a string to set.
+ *
+ * @retur 0 on success, a Kerberos error code otherwise.
  */
-
 krb5_error_code smb_krb5_principal_set_realm(krb5_context context,
 					     krb5_principal principal,
 					     const char *realm)
