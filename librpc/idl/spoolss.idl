@@ -3407,7 +3407,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x71 */
-	WERROR spoolss_RpcEnumJobNamedProperties(
+	WERROR spoolss_EnumJobNamedProperties(
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
 		[out,ref] uint32 *pcProperties,

@@ -3315,7 +3315,7 @@ static bool test_JobPropertiesEnum(struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   uint32_t job_id)
 {
-	struct spoolss_RpcEnumJobNamedProperties r;
+	struct spoolss_EnumJobNamedProperties r;
 	uint32_t pcProperties = 0;
 	struct RPC_PrintNamedProperty *ppProperties = NULL;
 
@@ -3324,13 +3324,13 @@ static bool test_JobPropertiesEnum(struct torture_context *tctx,
 	r.out.pcProperties = &pcProperties;
 	r.out.ppProperties = &ppProperties;
 
-	torture_comment(tctx, "Testing RpcEnumJobNamedProperties(%d)\n", job_id);
+	torture_comment(tctx, "Testing EnumJobNamedProperties(%d)\n", job_id);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_RpcEnumJobNamedProperties_r(b, tctx, &r),
-		"spoolss_RpcEnumJobNamedProperties failed");
+		dcerpc_spoolss_EnumJobNamedProperties_r(b, tctx, &r),
+		"spoolss_EnumJobNamedProperties failed");
 	torture_assert_werr_ok(tctx, r.out.result,
-		"spoolss_RpcEnumJobNamedProperties failed");
+		"spoolss_EnumJobNamedProperties failed");
 
 	return true;
 }
