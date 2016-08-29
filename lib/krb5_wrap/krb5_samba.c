@@ -1151,6 +1151,21 @@ krb5_error_code smb_krb5_kt_open(krb5_context context,
 					 keytab);
 }
 
+/**
+ * @brief Get a key table name.
+ *
+ * @param[in]  mem_ctx The talloc context to use for allocation.
+ *
+ * @param[in]  context The library context.
+ *
+ * @param[in]  keytab The key table to get the name from.
+ *
+ * @param[in]  keytab_name A talloc'ed string of the key table name.
+ *
+ * The talloc'ed name string needs to be freed with talloc_free().
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     krb5_keytab keytab,
