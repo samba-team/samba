@@ -228,8 +228,11 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	   realm in particular), possibly falling back to
 	   GSS_C_NT_HOSTBASED_SERVICE
 	*/
-	name_buffer.value = kerberos_get_principal_from_service_hostname(
-					gse_ctx, service, server, lp_realm());
+	name_buffer.value =
+		smb_krb5_get_principal_from_service_hostname(gse_ctx,
+							     service,
+							     server,
+							     lp_realm());
 	if (!name_buffer.value) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err_out;

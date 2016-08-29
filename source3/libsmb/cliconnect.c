@@ -1750,8 +1750,11 @@ static char *cli_session_setup_get_principal(
 					    remote_name, realm);
 		TALLOC_FREE(realm);
 	} else {
-		principal = kerberos_get_principal_from_service_hostname(
-			talloc_tos(), "cifs", remote_name, lp_realm());
+		principal =
+			smb_krb5_get_principal_from_service_hostname(talloc_tos(),
+								     "cifs",
+								     remote_name,
+								     lp_realm());
 	}
 	DEBUG(3, ("cli_session_setup_spnego: guessed server principal=%s\n",
 		  principal ? principal : "<null>"));

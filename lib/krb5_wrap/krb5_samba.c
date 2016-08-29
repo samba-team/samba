@@ -2683,7 +2683,7 @@ static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 	return realm;
 }
 
-char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
+char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 						   const char *service,
 						   const char *remote_name,
 						   const char *default_realm)
@@ -2706,8 +2706,7 @@ char *kerberos_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 		if (!realm) {
 			return NULL;
 		}
-		DEBUG(3,("kerberos_get_principal_from_service_hostname: "
-			 "cannot get realm from, "
+		DEBUG(3,("Cannot get realm from, "
 			 "desthost %s or default ccache. Using default "
 			 "smb.conf realm %s\n",
 			 remote_name,
