@@ -896,13 +896,6 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 	return ret;
 }
 
-krb5_error_code smb_krb5_get_init_creds_opt_alloc(krb5_context context,
-					    krb5_get_init_creds_opt **opt)
-{
-	/* Heimdal or modern MIT version */
-	return krb5_get_init_creds_opt_alloc(context, opt);
-}
-
 void smb_krb5_get_init_creds_opt_free(krb5_context context,
 				krb5_get_init_creds_opt *opt)
 {

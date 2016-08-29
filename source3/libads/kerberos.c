@@ -235,7 +235,7 @@ int kerberos_kinit_password_ext(const char *principal,
 		goto out;
 	}
 
-	if ((code = smb_krb5_get_init_creds_opt_alloc(ctx, &opt))) {
+	if ((code = krb5_get_init_creds_opt_alloc(ctx, &opt))) {
 		goto out;
 	}
 
