@@ -113,6 +113,21 @@ void krb5_free_unparsed_name(krb5_context context, char *val)
 }
 #endif
 
+#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
+const krb5_data *krb5_princ_component(krb5_context context,
+				      krb5_principal principal, int i);
+
+const krb5_data *krb5_princ_component(krb5_context context,
+				      krb5_principal principal, int i)
+{
+	static krb5_data kdata;
+
+	kdata.data = discard_const_p(char, krb5_principal_get_comp_string(context, principal, i));
+	kdata.length = strlen((const char *)kdata.data);
+	return &kdata;
+}
+#endif
+
 
 /**********************************************************
  * WRAPPING FUNCTIONS
@@ -598,19 +613,6 @@ done:
 	return ret;
 }
 
-
-#if defined(HAVE_KRB5_PRINCIPAL_GET_COMP_STRING) && !defined(HAVE_KRB5_PRINC_COMPONENT)
- const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i );
-
- const krb5_data *krb5_princ_component(krb5_context context, krb5_principal principal, int i )
-{
-	static krb5_data kdata;
-
-	kdata.data = discard_const_p(char, krb5_principal_get_comp_string(context, principal, i));
-	kdata.length = strlen((const char *)kdata.data);
-	return &kdata;
-}
-#endif
 
 /*
  * @brief Get talloced string component of a principal
