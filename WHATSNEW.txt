@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.5.  This is *not*
+This is the third release candidate of Samba 4.5.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -344,6 +344,77 @@ KNOWN ISSUES
 ============
 
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.5#All_bugs
+
+
+CHANGES SINCE 4.5.0rc2
+======================
+
+o   Michael Adam <obnox@samba.org>
+    * BUG 12155: Some idmap backends don't perform range checks for the result
+      of sids_to_xids.
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 12115: Endless loop on drsuapi pull replication after schema changes.
+    * BUG 12135: net ads gpo refresh can crash with null pointer deref..
+    * BUG 12139: Race between break oplock and check for share_mode.
+    * BUG 12150: SMB2 snapshot query fails on DFS shares..
+    * BUG 12165: smbclient allinfo doesn't correctly return 'previous version'
+      info over SMB1.
+    * BUG 12166: smbclient allinfo doesn't correctly return 'previous version'
+      info over SMB2.
+    * BUG 12174: error: 'conn' undeclared.
+
+o   Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+    * BUG 12143: misnamed attribute in samba_kcc causes exception in unusual
+      circumstances.
+    * BUG 12187: Backport changes for partial attribute set calculation
+      for 4.5.
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 12107: backport backupkey tests.
+    * BUG 12115: Endless loop on drsuapi pull replication after schema changes.
+    * BUG 12128: Correctly resolve replicated schema changes regarding linked
+      attributes.
+
+o   Amitay Isaacs <amitay@gmail.com>
+    * BUG 12137: Fix printf format non-liternal warnings and printf
+      format errors.
+    * BUG 12138: Fix uninitialized timeout in ctdb_pmda.
+    * BUG 12151: Drop resurrected ctdb commands in new ctdb tool.
+    * BUG 12152: Fix ctdb addip; implementation to match ctdb delip.
+    * BUG 12163: Fix missing arguments and format elements in format strings.
+    * BUG 12168: Fix format-nonliteral warnings.
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 12108: Backport selftest/autobuild fixes to v4-5-test.
+    * BUG 12114: In memory schema updated on non schema master.
+    * BUG 12115: Endless loop on drsuapi pull replication after schema changes.
+    * BUG 12128: Correctly resolve replicated schema changes regarding
+      linked attributes.
+    * BUG 12129: let samba-tool ldapcmp ignore whenChanged.
+
+o   Garming Sam <garming@catalyst.net.nz>
+    * BUG 12187: Backport changes for partial attribute set calculation
+      for 4.5.
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 12175: smbget always prompts for a username.
+
+o   Christof Schmitt <cs@samba.org>
+    * BUG 12150: SMB2 snapshot query fails on DFS shares..
+
+o   Martin Schwenke <martin@meltin.net>
+    * BUG 12157: Coverity and related fixes.
+    * BUG 12158: CTDB release IP fixes.
+    * BUG 12161: Fix CTDB cumulative takeover timeout.
+    * BUG 12170: CTDB test runs can kill each other's ctdbd daemons.
+
+o   Uri Simchoni <uri@samba.org>
+    * BUG 12145: smbd: if inherit owner is enabled, the free disk on a folder
+      should take the owner's quota into account.
+    * BUG 12149: smbd: cannot load a Windows device driver from a Samba share
+      via SMB2.
+    * BUG 12172: a snapshot folder cannot be accessed via SMB1.
 
 
 CHANGES SINCE 4.5.0rc1
