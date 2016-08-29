@@ -22,6 +22,15 @@ export CTDB_NODES="${TEST_VAR_DIR}/nodes.txt"
 
 #######################################
 
+config_from_environment ()
+{
+	# Override from the environment.  This would be easier if env was
+	# guaranteed to quote its output so it could be reused.
+	env |
+	grep '^CTDB_' |
+	sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@'
+}
+
 setup_ctdb ()
 {
     mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
@@ -99,11 +108,9 @@ CTDB_SOCKET="${TEST_VAR_DIR}/sock.$pnn"
 CTDB_NOSETSCHED=yes
 EOF
 
-	# Override from the environment.  This would be easier if env was
-	# guaranteed to quote its output so it could be reused.
-	env |
-	grep '^CTDB_' |
-	sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@' >>"$conf"
+	# Append any configuration variables set in environment to
+	# configuration file so they affect CTDB after each restart.
+	config_from_environment >>"$conf"
     done
 }
 
