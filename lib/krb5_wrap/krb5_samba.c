@@ -988,10 +988,10 @@ krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 #define MAX_KEYTAB_NAME_LEN 1100
 #endif
 
-krb5_error_code smb_krb5_open_keytab_relative(krb5_context context,
-					      const char *keytab_name_req,
-					      bool write_access,
-					      krb5_keytab *keytab)
+krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
+					  const char *keytab_name_req,
+					  bool write_access,
+					  krb5_keytab *keytab)
 {
 	krb5_error_code ret = 0;
 	TALLOC_CTX *mem_ctx;
@@ -1119,10 +1119,10 @@ krb5_error_code smb_krb5_open_keytab(krb5_context context,
 		}
 	}
 
-	return smb_krb5_open_keytab_relative(context,
-					     keytab_name_req,
-					     write_access,
-					     keytab);
+	return smb_krb5_kt_open_relative(context,
+					 keytab_name_req,
+					 write_access,
+					 keytab);
 }
 
 krb5_error_code smb_krb5_keytab_name(TALLOC_CTX *mem_ctx,

@@ -66,7 +66,7 @@ int main (int argc, char **argv)
 		smb_krb5_err(mem_ctx, context, 1, ret, "krb5_context");
 	}
 
-	ret = smb_krb5_open_keytab_relative(context, keytab_name, false, &keytab);
+	ret = smb_krb5_kt_open_relative(context, keytab_name, false, &keytab);
 	if (ret) {
 		smb_krb5_err(mem_ctx, context, 1, ret, "open keytab");
 	}

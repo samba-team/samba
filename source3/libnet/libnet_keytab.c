@@ -81,10 +81,10 @@ krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	ret = smb_krb5_open_keytab_relative(context,
-					    keytab_name,
-					    true, /* write_access */
-					    &keytab);
+	ret = smb_krb5_kt_open_relative(context,
+					keytab_name,
+					true, /* write_access */
+					&keytab);
 	if (ret) {
 		DEBUG(1,("keytab_init: smb_krb5_open_keytab failed (%s)\n",
 			error_message(ret)));

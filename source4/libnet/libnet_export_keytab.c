@@ -44,10 +44,10 @@ static NTSTATUS sdb_kt_copy(TALLOC_CTX *mem_ctx,
 	bool copy_one_principal = (principal != NULL);
 	krb5_data password;
 
-	code = smb_krb5_open_keytab_relative(context,
-					     keytab_name,
-					     true, /* write_access */
-					     &keytab);
+	code = smb_krb5_kt_open_relative(context,
+					 keytab_name,
+					 true, /* write_access */
+					 &keytab);
 	if (code != 0) {
 		*error_string = talloc_asprintf(mem_ctx,
 						"Failed to open keytab: %s",
