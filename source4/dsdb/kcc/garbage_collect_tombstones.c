@@ -35,42 +35,16 @@
 NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 					 struct ldb_context *samdb,
 					 struct dsdb_ldb_dn_list_node *part,
-					 time_t current_time, time_t *last_deleted_check,
-					 time_t *last_full_scan_deleted_check)
+					 time_t current_time,
+					 bool do_fs)
 {
 	int ret;
 	uint32_t tombstoneLifetime;
-	bool do_fs = false;
-
-	time_t interval = lpcfg_parm_int(lp_ctx, NULL, "kccsrv",
-					 "check_deleted_full_scan_interval", 86400);
-
-	if (current_time - *last_deleted_check < lpcfg_parm_int(lp_ctx, NULL, "kccsrv",
-								  "check_deleted_interval", 600)) {
-		return NT_STATUS_OK;
-	}
-	*last_deleted_check = current_time;
 
 	ret = dsdb_tombstone_lifetime(samdb, &tombstoneLifetime);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1,(__location__ ": Failed to get tombstone lifetime\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	if (*last_full_scan_deleted_check > 0 && ((current_time - *last_full_scan_deleted_check) > interval )) {
-		do_fs = true;
-		*last_full_scan_deleted_check = current_time;
-	}
-
-	if (*last_full_scan_deleted_check == 0) {
-		/*
-		 * If we never made a full scan set the last full scan event to be in the past
-		 * and that 9/10 of the full scan interval has already passed.
-		 * This is done to avoid the full scan to fire just at the begining of samba
-		 * or a couple of minutes after the start.
-		 * With this "setup" and default values of interval, the full scan will fire
-		 * 2.4 hours after the start of samba
-		 */
-		*last_full_scan_deleted_check = current_time - ((9 * interval) / 10);
 	}
 
 	for (; part != NULL; part = part->next) {
