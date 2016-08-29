@@ -2411,6 +2411,29 @@ void smb_krb5_free_checksum_contents(krb5_context ctx, krb5_checksum *cksum)
 }
 #endif
 
+/**
+ * @brief Compute a checksum operating on a keyblock.
+ *
+ * This function computes a checksum over a PAC using the keyblock for a keyed
+ * checksum.
+ *
+ * @param[in]  mem_ctx A talloc context to alocate the signature on.
+ *
+ * @param[in]  pac_data The PAC as input.
+ *
+ * @param[in]  context  The library context.
+ *
+ * @param[in]  keyblock Encryption key for a keyed checksum.
+ *
+ * @param[out] sig_type The checksum type
+ *
+ * @param[out] sig_blob The talloc'ed checksum
+ *
+ * The caller must free the sig_blob with talloc_free() when it is not needed
+ * anymore.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 					   DATA_BLOB *pac_data,
 					   krb5_context context,
