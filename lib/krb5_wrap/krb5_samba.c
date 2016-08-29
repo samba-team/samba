@@ -1151,7 +1151,7 @@ krb5_error_code smb_krb5_kt_open(krb5_context context,
 					 keytab);
 }
 
-krb5_error_code smb_krb5_keytab_name(TALLOC_CTX *mem_ctx,
+krb5_error_code smb_krb5_kt_get_name(TALLOC_CTX *mem_ctx,
 				     krb5_context context,
 				     krb5_keytab keytab,
 				     const char **keytab_name)

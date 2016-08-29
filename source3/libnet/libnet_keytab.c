@@ -92,7 +92,7 @@ krb5_error_code libnet_keytab_init(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	ret = smb_krb5_keytab_name(mem_ctx, context, keytab, &keytab_string);
+	ret = smb_krb5_kt_get_name(mem_ctx, context, keytab, &keytab_string);
 	if (ret) {
 		krb5_kt_close(context, keytab);
 		krb5_free_context(context);

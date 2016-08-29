@@ -410,7 +410,7 @@ static NTSTATUS gse_init_server(TALLOC_CTX *mem_ctx,
 		const char *ktname;
 		gss_OID_set_desc mech_set;
 
-		ret = smb_krb5_keytab_name(gse_ctx, gse_ctx->k5ctx,
+		ret = smb_krb5_kt_get_name(gse_ctx, gse_ctx->k5ctx,
 				   gse_ctx->keytab, &ktname);
 		if (ret) {
 			status = NT_STATUS_INTERNAL_ERROR;
