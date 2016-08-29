@@ -908,6 +908,17 @@ krb5_enctype smb_krb5_kt_get_enctype_from_entry(krb5_keytab_entry *kt_entry)
 	return KRB5_KEY_TYPE(KRB5_KT_KEY(kt_entry));
 }
 
+/**
+ * @brief Free the contents of a key table entry.
+ *
+ * @param[in]  context The library context.
+ *
+ * @param[in]  kt_entry The key table entry to free the contents of.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ *
+ * The pointer itself is not freed.
+ */
 krb5_error_code smb_krb5_kt_free_entry(krb5_context context,
 					krb5_keytab_entry *kt_entry)
 {
