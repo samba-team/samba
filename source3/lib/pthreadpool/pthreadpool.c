@@ -23,6 +23,11 @@
 #include "system/threads.h"
 #include "pthreadpool.h"
 #include "lib/util/dlinklist.h"
+
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #include <assert.h>
 
 struct pthreadpool_job {
