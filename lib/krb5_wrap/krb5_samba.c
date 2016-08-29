@@ -1107,11 +1107,11 @@ krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
 		goto out;
 	}
 
- resolve:
+resolve:
 	DEBUG(10,("smb_krb5_open_keytab: resolving: %s\n", tmp));
 	ret = krb5_kt_resolve(context, tmp, keytab);
 
- out:
+out:
 	TALLOC_FREE(mem_ctx);
 	return ret;
 }
