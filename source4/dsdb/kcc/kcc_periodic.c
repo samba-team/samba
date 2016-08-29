@@ -601,7 +601,9 @@ WERROR kccsrv_periodic_schedule(struct kccsrv_service *service, uint32_t next_in
  */
 static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 {
+	int ret;
 	bool do_fs = false;
+	uint32_t tombstoneLifetime;
 	time_t current = time(NULL);
 	time_t interval = lpcfg_parm_int(s->task->lp_ctx, NULL, "kccsrv",
 					 "check_deleted_full_scan_interval", 86400);
@@ -629,8 +631,15 @@ static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_c
 		s->last_full_scan_deleted_check = current - ((9 * interval) / 10);
 	}
 
+	ret = dsdb_tombstone_lifetime(s->samdb, &tombstoneLifetime);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1,(__location__ ": Failed to get tombstone lifetime\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	return dsdb_garbage_collect_tombstones(mem_ctx, s->task->lp_ctx, s->samdb,
-					       s->partitions, current, do_fs);
+					       s->partitions, current, do_fs,
+					       tombstoneLifetime);
 }
 
 static void kccsrv_periodic_run(struct kccsrv_service *service)
