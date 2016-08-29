@@ -491,12 +491,13 @@ static void *pthreadpool_server(void *arg)
 
 			job.fn(job.private_data);
 
-			res = pthread_mutex_lock(&pool->mutex);
-			assert(res == 0);
-
 			ret = pool->signal_fn(job.id,
 					      job.fn, job.private_data,
 					      pool->signal_fn_private_data);
+
+			res = pthread_mutex_lock(&pool->mutex);
+			assert(res == 0);
+
 			if (ret != 0) {
 				pthreadpool_server_exit(pool);
 				pthread_mutex_unlock(&pool->mutex);
