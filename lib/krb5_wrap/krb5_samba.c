@@ -786,7 +786,18 @@ krb5_error_code smb_krb5_free_addresses(krb5_context context,
 }
 
 #define MAX_NETBIOSNAME_LEN 16
- krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr,
+
+/**
+ * @brief Add a netbios name to the array of addresses
+ *
+ * @param[in]  kerb_addr A pointer to the smb_krb5_addresses to add the
+ *                       netbios name to.
+ *
+ * @param[in]  netbios_name The netbios name to add.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
+krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr,
 						   const char *netbios_name)
 {
 	krb5_error_code ret = 0;
