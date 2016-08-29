@@ -1710,19 +1710,31 @@ krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
 #endif
 }
 
-/*
-  simulate a kinit, putting the tgt in the given credentials cache.
-  Orignally by remus@snapserver.com
-
-  This version is built to use a keyblock, rather than needing the
-  original password.
-
-  The impersonate_principal is the principal if NULL, or the principal
-  to impersonate
-
-  The target_service defaults to the krbtgt if NULL, but could be
-   kpasswd/realm or the local service (if we are doing s4u2self)
-*/
+/**
+ * @brief Simulate a kinit by putting the tgt in the given credential cache.
+ *
+ * This function uses a keyblock rather than needingthe original password.
+ *
+ * @param[in]  ctx      The library context
+ *
+ * @param[in]  cc       The credential cache to put the tgt in.
+ *
+ * @param[in]  principal The client princial
+ *
+ * @param[in]  keyblock  The keyblock to use.
+ *
+ * @param[in]  target_service The service name of the initial credentials (or NULL).
+ *
+ * @param[in]  krb_options Initial credential options.
+ *
+ * @param[in]  expire_time    A pointer to store the experation time of the
+ *                            credentials (or NULL).
+ *
+ * @param[in]  kdc_time       A pointer to store the time when the ticket becomes
+ *                            valid (or NULL).
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_kinit_keyblock_ccache(krb5_context ctx,
 					       krb5_ccache cc,
 					       krb5_principal principal,
