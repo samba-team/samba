@@ -8880,7 +8880,7 @@ static bool test_printer_bidi(struct torture_context *tctx,
 				      struct torture_printer_context);
 	struct dcerpc_pipe *p = t->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-	struct spoolss_RpcSendRecvBidiData r;
+	struct spoolss_SendRecvBidiData r;
 	struct RPC_BIDI_REQUEST_CONTAINER bidi_req;
 	struct RPC_BIDI_RESPONSE_CONTAINER *bidi_rep = NULL;
 
@@ -8896,10 +8896,10 @@ static bool test_printer_bidi(struct torture_context *tctx,
 	r.out.ppRespData = &bidi_rep;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_RpcSendRecvBidiData_r(b, tctx, &r),
-		"RpcSendRecvBidiData failed");
+		dcerpc_spoolss_SendRecvBidiData_r(b, tctx, &r),
+		"SendRecvBidiData failed");
 	torture_assert_werr_equal(tctx, r.out.result, WERR_NOT_SUPPORTED,
-		"RpcSendRecvBidiData failed");
+		"SendRecvBidiData failed");
 
 	if (!(t->info2.attributes & PRINTER_ATTRIBUTE_ENABLE_BIDI)) {
 		torture_skip(tctx, "skipping further tests as printer is not BIDI enabled");
@@ -8908,10 +8908,10 @@ static bool test_printer_bidi(struct torture_context *tctx,
 	r.in.pAction = BIDI_ACTION_ENUM_SCHEMA;
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_RpcSendRecvBidiData_r(b, tctx, &r),
-		"RpcSendRecvBidiData failed");
+		dcerpc_spoolss_SendRecvBidiData_r(b, tctx, &r),
+		"SendRecvBidiData failed");
 	torture_assert_werr_ok(tctx, r.out.result,
-		"RpcSendRecvBidiData failed");
+		"SendRecvBidiData failed");
 
 	return true;
 }

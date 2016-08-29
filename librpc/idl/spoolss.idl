@@ -3248,7 +3248,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[size_is(Count), unique] RPC_BIDI_RESPONSE_DATA *aData[];
 	} RPC_BIDI_RESPONSE_CONTAINER;
 
-	WERROR spoolss_RpcSendRecvBidiData(
+	WERROR spoolss_SendRecvBidiData(
 		[in] policy_handle hPrinter,
 		[in,unique] [string,charset(UTF16)] uint16 *pAction,
 		[in] RPC_BIDI_REQUEST_CONTAINER *pReqData,
