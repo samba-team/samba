@@ -901,6 +901,25 @@ static NTSTATUS open_file(files_struct *fsp,
 			return status;
 		}
 
+		if (local_flags & O_NONBLOCK) {
+			/*
+			 * GPFS can return ETIMEDOUT for pread on
+			 * nonblocking file descriptors when files
+			 * migrated to tape need to be recalled. I
+			 * could imagine this happens elsehwere
+			 * too. With blocking file descriptors this
+			 * does not happen.
+			 */
+			ret = set_blocking(fsp->fh->fd, true);
+			if (ret == -1) {
+				status = map_nt_error_from_unix(errno);
+				DBG_WARNING("Could not set fd to blocking: "
+					    "%s\n", strerror(errno));
+				fd_close(fsp);
+				return status;
+			}
+		}
+
 		ret = SMB_VFS_FSTAT(fsp, &smb_fname->st);
 		if (ret == -1) {
 			/* If we have an fd, this stat should succeed. */
