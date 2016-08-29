@@ -331,12 +331,16 @@ done:
 		if (password) {
 			if (impersonate_principal) {
 #ifdef SAMBA4_USES_HEIMDAL
-				ret = kerberos_kinit_s4u2_cc(
-						smb_krb5_context->krb5_context,
-						ccache, princ, password,
-						impersonate_principal,
-						self_service, target_service,
-						krb_options, NULL, &kdc_time);
+				ret = smb_krb5_kinit_s4u2_ccache(smb_krb5_context->krb5_context,
+								 ccache,
+								 princ,
+								 password,
+								 impersonate_principal,
+								 self_service,
+								 target_service,
+								 krb_options,
+								 NULL,
+								 &kdc_time);
 #else
 				talloc_free(mem_ctx);
 				(*error_string) = "INTERNAL error: s4u2 ops "
