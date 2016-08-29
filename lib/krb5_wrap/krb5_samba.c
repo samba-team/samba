@@ -1723,13 +1723,14 @@ krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
   The target_service defaults to the krbtgt if NULL, but could be
    kpasswd/realm or the local service (if we are doing s4u2self)
 */
-krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
-					   krb5_principal principal,
-					   krb5_keyblock *keyblock,
-					   const char *target_service,
-					   krb5_get_init_creds_opt *krb_options,
-					   time_t *expire_time,
-					   time_t *kdc_time)
+krb5_error_code smb_krb5_kinit_keyblock_ccache(krb5_context ctx,
+					       krb5_ccache cc,
+					       krb5_principal principal,
+					       krb5_keyblock *keyblock,
+					       const char *target_service,
+					       krb5_get_init_creds_opt *krb_options,
+					       time_t *expire_time,
+					       time_t *kdc_time)
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;

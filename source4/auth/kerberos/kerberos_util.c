@@ -375,10 +375,14 @@ done:
 						 &keyblock);
 			
 			if (ret == 0) {
-				ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, ccache, 
-								 princ, &keyblock,
-								 target_service, krb_options,
-								 NULL, &kdc_time);
+				ret = smb_krb5_kinit_keyblock_ccache(smb_krb5_context->krb5_context,
+								     ccache,
+								     princ,
+								     &keyblock,
+								     target_service,
+								     krb_options,
+								     NULL,
+								     &kdc_time);
 				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
 			}
 		}
