@@ -313,8 +313,8 @@ int kerberos_kinit_password_ext(const char *principal,
 	if (addr) {
 		smb_krb5_free_addresses(ctx, addr);
 	}
- 	if (opt) {
-		smb_krb5_get_init_creds_opt_free(ctx, opt);
+	if (opt) {
+		krb5_get_init_creds_opt_free(ctx, opt);
 	}
 	if (cc) {
 		krb5_cc_close(ctx, cc);

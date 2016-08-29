@@ -197,8 +197,6 @@ krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses
 NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
 krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 
-void smb_krb5_get_init_creds_opt_free(krb5_context context,
-				    krb5_get_init_creds_opt *opt);
 krb5_enctype smb_get_enctype_from_kt_entry(krb5_keytab_entry *kt_entry);
 krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 					    krb5_enctype enctype,

@@ -896,13 +896,6 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 	return ret;
 }
 
-void smb_krb5_get_init_creds_opt_free(krb5_context context,
-				krb5_get_init_creds_opt *opt)
-{
-	/* Modern MIT or Heimdal version */
-	krb5_get_init_creds_opt_free(context, opt);
-}
-
 krb5_enctype smb_get_enctype_from_kt_entry(krb5_keytab_entry *kt_entry)
 {
 	return KRB5_KEY_TYPE(KRB5_KT_KEY(kt_entry));
