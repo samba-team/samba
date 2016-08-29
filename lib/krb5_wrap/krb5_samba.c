@@ -1652,6 +1652,27 @@ krb5_error_code smb_krb5_get_credentials(krb5_context context,
 	return ret;
 }
 
+/**
+ * @brief Initialize a krb5_keyblock with the given data.
+ *
+ * Initialized a new keyblock, allocates the contents fo the key and
+ * copies the data into the keyblock.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  enctype  The encryption type.
+ *
+ * @param[in]  data     The date to initialize the keyblock with.
+ *
+ * @param[in]  length   The length of the keyblock.
+ *
+ * @param[in]  key      Newly allocated keyblock structure.
+ *
+ * The key date must be freed using krb5_free_keyblock_contents() when it is
+ * no longer needed.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
 						krb5_enctype enctype,
 						const void *data,
