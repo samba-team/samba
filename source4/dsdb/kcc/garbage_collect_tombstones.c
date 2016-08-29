@@ -36,16 +36,10 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx, struct loadparm_co
 					 struct ldb_context *samdb,
 					 struct dsdb_ldb_dn_list_node *part,
 					 time_t current_time,
-					 bool do_fs)
+					 bool do_fs,
+					 uint32_t tombstoneLifetime)
 {
 	int ret;
-	uint32_t tombstoneLifetime;
-
-	ret = dsdb_tombstone_lifetime(samdb, &tombstoneLifetime);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1,(__location__ ": Failed to get tombstone lifetime\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
 
 	for (; part != NULL; part = part->next) {
 		struct ldb_dn *do_dn;
