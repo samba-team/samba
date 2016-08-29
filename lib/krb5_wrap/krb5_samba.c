@@ -2738,6 +2738,20 @@ char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 	return principal;
 }
 
+/**
+ * @brief Get an error string from a Kerberos error code.
+ *
+ * @param[in]  context  The library context.
+ *
+ * @param[in]  code     The Kerberos error code.
+ *
+ * @param[in]  mem_ctx  The talloc context to allocate the error string on.
+ *
+ * @return A talloc'ed error string or NULL if an error occured.
+ *
+ * The caller must free the returned error string with talloc_free() if not
+ * needed anymore
+ */
 char *smb_get_krb5_error_message(krb5_context context,
 				 krb5_error_code code,
 				 TALLOC_CTX *mem_ctx)
