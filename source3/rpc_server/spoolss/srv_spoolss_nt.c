@@ -11270,11 +11270,11 @@ WERROR _spoolss_SetJobNamedProperty(struct pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_RpcDeleteJobNamedProperty
+ _spoolss_DeleteJobNamedProperty
 ****************************************************************/
 
-WERROR _spoolss_RpcDeleteJobNamedProperty(struct pipes_struct *p,
-					  struct spoolss_RpcDeleteJobNamedProperty *r)
+WERROR _spoolss_DeleteJobNamedProperty(struct pipes_struct *p,
+				       struct spoolss_DeleteJobNamedProperty *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;

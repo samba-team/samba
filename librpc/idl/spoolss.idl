@@ -3399,7 +3399,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x70 */
-	WERROR spoolss_RpcDeleteJobNamedProperty(
+	WERROR spoolss_DeleteJobNamedProperty(
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
 		[in] [string,charset(UTF16)] uint16 *pszName

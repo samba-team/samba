@@ -3392,20 +3392,20 @@ static bool test_JobPropertyDelete(struct torture_context *tctx,
 				   uint32_t job_id,
 				   const char *property_name)
 {
-	struct spoolss_RpcDeleteJobNamedProperty r;
+	struct spoolss_DeleteJobNamedProperty r;
 
 	r.in.hPrinter = handle;
 	r.in.JobId = job_id;
 	r.in.pszName = property_name;
 
-	torture_comment(tctx, "Testing RpcDeleteJobNamedProperty(%d) %s\n",
+	torture_comment(tctx, "Testing DeleteJobNamedProperty(%d) %s\n",
 		job_id, property_name);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_RpcDeleteJobNamedProperty_r(b, tctx, &r),
-		"spoolss_RpcDeleteJobNamedProperty failed");
+		dcerpc_spoolss_DeleteJobNamedProperty_r(b, tctx, &r),
+		"spoolss_DeleteJobNamedProperty failed");
 	torture_assert_werr_ok(tctx, r.out.result,
-		"spoolss_RpcDeleteJobNamedProperty failed");
+		"spoolss_DeleteJobNamedProperty failed");
 
 	return true;
 }
