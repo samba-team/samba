@@ -1327,15 +1327,17 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* unravel the NDR for the packet */
 	status = context->iface->ndr_pull(call, call, pull, &call->r);
 	if (!NT_STATUS_IS_OK(status)) {
+		uint8_t extra_flags = 0;
 		if (call->fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			/* we got an unknown call */
 			DEBUG(3,(__location__ ": Unknown RPC call %u on %s\n",
 				 call->pkt.u.request.opnum, context->iface->name));
 			dcesrv_save_call(call, "unknown");
+			extra_flags |= DCERPC_PFC_FLAG_DID_NOT_EXECUTE;
 		} else {
 			dcesrv_save_call(call, "pullfail");
 		}
-		return dcesrv_fault(call, call->fault_code);
+		return dcesrv_fault_with_flags(call, call->fault_code, extra_flags);
 	}
 
 	if (pull->offset != pull->data_size) {
