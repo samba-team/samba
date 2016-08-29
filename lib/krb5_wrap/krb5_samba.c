@@ -2773,15 +2773,12 @@ char *smb_get_krb5_error_message(krb5_context context,
 
 
 /**
-* @brief Return the kerberos library setting for "libdefaults:allow_weak_crypto"
-*
-* @param context	The krb5_context
-*
-* @return krb5_boolean
-*
-* Function returns true if weak crypto is allowd, false if not
-*/
-
+ * @brief Return the kerberos library setting for: libdefaults:allow_weak_crypto
+ *
+ * @param[in]  context  The library context
+ *
+ * @return True if weak crypto is allowed, false if not.
+ */
 krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context)
 #if defined(HAVE_KRB5_CONFIG_GET_BOOL_DEFAULT)
 {
