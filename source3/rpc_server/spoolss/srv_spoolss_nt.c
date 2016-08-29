@@ -11259,11 +11259,11 @@ WERROR _spoolss_GetJobNamedPropertyValue(struct pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_RpcSetJobNamedProperty
+ _spoolss_SetJobNamedProperty
 ****************************************************************/
 
-WERROR _spoolss_RpcSetJobNamedProperty(struct pipes_struct *p,
-				       struct spoolss_RpcSetJobNamedProperty *r)
+WERROR _spoolss_SetJobNamedProperty(struct pipes_struct *p,
+				    struct spoolss_SetJobNamedProperty *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;

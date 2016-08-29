@@ -3391,7 +3391,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x6f */
-	[public] WERROR spoolss_RpcSetJobNamedProperty(
+	[public] WERROR spoolss_SetJobNamedProperty(
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
 		[in,ref] RPC_PrintNamedProperty *pProperty

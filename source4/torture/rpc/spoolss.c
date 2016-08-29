@@ -3341,21 +3341,21 @@ static bool test_JobPropertySet(struct torture_context *tctx,
 				uint32_t job_id,
 				struct RPC_PrintNamedProperty *property)
 {
-	struct spoolss_RpcSetJobNamedProperty r;
+	struct spoolss_SetJobNamedProperty r;
 
 	r.in.hPrinter = handle;
 	r.in.JobId = job_id;
 	r.in.pProperty = property;
 
-	torture_comment(tctx, "Testing RpcSetJobNamedProperty(%d) %s - %d\n",
+	torture_comment(tctx, "Testing SetJobNamedProperty(%d) %s - %d\n",
 		job_id, property->propertyName,
 		property->propertyValue.ePropertyType);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_RpcSetJobNamedProperty_r(b, tctx, &r),
-		"spoolss_RpcSetJobNamedProperty failed");
+		dcerpc_spoolss_SetJobNamedProperty_r(b, tctx, &r),
+		"spoolss_SetJobNamedProperty failed");
 	torture_assert_werr_ok(tctx, r.out.result,
-		"spoolss_RpcSetJobNamedProperty failed");
+		"spoolss_SetJobNamedProperty failed");
 
 	return true;
 }

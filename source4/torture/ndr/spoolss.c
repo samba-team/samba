@@ -1740,7 +1740,7 @@ static const uint8_t getcoreprinterdrivers_64_req_data[] = {
 	0x04, 0x00, 0x00, 0x00
 };
 
-static const uint8_t rpcsetjobnamedproperty_req_data[] = {
+static const uint8_t setjobnamedproperty_req_data[] = {
 	0x00, 0x00, 0x00, 0x00, 0x3d, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xff, 0x50, 0xdf, 0xe4, 0xce, 0x1a, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00,
@@ -1755,8 +1755,8 @@ static const uint8_t rpcsetjobnamedproperty_req_data[] = {
 	0x4e, 0x00, 0x4f, 0x00, 0x57, 0x00, 0x4e, 0x00, 0x00, 0x00
 };
 
-static bool rpcsetjobnamedproperty_req_check(struct torture_context *tctx,
-					     struct spoolss_RpcSetJobNamedProperty *r)
+static bool setjobnamedproperty_req_check(struct torture_context *tctx,
+					  struct spoolss_SetJobNamedProperty *r)
 {
 	/* FIXME hPrinter */
 	torture_assert_int_equal(tctx, r->in.JobId, 0x00000005, "JobId");
@@ -1829,7 +1829,7 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_fn_test_flags(suite, spoolss_GetCorePrinterDrivers, getcoreprinterdrivers_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
 
-	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RpcSetJobNamedProperty, rpcsetjobnamedproperty_req_data, NDR_IN, rpcsetjobnamedproperty_req_check);
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_SetJobNamedProperty, setjobnamedproperty_req_data, NDR_IN, setjobnamedproperty_req_check);
 
 	return suite;
 }
