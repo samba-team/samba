@@ -4,6 +4,7 @@
    ldb database library - Extended match rules
 
    Copyright (C) 2014 Samuel Cabrero <samuelcabrero@kernevil.me>
+   Copyright (C) Andrew Bartlett <abartlet@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +24,8 @@
 #include <ldb_module.h>
 #include "dsdb/samdb/samdb.h"
 #include "ldb_matching_rules.h"
+#include "libcli/security/security.h"
+#include "dsdb/common/util.h"
 
 static int ldb_eval_transitive_filter_helper(TALLOC_CTX *mem_ctx,
 					     struct ldb_context *ldb,
@@ -324,9 +327,128 @@ static int ldb_comparator_trans(struct ldb_context *ldb,
 }
 
 
+/*
+ * This rule provides match of a link attribute against a 'should be expunged' criteria
+ *
+ * This allows a search filter such as:
+ *
+ * member:1.3.6.1.4.1.7165.4.5.2:=131139216000000000
+ *
+ * This searches the member attribute, but also any member attributes
+ * that are deleted and should be expunged after the specified NTTIME
+ * time.
+ *
+ */
+static int dsdb_match_for_expunge(struct ldb_context *ldb,
+				  const char *oid,
+				  const struct ldb_message *msg,
+				  const char *attribute_to_match,
+				  const struct ldb_val *value_to_match,
+				  bool *matched)
+{
+	const struct dsdb_schema *schema;
+	const struct dsdb_attribute *schema_attr;
+	TALLOC_CTX *tmp_ctx;
+	unsigned int i;
+	struct ldb_message_element *el;
+	struct auth_session_info *session_info;
+	uint64_t tombstone_time;
+	*matched = false;
+
+	el = ldb_msg_find_element(msg, attribute_to_match);
+	if (el == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	session_info
+		= talloc_get_type(ldb_get_opaque(ldb, "sessionInfo"),
+				  struct auth_session_info);
+	if (security_session_user_level(session_info, NULL) != SECURITY_SYSTEM) {
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+
+	/*
+	 * If the target attribute to match is not a linked attribute, then
+	 * the filter evaluates to undefined
+	 */
+	schema = dsdb_get_schema(ldb, NULL);
+	if (schema == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/* TODO this is O(log n) per attribute */
+	schema_attr = dsdb_attribute_by_lDAPDisplayName(schema, attribute_to_match);
+	if (schema_attr == NULL) {
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	/*
+	 * This extended match filter is only valid for forward linked attributes.
+	 */
+	if (schema_attr->linkID == 0 || (schema_attr->linkID & 1) == 1) {
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
+	}
+
+	/* Just check we don't allow the caller to fill our stack */
+	if (value_to_match->length >=64) {
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+	} else {
+		char *p = NULL;
+		char s[value_to_match->length+1];
+		memcpy(s, value_to_match->data, value_to_match->length);
+		s[value_to_match->length] = 0;
+		if (s[0] == '\0' || s[0] == '-') {
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+		tombstone_time = strtoull(s, &p, 10);
+		if (p == NULL || p == s || *p != '\0' || tombstone_time == ULLONG_MAX) {
+			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
+		}
+	}
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		NTSTATUS status;
+		struct dsdb_dn *dn;
+		uint64_t rmd_changetime;
+		if (dsdb_dn_is_deleted_val(&el->values[i]) == false) {
+			continue;
+		}
+
+		dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i],
+				   schema_attr->syntax->ldap_oid);
+		if (dn == NULL) {
+			DEBUG(1, ("Error: Failed to parse linked attribute blob of %s.\n", el->name));
+			continue;
+		}
+
+		status = dsdb_get_extended_dn_uint64(dn->dn, &rmd_changetime,
+						     "RMD_CHANGETIME");
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Error: RMD_CHANGETIME is missing on a forward link.\n"));
+			continue;
+		}
+
+		if (rmd_changetime > tombstone_time) {
+			continue;
+		}
+
+		*matched = true;
+		break;
+	}
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
 int ldb_register_samba_matching_rules(struct ldb_context *ldb)
 {
-	struct ldb_extended_match_rule *transitive_eval;
+	struct ldb_extended_match_rule *transitive_eval = NULL,
+		*match_for_expunge = NULL;
 	int ret;
 
 	transitive_eval = talloc_zero(ldb, struct ldb_extended_match_rule);
@@ -335,6 +457,15 @@ int ldb_register_samba_matching_rules(struct ldb_context *ldb)
 	ret = ldb_register_extended_match_rule(ldb, transitive_eval);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(transitive_eval);
+		return ret;
+	}
+
+	match_for_expunge = talloc_zero(ldb, struct ldb_extended_match_rule);
+	match_for_expunge->oid = DSDB_MATCH_FOR_EXPUNGE;
+	match_for_expunge->callback = dsdb_match_for_expunge;
+	ret = ldb_register_extended_match_rule(ldb, match_for_expunge);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(match_for_expunge);
 		return ret;
 	}
 
