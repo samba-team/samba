@@ -896,15 +896,6 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 	return ret;
 }
 
- void smb_krb5_free_error(krb5_context context, krb5_error *krberror)
-{
-#ifdef HAVE_KRB5_FREE_ERROR_CONTENTS /* Heimdal */
-	krb5_free_error_contents(context, krberror);
-#else /* MIT */
-	krb5_free_error(context, krberror);
-#endif
-}
-
  krb5_error_code handle_krberror_packet(krb5_context context,
 					krb5_data *packet)
 {
@@ -928,7 +919,7 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 			got_error_code = true;
 		}
 
-		smb_krb5_free_error(context, &krberror);
+		krb5_free_error(context, &krberror);
 	}
 #else /* MIT */
 	{
@@ -948,7 +939,7 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 #endif
 			got_error_code = true;
 		}
-		smb_krb5_free_error(context, krberror);
+		krb5_free_error(context, krberror);
 	}
 #endif
 	if (got_error_code) {

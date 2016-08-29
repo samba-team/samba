@@ -2977,8 +2977,8 @@ static krb5_error_code check_pw_with_krb5_send_and_recv_func(krb5_context contex
 
 	hi.proto = KRB5_KRBHST_TCP;
 
-	smb_krb5_free_error(ctx->smb_krb5_context->krb5_context,
-			    &ctx->error);
+	krb5_free_error_contents(ctx->smb_krb5_context->krb5_context,
+				 &ctx->error);
 	ctx->counts.io++;
 
 	k5ret = smb_krb5_send_and_recv_func_forced(context, ctx->server,
@@ -3158,8 +3158,8 @@ static int check_pw_with_krb5_ctx_destructor(struct check_pw_with_krb5_ctx *ctx)
 
 	free_EncTicketPart(&ctx->krbtgt_referral_enc_part);
 
-	smb_krb5_free_error(ctx->smb_krb5_context->krb5_context,
-			    &ctx->error);
+	krb5_free_error_contents(ctx->smb_krb5_context->krb5_context,
+				 &ctx->error);
 
 	talloc_unlink(ctx, ctx->smb_krb5_context);
 	ctx->smb_krb5_context = NULL;
