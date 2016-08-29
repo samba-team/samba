@@ -1681,6 +1681,22 @@ krb5_error_code smb_krb5_keyblock_init_contents(krb5_context context,
 {
 #if defined(HAVE_KRB5_KEYBLOCK_INIT)
 	return krb5_keyblock_init(context, enctype, data, length, key);
+#elif defined(HAVE_KRB5_INIT_KEYBLOCK)
+	krb5_error_code code;
+
+	code = krb5_init_keyblock(context,
+				  enctype,
+				  length,
+				  key);
+	if (code != 0) {
+		return code;
+	}
+
+	if (length != 0) {
+		memcpy(KRB5_KEY_DATA(key), data, length);
+	}
+
+	return 0;
 #else
 	memset(key, 0, sizeof(krb5_keyblock));
 	KRB5_KEY_DATA(key) = SMB_MALLOC(length);
