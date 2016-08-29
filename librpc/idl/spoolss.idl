@@ -3382,7 +3382,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		RPC_PrintPropertyValue propertyValue;
 	} RPC_PrintNamedProperty;
 
-	WERROR spoolss_RpcGetJobNamedPropertyValue(
+	WERROR spoolss_GetJobNamedPropertyValue(
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
 		[in] [string,charset(UTF16)] uint16 *pszName,

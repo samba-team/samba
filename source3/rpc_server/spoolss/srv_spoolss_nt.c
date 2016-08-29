@@ -11248,11 +11248,11 @@ WERROR _spoolss_6d(struct pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_RpcGetJobNamedPropertyValue
+ _spoolss_GetJobNamedPropertyValue
 ****************************************************************/
 
-WERROR _spoolss_RpcGetJobNamedPropertyValue(struct pipes_struct *p,
-					    struct spoolss_RpcGetJobNamedPropertyValue *r)
+WERROR _spoolss_GetJobNamedPropertyValue(struct pipes_struct *p,
+					 struct spoolss_GetJobNamedPropertyValue *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;

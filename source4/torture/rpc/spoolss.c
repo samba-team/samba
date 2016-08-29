@@ -3367,21 +3367,21 @@ static bool test_JobPropertyGetValue(struct torture_context *tctx,
 				     const char *property_name,
 				     struct RPC_PrintPropertyValue *value)
 {
-	struct spoolss_RpcGetJobNamedPropertyValue r;
+	struct spoolss_GetJobNamedPropertyValue r;
 
 	r.in.hPrinter = handle;
 	r.in.JobId = job_id;
 	r.in.pszName = property_name;
 	r.out.pValue = value;
 
-	torture_comment(tctx, "Testing RpcGetJobNamedPropertyValue(%d) %s\n",
+	torture_comment(tctx, "Testing GetJobNamedPropertyValue(%d) %s\n",
 		job_id, property_name);
 
 	torture_assert_ntstatus_ok(tctx,
-		dcerpc_spoolss_RpcGetJobNamedPropertyValue_r(b, tctx, &r),
-		"spoolss_RpcGetJobNamedPropertyValue failed");
+		dcerpc_spoolss_GetJobNamedPropertyValue_r(b, tctx, &r),
+		"spoolss_GetJobNamedPropertyValue failed");
 	torture_assert_werr_ok(tctx, r.out.result,
-		"spoolss_RpcGetJobNamedPropertyValue failed");
+		"spoolss_GetJobNamedPropertyValue failed");
 
 	return true;
 }
