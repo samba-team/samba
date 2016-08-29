@@ -693,9 +693,7 @@ _PRIVATE_ int ldb_register_extended_match_rules(struct ldb_context *ldb)
 }
 
 /*
-  register a new ldb backend
-
-  if override is true, then override any existing backend for this prefix
+  register a new ldb extended matching rule
 */
 int ldb_register_extended_match_rule(struct ldb_context *ldb,
 				     const struct ldb_extended_match_rule *rule)
