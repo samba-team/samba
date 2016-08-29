@@ -2300,6 +2300,22 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 #endif
 
 #if !defined(HAVE_KRB5_MAKE_PRINCIPAL) && defined(HAVE_KRB5_BUILD_PRINCIPAL_ALLOC_VA)
+/**
+ * @brief Create a principal name using a variable argument list.
+ *
+ * @param[in]  context  The library context.
+ *
+ * @param[inout]  principal A pointer to the principal structure.
+ *
+ * @param[in]  _realm    The realm to use. If NULL then the function will
+ *                       get the default realm name.
+ *
+ * @param[in]  ...       A list of 'char *' components, ending with NULL.
+ *
+ * Use krb5_free_principal() to free the principal when it is no longer needed.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_make_principal(krb5_context context,
 					krb5_principal *principal,
 					const char *_realm, ...)
