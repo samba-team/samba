@@ -123,9 +123,25 @@ daemons_start ()
 	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
 	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
 
+	# If there is any CTDB configuration in the environment then
+	# append it to the regular configuration in a temporary
+	# configuration file and use it just this once.
+	local tmp_conf=""
+	local env_conf=$(config_from_environment)
+	if [ -n "$env_conf" ] ; then
+		tmp_conf=$(mktemp --tmpdir="$TEST_VAR_DIR")
+		cat "$conf" >"$tmp_conf"
+		echo "$env_conf" >>"$tmp_conf"
+		conf="$tmp_conf"
+	fi
+
 	CTDBD="${VALGRIND} ctdbd --sloppy-start --nopublicipcheck" \
 	     CTDBD_CONF="$conf" \
 	     ctdbd_wrapper "$pidfile" start
+
+	if [ -n "$tmp_conf" ] ; then
+		rm -f "$tmp_conf"
+	fi
     done
 }
 
