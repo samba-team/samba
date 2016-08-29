@@ -2510,19 +2510,17 @@ krb5_error_code smb_krb5_make_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
 
-/*
- * smb_krb5_principal_get_realm
- *
+/**
  * @brief Get realm of a principal
  *
- * @param[in] context		The krb5_context
- * @param[in] principal		The principal
- * @return pointer to the realm
+ * @param[in] context   The library context
  *
- * Caller must free if the return value is not NULL.
+ * @param[in] principal The principal to get the realm from.
  *
+ * @return An allocated string with the realm or NULL if an error occured.
+ *
+ * The caller must free the realm string with free() if not needed anymore.
  */
-
 char *smb_krb5_principal_get_realm(krb5_context context,
 				   krb5_const_principal principal)
 {
