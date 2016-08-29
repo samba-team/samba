@@ -1825,13 +1825,14 @@ done:
 	return code;
 }
 
-krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
-					   krb5_principal principal,
-					   const char *password,
-					   const char *target_service,
-					   krb5_get_init_creds_opt *krb_options,
-					   time_t *expire_time,
-					   time_t *kdc_time)
+krb5_error_code smb_krb5_kinit_password_ccache(krb5_context ctx,
+					       krb5_ccache cc,
+					       krb5_principal principal,
+					       const char *password,
+					       const char *target_service,
+					       krb5_get_init_creds_opt *krb_options,
+					       time_t *expire_time,
+					       time_t *kdc_time)
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
@@ -2186,7 +2187,7 @@ krb5_error_code kerberos_kinit_s4u2_cc(krb5_context ctx,
 		if (code != 0) {
 			ip = NULL;
 		}
-		DEBUG(1, ("kerberos_kinit_password_cc: "
+		DEBUG(1, ("smb_krb5_kinit_password_cache: "
 			  "KDC returned self principal[%s] while impersonating [%s]\n",
 			  sp?sp:"<no memory>",
 			  ip?ip:"<no memory>"));
@@ -2216,7 +2217,7 @@ krb5_error_code kerberos_kinit_s4u2_cc(krb5_context ctx,
 		if (code != 0) {
 			ep = NULL;
 		}
-		DEBUG(1, ("kerberos_kinit_password_cc: "
+		DEBUG(1, ("smb_krb5_kinit_password_cache: "
 			  "KDC returned wrong principal[%s] we expected [%s]\n",
 			  sp?sp:"<no memory>",
 			  ep?ep:"<no memory>"));

@@ -344,11 +344,14 @@ done:
 				return EINVAL;
 #endif
 			} else {
-				ret = kerberos_kinit_password_cc(
-						smb_krb5_context->krb5_context,
-						ccache, princ, password,
-						target_service,
-						krb_options, NULL, &kdc_time);
+				ret = smb_krb5_kinit_password_ccache(smb_krb5_context->krb5_context,
+								     ccache,
+								     princ,
+								     password,
+								     target_service,
+								     krb_options,
+								     NULL,
+								     &kdc_time);
 			}
 		} else if (impersonate_principal) {
 			talloc_free(mem_ctx);

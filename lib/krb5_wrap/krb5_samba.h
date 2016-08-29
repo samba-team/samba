@@ -251,14 +251,14 @@ krb5_error_code smb_krb5_kinit_keyblock_ccache(krb5_context ctx,
 					       krb5_get_init_creds_opt *krb_options,
 					       time_t *expire_time,
 					       time_t *kdc_time);
-krb5_error_code kerberos_kinit_password_cc(krb5_context ctx,
-					   krb5_ccache cc,
-					   krb5_principal principal,
-					   const char *password,
-					   const char *target_service,
-					   krb5_get_init_creds_opt *krb_options,
-					   time_t *expire_time,
-					   time_t *kdc_time);
+krb5_error_code smb_krb5_kinit_password_ccache(krb5_context ctx,
+					       krb5_ccache cc,
+					       krb5_principal principal,
+					       const char *password,
+					       const char *target_service,
+					       krb5_get_init_creds_opt *krb_options,
+					       time_t *expire_time,
+					       time_t *kdc_time);
 #ifdef SAMBA4_USES_HEIMDAL
 krb5_error_code kerberos_kinit_s4u2_cc(krb5_context ctx,
 					krb5_ccache store_cc,
