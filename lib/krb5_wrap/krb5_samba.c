@@ -896,7 +896,7 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 	return ret;
 }
 
-krb5_enctype smb_get_enctype_from_kt_entry(krb5_keytab_entry *kt_entry)
+krb5_enctype smb_krb5_kt_get_enctype_from_entry(krb5_keytab_entry *kt_entry)
 {
 	return KRB5_KEY_TYPE(KRB5_KT_KEY(kt_entry));
 }
@@ -1176,7 +1176,7 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 	while (!krb5_kt_next_entry(context, keytab, &kt_entry, &cursor)) {
 		bool name_ok = false;
 		krb5_enctype kt_entry_enctype =
-			smb_get_enctype_from_kt_entry(&kt_entry);
+			smb_krb5_kt_get_enctype_from_entry(&kt_entry);
 
 		if (!flush && (princ_s != NULL)) {
 			ret = smb_krb5_unparse_name(tmp_ctx, context,

@@ -82,7 +82,7 @@ int main (int argc, char **argv)
 	{
 		char *principal = NULL;
 		char *enctype_str = NULL;
-		krb5_enctype enctype = smb_get_enctype_from_kt_entry(&entry);
+		krb5_enctype enctype = smb_krb5_kt_get_enctype_from_entry(&entry);
 
 		ret = smb_krb5_unparse_name(mem_ctx,
 					    context,

@@ -627,7 +627,7 @@ int ads_keytab_list(const char *keytab_name)
 			goto out;
 		}
 
-		enctype = smb_get_enctype_from_kt_entry(&kt_entry);
+		enctype = smb_krb5_kt_get_enctype_from_entry(&kt_entry);
 
 		ret = smb_krb5_enctype_to_string(context, enctype, &etype_s);
 		if (ret &&

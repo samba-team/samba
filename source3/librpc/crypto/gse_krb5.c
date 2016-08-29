@@ -242,7 +242,8 @@ static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 		 * we can verify if the keytab needs to be upgraded */
 		while ((ret = krb5_kt_next_entry(krbctx, *keytab,
 					   &kt_entry, &kt_cursor)) == 0) {
-			if (smb_get_enctype_from_kt_entry(&kt_entry) == CLEARTEXT_PRIV_ENCTYPE) {
+			if (smb_krb5_kt_get_enctype_from_entry(&kt_entry) ==
+			    CLEARTEXT_PRIV_ENCTYPE) {
 				break;
 			}
 			smb_krb5_kt_free_entry(krbctx, &kt_entry);
