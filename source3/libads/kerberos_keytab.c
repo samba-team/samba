@@ -75,9 +75,9 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		return -1;
 	}
 
-	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
+	ret = smb_krb5_kt_open(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
 			  error_message(ret)));
 		goto out;
 	}
@@ -262,9 +262,9 @@ int ads_keytab_flush(ADS_STRUCT *ads)
 		return ret;
 	}
 
-	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
+	ret = smb_krb5_kt_open(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
 			  error_message(ret)));
 		goto out;
 	}
@@ -447,9 +447,9 @@ int ads_keytab_create_default(ADS_STRUCT *ads)
 	DEBUG(3, (__location__ ": Searching for keytab entries to preserve "
 		  "and update.\n"));
 
-	ret = smb_krb5_open_keytab(context, NULL, True, &keytab);
+	ret = smb_krb5_kt_open(context, NULL, True, &keytab);
 	if (ret) {
-		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
 			  error_message(ret)));
 		goto done;
 	}
@@ -600,9 +600,9 @@ int ads_keytab_list(const char *keytab_name)
 		return ret;
 	}
 
-	ret = smb_krb5_open_keytab(context, keytab_name, False, &keytab);
+	ret = smb_krb5_kt_open(context, keytab_name, False, &keytab);
 	if (ret) {
-		DEBUG(1, (__location__ ": smb_krb5_open_keytab failed (%s)\n",
+		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
 			  error_message(ret)));
 		goto out;
 	}

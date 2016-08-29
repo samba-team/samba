@@ -1116,10 +1116,10 @@ out:
 	return ret;
 }
 
-krb5_error_code smb_krb5_open_keytab(krb5_context context,
-				     const char *keytab_name_req,
-				     bool write_access,
-				     krb5_keytab *keytab)
+krb5_error_code smb_krb5_kt_open(krb5_context context,
+				 const char *keytab_name_req,
+				 bool write_access,
+				 krb5_keytab *keytab)
 {
 	if (keytab_name_req != NULL) {
 		if (keytab_name_req[0] != '/') {
@@ -1372,7 +1372,7 @@ out:
  *
  * @return A corresponding KRB5 error code.
  *
- * @see smb_krb5_open_keytab()
+ * @see smb_krb5_kt_open()
  */
 krb5_error_code smb_krb5_kt_add_entry(krb5_context context,
 				      krb5_keytab keytab,
