@@ -40,7 +40,8 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 					 time_t current_time,
 					 uint32_t tombstoneLifetime,
 					 unsigned int *num_objects_removed,
-					 unsigned int *num_links_removed)
+					 unsigned int *num_links_removed,
+					 char **error_string)
 {
 	int ret;
 
@@ -57,7 +58,7 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 
 	*num_objects_removed = 0;
 	*num_links_removed = 0;
-
+	*error_string = NULL;
 	num_link_attrs = 0;
 
 	/*
@@ -132,8 +133,9 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 				  attrs, flags, filter);
 
 		if (ret != LDB_SUCCESS) {
-			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",
-				 ldb_dn_get_linearized(do_dn)));
+			*error_string = talloc_asprintf(mem_ctx, "Failed to search for deleted objects in %s: %s",
+							ldb_dn_get_linearized(do_dn),
+							ldb_errstring(samdb));
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
