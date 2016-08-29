@@ -973,21 +973,29 @@ krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 #endif
 }
 
-/**********************************************************************
- * Open a krb5 keytab with flags, handles readonly or readwrite access and
- * allows one to process non-default keytab names.
- * @param context krb5_context
- * @param keytab_name_req string
- * @param write_access bool if writable keytab is required
- * @param krb5_keytab pointer to krb5_keytab (close with krb5_kt_close())
- * @return krb5_error_code
-**********************************************************************/
-
 /* This MAX_NAME_LEN is a constant defined in krb5.h */
 #ifndef MAX_KEYTAB_NAME_LEN
 #define MAX_KEYTAB_NAME_LEN 1100
 #endif
 
+/**
+ * @brief Open a key table readonly or with readwrite access.
+ *
+ * Allows to use a different keytab than the default one using a relative
+ * path to the keytab.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  keytab_name_req The path to the key table.
+ *
+ * @param[in]  write_access Open with readwrite access.
+ *
+ * @param[in]  keytab A pointer o the opended key table.
+ *
+ * The keytab pointer should be freed using krb5_kt_close().
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
 					  const char *keytab_name_req,
 					  bool write_access,
