@@ -24,5 +24,6 @@
 
 /* This rule provides recursive search of a link attribute */
 #define SAMBA_LDAP_MATCH_RULE_TRANSITIVE_EVAL	"1.2.840.113556.1.4.1941"
+#define DSDB_MATCH_FOR_EXPUNGE	"1.3.6.1.4.1.7165.4.5.2"
 
 #endif /* _LDB_MATCHING_RULES_H_ */
