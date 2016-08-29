@@ -649,12 +649,35 @@ char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
 #endif
 }
 
-/* Prototypes */
-
- krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,	/* FILE:/tmp/krb5cc_0 */
-				       const char *client_string,	/* gd@BER.SUSE.DE */
-				       const char *service_string,	/* krbtgt/BER.SUSE.DE@BER.SUSE.DE */
-				       time_t *expire_time)
+/**
+ * @brief
+ *
+ * @param[in]  ccache_string A string pointing to the cache to renew the ticket
+ *                           (e.g. FILE:/tmp/krb5cc_0) or NULL. If the principal
+ *                           ccache has not been specified, the default ccache
+ *                           will be used.
+ *
+ * @param[in]  client_string The client principal string (e.g. user@SAMBA.SITE)
+ *                           or NULL. If the principal string has not been
+ *                           specified, the principal from the ccache will be
+ *                           retrieved.
+ *
+ * @param[in]  service_string The service ticket string
+ *                            (e.g. krbtgt/SAMBA.SITE@SAMBA.SITE) or NULL. If
+ *                            the sevice ticket is specified, it is parsed (
+ *                            with the realm part ignored) and used as the
+ *                            server principal of the credential. Otherwise
+ *                            the ticket-granting service is used.
+ *
+ * @param[in]  expire_time    A pointer to store the credentials end time or
+ *                            NULL.
+ *
+ * @return 0 on Succes, a Kerberos error code otherwise.
+ */
+krb5_error_code smb_krb5_renew_ticket(const char *ccache_string,
+				      const char *client_string,
+				      const char *service_string,
+				      time_t *expire_time)
 {
 	krb5_error_code ret;
 	krb5_context context = NULL;
