@@ -2683,6 +2683,23 @@ static char *smb_krb5_get_realm_from_hostname(TALLOC_CTX *mem_ctx,
 	return realm;
 }
 
+/**
+ * @brief Get the principal as a string from the service hostname.
+ *
+ * @param[in]  mem_ctx  The talloc context
+ *
+ * @param[in]  service  The service name
+ *
+ * @param[in]  remote_name The remote name
+ *
+ * @param[in]  default_realm The default_realm if we cannot get it from the
+ *                           hostname or netbios name.
+ *
+ * @return A talloc'ed principal string or NULL if an error occured.
+ *
+ * The caller needs to free the principal with talloc_free() if it isn't needed
+ * anymore.
+ */
 char *smb_krb5_get_principal_from_service_hostname(TALLOC_CTX *mem_ctx,
 						   const char *service,
 						   const char *remote_name,
