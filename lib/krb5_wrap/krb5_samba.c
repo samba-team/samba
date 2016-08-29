@@ -1116,6 +1116,24 @@ out:
 	return ret;
 }
 
+/**
+ * @brief Open a key table readonly or with readwrite access.
+ *
+ * Allows to use a different keytab than the default one. The path needs to be
+ * an absolute path or an error will be returned.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  keytab_name_req The path to the key table.
+ *
+ * @param[in]  write_access Open with readwrite access.
+ *
+ * @param[in]  keytab A pointer o the opended key table.
+ *
+ * The keytab pointer should be freed using krb5_kt_close().
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_kt_open(krb5_context context,
 				 const char *keytab_name_req,
 				 bool write_access,
