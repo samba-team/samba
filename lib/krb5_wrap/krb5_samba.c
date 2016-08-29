@@ -614,7 +614,7 @@ done:
 }
 
 
-/*
+/**
  * @brief Get talloced string component of a principal
  *
  * @param[in] mem_ctx		The TALLOC_CTX
@@ -626,8 +626,6 @@ done:
  * Caller must talloc_free if the return value is not NULL.
  *
  */
-
-/* caller has to free returned string with talloc_free() */
 char *smb_krb5_principal_get_comp_string(TALLOC_CTX *mem_ctx,
 					 krb5_context context,
 					 krb5_const_principal principal,
