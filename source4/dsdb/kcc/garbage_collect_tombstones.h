@@ -30,4 +30,5 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 					 time_t current_time,
 					 uint32_t tombstoneLifetime,
 					 unsigned int *num_objects_removed,
-					 unsigned int *num_links_removed);
+					 unsigned int *num_links_removed,
+					 char **error_string);

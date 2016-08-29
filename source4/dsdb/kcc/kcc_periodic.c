@@ -609,6 +609,7 @@ static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_c
 	unsigned int num_objects_removed = 0;
 	unsigned int num_links_removed = 0;
 	NTSTATUS status;
+	char *error_string = NULL;
 
 	if (current_time - s->last_deleted_check < interval) {
 		return NT_STATUS_OK;
@@ -626,7 +627,8 @@ static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_c
 						 s->partitions,
 						 current_time, tombstoneLifetime,
 						 &num_objects_removed,
-						 &num_links_removed);
+						 &num_links_removed,
+						 &error_string);
 
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("garbage_collect_tombstones: Removed %u tombstone objects "
@@ -637,7 +639,7 @@ static NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_c
 			  "objects and links after removing %u tombstone objects "
 			  "and %u tombstone links successfully: %s\n",
 			  num_objects_removed, num_links_removed,
-			  nt_errstr(status)));
+			  error_string ? error_string : nt_errstr(status)));
 	}
 	return status;
 }

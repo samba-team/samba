@@ -1092,6 +1092,7 @@ static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *ar
 	NTSTATUS status;
 	unsigned int num_objects_removed = 0;
 	unsigned int num_links_removed = 0;
+	char *error_string = NULL;
 
 	if (!PyArg_ParseTuple(args, "OOL|L", &py_ldb,
 			      &py_list_dn, &_current_time, &_tombstone_lifetime)) {
@@ -1156,10 +1157,16 @@ static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *ar
 						 part, current_time,
 						 tombstone_lifetime,
 						 &num_objects_removed,
-						 &num_links_removed);
+						 &num_links_removed,
+						 &error_string);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetNTSTATUS(status);
+		if (error_string) {
+			PyErr_Format(PyExc_RuntimeError, "%s", error_string);
+		} else {
+			PyErr_SetNTSTATUS(status);
+		}
+		TALLOC_FREE(mem_ctx);
 		return NULL;
 	}
 
