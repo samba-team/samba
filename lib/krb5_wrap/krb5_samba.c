@@ -896,6 +896,13 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 	return ret;
 }
 
+/**
+ * @brief Get the enctype from a key table entry
+ *
+ * @param[in]  kt_entry Key table entry to get the enctype from.
+ *
+ * @return The enctype from the entry.
+ */
 krb5_enctype smb_krb5_kt_get_enctype_from_entry(krb5_keytab_entry *kt_entry)
 {
 	return KRB5_KEY_TYPE(KRB5_KT_KEY(kt_entry));
