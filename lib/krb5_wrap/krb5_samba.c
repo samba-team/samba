@@ -1900,19 +1900,36 @@ done:
 }
 
 #ifdef SAMBA4_USES_HEIMDAL
-/*
-  simulate a kinit, putting the tgt in the given credentials cache.
-  Orignally by remus@snapserver.com
-
-  The impersonate_principal is the principal
-
-  The self_service, should be the local service (for S4U2Self if
-  impersonate_principal is given).
-
-  The target_service defaults to the krbtgt if NULL, but could be
-  kpasswd/realm or a remote service (for S4U2Proxy)
-
-*/
+/**
+ * @brief Simulate a kinit by putting the tgt in the given credential cache.
+ *
+ * @param[in]  ctx      The library context
+ *
+ * @param[in]  cc       The credential cache to store the tgt in.
+ *
+ * @param[in]  principal The initial client princial.
+ *
+ * @param[in]  password  The password (or NULL).
+ *
+ * @param[in]  impersonate_principal The impersonatiion principal (or NULL).
+ *
+ * @param[in]  self_service The local service for S4U2Self if
+ *                          impersonate_principal is specified).
+ *
+ * @param[in]  target_service The service name of the initial credentials
+ *                            (kpasswd/REALM or a remote service). It defaults
+ *                            to the krbtgt if NULL.
+ *
+ * @param[in]  krb_options Initial credential options.
+ *
+ * @param[in]  expire_time    A pointer to store the experation time of the
+ *                            credentials (or NULL).
+ *
+ * @param[in]  kdc_time       A pointer to store the time when the ticket becomes
+ *                            valid (or NULL).
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 					   krb5_ccache store_cc,
 					   krb5_principal init_principal,
