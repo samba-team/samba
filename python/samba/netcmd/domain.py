@@ -32,6 +32,7 @@ import random
 import tempfile
 import logging
 import subprocess
+import time
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
@@ -3747,6 +3748,72 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
                                      tln=local_tdo_info.domain_name.string)
         return
 
+class cmd_domain_tombstones_expunge(Command):
+    """Expunge tombstones from the database.
+
+This command expunges tombstones from the database."""
+    synopsis = "%prog NC [NC [...]] [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server", type=str,
+                metavar="URL", dest="H"),
+        Option("--current-time",
+                help="The current time to evaluate the tombstone lifetime from, expressed as YYYY-MM-DD",
+                type=str),
+        Option("--tombstone-lifetime", help="Number of days a tombstone should be preserved for", type=int),
+    ]
+
+    takes_args = ["nc*"]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, *ncs, **kwargs):
+        sambaopts = kwargs.get("sambaopts")
+        credopts = kwargs.get("credopts")
+        versionpts = kwargs.get("versionopts")
+        H = kwargs.get("H")
+        current_time_string = kwargs.get("current_time")
+        tombstone_lifetime = kwargs.get("tombstone_lifetime")
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        if current_time_string is not None:
+            current_time_obj = time.strptime(current_time_string, "%Y-%m-%d")
+            current_time = long(time.mktime(current_time_obj))
+
+        else:
+            current_time = long(time.time())
+
+        if len(ncs) == 0:
+            res = samdb.search(expression="", base="", scope=ldb.SCOPE_BASE,
+                         attrs=["namingContexts"])
+
+            ncs = []
+            for nc in res[0]["namingContexts"]:
+                ncs.append(str(nc))
+        else:
+            ncs = list(ncs)
+
+        try:
+            (removed_objects,
+             removed_links) = samdb.garbage_collect_tombstones(ncs,
+                                                               current_time=current_time,
+                                                               tombstone_lifetime=tombstone_lifetime)
+
+        except Exception, err:
+            raise CommandError("Failed to expunge / garbage collect tombstones", err)
+
+        self.outf.write("Removed %d objects and %d links successfully\n"
+                        % (removed_objects, removed_links))
+
+
+
 class cmd_domain_trust(SuperCommand):
     """Domain and forest trust management."""
 
@@ -3757,6 +3824,12 @@ class cmd_domain_trust(SuperCommand):
     subcommands["delete"] = cmd_domain_trust_delete()
     subcommands["validate"] = cmd_domain_trust_validate()
     subcommands["namespaces"] = cmd_domain_trust_namespaces()
+
+class cmd_domain_tombstones(SuperCommand):
+    """Domain tombstone and recycled object management."""
+
+    subcommands = {}
+    subcommands["expunge"] = cmd_domain_tombstones_expunge()
 
 class cmd_domain(SuperCommand):
     """Domain management."""
@@ -3774,3 +3847,4 @@ class cmd_domain(SuperCommand):
     subcommands["classicupgrade"] = cmd_domain_classicupgrade()
     subcommands["samba3upgrade"] = cmd_domain_samba3upgrade()
     subcommands["trust"] = cmd_domain_trust()
+    subcommands["tombstones"] = cmd_domain_tombstones()
