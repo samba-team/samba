@@ -346,6 +346,11 @@ KNOWN ISSUES
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.5#All_bugs
 
 
+CHANGES SINCE 4.5.0rc3
+======================
+
+
+
 CHANGES SINCE 4.5.0rc2
 ======================
 
