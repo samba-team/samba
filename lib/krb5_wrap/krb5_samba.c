@@ -937,7 +937,20 @@ krb5_error_code smb_krb5_kt_free_entry(krb5_context context,
 }
 
 
-/* caller needs to free etype_s */
+/**
+ * @brief Convert an encryption type to a string.
+ *
+ * @param[in]  context The library context.
+ *
+ * @param[in]  enctype The encryption type.
+ *
+ * @param[in]  etype_s A pointer to store the allocated encryption type as a
+ *                     string.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ *
+ * The caller needs to free the allocated string etype_s.
+ */
 krb5_error_code smb_krb5_enctype_to_string(krb5_context context,
 					   krb5_enctype enctype,
 					   char **etype_s)
