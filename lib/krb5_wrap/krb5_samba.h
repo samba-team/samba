@@ -197,9 +197,6 @@ krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses
 NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
 krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
 
-krb5_error_code handle_krberror_packet(krb5_context context,
-                                         krb5_data *packet);
-
 void smb_krb5_get_init_creds_opt_free(krb5_context context,
 				    krb5_get_init_creds_opt *opt);
 krb5_error_code smb_krb5_get_init_creds_opt_alloc(krb5_context context,

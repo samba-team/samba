@@ -896,59 +896,6 @@ krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr
 	return ret;
 }
 
- krb5_error_code handle_krberror_packet(krb5_context context,
-					krb5_data *packet)
-{
-	krb5_error_code ret;
-	bool got_error_code = false;
-
-	DEBUG(10,("handle_krberror_packet: got error packet\n"));
-
-#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR /* Heimdal */
-	{
-		krb5_error krberror;
-
-		if ((ret = krb5_rd_error(context, packet, &krberror))) {
-			DEBUG(10,("handle_krberror_packet: krb5_rd_error failed with: %s\n",
-				error_message(ret)));
-			return ret;
-		}
-
-		if (krberror.e_data == NULL || krberror.e_data->data == NULL) {
-			ret = (krb5_error_code) krberror.error_code;
-			got_error_code = true;
-		}
-
-		krb5_free_error(context, &krberror);
-	}
-#else /* MIT */
-	{
-		krb5_error *krberror;
-
-		if ((ret = krb5_rd_error(context, packet, &krberror))) {
-			DEBUG(10,("handle_krberror_packet: krb5_rd_error failed with: %s\n",
-				error_message(ret)));
-			return ret;
-		}
-
-		if (krberror->e_data.data == NULL) {
-#if defined(ERROR_TABLE_BASE_krb5)
-			ret = ERROR_TABLE_BASE_krb5 + (krb5_error_code) krberror->error;
-#else
-			ret = (krb5_error_code)krberror->error;
-#endif
-			got_error_code = true;
-		}
-		krb5_free_error(context, krberror);
-	}
-#endif
-	if (got_error_code) {
-		DEBUG(5,("handle_krberror_packet: got KERBERR from kpasswd: %s (%d)\n",
-			error_message(ret), ret));
-	}
-	return ret;
-}
-
 krb5_error_code smb_krb5_get_init_creds_opt_alloc(krb5_context context,
 					    krb5_get_init_creds_opt **opt)
 {
