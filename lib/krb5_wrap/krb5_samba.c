@@ -758,7 +758,17 @@ done:
 	return ret;
 }
 
- krb5_error_code smb_krb5_free_addresses(krb5_context context, smb_krb5_addresses *addr)
+/**
+ * @brief Free the data stored in an smb_krb5_addresses structure.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  addr     The address structure to free.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
+krb5_error_code smb_krb5_free_addresses(krb5_context context,
+					smb_krb5_addresses *addr)
 {
 	krb5_error_code ret = 0;
 	if (addr == NULL) {
