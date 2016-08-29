@@ -1825,6 +1825,29 @@ done:
 	return code;
 }
 
+/**
+ * @brief Simulate a kinit by putting the tgt in the given credential cache.
+ *
+ * @param[in]  ctx      The library context
+ *
+ * @param[in]  cc       The credential cache to put the tgt in.
+ *
+ * @param[in]  principal The client princial
+ *
+ * @param[in]  password  The password (or NULL).
+ *
+ * @param[in]  target_service The service name of the initial credentials (or NULL).
+ *
+ * @param[in]  krb_options Initial credential options.
+ *
+ * @param[in]  expire_time    A pointer to store the experation time of the
+ *                            credentials (or NULL).
+ *
+ * @param[in]  kdc_time       A pointer to store the time when the ticket becomes
+ *                            valid (or NULL).
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_kinit_password_ccache(krb5_context ctx,
 					       krb5_ccache cc,
 					       krb5_principal principal,
