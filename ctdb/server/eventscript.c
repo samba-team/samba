@@ -1076,7 +1076,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 	state = talloc(ctdb->event_script_ctx, struct eventscript_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c = talloc_steal(state, c);
+	state->c = NULL;
 
 	DEBUG(DEBUG_NOTICE,("Running eventscripts with arguments %s\n", indata.dptr));
 
@@ -1092,7 +1092,7 @@ int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
 
 	/* tell ctdb_control.c that we will be replying asynchronously */
 	*async_reply = true;
-
+	state->c = talloc_steal(state, c);
 	return 0;
 }
 
