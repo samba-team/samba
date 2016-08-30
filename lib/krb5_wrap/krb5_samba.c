@@ -2890,6 +2890,17 @@ krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
 }
 #endif
 
+/**
+ * @brief Copy a credential cache.
+ *
+ * @param[in]  context  The library context.
+ *
+ * @param[in]  incc     Credential cache to be copied.
+ *
+ * @param[inout] outcc  Copy of credential cache to be filled in.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_cc_copy_creds(krb5_context context,
 				       krb5_ccache incc, krb5_ccache outcc)
 {
