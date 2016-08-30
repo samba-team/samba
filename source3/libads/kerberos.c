@@ -203,12 +203,14 @@ static bool smb_krb5_get_ntstatus_from_init_creds(krb5_context ctx,
 						  krb5_get_init_creds_opt *opt,
 						  NTSTATUS *nt_status)
 {
-#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
-	/* HEIMDAL */
-
 	krb5_init_creds_context icc;
 	krb5_error_code code;
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
+	/* HEIMDAL */
 	krb5_error error;
+#else
+	krb5_error *error = NULL;
+#endif
 	bool ok;
 
 	code = krb5_init_creds_init(ctx,
@@ -234,14 +236,17 @@ static bool smb_krb5_get_ntstatus_from_init_creds(krb5_context ctx,
 	}
 	krb5_init_creds_free(ctx, icc);
 
+#ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
 	ok = smb_krb5_get_ntstatus_from_krb5_error(&error, nt_status);
 
 	krb5_free_error_contents(ctx, &error);
+#else
+	ok = smb_krb5_get_ntstatus_from_krb5_error(error, nt_status);
+
+	krb5_free_error(ctx, error);
+#endif
 
 	return ok;
-#else
-	return false;
-#endif
 }
 
 /*
