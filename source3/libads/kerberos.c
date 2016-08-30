@@ -199,41 +199,49 @@ static bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 }
 
 static bool smb_krb5_get_ntstatus_from_init_creds(krb5_context ctx,
+						  krb5_principal client,
 						  krb5_get_init_creds_opt *opt,
 						  NTSTATUS *nt_status)
 {
-	bool ret = False;
-	krb5_error *error = NULL;
-
-#ifdef HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR
-	ret = krb5_get_init_creds_opt_get_error(ctx, opt, &error);
-	if (ret) {
-		DEBUG(1,("krb5_get_init_creds_opt_get_error gave: %s\n", 
-			error_message(ret)));
-		return False;
-	}
-#endif /* HAVE_KRB5_GET_INIT_CREDS_OPT_GET_ERROR */
-
-	if (!error) {
-		DEBUG(1,("no krb5_error\n"));
-		return False;
-	}
-
 #ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
-	if (!error->e_data) {
-#else
-	if (error->e_data.data == NULL) {
-#endif /* HAVE_E_DATA_POINTER_IN_KRB5_ERROR */
-		DEBUG(1,("no edata in krb5_error\n")); 
-		krb5_free_error(ctx, error);
-		return False;
+	/* HEIMDAL */
+
+	krb5_init_creds_context icc;
+	krb5_error_code code;
+	krb5_error error;
+	bool ok;
+
+	code = krb5_init_creds_init(ctx,
+				    client,
+				    NULL,
+				    NULL,
+				    0,
+				    opt,
+				    &icc);
+	if (code != 0) {
+		DBG_WARNING("krb5_init_creds_init failed with: %s\n",
+			    error_message(code));
+		return false;
 	}
 
-	ret = smb_krb5_get_ntstatus_from_krb5_error(error, nt_status);
+	code = krb5_init_creds_get_error(ctx,
+					 icc,
+					 &error);
+	if (code != 0) {
+		DBG_WARNING("krb5_init_creds_get_error failed with: %s\n",
+			    error_message(code));
+		return false;
+	}
+	krb5_init_creds_free(ctx, icc);
 
-	krb5_free_error(ctx, error);
+	ok = smb_krb5_get_ntstatus_from_krb5_error(&error, nt_status);
 
-	return ret;
+	krb5_free_error_contents(ctx, &error);
+
+	return ok;
+#else
+	return false;
+#endif
 }
 
 /*
@@ -348,6 +356,7 @@ int kerberos_kinit_password_ext(const char *principal,
 			bool ok;
 
 			ok = smb_krb5_get_ntstatus_from_init_creds(ctx,
+								   me,
 								   opt,
 								   &status);
 			if (ok) {
