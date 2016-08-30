@@ -509,13 +509,6 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-bool smb_krb5_principal_compare_any_realm(krb5_context context, 
-					  krb5_const_principal princ1, 
-					  krb5_const_principal princ2)
-{
-	return krb5_principal_compare_any_realm(context, princ1, princ2);
-}
-
 /**
  * @brief Free the contents of a krb5_data structure and zero the data field.
  *
