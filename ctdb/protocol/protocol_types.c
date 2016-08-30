@@ -231,19 +231,15 @@ struct stringn_wire {
 
 size_t ctdb_stringn_len(const char *str)
 {
-	return sizeof(uint32_t) + strlen(str) + 1;
+	return sizeof(uint32_t) + ctdb_string_len(str);
 }
 
 void ctdb_stringn_push(const char *str, uint8_t *buf)
 {
 	struct stringn_wire *wire = (struct stringn_wire *)buf;
 
-	if (str == NULL) {
-		wire->length = 0;
-	} else {
-		wire->length = strlen(str) + 1;
-		memcpy(wire->str, str, wire->length);
-	}
+	wire->length = ctdb_string_len(str);
+	ctdb_string_push(str, wire->str);
 }
 
 int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
@@ -263,6 +259,11 @@ int ctdb_stringn_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 	}
 	if (buflen < sizeof(uint32_t) + wire->length) {
 		return EMSGSIZE;
+	}
+
+	if (wire->length == 0) {
+		*out = NULL;
+		return 0;
 	}
 
 	str = talloc_strndup(mem_ctx, (char *)wire->str, wire->length);
