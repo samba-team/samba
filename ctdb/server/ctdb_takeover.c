@@ -522,7 +522,7 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 	state = talloc(vnn, struct ctdb_do_takeip_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c = talloc_steal(ctdb, c);
+	state->c = NULL;
 	state->vnn   = vnn;
 
 	vnn->update_in_flight = true;
@@ -551,6 +551,7 @@ static int32_t ctdb_do_takeip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	state->c = talloc_steal(ctdb, c);
 	return 0;
 }
 
@@ -659,7 +660,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 	state = talloc(vnn, struct ctdb_do_updateip_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
-	state->c = talloc_steal(ctdb, c);
+	state->c = NULL;
 	state->old = old;
 	state->vnn = vnn;
 
@@ -691,6 +692,7 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	state->c = talloc_steal(ctdb, c);
 	return 0;
 }
 
@@ -1003,8 +1005,8 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state->c = talloc_steal(state, c);
-	state->addr = talloc(state, ctdb_sock_addr);       
+	state->c = NULL;
+	state->addr = talloc(state, ctdb_sock_addr);
 	if (state->addr == NULL) {
 		ctdb_set_error(ctdb, "Out of memory at %s:%d",
 			       __FILE__, __LINE__);
@@ -1037,6 +1039,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 
 	/* tell the control that we will be reply asynchronously */
 	*async_reply = true;
+	state->c = talloc_steal(state, c);
 	return 0;
 }
 
