@@ -509,18 +509,6 @@ krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-krb5_error_code smb_krb5_parse_name_norealm(krb5_context context, 
-					    const char *name, 
-					    krb5_principal *principal)
-{
-	/* we are cheating here because parse_name will in fact set the realm.
-	 * We don't care as the only caller of smb_krb5_parse_name_norealm
-	 * ignores the realm anyway when calling
-	 * smb_krb5_principal_compare_any_realm later - Guenther */
-
-	return smb_krb5_parse_name(context, name, principal);
-}
-
 bool smb_krb5_principal_compare_any_realm(krb5_context context, 
 					  krb5_const_principal princ1, 
 					  krb5_const_principal princ2)

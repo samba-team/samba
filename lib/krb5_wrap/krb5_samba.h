@@ -184,9 +184,6 @@ krb5_error_code smb_krb5_kt_free_entry(krb5_context context, krb5_keytab_entry *
 void kerberos_set_creds_enctype(krb5_creds *pcreds, int enctype);
 bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, krb5_enctype enctype2);
 void smb_krb5_free_data_contents(krb5_context context, krb5_data *pdata);
-krb5_error_code smb_krb5_parse_name_norealm(krb5_context context,
-					    const char *name,
-					    krb5_principal *principal);
 bool smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ1,
 					  krb5_const_principal princ2);
