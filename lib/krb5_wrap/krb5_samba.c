@@ -2843,13 +2843,14 @@ int smb_krb5_principal_get_type(krb5_context context,
 }
 
 /**
-* @brief Set the type of a krb5_principal
-*
-* @param context	The krb5_context
-* @param principal	The const krb5_principal
-* @param type		The principal type
-*
-*/
+ * @brief Set the type of a principal
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[inout] principal The principal to set the type for.
+ *
+ * @param[in]  type     The principal type to set.
+ */
 void smb_krb5_principal_set_type(krb5_context context,
 				 krb5_principal principal,
 				 int type)
