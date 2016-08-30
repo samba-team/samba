@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "torture/ndr/ndr.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#include "librpc/gen_ndr/ndr_winspool.h"
 #include "torture/ndr/proto.h"
 
 static const uint8_t openprinterex_req_data[] = {
@@ -1774,17 +1775,26 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_OpenPrinterEx, openprinterex_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_OpenPrinterEx, openprinterex_resp_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncOpenPrinter, openprinterex_req_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncOpenPrinter, openprinterex_resp_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_OpenPrinterEx, openprinterex_devmode_req_data, NDR_IN, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncOpenPrinter, openprinterex_devmode_req_data, NDR_IN, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ClosePrinter, closeprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ClosePrinter, closeprinter_resp_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncClosePrinter, closeprinter_req_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncClosePrinter, closeprinter_resp_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinter, getprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinter, getprinter_resp_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncGetPrinter, getprinter_req_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncGetPrinter, getprinter_resp_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterData, getprinterdata_req_data, getprinterdata_resp_data, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncGetPrinterData, getprinterdata_req_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_io_test(suite, winspool_AsyncGetPrinterData, getprinterdata_req_data, getprinterdata_resp_data, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_resp_data, NDR_OUT, NULL );
@@ -1800,36 +1810,54 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumForms, enumforms_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumForms, enumforms_out_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumForms, enumforms_in_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumForms, enumforms_out_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterDataEx, enumprinterdataex_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterDataEx, enumprinterdataex_out_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumPrinterDataEx, enumprinterdataex_in_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumPrinterDataEx, enumprinterdataex_out_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_io_test(suite, spoolss_EnumPrinterDataEx, enumprinterdataex_w2k8r2_in_data, enumprinterdataex_w2k8r2_out_data, NULL);
+	torture_suite_add_ndr_pull_io_test(suite, winspool_AsyncEnumPrinterDataEx, enumprinterdataex_w2k8r2_in_data, enumprinterdataex_w2k8r2_out_data, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterKey, enumprinterkey_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterKey, enumprinterkey_out_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumPrinterKey, enumprinterkey_in_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumPrinterKey, enumprinterkey_out_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterKey, enumprinterkey_in_data2, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumPrinterKey, enumprinterkey_out_data2, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumPrinterKey, enumprinterkey_in_data2, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncEnumPrinterKey, enumprinterkey_out_data2, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_FindClosePrinterNotify, FCPN_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_FindClosePrinterNotify, FCPN_out_data, NDR_OUT, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_in_data, getprinterdriverdir_out_data, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncGetPrinterDriverDirectory, getprinterdriverdir_in_data, NDR_IN, NULL);
+	torture_suite_add_ndr_pull_io_test(suite, winspool_AsyncGetPrinterDriverDirectory, getprinterdriverdir_in_data, getprinterdriverdir_out_data, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_AddPrinterDriverEx, addprinterdriverex_in_data, NDR_IN, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncAddPrinterDriver, addprinterdriverex_in_data, NDR_IN, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, NDR_IN, getprinterdriver2_in_check);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncGetPrinterDriver, getprinterdriver2_in_data, NDR_IN, NULL);
 	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, getprinterdriver2_out_data, getprinterdriver2_out_check);
+	torture_suite_add_ndr_pull_io_test(suite, winspool_AsyncGetPrinterDriver, getprinterdriver2_in_data, getprinterdriver2_out_data, NULL);
 
 	torture_suite_add_ndr_pull_fn_test_flags(suite, spoolss_OpenPrinterEx, openprinterex_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
+	torture_suite_add_ndr_pull_fn_test_flags(suite, winspool_AsyncOpenPrinter, openprinterex_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
 
 	torture_suite_add_ndr_pull_fn_test_flags(suite, spoolss_SetPrinter, setprinter_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
+	torture_suite_add_ndr_pull_fn_test_flags(suite, winspool_AsyncSetPrinter, setprinter_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
 
 	torture_suite_add_ndr_pull_fn_test_flags(suite, spoolss_GetCorePrinterDrivers, getcoreprinterdrivers_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
+	torture_suite_add_ndr_pull_fn_test_flags(suite, winspool_AsyncGetCorePrinterDrivers, getcoreprinterdrivers_64_req_data, NDR_IN, LIBNDR_FLAG_NDR64, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_SetJobNamedProperty, setjobnamedproperty_req_data, NDR_IN, setjobnamedproperty_req_check);
+	torture_suite_add_ndr_pull_fn_test(suite, winspool_AsyncSetJobNamedProperty, setjobnamedproperty_req_data, NDR_IN, NULL);
 
 	return suite;
 }
