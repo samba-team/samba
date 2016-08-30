@@ -466,11 +466,26 @@ krb5_error_code smb_krb5_parse_name(krb5_context context,
 	return ret;
 }
 
-/**************************************************************
- krb5_parse_name that returns a UNIX charset name. Must
- be freed with talloc_free() call.
-**************************************************************/
-
+/**
+ * @brief Convert a Kerberos principal structure to a string representation.
+ *
+ * The resulting string representation will be a unix charset name and is
+ * talloc'ed.
+ *
+ * @param[in]  mem_ctx  The talloc context to allocate memory on.
+ *
+ * @param[in]  context  The library context.
+ *
+ * @param[in]  principal The principal.
+ *
+ * @param[out] unix_name A string representation of the princpial name as with
+ *                       unix charset.
+ *
+ * Use talloc_free() to free the string representation if it is no longer
+ * needed.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_unparse_name(TALLOC_CTX *mem_ctx,
 				      krb5_context context,
 				      krb5_const_principal principal,
