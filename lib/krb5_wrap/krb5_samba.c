@@ -434,13 +434,22 @@ bool unwrap_edata_ntstatus(TALLOC_CTX *mem_ctx,
 }
 
 
-/**************************************************************
- krb5_parse_name that takes a UNIX charset.
-**************************************************************/
-
+/**
+ * @brief Convert a string principal name to a Kerberos principal.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  name     The principal as a unix charset string.
+ *
+ * @param[out] principal The newly allocated principal.
+ *
+ * Use krb5_free_principal() to free a principal when it is no longer needed.
+ *
+ * @return 0 on success, a Kerberos error code otherwise.
+ */
 krb5_error_code smb_krb5_parse_name(krb5_context context,
-				const char *name, /* in unix charset */
-				krb5_principal *principal)
+				    const char *name,
+				    krb5_principal *principal)
 {
 	krb5_error_code ret;
 	char *utf8_name;
