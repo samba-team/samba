@@ -678,7 +678,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 
 	/* Perform an authenticated DCE-RPC bind
 	 */
-	if (!(conn->flags & (DCERPC_CONNECT|DCERPC_SEAL))) {
+	if (!(conn->flags & (DCERPC_CONNECT|DCERPC_SEAL|DCERPC_PACKET))) {
 		/*
 		  we are doing an authenticated connection,
 		  which needs to use [connect], [sign] or [seal].

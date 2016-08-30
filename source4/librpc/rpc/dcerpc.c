@@ -1526,7 +1526,7 @@ static NTSTATUS dcerpc_request_prepare_vt(struct rpc_request *req)
 	struct ndr_push *ndr = NULL;
 	enum ndr_err_code ndr_err;
 
-	if (sec->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (sec->auth_level < DCERPC_AUTH_LEVEL_PACKET) {
 		return NT_STATUS_OK;
 	}
 
@@ -1661,7 +1661,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 		need_async = true;
 	}
 
-	if (c->security_state.auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (c->security_state.auth_level >= DCERPC_AUTH_LEVEL_PACKET) {
 		can_async = gensec_have_feature(c->security_state.generic_state,
 						GENSEC_FEATURE_ASYNC_REPLIES);
 	}
@@ -1683,7 +1683,7 @@ static void dcerpc_ship_next_request(struct dcecli_connection *c)
 	   request header size */
 	chunk_size = p->conn->srv_max_recv_frag;
 	chunk_size -= DCERPC_REQUEST_LENGTH;
-	if (c->security_state.auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (c->security_state.auth_level >= DCERPC_AUTH_LEVEL_PACKET) {
 		size_t max_payload = chunk_size;
 
 		max_payload -= DCERPC_AUTH_TRAILER_LENGTH;
@@ -2048,6 +2048,8 @@ uint32_t dcerpc_auth_level(struct dcecli_connection *c)
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	} else if (c->flags & DCERPC_CONNECT) {
 		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+	} else if (c->flags & DCERPC_PACKET) {
+		auth_level = DCERPC_AUTH_LEVEL_PACKET;
 	} else {
 		auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}

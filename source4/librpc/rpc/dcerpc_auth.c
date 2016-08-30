@@ -432,7 +432,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (gensec_have_feature(sec->generic_state, GENSEC_FEATURE_SIGN_PKT_HEADER)) {
-		if (sec->auth_level >= DCERPC_AUTH_LEVEL_INTEGRITY) {
+		if (sec->auth_level >= DCERPC_AUTH_LEVEL_PACKET) {
 			state->pipe->conn->flags |= DCERPC_PROPOSE_HEADER_SIGNING;
 		}
 	}
