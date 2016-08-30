@@ -105,6 +105,7 @@ static const struct ncacn_option {
 	{"bigendian", DCERPC_PUSH_BIGENDIAN},
 	{"smb2", DCERPC_SMB2},
 	{"ndr64", DCERPC_NDR64},
+	{"packet", DCERPC_PACKET},
 };
 
 static const struct ncacn_option *ncacn_option_by_name(const char *name)
@@ -590,6 +591,8 @@ _PUBLIC_ void dcerpc_binding_get_auth_info(const struct dcerpc_binding *b,
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	} else if (b->flags & DCERPC_CONNECT) {
 		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
+	} else if (b->flags & DCERPC_PACKET) {
+		auth_level = DCERPC_AUTH_LEVEL_PACKET;
 	} else if (auth_type != DCERPC_AUTH_TYPE_NONE) {
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 	} else {

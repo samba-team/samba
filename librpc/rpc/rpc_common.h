@@ -106,6 +106,8 @@ struct dcerpc_binding;
 /* this triggers the DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN flag in the bind request */
 #define DCERPC_PROPOSE_HEADER_SIGNING          (1<<25)
 
+#define DCERPC_PACKET			(1<<26)
+
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
