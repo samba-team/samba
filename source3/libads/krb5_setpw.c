@@ -248,12 +248,14 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 	return ADS_ERROR_KRB5(ret);
     }
 
-    ret = krb5_change_password(context,
-			       &creds,
-			       discard_const_p(char, newpw),
-			       &result_code,
-			       &result_code_string,
-			       &result_string);
+	ret = krb5_set_password(context,
+				&creds,
+				discard_const_p(char, newpw),
+				princ,
+				&result_code,
+				&result_code_string,
+				&result_string);
+
     if (ret) {
 	DEBUG(1, ("krb5_change_password failed (%s)\n", error_message(ret)));
 	aret = ADS_ERROR_KRB5(ret);
