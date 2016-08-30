@@ -434,8 +434,8 @@ def build(bld):
                         includes='include',
                         deps='ctdb-protocol replace talloc tevent')
 
-    bld.SAMBA_SUBSYSTEM('ctdb-server',
-                        source='server/ctdbd.c ' +
+    bld.SAMBA_BINARY('ctdbd',
+                     source='server/ctdbd.c ' +
                                bld.SUBDIR('server',
                                           '''ctdb_daemon.c ctdb_recoverd.c
                                              ctdb_recover.c ctdb_freeze.c
@@ -452,14 +452,10 @@ def build(bld):
                                              ctdb_statistics.c
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c'''),
-                        includes='include',
-                        deps='''ctdb-ipalloc replace sys_rw
-                                popt talloc tevent tdb talloc_report''')
-
-    bld.SAMBA_BINARY('ctdbd',
-                     source='',
-                     deps='''ctdb-server ctdb-client ctdb-common
-                             ctdb-system ctdb-tcp ctdb-util''' +
+                     includes='include',
+                     deps='''ctdb-ipalloc ctdb-client ctdb-common ctdb-system
+                             ctdb-tcp ctdb-util replace sys_rw popt
+                             talloc tevent tdb talloc_report''' +
                           ib_deps,
                      install_path='${SBINDIR}',
                      manpages='ctdbd.1')
