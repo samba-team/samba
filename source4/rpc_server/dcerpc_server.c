@@ -989,10 +989,6 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 			return NT_STATUS_RPC_PROTOCOL_ERROR;
 		}
 
-		if (ctx->num_transfer_syntaxes != 1) {
-			return NT_STATUS_RPC_PROTOCOL_ERROR;
-		}
-
 		if (selected_transfer != NULL) {
 			ok = ndr_syntax_id_equal(&context->transfer_syntax,
 						 selected_transfer);
@@ -1003,8 +999,6 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 			ack->result = DCERPC_BIND_ACK_RESULT_ACCEPTANCE;
 			ack->reason.value = DCERPC_BIND_ACK_REASON_NOT_SPECIFIED;
 			ack->syntax = context->transfer_syntax;
-		} else {
-			return NT_STATUS_RPC_PROTOCOL_ERROR;
 		}
 
 		/*
