@@ -390,7 +390,7 @@ def build(bld):
                                           '''db_hash.c srvid.c reqid.c
                                              pkt_read.c pkt_write.c comm.c
                                              logging.c rb_tree.c tunable.c
-                                             pidfile.c'''),
+                                             pidfile.c run_proc.c'''),
                         deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb''')
 
@@ -714,6 +714,7 @@ def build(bld):
         'protocol_types_test',
         'protocol_client_test',
         'pidfile_test',
+        'run_proc_test',
     ]
 
     for target in ctdb_unit_tests:
@@ -722,7 +723,7 @@ def build(bld):
         bld.SAMBA_BINARY(target,
                          source=src,
                          deps='''talloc tevent tdb tevent-util
-                                 LIBASYNC_REQ samba-util''',
+                                 LIBASYNC_REQ samba-util sys_rw''',
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('reqid_test',
