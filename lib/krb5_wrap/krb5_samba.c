@@ -2864,16 +2864,20 @@ void smb_krb5_principal_set_type(krb5_context context,
 #endif
 }
 
-/**
-* @brief Generate a krb5 warning, forwarding to com_err
-*
-* @param context	The krb5_context
-* @param fmt		The message format
-* @param ...		The message arguments
-*
-* @return
-*/
 #if !defined(HAVE_KRB5_WARNX)
+/**
+ * @brief Log a Kerberos message
+ *
+ * It sends the message to com_err.
+ *
+ * @param[in]  context  The library context
+ *
+ * @param[in]  fmt      The message format
+ *
+ * @param[in]  ...      The message arguments
+ *
+ * @return 0 on success.
+ */
 krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
 {
 	va_list args;
