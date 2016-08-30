@@ -2822,13 +2822,14 @@ krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context)
 #endif
 
 /**
-* @brief Return the type of a krb5_principal
-*
-* @param context	The krb5_context
-* @param principal	The const krb5_principal
-*
-* @return integer type of the principal
-*/
+ * @brief Return the type of a krb5_principal
+ *
+ * @param[in]  context  The library context.
+ *
+ * @param[in]  principal The principal to get the type from.
+ *
+ * @return The integer type of the principal.
+ */
 int smb_krb5_principal_get_type(krb5_context context,
 				krb5_const_principal principal)
 {
