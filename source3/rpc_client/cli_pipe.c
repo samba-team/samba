@@ -1152,7 +1152,7 @@ static NTSTATUS create_generic_auth_rpc_bind_req(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	if (cli->auth->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (cli->auth->auth_level < DCERPC_AUTH_LEVEL_PACKET) {
 		*client_hdr_signing = false;
 		return status;
 	}
@@ -1386,7 +1386,7 @@ static NTSTATUS prepare_verification_trailer(struct rpc_api_pipe_req_state *stat
 		return NT_STATUS_OK;
 	}
 
-	if (a->auth_level < DCERPC_AUTH_LEVEL_INTEGRITY) {
+	if (a->auth_level < DCERPC_AUTH_LEVEL_PACKET) {
 		return NT_STATUS_OK;
 	}
 
@@ -1596,8 +1596,8 @@ static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
 	switch (state->cli->auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_CONNECT:
-	case DCERPC_AUTH_LEVEL_PACKET:
 		break;
+	case DCERPC_AUTH_LEVEL_PACKET:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		status = dcerpc_add_auth_footer(state->cli->auth, pad_len,
