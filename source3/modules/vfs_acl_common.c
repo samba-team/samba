@@ -4,6 +4,7 @@
  *
  * Copyright (C) Volker Lendecke, 2008
  * Copyright (C) Jeremy Allison, 2009
+ * Copyright (C) Ralph Böhme, 2016
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
