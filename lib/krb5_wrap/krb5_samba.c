@@ -2883,7 +2883,7 @@ krb5_error_code krb5_warnx(krb5_context context, const char *fmt, ...)
 	va_list args;
 
 	va_start(args, fmt);
-	com_err_va("kdb_samba", errno, fmt, args);
+	com_err_va("samba-kdc", errno, fmt, args);
 	va_end(args);
 
 	return 0;
