@@ -487,6 +487,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
@@ -556,6 +557,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		status = gensec_check_packet(dce_conn->auth_state.gensec_security,
 					     pkt->u.request.stub_and_verifier.data, 
 					     pkt->u.request.stub_and_verifier.length,
@@ -607,6 +609,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		if (sig_size == 0) {
 			return false;
 		}
@@ -701,6 +704,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
 					    call,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 

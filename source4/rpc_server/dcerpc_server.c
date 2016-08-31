@@ -582,7 +582,11 @@ NTSTATUS dcesrv_interface_bind_require_integrity(struct dcesrv_call_state *dce_c
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
+	/*
+	 * For connection oriented DCERPC DCERPC_AUTH_LEVEL_PACKET (4)
+	 * has the same behavior as DCERPC_AUTH_LEVEL_INTEGRITY (5).
+	 */
+	dce_call->context->min_auth_level = DCERPC_AUTH_LEVEL_PACKET;
 	return NT_STATUS_OK;
 }
 
@@ -1259,6 +1263,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	switch (call->conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_PACKET:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		break;
