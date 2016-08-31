@@ -284,6 +284,24 @@ struct tevent_timer *tevent_common_add_timer_v2(struct tevent_context *ev,
 						true);
 }
 
+void tevent_update_timer(struct tevent_timer *te, struct timeval next_event)
+{
+	struct tevent_context *ev = te->event_ctx;
+
+	if (ev->last_zero_timer == te) {
+		te->event_ctx->last_zero_timer = DLIST_PREV(te);
+	}
+	DLIST_REMOVE(ev->timer_events, te);
+
+	te->next_event = next_event;
+
+	/*
+	 * Not doing the zero_timer optimization. This is for new code
+	 * that should know about immediates.
+	 */
+	tevent_common_insert_timer(ev, te, false);
+}
+
 /*
   do a single event loop using the events defined in ev
 

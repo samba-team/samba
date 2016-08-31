@@ -252,6 +252,16 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 			  #handler, __location__)
 #endif
 
+/**
+ * @brief Set the time a tevent_timer fires
+ *
+ * @param[in]  te       The timer event to reset
+ *
+ * @param[in]  next_event  Timeval specifying the absolute time to fire this
+ * event. This is not an offset.
+ */
+void tevent_update_timer(struct tevent_timer *te, struct timeval next_event);
+
 #ifdef DOXYGEN
 /**
  * Initialize an immediate event object
