@@ -190,7 +190,7 @@ static int map_attrs_partition(struct ldb_module *module, void *mem_ctx, const c
 static int ldb_msg_replace(struct ldb_message *msg, const struct ldb_message_element *el)
 {
 	struct ldb_message_element *old;
-	int j;
+	unsigned j;
 	old = ldb_msg_find_element(msg, el->name);
 
 	/* no local result, add as new element */
