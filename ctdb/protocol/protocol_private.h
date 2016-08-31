@@ -22,6 +22,11 @@
 
 #include "protocol.h"
 
+size_t ctdb_int32_len(int32_t val);
+void ctdb_int32_push(int32_t val, uint8_t *buf);
+int ctdb_int32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+	            int32_t *out);
+
 size_t ctdb_uint32_len(uint32_t val);
 void ctdb_uint32_push(uint32_t val, uint8_t *buf);
 int ctdb_uint32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,

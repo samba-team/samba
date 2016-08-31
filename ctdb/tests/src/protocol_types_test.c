@@ -1017,6 +1017,25 @@ static void verify_ctdb_g_lock_list(struct ctdb_g_lock_list *p1,
  * Functions to test marshalling routines
  */
 
+static int32_t rand32i(void)
+{
+	return INT_MIN + random();
+}
+
+static void test_ctdb_int32(void)
+{
+	int32_t p1, p2;
+	size_t buflen;
+	int ret;
+
+	p1 = rand32i();
+	buflen = ctdb_int32_len(p1);
+	ctdb_int32_push(p1, BUFFER);
+	ret = ctdb_int32_pull(BUFFER, buflen, NULL, &p2);
+	assert(ret == 0);
+	assert(p1 == p2);
+}
+
 static void test_ctdb_uint32(void)
 {
 	uint32_t p1, p2;
@@ -1259,6 +1278,7 @@ int main(int argc, char *argv[])
 		srandom(seed);
 	}
 
+	test_ctdb_int32();
 	test_ctdb_uint32();
 	test_ctdb_uint64();
 	test_ctdb_double();

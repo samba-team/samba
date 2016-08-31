@@ -27,6 +27,27 @@
 #include "protocol_private.h"
 #include "protocol_api.h"
 
+size_t ctdb_int32_len(int32_t val)
+{
+	return sizeof(int32_t);
+}
+
+void ctdb_int32_push(int32_t val, uint8_t *buf)
+{
+	memcpy(buf, &val, sizeof(int32_t));
+}
+
+int ctdb_int32_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
+		    int32_t *out)
+{
+	if (buflen < sizeof(int32_t)) {
+		return EMSGSIZE;
+	}
+
+	*out = *(int32_t *)buf;
+	return 0;
+}
+
 size_t ctdb_uint32_len(uint32_t val)
 {
 	return sizeof(uint32_t);
