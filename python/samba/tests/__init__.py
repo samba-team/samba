@@ -454,7 +454,8 @@ class RawDCERPCTest(TestCase):
             pass
         return rep_pdu
 
-    def recv_pdu(self, ndr_print=None, hexdump=None, timeout=None):
+    def recv_pdu_raw(self, ndr_print=None, hexdump=None, timeout=None):
+        rep_pdu = None
         rep = None
         if ndr_print is None:
             ndr_print = self.do_ndr_print
@@ -463,13 +464,19 @@ class RawDCERPCTest(TestCase):
         try:
             rep_pdu = self.recv_raw(hexdump=hexdump, timeout=timeout)
             if rep_pdu is None:
-                return None
+                return (None,None)
             rep = samba.ndr.ndr_unpack(samba.dcerpc.dcerpc.ncacn_packet, rep_pdu, allow_remaining=True)
             if ndr_print:
                 sys.stderr.write("recv_pdu: %s" % samba.ndr.ndr_print(rep))
             self.assertEqual(rep.frag_length, len(rep_pdu))
         finally:
             pass
+        return (rep, rep_pdu)
+
+    def recv_pdu(self, ndr_print=None, hexdump=None, timeout=None):
+        (rep, rep_pdu) = self.recv_pdu_raw(ndr_print=ndr_print,
+                                           hexdump=hexdump,
+                                           timeout=timeout)
         return rep
 
     def generate_auth(self,
