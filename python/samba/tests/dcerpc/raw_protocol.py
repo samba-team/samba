@@ -559,15 +559,6 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(len(rep.u._pad), 3)
         self.assertEquals(rep.u._pad, '\0' * 3)
 
-        ndr32 = base.transfer_syntax_ndr()
-
-        tsf1_list = [ndr32]
-        ctx1 = dcerpc.ctx_list()
-        ctx1.context_id = 1
-        ctx1.num_transfer_syntaxes = len(tsf1_list)
-        ctx1.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
-        ctx1.transfer_syntaxes = tsf1_list
-
         # wait for a disconnect
         rep = self.recv_pdu()
         self.assertIsNone(rep)
