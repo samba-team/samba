@@ -154,39 +154,13 @@ static int tevent_common_timed_deny_destructor(struct tevent_timer *te)
 	return -1;
 }
 
-/*
-  add a timed event
-  return NULL on failure (memory allocation error)
-*/
-static struct tevent_timer *tevent_common_add_timer_internal(
-					struct tevent_context *ev,
-					TALLOC_CTX *mem_ctx,
-					struct timeval next_event,
-					tevent_timer_handler_t handler,
-					void *private_data,
-					const char *handler_name,
-					const char *location,
-					bool optimize_zero)
+static void tevent_common_insert_timer(struct tevent_context *ev,
+				       struct tevent_timer *te,
+				       bool optimize_zero)
 {
-	struct tevent_timer *te, *prev_te, *cur_te;
-
-	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
-	if (te == NULL) return NULL;
-
-	te->event_ctx		= ev;
-	te->next_event		= next_event;
-	te->handler		= handler;
-	te->private_data	= private_data;
-	te->handler_name	= handler_name;
-	te->location		= location;
-	te->additional_data	= NULL;
-
-	if (ev->timer_events == NULL) {
-		ev->last_zero_timer = NULL;
-	}
+	struct tevent_timer *prev_te = NULL;
 
 	/* keep the list ordered */
-	prev_te = NULL;
 	if (optimize_zero && tevent_timeval_is_zero(&te->next_event)) {
 		/*
 		 * Some callers use zero tevent_timer
@@ -199,6 +173,8 @@ static struct tevent_timer *tevent_common_add_timer_internal(
 		prev_te = ev->last_zero_timer;
 		ev->last_zero_timer = te;
 	} else {
+		struct tevent_timer *cur_te;
+
 		/*
 		 * we traverse the list from the tail
 		 * because it's much more likely that
@@ -227,6 +203,40 @@ static struct tevent_timer *tevent_common_add_timer_internal(
 	}
 
 	DLIST_ADD_AFTER(ev->timer_events, te, prev_te);
+}
+
+/*
+  add a timed event
+  return NULL on failure (memory allocation error)
+*/
+static struct tevent_timer *tevent_common_add_timer_internal(
+					struct tevent_context *ev,
+					TALLOC_CTX *mem_ctx,
+					struct timeval next_event,
+					tevent_timer_handler_t handler,
+					void *private_data,
+					const char *handler_name,
+					const char *location,
+					bool optimize_zero)
+{
+	struct tevent_timer *te;
+
+	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
+	if (te == NULL) return NULL;
+
+	te->event_ctx		= ev;
+	te->next_event		= next_event;
+	te->handler		= handler;
+	te->private_data	= private_data;
+	te->handler_name	= handler_name;
+	te->location		= location;
+	te->additional_data	= NULL;
+
+	if (ev->timer_events == NULL) {
+		ev->last_zero_timer = NULL;
+	}
+
+	tevent_common_insert_timer(ev, te, optimize_zero);
 
 	talloc_set_destructor(te, tevent_common_timed_destructor);
 
