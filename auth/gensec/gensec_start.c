@@ -745,6 +745,14 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_s
 		if (gensec_security->gensec_role == GENSEC_CLIENT) {
 			gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 		}
+	} else if (auth_level == DCERPC_AUTH_LEVEL_PACKET) {
+		/*
+		 * For connection oriented DCERPC DCERPC_AUTH_LEVEL_PACKET (4)
+		 * has the same behavior as DCERPC_AUTH_LEVEL_INTEGRITY (5).
+		 */
+		if (gensec_security->gensec_role == GENSEC_CLIENT) {
+			gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+		}
 	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
