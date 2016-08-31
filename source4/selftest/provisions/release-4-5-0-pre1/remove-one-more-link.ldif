@@ -1,0 +1,5 @@
+dn: cn=helpers,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+delete: member
+member: cn=user1,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+-

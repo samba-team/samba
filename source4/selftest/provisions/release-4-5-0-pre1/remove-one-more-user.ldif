@@ -1,0 +1,3 @@
+dn: cn=user2,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: delete
+-

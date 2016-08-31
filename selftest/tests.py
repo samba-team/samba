@@ -104,6 +104,11 @@ plantestsuite(
     ["PYTHON=%s" % python,
      os.path.join(bbdir, "upgradeprovision-oldrelease.sh"),
      '$PREFIX_ABS/provision', 'release-4-0-0', configuration])
+plantestsuite(
+    "samba4.blackbox.tombstones-expunge.release-4-5-0-pre1", "none",
+    ["PYTHON=%s" % python,
+     os.path.join(bbdir, "tombstones-expunge.sh"),
+     '$PREFIX_ABS/provision', 'release-4-5-0-pre1', configuration])
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")

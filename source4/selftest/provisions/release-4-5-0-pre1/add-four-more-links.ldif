@@ -1,0 +1,15 @@
+dn: cn=swimmers,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: member
+member: cn=user1,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: cn=user2,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+dn: cn=helpers,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: member
+member: cn=user1,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+dn: cn=leaders,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: member
+member: cn=user2,cn=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
