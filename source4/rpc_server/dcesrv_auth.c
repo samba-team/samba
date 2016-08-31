@@ -57,11 +57,16 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 					  NULL, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*
-		 * This will cause a
-		 * DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED
-		 * in the caller
+		 * Setting DCERPC_AUTH_LEVEL_NONE,
+		 * gives the caller the reject_reason
+		 * as auth_context_id.
+		 *
+		 * Note: DCERPC_AUTH_LEVEL_NONE == 1
 		 */
-		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+		auth->auth_context_id =
+			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED;
 		return false;
 	}
 
@@ -78,14 +83,14 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	default:
 		/*
 		 * Setting DCERPC_AUTH_LEVEL_NONE,
-		 * gives the caller a chance to decide what
-		 * reject_reason to use
+		 * gives the caller the reject_reason
+		 * as auth_context_id.
 		 *
 		 * Note: DCERPC_AUTH_LEVEL_NONE == 1
 		 */
 		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
 		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
-		auth->auth_context_id = 0;
+		auth->auth_context_id = DCERPC_BIND_NAK_REASON_NOT_SPECIFIED;
 		return false;
 	}
 
@@ -133,10 +138,32 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_type,
 					       auth->auth_level);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Failed to start GENSEC mechanism for DCERPC server: auth_type=%d, auth_level=%d: %s\n",
-			  (int)auth->auth_type,
+		const char *backend_name =
+			gensec_get_name_by_authtype(auth->gensec_security,
+						    auth->auth_type);
+
+		DEBUG(3, ("Failed to start GENSEC mechanism for DCERPC server: "
+			  "auth_type=%d (%s), auth_level=%d: %s\n",
+			  (int)auth->auth_type, backend_name,
 			  (int)auth->auth_level,
 			  nt_errstr(status)));
+
+		/*
+		 * Setting DCERPC_AUTH_LEVEL_NONE,
+		 * gives the caller the reject_reason
+		 * as auth_context_id.
+		 *
+		 * Note: DCERPC_AUTH_LEVEL_NONE == 1
+		 */
+		auth->auth_type = DCERPC_AUTH_TYPE_NONE;
+		auth->auth_level = DCERPC_AUTH_LEVEL_NONE;
+		if (backend_name != NULL) {
+			auth->auth_context_id =
+				DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM;
+		} else {
+			auth->auth_context_id =
+				DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE;
+		}
 		return false;
 	}
 

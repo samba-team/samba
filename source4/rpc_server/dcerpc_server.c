@@ -802,21 +802,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 		TALLOC_FREE(call->context);
 
-		if (call->fault_code == DCERPC_NCA_S_PROTO_ERROR) {
-			return dcesrv_bind_nak(call,
-			DCERPC_BIND_NAK_REASON_PROTOCOL_VERSION_NOT_SUPPORTED);
+		if (auth->auth_level == DCERPC_AUTH_LEVEL_NONE) {
+			/*
+			 * With DCERPC_AUTH_LEVEL_NONE, we get the
+			 * reject_reason in auth->auth_context_id.
+			 */
+			return dcesrv_bind_nak(call, auth->auth_context_id);
 		}
 
-		if (auth->auth_level != DCERPC_AUTH_LEVEL_NONE) {
-			/*
-			 * We only give INVALID_AUTH_TYPE if the auth_level was
-			 * valid.
-			 */
-			return dcesrv_bind_nak(call,
-					DCERPC_BIND_NAK_REASON_INVALID_AUTH_TYPE);
-		}
+		/*
+		 * This must a be a temporary failure e.g. talloc or invalid
+		 * configuration, e.g. no machine account.
+		 */
 		return dcesrv_bind_nak(call,
-					DCERPC_BIND_NAK_REASON_NOT_SPECIFIED);
+				DCERPC_BIND_NAK_REASON_TEMPORARY_CONGESTION);
 	}
 
 	/* setup a bind_ack */
