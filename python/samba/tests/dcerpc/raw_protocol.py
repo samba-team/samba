@@ -1681,6 +1681,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
     def test_auth_none_call_request(self):
         return self._test_auth_none_level_request(dcerpc.DCERPC_AUTH_LEVEL_CALL)
 
+    def test_auth_none_packet_request(self):
+        return self._test_auth_none_level_request(dcerpc.DCERPC_AUTH_LEVEL_PACKET)
+
     def _test_neg_xmit_check_values(self,
                                     req_xmit=None,
                                     req_recv=None,
@@ -2758,6 +2761,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
 
+    def test_spnego_connect_packet_upgrade(self):
+        return self._test_spnego_connect_upgrade_request(
+                                        dcerpc.DCERPC_AUTH_LEVEL_PACKET)
+
     def test_spnego_connect_integrity_upgrade(self):
         return self._test_spnego_connect_upgrade_request(
                                         dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
@@ -2874,6 +2881,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.assertIsNone(rep)
         self.assertNotConnected()
+
+    def test_spnego_packet_downgrade_connect(self):
+        return self._test_spnego_connect_downgrade_request(
+                                        dcerpc.DCERPC_AUTH_LEVEL_PACKET)
 
     def test_spnego_integrity_downgrade_connect(self):
         return self._test_spnego_connect_upgrade_request(
