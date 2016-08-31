@@ -1393,16 +1393,16 @@ int tevent_timeval_compare(const struct timeval *tv1,
 			   const struct timeval *tv2);
 
 /**
- * @brief Get a zero timval value.
+ * @brief Get a zero timeval value.
  *
- * @return              A zero timval value.
+ * @return              A zero timeval value.
  */
 struct timeval tevent_timeval_zero(void);
 
 /**
  * @brief Get a timeval value for the current time.
  *
- * @return              A timval value with the current time.
+ * @return              A timeval value with the current time.
  */
 struct timeval tevent_timeval_current(void);
 
