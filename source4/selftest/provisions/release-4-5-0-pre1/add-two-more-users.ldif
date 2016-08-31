@@ -1,0 +1,15 @@
+dn: CN=user1,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: user1
+
+dn: CN=user2,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: user
+samaccountname: user2
+
+dn: CN=helpers,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: group
+samaccountname: helpers
+
+dn: CN=leaders,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+objectclass: group
+samaccountname: leaders
