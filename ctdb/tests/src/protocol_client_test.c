@@ -1837,6 +1837,176 @@ static void verify_ctdb_req_message_data(struct ctdb_req_message_data *c,
 }
 
 /*
+ * Functions to fill and verify eventd protocol structures
+ */
+
+static void fill_ctdb_event_request_data(TALLOC_CTX *mem_ctx,
+					 struct ctdb_event_request_data *r,
+					 uint32_t command)
+{
+	r->command = command;
+
+	switch (command) {
+	case CTDB_EVENT_COMMAND_RUN:
+		r->data.run = talloc(mem_ctx, struct ctdb_event_request_run);
+		assert(r->data.run != NULL);
+
+		fill_ctdb_event_request_run(mem_ctx, r->data.run);
+		break;
+
+	case CTDB_EVENT_COMMAND_STATUS:
+		r->data.status = talloc(mem_ctx,
+					struct ctdb_event_request_status);
+		assert(r->data.status != NULL);
+
+		fill_ctdb_event_request_status(mem_ctx, r->data.status);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
+		r->data.script_enable = talloc(mem_ctx,
+				struct ctdb_event_request_script_enable);
+		assert(r->data.script_enable != NULL);
+
+		fill_ctdb_event_request_script_enable(mem_ctx,
+						      r->data.script_enable);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
+		r->data.script_disable = talloc(mem_ctx,
+				struct ctdb_event_request_script_disable);
+		assert(r->data.script_disable != NULL);
+
+		fill_ctdb_event_request_script_disable(mem_ctx,
+						       r->data.script_disable);
+		break;
+	}
+}
+
+static void verify_ctdb_event_request_data(struct ctdb_event_request_data *r,
+					   struct ctdb_event_request_data *r2)
+{
+	assert(r->command == r2->command);
+
+	switch (r->command) {
+	case CTDB_EVENT_COMMAND_RUN:
+		verify_ctdb_event_request_run(r->data.run, r2->data.run);
+		break;
+
+	case CTDB_EVENT_COMMAND_STATUS:
+		verify_ctdb_event_request_status(r->data.status,
+						 r2->data.status);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
+		verify_ctdb_event_request_script_enable(r->data.script_enable,
+							r2->data.script_enable);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
+		verify_ctdb_event_request_script_disable(r->data.script_disable,
+							 r2->data.script_disable);
+		break;
+	}
+}
+
+static void fill_ctdb_event_reply_data(TALLOC_CTX *mem_ctx,
+				       struct ctdb_event_reply_data *r,
+				       uint32_t command)
+{
+	r->command = command;
+	r->result = rand32i();
+
+	switch (command) {
+	case CTDB_EVENT_COMMAND_STATUS:
+		r->data.status = talloc(mem_ctx,
+					struct ctdb_event_reply_status);
+		assert(r->data.status != NULL);
+
+		fill_ctdb_event_reply_status(mem_ctx, r->data.status);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
+		r->data.script_list = talloc(mem_ctx,
+				struct ctdb_event_reply_script_list);
+		assert(r->data.script_list != NULL);
+
+		fill_ctdb_event_reply_script_list(mem_ctx,
+						  r->data.script_list);
+		break;
+	}
+}
+
+static void verify_ctdb_event_reply_data(struct ctdb_event_reply_data *r,
+					 struct ctdb_event_reply_data *r2)
+{
+	assert(r->command == r2->command);
+	assert(r->result == r2->result);
+
+	switch (r->command) {
+	case CTDB_EVENT_COMMAND_RUN:
+		break;
+
+	case CTDB_EVENT_COMMAND_STATUS:
+		verify_ctdb_event_reply_status(r->data.status,
+					       r2->data.status);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_LIST:
+		verify_ctdb_event_reply_script_list(r->data.script_list,
+						    r2->data.script_list);
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_ENABLE:
+		break;
+
+	case CTDB_EVENT_COMMAND_SCRIPT_DISABLE:
+		break;
+	}
+}
+
+static void verify_ctdb_event_header(struct ctdb_event_header *h,
+				     struct ctdb_event_header *h2)
+{
+	verify_buffer(h, h2, ctdb_event_header_len(h));
+}
+
+static void fill_ctdb_event_request(TALLOC_CTX *mem_ctx,
+				    struct ctdb_event_request *r,
+				    uint32_t command)
+{
+	ctdb_event_header_fill(&r->header, rand());
+	fill_ctdb_event_request_data(mem_ctx, &r->rdata, command);
+}
+
+static void verify_ctdb_event_request(struct ctdb_event_request *r,
+				      struct ctdb_event_request *r2)
+{
+	verify_ctdb_event_header(&r->header, &r2->header);
+	verify_ctdb_event_request_data(&r->rdata, &r2->rdata);
+}
+
+static void fill_ctdb_event_reply(TALLOC_CTX *mem_ctx,
+				  struct ctdb_event_reply *r,
+				  uint32_t command)
+{
+	ctdb_event_header_fill(&r->header, rand());
+	fill_ctdb_event_reply_data(mem_ctx, &r->rdata, command);
+}
+
+static void verify_ctdb_event_reply(struct ctdb_event_reply *r,
+				    struct ctdb_event_reply *r2)
+{
+	verify_ctdb_event_header(&r->header, &r2->header);
+	verify_ctdb_event_reply_data(&r->rdata, &r2->rdata);
+}
+
+/*
  * Functions to test marshalling
  */
 
@@ -2263,6 +2433,179 @@ static void test_req_message_test(void)
 	talloc_free(mem_ctx);
 }
 
+/*
+ * Functions to test eventd protocol marshalling
+ */
+
+static void test_ctdb_event_header(void)
+{
+	TALLOC_CTX *mem_ctx;
+	size_t buflen;
+	struct ctdb_event_header h, h2;
+	int ret;
+
+	printf("ctdb_event_header\n");
+	fflush(stdout);
+
+	mem_ctx = talloc_new(NULL);
+	assert(mem_ctx != NULL);
+
+	ctdb_event_header_fill(&h, REQID);
+
+	buflen = ctdb_event_header_len(&h);
+	ctdb_event_header_push(&h, BUFFER);
+	ret = ctdb_event_header_pull(BUFFER, buflen, mem_ctx, &h2);
+	assert(ret == 0);
+
+	verify_ctdb_event_header(&h, &h2);
+
+	talloc_free(mem_ctx);
+}
+
+#define NUM_COMMANDS	5
+
+static void test_event_request_data(void)
+{
+	TALLOC_CTX *mem_ctx;
+	size_t buflen;
+	struct ctdb_event_request_data rd, rd2;
+	uint32_t command;
+	int ret;
+
+	printf("ctdb_event_request_data\n");
+	fflush(stdout);
+
+	for (command=1; command<=NUM_COMMANDS; command++) {
+		mem_ctx = talloc_new(NULL);
+		assert(mem_ctx != NULL);
+
+		printf("%u.. ", command);
+		fflush(stdout);
+		fill_ctdb_event_request_data(mem_ctx, &rd, command);
+		buflen = ctdb_event_request_data_len(&rd);
+		ctdb_event_request_data_push(&rd, BUFFER);
+		ret = ctdb_event_request_data_pull(BUFFER, buflen, mem_ctx, &rd2);
+		assert(ret == 0);
+		verify_ctdb_event_request_data(&rd, &rd2);
+
+		talloc_free(mem_ctx);
+	}
+
+	printf("\n");
+	fflush(stdout);
+}
+
+static void test_event_reply_data(void)
+{
+	TALLOC_CTX *mem_ctx;
+	size_t buflen;
+	struct ctdb_event_reply_data rd, rd2;
+	uint32_t command;
+	int ret;
+
+	printf("ctdb_event_reply_data\n");
+	fflush(stdout);
+
+	for (command=1; command<=NUM_COMMANDS; command++) {
+		mem_ctx = talloc_new(NULL);
+		assert(mem_ctx != NULL);
+
+		printf("%u.. ", command);
+		fflush(stdout);
+		fill_ctdb_event_reply_data(mem_ctx, &rd, command);
+		buflen = ctdb_event_reply_data_len(&rd);
+		ctdb_event_reply_data_push(&rd, BUFFER);
+		ret = ctdb_event_reply_data_pull(BUFFER, buflen, mem_ctx, &rd2);
+		assert(ret == 0);
+		verify_ctdb_event_reply_data(&rd, &rd2);
+
+		talloc_free(mem_ctx);
+	}
+
+	printf("\n");
+	fflush(stdout);
+}
+
+static void test_event_request(void)
+{
+	TALLOC_CTX *mem_ctx;
+	uint8_t *buf;
+	size_t len, buflen;
+	int ret;
+	struct ctdb_event_request r, r2;
+	uint32_t command;
+
+	printf("ctdb_event_request\n");
+	fflush(stdout);
+
+	for (command=1; command<=NUM_COMMANDS; command++) {
+		mem_ctx = talloc_new(NULL);
+		assert(mem_ctx != NULL);
+
+		printf("%u.. ", command);
+		fflush(stdout);
+		fill_ctdb_event_request(mem_ctx, &r, command);
+		buflen = ctdb_event_request_len(&r);
+		buf = talloc_size(mem_ctx, buflen);
+		assert(buf != NULL);
+		len = 0;
+		ret = ctdb_event_request_push(&r, buf, &len);
+		assert(ret == EMSGSIZE);
+		assert(len == buflen);
+		ret = ctdb_event_request_push(&r, buf, &buflen);
+		assert(ret == 0);
+		ret = ctdb_event_request_pull(buf, buflen, mem_ctx, &r2);
+		assert(ret == 0);
+		assert(r2.header.length == buflen);
+		verify_ctdb_event_request(&r, &r2);
+
+		talloc_free(mem_ctx);
+	}
+
+	printf("\n");
+	fflush(stdout);
+}
+
+static void test_event_reply(void)
+{
+	TALLOC_CTX *mem_ctx;
+	uint8_t *buf;
+	size_t len, buflen;
+	int ret;
+	struct ctdb_event_reply r, r2;
+	uint32_t command;
+
+	printf("ctdb_event_reply\n");
+	fflush(stdout);
+
+	for (command=1; command<=NUM_COMMANDS; command++) {
+		mem_ctx = talloc_new(NULL);
+		assert(mem_ctx != NULL);
+
+		printf("%u.. ", command);
+		fflush(stdout);
+		fill_ctdb_event_reply(mem_ctx, &r, command);
+		buflen = ctdb_event_reply_len(&r);
+		buf = talloc_size(mem_ctx, buflen);
+		assert(buf != NULL);
+		len = 0;
+		ret = ctdb_event_reply_push(&r, buf, &len);
+		assert(ret == EMSGSIZE);
+		assert(len == buflen);
+		ret = ctdb_event_reply_push(&r, buf, &buflen);
+		assert(ret == 0);
+		ret = ctdb_event_reply_pull(buf, buflen, mem_ctx, &r2);
+		assert(ret == 0);
+		assert(r2.header.length == buflen);
+		verify_ctdb_event_reply(&r, &r2);
+
+		talloc_free(mem_ctx);
+	}
+
+	printf("\n");
+	fflush(stdout);
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc == 2) {
@@ -2285,6 +2628,13 @@ int main(int argc, char *argv[])
 	test_reply_control_test();
 
 	test_req_message_test();
+
+	test_ctdb_event_header();
+
+	test_event_request_data();
+	test_event_reply_data();
+	test_event_request();
+	test_event_reply();
 
 	return 0;
 }

@@ -11,6 +11,15 @@ control_output=$(
     echo
 )
 
+last_command=5
+
+command_output=$(
+    for i in $(seq 1 $last_command) ; do
+	echo -n "$i.. "
+    done
+    echo
+)
+
 output=$(
     echo "ctdb_req_header"
     echo "ctdb_req_call"
@@ -27,6 +36,15 @@ output=$(
     echo "ctdb_reply_control"
     echo "$control_output"
     echo "ctdb_req_message"
+    echo "ctdb_event_header"
+    echo "ctdb_event_request_data"
+    echo "$command_output"
+    echo "ctdb_event_reply_data"
+    echo "$command_output"
+    echo "ctdb_event_request"
+    echo "$command_output"
+    echo "ctdb_event_reply"
+    echo "$command_output"
 )
 
 ok "$output"
