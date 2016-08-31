@@ -81,6 +81,11 @@ def set_options(opt):
                   action="store_true", help="Run testsuites in random order")
     gr.add_option('--perf-test', dest='PERF_TEST', default=False,
                   action="store_true", help="run performance tests only")
+    gr.add_option('--test-list', dest='TEST_LIST', default='',
+                  action="store_true",
+                  help=("use tests listed here, not defaults "
+                        "(--test-list='FOO|' will execute FOO; "
+                        "--test-list='FOO' will read it)"))
 
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
@@ -198,7 +203,9 @@ def cmd_testonly(opt):
     if not os.path.isdir(env.SELFTEST_PREFIX):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
-    if Options.options.PERF_TEST:
+    if Options.options.TEST_LIST:
+        env.TESTLISTS = '--testlist=%r' % Options.options.TEST_LIST
+    elif Options.options.PERF_TEST:
         env.TESTLISTS = '--testlist="${PYTHON} ${srcdir}/selftest/perf_tests.py|" '
     else:
         env.TESTLISTS = ('--testlist="${PYTHON} ${srcdir}/selftest/tests.py|" ' +
