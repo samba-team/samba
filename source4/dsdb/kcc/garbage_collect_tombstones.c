@@ -142,7 +142,7 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		DEBUG(1, ("Doing a full scan on %s and looking for deleted object\n",
+		DEBUG(1, ("Doing a full scan on %s and looking for deleted objects\n",
 			  ldb_dn_get_linearized(part->dn)));
 
 		flags = DSDB_SEARCH_SHOW_RECYCLED |
