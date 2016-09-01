@@ -33,7 +33,22 @@
 #include "lib/ldb-samba/ldb_matching_rules.h"
 #include "lib/util/time.h"
 
-
+/*
+ * Per MS-ADTS 3.1.1.5.5 Delete Operation
+ *
+ * "Tombstones are a type of deleted object distinguished from
+ *  existing-objects by the presence of the isDeleted attribute with the
+ *  value true."
+ *
+ * "After a time period at least as large as a tombstone lifetime, the
+ *  tombstone is removed from the directory."
+ *
+ * The purpose of this routine is to remove such objects.  It is
+ * called from a timed event in the KCC, and from samba-tool domain
+ * expunge tombstones.
+ *
+ * Additionally, linked attributes have similar properties.
+ */
 NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 					 struct ldb_context *samdb,
 					 struct dsdb_ldb_dn_list_node *part,
@@ -168,6 +183,19 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 			}
 
 			/* This must have a linked attribute */
+
+			/*
+			 * From MS-ADTS 3.1.1.1.9 DCs, usn Counters, and the Originating Update Stamp
+			 *
+			 * "A link value r is deleted, but exists as a
+			 *  tombstone, if r.stamp.timeDeleted ≠ 0. When
+			 *  the current time minus r.stamp.timeDeleted
+			 *  exceeds the tombstone lifetime, the link
+			 *  value r is garbage-collected; that is,
+			 *  removed from its containing forward link
+			 *  attribute. "
+			 */
+
 			for (j=0; j < res->msgs[i]->num_elements; j++) {
 				struct ldb_message_element *element = &res->msgs[i]->elements[j];
 				/* TODO this is O(log n) per attribute with deleted values */
