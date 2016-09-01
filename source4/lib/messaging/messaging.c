@@ -255,9 +255,14 @@ NTSTATUS imessaging_send(struct imessaging_context *msg, struct server_id server
 		pid = getpid();
 	}
 
-	priv = root_privileges();
 	ret = messaging_dgm_send(pid, iov, num_iov, NULL, 0);
-	TALLOC_FREE(priv);
+
+	if (ret == EACCES) {
+		priv = root_privileges();
+		ret = messaging_dgm_send(pid, iov, num_iov, NULL, 0);
+		TALLOC_FREE(priv);
+	}
+
 	if (ret != 0) {
 		return map_nt_error_from_unix_common(ret);
 	}

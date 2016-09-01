@@ -464,9 +464,14 @@ int messaging_send_iov_from(struct messaging_context *msg_ctx,
 	iov2[0] = (struct iovec){ .iov_base = hdr, .iov_len = sizeof(hdr) };
 	memcpy(&iov2[1], iov, iovlen * sizeof(*iov));
 
-	become_root();
 	ret = messaging_dgm_send(dst.pid, iov2, iovlen+1, fds, num_fds);
-	unbecome_root();
+
+	if (ret == EACCES) {
+		become_root();
+		ret = messaging_dgm_send(dst.pid, iov2, iovlen+1,
+					 fds, num_fds);
+		unbecome_root();
+	}
 
 	return ret;
 }
