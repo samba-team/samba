@@ -548,9 +548,9 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			}
 
 
-			dsdb_dn = dsdb_dn_parse(msg, ldb, plain_dn, attribute->syntax->ldap_oid);
+			dsdb_dn = dsdb_dn_parse_trusted(msg, ldb, plain_dn, attribute->syntax->ldap_oid);
 
-			if (!dsdb_dn || !ldb_dn_validate(dsdb_dn->dn)) {
+			if (!dsdb_dn) {
 				ldb_asprintf_errstring(ldb, 
 						       "could not parse %.*s in %s on %s as a %s DN", 
 						       (int)plain_dn->length, plain_dn->data,
@@ -570,13 +570,6 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 					is_deleted_objects = true;
 				}
 				talloc_free(hex_string);
-			}
-
-			/* don't let users see the internal extended
-			   GUID components */
-			if (!have_reveal_control) {
-				const char *accept[] = { "GUID", "SID", NULL };
-				ldb_dn_extended_filter(dn, accept);
 			}
 
 			if (p->normalise) {
@@ -633,6 +626,21 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 			}
 			
 			if (make_extended_dn) {
+				if (!ldb_dn_validate(dsdb_dn->dn)) {
+					ldb_asprintf_errstring(ldb, 
+							       "could not parse %.*s in %s on %s as a %s DN", 
+							       (int)plain_dn->length, plain_dn->data,
+							       msg->elements[i].name, ldb_dn_get_linearized(msg->dn),
+							       attribute->syntax->ldap_oid);
+					talloc_free(dsdb_dn);
+					return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
+				}
+				/* don't let users see the internal extended
+				   GUID components */
+				if (!have_reveal_control) {
+					const char *accept[] = { "GUID", "SID", NULL };
+					ldb_dn_extended_filter(dn, accept);
+				}
 				dn_str = dsdb_dn_get_extended_linearized(msg->elements[i].values,
 									 dsdb_dn, ac->extended_type);
 			} else {
