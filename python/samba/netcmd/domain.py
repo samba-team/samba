@@ -3800,14 +3800,21 @@ This command expunges tombstones from the database."""
         else:
             ncs = list(ncs)
 
+        started_transaction = False
         try:
+            samdb.transaction_start()
+            started_transaction = True
             (removed_objects,
              removed_links) = samdb.garbage_collect_tombstones(ncs,
                                                                current_time=current_time,
                                                                tombstone_lifetime=tombstone_lifetime)
 
         except Exception, err:
+            if started_transaction:
+                samdb.transaction_cancel()
             raise CommandError("Failed to expunge / garbage collect tombstones", err)
+
+        samdb.transaction_commit()
 
         self.outf.write("Removed %d objects and %d links successfully\n"
                         % (removed_objects, removed_links))
