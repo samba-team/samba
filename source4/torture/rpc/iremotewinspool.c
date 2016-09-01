@@ -152,13 +152,13 @@ static bool test_AsyncGetPrinterData_checktype(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_AsyncGetPrinterData(struct torture_context *tctx,
-				     struct dcerpc_binding_handle *b,
-				     struct policy_handle *handle,
-				     const char *value_name,
-				     enum winreg_Type *type_p,
-				     uint8_t **data_p,
-				     uint32_t *needed_p)
+static bool test_AsyncGetPrinterData_args(struct torture_context *tctx,
+					  struct dcerpc_binding_handle *b,
+					  struct policy_handle *handle,
+					  const char *value_name,
+					  enum winreg_Type *type_p,
+					  uint8_t **data_p,
+					  uint32_t *needed_p)
 {
 	return test_AsyncGetPrinterData_checktype(tctx, b, handle,
 						  value_name,
@@ -177,7 +177,7 @@ static bool test_get_environment(struct torture_context *tctx,
 	uint32_t needed;
 
 	torture_assert(tctx,
-		test_AsyncGetPrinterData(tctx, b, handle, "Architecture", &type, &data, &needed),
+		test_AsyncGetPrinterData_args(tctx, b, handle, "Architecture", &type, &data, &needed),
 		"failed to get Architecture");
 
 	torture_assert_int_equal(tctx, type, REG_SZ, "unexpected type");
@@ -568,6 +568,48 @@ static bool test_AsyncEnumPrinters(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_AsyncGetPrinterData(struct torture_context *tctx,
+				     void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	DATA_BLOB blob;
+	const char *s;
+	bool ok;
+
+	uint32_t pType;
+	uint32_t pcbNeeded;
+	uint8_t *pData;
+
+	torture_assert(tctx,
+		test_AsyncGetPrinterData_args(tctx, b, &ctx->server_handle,
+					      "MajorVersion",
+					      &pType, &pData, &pcbNeeded),
+		"failed to check for MajorVersion");
+
+	torture_assert_int_equal(tctx, pcbNeeded, 4, "pcbNeeded");
+	torture_assert_int_equal(tctx, pType, REG_DWORD, "pType");
+	torture_assert_int_equal(tctx, IVAL(pData, 0), 3, "pData");
+
+	torture_assert(tctx,
+		test_AsyncGetPrinterData_args(tctx, b, &ctx->server_handle,
+					      "Architecture",
+					      &pType, &pData, &pcbNeeded),
+		"failed to check for Architecture");
+
+	blob = data_blob_const(pData, pcbNeeded);
+
+	torture_assert_int_equal(tctx, pType, REG_SZ, "pType");
+	torture_assert(tctx, pull_reg_sz(tctx, &blob, &s), "");
+	ok = strequal(s, SPOOLSS_ARCHITECTURE_x64) || strequal(s, SPOOLSS_ARCHITECTURE_NT_X86);
+	torture_assert(tctx, ok, "unexpected architecture returned");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool");
@@ -583,6 +625,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "AsyncClosePrinter", test_AsyncClosePrinter);
 	torture_tcase_add_simple_test(tcase, "AsyncUploadPrinterDriverPackage", test_AsyncUploadPrinterDriverPackage);
 	torture_tcase_add_simple_test(tcase, "AsyncEnumPrinters", test_AsyncEnumPrinters);
+	torture_tcase_add_simple_test(tcase, "AsyncGetPrinterData", test_AsyncGetPrinterData);
 
 	return suite;
 }
