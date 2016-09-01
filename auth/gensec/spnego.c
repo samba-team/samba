@@ -54,9 +54,11 @@ struct spnego_state {
 
 	DATA_BLOB mech_types;
 	size_t num_targs;
+	bool downgraded;
 	bool mic_requested;
 	bool needs_mic_sign;
 	bool needs_mic_check;
+	bool may_skip_mic_check;
 	bool done_mic_check;
 
 	bool simulate_w2k;
@@ -433,6 +435,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 					 * Indicate the downgrade and request a
 					 * mic.
 					 */
+					spnego_state->downgraded = true;
 					spnego_state->mic_requested = true;
 					break;
 				}
@@ -1077,7 +1080,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
 				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
 				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech)));
-
+			spnego_state->downgraded = true;
 			spnego_state->no_response_expected = false;
 			talloc_free(spnego_state->sub_sec_security);
 			nt_status = gensec_subcontext_start(spnego_state,
@@ -1132,6 +1135,23 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
 				spnego_free_data(&spnego);
 				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			if (spnego.negTokenTarg.mechListMIC.length == 0
+			    && spnego_state->may_skip_mic_check) {
+				/*
+				 * In this case we don't require
+				 * a mechListMIC from the server.
+				 *
+				 * This works around bugs in the Azure
+				 * and Apple spnego implementations.
+				 *
+				 * See
+				 * https://bugzilla.samba.org/show_bug.cgi?id=11994
+				 */
+				spnego_state->needs_mic_check = false;
+				nt_status = NT_STATUS_OK;
+				goto client_response;
 			}
 
 			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
@@ -1189,9 +1209,56 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 					 */
 					new_spnego = false;
 				}
+
 				break;
 
 			case SPNEGO_ACCEPT_INCOMPLETE:
+				if (spnego.negTokenTarg.mechListMIC.length > 0) {
+					new_spnego = true;
+					break;
+				}
+
+				if (spnego_state->downgraded) {
+					/*
+					 * A downgrade should be protected if
+					 * supported
+					 */
+					break;
+				}
+
+				/*
+				 * The caller may just asked for
+				 * GENSEC_FEATURE_SESSION_KEY, this
+				 * is only reflected in the want_features.
+				 *
+				 * As it will imply
+				 * gensec_have_features(GENSEC_FEATURE_SIGN)
+				 * to return true.
+				 */
+				if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
+					break;
+				}
+				if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
+					break;
+				}
+				/*
+				 * Here we're sure our preferred mech was
+				 * selected by the server and our caller doesn't
+				 * need GENSEC_FEATURE_SIGN nor
+				 * GENSEC_FEATURE_SEAL support.
+				 *
+				 * In this case we don't require
+				 * a mechListMIC from the server.
+				 *
+				 * This works around bugs in the Azure
+				 * and Apple spnego implementations.
+				 *
+				 * See
+				 * https://bugzilla.samba.org/show_bug.cgi?id=11994
+				 */
+				spnego_state->may_skip_mic_check = true;
+				break;
+
 			case SPNEGO_REQUEST_MIC:
 				if (spnego.negTokenTarg.mechListMIC.length > 0) {
 					new_spnego = true;
