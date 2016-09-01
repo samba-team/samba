@@ -88,6 +88,47 @@ remove_one_user() {
     fi
 }
 
+check_match_rule_links() {
+    tmpldif=$PREFIX_ABS/$RELEASE/expected-match-rule-links.ldif.tmp
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
+    diff $tmpldif $release_dir/expected-match-rule-links.ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
+check_match_rule_links_negative() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=-131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member
+}
+
+check_match_rule_links_overflow() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=18446744073709551617)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member
+}
+
+check_match_rule_links_null() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=18446744\073709551617)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member
+}
+
+check_match_rule_links_hex() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=abcd)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member
+}
+
+check_match_rule_links_hex2() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=0xabcd)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member
+}
+
+check_match_rule_links_decimal() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=131139216000000000.00)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member
+}
+
+check_match_rule_links_backlink() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(memberOf:1.3.6.1.4.1.7165.4.5.2:=131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted memberOf
+}
+
+check_match_rule_links_notlink() {
+    $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(samAccountName:1.3.6.1.4.1.7165.4.5.2:=131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted samAccountName
+}
+
 check_expected_after_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-expunge.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted member > $tmpldif
@@ -121,6 +162,15 @@ if [ -d $release_dir ]; then
     testit "add_four_more_links" add_four_more_links
     testit "remove_one_link" remove_one_link
     testit "remove_one_user" remove_one_user
+    testit "check_match_rule_links" check_match_rule_links
+    testit_expect_failure "check_match_rule_links_negative" check_match_rule_links_negative
+    testit_expect_failure "check_match_rule_links_overflow" check_match_rule_links_overflow
+    testit_expect_failure "check_match_rule_links_null" check_match_rule_links_null
+    testit_expect_failure "check_match_rule_links_hex" check_match_rule_links_hex
+    testit_expect_failure "check_match_rule_links_hex2" check_match_rule_links_hex2
+    testit_expect_failure "check_match_rule_links_decimal" check_match_rule_links_decimal
+    testit_expect_failure "check_match_rule_links_backlink" check_match_rule_links_backlink
+    testit_expect_failure "check_match_rule_links_notlink" check_match_rule_links_notlink
     testit "tombstones_expunge" tombstones_expunge
     testit "check_expected_after_deleted_links" check_expected_after_deleted_links
     testit "check_expected_after_links" check_expected_after_links
