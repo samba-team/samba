@@ -4119,19 +4119,27 @@ static bool test_GetPrinterData_list(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(list); i++) {
 		enum winreg_Type type = REG_NONE;
-		enum winreg_Type type_ex= REG_NONE;
+		enum winreg_Type type_ex1 = REG_NONE;
+		enum winreg_Type type_ex2 = REG_NONE;
 		uint8_t *data;
-		uint8_t *data_ex = NULL;
+		uint8_t *data_ex1 = NULL;
+		uint8_t *data_ex2 = NULL;
 		uint32_t needed;
-		uint32_t needed_ex = 0;
+		uint32_t needed_ex1 = 0;
+		uint32_t needed_ex2 = 0;
 
 		torture_assert(tctx, test_GetPrinterData(tctx, b, &ctx->server_handle, list[i], &type, &data, &needed),
 			talloc_asprintf(tctx, "GetPrinterData failed on %s\n", list[i]));
-		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, &ctx->server_handle, "random_string", list[i], &type_ex, &data_ex, &needed_ex),
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, &ctx->server_handle, "random_string", list[i], &type_ex1, &data_ex1, &needed_ex1),
 			talloc_asprintf(tctx, "GetPrinterDataEx failed on %s\n", list[i]));
-		torture_assert_int_equal(tctx, type, type_ex, "type mismatch");
-		torture_assert_int_equal(tctx, needed, needed_ex, "needed mismatch");
-		torture_assert_mem_equal(tctx, data, data_ex, needed, "data mismatch");
+		torture_assert(tctx, test_GetPrinterDataEx(tctx, p, &ctx->server_handle, "", list[i], &type_ex2, &data_ex2, &needed_ex2),
+			talloc_asprintf(tctx, "GetPrinterDataEx failed on %s\n", list[i]));
+		torture_assert_int_equal(tctx, type, type_ex1, "type mismatch");
+		torture_assert_int_equal(tctx, type, type_ex2, "type mismatch");
+		torture_assert_int_equal(tctx, needed, needed_ex1, "needed mismatch");
+		torture_assert_int_equal(tctx, needed, needed_ex2, "needed mismatch");
+		torture_assert_mem_equal(tctx, data, data_ex1, needed, "data mismatch");
+		torture_assert_mem_equal(tctx, data, data_ex2, needed, "data mismatch");
 	}
 
 	return true;
