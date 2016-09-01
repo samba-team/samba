@@ -742,7 +742,9 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_s
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_DCE_STYLE);
 	gensec_want_feature(gensec_security, GENSEC_FEATURE_ASYNC_REPLIES);
 	if (auth_level == DCERPC_AUTH_LEVEL_INTEGRITY) {
-		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+		if (gensec_security->gensec_role == GENSEC_CLIENT) {
+			gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
+		}
 	} else if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
 		gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
