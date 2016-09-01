@@ -533,6 +533,13 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 
 	pkt->u.request.stub_and_verifier.length -= auth_length;
 
+	/*
+	 * check the indicated amount of padding, used below...
+	 */
+	if (pkt->u.request.stub_and_verifier.length < call->in_auth_info.auth_pad_length) {
+		return false;
+	}
+
 	/* check signature or unseal the packet */
 	switch (dce_conn->auth_state.auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -568,10 +575,10 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		break;
 	}
 
-	/* remove the indicated amount of padding */
-	if (pkt->u.request.stub_and_verifier.length < call->in_auth_info.auth_pad_length) {
-		return false;
-	}
+	/*
+	 * remove the indicated amount of padding
+	 * overflow is checked about!
+	 */
 	pkt->u.request.stub_and_verifier.length -= call->in_auth_info.auth_pad_length;
 
 	if (!NT_STATUS_IS_OK(status)) {
