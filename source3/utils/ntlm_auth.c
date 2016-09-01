@@ -1214,9 +1214,6 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 	}
 	
 	gensec_set_credentials(gensec_security, server_credentials);
-	
-	gensec_want_feature(gensec_security, GENSEC_FEATURE_SIGN);
-	gensec_want_feature(gensec_security, GENSEC_FEATURE_SEAL);
 
 	talloc_unlink(tmp_ctx, lp_ctx);
 	talloc_unlink(tmp_ctx, server_credentials);
