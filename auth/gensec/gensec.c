@@ -227,45 +227,32 @@ _PUBLIC_ size_t gensec_max_update_size(struct gensec_security *gensec_security)
 	return gensec_security->max_update_size;
 }
 
-static NTSTATUS gensec_verify_dcerpc_auth_level(struct gensec_security *gensec_security)
+static NTSTATUS gensec_verify_features(struct gensec_security *gensec_security)
 {
-	if (gensec_security->dcerpc_auth_level == 0) {
-		return NT_STATUS_OK;
-	}
-
 	/*
-	 * Because callers using the
-	 * gensec_start_mech_by_auth_type() never call
-	 * gensec_want_feature(), it isn't sensible for them
-	 * to have to call gensec_have_feature() manually, and
-	 * these are not points of negotiation, but are
-	 * asserted by the client
+	 * gensec_want_feature(GENSEC_FEATURE_SIGN)
+	 * and
+	 * gensec_want_feature(GENSEC_FEATURE_SEAL)
+	 * require these flags to be available.
 	 */
-	switch (gensec_security->dcerpc_auth_level) {
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 			DEBUG(0,("Did not manage to negotiate mandatory feature "
-				 "SIGN for dcerpc auth_level %u\n",
-				 gensec_security->dcerpc_auth_level));
+				 "SIGN\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		break;
-	case DCERPC_AUTH_LEVEL_PRIVACY:
-		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			DEBUG(0,("Did not manage to negotiate mandatory feature "
-				 "SIGN for dcerpc auth_level %u\n",
-				 gensec_security->dcerpc_auth_level));
-			return NT_STATUS_ACCESS_DENIED;
-		}
+	}
+	if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 			DEBUG(0,("Did not manage to negotiate mandatory feature "
-				 "SEAL for dcerpc auth_level %u\n",
-				 gensec_security->dcerpc_auth_level));
+				 "SEAL\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
-		break;
-	default:
-		break;
+		if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+			DEBUG(0,("Did not manage to negotiate mandatory feature "
+				 "SIGN for SEAL\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -315,7 +302,7 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 		 * these are not points of negotiation, but are
 		 * asserted by the client
 		 */
-		status = gensec_verify_dcerpc_auth_level(gensec_security);
+		status = gensec_verify_features(gensec_security);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -490,7 +477,7 @@ static void gensec_update_subreq_done(struct tevent_req *subreq)
 	 * these are not points of negotiation, but are
 	 * asserted by the client
 	 */
-	status = gensec_verify_dcerpc_auth_level(state->gensec_security);
+	status = gensec_verify_features(state->gensec_security);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
