@@ -1571,8 +1571,8 @@ static void gensec_spnego_want_feature(struct gensec_security *gensec_security,
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 
+	gensec_security->want_features |= feature;
 	if (!spnego_state || !spnego_state->sub_sec_security) {
-		gensec_security->want_features |= feature;
 		return;
 	}
 
