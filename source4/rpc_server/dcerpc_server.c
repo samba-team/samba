@@ -1523,7 +1523,10 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			 */
 			dcesrv_call_disconnect_after(call,
 						"dcesrv_auth_request - failed");
-			return dcesrv_fault(call, DCERPC_FAULT_ACCESS_DENIED);
+			if (call->fault_code == 0) {
+				call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
+			}
+			return dcesrv_fault(call, call->fault_code);
 		}
 	}
 

@@ -472,6 +472,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	size_t hdr_size = DCERPC_REQUEST_LENGTH;
 
 	if (!dce_conn->allow_request) {
+		call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
 		return false;
 	}
 
@@ -500,6 +501,7 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 		return true;
 
 	default:
+		call->fault_code = DCERPC_NCA_S_UNSUPPORTED_AUTHN_LEVEL;
 		return false;
 	}
 
@@ -511,6 +513,9 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 					  &pkt->u.request.stub_and_verifier,
 					  &call->in_auth_info, &auth_length, false);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
+			call->fault_code = DCERPC_NCA_S_PROTO_ERROR;
+		}
 		return false;
 	}
 
@@ -569,7 +574,12 @@ bool dcesrv_auth_request(struct dcesrv_call_state *call, DATA_BLOB *full_packet)
 	}
 	pkt->u.request.stub_and_verifier.length -= call->in_auth_info.auth_pad_length;
 
-	return NT_STATUS_IS_OK(status);
+	if (!NT_STATUS_IS_OK(status)) {
+		call->fault_code = DCERPC_FAULT_SEC_PKG_ERROR;
+		return false;
+	}
+
+	return true;
 }
 
 
