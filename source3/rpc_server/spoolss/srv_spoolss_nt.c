@@ -9729,12 +9729,6 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 		goto done;
 	}
 
-	/* check to see if the keyname is valid */
-	if (!strlen(r->in.key_name)) {
-		result = WERR_INVALID_PARAM;
-		goto done;
-	}
-
 	/* Is the handle to a printer or to the server? */
 
 	if (Printer->printer_type == SPLHND_SERVER) {
@@ -9762,6 +9756,12 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 		}
 
 		result = WERR_OK;
+		goto done;
+	}
+
+	/* check to see if the keyname is valid */
+	if (!strlen(r->in.key_name)) {
+		result = WERR_INVALID_PARAM;
 		goto done;
 	}
 
