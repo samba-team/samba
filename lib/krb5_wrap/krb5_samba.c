@@ -3118,7 +3118,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			if (retval != 0) {
 				DBG_WARNING("krb5_auth_con_setuseruserkey "
 					    "failed (%s)\n",
-					    error_message(retval)));
+					    error_message(retval));
 				goto cleanup_creds;
 			}
 
@@ -3128,7 +3128,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 							KRB5_AUTH_CONTEXT_USE_SUBKEY);
 			if (retval != 0) {
 				DBG_WARNING("krb5_auth_con_setflags failed (%s)\n",
-					    error_message(retval)));
+					    error_message(retval));
 				goto cleanup_creds;
 			}
 
@@ -3160,7 +3160,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 				retval = ads_setup_auth_context(context, auth_context);
 				if (retval != 0) {
 					DBG_WARNING("ads_setup_auth_context failed (%s)\n",
-						    error_message(retval)));
+						    error_message(retval));
 					goto cleanup_creds;
 				}
 			} else {
