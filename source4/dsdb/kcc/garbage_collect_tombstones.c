@@ -202,6 +202,11 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 				const struct dsdb_attribute *attrib
 					= dsdb_attribute_by_lDAPDisplayName(schema, element->name);
 
+				/* This avoids parsing isDeleted as a link */
+				if (attrib->linkID == 0 || ((attrib->linkID & 1) == 1)) {
+					continue;
+				}
+
 				for (k = 0; k < element->num_values; k++) {
 					struct ldb_val *value = &element->values[k];
 					uint64_t whenChanged = 0;
