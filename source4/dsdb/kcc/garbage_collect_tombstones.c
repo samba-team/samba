@@ -149,7 +149,7 @@ NTSTATUS dsdb_garbage_collect_tombstones(TALLOC_CTX *mem_ctx,
 			DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 			DSDB_SEARCH_REVEAL_INTERNALS;
 		ret = dsdb_search(samdb, tmp_ctx, &res, part->dn, LDB_SCOPE_SUBTREE,
-				  attrs, flags, filter);
+				  attrs, flags, "%s", filter);
 
 		if (ret != LDB_SUCCESS) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to search for deleted objects in %s: %s",
