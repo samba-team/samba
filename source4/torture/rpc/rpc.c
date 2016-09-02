@@ -86,7 +86,7 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 				     cmdline_credentials, tctx->ev, tctx->lp_ctx);
  
 	if (NT_STATUS_IS_ERR(status)) {
-		printf("Failed to connect to remote server: %s %s\n", 
+		torture_warning(tctx, "Failed to connect to remote server: %s %s\n",
 			   dcerpc_binding_string(tctx, binding), nt_errstr(status));
 	}
 
