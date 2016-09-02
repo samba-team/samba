@@ -1124,7 +1124,7 @@ static size_t gensec_gse_sig_size(struct gensec_security *gensec_security,
 
 	gse_ctx->sig_size = gssapi_get_sig_size(gse_ctx->gssapi_context,
 					        &gse_ctx->gss_mech,
-					        gse_ctx->gss_want_flags,
+					        gse_ctx->gss_got_flags,
 					        data_size);
 	return gse_ctx->sig_size;
 }
