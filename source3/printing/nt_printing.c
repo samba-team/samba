@@ -80,6 +80,11 @@ static bool print_driver_directories_init(void)
 	char *driver_path;
 	bool ok;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	const char *dir_list[] = {
+		"W32X86/PCC",
+		"x64/PCC",
+		"color"
+	};
 
 	service = lp_servicenumber("print$");
 	if (service < 0) {
@@ -120,6 +125,28 @@ static bool print_driver_directories_init(void)
 			DEBUG(1, ("Failed to create printer driver "
 				  "architecture directory %s\n",
 				  arch_path));
+			talloc_free(mem_ctx);
+			return false;
+		}
+	}
+
+	for (i = 0; i < ARRAY_SIZE(dir_list); i++) {
+		const char *path;
+
+		path = talloc_asprintf(mem_ctx,
+				       "%s/%s",
+				       driver_path,
+				       dir_list[i]);
+		if (path == NULL) {
+			talloc_free(mem_ctx);
+			return false;
+		}
+
+		ok = directory_create_or_exist(path, 0755);
+		if (!ok) {
+			DEBUG(1, ("Failed to create printer driver "
+				  "architecture directory %s\n",
+				  path));
 			talloc_free(mem_ctx);
 			return false;
 		}
