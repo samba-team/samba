@@ -143,6 +143,7 @@ int main(int argc, const char *argv[])
 	 */
 	for (i=0; i<num_records; i++) {
 		data = trbt_lookup32(tree, i);
+		assert(data != NULL);
 		if (i < 3) {
 			assert(*data == 1);
 		} else {
