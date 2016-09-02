@@ -4413,6 +4413,7 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			argv[0]);
 		return ret;
 	}
+	db_hdr.name[sizeof(db_hdr.name)-1] = '\0';
 
 	if (db_hdr.version != DB_VERSION) {
 		fprintf(stderr,
