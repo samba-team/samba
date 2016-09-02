@@ -83,6 +83,8 @@ static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
 				 KRB5KDC_ERR_SVC_UNAVAILABLE,
 				 NULL,
 				 NULL,
+				 NULL,
+				 NULL,
 				 &enc_error);
 	if (code != 0) {
 		DBG_WARNING("Unable to form krb5 error reply\n");

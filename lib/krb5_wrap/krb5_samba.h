@@ -169,6 +169,8 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 				  krb5_error_code error_code,
 				  const char *e_text,
 				  krb5_data *e_data,
+				  const krb5_principal client,
+				  const krb5_principal server,
 				  krb5_data *enc_err);
 
 krb5_error_code smb_krb5_get_allowed_etypes(krb5_context context,

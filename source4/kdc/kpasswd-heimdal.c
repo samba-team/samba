@@ -81,6 +81,8 @@ static bool kpasswdd_make_unauth_error_reply(struct kdc_server *kdc,
 				 result_code,
 				 NULL,
 				 &k5_error_bytes,
+				 NULL,
+				 NULL,
 				 &k5_error_blob);
 	if (kret) {
 		return false;

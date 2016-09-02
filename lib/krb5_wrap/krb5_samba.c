@@ -206,6 +206,8 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 				  krb5_error_code error_code,
 				  const char *e_text,
 				  krb5_data *e_data,
+				  const krb5_principal client,
+				  const krb5_principal server,
 				  krb5_data *enc_err)
 {
 	krb5_error_code code = EINVAL;
@@ -214,27 +216,59 @@ krb5_error_code smb_krb5_mk_error(krb5_context context,
 			     error_code,
 			     e_text,
 			     e_data,
-			     NULL, /* client */
-			     NULL, /* server */
+			     client,
+			     server,
 			     NULL, /* client_time */
 			     NULL, /* client_usec */
 			     enc_err);
 #else
-	krb5_error dec_err = {
-		.error = error_code,
-	};
+	krb5_principal unspec_server = NULL;
+	krb5_error errpkt;
 
-	if (e_text != NULL) {
-		dec_err.text.length = strlen(e_text);
-		dec_err.text.data = discard_const_p(char, e_text);
+	errpkt.ctime = 0;
+	errpkt.cusec = 0;
+
+	code = krb5_us_timeofday(context,
+				 &errpkt.stime,
+				 &errpkt.susec);
+	if (code != 0) {
+		return code;
 	}
+
+	errpkt.error = error_code;
+
+	errpkt.text.length = 0;
+	if (e_text != NULL) {
+		errpkt.text.length = strlen(e_text);
+		errpkt.text.data = discard_const_p(char, e_text);
+	}
+
+	errpkt.e_data.magic = KV5M_DATA;
+	errpkt.e_data.length = 0;
+	errpkt.e_data.data = NULL;
 	if (e_data != NULL) {
-		dec_err.e_data = *e_data;
+		errpkt.e_data = *e_data;
+	}
+
+	errpkt.client = client;
+
+	if (server != NULL) {
+		errpkt.server = server;
+	} else {
+		code = smb_krb5_make_principal(context,
+					       &unspec_server,
+					       "<unspecified realm>",
+					       NULL);
+		if (code != 0) {
+			return code;
+		}
+		errpkt.server = unspec_server;
 	}
 
 	code = krb5_mk_error(context,
-			     &dec_err,
+			     &errpkt,
 			     enc_err);
+	krb5_free_principal(context, unspec_server);
 #endif
 	return code;
 }
