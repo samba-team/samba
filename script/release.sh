@@ -656,7 +656,7 @@ announcement_samba_rc() {
 		echo "================"
 		echo ""
 		echo "The uncompressed tarballs and patch files have been signed"
-		echo "using GnuPG (ID 6568B7EA).  The source code can be downloaded"
+		echo "using GnuPG (ID ${GPG_KEYID}).  The source code can be downloaded"
 		echo "from:"
 		echo ""
 		echo "        ${download_url}"
@@ -805,7 +805,7 @@ announcement_samba_stable() {
 		echo "================"
 		echo ""
 		echo "The uncompressed tarballs and patch files have been signed"
-		echo "using GnuPG (ID 6568B7EA).  The source code can be downloaded"
+		echo "using GnuPG (ID ${GPG_KEYID}).  The source code can be downloaded"
 		echo "from:"
 		echo ""
 		echo "        ${release_url}"
@@ -1012,7 +1012,7 @@ talloc | tdb | tevent | ldb)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='13084025'
+		GPG_KEYID='4793916113084025'
 	}
 
 	productbase="${product}"
@@ -1031,7 +1031,7 @@ samba-rc)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='6568B7EA'
+		GPG_KEYID='6F33915B6568B7EA'
 	}
 
 	productbase="samba"
@@ -1052,7 +1052,7 @@ samba-stable)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='6568B7EA'
+		GPG_KEYID='6F33915B6568B7EA'
 	}
 
 	productbase="samba"
@@ -1074,7 +1074,7 @@ TODO-samba-security)
 	}
 
 	test -z "${GPG_KEYID-}"  && {
-		GPG_KEYID='6568B7EA'
+		GPG_KEYID='6F33915B6568B7EA'
 	}
 
 	productbase="samba"
