@@ -170,7 +170,7 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		    struct ctdb_ltdb_header *header, TDB_DATA data)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	TDB_DATA rec;
+	TDB_DATA rec[2];
 	uint32_t hsize = sizeof(struct ctdb_ltdb_header);
 	int ret;
 	bool seqnum_suppressed = false;
@@ -196,12 +196,11 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		}
 	}
 
-	rec.dsize = sizeof(*header) + data.dsize;
-	rec.dptr = talloc_size(ctdb, rec.dsize);
-	CTDB_NO_MEMORY(ctdb, rec.dptr);
+	rec[0].dsize = hsize;
+	rec[0].dptr = (uint8_t *)header;
 
-	memcpy(rec.dptr, header, sizeof(*header));
-	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
+	rec[1].dsize = data.dsize;
+	rec[1].dptr = data.dptr;
 
 	/* Databases with seqnum updates enabled only get their seqnum
 	   changes when/if we modify the data */
@@ -218,15 +217,13 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 			free(old.dptr);
 		}
 	}
-	ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+	ret = tdb_storev(ctdb_db->ltdb->tdb, key, rec, 2, TDB_REPLACE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to store dynamic data\n"));
 	}
 	if (seqnum_suppressed) {
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
 	}
-
-	talloc_free(rec.dptr);
 
 	return ret;
 }
