@@ -57,7 +57,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 				  TDB_DATA data)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
-	TDB_DATA rec;
+	TDB_DATA rec[2];
 	uint32_t hsize = sizeof(struct ctdb_ltdb_header);
 	int ret;
 	bool seqnum_suppressed = false;
@@ -186,12 +186,11 @@ store:
 	 */
 	header->flags &= ~CTDB_REC_FLAG_AUTOMATIC;
 
-	rec.dsize = sizeof(*header) + data.dsize;
-	rec.dptr = talloc_size(ctdb, rec.dsize);
-	CTDB_NO_MEMORY(ctdb, rec.dptr);
+	rec[0].dsize = hsize;
+	rec[0].dptr = (uint8_t *)header;
 
-	memcpy(rec.dptr, header, sizeof(*header));
-	memcpy(rec.dptr + sizeof(*header), data.dptr, data.dsize);
+	rec[1].dsize = data.dsize;
+	rec[1].dptr = data.dptr;
 
 	/* Databases with seqnum updates enabled only get their seqnum
 	   changes when/if we modify the data */
@@ -215,7 +214,7 @@ store:
 			    ctdb_hash(&key)));
 
 	if (keep) {
-		ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+		ret = tdb_storev(ctdb_db->ltdb->tdb, key, rec, 2, TDB_REPLACE);
 	} else {
 		ret = tdb_delete(ctdb_db->ltdb->tdb, key);
 	}
@@ -241,8 +240,6 @@ store:
 	if (seqnum_suppressed) {
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
 	}
-
-	talloc_free(rec.dptr);
 
 	if (schedule_for_deletion) {
 		int ret2;
