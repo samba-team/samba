@@ -423,6 +423,12 @@ def build(bld):
                         includes='include',
                         deps='replace talloc tevent tdb tdb-wrap')
 
+    bld.SAMBA_SUBSYSTEM('ctdb-server-util',
+                        source=bld.SUBDIR('common',
+                                          '''sock_daemon.c'''),
+                        deps='''samba-util ctdb-util tevent-util
+                                replace talloc tevent''')
+
     bld.SAMBA_SUBSYSTEM('ctdb-ipalloc',
                         source=bld.SUBDIR('server',
                                           '''ipalloc_deterministic.c
@@ -715,6 +721,7 @@ def build(bld):
         'protocol_client_test',
         'pidfile_test',
         'run_proc_test',
+        'sock_daemon_test',
     ]
 
     for target in ctdb_unit_tests:
