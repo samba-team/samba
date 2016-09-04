@@ -236,8 +236,6 @@ class cmd_domain_provision(Command):
                 help="Set target directory"),
          Option("--ol-mmr-urls", type="string", metavar="LDAPSERVER",
                 help="List of LDAP-URLS [ ldap://<FQHN>:<PORT>/  (where <PORT> has to be different than 389!) ] separated with comma (\",\") for use with OpenLDAP-MMR (Multi-Master-Replication), e.g.: \"ldap://s4dc1:9000,ldap://s4dc2:9000\""),
-         Option("--use-xattrs", type="choice", choices=["yes", "no", "auto"], help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
-
          Option("--use-rfc2307", action="store_true", help="Use AD to store posix attributes (default = no)"),
         ]
 
@@ -253,7 +251,13 @@ class cmd_domain_provision(Command):
         ]
 
     ntvfs_options = [
-         Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
+        Option("--use-ntvfs", action="store_true", help="Use NTVFS for the fileserver (default = no)"),
+        Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
+               metavar="[yes|no|auto]",
+               help="Define if we should use the native fs capabilities or a tdb file for "
+               "storing attributes likes ntacl when --use-ntvfs is set. "
+               "auto tries to make an inteligent guess based on the user rights and system capabilities",
+               default="auto")
     ]
 
     if os.getenv('TEST_LDAP', "no") == "yes":
@@ -409,6 +413,11 @@ class cmd_domain_provision(Command):
 
         if use_xattrs == "yes":
             eadb = False
+        elif use_xattrs == "auto" and use_ntvfs == False or use_ntvfs == None:
+            eadb = False
+        elif use_ntvfs == False or use_ntvfs == None:
+            raise CommandError("--use-xattrs=no requires --use-ntvfs (not supported for production use).  "
+                               "Please re-run with --use-xattrs omitted.")
         elif use_xattrs == "auto" and not lp.get("posix:eadb"):
             if targetdir:
                 file = tempfile.NamedTemporaryFile(dir=os.path.abspath(targetdir))
@@ -1457,8 +1466,6 @@ class cmd_domain_classicupgrade(Command):
                   help="Path prefix where the new Samba 4.0 AD domain should be initialised"),
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--verbose", help="Be verbose", action="store_true"),
-        Option("--use-xattrs", type="choice", choices=["yes","no","auto"], metavar="[yes|no|auto]",
-                   help="Define if we should use the native fs capabilities or a tdb file for storing attributes likes ntacl, auto tries to make an inteligent guess based on the user rights and system capabilities", default="auto"),
         Option("--dns-backend", type="choice", metavar="NAMESERVER-BACKEND",
                choices=["SAMBA_INTERNAL", "BIND9_FLATFILE", "BIND9_DLZ", "NONE"],
                help="The DNS server backend. SAMBA_INTERNAL is the builtin name server (default), "
@@ -1470,7 +1477,13 @@ class cmd_domain_classicupgrade(Command):
 
     ntvfs_options = [
         Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true")
+               action="store_true"),
+        Option("--use-xattrs", type="choice", choices=["yes","no","auto"],
+               metavar="[yes|no|auto]",
+               help="Define if we should use the native fs capabilities or a tdb file for "
+               "storing attributes likes ntacl when --use-ntvfs is set. "
+               "auto tries to make an inteligent guess based on the user rights and system capabilities",
+               default="auto")
     ]
     if samba.is_ntvfs_fileserver_built():
         takes_options.extend(ntvfs_options)
@@ -1519,6 +1532,11 @@ class cmd_domain_classicupgrade(Command):
         eadb = True
         if use_xattrs == "yes":
             eadb = False
+        elif use_xattrs == "auto" and use_ntvfs == False or use_ntvfs == None:
+            eadb = False
+        elif use_ntvfs == False or use_ntvfs == None:
+            raise CommandError("--use-xattrs=no requires --use-ntvfs (not supported for production use).  "
+                               "Please re-run with --use-xattrs omitted.")
         elif use_xattrs == "auto" and not s3conf.get("posix:eadb"):
             if targetdir:
                 tmpfile = tempfile.NamedTemporaryFile(dir=os.path.abspath(targetdir))
