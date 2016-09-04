@@ -4,6 +4,8 @@
    handle removal of deleted objects
 
    Copyright (C) 2009 Andrew Tridgell
+   Copyright (C) 2016 Andrew Bartlett
+   Copyright (C) 2016 Catalyst.NET Ltd
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
