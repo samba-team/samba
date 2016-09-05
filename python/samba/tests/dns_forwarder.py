@@ -185,8 +185,8 @@ class TestDnsForwarding(DNSTest):
                              host, str(port), id])
         self.subprocesses.append(p)
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-        for i in xrange(30):
-            time.sleep(0.01)
+        for i in xrange(300):
+            time.sleep(0.05)
             s.connect((host, port))
             try:
                 s.send('timeout 0', 0)
