@@ -22,6 +22,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_winspool.h"
 #include "librpc/gen_ndr/ndr_winspool_c.h"
+#include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/registry/util_reg.h"
 
@@ -610,6 +611,60 @@ static bool test_AsyncGetPrinterData(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * Test if one can close a printserver handle that has been acquired via
+ * winspool_AsyncOpenPrinter with a spoolss_ClosePrinter operation.
+ */
+
+static bool test_OpenPrinter(struct torture_context *tctx,
+			     void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	const char *printer_name;
+	struct policy_handle handle;
+	struct dcerpc_pipe *s;
+	struct dcerpc_binding *binding;
+	struct spoolss_ClosePrinter r;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_binding(tctx, &binding),
+		"failed to get binding");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_set_transport(binding, NCACN_NP),
+		"failed to set ncacn_np transport");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_binding_set_object(binding, GUID_zero()),
+		"failed to set object uuid to zero");
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection_with_binding(tctx, binding, &s, &ndr_table_spoolss),
+		"failed to connect to spoolss");
+
+	printer_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	torture_assert(tctx,
+		test_AsyncOpenPrinter_byprinter(tctx, ctx, p, printer_name, &handle),
+		"failed to open printserver via winspool");
+
+
+	r.in.handle = &handle;
+	r.out.handle = &handle;
+
+	torture_assert_ntstatus_equal(tctx,
+		dcerpc_spoolss_ClosePrinter_r(s->binding_handle, tctx, &r),
+		NT_STATUS_RPC_SS_CONTEXT_MISMATCH,
+		"ClosePrinter failed");
+
+	talloc_free(s);
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "iremotewinspool");
@@ -626,6 +681,14 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "AsyncUploadPrinterDriverPackage", test_AsyncUploadPrinterDriverPackage);
 	torture_tcase_add_simple_test(tcase, "AsyncEnumPrinters", test_AsyncEnumPrinters);
 	torture_tcase_add_simple_test(tcase, "AsyncGetPrinterData", test_AsyncGetPrinterData);
+
+	tcase = torture_suite_add_tcase(suite, "handles");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_iremotewinspool_setup,
+				  torture_rpc_iremotewinspool_teardown);
+
+	torture_tcase_add_simple_test(tcase, "OpenPrinter", test_OpenPrinter);
 
 	return suite;
 }
