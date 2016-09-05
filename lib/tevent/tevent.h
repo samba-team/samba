@@ -465,11 +465,11 @@ void tevent_set_abort_fn(void (*abort_fn)(const char *reason));
 /* bits for file descriptor event flags */
 
 /**
- * Monitor a file descriptor for write availability
+ * Monitor a file descriptor for data to be read
  */
 #define TEVENT_FD_READ 1
 /**
- * Monitor a file descriptor for data to be read
+ * Monitor a file descriptor for writeability
  */
 #define TEVENT_FD_WRITE 2
 
