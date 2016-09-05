@@ -51,6 +51,18 @@ testit "testjoin" $VALGRIND $net_tool ads testjoin -kP || failed=`expr $failed +
 export SOCKET_WRAPPER_PCAP_FILE=
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
+#
+# Older versions of tshark do not support -Y option,
+# They use -R which cannot be used with recent versions...
+#
+if ! tshark -r $pcap_file  -nVY "kerberos" > /dev/null 2>&1 ; then
+    subunit_start_test "client encryption types"
+    subunit_skip_test "client encryption types" <<EOF
+Skipping tests - old version of tshark detected
+EOF
+    exit 0
+fi
+
 actual_types="`tshark -r $pcap_file  -nVY "kerberos" | \
 	sed -rn -e 's/[[:space:]]*ENCTYPE:.*\(([^\)]*)\)$/\1/p' \
 	    -e 's/[[:space:]]*Encryption type:.*\(([^\)]*)\)$/\1/p' | \
