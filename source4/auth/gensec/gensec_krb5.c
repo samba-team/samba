@@ -1021,11 +1021,20 @@ static bool gensec_krb5_have_feature(struct gensec_security *gensec_security,
 	if (feature & GENSEC_FEATURE_SESSION_KEY) {
 		return true;
 	} 
-	if (!gensec_krb5_state->gssapi && 
-	    (feature & GENSEC_FEATURE_SEAL)) {
+	if (gensec_krb5_state->gssapi) {
+		return false;
+	}
+
+	/*
+	 * krb5_mk_priv provides SIGN and SEAL
+	 */
+	if (feature & GENSEC_FEATURE_SIGN) {
 		return true;
-	} 
-	
+	}
+	if (feature & GENSEC_FEATURE_SEAL) {
+		return true;
+	}
+
 	return false;
 }
 
