@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "rpc_common.h"
 #include "lib/util/bitmap.h"
+#include "auth/gensec/gensec.h"
 
 /* we need to be able to get/set the fragment length without doing a full
    decode */
@@ -356,6 +357,146 @@ NTSTATUS dcerpc_verify_ncacn_packet_header(const struct ncacn_packet *pkt,
 	if (pkt->drep[3] != 0) {
 		return NT_STATUS_RPC_PROTOCOL_ERROR;
 	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
+				    struct gensec_security *gensec,
+				    TALLOC_CTX *mem_ctx,
+				    enum dcerpc_pkt_type ptype,
+				    uint8_t required_flags,
+				    uint8_t optional_flags,
+				    uint8_t payload_offset,
+				    DATA_BLOB *payload_and_verifier,
+				    DATA_BLOB *raw_packet,
+				    const struct ncacn_packet *pkt)
+{
+	NTSTATUS status;
+	struct dcerpc_auth auth;
+	uint32_t auth_length;
+
+	if (auth_state == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = dcerpc_verify_ncacn_packet_header(pkt, ptype,
+					payload_and_verifier->length,
+					required_flags, optional_flags);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	switch (auth_state->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		if (pkt->auth_length != 0) {
+			break;
+		}
+		return NT_STATUS_OK;
+	case DCERPC_AUTH_LEVEL_NONE:
+		if (pkt->auth_length != 0) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		return NT_STATUS_OK;
+
+	default:
+		return NT_STATUS_RPC_UNSUPPORTED_AUTHN_LEVEL;
+	}
+
+	if (pkt->auth_length == 0) {
+		return NT_STATUS_RPC_PROTOCOL_ERROR;
+	}
+
+	if (gensec == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = dcerpc_pull_auth_trailer(pkt, mem_ctx,
+					  payload_and_verifier,
+					  &auth, &auth_length, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (payload_and_verifier->length < auth_length) {
+		/*
+		 * should be checked in dcerpc_pull_auth_trailer()
+		 */
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	payload_and_verifier->length -= auth_length;
+
+	if (payload_and_verifier->length < auth.auth_pad_length) {
+		/*
+		 * should be checked in dcerpc_pull_auth_trailer()
+		 */
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (auth.auth_type != auth_state->auth_type) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (auth.auth_level != auth_state->auth_level) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (auth.auth_context_id != auth_state->auth_context_id) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/* check signature or unseal the packet */
+	switch (auth_state->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = gensec_unseal_packet(gensec,
+					      raw_packet->data + payload_offset,
+					      payload_and_verifier->length,
+					      raw_packet->data,
+					      raw_packet->length -
+					      auth.credentials.length,
+					      &auth.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_RPC_SEC_PKG_ERROR;
+		}
+		memcpy(payload_and_verifier->data,
+		       raw_packet->data + payload_offset,
+		       payload_and_verifier->length);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
+		status = gensec_check_packet(gensec,
+					     payload_and_verifier->data,
+					     payload_and_verifier->length,
+					     raw_packet->data,
+					     raw_packet->length -
+					     auth.credentials.length,
+					     &auth.credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_RPC_SEC_PKG_ERROR;
+		}
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		/* for now we ignore possible signatures here */
+		break;
+
+	default:
+		return NT_STATUS_RPC_UNSUPPORTED_AUTHN_LEVEL;
+	}
+
+	/*
+	 * remove the indicated amount of padding
+	 *
+	 * A possible overflow is checked above.
+	 */
+	payload_and_verifier->length -= auth.auth_pad_length;
 
 	return NT_STATUS_OK;
 }

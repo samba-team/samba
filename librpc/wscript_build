@@ -715,7 +715,7 @@ bld.SAMBA_LIBRARY('ndr',
 
 bld.SAMBA_LIBRARY('dcerpc-binding',
     source='rpc/dcerpc_error.c rpc/binding.c rpc/dcerpc_util.c rpc/binding_handle.c',
-    deps='ndr tevent NDR_DCERPC LIBTSOCKET tevent-util',
+    deps='ndr tevent NDR_DCERPC LIBTSOCKET tevent-util gensec',
     pc_files=[],
     public_headers='rpc/rpc_common.h',
     vnum='0.0.1')

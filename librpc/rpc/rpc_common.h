@@ -36,6 +36,7 @@ struct epm_floor;
 struct epm_tower;
 struct tevent_context;
 struct tstream_context;
+struct gensec_security;
 
 enum dcerpc_transport_t {
 	NCA_UNKNOWN, NCACN_NP, NCACN_IP_TCP, NCACN_IP_UDP, NCACN_VNS_IPC, 
@@ -202,6 +203,16 @@ NTSTATUS dcerpc_verify_ncacn_packet_header(const struct ncacn_packet *pkt,
 					   size_t max_auth_info,
 					   uint8_t required_flags,
 					   uint8_t optional_flags);
+NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
+				    struct gensec_security *gensec,
+				    TALLOC_CTX *mem_ctx,
+				    enum dcerpc_pkt_type ptype,
+				    uint8_t required_flags,
+				    uint8_t optional_flags,
+				    uint8_t payload_offset,
+				    DATA_BLOB *payload_and_verifier,
+				    DATA_BLOB *raw_packet,
+				    const struct ncacn_packet *pkt);
 struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct tstream_context *stream);
