@@ -66,8 +66,6 @@ extern const char *panic_action;
 /**
  * Write backtrace to debug log
  */
-_PUBLIC_ void call_backtrace(void);
-
 _PUBLIC_ void dump_core_setup(const char *progname, const char *logfile);
 
 /**
