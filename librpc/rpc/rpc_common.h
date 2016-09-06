@@ -213,6 +213,14 @@ NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
 				    DATA_BLOB *payload_and_verifier,
 				    DATA_BLOB *raw_packet,
 				    const struct ncacn_packet *pkt);
+NTSTATUS dcerpc_ncacn_push_pkt_auth(const struct dcerpc_auth *auth_state,
+				    struct gensec_security *gensec,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *raw_packet,
+				    size_t sig_size,
+				    uint8_t payload_offset,
+				    const DATA_BLOB *payload,
+				    const struct ncacn_packet *pkt);
 struct tevent_req *dcerpc_read_ncacn_packet_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct tstream_context *stream);

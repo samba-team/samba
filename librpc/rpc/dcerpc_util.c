@@ -501,6 +501,208 @@ NTSTATUS dcerpc_ncacn_pull_pkt_auth(const struct dcerpc_auth *auth_state,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcerpc_ncacn_push_pkt_auth(const struct dcerpc_auth *auth_state,
+				    struct gensec_security *gensec,
+				    TALLOC_CTX *mem_ctx,
+				    DATA_BLOB *raw_packet,
+				    size_t sig_size,
+				    uint8_t payload_offset,
+				    const DATA_BLOB *payload,
+				    const struct ncacn_packet *pkt)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	struct ndr_push *ndr = NULL;
+	uint32_t payload_length;
+	uint32_t whole_length;
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB sig = data_blob_null;
+	struct dcerpc_auth _out_auth_info;
+	struct dcerpc_auth *out_auth_info = NULL;
+
+	*raw_packet = data_blob_null;
+
+	if (auth_state == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	switch (auth_state->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
+		if (sig_size == 0) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		if (gensec == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		_out_auth_info = (struct dcerpc_auth) {
+			.auth_type = auth_state->auth_type,
+			.auth_level = auth_state->auth_level,
+			.auth_context_id = auth_state->auth_context_id,
+		};
+		out_auth_info = &_out_auth_info;
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+		/*
+		 * TODO: let the gensec mech decide if it wants to generate a
+		 *       signature that might be needed for schannel...
+		 */
+		if (sig_size != 0) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		if (gensec == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		break;
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		if (sig_size != 0) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		break;
+
+	default:
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	ndr = ndr_push_init_ctx(frame);
+	if (ndr == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(pkt->drep[0] & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
+	if (pkt->pfc_flags & DCERPC_PFC_FLAG_OBJECT_UUID) {
+		ndr->flags |= LIBNDR_FLAG_OBJECT_PRESENT;
+	}
+
+	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(frame);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (out_auth_info != NULL) {
+		/*
+		 * pad to 16 byte multiple in the payload portion of the
+		 * packet. This matches what w2k3 does. Note that we can't use
+		 * ndr_push_align() as that is relative to the start of the
+		 * whole packet, whereas w2k8 wants it relative to the start
+		 * of the stub.
+		 */
+		out_auth_info->auth_pad_length =
+			DCERPC_AUTH_PAD_LENGTH(payload->length);
+		ndr_err = ndr_push_zero(ndr, out_auth_info->auth_pad_length);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			TALLOC_FREE(frame);
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+
+		payload_length = payload->length +
+			out_auth_info->auth_pad_length;
+
+		ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS,
+					       out_auth_info);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			TALLOC_FREE(frame);
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+
+		whole_length = ndr->offset;
+
+		ndr_err = ndr_push_zero(ndr, sig_size);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			TALLOC_FREE(frame);
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+	} else {
+		payload_length = payload->length;
+		whole_length = ndr->offset;
+	}
+
+	/* extract the whole packet as a blob */
+	blob = ndr_push_blob(ndr);
+
+	/*
+	 * Setup the frag and auth length in the packet buffer.
+	 * This is needed if the GENSEC mech does AEAD signing
+	 * of the packet headers. The signature itself will be
+	 * appended later.
+	 */
+	dcerpc_set_frag_length(&blob, blob.length);
+	dcerpc_set_auth_length(&blob, sig_size);
+
+	/* sign or seal the packet */
+	switch (auth_state->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = gensec_seal_packet(gensec,
+					    frame,
+					    blob.data + payload_offset,
+					    payload_length,
+					    blob.data,
+					    whole_length,
+					    &sig);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
+		status = gensec_sign_packet(gensec,
+					    frame,
+					    blob.data + payload_offset,
+					    payload_length,
+					    blob.data,
+					    whole_length,
+					    &sig);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(frame);
+			return status;
+		}
+		break;
+
+	case DCERPC_AUTH_LEVEL_CONNECT:
+	case DCERPC_AUTH_LEVEL_NONE:
+		break;
+
+	default:
+		TALLOC_FREE(frame);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (sig.length != sig_size) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_RPC_SEC_PKG_ERROR;
+	}
+
+	if (sig_size != 0) {
+		memcpy(blob.data + whole_length, sig.data, sig_size);
+	}
+
+	*raw_packet = blob;
+	talloc_steal(mem_ctx, raw_packet->data);
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
 struct dcerpc_read_ncacn_packet_state {
 #if 0
 	struct {
