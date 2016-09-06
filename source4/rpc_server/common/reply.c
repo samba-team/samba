@@ -244,8 +244,6 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		pkt.u.response.alloc_hint = stub.length;
 		pkt.u.response.context_id = call->pkt.u.request.context_id;
 		pkt.u.response.cancel_count = 0;
-		pkt.u.response._pad.data = call->pkt.u.request._pad.data;
-		pkt.u.response._pad.length = call->pkt.u.request._pad.length;
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
 
