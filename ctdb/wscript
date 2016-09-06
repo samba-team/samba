@@ -829,6 +829,7 @@ def build(bld):
     test_subdirs = [
         'complex',
         'cunit',
+        'eventd',
         'events.d',
         'eventscripts',
         'onnode',
