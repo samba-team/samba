@@ -1057,6 +1057,10 @@ out_free:
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
 	}
+	if (bflags & DCERPC_PACKET) {
+		pipe_default_auth_level = DCERPC_AUTH_LEVEL_PACKET;
+		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
+	}
 	if (bflags & DCERPC_SIGN) {
 		pipe_default_auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
 		pipe_default_auth_type = DCERPC_AUTH_TYPE_NTLMSSP;
