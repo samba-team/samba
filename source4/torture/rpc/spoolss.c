@@ -9137,6 +9137,63 @@ static bool test_print_job_enum(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printer_log_jobinfo(struct torture_context *tctx,
+				     void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct spoolss_BranchOfficeJobDataContainer info;
+	int i;
+
+	struct spoolss_LogJobInfoForBranchOffice r;
+
+	torture_comment(tctx, "Testing LogJobInfoForBranchOffice\n");
+
+	info.cJobDataEntries = 0;
+	info.JobData = NULL;
+
+	r.in.hPrinter = &t->handle;
+	r.in.pBranchOfficeJobDataContainer = &info;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_LogJobInfoForBranchOffice_r(b, tctx, &r),
+		"LogJobInfoForBranchOffice failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAMETER,
+		"LogJobInfoForBranchOffice failed");
+
+	info.cJobDataEntries = 1;
+	info.JobData = talloc_zero_array(tctx, struct spoolss_BranchOfficeJobData, info.cJobDataEntries);
+
+	info.JobData[0].eEventType = kLogOfflineFileFull;
+	info.JobData[0].JobId = 42;
+	info.JobData[0].JobInfo.LogOfflineFileFull.pMachineName = talloc_strdup(tctx, "mthelena");
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_LogJobInfoForBranchOffice_r(b, tctx, &r),
+		"LogJobInfoForBranchOffice failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_OK,
+		"LogJobInfoForBranchOffice failed");
+
+	info.cJobDataEntries = 42;
+	info.JobData = talloc_zero_array(tctx, struct spoolss_BranchOfficeJobData, info.cJobDataEntries);
+
+	for (i=0; i < info.cJobDataEntries; i++) {
+		info.JobData[i].eEventType = kLogOfflineFileFull;
+		info.JobData[i].JobId = i;
+		info.JobData[i].JobInfo.LogOfflineFileFull.pMachineName = talloc_asprintf(tctx, "torture_%d", i);
+	}
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_LogJobInfoForBranchOffice_r(b, tctx, &r),
+		"LogJobInfoForBranchOffice failed");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_OK,
+		"LogJobInfoForBranchOffice failed");
+
+	return true;
+}
+
 void torture_tcase_printer(struct torture_tcase *tcase)
 {
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter_wrap);
@@ -9165,6 +9222,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 	torture_tcase_add_simple_test(tcase, "publish_toggle",
 				      test_printer_publish_toggle);
 	torture_tcase_add_simple_test(tcase, "print_job_enum", test_print_job_enum);
+	torture_tcase_add_simple_test(tcase, "log_jobinfo", test_printer_log_jobinfo);
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
