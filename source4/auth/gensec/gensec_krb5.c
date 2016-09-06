@@ -339,12 +339,16 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 						    ccache_container->ccache,
 						    &this_cred.client);
 			if (ret != 0) {
+				krb5_free_principal(gensec_krb5_state->smb_krb5_context->krb5_context,
+						    target_principal);
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
 			ret = krb5_copy_principal(gensec_krb5_state->smb_krb5_context->krb5_context,
 						  target_principal,
 						  &this_cred.server);
+			krb5_free_principal(gensec_krb5_state->smb_krb5_context->krb5_context,
+					    target_principal);
 			if (ret != 0) {
 				krb5_free_cred_contents(gensec_krb5_state->smb_krb5_context->krb5_context,
 							&this_cred);
@@ -369,9 +373,6 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 						   in_data_p,
 						   cred,
 						   &gensec_krb5_state->enc_ticket);
-
-			krb5_free_principal(gensec_krb5_state->smb_krb5_context->krb5_context, 
-					    target_principal);
 		}
 	} else {
 		ret = krb5_mk_req(gensec_krb5_state->smb_krb5_context->krb5_context, 
