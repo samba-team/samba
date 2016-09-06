@@ -2339,7 +2339,7 @@ static NTSTATUS samdb_set_password_internal(struct ldb_context *ldb, TALLOC_CTX 
 		status = NT_STATUS_ACCESS_DENIED;
 	} else if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Failed to set password on %s: %s\n",
-			  ldb_dn_get_linearized(msg->dn),
+			  ldb_dn_get_linearized(user_dn),
 			  ldb_errstring(ldb)));
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
