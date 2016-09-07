@@ -72,60 +72,6 @@ static bool kpasswdd_make_unauth_error_reply(struct kdc_server *kdc,
 	return true;
 }
 
-static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
-					TALLOC_CTX *mem_ctx,
-					NTSTATUS status,
-					enum samPwdChangeReason reject_reason,
-					struct samr_DomInfo1 *dominfo,
-					DATA_BLOB *error_blob)
-{
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		return kpasswd_make_error_reply(mem_ctx,
-						KRB5_KPASSWD_ACCESSDENIED,
-						"No such user when changing password",
-						error_blob);
-	}
-	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		return kpasswd_make_error_reply(mem_ctx,
-						KRB5_KPASSWD_ACCESSDENIED,
-						"Not permitted to change password",
-						error_blob);
-	}
-	if (dominfo && NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		const char *reject_string;
-		switch (reject_reason) {
-		case SAM_PWD_CHANGE_PASSWORD_TOO_SHORT:
-			reject_string = talloc_asprintf(mem_ctx, "Password too short, password must be at least %d characters long.",
-							dominfo->min_password_length);
-			break;
-		case SAM_PWD_CHANGE_NOT_COMPLEX:
-			reject_string = "Password does not meet complexity requirements";
-			break;
-		case SAM_PWD_CHANGE_PWD_IN_HISTORY:
-			reject_string = talloc_asprintf(mem_ctx, "Password is already in password history.  New password must not match any of your %d previous passwords.",
-							dominfo->password_history_length);
-			break;
-		default:
-			reject_string = "Password change rejected, password changes may not be permitted on this account, or the minimum password age may not have elapsed.";
-			break;
-		}
-		return kpasswd_make_error_reply(mem_ctx,
-						KRB5_KPASSWD_SOFTERROR,
-						reject_string,
-						error_blob);
-	}
-	if (!NT_STATUS_IS_OK(status)) {
-		return kpasswd_make_error_reply(mem_ctx,
-						 KRB5_KPASSWD_HARDERROR,
-						 talloc_asprintf(mem_ctx, "failed to set password: %s", nt_errstr(status)),
-						 error_blob);
-
-	}
-	return kpasswd_make_error_reply(mem_ctx, KRB5_KPASSWD_SUCCESS,
-					"Password changed",
-					error_blob);
-}
-
 /*
    A user password change
 
@@ -161,8 +107,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 						 reply);
 	}
 
-	return kpasswd_make_pwchange_reply(kdc,
-					   mem_ctx,
+	return kpasswd_make_pwchange_reply(mem_ctx,
 					   result,
 					   reject_reason,
 					   dominfo,
@@ -321,7 +266,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		if (ret != LDB_SUCCESS) {
 			free(set_password_on_princ);
 			status = NT_STATUS_TRANSACTION_ABORTED;
-			return kpasswd_make_pwchange_reply(kdc, mem_ctx,
+			return kpasswd_make_pwchange_reply(mem_ctx,
 							   status,
 							   SAM_PWD_CHANGE_NO_ERROR,
 							   NULL,
@@ -340,7 +285,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		free(set_password_on_princ);
 		if (!NT_STATUS_IS_OK(status)) {
 			ldb_transaction_cancel(samdb);
-			return kpasswd_make_pwchange_reply(kdc, mem_ctx,
+			return kpasswd_make_pwchange_reply(mem_ctx,
 							   status,
 							   SAM_PWD_CHANGE_NO_ERROR,
 							   NULL,
@@ -367,7 +312,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		} else {
 			ldb_transaction_cancel(samdb);
 		}
-		return kpasswd_make_pwchange_reply(kdc, mem_ctx,
+		return kpasswd_make_pwchange_reply(mem_ctx,
 						   status,
 						   reject_reason,
 						   dominfo,

@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include "librpc/gen_ndr/samr.h"
 #include "kdc/kpasswd-helper.h"
 
 bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
@@ -71,4 +72,87 @@ bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
 	talloc_free(s);
 
 	return true;
+}
+
+bool kpasswd_make_pwchange_reply(TALLOC_CTX *mem_ctx,
+				 NTSTATUS status,
+				 enum samPwdChangeReason reject_reason,
+				 struct samr_DomInfo1 *dominfo,
+				 DATA_BLOB *error_blob)
+{
+	const char *reject_string = NULL;
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_ACCESSDENIED,
+						"No such user when changing password",
+						error_blob);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_ACCESSDENIED,
+						"Not permitted to change password",
+						error_blob);
+	}
+	if (dominfo != NULL &&
+	    NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+		switch (reject_reason) {
+		case SAM_PWD_CHANGE_PASSWORD_TOO_SHORT:
+			reject_string =
+				talloc_asprintf(mem_ctx,
+						"Password too short, password "
+						"must be at least %d characters "
+						"long.",
+						dominfo->min_password_length);
+			if (reject_string == NULL) {
+				reject_string = "Password too short";
+			}
+			break;
+		case SAM_PWD_CHANGE_NOT_COMPLEX:
+			reject_string = "Password does not meet complexity "
+					"requirements";
+			break;
+		case SAM_PWD_CHANGE_PWD_IN_HISTORY:
+			reject_string =
+				talloc_asprintf(mem_ctx,
+						"Password is already in password "
+						"history. New password must not "
+						"match any of your %d previous "
+						"passwords.",
+						dominfo->password_history_length);
+			if (reject_string == NULL) {
+				reject_string = "Password is already in password "
+						"history";
+			}
+			break;
+		default:
+			reject_string = "Password change rejected, password "
+					"changes may not be permitted on this "
+					"account, or the minimum password age "
+					"may not have elapsed.";
+			break;
+		}
+
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_SOFTERROR,
+						reject_string,
+						error_blob);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		reject_string = talloc_asprintf(mem_ctx,
+						"Failed to set password: %s",
+						nt_errstr(status));
+		if (reject_string == NULL) {
+			reject_string = "Failed to set password";
+		}
+		return kpasswd_make_error_reply(mem_ctx,
+						KRB5_KPASSWD_HARDERROR,
+						reject_string,
+						error_blob);
+	}
+
+	return kpasswd_make_error_reply(mem_ctx,
+					KRB5_KPASSWD_SUCCESS,
+					"Password changed",
+					error_blob);
 }

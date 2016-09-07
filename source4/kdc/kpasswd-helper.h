@@ -27,4 +27,10 @@ bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
 			      const char *error_string,
 			      DATA_BLOB *error_data);
 
+bool kpasswd_make_pwchange_reply(TALLOC_CTX *mem_ctx,
+				 NTSTATUS status,
+				 enum samPwdChangeReason reject_reason,
+				 struct samr_DomInfo1 *dominfo,
+				 DATA_BLOB *error_blob);
+
 #endif /* _KPASSWD_HELPER_H */
