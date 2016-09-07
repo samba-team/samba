@@ -357,6 +357,7 @@ void tevent_common_threaded_activate_immediate(struct tevent_context *ev);
 
 bool tevent_common_have_events(struct tevent_context *ev);
 int tevent_common_wakeup_init(struct tevent_context *ev);
+int tevent_common_wakeup_fd(int fd);
 int tevent_common_wakeup(struct tevent_context *ev);
 
 struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,

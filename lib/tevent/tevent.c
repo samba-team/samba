@@ -902,25 +902,30 @@ int tevent_common_wakeup_init(struct tevent_context *ev)
 	return 0;
 }
 
-int tevent_common_wakeup(struct tevent_context *ev)
+int tevent_common_wakeup_fd(int fd)
 {
 	ssize_t ret;
-
-	if (ev->wakeup_fde == NULL) {
-		return ENOTCONN;
-	}
 
 	do {
 #ifdef HAVE_EVENTFD
 		uint64_t val = 1;
-		ret = write(ev->wakeup_fd, &val, sizeof(val));
+		ret = write(fd, &val, sizeof(val));
 #else
 		char c = '\0';
-		ret = write(ev->wakeup_fd, &c, 1);
+		ret = write(fd, &c, 1);
 #endif
 	} while ((ret == -1) && (errno == EINTR));
 
 	return 0;
+}
+
+int tevent_common_wakeup(struct tevent_context *ev)
+{
+	if (ev->wakeup_fde == NULL) {
+		return ENOTCONN;
+	}
+
+	return tevent_common_wakeup_fd(ev->wakeup_fd);
 }
 
 static void tevent_common_wakeup_fini(struct tevent_context *ev)
