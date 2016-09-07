@@ -33,6 +33,7 @@
 #include "kdc/kdc-proxy.h"
 #include "kdc/kdc-glue.h"
 #include "kdc/pac-glue.h"
+#include "kdc/kpasswd-service.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/session.h"
 #include "libds/common/roles.h"
@@ -151,7 +152,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 			if (kpasswd_port) {
 				status = kdc_add_socket(kdc, model_ops,
 							"kpasswd", wcard[i], kpasswd_port,
-							kpasswdd_process, false);
+							kpasswd_process, false);
 				if (NT_STATUS_IS_OK(status)) {
 					num_binds++;
 				}
@@ -177,7 +178,7 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 		if (kpasswd_port) {
 			status = kdc_add_socket(kdc, model_ops,
 						"kpasswd", address, kpasswd_port,
-						kpasswdd_process, done_wildcard);
+						kpasswd_process, done_wildcard);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}
@@ -408,6 +409,14 @@ static void kdc_task_init(struct task_server *task)
 	ret = krb5_kt_register(kdc->smb_krb5_context->krb5_context, &hdb_kt_ops);
 	if(ret) {
 		task_server_terminate(task, "kdc: failed to register keytab plugin", true);
+		return;
+	}
+
+	kdc->keytab_name = talloc_asprintf(kdc, "HDB:samba4&%p", kdc->base_ctx);
+	if (kdc->keytab_name == NULL) {
+		task_server_terminate(task,
+				      "kdc: Failed to set keytab name",
+				      true);
 		return;
 	}
 
