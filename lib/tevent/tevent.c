@@ -200,6 +200,16 @@ static void tevent_atfork_prepare(void)
 	}
 
 	for (ev = tevent_contexts; ev != NULL; ev = ev->next) {
+		struct tevent_threaded_context *tctx;
+
+		for (tctx = ev->threaded_contexts; tctx != NULL;
+		     tctx = tctx->next) {
+			ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
+			if (ret != 0) {
+				tevent_abort(ev, "pthread_mutex_lock failed");
+			}
+		}
+
 		ret = pthread_mutex_lock(&ev->scheduled_mutex);
 		if (ret != 0) {
 			tevent_abort(ev, "pthread_mutex_lock failed");
@@ -214,9 +224,20 @@ static void tevent_atfork_parent(void)
 
 	for (ev = DLIST_TAIL(tevent_contexts); ev != NULL;
 	     ev = DLIST_PREV(ev)) {
+		struct tevent_threaded_context *tctx;
+
 		ret = pthread_mutex_unlock(&ev->scheduled_mutex);
 		if (ret != 0) {
 			tevent_abort(ev, "pthread_mutex_unlock failed");
+		}
+
+		for (tctx = DLIST_TAIL(ev->threaded_contexts); tctx != NULL;
+		     tctx = DLIST_PREV(tctx)) {
+			ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
+			if (ret != 0) {
+				tevent_abort(
+					ev, "pthread_mutex_unlock failed");
+			}
 		}
 	}
 
@@ -235,9 +256,15 @@ static void tevent_atfork_child(void)
 	     ev = DLIST_PREV(ev)) {
 		struct tevent_threaded_context *tctx;
 
-		for (tctx = ev->threaded_contexts; tctx != NULL;
-		     tctx = tctx->next) {
+		for (tctx = DLIST_TAIL(ev->threaded_contexts); tctx != NULL;
+		     tctx = DLIST_PREV(tctx)) {
 			tctx->event_ctx = NULL;
+
+			ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
+			if (ret != 0) {
+				tevent_abort(
+					ev, "pthread_mutex_unlock failed");
+			}
 		}
 
 		ev->threaded_contexts = NULL;
@@ -289,18 +316,32 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	if (ret != 0) {
 		abort();
 	}
-#endif
 
-	if (ev->threaded_contexts != NULL) {
+	while (ev->threaded_contexts != NULL) {
+		struct tevent_threaded_context *tctx = ev->threaded_contexts;
+
+		ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
+		if (ret != 0) {
+			abort();
+		}
+
 		/*
-		 * Threaded contexts are indicators that threads are
-		 * about to send us immediates via
-		 * tevent_threaded_schedule_immediate. The caller
-		 * needs to make sure that the tevent context lives
-		 * long enough to receive immediates from all threads.
+		 * Indicate to the thread that the tevent_context is
+		 * gone. The counterpart of this is in
+		 * _tevent_threaded_schedule_immediate, there we read
+		 * this under the threaded_context's mutex.
 		 */
-		tevent_abort(ev, "threaded contexts exist");
+
+		tctx->event_ctx = NULL;
+
+		ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
+		if (ret != 0) {
+			abort();
+		}
+
+		DLIST_REMOVE(ev->threaded_contexts, tctx);
 	}
+#endif
 
 	tevent_common_wakeup_fini(ev);
 

@@ -375,9 +375,17 @@ void tevent_thread_proxy_schedule(struct tevent_thread_proxy *tp,
 static int tevent_threaded_context_destructor(
 	struct tevent_threaded_context *tctx)
 {
+	int ret;
+
 	if (tctx->event_ctx != NULL) {
 		DLIST_REMOVE(tctx->event_ctx->threaded_contexts, tctx);
 	}
+
+	ret = pthread_mutex_destroy(&tctx->event_ctx_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
 	return 0;
 }
 
@@ -399,6 +407,13 @@ struct tevent_threaded_context *tevent_threaded_context_create(
 		return NULL;
 	}
 	tctx->event_ctx = ev;
+	tctx->wakeup_fd = ev->wakeup_fd;
+
+	ret = pthread_mutex_init(&tctx->event_ctx_mutex, NULL);
+	if (ret != 0) {
+		TALLOC_FREE(tctx);
+		return NULL;
+	}
 
 	DLIST_ADD(ev->threaded_contexts, tctx);
 	talloc_set_destructor(tctx, tevent_threaded_context_destructor);
@@ -418,8 +433,27 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 					 const char *location)
 {
 #ifdef HAVE_PTHREAD
-	struct tevent_context *ev = tctx->event_ctx;
+	struct tevent_context *ev;
 	int ret;
+
+	ret = pthread_mutex_lock(&tctx->event_ctx_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+	ev = tctx->event_ctx;
+
+	ret = pthread_mutex_unlock(&tctx->event_ctx_mutex);
+	if (ret != 0) {
+		abort();
+	}
+
+	if (ev == NULL) {
+		/*
+		 * Our event context is already gone.
+		 */
+		return;
+	}
 
 	if ((im->event_ctx != NULL) || (handler == NULL)) {
 		abort();
@@ -455,7 +489,7 @@ void _tevent_threaded_schedule_immediate(struct tevent_threaded_context *tctx,
 	 * than a noncontended one. So I'd opt for the lower footprint
 	 * initially. Maybe we have to change that later.
 	 */
-	tevent_common_wakeup(ev);
+	tevent_common_wakeup_fd(tctx->wakeup_fd);
 #else
 	/*
 	 * tevent_threaded_context_create() returned NULL with ENOSYS...
