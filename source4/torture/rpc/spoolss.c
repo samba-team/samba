@@ -3317,7 +3317,7 @@ static bool test_JobPropertiesEnum(struct torture_context *tctx,
 {
 	struct spoolss_EnumJobNamedProperties r;
 	uint32_t pcProperties = 0;
-	struct RPC_PrintNamedProperty *ppProperties = NULL;
+	struct spoolss_PrintNamedProperty *ppProperties = NULL;
 
 	r.in.hPrinter = handle;
 	r.in.JobId = job_id;
@@ -3339,7 +3339,7 @@ static bool test_JobPropertySet(struct torture_context *tctx,
 				struct dcerpc_binding_handle *b,
 				struct policy_handle *handle,
 				uint32_t job_id,
-				struct RPC_PrintNamedProperty *property)
+				struct spoolss_PrintNamedProperty *property)
 {
 	struct spoolss_SetJobNamedProperty r;
 
@@ -3365,7 +3365,7 @@ static bool test_JobPropertyGetValue(struct torture_context *tctx,
 				     struct policy_handle *handle,
 				     uint32_t job_id,
 				     const char *property_name,
-				     struct RPC_PrintPropertyValue *value)
+				     struct spoolss_PrintPropertyValue *value)
 {
 	struct spoolss_GetJobNamedPropertyValue r;
 
@@ -3663,8 +3663,8 @@ static bool test_DoPrintTest_extended(struct torture_context *tctx,
 }
 
 static bool test_JobPrintProperties_equal(struct torture_context *tctx,
-					  struct RPC_PrintPropertyValue *got,
-					  struct RPC_PrintNamedProperty *exp)
+					  struct spoolss_PrintPropertyValue *got,
+					  struct spoolss_PrintNamedProperty *exp)
 {
 	torture_assert_int_equal(tctx,
 				 got->ePropertyType,
@@ -3719,14 +3719,14 @@ static bool test_JobPrintProperties(struct torture_context *tctx,
 				    struct policy_handle *handle,
 				    uint32_t job_id)
 {
-	struct RPC_PrintNamedProperty in;
-	struct RPC_PrintPropertyValue out;
+	struct spoolss_PrintNamedProperty in;
+	struct spoolss_PrintPropertyValue out;
 	int i;
 	DATA_BLOB blob = data_blob_string_const("blob");
 	struct {
 		const char *property_name;
-		enum RPC_EPrintPropertyType type;
-		union RPC_PrintPropertyValueUnion value;
+		enum spoolss_EPrintPropertyType type;
+		union spoolss_PrintPropertyValueUnion value;
 		WERROR expected_result;
 	} tests[] = {
 		{

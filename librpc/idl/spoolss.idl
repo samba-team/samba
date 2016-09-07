@@ -3357,36 +3357,36 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		kRpcPropertyTypeInt64	= 3,
 		kRpcPropertyTypeByte	= 4,
 		kRpcPropertyTypeBuffer	= 5
-	} RPC_EPrintPropertyType;
+	} spoolss_EPrintPropertyType;
 
 	typedef struct {
 		uint32 cbBuf;
 		[size_is(cbBuf)] uint8 *pBuf;
 	} propertyBlob;
 
-	typedef [ms_union,switch_type(RPC_EPrintPropertyType)] union {
+	typedef [ms_union,switch_type(spoolss_EPrintPropertyType)] union {
 		[case(kRpcPropertyTypeString)] [string,charset(UTF16)] uint16 *propertyString;
 		[case(kRpcPropertyTypeInt32)] uint32 propertyInt32;
 		[case(kRpcPropertyTypeInt64)] hyper propertyInt64;
 		[case(kRpcPropertyTypeByte)] uint8 propertyByte;
 		[case(kRpcPropertyTypeBuffer)] propertyBlob propertyBlob;
-	} RPC_PrintPropertyValueUnion;
+	} spoolss_PrintPropertyValueUnion;
 
 	typedef [public] struct {
-		RPC_EPrintPropertyType ePropertyType;
-		[switch_is(ePropertyType)] RPC_PrintPropertyValueUnion value;
-	} RPC_PrintPropertyValue;
+		spoolss_EPrintPropertyType ePropertyType;
+		[switch_is(ePropertyType)] spoolss_PrintPropertyValueUnion value;
+	} spoolss_PrintPropertyValue;
 
 	typedef [public] struct {
 		[string,charset(UTF16)] uint16 *propertyName;
-		RPC_PrintPropertyValue propertyValue;
-	} RPC_PrintNamedProperty;
+		spoolss_PrintPropertyValue propertyValue;
+	} spoolss_PrintNamedProperty;
 
 	WERROR spoolss_GetJobNamedPropertyValue(
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
 		[in] [string,charset(UTF16)] uint16 *pszName,
-		[out,ref] RPC_PrintPropertyValue *pValue
+		[out,ref] spoolss_PrintPropertyValue *pValue
 	);
 
 	/******************/
@@ -3394,7 +3394,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	[public] WERROR spoolss_SetJobNamedProperty(
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
-		[in,ref] RPC_PrintNamedProperty *pProperty
+		[in,ref] spoolss_PrintNamedProperty *pProperty
 	);
 
 	/******************/
@@ -3411,7 +3411,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[in,ref] policy_handle *hPrinter,
 		[in] uint32 JobId,
 		[out,ref] uint32 *pcProperties,
-		[out,ref,size_is(,*pcProperties)] RPC_PrintNamedProperty **ppProperties
+		[out,ref,size_is(,*pcProperties)] spoolss_PrintNamedProperty **ppProperties
 	);
 
 	/******************/
