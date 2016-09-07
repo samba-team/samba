@@ -36,6 +36,10 @@ if conf.env.KRB5_CONFIG:
     krb5_define_syslib(conf, "krb5", conf.env['LIB_KRB5'])
 
     conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
+                   package="kadm-server", uselib_store="KADM-SERVER")
+    conf.CHECK_FUNCS_IN('kadm5_init', 'kadm5srv_mit')
+
+    conf.CHECK_CFG(path=conf.env.KRB5_CONFIG, args="--cflags --libs",
                    package="kdb", uselib_store="KDB5")
     krb5_define_syslib(conf, "kdb5", conf.env['LIB_KDB5'])
 
