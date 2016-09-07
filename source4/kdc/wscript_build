@@ -67,8 +67,7 @@ bld.SAMBA_SUBSYSTEM('KDC-SERVER',
                          ldb
                          LIBTSOCKET
                          LIBSAMBA_TSOCKET
-                    ''',
-                    enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'))
+                    ''')
 
 kpasswd_flavor_src = 'kpasswd-service.c kpasswd-helper.c'
 if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
