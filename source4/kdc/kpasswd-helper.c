@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "system/kerberos.h"
 #include "librpc/gen_ndr/samr.h"
+#include "dsdb/samdb/samdb.h"
+#include "auth/auth.h"
 #include "kdc/kpasswd-helper.h"
 
 bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
@@ -155,4 +157,85 @@ bool kpasswd_make_pwchange_reply(TALLOC_CTX *mem_ctx,
 					KRB5_KPASSWD_SUCCESS,
 					"Password changed",
 					error_blob);
+}
+
+NTSTATUS kpasswd_samdb_set_password(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *event_ctx,
+				    struct loadparm_context *lp_ctx,
+				    struct auth_session_info *session_info,
+				    bool is_service_principal,
+				    const char *target_principal_name,
+				    DATA_BLOB *password,
+				    enum samPwdChangeReason *reject_reason,
+				    struct samr_DomInfo1 **dominfo)
+{
+	NTSTATUS status;
+	struct ldb_context *samdb;
+	struct ldb_dn *target_dn = NULL;
+	int rc;
+
+	samdb = samdb_connect(mem_ctx,
+			      event_ctx,
+			      lp_ctx,
+			      session_info,
+			      0);
+	if (samdb == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	DBG_INFO("%s\\%s (%s) is changing password of %s\n",
+		 session_info->info->domain_name,
+		 session_info->info->account_name,
+		 dom_sid_string(mem_ctx,
+				&session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
+		 target_principal_name);
+
+	rc = ldb_transaction_start(samdb);
+	if (rc != LDB_SUCCESS) {
+		return NT_STATUS_TRANSACTION_ABORTED;
+	}
+
+	if (is_service_principal) {
+		status = crack_service_principal_name(samdb,
+						      mem_ctx,
+						      target_principal_name,
+						      &target_dn,
+						      NULL);
+	} else {
+		status = crack_user_principal_name(samdb,
+						   mem_ctx,
+						   target_principal_name,
+						   &target_dn,
+						   NULL);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_transaction_cancel(samdb);
+		return status;
+	}
+
+	status = samdb_set_password(samdb,
+				    mem_ctx,
+				    target_dn,
+				    NULL, /* domain_dn */
+				    password,
+				    NULL, /* lmNewHash */
+				    NULL, /* ntNewHash */
+				    NULL, /* lmOldHash */
+				    NULL, /* ntOldHash */
+				    reject_reason,
+				    dominfo);
+	if (NT_STATUS_IS_OK(status)) {
+		rc = ldb_transaction_commit(samdb);
+		if (rc != LDB_SUCCESS) {
+			DBG_WARNING("Failed to commit transaction to "
+				    "set password on %s: %s\n",
+				    ldb_dn_get_linearized(target_dn),
+				    ldb_errstring(samdb));
+			return NT_STATUS_TRANSACTION_ABORTED;
+		}
+	} else {
+		ldb_transaction_cancel(samdb);
+	}
+
+	return status;
 }
