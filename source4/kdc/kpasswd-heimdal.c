@@ -33,31 +33,7 @@
 #include "kdc/kdc-glue.h"
 #include "dsdb/common/util.h"
 #include "kdc/kpasswd_glue.h"
-
-/* Return true if there is a valid error packet formed in the error_blob */
-static bool kpasswdd_make_error_reply(struct kdc_server *kdc,
-				     TALLOC_CTX *mem_ctx,
-				     uint16_t result_code,
-				     const char *error_string,
-				     DATA_BLOB *error_blob)
-{
-	char *error_string_utf8;
-	size_t len;
-
-	DEBUG(result_code ? 3 : 10, ("kpasswdd: %s\n", error_string));
-
-	if (!push_utf8_talloc(mem_ctx, &error_string_utf8, error_string, &len)) {
-		return false;
-	}
-
-	*error_blob = data_blob_talloc(mem_ctx, NULL, 2 + len + 1);
-	if (!error_blob->data) {
-		return false;
-	}
-	RSSVAL(error_blob->data, 0, result_code);
-	memcpy(error_blob->data + 2, error_string_utf8, len + 1);
-	return true;
-}
+#include "kdc/kpasswd-helper.h"
 
 /* Return true if there is a valid error packet formed in the error_blob */
 static bool kpasswdd_make_unauth_error_reply(struct kdc_server *kdc,
@@ -70,7 +46,7 @@ static bool kpasswdd_make_unauth_error_reply(struct kdc_server *kdc,
 	int kret;
 	DATA_BLOB error_bytes;
 	krb5_data k5_error_bytes, k5_error_blob;
-	ret = kpasswdd_make_error_reply(kdc, mem_ctx, result_code, error_string,
+	ret = kpasswd_make_error_reply(mem_ctx, result_code, error_string,
 				       &error_bytes);
 	if (!ret) {
 		return false;
@@ -104,13 +80,13 @@ static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 					DATA_BLOB *error_blob)
 {
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						KRB5_KPASSWD_ACCESSDENIED,
 						"No such user when changing password",
 						error_blob);
 	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						KRB5_KPASSWD_ACCESSDENIED,
 						"Not permitted to change password",
 						error_blob);
@@ -133,19 +109,19 @@ static bool kpasswd_make_pwchange_reply(struct kdc_server *kdc,
 			reject_string = "Password change rejected, password changes may not be permitted on this account, or the minimum password age may not have elapsed.";
 			break;
 		}
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						KRB5_KPASSWD_SOFTERROR,
 						reject_string,
 						error_blob);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						 KRB5_KPASSWD_HARDERROR,
 						 talloc_asprintf(mem_ctx, "failed to set password: %s", nt_errstr(status)),
 						 error_blob);
 
 	}
-	return kpasswdd_make_error_reply(kdc, mem_ctx, KRB5_KPASSWD_SUCCESS,
+	return kpasswd_make_error_reply(mem_ctx, KRB5_KPASSWD_SUCCESS,
 					"Password changed",
 					error_blob);
 }
@@ -179,8 +155,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 					       &error_string,
 					       &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		return kpasswdd_make_error_reply(kdc,
-						 mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						 KRB5_KPASSWD_ACCESSDENIED,
 						 error_string,
 						 reply);
@@ -207,7 +182,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 	if (!NT_STATUS_IS_OK(gensec_session_info(gensec_security,
 						 mem_ctx,
 						 &session_info))) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						KRB5_KPASSWD_HARDERROR,
 						"gensec_session_info failed!",
 						reply);
@@ -251,7 +226,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		ret = decode_ChangePasswdDataMS(input->data, input->length,
 						&chpw, &len);
 		if (ret) {
-			return kpasswdd_make_error_reply(kdc, mem_ctx,
+			return kpasswd_make_error_reply(mem_ctx,
 							KRB5_KPASSWD_MALFORMED,
 							"failed to decode password change structure",
 							reply);
@@ -271,7 +246,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		if ((chpw.targname && !chpw.targrealm)
 		    || (!chpw.targname && chpw.targrealm)) {
 			free_ChangePasswdDataMS(&chpw);
-			return kpasswdd_make_error_reply(kdc, mem_ctx,
+			return kpasswd_make_error_reply(mem_ctx,
 							KRB5_KPASSWD_MALFORMED,
 							"Realm and principal must be both present, or neither present",
 							reply);
@@ -283,7 +258,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 						       *chpw.targrealm, 0);
 			if (ret) {
 				free_ChangePasswdDataMS(&chpw);
-				return kpasswdd_make_error_reply(kdc, mem_ctx,
+				return kpasswd_make_error_reply(mem_ctx,
 								KRB5_KPASSWD_MALFORMED,
 								"failed to get principal",
 								reply);
@@ -291,7 +266,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 			if (copy_PrincipalName(chpw.targname, &principal->name)) {
 				free_ChangePasswdDataMS(&chpw);
 				krb5_free_principal(context, principal);
-				return kpasswdd_make_error_reply(kdc, mem_ctx,
+				return kpasswd_make_error_reply(mem_ctx,
 								KRB5_KPASSWD_MALFORMED,
 								"failed to extract principal to set",
 								reply);
@@ -312,7 +287,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 
 			if (krb5_unparse_name_short(context, principal, &set_password_on_princ) != 0) {
 				krb5_free_principal(context, principal);
-				return kpasswdd_make_error_reply(kdc, mem_ctx,
+				return kpasswd_make_error_reply(mem_ctx,
 								 KRB5_KPASSWD_MALFORMED,
 								 "krb5_unparse_name failed!",
 								 reply);
@@ -320,7 +295,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		} else {
 			if (krb5_unparse_name(context, principal, &set_password_on_princ) != 0) {
 				krb5_free_principal(context, principal);
-				return kpasswdd_make_error_reply(kdc, mem_ctx,
+				return kpasswd_make_error_reply(mem_ctx,
 								 KRB5_KPASSWD_MALFORMED,
 								 "krb5_unparse_name failed!",
 								 reply);
@@ -331,7 +306,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, session_info, 0);
 		if (!samdb) {
 			free(set_password_on_princ);
-			return kpasswdd_make_error_reply(kdc, mem_ctx,
+			return kpasswd_make_error_reply(mem_ctx,
 							 KRB5_KPASSWD_HARDERROR,
 							 "Unable to open database!",
 							 reply);
@@ -399,7 +374,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 						   reply);
 	}
 	default:
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
+		return kpasswd_make_error_reply(mem_ctx,
 						 KRB5_KPASSWD_BAD_VERSION,
 						 talloc_asprintf(mem_ctx,
 								 "Protocol version %u not supported",
