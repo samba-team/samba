@@ -73,7 +73,7 @@ struct pthreadpool {
 	/*
 	 * indicator to worker threads that they should shut down
 	 */
-	int shutdown;
+	bool shutdown;
 
 	/*
 	 * maximum number of threads
@@ -150,7 +150,7 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 		return ret;
 	}
 
-	pool->shutdown = 0;
+	pool->shutdown = false;
 	pool->num_threads = 0;
 	pool->num_exited = 0;
 	pool->exited = NULL;
@@ -295,7 +295,7 @@ int pthreadpool_destroy(struct pthreadpool *pool)
 		 * We have active threads, tell them to finish, wait for that.
 		 */
 
-		pool->shutdown = 1;
+		pool->shutdown = true;
 
 		if (pool->num_idle > 0) {
 			/*
@@ -455,7 +455,7 @@ static void *pthreadpool_server(void *arg)
 		clock_gettime(CLOCK_REALTIME, &ts);
 		ts.tv_sec += 1;
 
-		while ((pool->num_jobs == 0) && (pool->shutdown == 0)) {
+		while ((pool->num_jobs == 0) && !pool->shutdown) {
 
 			pool->num_idle += 1;
 			res = pthread_cond_timedwait(
@@ -505,7 +505,7 @@ static void *pthreadpool_server(void *arg)
 			}
 		}
 
-		if ((pool->num_jobs == 0) && (pool->shutdown != 0)) {
+		if ((pool->num_jobs == 0) && pool->shutdown) {
 			/*
 			 * No more work to do and we're asked to shut down, so
 			 * exit
