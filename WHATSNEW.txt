@@ -1,12 +1,10 @@
-Release Announcements
-=====================
+                   =============================
+                   Release Notes for Samba 4.5.0
+                           September 7, 2016
+                   =============================
 
-This is the third release candidate of Samba 4.5.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
 
-Samba 4.5 will be the next version of the Samba suite.
+This is the first stable release of the Samba 4.5 release series.
 
 
 UPGRADING
@@ -343,12 +341,41 @@ smb.conf changes
 KNOWN ISSUES
 ============
 
+While a lot of schema replication bugs were fixed in this release
+Bug 12204 - Samba fails to replicate schema 69
+(https://bugzilla.samba.org/show_bug.cgi?id=12204) is still open.
+The replication fails if more than 133 schema objects are added
+at the same time.
+
+More open bugs are listed at:
 https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.5#All_bugs
 
 
 CHANGES SINCE 4.5.0rc3
 ======================
 
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 12194: idmap_script: fix missing "IDTOSID" argument in scripts
+      command line.
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 12178: samba-tool dbcheck fails to fix replPropertyMetaData.
+
+o   Ralph Boehme <slow@samba.org>
+    * BUG 12177: Unexpected synthesized default ACL from vfs_acl_xattr.
+    * BUG 12181: vfs_acl_common not setting filesystem permissions anymore.
+    * BUG 12184: Loading shared RPC modules failed.
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 12245: fix _spoolss_GetPrinterDataEx by moving the keyname
+      length check.
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 11994: smbclient fails to connect to Azure or Apple share spnego
+      fails with no mechListMIC.
+
+o   Martin Schwenke <martin@meltin.net>
+    * BUG 12180: CTDB crashes running eventscripts.
 
 
 CHANGES SINCE 4.5.0rc2
