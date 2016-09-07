@@ -218,12 +218,6 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		return ENOENT;
 	}
 
-	if (saltPrincipal == NULL) {
-		*perror_string = talloc_strdup(parent_ctx,
-					      "No saltPrincipal provided");
-		return EINVAL;
-	}
-
 	ret = krb5_kt_resolve(context, keytab_name, &keytab);
 	if (ret) {
 		*perror_string = smb_get_krb5_error_message(context,
@@ -283,6 +277,12 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 		/* Create a new keytab.  If during the cleanout we found
 		 * entires for kvno -1, then don't try and duplicate them.
 		 * Otherwise, add kvno, and kvno -1 */
+		if (saltPrincipal == NULL) {
+			*perror_string = talloc_strdup(parent_ctx,
+						       "No saltPrincipal provided");
+			ret = EINVAL;
+			goto done;
+		}
 
 		ret = create_keytab(tmp_ctx,
 				    samAccountName, upper_realm, saltPrincipal,
