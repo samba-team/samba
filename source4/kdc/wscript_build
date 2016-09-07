@@ -54,6 +54,15 @@ bld.SAMBA_SUBSYSTEM('KDC-SERVER',
                     ''',
                     enabled=bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'))
 
+bld.SAMBA_SUBSYSTEM('KPASSWD-SERVICE',
+                    source='kpasswd-service.c kpasswd-helper.c',
+                    includes=kdc_include,
+                    deps='''
+                         krb5samba
+                         samba_server_gensec
+                         KPASSWD_GLUE
+                         ''')
+
 bld.SAMBA_SUBSYSTEM('KDC-GLUE',
 	source='kdc-glue.c',
         includes=kdc_include,
