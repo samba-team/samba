@@ -46,16 +46,25 @@ bool push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src,
 }
 
 /**
- * Copy a string from a unix char* src to a UTF-8 destination, allocating a buffer using talloc
+ * @brief Create a UTF-8 string from a unix charset string.
  *
- * @param dest always set at least to NULL
- * @parm converted_size set to the number of bytes occupied by the string in
- * the destination on success.
+ * The resulting UTF-8 string is talloc'ed.
  *
- * @return true if new buffer was correctly allocated, and string was
- * converted.
- **/
-
+ * @param[in]  ctx      The talloc memory context.
+ *
+ * @param[in]  dest     A pointer to store the pointer to the talloc'ed UTF-8
+ *                      string.
+ *
+ * @param[in]  src      The unix charset string to convert.
+ *
+ * @param[in]  converted_size A pointer to store the length of the talloc'ed
+ *                            UTF-8 string including the nul-termination bytes.
+ *
+ * The destination string should be free'd using talloc_free() if no longer
+ * needed.
+ *
+ * @return True on succcess, false otherwise.
+ */
 bool push_utf8_talloc(TALLOC_CTX *ctx, char **dest, const char *src,
 		      size_t *converted_size)
 {
