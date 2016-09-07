@@ -860,7 +860,7 @@ static void wakeup_pipe_handler(struct tevent_context *ev,
 
 int tevent_common_wakeup_init(struct tevent_context *ev)
 {
-	int ret;
+	int ret, read_fd;
 
 	if (ev->wakeup_fde != NULL) {
 		return 0;
@@ -871,7 +871,7 @@ int tevent_common_wakeup_init(struct tevent_context *ev)
 	if (ret == -1) {
 		return errno;
 	}
-	ev->wakeup_fd = ret;
+	read_fd = ev->wakeup_fd = ret;
 #else
 	{
 		int pipe_fds[2];
@@ -879,21 +879,22 @@ int tevent_common_wakeup_init(struct tevent_context *ev)
 		if (ret == -1) {
 			return errno;
 		}
-		ev->wakeup_fd = pipe_fds[0];
-		ev->wakeup_write_fd = pipe_fds[1];
+		ev->wakeup_fd = pipe_fds[1];
+		ev->wakeup_read_fd = pipe_fds[0];
 
 		ev_set_blocking(ev->wakeup_fd, false);
-		ev_set_blocking(ev->wakeup_write_fd, false);
+		ev_set_blocking(ev->wakeup_read_fd, false);
+
+		read_fd = ev->wakeup_read_fd;
 	}
 #endif
 
-	ev->wakeup_fde = tevent_add_fd(ev, ev, ev->wakeup_fd,
-				     TEVENT_FD_READ,
+	ev->wakeup_fde = tevent_add_fd(ev, ev, read_fd, TEVENT_FD_READ,
 				     wakeup_pipe_handler, NULL);
 	if (ev->wakeup_fde == NULL) {
 		close(ev->wakeup_fd);
 #ifndef HAVE_EVENTFD
-		close(ev->wakeup_write_fd);
+		close(ev->wakeup_read_fd);
 #endif
 		return ENOMEM;
 	}
@@ -915,7 +916,7 @@ int tevent_common_wakeup(struct tevent_context *ev)
 		ret = write(ev->wakeup_fd, &val, sizeof(val));
 #else
 		char c = '\0';
-		ret = write(ev->wakeup_write_fd, &c, 1);
+		ret = write(ev->wakeup_fd, &c, 1);
 #endif
 	} while ((ret == -1) && (errno == EINTR));
 
@@ -932,6 +933,6 @@ static void tevent_common_wakeup_fini(struct tevent_context *ev)
 
 	close(ev->wakeup_fd);
 #ifndef HAVE_EVENTFD
-	close(ev->wakeup_write_fd);
+	close(ev->wakeup_read_fd);
 #endif
 }

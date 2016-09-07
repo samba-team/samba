@@ -277,9 +277,9 @@ struct tevent_context {
 
 	/* pipe hack used with signal handlers */
 	struct tevent_fd *wakeup_fde;
-	int wakeup_fd;
+	int wakeup_fd;		/* fd to write into */
 #ifndef HAVE_EVENT_FD
-	int wakeup_write_fd;
+	int wakeup_read_fd;
 #endif
 
 	/* debugging operations */
