@@ -56,7 +56,7 @@ setup_ctdb ()
     local i
     for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
 	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
-	    j=$((printf "%02x" $i))
+	    j=$(printf "%02x" $i)
 	    echo "fd00::5357:5f${j}" >>"$CTDB_NODES"
 	    # FIXME: need to add addresses to lo as root before running :-(
 	    # ip addr add "fc00:10::${i}/64" dev lo
