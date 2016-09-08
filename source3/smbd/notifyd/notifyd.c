@@ -17,14 +17,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "replace.h"
+#include <tevent.h>
+#include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/notify.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/server_id.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "messages.h"
-#include "proto.h"
 #include "tdb.h"
 #include "util_tdb.h"
 #include "notifyd.h"
@@ -32,7 +33,6 @@
 #include "lib/util/tevent_unix.h"
 #include "ctdbd_conn.h"
 #include "ctdb_srvids.h"
-#include "source3/smbd/proto.h"
 #include "server_id_db_util.h"
 #include "lib/util/iov_buf.h"
 #include "messages_util.h"
