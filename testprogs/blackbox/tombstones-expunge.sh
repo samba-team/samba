@@ -46,11 +46,23 @@ undump() {
 
 tombstones_expunge() {
     tmpfile=$PREFIX_ABS/$RELEASE/expected-expunge-output.txt
+    tmpldif1=$PREFIX_ABS/$RELEASE/expected-expunge-output2.txt.tmp1
+
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif1
+
     $PYTHON $BINDIR/samba-tool domain tombstones expunge -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --current-time=2016-07-30 --tombstone-lifetime=4 > $tmpfile
     if [ "$?" != "0" ]; then
 	return $?
     fi
     diff $tmpfile $release_dir/expected-expunge-output.txt
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+
+    tmpldif2=$PREFIX_ABS/$RELEASE/expected-expunge-output2.txt.tmp2
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif2
+
+    diff $tmpldif1 $tmpldif2
     if [ "$?" != "0" ]; then
 	return 1
     fi
