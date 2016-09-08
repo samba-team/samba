@@ -710,7 +710,7 @@ void reply_negprot(struct smb_request *req)
 		supported_protocols[protocol].proto_reply_fn(req, choice);
 		DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 	} else {
-		DEBUG(0,("No protocol supported !\n"));
+		DBG_NOTICE("No protocol supported !\n");
 		reply_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, choice);
 	}
