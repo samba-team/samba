@@ -37,6 +37,11 @@ if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
                           talloc
                           UTIL_RUNCMD
                           MIT_KDC_IRPC
+                          KDC-SERVER
+                          KPASSWD-SERVICE
+                          com_err
+                          kadm5srv_mit
+                          kdb5
                      ''',
                      internal_module=False)
 
@@ -72,6 +77,8 @@ bld.SAMBA_SUBSYSTEM('KDC-SERVER',
 kpasswd_flavor_src = 'kpasswd-service.c kpasswd-helper.c'
 if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
     kpasswd_flavor_src = kpasswd_flavor_src + ' kpasswd-service-heimdal.c'
+elif bld.CONFIG_GET('SAMBA_USES_MITKDC'):
+    kpasswd_flavor_src = kpasswd_flavor_src + ' kpasswd-service-mit.c'
 
 bld.SAMBA_SUBSYSTEM('KPASSWD-SERVICE',
                     source=kpasswd_flavor_src,

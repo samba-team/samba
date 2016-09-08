@@ -3,7 +3,7 @@
 
    Start MIT krb5kdc server within Samba AD
 
-   Copyright (c) 2014      Andreas Schneider <asn@samba.org>
+   Copyright (c) 2014-2016 Andreas Schneider <asn@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,10 +30,113 @@
 #include "kdc/kdc-service-mit.h"
 #include "dynconfig.h"
 #include "libds/common/roles.h"
+#include "lib/socket/netif.h"
+#include "samba/session.h"
+#include "dsdb/samdb/samdb.h"
+#include "kdc/samba_kdc.h"
+#include "kdc/kdc-server.h"
+#include "kdc/kpasswd-service.h"
+#include <kadm5/admin.h>
+#include <kdb.h>
 
 #include "source4/kdc/mit_kdc_irpc.h"
 
+/* PROTOTYPES */
 static void mitkdc_server_done(struct tevent_req *subreq);
+
+static int kdc_server_destroy(struct kdc_server *kdc)
+{
+	if (kdc->private_data != NULL) {
+		kadm5_destroy(kdc->private_data);
+	}
+
+	return 0;
+}
+
+static NTSTATUS startup_kpasswd_server(TALLOC_CTX *mem_ctx,
+				       struct kdc_server *kdc,
+				       struct loadparm_context *lp_ctx,
+				       struct interface *ifaces)
+{
+	const struct model_ops *model_ops;
+	int num_interfaces;
+	int i;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	uint16_t kpasswd_port;
+	bool done_wildcard = false;
+	bool ok;
+
+	kpasswd_port = lpcfg_kpasswd_port(lp_ctx);
+	if (kpasswd_port == 0) {
+		return NT_STATUS_OK;
+	}
+
+	model_ops = process_model_startup("single");
+	if (model_ops == NULL) {
+		DBG_ERR("Can't find 'single' process model_ops\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	tmp_ctx = talloc_named_const(mem_ctx, 0, "kpasswd");
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	num_interfaces = iface_list_count(ifaces);
+
+	ok = lpcfg_bind_interfaces_only(lp_ctx);
+	if (!ok) {
+		int num_binds = 0;
+		char **wcard;
+
+		wcard = iface_list_wildcard(tmp_ctx);
+		if (wcard == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		for (i = 0; wcard[i] != NULL; i++) {
+			status = kdc_add_socket(kdc,
+						model_ops,
+						"kpasswd",
+						wcard[i],
+						kpasswd_port,
+						kpasswd_process,
+						false);
+			if (NT_STATUS_IS_OK(status)) {
+				num_binds++;
+			}
+		}
+		talloc_free(wcard);
+
+		if (num_binds == 0) {
+			status = NT_STATUS_INVALID_PARAMETER_MIX;
+			goto out;
+		}
+
+		done_wildcard = true;
+	}
+
+	for (i = 0; i < num_interfaces; i++) {
+		const char *address = talloc_strdup(tmp_ctx, iface_list_n_ip(ifaces, i));
+
+		status = kdc_add_socket(kdc,
+					model_ops,
+					"kpasswd",
+					address,
+					kpasswd_port,
+					kpasswd_process,
+					done_wildcard);
+		if (NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+	}
+
+out:
+	talloc_free(tmp_ctx);
+	return status;
+}
 
 /*
  * Startup a copy of the krb5kdc as a child daemon
@@ -42,8 +145,14 @@ void mitkdc_task_init(struct task_server *task)
 {
 	struct tevent_req *subreq;
 	const char * const *kdc_cmd;
+	struct interface *ifaces;
 	const char *kdc_config;
+	struct kdc_server *kdc;
+	krb5_error_code code;
 	NTSTATUS status;
+	kadm5_ret_t ret;
+	kadm5_config_params config;
+	void *server_handle;
 
 	task_server_set_title(task, "task[mitkdc_parent]");
 
@@ -63,6 +172,15 @@ void mitkdc_task_init(struct task_server *task)
 	case ROLE_ACTIVE_DIRECTORY_DC:
 		/* Yes, we want to start the KDC */
 		break;
+	}
+
+	/* Load interfaces for kpasswd */
+	load_interface_list(task, task->lp_ctx, &ifaces);
+	if (iface_list_count(ifaces) == 0) {
+		task_server_terminate(task,
+				      "KDC: no network interfaces configured",
+				      false);
+		return;
 	}
 
 	kdc_config = lpcfg_mit_kdc_config(task->lp_ctx, task);
@@ -106,6 +224,105 @@ void mitkdc_task_init(struct task_server *task)
 	}
 
 	DEBUG(5,("Started irpc service for kdc_server\n"));
+
+	kdc = talloc_zero(task, struct kdc_server);
+	if (kdc == NULL) {
+		task_server_terminate(task, "KDC: Out of memory", true);
+		return;
+	}
+	talloc_set_destructor(kdc, kdc_server_destroy);
+
+	kdc->task = task;
+
+	kdc->base_ctx = talloc_zero(kdc, struct samba_kdc_base_context);
+	if (kdc->base_ctx == NULL) {
+		task_server_terminate(task, "KDC: Out of memory", true);
+		return;
+	}
+
+	kdc->base_ctx->ev_ctx = task->event_ctx;
+	kdc->base_ctx->lp_ctx = task->lp_ctx;
+
+	initialize_krb5_error_table();
+
+	code = smb_krb5_init_context(kdc,
+				     kdc->task->lp_ctx,
+				     &kdc->smb_krb5_context);
+	if (code != 0) {
+		task_server_terminate(task,
+				      "KDC: Unable to initialized krb5 context",
+				      true);
+		return;
+	}
+
+	code = kadm5_init_krb5_context(&kdc->smb_krb5_context->krb5_context);
+	if (code != 0) {
+		task_server_terminate(task,
+				      "KDC: Unable to init kadm5 krb5_context",
+				      true);
+		return;
+	}
+
+	ZERO_STRUCT(config);
+	config.mask = KADM5_CONFIG_REALM;
+	config.realm = discard_const_p(char, lpcfg_realm(kdc->task->lp_ctx));
+
+	ret = kadm5_init(kdc->smb_krb5_context->krb5_context,
+			 discard_const_p(char, "kpasswd"),
+			 NULL, /* pass */
+			 discard_const_p(char, "kpasswd"),
+			 &config,
+			 KADM5_STRUCT_VERSION,
+			 KADM5_API_VERSION_4,
+			 NULL,
+			 &server_handle);
+	if (ret != 0) {
+		task_server_terminate(task,
+				      "KDC: Initialize kadm5",
+				      true);
+		return;
+	}
+	kdc->private_data = server_handle;
+
+	code = krb5_db_register_keytab(kdc->smb_krb5_context->krb5_context);
+	if (code != 0) {
+		task_server_terminate(task,
+				      "KDC: Unable to KDB",
+				      true);
+		return;
+	}
+
+	kdc->keytab_name = talloc_asprintf(kdc, "KDB:");
+	if (kdc->keytab_name == NULL) {
+		task_server_terminate(task,
+				      "KDC: Out of memory",
+				      true);
+		return;
+	}
+
+	kdc->samdb = samdb_connect(kdc,
+				   kdc->task->event_ctx,
+				   kdc->task->lp_ctx,
+				   system_session(kdc->task->lp_ctx),
+				   0);
+	if (kdc->samdb == NULL) {
+		task_server_terminate(task,
+				      "KDC: Unable to connect to sambdb",
+				      true);
+		return;
+	}
+
+	status = startup_kpasswd_server(kdc,
+				    kdc,
+				    task->lp_ctx,
+				    ifaces);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task,
+				      "KDC: Unable to start kpasswd server",
+				      true);
+	}
+
+	DEBUG(5,("Started kpasswd service for kdc_server\n"));
 }
 
 /*
