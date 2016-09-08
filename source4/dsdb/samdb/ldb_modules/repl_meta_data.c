@@ -1312,6 +1312,18 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 		} else if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
 			may_skip = true;
 		}
+	} else if (a->linkID != 0 && LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE &&
+		   ldb_request_get_control(req, DSDB_CONTROL_REPLMD_VANISH_LINKS) != NULL) {
+		/*
+		 * We intentionally skip the version bump when attempting to
+		 * vanish links.
+		 *
+		 * The control is set by dbcheck and expunge-tombstones which
+		 * both attempt to be non-replicating. Otherwise, making an
+		 * alteration to the replication state would trigger a
+		 * broadcast of all expunged objects.
+		 */
+		may_skip = true;
 	}
 
 	if (el->flags & DSDB_FLAG_INTERNAL_FORCE_META_DATA) {
