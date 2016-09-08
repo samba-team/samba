@@ -435,3 +435,14 @@ WERROR spoolss_create_default_secdesc(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+const char *spoolss_get_short_filesys_environment(const char *environment)
+{
+	if (strequal(environment, SPOOLSS_ARCHITECTURE_x64)) {
+		return "amd64";
+	} else if (strequal(environment, SPOOLSS_ARCHITECTURE_NT_X86)) {
+		return "x86";
+	} else {
+		return NULL;
+	}
+}
