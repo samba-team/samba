@@ -196,6 +196,69 @@ static int samba_kdc_entry_destructor(struct samba_kdc_entry *p)
 	return 0;
 }
 
+/*
+ * Sort keys in descending order of strength.
+ *
+ * Explanaton from Greg Hudson:
+ *
+ * To encrypt tickets only the first returned key is used by the MIT KDC.  The
+ * other keys just communicate support for session key enctypes, and aren't
+ * really used.  The encryption key for the ticket enc part doesn't have
+ * to be of a type requested by the client. The session key enctype is chosen
+ * based on the client preference order, limited by the set of enctypes present
+ * in the server keys (unless the string attribute is set on the server
+ * principal overriding that set).
+ */
+static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
+{
+	unsigned int i, j, idx = 0;
+	static const krb5_enctype etype_list[] = {
+		ENCTYPE_AES256_CTS_HMAC_SHA1_96,
+		ENCTYPE_AES128_CTS_HMAC_SHA1_96,
+		ENCTYPE_DES3_CBC_SHA1,
+		ENCTYPE_ARCFOUR_HMAC,
+		ENCTYPE_DES_CBC_MD5,
+		ENCTYPE_DES_CBC_MD4,
+		ENCTYPE_DES_CBC_CRC,
+		ENCTYPE_NULL
+	};
+	size_t etype_len = ARRAY_SIZE(etype_list);
+	size_t keys_size = entry_ex->entry.keys.len;
+	struct sdb_key *keys = entry_ex->entry.keys.val;
+	struct sdb_key *sorted_keys;
+
+	sorted_keys = calloc(keys_size, sizeof(struct sdb_key));
+	if (sorted_keys == NULL) {
+		return -1;
+	}
+
+	for (i = 0; i < etype_len; i++) {
+		for (j = 0; j < keys_size; j++) {
+			const struct sdb_key skey = keys[j];
+
+			/* Paranoia: Do not overflow the key_data array */
+			if (idx > keys_size) {
+				return -1;
+			}
+
+			if (KRB5_KEY_TYPE(&skey.key) == etype_list[i]) {
+				sorted_keys[idx] = skey;
+				idx++;
+			}
+		}
+	}
+
+	/* Paranoia: Something went wrong during data copy */
+	if (idx < keys_size) {
+		return -1;
+	}
+
+	free(entry_ex->entry.keys.val);
+	entry_ex->entry.keys.val = sorted_keys;
+
+	return 0;
+}
+
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct samba_kdc_db_context *kdc_db_ctx,
 						    TALLOC_CTX *mem_ctx,
@@ -588,6 +651,13 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 out:
 	if (ret != 0) {
 		entry_ex->entry.keys.len = 0;
+	} else if (entry_ex->entry.keys.len > 0 &&
+		   entry_ex->entry.keys.val != NULL) {
+		ret = samba_kdc_sort_encryption_keys(entry_ex);
+		if (ret != 0) {
+			entry_ex->entry.keys.len = 0;
+			ret = ENOMEM;
+		}
 	}
 	if (entry_ex->entry.keys.len == 0 && entry_ex->entry.keys.val) {
 		free(entry_ex->entry.keys.val);
@@ -1421,6 +1491,13 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	entry_ex->entry.max_life = NULL;
 
 	entry_ex->entry.max_renew = NULL;
+
+	ret = samba_kdc_sort_encryption_keys(entry_ex);
+	if (ret != 0) {
+		krb5_clear_error_message(context);
+		ret = ENOMEM;
+		goto out;
+	}
 
 	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
 	if (entry_ex->entry.etypes == NULL) {
