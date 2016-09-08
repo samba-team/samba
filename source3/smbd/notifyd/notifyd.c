@@ -130,11 +130,11 @@ static bool notifyd_trigger(struct messaging_context *msg_ctx,
 static bool notifyd_get_db(struct messaging_context *msg_ctx,
 			   struct messaging_rec **prec,
 			   void *private_data);
+
+#ifdef CLUSTER_SUPPORT
 static bool notifyd_got_db(struct messaging_context *msg_ctx,
 			   struct messaging_rec **prec,
 			   void *private_data);
-
-#ifdef CLUSTER_SUPPORT
 static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
 				     struct messaging_reclog *log);
@@ -240,6 +240,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
 
+#ifdef CLUSTER_SUPPORT
 	subreq = messaging_handler_send(state, ev, msg_ctx,
 					MSG_SMB_NOTIFY_DB,
 					notifyd_got_db, state);
@@ -247,6 +248,7 @@ struct tevent_req *notifyd_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, notifyd_handler_done, req);
+#endif
 
 	names_db = messaging_names_db(msg_ctx);
 
@@ -901,6 +903,8 @@ static bool notifyd_get_db(struct messaging_context *msg_ctx,
 	return true;
 }
 
+#ifdef CLUSTER_SUPPORT
+
 static int notifyd_add_proxy_syswatches(struct db_record *rec,
 					void *private_data);
 
@@ -965,8 +969,6 @@ static bool notifyd_got_db(struct messaging_context *msg_ctx,
 
 	return true;
 }
-
-#ifdef CLUSTER_SUPPORT
 
 static void notifyd_broadcast_reclog(struct ctdbd_connection *ctdbd_conn,
 				     struct server_id src,
@@ -1169,8 +1171,6 @@ static int notifyd_clean_peers_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_unix(req);
 }
 
-#endif
-
 static int notifyd_add_proxy_syswatches(struct db_record *rec,
 					void *private_data)
 {
@@ -1215,8 +1215,6 @@ static int notifyd_add_proxy_syswatches(struct db_record *rec,
 
 	return 0;
 }
-
-#ifdef CLUSTER_SUPPORT
 
 static int notifyd_db_del_syswatches(struct db_record *rec, void *private_data)
 {
