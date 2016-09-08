@@ -563,7 +563,7 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
+static WERROR winreg_printer_ver_to_qword(const char *str, uint64_t *data)
 {
 	unsigned int v1, v2, v3, v4;
 
@@ -3659,7 +3659,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 					      "DriverVersion",
 					      &tmp_str);
 		if (W_ERROR_IS_OK(result)) {
-			result = winreg_printer_ver_to_dword(tmp_str,
+			result = winreg_printer_ver_to_qword(tmp_str,
 						&info8->driver_version);
 		}
 		CHECK_ERROR(result);
@@ -3727,7 +3727,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 					      "MinInboxDriverVerVersion",
 					      &tmp_str);
 		if (W_ERROR_IS_OK(result)) {
-			result = winreg_printer_ver_to_dword(tmp_str,
+			result = winreg_printer_ver_to_qword(tmp_str,
 					&info8->min_inbox_driver_ver_version);
 		}
 		CHECK_ERROR(result);
