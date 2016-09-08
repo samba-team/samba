@@ -1600,6 +1600,74 @@ static WERROR cmd_spoolss_getdriverdir(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
+static WERROR cmd_spoolss_getdriverpackagepath(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       int argc, const char **argv)
+{
+	HRESULT hresult;
+	NTSTATUS status;
+	const char *env = SPOOLSS_ARCHITECTURE_NT_X86;
+	uint32_t offered;
+	uint32_t needed;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	const char *package_id = "";
+	const char *cab = NULL;
+
+	if (argc > 4) {
+		printf("Usage: %s [environment] [package_id]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	/* Get the arguments need to open the printer handle */
+
+	if (argc >= 2) {
+		env = argv[1];
+	}
+
+	if (argc == 3) {
+		package_id = argv[2];
+	}
+
+	offered = 1;
+	cab = talloc_array(mem_ctx, char, offered);
+	status = dcerpc_spoolss_GetPrinterDriverPackagePath(b, mem_ctx,
+							    cli->srv_name_slash,
+							    env,
+							    NULL,
+							    package_id,
+							    cab,
+							    offered,
+							    &needed,
+							    &hresult);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (W_ERROR_EQUAL(W_ERROR(WIN32_FROM_HRESULT(hresult)), WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		cab = talloc_zero_array(mem_ctx, char, offered);
+
+		status = dcerpc_spoolss_GetPrinterDriverPackagePath(b, mem_ctx,
+								    cli->srv_name_slash,
+								    env,
+								    NULL,
+								    package_id,
+								    cab,
+								    offered,
+								    &needed,
+								    &hresult);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+	}
+
+	return W_ERROR(WIN32_FROM_HRESULT(hresult));
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static void set_drv_info_3_env(TALLOC_CTX *mem_ctx,
 			       struct spoolss_AddDriverInfo3 *info,
 			       const char *arch)
@@ -3866,6 +3934,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdataex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprinterdataex,	&ndr_table_spoolss, NULL, "Get printer driver data with keyname", ""},
 	{ "getdriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriver,		&ndr_table_spoolss, NULL, "Get print driver information",        "" },
 	{ "getdriverdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriverdir,	&ndr_table_spoolss, NULL, "Get print driver upload directory",   "" },
+	{ "getdriverpackagepath", RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriverpackagepath,	&ndr_table_spoolss, NULL, "Get print driver package download directory",   "" },
 	{ "getprinter", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprinter, 	&ndr_table_spoolss, NULL, "Get printer info",                    "" },
 	{ "openprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer,	&ndr_table_spoolss, NULL, "Open printer handle",                 "" },
 	{ "openprinter_ex",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer_ex,	&ndr_table_spoolss, NULL, "Open printer handle",                 "" },
