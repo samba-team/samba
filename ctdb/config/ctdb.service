@@ -1,6 +1,6 @@
 [Unit]
 Description=CTDB
-After=network.target
+After=network-online.target time-sync.target
 
 [Service]
 Type=forking
