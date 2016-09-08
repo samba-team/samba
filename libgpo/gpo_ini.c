@@ -197,12 +197,14 @@ NTSTATUS gp_inifile_getbool(struct gp_inifile_context *ctx, const char *key, boo
 		return result;
 	}
 
-	if (strequal(value, "Yes")) {
+	if (strequal(value, "Yes") ||
+	    strequal(value, "True")) {
 		if (ret) {
 			*ret = true;
 		}
 		return NT_STATUS_OK;
-	} else if (strequal(value, "No")) {
+	} else if (strequal(value, "No") ||
+		   strequal(value, "False")) {
 		if (ret) {
 			*ret = false;
 		}
