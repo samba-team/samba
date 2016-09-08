@@ -45,7 +45,7 @@ undump() {
 }
 
 tombstones_expunge() {
-    tmpfile=$PREFIX_ABS/$RELEASE/expected-expunge-output.txt
+    tmpfile=$PREFIX_ABS/$RELEASE/expected-expunge-output.txt.tmp
     tmpldif1=$PREFIX_ABS/$RELEASE/expected-expunge-output2.txt.tmp1
 
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif1
