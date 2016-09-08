@@ -143,6 +143,20 @@ bld.SAMBA_SUBSYSTEM('KPASSWD_GLUE',
         includes=kdc_include,
         deps='ldb com_err')
 
+bld.SAMBA_SUBSYSTEM('MIT_KDC_IRPC',
+                    source='mit_kdc_irpc.c',
+                    deps='''
+                    ldb
+                    auth4_sam
+                    samba-credentials
+                    db-glue
+                    samba-hostconfig
+                    com_err
+                    kdb5
+                    ''',
+                    enabled=(bld.CONFIG_SET('SAMBA_USES_MITKDC') and bld.CONFIG_SET('HAVE_KDB_H'))
+                    )
+
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
                     source='mit_samba.c',
                     deps='''
