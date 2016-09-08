@@ -8063,6 +8063,25 @@ static bool test_get_printer_driver_package_path(struct torture_context *tctx,
 		torture_assert_hresult_ok(tctx, r.out.result,
 			"spoolss_GetPrinterDriverPackagePath failed");
 
+		r.in.servername = NULL;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverPackagePath_r(b, tctx, &r),
+			"spoolss_GetPrinterDriverPackagePath failed");
+		torture_assert_werr_equal(tctx,
+			W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_INSUFFICIENT_BUFFER,
+			"spoolss_GetPrinterDriverPackagePath failed");
+
+		r.in.driver_package_cab_size = required;
+		r.in.driver_package_cab = talloc_zero_array(tctx, char, required);
+		r.out.driver_package_cab = talloc_zero_array(tctx, char, required);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_GetPrinterDriverPackagePath_r(b, tctx, &r),
+			"spoolss_GetPrinterDriverPackagePath failed");
+		torture_assert_hresult_ok(tctx, r.out.result,
+			"spoolss_GetPrinterDriverPackagePath failed");
+
 	}
 
 	return true;
