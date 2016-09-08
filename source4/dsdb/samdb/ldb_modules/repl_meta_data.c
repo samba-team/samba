@@ -3621,9 +3621,10 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 					ldb_asprintf_errstring(ldb,
 							       __location__
 							       ": Failed to remove backlink of "
-							       "%s when deleting %s",
+							       "%s when deleting %s: %s",
 							       el->name,
-							       old_dn_str);
+							       old_dn_str,
+							       ldb_errstring(ldb));
 					talloc_free(tmp_ctx);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
