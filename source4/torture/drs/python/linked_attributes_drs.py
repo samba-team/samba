@@ -140,7 +140,7 @@ class LATests(drs_base.DrsBaseTestCase, ExopBaseTest):
             if link.attid == expected_attid:
                 unpacked = ndr_unpack(drsuapi.DsReplicaObjectIdentifier3,
                                       link.value.blob)
-                active = link.flags &  drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE
+                active = link.flags & drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE
                 links.append((str(unpacked.dn), bool(active)))
 
         return links
