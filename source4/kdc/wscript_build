@@ -6,24 +6,38 @@ if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
 else:
     kdc_include = getattr(bld.env, "CPPPATH_KDC")
 
-bld.SAMBA_MODULE('service_kdc',
-                 source='kdc-heimdal.c',
-                 subsystem='service',
-                 init_function='server_service_kdc_init',
-                 deps='''
-                      kdc
-                      HDB_SAMBA4
-                      WDC_SAMBA4
-                      samba-hostconfig
-                      com_err
-                      samba_server_gensec
-                      PAC_GLUE
-                      KDC-GLUE
-                      KDC-SERVER
-                      KPASSWD-SERVICE
-                      KPASSWD_GLUE
-                 ''',
-                 internal_module=False)
+if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
+    bld.SAMBA_MODULE('service_kdc',
+                     source='kdc-heimdal.c',
+                     subsystem='service',
+                     init_function='server_service_kdc_init',
+                     deps='''
+                          kdc
+                          HDB_SAMBA4
+                          WDC_SAMBA4
+                          samba-hostconfig
+                          com_err
+                          samba_server_gensec
+                          PAC_GLUE
+                          KDC-GLUE
+                          KDC-SERVER
+                          KPASSWD-SERVICE
+                          KPASSWD_GLUE
+                     ''',
+                     internal_module=False)
+
+if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
+    bld.SAMBA_MODULE('service_kdc',
+                     source='kdc-service-mit.c',
+                     subsystem='service',
+                     init_function='server_service_mitkdc_init',
+                     deps='''
+                          samba-hostconfig
+                          service
+                          talloc
+                          UTIL_RUNCMD
+                     ''',
+                     internal_module=False)
 
 bld.SAMBA_LIBRARY('HDB_SAMBA4',
                   source='hdb-samba4.c hdb-samba4-plugin.c',
