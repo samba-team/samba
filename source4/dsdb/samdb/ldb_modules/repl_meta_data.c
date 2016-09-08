@@ -2600,6 +2600,16 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
+	/*
+	 * TODO:
+	 *
+	 * We should restrict this to the intersection of the list of
+	 * linked attributes in the schema and the list of attributes
+	 * being modified.
+	 *
+	 * This will help performance a little, as otherwise we have
+	 * to allocate the entire object value-by-value.
+	 */
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, NULL,
 	                            DSDB_FLAG_NEXT_MODULE |
 	                            DSDB_SEARCH_SHOW_RECYCLED |
