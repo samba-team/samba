@@ -36,6 +36,7 @@ if bld.CONFIG_GET('SAMBA_USES_MITKDC'):
                           service
                           talloc
                           UTIL_RUNCMD
+                          MIT_KDC_IRPC
                      ''',
                      internal_module=False)
 

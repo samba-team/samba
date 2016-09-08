@@ -31,6 +31,8 @@
 #include "dynconfig.h"
 #include "libds/common/roles.h"
 
+#include "source4/kdc/mit_kdc_irpc.h"
+
 static void mitkdc_server_done(struct tevent_req *subreq);
 
 /*
@@ -40,6 +42,7 @@ void mitkdc_task_init(struct task_server *task)
 {
 	struct tevent_req *subreq;
 	const char * const *kdc_cmd;
+	NTSTATUS status;
 
 	task_server_set_title(task, "task[mitkdc_parent]");
 
@@ -87,6 +90,15 @@ void mitkdc_task_init(struct task_server *task)
 	tevent_req_set_callback(subreq, mitkdc_server_done, task);
 
 	DEBUG(5,("Started krb5kdc process\n"));
+
+	status = samba_setup_mit_kdc_irpc(task);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task,
+				      "Failed to setup kdc irpc service",
+				      true);
+	}
+
+	DEBUG(5,("Started irpc service for kdc_server\n"));
 }
 
 /*
