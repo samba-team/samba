@@ -303,7 +303,7 @@ class LATests(samba.tests.TestCase):
         self.remove_linked_attribute(g2, u1)
         self.assert_forward_links(g2, [])
 
-    def test_la_links_delete_link_reveal(self):
+    def _test_la_links_delete_link_reveal(self):
         u1, u2 = self.add_objects(2, 'user', 'u_del_link_reveal')
         g1, g2 = self.add_objects(2, 'group', 'g_del_link_reveal')
 
@@ -318,6 +318,11 @@ class LATests(samba.tests.TestCase):
                                   show_deactivated_link=0,
                                   reveal_internals=0
         )
+    def test_la_links_delete_link_reveal(self):
+        if opts.no_reveal_internals:
+            print 'skipping because --no-reveal-internals'
+            return
+        self._test_la_links_delete_link_reveal()
 
     def test_la_links_delete_user(self):
         u1, u2 = self.add_objects(2, 'user', 'u_del_user')
