@@ -2586,13 +2586,6 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 	const struct dsdb_schema *schema;
 	struct GUID old_guid;
 
-	if (seq_num == 0) {
-		/* there the replmd_update_rpmd code has already
-		 * checked and saw that there are no linked
-		 * attributes */
-		return LDB_SUCCESS;
-	}
-
 	if (dsdb_functional_level(ldb) == DS_DOMAIN_FUNCTION_2000) {
 		/*
 		 * Nothing special is required for modifying or vanishing links
