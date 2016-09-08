@@ -2,646 +2,775 @@
 dn: CN=User,CN={31B2F340-016D-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3586
 
 # record 2
 dn: CN=User,CN={6AC1786C-016F-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3589
 
 # record 3
 dn: CN=Content,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=ms-DFSR-Content,CN=Schema,CN=Configuration,DC=release-4-5-0
  -pre1,DC=samba,DC=corp
+uSNChanged: 3394
 
 # record 4
 dn: CN=Machine,CN={31B2F340-016D-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3587
 
 # record 5
 dn: CN=Machine,CN={6AC1786C-016F-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3590
 
 # record 6
 dn: CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=ms-DFSR-Topology,CN=Schema,CN=Configuration,DC=release-4-5-
  0-pre1,DC=samba,DC=corp
+uSNChanged: 3395
 
 # record 7
 dn: CN=0b7fb422-3609-4587-8c2e-94b10f67d1bf,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3453
 
 # record 8
 dn: CN=0e660ea3-8a5e-4495-9ad7-ca1bd4638f9e,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3405
 
 # record 9
 dn: CN=10b3ad2a-6883-4fa7-90fc-6377cbdc1b26,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3409
 
 # record 10
 dn: CN=13d15cf0-e6c8-11d6-9793-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3450
 
 # record 11
 dn: CN=231fb90b-c92a-40c9-9379-bacfc313a3e3,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3454
 
 # record 12
 dn: CN=2416c60a-fe15-4d7a-a61e-dffd5df864d3,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3402
 
 # record 13
 dn: CN=293f0798-ea5c-4455-9f5d-45f33a30703b,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3416
 
 # record 14
 dn: CN=2951353e-d102-4ea5-906c-54247eeec741,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3455
 
 # record 15
 dn: CN=3051c66f-b332-4a73-9a20-2d6a7d6e6a1c,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3447
 
 # record 16
 dn: CN=3c784009-1f57-4e2a-9b04-6915c9e71961,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3424
 
 # record 17
 dn: CN=3e4f4182-ac5d-4378-b760-0eab2de593e2,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3448
 
 # record 18
 dn: CN=446f24ea-cfd5-4c52-8346-96e170bcb912,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3414
 
 # record 19
 dn: CN=4aaabc3a-c416-4b9c-a6bb-4b453ab1c1f0,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3456
 
 # record 20
 dn: CN=4c93ad42-178a-4275-8600-16811d28f3aa,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3457
 
 # record 21
 dn: CN=4dfbb973-8a62-4310-a90c-776e00f83222,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3419
 
 # record 22
 dn: CN=51cba88b-99cf-4e16-bef2-c427b38d0767,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3415
 
 # record 23
 dn: CN=57428d75-bef7-43e1-938b-2e749f5a8d56,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3458
 
 # record 24
 dn: CN=5c82b233-75fc-41b3-ac71-c69592e6bf15,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3417
 
 # record 25
 dn: CN=61b34cb0-55ee-4be9-b595-97810b92b017,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3459
 
 # record 26
 dn: CN=6ada9ff7-c9df-45c1-908e-9fef2fab008a,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3408
 
 # record 27
 dn: CN=6bcd5678-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3425
 
 # record 28
 dn: CN=6bcd5679-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3426
 
 # record 29
 dn: CN=6bcd567a-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3427
 
 # record 30
 dn: CN=6bcd567b-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3428
 
 # record 31
 dn: CN=6bcd567c-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3429
 
 # record 32
 dn: CN=6bcd567d-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3430
 
 # record 33
 dn: CN=6bcd567e-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3431
 
 # record 34
 dn: CN=6bcd567f-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3432
 
 # record 35
 dn: CN=6bcd5680-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3433
 
 # record 36
 dn: CN=6bcd5681-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3434
 
 # record 37
 dn: CN=6bcd5682-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3435
 
 # record 38
 dn: CN=6bcd5683-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3436
 
 # record 39
 dn: CN=6bcd5684-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3437
 
 # record 40
 dn: CN=6bcd5685-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3438
 
 # record 41
 dn: CN=6bcd5686-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3439
 
 # record 42
 dn: CN=6bcd5687-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3440
 
 # record 43
 dn: CN=6bcd5688-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3441
 
 # record 44
 dn: CN=6bcd5689-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3442
 
 # record 45
 dn: CN=6bcd568a-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3443
 
 # record 46
 dn: CN=6bcd568b-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3444
 
 # record 47
 dn: CN=6bcd568c-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3445
 
 # record 48
 dn: CN=6bcd568d-8314-11d6-977b-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3446
 
 # record 49
 dn: CN=6E157EDF-4E72-4052-A82A-EC3F91021A22,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3452
 
 # record 50
 dn: CN=6ff880d6-11e7-4ed1-a20f-aac45da48650,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3413
 
 # record 51
 dn: CN=71482d49-8870-4cb3-a438-b6fc9ec35d70,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3460
 
 # record 52
 dn: CN=7868d4c8-ac41-4e05-b401-776280e8e9f1,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3403
 
 # record 53
 dn: CN=7cfb016c-4f87-4406-8166-bd9df943947f,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3421
 
 # record 54
 dn: CN=7ffef925-405b-440a-8d58-35e8cd6e98c3,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3418
 
 # record 55
 dn: CN=8437C3D8-7689-4200-BF38-79E4AC33DFA0,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3420
 
 # record 56
 dn: CN=860c36ed-5241-4c62-a18b-cf6ff9994173,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3404
 
 # record 57
 dn: CN=8ca38317-13a4-4bd4-806f-ebed6acb5d0c,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3423
 
 # record 58
 dn: CN=8ddf6913-1c7b-4c59-a5af-b9ca3b3d2c4c,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3451
 
 # record 59
 dn: CN=9738c400-7795-4d6e-b19d-c16cd6486166,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3461
 
 # record 60
 dn: CN=98de1d3e-6611-443b-8b4e-f4337f1ded0b,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3410
 
 # record 61
 dn: CN=9cac1f66-2167-47ad-a472-2a13251310e4,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3412
 
 # record 62
 dn: CN=a1789bfb-e0a2-4739-8cc0-e77d892d080a,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3462
 
 # record 63
 dn: CN=a3dac986-80e7-4e59-a059-54cb1ab43cb9,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3463
 
 # record 64
 dn: CN=a86fe12a-0f62-4e2a-b271-d27f601f8182,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3406
 
 # record 65
 dn: CN=ab402345-d3c3-455d-9ff7-40268a1099b6,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3399
 
 # record 66
 dn: CN=aed72870-bf16-4788-8ac7-22299c8207f1,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3464
 
 # record 67
 dn: CN=b96ed344-545a-4172-aa0c-68118202f125,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3465
 
 # record 68
 dn: CN=bab5f54d-06c8-48de-9b87-d78b796564e4,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3400
 
 # record 69
 dn: CN=c4f17608-e611-11d6-9793-00c04f613221,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3449
 
 # record 70
 dn: CN=c88227bc-fcca-4b58-8d8a-cd3d64528a02,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3466
 
 # record 71
 dn: CN=d85c0bfd-094f-4cad-a2b5-82ac9268475d,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3407
 
 # record 72
 dn: CN=dda1d01d-4bd7-4c49-a184-46f9241b560e,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3467
 
 # record 73
 dn: CN=de10d491-909f-4fb0-9abb-4b7865c0fe80,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3468
 
 # record 74
 dn: CN=ebad865a-d649-416f-9922-456b53bbb5b8,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3469
 
 # record 75
 dn: CN=f3dd09dd-25e8-4f9c-85df-12d6d2f2f2f5,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3401
 
 # record 76
 dn: CN=f58300d1-b71a-4DB6-88a1-a8b9538beaca,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3470
 
 # record 77
 dn: CN=f607fd87-80cf-45e2-890b-6cf97ec0e284,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3411
 
 # record 78
 dn: CN=f7ed4553-d82b-49ef-a839-2f38a36bb069,CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3422
 
 # record 79
 dn: DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3606
 
 # record 80
 dn: DC=a.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3616
 
 # record 81
 dn: DC=b.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3609
 
 # record 82
 dn: DC=c.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3618
 
 # record 83
 dn: DC=d.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3614
 
 # record 84
 dn: DC=e.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3613
 
 # record 85
 dn: DC=f.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3608
 
 # record 86
 dn: DC=g.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3617
 
 # record 87
 dn: DC=h.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3607
 
 # record 88
 dn: DC=i.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3612
 
 # record 89
 dn: DC=j.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3619
 
 # record 90
 dn: DC=k.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3615
 
 # record 91
 dn: DC=l.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3611
 
 # record 92
 dn: DC=m.root-servers.net,DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Node,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3610
 
 # record 93
 dn: CN=SOM,CN=WMIPolicy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3510
 
 # record 94
 dn: CN=WMIGPO,CN=WMIPolicy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3511
 
 # record 95
 dn: CN=RID Set,CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=RID-Set,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC
  =samba,DC=corp
+uSNChanged: 3584
 
 # record 96
 dn: CN=Operations,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3398
 
 # record 97
 dn: CN=PolicyType,CN=WMIPolicy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3509
 
 # record 98
 dn: CN=VolumeTable,CN=FileLinks,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Link-Track-Volume-Table,CN=Schema,CN=Configuration,DC=relea
  se-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3475
 
 # record 99
 dn: CN=AppCategories,CN=Default Domain Policy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Class-Store,CN=Schema,CN=Configuration,DC=release-4-5-0-pre
  1,DC=samba,DC=corp
+uSNChanged: 3390
 
 # record 100
 dn: CN=PolicyTemplate,CN=WMIPolicy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3508
 
 # record 101
 dn: CN=ObjectMoveTable,CN=FileLinks,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Link-Track-Object-Move-Table,CN=Schema,CN=Configuration,DC=
  release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3474
 
 # record 102
 dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3471
 
 # record 103
 dn: CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=ms-DFSR-ReplicationGroup,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3393
 
 # record 104
 dn: CN=ActiveDirectoryUpdate,CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3397
 
 # record 105
 dn: CN={31B2F340-016D-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=releas
  e-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3585
 
 # record 106
 dn: CN={6AC1786C-016F-11D2-945F-00C04FB984F9},CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group-Policy-Container,CN=Schema,CN=Configuration,DC=releas
  e-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3588
 
 # record 107
 dn: CN=ipsecNFA{59319BE2-5EE3-11D2-ACE8-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3692
 
 # record 108
 dn: CN=ipsecNFA{59319BF3-5EE3-11D2-ACE8-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3709
 
 # record 109
 dn: CN=ipsecNFA{59319C04-5EE3-11D2-ACE8-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3703
 
 # record 110
 dn: CN=ipsecNFA{594272E2-071D-11D3-AD22-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3694
 
 # record 111
 dn: CN=ipsecNFA{594272FD-071D-11D3-AD22-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3495
 
 # record 112
 dn: CN=ipsecNFA{6A1F5C6F-72B7-11D2-ACF0-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3498
 
 # record 113
 dn: CN=ipsecNFA{72385232-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3691
 
 # record 114
 dn: CN=ipsecNFA{7238523E-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-NFA,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3708
 
 # record 115
 dn: CN=ipsecFilter{72385235-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Filter,CN=Schema,CN=Configuration,DC=release-4-5-0-pr
  e1,DC=samba,DC=corp
+uSNChanged: 3700
 
 # record 116
 dn: CN=ipsecFilter{7238523A-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Filter,CN=Schema,CN=Configuration,DC=release-4-5-0-pr
  e1,DC=samba,DC=corp
+uSNChanged: 3696
 
 # record 117
 dn: CN=ipsecPolicy{72385230-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Policy,CN=Schema,CN=Configuration,DC=release-4-5-0-pr
  e1,DC=samba,DC=corp
+uSNChanged: 3689
 
 # record 118
 dn: CN=ipsecPolicy{72385236-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Policy,CN=Schema,CN=Configuration,DC=release-4-5-0-pr
  e1,DC=samba,DC=corp
+uSNChanged: 3702
 
 # record 119
 dn: CN=ipsecPolicy{7238523C-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Policy,CN=Schema,CN=Configuration,DC=release-4-5-0-pr
  e1,DC=samba,DC=corp
+uSNChanged: 3707
 
 # record 120
 dn: CN=ipsecISAKMPPolicy{72385231-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-ISAKMP-Policy,CN=Schema,CN=Configuration,DC=release-4
  -5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3478
 
 # record 121
 dn: CN=ipsecISAKMPPolicy{72385237-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-ISAKMP-Policy,CN=Schema,CN=Configuration,DC=release-4
  -5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3488
 
 # record 122
 dn: CN=ipsecISAKMPPolicy{7238523D-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-ISAKMP-Policy,CN=Schema,CN=Configuration,DC=release-4
  -5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3492
 
 # record 123
 dn: CN=ipsecNegotiationPolicy{59319BDF-5EE3-11D2-ACE8-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Negotiation-Policy,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3484
 
 # record 124
 dn: CN=ipsecNegotiationPolicy{59319BF0-5EE3-11D2-ACE8-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Negotiation-Policy,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3497
 
 # record 125
 dn: CN=ipsecNegotiationPolicy{59319C01-5EE3-11D2-ACE8-0060B0ECCA17},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Negotiation-Policy,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3490
 
 # record 126
 dn: CN=ipsecNegotiationPolicy{72385233-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Negotiation-Policy,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3482
 
 # record 127
 dn: CN=ipsecNegotiationPolicy{7238523B-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Negotiation-Policy,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3698
 
 # record 128
 dn: CN=ipsecNegotiationPolicy{7238523F-70FA-11D1-864C-14A300000000},CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Ipsec-Negotiation-Policy,CN=Schema,CN=Configuration,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3496
 
 # record 129
 dn: DC=RootDNSServers,CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dns-Zone,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
+uSNChanged: 3605
 
 # record 130
 dn: CN=Guest,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -649,6 +778,7 @@ memberOf: CN=Guests,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=
  samba,DC=corp
 sAMAccountType: 805306368
+uSNChanged: 3546
 
 # record 131
 dn: CN=Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -660,6 +790,7 @@ member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samb
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3563
 
 # record 132
 dn: CN=Guests,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -668,6 +799,7 @@ member: CN=Guest,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3564
 
 # record 133
 dn: CN=krbtgt,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -676,17 +808,20 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=
  samba,DC=corp
 sAMAccountType: 805306368
+uSNChanged: 3547
 
 # record 134
 dn: CN=Server,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Sam-Server,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1
  ,DC=samba,DC=corp
+uSNChanged: 3505
 
 # record 135
 dn: CN=S-1-5-4,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba,DC=corp
 memberOf: CN=Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,DC=re
  lease-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3558
 
 # record 136
 dn: CN=S-1-5-9,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -694,16 +829,19 @@ memberOf: CN=Windows Authorization Access Group,CN=Builtin,DC=release-4-5-0-pr
  e1,DC=samba,DC=corp
 objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,DC=re
  lease-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3559
 
 # record 137
 dn: CN=Meetings,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3499
 
 # record 138
 dn: CN=Policies,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3501
 
 # record 139
 dn: CN=S-1-5-11,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -712,29 +850,34 @@ memberOf: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,DC=release-4-5-0-pr
 memberOf: CN=Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,DC=re
  lease-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3560
 
 # record 140
 dn: CN=S-1-5-17,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba,DC=corp
 memberOf: CN=IIS_IUSRS,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Foreign-Security-Principal,CN=Schema,CN=Configuration,DC=re
  lease-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3561
 
 # record 141
 dn: CN=swimmers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3745
 
 # record 142
 dn: CN=DnsAdmins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3602
 
 # record 143
 dn: CN=FileLinks,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=File-Link-Tracking,CN=Schema,CN=Configuration,DC=release-4-
  5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3473
 
 # record 144
 dn: CN=IIS_IUSRS,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -743,32 +886,38 @@ member: CN=S-1-5-17,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samb
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3579
 
 # record 145
 dn: CN=Microsoft,CN=Program Data,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3384
 
 # record 146
 dn: CN=WMIPolicy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3507
 
 # record 147
 dn: CN=Replicator,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3569
 
 # record 148
 dn: CN=IP Security,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3476
 
 # record 149
 dn: CN=RpcServices,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Rpc-Container,CN=Schema,CN=Configuration,DC=release-4-5-0-p
  re1,DC=samba,DC=corp
+uSNChanged: 3504
 
 # record 150
 dn: CN=Domain Users,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -776,16 +925,19 @@ memberOf: CN=Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3541
 
 # record 151
 dn: CN=MicrosoftDNS,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3604
 
 # record 152
 dn: CN=RID Manager$,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=RID-Manager,CN=Schema,CN=Configuration,DC=release-4-5-0-pre
  1,DC=samba,DC=corp
+uSNChanged: 3598
 
 # record 153
 dn: CN=Administrator,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -798,16 +950,19 @@ memberOf: CN=Domain Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=
  samba,DC=corp
 sAMAccountType: 805306368
+uSNChanged: 3545
 
 # record 154
 dn: CN=AdminSDHolder,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3386
 
 # record 155
 dn: CN=ComPartitions,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3387
 
 # record 156
 dn: CN=Domain Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -818,6 +973,7 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3549
 
 # record 157
 dn: CN=Domain Guests,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -825,11 +981,13 @@ memberOf: CN=Guests,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3542
 
 # record 158
 dn: CN=DomainUpdates,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3396
 
 # record 159
 dn: CN=Schema Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -839,6 +997,7 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3551
 
 # record 160
 dn: CN=Administrators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -848,12 +1007,14 @@ member: CN=Administrator,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3562
 
 # record 161
 dn: CN=DnsUpdateProxy,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3603
 
 # record 162
 dn: CN=Cert Publishers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -862,69 +1023,81 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3550
 
 # record 163
 dn: CN=DOUGLASB-DESKTO,OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Computer,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,D
  C=samba,DC=corp
 sAMAccountType: 805306369
+uSNChanged: 3601
 
 # record 164
 dn: CN=Print Operators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3567
 
 # record 165
 dn: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=
  samba,DC=corp
 sAMAccountType: 805306368
+uSNChanged: 3712
 
 # record 166
 dn: CN=WinsockServices,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3506
 
 # record 167
 dn: CN=Backup Operators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3568
 
 # record 168
 dn: CN=ComPartitionSets,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3388
 
 # record 169
 dn: CN=Domain Computers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3543
 
 # record 170
 dn: CN=Server Operators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3566
 
 # record 171
 dn: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=
  samba,DC=corp
 sAMAccountType: 805306368
+uSNChanged: 3715
 
 # record 172
 dn: CN=Account Operators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3565
 
 # record 173
 dn: CN=Dfs-Configuration,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Dfs-Configuration,CN=Schema,CN=Configuration,DC=release-4-5
  -0-pre1,DC=samba,DC=corp
+uSNChanged: 3391
 
 # record 174
 dn: CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -935,12 +1108,14 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3552
 
 # record 175
 dn: CN=Event Log Readers,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3581
 
 # record 176
 dn: CN=Domain Controllers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -949,57 +1124,67 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3544
 
 # record 177
 dn: CN=DFSR-GlobalSettings,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=ms-DFSR-GlobalSettings,CN=Schema,CN=Configuration,DC=releas
  e-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3392
 
 # record 178
 dn: CN=RAS and IAS Servers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3555
 
 # record 179
 dn: CN=Remote Desktop Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3571
 
 # record 180
 dn: CN=Default Domain Policy,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Domain-Policy,CN=Schema,CN=Configuration,DC=release-4-5-0-p
  re1,DC=samba,DC=corp
+uSNChanged: 3389
 
 # record 181
 dn: CN=Distributed COM Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3578
 
 # record 182
 dn: CN=Performance Log Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3575
 
 # record 183
 dn: CN=Cryptographic Operators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3580
 
 # record 184
 dn: CN=File Replication Service,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=NTFRS-Settings,CN=Schema,CN=Configuration,DC=release-4-5-0-
  pre1,DC=samba,DC=corp
+uSNChanged: 3472
 
 # record 185
 dn: CN=Performance Monitor Users,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3574
 
 # record 186
 dn: CN=Group Policy Creator Owners,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -1009,11 +1194,13 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3553
 
 # record 187
 dn: CN=Password Settings Container,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=ms-DS-Password-Settings-Container,CN=Schema,CN=Configuratio
  n,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3500
 
 # record 188
 dn: CN=Read-only Domain Controllers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -1022,35 +1209,41 @@ memberOf: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3554
 
 # record 189
 dn: CN=Incoming Forest Trust Builders,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3573
 
 # record 190
 dn: CN=Certificate Service DCOM Access,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3582
 
 # record 191
 dn: CN=Network Configuration Operators,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3572
 
 # record 192
 dn: CN=Terminal Server License Servers,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3577
 
 # record 193
 dn: CN=RAS and IAS Servers Access Check,CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3502
 
 # record 194
 dn: CN=Pre-Windows 2000 Compatible Access,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -1059,6 +1252,7 @@ member: CN=S-1-5-11,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samb
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3570
 
 # record 195
 dn: CN=Windows Authorization Access Group,CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -1067,6 +1261,7 @@ member: CN=S-1-5-9,CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3576
 
 # record 196
 dn: CN=Denied RODC Password Replication Group,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
@@ -1083,106 +1278,128 @@ member: CN=krbtgt,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3557
 
 # record 197
 dn: CN=Allowed RODC Password Replication Group,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 536870912
+uSNChanged: 3556
 
 # record 198
 dn: CN=Enterprise Read-only Domain Controllers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Group,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,DC=s
  amba,DC=corp
 sAMAccountType: 268435456
+uSNChanged: 3548
 
 # record 199
 dn: CN=ddg\0ADEL:fb8c2fe3-5448-43de-99f9-e1d3b9357cfc,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3737
 
 # record 200
 dn: CN=dsg\0ADEL:6d66d0ef-cad7-4e5d-b1b6-4a233a21c269,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3734
 
 # record 201
 dn: CN=gdg\0ADEL:e0f581e7-14ee-4fc2-839c-8f46f581c72a,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3738
 
 # record 202
 dn: CN=gsg\0ADEL:91aa85cc-fc19-4b8c-9fc7-aaba425439c7,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3735
 
 # record 203
 dn: CN=udg\0ADEL:7cff5537-51b1-4d26-a295-0225dbea8525,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3739
 
 # record 204
 dn: CN=usg\0ADEL:d012e8f5-a4bd-40ea-a2a1-68ff2508847d,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3736
 
 # record 205
 dn: CN=fred\0ADEL:2301a64c-5b42-4ca8-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 lastKnownParent: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3746
 
 # record 206
 dn: CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3373
 
 # record 207
 dn: CN=System,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3385
 
 # record 208
 dn: CN=Builtin,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Builtin-Domain,CN=Schema,CN=Configuration,DC=release-4-5-0-
  pre1,DC=samba,DC=corp
+uSNChanged: 3376
 
 # record 209
 dn: CN=Computers,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3375
 
 # record 210
 dn: CN=NTDS Quotas,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=ms-DS-Quota-Container,CN=Schema,CN=Configuration,DC=release
  -4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3382
 
 # record 211
 dn: CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Lost-And-Found,CN=Schema,CN=Configuration,DC=release-4-5-0-
  pre1,DC=samba,DC=corp
+uSNChanged: 3381
 
 # record 212
 dn: CN=Program Data,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3383
 
 # record 213
 dn: CN=Infrastructure,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Infrastructure-Update,CN=Schema,CN=Configuration,DC=release
  -4-5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3597
 
 # record 214
 dn: CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3377
 
 # record 215
 dn: CN=ForeignSecurityPrincipals,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Container,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1,
  DC=samba,DC=corp
+uSNChanged: 3379
 
 # record 216
 dn: OU=Domain Controllers,DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,DC=release-4
  -5-0-pre1,DC=samba,DC=corp
+uSNChanged: 3378
 
 # record 217
 dn: DC=release-4-5-0-pre1,DC=samba,DC=corp
 objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,DC=release-4-5-0-pre1
  ,DC=samba,DC=corp
+uSNChanged: 3596
 wellKnownObjects: B:32:6227F0AF1FC2410D8E3BB10615BB5B0F:CN=NTDS Quotas,DC=rele
  ase-4-5-0-pre1,DC=samba,DC=corp
 wellKnownObjects: B:32:F4BE92A4C777485E878E9421D53087DB:CN=Microsoft,CN=Progra

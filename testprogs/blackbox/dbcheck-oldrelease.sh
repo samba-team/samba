@@ -181,6 +181,13 @@ check_expected_before_values() {
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
+    elif [ x$RELEASE = x"release-4-5-0-pre1" ]; then
+        tmpldif=$PREFIX_ABS/$RELEASE/rootdse-version.initial.txt.tmp
+        TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif
+        diff $tmpldif $release_dir/rootdse-version.initial.txt
+        if [ "$?" != "0" ]; then
+            return 1
+        fi
     fi
     return 0
 }
@@ -233,11 +240,20 @@ check_expected_after_values() {
     elif [ x$RELEASE = x"release-4-5-0-pre1" ]; then
         echo  $RELEASE  checking after values
 	tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-dbcheck.ldif.tmp
-        $BINDIR/ldbsearch -H  tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --show-recycled --show-deleted  --show-deactivated-link --reveal member memberOf lastKnownParent objectCategory lastKnownParent wellKnownObjects legacyExchangeDN  sAMAccountType --sorted > $tmpldif
+        $BINDIR/ldbsearch -H  tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --show-recycled --show-deleted  --show-deactivated-link --reveal member memberOf lastKnownParent objectCategory lastKnownParent wellKnownObjects legacyExchangeDN  sAMAccountType uSNChanged --sorted > $tmpldif
 	diff $tmpldif $release_dir/expected-links-after-dbcheck.ldif
 	if [ "$?" != "0" ]; then
 	    return 1
 	fi
+
+	# If in the future dbcheck has to make a change recorded in replPropertyMetadata,
+	# this test will fail and can be removed.
+        tmpversion=$PREFIX_ABS/$RELEASE/rootdse-version.final.txt.tmp
+        TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpversion
+        diff $tmpversion $release_dir/rootdse-version.final.txt
+        if [ "$?" != "0" ]; then
+            return 1
+        fi
     fi
     return 0
 }
