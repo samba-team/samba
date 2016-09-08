@@ -1202,6 +1202,13 @@ static int notifyd_add_proxy_syswatches(struct db_record *rec,
 		uint32_t subdir_filter = instance->instance.subdir_filter;
 		int ret;
 
+		/*
+		 * This is a remote database. Pointers that we were
+		 * given don't make sense locally. Initialize to NULL
+		 * in case sys_notify_watch fails.
+		 */
+		instances[i].sys_watch = NULL;
+
 		ret = state->sys_notify_watch(
 			db, state->sys_notify_ctx, path,
 			&filter, &subdir_filter,
