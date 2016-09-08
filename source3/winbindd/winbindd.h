@@ -344,12 +344,6 @@ struct winbindd_tdc_domain {
 	uint32_t trust_type;
 };
 
-/* Switch for listing users or groups */
-enum ent_type {
-	LIST_USERS = 0,
-	LIST_GROUPS,
-};
-
 struct WINBINDD_MEMORY_CREDS {
 	struct WINBINDD_MEMORY_CREDS *next, *prev;
 	const char *username; /* lookup key. */
