@@ -8438,18 +8438,6 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	WERROR err = WERR_OK;
 	const char *driver_name = NULL;
 	uint32_t version;
-	const char *fn;
-
-	switch (p->opnum) {
-		case NDR_SPOOLSS_ADDPRINTERDRIVER:
-			fn = "_spoolss_AddPrinterDriver";
-			break;
-		case NDR_SPOOLSS_ADDPRINTERDRIVEREX:
-			fn = "_spoolss_AddPrinterDriverEx";
-			break;
-		default:
-			return WERR_INVALID_PARAM;
-	}
 
 	/*
 	 * we only support the semantics of AddPrinterDriver()
@@ -8468,7 +8456,7 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	if (r->in.info_ctr->level != 3 &&
 	    r->in.info_ctr->level != 6 &&
 	    r->in.info_ctr->level != 8) {
-		DEBUG(0,("%s: level %d not yet implemented\n", fn,
+		DEBUG(0,("%s: level %d not yet implemented\n", __func__,
 			r->in.info_ctr->level));
 		return WERR_UNKNOWN_LEVEL;
 	}
@@ -8503,7 +8491,7 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 
 	if (!srv_spoolss_drv_upgrade_printer(driver_name, p->msg_ctx)) {
 		DEBUG(0,("%s: Failed to send message about upgrading driver [%s]!\n",
-			fn, driver_name));
+			__func__, driver_name));
 	}
 
 done:
