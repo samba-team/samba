@@ -266,11 +266,32 @@ class LATests(samba.tests.TestCase):
         u1, u2 = self.add_objects(2, 'user', 'u_del_link')
         g1, g2 = self.add_objects(2, 'group', 'g_del_link')
 
+        res = self.samdb.search(g1, scope=ldb.SCOPE_BASE,
+                                attrs=['uSNChanged'])
+        old_usn1 = int(res[0]['uSNChanged'][0])
+
         self.add_linked_attribute(g1, u1)
+
+        res = self.samdb.search(g1, scope=ldb.SCOPE_BASE,
+                                attrs=['uSNChanged'])
+        new_usn1 = int(res[0]['uSNChanged'][0])
+
+        self.assertNotEqual(old_usn1, new_usn1, "USN should have incremented")
+
         self.add_linked_attribute(g2, u1)
         self.add_linked_attribute(g2, u2)
 
+        res = self.samdb.search(g2, scope=ldb.SCOPE_BASE,
+                                attrs=['uSNChanged'])
+        old_usn2 = int(res[0]['uSNChanged'][0])
+
         self.remove_linked_attribute(g2, u1)
+
+        res = self.samdb.search(g2, scope=ldb.SCOPE_BASE,
+                                attrs=['uSNChanged'])
+        new_usn2 = int(res[0]['uSNChanged'][0])
+
+        self.assertNotEqual(old_usn2, new_usn2, "USN should have incremented")
 
         self.assert_forward_links(g1, [u1])
         self.assert_forward_links(g2, [u2])
