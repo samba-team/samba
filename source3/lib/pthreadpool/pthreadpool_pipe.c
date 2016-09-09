@@ -24,6 +24,7 @@
 
 struct pthreadpool_pipe {
 	struct pthreadpool *pool;
+	int num_jobs;
 	pid_t pid;
 	int pipe_fds[2];
 };
@@ -39,7 +40,7 @@ int pthreadpool_pipe_init(unsigned max_threads,
 	struct pthreadpool_pipe *pool;
 	int ret;
 
-	pool = malloc(sizeof(struct pthreadpool_pipe));
+	pool = calloc(1, sizeof(struct pthreadpool_pipe));
 	if (pool == NULL) {
 		return ENOMEM;
 	}
@@ -88,6 +89,10 @@ int pthreadpool_pipe_destroy(struct pthreadpool_pipe *pool)
 {
 	int ret;
 
+	if (pool->num_jobs != 0) {
+		return EBUSY;
+	}
+
 	ret = pthreadpool_destroy(pool->pool);
 	if (ret != 0) {
 		return ret;
@@ -132,6 +137,7 @@ static int pthreadpool_pipe_reinit(struct pthreadpool_pipe *pool)
 	}
 
 	pool->pipe_fds[0] = signal_fd;
+	pool->num_jobs = 0;
 
 	return 0;
 }
@@ -148,7 +154,13 @@ int pthreadpool_pipe_add_job(struct pthreadpool_pipe *pool, int job_id,
 	}
 
 	ret = pthreadpool_add_job(pool->pool, job_id, fn, private_data);
-	return ret;
+	if (ret != 0) {
+		return ret;
+	}
+
+	pool->num_jobs += 1;
+
+	return 0;
 }
 
 int pthreadpool_pipe_signal_fd(struct pthreadpool_pipe *pool)
@@ -159,7 +171,7 @@ int pthreadpool_pipe_signal_fd(struct pthreadpool_pipe *pool)
 int pthreadpool_pipe_finished_jobs(struct pthreadpool_pipe *pool, int *jobids,
 				   unsigned num_jobids)
 {
-	ssize_t to_read, nread;
+	ssize_t to_read, nread, num_jobs;
 	pid_t pid = getpid();
 
 	if (pool->pid != pid) {
@@ -178,5 +190,13 @@ int pthreadpool_pipe_finished_jobs(struct pthreadpool_pipe *pool, int *jobids,
 	if ((nread % sizeof(int)) != 0) {
 		return -EINVAL;
 	}
-	return nread / sizeof(int);
+
+	num_jobs = nread / sizeof(int);
+
+	if (num_jobs > pool->num_jobs) {
+		return -EINVAL;
+	}
+	pool->num_jobs -= num_jobs;
+
+	return num_jobs;
 }
