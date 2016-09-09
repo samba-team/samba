@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include "pthreadpool_pipe.h"
+#include "pthreadpool_tevent.h"
 
 static int test_init(void)
 {
@@ -189,9 +190,90 @@ static int test_fork(void)
 	return 0;
 }
 
+static void test_tevent_wait(void *private_data)
+{
+	int *timeout = private_data;
+	poll(NULL, 0, *timeout);
+}
+
+static int test_tevent_1(void)
+{
+	struct tevent_context *ev;
+	struct pthreadpool_tevent *pool;
+	struct tevent_req *req1, *req2;
+	int timeout10 = 10;
+	int timeout100 = 100;
+	int ret;
+	bool ok;
+
+	ev = tevent_context_init(NULL);
+	if (ev == NULL) {
+		ret = errno;
+		fprintf(stderr, "tevent_context_init failed: %s\n",
+			strerror(ret));
+		return ret;
+	}
+	ret = pthreadpool_tevent_init(ev, 0, &pool);
+	if (ret != 0) {
+		fprintf(stderr, "pthreadpool_tevent_init failed: %s\n",
+			strerror(ret));
+		TALLOC_FREE(ev);
+		return ret;
+	}
+	req1 = pthreadpool_tevent_job_send(
+		ev, ev, pool, test_tevent_wait, &timeout10);
+	if (req1 == NULL) {
+		fprintf(stderr, "pthreadpool_tevent_job_send failed\n");
+		TALLOC_FREE(ev);
+		return ENOMEM;
+	}
+	req2 = pthreadpool_tevent_job_send(
+		ev, ev, pool, test_tevent_wait, &timeout100);
+	if (req2 == NULL) {
+		fprintf(stderr, "pthreadpool_tevent_job_send failed\n");
+		TALLOC_FREE(ev);
+		return ENOMEM;
+	}
+	ok = tevent_req_poll(req2, ev);
+	if (!ok) {
+		ret = errno;
+		fprintf(stderr, "tevent_req_poll failed: %s\n",
+			strerror(ret));
+		TALLOC_FREE(ev);
+		return ret;
+	}
+	ret = pthreadpool_tevent_job_recv(req1);
+	TALLOC_FREE(req1);
+	if (ret != 0) {
+		fprintf(stderr, "tevent_req_poll failed: %s\n",
+			strerror(ret));
+		TALLOC_FREE(ev);
+		return ret;
+	}
+
+	TALLOC_FREE(req2);
+
+	ret = tevent_loop_wait(ev);
+	if (ret != 0) {
+		fprintf(stderr, "tevent_loop_wait failed\n");
+		return ret;
+	}
+
+	TALLOC_FREE(pool);
+	TALLOC_FREE(ev);
+	return 0;
+}
+
 int main(void)
 {
 	int ret;
+
+	ret = test_tevent_1();
+	if (ret != 0) {
+		fprintf(stderr, "test_event_1 failed: %s\n",
+			strerror(ret));
+		return 1;
+	}
 
 	ret = test_init();
 	if (ret != 0) {
