@@ -33,7 +33,7 @@
 /* The following definitions come from auth/auth_sam_reply.c  */
 
 NTSTATUS make_user_info_SamBaseInfo(TALLOC_CTX *mem_ctx,
-				    const const char *account_name,
+				    const char *account_name,
 				    const struct netr_SamBaseInfo *base,
 				    bool authenticated,
 				    struct auth_user_info **_user_info);
