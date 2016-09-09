@@ -26,6 +26,8 @@
 #include "cluster/cluster.h"
 #include "param/param.h"
 #include "torture/local/proto.h"
+#include "system/select.h"
+#include "system/filesys.h"
 
 static uint32_t msg_pong;
 
@@ -134,9 +136,83 @@ static bool test_ping_speed(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_messaging_overflow(struct torture_context *tctx)
+{
+	struct imessaging_context *msg_ctx;
+	ssize_t nwritten, nread;
+	pid_t child;
+	char c = 0;
+	int up_pipe[2], down_pipe[2];
+	int i, ret, child_status;
+
+	ret = pipe(up_pipe);
+	torture_assert(tctx, ret == 0, "pipe failed");
+	ret = pipe(down_pipe);
+	torture_assert(tctx, ret == 0, "pipe failed");
+
+	child = fork();
+	if (child < 0) {
+		torture_fail(tctx, "fork failed");
+	}
+
+	if (child == 0) {
+		torture_assert(tctx, ret == 0, "close failed");
+
+		msg_ctx = imessaging_init(tctx, tctx->lp_ctx,
+					  cluster_id(getpid(), 0),
+					  tctx->ev);
+		torture_assert(tctx, msg_ctx != NULL,
+			       "imessaging_init failed");
+
+		do {
+			nwritten = write(up_pipe[1], &c, 1);
+		} while ((nwritten == -1) && (errno == EINTR));
+
+		ret = close(down_pipe[1]);
+
+		do {
+			nread = read(down_pipe[0], &c, 1);
+		} while ((nread == -1) && (errno == EINTR));
+
+		exit(0);
+	}
+
+	do {
+		nread = read(up_pipe[0], &c, 1);
+	} while ((nread == -1) && (errno == EINTR));
+
+	msg_ctx = imessaging_init(tctx, tctx->lp_ctx, cluster_id(getpid(), 0),
+				  tctx->ev);
+	torture_assert(tctx, msg_ctx != NULL, "imessaging_init failed");
+
+	for (i=0; i<1000; i++) {
+		NTSTATUS status;
+		status = imessaging_send(msg_ctx, cluster_id(child, 0),
+					 MSG_PING, NULL);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "imessaging_send failed");
+	}
+
+	tevent_loop_once(tctx->ev);
+
+	talloc_free(msg_ctx);
+
+	ret = close(down_pipe[1]);
+	torture_assert(tctx, ret == 0, "close failed");
+
+	ret = waitpid(child, &child_status, 0);
+	torture_assert(tctx, ret == child, "wrong child exited");
+	torture_assert(tctx, child_status == 0, "child failed");
+
+	poll(NULL, 0, 500);
+
+	return true;
+}
+
 struct torture_suite *torture_local_messaging(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *s = torture_suite_create(mem_ctx, "messaging");
+	torture_suite_add_simple_test(s, "overflow", test_messaging_overflow);
 	torture_suite_add_simple_test(s, "ping_speed", test_ping_speed);
 	return s;
 }
