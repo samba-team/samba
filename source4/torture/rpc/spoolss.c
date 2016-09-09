@@ -1189,11 +1189,12 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 				   const char *driver_name,
 				   const char *environment);
 
-bool test_GetPrinter_level(struct torture_context *tctx,
-			   struct dcerpc_binding_handle *b,
-			   struct policy_handle *handle,
-			   uint32_t level,
-			   union spoolss_PrinterInfo *info)
+bool test_GetPrinter_level_exp(struct torture_context *tctx,
+			       struct dcerpc_binding_handle *b,
+			       struct policy_handle *handle,
+			       uint32_t level,
+			       WERROR expected_werror,
+			       union spoolss_PrinterInfo *info)
 {
 	struct spoolss_GetPrinter r;
 	uint32_t needed;
@@ -1218,7 +1219,9 @@ bool test_GetPrinter_level(struct torture_context *tctx,
 			"GetPrinter failed");
 	}
 
-	torture_assert_werr_ok(tctx, r.out.result, "GetPrinter failed");
+	torture_assert_werr_equal(tctx,
+		r.out.result, expected_werror,
+		"GetPrinter failed");
 
 	CHECK_NEEDED_SIZE_LEVEL(spoolss_PrinterInfo, r.out.info, r.in.level, needed, 4);
 
@@ -1229,6 +1232,14 @@ bool test_GetPrinter_level(struct torture_context *tctx,
 	return true;
 }
 
+bool test_GetPrinter_level(struct torture_context *tctx,
+			   struct dcerpc_binding_handle *b,
+			   struct policy_handle *handle,
+			   uint32_t level,
+			   union spoolss_PrinterInfo *info)
+{
+	return test_GetPrinter_level_exp(tctx, b, handle, level, WERR_OK, info);
+}
 
 static bool test_GetPrinter(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b,
@@ -8087,6 +8098,34 @@ static bool test_get_printer_driver_package_path(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_get_printer_printserverhandle(struct torture_context *tctx,
+					       void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t levels[] = {0, 1, 2, /* 3,*/ 4, 5, 6, 7, 8};
+	int i;
+
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+
+		torture_assert(tctx,
+			test_GetPrinter_level_exp(tctx, b, &ctx->server_handle,
+						  levels[i], WERR_INVALID_LEVEL,
+						  NULL),
+			"failed to call GetPrinter");
+	}
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &ctx->server_handle, 3, NULL),
+		"failed to call GetPrinter");
+
+	return true;
+}
+
+
 static bool test_PrintServer_Forms_Winreg(struct torture_context *tctx,
 					  void *private_data)
 {
@@ -9322,6 +9361,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "architecture_buffer", test_architecture_buffer);
 	torture_tcase_add_simple_test(tcase, "get_core_printer_drivers", test_get_core_printer_drivers);
 	torture_tcase_add_simple_test(tcase, "get_printer_driver_package_path", test_get_printer_driver_package_path);
+	torture_tcase_add_simple_test(tcase, "get_printer", test_get_printer_printserverhandle);
 
 	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 
