@@ -284,6 +284,12 @@ static void show_build(void)
 	exit(0);
 }
 
+static int event_ctx_destructor(struct tevent_context *event_ctx)
+{
+	imessaging_dgm_unref_all();
+	return 0;
+}
+
 /*
  main server.
 */
@@ -421,6 +427,8 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	if (event_ctx == NULL) {
 		exit_daemon("Initializing event context failed", EACCES);
 	}
+
+	talloc_set_destructor(event_ctx, event_ctx_destructor);
 
 	if (opt_interactive) {
 		/* terminate when stdin goes away */

@@ -44,6 +44,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,
 					   struct server_id server_id,
 					   struct tevent_context *ev);
+void imessaging_dgm_unref_all(void);
 int imessaging_cleanup(struct imessaging_context *msg);
 struct imessaging_context *imessaging_client_init(TALLOC_CTX *mem_ctx,
 					   struct loadparm_context *lp_ctx,

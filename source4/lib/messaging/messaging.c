@@ -293,6 +293,31 @@ static void imessaging_dgm_recv(const uint8_t *buf, size_t buf_len,
 				int *fds, size_t num_fds,
 				void *private_data);
 
+/* Keep a list of imessaging contexts */
+static struct imessaging_context *msg_ctxs;
+
+static int imessaging_context_destructor(struct imessaging_context *msg)
+{
+	DLIST_REMOVE(msg_ctxs, msg);
+	return 0;
+}
+
+/*
+ * Cleanup messaging dgm contexts
+ *
+ * We must make sure to unref all messaging_dgm_ref's *before* the
+ * tevent context goes away. Only when the last ref is freed, the
+ * refcounted messaging dgm context will be freed.
+ */
+void imessaging_dgm_unref_all(void)
+{
+	struct imessaging_context *msg = NULL;
+
+	for (msg = msg_ctxs; msg != NULL; msg = msg->next) {
+		TALLOC_FREE(msg->msg_dgm_ref);
+	}
+}
+
 /*
   create the listening socket and setup the dispatcher
 */
@@ -315,6 +340,8 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	if (msg == NULL) {
 		return NULL;
 	}
+
+	talloc_set_destructor(msg, imessaging_context_destructor);
 
 	/* create the messaging directory if needed */
 
@@ -373,6 +400,8 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	imessaging_register(msg, NULL, MSG_REQ_POOL_USAGE, pool_message);
 	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
 	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
+
+	DLIST_ADD(msg_ctxs, msg);
 
 	return msg;
 fail:
