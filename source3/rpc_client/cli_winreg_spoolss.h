@@ -146,6 +146,23 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 				  struct spoolss_security_descriptor **psecdesc);
 
 /**
+ * @brief Get the security descriptor for a printserver.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  b The dcerpc binding handle
+ *
+ * @param[out] psecdesc   A pointer to store the security descriptor.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+
+WERROR winreg_get_printserver_secdesc(TALLOC_CTX *mem_ctx,
+				      struct dcerpc_binding_handle *winreg_handle,
+				      struct spoolss_security_descriptor **psecdesc);
+
+/**
  * @brief Set the security descriptor for a printer.
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
