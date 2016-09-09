@@ -4804,6 +4804,21 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 		goto err_info_free;
 	}
 
+	if (Printer->printer_type == SPLHND_SERVER) {
+		if (r->in.level != 3) {
+			result = WERR_UNKNOWN_LEVEL;
+			goto err_info_free;
+		}
+
+		result = spoolss_create_default_secdesc(p->mem_ctx,
+							&r->out.info->info3.secdesc);
+		if (!W_ERROR_IS_OK(result)) {
+			goto err_info_free;
+		}
+
+		goto done;
+	}
+
 	if (!get_printer_snum(p, r->in.handle, &snum, NULL)) {
 		result = WERR_BADFID;
 		goto err_info_free;
@@ -4880,7 +4895,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 			  r->in.level, win_errstr(result)));
 		goto err_info_free;
 	}
-
+ done:
 	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo,
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
