@@ -53,8 +53,13 @@ int pthreadpool_init(unsigned max_threads, struct pthreadpool **presult,
 /**
  * @brief Destroy a pthreadpool
  *
- * Destroy a pthreadpool. If jobs are still active, this returns
- * EBUSY.
+ * Destroy a pthreadpool. If jobs are submitted, but not yet active in
+ * a thread, they won't get executed. If a job has already been
+ * submitted to a thread, the job function will continue running, and
+ * the signal function might still be called. The caller of
+ * pthreadpool_init must make sure the required resources are still
+ * around when the pool is destroyed with pending jobs.  The last
+ * thread to exit will finally free() the pool memory.
  *
  * @param[in]	pool		The pool to destroy
  * @return			success: 0, failure: errno
