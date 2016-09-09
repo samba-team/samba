@@ -31,6 +31,18 @@ struct pthreadpool_tevent {
 	struct pthreadpool_tevent_job_state *jobs;
 };
 
+struct pthreadpool_tevent_job_state {
+	struct pthreadpool_tevent_job_state *prev, *next;
+	struct pthreadpool_tevent *pool;
+	struct tevent_context *ev;
+	struct tevent_threaded_context *tctx;
+	struct tevent_immediate *im;
+	struct tevent_req *req;
+
+	void (*fn)(void *private_data);
+	void *private_data;
+};
+
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool);
 
 static int pthreadpool_tevent_job_signal(int jobid,
@@ -78,18 +90,6 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 
 	return 0;
 }
-
-struct pthreadpool_tevent_job_state {
-	struct pthreadpool_tevent_job_state *prev, *next;
-	struct pthreadpool_tevent *pool;
-	struct tevent_context *ev;
-	struct tevent_threaded_context *tctx;
-	struct tevent_immediate *im;
-	struct tevent_req *req;
-
-	void (*fn)(void *private_data);
-	void *private_data;
-};
 
 static void pthreadpool_tevent_job_fn(void *private_data);
 static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
