@@ -76,6 +76,7 @@ int pthreadpool_tevent_init(TALLOC_CTX *mem_ctx, unsigned max_threads,
 
 static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 {
+	struct pthreadpool_tevent_job_state *state, *next;
 	int ret;
 
 	ret = pthreadpool_destroy(pool->pool);
@@ -84,8 +85,10 @@ static int pthreadpool_tevent_destructor(struct pthreadpool_tevent *pool)
 	}
 	pool->pool = NULL;
 
-	if (pool->jobs != NULL) {
-		abort();
+	for (state = pool->jobs; state != NULL; state = next) {
+		next = state->next;
+		DLIST_REMOVE(pool->jobs, state);
+		state->pool = NULL;
 	}
 
 	return 0;
@@ -114,7 +117,7 @@ static int pthreadpool_tevent_job_state_destructor(
 	/*
 	 * We need to reparent to a long term context.
 	 */
-	(void)talloc_reparent(state->req, state->pool, state);
+	(void)talloc_reparent(state->req, NULL, state);
 	state->req = NULL;
 	return -1;
 }
@@ -214,8 +217,10 @@ static void pthreadpool_tevent_job_done(struct tevent_context *ctx,
 	struct pthreadpool_tevent_job_state *state = talloc_get_type_abort(
 		private_data, struct pthreadpool_tevent_job_state);
 
-	DLIST_REMOVE(state->pool->jobs, state);
-	state->pool = NULL;
+	if (state->pool != NULL) {
+		DLIST_REMOVE(state->pool->jobs, state);
+		state->pool = NULL;
+	}
 
 	TALLOC_FREE(state->tctx);
 
