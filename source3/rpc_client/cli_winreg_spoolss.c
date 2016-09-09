@@ -1794,16 +1794,16 @@ WERROR winreg_get_printserver_secdesc(TALLOC_CTX *mem_ctx,
 				  psecdesc);
 }
 
-WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  struct dcerpc_binding_handle *winreg_handle,
-				  const char *sharename,
-				  const struct spoolss_security_descriptor *secdesc)
+static WERROR winreg_set_secdesc(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *winreg_handle,
+				 const char *path,
+				 const char *attribute,
+				 const struct spoolss_security_descriptor *secdesc)
 {
 	const struct spoolss_security_descriptor *new_secdesc = secdesc;
 	struct spoolss_security_descriptor *old_secdesc;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct policy_handle hive_hnd, key_hnd;
-	const char *path;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	WERROR result;
@@ -1811,12 +1811,6 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
-	}
-
-	path = winreg_printer_data_keyname(tmp_ctx, sharename);
-	if (path == NULL) {
-		talloc_free(tmp_ctx);
 		return WERR_NOMEM;
 	}
 
@@ -1831,10 +1825,11 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 		struct security_acl *dacl, *sacl;
 		size_t size;
 
-		result = winreg_get_printer_secdesc(tmp_ctx,
-						    winreg_handle,
-						    sharename,
-						    &old_secdesc);
+		result = winreg_get_secdesc(tmp_ctx,
+					    winreg_handle,
+					    path,
+					    attribute,
+					    &old_secdesc);
 		if (!W_ERROR_IS_OK(result)) {
 			talloc_free(tmp_ctx);
 			return result;
@@ -1890,7 +1885,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	status = dcerpc_winreg_set_sd(tmp_ctx,
 				      winreg_handle,
 				      &key_hnd,
-				      "Security",
+				      attribute,
 				      new_secdesc,
 				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1907,6 +1902,37 @@ done:
 
 	talloc_free(tmp_ctx);
 	return result;
+}
+
+WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
+				  struct dcerpc_binding_handle *winreg_handle,
+				  const char *sharename,
+				  const struct spoolss_security_descriptor *secdesc)
+{
+	char *path;
+	WERROR result;
+
+	path = winreg_printer_data_keyname(mem_ctx, sharename);
+	if (path == NULL) {
+		return WERR_NOMEM;
+	}
+
+	result = winreg_set_secdesc(mem_ctx, winreg_handle,
+				    path,
+				    "Security", secdesc);
+	talloc_free(path);
+
+	return result;
+}
+
+WERROR winreg_set_printserver_secdesc(TALLOC_CTX *mem_ctx,
+				      struct dcerpc_binding_handle *winreg_handle,
+				      const struct spoolss_security_descriptor *secdesc)
+{
+	return winreg_set_secdesc(mem_ctx, winreg_handle,
+				  TOP_LEVEL_CONTROL_KEY,
+				  "ServerSecurityDescriptor",
+				  secdesc);
 }
 
 /* Set printer data over the winreg pipe. */

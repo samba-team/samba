@@ -182,6 +182,23 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 				  const struct spoolss_security_descriptor *secdesc);
 
 /**
+ * @brief Set the security descriptor for a printserver.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  b The dcerpc binding handle
+ *
+ * @param[in]  secdesc  The security descriptor to save.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+WERROR winreg_set_printserver_secdesc(TALLOC_CTX *mem_ctx,
+				      struct dcerpc_binding_handle *b,
+				      const struct spoolss_security_descriptor *secdesc);
+
+
+/**
  * @internal
  *
  * @brief Set printer data over the winreg pipe.
