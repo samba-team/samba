@@ -302,8 +302,7 @@ bld.SAMBA3_SUBSYSTEM('TDB_LIB',
 
 bld.SAMBA3_LIBRARY('messages_dgm',
                    source='''lib/messages_dgm.c lib/messages_dgm_ref.c''',
-                   deps='''talloc UNIX_MSG POLL_FUNCS_TEVENT samba-debug
-                           genrand''',
+                   deps='''talloc samba-debug PTHREADPOOL msghdr genrand''',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('messages_util',
@@ -355,7 +354,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         UTIL_PW
                         SAMBA_VERSION
                         PTHREADPOOL
-                        UNIX_MSG
                         POLL_FUNCS_TEVENT
                         interfaces
                         param
@@ -1459,7 +1457,6 @@ bld.SAMBA3_BINARY('spotlight2sparql',
 bld.RECURSE('auth')
 bld.RECURSE('libgpo/gpext')
 bld.RECURSE('lib/pthreadpool')
-bld.RECURSE('lib/unix_msg')
 bld.RECURSE('librpc')
 bld.RECURSE('librpc/idl')
 bld.RECURSE('libsmb')
