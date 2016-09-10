@@ -4805,12 +4805,24 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 	}
 
 	if (Printer->printer_type == SPLHND_SERVER) {
+
+		struct dcerpc_binding_handle *b;
+
 		if (r->in.level != 3) {
 			result = WERR_UNKNOWN_LEVEL;
 			goto err_info_free;
 		}
 
-		result = spoolss_create_default_secdesc(p->mem_ctx,
+		result = winreg_printer_binding_handle(p->mem_ctx,
+						       get_session_info_system(),
+						       p->msg_ctx,
+						       &b);
+		if (!W_ERROR_IS_OK(result)) {
+			goto err_info_free;
+		}
+
+		result = winreg_get_printserver_secdesc(p->mem_ctx,
+							b,
 							&r->out.info->info3.secdesc);
 		if (!W_ERROR_IS_OK(result)) {
 			goto err_info_free;
