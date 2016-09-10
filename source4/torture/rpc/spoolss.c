@@ -284,7 +284,7 @@ static bool test_OpenPrinter_server(struct torture_context *tctx,
 	op.in.printername	= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	op.in.datatype		= NULL;
 	op.in.devmode_ctr.devmode= NULL;
-	op.in.access_mask	= 0;
+	op.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
 	op.out.handle		= server_handle;
 
 	torture_comment(tctx, "Testing OpenPrinter(%s)\n", op.in.printername);
@@ -8125,6 +8125,106 @@ static bool test_get_printer_printserverhandle(struct torture_context *tctx,
 	return true;
 }
 
+#define TEST_SID "S-1-5-21-1234567890-1234567890-1234567890-500"
+
+static bool test_set_printer_printserverhandle(struct torture_context *tctx,
+					       void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	union spoolss_PrinterInfo info;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo3 info3;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+	struct security_descriptor *sd;
+	struct security_ace *ace;
+	struct dom_sid sid;
+	int i;
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &ctx->server_handle, 3, &info),
+		"failed to call GetPrinter");
+
+	secdesc_ctr.sd = info.info3.secdesc;
+	secdesc_ctr.sd->owner_sid = NULL;
+	secdesc_ctr.sd->group_sid = NULL;
+
+	sd = security_descriptor_copy(tctx, secdesc_ctr.sd);
+	if (sd == NULL) {
+		return false;
+	}
+
+	ace = security_ace_create(tctx,
+				  TEST_SID,
+				  SEC_ACE_TYPE_ACCESS_ALLOWED,
+				  SEC_STD_REQUIRED,
+				  SEC_ACE_FLAG_CONTAINER_INHERIT);
+	torture_assert(tctx, ace, "failed to create ace");
+
+	torture_assert_ntstatus_ok(tctx,
+		security_descriptor_dacl_add(sd, ace),
+		"failed to add ace");
+
+	secdesc_ctr.sd = sd;
+
+	info3.sec_desc_ptr = NULL;
+
+	info_ctr.level = 3;
+	info_ctr.info.info3 = &info3;
+
+	ZERO_STRUCT(devmode_ctr);
+
+	torture_assert(tctx,
+		test_SetPrinter(tctx, b, &ctx->server_handle, &info_ctr,
+				&devmode_ctr, &secdesc_ctr, 0),
+		"failed to call SetPrinter");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &ctx->server_handle, 3, &info),
+		"failed to call GetPrinter");
+
+	for (i = 0; i < info.info3.secdesc->dacl->num_aces; i++) {
+		if (security_ace_equal(&info.info3.secdesc->dacl->aces[i], ace)) {
+			break;
+		}
+	}
+
+	if (i == info.info3.secdesc->dacl->num_aces) {
+		torture_fail(tctx, "ace not present");
+	}
+
+	torture_assert(tctx,
+		dom_sid_parse(TEST_SID, &sid),
+		"failed to parse sid");
+
+	torture_assert_ntstatus_ok(tctx,
+		security_descriptor_dacl_del(info.info3.secdesc, &sid),
+		"failed to remove ace from sd");
+
+	secdesc_ctr.sd = info.info3.secdesc;
+
+	torture_assert(tctx,
+		test_SetPrinter(tctx, b, &ctx->server_handle, &info_ctr,
+				&devmode_ctr, &secdesc_ctr, 0),
+		"failed to call SetPrinter");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &ctx->server_handle, 3, &info),
+		"failed to call GetPrinter");
+
+	for (i = 0; i < info.info3.secdesc->dacl->num_aces; i++) {
+		if (security_ace_equal(&info.info3.secdesc->dacl->aces[i], ace)) {
+			torture_fail(tctx, "ace still present");
+		}
+	}
+
+	return true;
+}
+
 
 static bool test_PrintServer_Forms_Winreg(struct torture_context *tctx,
 					  void *private_data)
@@ -9362,6 +9462,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "get_core_printer_drivers", test_get_core_printer_drivers);
 	torture_tcase_add_simple_test(tcase, "get_printer_driver_package_path", test_get_printer_driver_package_path);
 	torture_tcase_add_simple_test(tcase, "get_printer", test_get_printer_printserverhandle);
+	torture_tcase_add_simple_test(tcase, "set_printer", test_set_printer_printserverhandle);
 
 	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 
