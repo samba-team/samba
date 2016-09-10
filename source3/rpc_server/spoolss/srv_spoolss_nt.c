@@ -1781,6 +1781,11 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		snum = -1;
 
+		if (r->in.access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
+			r->in.access_mask |= SERVER_ACCESS_ADMINISTER;
+			r->in.access_mask |= SERVER_ACCESS_ENUMERATE;
+		}
+
 		/* Map standard access rights to object specific access rights */
 
 		se_map_standard(&r->in.access_mask,
