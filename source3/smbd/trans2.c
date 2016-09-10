@@ -55,7 +55,7 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 				const SMB_STRUCT_STAT *psbuf);
 
 /****************************************************************************
- Check if an open file handle or pathname is a symlink.
+ Check if an open file handle or smb_fname is a symlink.
 ****************************************************************************/
 
 static NTSTATUS refuse_symlink(connection_struct *conn,
@@ -68,6 +68,10 @@ static NTSTATUS refuse_symlink(connection_struct *conn,
 	if (fsp) {
 		pst = &fsp->fsp_name->st;
 	} else {
+		pst = &smb_fname->st;
+	}
+
+	if (!VALID_STAT(*pst)) {
 		int ret = vfs_stat_smb_basename(conn,
 				smb_fname,
 				&sbuf);
@@ -76,6 +80,7 @@ static NTSTATUS refuse_symlink(connection_struct *conn,
 		}
 		pst = &sbuf;
 	}
+
 	if (S_ISLNK(pst->st_ex_mode)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
