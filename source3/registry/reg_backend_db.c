@@ -126,6 +126,7 @@ static const char *builtin_registry_paths[] = {
 	KEY_PRINTING "\\Forms",
 	KEY_PRINTING "\\Printers",
 	KEY_PRINTING "\\Environments\\Windows NT x86\\Print Processors\\winprint",
+	KEY_PRINTING "\\Environments\\Windows x64\\Print Processors\\winprint",
 	KEY_SHARES,
 	KEY_EVENTLOG,
 	KEY_SMBCONF,
