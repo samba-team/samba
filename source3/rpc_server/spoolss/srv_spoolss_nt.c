@@ -6083,14 +6083,15 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 {
 	struct spoolss_security_descriptor *new_secdesc = NULL;
 	struct spoolss_security_descriptor *old_secdesc = NULL;
-	const char *printer;
+	const char *printer = NULL;
 	WERROR result;
-	int snum;
+	int snum = -1;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
 	struct dcerpc_binding_handle *b;
 	TALLOC_CTX *tmp_ctx = NULL;
+	bool ok = false;
 
-	if (!Printer || !get_printer_snum(p, handle, &snum, NULL)) {
+	if (!Printer) {
 		DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
 			 OUR_HANDLE(handle)));
 
@@ -6103,15 +6104,42 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		result = WERR_INVALID_PARAM;
 		goto done;
 	}
-	printer = lp_const_servicename(snum);
+
+	switch (Printer->printer_type) {
+	case SPLHND_SERVER:
+		break;
+	case SPLHND_PRINTER:
+		if (!get_printer_snum(p, handle, &snum, NULL)) {
+			DEBUG(2,("update_printer_sec: Invalid handle (%s:%u:%u)\n",
+				 OUR_HANDLE(handle)));
+			result = WERR_BADFID;
+			goto done;
+		}
+		printer = lp_const_servicename(snum);
+		break;
+	default:
+		break;
+	}
 
 	/* Check the user has permissions to change the security
 	   descriptor.  By experimentation with two NT machines, the user
 	   requires Full Access to the printer to change security
 	   information. */
 
-	if ( Printer->access_granted != PRINTER_ACCESS_ADMINISTER ) {
-		DEBUG(4,("update_printer_sec: updated denied by printer permissions\n"));
+	switch (Printer->printer_type) {
+	case SPLHND_SERVER:
+		ok = Printer->access_granted == SERVER_ACCESS_ADMINISTER;
+		break;
+	case SPLHND_PRINTER:
+		ok = Printer->access_granted == PRINTER_ACCESS_ADMINISTER;
+		break;
+	default:
+		break;
+	}
+
+	if (!ok) {
+		DEBUG(4,("update_printer_sec: updated denied by printer permissions "
+			"(access_granted: 0x%08x)\n", Printer->access_granted));
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
@@ -6131,9 +6159,15 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 
 	/* NT seems to like setting the security descriptor even though
 	   nothing may have actually changed. */
-	result = winreg_get_printer_secdesc(tmp_ctx, b,
-					    printer,
-					    &old_secdesc);
+
+	if (printer != NULL) {
+		result = winreg_get_printer_secdesc(tmp_ctx, b,
+						    printer,
+						    &old_secdesc);
+	} else {
+		result = winreg_get_printserver_secdesc(tmp_ctx, b,
+							&old_secdesc);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2,("update_printer_sec: winreg_get_printer_secdesc_internal() failed\n"));
 		result = WERR_BADFID;
@@ -6181,9 +6215,14 @@ static WERROR update_printer_sec(struct policy_handle *handle,
 		goto done;
 	}
 
-	result = winreg_set_printer_secdesc(tmp_ctx, b,
-					    printer,
-					    new_secdesc);
+	if (printer != NULL) {
+		result = winreg_set_printer_secdesc(tmp_ctx, b,
+						    printer,
+						    new_secdesc);
+	} else {
+		result = winreg_set_printserver_secdesc(tmp_ctx, b,
+							new_secdesc);
+	}
 
 done:
 	talloc_free(tmp_ctx);
