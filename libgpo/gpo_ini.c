@@ -273,6 +273,59 @@ NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
+****************************************************************/
+
+NTSTATUS gp_inifile_init_context_direct(TALLOC_CTX *mem_ctx,
+					const char *unix_path,
+					struct gp_inifile_context **pgp_ctx)
+{
+	struct gp_inifile_context *gp_ctx = NULL;
+	NTSTATUS status;
+	int rv;
+	char *tmp_filename = NULL;
+
+	if (unix_path == NULL || pgp_ctx == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	gp_ctx = talloc_zero(mem_ctx, struct gp_inifile_context);
+	if (gp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = convert_file_from_ucs2(mem_ctx, unix_path,
+					&tmp_filename);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
+	}
+
+	rv = pm_process(tmp_filename,
+			change_section,
+			store_keyval_pair,
+			gp_ctx);
+	if (rv != 0) {
+		return NT_STATUS_NO_SUCH_FILE;
+	}
+
+	gp_ctx->generated_filename = tmp_filename;
+	gp_ctx->mem_ctx = mem_ctx;
+
+	*pgp_ctx = gp_ctx;
+
+	return NT_STATUS_OK;
+
+ failed:
+
+	DEBUG(1,("gp_inifile_init_context_direct failed: %s\n",
+		nt_errstr(status)));
+
+	talloc_free(gp_ctx);
+
+	return status;
+}
+
+
+/****************************************************************
  parse the local gpt.ini file
 ****************************************************************/
 
