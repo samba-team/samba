@@ -27,16 +27,26 @@ static uint32_t offline_fs_capabilities(struct vfs_handle_struct *handle,
 	       FILE_SUPPORTS_REMOTE_STORAGE;
 }
 
-static bool offline_is_offline(struct vfs_handle_struct *handle,
-			       const struct smb_filename *fname,
-			       SMB_STRUCT_STAT *stbuf)
+static NTSTATUS offline_get_dos_attributes(struct vfs_handle_struct *handle,
+					   struct smb_filename *smb_fname,
+					   uint32_t *dosmode)
 {
-	return true;
+	*dosmode |= FILE_ATTRIBUTE_OFFLINE;
+	return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle, smb_fname, dosmode);
+}
+
+static NTSTATUS offline_fget_dos_attributes(struct vfs_handle_struct *handle,
+					    struct files_struct *fsp,
+					    uint32_t *dosmode)
+{
+	*dosmode |= FILE_ATTRIBUTE_OFFLINE;
+	return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 }
 
 static struct vfs_fn_pointers offline_fns = {
     .fs_capabilities_fn = offline_fs_capabilities,
-    .is_offline_fn = offline_is_offline,
+	.get_dos_attributes_fn = offline_get_dos_attributes,
+	.fget_dos_attributes_fn = offline_fget_dos_attributes,
 };
 
 NTSTATUS vfs_offline_init(void);

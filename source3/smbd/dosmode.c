@@ -384,6 +384,12 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	/*
+	 * Don't store FILE_ATTRIBUTE_OFFLINE, it's dealt with in
+	 * vfs_default via DMAPI if that is enabled.
+	 */
+	dosmode &= ~FILE_ATTRIBUTE_OFFLINE;
+
 	ZERO_STRUCT(dosattrib);
 	ZERO_STRUCT(blob);
 
@@ -605,7 +611,6 @@ static uint32_t dos_mode_from_name(connection_struct *conn,
 uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 {
 	uint32_t result = 0;
-	bool offline;
 	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(8,("dos_mode: %s\n", smb_fname_str_dbg(smb_fname)));
@@ -618,11 +623,6 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	status = SMB_VFS_GET_DOS_ATTRIBUTES(conn, smb_fname, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		result |= dos_mode_from_sbuf(conn, smb_fname);
-	}
-
-	offline = SMB_VFS_IS_OFFLINE(conn, smb_fname, &smb_fname->st);
-	if (S_ISREG(smb_fname->st.st_ex_mode) && offline) {
-		result |= FILE_ATTRIBUTE_OFFLINE;
 	}
 
 	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {
@@ -665,8 +665,6 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	mode_t tmp;
 	mode_t unixmode;
 	int ret = -1, lret = -1;
-	uint32_t old_mode;
-	struct timespec new_create_timespec;
 	files_struct *fsp = NULL;
 	bool need_close = false;
 	NTSTATUS status;
@@ -676,8 +674,7 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		return -1;
 	}
 
-	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
-	dosmode &= (SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE);
+	dosmode &= SAMBA_ATTRIBUTES_MASK;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n",
 		  dosmode, smb_fname_str_dbg(smb_fname)));
@@ -691,34 +688,6 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		dosmode |= FILE_ATTRIBUTE_DIRECTORY;
 	else
 		dosmode &= ~FILE_ATTRIBUTE_DIRECTORY;
-
-	new_create_timespec = smb_fname->st.st_ex_btime;
-
-	old_mode = dos_mode(conn, smb_fname);
-
-	if ((dosmode & FILE_ATTRIBUTE_OFFLINE) &&
-	    !(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
-		lret = SMB_VFS_SET_OFFLINE(conn, smb_fname);
-		if (lret == -1) {
-			if (errno == ENOTSUP) {
-				DEBUG(10, ("Setting FILE_ATTRIBUTE_OFFLINE for "
-					   "%s/%s is not supported.\n",
-					   parent_dir,
-					   smb_fname_str_dbg(smb_fname)));
-			} else {
-				DEBUG(0, ("An error occurred while setting "
-					  "FILE_ATTRIBUTE_OFFLINE for "
-					  "%s/%s: %s", parent_dir,
-					  smb_fname_str_dbg(smb_fname),
-					  strerror(errno)));
-			}
-		}
-	}
-
-	dosmode  &= ~FILE_ATTRIBUTE_OFFLINE;
-	old_mode &= ~FILE_ATTRIBUTE_OFFLINE;
-
-	smb_fname->st.st_ex_btime = new_create_timespec;
 
 	/* Store the DOS attributes in an EA by preference. */
 	status = SMB_VFS_SET_DOS_ATTRIBUTES(conn, smb_fname, dosmode);

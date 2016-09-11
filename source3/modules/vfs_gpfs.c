@@ -1502,6 +1502,9 @@ static uint32_t vfs_gpfs_winattrs_to_dosmode(unsigned int winattrs)
 	if (winattrs & GPFS_WINATTR_SPARSE_FILE) {
 		dosmode |= FILE_ATTRIBUTE_SPARSE;
 	}
+	if (winattrs & GPFS_WINATTR_OFFLINE) {
+		dosmode |= FILE_ATTRIBUTE_OFFLINE;
+	}
 
 	return dosmode;
 }
@@ -1524,6 +1527,9 @@ static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
 	}
 	if (dosmode & FILE_ATTRIBUTE_SPARSE) {
 		winattrs |= GPFS_WINATTR_SPARSE_FILE;
+	}
+	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
+		winattrs |= GPFS_WINATTR_OFFLINE;
 	}
 
 	return winattrs;

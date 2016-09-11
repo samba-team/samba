@@ -1544,10 +1544,21 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
+static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
+			       const struct smb_filename *fname,
+			       SMB_STRUCT_STAT *sbuf);
+
 static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
 					   struct smb_filename *smb_fname,
 					   uint32_t *dosmode)
 {
+	bool offline;
+
+	offline = vfswrap_is_offline(handle, smb_fname, &smb_fname->st);
+	if (offline) {
+		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
+	}
+
 	return get_ea_dos_attribute(handle->conn, smb_fname, dosmode);
 }
 
@@ -1555,6 +1566,13 @@ static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 					    struct files_struct *fsp,
 					    uint32_t *dosmode)
 {
+	bool offline;
+
+	offline = vfswrap_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
+	if (offline) {
+		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
+	}
+
 	return get_ea_dos_attribute(handle->conn, fsp->fsp_name, dosmode);
 }
 
@@ -2683,16 +2701,6 @@ static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
 	return offline;
 }
 
-static int vfswrap_set_offline(struct vfs_handle_struct *handle,
-			       const struct smb_filename *fname)
-{
-	/* We don't know how to set offline bit by default, needs to be overriden in the vfs modules */
-#if defined(ENOTSUP)
-	errno = ENOTSUP;
-#endif
-	return -1;
-}
-
 static NTSTATUS vfswrap_durable_cookie(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
 				       TALLOC_CTX *mem_ctx,
@@ -2851,10 +2859,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	/* aio operations */
 	.aio_force_fn = vfswrap_aio_force,
-
-	/* offline operations */
-	.is_offline_fn = vfswrap_is_offline,
-	.set_offline_fn = vfswrap_set_offline,
 
 	/* durable handle operations */
 	.durable_cookie_fn = vfswrap_durable_cookie,
