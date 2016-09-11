@@ -67,7 +67,7 @@ event again. There are 2 types of loop available for use in tevent library:
 <li>int tevent_loop_once()</li>
 </ul>
 
-Both of functions accept just one parametr (tevent context) and the only
+Both of functions accept just one parameter (tevent context) and the only
 difference lies in the fact that the first loop can theoretically last for ever
 but the second one will wait just for a single one event to catch and then the
 loop breaks and the program continue.

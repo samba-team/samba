@@ -11,7 +11,8 @@ beginning of the queue as fast as possible. In tevent library it is
 similar, but the queue is not automatically set for any event. The queue has to
 be created on purpose, and events which should follow the order of the FIFO
 queue have to be explicitly pinpointed. Creating such a queue is crucial in
-situations when sequential processing is absolutely essential for the succesful
+situations when sequential processing is absolutely essential for the
+successful
 completion of a task, e.g. for a large quantity of data that are about to be
 written from a buffer into a socket. The tevent library has its own queue
 structure that is ready to use after it has been initialized and started up
@@ -20,7 +21,7 @@ once.
 @subsection cr_queue Creation of Queues
 
 The first and most important step is the creation of the tevent queue
-(represented by struct tevent queue), which will then be in running mode.
+(represented by struct tevent_queue), which will then be in running mode.
 
 @code
 struct tevent_queue* tevent_queue_create (TALLOC_CTX *mem_ctx, const char *name)
