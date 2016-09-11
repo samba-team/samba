@@ -1,7 +1,7 @@
 /**
-@page tevent_context Chapter 6: Tevent with threads
+@page tevent_thread Chapter 6: Tevent with threads
 
-@section context Tevent with threads
+@section threads Tevent with threads
 
 In order to use tevent with threads, you must first understand
 how to use the talloc library in threaded programs. For more
