@@ -5700,7 +5700,8 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 			if (info_level == SMB_QUERY_FILE_UNIX_BASIC ||
 					info_level == SMB_QUERY_FILE_UNIX_INFO2 ||
-					info_level == SMB_QUERY_FILE_UNIX_LINK) {
+					info_level == SMB_QUERY_FILE_UNIX_LINK ||
+					req->posix_pathnames) {
 				ucf_flags |= UCF_UNIX_NAME_LOOKUP;
 			}
 		}
@@ -5761,7 +5762,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (INFO_LEVEL_IS_UNIX(info_level)) {
+			if (INFO_LEVEL_IS_UNIX(info_level) || req->posix_pathnames) {
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn, smb_fname_base) != 0) {
 					DEBUG(3,("call_trans2qfilepathinfo: "
@@ -5807,7 +5808,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 		}
 
-		if (INFO_LEVEL_IS_UNIX(info_level)) {
+		if (INFO_LEVEL_IS_UNIX(info_level) || req->posix_pathnames) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn, smb_fname)) {
 				DEBUG(3,("call_trans2qfilepathinfo: "
