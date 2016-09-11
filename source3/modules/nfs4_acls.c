@@ -529,11 +529,19 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 {
 	SMB_STRUCT_STAT sbuf;
 	struct smbacl4_vfs_params params;
+	SMB_STRUCT_STAT *psbuf = NULL;
 
 	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
-	if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
-		return map_nt_error_from_unix(errno);
+	if (VALID_STAT(fsp->fsp_name->st)) {
+		psbuf = &fsp->fsp_name->st;
+	}
+
+	if (psbuf == NULL) {
+		if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
+			return map_nt_error_from_unix(errno);
+		}
+		psbuf = &sbuf;
 	}
 
 	if (pparams == NULL) {
@@ -544,7 +552,7 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 		pparams = &params;
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, pparams, security_info,
+	return smb_get_nt_acl_nfs4_common(psbuf, pparams, security_info,
 					  mem_ctx, ppdesc, theacl);
 }
 
@@ -558,12 +566,20 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 {
 	SMB_STRUCT_STAT sbuf;
 	struct smbacl4_vfs_params params;
+	const SMB_STRUCT_STAT *psbuf = NULL;
 
 	DEBUG(10, ("smb_get_nt_acl_nfs4 invoked for %s\n",
 		smb_fname->base_name));
 
-	if (smbacl4_GetFileOwner(conn, smb_fname, &sbuf)) {
-		return map_nt_error_from_unix(errno);
+	if (VALID_STAT(smb_fname->st)) {
+		psbuf = &smb_fname->st;
+	}
+
+	if (psbuf == NULL) {
+		if (smbacl4_GetFileOwner(conn, smb_fname, &sbuf)) {
+			return map_nt_error_from_unix(errno);
+		}
+		psbuf = &sbuf;
 	}
 
 	if (pparams == NULL) {
@@ -574,7 +590,7 @@ NTSTATUS smb_get_nt_acl_nfs4(struct connection_struct *conn,
 		pparams = &params;
 	}
 
-	return smb_get_nt_acl_nfs4_common(&sbuf, pparams, security_info,
+	return smb_get_nt_acl_nfs4_common(psbuf, pparams, security_info,
 					  mem_ctx, ppdesc, theacl);
 }
 
