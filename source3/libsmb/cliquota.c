@@ -46,10 +46,10 @@ void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 	return;	
 }
 
-static bool parse_user_quota_record(const uint8_t *rdata,
-				    unsigned int rdata_count,
-				    unsigned int *offset,
-				    SMB_NTQUOTA_STRUCT *pqt)
+bool parse_user_quota_record(const uint8_t *rdata,
+			     unsigned int rdata_count,
+			     unsigned int *offset,
+			     SMB_NTQUOTA_STRUCT *pqt)
 {
 	int sid_len;
 	SMB_NTQUOTA_STRUCT qt;

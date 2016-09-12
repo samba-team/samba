@@ -762,6 +762,10 @@ int cli_printjob_del(struct cli_state *cli, int job);
 
 NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum);
 void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list);
+bool parse_user_quota_record(const uint8_t *rdata,
+			     unsigned int rdata_count,
+			     unsigned int *offset,
+			     SMB_NTQUOTA_STRUCT *pqt);
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt);
 NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
