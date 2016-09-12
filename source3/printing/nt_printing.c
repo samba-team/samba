@@ -152,6 +152,28 @@ static bool print_driver_directories_init(void)
 		}
 	}
 
+	driver_path = state_path("DriverStore");
+	ok = directory_create_or_exist(driver_path, 0755);
+	if (!ok) {
+		DEBUG(1,("failed to create path %s\n", driver_path));
+		talloc_free(mem_ctx);
+		return false;
+	}
+	driver_path = state_path("DriverStore/FileRepository");
+	ok = directory_create_or_exist(driver_path, 0755);
+	if (!ok) {
+		DEBUG(1,("failed to create path %s\n", driver_path));
+		talloc_free(mem_ctx);
+		return false;
+	}
+	driver_path = state_path("DriverStore/Temp");
+	ok = directory_create_or_exist(driver_path, 0755);
+	if (!ok) {
+		DEBUG(1,("failed to create path %s\n", driver_path));
+		talloc_free(mem_ctx);
+		return false;
+	}
+
 	talloc_free(mem_ctx);
 	return true;
 }
