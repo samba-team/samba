@@ -332,9 +332,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		ctdb_enable_monitoring(ctdb);
 		return 0;
-	
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS: 
-		return ctdb_run_eventscripts(ctdb, c, indata, async_reply);
+
+	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
+		return control_not_implemented("RUN_EVENTSCRIPTS", NULL);
 
 	case CTDB_CONTROL_DISABLE_MONITOR: 
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -496,8 +496,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_recd_ping(ctdb);
 
 	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_get_event_script_status(ctdb, *(uint32_t *)indata.dptr, outdata);
+		return control_not_implemented("GET_EVENT_SCRIPT_STATUS", NULL);
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
 		CHECK_CONTROL_DATA_SIZE(sizeof(double));
@@ -551,10 +550,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_ENABLE_SCRIPT:
-		return ctdb_control_enable_script(ctdb, indata);
+		return control_not_implemented("ENABLE_SCRIPT", NULL);
 
 	case CTDB_CONTROL_DISABLE_SCRIPT:
-		return ctdb_control_disable_script(ctdb, indata);
+		return control_not_implemented("DISABLE_SCRIPT", NULL);
 
 	case CTDB_CONTROL_SET_BAN_STATE:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_ban_state));

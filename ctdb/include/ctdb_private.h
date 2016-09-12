@@ -995,10 +995,6 @@ void ctdb_local_remove_from_delete_queue(struct ctdb_db_context *ctdb_db,
 
 /* from eventscript.c */
 
-int32_t ctdb_control_get_event_script_status(struct ctdb_context *ctdb,
-					     uint32_t call_type,
-					     TDB_DATA *outdata);
-
 int ctdb_event_script_callback(struct ctdb_context *ctdb,
 			       TALLOC_CTX *mem_ctx,
 			       void (*callback)(struct ctdb_context *,
@@ -1013,12 +1009,5 @@ int ctdb_event_script_args(struct ctdb_context *ctdb,
 
 int ctdb_event_script(struct ctdb_context *ctdb,
 		      enum ctdb_event call);
-
-int32_t ctdb_run_eventscripts(struct ctdb_context *ctdb,
-			      struct ctdb_req_control_old *c,
-			      TDB_DATA data, bool *async_reply);
-
-int32_t ctdb_control_enable_script(struct ctdb_context *ctdb, TDB_DATA indata);
-int32_t ctdb_control_disable_script(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif
