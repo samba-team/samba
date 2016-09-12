@@ -56,7 +56,7 @@ void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
 			    uint32_t *tval_noiptakeover,
 			    uint32_t *tval_noiphostonalldisabled);
 
-bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
+void ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *known_ips,
 			    struct ctdb_public_ip_list *available_ips);
 
