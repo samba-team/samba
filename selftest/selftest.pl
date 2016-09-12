@@ -324,6 +324,8 @@ my $srcdir_abs = abs_path($srcdir);
 die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
 die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
 
+$ENV{SAMBA_SELFTEST} = "1";
+
 $ENV{PREFIX} = $prefix;
 $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
