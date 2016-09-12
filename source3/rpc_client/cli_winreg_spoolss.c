@@ -529,8 +529,9 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	char *str;
 
-	/* FIXME: check format is right,
-	 *	this needs to be something like: 6.1.7600.16385 */
+	/*
+	 * this needs to be something like: 6.1.7600.16385
+	 */
 	str = talloc_asprintf(mem_ctx, "%u.%u.%u.%u",
 			      (unsigned)((data >> 48) & 0xFFFF),
 			      (unsigned)((data >> 32) & 0xFFFF),
@@ -574,7 +575,7 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
 	*data = ((uint64_t)(v1 & 0xFFFF) << 48) +
 		((uint64_t)(v2 & 0xFFFF) << 32) +
 		((uint64_t)(v3 & 0xFFFF) << 16) +
-		(uint64_t)(v2 & 0xFFFF);
+		(uint64_t)(v4 & 0xFFFF);
 
 	return WERR_OK;
 }
