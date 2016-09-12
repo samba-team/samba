@@ -4178,41 +4178,6 @@ int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb)
 }
 
 /*
-  get the status of running the monitor eventscripts: NULL means never run.
- */
-int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
-			      struct timeval timeout, uint32_t destnode,
-			      TALLOC_CTX *mem_ctx,
-			      enum ctdb_event type,
-			      struct ctdb_script_list_old **scripts)
-{
-	int ret;
-	TDB_DATA outdata, indata;
-	int32_t res;
-	uint32_t uinttype = type;
-
-	indata.dptr = (uint8_t *)&uinttype;
-	indata.dsize = sizeof(uinttype);
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS, 0, indata,
-			   mem_ctx, &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getscriptstatus failed ret:%d res:%d\n", ret, res));
-		return -1;
-	}
-
-	if (outdata.dsize == 0) {
-		*scripts = NULL;
-	} else {
-		*scripts = (struct ctdb_script_list_old *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
-		talloc_free(outdata.dptr);
-	}
-
-	return 0;
-}
-
-/*
   tell the main daemon how long it took to lock the reclock file
  */
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb, struct timeval timeout, double latency)
@@ -4342,51 +4307,6 @@ int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb, struct timeval timeout
 
 	return 0;
 }
-
-/* enable an eventscript
- */
-int ctdb_ctrl_enablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script)
-{
-	int ret;
-	TDB_DATA data;
-	int32_t res;
-
-	data.dsize = strlen(script) + 1;
-	data.dptr  = discard_const(script);
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_ENABLE_SCRIPT, 0, data, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for enablescript failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/* disable an eventscript
- */
-int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, const char *script)
-{
-	int ret;
-	TDB_DATA data;
-	int32_t res;
-
-	data.dsize = strlen(script) + 1;
-	data.dptr  = discard_const(script);
-
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_DISABLE_SCRIPT, 0, data, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for disablescript failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
 
 int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout,
 		      uint32_t destnode, struct ctdb_ban_state *bantime)

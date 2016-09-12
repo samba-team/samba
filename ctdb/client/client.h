@@ -452,11 +452,6 @@ int ctdb_ctrl_del_public_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    int destnode, struct timeval timeout,
 			    struct ctdb_addr_info *addr_info);
 
-int ctdb_ctrl_run_eventscripts(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       struct ctdb_client_context *client,
-			       int destnode, struct timeval timeout,
-			       const char *event);
-
 int ctdb_ctrl_get_capabilities(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       struct ctdb_client_context *client,
 			       int destnode, struct timeval timeout,
@@ -481,13 +476,6 @@ int ctdb_ctrl_get_nodemap(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			  struct ctdb_client_context *client,
 			  int destnode, struct timeval timeout,
 			  struct ctdb_node_map **nodemap);
-
-int ctdb_ctrl_get_event_script_status(TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      struct ctdb_client_context *client,
-				      int destnode, struct timeval timeout,
-				      enum ctdb_event event,
-				      struct ctdb_script_list **slist);
 
 int ctdb_ctrl_traverse_kill(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    struct ctdb_client_context *client,
@@ -516,16 +504,6 @@ int ctdb_ctrl_set_recmasterrole(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct ctdb_client_context *client,
 				int destnode, struct timeval timeout,
 				uint32_t recmaster_role);
-
-int ctdb_ctrl_enable_script(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			    struct ctdb_client_context *client,
-			    int destnode, struct timeval timeout,
-			    const char *script);
-
-int ctdb_ctrl_disable_script(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			     struct ctdb_client_context *client,
-			     int destnode, struct timeval timeout,
-			     const char *script);
 
 int ctdb_ctrl_set_ban_state(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			    struct ctdb_client_context *client,

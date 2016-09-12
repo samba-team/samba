@@ -528,12 +528,6 @@ int ctdb_transaction_cancel(struct ctdb_transaction_handle *h);
 
 int ctdb_ctrl_recd_ping(struct ctdb_context *ctdb);
 
-int ctdb_ctrl_getscriptstatus(struct ctdb_context *ctdb,
-			      struct timeval timeout, uint32_t destnode,
-			      TALLOC_CTX *mem_ctx,
-			      enum ctdb_event type,
-			      struct ctdb_script_list_old **script_status);
-
 int ctdb_ctrl_report_recd_lock_latency(struct ctdb_context *ctdb,
 				       struct timeval timeout, double latency);
 
@@ -552,11 +546,6 @@ int ctdb_ctrl_setlmasterrole(struct ctdb_context *ctdb,
 int ctdb_ctrl_setrecmasterrole(struct ctdb_context *ctdb,
 			       struct timeval timeout, uint32_t destnode,
 			       uint32_t recmasterrole);
-
-int ctdb_ctrl_enablescript(struct ctdb_context *ctdb, struct timeval timeout,
-			   uint32_t destnode, const char *script);
-int ctdb_ctrl_disablescript(struct ctdb_context *ctdb, struct timeval timeout,
-			    uint32_t destnode, const char *script);
 
 int ctdb_ctrl_set_ban(struct ctdb_context *ctdb, struct timeval timeout,
 		      uint32_t destnode, struct ctdb_ban_state *bantime);
