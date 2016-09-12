@@ -230,6 +230,7 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *available_ips)
 {
 	ipalloc_state->available_public_ips = available_ips;
+	ipalloc_state->known_public_ips = known_ips;
 
 	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state,
 						       known_ips);
