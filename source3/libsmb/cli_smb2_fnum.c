@@ -37,6 +37,7 @@
 #include "libsmb/proto.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "../libcli/security/security.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 #include "lib/util_ea.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "ntioctl.h"
@@ -2343,6 +2344,91 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/***************************************************************
+ Wrapper that allows SMB2 to get user quota.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
+				 int quota_fnum,
+				 SMB_NTQUOTA_STRUCT *pqt)
+{
+	NTSTATUS status;
+	DATA_BLOB inbuf = data_blob_null;
+	DATA_BLOB outbuf = data_blob_null;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	unsigned sid_len;
+	unsigned int offset;
+	uint8_t *buf;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, quota_fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
+
+	inbuf = data_blob_talloc_zero(frame, 24 + sid_len);
+	if (inbuf.data == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	buf = inbuf.data;
+
+	SCVAL(buf, 0, 1);	   /* ReturnSingle */
+	SCVAL(buf, 1, 0);	   /* RestartScan */
+	SSVAL(buf, 2, 0);	   /* Reserved */
+	if (8 + sid_len < 8) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	SIVAL(buf, 4, 8 + sid_len); /* SidListLength */
+	SIVAL(buf, 8, 0);	   /* StartSidLength */
+	SIVAL(buf, 12, 0);	  /* StartSidOffset */
+	SIVAL(buf, 16, 0);	  /* NextEntryOffset */
+	SIVAL(buf, 20, sid_len);    /* SidLength */
+	sid_linearize(buf + 24, sid_len, &pqt->sid);
+
+	status = smb2cli_query_info(cli->conn, cli->timeout, cli->smb2.session,
+				    cli->smb2.tcon, 4, /* in_info_type */
+				    0,		       /* in_file_info_class */
+				    0xFFFF, /* in_max_output_length */
+				    &inbuf, /* in_input_buffer */
+				    0,      /* in_additional_info */
+				    0,      /* in_flags */
+				    ph->fid_persistent, ph->fid_volatile, frame,
+				    &outbuf);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	if (!parse_user_quota_record(outbuf.data, outbuf.length, &offset,
+				     pqt)) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		DEBUG(0, ("Got invalid FILE_QUOTA_INFORMATION in reply.\n"));
+	}
+
+fail:
 	TALLOC_FREE(frame);
 	return status;
 }

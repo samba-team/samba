@@ -149,6 +149,9 @@ NTSTATUS cli_smb2_set_ea_path(struct cli_state *cli,
 			const char *ea_name,
 			const char *ea_val,
 			size_t ea_len);
+NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
+				 int quota_fnum,
+				 SMB_NTQUOTA_STRUCT *pqt);
 struct tevent_req *cli_smb2_read_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,

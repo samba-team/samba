@@ -23,6 +23,7 @@
 #include "fake_file.h"
 #include "../libcli/security/security.h"
 #include "trans2.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 {
@@ -116,6 +117,10 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 
 	if (!cli||!pqt) {
 		smb_panic("cli_get_user_quota() called with NULL Pointer!");
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_get_user_quota(cli, quota_fnum, pqt);
 	}
 
 	SSVAL(setup + 0, 0, NT_TRANSACT_GET_USER_QUOTA);
