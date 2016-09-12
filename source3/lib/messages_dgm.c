@@ -455,6 +455,8 @@ static void messaging_dgm_out_queue_trigger(struct tevent_req *req,
 	struct messaging_dgm_out_queue_state *state = tevent_req_data(
 		req, struct messaging_dgm_out_queue_state);
 
+	tevent_req_reset_endtime(req);
+
 	state->subreq = pthreadpool_tevent_job_send(
 		state, state->ev, state->pool,
 		messaging_dgm_out_threaded_job, state);
@@ -518,6 +520,7 @@ static int messaging_dgm_out_send_fragment(
 {
 	struct tevent_req *req;
 	size_t qlen;
+	bool ok;
 
 	qlen = tevent_queue_length(out->queue);
 	if (qlen == 0) {
@@ -549,6 +552,13 @@ static int messaging_dgm_out_send_fragment(
 		return ENOMEM;
 	}
 	tevent_req_set_callback(req, messaging_dgm_out_sent_fragment, out);
+
+	ok = tevent_req_set_endtime(req, ev,
+				    tevent_timeval_current_ofs(60, 0));
+	if (!ok) {
+		TALLOC_FREE(req);
+		return ENOMEM;
+	}
 
 	return 0;
 }
