@@ -556,3 +556,51 @@ const char *dbwrap_name(struct db_context *db)
 {
 	return db->name;
 }
+
+static ssize_t tdb_data_buf(const TDB_DATA *dbufs, int num_dbufs,
+			    uint8_t *buf, size_t buflen)
+{
+	size_t needed = 0;
+	uint8_t *p = buf;
+	int i;
+
+	for (i=0; i<num_dbufs; i++) {
+		size_t thislen = dbufs[i].dsize;
+		size_t tmp;
+
+		tmp = needed + thislen;
+		if (tmp < needed) {
+			/* wrap */
+			return -1;
+		}
+		needed = tmp;
+
+		if (needed <= buflen) {
+			memcpy(p, dbufs[i].dptr, thislen);
+			p += thislen;
+		}
+	}
+
+	return needed;
+}
+
+
+TDB_DATA dbwrap_merge_dbufs(TALLOC_CTX *mem_ctx,
+			    const TDB_DATA *dbufs, int num_dbufs)
+{
+	ssize_t len = tdb_data_buf(dbufs, num_dbufs, NULL, 0);
+	uint8_t *buf;
+
+	if (len == -1) {
+		return (TDB_DATA) {0};
+	}
+
+	buf = talloc_array(mem_ctx, uint8_t, len);
+	if (buf == NULL) {
+		return (TDB_DATA) {0};
+	}
+
+	tdb_data_buf(dbufs, num_dbufs, buf, len);
+
+	return (TDB_DATA) { .dptr = buf, .dsize = len };
+}
