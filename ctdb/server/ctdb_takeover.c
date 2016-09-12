@@ -1607,11 +1607,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		return -1;
 	}
 
-	if (! ipalloc_set_public_ips(ipalloc_state, known_ips, available_ips)) {
-		DEBUG(DEBUG_ERR, ("Failed to set public IPs\n"));
-		talloc_free(tmp_ctx);
-		return -1;
-	}
+	ipalloc_set_public_ips(ipalloc_state, known_ips, available_ips);
 
 	if (! ipalloc_can_host_ips(ipalloc_state)) {
 		DEBUG(DEBUG_WARNING,("No nodes available to host public IPs yet\n"));

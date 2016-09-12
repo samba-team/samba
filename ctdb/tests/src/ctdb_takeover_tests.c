@@ -300,10 +300,7 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 				 read_ips_for_multiple_nodes,
 				 &known, &avail);
 
-	if (! ipalloc_set_public_ips(*ipalloc_state, known, avail)) {
-		DEBUG(DEBUG_ERR, ("Failed to set public IPs\n"));
-		exit(1);
-	}
+	ipalloc_set_public_ips(*ipalloc_state, known, avail);
 
 	tval_noiptakeover = get_tunable_values(mem_ctx, nodemap->num,
 					       "CTDB_SET_NoIPTakeover");
