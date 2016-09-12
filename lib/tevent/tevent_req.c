@@ -313,6 +313,11 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 	return true;
 }
 
+void tevent_req_reset_endtime(struct tevent_req *req)
+{
+	TALLOC_FREE(req->internal.timer);
+}
+
 void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt)
 {
 	req->async.fn = fn;

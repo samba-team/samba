@@ -1040,6 +1040,13 @@ bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime);
 
+/**
+ * @brief Reset the timer set by tevent_req_set_endtime.
+ *
+ * @param[in]  req      The request to reset the timeout for
+ */
+void tevent_req_reset_endtime(struct tevent_req *req);
+
 #ifdef DOXYGEN
 /**
  * @brief Call the notify callback of the given tevent request manually.
