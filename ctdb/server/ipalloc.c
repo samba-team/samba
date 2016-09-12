@@ -245,14 +245,18 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 {
 	int i;
-	struct public_ip_list *ip_list;
 
-
-	for (ip_list = ipalloc_state->all_ips;
-	     ip_list != NULL;
-	     ip_list = ip_list->next) {
-		if (ip_list->pnn != -1) {
-			return true;
+	for (i=0; i < ipalloc_state->num; i++) {
+		struct ctdb_public_ip_list *ips =
+			ipalloc_state->known_public_ips;
+		if (ips[i].num != 0) {
+			int j;
+			/* Succeed if an address is hosted on node i */
+			for (j=0; j < ips[i].num; j++) {
+				if (ips[i].ip[j].pnn == i) {
+					return true;
+				}
+			}
 		}
 	}
 
