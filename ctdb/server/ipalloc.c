@@ -245,12 +245,14 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 {
 	int i;
+	bool have_ips = false;
 
 	for (i=0; i < ipalloc_state->num; i++) {
 		struct ctdb_public_ip_list *ips =
 			ipalloc_state->known_public_ips;
 		if (ips[i].num != 0) {
 			int j;
+			have_ips = true;
 			/* Succeed if an address is hosted on node i */
 			for (j=0; j < ips[i].num; j++) {
 				if (ips[i].ip[j].pnn == i) {
@@ -260,6 +262,14 @@ bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 		}
 	}
 
+	if (! have_ips) {
+		return false;
+	}
+
+	/* At this point there are known addresses but none are
+	 * hosted.  Need to check if cluster can now host some
+	 * addresses.
+	 */
 	for (i=0; i < ipalloc_state->num; i++) {
 		if (ipalloc_state->available_public_ips[i].num != 0) {
 			return true;
