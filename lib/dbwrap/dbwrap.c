@@ -86,7 +86,7 @@ NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
 {
 	NTSTATUS status;
 
-	status = rec->store(rec, data, flags);
+	status = rec->storev(rec, &data, 1, flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

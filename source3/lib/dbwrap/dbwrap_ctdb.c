@@ -494,7 +494,9 @@ static bool pull_newest_from_marshall_buffer(struct ctdb_marshall_buffer *buf,
 	return true;
 }
 
-static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, int flag);
+static NTSTATUS db_ctdb_storev_transaction(struct db_record *rec,
+					   const TDB_DATA *dbufs, int num_dbufs,
+					   int flag);
 static NTSTATUS db_ctdb_delete_transaction(struct db_record *rec);
 
 static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ctx,
@@ -521,7 +523,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 		return NULL;
 	}
 
-	result->store = db_ctdb_store_transaction;
+	result->storev = db_ctdb_storev_transaction;
 	result->delete_rec = db_ctdb_delete_transaction;
 
 	if (pull_newest_from_marshall_buffer(ctx->transaction->m_write, key,
@@ -656,13 +658,23 @@ static NTSTATUS db_ctdb_transaction_store(struct db_ctdb_transaction_handle *h,
 /* 
    a record store inside a transaction
  */
-static NTSTATUS db_ctdb_store_transaction(struct db_record *rec, TDB_DATA data, int flag)
+static NTSTATUS db_ctdb_storev_transaction(
+	struct db_record *rec, const TDB_DATA *dbufs, int num_dbufs, int flag)
 {
 	struct db_ctdb_transaction_handle *h = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_transaction_handle);
 	NTSTATUS status;
+	TDB_DATA data;
+
+	data = dbwrap_merge_dbufs(rec, dbufs, num_dbufs);
+	if (data.dptr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = db_ctdb_transaction_store(h, rec->key, data);
+
+	TALLOC_FREE(data.dptr);
+
 	return status;
 }
 
@@ -887,12 +899,23 @@ static int db_ctdb_transaction_cancel(struct db_context *db)
 }
 
 
-static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
+static NTSTATUS db_ctdb_storev(struct db_record *rec,
+			       const TDB_DATA *dbufs, int num_dbufs, int flag)
 {
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_rec);
+	NTSTATUS status;
+	TDB_DATA data;
 
-	return db_ctdb_ltdb_store(crec->ctdb_ctx, rec->key, &(crec->header), data);
+	data = dbwrap_merge_dbufs(rec, dbufs, num_dbufs);
+	if (data.dptr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = db_ctdb_ltdb_store(crec->ctdb_ctx, rec->key, &(crec->header),
+				    data);
+	TALLOC_FREE(data.dptr);
+	return status;
 }
 
 
@@ -954,7 +977,7 @@ static NTSTATUS db_ctdb_delete(struct db_record *rec)
 	 * tdb-level cleanup
 	 */
 
-	status = db_ctdb_store(rec, tdb_null, 0);
+	status = db_ctdb_storev(rec, &tdb_null, 1, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1125,7 +1148,7 @@ again:
 		return NULL;
 	}
 
-	result->store = db_ctdb_store;
+	result->storev = db_ctdb_storev;
 	result->delete_rec = db_ctdb_delete;
 	talloc_set_destructor(result, db_ctdb_record_destr);
 
@@ -1658,7 +1681,8 @@ static int db_ctdb_traverse(struct db_context *db,
 	return state.count;
 }
 
-static NTSTATUS db_ctdb_store_deny(struct db_record *rec, TDB_DATA data, int flag)
+static NTSTATUS db_ctdb_storev_deny(struct db_record *rec,
+				    const TDB_DATA *dbufs, int num_dbufs, int flag)
 {
 	return NT_STATUS_MEDIA_WRITE_PROTECTED;
 }
@@ -1677,7 +1701,7 @@ static void traverse_read_callback(TDB_DATA key, TDB_DATA data, void *private_da
 	rec.db = state->db;
 	rec.key = key;
 	rec.value = data;
-	rec.store = db_ctdb_store_deny;
+	rec.storev = db_ctdb_storev_deny;
 	rec.delete_rec = db_ctdb_delete_deny;
 	rec.private_data = NULL;
 	state->fn(&rec, state->private_data);
@@ -1704,7 +1728,7 @@ static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TD
 	rec.db = state->db;
 	rec.key = kbuf;
 	rec.value = dbuf;
-	rec.store = db_ctdb_store_deny;
+	rec.storev = db_ctdb_storev_deny;
 	rec.delete_rec = db_ctdb_delete_deny;
 	rec.private_data = NULL;
 

@@ -118,7 +118,8 @@ overflow:
 	return -1;
 }
 
-static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
+static NTSTATUS db_rbt_storev(struct db_record *rec,
+			      const TDB_DATA *dbufs, int num_dbufs, int flag)
 {
 	struct db_rbt_ctx *db_ctx = talloc_get_type_abort(
 		rec->db->private_data, struct db_rbt_ctx);
@@ -130,10 +131,21 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	struct db_rbt_node *parent_node = NULL;
 
 	ssize_t reclen;
-	TDB_DATA this_key, this_val;
+	TDB_DATA data, this_key, this_val;
+	void *to_free = NULL;
 
 	if (db_ctx->traverse_read > 0) {
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
+	if (num_dbufs == 1) {
+		data = dbufs[0];
+	} else {
+		data = dbwrap_merge_dbufs(rec, dbufs, num_dbufs);
+		if (data.dptr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		to_free = data.dptr;
 	}
 
 	if (rec_priv->node != NULL) {
@@ -154,17 +166,20 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 			 */
 			memcpy(this_val.dptr, data.dptr, data.dsize);
 			rec_priv->node->valuesize = data.dsize;
+			TALLOC_FREE(to_free);
 			return NT_STATUS_OK;
 		}
 	}
 
 	reclen = db_rbt_reclen(rec->key.dsize, data.dsize);
 	if (reclen == -1) {
+		TALLOC_FREE(to_free);
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
 	}
 
 	node = talloc_zero_size(db_ctx, reclen);
 	if (node == NULL) {
+		TALLOC_FREE(to_free);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -231,6 +246,8 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	rb_link_node(&node->rb_node, parent, p);
 	DLIST_ADD_AFTER(db_ctx->nodes, node, parent_node);
 	rb_insert_color(&node->rb_node, &db_ctx->tree);
+
+	TALLOC_FREE(to_free);
 
 	return NT_STATUS_OK;
 }
@@ -350,7 +367,7 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	rec_priv = (struct db_rbt_rec *)
 		((char *)result + DBWRAP_RBT_ALIGN(sizeof(struct db_record)));
 
-	result->store = db_rbt_store;
+	result->storev = db_rbt_storev;
 	result->delete_rec = db_rbt_delete;
 	result->private_data = rec_priv;
 
@@ -425,7 +442,7 @@ static int db_rbt_traverse_internal(struct db_context *db,
 		ZERO_STRUCT(rec);
 		rec.db = db;
 		rec.private_data = &rec_priv;
-		rec.store = db_rbt_store;
+		rec.storev = db_rbt_storev;
 		rec.delete_rec = db_rbt_delete;
 		db_rbt_parse_node(rec_priv.node, &rec.key, &rec.value);
 

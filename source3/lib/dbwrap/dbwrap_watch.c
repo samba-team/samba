@@ -238,8 +238,9 @@ struct db_watched_subrec {
 	bool deleted;
 };
 
-static NTSTATUS dbwrap_watched_store(struct db_record *rec, TDB_DATA data,
-				     int flag);
+static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
+				      const TDB_DATA *dbufs, int num_dbufs,
+				      int flag);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
 
 static struct db_record *dbwrap_watched_fetch_locked(
@@ -271,7 +272,7 @@ static struct db_record *dbwrap_watched_fetch_locked(
 
 	rec->db = db;
 	rec->key = dbwrap_record_get_key(subrec->subrec);
-	rec->store = dbwrap_watched_store;
+	rec->storev = dbwrap_watched_storev;
 	rec->delete_rec = dbwrap_watched_delete;
 
 	subrec_value = dbwrap_record_get_value(subrec->subrec);
@@ -383,18 +384,29 @@ static NTSTATUS dbwrap_watched_save(struct db_watched_subrec *subrec,
 	return status;
 }
 
-static NTSTATUS dbwrap_watched_store(struct db_record *rec, TDB_DATA data,
-				     int flag)
+static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
+				      const TDB_DATA *dbufs, int num_dbufs,
+				      int flag)
 {
 	struct db_watched_subrec *subrec = talloc_get_type_abort(
 		rec->private_data, struct db_watched_subrec);
+	NTSTATUS status;
+	TDB_DATA data;
+
+	data = dbwrap_merge_dbufs(rec, dbufs, num_dbufs);
+	if (data.dptr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	dbwrap_watched_wakeup(rec, subrec);
 
 	subrec->deleted = false;
 
-	return dbwrap_watched_save(subrec, data, flag);
+	status = dbwrap_watched_save(subrec, data, flag);
 
+	TALLOC_FREE(data.dptr);
+
+	return status;
 }
 
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec)
