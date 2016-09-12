@@ -4034,31 +4034,6 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static int control_eventscript(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-			       int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 1) {
-		usage("eventscript");
-	}
-
-	if (strcmp(argv[0], "monitor") != 0) {
-		fprintf(stderr, "Only monitor event can be run\n");
-		return 1;
-	}
-
-	ret = ctdb_ctrl_run_eventscripts(mem_ctx, ctdb->ev, ctdb->client,
-					 ctdb->cmd_pnn, TIMEOUT(), argv[0]);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to run monitor event on node %u\n",
-			ctdb->cmd_pnn);
-		return ret;
-	}
-
-	return 0;
-}
-
 #define DB_VERSION	3
 #define MAX_DB_NAME	64
 #define MAX_REC_BUFFER_SIZE	(100*1000)
@@ -4651,114 +4626,6 @@ static int control_recmaster(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
-static void print_scriptstatus_one(struct ctdb_script_list *slist,
-				   const char *event_str)
-{
-	int i;
-	int num_run = 0;
-
-	if (slist == NULL) {
-		if (! options.machinereadable) {
-			printf("%s cycle never run\n", event_str);
-		}
-		return;
-	}
-
-	for (i=0; i<slist->num_scripts; i++) {
-		if (slist->script[i].status != -ENOEXEC) {
-			num_run++;
-		}
-	}
-
-	if (! options.machinereadable) {
-		printf("%d scripts were executed last %s cycle\n",
-		       num_run, event_str);
-	}
-
-	for (i=0; i<slist->num_scripts; i++) {
-		const char *status = NULL;
-
-		switch (slist->script[i].status) {
-		case -ETIME:
-			status = "TIMEDOUT";
-			break;
-		case -ENOEXEC:
-			status = "DISABLED";
-			break;
-		case 0:
-			status = "OK";
-			break;
-		default:
-			if (slist->script[i].status > 0) {
-				status = "ERROR";
-			}
-			break;
-		}
-
-		if (options.machinereadable) {
-			printf("%s%s%s%s%s%i%s%s%s%lu.%06lu%s%lu.%06lu%s%s%s\n",
-			       options.sep,
-			       event_str, options.sep,
-			       slist->script[i].name, options.sep,
-			       slist->script[i].status, options.sep,
-			       status, options.sep,
-			       (unsigned long)slist->script[i].start.tv_sec,
-			       slist->script[i].start.tv_usec, options.sep,
-			       (unsigned long)slist->script[i].finished.tv_sec,
-			       slist->script[i].finished.tv_usec, options.sep,
-			       slist->script[i].output, options.sep);
-			continue;
-		}
-
-		if (status) {
-			printf("%-20s Status:%s    ",
-			       slist->script[i].name, status);
-		} else {
-			/* Some other error, eg from stat. */
-			printf("%-20s Status:CANNOT RUN (%s)",
-			       slist->script[i].name,
-			       strerror(-slist->script[i].status));
-		}
-
-		if (slist->script[i].status >= 0) {
-			printf("Duration:%.3lf ",
-			       timeval_delta(&slist->script[i].finished,
-					     &slist->script[i].start));
-		}
-		if (slist->script[i].status != -ENOEXEC) {
-			printf("%s", ctime(&slist->script[i].start.tv_sec));
-			if (slist->script[i].status != 0) {
-				printf("   OUTPUT:%s\n",
-				       slist->script[i].output);
-			}
-		} else {
-			printf("\n");
-		}
-	}
-}
-
-static void print_scriptstatus(struct ctdb_script_list **slist,
-			       int count, const char **event_str)
-{
-	int i;
-
-	if (options.machinereadable) {
-		printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
-		       options.sep,
-		       "Type", options.sep,
-		       "Name", options.sep,
-		       "Code", options.sep,
-		       "Status", options.sep,
-		       "Start", options.sep,
-		       "End", options.sep,
-		       "Error Output", options.sep);
-	}
-
-	for (i=0; i<count; i++) {
-		print_scriptstatus_one(slist[i], event_str[i]);
-	}
-}
-
 static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			 int argc, const char **argv)
 {
@@ -4812,130 +4679,17 @@ static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 static int control_scriptstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				int argc, const char **argv)
 {
-	struct ctdb_script_list **slist;
-	const char *event_str;
-	enum ctdb_event event;
-	const char *all_events[] = {
-		"init", "setup", "startup", "monitor",
-		"takeip", "releaseip", "updateip", "ipreallocated" };
-	bool valid;
-	int ret, i, j;
-	int count, start, end, num;
+	const char *new_argv[3];
 
 	if (argc > 1) {
 		usage("scriptstatus");
 	}
 
-	if (argc == 0) {
-		event_str = "monitor";
-	} else {
-		event_str = argv[0];
-	}
+	new_argv[0] = "status";
+	new_argv[1] = (argc == 0) ? "monitor" : argv[0];
+	new_argv[2] = NULL;
 
-	valid = false;
-	end = 0;
-
-	for (i=0; i<ARRAY_SIZE(all_events); i++) {
-		if (strcmp(event_str, all_events[i]) == 0) {
-			valid = true;
-			count = 1;
-			start = i;
-			end = i+1;
-			break;
-		}
-	}
-
-	if (strcmp(event_str, "all") == 0) {
-		valid = true;
-		count = ARRAY_SIZE(all_events);
-		start = 0;
-		end = count-1;
-	}
-
-	if (! valid) {
-		fprintf(stderr, "Unknown event name %s\n", argv[0]);
-		usage("scriptstatus");
-	}
-
-	slist = talloc_array(mem_ctx, struct ctdb_script_list *, count);
-	if (slist == NULL) {
-		fprintf(stderr, "Memory allocation error\n");
-		return 1;
-	}
-
-	num = 0;
-	for (i=start; i<end; i++) {
-		event = ctdb_event_from_string(all_events[i]);
-
-		ret = ctdb_ctrl_get_event_script_status(mem_ctx, ctdb->ev,
-							ctdb->client,
-							ctdb->cmd_pnn,
-							TIMEOUT(), event,
-							&slist[num]);
-		if (ret != 0) {
-			fprintf(stderr,
-				"failed to get script status for %s event\n",
-				all_events[i]);
-			return 1;
-		}
-
-		if (slist[num] == NULL) {
-			num++;
-			continue;
-		}
-
-		/* The ETIME status is ignored for certain events.
-		 * In that case the status is 0, but endtime is not set.
-		 */
-		for (j=0; j<slist[num]->num_scripts; j++) {
-			if (slist[num]->script[j].status == 0 &&
-			    timeval_is_zero(&slist[num]->script[j].finished)) {
-				slist[num]->script[j].status = -ETIME;
-			}
-		}
-
-		num++;
-	}
-
-	print_scriptstatus(slist, count, &all_events[start]);
-	return 0;
-}
-
-static int control_enablescript(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 1) {
-		usage("enablescript");
-	}
-
-	ret = ctdb_ctrl_enable_script(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), argv[0]);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to enable script %s\n", argv[0]);
-		return ret;
-	}
-
-	return 0;
-}
-
-static int control_disablescript(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
-				 int argc, const char **argv)
-{
-	int ret;
-
-	if (argc != 1) {
-		usage("disablescript");
-	}
-
-	ret = ctdb_ctrl_disable_script(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT(), argv[0]);
-	if (ret != 0) {
-		fprintf(stderr, "Failed to disable script %s\n", argv[0]);
-		return ret;
-	}
-
+	(void) control_event(mem_ctx, ctdb, 2, new_argv);
 	return 0;
 }
 
@@ -6346,8 +6100,6 @@ static const struct ctdb_cmd {
 		"add an ip address to a node", "<ip/mask> <iface>" },
 	{ "delip", control_delip, false, true,
 		"delete an ip address from a node", "<ip>" },
-	{ "eventscript", control_eventscript, false, true,
-		"run an event", "monitor" },
 	{ "backupdb", control_backupdb, false, false,
 		"backup a database into a file", "<dbname|dbid> <file>" },
 	{ "restoredb", control_restoredb, false, false,
@@ -6360,13 +6112,9 @@ static const struct ctdb_cmd {
 		"show the pnn for the recovery master", NULL },
 	{ "event", control_event, true, false,
 		"event and event script commands", NULL },
-	{ "scriptstatus", control_scriptstatus, false, true,
+	{ "scriptstatus", control_scriptstatus, true, false,
 		"show event script status",
 		"[init|setup|startup|monitor|takeip|releaseip|ipreallocated]" },
-	{ "enablescript", control_enablescript, false, true,
-		"enable an eventscript", "<script>"},
-	{ "disablescript", control_disablescript, false, true,
-		"disable an eventscript", "<script>"},
 	{ "natgw", control_natgw, false, false,
 		"show natgw configuration", "master|list|status" },
 	{ "natgwlist", control_natgwlist, false, false,

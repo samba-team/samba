@@ -55,15 +55,15 @@ sleep_for 5
 
 my_exit_hook ()
 {
-    onnode -q all $CTDB enablescript  "10.interface"
-    onnode -q all $CTDB disablescript "10.external"
+    onnode -q all $CTDB event script enable "10.interface"
+    onnode -q all $CTDB event script disable "10.external"
 }
 ctdb_test_exit_hook_add my_exit_hook
 
 echo "Disable 10.interface on all nodes"
-try_command_on_node all $CTDB disablescript 10.interface
+try_command_on_node all $CTDB event script disable 10.interface
 echo "Enable 10.external on all nodes"
-try_command_on_node all $CTDB enablescript  10.external
+try_command_on_node all $CTDB event script enable 10.external
 
 test_port=445
 
