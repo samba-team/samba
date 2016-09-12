@@ -231,9 +231,7 @@ bool ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 	ipalloc_state->available_public_ips = available_ips;
 	ipalloc_state->known_public_ips = known_ips;
 
-	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
-
-	return (ipalloc_state->all_ips != NULL);
+	return true;
 }
 
 /* This can only return false if there are no available IPs *and*
@@ -281,6 +279,11 @@ bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 {
 	bool ret = false;
+
+	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
+	if (ipalloc_state->all_ips == NULL) {
+		return NULL;
+	}
 
 	switch (ipalloc_state->algorithm) {
 	case IPALLOC_LCP2:
