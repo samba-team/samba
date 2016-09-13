@@ -207,7 +207,7 @@ interface ntlmssp
 		uint8 ChallengeFromClient[8];
 	} LMv2_RESPONSE;
 
-	typedef [nodiscriminant] union {
+	typedef [nopython,nodiscriminant] union {
 		[case(24)] LM_RESPONSE v1;
 		[default];
 	} ntlmssp_LM_RESPONSE;
@@ -238,7 +238,7 @@ interface ntlmssp
 		NTLMv2_CLIENT_CHALLENGE Challenge;
 	} NTLMv2_RESPONSE;
 
-	typedef [public,nodiscriminant] union {
+	typedef [public,nopython,nodiscriminant] union {
 		[case(0)] ;
 		[case(0x18)] NTLM_RESPONSE v1;
 		[default] NTLMv2_RESPONSE v2;
