@@ -1390,7 +1390,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct ndr_pull *pull;
 	NTSTATUS status;
-	struct dcesrv_connection_context *context;
 
 	if (!call->conn->allow_request) {
 		return dcesrv_fault_disconnect(call, DCERPC_NCA_S_PROTO_ERROR);
@@ -1402,8 +1401,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		call->state_flags &= ~DCESRV_CALL_STATE_FLAG_MAY_ASYNC;
 	}
 
-	context = dcesrv_find_context(call->conn, call->pkt.u.request.context_id);
-	if (context == NULL) {
+	if (call->context == NULL) {
 		return dcesrv_fault_with_flags(call, DCERPC_NCA_S_UNKNOWN_IF,
 					DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 	}
@@ -1415,7 +1413,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		break;
 	default:
-		if (!context->allow_connect) {
+		if (!call->context->allow_connect) {
 			char *addr;
 
 			addr = tsocket_address_string(call->conn->remote_address,
@@ -1424,7 +1422,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			DEBUG(2, ("%s: restrict auth_level_connect access "
 				  "to [%s] with auth[type=0x%x,level=0x%x] "
 				  "on [%s] from [%s]\n",
-				  __func__, context->iface->name,
+				  __func__, call->context->iface->name,
 				  call->conn->auth_state.auth_type,
 				  call->conn->auth_state.auth_level,
 				  derpc_transport_string_by_transport(transport),
@@ -1434,7 +1432,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		break;
 	}
 
-	if (call->conn->auth_state.auth_level < context->min_auth_level) {
+	if (call->conn->auth_state.auth_level < call->context->min_auth_level) {
 		char *addr;
 
 		addr = tsocket_address_string(call->conn->remote_address, call);
@@ -1443,8 +1441,8 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			  "to [%s] with auth[type=0x%x,level=0x%x] "
 			  "on [%s] from [%s]\n",
 			  __func__,
-			  context->min_auth_level,
-			  context->iface->name,
+			  call->context->min_auth_level,
+			  call->context->iface->name,
 			  call->conn->auth_state.auth_type,
 			  call->conn->auth_state.auth_level,
 			  derpc_transport_string_by_transport(transport),
@@ -1457,7 +1455,6 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	call->context	= context;
 	call->ndr_pull	= pull;
 
 	if (!(call->pkt.drep[0] & DCERPC_DREP_LE)) {
@@ -1476,13 +1473,14 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* unravel the NDR for the packet */
-	status = context->iface->ndr_pull(call, call, pull, &call->r);
+	status = call->context->iface->ndr_pull(call, call, pull, &call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		uint8_t extra_flags = 0;
 		if (call->fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
 			/* we got an unknown call */
 			DEBUG(3,(__location__ ": Unknown RPC call %u on %s\n",
-				 call->pkt.u.request.opnum, context->iface->name));
+				 call->pkt.u.request.opnum,
+				 call->context->iface->name));
 			dcesrv_save_call(call, "unknown");
 			extra_flags |= DCERPC_PFC_FLAG_DID_NOT_EXECUTE;
 		} else {
@@ -1498,10 +1496,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* call the dispatch function */
-	status = context->iface->dispatch(call, call, call->r);
+	status = call->context->iface->dispatch(call, call, call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("dcerpc fault in call %s:%02x - %s\n",
-			 context->iface->name, 
+			 call->context->iface->name,
 			 call->pkt.u.request.opnum,
 			 dcerpc_errstr(pull, call->fault_code)));
 		return dcesrv_fault(call, call->fault_code);
@@ -1629,6 +1627,12 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_PENDING_CANCEL) {
 				return dcesrv_fault_disconnect(call,
 						DCERPC_FAULT_NO_CALL_ACTIVE);
+			}
+			call->context = dcesrv_find_context(call->conn,
+						call->pkt.u.request.context_id);
+			if (call->context == NULL) {
+				return dcesrv_fault_with_flags(call, DCERPC_NCA_S_UNKNOWN_IF,
+					DCERPC_PFC_FLAG_DID_NOT_EXECUTE);
 			}
 		} else {
 			const struct dcerpc_request *nr = &call->pkt.u.request;
