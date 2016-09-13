@@ -484,7 +484,7 @@ static void cli_pull_chunk_ship(struct cli_pull_chunk *chunk)
 
 		if (chunk->tmp_size == 0) {
 			/*
-			 * we git a short read, we're done
+			 * we got a short read, we're done
 			 */
 			tevent_req_done(req);
 			return;
@@ -500,7 +500,7 @@ static void cli_pull_chunk_ship(struct cli_pull_chunk *chunk)
 
 		if (chunk->tmp_size < chunk->total_size) {
 			/*
-			 * we git a short read, we're done
+			 * we got a short read, we're done
 			 */
 			tevent_req_done(req);
 			return;
