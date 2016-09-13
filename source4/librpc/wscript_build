@@ -250,6 +250,12 @@ for env in bld.gen_python_environments():
 		realname='samba/dcerpc/spoolss.so'
 		)
 
+	bld.SAMBA_PYTHON('python_winspool',
+		source='../../librpc/gen_ndr/py_winspool.c',
+		deps='RPC_NDR_WINSPOOL %s %s' % (pytalloc_util, pyrpc_util),
+		realname='samba/dcerpc/winspool.so'
+		)
+
 	bld.SAMBA_PYTHON('python_witness',
 		source='../../librpc/gen_ndr/py_witness.c',
 		deps='RPC_NDR_WITNESS %s %s' % (pytalloc_util, pyrpc_util),
