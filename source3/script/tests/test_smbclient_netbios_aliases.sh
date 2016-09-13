@@ -7,7 +7,7 @@ EOF
 exit 1;
 fi
 
-SMBCLIENT3=$1
+smbclient=$1
 SERVER=$2
 USERNAME=$3
 PASSWORD=$4
@@ -15,11 +15,11 @@ PREFIX=$5
 shift 5
 ADDARGS="$*"
 
-samba4bindir="$BINDIR"
-samba4srcdir="$SRCDIR/source4"
-samba4kinit=kinit
-if test -x $BINDIR/samba4kinit; then
-	samba4kinit=$BINDIR/samba4kinit
+samba_bindir="$BINDIR"
+samba_srcdir="$SRCDIR/source4"
+samba_kinit=kinit
+if test -x ${samba_bindir}/samba4kinit; then
+	samba_kinit=${samba_bindir}/samba4kinit
 fi
 
 KRB5CCNAME_PATH="$PREFIX/test_smbclient_netbios_aliases_krb5ccache"
@@ -30,11 +30,11 @@ export KRB5CCNAME
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
+. $incdir/common_test_fns.inc
 
-echo $PASSWORD > $PREFIX/tmppassfile
-testit "kinit" $samba4kinit --password-file=$PREFIX/tmppassfile $USERNAME || failed=`expr $failed + 1`
-rm -f $PREFIX/tmppassfile
-testit "smbclient" $VALGRIND $SMBCLIENT3 -k //$SERVER/tmp -c 'ls' $ADDARGS || failed=`expr $failed + 1`
+testit "kinit" kerberos_kinit ${samba_kinit} ${USERNAME} ${PASSWORD}
+
+test_smbclient "smbclient (krb5)" "ls" "//$SERVER/tmp" -k || failed=`expr $failed + 1`
 
 rm -rf $KRB5CCNAME_PATH
 
