@@ -46,3 +46,8 @@ NTSTATUS gp_inifile_getstring(struct gp_inifile_context *ctx, const char *key, c
 NTSTATUS gp_inifile_getint(struct gp_inifile_context *ctx, const char *key, int *ret);
 NTSTATUS gp_inifile_getbool(struct gp_inifile_context *ctx, const char *key, bool *ret);
 
+NTSTATUS gp_inifile_enum_section(struct gp_inifile_context *ctx,
+				 const char *section,
+				 size_t *num_ini_keys,
+				 const char ***ini_keys,
+				 const char ***ini_values);

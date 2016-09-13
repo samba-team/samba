@@ -217,6 +217,80 @@ NTSTATUS gp_inifile_getbool(struct gp_inifile_context *ctx, const char *key, boo
 /****************************************************************
 ****************************************************************/
 
+NTSTATUS gp_inifile_enum_section(struct gp_inifile_context *ctx,
+				 const char *section,
+				 size_t *num_ini_keys,
+				 const char ***ini_keys,
+				 const char ***ini_values)
+{
+	NTSTATUS status;
+	int i;
+	size_t num_keys = 0, num_vals = 0;
+	const char **keys = NULL;
+	const char **values = NULL;
+
+	if (section == NULL || num_ini_keys == NULL ||
+	    ini_keys == NULL || ini_values == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (i = 0; i < ctx->keyval_count; i++) {
+
+		bool ok;
+
+		/*
+		 * section: KEYNAME
+		 * KEYNAME:value matches
+		 * KEYNAME_OEM:value not
+		 */
+
+		if (strlen(section)+1 > strlen(ctx->data[i]->key)) {
+			continue;
+		}
+
+		if (!strnequal(section, ctx->data[i]->key, strlen(section))) {
+			continue;
+		}
+
+		if (ctx->data[i]->key[strlen(section)] != ':') {
+			continue;
+		}
+
+		ok = add_string_to_array(ctx, ctx->data[i]->key, &keys, &num_keys);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+
+		ok = add_string_to_array(ctx, ctx->data[i]->val, &values, &num_vals);
+		if (!ok) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+
+		if (num_keys != num_vals) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto failed;
+		}
+	}
+
+	*num_ini_keys = num_keys;
+	*ini_keys = keys;
+	*ini_values = values;
+
+	return NT_STATUS_OK;
+
+ failed:
+	talloc_free(keys);
+	talloc_free(values);
+
+	return status;
+}
+
+
+/****************************************************************
+****************************************************************/
+
 NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 				 uint32_t flags,
 				 const char *unix_path,
