@@ -244,6 +244,12 @@ for env in bld.gen_python_environments():
                 cflags_end=gen_cflags
 		)
 
+	bld.SAMBA_PYTHON('python_spoolss',
+		source='../../librpc/gen_ndr/py_spoolss.c',
+		deps='RPC_NDR_SPOOLSS %s %s' % (pytalloc_util, pyrpc_util),
+		realname='samba/dcerpc/spoolss.so'
+		)
+
 	bld.SAMBA_PYTHON('python_witness',
 		source='../../librpc/gen_ndr/py_witness.c',
 		deps='RPC_NDR_WITNESS %s %s' % (pytalloc_util, pyrpc_util),
