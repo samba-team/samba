@@ -173,3 +173,13 @@ _restart_ctdb_all ()
     daemons_stop
     daemons_start
 }
+
+ps_ctdbd ()
+{
+	# If this fails to find processes then the tests fails, so
+	# look at full command-line so this will work with valgrind.
+	# Note that the output could be generated with pgrep's -a
+	# option but it doesn't exist in older versions.
+	ps -p $(pgrep -f '\<ctdbd\>' | xargs | sed -e 's| |,|g') -o args ww
+	echo
+}
