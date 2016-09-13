@@ -2867,10 +2867,10 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 						PRINTER_ALL_ACCESS;
 
 	const int PRINTER_ACE_MANAGE_DOCUMENTS = SEC_GENERIC_ALL |
-						READ_CONTROL_ACCESS;
+						 SEC_STD_READ_CONTROL;
 
-	const int PRINTER_ACE_PRINT	= GENERIC_EXECUTE_ACCESS |
-					  READ_CONTROL_ACCESS |
+	const int PRINTER_ACE_PRINT	= SEC_GENERIC_EXECUTE |
+					  SEC_STD_READ_CONTROL |
 					  PRINTER_ACCESS_USE;
 
 	/******************/
