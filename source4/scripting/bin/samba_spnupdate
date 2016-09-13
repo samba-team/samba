@@ -219,7 +219,7 @@ def call_rodc_update(d):
     server = cldap_ret.pdc_dns_name
     try:
         binding_options = "seal"
-        if int(lp.get("log level")) >= 5:
+        if lp.log_level() >= 5:
             binding_options += ",print"
         drs = drsuapi.drsuapi('ncacn_ip_tcp:%s[%s]' % (server, binding_options), lp, creds)
         (drs_handle, supported_extensions) = drs_utils.drs_DsBind(drs)
