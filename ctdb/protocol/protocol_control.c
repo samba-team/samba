@@ -49,7 +49,6 @@ struct ctdb_reply_control_wire {
 static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 {
 	size_t len = 0;
-	uint64_t u64;
 
 	if (cd == NULL) {
 		return 0;
@@ -384,8 +383,7 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		u64 = cd->data.db_id;
-		len = ctdb_uint64_len(u64);
+		len = ctdb_uint64_len((uint64_t)cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
@@ -501,8 +499,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 				       uint8_t *buf)
 {
-	uint64_t u64;
-
 	switch (cd->opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
 		ctdb_pid_push(cd->data.pid, buf);
@@ -724,8 +720,7 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		u64 = cd->data.db_id;
-		ctdb_uint64_push(u64, buf);
+		ctdb_uint32_push(cd->data.db_id, buf);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
@@ -824,7 +819,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 				      struct ctdb_req_control_data *cd)
 {
 	int ret = 0;
-	uint64_t u64 = 0;
 
 	cd->opcode = opcode;
 
@@ -1103,8 +1097,8 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 		break;
 
 	case CTDB_CONTROL_GET_DB_SEQNUM:
-		ret = ctdb_uint64_pull(buf, buflen, mem_ctx, &u64);
-		cd->data.db_id = (uint32_t)u64;
+		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
+				       &cd->data.db_id);
 		break;
 
 	case CTDB_CONTROL_DB_SET_HEALTHY:
