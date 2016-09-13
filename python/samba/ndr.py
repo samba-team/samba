@@ -42,9 +42,15 @@ def ndr_unpack(cls, data, allow_remaining=False):
     :return: Unpacked object
     """
     object = cls()
-    object.__ndr_unpack__(data, allow_remaining=allow_remaining)
+    ndr_unpack = getattr(object, "__ndr_unpack__", None)
+    if ndr_unpack is None:
+        raise TypeError("%r is not a NDR object" % object)
+    ndr_unpack(data, allow_remaining=allow_remaining)
     return object
 
 
 def ndr_print(object):
-    return object.__ndr_print__()
+    ndr_print = getattr(object, "__ndr_print__", None)
+    if ndr_print is None:
+        raise TypeError("%r is not a NDR object" % object)
+    return ndr_print()
