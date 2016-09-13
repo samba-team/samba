@@ -54,3 +54,80 @@ def ndr_print(object):
     if ndr_print is None:
         raise TypeError("%r is not a NDR object" % object)
     return ndr_print()
+
+def ndr_pack_in(object, bigendian=False, ndr64=False):
+    """Pack the input of an NDR function object.
+
+    :param object: Object to pack
+    :param bigendian: use LIBNDR_FLAG_BIGENDIAN (default=False)
+    :param ndr64: use LIBNDR_FLAG_NDR64 (default=False)
+    :return: String object with marshalled object.
+    """
+    ndr_pack_in_fn = getattr(object, "__ndr_pack_in__", None)
+    if ndr_pack_in_fn is None:
+        raise TypeError("%r is not a NDR function object" % object)
+    return ndr_pack_in_fn(bigendian=bigendian, ndr64=ndr64)
+
+
+def ndr_unpack_in(object, data, bigendian=False, ndr64=False, allow_remaining=False):
+    """Unpack the input of an NDR function object.
+
+    :param cls: Class of the object to unpack
+    :param data: Buffer to unpack
+    :param bigendian: use LIBNDR_FLAG_BIGENDIAN (default=False)
+    :param ndr64: use LIBNDR_FLAG_NDR64 (default=False)
+    :param allow_remaining: allows remaining data at the end (default=False)
+    :return: Unpacked object
+    """
+    ndr_unpack_in_fn = getattr(object, "__ndr_unpack_in__", None)
+    if ndr_unpack_in_fn is None:
+        raise TypeError("%r is not a NDR function object" % object)
+    ndr_unpack_in_fn(data, bigendian=bigendian, ndr64=ndr64,
+                      allow_remaining=allow_remaining)
+    return object
+
+
+def ndr_print_in(object):
+    ndr_print_in_fn = getattr(object, "__ndr_print_in__", None)
+    if ndr_print_in_fn is None:
+        raise TypeError("%r is not a NDR function object" % object)
+    return ndr_print_in_fn()
+
+
+def ndr_pack_out(object, bigendian=False, ndr64=False):
+    """Pack the output of an NDR function object.
+
+    :param object: Object to pack
+    :param bigendian: use LIBNDR_FLAG_BIGENDIAN (default=False)
+    :param ndr64: use LIBNDR_FLAG_NDR64 (default=False)
+    :return: String object with marshalled object.
+    """
+    ndr_pack_out_fn = getattr(object, "__ndr_pack_out__", None)
+    if ndr_pack_out_fn is None:
+        raise TypeError("%r is not a NDR function object" % object)
+    return ndr_pack_out_fn(bigendian=bigendian, ndr64=ndr64)
+
+
+def ndr_unpack_out(object, data, bigendian=False, ndr64=False, allow_remaining=False):
+    """Unpack the output of an NDR function object.
+
+    :param cls: Class of the object to unpack
+    :param data: Buffer to unpack
+    :param bigendian: use LIBNDR_FLAG_BIGENDIAN (default=False)
+    :param ndr64: use LIBNDR_FLAG_NDR64 (default=False)
+    :param allow_remaining: allows remaining data at the end (default=False)
+    :return: Unpacked object
+    """
+    ndr_unpack_out_fn = getattr(object, "__ndr_unpack_out__", None)
+    if ndr_unpack_out_fn is None:
+        raise TypeError("%r is not a NDR function object" % object)
+    ndr_unpack_out_fn(data, bigendian=bigendian, ndr64=ndr64,
+                       allow_remaining=allow_remaining)
+    return object
+
+
+def ndr_print_out(object):
+    ndr_print_out_fn = getattr(object, "__ndr_print_out__", None)
+    if ndr_print_out_fn is None:
+        raise TypeError("%r is not a NDR function object" % object)
+    return ndr_print_out_fn()
