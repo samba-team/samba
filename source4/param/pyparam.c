@@ -322,6 +322,13 @@ static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 
 }
 
+static PyObject *py_lp_log_level(PyObject *self, PyObject *unused)
+{
+	int ret = DEBUGLEVEL_CLASS[DBGC_CLASS];
+	return PyInt_FromLong(ret);
+}
+
+
 static PyObject *py_samdb_url(PyObject *self, PyObject *unused)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
@@ -357,6 +364,8 @@ static PyMethodDef py_lp_ctx_methods[] = {
 		"Get the server role." },
 	{ "dump", py_lp_dump, METH_VARARGS,
 		"S.dump(stream, show_defaults=False)" },
+	{ "log_level", py_lp_log_level, METH_NOARGS,
+		"S.log_level() -> int\n Get the active log level" },
 	{ "dump_a_parameter", py_lp_dump_a_parameter, METH_VARARGS,
 		"S.dump_a_parameter(stream, name, service_name)" },
 	{ "samdb_url", py_samdb_url, METH_NOARGS,
