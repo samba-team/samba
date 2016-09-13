@@ -182,16 +182,16 @@ static NTSTATUS db_ctdb_ltdb_parse(
 static NTSTATUS db_ctdb_ltdb_store(struct db_ctdb_ctx *db,
 				   TDB_DATA key,
 				   struct ctdb_ltdb_header *header,
-				   TDB_DATA data)
+				   const TDB_DATA *dbufs, int num_dbufs)
 {
-	TDB_DATA recs[2];
+	TDB_DATA recs[num_dbufs+1];
 	int ret;
 
 	recs[0] = (TDB_DATA) { .dptr = (uint8_t *)header,
 			       .dsize = sizeof(struct ctdb_ltdb_header) };
-	recs[1] = data;
+	memcpy(&recs[1], dbufs, sizeof(TDB_DATA) * num_dbufs);
 
-	ret = tdb_storev(db->wtdb->tdb, key, recs, 2, TDB_REPLACE);
+	ret = tdb_storev(db->wtdb->tdb, key, recs, num_dbufs + 1, TDB_REPLACE);
 
 	return (ret == 0) ? NT_STATUS_OK
 			  : tdb_error_to_ntstatus(db->wtdb->tdb);
@@ -905,16 +905,9 @@ static NTSTATUS db_ctdb_storev(struct db_record *rec,
 	struct db_ctdb_rec *crec = talloc_get_type_abort(
 		rec->private_data, struct db_ctdb_rec);
 	NTSTATUS status;
-	TDB_DATA data;
-
-	data = dbwrap_merge_dbufs(rec, dbufs, num_dbufs);
-	if (data.dptr == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	status = db_ctdb_ltdb_store(crec->ctdb_ctx, rec->key, &(crec->header),
-				    data);
-	TALLOC_FREE(data.dptr);
+				    dbufs, num_dbufs);
 	return status;
 }
 
