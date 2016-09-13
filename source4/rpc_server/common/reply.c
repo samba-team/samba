@@ -234,7 +234,13 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 			pkt.pfc_flags |= DCERPC_PFC_FLAG_LAST;
 		}
 		pkt.u.response.alloc_hint = stub.length;
-		pkt.u.response.context_id = call->pkt.u.request.context_id;
+		/*
+		 * bug for bug, feature for feature...
+		 *
+		 * Windows truncates the context_id with & 0xFF,
+		 * so we do.
+		 */
+		pkt.u.response.context_id = context->context_id & 0xFF;
 		pkt.u.response.cancel_count = 0;
 		pkt.u.response.stub_and_verifier.data = stub.data;
 		pkt.u.response.stub_and_verifier.length = length;
