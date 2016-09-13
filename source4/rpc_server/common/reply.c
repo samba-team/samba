@@ -112,22 +112,10 @@ NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
 	pkt.ptype = DCERPC_PKT_FAULT;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.fault.alloc_hint = 24;
-	switch (call->pkt.ptype) {
-	case DCERPC_PKT_REQUEST:
-		pkt.u.fault.context_id = call->pkt.u.request.context_id;
-		break;
-	default:
+	if (call->context != NULL) {
+		pkt.u.fault.context_id = call->context->context_id;
+	} else {
 		pkt.u.fault.context_id = 0;
-		break;
-	}
-	switch (fault_code) {
-	case DCERPC_NCA_S_PROTO_ERROR:
-	case DCERPC_NCA_S_UNKNOWN_IF:
-		/*
-		 * context_id = 0 is forced on protocol errors.
-		 */
-		pkt.u.fault.context_id = 0;
-		break;
 	}
 	pkt.u.fault.cancel_count = 0;
 	pkt.u.fault.flags = 0;
