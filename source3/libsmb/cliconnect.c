@@ -37,8 +37,144 @@
 #include "libsmb/nmblib.h"
 #include "librpc/ndr/libndr.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/param/param.h"
 
 #define STAR_SMBSERVER "*SMBSERVER"
+
+static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
+						      const char *username,
+						      const char *domain,
+						      const char *realm,
+						      const char *password,
+						      bool use_kerberos,
+						      bool fallback_after_kerberos,
+						      bool use_ccache,
+						      bool password_is_nt_hash)
+{
+	struct loadparm_context *lp_ctx = NULL;
+	struct cli_credentials *creds = NULL;
+	bool ok;
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		return NULL;
+	}
+
+	lp_ctx = loadparm_init_s3(creds, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		goto fail;
+	}
+	cli_credentials_set_conf(creds, lp_ctx);
+
+	if (domain == NULL) {
+		domain = "";
+	}
+
+	if (username == NULL) {
+		username = "";
+	}
+
+	if (strlen(username) == 0) {
+		if (password != NULL && strlen(password) == 0) {
+			/*
+			 * some callers pass "" as no password
+			 *
+			 * gensec only handles NULL as no password.
+			 */
+			password = NULL;
+		}
+		if (password == NULL) {
+			cli_credentials_set_anonymous(creds);
+			return creds;
+		}
+	}
+
+	if (use_kerberos && fallback_after_kerberos) {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_AUTO_USE_KERBEROS);
+	} else if (use_kerberos) {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_MUST_USE_KERBEROS);
+	} else {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_DONT_USE_KERBEROS);
+	}
+
+	if (use_ccache) {
+		uint32_t features;
+
+		features = cli_credentials_get_gensec_features(creds);
+		features |= GENSEC_FEATURE_NTLM_CCACHE;
+		cli_credentials_set_gensec_features(creds, features);
+
+		if (password != NULL && strlen(password) == 0) {
+			/*
+			 * some callers pass "" as no password
+			 *
+			 * GENSEC_FEATURE_NTLM_CCACHE only handles
+			 * NULL as no password.
+			 */
+			password = NULL;
+		}
+	}
+
+	ok = cli_credentials_set_username(creds,
+					  username,
+					  CRED_SPECIFIED);
+	if (!ok) {
+		goto fail;
+	}
+
+	ok = cli_credentials_set_domain(creds,
+					domain,
+					CRED_SPECIFIED);
+	if (!ok) {
+		goto fail;
+	}
+
+	if (realm != NULL) {
+		ok = cli_credentials_set_realm(creds,
+					       realm,
+					       CRED_SPECIFIED);
+		if (!ok) {
+			goto fail;
+		}
+	}
+
+	if (password != NULL && strlen(password) > 0) {
+		if (password_is_nt_hash) {
+			struct samr_Password nt_hash;
+			size_t converted;
+
+			converted = strhex_to_str((char *)nt_hash.hash,
+						  sizeof(nt_hash.hash),
+						  password,
+						  strlen(password));
+			if (converted != sizeof(nt_hash.hash)) {
+				goto fail;
+			}
+
+			ok = cli_credentials_set_nt_hash(creds,
+							 &nt_hash,
+							 CRED_SPECIFIED);
+			if (!ok) {
+				goto fail;
+			}
+		} else {
+			ok = cli_credentials_set_password(creds,
+							  password,
+							  CRED_SPECIFIED);
+			if (!ok) {
+				goto fail;
+			}
+		}
+	}
+
+	return creds;
+fail:
+	TALLOC_FREE(creds);
+	return NULL;
+}
 
 /********************************************************
  Utility function to ensure we always return at least
@@ -561,6 +697,7 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	NTSTATUS status;
 	const DATA_BLOB *b = NULL;
 	const char *dest_realm = NULL;
+	struct cli_credentials *creds = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_gensec_state);
@@ -579,92 +716,33 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	 */
 	dest_realm = cli_state_remote_realm(cli);
 
-	if (user == NULL || strlen(user) == 0) {
-		if (pass != NULL && strlen(pass) == 0) {
-			/*
-			 * some callers pass "" as no password
-			 *
-			 * gensec only handles NULL as no password.
-			 */
-			pass = NULL;
-		}
+	creds = cli_session_creds_init(state,
+				       user,
+				       domain,
+				       dest_realm,
+				       pass,
+				       cli->use_kerberos,
+				       cli->fallback_after_kerberos,
+				       cli->use_ccache,
+				       cli->pw_nt_hash);
+	if (tevent_req_nomem(creds, req)) {
+		return tevent_req_post(req, ev);
 	}
+
+	cli_credentials_set_kerberos_state(creds, krb5_state);
 
 	status = auth_generic_client_prepare(state, &state->auth_generic);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 
+	status = auth_generic_set_creds(state->auth_generic, creds);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
 	gensec_want_feature(state->auth_generic->gensec_security,
 			    GENSEC_FEATURE_SESSION_KEY);
-	if (cli->use_ccache) {
-		gensec_want_feature(state->auth_generic->gensec_security,
-				    GENSEC_FEATURE_NTLM_CCACHE);
-		if (pass != NULL && strlen(pass) == 0) {
-			/*
-			 * some callers pass "" as no password
-			 *
-			 * GENSEC_FEATURE_NTLM_CCACHE only handles
-			 * NULL as no password.
-			 */
-			pass = NULL;
-		}
-	}
-
-	status = auth_generic_set_username(state->auth_generic, user);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
-
-	status = auth_generic_set_domain(state->auth_generic, domain);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
-
-	if (dest_realm != NULL) {
-		bool ok;
-
-		ok = cli_credentials_set_realm(state->auth_generic->credentials,
-					       dest_realm, CRED_SPECIFIED);
-		if (!ok) {
-			tevent_req_oom(req);
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	if (cli->pw_nt_hash) {
-		struct samr_Password nt_hash;
-		size_t converted;
-		bool ok;
-
-		if (pass == NULL) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return tevent_req_post(req, ev);
-		}
-
-		converted = strhex_to_str((char *)nt_hash.hash,
-					  sizeof(nt_hash.hash),
-					  pass, strlen(pass));
-		if (converted != sizeof(nt_hash.hash)) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
-			return tevent_req_post(req, ev);
-		}
-
-		ok = cli_credentials_set_nt_hash(state->auth_generic->credentials,
-						 &nt_hash, CRED_SPECIFIED);
-		if (!ok) {
-			tevent_req_oom(req);
-			return tevent_req_post(req, ev);
-		}
-	} else {
-		status = auth_generic_set_password(state->auth_generic, pass);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	cli_credentials_set_kerberos_state(state->auth_generic->credentials,
-					   krb5_state);
 
 	if (target_service != NULL) {
 		status = gensec_set_target_service(
