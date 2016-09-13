@@ -72,6 +72,8 @@ enum dbwrap_req_state {
 TDB_DATA dbwrap_record_get_key(const struct db_record *rec);
 TDB_DATA dbwrap_record_get_value(const struct db_record *rec);
 NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags);
+NTSTATUS dbwrap_record_storev(struct db_record *rec,
+			      const TDB_DATA *dbufs, int num_dbufs, int flags);
 NTSTATUS dbwrap_record_delete(struct db_record *rec);
 struct db_record *dbwrap_fetch_locked(struct db_context *db,
 				      TALLOC_CTX *mem_ctx,

@@ -82,15 +82,21 @@ TDB_DATA dbwrap_record_get_value(const struct db_record *rec)
 	return rec->value;
 }
 
-NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
+NTSTATUS dbwrap_record_storev(struct db_record *rec,
+			      const TDB_DATA *dbufs, int num_dbufs, int flags)
 {
 	NTSTATUS status;
 
-	status = rec->storev(rec, &data, 1, flags);
+	status = rec->storev(rec, dbufs, num_dbufs, flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	return NT_STATUS_OK;
+}
+
+NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
+{
+	return dbwrap_record_storev(rec, &data, 1, flags);
 }
 
 NTSTATUS dbwrap_record_delete(struct db_record *rec)
