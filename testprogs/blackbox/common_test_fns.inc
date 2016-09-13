@@ -88,3 +88,19 @@ test_rpcclient_expect_failure_grep() {
 	fi
 	return $status
 }
+
+kerberos_kinit() {
+	kinit_tool="${1}"
+	principal="${2}"
+	password="${3}"
+	shift 3
+	kbase=$(basename ${kinit_tool})
+	if [ "${kbase}" = "samba4kinit" ]; then
+		kpassfile=$(mktemp)
+		echo $password > ${kpassfile}
+		$kinit_tool --password-file=${kpassfile} $principal $@
+		rm -f ${kpassfile}
+	else
+		echo $password | $kinit_tool $principal $@
+	fi
+}
