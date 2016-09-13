@@ -45,12 +45,6 @@ struct ctdb_registered_call {
  */
 #define ctdb_validate_pnn(ctdb, pnn) (((uint32_t)(pnn)) < (ctdb)->num_nodes)
 
-
-/* called from the queue code when a packet comes in. Called with data==NULL
-   on error */
-typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
-				   void *private_data);
-
 /* used for callbacks in ctdb_control requests */
 typedef void (*ctdb_control_callback_fn_t)(struct ctdb_context *,
 					   int32_t status, TDB_DATA data, 
