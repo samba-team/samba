@@ -4952,12 +4952,45 @@ do {\
 	}
 
 #undef test_dm
-#undef test_sd
 
 	torture_comment(tctx, "Printer Info and winreg consistency test succeeded\n\n");
 
 	return true;
 }
+
+static bool test_GetPrintserverInfo_winreg(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   struct policy_handle *handle,
+					   struct dcerpc_binding_handle *winreg_handle,
+					   struct policy_handle *hive_handle)
+{
+	union spoolss_PrinterInfo info;
+	struct policy_handle key_handle;
+
+	torture_comment(tctx,
+		"Testing Printserver Info and winreg consistency\n");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, handle, 3, &info),
+		"failed to get printer info level 2");
+
+	torture_assert(tctx,
+		test_winreg_OpenKey(tctx, winreg_handle, hive_handle,
+				    TOP_LEVEL_CONTROL_KEY, &key_handle), "");
+
+	test_sd("ServerSecurityDescriptor", info.info3.secdesc);
+
+	torture_assert(tctx,
+		test_winreg_CloseKey(tctx, winreg_handle, &key_handle), "");
+
+#undef test_sd
+
+	torture_comment(tctx,
+		"Printserver Info and winreg consistency test succeeded\n\n");
+
+	return true;
+}
+
 
 static bool test_PrintProcessors(struct torture_context *tctx,
 				 struct dcerpc_binding_handle *b,
@@ -5769,6 +5802,33 @@ static bool test_PrinterInfo_winreg(struct torture_context *tctx,
 
 	return ret;
 }
+
+static bool test_PrintserverInfo_winreg(struct torture_context *tctx,
+					struct dcerpc_pipe *p,
+					struct policy_handle *handle)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_pipe *p2;
+	bool ret = true;
+	struct policy_handle hive_handle;
+	struct dcerpc_binding_handle *b2;
+
+	torture_assert_ntstatus_ok(tctx,
+		torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+		"could not open winreg pipe");
+	b2 = p2->binding_handle;
+
+	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
+
+	ret = test_GetPrintserverInfo_winreg(tctx, b, handle, b2, &hive_handle);
+
+	test_winreg_CloseKey(tctx, b2, &hive_handle);
+
+	talloc_free(p2);
+
+	return ret;
+}
+
 
 static bool test_DriverInfo_winreg(struct torture_context *tctx,
 				   struct dcerpc_pipe *p,
@@ -8791,6 +8851,21 @@ static bool test_printer_info_winreg(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printserver_info_winreg(struct torture_context *tctx,
+					 void *private_data)
+{
+	struct test_spoolss_context *t =
+		(struct test_spoolss_context *)talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+
+	torture_assert(tctx,
+		test_PrintserverInfo_winreg(tctx, p, &t->server_handle),
+		"failed to test printserver info winreg");
+
+	return true;
+}
+
+
 static bool test_printer_change_id(struct torture_context *tctx,
 				   void *private_data)
 {
@@ -9463,6 +9538,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "get_printer_driver_package_path", test_get_printer_driver_package_path);
 	torture_tcase_add_simple_test(tcase, "get_printer", test_get_printer_printserverhandle);
 	torture_tcase_add_simple_test(tcase, "set_printer", test_set_printer_printserverhandle);
+	torture_tcase_add_simple_test(tcase, "printserver_info_winreg", test_printserver_info_winreg);
 
 	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 
