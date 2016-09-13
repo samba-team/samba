@@ -55,3 +55,9 @@ class LoadParmTestCase(samba.tests.TestCase):
         samba_lp = param.LoadParm()
         samba_lp.load_default()
         self.assertRaises(KeyError, samba_lp.__getitem__, "nonexistent")
+
+    def test_log_level(self):
+        samba_lp = param.LoadParm()
+        samba_lp.set("log level", "5 auth:4")
+        self.assertEquals(5, samba_lp.log_level())
+
