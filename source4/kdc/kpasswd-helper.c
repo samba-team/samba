@@ -54,11 +54,13 @@ bool kpasswd_make_error_reply(TALLOC_CTX *mem_ctx,
 	 */
 #ifndef SAMBA4_USES_HEIMDAL
 	if (slen < 2) {
+		talloc_free(s);
 		return false;
 	}
 	slen -= 2;
 #endif
 	if (2 + slen < slen) {
+		talloc_free(s);
 		return false;
 	}
 	error_data->length = 2 + slen;
