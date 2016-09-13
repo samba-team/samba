@@ -44,7 +44,7 @@ def drsuapi_connect(server, lp, creds):
     """
 
     binding_options = "seal"
-    if int(lp.get("log level")) >= 5:
+    if lp.log_level() >= 5:
         binding_options += ",print"
     binding_string = "ncacn_ip_tcp:%s[%s]" % (server, binding_options)
     try:
