@@ -470,7 +470,6 @@ static int unix_dgram_sendq_schedule_free(struct unix_dgram_send_queue *q)
 		unix_dgram_sendq_scheduled_free_handler,
 		q);
 	if (q->timeout == NULL) {
-		unix_dgram_send_queue_free(q);
 		return ENOMEM;
 	}
 
