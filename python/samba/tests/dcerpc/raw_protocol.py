@@ -211,9 +211,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                         dcerpc.DCERPC_PFC_FLAG_FIRST |
                                         dcerpc.DCERPC_PFC_FLAG_LAST)
 
-    # TODO: doesn't announce DCERPC_PFC_FLAG_CONC_MPX
-    # by default
-    def _test_no_auth_request_bind_pfc_CONC_MPX(self):
+    def test_no_auth_request_bind_pfc_CONC_MPX(self):
         return self._test_no_auth_request_bind_pfc_flags(
                                         req_pfc_flags=0 |
                                         dcerpc.DCERPC_PFC_FLAG_CONC_MPX |
