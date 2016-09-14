@@ -625,7 +625,11 @@ uint32_t dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 	result |= dos_mode_from_name(conn, smb_fname, result);
 
 	if (result == 0) {
-		result = FILE_ATTRIBUTE_NORMAL;
+		if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+			result = FILE_ATTRIBUTE_DIRECTORY;
+		} else {
+			result = FILE_ATTRIBUTE_NORMAL;
+		}
 	}
 
 	result = filter_mode_by_protocol(result);
