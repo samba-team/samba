@@ -377,10 +377,11 @@ NTSTATUS gp_inifile_init_context_direct(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	rv = pm_process(tmp_filename != NULL ? tmp_filename : unix_path,
-			change_section,
-			store_keyval_pair,
-			gp_ctx);
+	rv = pm_process_with_flags(tmp_filename != NULL ? tmp_filename : unix_path,
+				   true,
+				   change_section,
+				   store_keyval_pair,
+				   gp_ctx);
 	if (rv != 0) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
