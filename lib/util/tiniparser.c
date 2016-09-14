@@ -339,6 +339,7 @@ struct tiniparser_dictionary *tiniparser_load(const char *filename)
 	d->section_list = NULL;
 
 	ret = tini_parse(fp,
+			false,
 			section_parser,
 			value_parser,
 			d);

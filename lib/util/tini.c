@@ -227,19 +227,27 @@ static char *trim_one_space(char *buf)
 }
 
 static bool parse_param(char *buf,
+			bool allow_empty_value,
 			bool (*pfunc)(const char *name, const char *value,
 				      void *private_data),
 			void *private_data)
 {
 	char *equals;
-	char *name, *value;
+	char *name;
+	const char *value;
 	size_t len;
+	bool no_value = false;
 
 	equals = strchr(buf, '=');
-	if (equals == NULL) {
-		return true;
+	if (equals != NULL) {
+		*equals = '\0';
+	} else {
+		if (allow_empty_value) {
+			no_value = true;
+		} else {
+			return true;
+		}
 	}
-	*equals = '\0';
 
 	name = trim_one_space(buf);
 	len = strlen(buf);
@@ -247,12 +255,17 @@ static bool parse_param(char *buf,
 		return false;
 	}
 
-	value = trim_one_space(equals+1);
+	if (no_value) {
+		value = "";
+	} else {
+		value = trim_one_space(equals+1);
+	}
 
 	return pfunc(name, value, private_data);
 }
 
 bool tini_parse(FILE *f,
+		bool allow_empty_value,
 		bool (*sfunc)(const char *section, void *private_data),
 		bool (*pfunc)(const char *name, const char *value,
 			      void *private_data),
@@ -293,7 +306,7 @@ bool tini_parse(FILE *f,
 			ok = parse_section(buf, sfunc, private_data);
 			break;
 		default:
-			ok = parse_param(buf, pfunc, private_data);
+			ok = parse_param(buf, allow_empty_value, pfunc, private_data);
 			break;
 		}
 

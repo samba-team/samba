@@ -38,6 +38,7 @@
 #include <stdio.h>
 
 bool tini_parse(FILE *f,
+		bool allow_empty_value,
 		bool (*sfunc)(const char *section, void *private_data),
 		bool (*pfunc)(const char *name, const char *value,
 			      void *private_data),

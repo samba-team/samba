@@ -96,7 +96,30 @@ bool pm_process(const char *filename,
 		return false;
 	}
 
-	ret = tini_parse(f, sfunc, pfunc, private_data);
+	ret = tini_parse(f, false, sfunc, pfunc, private_data);
+
+	fclose(f);
+
+	return ret;
+}
+
+
+bool pm_process_with_flags(const char *filename,
+			   bool allow_empty_values,
+			   bool (*sfunc)(const char *section, void *private_data),
+			   bool (*pfunc)(const char *name, const char *value,
+					 void *private_data),
+			   void *private_data)
+{
+	FILE *f;
+	bool ret;
+
+	f = fopen(filename, "r");
+	if (f == NULL) {
+		return false;
+	}
+
+	ret = tini_parse(f, allow_empty_values, sfunc, pfunc, private_data);
 
 	fclose(f);
 
