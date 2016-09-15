@@ -235,6 +235,7 @@ int async_connect_recv(struct tevent_req *req, int *perrno)
 
 struct writev_state {
 	struct tevent_context *ev;
+	struct tevent_queue_entry *queue_entry;
 	int fd;
 	struct tevent_fd *fde;
 	struct iovec *iov;
@@ -246,6 +247,7 @@ struct writev_state {
 
 static void writev_cleanup(struct tevent_req *req,
 			   enum tevent_req_state req_state);
+static bool writev_cancel(struct tevent_req *req);
 static void writev_trigger(struct tevent_req *req, void *private_data);
 static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			   uint16_t flags, void *private_data);
@@ -275,6 +277,7 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->err_on_readability = err_on_readability;
 
 	tevent_req_set_cleanup_fn(req, writev_cleanup);
+	tevent_req_set_cancel_fn(req, writev_cancel);
 
 	if (queue == NULL) {
 		state->fde = tevent_add_fd(state->ev, state, state->fd,
@@ -285,8 +288,9 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return req;
 	}
 
-	if (!tevent_queue_add(queue, ev, req, writev_trigger, NULL)) {
-		tevent_req_oom(req);
+	state->queue_entry = tevent_queue_add_entry(queue, ev, req,
+						    writev_trigger, NULL);
+	if (tevent_req_nomem(state->queue_entry, req)) {
 		return tevent_req_post(req, ev);
 	}
 	return req;
@@ -297,12 +301,42 @@ static void writev_cleanup(struct tevent_req *req,
 {
 	struct writev_state *state = tevent_req_data(req, struct writev_state);
 
+	TALLOC_FREE(state->queue_entry);
 	TALLOC_FREE(state->fde);
+}
+
+static bool writev_cancel(struct tevent_req *req)
+{
+	struct writev_state *state = tevent_req_data(req, struct writev_state);
+
+	TALLOC_FREE(state->queue_entry);
+	TALLOC_FREE(state->fde);
+
+	if (state->count == 0) {
+		/*
+		 * already completed.
+		 */
+		return false;
+	}
+
+	tevent_req_defer_callback(req, state->ev);
+	if (state->total_size > 0) {
+		/*
+		 * We've already started to write :-(
+		 */
+		tevent_req_error(req, EIO);
+		return false;
+	}
+
+	tevent_req_error(req, ECANCELED);
+	return true;
 }
 
 static void writev_trigger(struct tevent_req *req, void *private_data)
 {
 	struct writev_state *state = tevent_req_data(req, struct writev_state);
+
+	state->queue_entry = NULL;
 
 	state->fde = tevent_add_fd(state->ev, state, state->fd, state->flags,
 			    writev_handler, req);
