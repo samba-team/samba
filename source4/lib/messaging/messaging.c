@@ -304,6 +304,7 @@ static struct imessaging_context *msg_ctxs;
 static int imessaging_context_destructor(struct imessaging_context *msg)
 {
 	DLIST_REMOVE(msg_ctxs, msg);
+	TALLOC_FREE(msg->msg_dgm_ref);
 	return 0;
 }
 
