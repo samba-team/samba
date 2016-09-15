@@ -20,3 +20,4 @@
 */
 
 uint32_t ndr_count_cfdata(const struct cab_file *r);
+uint32_t ndr_cab_generate_checksum(const struct CFDATA *r);

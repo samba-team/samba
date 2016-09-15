@@ -63,6 +63,55 @@ uint32_t ndr_count_cfdata(const struct cab_file *r)
 	return count;
 }
 
+static uint32_t ndr_cab_compute_checksum(uint8_t *data, uint32_t length, uint32_t seed)
+{
+	int num_ulong;
+	uint32_t checksum;
+	uint8_t *pb;
+	uint32_t ul;
+
+	num_ulong = length / 4;
+	checksum = seed;
+	pb = data;
+
+	while (num_ulong-- > 0) {
+		ul = *pb++;
+		ul |= (((uint32_t)(*pb++)) <<  8);
+		ul |= (((uint32_t)(*pb++)) << 16);
+		ul |= (((uint32_t)(*pb++)) << 24);
+
+		checksum ^= ul;
+	}
+
+	ul = 0;
+
+	switch (length % 4) {
+	case 3:
+		ul |= (((uint32_t)(*pb++)) << 16);
+	case 2:
+		ul |= (((uint32_t)(*pb++)) <<  8);
+	case 1:
+		ul |= *pb++;
+	default:
+		break;
+	}
+
+	checksum ^= ul;
+
+	return checksum;
+}
+
+uint32_t ndr_cab_generate_checksum(const struct CFDATA *r)
+{
+	uint32_t csumPartial;
+
+	csumPartial = ndr_cab_compute_checksum(&r->ab[0], r->cbData, 0);
+
+	return ndr_cab_compute_checksum((uint8_t *)discard_const(&r->cbData),
+					sizeof(r->cbData) + sizeof(r->cbUncomp),
+					csumPartial);
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags, const struct cab_file *r)
 {
 	uint32_t cntr_cffolders_0;
