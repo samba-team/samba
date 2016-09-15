@@ -29,6 +29,7 @@
 #include "lib/util/dlinklist.h"
 #include "lib/util/debug.h"
 #include "lib/util/blocking.h"
+#include "lib/util/time.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -200,6 +201,8 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 	struct tevent_fd *fde;
 	char **argv;
 	int i;
+	struct timeval before;
+	double delta_t;
 
 	log = talloc_zero(mem_ctx, struct ctdb_log_state);
 	CTDB_NO_MEMORY_NULL(ctdb, log);
@@ -230,6 +233,8 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 		argv[i+2] = discard_const(helper_argv[i]);
 	}
 
+	before = timeval_current();
+
 	*pid = vfork();
 	if (*pid == 0) {
 		execv(helper, argv);
@@ -241,6 +246,11 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 		DEBUG(DEBUG_ERR, (__location__ "vfork failed for helper process\n"));
 		close(p[0]);
 		goto free_log;
+	}
+
+	delta_t = timeval_elapsed(&before);
+	if (delta_t > 3.0) {
+		DEBUG(DEBUG_WARNING, ("vfork() took %lf seconds\n", delta_t));
 	}
 
 	ctdb_track_child(ctdb, *pid);
