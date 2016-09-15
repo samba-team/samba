@@ -1220,11 +1220,26 @@ static void dcerpc_bind_recv_handler(struct rpc_request *subreq,
 
 	flags = dcerpc_binding_get_flags(state->p->binding);
 
-	if ((flags & DCERPC_CONCURRENT_MULTIPLEX) &&
-	    (pkt->pfc_flags & DCERPC_PFC_FLAG_CONC_MPX)) {
-		conn->flags |= DCERPC_CONCURRENT_MULTIPLEX;
+	if (flags & DCERPC_CONCURRENT_MULTIPLEX) {
+		if (pkt->pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) {
+			conn->flags |= DCERPC_CONCURRENT_MULTIPLEX;
+		} else {
+			conn->flags &= ~DCERPC_CONCURRENT_MULTIPLEX;
+		}
 	}
 
+	if (!(conn->flags & DCERPC_CONCURRENT_MULTIPLEX)) {
+		struct dcerpc_binding *pb =
+			discard_const_p(struct dcerpc_binding, state->p->binding);
+		/*
+		 * clear DCERPC_CONCURRENT_MULTIPLEX
+		 */
+		status = dcerpc_binding_set_flags(pb, 0,
+						  DCERPC_CONCURRENT_MULTIPLEX);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
 	if ((conn->flags & DCERPC_PROPOSE_HEADER_SIGNING) &&
 	    (pkt->pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN)) {
 		conn->flags |= DCERPC_HEADER_SIGNING;
