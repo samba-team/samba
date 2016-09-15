@@ -839,6 +839,70 @@ static uint16_t smb1cli_alloc_mid(struct smbXcli_conn *conn)
 	}
 }
 
+static NTSTATUS smbXcli_req_cancel_write_req(struct tevent_req *req)
+{
+	struct smbXcli_req_state *state =
+		tevent_req_data(req,
+		struct smbXcli_req_state);
+	struct smbXcli_conn *conn = state->conn;
+	size_t num_pending = talloc_array_length(conn->pending);
+	ssize_t ret;
+	int err;
+	bool ok;
+
+	if (state->write_req == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Check if it's possible to cancel the request.
+	 * If the result is true it's not to late.
+	 * See writev_cancel().
+	 */
+	ok = tevent_req_cancel(state->write_req);
+	if (ok) {
+		TALLOC_FREE(state->write_req);
+
+		if (conn->protocol >= PROTOCOL_SMB2_02) {
+			/*
+			 * SMB2 has a sane signing state.
+			 */
+			return NT_STATUS_OK;
+		}
+
+		if (num_pending > 1) {
+			/*
+			 * We have more pending requests following us.  This
+			 * means the signing state will be broken for them.
+			 *
+			 * As a solution we could add the requests directly to
+			 * our outgoing queue and do the signing in the trigger
+			 * function and then use writev_send() without passing a
+			 * queue.  That way we'll only sign packets we're most
+			 * likely send to the wire.
+			 */
+			return NT_STATUS_REQUEST_OUT_OF_SEQUENCE;
+		}
+
+		/*
+		 * If we're the only request that's
+		 * pending, we're able to recover the signing
+		 * state.
+		 */
+		smb_signing_cancel_reply(conn->smb1.signing,
+					 state->smb1.one_way_seqnum);
+		return NT_STATUS_OK;
+	}
+
+	ret = writev_recv(state->write_req, &err);
+	TALLOC_FREE(state->write_req);
+	if (ret == -1) {
+		return map_nt_error_from_unix_common(err);
+	}
+
+	return NT_STATUS_OK;
+}
+
 void smbXcli_req_unset_pending(struct tevent_req *req)
 {
 	struct smbXcli_req_state *state =
@@ -847,14 +911,23 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 	struct smbXcli_conn *conn = state->conn;
 	size_t num_pending = talloc_array_length(conn->pending);
 	size_t i;
+	NTSTATUS cancel_status;
 
-	TALLOC_FREE(state->write_req);
+	cancel_status = smbXcli_req_cancel_write_req(req);
 
 	if (state->smb1.mid != 0) {
 		/*
 		 * This is a [nt]trans[2] request which waits
 		 * for more than one reply.
 		 */
+		if (!NT_STATUS_IS_OK(cancel_status)) {
+			/*
+			 * If the write_req cancel didn't work
+			 * we can't use the connection anymore.
+			 */
+			smbXcli_conn_disconnect(conn, cancel_status);
+			return;
+		}
 		return;
 	}
 
@@ -866,8 +939,18 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 		 * conn->pending. So if nothing is pending anymore, we need to
 		 * delete the socket read fde.
 		 */
+		/* TODO: smbXcli_conn_cancel_read_req */
 		TALLOC_FREE(conn->pending);
 		conn->read_smb_req = NULL;
+
+		if (!NT_STATUS_IS_OK(cancel_status)) {
+			/*
+			 * If the write_req cancel didn't work
+			 * we can't use the connection anymore.
+			 */
+			smbXcli_conn_disconnect(conn, cancel_status);
+			return;
+		}
 		return;
 	}
 
@@ -882,6 +965,15 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 		 * right thing nevertheless, the point of this routine is to
 		 * remove ourselves from conn->pending.
 		 */
+
+		if (!NT_STATUS_IS_OK(cancel_status)) {
+			/*
+			 * If the write_req cancel didn't work
+			 * we can't use the connection anymore.
+			 */
+			smbXcli_conn_disconnect(conn, cancel_status);
+			return;
+		}
 		return;
 	}
 
@@ -898,6 +990,15 @@ void smbXcli_req_unset_pending(struct tevent_req *req)
 	 */
 	conn->pending = talloc_realloc(NULL, conn->pending, struct tevent_req *,
 				       num_pending - 1);
+
+	if (!NT_STATUS_IS_OK(cancel_status)) {
+		/*
+		 * If the write_req cancel didn't work
+		 * we can't use the connection anymore.
+		 */
+		smbXcli_conn_disconnect(conn, cancel_status);
+		return;
+	}
 	return;
 }
 
@@ -907,19 +1008,31 @@ static void smbXcli_req_cleanup(struct tevent_req *req,
 	struct smbXcli_req_state *state =
 		tevent_req_data(req,
 		struct smbXcli_req_state);
-
-	TALLOC_FREE(state->write_req);
+	struct smbXcli_conn *conn = state->conn;
+	NTSTATUS cancel_status;
 
 	switch (req_state) {
 	case TEVENT_REQ_RECEIVED:
 		/*
 		 * Make sure we really remove it from
 		 * the pending array on destruction.
+		 *
+		 * smbXcli_req_unset_pending() calls
+		 * smbXcli_req_cancel_write_req() internal
 		 */
 		state->smb1.mid = 0;
 		smbXcli_req_unset_pending(req);
 		return;
 	default:
+		cancel_status = smbXcli_req_cancel_write_req(req);
+		if (!NT_STATUS_IS_OK(cancel_status)) {
+			/*
+			 * If the write_req cancel didn't work
+			 * we can't use the connection anymore.
+			 */
+			smbXcli_conn_disconnect(conn, cancel_status);
+			return;
+		}
 		return;
 	}
 }
@@ -1084,6 +1197,8 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 		state = tevent_req_data(req, struct smbXcli_req_state);
 
 		if (state->smb1.chained_requests == NULL) {
+			bool in_progress;
+
 			/*
 			 * We're dead. No point waiting for trans2
 			 * replies.
@@ -1094,6 +1209,14 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 
 			if (NT_STATUS_IS_OK(status)) {
 				/* do not notify the callers */
+				continue;
+			}
+
+			in_progress = tevent_req_is_in_progress(req);
+			if (!in_progress) {
+				/*
+				 * already finished
+				 */
 				continue;
 			}
 
@@ -1110,6 +1233,8 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 		num_chained = talloc_array_length(chain);
 
 		for (i=0; i<num_chained; i++) {
+			bool in_progress;
+
 			req = chain[i];
 			state = tevent_req_data(req, struct smbXcli_req_state);
 
@@ -1123,6 +1248,14 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 
 			if (NT_STATUS_IS_OK(status)) {
 				/* do not notify the callers */
+				continue;
+			}
+
+			in_progress = tevent_req_is_in_progress(req);
+			if (!in_progress) {
+				/*
+				 * already finished
+				 */
 				continue;
 			}
 
