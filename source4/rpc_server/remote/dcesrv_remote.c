@@ -51,6 +51,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	bool machine_account;
 	struct dcerpc_binding		*b;
 	struct composite_context	*pipe_conn_req;
+	uint32_t flags = 0;
 
 	machine_account = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
 
@@ -134,6 +135,15 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return status;
 	}
 
+	if (dce_call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) {
+		status = dcerpc_binding_set_flags(b, DCERPC_CONCURRENT_MULTIPLEX, 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("dcerpc_binding_set_flags(CONC_MPX) - %s'\n",
+				  nt_errstr(status)));
+			return status;
+		}
+	}
+
 	DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(dce_call->context, b)));
 
 	pipe_conn_req = dcerpc_pipe_connect_b_send(dce_call->context, b, table,
@@ -146,6 +156,11 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	flags = dcerpc_binding_get_flags(priv->c_pipe->binding);
+	if (!(flags & DCERPC_CONCURRENT_MULTIPLEX)) {
+		dce_call->state_flags &= ~DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
 	}
 
 	if (dce_call->conn->assoc_group->proxied_id == 0) {
