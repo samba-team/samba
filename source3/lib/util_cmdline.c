@@ -54,8 +54,49 @@ const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_inf
 void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 				    const char *username)
 {
+	char *s;
+	char *p;
+	bool contains_domain = false;
+
+	s = talloc_strdup(auth_info, username);
+	if (s == NULL) {
+		exit(ENOMEM);
+	}
+
+	p = strchr_m(s, '\\');
+	if (p != NULL) {
+		contains_domain = true;
+	}
+	if (!contains_domain) {
+		p = strchr_m(s, '/');
+		if (p != NULL) {
+			contains_domain = true;
+		}
+	}
+	if (!contains_domain) {
+		char sep = *lp_winbind_separator();
+
+		if (sep != '\0') {
+			p = strchr_m(s, *lp_winbind_separator());
+			if (p != NULL) {
+				contains_domain = true;
+			}
+		}
+	}
+
+	if (contains_domain) {
+		*p = '\0';
+		username = p + 1;
+
+		/* s is now the workgroup part */
+		set_cmdline_auth_info_domain(auth_info, s);
+	}
+
 	TALLOC_FREE(auth_info->username);
 	auth_info->username = talloc_strdup(auth_info, username);
+
+	TALLOC_FREE(s);
+
 	if (!auth_info->username) {
 		exit(ENOMEM);
 	}
