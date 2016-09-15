@@ -20,6 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/**
+ * @file srv_keytab.c
+ *
+ * @brief Kerberos keytab utility functions
+ *
+ */
 
 #include "includes.h"
 #include "system/kerberos.h"
@@ -189,6 +195,31 @@ done:
 	return ret;
 }
 
+/**
+ * @brief Update a Kerberos keytab and removes any obsolete keytab entries.
+ *
+ * If the keytab does not exist, this function will create one.
+ *
+ * @param[in] parent_ctx	Talloc memory context
+ * @param[in] context		Kerberos context
+ * @param[in] keytab_name	Keytab to open
+ * @param[in] samAccountName	User account to update
+ * @param[in] realm		Kerberos realm
+ * @param[in] SPNs		Service principal names to update
+ * @param[in] num_SPNs		Length of SPNs
+ * @param[in] saltPrincipal	Salt used for AES encryption.
+ * 				Required, unless delete_all_kvno is set.
+ * @param[in] old_secret	Old password
+ * @param[in] new_secret	New password
+ * @param[in] kvno		Current key version number
+ * @param[in] supp_enctypes	msDS-SupportedEncryptionTypes bit-field
+ * @param[in] delete_all_kvno	Removes all obsolete entries, without
+ * 				recreating the keytab.
+ * @param[out] _keytab		If supplied, returns the keytab
+ * @param[out] perror_string	Error string on failure
+ *
+ * @return			0 on success, errno on failure
+ */
 krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 				krb5_context context,
 				const char *keytab_name,
@@ -312,6 +343,22 @@ done:
 	return ret;
 }
 
+/**
+ * @brief Wrapper around smb_krb5_update_keytab() for creating an in-memory keytab
+ *
+ * @param[in] parent_ctx	Talloc memory context
+ * @param[in] context		Kerberos context
+ * @param[in] new_secret	New password
+ * @param[in] samAccountName	User account to update
+ * @param[in] realm		Kerberos realm
+ * @param[in] salt_principal	Salt used for AES encryption.
+ * 				Required, unless delete_all_kvno is set.
+ * @param[in] kvno		Current key version number
+ * @param[out] keytab		If supplied, returns the keytab
+ * @param[out] keytab_name	Returns the created keytab name
+ *
+ * @return			0 on success, errno on failure
+ */
 krb5_error_code smb_krb5_create_memory_keytab(TALLOC_CTX *parent_ctx,
 				krb5_context context,
 				const char *new_secret,
