@@ -207,6 +207,9 @@ bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_inf
 {
 	char *pass = NULL;
 	char *account = NULL;
+	const char *realm = lp_realm();
+	int rc;
+
 
 	if (!get_cmdline_auth_info_use_machine_account(auth_info)) {
 		return false;
@@ -217,8 +220,21 @@ bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_inf
 		return false;
 	}
 
-	if (asprintf(&account, "%s$@%s", lp_netbios_name(), lp_realm()) < 0) {
-		return false;
+	if (realm != NULL && realm[0] != '\0') {
+		rc = asprintf(&account,
+			      "%s$@%s",
+			      lp_netbios_name(),
+			      realm);
+		if (rc < 0) {
+			return false;
+		}
+	} else {
+		rc = asprintf(&account,
+			      "%s$",
+			      lp_netbios_name());
+		if (rc < 0) {
+			return false;
+		}
 	}
 
 	pass = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
