@@ -79,7 +79,7 @@ static bool find_sofs_share(struct torture_context *tctx,
 
 	torture_assert_ntstatus_ok(tctx,
 		torture_rpc_connection_transport(tctx, &p, &ndr_table_srvsvc,
-						 NCACN_NP, 0),
+						 NCACN_NP, 0, 0),
 		"failed to setup srvsvc connection");
 
 	b = p->binding_handle;

@@ -131,7 +131,8 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	torture_comment(torture, "connect lsa pipe2\n");
 	status = torture_rpc_connection_transport(torture, &p2, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe2");
 	b2 = p2->binding_handle;
 
@@ -170,7 +171,8 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	torture_comment(torture, "connect lsa pipe3 after the policy handle is opened\n");
 	status = torture_rpc_connection_transport(torture, &p3, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe3");
 	b3 = p3->binding_handle;
 
@@ -310,7 +312,8 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	torture_comment(torture, "connect lsa pipe4 and use policy handle\n");
 	status = torture_rpc_connection_transport(torture, &p4, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe4");
 	b4 = p4->binding_handle;
 
@@ -335,7 +338,8 @@ static bool test_handles_lsa_shared(struct torture_context *torture)
 	torture_comment(torture, "connect lsa pipe5 - should fail\n");
 	status = torture_rpc_connection_transport(torture, &p5, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening lsa pipe5");
 
@@ -423,7 +427,8 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	torture_comment(torture, "connect lsa pipe2\n");
 	status = torture_rpc_connection_transport(torture, &p2, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_ok(torture, status, "opening lsa pipe2");
 	b2 = p2->binding_handle;
 
@@ -460,14 +465,16 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	torture_comment(torture, "connect samr pipe3 - should fail\n");
 	status = torture_rpc_connection_transport(torture, &p3, &ndr_table_samr,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening samr pipe3");
 
 	torture_comment(torture, "connect lsa pipe4 - should fail\n");
 	status = torture_rpc_connection_transport(torture, &p4, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening lsa pipe4");
 
@@ -479,14 +486,16 @@ static bool test_handles_mixed_shared(struct torture_context *torture)
 	torture_comment(torture, "connect samr pipe5 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p5, &ndr_table_samr,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening samr pipe5");
 
 	torture_comment(torture, "connect lsa pipe6 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p6, &ndr_table_lsarpc,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening lsa pipe6");
 
@@ -523,14 +532,16 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 	torture_comment(torture, "connect samr pipe2 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p2, &ndr_table_samr,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening samr pipe2");
 
 	torture_comment(torture, "connect samr pipe3 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p3, &ndr_table_samr,
 						  transport,
-						  assoc_group_id);
+						  assoc_group_id,
+						  0);
 	torture_assert_ntstatus_equal(torture, status, NT_STATUS_UNSUCCESSFUL,
 				      "opening samr pipe3");
 
