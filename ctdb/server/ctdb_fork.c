@@ -25,6 +25,7 @@
 #include <tevent.h>
 
 #include "lib/util/debug.h"
+#include "lib/util/time.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
@@ -68,6 +69,10 @@ void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid)
 pid_t ctdb_fork(struct ctdb_context *ctdb)
 {
 	pid_t pid;
+	struct timeval before;
+	double delta_t;
+
+	before = timeval_current();
 
 	pid = fork();
 	if (pid == -1) {
@@ -102,6 +107,11 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 		ctdb->can_send_controls = false;
 
 		return 0;
+	}
+
+	delta_t = timeval_elapsed(&before);
+	if (delta_t > 3.0) {
+		DEBUG(DEBUG_WARNING, ("fork() took %lf seconds\n", delta_t));
 	}
 
 	ctdb_track_child(ctdb, pid);
