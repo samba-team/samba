@@ -423,6 +423,13 @@ bld.SAMBA_SUBSYSTEM('NDR_PREG',
     public_deps='ndr'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_CAB',
+    source='''
+           gen_ndr/ndr_cab.c
+           ndr/ndr_cab.c
+           ''',
+    public_deps='ndr')
+
 bld.SAMBA_SUBSYSTEM('NDR_FILE_ID',
     source='gen_ndr/ndr_file_id.c',
     public_deps='ndr'

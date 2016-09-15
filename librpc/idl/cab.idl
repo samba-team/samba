@@ -1,0 +1,135 @@
+#include "idl_types.h"
+
+import "misc.idl";
+
+/*
+   IDL structures defining Cabinet files
+
+   more info can be found at:
+   https://msdn.microsoft.com/en-us/library/bb267310.aspx#cabinet_format
+*/
+
+[
+	pointer_default(unique),
+	helper("../librpc/ndr/ndr_cab.h"),
+	helpstring("Cabinet structure"),
+	uuid("12345678-0000-0000-0000-00000000")
+]
+	interface cab
+{
+
+	/*
+	 * flags.cfhdrPREV_CABINET is set if this cabinet file is not the first in
+	 * a set of cabinet files. When this bit is set, the szCabinetPrev and
+	 * szDiskPrev fields are present in this CFHEADER.
+	 *
+	 * flags.cfhdrNEXT_CABINET is set if this cabinet file is not the last in a
+	 * set of cabinet files. When this bit is set, the szCabinetNext and
+	 * szDiskNext fields are present in this CFHEADER.
+	 *
+	 * flags.cfhdrRESERVE_PRESENT is set if this cabinet file contains any
+	 * reserved fields. When this bit is set, the cbCFHeader, cbCFFolder, and
+	 * cbCFData fields are present in this CFHEADER.
+	 */
+
+	typedef [bitmap16bit] bitmap {
+		cfhdrPREV_CABINET	= 0x0001,
+		cfhdrNEXT_CABINET	= 0x0002,
+		cfhdrRESERVE_PRESENT	= 0x0004
+	} cf_flags;
+
+	typedef [public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN)] struct {
+		[charset(DOS),value("MSCF")] uint8 signature[4];
+		[value(0)] uint32 reserved1;	/* reserved */
+		uint32 cbCabinet;		/* size of this cabinet file in bytes */
+		[value(0)] uint32 reserved2;	/* reserved */
+		[value(cFolders*8+36)] uint32 coffFiles;		/* offset of the first CFFILE entry */
+		[value(0)] uint32 reserved3;	/* reserved */
+		[value(3)] uint8 versionMinor;	/* cabinet file format version, minor */
+		[value(1)] uint8 versionMajor;	/* cabinet file format version, major */
+		uint16 cFolders;		/* number of CFFOLDER entries in this cabinet */
+		uint16 cFiles;			/* number of CFFILE entries in this cabinet */
+		cf_flags flags;			/* cabinet file option indicators */
+		uint16 setID;			/* must be the same for all cabinets in a set */
+		uint16 iCabinet;		/* number of this cabinet file in a set */
+#if 0
+		[range(0,60000)] uint16 cbCFHeader;	/* (optional) size of per-cabinet reserved area */
+		[range(0,255)] uint8 cbCFFolder;	/* (optional) size of per-folder reserved area */
+		[range(0,255)] uint8 cbCFData;		/* (optional) size of per-datablock reserved area */
+		uint8 abReserve[];		/* (optional) per-cabinet reserved area */
+		uint8 szCabinetPrev[];		/* (optional) name of previous cabinet file */
+		uint8 szDiskPrev[];		/* (optional) name of previous disk */
+		uint8 szCabinetNext[];		/* (optional) name of next cabinet file */
+		uint8 szDiskNext[];		/* (optional) name of next disk */
+#endif
+	} CFHEADER;
+
+	typedef enum {
+		CF_COMPRESS_NONE = 0,
+		CF_COMPRESS_MSZIP = 1,
+		CF_COMPRESS_LZX = 4611
+	} cf_compress_type;
+
+	typedef [public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN)] struct {
+		uint32 coffCabStart;	/* offset of the first CFDATA block in this folder */
+		uint16 cCFData;		/* number of CFDATA blocks in this folder */
+		cf_compress_type typeCompress;	/* compression type indicator */
+#if 0
+		uint8 abReserve[];	/* (optional) per-folder reserved area */
+#endif
+	} CFFOLDER;
+
+	const int ifoldCONTINUED_FROM_PREV	= 0xFFFD;
+	const int ifoldCONTINUED_TO_NEXT	= 0xFFFE;
+	const int ifoldCONTINUED_PREV_AND_NEXT	= 0xFFFF;
+
+	typedef [bitmap16bit] bitmap {
+		_A_RDONLY	= 0x01,  /* file is read-only */
+		_A_HIDDEN	= 0x02,  /* file is hidden */
+		_A_SYSTEM	= 0x04,  /* file is a system file */
+		_A_ARCH		= 0x20,  /* file modified since last backup */
+		_A_EXEC		= 0x40,  /* run after extraction */
+		_A_NAME_IS_UTF	= 0x80  /* szName[] contains UTF */
+	} cf_attributes;
+
+	typedef [noprint,flag(NDR_NOALIGN)] struct {
+		uint16 date;
+	} cf_date;
+
+	typedef [noprint,flag(NDR_NOALIGN)] struct {
+		uint16 time;
+	} cf_time;
+
+	typedef [public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN),gensize] struct {
+		uint32 cbFile;		/* uncompressed size of this file in bytes */
+		uint32 uoffFolderStart;	/* uncompressed offset of this file in the folder */
+		uint16 iFolder;		/* index into the CFFOLDER area */
+		cf_date date;		/* date stamp for this file */
+		cf_time time;		/* time stamp for this file */
+		cf_attributes attribs;	/* attribute flags for this file */
+		[flag(r->attribs & _A_NAME_IS_UTF ? STR_UTF8|STR_NULLTERM : STR_ASCII|STR_NULLTERM)] string szName;
+	} CFFILE;
+
+	typedef [public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN)] struct {
+		uint32 csum;		/* checksum of this CFDATA entry */
+		uint16 cbData;		/* number of compressed bytes in this block */
+		uint16 cbUncomp;	/* number of uncompressed bytes in this block */
+#if 0
+		uint8 abReserve[];	/* (optional) per-datablock reserved area */
+#endif
+		uint8 ab[cbData];	/* compressed data bytes */
+	} CFDATA;
+
+	typedef [nopush,nopull,public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN)] struct {
+		CFHEADER cfheader;
+		CFFOLDER cffolders[cfheader.cFolders];
+		CFFILE cffiles[cfheader.cFiles];
+		[noprint,value(ndr_count_cfdata(r))] uint32 cfdata_count;
+		CFDATA cfdata[cfdata_count];
+	} cab_file;
+
+	void decode_cab_file(
+		[in] cab_file file
+		);
+
+}

@@ -69,18 +69,66 @@ bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
 bld.SAMBA_SUBSYSTEM('ndr-table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
-        public_deps='''ndr-standard NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
-        NDR_DRSUAPI NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_EPMAPPER
-        NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINSIF NDR_MGMT
-        NDR_OXIDRESOLVER NDR_REMACT NDR_WZCSVC
-        NDR_BROWSER NDR_W32TIME NDR_SCERPC NDR_TRKWKS NDR_KEYSVC ndr-krb5pac
-        NDR_XATTR NDR_SCHANNEL NDR_ROT NDR_DRSBLOBS ndr_nbt NDR_WINSREPL
-        NDR_SECURITY NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB
-        NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI
-        NDR_FRSTRANS NDR_NFS4ACL NDR_NTP_SIGND NDR_DCOM NDR_WMI
-        NDR_NAMED_PIPE_AUTH NDR_NTLMSSP NDR_DFSBLOBS NDR_DNSP
-        NDR_NTPRINTING NDR_DNS NDR_BACKUPKEY NDR_PREG NDR_BKUPBLOBS NDR_FSCC
-        NDR_FRSBLOBS NDR_CLUSAPI NDR_WINSPOOL''',
+        public_deps='''
+                    ndr-standard
+                    NDR_AUDIOSRV
+                    NDR_DSBACKUP
+                    NDR_EFS
+                    NDR_DRSUAPI
+                    NDR_POLICYAGENT
+                    NDR_UNIXINFO
+                    NDR_SPOOLSS
+                    NDR_EPMAPPER
+                    NDR_DBGIDL
+                    NDR_DSSETUP
+                    NDR_MSGSVC
+                    NDR_WINSIF
+                    NDR_MGMT
+                    NDR_OXIDRESOLVER
+                    NDR_REMACT
+                    NDR_WZCSVC
+                    NDR_BROWSER
+                    NDR_W32TIME
+                    NDR_SCERPC
+                    NDR_TRKWKS
+                    NDR_KEYSVC
+                    ndr-krb5pac
+                    NDR_XATTR
+                    NDR_SCHANNEL
+                    NDR_ROT
+                    NDR_DRSBLOBS
+                    ndr_nbt
+                    NDR_WINSREPL
+                    NDR_SECURITY
+                    NDR_DNSSERVER
+                    NDR_WINSTATION
+                    NDR_IRPC
+                    NDR_OPENDB
+                    NDR_SASL_HELPERS
+                    NDR_NOTIFY
+                    NDR_WINBIND
+                    NDR_FRSRPC
+                    NDR_FRSAPI
+                    NDR_FRSTRANS
+                    NDR_NFS4ACL
+                    NDR_NTP_SIGND
+                    NDR_DCOM
+                    NDR_WMI
+                    NDR_NAMED_PIPE_AUTH
+                    NDR_NTLMSSP
+                    NDR_DFSBLOBS
+                    NDR_DNSP
+                    NDR_NTPRINTING
+                    NDR_DNS
+                    NDR_BACKUPKEY
+                    NDR_PREG
+                    NDR_BKUPBLOBS
+                    NDR_FSCC
+                    NDR_FRSBLOBS
+                    NDR_CLUSAPI
+                    NDR_WINSPOOL
+                    NDR_CAB
+                    ''',
         depends_on='GEN_NDR_TABLES'
         )
 
