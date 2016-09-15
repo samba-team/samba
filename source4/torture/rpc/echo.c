@@ -238,11 +238,28 @@ static bool test_sleep(struct torture_context *tctx,
 	struct timeval diff[ASYNC_COUNT];
 	int total_done = 0;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	enum dcerpc_transport_t transport;
+	uint32_t assoc_group_id;
+	struct dcerpc_pipe *p2 = NULL;
+	NTSTATUS status;
 
 	if (torture_setting_bool(tctx, "quick", false)) {
 		torture_skip(tctx, "TestSleep disabled - use \"torture:quick=no\" to enable\n");
 	}
 	torture_comment(tctx, "Testing TestSleep - use \"torture:quick=yes\" to disable\n");
+
+	transport	= dcerpc_binding_get_transport(p->binding);
+	assoc_group_id	= dcerpc_binding_get_assoc_group_id(p->binding);
+
+	torture_comment(tctx, "connect echo connection 2 with "
+			"DCERPC_CONCURRENT_MULTIPLEX\n");
+	status = torture_rpc_connection_transport(tctx, &p2,
+						  &ndr_table_rpcecho,
+						  transport,
+						  assoc_group_id,
+						  DCERPC_CONCURRENT_MULTIPLEX);
+	torture_assert_ntstatus_ok(tctx, status, "opening echo connection 2");
+	b = p2->binding_handle;
 
 	for (i=0;i<ASYNC_COUNT;i++) {
 		done1[i]	= false;
