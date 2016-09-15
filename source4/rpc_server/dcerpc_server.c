@@ -1089,6 +1089,11 @@ static NTSTATUS dcesrv_check_or_create_context(struct dcesrv_call_state *call,
 
 	dcesrv_prepare_context_auth(call);
 
+	/*
+	 * Multiplex is supported by default
+	 */
+	call->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
+
 	status = iface->bind(call, iface, if_version);
 	call->context = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
