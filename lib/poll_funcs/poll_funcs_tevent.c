@@ -475,6 +475,7 @@ static int poll_funcs_state_destructor(struct poll_funcs_state *state)
 {
 	size_t num_watches = talloc_array_length(state->watches);
 	size_t num_timeouts = talloc_array_length(state->timeouts);
+	size_t num_contexts = talloc_array_length(state->contexts);
 	size_t i;
 	/*
 	 * Make sure the watches are cleared before the contexts. The watches
@@ -485,6 +486,9 @@ static int poll_funcs_state_destructor(struct poll_funcs_state *state)
 	}
 	for (i=0; i<num_timeouts; i++) {
 		TALLOC_FREE(state->timeouts[i]);
+	}
+	for (i=0; i<num_contexts; i++) {
+		TALLOC_FREE(state->contexts[i]);
 	}
 	return 0;
 }
