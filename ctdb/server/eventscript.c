@@ -737,6 +737,28 @@ schedule_callback_immediate(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/* only specific events are allowed while in recovery */
+static bool event_allowed_during_recovery(enum ctdb_event event)
+{
+	const enum ctdb_event allowed_events[] = {
+		CTDB_EVENT_INIT,
+		CTDB_EVENT_SETUP,
+		CTDB_EVENT_START_RECOVERY,
+		CTDB_EVENT_SHUTDOWN,
+		CTDB_EVENT_RELEASE_IP,
+		CTDB_EVENT_IPREALLOCATED,
+	};
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(allowed_events); i++) {
+		if (event == allowed_events[i]) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /*
   run the event script in the background, calling the callback when
   finished
@@ -758,26 +780,11 @@ static int ctdb_event_script_callback_v(struct ctdb_context *ctdb,
 {
 	struct ctdb_event_script_state *state;
 
-	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		/* we guarantee that only some specifically allowed event scripts are run
-		   while in recovery */
-		const enum ctdb_event allowed_calls[] = {
-			CTDB_EVENT_INIT,
-			CTDB_EVENT_SETUP,
-			CTDB_EVENT_START_RECOVERY,
-			CTDB_EVENT_SHUTDOWN,
-			CTDB_EVENT_RELEASE_IP,
-			CTDB_EVENT_IPREALLOCATED,
-		};
-		int i;
-		for (i=0;i<ARRAY_SIZE(allowed_calls);i++) {
-			if (call == allowed_calls[i]) break;
-		}
-		if (i == ARRAY_SIZE(allowed_calls)) {
-			DEBUG(DEBUG_ERR,("Refusing to run event scripts call '%s' while in recovery\n",
-				 ctdb_eventscript_call_names[call]));
-			return -1;
-		}
+	if ((ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) &&
+	    (! event_allowed_during_recovery(call))) {
+		DEBUG(DEBUG_ERR,
+		      ("Refusing to run event '%s' while in recovery\n",
+		       ctdb_eventscript_call_names[call]));
 	}
 
 	/* Do not run new monitor events if some event is already
