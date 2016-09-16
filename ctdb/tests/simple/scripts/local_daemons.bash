@@ -7,6 +7,8 @@ if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
 	# ctdbd_wrapper is in config/ directory
 	PATH="${ctdb_dir}/bin:${ctdb_dir}/config:${PATH}"
 	hdir="${ctdb_dir}/bin"
+	export CTDB_EVENTD="${hdir}/ctdb_eventd"
+	export CTDB_EVENT_HELPER="${hdir}/ctdb_event"
 	export CTDB_LOCK_HELPER="${hdir}/ctdb_lock_helper"
 	export CTDB_EVENT_HELPER="${hdir}/ctdb_event_helper"
 	export CTDB_RECOVERY_HELPER="${hdir}/ctdb_recovery_helper"

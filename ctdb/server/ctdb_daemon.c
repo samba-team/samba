@@ -1307,6 +1307,11 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	/* force initial recovery for election */
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 
+	if (ctdb_start_eventd(ctdb) != 0) {
+		DEBUG(DEBUG_ERR, ("Failed to start event daemon\n"));
+		exit(1);
+	}
+
 	ctdb_set_runstate(ctdb, CTDB_RUNSTATE_INIT);
 	ret = ctdb_event_script(ctdb, CTDB_EVENT_INIT);
 	if (ret != 0) {
@@ -1839,6 +1844,7 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
 	ctdb_stop_monitoring(ctdb);
 	ctdb_release_all_ips(ctdb);
 	ctdb_event_script(ctdb, CTDB_EVENT_SHUTDOWN);
+	ctdb_stop_eventd(ctdb);
 	if (ctdb->methods != NULL && ctdb->methods->shutdown != NULL) {
 		ctdb->methods->shutdown(ctdb);
 	}

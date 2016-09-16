@@ -312,12 +312,6 @@ struct ctdb_context {
 	TALLOC_CTX *recd_ctx; /* a context used to track recoverd monitoring events */
 	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 
-	TALLOC_CTX *event_script_ctx;
-	int active_events;
-
-	struct ctdb_event_script_state *current_monitor;
-	struct ctdb_script_list_old *last_status[CTDB_EVENT_MAX];
-
 	struct eventd_context *ectx;
 
 	TALLOC_CTX *banning_ctx;
@@ -332,9 +326,6 @@ struct ctdb_context {
 
 	/* if we are a child process, do we have a domain socket to send controls on */
 	bool can_send_controls;
-
-	/* list of event script callback functions that are active */
-	struct event_script_callback *script_callbacks;
 
 	struct ctdb_reloadips_handle *reload_ips;
 

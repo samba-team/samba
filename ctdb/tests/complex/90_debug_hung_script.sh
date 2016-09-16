@@ -84,11 +84,11 @@ done <<'EOF'
 ===== Start of hung script debug for PID=".*", event="monitor" =====
 ===== End of hung script debug for PID=".*", event="monitor" =====
 pstree -p -a .*:
- *\`-99\\.timeout,.* /etc/ctdb/events.d/99.timeout monitor
+99\\.timeout,.* /etc/ctdb/events.d/99.timeout monitor
  *\`-sleep,.*
 ---- Stack trace of interesting process [0-9]*\\[sleep\\] ----
 [<[0-9a-f]*>] .*sleep+.*
 ---- ctdb scriptstatus monitor: ----
-99\\.timeout *Status:TIMEDOUT.*
- *OUTPUT:sleeping for [0-9]* seconds\\.\\.\\.
+99\\.timeout *TIMEDOUT.*
+ *OUTPUT: sleeping for [0-9]* seconds\\.\\.\\.
 EOF
