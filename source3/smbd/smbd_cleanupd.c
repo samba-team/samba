@@ -169,7 +169,6 @@ static void smbd_cleanupd_process_exited(struct messaging_context *msg,
 	}
 
 	if (ret == 0) {
-		DBG_ERR("got 0 cleanup events, expected at least 1\n");
 		TALLOC_FREE(frame);
 		return;
 	}
