@@ -1619,10 +1619,33 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 		}
 
 		if (call->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) {
+			if (dce_conn->pending_call_list != NULL) {
+				/*
+				 * concurrent requests are only allowed
+				 * if DCERPC_PFC_FLAG_CONC_MPX was negotiated.
+				 */
+				if (!(dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
+					dcesrv_call_disconnect_after(call,
+						"dcesrv_auth_request - "
+						"existing pending call without CONN_MPX");
+					return dcesrv_fault(call,
+						DCERPC_NCA_S_PROTO_ERROR);
+				}
+			}
 			/* only one request is possible in the fragmented list */
 			if (dce_conn->incoming_fragmented_call_list != NULL) {
-				TALLOC_FREE(call);
-				call = dce_conn->incoming_fragmented_call_list;
+				if (!(dce_conn->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
+					/*
+					 * Without DCERPC_PFC_FLAG_CONC_MPX
+					 * we need to return the FAULT on the
+					 * already existing call.
+					 *
+					 * This is important to get the
+					 * call_id and context_id right.
+					 */
+					TALLOC_FREE(call);
+					call = dce_conn->incoming_fragmented_call_list;
+				}
 				dcesrv_call_disconnect_after(call,
 					"dcesrv_auth_request - "
 					"existing fragmented call");
