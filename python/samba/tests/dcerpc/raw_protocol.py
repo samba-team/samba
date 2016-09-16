@@ -1523,21 +1523,27 @@ class TestDCERPC_BIND(RawDCERPCTest):
         auth_context_id = 0
 
         if creds is not None:
-            g = gensec.Security.start_client(self.settings)
-            g.set_credentials(creds)
-            g.want_feature(gensec.FEATURE_DCE_STYLE)
             # We always start with DCERPC_AUTH_LEVEL_INTEGRITY
-            g.start_mech_by_authtype(auth_type, dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
+            auth_context = self.get_auth_context_creds(creds,
+                                auth_type=auth_type,
+                                auth_level=auth_level,
+                                auth_context_id=auth_context_id,
+                                g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
             from_server = ""
-            (finished, to_server) = g.update(from_server)
+            (finished, to_server) = auth_context["gensec"].update(from_server)
             self.assertFalse(finished)
+
+            auth_info = self.generate_auth(auth_type=auth_context["auth_type"],
+                                           auth_level=auth_context["auth_level"],
+                                           auth_context_id=auth_context["auth_context_id"],
+                                           auth_blob=to_server)
         else:
             to_server = "none"
+            auth_info = self.generate_auth(auth_type=auth_type,
+                                           auth_level=auth_level,
+                                           auth_context_id=auth_context_id,
+                                           auth_blob=to_server)
 
-        auth_info = self.generate_auth(auth_type=auth_type,
-                                       auth_level=auth_level,
-                                       auth_context_id=auth_context_id,
-                                       auth_blob=to_server)
         req = self.generate_bind(call_id=0,
                                  ctx_list=ctx_list,
                                  auth_info=auth_info)
