@@ -242,13 +242,15 @@ NTSTATUS cli_list_user_quota(struct cli_state *cli, int quota_fnum,
 			   &rparam, 0, &rparam_count,
 			   &rdata, 0, &rdata_count);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
 		DEBUG(1, ("NT_TRANSACT_GET_USER_QUOTA failed: %s\n",
 			  nt_errstr(status)));
 		goto cleanup;
 	}
 
-	if (rdata_count == 0) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) ||
+	    rdata_count == 0) {
 		*pqt_list = NULL;
 		return NT_STATUS_OK;
 	}
@@ -304,13 +306,16 @@ NTSTATUS cli_list_user_quota(struct cli_state *cli, int quota_fnum,
 				   &rparam, 0, &rparam_count,
 				   &rdata, 0, &rdata_count);
 
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
 			DEBUG(1, ("NT_TRANSACT_GET_USER_QUOTA failed: %s\n",
 				  nt_errstr(status)));
 			goto cleanup;
 		}
 
-		if (rdata_count == 0) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) ||
+		    rdata_count == 0) {
+			status = NT_STATUS_OK;
 			break;
 		}
 
