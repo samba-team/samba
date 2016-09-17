@@ -1050,8 +1050,8 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct tstream_tls_connect_state *state;
-	const char *error_pos;
 #if ENABLE_GNUTLS
+	const char *error_pos;
 	struct tstream_tls *tlss;
 	int ret;
 #endif /* ENABLE_GNUTLS */
@@ -1330,8 +1330,8 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct tstream_tls_accept_state *state;
 	struct tstream_tls *tlss;
-	const char *error_pos;
 #if ENABLE_GNUTLS
+	const char *error_pos;
 	int ret;
 #endif /* ENABLE_GNUTLS */
 
