@@ -506,12 +506,6 @@ def build(bld):
                      includes='include',
                      install_path='${CTDB_HELPER_BINDIR}')
 
-    bld.SAMBA_BINARY('ctdb_event_helper',
-                     source='server/ctdb_event_helper.c',
-                     includes='include',
-                     deps='samba-util sys_rw ctdb-system replace tdb',
-                     install_path='${CTDB_HELPER_BINDIR}')
-
     bld.SAMBA_BINARY('ctdb_recovery_helper',
                      source='server/ctdb_recovery_helper.c',
                      deps='''ctdb-client2 ctdb-protocol ctdb-util
