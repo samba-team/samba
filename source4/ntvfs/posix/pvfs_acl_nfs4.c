@@ -155,8 +155,7 @@ static NTSTATUS pvfs_acl_save_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 		ids[i].status = ID_UNKNOWN;
 	}
 
-	status = wbc_sids_to_xids(pvfs->ntvfs->ctx->event_ctx, ids,
-				  acl.a_count);
+	status = wbc_sids_to_xids(ids, acl.a_count);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
 		return status;

@@ -55,7 +55,7 @@ NTSTATUS security_token_to_unix_token(TALLOC_CTX *mem_ctx,
 		ids[s].status = ID_UNKNOWN;
 	}
 
-	status = wbc_sids_to_xids(ev, ids, token->num_sids);
+	status = wbc_sids_to_xids(ids, token->num_sids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	g = token->num_sids;

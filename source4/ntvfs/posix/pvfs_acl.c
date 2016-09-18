@@ -330,8 +330,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		if (!dom_sid_equal(sd->owner_sid, new_sd->owner_sid)) {
 			ids->sid = new_sd->owner_sid;
-			status = wbc_sids_to_xids(pvfs->ntvfs->ctx->event_ctx,
-						  ids, 1);
+			status = wbc_sids_to_xids(ids, 1);
 			NT_STATUS_NOT_OK_RETURN(status);
 
 			if (ids->xid.type == ID_TYPE_BOTH ||
@@ -348,8 +347,7 @@ NTSTATUS pvfs_acl_set(struct pvfs_state *pvfs,
 		}
 		if (!dom_sid_equal(sd->group_sid, new_sd->group_sid)) {
 			ids->sid = new_sd->group_sid;
-			status = wbc_sids_to_xids(pvfs->ntvfs->ctx->event_ctx,
-						  ids, 1);
+			status = wbc_sids_to_xids(ids, 1);
 			NT_STATUS_NOT_OK_RETURN(status);
 
 			if (ids->xid.type == ID_TYPE_BOTH ||

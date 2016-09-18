@@ -26,8 +26,7 @@
 #include "libcli/security/dom_sid.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-NTSTATUS wbc_sids_to_xids(struct tevent_context *ev, struct id_map *ids,
-			  uint32_t count)
+NTSTATUS wbc_sids_to_xids(struct id_map *ids, uint32_t count)
 {
 	TALLOC_CTX *mem_ctx;
 	uint32_t i;
