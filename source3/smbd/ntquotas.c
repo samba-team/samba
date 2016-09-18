@@ -234,8 +234,7 @@ int vfs_get_user_ntquota_list(files_struct *fsp, SMB_NTQUOTA_LIST **qt_list)
 
 static int quota_handle_destructor(SMB_NTQUOTA_HANDLE *handle)
 {
-	if (handle->quota_list)
-		free_ntquota_list(&handle->quota_list);
+	free_ntquota_list(&handle->quota_list);
 	return 0;
 }
 
