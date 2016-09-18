@@ -456,7 +456,7 @@ static struct tevent_req *notifyd_init_send(struct tevent_context *ev,
 		.ppid = ppid
 	};
 
-	subreq = tevent_wakeup_send(req, ev, tevent_timeval_current_ofs(1, 0));
+	subreq = tevent_wakeup_send(state, ev, tevent_timeval_current_ofs(1, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -491,7 +491,7 @@ static void notifyd_init_trigger(struct tevent_req *subreq)
 
 	DBG_NOTICE("notifyd startup failed, rescheduling\n");
 
-	subreq = tevent_wakeup_send(req, state->ev,
+	subreq = tevent_wakeup_send(state, state->ev,
 				    tevent_timeval_current_ofs(1, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		DBG_ERR("scheduling notifyd restart failed, giving up\n");
@@ -667,7 +667,7 @@ static struct tevent_req *cleanupd_init_send(struct tevent_context *ev,
 		.ppid = ppid
 	};
 
-	subreq = tevent_wakeup_send(req, ev, tevent_timeval_current_ofs(0, 0));
+	subreq = tevent_wakeup_send(state, ev, tevent_timeval_current_ofs(0, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -702,7 +702,7 @@ static void cleanupd_init_trigger(struct tevent_req *subreq)
 
 	DBG_NOTICE("cleanupd startup failed, rescheduling\n");
 
-	subreq = tevent_wakeup_send(req, state->ev,
+	subreq = tevent_wakeup_send(state, state->ev,
 				    tevent_timeval_current_ofs(1, 0));
 	if (tevent_req_nomem(subreq, req)) {
 		DBG_ERR("scheduling cleanupd restart failed, giving up\n");
