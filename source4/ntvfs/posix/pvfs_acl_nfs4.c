@@ -90,7 +90,7 @@ static NTSTATUS pvfs_acl_load_nfs4(struct pvfs_state *pvfs, struct pvfs_filename
 
 	/* Allocate memory for the sids from the security descriptor to be on
 	 * the safe side. */
-	status = wbc_xids_to_sids(pvfs->ntvfs->ctx->event_ctx, ids, num_ids);
+	status = wbc_xids_to_sids(ids, num_ids);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	sd->owner_sid = talloc_steal(sd, ids[0].sid);

@@ -22,5 +22,4 @@
 
 NTSTATUS wbc_sids_to_xids(struct id_map *ids, uint32_t count);
 
-NTSTATUS wbc_xids_to_sids(struct tevent_context *ev, struct id_map *ids,
-			  uint32_t count);
+NTSTATUS wbc_xids_to_sids(struct id_map *ids, uint32_t count);
