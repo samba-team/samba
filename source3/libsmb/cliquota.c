@@ -34,8 +34,9 @@ NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum)
 
 void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 {
-	if (!qt_list)
+	if (!qt_list || !*qt_list) {
 		return;
+	}
 
 	if ((*qt_list)->mem_ctx)
 		talloc_destroy((*qt_list)->mem_ctx);
