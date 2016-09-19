@@ -109,6 +109,65 @@ bool parse_user_quota_record(const uint8_t *rdata,
 	return True;
 }
 
+NTSTATUS parse_user_quota_list(const uint8_t *curdata,
+			       uint32_t curdata_count,
+			       TALLOC_CTX *mem_ctx,
+			       SMB_NTQUOTA_LIST **pqt_list)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	unsigned offset;
+	SMB_NTQUOTA_STRUCT qt;
+	SMB_NTQUOTA_LIST *tmp_list_ent;
+
+	while (true) {
+		ZERO_STRUCT(qt);
+		if (!parse_user_quota_record(curdata, curdata_count, &offset,
+					     &qt)) {
+			DEBUG(1, ("Failed to parse the quota record\n"));
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			break;
+		}
+
+		if ((tmp_list_ent = talloc_zero(mem_ctx, SMB_NTQUOTA_LIST)) ==
+		    NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			break;
+		}
+
+		if ((tmp_list_ent->quotas =
+			 talloc_zero(mem_ctx, SMB_NTQUOTA_STRUCT)) == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			break;
+		}
+
+		memcpy(tmp_list_ent->quotas, &qt, sizeof(qt));
+		tmp_list_ent->mem_ctx = mem_ctx;
+
+		DLIST_ADD((*pqt_list), tmp_list_ent);
+
+		if (offset > curdata_count) {
+			DEBUG(1, ("out of bounds offset in quota record\n"));
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			break;
+		}
+
+		if (curdata + offset < curdata) {
+			DEBUG(1, ("Pointer overflow in quota record\n"));
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			break;
+		}
+
+		curdata += offset;
+		curdata_count -= offset;
+
+		if (offset == 0) {
+			break;
+		}
+	}
+
+	return status;
+}
+
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt)
 {
@@ -227,11 +286,6 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 	uint8_t params[16];
 	uint8_t *rparam=NULL, *rdata=NULL;
 	uint32_t rparam_count=0, rdata_count=0;
-	unsigned int offset;
-	const uint8_t *curdata = NULL;
-	unsigned int curdata_count = 0;
-	SMB_NTQUOTA_STRUCT qt;
-	SMB_NTQUOTA_LIST *tmp_list_ent;
 	NTSTATUS status;
 	uint16_t op = first ? TRANSACT_GET_USER_QUOTA_LIST_START
 			    : TRANSACT_GET_USER_QUOTA_LIST_CONTINUE;
@@ -255,63 +309,18 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 			   &rparam, 0, &rparam_count,
 			   &rdata, 0, &rdata_count);
 
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-		goto cleanup;
-	}
-
 	/* compat. with smbd + safeguard against
 	 * endless loop
 	 */
-	if (rdata_count == 0) {
+	if (NT_STATUS_IS_OK(status) && rdata_count == 0) {
 		status = NT_STATUS_NO_MORE_ENTRIES;
 	}
 
-	curdata = rdata;
-	curdata_count = rdata_count;
-	while (true) {
-		ZERO_STRUCT(qt);
-		if (!parse_user_quota_record((const uint8_t *)curdata, curdata_count,
-					     &offset, &qt)) {
-			DEBUG(1,("Failed to parse the quota record\n"));
-			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-			goto cleanup;
-		}
-
-		if ((tmp_list_ent=talloc_zero(mem_ctx,SMB_NTQUOTA_LIST))==NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto cleanup;
-		}
-
-		if ((tmp_list_ent->quotas=talloc_zero(mem_ctx,SMB_NTQUOTA_STRUCT))==NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto cleanup;
-		}
-
-		memcpy(tmp_list_ent->quotas,&qt,sizeof(qt));
-		tmp_list_ent->mem_ctx = mem_ctx;		
-
-		DLIST_ADD((*pqt_list),tmp_list_ent);
-
-		if (offset > curdata_count) {
-			DEBUG(1, ("out of bounds offset in quota record\n"));
-			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-			goto cleanup;
-		}
-
-		if (curdata + offset < curdata) {
-			DEBUG(1, ("Pointer overflow in quota record\n"));
-			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
-			goto cleanup;
-		}
-
-		curdata += offset;
-		curdata_count -= offset;
-
-		if (offset == 0) {
-			break;
-		}
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
 	}
+
+	status = parse_user_quota_list(rdata, rdata_count, mem_ctx, pqt_list);
 
 cleanup:
 	TALLOC_FREE(rparam);

@@ -766,6 +766,10 @@ bool parse_user_quota_record(const uint8_t *rdata,
 			     unsigned int rdata_count,
 			     unsigned int *offset,
 			     SMB_NTQUOTA_STRUCT *pqt);
+NTSTATUS parse_user_quota_list(const uint8_t *curdata,
+			       uint32_t curdata_size,
+			       TALLOC_CTX *mem_ctx,
+			       SMB_NTQUOTA_LIST **pqt_list);
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt);
 NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
