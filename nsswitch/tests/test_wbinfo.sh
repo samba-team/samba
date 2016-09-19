@@ -51,6 +51,12 @@ knownfail() {
         return $status
 }
 
+KRB5CCNAME_PATH="$PREFIX/test_wbinfo_krb5ccache"
+rm -f $KRB5CCNAME_PATH
+
+KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+export KRB5CCNAME
+
 # List users
 testit "wbinfo -u against $TARGET" $wbinfo -u || failed=`expr $failed + 1`
 # List groups
@@ -244,8 +250,10 @@ testit "wbinfo --getdcname against $TARGET" $wbinfo --getdcname=$DOMAIN
 
 testit "wbinfo -p against $TARGET" $wbinfo -p || failed=`expr $failed + 1`
 
-testit "wbinfo -K against $TARGET with domain creds" $wbinfo -K "$DOMAIN/$USERNAME"%"$PASSWORD" || failed=`expr $failed + 1`
+testit "wbinfo -K against $TARGET with domain creds" $wbinfo --krb5ccname=$KRB5CCNAME --krb5auth="$DOMAIN/$USERNAME"%"$PASSWORD" || failed=`expr $failed + 1`
 
 testit "wbinfo --separator against $TARGET" $wbinfo --separator || failed=`expr $failed + 1`
+
+rm -f $KRB5CCNAME_PATH
 
 exit $failed
