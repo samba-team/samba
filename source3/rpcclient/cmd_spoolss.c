@@ -3926,6 +3926,69 @@ static WERROR cmd_spoolss_play_gdi_script_on_printer_ic(struct rpc_pipe_client *
 	return result;
 }
 
+static WERROR cmd_spoolss_get_core_printer_drivers(struct rpc_pipe_client *cli,
+						   TALLOC_CTX *mem_ctx, int argc,
+						   const char **argv)
+{
+	NTSTATUS status;
+	HRESULT result;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	const char *architecture = SPOOLSS_ARCHITECTURE_x64;
+	struct spoolss_CorePrinterDriver core_printer_drivers;
+	DATA_BLOB blob;
+	bool ok;
+	int i;
+	uint32_t count;
+	const char **array;
+
+	if (argc == 1) {
+		count = 1;
+		array = talloc_zero_array(mem_ctx, const char *, count + 1);
+		if (array == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		array[0] = talloc_strdup(array, SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV);
+		if (array[0] == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+	} else {
+		count = argc -1;
+		array = talloc_zero_array(mem_ctx, const char *, count + 1);
+		if (array == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+		for (i = 0; i < argc - 1; i++) {
+			array[i] = talloc_strdup(array, argv[i + 1]);
+			if (array[i] == NULL) {
+				return WERR_NOT_ENOUGH_MEMORY;
+			}
+		}
+	}
+
+	ok = push_reg_multi_sz(mem_ctx, &blob, array);
+	if (!ok) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	status = dcerpc_spoolss_GetCorePrinterDrivers(b, mem_ctx,
+						      cli->srv_name_slash,
+						      architecture,
+						      blob.length/2,
+						      (uint16_t *)blob.data,
+						      count,
+						      &core_printer_drivers,
+						      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!HRES_IS_OK(result)) {
+		return W_ERROR(WIN32_FROM_HRESULT(result));
+	}
+
+	return WERR_OK;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -4312,6 +4375,16 @@ struct cmd_set spoolss_commands[] = {
 		.table              = &ndr_table_spoolss,
 		.rpc_pipe           = NULL,
 		.description        = "Create Printer IC",
+		.usage              = "",
+	},
+	{
+		.name               = "getcoreprinterdrivers",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_spoolss_get_core_printer_drivers,
+		.table              = &ndr_table_spoolss,
+		.rpc_pipe           = NULL,
+		.description        = "Get CorePrinterDriver",
 		.usage              = "",
 	},
 
