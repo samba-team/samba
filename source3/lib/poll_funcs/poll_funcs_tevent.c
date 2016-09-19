@@ -302,6 +302,9 @@ static int poll_funcs_state_destructor(struct poll_funcs_state *state)
 	for (i=0; i<state->num_watches; i++) {
 		TALLOC_FREE(state->watches[i]);
 	}
+	for (i=0; i<state->num_contexts; i++) {
+		TALLOC_FREE(state->contexts[i]);
+	}
 	return 0;
 }
 
