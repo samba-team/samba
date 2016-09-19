@@ -1398,6 +1398,7 @@ static struct tevent_req *collect_all_db_send(
 	state->pnn_list = pnn_list;
 	state->count = count;
 	state->caps = caps;
+	state->ban_credits = ban_credits;
 	state->db_id = db_id;
 	state->recdb = recdb;
 	state->index = 0;
