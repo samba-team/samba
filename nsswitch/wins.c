@@ -39,10 +39,19 @@ static pthread_mutex_t wins_nss_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define INADDRSZ 4
 #endif
 
-NSS_STATUS _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
-			  char *buffer, size_t buflen, int *h_errnop);
-NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
-			   char *buffer, size_t buflen, int *h_errnop);
+NSS_STATUS _nss_wins_gethostbyname_r(const char *hostname,
+				     struct hostent *he,
+				     char *buffer,
+				     size_t buflen,
+				     int *errnop,
+				     int *h_errnop);
+NSS_STATUS _nss_wins_gethostbyname2_r(const char *name,
+				      int af,
+				      struct hostent *he,
+				      char *buffer,
+				      size_t buflen,
+				      int *errnop,
+				      int *h_errnop);
 
 static char *lookup_byname_backend(const char *name)
 {
@@ -225,8 +234,12 @@ gethostbyname() - we ignore any domain portion of the name and only
 handle names that are at most 15 characters long
   **************************************************************************/
 NSS_STATUS
-_nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
-			  char *buffer, size_t buflen, int *h_errnop)
+_nss_wins_gethostbyname_r(const char *hostname,
+			  struct hostent *he,
+			  char *buffer,
+			  size_t buflen,
+			  int *errnop,
+			  int *h_errnop)
 {
 	NSS_STATUS nss_status = NSS_STATUS_SUCCESS;
 	char *ip;
@@ -247,6 +260,7 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 
 	ip = lookup_byname_backend(name);
 	if (ip == NULL) {
+		*errnop = EINVAL;
 		nss_status = NSS_STATUS_NOTFOUND;
 		goto out;
 	}
@@ -254,6 +268,7 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	rc = inet_pton(AF_INET, ip, &in);
 	wbcFreeMemory(ip);
 	if (rc == 0) {
+		*errnop = errno;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -263,6 +278,7 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	namelen = strlen(name) + 1;
 
 	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL) {
+		*errnop = EAGAIN;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -275,18 +291,21 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 		i = sizeof(char*) - i;
 
 	if (get_static(&buffer, &buflen, i) == NULL) {
+		*errnop = EAGAIN;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
 	if ((he->h_addr_list = (char **)get_static(
 		     &buffer, &buflen, 2 * sizeof(char *))) == NULL) {
+		*errnop = EAGAIN;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
 	if ((he->h_addr_list[0] = get_static(&buffer, &buflen,
 					     INADDRSZ)) == NULL) {
+		*errnop = EAGAIN;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -306,12 +325,14 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 		i = sizeof(char*) - i;
 
 	if (get_static(&buffer, &buflen, i) == NULL) {
+		*errnop = EAGAIN;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
 	if ((he->h_aliases = (char **)get_static(
 		     &buffer, &buflen, sizeof(char *))) == NULL) {
+		*errnop = EAGAIN;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -330,17 +351,27 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 
 
 NSS_STATUS
-_nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
-			   char *buffer, size_t buflen, int *h_errnop)
+_nss_wins_gethostbyname2_r(const char *name,
+			   int af,
+			   struct hostent *he,
+			   char *buffer,
+			   size_t buflen,
+			   int *errnop,
+			   int *h_errnop)
 {
 	NSS_STATUS nss_status;
 
 	if(af!=AF_INET) {
+		*errnop = EAFNOSUPPORT;
 		*h_errnop = NO_DATA;
 		nss_status = NSS_STATUS_UNAVAIL;
 	} else {
-		nss_status = _nss_wins_gethostbyname_r(
-				name, he, buffer, buflen, h_errnop);
+		nss_status = _nss_wins_gethostbyname_r(name,
+						       he,
+						       buffer,
+						       buflen,
+						       errnop,
+						       h_errnop);
 	}
 	return nss_status;
 }
