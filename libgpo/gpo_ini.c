@@ -56,7 +56,7 @@ static bool store_keyval_pair(const char *key, const char *value, void *ctx_ptr)
 	}
 
 	ctx->data[ctx->keyval_count]->key = talloc_asprintf(ctx, "%s:%s", ctx->current_section, key);
-	ctx->data[ctx->keyval_count]->val = talloc_strdup(ctx, value);
+	ctx->data[ctx->keyval_count]->val = talloc_strdup(ctx, value ? value : "");
 
 	if (!ctx->data[ctx->keyval_count]->key ||
 	    !ctx->data[ctx->keyval_count]->val) {
