@@ -22,10 +22,11 @@ if test -x $BINDIR/samba4kinit; then
 	samba4kinit=$BINDIR/samba4kinit
 fi
 
-KRB5CCNAME_PATH="$PREFIX/tmpccache"
+KRB5CCNAME_PATH="$PREFIX/test_smbclient_netbios_aliases_krb5ccache"
+rm -rf $KRB5CCNAME_PATH
+
 KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
-rm -rf $KRB5CCNAME_PATH
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
