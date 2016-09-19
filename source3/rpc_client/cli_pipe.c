@@ -2629,7 +2629,7 @@ NTSTATUS rpccli_ncalrpc_bind_data(TALLOC_CTX *mem_ctx,
 					"host", /* target_service */
 					NAME_NT_AUTHORITY, /* domain */
 					"SYSTEM",
-					"", /* password */
+					NULL, /* password */
 					CRED_DONT_USE_KERBEROS,
 					NULL, /* netlogon_creds_CredentialState */
 					presult);
