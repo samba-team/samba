@@ -138,6 +138,15 @@ static uint32_t ndr_size_cab_file(const struct cab_file *r)
 	return size;
 }
 
+enum cf_compress_type ndr_cab_get_compression(const struct cab_file *r)
+{
+	if (r->cfheader.cFolders == 0) {
+		return CF_COMPRESS_NONE;
+	}
+
+	return r->cffolders[0].typeCompress;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags, const struct cab_file *r)
 {
 	uint32_t cntr_cffolders_0;
