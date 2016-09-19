@@ -256,7 +256,7 @@ for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc", "ad_dc"]:
     # Winreg tests test bulk Kerberos encryption of DCE/RPC
     # We test rpc.winreg here too, because the winreg interface if
     # handled by the source3/rpc_server code.
-    for bindoptions in ["connect", "krb5", "krb5,sign", "krb5,seal", "spnego", "spnego,sign", "spnego,seal"]:
+    for bindoptions in ["connect", "packet", "krb5", "krb5,packet", "krb5,sign", "krb5,seal", "spnego", "spnego,packet", "spnego,sign", "spnego,seal"]:
         plansmbtorture4testsuite('rpc.winreg', env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.winreg on %s with %s" % (transport, bindoptions))
 
     for transport in transports:
