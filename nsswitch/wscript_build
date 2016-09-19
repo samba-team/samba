@@ -42,7 +42,7 @@ if (Utils.unversioned_sys_platform() == 'linux' or (host_os.rfind('gnu') > -1)):
     bld.SAMBA3_LIBRARY('nss_wins',
                        keep_underscore=True,
                        source='wins.c',
-                       deps='''wbclient''',
+                       deps='wbclient replace',
                        public_headers=[],
                        public_headers_install=False,
                        pc_files=[],
