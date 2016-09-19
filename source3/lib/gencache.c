@@ -664,7 +664,7 @@ bool gencache_stabilize(void)
 		return false;
 	}
 
-	res = tdb_lockall(cache_notrans->tdb);
+	res = tdb_lockall_nonblock(cache_notrans->tdb);
 	if (res != 0) {
 		tdb_transaction_cancel(cache->tdb);
 		DEBUG(10, ("Could not get allrecord lock on "
