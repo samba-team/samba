@@ -73,9 +73,16 @@ bool parse_user_quota_record(const uint8_t *rdata,
 
 	/* sid len */
 	sid_len = IVAL(rdata,4);
+	if (40 + sid_len < 40) {
+		return false;
+	}
 
 	if (rdata_count < 40+sid_len) {
 		return False;		
+	}
+
+	if (*offset != 0 && *offset < 40 + sid_len) {
+		return false;
 	}
 
 	/* unknown 8 bytes in pdata 
@@ -260,10 +267,9 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 		status = NT_STATUS_NO_MORE_ENTRIES;
 	}
 
-	offset = 1;
-	for (curdata=rdata,curdata_count=rdata_count;
-		((curdata)&&(curdata_count>=8)&&(offset>0));
-		curdata +=offset,curdata_count -= offset) {
+	curdata = rdata;
+	curdata_count = rdata_count;
+	while (true) {
 		ZERO_STRUCT(qt);
 		if (!parse_user_quota_record((const uint8_t *)curdata, curdata_count,
 					     &offset, &qt)) {
@@ -286,6 +292,25 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 		tmp_list_ent->mem_ctx = mem_ctx;		
 
 		DLIST_ADD((*pqt_list),tmp_list_ent);
+
+		if (offset > curdata_count) {
+			DEBUG(1, ("out of bounds offset in quota record\n"));
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto cleanup;
+		}
+
+		if (curdata + offset < curdata) {
+			DEBUG(1, ("Pointer overflow in quota record\n"));
+			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			goto cleanup;
+		}
+
+		curdata += offset;
+		curdata_count -= offset;
+
+		if (offset == 0) {
+			break;
+		}
 	}
 
 cleanup:
