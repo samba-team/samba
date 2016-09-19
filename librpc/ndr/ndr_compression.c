@@ -383,7 +383,8 @@ static enum ndr_err_code ndr_push_compression_xpress_chunk(struct ndr_push *ndrp
 enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 				    struct ndr_pull **_comndr,
 				    enum ndr_compression_alg compression_alg,
-				    ssize_t decompressed_len)
+				    ssize_t decompressed_len,
+				    ssize_t compressed_len)
 {
 	struct ndr_push *ndrpush;
 	struct ndr_pull *comndr;

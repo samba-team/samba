@@ -37,7 +37,8 @@
 enum ndr_err_code ndr_pull_compression_start(struct ndr_pull *subndr,
 				    struct ndr_pull **_comndr,
 				    enum ndr_compression_alg compression_alg,
-				    ssize_t decompressed_len);
+				    ssize_t decompressed_len,
+				    ssize_t compressed_len);
 enum ndr_err_code ndr_pull_compression_end(struct ndr_pull *subndr,
 				  struct ndr_pull *comndr,
 				  enum ndr_compression_alg compression_alg,
