@@ -499,15 +499,18 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 			break;
 		case 'G' : {
 			struct passwd *pass;
+			bool is_domain_name = false;
+			const char *sep = lp_winbind_separator();
 
 			if (domain_name != NULL && domain_name[0] != '\0' &&
-			    !strequal(domain_name, my_sam_name()))
-			{
+			    (lp_security() == SEC_ADS ||
+			     lp_security() == SEC_DOMAIN)) {
 				r = talloc_asprintf(tmp_ctx,
 						    "%s%c%s",
 						    domain_name,
-						    *lp_winbind_separator(),
+						    *sep,
 						    smb_name);
+				is_domain_name = true;
 			} else {
 				r = talloc_strdup(tmp_ctx, smb_name);
 			}
@@ -517,9 +520,18 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 
 			pass = Get_Pwnam_alloc(tmp_ctx, r);
 			if (pass != NULL) {
-				a_string = realloc_string_sub(
-					a_string, "%G",
-					gidtoname(pass->pw_gid));
+				char *group_name;
+
+				group_name = gidtoname(pass->pw_gid);
+				if (is_domain_name) {
+					p = strchr_m(group_name, *sep);
+					if (p != NULL) {
+						group_name = p + 1;
+					}
+				}
+				a_string = realloc_string_sub(a_string,
+							      "%G",
+							      group_name);
 			}
 			TALLOC_FREE(pass);
 			break;
