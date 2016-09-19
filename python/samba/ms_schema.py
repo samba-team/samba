@@ -162,6 +162,10 @@ def fix_dn(dn):
         dn = dn.replace("\n ", "")
         dn = dn.replace(" ", "")
         return dn.replace("CN=Schema,CN=Configuration,<RootDomainDN>", "${SCHEMADN}")
+    elif dn.endswith("DC=X"):
+        return dn.replace("CN=Schema,CN=Configuration,DC=X", "${SCHEMADN}")
+    elif dn.endswith("CN=X"):
+        return dn.replace("CN=Schema,CN=Configuration,CN=X", "${SCHEMADN}")
     else:
         return dn
 
