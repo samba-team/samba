@@ -2433,6 +2433,79 @@ fail:
 	return status;
 }
 
+/***************************************************************
+ Wrapper that allows SMB2 to list user quota.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_list_user_quota_step(struct cli_state *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int quota_fnum,
+				       SMB_NTQUOTA_LIST **pqt_list,
+				       bool first)
+{
+	NTSTATUS status;
+	DATA_BLOB inbuf = data_blob_null;
+	DATA_BLOB outbuf = data_blob_null;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	uint8_t *buf;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, quota_fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
+	}
+
+	inbuf = data_blob_talloc_zero(frame, 16);
+	if (inbuf.data == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto cleanup;
+	}
+
+	buf = inbuf.data;
+
+	SCVAL(buf, 0, 0);	     /* ReturnSingle */
+	SCVAL(buf, 1, first ? 1 : 0); /* RestartScan */
+	SSVAL(buf, 2, 0);	     /* Reserved */
+	SIVAL(buf, 4, 0);	     /* SidListLength */
+	SIVAL(buf, 8, 0);	     /* StartSidLength */
+	SIVAL(buf, 12, 0);	    /* StartSidOffset */
+
+	status = smb2cli_query_info(cli->conn, cli->timeout, cli->smb2.session,
+				    cli->smb2.tcon, 4, /* in_info_type */
+				    0,		       /* in_file_info_class */
+				    0xFFFF, /* in_max_output_length */
+				    &inbuf, /* in_input_buffer */
+				    0,      /* in_additional_info */
+				    0,      /* in_flags */
+				    ph->fid_persistent, ph->fid_volatile, frame,
+				    &outbuf);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
+	}
+
+	status = parse_user_quota_list(outbuf.data, outbuf.length, mem_ctx,
+				       pqt_list);
+
+cleanup:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct cli_smb2_read_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;

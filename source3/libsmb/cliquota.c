@@ -290,6 +290,11 @@ static NTSTATUS cli_list_user_quota_step(struct cli_state *cli,
 	uint16_t op = first ? TRANSACT_GET_USER_QUOTA_LIST_START
 			    : TRANSACT_GET_USER_QUOTA_LIST_CONTINUE;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_list_user_quota_step(cli, mem_ctx, quota_fnum,
+						     pqt_list, first);
+	}
+
 	SSVAL(setup + 0, 0, NT_TRANSACT_GET_USER_QUOTA);
 
 	SSVAL(params, 0,quota_fnum);
