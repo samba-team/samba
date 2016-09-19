@@ -318,14 +318,26 @@ static bool poll_funcs_context_slot_find(struct poll_funcs_state *state,
 	struct poll_funcs_tevent_context **contexts;
 	unsigned i;
 
+	/* Look for an existing match first. */
 	for (i=0; i<state->num_contexts; i++) {
 		struct poll_funcs_tevent_context *ctx = state->contexts[i];
 
-		if ((ctx == NULL) || (ctx->ev == ev)) {
+		if (ctx != NULL && ctx->ev == ev) {
 			*slot = i;
 			return true;
 		}
 	}
+
+	/* Now look for a free slot. */
+	for (i=0; i<state->num_contexts; i++) {
+		struct poll_funcs_tevent_context *ctx = state->contexts[i];
+
+		if (ctx == NULL) {
+			*slot = i;
+			return true;
+		}
+	}
+
 
 	contexts = talloc_realloc(state, state->contexts,
 				  struct poll_funcs_tevent_context *,
