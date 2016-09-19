@@ -47,6 +47,7 @@ bool fast_start;
 #include "common/rb_tree.c"
 #include "common/reqid.c"
 #include "common/logging.c"
+#include "common/pidfile.c"
 
 /* CTDB_SERVER_OBJ */
 #include "server/ctdb_daemon.c"

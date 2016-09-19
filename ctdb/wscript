@@ -343,7 +343,7 @@ def build(bld):
                         source=bld.SUBDIR('common',
                                           '''db_hash.c srvid.c reqid.c
                                              pkt_read.c pkt_write.c comm.c
-                                             logging.c'''),
+                                             logging.c pidfile.c'''),
                         deps='replace talloc tevent tdb tevent-util')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',
@@ -629,6 +629,7 @@ def build(bld):
         'comm_client_test',
         'protocol_types_test',
         'protocol_client_test',
+        'pidfile_test',
     ]
 
     for target in ctdb_unit_tests:
