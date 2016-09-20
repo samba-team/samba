@@ -75,7 +75,10 @@ testit "create user locally" \
 ### Test normal operation as user
 ###########################################################
 
-KRB5CCNAME="$PREFIX/tmpuserccache"
+KRB5CCNAME_PATH="$PREFIX/test_password_settings_krb5ccache"
+rm -f $KRB5CCNAME_PATH
+
+KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
 export KRB5CCNAME
 
 testit "kinit with user password" \
@@ -206,6 +209,7 @@ testit "reset password policies" \
 testit "delete user $TEST_USERNAME" \
 	$VALGRIND $samba_tool user delete $TEST_USERNAME -U"$USERNAME%$PASSWORD" $CONFIG -k no  || failed=`expr $failed + 1`
 
-rm -f $PREFIX/tmpuserpassfile $PREFIX/tmpsmbpasswdscript $PREFIX/tmpuserccache
+rm -f $PREFIX/tmpuserpassfile $PREFIX/tmpsmbpasswdscript
+rm -f $KRB5CCNAME_PATH
 
 exit $failed
