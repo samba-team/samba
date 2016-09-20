@@ -87,6 +87,8 @@ testit "kinit with user password" \
 test_smbclient "Test login with user kerberos ccache" \
 	"ls" "$SMB_UNC" -k yes || failed=`expr $failed + 1`
 
+rm -f $KRB5CCNAME_PATH
+
 ###########################################################
 ### Change the users password
 ###########################################################
@@ -113,6 +115,8 @@ testit_expect_failure "Test login with user kerberos ccache, but wrong password 
 	$VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k yes -U$TEST_PRINCIPAL%invalidpass && failed=`expr $failed + 1`
 testit_expect_failure "Test login with user kerberos ccache, but old password specified" \
 	$VALGRIND $smbclient //$SERVER/tmp -c 'ls' -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD_OLD && failed=`expr $failed + 1`
+
+rm -f $KRB5CCNAME_PATH
 
 ###########################################################
 ### Set the password with smbpasswd
@@ -150,6 +154,8 @@ TEST_PASSWORD_NEW="testPaSS@05%"
 
 test_smbclient "Test login with user kerberos" 'ls' "$SMB_UNC" -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
 
+rm -f $KRB5CCNAME_PATH
+
 cat > $PREFIX/tmpsmbpasswdscript <<EOF
 expect Old SMB password:
 password ${TEST_PASSWORD}\n
@@ -167,6 +173,8 @@ TEST_PASSWORD_NEW="testPaSS@06%"
 
 test_smbclient "Test login with user kerberos" \
 	"ls" "$SMB_UNC" -k yes -U$TEST_PRINCIPAL%$TEST_PASSWORD || failed=`expr $failed + 1`
+
+rm -f $KRB5CCNAME_PATH
 
 testit_expect_failure "try to set a non-complex password (command should not succeed)" \
 	$VALGRIND $samba_tool user password -W$DOMAIN "-U$DOMAIN/$TEST_USERNAME%$TEST_PASSWORD" -k no --newpassword="$TEST_PASSWORD_WEAK" && failed=`expr $failed + 1`
