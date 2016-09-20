@@ -155,7 +155,10 @@
 
 		<listitem><para><command>native</command> - store
 		characters with their native ASCII
-		value</para></listitem>
+		value. <emphasis>Important</emphasis>: this option
+		requires the use of <emphasis>vfs_catia</emphasis> in
+		the VFS module stack as shown in the examples
+		section.</para></listitem>
 
 	      </itemizedlist>
 	    </listitem>
