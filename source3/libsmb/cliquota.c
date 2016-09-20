@@ -415,6 +415,10 @@ NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
 		smb_panic("cli_get_fs_quota_info() called with NULL Pointer!");
 	}
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_get_fs_quota_info(cli, quota_fnum, pqt);
+	}
+
 	SSVAL(setup + 0, 0, TRANSACT2_QFSINFO);
 
 	SSVAL(param,0,SMB_FS_QUOTA_INFORMATION);

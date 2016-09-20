@@ -2506,6 +2506,59 @@ cleanup:
 	return status;
 }
 
+/***************************************************************
+ Wrapper that allows SMB2 to get file system quota.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_get_fs_quota_info(struct cli_state *cli,
+				    int quota_fnum,
+				    SMB_NTQUOTA_STRUCT *pqt)
+{
+	NTSTATUS status;
+	DATA_BLOB outbuf = data_blob_null;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, quota_fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
+	}
+
+	status = smb2cli_query_info(
+	    cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
+	    2,				     /* in_info_type */
+	    SMB_FS_QUOTA_INFORMATION - 1000, /* in_file_info_class */
+	    0xFFFF,			     /* in_max_output_length */
+	    NULL,			     /* in_input_buffer */
+	    0,				     /* in_additional_info */
+	    0,				     /* in_flags */
+	    ph->fid_persistent, ph->fid_volatile, frame, &outbuf);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
+	}
+
+	status = parse_fs_quota_buffer(outbuf.data, outbuf.length, pqt);
+
+cleanup:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct cli_smb2_read_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
