@@ -44,6 +44,7 @@
 #include "param/param.h"
 #include "libds/common/flag_mapping.h"
 #include "system/network.h"
+#include "librpc/gen_ndr/irpc.h"
 
 struct samldb_ctx;
 enum samldb_add_type {
@@ -3380,6 +3381,58 @@ static int samldb_verify_subnet(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static char *refer_if_rodc(struct ldb_context *ldb, struct ldb_request *req,
+			   struct ldb_dn *dn)
+{
+	bool rodc = false;
+	struct loadparm_context *lp_ctx;
+	char *referral;
+	int ret;
+	WERROR err;
+
+	if (ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID) ||
+	    ldb_request_get_control(req, DSDB_CONTROL_DBCHECK_MODIFY_RO_REPLICA)) {
+		return NULL;
+	}
+
+	ret = samdb_rodc(ldb, &rodc);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
+		return NULL;
+	}
+
+	if (rodc) {
+		const char *domain = NULL;
+		struct ldb_dn *fsmo_role_dn;
+		struct ldb_dn *role_owner_dn;
+		ldb_set_errstring(ldb, "RODC modify is forbidden!");
+		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					 struct loadparm_context);
+
+		err = dsdb_get_fsmo_role_info(req, ldb, DREPL_PDC_MASTER,
+					      &fsmo_role_dn, &role_owner_dn);
+		if (W_ERROR_IS_OK(err)) {
+			struct ldb_dn *server_dn = ldb_dn_copy(req, role_owner_dn);
+			if (server_dn != NULL) {
+				ldb_dn_remove_child_components(server_dn, 1);
+
+				domain = samdb_dn_to_dnshostname(ldb, req,
+								 server_dn);
+			}
+		}
+		if (domain == NULL) {
+			domain = lpcfg_dnsdomain(lp_ctx);
+		}
+		referral = talloc_asprintf(req,
+					   "ldap://%s/%s",
+					   domain,
+					   ldb_dn_get_linearized(dn));
+		return referral;
+	}
+
+	return NULL;
+}
+
 
 /* add */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
@@ -3388,6 +3441,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	struct samldb_ctx *ac;
 	struct ldb_message_element *el;
 	int ret;
+	char *referral = NULL;
 
 	ldb = ldb_module_get_ctx(module);
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "samldb_add\n");
@@ -3395,6 +3449,12 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		return ldb_next_request(module, req);
+	}
+
+	referral = refer_if_rodc(ldb, req, req->op.add.message->dn);
+	if (referral != NULL) {
+		ret = ldb_module_send_referral(req, referral);
+		return ret;
 	}
 
 	el = ldb_msg_find_element(req->op.add.message, "userParameters");
@@ -3831,11 +3891,21 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct samldb_ctx *ac;
+	char *referral = NULL;
 	int ret;
+	struct ldb_context *ldb;
 
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		/* do not manipulate our control entries */
 		return ldb_next_request(module, req);
+	}
+
+	ldb = ldb_module_get_ctx(module);
+
+	referral = refer_if_rodc(ldb, req, req->op.del.dn);
+	if (referral != NULL) {
+		ret = ldb_module_send_referral(req, referral);
+		return ret;
 	}
 
 	ac = samldb_ctx_init(module, req);
