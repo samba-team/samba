@@ -1102,10 +1102,11 @@ bool parse_domain_user(const char *domuser, fstring domain, fstring user)
 
 	if ( !p ) {
 		fstrcpy(user, domuser);
+		p = strchr(domuser, '@');
 
-		if ( assume_domain(lp_workgroup())) {
+		if ( assume_domain(lp_workgroup()) && p == NULL) {
 			fstrcpy(domain, lp_workgroup());
-		} else if ((p = strchr(domuser, '@')) != NULL) {
+		} else if (p != NULL) {
 			fstrcpy(domain, p + 1);
 			user[PTR_DIFF(p, domuser)] = 0;
 		} else {
