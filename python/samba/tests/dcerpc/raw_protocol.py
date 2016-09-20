@@ -1920,44 +1920,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def _get_netlogon_ctx(self):
         abstract = samba.dcerpc.netlogon.abstract_syntax()
-        self.epmap_reconnect(abstract)
-
         ndr32 = base.transfer_syntax_ndr()
 
-        tsf1_list = [ndr32]
-        ctx = dcerpc.ctx_list()
-        ctx.context_id = 0
-        ctx.num_transfer_syntaxes = len(tsf1_list)
-        ctx.abstract_syntax = abstract
-        ctx.transfer_syntaxes = tsf1_list
-
-        req = self.generate_bind(call_id=0,
-                                 ctx_list=[ctx])
-        self.send_pdu(req)
-        rep = self.recv_pdu()
-        self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
-                        auth_length=0)
-        self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
-        self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertNotEquals(rep.u.assoc_group_id, req.u.assoc_group_id)
-        port_str = "%d" % self.tcp_port
-        port_len = len(port_str) + 1
-        mod_len = (2 + port_len) % 4
-        if mod_len != 0:
-            port_pad = 4 - mod_len
-        else:
-            port_pad = 0
-        self.assertEquals(rep.u.secondary_address_size, port_len)
-        self.assertEquals(rep.u.secondary_address, port_str)
-        self.assertEquals(len(rep.u._pad1), port_pad)
-        self.assertEquals(rep.u._pad1, '\0' * port_pad)
-        self.assertEquals(rep.u.num_results, 1)
-        self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
-        self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
-        self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
-        self.assertEquals(rep.u.auth_info, '\0' * 0)
+        (ctx, ack) = self.prepare_presentation(abstract, ndr32, context_id=0,
+                                               epmap=True, return_ack=True)
 
         server = '\\\\' + self.target_hostname
         server_utf16 = unicode(server, 'utf-8').encode('utf-16-le')
@@ -1975,7 +1941,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         real_stub += computer_utf16 + '\x00\x00'
         real_stub += '\x11\x22\x33\x44\x55\x66\x77\x88'
 
-        return (ctx, rep, real_stub)
+        return (ctx, ack, real_stub)
 
     def _test_fragmented_requests(self, remaining=None, alloc_hint=None,
                                   fault_first=None, fault_last=None):
