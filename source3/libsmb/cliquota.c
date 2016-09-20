@@ -168,6 +168,39 @@ NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 	return status;
 }
 
+NTSTATUS parse_fs_quota_buffer(const uint8_t *rdata,
+			       unsigned int rdata_count,
+			       SMB_NTQUOTA_STRUCT *pqt)
+{
+	SMB_NTQUOTA_STRUCT qt;
+
+	ZERO_STRUCT(qt);
+
+	if (rdata_count < 48) {
+		/* minimum length is not enforced by SMB2 client.
+		 */
+		DEBUG(1, ("small returned fs quota buffer\n"));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	/* unknown_1 24 NULL bytes in pdata*/
+
+	/* the soft quotas 8 bytes (uint64_t)*/
+	qt.softlim = BVAL(rdata, 24);
+
+	/* the hard quotas 8 bytes (uint64_t)*/
+	qt.hardlim = BVAL(rdata, 32);
+
+	/* quota_flags 2 bytes **/
+	qt.qflags = SVAL(rdata, 40);
+
+	qt.qtype = SMB_USER_FS_QUOTA_TYPE;
+
+	*pqt = qt;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt)
 {
@@ -376,10 +409,7 @@ NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
 	uint8_t param[2];
 	uint8_t *rdata=NULL;
 	uint32_t rdata_count=0;
-	SMB_NTQUOTA_STRUCT qt;
 	NTSTATUS status;
-
-	ZERO_STRUCT(qt);
 
 	if (!cli||!pqt) {
 		smb_panic("cli_get_fs_quota_info() called with NULL Pointer!");
@@ -406,20 +436,7 @@ NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
 		return status;
 	}
 
-	/* unknown_1 24 NULL bytes in pdata*/
-
-	/* the soft quotas 8 bytes (uint64_t)*/
-	qt.softlim = BVAL(rdata,24);
-
-	/* the hard quotas 8 bytes (uint64_t)*/
-	qt.hardlim = BVAL(rdata,32);
-
-	/* quota_flags 2 bytes **/
-	qt.qflags = SVAL(rdata,40);
-
-	qt.qtype = SMB_USER_FS_QUOTA_TYPE;
-
-	*pqt = qt;
+	status = parse_fs_quota_buffer(rdata, rdata_count, pqt);
 
 	TALLOC_FREE(rdata);
 	return status;
