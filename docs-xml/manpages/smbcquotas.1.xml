@@ -34,6 +34,7 @@
 		<arg choice="opt">-V</arg>
 
 		<arg choice="opt">-U username</arg>
+		<arg choice="opt">-m|--max-protocol LEVEL</arg>
 		<arg choice="opt">-N</arg>
 		<arg choice="opt">-k</arg>
 		<arg choice="opt">-A</arg>
@@ -93,6 +94,17 @@
 		<listitem><para>This option displays all QUOTA information in numeric 
 		format.  The default is to convert SIDs to names and QUOTA limits 
 		to a readable string format.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-m|--max-protocol PROTOCOL_NAME</term>
+		<listitem><para>This allows the user to select the
+		highest SMB protocol level that smbcquotas will use to
+		connect to the server. By default this is set to
+		NT1, which is the highest available SMB1 protocol.
+		To connect using SMB2 or SMB3 protocol, use the
+		strings SMB2 or SMB3 respectively.
+		</para></listitem>
 		</varlistentry>
 
 		<varlistentry>

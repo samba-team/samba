@@ -598,6 +598,8 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 		{ "numeric", 'n', POPT_ARG_NONE, NULL, 'n', "Don't resolve sids or limits to names" },
 		{ "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "be verbose" },
 		{ "test-args", 't', POPT_ARG_NONE, NULL, 't', "Test arguments"},
+		{"max-protocol", 'm', POPT_ARG_STRING, NULL, 'm',
+		 "Set the max protocol level", "LEVEL"},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		{ NULL }
@@ -678,6 +680,10 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 				exit(EXIT_PARSE_ERROR);
 			}
 			todo = SET_QUOTA;
+			break;
+		case 'm':
+			lp_set_cmdline("client max protocol",
+				       poptGetOptArg(pc));
 			break;
 		}
 	}
