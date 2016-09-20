@@ -737,7 +737,9 @@ static bool dbwrap_watched_remove_waiter(struct db_watched_subrec *subrec,
 	}
 
 	if (i == num_watchers) {
-		DBG_WARNING("Did not find id in state->watchers\n");
+		struct server_id_buf buf;
+		DBG_WARNING("Did not find %s in state->watchers\n",
+			    server_id_str_buf(id, &buf));
 		return false;
 	}
 
