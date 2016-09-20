@@ -424,7 +424,7 @@ char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 int get_safe_SVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval);
 int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, int failval);
-void split_domain_user(TALLOC_CTX *mem_ctx,
+bool split_domain_user(TALLOC_CTX *mem_ctx,
 		       const char *full_name,
 		       char **domain,
 		       char **user);

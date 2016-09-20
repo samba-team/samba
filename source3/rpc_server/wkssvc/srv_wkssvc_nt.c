@@ -825,6 +825,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	struct security_token *token = p->session_info->security_token;
 	NTSTATUS status;
 	DATA_BLOB session_key;
+	bool ok;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -863,10 +864,13 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 		return werr;
 	}
 
-	split_domain_user(p->mem_ctx,
-			  r->in.admin_account,
-			  &admin_domain,
-			  &admin_account);
+	ok = split_domain_user(p->mem_ctx,
+			       r->in.admin_account,
+			       &admin_domain,
+			       &admin_account);
+	if (!ok) {
+		return WERR_NOMEM;
+	}
 
 	werr = libnet_init_JoinCtx(p->mem_ctx, &j);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -913,6 +917,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	struct security_token *token = p->session_info->security_token;
 	NTSTATUS status;
 	DATA_BLOB session_key;
+	bool ok;
 
 	if (!r->in.account || !r->in.encrypted_password) {
 		return WERR_INVALID_PARAM;
@@ -942,10 +947,13 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 		return werr;
 	}
 
-	split_domain_user(p->mem_ctx,
-			  r->in.account,
-			  &admin_domain,
-			  &admin_account);
+	ok = split_domain_user(p->mem_ctx,
+			       r->in.account,
+			       &admin_domain,
+			       &admin_account);
+	if (!ok) {
+		return WERR_NOMEM;
+	}
 
 	werr = libnet_init_UnjoinCtx(p->mem_ctx, &u);
 	if (!W_ERROR_IS_OK(werr)) {

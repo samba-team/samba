@@ -2103,7 +2103,7 @@ int get_safe_IVAL(const char *buf_base, size_t buf_len, char *ptr, size_t off, i
  call (they take care of winbind separator and other winbind specific settings).
 ****************************************************************/
 
-void split_domain_user(TALLOC_CTX *mem_ctx,
+bool split_domain_user(TALLOC_CTX *mem_ctx,
 		       const char *full_name,
 		       char **domain,
 		       char **user)
@@ -2115,11 +2115,23 @@ void split_domain_user(TALLOC_CTX *mem_ctx,
 	if (p != NULL) {
 		*domain = talloc_strndup(mem_ctx, full_name,
 					 PTR_DIFF(p, full_name));
+		if (*domain == NULL) {
+			return false;
+		}
 		*user = talloc_strdup(mem_ctx, p+1);
+		if (*user == NULL) {
+			TALLOC_FREE(*domain);
+			return false;
+		}
 	} else {
-		*domain = talloc_strdup(mem_ctx, "");
+		*domain = NULL;
 		*user = talloc_strdup(mem_ctx, full_name);
+		if (*user == NULL) {
+			return false;
+		}
 	}
+
+	return true;
 }
 
 /****************************************************************

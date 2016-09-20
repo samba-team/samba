@@ -2131,11 +2131,21 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 	if (!r->in.admin_domain) {
 		char *admin_domain = NULL;
 		char *admin_account = NULL;
-		split_domain_user(mem_ctx,
-				  r->in.admin_account,
-				  &admin_domain,
-				  &admin_account);
-		r->in.admin_domain = admin_domain;
+		bool ok;
+
+		ok = split_domain_user(mem_ctx,
+				       r->in.admin_account,
+				       &admin_domain,
+				       &admin_account);
+		if (!ok) {
+			return WERR_NOMEM;
+		}
+
+		if (admin_domain != NULL) {
+			r->in.admin_domain = admin_domain;
+		} else {
+			r->in.admin_domain = r->in.domain_name;
+		}
 		r->in.admin_account = admin_account;
 	}
 
@@ -2814,11 +2824,21 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	if (!r->in.admin_domain) {
 		char *admin_domain = NULL;
 		char *admin_account = NULL;
-		split_domain_user(mem_ctx,
-				  r->in.admin_account,
-				  &admin_domain,
-				  &admin_account);
-		r->in.admin_domain = admin_domain;
+		bool ok;
+
+		ok = split_domain_user(mem_ctx,
+				       r->in.admin_account,
+				       &admin_domain,
+				       &admin_account);
+		if (!ok) {
+			return WERR_NOMEM;
+		}
+
+		if (admin_domain != NULL) {
+			r->in.admin_domain = admin_domain;
+		} else {
+			r->in.admin_domain = r->in.domain_name;
+		}
 		r->in.admin_account = admin_account;
 	}
 
