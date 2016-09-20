@@ -107,6 +107,13 @@ bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     spoolss/srv_spoolss_util.c''',
                     deps='PRINTING PRINTBACKEND LIBCLI_WINREG_INTERNAL')
 
+bld.SAMBA3_SUBSYSTEM('RPC_IREMOTEWINSPOOL',
+                    source='''
+                    spoolss/srv_iremotewinspool_nt.c
+                    ../../librpc/gen_ndr/srv_winspool.c
+                    ''',
+                    deps='RPC_SPOOLSS')
+
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
                     source='''srvsvc/srv_srvsvc_nt.c
                     ../../librpc/gen_ndr/srv_srvsvc.c''',
@@ -167,6 +174,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
                     RPC_NETDFS
                     RPC_SRVSVC
                     RPC_SPOOLSS
+                    RPC_IREMOTEWINSPOOL
                     RPC_EVENTLOG
                     RPC_RPCECHO
                     RPC_SERVER
