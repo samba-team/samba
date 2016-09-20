@@ -31,6 +31,53 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
 
+static NTSTATUS fsctl_dup_extents_check_overlap(struct files_struct *src_fsp,
+						struct files_struct *dst_fsp,
+				struct fsctl_dup_extents_to_file *dup_extents)
+{
+	uint64_t src_off_last;
+	uint64_t tgt_off_last;
+
+	if (!file_id_equal(&src_fsp->file_id, &dst_fsp->file_id)) {
+		/* src and dest refer to different files */
+		return NT_STATUS_OK;
+	}
+
+	if (dup_extents->byte_count == 0) {
+		/* no range to overlap */
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * [MS-FSCC] 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE Reply
+	 * STATUS_NOT_SUPPORTED:
+	 * The source and target destination ranges overlap on the same file.
+	 */
+
+	src_off_last = dup_extents->source_off + dup_extents->byte_count - 1;
+	if ((dup_extents->target_off >= dup_extents->source_off)
+				&& (dup_extents->target_off <= src_off_last)) {
+		/*
+		 * src: |-----------|
+		 * tgt:       |-----------|
+		 */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+
+	tgt_off_last = dup_extents->target_off + dup_extents->byte_count - 1;
+	if ((tgt_off_last >= dup_extents->source_off)
+					&& (tgt_off_last <= src_off_last)) {
+		/*
+		 * src:       |-----------|
+		 * tgt: |-----------|
+		 */
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct fsctl_dup_extents_state {
 	struct tevent_context *ev;
 	struct connection_struct *conn;
@@ -52,6 +99,7 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 	uint64_t src_fid_volatile = 0;
 	struct files_struct *src_fsp = NULL;
 	int ndr_ret;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct fsctl_dup_extents_state);
@@ -105,6 +153,13 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 	if (state->dup_extents.byte_count == 0) {
 		DBG_ERR("skipping zero length dup extents\n");
 		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	status = fsctl_dup_extents_check_overlap(src_fsp, dst_fsp,
+						 &state->dup_extents);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
