@@ -261,6 +261,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 	ip = lookup_byname_backend(name);
 	if (ip == NULL) {
 		*errnop = EINVAL;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_NOTFOUND;
 		goto out;
 	}
@@ -269,6 +270,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 	wbcFreeMemory(ip);
 	if (rc == 0) {
 		*errnop = errno;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -279,6 +281,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 
 	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL) {
 		*errnop = EAGAIN;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -292,6 +295,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 
 	if (get_static(&buffer, &buflen, i) == NULL) {
 		*errnop = EAGAIN;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -299,6 +303,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 	if ((he->h_addr_list = (char **)get_static(
 		     &buffer, &buflen, 2 * sizeof(char *))) == NULL) {
 		*errnop = EAGAIN;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -306,6 +311,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 	if ((he->h_addr_list[0] = get_static(&buffer, &buflen,
 					     INADDRSZ)) == NULL) {
 		*errnop = EAGAIN;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -326,6 +332,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 
 	if (get_static(&buffer, &buflen, i) == NULL) {
 		*errnop = EAGAIN;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
@@ -333,12 +340,14 @@ _nss_wins_gethostbyname_r(const char *hostname,
 	if ((he->h_aliases = (char **)get_static(
 		     &buffer, &buflen, sizeof(char *))) == NULL) {
 		*errnop = EAGAIN;
+		*h_errnop = NETDB_INTERNAL;
 		nss_status = NSS_STATUS_TRYAGAIN;
 		goto out;
 	}
 
 	he->h_aliases[0] = NULL;
 
+	*h_errnop = NETDB_SUCCESS;
 	nss_status = NSS_STATUS_SUCCESS;
 
   out:
