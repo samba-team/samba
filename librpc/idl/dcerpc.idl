@@ -217,11 +217,15 @@ interface dcerpc
 	   to see what fault w2k3 returns in this case */
 	const int DCERPC_FAULT_TODO         = 0x00000042;
 
+	typedef [bitmap8bit] bitmap {
+		DCERPC_FAULT_FLAG_EXTENDED_ERROR_INFORMATION = 0x01
+	} dcerpc_fault_flags;
+
 	typedef struct {
 		uint32 alloc_hint;
 		uint16 context_id;
 		uint8 cancel_count;
-		uint8 flags;
+		dcerpc_fault_flags flags;
 		dcerpc_nca_status status;
 		[value(0)] uint32 reserved;
 		[flag(NDR_REMAINING)] DATA_BLOB error_and_verifier;
