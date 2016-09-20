@@ -15,6 +15,12 @@ EXPECTED_ETYPES="$6"
 # Load test functions
 . `dirname $0`/subunit.sh
 
+KRB5CCNAME_PATH="$PREFIX/test_client_etypes_krb5ccname"
+rm -f $KRB5CCNAME_PATH
+
+KRB5CCNAME="FILE:$KRB5CCNAME_PATH"
+export KRB5CCNAME
+
 #requires tshark and sha1sum
 if ! which tshark > /dev/null 2>&1 || ! which sha1sum > /dev/null 2>&1 ; then
     subunit_start_test "client encryption types"
@@ -71,5 +77,7 @@ actual_types="`tshark -r $pcap_file  -nVY "kerberos" | \
 testit "verify types" test "x$actual_types" = "x$EXPECTED_ETYPES" || failed=`expr $failed + 1`
 
 rm -rf $BASEDIR/$WORKDIR
+rm -f $KRB5CCNAME_PATH
+
 
 exit $failed
