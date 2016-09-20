@@ -89,8 +89,7 @@ interface copychunk
 	} fsctl_offload_write_output;
 
 	typedef [public] struct {
-		/* The FileHandle field is the volatile part of the fileid */
-		hyper fid_volatile;
+		uint8 source_fid[16];
 		hyper source_off;
 		hyper target_off;
 		hyper byte_count;
