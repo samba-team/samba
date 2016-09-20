@@ -121,6 +121,7 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli,
 			uint64_t *bsize,
 			uint64_t *total,
 			uint64_t *avail);
+NTSTATUS cli_smb2_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr);
 NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
 			uint16_t fnum,
 			uint32_t sec_info,

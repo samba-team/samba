@@ -337,6 +337,10 @@ NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_get_fs_attr_info(cli, fs_attr);
+	}
+
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
