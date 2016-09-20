@@ -112,6 +112,32 @@ uint32_t ndr_cab_generate_checksum(const struct CFDATA *r)
 					csumPartial);
 }
 
+static uint32_t ndr_size_cab_file(const struct cab_file *r)
+{
+	uint32_t size = 0;
+	int i;
+
+	/* header */
+	size += 36;
+
+	/* folder */
+	for (i = 0; i < r->cfheader.cFolders; i++) {
+		size += 8;
+	}
+
+	/* files */
+	for (i = 0; i < r->cfheader.cFiles; i++) {
+		size += ndr_size_CFFILE(&r->cffiles[i], 0);
+	}
+
+	/* data */
+	for (i = 0; i < ndr_count_cfdata(r); i++) {
+		size += 8 + r->cfdata[i].cbData;
+	}
+
+	return size;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags, const struct cab_file *r)
 {
 	uint32_t cntr_cffolders_0;
@@ -142,6 +168,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags
 		}
 		ndr->flags = _flags_save_STRUCT;
 	}
+
+	SIVAL(ndr->data, 8, ndr_size_cab_file(r));
+
 	return NDR_ERR_SUCCESS;
 }
 
