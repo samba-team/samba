@@ -215,13 +215,16 @@ def env_loadparm():
     return lp
 
 
-def env_get_var_value(var_name):
+def env_get_var_value(var_name, allow_missing=False):
     """Returns value for variable in os.environ
 
     Function throws AssertionError if variable is defined.
     Unit-test based python tests require certain input params
     to be set in environment, otherwise they can't be run
     """
+    if allow_missing:
+        if var_name not in os.environ.keys():
+            return None
     assert var_name in os.environ.keys(), "Please supply %s in environment" % var_name
     return os.environ[var_name]
 
@@ -267,11 +270,14 @@ class RawDCERPCTest(TestCase):
         self.do_hexdump = False
 
         self.host = samba.tests.env_get_var_value('SERVER')
+        self.target_hostname = samba.tests.env_get_var_value('TARGET_HOSTNAME', allow_missing=True)
+        if self.target_hostname is None:
+            self.target_hostname = self.host
         self.tcp_port = 135
 
         self.settings = {}
         self.settings["lp_ctx"] = self.lp_ctx = samba.tests.env_loadparm()
-        self.settings["target_hostname"] = self.host
+        self.settings["target_hostname"] = self.target_hostname
 
         self.connect()
 

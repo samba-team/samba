@@ -1959,7 +1959,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ndr32)
         self.assertEquals(rep.u.auth_info, '\0' * 0)
 
-        server = '\\\\' + self.host
+        server = '\\\\' + self.target_hostname
         server_utf16 = unicode(server, 'utf-8').encode('utf-16-le')
         computer = 'UNKNOWNCOMPUTER'
         computer_utf16 = unicode(computer, 'utf-8').encode('utf-16-le')
