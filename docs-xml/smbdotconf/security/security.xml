@@ -80,17 +80,6 @@
     <para>See also the <smbconfoption name="password server"/> parameter and
 	 the <smbconfoption name="encrypted passwords"/> parameter.</para>
 
-
-    <para><emphasis>Note</emphasis> that the name of the resource being 
-    requested is <emphasis>not</emphasis> sent to the server until after 
-    the server has successfully authenticated the client. This is why 
-    guest shares don't work in user level security without allowing 
-    the server to automatically map unknown users into the <smbconfoption name="guest account"/>. 
-    See the <smbconfoption name="map to guest"/> parameter for details on doing this.</para>
-
-    <para>See also the <smbconfoption name="password server"/> parameter and the 
-	<smbconfoption name="encrypted passwords"/> parameter.</para>
-
 	<para><anchor id="SECURITYEQUALSADS"/><emphasis>SECURITY = ADS</emphasis></para>
 	
 	<para>In this mode, Samba will act as a domain member in an ADS realm. To operate 
