@@ -31,6 +31,21 @@ config_from_environment ()
 	sed -e 's@=\([^"]\)@="\1@' -e 's@[^"]$@&"@' -e 's@="$@&"@'
 }
 
+# If the given IP is hosted then print 2 items: maskbits and iface
+have_ip ()
+{
+	local addr="$1"
+	local bits t
+
+	case "$addr" in
+	*:*) bits=128 ;;
+	*)   bits=32  ;;
+	esac
+
+	t=$(ip addr show to "${addr}/${bits}")
+	[ -n "$t" ]
+}
+
 setup_ctdb ()
 {
     mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
@@ -53,13 +68,19 @@ setup_ctdb ()
     mkdir -p "${TEST_VAR_DIR}/events.d"
     cp -p "${events_d}/"* "${TEST_VAR_DIR}/events.d/"
 
+    local have_all_ips=true
     local i
     for i in $(seq 1 $TEST_LOCAL_DAEMONS) ; do
-	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
-	    j=$(printf "%02x" $i)
-	    echo "fd00::5357:5f${j}" >>"$CTDB_NODES"
-	    # FIXME: need to add addresses to lo as root before running :-(
-	    # ip addr add "fc00:10::${i}/64" dev lo
+	if [ -n "$CTDB_USE_IPV6" ]; then
+	    local j=$(printf "%02x" $i)
+	    local node_ip="fd00::5357:5f${j}"
+	    if have_ip "$node_ip" ; then
+		echo "$node_ip" >>"$CTDB_NODES"
+	    else
+		echo "ERROR: ${node_ip} not on an interface, please add it"
+		have_all_ips=false
+	    fi
+
 	    # 2 public addresses on most nodes, just to make things interesting.
 	    if [ $(($i - 1)) -ne $no_public_ips ] ; then
 		echo "fc00:10::1:${i}/64 lo" >>"$public_addresses_all"
@@ -75,6 +96,10 @@ setup_ctdb ()
 	    fi
 	fi
     done
+
+    if ! $have_all_ips ; then
+	    return 1
+    fi
 
     local pnn
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
