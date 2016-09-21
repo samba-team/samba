@@ -90,4 +90,31 @@ NTSTATUS tstream_read_pdu_blob_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    DATA_BLOB *pdu_blob);
 
+/**
+ * @brief Get a PDU size with a 32 bit size header field
+ *
+ * Work out if a packet is complete for protocols that use a 32 bit
+ * network byte order length.
+ *
+ * @see tstream_read_pdu_blob_send()
+ * @see tstream_read_pdu_blob_recv()
+ */
+NTSTATUS tstream_full_request_u32(struct tstream_context *stream,
+				  void *private_data,
+				  DATA_BLOB blob, size_t *size);
+
+/**
+ * @brief Get a PDU size with a 16 bit size header field
+ *
+ * Work out if a packet is complete for protocols that use a 16 bit
+ * network byte order length.
+ *
+ * @see tstream_read_pdu_blob_send()
+ * @see tstream_read_pdu_blob_recv()
+ */
+NTSTATUS tstream_full_request_u16(struct tstream_context *stream,
+				  void *private_data,
+				  DATA_BLOB blob, size_t *size);
+
+
 #endif /* _LIBCLI_UTIL_TSTREAM_H_ */
