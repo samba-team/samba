@@ -612,15 +612,3 @@ _PUBLIC_ NTSTATUS packet_full_request_u32(void *private_data, DATA_BLOB blob, si
 	}
 	return NT_STATUS_OK;
 }
-
-_PUBLIC_ NTSTATUS packet_full_request_u16(void *private_data, DATA_BLOB blob, size_t *size)
-{
-	if (blob.length < 2) {
-		return STATUS_MORE_ENTRIES;
-	}
-	*size = 2 + RSVAL(blob.data, 0);
-	if (*size > blob.length) {
-		return STATUS_MORE_ENTRIES;
-	}
-	return NT_STATUS_OK;
-}

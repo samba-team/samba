@@ -61,6 +61,5 @@ void packet_queue_run(struct packet_context *pc);
 */
 NTSTATUS packet_full_request_nbt(void *private_data, DATA_BLOB blob, size_t *size);
 NTSTATUS packet_full_request_u32(void *private_data, DATA_BLOB blob, size_t *size);
-NTSTATUS packet_full_request_u16(void *private_data, DATA_BLOB blob, size_t *size);
 
 
