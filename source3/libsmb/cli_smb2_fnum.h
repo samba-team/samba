@@ -163,6 +163,9 @@ NTSTATUS cli_smb2_get_fs_quota_info(struct cli_state *cli,
 NTSTATUS cli_smb2_set_user_quota(struct cli_state *cli,
 				 int quota_fnum,
 				 SMB_NTQUOTA_LIST *qtl);
+NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
+				    int quota_fnum,
+				    SMB_NTQUOTA_STRUCT *pqt);
 struct tevent_req *cli_smb2_read_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,

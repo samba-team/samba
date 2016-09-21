@@ -2608,6 +2608,50 @@ cleanup:
 	return status;
 }
 
+NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
+				    int quota_fnum,
+				    SMB_NTQUOTA_STRUCT *pqt)
+{
+	NTSTATUS status;
+	DATA_BLOB inbuf = data_blob_null;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto cleanup;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, quota_fnum, &ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
+	}
+
+	status = build_fs_quota_buffer(talloc_tos(), pqt, &inbuf, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = smb2cli_set_info(
+	    cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
+	    2,				     /* in_info_type */
+	    SMB_FS_QUOTA_INFORMATION - 1000, /* in_file_info_class */
+	    &inbuf,			     /* in_input_buffer */
+	    0,				     /* in_additional_info */
+	    ph->fid_persistent, ph->fid_volatile);
+cleanup:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct cli_smb2_read_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
