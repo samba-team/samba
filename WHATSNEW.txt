@@ -1,4 +1,151 @@
                    =============================
+                   Release Notes for Samba 4.4.6
+                        September 22, 2016
+                   =============================
+
+
+This is the latest stable release of Samba 4.4.
+
+
+Changes since 4.4.5:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 11977: libnet: Ignore realm setting for domain security joins to AD
+     domains if 'winbind rpc only = true'.
+   * BUG 12155: idmap: Centrally check that unix IDs returned by the idmap
+     backends are in range.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11838:  s4: ldb: Ignore case of "range" in sscanf as we've already
+     checked for its presence.
+   * BUG 11845: Incorrect bytecount in ReadAndX smb1 response.
+   * BUG 11955: lib: Fix uninitialized read in msghdr_copy.
+   * BUG 11959: s3: krb5: keytab - The done label can be jumped to with context
+     == NULL.
+   * BUG 11986: s3: libsmb: Correctly trim a trailing \\ character in
+     cli_smb2_create_fnum_send() when passing a pathname to SMB2 create.
+   * BUG 12021: Fix smbd crash (Signal 4) on File Delete.
+   * BUG 12135: libgpo: Correctly use the 'server' parameter after parsing it
+     out of the GPO path.
+   * BUG 12139: s3: oplock: Fix race condition when closing an oplocked file.
+   * BUG 12272: Fix messaging subsystem crash.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 11750: gcc6 fails to build internal heimdal.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 11991: build: Build less of Samba when building
+     '--without-ntvfs-fileserver'.
+   * BUG 12026: build: Always build eventlog6. This is not a duplicate of
+     eventlog.
+   * BUG 12154: ldb-samba: Add "secret" as a value to hide in LDIF files.
+   * BUG 12178: dbcheck: Abandon dbcheck if we get an error during a
+     transaction.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 10008: dbwrap_ctdb: Treat empty records in ltdb as non-existing.
+   * BUG 11520: Fix DNS secure updates.
+   * BUG 11961: idmap_autorid allocates ids for unknown SIDs from other
+     backends.
+   * BUG 11992: s3/smbd: Only use stored dos attributes for
+     open_match_attributes() check.
+   * BUG 12005: smbd: Ignore ctdb tombstone records in
+     fetch_share_mode_unlocked_parser().
+   * BUG 12016: cleanupd terminates main smbd on exit.
+   * BUG 12028: vfs_acl_xattr: Objects without NT ACL xattr.
+   * BUG 12105: async_req: Make async_connect_send() "reentrant".
+   * BUG 12177: vfs_acl_common: Fix unexpected synthesized default ACL from
+     vfs_acl_xattr.
+   * BUG 12181: vfs_acl_xattr|tdb: Enforced settings when
+     "ignore system acls = yes".
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 11975: libnet_join: use sitename if it was set by pre-join detection.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11977: s3-libnet: Print error string even on successful completion of
+     libnetjoin.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 11940: CTDB fails to recover large database.
+   * BUG 11941: CTDB does not ban misbehaving nodes during recovery.
+   * BUG 11946: Samba and CTDB packages both have tevent-unix-util dependency.
+   * BUG 11956: ctdb-recoverd: Avoid duplicate recoverd event in parallel
+     recovery.
+   * BUG 12158: CTDB release IP fixes.
+   * BUG 12259: ctdb-protocol: Fix marshalling for GET_DB_SEQNUM control
+     request.
+   * BUG 12271: CTDB recovery does not terminate if no node is banned due to
+     failure.
+   * BUG 12275: ctdb-recovery-helper: Add missing initialisation of ban_credits.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12268: smbd: Reset O_NONBLOCK on open files.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 11948: dcerpc.idl: Remove unused DCERPC_NCACN_PAYLOAD_MAX_SIZE.
+   * BUG 11982: Invalid auth_pad_length is not ignored for BIND_* and ALTER_*
+     pdus.
+   * BUG 11994: gensec/spnego: Work around missing server mechListMIC in SMB
+     servers.
+   * BUG 12007: libads: Ensure the right ccache is used during spnego bind.
+   * BUG 12018: python/remove_dc: Handle dnsNode objects without dnsRecord
+     attribute.
+   * BUG 12129: samba-tool/ldapcmp: Ignore differences of whenChanged.
+
+o  Marc Muehlfeld <mmuehlfeld@samba.org>
+   * BUG 12023: man: Wrong option for parameter ldap ssl in smb.conf man page.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 11936: libutil: Support systemd 230.
+   * BUG 11999: s3-winbind: Fix memory leak with each cached credential login.
+   * BUG 12104: ctdb-waf: Move ctdb tests to libexec directory.
+   * BUG 12175: s3-util: Fix asking for username and password in smbget.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12104: ctdb-packaging: Move ctdb tests to libexec directory.
+   * BUG 12110: ctdb-daemon: Fix several Coverity IDs.
+   * BUG 12158: CTDB release IP fixes.
+   * BUG 12161: Fix CTDB cumulative takeover timeout.
+   * BUG 12180: Fix CTDB crashes running eventscripts.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12006: auth: Fix a memory leak in gssapi_get_session_key().
+   * BUG 12145: smbd: If inherit owner is enabled, the free disk on a folder
+     should take the owner's quota into account.
+   * BUG 12149: smbd: Allow reading files based on FILE_EXECUTE access right.
+   * BUG 12172: Fix access of snapshot folders via SMB1.
+
+o  Lorinczy Zsigmond <lzsiga@freemail.c3.hu>
+   * BUG 11947: lib: replace: snprintf: Fix length calculation for hex/octal
+     64-bit values.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.4.5
                            July 7, 2016
                    =============================
@@ -68,8 +215,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.4.4
