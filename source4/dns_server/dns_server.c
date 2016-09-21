@@ -374,13 +374,13 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 
 	/*
 	 * The dns tcp pdu's has the length as 2 byte (initial_read_size),
-	 * packet_full_request_u16 provides the pdu length then.
+	 * tstream_full_request_u16 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(dns_conn,
 					    dns_conn->conn->event.ctx,
 					    dns_conn->tstream,
 					    2, /* initial_read_size */
-					    packet_full_request_u16,
+					    tstream_full_request_u16,
 					    dns_conn);
 	if (subreq == NULL) {
 		dns_tcp_terminate_connection(dns_conn, "dns_tcp_call_loop: "
@@ -500,13 +500,13 @@ static void dns_tcp_accept(struct stream_connection *conn)
 
 	/*
 	 * The dns tcp pdu's has the length as 2 byte (initial_read_size),
-	 * packet_full_request_u16 provides the pdu length then.
+	 * tstream_full_request_u16 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(dns_conn,
 					    dns_conn->conn->event.ctx,
 					    dns_conn->tstream,
 					    2, /* initial_read_size */
-					    packet_full_request_u16,
+					    tstream_full_request_u16,
 					    dns_conn);
 	if (subreq == NULL) {
 		dns_tcp_terminate_connection(dns_conn, "dns_tcp_accept: "

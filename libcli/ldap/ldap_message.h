@@ -218,6 +218,7 @@ struct ldap_request_limits {
 };
 
 struct asn1_data;
+struct tstream_context;
 
 struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
 NTSTATUS ldap_decode(struct asn1_data *data,
@@ -227,7 +228,10 @@ NTSTATUS ldap_decode(struct asn1_data *data,
 bool ldap_encode(struct ldap_message *msg,
 		 const struct ldap_control_handler *control_handlers,
 		 DATA_BLOB *result, TALLOC_CTX *mem_ctx);
-NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size);
+NTSTATUS ldap_full_packet(struct tstream_context *stream,
+			  void *private_data,
+			  DATA_BLOB blob,
+			  size_t *packet_size);
 
 bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 				  struct asn1_data *data,

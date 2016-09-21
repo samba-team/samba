@@ -398,13 +398,13 @@ static void ntp_signd_call_loop(struct tevent_req *subreq)
 
 	/*
 	 * The NTP tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * tstream_full_request_u32 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(ntp_signd_conn,
 					    ntp_signd_conn->conn->event.ctx,
 					    ntp_signd_conn->tstream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    ntp_signd_conn);
 	if (subreq == NULL) {
 		ntp_signd_terminate_connection(ntp_signd_conn, "ntp_signd_call_loop: "
@@ -488,13 +488,13 @@ static void ntp_signd_accept(struct stream_connection *conn)
 
 	/*
 	 * The NTP tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * tstream_full_request_u32 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(ntp_signd_conn,
 					    ntp_signd_conn->conn->event.ctx,
 					    ntp_signd_conn->tstream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    ntp_signd_conn);
 	if (subreq == NULL) {
 		ntp_signd_terminate_connection(ntp_signd_conn,

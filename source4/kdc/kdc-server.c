@@ -349,13 +349,13 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 
 	/*
 	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * tstream_full_request_u32 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(kdc_conn,
 					    kdc_conn->conn->event.ctx,
 					    kdc_conn->tstream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    kdc_conn);
 	if (subreq == NULL) {
 		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
@@ -416,13 +416,13 @@ static void kdc_tcp_call_proxy_done(struct tevent_req *subreq)
 
 	/*
 	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * tstream_full_request_u32 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(kdc_conn,
 					    kdc_conn->conn->event.ctx,
 					    kdc_conn->tstream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    kdc_conn);
 	if (subreq == NULL) {
 		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_proxy_done: "
@@ -505,13 +505,13 @@ static void kdc_tcp_accept(struct stream_connection *conn)
 
 	/*
 	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
-	 * packet_full_request_u32 provides the pdu length then.
+	 * tstream_full_request_u32 provides the pdu length then.
 	 */
 	subreq = tstream_read_pdu_blob_send(kdc_conn,
 					    kdc_conn->conn->event.ctx,
 					    kdc_conn->tstream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    kdc_conn);
 	if (subreq == NULL) {
 		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_accept: "

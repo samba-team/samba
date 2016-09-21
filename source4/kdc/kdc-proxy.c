@@ -516,7 +516,7 @@ static void kdc_tcp_proxy_connect_done(struct tevent_req *subreq)
 					    state->ev,
 					    state->proxy.stream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    req);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

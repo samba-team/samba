@@ -111,7 +111,8 @@ static void tstream_read_pdu_blob_done(struct tevent_req *subreq)
 		return;
 	}
 
-	status = state->caller.full_fn(state->caller.full_private,
+	status = state->caller.full_fn(state->caller.stream,
+				       state->caller.full_private,
 				       state->pdu_blob, &pdu_size);
 	if (NT_STATUS_IS_OK(status)) {
 		tevent_req_done(req);

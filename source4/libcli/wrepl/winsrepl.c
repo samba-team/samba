@@ -476,7 +476,7 @@ static void wrepl_request_writev_done(struct tevent_req *subreq)
 					    state->caller.ev,
 					    state->caller.wrepl_socket->stream,
 					    4, /* initial_read_size */
-					    packet_full_request_u32,
+					    tstream_full_request_u32,
 					    NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

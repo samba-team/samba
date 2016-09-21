@@ -449,6 +449,7 @@ static void ldapsrv_accept_tls_done(struct tevent_req *subreq)
 
 static void ldapsrv_call_read_done(struct tevent_req *subreq);
 static NTSTATUS ldapsrv_packet_check(
+	struct tstream_context *stream,
 	void *private_data,
 	DATA_BLOB blob,
 	size_t *packet_size);
@@ -1660,6 +1661,7 @@ static int ldapsrv_check_packet_size(
  *
  */
 static NTSTATUS ldapsrv_packet_check(
+	struct tstream_context *stream,
 	void *private_data,
 	DATA_BLOB blob,
 	size_t *packet_size)
@@ -1668,7 +1670,7 @@ static NTSTATUS ldapsrv_packet_check(
 	struct ldapsrv_connection *conn = private_data;
 	int result = LDB_SUCCESS;
 
-	ret = ldap_full_packet(private_data, blob, packet_size);
+	ret = ldap_full_packet(stream, private_data, blob, packet_size);
 	if (!NT_STATUS_IS_OK(ret)) {
 		return ret;
 	}

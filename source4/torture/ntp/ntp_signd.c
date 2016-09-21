@@ -226,7 +226,7 @@ static bool test_ntp_signd(struct torture_context *tctx,
 					 tctx->ev,
 					 signd_client->tstream,
 					 4, /*initial_read_size */
-					 packet_full_request_u32,
+					 tstream_full_request_u32,
 					 NULL);
 	torture_assert(tctx, req != NULL,
 		       "Failed to setup a read for pdu_blob.");

@@ -23,6 +23,8 @@
 /**
  * @brief The function which will report the size of the full pdu.
  *
+ * @param[in]  stream   The tstream_context to operate on
+ *
  * @param[in]  private_data Some private data which could be used.
  *
  * @param[in]  blob     The received blob to get the size from.
@@ -32,7 +34,8 @@
  * @return              NT_STATUS_OK on success, STATUS_MORE_ENTRIES if there
  *                      are more entries.
  */
-typedef NTSTATUS tstream_read_pdu_blob_full_fn_t(void *private_data,
+typedef NTSTATUS tstream_read_pdu_blob_full_fn_t(struct tstream_context *stream,
+						 void *private_data,
 						 DATA_BLOB blob,
 						 size_t *packet_size);
 

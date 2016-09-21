@@ -1650,7 +1650,10 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
   return NT_STATUS_OK if a blob has enough bytes in it to be a full
   ldap packet. Set packet_size if true.
 */
-NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size)
+NTSTATUS ldap_full_packet(struct tstream_context *stream,
+			  void *private_data,
+			  DATA_BLOB blob,
+			  size_t *packet_size)
 {
 	int ret;
 
