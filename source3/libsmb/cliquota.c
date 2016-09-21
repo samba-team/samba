@@ -397,6 +397,10 @@ cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST *qtl)
 		smb_panic("cli_set_user_quota() called with NULL Pointer!");
 	}
 
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		return cli_smb2_set_user_quota(cli, quota_fnum, qtl);
+	}
+
 	status = build_user_quota_buffer(qtl, 0, talloc_tos(), &data, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
