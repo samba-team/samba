@@ -47,6 +47,29 @@ void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 	return;	
 }
 
+bool add_record_to_ntquota_list(TALLOC_CTX *mem_ctx,
+				SMB_NTQUOTA_STRUCT *pqt,
+				SMB_NTQUOTA_LIST **pqt_list)
+{
+	SMB_NTQUOTA_LIST *tmp_list_ent;
+
+	if ((tmp_list_ent = talloc_zero(mem_ctx, SMB_NTQUOTA_LIST)) == NULL) {
+		return false;
+	}
+
+	if ((tmp_list_ent->quotas = talloc_zero(mem_ctx, SMB_NTQUOTA_STRUCT)) ==
+	    NULL) {
+		return false;
+	}
+
+	*tmp_list_ent->quotas = *pqt;
+	tmp_list_ent->mem_ctx = mem_ctx;
+
+	DLIST_ADD((*pqt_list), tmp_list_ent);
+
+	return true;
+}
+
 bool parse_user_quota_record(const uint8_t *rdata,
 			     unsigned int rdata_count,
 			     unsigned int *offset,
@@ -117,7 +140,6 @@ NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 	NTSTATUS status = NT_STATUS_OK;
 	unsigned offset;
 	SMB_NTQUOTA_STRUCT qt;
-	SMB_NTQUOTA_LIST *tmp_list_ent;
 
 	while (true) {
 		ZERO_STRUCT(qt);
@@ -128,23 +150,6 @@ NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 			break;
 		}
 
-		if ((tmp_list_ent = talloc_zero(mem_ctx, SMB_NTQUOTA_LIST)) ==
-		    NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			break;
-		}
-
-		if ((tmp_list_ent->quotas =
-			 talloc_zero(mem_ctx, SMB_NTQUOTA_STRUCT)) == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			break;
-		}
-
-		memcpy(tmp_list_ent->quotas, &qt, sizeof(qt));
-		tmp_list_ent->mem_ctx = mem_ctx;
-
-		DLIST_ADD((*pqt_list), tmp_list_ent);
-
 		if (offset > curdata_count) {
 			DEBUG(1, ("out of bounds offset in quota record\n"));
 			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -154,6 +159,11 @@ NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 		if (curdata + offset < curdata) {
 			DEBUG(1, ("Pointer overflow in quota record\n"));
 			status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+			break;
+		}
+
+		if (!add_record_to_ntquota_list(mem_ctx, &qt, pqt_list)) {
+			status = NT_STATUS_NO_MEMORY;
 			break;
 		}
 
@@ -199,6 +209,119 @@ NTSTATUS parse_fs_quota_buffer(const uint8_t *rdata,
 	*pqt = qt;
 
 	return NT_STATUS_OK;
+}
+
+NTSTATUS build_user_quota_buffer(SMB_NTQUOTA_LIST *qt_list,
+				 uint32_t maxlen,
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *outbuf,
+				 SMB_NTQUOTA_LIST **end_ptr)
+{
+	uint32_t qt_len = 0;
+	uint8_t *entry;
+	uint32_t entry_len;
+	int sid_len;
+	SMB_NTQUOTA_LIST *qtl;
+	DATA_BLOB qbuf = data_blob_null;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	if (qt_list == NULL) {
+		status = NT_STATUS_OK;
+		*outbuf = data_blob_null;
+		if (end_ptr) {
+			*end_ptr = NULL;
+		}
+		return NT_STATUS_OK;
+	}
+
+	for (qtl = qt_list; qtl != NULL; qtl = qtl->next) {
+
+		sid_len = ndr_size_dom_sid(&qtl->quotas->sid, 0);
+		if (47 + sid_len < 47) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+		entry_len = 40 + sid_len;
+		entry_len = ((entry_len + 7) / 8) * 8;
+
+		if (qt_len + entry_len < qt_len) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+		qt_len += entry_len;
+	}
+
+	if (maxlen > 0 && qt_len > maxlen) {
+		qt_len = maxlen;
+	}
+
+	qbuf = data_blob_talloc_zero(mem_ctx, qt_len);
+	if (qbuf.data == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	for (qt_len = 0, entry = qbuf.data; qt_list != NULL;
+	     qt_list = qt_list->next, qt_len += entry_len, entry += entry_len) {
+
+		sid_len = ndr_size_dom_sid(&qt_list->quotas->sid, 0);
+		entry_len = 40 + sid_len;
+		entry_len = ((entry_len + 7) / 8) * 8;
+
+		if (qt_len + entry_len > qbuf.length) {
+			/* check for not-enough room even for a single
+			 * entry
+			 */
+			if (qt_len == 0) {
+				status = NT_STATUS_BUFFER_TOO_SMALL;
+				goto fail;
+			}
+
+			break;
+		}
+
+		/* nextoffset entry 4 bytes */
+		SIVAL(entry, 0, entry_len);
+
+		/* then the len of the SID 4 bytes */
+		SIVAL(entry, 4, sid_len);
+
+		/* NTTIME of last record change */
+		SBIG_UINT(entry, 8, (uint64_t)0);
+
+		/* the used disk space 8 bytes uint64_t */
+		SBIG_UINT(entry, 16, qt_list->quotas->usedspace);
+
+		/* the soft quotas 8 bytes uint64_t */
+		SBIG_UINT(entry, 24, qt_list->quotas->softlim);
+
+		/* the hard quotas 8 bytes uint64_t */
+		SBIG_UINT(entry, 32, qt_list->quotas->hardlim);
+
+		/* and now the SID */
+		sid_linearize((uint8_t *)(entry + 40), sid_len,
+			      &qt_list->quotas->sid);
+	}
+
+	/* overwrite the offset of the last entry */
+	SIVAL(entry - entry_len, 0, 0);
+
+	/*potentially shrink the buffer if max was given
+	 * and we haven't quite reached the max
+	 */
+	qbuf.length = qt_len;
+	*outbuf = qbuf;
+	qbuf = data_blob_null;
+	status = NT_STATUS_OK;
+
+	if (end_ptr) {
+		*end_ptr = qt_list;
+	}
+
+fail:
+	data_blob_free(&qbuf);
+
+	return status;
 }
 
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
@@ -262,40 +385,33 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 	return status;
 }
 
-NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
-			    SMB_NTQUOTA_STRUCT *pqt)
+NTSTATUS
+cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST *qtl)
 {
 	uint16_t setup[1];
 	uint8_t params[2];
-	uint8_t data[112];
-	unsigned int sid_len;	
-	NTSTATUS status;
+	DATA_BLOB data = data_blob_null;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
-	memset(data,'\0',112);
-
-	if (!cli||!pqt) {
+	if (!cli || !qtl) {
 		smb_panic("cli_set_user_quota() called with NULL Pointer!");
+	}
+
+	status = build_user_quota_buffer(qtl, 0, talloc_tos(), &data, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto cleanup;
 	}
 
 	SSVAL(setup + 0, 0, NT_TRANSACT_SET_USER_QUOTA);
 
 	SSVAL(params,0,quota_fnum);
 
-	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
-	SIVAL(data,0,0);
-	SIVAL(data,4,sid_len);
-	SBIG_UINT(data, 8,(uint64_t)0);
-	SBIG_UINT(data,16,pqt->usedspace);
-	SBIG_UINT(data,24,pqt->softlim);
-	SBIG_UINT(data,32,pqt->hardlim);
-	sid_linearize(data+40, sid_len, &pqt->sid);
-
 	status = cli_trans(talloc_tos(), cli, SMBnttrans,
 			   NULL, -1, /* name, fid */
 			   NT_TRANSACT_SET_USER_QUOTA, 0,
 			   setup, 1, 0, /* setup */
 			   params, 2, 0, /* params */
-			   data, 112, 0, /* data */
+			   data.data, data.length, 0, /* data */
 			   NULL,		/* recv_flags2 */
 			   NULL, 0, NULL,	/* rsetup */
 			   NULL, 0, NULL,	/* rparams */
@@ -306,6 +422,8 @@ NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
 			  nt_errstr(status)));
 	}
 
+cleanup:
+	data_blob_free(&data);
 	return status;
 }
 

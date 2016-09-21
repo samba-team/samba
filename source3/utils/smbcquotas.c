@@ -339,6 +339,7 @@ static int do_quota(struct cli_state *cli,
 	uint32_t fs_attrs = 0;
 	uint16_t quota_fnum = 0;
 	SMB_NTQUOTA_LIST *qtl = NULL;
+	TALLOC_CTX *qtl_ctx = NULL;
 	SMB_NTQUOTA_STRUCT qt;
 	NTSTATUS status;
 
@@ -386,8 +387,21 @@ static int do_quota(struct cli_state *cli,
 					break;
 				case QUOTA_SETLIM:
 					pqt->sid = qt.sid;
+					if ((qtl_ctx = talloc_init(
+						 "SMB_USER_QUOTA_SET")) ==
+					    NULL) {
+						return -1;
+					}
+
+					if (!add_record_to_ntquota_list(
+						qtl_ctx, pqt, &qtl)) {
+						TALLOC_FREE(qtl_ctx);
+						return -1;
+					}
+
 					status = cli_set_user_quota(
-						cli, quota_fnum, pqt);
+					    cli, quota_fnum, qtl);
+					free_ntquota_list(&qtl);
 					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_set_user_quota %s\n",
 							 nt_errstr(status),

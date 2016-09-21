@@ -766,6 +766,9 @@ bool parse_user_quota_record(const uint8_t *rdata,
 			     unsigned int rdata_count,
 			     unsigned int *offset,
 			     SMB_NTQUOTA_STRUCT *pqt);
+bool add_record_to_ntquota_list(TALLOC_CTX *mem_ctx,
+				SMB_NTQUOTA_STRUCT *pqt,
+				SMB_NTQUOTA_LIST **pqt_list);
 NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 			       uint32_t curdata_size,
 			       TALLOC_CTX *mem_ctx,
@@ -773,10 +776,16 @@ NTSTATUS parse_user_quota_list(const uint8_t *curdata,
 NTSTATUS parse_fs_quota_buffer(const uint8_t *rdata,
 			       unsigned int rdata_count,
 			       SMB_NTQUOTA_STRUCT *pqt);
+NTSTATUS build_user_quota_buffer(SMB_NTQUOTA_LIST *qt_list,
+				 uint32_t maxlen,
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *outbuf,
+				 SMB_NTQUOTA_LIST **end_ptr);
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt);
-NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
-			    SMB_NTQUOTA_STRUCT *pqt);
+NTSTATUS cli_set_user_quota(struct cli_state *cli,
+			    int quota_fnum,
+			    SMB_NTQUOTA_LIST *qtl);
 NTSTATUS cli_list_user_quota(struct cli_state *cli, int quota_fnum,
 			     SMB_NTQUOTA_LIST **pqt_list);
 NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
