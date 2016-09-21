@@ -781,6 +781,10 @@ NTSTATUS build_user_quota_buffer(SMB_NTQUOTA_LIST *qt_list,
 				 TALLOC_CTX *mem_ctx,
 				 DATA_BLOB *outbuf,
 				 SMB_NTQUOTA_LIST **end_ptr);
+NTSTATUS build_fs_quota_buffer(TALLOC_CTX *mem_ctx,
+			       const SMB_NTQUOTA_STRUCT *pqt,
+			       DATA_BLOB *blob,
+			       uint32_t maxlen);
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt);
 NTSTATUS cli_set_user_quota(struct cli_state *cli,

@@ -324,6 +324,45 @@ fail:
 	return status;
 }
 
+NTSTATUS build_fs_quota_buffer(TALLOC_CTX *mem_ctx,
+			       const SMB_NTQUOTA_STRUCT *pqt,
+			       DATA_BLOB *blob,
+			       uint32_t maxlen)
+{
+	uint8_t *buf;
+
+	if (maxlen > 0 && maxlen < 48) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
+	*blob = data_blob_talloc_zero(mem_ctx, 48);
+
+	if (!blob->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	buf = blob->data;
+
+	/* Unknown1 24 NULL bytes*/
+	SBIG_UINT(buf, 0, (uint64_t)0);
+	SBIG_UINT(buf, 8, (uint64_t)0);
+	SBIG_UINT(buf, 16, (uint64_t)0);
+
+	/* Default Soft Quota 8 bytes */
+	SBIG_UINT(buf, 24, pqt->softlim);
+
+	/* Default Hard Quota 8 bytes */
+	SBIG_UINT(buf, 32, pqt->hardlim);
+
+	/* Quota flag 4 bytes */
+	SIVAL(buf, 40, pqt->qflags);
+
+	/* 4 padding bytes */
+	SIVAL(buf, 44, 0);
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt)
 {
@@ -573,14 +612,16 @@ NTSTATUS cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum,
 {
 	uint16_t setup[1];
 	uint8_t param[4];
-	uint8_t data[48];
-	SMB_NTQUOTA_STRUCT qt;
+	DATA_BLOB data = data_blob_null;
 	NTSTATUS status;
-	ZERO_STRUCT(qt);
-	memset(data,'\0',48);
 
 	if (!cli||!pqt) {
 		smb_panic("cli_set_fs_quota_info() called with NULL Pointer!");
+	}
+
+	status = build_fs_quota_buffer(talloc_tos(), pqt, &data, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	SSVAL(setup + 0, 0,TRANSACT2_SETFSINFO);
@@ -588,25 +629,12 @@ NTSTATUS cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum,
 	SSVAL(param,0,quota_fnum);
 	SSVAL(param,2,SMB_FS_QUOTA_INFORMATION);
 
-	/* Unknown1 24 NULL bytes*/
-
-	/* Default Soft Quota 8 bytes */
-	SBIG_UINT(data,24,pqt->softlim);
-
-	/* Default Hard Quota 8 bytes */
-	SBIG_UINT(data,32,pqt->hardlim);
-
-	/* Quota flag 2 bytes */
-	SSVAL(data,40,pqt->qflags);
-
-	/* Unknown3 6 NULL bytes */
-
 	status = cli_trans(talloc_tos(), cli, SMBtrans2,
 			   NULL, -1, /* name, fid */
 			   0, 0,     /* function, flags */
 			   setup, 1, 0, /* setup */
 			   param, 4, 0, /* param */
-			   data, 48, 0, /* data */
+			   data.data, data.length, 0, /* data */
 			   NULL,	 /* recv_flags2 */
 			   NULL, 0, NULL, /* rsetup */
 			   NULL, 0, NULL, /* rparam */
