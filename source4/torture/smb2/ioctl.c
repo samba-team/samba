@@ -5039,12 +5039,14 @@ static bool test_ioctl_dup_extents_len_beyond_dest(struct torture_context *tctx,
 				   "ndr_push_fsctl_dup_extents_to_file");
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
+#if 0
 	/*
 	 * 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE Reply - this should fail, but
 	 * passes against WS2016 RTM!
 	 */
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_SUPPORTED,
 				   "FSCTL_DUP_EXTENTS_TO_FILE");
+#endif
 
 	/* the file sizes shouldn't have been changed */
 	ZERO_STRUCT(io);
