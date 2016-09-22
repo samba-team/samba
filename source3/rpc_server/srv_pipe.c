@@ -587,8 +587,8 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 	   refuse the bind. */
 
 	status = auth_generic_server_check_flags(gensec_security,
-					    (auth_level ==
-						DCERPC_AUTH_LEVEL_INTEGRITY),
+					    (auth_level >=
+						DCERPC_AUTH_LEVEL_PACKET),
 					    (auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1359,6 +1359,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 
 	switch (p->auth.auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
+	case DCERPC_AUTH_LEVEL_PACKET:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 		break;
