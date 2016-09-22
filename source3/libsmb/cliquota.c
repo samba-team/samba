@@ -450,7 +450,7 @@ NTSTATUS cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum,
 			   NULL, -1, /* name, fid */
 			   0, 0,     /* function, flags */
 			   setup, 1, 0, /* setup */
-			   param, 8, 0, /* param */
+			   param, 4, 0, /* param */
 			   data, 48, 0, /* data */
 			   NULL,	 /* recv_flags2 */
 			   NULL, 0, NULL, /* rsetup */
