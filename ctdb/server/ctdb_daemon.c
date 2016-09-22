@@ -1008,7 +1008,15 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path)-1);
 
 	/* Remove any old socket */
-	unlink(ctdb->daemon.name);
+	ret = unlink(ctdb->daemon.name);
+	if (ret == 0) {
+		DEBUG(DEBUG_WARNING,
+		      ("Removed stale socket %s\n", ctdb->daemon.name));
+	} else if (errno != ENOENT) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to remove stale socket %s\n", ctdb->daemon.name));
+		return -1;
+	}
 
 	set_close_on_exec(ctdb->daemon.sd);
 
