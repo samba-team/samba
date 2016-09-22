@@ -1237,8 +1237,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		return 0;
 	}
 
-	tdb_reopen_all(false);
-
 	if (do_fork) {
 		if (setsid() == -1) {
 			ctdb_die(ctdb, "Failed to setsid()\n");
