@@ -5314,14 +5314,14 @@ static bool test_ioctl_dup_extents_sparse_src(struct torture_context *tctx,
 	torture_assert_ndr_success(tctx, ndr_ret,
 				   "ndr_push_fsctl_dup_extents_to_file");
 
+	/*
+	 * src is sparse, but spec says: 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE
+	 * Reply...  STATUS_NOT_SUPPORTED: Target file is sparse, while source
+	 *				   is a non-sparse file.
+	 */
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
-	torture_assert_ntstatus_ok(tctx, status,
-				   "FSCTL_DUP_EXTENTS_TO_FILE");
-
-	ok = check_pattern(tctx, tree, tmp_ctx, dest_h, 0, 4096, 0);
-	if (!ok) {
-		torture_fail(tctx, "inconsistent file data");
-	}
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_SUPPORTED,
+				      "FSCTL_DUP_EXTENTS_TO_FILE");
 
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
@@ -5388,9 +5388,13 @@ static bool test_ioctl_dup_extents_sparse_dest(struct torture_context *tctx,
 	torture_assert_ndr_success(tctx, ndr_ret,
 				   "ndr_push_fsctl_dup_extents_to_file");
 
+	/*
+	 * dest is sparse, but spec says: 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE
+	 * Reply...  STATUS_NOT_SUPPORTED: Target file is sparse, while source
+	 *				   is a non-sparse file.
+	 */
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_SUPPORTED,
-				      "FSCTL_DUP_EXTENTS_TO_FILE");
+	torture_assert_ntstatus_ok(tctx, status, "FSCTL_DUP_EXTENTS_TO_FILE");
 
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
