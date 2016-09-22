@@ -401,12 +401,6 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	lock_ctx = talloc_get_type_abort(private_data, struct lock_context);
 	ctdb = lock_ctx->ctdb;
 
-	/* If a node stopped/banned, don't spam the logs */
-	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
-		lock_ctx->ttimer = NULL;
-		return;
-	}
-
 	elapsed_time = timeval_elapsed(&lock_ctx->start_time);
 	if (lock_ctx->ctdb_db) {
 		DEBUG(DEBUG_WARNING,
@@ -417,6 +411,11 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		DEBUG(DEBUG_WARNING,
 		      ("Unable to get ALLDB locks for %.0lf seconds\n",
 		       elapsed_time));
+	}
+
+	/* If a node stopped/banned, don't spam the logs */
+	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
+		goto skip_lock_debug;
 	}
 
 	if (ctdb_set_helper("lock debugging helper",
@@ -434,6 +433,8 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 		      (__location__
 		       " Unable to setup lock debugging\n"));
 	}
+
+skip_lock_debug:
 
 	/* Back-off logging if lock is not obtained for a long time */
 	if (elapsed_time < 100.0) {
