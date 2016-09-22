@@ -392,8 +392,10 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 				    void *private_data)
 {
 	static char debug_locks[PATH_MAX+1] = "";
+	static struct timeval last_debug_time;
 	struct lock_context *lock_ctx;
 	struct ctdb_context *ctdb;
+	struct timeval now;
 	pid_t pid;
 	double elapsed_time;
 	int new_timer;
@@ -417,6 +419,14 @@ static void ctdb_lock_timeout_handler(struct tevent_context *ev,
 	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_INACTIVE) {
 		goto skip_lock_debug;
 	}
+
+	/* Restrict log debugging to once per second */
+	now = timeval_current();
+	if (last_debug_time.tv_sec == now.tv_sec) {
+		goto skip_lock_debug;
+	}
+
+	last_debug_time.tv_sec = now.tv_sec;
 
 	if (ctdb_set_helper("lock debugging helper",
 			    debug_locks, sizeof(debug_locks),
