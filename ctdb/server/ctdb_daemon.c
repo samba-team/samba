@@ -1233,13 +1233,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	int res, ret = -1;
 	struct tevent_fd *fde;
 
-	/* create a unix domain stream socket to listen to */
-	res = ux_socket_bind(ctdb);
-	if (res!=0) {
-		DEBUG(DEBUG_ALERT,("Cannot continue.  Exiting!\n"));
-		exit(10);
-	}
-
 	if (do_fork && fork()) {
 		return 0;
 	}
@@ -1263,6 +1256,13 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
 			  CTDB_VERSION_STRING, ctdb->ctdbd_pid));
 	ctdb_create_pidfile(ctdb);
+
+	/* create a unix domain stream socket to listen to */
+	res = ux_socket_bind(ctdb);
+	if (res!=0) {
+		DEBUG(DEBUG_ALERT,("Cannot continue.  Exiting!\n"));
+		exit(10);
+	}
 
 	/* Make sure we log something when the daemon terminates.
 	 * This must be the first exit handler to run (so the last to
