@@ -155,7 +155,6 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 	switch (auth->auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_CONNECT:
-	case DCERPC_AUTH_LEVEL_PACKET:
 		max_len = max_xmit_frag - header_len;
 		*data_to_send = MIN(max_len, data_left);
 		*pad_len = 0;
@@ -167,6 +166,9 @@ NTSTATUS dcerpc_guess_sizes(struct pipe_auth_data *auth,
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		break;
+
+	case DCERPC_AUTH_LEVEL_PACKET:
 		break;
 
 	default:
@@ -244,6 +246,7 @@ static NTSTATUS add_generic_auth_footer(struct gensec_security *gensec_security,
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		/* Data is signed. */
 		status = gensec_sign_packet(gensec_security,
 					    rpc_out->data,
@@ -301,6 +304,7 @@ static NTSTATUS get_generic_auth_footer(struct gensec_security *gensec_security,
 					    auth_token);
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
+	case DCERPC_AUTH_LEVEL_PACKET:
 		/* Data is signed. */
 		return gensec_check_packet(gensec_security,
 					   data->data,
@@ -425,6 +429,10 @@ NTSTATUS dcerpc_check_auth(struct pipe_auth_data *auth,
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		DEBUG(10, ("Requested Integrity.\n"));
+		break;
+
+	case DCERPC_AUTH_LEVEL_PACKET:
+		DEBUG(10, ("Requested packet.\n"));
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
