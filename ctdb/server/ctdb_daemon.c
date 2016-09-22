@@ -1007,15 +1007,6 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path)-1);
 
-	/* First check if an old ctdbd might be running */
-	if (connect(ctdb->daemon.sd,
-		    (struct sockaddr *)&addr, sizeof(addr)) == 0) {
-		DEBUG(DEBUG_CRIT,
-		      ("Something is already listening on ctdb socket '%s'\n",
-		       ctdb->daemon.name));
-		goto failed;
-	}
-
 	/* Remove any old socket */
 	unlink(ctdb->daemon.name);
 
