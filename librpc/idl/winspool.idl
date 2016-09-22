@@ -704,21 +704,21 @@ import "misc.idl", "security.idl", "winreg.idl", "spoolss.idl";
 	[public] HRESULT winspool_SyncRegisterForRemoteNotifications(
 		[in]    PRINTER_HANDLE                  hPrinter,
 		[in]    winspool_PrintPropertiesCollection *pNotifyFilter,
-		[out]   RMTNTFY_HANDLE                 *phwinspool_Handle
+		[out]   RMTNTFY_HANDLE                 *phRpcHandle
 	);
 
 	/******************/
 	/* Function: 0x3b */
 
 	HRESULT winspool_SyncUnRegisterForRemoteNotifications(
-		[in, out]   RMTNTFY_HANDLE             *phwinspool_Handle
+		[in, out]   RMTNTFY_HANDLE             *phRpcHandle
 	);
 
 	/******************/
 	/* Function: 0x3c */
 
 	HRESULT winspool_SyncRefreshRemoteNotifications(
-		[in]    RMTNTFY_HANDLE                  hwinspool_Handle,
+		[in]    RMTNTFY_HANDLE                  hRpcHandle,
 		[in]    winspool_PrintPropertiesCollection *pNotifyFilter,
 		[out]   winspool_PrintPropertiesCollection **ppNotifyData
 	);
@@ -727,7 +727,7 @@ import "misc.idl", "security.idl", "winreg.idl", "spoolss.idl";
 	/* Function: 0x3d */
 
 	HRESULT winspool_AsyncGetRemoteNotifications(
-		[in]    RMTNTFY_HANDLE                  hwinspool_Handle,
+		[in]    RMTNTFY_HANDLE                  hRpcHandle,
 		[out]   winspool_PrintPropertiesCollection **ppNotifyData
 	);
 
