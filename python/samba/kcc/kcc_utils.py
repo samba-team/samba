@@ -1214,11 +1214,19 @@ class NTDSConnection(object):
 
         :param shed: schedule to compare to
         """
-        if self.schedule is not None:
-            if sched is None:
-                return False
-        elif sched is None:
-            return True
+        # There are 4 cases, where either self.schedule or sched can be None
+        #
+        #                   |  self. is None  |   self. is not None
+        #     --------------+-----------------+--------------------
+        #     sched is None |     True        |     False
+        #     --------------+-----------------+--------------------
+        # sched is not None |    False        |    do calculations
+
+        if self.schedule is None:
+            return sched is None
+
+        if sched is None:
+            return False
 
         if ((self.schedule.size != sched.size or
              self.schedule.bandwidth != sched.bandwidth or
