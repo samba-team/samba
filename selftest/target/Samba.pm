@@ -204,6 +204,13 @@ sub mk_krb5_conf($$)
 
 ";
 
+	if (defined($ctx->{krb5_ccname})) {
+		print KRB5CONF "
+ default_ccache_name = $ctx->{krb5_ccname}
+";
+	}
+
+
         if (defined($ctx->{supported_enctypes})) {
 		print KRB5CONF "
  default_etypes = $ctx->{supported_enctypes}
