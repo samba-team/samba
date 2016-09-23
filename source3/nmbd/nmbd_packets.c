@@ -1687,14 +1687,12 @@ struct socket_attributes {
 	bool triggered;
 };
 
-static bool create_listen_pollfds(struct pollfd **pfds,
-				  struct socket_attributes **pattrs,
+static bool create_listen_array(struct socket_attributes **pattrs,
 				  int *pnum_sockets)
 {
 	struct subnet_record *subrec = NULL;
 	int count = 0;
 	int num = 0;
-	struct pollfd *fds;
 	struct socket_attributes *attrs;
 
 	/* The ClientNMB and ClientDGRAM sockets */
@@ -1718,30 +1716,20 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		}
 	}
 
-	fds = talloc_zero_array(NULL, struct pollfd, count);
-	if (fds == NULL) {
-		DEBUG(1, ("create_listen_pollfds: malloc fail for fds. "
-			  "size %d\n", count));
-		return true;
-	}
-
 	attrs = talloc_zero_array(NULL, struct socket_attributes, count);
 	if (attrs == NULL) {
-		DEBUG(1, ("create_listen_pollfds: malloc fail for attrs. "
+		DEBUG(1, ("talloc fail for attrs. "
 			  "size %d\n", count));
-		TALLOC_FREE(fds);
 		return true;
 	}
 
 	num = 0;
 
-	fds[num].fd = ClientNMB;
 	attrs[num].fd = ClientNMB;
 	attrs[num].type = NMB_PACKET;
 	attrs[num].broadcast = false;
 	num += 1;
 
-	fds[num].fd = ClientDGRAM;
 	attrs[num].fd = ClientDGRAM;
 	attrs[num].type = DGRAM_PACKET;
 	attrs[num].broadcast = false;
@@ -1750,7 +1738,6 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 
 		if (subrec->nmb_sock != -1) {
-			fds[num].fd = subrec->nmb_sock;
 			attrs[num].fd = subrec->nmb_sock;
 			attrs[num].type = NMB_PACKET;
 			attrs[num].broadcast = false;
@@ -1758,7 +1745,6 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		}
 
 		if (subrec->nmb_bcast != -1) {
-			fds[num].fd = subrec->nmb_bcast;
 			attrs[num].fd = subrec->nmb_bcast;
 			attrs[num].type = NMB_PACKET;
 			attrs[num].broadcast = true;
@@ -1766,7 +1752,6 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		}
 
 		if (subrec->dgram_sock != -1) {
-			fds[num].fd = subrec->dgram_sock;
 			attrs[num].fd = subrec->dgram_sock;
 			attrs[num].type = DGRAM_PACKET;
 			attrs[num].broadcast = false;
@@ -1774,16 +1759,12 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		}
 
 		if (subrec->dgram_bcast != -1) {
-			fds[num].fd = subrec->dgram_bcast;
 			attrs[num].fd = subrec->dgram_bcast;
 			attrs[num].type = DGRAM_PACKET;
 			attrs[num].broadcast = true;
 			num += 1;
 		}
 	}
-
-	TALLOC_FREE(*pfds);
-	*pfds = fds;
 
 	TALLOC_FREE(*pattrs);
 	*pattrs = attrs;
@@ -1904,7 +1885,6 @@ static void nmbd_fd_handler(struct tevent_context *ev,
 
 bool listen_for_packets(struct messaging_context *msg, bool run_election)
 {
-	static struct pollfd *fds = NULL;
 	static struct socket_attributes *attrs = NULL;
 	static int listen_number = 0;
 	int num_sockets;
@@ -1921,8 +1901,8 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	bool got_timeout = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if ((fds == NULL) || rescan_listen_set) {
-		if (create_listen_pollfds(&fds, &attrs, &listen_number)) {
+	if ((attrs == NULL) || rescan_listen_set) {
+		if (create_listen_array(&attrs, &listen_number)) {
 			DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
 			TALLOC_FREE(frame);
 			return True;
@@ -1930,38 +1910,20 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 		rescan_listen_set = False;
 	}
 
-	/*
-	 * "fds" can be enlarged by event_add_to_poll_args
-	 * below. Shrink it again to what was given to us by
-	 * create_listen_pollfds.
-	 */
-
-	fds = talloc_realloc(NULL, fds, struct pollfd, listen_number);
-	if (fds == NULL) {
-		TALLOC_FREE(frame);
-		return true;
-	}
 	num_sockets = listen_number;
 
 #ifndef SYNC_DNS
 	dns_fd = asyncdns_fd();
 	if (dns_fd != -1) {
-		fds = talloc_realloc(NULL, fds, struct pollfd, num_sockets+1);
-		if (fds == NULL) {
-			TALLOC_FREE(frame);
-			return true;
-		}
 		attrs = talloc_realloc(NULL,
 					attrs,
 					struct socket_attributes,
 					num_sockets + 1);
 		if (attrs == NULL) {
-			TALLOC_FREE(fds);
 			TALLOC_FREE(frame);
 			return true;
 		}
 		dns_pollidx = num_sockets;
-		fds[num_sockets].fd = dns_fd;
 		attrs[dns_pollidx].fd = dns_fd;
 		/*
 		 * dummy values, we only need
