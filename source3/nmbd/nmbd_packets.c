@@ -2004,7 +2004,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 			client_port = DGRAM_PORT;
 		}
 
-		packet = read_packet(fds[i].fd, packet_type);
+		packet = read_packet(attrs[i].fd, packet_type);
 		if (!packet) {
 			continue;
 		}
@@ -2014,7 +2014,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 		 * only is set then check it came from one of our local nets.
 		 */
 		if (lp_bind_interfaces_only() &&
-		    (fds[i].fd == client_fd) &&
+		    (attrs[i].fd == client_fd) &&
 		    (!is_local_net_v4(packet->ip))) {
 			DEBUG(7,("discarding %s packet sent to broadcast socket from %s:%d\n",
 				packet_name, inet_ntoa(packet->ip), packet->port));
@@ -2053,10 +2053,10 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 
 		if (attrs[i].broadcast) {
 			/* this is a broadcast socket */
-			packet->send_fd = fds[i-1].fd;
+			packet->send_fd = attrs[i-1].fd;
 		} else {
 			/* this is already a unicast socket */
-			packet->send_fd = fds[i].fd;
+			packet->send_fd = attrs[i].fd;
 		}
 
 		queue_packet(packet);
