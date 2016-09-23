@@ -1683,6 +1683,8 @@ on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), subrec->subnet_
 struct socket_attributes {
 	enum packet_type type;
 	bool broadcast;
+	int fd;
+	bool triggered;
 };
 
 static bool create_listen_pollfds(struct pollfd **pfds,
@@ -1723,7 +1725,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 		return true;
 	}
 
-	attrs = talloc_array(NULL, struct socket_attributes, count);
+	attrs = talloc_zero_array(NULL, struct socket_attributes, count);
 	if (attrs == NULL) {
 		DEBUG(1, ("create_listen_pollfds: malloc fail for attrs. "
 			  "size %d\n", count));
@@ -1734,11 +1736,13 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 	num = 0;
 
 	fds[num].fd = ClientNMB;
+	attrs[num].fd = ClientNMB;
 	attrs[num].type = NMB_PACKET;
 	attrs[num].broadcast = false;
 	num += 1;
 
 	fds[num].fd = ClientDGRAM;
+	attrs[num].fd = ClientDGRAM;
 	attrs[num].type = DGRAM_PACKET;
 	attrs[num].broadcast = false;
 	num += 1;
@@ -1747,6 +1751,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 
 		if (subrec->nmb_sock != -1) {
 			fds[num].fd = subrec->nmb_sock;
+			attrs[num].fd = subrec->nmb_sock;
 			attrs[num].type = NMB_PACKET;
 			attrs[num].broadcast = false;
 			num += 1;
@@ -1754,6 +1759,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 
 		if (subrec->nmb_bcast != -1) {
 			fds[num].fd = subrec->nmb_bcast;
+			attrs[num].fd = subrec->nmb_bcast;
 			attrs[num].type = NMB_PACKET;
 			attrs[num].broadcast = true;
 			num += 1;
@@ -1761,6 +1767,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 
 		if (subrec->dgram_sock != -1) {
 			fds[num].fd = subrec->dgram_sock;
+			attrs[num].fd = subrec->dgram_sock;
 			attrs[num].type = DGRAM_PACKET;
 			attrs[num].broadcast = false;
 			num += 1;
@@ -1768,6 +1775,7 @@ static bool create_listen_pollfds(struct pollfd **pfds,
 
 		if (subrec->dgram_bcast != -1) {
 			fds[num].fd = subrec->dgram_bcast;
+			attrs[num].fd = subrec->dgram_bcast;
 			attrs[num].type = DGRAM_PACKET;
 			attrs[num].broadcast = true;
 			num += 1;
