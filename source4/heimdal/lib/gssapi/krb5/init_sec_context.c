@@ -427,12 +427,15 @@ init_auth
     /*
      * This is hideous glue for (NFS) clients that wants to limit the
      * available enctypes to what it can support (encryption in
-     * kernel).
+     * kernel). If there is no enctypes selected for this credential,
+     * reset it to the default set of enctypes.
      */
     {
-	if (cred && cred->enctypes) {
-	    krb5_set_default_in_tkt_etypes(context, cred->enctypes);
-	}
+	krb5_enctype *enctypes = NULL;
+
+	if (cred && cred->enctypes)
+	    enctypes = cred->enctypes;
+	krb5_set_default_in_tkt_etypes(context, enctypes);
     }
 
     /* canon name if needed for client + target realm */
