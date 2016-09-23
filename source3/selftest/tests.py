@@ -429,7 +429,7 @@ for t in tests:
 
 test = 'rpc.lsa.lookupsids'
 auth_options = ["", "ntlm", "spnego", "spnego,ntlm" ]
-signseal_options = ["", ",connect", ",sign", ",seal"]
+signseal_options = ["", ",connect", ",packet", ",sign", ",seal"]
 endianness_options = ["", ",bigendian"]
 for s in signseal_options:
     for e in endianness_options:
