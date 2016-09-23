@@ -1917,10 +1917,12 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	int dns_pollidx = -1;
 #endif
 	struct processed_packet *processed_packet_list = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	if ((fds == NULL) || rescan_listen_set) {
 		if (create_listen_pollfds(&fds, &attrs, &listen_number)) {
 			DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
+			TALLOC_FREE(frame);
 			return True;
 		}
 		rescan_listen_set = False;
@@ -1934,6 +1936,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 
 	fds = talloc_realloc(NULL, fds, struct pollfd, listen_number);
 	if (fds == NULL) {
+		TALLOC_FREE(frame);
 		return true;
 	}
 	num_sockets = listen_number;
@@ -1943,6 +1946,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	if (dns_fd != -1) {
 		fds = talloc_realloc(NULL, fds, struct pollfd, num_sockets+1);
 		if (fds == NULL) {
+			TALLOC_FREE(frame);
 			return true;
 		}
 		attrs = talloc_realloc(NULL,
@@ -1951,6 +1955,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 					num_sockets + 1);
 		if (attrs == NULL) {
 			TALLOC_FREE(fds);
+			TALLOC_FREE(frame);
 			return true;
 		}
 		dns_pollidx = num_sockets;
@@ -1972,6 +1977,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 
 	/* Process a signal and timer events now... */
 	if (run_events_poll(nmbd_event_context(), 0, NULL, 0)) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -1991,10 +1997,12 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	pollrtn = poll(fds, num_sockets, timeout);
 
 	if (run_events_poll(nmbd_event_context(), pollrtn, fds, num_sockets)) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
 	if (pollrtn == -1) {
+		TALLOC_FREE(frame);
 		return False;
 	}
 
@@ -2089,6 +2097,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	}
 
 	free_processed_packet_list(&processed_packet_list);
+	TALLOC_FREE(frame);
 	return False;
 }
 
