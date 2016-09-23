@@ -1909,14 +1909,16 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	static int listen_number = 0;
 	int num_sockets;
 	int i;
+	int loop_rtn;
+	int timeout_secs;
 
-	int pollrtn;
-	int timeout;
 #ifndef SYNC_DNS
 	int dns_fd;
 	int dns_pollidx = -1;
 #endif
 	struct processed_packet *processed_packet_list = NULL;
+	struct tevent_timer *te = NULL;
+	bool got_timeout = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if ((fds == NULL) || rescan_listen_set) {
@@ -1972,13 +1974,17 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 #endif
 
 	for (i=0; i<num_sockets; i++) {
-		fds[i].events = POLLIN|POLLHUP;
-	}
-
-	/* Process a signal and timer events now... */
-	if (run_events_poll(nmbd_event_context(), 0, NULL, 0)) {
-		TALLOC_FREE(frame);
-		return False;
+		struct tevent_fd *tfd = tevent_add_fd(nmbd_event_context(),
+							frame,
+							attrs[i].fd,
+							TEVENT_FD_READ,
+							nmbd_fd_handler,
+							&attrs[i]);
+		if (tfd == NULL) {
+			TALLOC_FREE(frame);
+			return true;
+		}
+		attrs[i].triggered = false;
 	}
 
 	/*
@@ -1988,28 +1994,40 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 	 * the time we are expecting the next netbios packet.
 	 */
 
-	timeout = ((run_election||num_response_packets)
-		   ? 1 : NMBD_SELECT_LOOP) * 1000;
-
-	event_add_to_poll_args(nmbd_event_context(), NULL,
-			       &fds, &num_sockets, &timeout);
-
-	pollrtn = poll(fds, num_sockets, timeout);
-
-	if (run_events_poll(nmbd_event_context(), pollrtn, fds, num_sockets)) {
-		TALLOC_FREE(frame);
-		return False;
+	if (run_election||num_response_packets) {
+		timeout_secs = 1;
+	} else {
+		timeout_secs = NMBD_SELECT_LOOP;
 	}
 
-	if (pollrtn == -1) {
+	te = tevent_add_timer(nmbd_event_context(),
+				frame,
+				tevent_timeval_current_ofs(timeout_secs, 0),
+				nmbd_timeout_handler,
+				&got_timeout);
+	if (te == NULL) {
 		TALLOC_FREE(frame);
-		return False;
+		return true;
+	}
+
+	loop_rtn = tevent_loop_once(nmbd_event_context());
+
+	if (loop_rtn == -1) {
+		TALLOC_FREE(frame);
+		return true;
+	}
+
+	if (got_timeout) {
+		TALLOC_FREE(frame);
+		return false;
 	}
 
 #ifndef SYNC_DNS
 	if ((dns_fd != -1) && (dns_pollidx != -1) &&
-	    (fds[dns_pollidx].revents & (POLLIN|POLLHUP|POLLERR))) {
+	    attrs[dns_pollidx].triggered){
 		run_dns_queue(msg);
+		TALLOC_FREE(frame);
+		return false;
 	}
 #endif
 
@@ -2020,7 +2038,7 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 		int client_fd;
 		int client_port;
 
-		if ((fds[i].revents & (POLLIN|POLLHUP|POLLERR)) == 0) {
+		if (!attrs[i].triggered) {
 			continue;
 		}
 
