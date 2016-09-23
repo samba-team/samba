@@ -123,6 +123,7 @@ struct dcerpc_pipe {
 
 	uint32_t context_id;
 
+	struct GUID object;
 	struct ndr_syntax_id syntax;
 	struct ndr_syntax_id transfer_syntax;
 

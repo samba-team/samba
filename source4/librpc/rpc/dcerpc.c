@@ -615,15 +615,17 @@ static const struct dcerpc_binding_handle_ops dcerpc_bh_ops = {
 };
 
 /* initialise a dcerpc pipe. */
-struct dcerpc_binding_handle *dcerpc_pipe_binding_handle(struct dcerpc_pipe *p)
+struct dcerpc_binding_handle *dcerpc_pipe_binding_handle(struct dcerpc_pipe *p,
+							 const struct GUID *object,
+							 const struct ndr_interface_table *table)
 {
 	struct dcerpc_binding_handle *h;
 	struct dcerpc_bh_state *hs;
 
 	h = dcerpc_binding_handle_create(p,
 					 &dcerpc_bh_ops,
-					 NULL,
-					 NULL, /* TODO */
+					 object,
+					 table,
 					 &hs,
 					 struct dcerpc_bh_state,
 					 __location__);
@@ -653,22 +655,10 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 		return NULL;
 	}
 
-	p->last_fault_code = 0;
-	p->context_id = 0;
 	p->request_timeout = DCERPC_REQUEST_TIMEOUT;
-	p->binding = NULL;
-
-	ZERO_STRUCT(p->syntax);
-	ZERO_STRUCT(p->transfer_syntax);
 
 	if (DEBUGLVL(100)) {
 		p->conn->flags |= DCERPC_DEBUG_PRINT_BOTH;
-	}
-
-	p->binding_handle = dcerpc_pipe_binding_handle(p);
-	if (p->binding_handle == NULL) {
-		talloc_free(p);
-		return NULL;
 	}
 
 	return p;

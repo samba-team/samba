@@ -853,6 +853,7 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p2;
+	struct GUID *object = NULL;
 	
 	p2 = talloc_zero(p, struct dcerpc_pipe);
 	if (p2 == NULL) {
@@ -873,7 +874,12 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p2->binding_handle = dcerpc_pipe_binding_handle(p2);
+	p2->object = dcerpc_binding_get_object(p2->binding);
+	if (!GUID_all_zero(&p2->object)) {
+		object = &p2->object;
+	}
+
+	p2->binding_handle = dcerpc_pipe_binding_handle(p2, object, table);
 	if (p2->binding_handle == NULL) {
 		talloc_free(p2);
 		return NT_STATUS_NO_MEMORY;
