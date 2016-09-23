@@ -64,6 +64,36 @@ time_t spoolss_Time_to_time_t(const struct spoolss_Time *r)
 /*******************************************************************
  ********************************************************************/
 
+bool spoolss_timestr_to_NTTIME(const char *str,
+			       NTTIME *data)
+{
+	struct tm tm;
+	time_t t;
+
+	if (strequal(str, "01/01/1601")) {
+		*data = 0;
+		return true;
+	}
+
+	ZERO_STRUCT(tm);
+
+	if (sscanf(str, "%d/%d/%d",
+		   &tm.tm_mon, &tm.tm_mday, &tm.tm_year) != 3) {
+		return false;
+	}
+	tm.tm_mon -= 1;
+	tm.tm_year -= 1900;
+	tm.tm_isdst = -1;
+
+	t = mktime(&tm);
+	unix_to_nt_time(data, t);
+
+	return true;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
 				const DATA_BLOB *blob,
 				union spoolss_PrinterData *data,
