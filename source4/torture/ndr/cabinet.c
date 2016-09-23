@@ -4176,11 +4176,76 @@ static bool cab_file_plain_check(struct torture_context *tctx,
 	return true;
 }
 
+static const uint8_t cab_file_MSZIP_data[] = {
+	0x4d, 0x53, 0x43, 0x46, 0x00, 0x00, 0x00, 0x00,
+	0x82, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x2c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x03, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x49, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x01, 0x00, 0x00, 0x80, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x36, 0x49,
+	0x09, 0x21, 0x20, 0x00, 0x62, 0x6c, 0x6f, 0x62,
+	0x2d, 0x41, 0x2d, 0x33, 0x32, 0x37, 0x36, 0x38,
+	0x00, 0x16, 0x6e, 0xdb, 0x5e, 0x31, 0x00, 0x00,
+	0x80, 0x43, 0x4b, 0xed, 0xc1, 0x81, 0x00, 0x00,
+	0x00, 0x00, 0x80, 0x20, 0xb6, 0xfd, 0xa5, 0x16,
+	0xa9, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x1a
+};
+
+static bool cab_file_MSZIP_check(struct torture_context *tctx,
+				 struct cab_file *r)
+{
+	DATA_BLOB blob;
+
+	torture_assert_str_equal(tctx, r->cfheader.signature, "MSCF", "signature");
+	torture_assert_int_equal(tctx, r->cfheader.reserved1, 0, "reserved1");
+	torture_assert_int_equal(tctx, r->cfheader.cbCabinet, 130, "cbCabinet");
+	torture_assert_int_equal(tctx, r->cfheader.reserved2, 0, "reserved2");
+	torture_assert_int_equal(tctx, r->cfheader.coffFiles, 44, "coffFiles");
+	torture_assert_int_equal(tctx, r->cfheader.reserved3, 0, "reserved3");
+	torture_assert_int_equal(tctx, r->cfheader.versionMinor, 3, "versionMinor");
+	torture_assert_int_equal(tctx, r->cfheader.versionMajor, 1, "versionMajor");
+	torture_assert_int_equal(tctx, r->cfheader.cFolders, 1, "cFolders");
+	torture_assert_int_equal(tctx, r->cfheader.cFiles, 1, "cFiles");
+	torture_assert_int_equal(tctx, r->cfheader.flags, 0, "flags");
+	torture_assert_int_equal(tctx, r->cfheader.setID, 0, "setID");
+	torture_assert_int_equal(tctx, r->cfheader.iCabinet, 0, "iCabinet");
+
+	torture_assert_int_equal(tctx, r->cffolders[0].coffCabStart, 0x49, "coffCabStart");
+	torture_assert_int_equal(tctx, r->cffolders[0].cCFData, 1, "cCFData");
+	torture_assert_int_equal(tctx, r->cffolders[0].typeCompress, CF_COMPRESS_MSZIP, "typeCompress");
+
+	torture_assert_int_equal(tctx, r->cffiles[0].cbFile, 0x8000, "cbFile");
+	torture_assert_int_equal(tctx, r->cffiles[0].uoffFolderStart, 0, "uoffFolderStart");
+	torture_assert_int_equal(tctx, r->cffiles[0].iFolder, 0, "iFolder");
+	torture_assert_int_equal(tctx, r->cffiles[0].date.date, 0x4936, "date");
+	torture_assert_int_equal(tctx, r->cffiles[0].time.time, 0x2109, "time");
+	torture_assert_int_equal(tctx, r->cffiles[0].attribs, 0x0020, "attribs");
+	torture_assert_str_equal(tctx, r->cffiles[0].szName, "blob-A-32768", "szName");
+
+	torture_assert_int_equal(tctx, r->cfdata[0].csum, 0x5EDB6E16, "csum");
+	torture_assert_int_equal(tctx, r->cfdata[0].cbData, 0x31, "cbData");
+	torture_assert_int_equal(tctx, r->cfdata[0].cbUncomp, 0x8000, "cbUncomp");
+
+	blob = data_blob(NULL, r->cfdata[0].cbUncomp);
+	memset(blob.data, 'A', blob.length);
+#if 0
+	/* once we have MSZIP compression working we can enable this test */
+	torture_assert_data_blob_equal(tctx, r->cfdata[0].mszip_data.ab, blob, "ab");
+#endif
+	return true;
+}
+
 struct torture_suite *ndr_cabinet_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "cabinet");
 
 	torture_suite_add_ndr_pull_test(suite, cab_file, cab_file_plain_data, cab_file_plain_check);
+	torture_suite_add_ndr_pull_test(suite, cab_file, cab_file_MSZIP_data, cab_file_MSZIP_check);
 
 	torture_suite_add_ndr_pull_validate_test(suite, cab_file, cab_file_plain_data, cab_file_plain_check);
 
