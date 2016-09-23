@@ -94,6 +94,26 @@ bool spoolss_timestr_to_NTTIME(const char *str,
 /*******************************************************************
  ********************************************************************/
 
+bool spoolss_driver_version_to_qword(const char *str,
+				     uint64_t *data)
+{
+	unsigned int v1, v2, v3, v4;
+
+	if (sscanf(str, "%u.%u.%u.%u", &v1, &v2, &v3, &v4) != 4) {
+		return false;
+	}
+
+	*data = ((uint64_t)(v1 & 0xFFFF) << 48) +
+		((uint64_t)(v2 & 0xFFFF) << 32) +
+		((uint64_t)(v3 & 0xFFFF) << 16) +
+		(uint64_t)(v4 & 0xFFFF);
+
+	return true;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
 				const DATA_BLOB *blob,
 				union spoolss_PrinterData *data,

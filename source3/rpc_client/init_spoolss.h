@@ -27,6 +27,8 @@ bool init_systemtime(struct spoolss_Time *r,
 time_t spoolss_Time_to_time_t(const struct spoolss_Time *r);
 bool spoolss_timestr_to_NTTIME(const char *str,
 			       NTTIME *data);
+bool spoolss_driver_version_to_qword(const char *str,
+				     uint64_t *data);
 WERROR pull_spoolss_PrinterData(TALLOC_CTX *mem_ctx,
 				const DATA_BLOB *blob,
 				union spoolss_PrinterData *data,
