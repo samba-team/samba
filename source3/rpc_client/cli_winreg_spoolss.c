@@ -493,26 +493,12 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 
 static WERROR winreg_printer_date_to_NTTIME(const char *str, NTTIME *data)
 {
-	struct tm tm;
-	time_t t;
+	bool ok;
 
-	if (strequal(str, "01/01/1601")) {
-		*data = 0;
-		return WERR_OK;
-	}
-
-	ZERO_STRUCT(tm);
-
-	if (sscanf(str, "%d/%d/%d",
-		   &tm.tm_mon, &tm.tm_mday, &tm.tm_year) != 3) {
+	ok = spoolss_timestr_to_NTTIME(str, data);
+	if (!ok) {
 		return WERR_INVALID_PARAMETER;
 	}
-	tm.tm_mon -= 1;
-	tm.tm_year -= 1900;
-	tm.tm_isdst = -1;
-
-	t = mktime(&tm);
-	unix_to_nt_time(data, t);
 
 	return WERR_OK;
 }
