@@ -4182,5 +4182,7 @@ struct torture_suite *ndr_cabinet_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_test(suite, cab_file, cab_file_plain_data, cab_file_plain_check);
 
+	torture_suite_add_ndr_pull_validate_test(suite, cab_file, cab_file_plain_data, cab_file_plain_check);
+
 	return suite;
 }
