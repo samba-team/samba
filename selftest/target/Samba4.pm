@@ -469,7 +469,7 @@ sub provision_raw_prepare($$$$$$$$$$$)
 	$ctx->{smb_conf_extra_options} = "";
 
 	my @provision_options = ();
-	push (@provision_options, "KRB5_CONFIG=\"$ctx->{krb5_config}\"");
+	push (@provision_options, "KRB5_CONFIG=\"$ctx->{krb5_conf}\"");
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	push (@provision_options, "NSS_WRAPPER_HOSTS=\"$ctx->{nsswrap_hosts}\"");
