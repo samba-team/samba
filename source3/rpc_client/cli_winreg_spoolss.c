@@ -552,16 +552,12 @@ static WERROR winreg_printer_write_ver(TALLOC_CTX *mem_ctx,
 
 static WERROR winreg_printer_ver_to_qword(const char *str, uint64_t *data)
 {
-	unsigned int v1, v2, v3, v4;
+	bool ok;
 
-	if (sscanf(str, "%u.%u.%u.%u", &v1, &v2, &v3, &v4) != 4) {
+	ok = spoolss_driver_version_to_qword(str, data);
+	if (!ok) {
 		return WERR_INVALID_PARAMETER;
 	}
-
-	*data = ((uint64_t)(v1 & 0xFFFF) << 48) +
-		((uint64_t)(v2 & 0xFFFF) << 32) +
-		((uint64_t)(v3 & 0xFFFF) << 16) +
-		(uint64_t)(v4 & 0xFFFF);
 
 	return WERR_OK;
 }
