@@ -1919,8 +1919,23 @@ bool listen_for_packets(struct messaging_context *msg, bool run_election)
 		if (fds == NULL) {
 			return true;
 		}
+		attrs = talloc_realloc(NULL,
+					attrs,
+					struct socket_attributes,
+					num_sockets + 1);
+		if (attrs == NULL) {
+			TALLOC_FREE(fds);
+			return true;
+		}
 		dns_pollidx = num_sockets;
 		fds[num_sockets].fd = dns_fd;
+		attrs[dns_pollidx].fd = dns_fd;
+		/*
+		 * dummy values, we only need
+		 * fd and triggered.
+		 */
+		attrs[dns_pollidx].type = NMB_PACKET;
+		attrs[dns_pollidx].broadcast = false;
 		num_sockets += 1;
 	}
 #endif
