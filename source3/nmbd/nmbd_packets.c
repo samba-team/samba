@@ -1872,6 +1872,32 @@ static void free_processed_packet_list(struct processed_packet **pp_processed_pa
 }
 
 /****************************************************************************
+ Timeout callback - just notice we timed out.
+***************************************************************************/
+
+static void nmbd_timeout_handler(struct tevent_context *ev,
+			struct tevent_timer *te,
+			struct timeval current_time,
+			void *private_data)
+{
+	bool *got_timeout = private_data;
+	*got_timeout = true;
+}
+
+/****************************************************************************
+ fd callback - remember the fd that triggered.
+***************************************************************************/
+
+static void nmbd_fd_handler(struct tevent_context *ev,
+				struct tevent_fd *fde,
+				uint16_t flags,
+				void *private_data)
+{
+	struct socket_attributes *attr = private_data;
+	attr->triggered = true;
+}
+
+/****************************************************************************
   Listens for NMB or DGRAM packets, and queues them.
   return True if the socket is dead
 ***************************************************************************/
