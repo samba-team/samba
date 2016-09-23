@@ -155,6 +155,22 @@ struct tevent_req *dcerpc_binding_handle_raw_call_send(TALLOC_CTX *mem_ctx,
 	state->out_length = 0;
 	state->out_flags = 0;
 
+	if (h->object != NULL) {
+		/*
+		 * If an object is set on the binding handle,
+		 * per request object passing is not allowed.
+		 */
+		if (object != NULL) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * We use the object from the binding handle
+		 */
+		object = h->object;
+	}
+
 	subreq = state->ops->raw_call_send(state, ev, h,
 					   object, opnum,
 					   in_flags, in_data, in_length);
