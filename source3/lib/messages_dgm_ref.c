@@ -36,7 +36,8 @@ static pid_t dgm_pid = 0;
 static struct msg_dgm_ref *refs = NULL;
 
 static int msg_dgm_ref_destructor(struct msg_dgm_ref *r);
-static void msg_dgm_ref_recv(const uint8_t *msg, size_t msg_len,
+static void msg_dgm_ref_recv(struct tevent_context *ev,
+			     const uint8_t *msg, size_t msg_len,
 			     int *fds, size_t num_fds, void *private_data);
 
 void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -114,7 +115,8 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return result;
 }
 
-static void msg_dgm_ref_recv(const uint8_t *msg, size_t msg_len,
+static void msg_dgm_ref_recv(struct tevent_context *ev,
+			     const uint8_t *msg, size_t msg_len,
 			     int *fds, size_t num_fds, void *private_data)
 {
 	struct msg_dgm_ref *r, *next;

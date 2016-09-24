@@ -78,7 +78,8 @@ struct messaging_dgm_context {
 	struct tevent_fd *read_fde;
 	struct messaging_dgm_in_msg *in_msgs;
 
-	void (*recv_cb)(const uint8_t *msg,
+	void (*recv_cb)(struct tevent_context *ev,
+			const uint8_t *msg,
 			size_t msg_len,
 			int *fds,
 			size_t num_fds,
@@ -823,7 +824,8 @@ int messaging_dgm_init(struct tevent_context *ev,
 		       uint64_t *punique,
 		       const char *socket_dir,
 		       const char *lockfile_dir,
-		       void (*recv_cb)(const uint8_t *msg,
+		       void (*recv_cb)(struct tevent_context *ev,
+				       const uint8_t *msg,
 				       size_t msg_len,
 				       int *fds,
 				       size_t num_fds,
@@ -1079,7 +1081,7 @@ static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
 	buflen -= sizeof(cookie);
 
 	if (cookie == 0) {
-		ctx->recv_cb(buf, buflen, fds, num_fds,
+		ctx->recv_cb(ev, buf, buflen, fds, num_fds,
 			     ctx->recv_cb_private_data);
 		return;
 	}
@@ -1142,7 +1144,7 @@ static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
 	DLIST_REMOVE(ctx->in_msgs, msg);
 	talloc_set_destructor(msg, NULL);
 
-	ctx->recv_cb(msg->buf, msg->msglen, fds, num_fds,
+	ctx->recv_cb(ev, msg->buf, msg->msglen, fds, num_fds,
 		     ctx->recv_cb_private_data);
 
 	TALLOC_FREE(msg);
