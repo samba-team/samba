@@ -310,8 +310,8 @@ typedef char fstring[FSTRING_LEN];
 #include "../lib/util/dlinklist.h"
 
 #include <talloc.h>
-
-#include "event.h"
+#include <tevent.h>
+#include "util_event.h"
 
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
