@@ -835,7 +835,7 @@ void winbind_msg_dump_event_list(struct messaging_context *msg_ctx,
 
 	DEBUG(10,("winbind_msg_dump_event_list received\n"));
 
-	dump_event_list(winbind_event_context());
+	DBG_WARNING("dump event list no longer implemented\n");
 
 	for (child = winbindd_children; child != NULL; child = child->next) {
 
@@ -1240,8 +1240,7 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 				      DATA_BLOB *data)
 {
 	DEBUG(5,("child_msg_dump_event_list received\n"));
-
-	dump_event_list(winbind_event_context());
+	DBG_WARNING("dump_event_list no longer implemented\n");
 }
 
 NTSTATUS winbindd_reinit_after_fork(const struct winbindd_child *myself,
