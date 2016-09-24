@@ -86,7 +86,7 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct rpc_pipe_client **cli_pipe);
 
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *abstract_syntax,
+				const struct ndr_interface_table *ndr_table,
 				const struct auth_session_info *session_info,
 				const struct tsocket_address *remote_address,
 				struct messaging_context *msg_ctx,

@@ -1838,7 +1838,7 @@ NTSTATUS wb_open_internal_pipe(TALLOC_CTX *mem_ctx,
 						 &cli);
 	} else {
 		status = rpc_pipe_open_internal(mem_ctx,
-						&table->syntax_id,
+						table,
 						session_info,
 						NULL,
 						winbind_messaging_context(),
