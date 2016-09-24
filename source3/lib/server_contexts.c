@@ -31,7 +31,7 @@ struct tevent_context *server_event_context(void)
 		 * autofree context, to avoid side effects in forked
 		 * children exiting.
 		 */
-		server_event_ctx = s3_tevent_context_init(NULL);
+		server_event_ctx = samba_tevent_context_init(NULL);
 	}
 	if (!server_event_ctx) {
 		smb_panic("Could not init server's event context");
