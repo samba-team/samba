@@ -960,18 +960,14 @@ static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
 	return true;
 }
 
-/*
-  Dispatch one messaging_rec
-*/
-static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
-				   struct tevent_context *ev,
-				   struct messaging_rec *rec)
+static void messaging_dispatch_classic(struct messaging_context *msg_ctx,
+				       struct messaging_rec *rec)
 {
 	struct messaging_callback *cb, *next;
-	unsigned i;
-	size_t j;
 
 	for (cb = msg_ctx->callbacks; cb != NULL; cb = next) {
+		size_t j;
+
 		next = cb->next;
 		if (cb->msg_type != rec->msg_type) {
 			continue;
@@ -996,6 +992,21 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		 * code which register more than one handler for the same
 		 * message type
 		 */
+	}
+}
+
+/*
+  Dispatch one messaging_rec
+*/
+static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+				   struct tevent_context *ev,
+				   struct messaging_rec *rec)
+{
+	unsigned i;
+	size_t j;
+
+	if (ev == msg_ctx->event_ctx) {
+		messaging_dispatch_classic(msg_ctx, rec);
 	}
 
 	if (!messaging_append_new_waiters(msg_ctx)) {
@@ -1033,7 +1044,8 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 
 		state = tevent_req_data(
 			req, struct messaging_filtered_read_state);
-		if (state->filter(rec, state->private_data)) {
+		if ((ev == state->ev) &&
+		    state->filter(rec, state->private_data)) {
 			messaging_filtered_read_done(req, rec);
 
 			/*
@@ -1044,6 +1056,32 @@ static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 		}
 
 		i += 1;
+	}
+
+	if (ev != msg_ctx->event_ctx) {
+		struct iovec iov;
+		int fds[rec->num_fds];
+		int ret;
+
+		/*
+		 * We've been listening on a nested event
+		 * context. Messages need to be handled in the main
+		 * event context, so post to ourselves
+		 */
+
+		iov.iov_base = rec->buf.data;
+		iov.iov_len = rec->buf.length;
+
+		for (i=0; i<rec->num_fds; i++) {
+			fds[i] = rec->fds[i];
+		}
+
+		ret = messaging_post_self(
+			msg_ctx, rec->src, rec->dest, rec->msg_type,
+			&iov, 1, fds, rec->num_fds);
+		if (ret == 0) {
+			return;
+		}
 	}
 
 	/*
