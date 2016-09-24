@@ -290,6 +290,9 @@ for transport in transports:
             plansmbtorture4testsuite('rpc.echo', env, ["%s:$SERVER[%s]" % (transport, bindoptions), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.echo on %s with %s and %s" % (transport, bindoptions, ntlmoptions))
 
 plansmbtorture4testsuite('rpc.echo', "ad_dc_ntvfs", ['ncacn_np:$SERVER[smb2]', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.echo on ncacn_np over smb2")
+for env in ["ad_dc", "nt4_dc"]:
+    plansmbtorture4testsuite('rpc.echo', env, ['60a15ec5-4de8-11d7-a637-005056a20182@ncacn_np:$SERVER[]', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:quick=yes'], "samba4.rpc.echo on ncacn_np with object")
+    plansmbtorture4testsuite('rpc.echo', env, ['60a15ec5-4de8-11d7-a637-005056a20182@ncacn_ip_tcp:$SERVER[]', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:quick=yes'], "samba4.rpc.echo on ncacn_ip_tcp with object")
 
 plansmbtorture4testsuite('ntp.signd', "ad_dc_ntvfs:local", ['ncacn_np:$SERVER', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.ntp.signd")
 
