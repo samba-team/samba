@@ -3224,9 +3224,9 @@ static void smbd_echo_loop(struct smbXsrv_connection *xconn,
 	}
 	state->xconn = xconn;
 	state->parent_pipe = parent_pipe;
-	state->ev = s3_tevent_context_init(state);
+	state->ev = samba_tevent_context_init(state);
 	if (state->ev == NULL) {
-		DEBUG(1, ("tevent_context_init failed\n"));
+		DEBUG(1, ("samba_tevent_context_init failed\n"));
 		TALLOC_FREE(state);
 		return;
 	}
