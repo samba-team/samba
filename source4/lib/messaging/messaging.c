@@ -149,7 +149,7 @@ NTSTATUS imessaging_register(struct imessaging_context *msg, void *private_data,
 	/* possibly expand dispatch array */
 	if (msg_type >= msg->num_types) {
 		struct dispatch_fn **dp;
-		int i;
+		uint32_t i;
 		dp = talloc_realloc(msg, msg->dispatch, struct dispatch_fn *, msg_type+1);
 		NT_STATUS_HAVE_NO_MEMORY(dp);
 		msg->dispatch = dp;
@@ -728,7 +728,7 @@ static int all_servers_func(const char *name, unsigned num_servers,
 	struct irpc_name_records *name_records = talloc_get_type(
 		private_data, struct irpc_name_records);
 	struct irpc_name_record *name_record;
-	int i;
+	uint32_t i;
 
 	name_records->names
 		= talloc_realloc(name_records, name_records->names,
