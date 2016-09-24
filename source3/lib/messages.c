@@ -83,6 +83,8 @@ struct messaging_context {
 	struct server_id_db *names_db;
 };
 
+static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
+					       struct messaging_rec *rec);
 static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
 				   struct messaging_rec *rec);
 
@@ -103,6 +105,53 @@ static void ping_message(struct messaging_context *msg_ctx,
 		  data->data ? (char *)data->data : ""));
 
 	messaging_send(msg_ctx, src, MSG_PONG, data);
+}
+
+static struct messaging_rec *messaging_rec_create(
+	TALLOC_CTX *mem_ctx, struct server_id src, struct server_id dst,
+	uint32_t msg_type, const struct iovec *iov, int iovlen,
+	const int *fds, size_t num_fds)
+{
+	ssize_t buflen;
+	uint8_t *buf;
+	struct messaging_rec *result;
+
+	if (num_fds > INT8_MAX) {
+		return NULL;
+	}
+
+	buflen = iov_buflen(iov, iovlen);
+	if (buflen == -1) {
+		return NULL;
+	}
+	buf = talloc_array(mem_ctx, uint8_t, buflen);
+	if (buf == NULL) {
+		return NULL;
+	}
+	iov_buf(iov, iovlen, buf, buflen);
+
+	{
+		struct messaging_rec rec;
+		int64_t fds64[num_fds];
+		size_t i;
+
+		for (i=0; i<num_fds; i++) {
+			fds64[i] = fds[i];
+		}
+
+		rec = (struct messaging_rec) {
+			.msg_version = MESSAGE_VERSION, .msg_type = msg_type,
+			.src = src, .dest = dst,
+			.buf.data = buf, .buf.length = buflen,
+			.num_fds = num_fds, .fds = fds64,
+		};
+
+		result = messaging_rec_dup(mem_ctx, &rec);
+	}
+
+	TALLOC_FREE(buf);
+
+	return result;
 }
 
 static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
