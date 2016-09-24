@@ -709,9 +709,9 @@ NTSTATUS make_external_rpc_pipe(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	ev_ctx = s3_tevent_context_init(tmp_ctx);
+	ev_ctx = samba_tevent_context_init(tmp_ctx);
 	if (ev_ctx == NULL) {
-		DEBUG(0, ("s3_tevent_context_init failed\n"));
+		DEBUG(0, ("samba_tevent_context_init failed\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
@@ -817,9 +817,9 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	ev = s3_tevent_context_init(talloc_tos());
+	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
-		DEBUG(0, ("s3_tevent_context_init failed\n"));
+		DEBUG(0, ("samba_tevent_context_init failed\n"));
 		goto fail;
 	}
 
