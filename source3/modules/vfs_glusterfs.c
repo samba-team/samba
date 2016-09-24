@@ -41,7 +41,6 @@
 #include "api/glfs.h"
 #include "lib/util/dlinklist.h"
 #include "lib/util/tevent_unix.h"
-#include "lib/tevent/tevent_internal.h"
 #include "smbd/globals.h"
 #include "lib/util/sys_rw.h"
 
