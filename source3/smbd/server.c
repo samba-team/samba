@@ -1670,7 +1670,6 @@ extern void build_options(bool screen);
 	 * Initialize the event context. The event context needs to be
 	 * initialized before the messaging context, cause the messaging
 	 * context holds an event context.
-	 * FIXME: This should be s3_tevent_context_init()
 	 */
 	ev_ctx = server_event_context();
 	if (ev_ctx == NULL) {
