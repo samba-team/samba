@@ -148,13 +148,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_cab_file(struct ndr_push *ndr, int ndr_flags
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX|LIBNDR_FLAG_LITTLE_ENDIAN|LIBNDR_FLAG_NOALIGN);
 		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 		if (ndr_flags & NDR_SCALARS) {
+			uint32_t next_offset = 0;
 			NDR_CHECK(ndr_push_align(ndr, 4));
 			NDR_CHECK(ndr_push_CFHEADER(ndr, NDR_SCALARS, &r->cfheader));
 			for (cntr_cffolders_0 = 0; cntr_cffolders_0 < (r->cfheader.cFolders); cntr_cffolders_0++) {
 				NDR_CHECK(ndr_push_CFFOLDER(ndr, NDR_SCALARS, &r->cffolders[cntr_cffolders_0]));
 			}
 			for (cntr_cffiles_0 = 0; cntr_cffiles_0 < (r->cfheader.cFiles); cntr_cffiles_0++) {
+				uint32_t offset = ndr->offset + 4;
 				NDR_CHECK(ndr_push_CFFILE(ndr, NDR_SCALARS, &r->cffiles[cntr_cffiles_0]));
+				if (cntr_cffiles_0 > 0) {
+					next_offset += r->cffiles[cntr_cffiles_0 - 1].cbFile;
+				}
+				SIVAL(ndr->data, offset, next_offset);
 			}
 #if 0
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_count_cfdata(r)));
