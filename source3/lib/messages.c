@@ -86,6 +86,7 @@ struct messaging_context {
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 					       struct messaging_rec *rec);
 static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+				   struct tevent_context *ev,
 				   struct messaging_rec *rec);
 
 /****************************************************************************
@@ -199,7 +200,7 @@ static void messaging_recv_cb(struct tevent_context *ev,
 		  (unsigned)rec.msg_type, rec.buf.length, num_fds,
 		  server_id_str_buf(rec.src, &idbuf));
 
-	messaging_dispatch_rec(msg_ctx, &rec);
+	messaging_dispatch_rec(msg_ctx, ev, &rec);
 	return;
 
 close_fail:
@@ -529,7 +530,7 @@ static void messaging_post_handler(struct tevent_context *ev,
 {
 	struct messaging_post_state *state = talloc_get_type_abort(
 		private_data, struct messaging_post_state);
-	messaging_dispatch_rec(state->msg_ctx, state->rec);
+	messaging_dispatch_rec(state->msg_ctx, ev, state->rec);
 	TALLOC_FREE(state);
 }
 
@@ -963,6 +964,7 @@ static bool messaging_append_new_waiters(struct messaging_context *msg_ctx)
   Dispatch one messaging_rec
 */
 static void messaging_dispatch_rec(struct messaging_context *msg_ctx,
+				   struct tevent_context *ev,
 				   struct messaging_rec *rec)
 {
 	struct messaging_callback *cb, *next;
