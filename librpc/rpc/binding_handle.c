@@ -373,12 +373,10 @@ struct tevent_req *dcerpc_binding_handle_call_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-#if 0 /* TODO: activate this when the callers are fixed */
 	if (table != h->table) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
 		return tevent_req_post(req, ev);
 	}
-#endif
 
 	if (opnum >= table->num_calls) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
