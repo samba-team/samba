@@ -27,7 +27,8 @@
 struct msg_dgm_ref {
 	struct msg_dgm_ref *prev, *next;
 	void *tevent_handle;
-	void (*recv_cb)(const uint8_t *msg, size_t msg_len,
+	void (*recv_cb)(struct tevent_context *ev,
+			const uint8_t *msg, size_t msg_len,
 			int *fds, size_t num_fds, void *private_data);
 	void *recv_cb_private_data;
 };
@@ -44,7 +45,8 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			uint64_t *unique,
 			const char *socket_dir,
 			const char *lockfile_dir,
-			void (*recv_cb)(const uint8_t *msg, size_t msg_len,
+			void (*recv_cb)(struct tevent_context *ev,
+					const uint8_t *msg, size_t msg_len,
 					int *fds, size_t num_fds,
 					void *private_data),
 			void *recv_cb_private_data,
@@ -127,7 +129,7 @@ static void msg_dgm_ref_recv(struct tevent_context *ev,
 	 */
 	for (r = refs; r != NULL; r = next) {
 		next = r->next;
-		r->recv_cb(msg, msg_len, fds, num_fds,
+		r->recv_cb(ev, msg, msg_len, fds, num_fds,
 			   r->recv_cb_private_data);
 	}
 }

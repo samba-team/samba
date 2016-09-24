@@ -154,7 +154,8 @@ static struct messaging_rec *messaging_rec_create(
 	return result;
 }
 
-static void messaging_recv_cb(const uint8_t *msg, size_t msg_len,
+static void messaging_recv_cb(struct tevent_context *ev,
+			      const uint8_t *msg, size_t msg_len,
 			      int *fds, size_t num_fds,
 			      void *private_data)
 {

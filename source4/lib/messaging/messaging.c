@@ -294,7 +294,8 @@ int imessaging_cleanup(struct imessaging_context *msg)
 	return 0;
 }
 
-static void imessaging_dgm_recv(const uint8_t *buf, size_t buf_len,
+static void imessaging_dgm_recv(struct tevent_context *ev,
+				const uint8_t *buf, size_t buf_len,
 				int *fds, size_t num_fds,
 				void *private_data);
 
@@ -415,7 +416,8 @@ fail:
 	return NULL;
 }
 
-static void imessaging_dgm_recv(const uint8_t *buf, size_t buf_len,
+static void imessaging_dgm_recv(struct tevent_context *ev,
+				const uint8_t *buf, size_t buf_len,
 				int *fds, size_t num_fds,
 				void *private_data)
 {
