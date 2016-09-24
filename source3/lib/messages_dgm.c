@@ -983,6 +983,7 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 }
 
 static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
+			       struct tevent_context *ev,
 			       uint8_t *msg, size_t msg_len,
 			       int *fds, size_t num_fds);
 
@@ -1049,7 +1050,7 @@ static void messaging_dgm_read_handler(struct tevent_context *ev,
 			}
 		}
 
-		messaging_dgm_recv(ctx, buf, received, fds, num_fds);
+		messaging_dgm_recv(ctx, ev, buf, received, fds, num_fds);
 	}
 
 }
@@ -1061,6 +1062,7 @@ static int messaging_dgm_in_msg_destructor(struct messaging_dgm_in_msg *m)
 }
 
 static void messaging_dgm_recv(struct messaging_dgm_context *ctx,
+			       struct tevent_context *ev,
 			       uint8_t *buf, size_t buflen,
 			       int *fds, size_t num_fds)
 {
