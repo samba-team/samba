@@ -228,3 +228,15 @@ interface trim
 		uint32 num_ranges_processed;
 	} fsctl_file_level_trim_rsp;
 }
+
+interface fsctl
+{
+	/* MS-FSCC 2.3.31 FSCTL_PIPE_WAIT */
+	typedef [public] struct {
+		hyper timeout;
+		[value(2*strlen_m(pipe_name))] uint32 pipe_name_len;
+		uint8 timeout_specified;
+		uint8 padding;
+		[charset(UTF16)] uint8 pipe_name[pipe_name_len];
+	} fsctl_pipe_wait;
+}

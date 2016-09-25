@@ -22,6 +22,7 @@
 #include "lib/util/tevent_ntstatus.h"
 #include "smb_common.h"
 #include "smbXcli_base.h"
+#include "librpc/gen_ndr/ndr_ioctl.h"
 
 struct smb2cli_ioctl_state {
 	uint8_t fixed[0x38];
@@ -385,6 +386,134 @@ NTSTATUS smb2cli_ioctl(struct smbXcli_conn *conn,
 				    out_input_buffer,
 				    out_output_buffer);
  fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct smb2cli_ioctl_pipe_wait_state {
+	DATA_BLOB in_blob;
+	DATA_BLOB out_blob;
+};
+
+static void smb2cli_ioctl_pipe_wait_done(struct tevent_req *subreq);
+
+struct tevent_req *smb2cli_ioctl_pipe_wait_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct smbXcli_conn *conn,
+						uint32_t timeout_msec,
+						struct smbXcli_session *session,
+						struct smbXcli_tcon *tcon,
+						const char *pipe_name,
+						uint64_t pipe_wait_timeout)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct smb2cli_ioctl_pipe_wait_state *state = NULL;
+	struct fsctl_pipe_wait fsctl = {0};
+	enum ndr_err_code err;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smb2cli_ioctl_pipe_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->out_blob = data_blob_string_const("");
+
+	fsctl.pipe_name = pipe_name;
+	fsctl.timeout = pipe_wait_timeout;
+	fsctl.timeout_specified = pipe_wait_timeout > 0 ? 1 : 0;
+
+	err = ndr_push_struct_blob(&state->in_blob, mem_ctx, &fsctl,
+				   (ndr_push_flags_fn_t)ndr_push_fsctl_pipe_wait);
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		return NULL;
+	}
+
+	subreq = smb2cli_ioctl_send(mem_ctx, ev, conn, timeout_msec,
+				    session, tcon,
+				    UINT64_MAX, UINT64_MAX,
+				    FSCTL_PIPE_WAIT,
+				    0, &state->in_blob,
+				    0, &state->out_blob,
+				    SMB2_IOCTL_FLAG_IS_FSCTL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(subreq, ev);
+	}
+	tevent_req_set_callback(subreq, smb2cli_ioctl_pipe_wait_done, req);
+
+	return req;
+}
+
+static void smb2cli_ioctl_pipe_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smb2cli_ioctl_pipe_wait_state *state = tevent_req_data(
+		req, struct smb2cli_ioctl_pipe_wait_state);
+	NTSTATUS status;
+
+	status = smb2cli_ioctl_recv(subreq, state, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+
+NTSTATUS smb2cli_ioctl_pipe_wait_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2cli_ioctl_pipe_wait(struct smbXcli_conn *conn,
+				 uint32_t timeout_msec,
+				 struct smbXcli_session *session,
+				 struct smbXcli_tcon *tcon,
+				 const char *pipe_name,
+				 uint64_t pipe_wait_timeout)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER_MIX;
+		goto fail;
+	}
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = smb2cli_ioctl_pipe_wait_send(frame, ev, conn, timeout_msec,
+					   session, tcon,
+					   pipe_name, pipe_wait_timeout);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+
+	status = smb2cli_ioctl_pipe_wait_recv(req);
+
+fail:
 	TALLOC_FREE(frame);
 	return status;
 }
