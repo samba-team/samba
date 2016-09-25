@@ -92,12 +92,6 @@ void free_sdb_entry(struct sdb_entry *s)
 	SAFE_FREE(s->valid_start);
 	SAFE_FREE(s->valid_end);
 	SAFE_FREE(s->pw_end);
-	if (s->etypes) {
-		if (s->etypes->len) {
-			free(s->etypes->val);
-		}
-		free(s->etypes);
-	}
 
 	ZERO_STRUCTP(s);
 }

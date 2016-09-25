@@ -736,7 +736,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
 	uint32_t msDS_User_Account_Control_Computed;
-	unsigned int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
 
@@ -1087,24 +1086,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* Could be bogus data in the entry, or out of memory */
 		goto out;
 	}
-
-	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
-	if (entry_ex->entry.etypes == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-	entry_ex->entry.etypes->len = entry_ex->entry.keys.len;
-	entry_ex->entry.etypes->val = calloc(entry_ex->entry.etypes->len, sizeof(int));
-	if (entry_ex->entry.etypes->val == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-	for (i=0; i < entry_ex->entry.etypes->len; i++) {
-		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
-	}
-
 
 	p->msg = talloc_steal(p, msg);
 
@@ -1497,23 +1478,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 		krb5_clear_error_message(context);
 		ret = ENOMEM;
 		goto out;
-	}
-
-	entry_ex->entry.etypes = malloc(sizeof(*(entry_ex->entry.etypes)));
-	if (entry_ex->entry.etypes == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-	entry_ex->entry.etypes->len = entry_ex->entry.keys.len;
-	entry_ex->entry.etypes->val = calloc(entry_ex->entry.etypes->len, sizeof(int));
-	if (entry_ex->entry.etypes->val == NULL) {
-		krb5_clear_error_message(context);
-		ret = ENOMEM;
-		goto out;
-	}
-	for (i=0; i < entry_ex->entry.etypes->len; i++) {
-		entry_ex->entry.etypes->val[i] = KRB5_KEY_TYPE(&entry_ex->entry.keys.val[i].key);
 	}
 
 	p->msg = talloc_steal(p, msg);

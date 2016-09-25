@@ -92,10 +92,6 @@ struct sdb_entry {
 	unsigned int *max_life;
 	unsigned int *max_renew;
 	struct SDBFlags flags;
-	struct sdb_entry_etypes {
-		unsigned int len;
-		unsigned int *val;
-	} *etypes;
 };
 
 struct sdb_entry_ex {
