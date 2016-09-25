@@ -805,6 +805,22 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 		return undef;
 	}
 
+	# Create to users alice and bob!
+	my $user_account_array = ["alice", "bob"];
+
+	foreach my $user_account (@{$user_account_array}) {
+		my $samba_tool_cmd = "";
+
+		$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+		$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+		$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+		    . " user create --configfile=$ctx->{smb_conf} $user_account Secret007";
+		unless (system($samba_tool_cmd) == 0) {
+			warn("Unable to create user: $user_account\n$samba_tool_cmd\n");
+			return undef;
+		}
+	}
+
 	return $ret;
 }
 
