@@ -136,6 +136,7 @@ def generateHeaderFile(out_file):
     out_file.write("\n#define FACILITY_WIN32 0x0007\n")
     out_file.write("#define WIN32_FROM_HRESULT(x) (HRES_ERROR_V(x) == 0 ? HRES_ERROR_V(x) : ~((FACILITY_WIN32 << 16) | 0x80000000) & HRES_ERROR_V(x))\n")
     out_file.write("#define HRESULT_IS_LIKELY_WERR(x) ((HRES_ERROR_V(x) & 0xFFFF0000) == 0x80070000)\n")
+    out_file.write("#define HRESULT_FROM_WERROR(x) (HRES_ERROR(0x80070000 | W_ERROR_V(x)))\n")
     out_file.write("\n\n\n#endif /*_HRESULT_H_*/")
 
 
