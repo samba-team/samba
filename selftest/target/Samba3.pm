@@ -370,6 +370,9 @@ sub setup_admember($$$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
 
+	my $prefix_abs = abs_path($prefix);
+	my @dirs = ();
+
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->have_ads()) {
 	        return "UNKNOWN";
@@ -377,11 +380,30 @@ sub setup_admember($$$$)
 
 	print "PROVISIONING S3 AD MEMBER...";
 
+	mkdir($prefix_abs, 0777);
+
+	my $share_dir="$prefix_abs/share";
+	push(@dirs, $share_dir);
+
+	my $substitution_path = "$share_dir/D_SAMBADOMAIN";
+	push(@dirs, $substitution_path);
+
+	$substitution_path = "$share_dir/D_SAMBADOMAIN/U_alice";
+	push(@dirs, $substitution_path);
+
+	$substitution_path = "$share_dir/D_SAMBADOMAIN/U_alice/G_domain users";
+	push(@dirs, $substitution_path);
+
 	my $member_options = "
 	security = ads
         workgroup = $dcvars->{DOMAIN}
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
+
+[subDUG]
+	path = $share_dir/D_%D/U_%U/G_%G
+	writeable = yes
+
 ";
 
 	my $ret = $self->provision($prefix,
@@ -393,12 +415,13 @@ sub setup_admember($$$$)
 
 	$ret or return undef;
 
+	mkdir($_, 0777) foreach(@dirs);
+
 	close(USERMAP);
 	$ret->{DOMAIN} = $dcvars->{DOMAIN};
 	$ret->{REALM} = $dcvars->{REALM};
 
 	my $ctx;
-	my $prefix_abs = abs_path($prefix);
 	$ctx = {};
 	$ctx->{krb5_conf} = "$prefix_abs/lib/krb5.conf";
 	$ctx->{domain} = $dcvars->{DOMAIN};
