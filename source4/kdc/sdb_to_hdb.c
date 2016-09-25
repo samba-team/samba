@@ -277,24 +277,29 @@ static int sdb_entry_to_hdb_entry(krb5_context context,
 
 	sdb_flags_to_hdb_flags(&s->flags, &h->flags);
 
-	if (s->etypes) {
+	h->etypes = NULL;
+	if (h->keys.val != NULL) {
 		h->etypes = malloc(sizeof(*h->etypes));
 		if (h->etypes == NULL) {
 			rc = ENOMEM;
 			goto error;
 		}
-		h->etypes->len = s->etypes->len;
+
+		h->etypes->len = s->keys.len;
+
 		h->etypes->val = calloc(h->etypes->len, sizeof(int));
 		if (h->etypes->val == NULL) {
 			rc = ENOMEM;
 			goto error;
 		}
+
 		for (i = 0; i < h->etypes->len; i++) {
-			h->etypes->val[i] = s->etypes->val[i];
+			Key k = h->keys.val[i];
+
+			h->etypes->val[i] = KRB5_KEY_TYPE(&(k.key));
 		}
-	} else {
-		h->etypes = NULL;
 	}
+
 	h->generation = NULL;
 	h->extensions = NULL; /* really sure ? FIXME */
 
