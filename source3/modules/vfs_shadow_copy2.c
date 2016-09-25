@@ -194,7 +194,7 @@ static bool shadow_copy2_update_snaplist(struct vfs_handle_struct *handle,
 	 * time.
 	 */
 	if (seconds > 0 || (priv->snaps->snaplist == NULL)) {
-		smb_fname.base_name = ".";
+		smb_fname.base_name = discard_const_p(char, ".");
 		fsp.fsp_name = &smb_fname;
 
 		ret = shadow_copy2_get_shadow_copy_data(handle, &fsp,
