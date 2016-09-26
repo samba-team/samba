@@ -234,7 +234,7 @@ static const struct {
 	{
 		HRES_SCHED_S_BATCH_LOGON_PROBLEM,
 		"HRES_SCHED_S_BATCH_LOGON_PROBLEM",
-		"The task is registered, but it may fail to start. Batch logon privilege needs to be enabled for the task principal."
+		"The task is registered, but it might fail to start. Batch logon privilege needs to be enabled for the task principal."
 	},
 	{
 		HRES_XACT_S_ASYNC,
@@ -384,7 +384,7 @@ static const struct {
 	{
 		HRES_NS_S_WMP_UI_VERSIONMISMATCH,
 		"HRES_NS_S_WMP_UI_VERSIONMISMATCH",
-		"An upgrade may be needed for the theme manager to correctly show this skin. Skin reports version: %.1f."
+		"An upgrade is needed for the theme manager to correctly show this skin. Skin reports version: %.1f."
 	},
 	{
 		HRES_NS_S_WMP_EXCEPTION,
@@ -949,12 +949,12 @@ static const struct {
 	{
 		HRES_CO_E_CREATEPROCESS_FAILURE,
 		"HRES_CO_E_CREATEPROCESS_FAILURE",
-		"The server process could not be started. The path name may be incorrect."
+		"The server process could not be started. The path name might be incorrect."
 	},
 	{
 		HRES_CO_E_RUNAS_CREATEPROCESS_FAILURE,
 		"HRES_CO_E_RUNAS_CREATEPROCESS_FAILURE",
-		"The server process could not be started as the configured identity. The path name may be incorrect or unavailable."
+		"The server process could not be started as the configured identity. The path name might be incorrect or unavailable."
 	},
 	{
 		HRES_CO_E_RUNAS_LOGON_FAILURE,
@@ -1104,7 +1104,7 @@ static const struct {
 	{
 		HRES_RPC_E_SERVER_DIED,
 		"HRES_RPC_E_SERVER_DIED",
-		"The callee (the server, not the server application) is not available and disappeared; all connections are invalid. The call may have executed."
+		"The callee (the server, not the server application) is not available and disappeared; all connections are invalid. The call might have executed."
 	},
 	{
 		HRES_RPC_E_CLIENT_DIED,
@@ -1144,7 +1144,7 @@ static const struct {
 	{
 		HRES_RPC_E_INVALID_DATA,
 		"HRES_RPC_E_INVALID_DATA",
-		"Received data is invalid. The data may be server or client data."
+		"Received data is invalid. The data might be server or client data."
 	},
 	{
 		HRES_RPC_E_INVALID_PARAMETER,
@@ -1659,7 +1659,7 @@ static const struct {
 	{
 		HRES_TYPE_E_SIZETOOBIG,
 		"HRES_TYPE_E_SIZETOOBIG",
-		"Size may not exceed 64 KB."
+		"Size cannot exceed 64 KB."
 	},
 	{
 		HRES_TYPE_E_DUPLICATEID,
@@ -1939,7 +1939,7 @@ static const struct {
 	{
 		HRES_STG_E_RESETS_EXHAUSTED,
 		"HRES_STG_E_RESETS_EXHAUSTED",
-		"Copy Protection Error—The drive's region setting may be permanent or the number of user resets has been exhausted."
+		"Copy Protection Error—The drive's region setting might be permanent or the number of user resets has been exhausted."
 	},
 	{
 		HRES_OLE_E_OLEVERB,
@@ -2594,7 +2594,7 @@ static const struct {
 	{
 		HRES_SCHED_E_NO_SECURITY_SERVICES,
 		"HRES_SCHED_E_NO_SECURITY_SERVICES",
-		"Task Scheduler security services are available only on Windows NT."
+		"Task Scheduler security services are available only on Windows NT operating system."
 	},
 	{
 		HRES_SCHED_E_UNKNOWN_OBJECT_VERSION,
@@ -2714,7 +2714,7 @@ static const struct {
 	{
 		HRES_XACT_E_HEURISTICDANGER,
 		"HRES_XACT_E_HEURISTICDANGER",
-		"Some of the states of the resource may have been committed while others may have been aborted, likely because of heuristic decisions."
+		"Some of the states of the resource might have been committed while others were aborted, likely because of heuristic decisions."
 	},
 	{
 		HRES_XACT_E_ISOLATIONLEVEL,
@@ -2889,7 +2889,7 @@ static const struct {
 	{
 		HRES_XACT_E_CLERKNOTFOUND,
 		"HRES_XACT_E_CLERKNOTFOUND",
-		"The specified CRM clerk was not found. It may have completed before it could be held."
+		"The specified CRM clerk was not found. It might have completed before it could be held."
 	},
 	{
 		HRES_XACT_E_CLERKEXISTS,
@@ -3150,6 +3150,11 @@ static const struct {
 		HRES_E_INVALIDARG,
 		"HRES_E_INVALIDARG",
 		"One or more arguments are invalid."
+	},
+	{
+		HRES_ERROR_DISK_FULL,
+		"HRES_ERROR_DISK_FULL",
+		"There is not enough space on the disk."
 	},
 	{
 		HRES_CO_E_CLASS_CREATE_FAILED,
@@ -3739,7 +3744,7 @@ static const struct {
 	{
 		HRES_SEC_E_SMARTCARD_CERT_REVOKED,
 		"HRES_SEC_E_SMARTCARD_CERT_REVOKED",
-		"The smart card certificate used for authentication has been revoked. Contact your system administrator. The event log may contain additional information."
+		"The smart card certificate used for authentication has been revoked. Contact your system administrator. The event log might contain additional information."
 	},
 	{
 		HRES_SEC_E_ISSUING_CA_UNTRUSTED,
@@ -4459,7 +4464,7 @@ static const struct {
 	{
 		HRES_CERTSRV_E_NO_DB_SESSIONS,
 		"HRES_CERTSRV_E_NO_DB_SESSIONS",
-		"An attempt was made to open a CA database session, but there are already too many active sessions. The server may need to be configured to allow additional sessions."
+		"An attempt was made to open a CA database session, but there are already too many active sessions. The server needs to be configured to allow additional sessions."
 	},
 	{
 		HRES_CERTSRV_E_ALIGNMENT_FAULT,
@@ -5244,7 +5249,7 @@ static const struct {
 	{
 		HRES_SPAPI_E_NON_WINDOWS_NT_DRIVER,
 		"HRES_SPAPI_E_NON_WINDOWS_NT_DRIVER",
-		"The driver selected for this device does not support Windows XP."
+		"The driver selected for this device does not support Windows XP operating system."
 	},
 	{
 		HRES_SPAPI_E_NON_WINDOWS_DRIVER,
@@ -5359,12 +5364,12 @@ static const struct {
 	{
 		HRES_SPAPI_E_SIGNATURE_OSATTRIBUTE_MISMATCH,
 		"HRES_SPAPI_E_SIGNATURE_OSATTRIBUTE_MISMATCH",
-		"The software was tested for compliance with Windows logo requirements on a different version of Windows and may not be compatible with this version."
+		"The software was tested for compliance with Windows logo requirements on a different version of Windows and might not be compatible with this version."
 	},
 	{
 		HRES_SPAPI_E_ONLY_VALIDATE_VIA_AUTHENTICODE,
 		"HRES_SPAPI_E_ONLY_VALIDATE_VIA_AUTHENTICODE",
-		"The file may be validated only by a catalog signed via Authenticode."
+		"The file can be validated only by a catalog signed via Authenticode."
 	},
 	{
 		HRES_SPAPI_E_DEVICE_INSTALLER_NOT_READY,
@@ -5714,7 +5719,7 @@ static const struct {
 	{
 		HRES_COMADMIN_E_OBJECTERRORS,
 		"HRES_COMADMIN_E_OBJECTERRORS",
-		"Errors occurred accessing one or more objects—the ErrorInfo collection may have more detail."
+		"Errors occurred accessing one or more objects—the ErrorInfo collection contains more detail."
 	},
 	{
 		HRES_COMADMIN_E_OBJECTINVALID,
@@ -5989,7 +5994,7 @@ static const struct {
 	{
 		HRES_COMADMIN_E_CANT_SUBSCRIBE_TO_COMPONENT,
 		"HRES_COMADMIN_E_CANT_SUBSCRIBE_TO_COMPONENT",
-		"Cannot subscribe to this component (the component may have been imported)."
+		"Cannot subscribe to this component (the component might have been imported)."
 	},
 	{
 		HRES_COMADMIN_E_EVENTCLASS_CANT_BE_SUBSCRIBER,
@@ -6164,7 +6169,7 @@ static const struct {
 	{
 		HRES_COMADMIN_E_SVCAPP_NOT_POOLABLE_OR_RECYCLABLE,
 		"HRES_COMADMIN_E_SVCAPP_NOT_POOLABLE_OR_RECYCLABLE",
-		"COM+ applications that run as Windows NT service may not be pooled or recycled."
+		"COM+ applications that run as Windows NT service cannot be pooled or recycled."
 	},
 	{
 		HRES_COMADMIN_E_USER_IN_SET,
@@ -6174,12 +6179,12 @@ static const struct {
 	{
 		HRES_COMADMIN_E_CANTRECYCLELIBRARYAPPS,
 		"HRES_COMADMIN_E_CANTRECYCLELIBRARYAPPS",
-		"Library applications may not be recycled."
+		"Library applications cannot be recycled."
 	},
 	{
 		HRES_COMADMIN_E_CANTRECYCLESERVICEAPPS,
 		"HRES_COMADMIN_E_CANTRECYCLESERVICEAPPS",
-		"Applications running as Windows NT services may not be recycled."
+		"Applications running as Windows NT services cannot be recycled."
 	},
 	{
 		HRES_COMADMIN_E_PROCESSALREADYRECYCLED,
@@ -6189,12 +6194,12 @@ static const struct {
 	{
 		HRES_COMADMIN_E_PAUSEDPROCESSMAYNOTBERECYCLED,
 		"HRES_COMADMIN_E_PAUSEDPROCESSMAYNOTBERECYCLED",
-		"A paused process may not be recycled."
+		"A paused process cannot be recycled."
 	},
 	{
 		HRES_COMADMIN_E_CANTMAKEINPROCSERVICE,
 		"HRES_COMADMIN_E_CANTMAKEINPROCSERVICE",
-		"Library applications may not be Windows NT services."
+		"Library applications cannot be Windows NT services."
 	},
 	{
 		HRES_COMADMIN_E_PROGIDINUSEBYCLSID,
@@ -6209,7 +6214,7 @@ static const struct {
 	{
 		HRES_COMADMIN_E_RECYCLEDPROCESSMAYNOTBEPAUSED,
 		"HRES_COMADMIN_E_RECYCLEDPROCESSMAYNOTBEPAUSED",
-		"A recycled process may not be paused."
+		"A recycled process cannot be paused."
 	},
 	{
 		HRES_COMADMIN_E_PARTITION_ACCESSDENIED,
@@ -6224,12 +6229,12 @@ static const struct {
 	{
 		HRES_COMADMIN_E_LEGACYCOMPS_NOT_ALLOWED_IN_1_0_FORMAT,
 		"HRES_COMADMIN_E_LEGACYCOMPS_NOT_ALLOWED_IN_1_0_FORMAT",
-		"Applications containing one or more legacy components may not be exported to 1.0 format."
+		"Applications containing one or more legacy components cannot be exported to 1.0 format."
 	},
 	{
 		HRES_COMADMIN_E_LEGACYCOMPS_NOT_ALLOWED_IN_NONBASE_PARTITIONS,
 		"HRES_COMADMIN_E_LEGACYCOMPS_NOT_ALLOWED_IN_NONBASE_PARTITIONS",
-		"Legacy components may not exist in nonbase partitions."
+		"Legacy components cannot exist in nonbase partitions."
 	},
 	{
 		HRES_COMADMIN_E_COMP_MOVE_SOURCE,
@@ -7679,7 +7684,7 @@ static const struct {
 	{
 		HRES_FVE_E_POLICY_PASSWORD_REQUIRED,
 		"HRES_FVE_E_POLICY_PASSWORD_REQUIRED",
-		"Group policy requires a recovery password before encryption may begin."
+		"Group policy requires a recovery password before encryption can begin."
 	},
 	{
 		HRES_FVE_E_CANNOT_SET_FVEK_ENCRYPTED,
@@ -7689,7 +7694,7 @@ static const struct {
 	{
 		HRES_FVE_E_CANNOT_ENCRYPT_NO_KEY,
 		"HRES_FVE_E_CANNOT_ENCRYPT_NO_KEY",
-		"A key must be specified before encryption may begin."
+		"A key must be specified before encryption can begin."
 	},
 	{
 		HRES_FVE_E_BOOTABLE_CDDVD,
@@ -9394,12 +9399,12 @@ static const struct {
 	{
 		HRES_NS_E_WMP_IMAGE_INVALID_FORMAT,
 		"HRES_NS_E_WMP_IMAGE_INVALID_FORMAT",
-		"Image file may be corrupt."
+		"Image file might be corrupt."
 	},
 	{
 		HRES_NS_E_WMP_GIF_UNEXPECTED_ENDOFFILE,
 		"HRES_NS_E_WMP_GIF_UNEXPECTED_ENDOFFILE",
-		"Unexpected end of file. GIF file may be corrupt."
+		"Unexpected end of file. GIF file might be corrupt."
 	},
 	{
 		HRES_NS_E_WMP_GIF_INVALID_FORMAT,
@@ -10179,7 +10184,7 @@ static const struct {
 	{
 		HRES_NS_E_WMP_FILE_NO_DURATION,
 		"HRES_NS_E_WMP_FILE_NO_DURATION",
-		"It is not possible to determine if this file can fit on a disc because Windows Media Player cannot detect the length of the file. Playing the file before burning may enable the Player to detect the file length."
+		"It is not possible to determine if this file can fit on a disc because Windows Media Player cannot detect the length of the file. Playing the file before burning might enable the Player to detect the file length."
 	},
 	{
 		HRES_NS_E_PDA_FAILED_TO_BURN,
@@ -11374,12 +11379,12 @@ static const struct {
 	{
 		HRES_NS_E_SUBSCRIPTIONSERVICE_LOGIN_FAILED,
 		"HRES_NS_E_SUBSCRIPTIONSERVICE_LOGIN_FAILED",
-		"Windows Media Player cannot sign in to the online store. Verify that you are using the correct user name and password. If the problem persists, the store may be temporarily unavailable."
+		"Windows Media Player cannot sign in to the online store. Verify that you are using the correct user name and password. If the problem persists, the store might be temporarily unavailable."
 	},
 	{
 		HRES_NS_E_SUBSCRIPTIONSERVICE_DOWNLOAD_TIMEOUT,
 		"HRES_NS_E_SUBSCRIPTIONSERVICE_DOWNLOAD_TIMEOUT",
-		"Windows Media Player cannot download this item because the server is not responding. The server might be temporarily unavailable or you may have lost your Internet connection."
+		"Windows Media Player cannot download this item because the server is not responding. The server might be temporarily unavailable or the Internet connection might be lost."
 	},
 	{
 		HRES_NS_E_CONTENT_PARTNER_STILL_INITIALIZING,
@@ -11389,7 +11394,7 @@ static const struct {
 	{
 		HRES_NS_E_OPEN_CONTAINING_FOLDER_FAILED,
 		"HRES_NS_E_OPEN_CONTAINING_FOLDER_FAILED",
-		"The folder could not be opened. The folder may have been moved or deleted."
+		"The folder could not be opened. The folder might have been moved or deleted."
 	},
 	{
 		HRES_NS_E_ADVANCEDEDIT_TOO_MANY_PICTURES,
@@ -12489,7 +12494,7 @@ static const struct {
 	{
 		HRES_NS_E_TRANSFORM_PLUGIN_INVALID,
 		"HRES_NS_E_TRANSFORM_PLUGIN_INVALID",
-		"The transform plug-in is not valid. It may be damaged or you may not have the required permissions to access the plug-in."
+		"The transform plug-in is not valid. It might be damaged or you might not have the required permissions to access the plug-in."
 	},
 	{
 		HRES_NS_E_EDL_REQUIRED_FOR_DEVICE_MULTIPASS,
@@ -13689,7 +13694,7 @@ static const struct {
 	{
 		HRES_NS_E_CONNECT_TIMEOUT,
 		"HRES_NS_E_CONNECT_TIMEOUT",
-		"It was not possible to establish a connection to the media server in a timely manner. The media server may be down for maintenance, or it may be necessary to use a proxy server to access this media server."
+		"It was not possible to establish a connection to the media server in a timely manner. The media server might be down for maintenance, or it might be necessary to use a proxy server to access this media server."
 	},
 	{
 		HRES_NS_E_PROXY_CONNECT_TIMEOUT,
@@ -13714,7 +13719,7 @@ static const struct {
 	{
 		HRES_NS_E_INCOMPATIBLE_PUSH_SERVER,
 		"HRES_NS_E_INCOMPATIBLE_PUSH_SERVER",
-		"The Server service that received the HTTP push request is not a compatible version of Windows Media Services (WMS). This error may indicate the push request was received by IIS instead of WMS. Ensure WMS is started and has the HTTP Server control protocol properly enabled and try again."
+		"The Server service that received the HTTP push request is not a compatible version of Windows Media Services (WMS). This error might indicate the push request was received by IIS instead of WMS. Ensure WMS is started and has the HTTP Server control protocol properly enabled and try again."
 	},
 	{
 		HRES_NS_E_END_OF_PLAYLIST,
