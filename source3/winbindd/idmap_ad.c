@@ -22,6 +22,7 @@
 #include "idmap.h"
 #include "tldap_gensec_bind.h"
 #include "tldap_util.h"
+#include "secrets.h"
 #include "lib/param/param.h"
 #include "utils/net.h"
 #include "auth/gensec/gensec.h"
@@ -242,6 +243,7 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 				       const char *domname,
 				       struct tldap_context **pld)
 {
+	struct db_context *db_ctx;
 	struct netr_DsRGetDCNameInfo *dcinfo;
 	struct sockaddr_storage dcaddr;
 	struct cli_credentials *creds;
@@ -308,7 +310,14 @@ static NTSTATUS idmap_ad_get_tldap_ctx(TALLOC_CTX *mem_ctx,
 
 	cli_credentials_set_conf(creds, lp_ctx);
 
-	status = cli_credentials_set_machine_account(creds, lp_ctx);
+	db_ctx = secrets_db_ctx();
+	if (db_ctx == NULL) {
+		DBG_DEBUG("Failed to open secrets.tdb.\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = cli_credentials_set_machine_account_db_ctx(creds, lp_ctx,
+							    db_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("cli_credentials_set_machine_account "
 			  "failed: %s\n", nt_errstr(status));
