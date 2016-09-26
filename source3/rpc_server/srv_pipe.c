@@ -1357,6 +1357,18 @@ static bool api_pipe_request(struct pipes_struct *p,
 					    pipe_fns->syntax.if_version);
 	SMB_ASSERT(interface_name != NULL);
 
+	if (p->auth.auth_level < pipe_fns->min_auth_level) {
+
+		DEBUG(1, ("%s: auth level required for %s: 0x%x, got: 0x%0x\n",
+			  __func__, interface_name,
+			  pipe_fns->min_auth_level,
+			  p->auth.auth_level));
+
+		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_ACCESS_DENIED));
+		TALLOC_FREE(frame);
+		return true;
+	}
+
 	switch (p->auth.auth_level) {
 	case DCERPC_AUTH_LEVEL_NONE:
 	case DCERPC_AUTH_LEVEL_PACKET:

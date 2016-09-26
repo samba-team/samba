@@ -98,6 +98,11 @@ struct pipe_rpc_fns {
 	 * shall we allow "connect" auth level for this interface ?
 	 */
 	bool allow_connect;
+
+	/*
+	 * minimal required auth level
+	 */
+	enum dcerpc_AuthLevel min_auth_level;
 };
 
 /*
