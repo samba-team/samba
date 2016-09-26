@@ -868,28 +868,6 @@ bld.SAMBA3_BINARY('smbd/smbd',
                       ''',
                  install_path='${SBINDIR}')
 
-bld.SAMBA3_BINARY('nmbd/nmbd',
-                 source='''nmbd/asyncdns.c nmbd/nmbd.c nmbd/nmbd_become_dmb.c
-                 nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
-                 nmbd/nmbd_browsesync.c nmbd/nmbd_elections.c
-                 nmbd/nmbd_incomingdgrams.c nmbd/nmbd_incomingrequests.c
-                 nmbd/nmbd_lmhosts.c nmbd/nmbd_logonnames.c nmbd/nmbd_mynames.c
-                 nmbd/nmbd_namelistdb.c nmbd/nmbd_namequery.c
-                 nmbd/nmbd_nameregister.c nmbd/nmbd_namerelease.c
-                 nmbd/nmbd_nodestatus.c nmbd/nmbd_packets.c
-                 nmbd/nmbd_processlogon.c nmbd/nmbd_responserecordsdb.c
-                 nmbd/nmbd_sendannounce.c nmbd/nmbd_serverlistdb.c
-                 nmbd/nmbd_subnetdb.c nmbd/nmbd_winsproxy.c nmbd/nmbd_winsserver.c
-                 nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c''',
-                 deps='''
-                 talloc
-                 tevent
-                 param
-                 libsmb
-                 popt_samba3
-                 ''',
-                 install_path='${SBINDIR}')
-
 
 bld.SAMBA3_SUBSYSTEM('TDB_VALIDATE',
                      source='lib/tdb_validate.c',
@@ -1243,6 +1221,7 @@ bld.RECURSE('lib/netapi/examples')
 bld.RECURSE('smbd/notifyd')
 bld.RECURSE('rpcclient')
 bld.RECURSE('utils')
+bld.RECURSE('nmbd')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
