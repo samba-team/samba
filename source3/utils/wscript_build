@@ -1,0 +1,251 @@
+#!/usr/bin/env python
+
+bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
+                    source='passwd_util.c',
+                    deps='samba-util')
+
+bld.SAMBA3_BINARY('profiles',
+                 source='profiles.c',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 param
+                 REGFIO''')
+
+bld.SAMBA3_BINARY('smbcontrol',
+                 source='smbcontrol.c',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3
+                 PRINTBASE''')
+
+bld.SAMBA3_BINARY('smbtree',
+                 source='smbtree.c',
+                 deps='''
+                 talloc
+                 param
+                 libsmb
+                 msrpc3
+                 popt_samba3
+                 RPC_NDR_SRVSVC''')
+
+bld.SAMBA3_BINARY('smbpasswd',
+                 source='smbpasswd.c',
+                 deps='''
+                 talloc
+                 param
+                 pdb
+                 PASSWD_UTIL
+                 PASSCHANGE''')
+
+bld.SAMBA3_BINARY('pdbedit',
+                 source='pdbedit.c',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3
+                 pdb
+                 PASSWD_UTIL''')
+
+bld.SAMBA3_BINARY('smbget',
+                 source='smbget.c',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 smbclient''')
+
+bld.SAMBA3_BINARY('nmblookup',
+                 source='nmblookup.c',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3
+                 LIBNMB''')
+
+bld.SAMBA3_BINARY('smbcacls',
+                 source='smbcacls.c ../lib/util_sd.c',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 msrpc3
+                 libcli_lsa3
+                 krb5samba''')
+
+bld.SAMBA3_BINARY('smbcquotas',
+                 source='smbcquotas.c',
+                 deps='''
+                 talloc
+                 popt_samba3
+                 libsmb
+                 msrpc3
+                 libcli_lsa3''')
+
+bld.SAMBA3_BINARY('eventlogadm',
+                 source='eventlogadm.c',
+                 deps='''
+                 talloc
+                 param
+                 LIBEVENTLOG''')
+
+bld.SAMBA3_BINARY('sharesec',
+                 source='sharesec.c ../lib/util_sd.c',
+                 deps='''
+                 talloc
+                 msrpc3
+                 libcli_lsa3
+                 popt_samba3''')
+
+bld.SAMBA3_BINARY('log2pcap',
+                 source='log2pcaphex.c',
+                 deps='''talloc popt''',
+                 install=False)
+
+bld.SAMBA3_BINARY('debug2html',
+                 source='''debug2html.c debugparse.c''',
+                 deps='''talloc popt''',
+                 install=False)
+
+bld.SAMBA3_BINARY('smbfilter',
+                 source='smbfilter.c',
+                 deps='''
+                 talloc
+                 param
+                 LIBNMB''',
+                 install=False)
+
+bld.SAMBA3_BINARY('ntlm_auth',
+                 source='''ntlm_auth.c ntlm_auth_diagnostics.c''',
+                 deps='''
+                 talloc
+                 krb5samba
+                 tiniparser
+                 libsmb
+                 popt_samba3
+                 gse gensec''')
+
+bld.SAMBA3_BINARY('dbwrap_tool',
+                 source='dbwrap_tool.c',
+                 deps='''
+                 talloc
+                 popt_samba3''')
+
+bld.SAMBA3_BINARY('dbwrap_torture',
+                 source='dbwrap_torture.c',
+                 deps='''
+                 talloc
+                 popt_samba3''',
+                 install=False)
+
+bld.SAMBA3_BINARY('split_tokens',
+                 source='split_tokens.c',
+                 deps='''
+                 talloc
+                 popt_samba3''',
+                 install=False)
+
+bld.SAMBA3_BINARY('samba-regedit',
+                  source="""regedit.c regedit_samba3.c
+                            regedit_wrap.c regedit_treeview.c
+                            regedit_valuelist.c regedit_dialog.c
+                            regedit_hexedit.c regedit_list.c""",
+                  deps='ncurses menu panel form registry param popt_samba3 smbregistry',
+                  enabled=bld.env.build_regedit)
+
+bld.SAMBA3_BINARY('testparm',
+                 source='testparm.c',
+                 deps='''
+                 talloc
+                 param
+                 popt_samba3''')
+
+bld.SAMBA3_BINARY('net',
+                 source='''net.c
+                 net_ads.c
+                 net_help.c
+                 net_rap.c
+                 net_rpc.c
+                 net_rpc_samsync.c
+                 net_time.c
+                 net_lookup.c
+                 net_cache.c
+                 net_groupmap.c
+                 net_idmap.c
+                 net_idmap_check.c
+                 interact.c
+                 net_status.c
+                 net_rpc_printer.c
+                 net_rpc_rights.c
+                 net_rpc_service.c
+                 net_rpc_registry.c
+                 net_usershare.c
+                 netlookup.c
+                 net_sam.c
+                 net_rpc_shell.c
+                 net_util.c
+                 net_rpc_sh_acct.c
+                 net_rpc_audit.c
+                 net_dns.c
+                 net_ads_gpo.c
+                 net_conf.c
+                 net_conf_util.c
+                 net_join.c
+                 net_user.c
+                 net_group.c
+                 net_file.c
+                 net_registry.c
+                 net_registry_check.c
+                 net_dom.c
+                 net_share.c
+                 net_g_lock.c
+                 net_serverid.c
+                 net_eventlog.c
+                 net_printing.c
+                 net_rpc_trust.c
+                 net_rpc_conf.c
+                 net_afs.c
+                 net_notify.c
+                 ../registry/reg_parse.c
+                 ../registry/reg_format.c
+                 ../registry/reg_import.c
+                 net_registry_util.c
+                 net_help_common.c''',
+                 deps='''
+                 talloc
+                 netapi
+                 addns
+                 samba_intl
+                 popt_samba3
+                 pdb
+                 libsmb
+                 param
+                 KRBCLIENT
+                 ndr-standard
+                 msrpc3
+                 gpo
+                 ads
+                 smbd_base
+                 LIBADS_SERVER
+                 LIBADS_PRINTER
+                 SMBREADLINE
+                 PASSWD_UTIL
+                 LIBNET
+                 LIBNET_DSSYNC
+                 LIBNET_SAMSYNC
+                 LIBEVENTLOG
+                 REGFIO
+                 NDR_NTPRINTING
+                 RPC_NDR_WINREG
+                 RPC_CLIENT_SCHANNEL
+                 LIBCLI_SAMR
+                 libcli_lsa3
+                 libcli_netlogon3
+                 cli_spoolss
+                 RPC_NDR_SRVSVC
+                 RPC_NDR_SVCCTL
+                 RPC_NDR_DSSETUP
+                 RPC_NDR_INITSHUTDOWN
+                 printing_migrate
+                 trusts_util
+                 IDMAP_AUTORID_TDB
+                 ''')

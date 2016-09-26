@@ -704,10 +704,6 @@ bld.SAMBA3_SUBSYSTEM('PRINTING',
                     printing/printer_list.c''',
                     deps='NDR_PRINTCAP tdb cups')
 
-bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
-                    source='utils/passwd_util.c',
-                    deps='samba-util')
-
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     source='lib/filename_util.c',
                     deps='samba-util')
@@ -1029,104 +1025,6 @@ bld.SAMBA3_BINARY('client/smbclient',
 		 archive
                  ''')
 
-bld.SAMBA3_BINARY('net',
-                 source='''utils/net.c
-                 utils/net_ads.c
-                 utils/net_help.c
-                 utils/net_rap.c
-                 utils/net_rpc.c
-                 utils/net_rpc_samsync.c
-                 utils/net_time.c
-                 utils/net_lookup.c
-                 utils/net_cache.c
-                 utils/net_groupmap.c
-                 utils/net_idmap.c
-                 utils/net_idmap_check.c
-                 utils/interact.c
-                 utils/net_status.c
-                 utils/net_rpc_printer.c
-                 utils/net_rpc_rights.c
-                 utils/net_rpc_service.c
-                 utils/net_rpc_registry.c
-                 utils/net_usershare.c
-                 utils/netlookup.c
-                 utils/net_sam.c
-                 utils/net_rpc_shell.c
-                 utils/net_util.c
-                 utils/net_rpc_sh_acct.c
-                 utils/net_rpc_audit.c
-                 utils/net_dns.c
-                 utils/net_ads_gpo.c
-                 utils/net_conf.c
-                 utils/net_conf_util.c
-                 utils/net_join.c
-                 utils/net_user.c
-                 utils/net_group.c
-                 utils/net_file.c
-                 utils/net_registry.c
-                 utils/net_registry_check.c
-                 utils/net_dom.c
-                 utils/net_share.c
-                 utils/net_g_lock.c
-                 utils/net_serverid.c
-                 utils/net_eventlog.c
-                 utils/net_printing.c
-                 utils/net_rpc_trust.c
-                 utils/net_rpc_conf.c
-                 utils/net_afs.c
-                 utils/net_notify.c
-                 registry/reg_parse.c
-                 registry/reg_format.c
-                 registry/reg_import.c
-                 utils/net_registry_util.c
-                 utils/net_help_common.c''',
-                 deps='''
-                 talloc
-                 netapi
-                 addns
-                 samba_intl
-                 popt_samba3
-                 pdb
-                 libsmb
-                 param
-                 KRBCLIENT
-                 ndr-standard
-                 msrpc3
-                 gpo
-                 ads
-                 smbd_base
-                 LIBADS_SERVER
-                 LIBADS_PRINTER
-                 SMBREADLINE
-                 PASSWD_UTIL
-                 LIBNET
-                 LIBNET_DSSYNC
-                 LIBNET_SAMSYNC
-                 LIBEVENTLOG
-                 REGFIO
-                 NDR_NTPRINTING
-                 RPC_NDR_WINREG
-                 RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR
-                 libcli_lsa3
-                 libcli_netlogon3
-                 cli_spoolss
-                 RPC_NDR_SRVSVC
-                 RPC_NDR_SVCCTL
-                 RPC_NDR_DSSETUP
-                 RPC_NDR_INITSHUTDOWN
-                 printing_migrate
-                 trusts_util
-                 IDMAP_AUTORID_TDB''')
-
-bld.SAMBA3_BINARY('profiles',
-                 source='utils/profiles.c',
-                 deps='''
-                 talloc
-                 popt_samba3
-                 param
-                 REGFIO''')
-
 bld.SAMBA3_BINARY('smbspool',
                  source='client/smbspool.c',
                  deps='''
@@ -1145,12 +1043,14 @@ bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
                  install_path='${LIBEXECDIR}/samba',
                  enabled=bld.CONFIG_SET('HAVE_CUPS'))
 
-bld.SAMBA3_BINARY('testparm',
-                 source='utils/testparm.c',
+bld.SAMBA3_BINARY('locktest2',
+                 source='torture/locktest2.c',
                  deps='''
                  talloc
                  param
-                 popt_samba3''')
+                 libsmb
+                 LOCKING''',
+                 install=False)
 
 smbstatus_source = 'utils/status.c smbd/notify_msg.c'
 
@@ -1168,57 +1068,6 @@ bld.SAMBA3_BINARY('smbstatus',
                  smbd_base
                  LOCKING
                  PROFILE''')
-
-bld.SAMBA3_BINARY('smbcontrol',
-                 source='utils/smbcontrol.c',
-                 deps='''
-                 talloc
-                 param
-                 popt_samba3
-                 PRINTBASE''')
-
-bld.SAMBA3_BINARY('smbtree',
-                 source='utils/smbtree.c',
-                 deps='''
-                 talloc
-                 param
-                 libsmb
-                 msrpc3
-                 popt_samba3
-                 RPC_NDR_SRVSVC''')
-
-bld.SAMBA3_BINARY('smbpasswd',
-                 source='utils/smbpasswd.c',
-                 deps='''
-                 talloc
-                 param
-                 pdb
-                 PASSWD_UTIL
-                 PASSCHANGE''')
-
-bld.SAMBA3_BINARY('pdbedit',
-                 source='utils/pdbedit.c',
-                 deps='''
-                 talloc
-                 param
-                 popt_samba3
-                 pdb
-                 PASSWD_UTIL''')
-
-bld.SAMBA3_BINARY('smbget',
-                 source='utils/smbget.c',
-                 deps='''
-                 talloc
-                 popt_samba3
-                 smbclient''')
-
-bld.SAMBA3_BINARY('nmblookup',
-                 source='utils/nmblookup.c',
-                 deps='''
-                 talloc
-                 param
-                 popt_samba3
-                 LIBNMB''')
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source='''torture/torture.c
@@ -1303,39 +1152,6 @@ bld.SAMBA3_BINARY('msg_source',
                  param''',
                  install=False)
 
-bld.SAMBA3_BINARY('smbcacls',
-                 source='utils/smbcacls.c lib/util_sd.c',
-                 deps='''
-                 talloc
-                 popt_samba3
-                 msrpc3
-                 libcli_lsa3
-                 krb5samba''')
-
-bld.SAMBA3_BINARY('smbcquotas',
-                 source='utils/smbcquotas.c',
-                 deps='''
-                 talloc
-                 popt_samba3
-                 libsmb
-                 msrpc3
-                 libcli_lsa3''')
-
-bld.SAMBA3_BINARY('eventlogadm',
-                 source='utils/eventlogadm.c',
-                 deps='''
-                 talloc
-                 param
-                 LIBEVENTLOG''')
-
-bld.SAMBA3_BINARY('sharesec',
-                 source='utils/sharesec.c lib/util_sd.c',
-                 deps='''
-                 talloc
-                 msrpc3
-                 libcli_lsa3
-                 popt_samba3''')
-
 bld.SAMBA3_BINARY('pdbtest',
                  source='torture/pdbtest.c',
                  deps='''
@@ -1356,49 +1172,12 @@ bld.SAMBA3_BINARY('vfstest',
                  SMBREADLINE''',
                  install=False)
 
-bld.SAMBA3_BINARY('log2pcap',
-                 source='utils/log2pcaphex.c',
-                 deps='''talloc popt''',
-                 install=False)
-
-bld.SAMBA3_BINARY('locktest2',
-                 source='torture/locktest2.c',
-                 deps='''
-                 talloc
-                 param
-                 libsmb
-                 LOCKING''',
-                 install=False)
-
-bld.SAMBA3_BINARY('debug2html',
-                 source='''utils/debug2html.c utils/debugparse.c''',
-                 deps='''talloc popt''',
-                 install=False)
-
-bld.SAMBA3_BINARY('smbfilter',
-                 source='utils/smbfilter.c',
-                 deps='''
-                 talloc
-                 param
-                 LIBNMB''',
-                 install=False)
-
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
                  deps='''
                  SAMBA_VERSION
                  param''',
                  install=False)
-
-bld.SAMBA3_BINARY('ntlm_auth',
-                 source='''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c''',
-                 deps='''
-                 talloc
-                 krb5samba
-                 tiniparser
-                 libsmb
-                 popt_samba3
-                 gse gensec''')
 
 bld.SAMBA3_BINARY('timelimit',
                  source='script/tests/timelimit.c',
@@ -1409,26 +1188,6 @@ bld.SAMBA3_BINARY('rpc_open_tcp',
                  deps='''
                  talloc
                  msrpc3''',
-                 install=False)
-
-bld.SAMBA3_BINARY('dbwrap_tool',
-                 source='utils/dbwrap_tool.c',
-                 deps='''
-                 talloc
-                 popt_samba3''')
-
-bld.SAMBA3_BINARY('dbwrap_torture',
-                 source='utils/dbwrap_torture.c',
-                 deps='''
-                 talloc
-                 popt_samba3''',
-                 install=False)
-
-bld.SAMBA3_BINARY('split_tokens',
-                 source='utils/split_tokens.c',
-                 deps='''
-                 talloc
-                 popt_samba3''',
                  install=False)
 
 bld.SAMBA3_BINARY('vlp',
@@ -1449,14 +1208,6 @@ bld.SAMBA3_PYTHON('pylibsmb',
                   deps='smbclient samba-credentials pycredentials',
                   realname='samba/samba3/libsmb_samba_internal.so'
                   )
-
-bld.SAMBA3_BINARY('samba-regedit',
-                  source="""utils/regedit.c utils/regedit_samba3.c
-                            utils/regedit_wrap.c utils/regedit_treeview.c
-                            utils/regedit_valuelist.c utils/regedit_dialog.c
-                            utils/regedit_hexedit.c utils/regedit_list.c""",
-                  deps='ncurses menu panel form registry param popt_samba3 smbregistry',
-                  enabled=bld.env.build_regedit)
 
 bld.SAMBA3_BINARY('spotlight2sparql',
                  source='''
@@ -1491,6 +1242,7 @@ bld.RECURSE('lib/netapi/tests')
 bld.RECURSE('lib/netapi/examples')
 bld.RECURSE('smbd/notifyd')
 bld.RECURSE('rpcclient')
+bld.RECURSE('utils')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
