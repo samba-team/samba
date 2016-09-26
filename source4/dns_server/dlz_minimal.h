@@ -27,8 +27,10 @@
 # define DLZ_DLOPEN_VERSION 1
 #elif defined (BIND_VERSION_9_9)
 # define DLZ_DLOPEN_VERSION 2
+# define DNS_CLIENTINFO_VERSION 1
 #elif defined (BIND_VERSION_9_10)
 # define DLZ_DLOPEN_VERSION 3
+# define DNS_CLIENTINFO_VERSION 1
 #else
 # error Unsupported BIND version
 #endif
@@ -97,7 +99,8 @@ typedef struct isc_sockaddr {
 	void *                          link;
 } isc_sockaddr_t;
 
-#define DNS_CLIENTINFO_VERSION 1
+#if DNS_CLIENTINFO_VERSION == 1
+
 typedef struct dns_clientinfo {
 	uint16_t version;
 	void *data;
@@ -114,6 +117,9 @@ typedef struct dns_clientinfomethods {
 	uint16_t age;
 	dns_clientinfo_sourceip_t sourceip;
 } dns_clientinfomethods_t;
+
+#endif /* DNS_CLIENTINFO_VERSION */
+
 #endif /* DLZ_DLOPEN_VERSION > 1 */
 
 /*
