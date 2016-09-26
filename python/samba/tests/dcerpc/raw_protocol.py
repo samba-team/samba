@@ -4134,83 +4134,20 @@ class TestDCERPC_BIND(RawDCERPCTest):
     def _test_spnego_bind_auth_level(self, auth_level, auth_context_id, ctx,
                                      g_auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
                                      alter_fault=None):
-        ctx_list = [ctx]
-
-        c = self.get_user_creds()
-        g = gensec.Security.start_client(self.settings)
-        g.set_credentials(c)
-        g.want_feature(gensec.FEATURE_DCE_STYLE)
-        auth_type = dcerpc.DCERPC_AUTH_TYPE_SPNEGO
-        g.start_mech_by_authtype(auth_type, g_auth_level)
-        from_server = ""
-        (finished, to_server) = g.update(from_server)
-        self.assertFalse(finished)
-
-        auth_info = self.generate_auth(auth_type=auth_type,
-                                       auth_level=auth_level,
-                                       auth_context_id=auth_context_id,
-                                       auth_blob=to_server)
-        req = self.generate_bind(call_id=0,
-                                 ctx_list=ctx_list,
-                                 auth_info=auth_info)
-
-        self.send_pdu(req)
-        rep = self.recv_pdu()
-        self.verify_pdu(rep, dcerpc.DCERPC_PKT_BIND_ACK, req.call_id)
-        self.assertEquals(rep.u.num_results, 1)
-        self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
-        self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
-        self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
-        self.assertNotEquals(len(rep.u.auth_info), 0)
-        a = self.parse_auth(rep.u.auth_info)
-
-        assoc_group_id=rep.u.assoc_group_id
-
-        from_server = a.credentials
-        (finished, to_server) = g.update(from_server)
-        self.assertFalse(finished)
-
-        auth_info = self.generate_auth(auth_type=auth_type,
-                                       auth_level=auth_level,
-                                       auth_context_id=auth_context_id,
-                                       auth_blob=to_server)
-        req = self.generate_alter(call_id=0,
-                                  ctx_list=ctx_list,
-                                  assoc_group_id=assoc_group_id,
-                                  auth_info=auth_info)
-
-        self.send_pdu(req)
-        rep = self.recv_pdu()
-        if alter_fault is not None:
-            self.verify_pdu(rep, dcerpc.DCERPC_PKT_FAULT, req.call_id,
-                            pfc_flags=req.pfc_flags |
-                            dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
-                            auth_length=0)
-            self.assertNotEquals(rep.u.alloc_hint, 0)
-            self.assertEquals(rep.u.context_id, 0)
-            self.assertEquals(rep.u.cancel_count, 0)
-            self.assertEquals(rep.u.flags, 0)
-            self.assertEquals(rep.u.status, alter_fault)
-            self.assertEquals(rep.u.reserved, 0)
-            self.assertEquals(len(rep.u.error_and_verifier), 0)
+        creds = self.get_user_creds()
+        auth_context = self.get_auth_context_creds(creds=creds,
+                                                   auth_type=dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
+                                                   auth_level=auth_level,
+                                                   auth_context_id=auth_context_id,
+                                                   g_auth_level=g_auth_level)
+        if auth_context is None:
             return None
-        self.verify_pdu(rep, dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id)
-        self.assertEquals(rep.u.num_results, 1)
-        self.assertEquals(rep.u.ctx_list[0].result,
-                dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
-        self.assertEquals(rep.u.ctx_list[0].reason,
-                dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
-        self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
-        self.assertNotEquals(len(rep.u.auth_info), 0)
-        a = self.parse_auth(rep.u.auth_info)
-
-        from_server = a.credentials
-        (finished, to_server) = g.update(from_server)
-        self.assertTrue(finished)
-
-        return g
+        ack = self.do_generic_bind(ctx=ctx,
+                                   auth_context=auth_context,
+                                   alter_fault=alter_fault)
+        if ack is None:
+            return None
+        return auth_context["gensec"]
 
     def _test_spnego_level_bind_nak(self, auth_level,
                                    reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM):
