@@ -305,7 +305,7 @@ static void wb_sids2xids_done(struct tevent_req *subreq)
 		 * All we can do here is to report "not mapped"
 		 */
 		for (i=0; i<src->num_ids; i++) {
-			src->ids[i].type = ID_TYPE_NOT_SPECIFIED;
+			src->ids[i].xid.type = ID_TYPE_NOT_SPECIFIED;
 		}
 	}
 
