@@ -29,7 +29,6 @@ import samba.dcerpc.epmapper
 import samba.dcerpc.mgmt
 import samba.dcerpc.netlogon
 import struct
-from samba.credentials import Credentials
 from samba import gensec
 from samba.tests import RawDCERPCTest
 
@@ -2329,8 +2328,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -2480,8 +2478,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -2597,8 +2594,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -2684,8 +2680,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -2773,8 +2768,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -2935,8 +2929,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3094,8 +3087,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1.transfer_syntaxes = tsf1_list
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3180,8 +3172,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1b.abstract_syntax = samba.dcerpc.epmapper.abstract_syntax()
         ctx1b.transfer_syntaxes = tsf1_list
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3268,8 +3259,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1b.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1b.transfer_syntaxes = tsf1b_list
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3350,8 +3340,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1.transfer_syntaxes = tsf1_list
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3439,8 +3428,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1b.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1b.transfer_syntaxes = tsf1b_list
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3528,8 +3516,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1b.abstract_syntax = samba.dcerpc.mgmt.abstract_syntax()
         ctx1b.transfer_syntaxes = tsf1b_list
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3610,8 +3597,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3764,8 +3750,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3829,8 +3814,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -3943,8 +3927,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -4062,8 +4045,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         ctx1.transfer_syntaxes = tsf1_list
         ctx_list = [ctx1]
 
-        c = Credentials()
-        c.set_anonymous()
+        c = self.get_anon_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -4154,12 +4136,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
                                      alter_fault=None):
         ctx_list = [ctx]
 
-        c = Credentials()
-        c.guess()
-        username = samba.tests.env_get_var_value('USERNAME')
-        password = samba.tests.env_get_var_value('PASSWORD')
-        c.set_username(username)
-        c.set_password(password)
+        c = self.get_user_creds()
         g = gensec.Security.start_client(self.settings)
         g.set_credentials(c)
         g.want_feature(gensec.FEATURE_DCE_STYLE)
@@ -4237,12 +4214,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
 
     def _test_spnego_level_bind_nak(self, auth_level,
                                    reason=dcerpc.DCERPC_BIND_NAK_REASON_INVALID_CHECKSUM):
-        c = Credentials()
-        c.guess()
-        username = samba.tests.env_get_var_value('USERNAME')
-        password = samba.tests.env_get_var_value('PASSWORD')
-        c.set_username(username)
-        c.set_password(password)
+        c = self.get_user_creds()
         return self._test_auth_type_level_bind_nak(auth_type=dcerpc.DCERPC_AUTH_TYPE_SPNEGO,
                                                    auth_level=auth_level, creds=c, reason=reason)
 
