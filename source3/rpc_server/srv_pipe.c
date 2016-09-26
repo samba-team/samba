@@ -50,6 +50,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/ndr_epmapper.h"
 #include "../librpc/gen_ndr/ndr_echo.h"
+#include "../librpc/gen_ndr/ndr_winspool.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -458,6 +459,11 @@ static bool check_bind_req(struct pipes_struct *p,
 	context_fns->allow_connect = lp_parm_bool(-1,
 		"allow dcerpc auth level connect",
 		interface_name, context_fns->allow_connect);
+
+	ok = ndr_syntax_id_equal(abstract, &ndr_table_iremotewinspool.syntax_id);
+	if (ok) {
+		context_fns->min_auth_level = DCERPC_AUTH_LEVEL_PACKET;
+	}
 
 	/* add to the list of open contexts */
 
