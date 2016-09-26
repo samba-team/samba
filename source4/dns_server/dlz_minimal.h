@@ -29,9 +29,12 @@
 # define DLZ_DLOPEN_VERSION 2
 #elif defined (BIND_VERSION_9_10)
 # define DLZ_DLOPEN_VERSION 3
-# define DLZ_DLOPEN_AGE 0
 #else
 # error Unsupported BIND version
+#endif
+
+#if DLZ_DLOPEN_VERSION > 1
+# define DLZ_DLOPEN_AGE 0
 #endif
 
 typedef unsigned int isc_result_t;
