@@ -120,7 +120,6 @@
 
 #include "librpc/gen_ndr/security.h"
 
-struct idle_event;
 struct share_mode_entry;
 struct uuid;
 struct named_mutex;

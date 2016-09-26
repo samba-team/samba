@@ -19,6 +19,8 @@
 */
 
 /* The following definitions come from lib/util_event.c  */
+struct idle_event;
+
 struct idle_event *event_add_idle(struct tevent_context *event_ctx,
 				  TALLOC_CTX *mem_ctx,
 				  struct timeval interval,
