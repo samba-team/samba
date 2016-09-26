@@ -679,6 +679,7 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	DATA_BLOB auth_resp = data_blob_null;
 	DATA_BLOB auth_blob = data_blob_null;
 	const struct ndr_interface_table *table;
+	const char *secondary_address = NULL;
 
 	if (!p->allow_bind) {
 		DEBUG(2,("Pipe not in allow bind state\n"));
@@ -826,14 +827,26 @@ static bool api_pipe_bind_req(struct pipes_struct *p,
 	u.bind_ack.max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 	u.bind_ack.assoc_group_id = assoc_gid;
 
-	/* name has to be \PIPE\xxxxx */
-	u.bind_ack.secondary_address =
-			talloc_asprintf(pkt, "\\PIPE\\%s",
-					rpc_srv_get_pipe_srv_name(&id));
-	if (!u.bind_ack.secondary_address) {
+	switch (p->transport) {
+	case NCACN_IP_TCP:
+		secondary_address = talloc_asprintf(pkt, "%d",
+			tsocket_address_inet_port(p->local_address));
+		break;
+	case NCACN_NP:
+	default:
+		/* name has to be \PIPE\xxxxx */
+		secondary_address =
+				talloc_asprintf(pkt, "\\PIPE\\%s",
+						rpc_srv_get_pipe_srv_name(&id));
+		break;
+	}
+
+	if (secondary_address == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		goto err_exit;
 	}
+
+	u.bind_ack.secondary_address = secondary_address;
 	u.bind_ack.secondary_address_size =
 				strlen(u.bind_ack.secondary_address) + 1;
 
