@@ -23,15 +23,15 @@
 #ifndef DLZ_MINIMAL_H
 #define DLZ_MINIMAL_H 1
 
-#ifdef BIND_VERSION_9_8
-#define DLZ_DLOPEN_VERSION 1
-#elif BIND_VERSION_9_9
-#define DLZ_DLOPEN_VERSION 2
-#elif BIND_VERSION_9_10
-#define DLZ_DLOPEN_VERSION 3
-#define DLZ_DLOPEN_AGE 0
+#if defined (BIND_VERSION_9_8)
+# define DLZ_DLOPEN_VERSION 1
+#elif defined (BIND_VERSION_9_9)
+# define DLZ_DLOPEN_VERSION 2
+#elif defined (BIND_VERSION_9_10)
+# define DLZ_DLOPEN_VERSION 3
+# define DLZ_DLOPEN_AGE 0
 #else
-#error Unsupported BIND version
+# error Unsupported BIND version
 #endif
 
 typedef unsigned int isc_result_t;
