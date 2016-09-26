@@ -29,6 +29,7 @@ builddirs = {
     "samba-libs"  : ".",
     "samba-static"  : ".",
     "samba-test-only"  : ".",
+    "samba-systemkrb5"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "talloc"  : "lib/talloc",
@@ -40,7 +41,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "samba-systemkrb5", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
@@ -161,6 +162,20 @@ tasks = {
                       ("nonshared-distclean", "make distclean", "text/plain"),
                       ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
                       ("nonshared-make", "make -j", "text/plain")],
+
+    "samba-systemkrb5" : [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --without-ad-dc", "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      # we currently cannot run a full make test, a limited list of tests could be run
+                      # via "make test TESTS=sometests"
+                      # ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
+                      ("install", "make install", "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                      ("clean", "make clean", "text/plain")
+                      ],
+
+
 
     "ldb" : [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
