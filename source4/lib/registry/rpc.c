@@ -319,7 +319,7 @@ static WERROR rpc_del_value(TALLOC_CTX *mem_ctx, struct registry_key *key,
 	struct winreg_String name;
 	NTSTATUS status;
 
-	name.name = value_name;
+	name = (struct winreg_String) { .name = value_name };
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
