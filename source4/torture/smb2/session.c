@@ -1125,8 +1125,8 @@ static bool test_session_expire1(struct torture_context *tctx)
 		torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 						"smb2_getinfo_file failed");
 
-		torture_comment(tctx, "sleep 5 seconds\n");
-		smb_msleep(5*1000);
+		torture_comment(tctx, "sleep 10 seconds\n");
+		smb_msleep(10*1000);
 
 		torture_comment(tctx, "query info => EXPIRED\n");
 		ZERO_STRUCT(qfinfo.access_information.out);
