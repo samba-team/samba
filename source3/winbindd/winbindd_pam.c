@@ -2559,7 +2559,15 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 	}
 
 	if (logon_info) {
-		/* Signature verification succeeded, trust the PAC */
+		/*
+		 * Signature verification succeeded, we can
+		 * trust the PAC and prime the netsamlogon
+		 * and name2sid caches. DO NOT DO THIS
+		 * in the signature verification failed
+		 * code path.
+		 */
+		struct winbindd_domain *domain = NULL;
+
 		result = create_info3_from_pac_logon_info(state->mem_ctx,
 							logon_info,
 							&info3_copy);
@@ -2567,6 +2575,31 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 			return result;
 		}
 		netsamlogon_cache_store(NULL, info3_copy);
+
+		/*
+		 * We're in the parent here, so find the child
+		 * pointer from the PAC domain name.
+		 */
+		domain = find_domain_from_name_noinit(
+				info3_copy->base.logon_domain.string);
+		if (domain && domain->primary ) {
+			struct dom_sid user_sid;
+
+			sid_compose(&user_sid,
+				info3_copy->base.domain_sid,
+				info3_copy->base.rid);
+
+			cache_name2sid(domain,
+				info3_copy->base.logon_domain.string,
+				info3_copy->base.account_name.string,
+				SID_NAME_USER,
+				&user_sid);
+
+			DBG_INFO("PAC for user %s\%s SID %s primed cache\n",
+				info3_copy->base.logon_domain.string,
+				info3_copy->base.account_name.string,
+				sid_string_dbg(&user_sid));
+		}
 
 	} else {
 		/* Try without signature verification */
