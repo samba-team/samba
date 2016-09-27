@@ -28,6 +28,7 @@
 #include "lib/param/param.h"
 #ifdef HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"
+#include "nsswitch/libwbclient/wbclient.h"
 #endif
 #include "librpc/crypto/gse.h"
 #include "auth/credentials/credentials.h"
@@ -63,6 +64,51 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 	if (pac_blob) {
 #ifdef HAVE_KRB5
+		struct wbcAuthUserParams params = {};
+		struct wbcAuthUserInfo *info = NULL;
+		struct wbcAuthErrorInfo *err = NULL;
+		wbcErr wbc_err;
+
+		/*
+		 * Let winbind decode the PAC.
+		 * This will also store the user
+		 * data in the netsamlogon cache.
+		 *
+		 * We need to do this *before* we
+		 * call get_user_from_kerberos_info()
+		 * as that does a user lookup that
+		 * expects info in the netsamlogon cache.
+		 *
+		 * See BUG: https://bugzilla.samba.org/show_bug.cgi?id=11259
+		 */
+		params.level = WBC_AUTH_USER_LEVEL_PAC;
+		params.password.pac.data = pac_blob->data;
+		params.password.pac.length = pac_blob->length;
+
+		become_root();
+		wbc_err = wbcAuthenticateUserEx(&params, &info, &err);
+		unbecome_root();
+
+		/*
+		 * As this is merely a cache prime
+		 * WBC_ERR_WINBIND_NOT_AVAILABLE
+		 * is not a fatal error, treat it
+		 * as success.
+		 */
+
+		switch (wbc_err) {
+			case WBC_ERR_WINBIND_NOT_AVAILABLE:
+			case WBC_ERR_SUCCESS:
+				break;
+			case WBC_ERR_AUTH_ERROR:
+				status = NT_STATUS(err->nt_status);
+				wbcFreeMemory(err);
+				goto done;
+			default:
+				status = NT_STATUS_LOGON_FAILURE;
+				goto done;
+		}
+
 		status = kerberos_pac_logon_info(tmp_ctx, *pac_blob, NULL, NULL,
 						 NULL, NULL, 0, &logon_info);
 #else
@@ -101,7 +147,7 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		goto done;
 	}
 
-	/* save the PAC data if we have it */
+	/* Get the info3 from the PAC data if we have it */
 	if (logon_info) {
 		status = create_info3_from_pac_logon_info(tmp_ctx,
 					logon_info,
@@ -109,7 +155,6 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
-		netsamlogon_cache_store(ntuser, info3_copy);
 	}
 
 	/* setup the string used by %U */
