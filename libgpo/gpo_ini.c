@@ -150,7 +150,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS gp_inifile_getstring(struct gp_inifile_context *ctx, const char *key, char **ret)
+NTSTATUS gp_inifile_getstring(struct gp_inifile_context *ctx, const char *key, const char **ret)
 {
 	int i;
 
@@ -170,7 +170,7 @@ NTSTATUS gp_inifile_getstring(struct gp_inifile_context *ctx, const char *key, c
 
 NTSTATUS gp_inifile_getint(struct gp_inifile_context *ctx, const char *key, int *ret)
 {
-	char *value;
+	const char *value;
 	NTSTATUS result;
 
 	result = gp_inifile_getstring(ctx,key, &value);
@@ -189,7 +189,7 @@ NTSTATUS gp_inifile_getint(struct gp_inifile_context *ctx, const char *key, int 
 
 NTSTATUS gp_inifile_getbool(struct gp_inifile_context *ctx, const char *key, bool *ret)
 {
-	char *value;
+	const char *value;
 	NTSTATUS result;
 
 	result = gp_inifile_getstring(ctx,key, &value);
@@ -415,7 +415,7 @@ NTSTATUS parse_gpt_ini(TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	int rv;
 	int v = 0;
-	char *name = NULL;
+	const char *name = NULL;
 	struct gp_inifile_context *ctx;
 
 	if (!filename) {

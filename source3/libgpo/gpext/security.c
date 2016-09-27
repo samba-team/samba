@@ -62,7 +62,7 @@ struct gpttmpl_table {
 static NTSTATUS gpttmpl_parse_header(struct gp_inifile_context *ini_ctx,
 				     uint32_t *version_out)
 {
-	char *signature = NULL;
+	const char *signature = NULL;
 	NTSTATUS result;
 	int version;
 	bool is_unicode = false;

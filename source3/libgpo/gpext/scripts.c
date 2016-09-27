@@ -138,9 +138,9 @@ static NTSTATUS scripts_parse_ini_section(struct gp_inifile_context *ini_ctx,
 	while (1) {
 
 		const char *key = NULL;
-		char *script = NULL;
+		const char *script = NULL;
 		const char *count = NULL;
-		char *parameters = NULL;
+		const char *parameters = NULL;
 
 		count = talloc_asprintf(ini_ctx->mem_ctx, "%d", i);
 		NT_STATUS_HAVE_NO_MEMORY(count);
