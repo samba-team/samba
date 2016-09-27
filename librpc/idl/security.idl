@@ -278,6 +278,10 @@ interface security
 	const string SID_BUILTIN_EVENT_LOG_READERS	= "S-1-5-32-573";
 	const string SID_BUILTIN_CERT_SERV_DCOM_ACCESS	= "S-1-5-32-574";
 
+	/* UID/GID mapping Samba style */
+	const string SID_SAMBA_UNIX_USER_OWNER		= "S-1-22-1";
+	const string SID_SAMBA_UNIX_GROUP_OWNER		= "S-1-22-2";
+
 	/* SECURITY_NT_SERVICE */
 	const string NAME_NT_SERVICE            = "NT SERVICE";
 

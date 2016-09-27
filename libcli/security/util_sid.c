@@ -34,85 +34,119 @@
  */
 
 
+/* S-1 */
 const struct dom_sid global_sid_World_Domain =               /* Everyone domain */
 { 1, 0, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-1 */
 const struct dom_sid global_sid_World =                      /* Everyone */
 { 1, 1, {0,0,0,0,0,1}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-2 */
 const struct dom_sid global_sid_Local_Authority =            /* Local Authority */
 { 1, 0, {0,0,0,0,0,2}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-3 */
 const struct dom_sid global_sid_Creator_Owner_Domain =       /* Creator Owner domain */
 { 1, 0, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5 */
 const struct dom_sid global_sid_NT_Authority =    		/* NT Authority */
 { 1, 0, {0,0,0,0,0,5}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-18 */
 const struct dom_sid global_sid_System =			/* System */
 { 1, 1, {0,0,0,0,0,5}, {18,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-0 */
 const struct dom_sid global_sid_NULL =            		/* NULL sid */
 { 1, 1, {0,0,0,0,0,0}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-11 */
 const struct dom_sid global_sid_Authenticated_Users =	/* All authenticated rids */
 { 1, 1, {0,0,0,0,0,5}, {11,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #if 0
-/* for documentation */
+/* for documentation S-1-5-12 */
 const struct dom_sid global_sid_Restriced =			/* Restriced Code */
 { 1, 1, {0,0,0,0,0,5}, {12,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 #endif
 
+/* S-1-18 */
 const struct dom_sid global_sid_Asserted_Identity =       /* Asserted Identity */
 { 1, 0, {0,0,0,0,0,18}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-18-1 */
 const struct dom_sid global_sid_Asserted_Identity_Service =	/* Asserted Identity Service */
 { 1, 1, {0,0,0,0,0,18}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-18-2 */
 const struct dom_sid global_sid_Asserted_Identity_Authentication_Authority =	/* Asserted Identity Authentication Authority */
 { 1, 1, {0,0,0,0,0,18}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
+/* S-1-5-2 */
 const struct dom_sid global_sid_Network =			/* Network rids */
 { 1, 1, {0,0,0,0,0,5}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
+/* S-1-3 */
 const struct dom_sid global_sid_Creator_Owner =		/* Creator Owner */
 { 1, 1, {0,0,0,0,0,3}, {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-3-1 */
 const struct dom_sid global_sid_Creator_Group =		/* Creator Group */
 { 1, 1, {0,0,0,0,0,3}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-3-4 */
 const struct dom_sid global_sid_Owner_Rights =		/* Owner Rights */
 { 1, 1, {0,0,0,0,0,3}, {4,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-7 */
 const struct dom_sid global_sid_Anonymous =			/* Anonymous login */
 { 1, 1, {0,0,0,0,0,5}, {7,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-9 */
 const struct dom_sid global_sid_Enterprise_DCs =		/* Enterprise DCs */
 { 1, 1, {0,0,0,0,0,5}, {9,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32 */
 const struct dom_sid global_sid_Builtin = 			/* Local well-known domain */
 { 1, 1, {0,0,0,0,0,5}, {32,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-544 */
 const struct dom_sid global_sid_Builtin_Administrators =	/* Builtin administrators */
 { 1, 2, {0,0,0,0,0,5}, {32,544,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-545 */
 const struct dom_sid global_sid_Builtin_Users =		/* Builtin users */
 { 1, 2, {0,0,0,0,0,5}, {32,545,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-546 */
 const struct dom_sid global_sid_Builtin_Guests =		/* Builtin guest users */
 { 1, 2, {0,0,0,0,0,5}, {32,546,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-547 */
 const struct dom_sid global_sid_Builtin_Power_Users =	/* Builtin power users */
 { 1, 2, {0,0,0,0,0,5}, {32,547,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-548 */
 const struct dom_sid global_sid_Builtin_Account_Operators =	/* Builtin account operators */
 { 1, 2, {0,0,0,0,0,5}, {32,548,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-549 */
 const struct dom_sid global_sid_Builtin_Server_Operators =	/* Builtin server operators */
 { 1, 2, {0,0,0,0,0,5}, {32,549,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-550 */
 const struct dom_sid global_sid_Builtin_Print_Operators =	/* Builtin print operators */
 { 1, 2, {0,0,0,0,0,5}, {32,550,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-551 */
 const struct dom_sid global_sid_Builtin_Backup_Operators =	/* Builtin backup operators */
 { 1, 2, {0,0,0,0,0,5}, {32,551,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-552 */
 const struct dom_sid global_sid_Builtin_Replicator =		/* Builtin replicator */
 { 1, 2, {0,0,0,0,0,5}, {32,552,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-32-554 */
 const struct dom_sid global_sid_Builtin_PreWin2kAccess =	/* Builtin pre win2k access */
 { 1, 2, {0,0,0,0,0,5}, {32,554,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
+/* S-1-22-1 */
 const struct dom_sid global_sid_Unix_Users =			/* Unmapped Unix users */
 { 1, 1, {0,0,0,0,0,22}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-22-2 */
 const struct dom_sid global_sid_Unix_Groups =			/* Unmapped Unix groups */
 { 1, 1, {0,0,0,0,0,22}, {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 
 /*
  * http://technet.microsoft.com/en-us/library/hh509017(v=ws.10).aspx
  */
+/* S-1-5-88 */
 const struct dom_sid global_sid_Unix_NFS =             /* MS NFS and Apple style */
 { 1, 1, {0,0,0,0,0,5}, {88,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-88-1 */
 const struct dom_sid global_sid_Unix_NFS_Users =		/* Unix uid, MS NFS and Apple style */
 { 1, 2, {0,0,0,0,0,5}, {88,1,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-88-2 */
 const struct dom_sid global_sid_Unix_NFS_Groups =		/* Unix gid, MS NFS and Apple style */
 { 1, 2, {0,0,0,0,0,5}, {88,2,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+/* S-1-5-88-3 */
 const struct dom_sid global_sid_Unix_NFS_Mode =			/* Unix mode */
 { 1, 2, {0,0,0,0,0,5}, {88,3,0,0,0,0,0,0,0,0,0,0,0,0,0}};
 /* Unused, left here for documentary purposes */
