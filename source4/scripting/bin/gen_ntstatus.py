@@ -165,6 +165,32 @@ def generateSourceFile(out_file):
     for err in ErrorsToUse:
         out_file.write("	{ \"%s\", %s },\n"%(err.err_define, err.err_define))
 
+def generatePythonFile(out_file):
+    out_file.write("/*\n")
+    out_file.write(" * New descriptions for existing errors generated from\n")
+    out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
+    out_file.write(" */\n")
+    out_file.write("#include <Python.h>\n")
+    out_file.write("#include \"includes.h\"\n\n")
+    out_file.write("static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)\n");
+    out_file.write("{\n");
+    out_file.write("\tif (v > LONG_MAX) {\n");
+    out_file.write("\t\treturn PyLong_FromUnsignedLongLong(v);\n");
+    out_file.write("\t} else {\n");
+    out_file.write("\t\treturn PyInt_FromLong(v);\n");
+    out_file.write("\t}\n");
+    out_file.write("}\n\n");
+    out_file.write("void initntstatus(void)\n")
+    out_file.write("{\n")
+    out_file.write("\tPyObject *m;\n\n")
+    out_file.write("\tm = Py_InitModule3(\"ntstatus\", NULL, \"NTSTATUS error defines\");\n");
+    out_file.write("\tif (m == NULL)\n");
+    out_file.write("\t\treturn;\n\n");
+    for err in ErrorsToUse:
+        line = "\tPyModule_AddObject(m, \"%s\", ndr_PyLong_FromUnsignedLongLong(0x%08x));\n" % (err.err_define, err.err_code)
+        out_file.write(line)
+    out_file.write("}\n");
+
 def def_in_list(define, err_def_with_desc):
     for item in err_def_with_desc:
         if item.strip() == define:
@@ -217,6 +243,7 @@ def main ():
     filename = "ntstatus"
     headerfile_name = filename + ".h"
     sourcefile_name = filename + ".c"
+    pythonfile_name = "py_" + filename + ".c"
     if len(sys.argv) > 3:
         input_file1 =  sys.argv[1]
         input_file2 =  sys.argv[2]
@@ -240,6 +267,10 @@ def main ():
     print "writing new headerfile: %s"%sourcefile_name
     out_file = open(sourcefile_name,"w")
     generateSourceFile(out_file)
+    out_file.close()
+    print "writing new headerfile: %s"%pythonfile_name
+    out_file = open(pythonfile_name,"w")
+    generatePythonFile(out_file)
     out_file.close()
 
 if __name__ == '__main__':
