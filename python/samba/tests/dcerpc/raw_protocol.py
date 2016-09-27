@@ -4609,6 +4609,82 @@ class TestDCERPC_BIND(RawDCERPCTest):
         return self._test_spnego_signing_auth_level_request(dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
 
 
+    def test_assoc_group_fail1(self):
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        tsf1_list = [transfer]
+        ctx = samba.dcerpc.dcerpc.ctx_list()
+        ctx.context_id = 1
+        ctx.num_transfer_syntaxes = len(tsf1_list)
+        ctx.abstract_syntax = abstract
+        ctx.transfer_syntaxes = tsf1_list
+
+        ack = self.do_generic_bind(ctx=ctx, assoc_group_id=1,
+                                   nak_reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+        return
+
+    def test_assoc_group_fail2(self):
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        tsf1_list = [transfer]
+        ctx = samba.dcerpc.dcerpc.ctx_list()
+        ctx.context_id = 1
+        ctx.num_transfer_syntaxes = len(tsf1_list)
+        ctx.abstract_syntax = abstract
+        ctx.transfer_syntaxes = tsf1_list
+
+        ack = self.do_generic_bind(ctx=ctx)
+
+        self._disconnect("test_assoc_group_fail2")
+        self.connect()
+
+        ack2 = self.do_generic_bind(ctx=ctx,assoc_group_id=ack.u.assoc_group_id,
+                                    nak_reason=dcerpc.DCERPC_BIND_NAK_REASON_NOT_SPECIFIED)
+        return
+
+    def test_assoc_group_diff1(self):
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        (ctx1, ack1) = self.prepare_presentation(abstract, transfer,
+                                                 context_id=1, return_ack=True)
+
+        conn2 = self.second_connection()
+        (ctx2, ack2) = conn2.prepare_presentation(abstract, transfer,
+                                                  context_id=2, return_ack=True)
+        self.assertNotEqual(ack2.u.assoc_group_id, ack1.u.assoc_group_id)
+
+        return
+
+    def test_assoc_group_ok1(self):
+        abstract = samba.dcerpc.mgmt.abstract_syntax()
+        transfer = base.transfer_syntax_ndr()
+
+        (ctx1, ack1) = self.prepare_presentation(abstract, transfer,
+                                                 context_id=1, return_ack=True)
+
+        conn2 = self.second_connection()
+        (ctx2, ack2) = conn2.prepare_presentation(abstract, transfer,
+                                                  assoc_group_id=ack1.u.assoc_group_id,
+                                                  context_id=2, return_ack=True)
+
+        inq_if_ids = samba.dcerpc.mgmt.inq_if_ids()
+        self.do_single_request(call_id = 1, ctx=ctx1, io=inq_if_ids)
+        conn2.do_single_request(call_id = 1, ctx=ctx2, io=inq_if_ids)
+
+        conn2.do_single_request(call_id = 1, ctx=ctx1, io=inq_if_ids,
+                                fault_pfc_flags = samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_FIRST |
+                                                  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_LAST |
+                                                  samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
+                                fault_status=dcerpc.DCERPC_NCA_S_UNKNOWN_IF,
+                                fault_context_id=0)
+
+        self.do_single_request(call_id = 1, ctx=ctx1, io=inq_if_ids)
+        conn2.do_single_request(call_id = 1, ctx=ctx2, io=inq_if_ids)
+        return
+
 if __name__ == "__main__":
     global_ndr_print = True
     global_hexdump = True
