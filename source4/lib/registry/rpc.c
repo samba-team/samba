@@ -293,7 +293,7 @@ static WERROR rpc_set_value(struct registry_key *key, const char *value_name,
 	struct winreg_String name;
 	NTSTATUS status;
 
-	name.name = value_name;
+	name = (struct winreg_String) { .name = value_name };
 
 	ZERO_STRUCT(r);
 	r.in.handle = &mykeydata->pol;
