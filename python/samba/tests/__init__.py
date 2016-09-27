@@ -281,6 +281,26 @@ class RawDCERPCTest(TestCase):
 
         self.connect()
 
+    def noop(self):
+        return
+
+    def second_connection(self, tcp_port=None):
+        c = RawDCERPCTest(methodName='noop')
+        c.do_ndr_print = self.do_ndr_print
+        c.do_hexdump = self.do_hexdump
+
+        c.host = self.host
+        c.target_hostname = self.target_hostname
+        if tcp_port is not None:
+            c.tcp_port = tcp_port
+        else:
+            c.tcp_port = self.tcp_port
+
+        c.settings = self.settings
+
+        c.connect()
+        return c
+
     def get_user_creds(self):
         c = Credentials()
         c.guess()
