@@ -205,7 +205,7 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 		msgsize - offsetof(struct msghdr_buf, buf) : 0;
 
 	if (msg != NULL) {
-		msg->msg = (struct msghdr) {};
+		msg->msg = (struct msghdr) { 0 };
 
 		fd_len = msghdr_prep_fds(&msg->msg, msg->buf, bufsize,
 					 fds, num_fds);
