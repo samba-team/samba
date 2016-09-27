@@ -238,6 +238,7 @@ static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
 
 			/* Paranoia: Do not overflow the key_data array */
 			if (idx > keys_size) {
+				free(sorted_keys);
 				return -1;
 			}
 
@@ -250,6 +251,7 @@ static int samba_kdc_sort_encryption_keys(struct sdb_entry_ex *entry_ex)
 
 	/* Paranoia: Something went wrong during data copy */
 	if (idx < keys_size) {
+		free(sorted_keys);
 		return -1;
 	}
 
