@@ -169,11 +169,23 @@ Example2 deletes group Group2 from the local server.  The command is run under r
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        filter = ("(&(sAMAccountName=%s)(objectClass=group))" %
+                  groupname)
 
         try:
-            samdb = SamDB(url=H, session_info=system_session(),
-                          credentials=creds, lp=lp)
-            samdb.deletegroup(groupname)
+            res = samdb.search(base=samdb.domain_dn(),
+                               scope=ldb.SCOPE_SUBTREE,
+                               expression=filter,
+                               attrs=["dn"])
+            group_dn = res[0].dn
+        except IndexError:
+            raise CommandError('Unable to find group "%s"' % (groupname))
+
+        try:
+            samdb.delete(group_dn)
         except Exception, e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to remove group "%s"' % groupname, e)
