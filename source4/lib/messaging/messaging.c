@@ -56,6 +56,7 @@ struct irpc_request {
 
 struct imessaging_context {
 	struct imessaging_context *prev, *next;
+	struct tevent_context *ev;
 	struct server_id server_id;
 	const char *sock_dir;
 	const char *lock_dir;
@@ -347,6 +348,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	if (msg == NULL) {
 		return NULL;
 	}
+	msg->ev = ev;
 
 	talloc_set_destructor(msg, imessaging_context_destructor);
 
@@ -416,6 +418,52 @@ fail:
 	return NULL;
 }
 
+struct imessaging_post_state {
+	struct imessaging_context *msg_ctx;
+	size_t buf_len;
+	uint8_t buf[];
+};
+
+static void imessaging_post_handler(struct tevent_context *ev,
+				    struct tevent_immediate *ti,
+				    void *private_data)
+{
+	struct imessaging_post_state *state = talloc_get_type_abort(
+		private_data, struct imessaging_post_state);
+	imessaging_dgm_recv(ev, state->buf, state->buf_len, NULL, 0,
+			    state->msg_ctx);
+	TALLOC_FREE(state);
+}
+
+static int imessaging_post_self(struct imessaging_context *msg,
+				const uint8_t *buf, size_t buf_len)
+{
+	struct tevent_immediate *ti;
+	struct imessaging_post_state *state;
+
+	state = talloc_size(
+		msg, offsetof(struct imessaging_post_state, buf) + buf_len);
+	if (state == NULL) {
+		return ENOMEM;
+	}
+	talloc_set_name_const(state, "struct imessaging_post_state");
+
+	ti = tevent_create_immediate(state);
+	if (ti == NULL) {
+		TALLOC_FREE(state);
+		return ENOMEM;
+	}
+
+	state->msg_ctx = msg;
+	state->buf_len = buf_len;
+	memcpy(state->buf, buf, buf_len);
+
+	tevent_schedule_immediate(ti, msg->ev, imessaging_post_handler,
+				  state);
+
+	return 0;
+}
+
 static void imessaging_dgm_recv(struct tevent_context *ev,
 				const uint8_t *buf, size_t buf_len,
 				int *fds, size_t num_fds,
@@ -430,6 +478,23 @@ static void imessaging_dgm_recv(struct tevent_context *ev,
 
 	if (buf_len < MESSAGE_HDR_LENGTH) {
 		/* Invalid message, ignore */
+		return;
+	}
+
+	if (num_fds != 0) {
+		/*
+		 * Source4 based messaging does not expect fd's yet
+		 */
+		return;
+	}
+
+	if (ev != msg->ev) {
+		int ret;
+		ret = imessaging_post_self(msg, buf, buf_len);
+		if (ret != 0) {
+			DBG_WARNING("imessaging_post_self failed: %s\n",
+				    strerror(ret));
+		}
 		return;
 	}
 
