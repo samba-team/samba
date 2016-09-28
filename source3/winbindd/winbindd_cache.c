@@ -3330,6 +3330,25 @@ bool lookup_cached_name(const char *domain_name,
 	return NT_STATUS_IS_OK(status);
 }
 
+/*
+ * Cache a name to sid without checking the sequence number.
+ * Used when caching from a trusted PAC.
+ */
+
+void cache_name2sid_trusted(struct winbindd_domain *domain,
+			const char *domain_name,
+			const char *name,
+			enum lsa_SidType type,
+			const struct dom_sid *sid)
+{
+	wcache_save_name_to_sid(domain,
+				NT_STATUS_OK,
+				domain_name,
+				name,
+				sid,
+				type);
+}
+
 void cache_name2sid(struct winbindd_domain *domain, 
 		    const char *domain_name, const char *name,
 		    enum lsa_SidType type, const struct dom_sid *sid)
