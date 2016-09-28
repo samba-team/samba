@@ -445,6 +445,14 @@ void kdb_samba_db_audit_as_req(krb5_context context,
 {
 	struct mit_samba_context *mit_ctx;
 
+	/*
+	 * FIXME: This segfaulted with a FAST test
+	 * FIND_FAST: <unknown client> for <unknown server>, Unknown FAST armor type 0
+	 */
+	if (client == NULL) {
+		return;
+	}
+
 	mit_ctx = ks_get_context(context);
 	if (mit_ctx == NULL) {
 		return;
