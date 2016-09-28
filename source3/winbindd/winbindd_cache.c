@@ -509,11 +509,10 @@ static bool store_cache_seqnum( struct winbindd_domain *domain )
 }
 
 /*
-  refresh the domain sequence number. If force is true
-  then always refresh it, no matter how recently we fetched it
+  refresh the domain sequence number on timeout.
 */
 
-static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
+static void refresh_sequence_number(struct winbindd_domain *domain)
 {
 	NTSTATUS status;
 	unsigned time_diff;
@@ -536,7 +535,7 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	time_diff = t - domain->last_seq_check;
 
 	/* see if we have to refetch the domain sequence number */
-	if (!force && (time_diff < cache_time) &&
+	if ((time_diff < cache_time) &&
 			(domain->sequence_number != DOM_SEQUENCE_NONE) &&
 			NT_STATUS_IS_OK(domain->last_status)) {
 		DEBUG(10, ("refresh_sequence_number: %s time ok\n", domain->name));
@@ -710,7 +709,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 		return NULL;
 	}
 
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 
 	va_start(ap, format);
 	smb_xvasprintf(&kstr, format, ap);
@@ -1558,7 +1557,7 @@ do_query:
 		 (retry++ < 5));
 
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1670,7 +1669,7 @@ do_query:
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1775,7 +1774,7 @@ do_query:
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1890,7 +1889,7 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 
 	if (domain->online &&
 	    (NT_STATUS_IS_OK(status) || NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))) {
@@ -2004,7 +2003,7 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2229,7 +2228,7 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 		return result;
 	}
 
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 
 	for (i=0; i<num_rids; i++) {
 		struct dom_sid sid;
@@ -2390,7 +2389,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2508,7 +2507,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		goto skip_save;
 
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2661,7 +2660,7 @@ static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2797,7 +2796,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2820,7 +2819,7 @@ skip_save:
 /* find the sequence number for a domain */
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 {
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 
 	*seq = domain->sequence_number;
 
@@ -2998,7 +2997,7 @@ do_query:
 		}
 	}
 	/* and save it */
- 	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3070,7 +3069,7 @@ do_query:
 		}
 	}
 	/* and save it */
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3335,7 +3334,7 @@ void cache_name2sid(struct winbindd_domain *domain,
 		    const char *domain_name, const char *name,
 		    enum lsa_SidType type, const struct dom_sid *sid)
 {
-	refresh_sequence_number(domain, false);
+	refresh_sequence_number(domain);
 	wcache_save_name_to_sid(domain, NT_STATUS_OK, domain_name, name,
 				sid, type);
 }
