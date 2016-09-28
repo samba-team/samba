@@ -2598,7 +2598,7 @@ NTSTATUS winbindd_pam_auth_pac_send(struct winbindd_cli_state *state,
 				info3_copy->base.domain_sid,
 				info3_copy->base.rid);
 
-			cache_name2sid(domain,
+			cache_name2sid_trusted(domain,
 				info3_copy->base.logon_domain.string,
 				info3_copy->base.account_name.string,
 				SID_NAME_USER,
