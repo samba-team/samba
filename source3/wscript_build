@@ -354,7 +354,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         UTIL_PW
                         SAMBA_VERSION
                         PTHREADPOOL
-                        POLL_FUNCS_TEVENT
                         interfaces
                         param
                         dbwrap
