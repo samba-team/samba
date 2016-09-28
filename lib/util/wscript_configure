@@ -110,16 +110,17 @@ conf.SET_TARGET_TYPE('systemd-journal', 'EMPTY')
 conf.SET_TARGET_TYPE('systemd', 'EMPTY')
 
 if Options.options.enable_systemd != False:
-    conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
+    r_daemon = conf.CHECK_CFG(package='libsystemd-daemon', args='--cflags --libs',
                    msg='Checking for libsystemd-daemon')
-    if not conf.CHECK_LIB('systemd-daemon', shlib=True):
-        conf.CHECK_LIB('systemd', shlib=True)
-
-if Options.options.enable_systemd != False:
-    conf.CHECK_CFG(package='libsystemd-journal', args='--cflags --libs',
+    r_journal = conf.CHECK_CFG(package='libsystemd-journal', args='--cflags --libs',
                    msg='Checking for libsystemd-journal')
-    if not conf.CHECK_LIB('systemd-journal', shlib=True):
+    if r_daemon is None and r_journal is None:
+        conf.CHECK_CFG(package='libsystemd', args='--cflags --libs',
+                   msg='Checking for libsystemd')
         conf.CHECK_LIB('systemd', shlib=True)
+    else:
+        conf.CHECK_LIB('systemd-daemon', shlib=True)
+        conf.CHECK_LIB('systemd-journal', shlib=True)
 
 if Options.options.enable_lttng != False:
     conf.CHECK_CFG(package='lttng-ust', args='--cflags --libs',
