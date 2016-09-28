@@ -112,10 +112,11 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 		&pac_buffer, &pac_display_buffer, &more);
 
 	if (gss_maj != 0) {
+		gss_OID oid = discard_const(gss_mech_krb5);
 		DBG_NOTICE("obtaining PAC via GSSAPI gss_get_name_attribute "
 			   "failed: %s\n", gssapi_error_string(mem_ctx,
 							       gss_maj, gss_min,
-							       gss_mech_krb5));
+							       oid));
 		return NT_STATUS_ACCESS_DENIED;
 	} else if (authenticated && complete) {
 		/* The PAC blob is returned directly */

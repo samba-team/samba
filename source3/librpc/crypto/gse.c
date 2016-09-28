@@ -207,6 +207,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	gss_OID_set_desc mech_set;
 #ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+	gss_OID oid = discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X);
 #endif
 	NTSTATUS status;
 
@@ -281,7 +282,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	 * http://krbdev.mit.edu/rt/Ticket/Display.html?id=6938
 	 */
 	gss_maj = gss_set_cred_option(&gss_min, &gse_ctx->creds,
-				      GSS_KRB5_CRED_NO_CI_FLAGS_X,
+				      oid,
 				      &empty_buffer);
 	if (gss_maj) {
 		DEBUG(0, ("gss_set_cred_option(GSS_KRB5_CRED_NO_CI_FLAGS_X), "

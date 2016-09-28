@@ -520,6 +520,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	struct ccache_container *ccache;
 #ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
+	gss_OID oid = discard_const(GSS_KRB5_CRED_NO_CI_FLAGS_X);
 #endif
 	krb5_enctype *etypes = NULL;
 
@@ -645,7 +646,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 	 * http://krbdev.mit.edu/rt/Ticket/Display.html?id=6938
 	 */
 	maj_stat = gss_set_cred_option(&min_stat, &gcc->creds,
-				       GSS_KRB5_CRED_NO_CI_FLAGS_X,
+				       oid,
 				       &empty_buffer);
 	if (maj_stat) {
 		talloc_free(gcc);
