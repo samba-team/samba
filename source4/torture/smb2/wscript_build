@@ -20,6 +20,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         maxfid.c
         maxwrite.c
         multichannel.c
+        oplock_break_handler.c
         notify.c
         notify_disabled.c
         oplock.c
