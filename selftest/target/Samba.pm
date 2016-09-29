@@ -296,6 +296,7 @@ sub get_interface($)
     $interfaces{"promotedvdc"} = 33;
     $interfaces{"rfc2307member"} = 34;
     $interfaces{"fileserver"} = 35;
+    $interfaces{"s4member_dflt"} = 36;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 40
