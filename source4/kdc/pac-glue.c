@@ -420,10 +420,13 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 	krb5_data cred_data;
 	krb5_data upn_data;
 	krb5_data deleg_data;
-	krb5_data null_data;
 	krb5_error_code ret;
-
-	ZERO_STRUCT(null_data);
+#ifdef SAMBA4_USES_HEIMDAL
+	krb5_data null_data = {
+		.length = 0,
+		.data = NULL,
+	};
+#endif
 
 	/* The user account may be set not to want the PAC */
 	if (logon_blob == NULL) {
@@ -503,10 +506,13 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		}
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL
 	/*
 	 * null_data will be filled by the generic KDC code in the caller
 	 * here we just add it in order to have it before
 	 * PAC_TYPE_UPN_DNS_INFO
+	 *
+	 * Not needed with MIT Kerberos - asn
 	 */
 	ret = krb5_pac_add_buffer(context, *pac,
 				  PAC_TYPE_LOGON_NAME,
@@ -516,6 +522,7 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 		smb_krb5_free_data_contents(context, &deleg_data);
 		return ret;
 	}
+#endif
 
 	if (upn_blob != NULL) {
 		ret = krb5_pac_add_buffer(context, *pac,
