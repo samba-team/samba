@@ -155,11 +155,10 @@ done:
 
 static krb5_error_code ks_get_pac(krb5_context context,
 				  krb5_db_entry *client,
+				  krb5_keyblock *client_key,
 				  krb5_pac *pac)
 {
 	struct mit_samba_context *mit_ctx;
-	DATA_BLOB pac_data;
-	krb5_data data;
 	krb5_error_code code;
 
 	mit_ctx = ks_get_context(context);
@@ -167,27 +166,15 @@ static krb5_error_code ks_get_pac(krb5_context context,
 		return KRB5_KDB_DBNOTINITED;
 	}
 
-	code = mit_samba_get_pac_data(mit_ctx,
-				      client,
-				      &pac_data);
+	code = mit_samba_get_pac(mit_ctx,
+				 context,
+				 client,
+				 client_key,
+				 pac);
 	if (code != 0) {
 		return code;
 	}
 
-	code = krb5_pac_init(context, pac);
-	if (code != 0) {
-		goto done;
-	}
-
-	data = ks_make_data(pac_data.data, pac_data.length);
-
-	code = krb5_pac_add_buffer(context, *pac, PAC_LOGON_INFO, &data);
-	if (code != 0) {
-		goto done;
-	}
-
-done:
-	free(pac_data.data);
 	return code;
 }
 
@@ -332,8 +319,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	is_as_req = ((flags & KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY) != 0);
 
 	if (is_as_req && (flags & KRB5_KDB_FLAG_INCLUDE_PAC)) {
-
-		code = ks_get_pac(context, client, &pac);
+		code = ks_get_pac(context, client, client_key, &pac);
 		if (code != 0) {
 			goto done;
 		}
@@ -350,7 +336,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 
 	if (pac == NULL && client != NULL) {
 
-		code = ks_get_pac(context, client, &pac);
+		code = ks_get_pac(context, client, client_key, &pac);
 		if (code != 0) {
 			goto done;
 		}
