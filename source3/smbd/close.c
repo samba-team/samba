@@ -182,7 +182,8 @@ NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("vfs_streaminfo failed: %s\n",
 			   nt_errstr(status)));
-		goto fail;
+		TALLOC_FREE(frame);
+		return status;
 	}
 
 	DEBUG(10, ("delete_all_streams found %d streams\n",
