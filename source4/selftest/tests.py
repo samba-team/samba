@@ -515,6 +515,13 @@ for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass
 
     plantestsuite("samba.ntlm_auth.(%s:local)" % env, "%s:local" % env, [os.path.join(samba3srcdir, "script/tests/test_ntlm_auth_s3.sh"), valgrindify(python), samba3srcdir, ntlm_auth3,  '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', configuration])
 
+for env in ["s4member_dflt_domain", "s4member"]:
+    for cmd in ["id", "getent"]:
+        users = ["$DC_USERNAME", "$DC_USERNAME@$REALM"]
+        if env == "s4member":
+            users = ["$DOMAIN/$DC_USERNAME", "$DC_USERNAME@$REALM"]
+        for usr in users:
+            plantestsuite("samba4.winbind.dom_name_parse.cmd", env, "%s/dom_parse.sh %s %s" % (bbdir,cmd,usr))
 
 nsstest4 = binpath("nsstest")
 for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", "nt4_member:local"]:

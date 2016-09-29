@@ -954,9 +954,9 @@ $extra_smbconf_shares
 	return $self->provision_raw_step2($ctx, $ret);
 }
 
-sub provision_s4member($$$)
+sub provision_s4member($$$$$)
 {
-	my ($self, $prefix, $dcvars) = @_;
+	my ($self, $prefix, $dcvars, $hostname, $more_conf) = @_;
 	print "PROVISIONING MEMBER...\n";
 	my $extra_smb_conf = "
         passdb backend = samba_dsdb
@@ -975,9 +975,12 @@ rpc_server:spoolss = embedded
 rpc_daemon:spoolssd = embedded
 rpc_server:tcpip = no
 ";
+	if ($more_conf) {
+		$extra_smb_conf = $extra_smb_conf . $more_conf . "\n";
+	}
 	my $ret = $self->provision($prefix,
 				   "member server",
-				   "s4member",
+				   $hostname,
 				   "SAMBADOMAIN",
 				   "samba.example.com",
 				   "2008",
@@ -1967,6 +1970,11 @@ sub setup_env($$$)
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
 		}
 		return $self->setup_subdom_dc("$path/subdom_dc", $self->{vars}->{ad_dc_ntvfs});
+	} elsif ($envname eq "s4member_dflt_domain") {
+		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
+			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
+		}
+		return $self->setup_s4member_dflt_domain("$path/s4member_dflt_domain", $self->{vars}->{ad_dc_ntvfs});
 	} elsif ($envname eq "s4member") {
 		if (not defined($self->{vars}->{ad_dc_ntvfs})) {
 			$self->setup_ad_dc_ntvfs("$path/ad_dc_ntvfs");
@@ -2005,7 +2013,7 @@ sub setup_s4member($$$)
 {
 	my ($self, $path, $dc_vars) = @_;
 
-	my $env = $self->provision_s4member($path, $dc_vars);
+	my $env = $self->provision_s4member($path, $dc_vars, "s4member");
 
 	if (defined $env) {
 	        if (not defined($self->check_or_start($env, "standard"))) {
@@ -2013,6 +2021,24 @@ sub setup_s4member($$$)
 		}
 
 		$self->{vars}->{s4member} = $env;
+	}
+
+	return $env;
+}
+
+sub setup_s4member_dflt_domain($$$)
+{
+	my ($self, $path, $dc_vars) = @_;
+
+	my $env = $self->provision_s4member($path, $dc_vars, "s4member_dflt",
+					    "winbind use default domain = yes");
+
+	if (defined $env) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
+		        return undef;
+		}
+
+		$self->{vars}->{s4member_dflt_domain} = $env;
 	}
 
 	return $env;

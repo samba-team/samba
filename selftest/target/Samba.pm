@@ -300,6 +300,7 @@ sub get_interface($)
     $interfaces{"fileserver"} = 35;
     $interfaces{"fakednsforwarder1"} = 36;
     $interfaces{"fakednsforwarder2"} = 37;
+    $interfaces{"s4member_dflt"} = 38;
 
     # update lib/socket_wrapper/socket_wrapper.c
     #  #define MAX_WRAPPED_INTERFACES 40
