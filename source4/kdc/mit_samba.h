@@ -51,6 +51,12 @@ int mit_samba_get_pac_data(struct mit_samba_context *ctx,
 			   krb5_db_entry *client,
 			   DATA_BLOB *data);
 
+int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
+		      krb5_context context,
+		      krb5_db_entry *client,
+		      krb5_keyblock *client_key,
+		      krb5_pac *pac);
+
 int mit_samba_update_pac_data(struct mit_samba_context *ctx,
 			      krb5_db_entry *client,
 			      DATA_BLOB *pac_data,
