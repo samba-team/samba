@@ -15,6 +15,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         getinfo.c
         ioctl.c
         lease.c
+        lease_break_handler.c
         lock.c
         maxfid.c
         maxwrite.c
