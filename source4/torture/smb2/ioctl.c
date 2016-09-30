@@ -5803,7 +5803,7 @@ static bool test_ioctl_dup_extents_compressed_src(struct torture_context *tctx,
 }
 
 static bool test_ioctl_dup_extents_compressed_dest(struct torture_context *tctx,
-					       struct smb2_tree *tree)
+						   struct smb2_tree *tree)
 {
 	struct smb2_handle src_h;
 	struct smb2_handle dest_h;
@@ -5863,8 +5863,13 @@ static bool test_ioctl_dup_extents_compressed_dest(struct torture_context *tctx,
 				   "ndr_push_fsctl_dup_extents_to_file");
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
-	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_NOT_SUPPORTED,
-				      "FSCTL_DUP_EXTENTS_TO_FILE");
+	torture_assert_ntstatus_ok(tctx, status,
+				   "FSCTL_DUP_EXTENTS_TO_FILE");
+
+	ok = check_pattern(tctx, tree, tmp_ctx, dest_h, 0, 4096, 0);
+	if (!ok) {
+		torture_fail(tctx, "inconsistent file data");
+	}
 
 	smb2_util_close(tree, src_h);
 	smb2_util_close(tree, dest_h);
