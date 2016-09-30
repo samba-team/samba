@@ -1026,7 +1026,7 @@ static void messaging_dgm_read_handler(struct tevent_context *ev,
 			return;
 		}
 		/* Problem with the socket. Set it unreadable. */
-		tevent_fd_set_flags(ctx->read_fde, 0);
+		tevent_fd_set_flags(fde, 0);
 		return;
 	}
 
