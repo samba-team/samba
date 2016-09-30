@@ -129,7 +129,18 @@ static void msg_dgm_ref_recv(struct tevent_context *ev,
 	 * that grabs the fd's will get them.
 	 */
 	for (r = refs; r != NULL; r = next) {
+		uint16_t flags;
+
 		next = r->next;
+
+		flags = tevent_fd_get_flags(r->tevent_handle);
+		if (flags == 0) {
+			/*
+			 * r's tevent_context has died.
+			 */
+			continue;
+		}
+
 		r->recv_cb(ev, msg, msg_len, fds, num_fds,
 			   r->recv_cb_private_data);
 	}
