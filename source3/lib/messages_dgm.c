@@ -1359,8 +1359,8 @@ int messaging_dgm_wipe(void)
 	return 0;
 }
 
-void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev)
+struct tevent_fd *messaging_dgm_register_tevent_context(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev)
 {
 	struct messaging_dgm_context *ctx = global_dgm_context;
 

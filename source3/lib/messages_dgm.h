@@ -42,7 +42,7 @@ int messaging_dgm_send(pid_t pid,
 		       const int *fds, size_t num_fds);
 int messaging_dgm_cleanup(pid_t pid);
 int messaging_dgm_wipe(void);
-void *messaging_dgm_register_tevent_context(TALLOC_CTX *mem_ctx,
-					    struct tevent_context *ev);
+struct tevent_fd *messaging_dgm_register_tevent_context(
+	TALLOC_CTX *mem_ctx, struct tevent_context *ev);
 
 #endif

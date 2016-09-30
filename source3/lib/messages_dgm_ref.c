@@ -26,7 +26,7 @@
 
 struct msg_dgm_ref {
 	struct msg_dgm_ref *prev, *next;
-	void *tevent_handle;
+	struct tevent_fd *tevent_handle;
 	void (*recv_cb)(struct tevent_context *ev,
 			const uint8_t *msg, size_t msg_len,
 			int *fds, size_t num_fds, void *private_data);
