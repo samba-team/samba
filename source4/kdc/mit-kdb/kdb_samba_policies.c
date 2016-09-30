@@ -182,6 +182,8 @@ static krb5_error_code ks_verify_pac(krb5_context context,
 				     unsigned int flags,
 				     krb5_const_principal client_princ,
 				     krb5_db_entry *client,
+				     krb5_db_entry *server,
+				     krb5_db_entry *krbtgt,
 				     krb5_keyblock *server_key,
 				     krb5_keyblock *krbtgt_key,
 				     krb5_timestamp authtime,
@@ -191,9 +193,7 @@ static krb5_error_code ks_verify_pac(krb5_context context,
 	struct mit_samba_context *mit_ctx;
 	krb5_authdata **authdata = NULL;
 	krb5_pac ipac = NULL;
-	DATA_BLOB pac_data = { NULL, 0 };
 	DATA_BLOB logon_data = { NULL, 0 };
-	krb5_data data;
 	krb5_error_code code;
 
 	mit_ctx = ks_get_context(context);
@@ -257,28 +257,23 @@ static krb5_error_code ks_verify_pac(krb5_context context,
 	}
 
 	/* check and update PAC */
-	pac_data.data = authdata[0]->contents;
-	pac_data.length = authdata[0]->length;
-
-	code = mit_samba_update_pac_data(mit_ctx,
-					 client,
-					 &pac_data,
-					 &logon_data);
+	code = krb5_pac_parse(context,
+			      authdata[0]->contents,
+			      authdata[0]->length,
+			      pac);
 	if (code != 0) {
 		goto done;
 	}
 
-	code = krb5_pac_init(context, pac);
-	if (code != 0) {
-		goto done;
-	}
-
-	data = ks_make_data(logon_data.data, logon_data.length);
-
-	code = krb5_pac_add_buffer(context, *pac, PAC_LOGON_INFO, &data);
-	if (code != 0) {
-		goto done;
-	}
+	code = mit_samba_reget_pac(mit_ctx,
+				   context,
+				   flags,
+				   client_princ,
+				   client,
+				   server,
+				   krbtgt,
+				   krbtgt_key,
+				   pac);
 
 done:
 	krb5_free_authdata(context, authdata);
@@ -326,9 +321,17 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	}
 
 	if (!is_as_req) {
-		code = ks_verify_pac(context, flags, ks_client_princ, client,
-				server_key, krbtgt_key, authtime,
-				tgt_auth_data, &pac);
+		code = ks_verify_pac(context,
+				     flags,
+				     ks_client_princ,
+				     client,
+				     server,
+				     krbtgt,
+				     server_key,
+				     krbtgt_key,
+				     authtime,
+				     tgt_auth_data,
+				     &pac);
 		if (code != 0) {
 			goto done;
 		}
@@ -350,6 +353,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	code = krb5_pac_sign(context, pac, authtime, ks_client_princ,
 			server_key, krbtgt_key, &pac_data);
 	if (code != 0) {
+		DBG_ERR("krb5_pac_sign failed: %d\n", code);
 		goto done;
 	}
 
