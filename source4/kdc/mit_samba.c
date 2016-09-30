@@ -76,7 +76,7 @@ int mit_samba_context_init(struct mit_samba_context **_ctx)
 		goto done;
 	}
 
-	setup_logging("mitkdc", DEBUG_STDOUT);
+	setup_logging("mitkdc", DEBUG_DEFAULT_STDOUT);
 
 	/* init s4 configuration */
 	s4_conf_file = lpcfg_configfile(base_ctx.lp_ctx);
