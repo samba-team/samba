@@ -48,6 +48,11 @@
         }								\
     } while(0)
 
+static krb5_error_code
+copy_enctypes(krb5_context context,
+	      const krb5_enctype *in,
+	      krb5_enctype **out);
+
 /*
  * Set the list of etypes `ret_etypes' from the configuration variable
  * `name'
@@ -122,6 +127,18 @@ init_context_from_config_file(krb5_context context)
 	return ret;
     free(context->etypes);
     context->etypes = tmptypes;
+
+    /* The etypes member may change during the lifetime
+     * of the context. To be able to reset it to
+     * config value, we keep another copy.
+     */
+    free(context->cfg_etypes);
+    context->cfg_etypes = NULL;
+    if (tmptypes) {
+	ret = copy_enctypes(context, tmptypes, &context->cfg_etypes);
+	if (ret)
+	    return ret;
+    }
 
     ret = set_etypes (context, "default_etypes_des", &tmptypes);
     if(ret)
@@ -506,6 +523,11 @@ krb5_copy_context(krb5_context context, krb5_context *out)
 	if (ret)
 	    goto out;
     }
+    if (context->cfg_etypes) {
+	ret = copy_etypes(context, context->cfg_etypes, &p->cfg_etypes);
+	if (ret)
+	    goto out;
+    }
     if (context->etypes_des) {
 	ret = copy_etypes(context, context->etypes_des, &p->etypes_des);
 	if (ret)
@@ -574,6 +596,7 @@ krb5_free_context(krb5_context context)
     if (context->default_cc_name_env)
 	free(context->default_cc_name_env);
     free(context->etypes);
+    free(context->cfg_etypes);
     free(context->etypes_des);
     krb5_free_host_realm (context, context->default_realms);
     krb5_config_file_free (context, context->cf);
@@ -944,6 +967,8 @@ default_etypes(krb5_context context, krb5_enctype **etype)
  *
  * @param context Kerberos 5 context.
  * @param etypes Encryption types, array terminated with ETYPE_NULL (0).
+ * A value of NULL resets the encryption types to the defaults set in the
+ * configuration file.
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -957,6 +982,10 @@ krb5_set_default_in_tkt_etypes(krb5_context context,
 {
     krb5_error_code ret;
     krb5_enctype *p = NULL;
+
+    if(!etypes) {
+	etypes = context->cfg_etypes;
+    }
 
     if(etypes) {
 	ret = copy_enctypes(context, etypes, &p);

@@ -250,6 +250,7 @@ typedef uint32_t krb5_enctype_set;
 
 typedef struct krb5_context_data {
     krb5_enctype *etypes;
+    krb5_enctype *cfg_etypes;
     krb5_enctype *etypes_des;/* deprecated */
     krb5_enctype *as_etypes;
     krb5_enctype *tgs_etypes;
