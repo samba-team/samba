@@ -75,7 +75,6 @@ struct messaging_dgm_context {
 	int lockfile_fd;
 
 	int sock;
-	struct tevent_fd *read_fde;
 	struct messaging_dgm_in_msg *in_msgs;
 
 	void (*recv_cb)(struct tevent_context *ev,
@@ -911,12 +910,6 @@ int messaging_dgm_init(struct tevent_context *ev,
 		return ret;
 	}
 
-	ctx->read_fde = tevent_add_fd(ctx->ev, ctx, ctx->sock, TEVENT_FD_READ,
-				      messaging_dgm_read_handler, ctx);
-	if (ctx->read_fde == NULL) {
-		goto fail_nomem;
-	}
-
 	talloc_set_destructor(ctx, messaging_dgm_context_destructor);
 
 	ctx->have_dgm_context = &have_dgm_context;
@@ -946,7 +939,6 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 		TALLOC_FREE(c->in_msgs);
 	}
 
-	TALLOC_FREE(c->read_fde);
 	close(c->sock);
 
 	if (getpid() == c->pid) {

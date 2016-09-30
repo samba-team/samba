@@ -96,13 +96,14 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			return NULL;
 		}
 
-		result->tevent_handle = messaging_dgm_register_tevent_context(
-			result, ev);
-		if (result->tevent_handle == NULL) {
-			TALLOC_FREE(result);
-			*err = ENOMEM;
-			return NULL;
-		}
+	}
+
+	result->tevent_handle = messaging_dgm_register_tevent_context(
+		result, ev);
+	if (result->tevent_handle == NULL) {
+		TALLOC_FREE(result);
+		*err = ENOMEM;
+		return NULL;
 	}
 
 	DBG_DEBUG("unique = %"PRIu64"\n", *unique);
