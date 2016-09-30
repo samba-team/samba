@@ -78,6 +78,28 @@ static NTSTATUS fsctl_dup_extents_check_overlap(struct files_struct *src_fsp,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS fsctl_dup_extents_check_sparse(struct files_struct *src_fsp,
+					       struct files_struct *dst_fsp)
+{
+	/*
+	 * 2.3.8 FSCTL_DUPLICATE_EXTENTS_TO_FILE Reply...
+	 * STATUS_NOT_SUPPORTED: Target file is sparse, while source
+	 *			 is a non-sparse file.
+	 *
+	 * WS2016 has the following behaviour (MS are in the process of fixing
+	 * the spec):
+	 * STATUS_NOT_SUPPORTED is returned if the source is sparse, while the
+	 * target is non-sparse. However, if target is sparse while the source
+	 * is non-sparse, then FSCTL_DUPLICATE_EXTENTS_TO_FILE completes
+	 * successfully.
+	 */
+	if ((src_fsp->is_sparse) && (!dst_fsp->is_sparse)) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct fsctl_dup_extents_state {
 	struct tevent_context *ev;
 	struct connection_struct *conn;
@@ -158,6 +180,12 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 
 	status = fsctl_dup_extents_check_overlap(src_fsp, dst_fsp,
 						 &state->dup_extents);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	status = fsctl_dup_extents_check_sparse(src_fsp, dst_fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
