@@ -52,8 +52,13 @@ static int free_mccache(struct ccache_container *ccc)
 }
 
 /* Free a disk-based ccache */
-static int free_dccache(struct ccache_container *ccc) {
-	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
+static int free_dccache(struct ccache_container *ccc)
+{
+	if (ccc->ccache != NULL) {
+		krb5_cc_close(ccc->smb_krb5_context->krb5_context,
+			      ccc->ccache);
+		ccc->ccache = NULL;
+	}
 
 	return 0;
 }
