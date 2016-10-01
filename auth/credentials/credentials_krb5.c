@@ -42,7 +42,11 @@ static void cli_credentials_invalidate_client_gss_creds(
 /* Free a memory ccache */
 static int free_mccache(struct ccache_container *ccc)
 {
-	krb5_cc_destroy(ccc->smb_krb5_context->krb5_context, ccc->ccache);
+	if (ccc->ccache != NULL) {
+		krb5_cc_destroy(ccc->smb_krb5_context->krb5_context,
+				ccc->ccache);
+		ccc->ccache = NULL;
+	}
 
 	return 0;
 }
