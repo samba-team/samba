@@ -26,7 +26,7 @@
 
 struct msg_dgm_ref {
 	struct msg_dgm_ref *prev, *next;
-	struct tevent_fd *tevent_handle;
+	struct messaging_dgm_fde *fde;
 	void (*recv_cb)(struct tevent_context *ev,
 			const uint8_t *msg, size_t msg_len,
 			int *fds, size_t num_fds, void *private_data);
@@ -59,7 +59,7 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		*err = ENOMEM;
 		return NULL;
 	}
-	result->tevent_handle = NULL;
+	result->fde = NULL;
 
 	tmp_refs = refs;
 
@@ -98,9 +98,8 @@ void *messaging_dgm_ref(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 	}
 
-	result->tevent_handle = messaging_dgm_register_tevent_context(
-		result, ev);
-	if (result->tevent_handle == NULL) {
+	result->fde = messaging_dgm_register_tevent_context(result, ev);
+	if (result->fde == NULL) {
 		TALLOC_FREE(result);
 		*err = ENOMEM;
 		return NULL;
@@ -129,12 +128,12 @@ static void msg_dgm_ref_recv(struct tevent_context *ev,
 	 * that grabs the fd's will get them.
 	 */
 	for (r = refs; r != NULL; r = next) {
-		uint16_t flags;
+		bool active;
 
 		next = r->next;
 
-		flags = tevent_fd_get_flags(r->tevent_handle);
-		if (flags == 0) {
+		active = messaging_dgm_fde_active(r->fde);
+		if (!active) {
 			/*
 			 * r's tevent_context has died.
 			 */
@@ -153,7 +152,7 @@ static int msg_dgm_ref_destructor(struct msg_dgm_ref *r)
 	}
 	DLIST_REMOVE(refs, r);
 
-	TALLOC_FREE(r->tevent_handle);
+	TALLOC_FREE(r->fde);
 
 	DBG_DEBUG("refs=%p\n", refs);
 

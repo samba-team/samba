@@ -41,6 +41,25 @@ struct sun_path_buf {
 	char buf[sizeof(struct sockaddr_un)];
 };
 
+/*
+ * We can only have one tevent_fd per dgm_context and per
+ * tevent_context. Maintain a list of registered tevent_contexts per
+ * dgm_context.
+ */
+struct messaging_dgm_fde_ev {
+	struct messaging_dgm_fde_ev *prev, *next;
+
+	/*
+	 * Backreference to enable DLIST_REMOVE from our
+	 * destructor. Also, set to NULL when the dgm_context dies
+	 * before the messaging_dgm_fde_ev.
+	 */
+	struct messaging_dgm_context *ctx;
+
+	struct tevent_context *ev;
+	struct tevent_fd *fde;
+};
+
 struct messaging_dgm_out {
 	struct messaging_dgm_out *prev, *next;
 	struct messaging_dgm_context *ctx;
@@ -75,6 +94,7 @@ struct messaging_dgm_context {
 	int sock;
 	struct messaging_dgm_in_msg *in_msgs;
 
+	struct messaging_dgm_fde_ev *fde_evs;
 	void (*recv_cb)(struct tevent_context *ev,
 			const uint8_t *msg,
 			size_t msg_len,
@@ -936,6 +956,11 @@ static int messaging_dgm_context_destructor(struct messaging_dgm_context *c)
 	while (c->in_msgs != NULL) {
 		TALLOC_FREE(c->in_msgs);
 	}
+	while (c->fde_evs != NULL) {
+		tevent_fd_set_flags(c->fde_evs->fde, 0);
+		c->fde_evs->ctx = NULL;
+		DLIST_REMOVE(c->fde_evs, c->fde_evs);
+	}
 
 	close(c->sock);
 
@@ -1349,14 +1374,83 @@ int messaging_dgm_wipe(void)
 	return 0;
 }
 
-struct tevent_fd *messaging_dgm_register_tevent_context(
+struct messaging_dgm_fde {
+	struct tevent_fd *fde;
+};
+
+static int messaging_dgm_fde_ev_destructor(struct messaging_dgm_fde_ev *fde_ev)
+{
+	if (fde_ev->ctx != NULL) {
+		DLIST_REMOVE(fde_ev->ctx->fde_evs, fde_ev);
+		fde_ev->ctx = NULL;
+	}
+	return 0;
+}
+
+struct messaging_dgm_fde *messaging_dgm_register_tevent_context(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev)
 {
 	struct messaging_dgm_context *ctx = global_dgm_context;
+	struct messaging_dgm_fde_ev *fde_ev;
+	struct messaging_dgm_fde *fde;
 
 	if (ctx == NULL) {
 		return NULL;
 	}
-	return tevent_add_fd(ev, mem_ctx, ctx->sock, TEVENT_FD_READ,
-			     messaging_dgm_read_handler, ctx);
+
+	fde = talloc(mem_ctx, struct messaging_dgm_fde);
+	if (fde == NULL) {
+		return NULL;
+	}
+
+	for (fde_ev = ctx->fde_evs; fde_ev != NULL; fde_ev = fde_ev->next) {
+		if ((fde_ev->ev == ev) &&
+		    (tevent_fd_get_flags(fde_ev->fde) != 0)) {
+			break;
+		}
+	}
+
+	if (fde_ev == NULL) {
+		fde_ev = talloc(fde, struct messaging_dgm_fde_ev);
+		if (fde_ev == NULL) {
+			return NULL;
+		}
+		fde_ev->fde = tevent_add_fd(
+			ev, fde_ev, ctx->sock, TEVENT_FD_READ,
+			messaging_dgm_read_handler, ctx);
+		if (fde_ev->fde == NULL) {
+			TALLOC_FREE(fde);
+			return NULL;
+		}
+		fde_ev->ev = ev;
+		fde_ev->ctx = ctx;
+		DLIST_ADD(ctx->fde_evs, fde_ev);
+		talloc_set_destructor(
+			fde_ev, messaging_dgm_fde_ev_destructor);
+	} else {
+		/*
+		 * Same trick as with tdb_wrap: The caller will never
+		 * see the talloc_referenced object, the
+		 * messaging_dgm_fde_ev, so problems with
+		 * talloc_unlink will not happen.
+		 */
+		if (talloc_reference(fde, fde_ev) == NULL) {
+			TALLOC_FREE(fde);
+			return NULL;
+		}
+	}
+
+	fde->fde = fde_ev->fde;
+	return fde;
+}
+
+bool messaging_dgm_fde_active(struct messaging_dgm_fde *fde)
+{
+	uint16_t flags;
+
+	if (fde == NULL) {
+		return false;
+	}
+	flags = tevent_fd_get_flags(fde->fde);
+	return (flags != 0);
 }

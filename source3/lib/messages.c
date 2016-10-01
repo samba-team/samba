@@ -637,7 +637,7 @@ static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
 struct messaging_filtered_read_state {
 	struct tevent_context *ev;
 	struct messaging_context *msg_ctx;
-	void *tevent_handle;
+	struct messaging_dgm_fde *fde;
 
 	bool (*filter)(struct messaging_rec *rec, void *private_data);
 	void *private_data;
@@ -674,9 +674,8 @@ struct tevent_req *messaging_filtered_read_send(
 	 */
 	tevent_req_defer_callback(req, state->ev);
 
-	state->tevent_handle = messaging_dgm_register_tevent_context(
-		state, ev);
-	if (tevent_req_nomem(state->tevent_handle, req)) {
+	state->fde = messaging_dgm_register_tevent_context(state, ev);
+	if (tevent_req_nomem(state->fde, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -718,7 +717,7 @@ static void messaging_filtered_read_cleanup(struct tevent_req *req,
 
 	tevent_req_set_cleanup_fn(req, NULL);
 
-	TALLOC_FREE(state->tevent_handle);
+	TALLOC_FREE(state->fde);
 
 	/*
 	 * Just set the [new_]waiters entry to NULL, be careful not to mess
