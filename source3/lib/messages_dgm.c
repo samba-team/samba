@@ -41,8 +41,6 @@ struct sun_path_buf {
 	char buf[sizeof(struct sockaddr_un)];
 };
 
-struct messaging_dgm_context;
-
 struct messaging_dgm_out {
 	struct messaging_dgm_out *prev, *next;
 	struct messaging_dgm_context *ctx;
