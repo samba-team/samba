@@ -31,6 +31,64 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "smb2_ioctl_private.h"
 
+/*
+ * XXX this may reduce dup_extents->byte_count so that it's less than the
+ * target file size.
+ */
+static NTSTATUS fsctl_dup_extents_check_lengths(struct files_struct *src_fsp,
+						struct files_struct *dst_fsp,
+				struct fsctl_dup_extents_to_file *dup_extents)
+{
+	NTSTATUS status;
+
+	if ((dup_extents->source_off + dup_extents->byte_count
+						< dup_extents->source_off)
+	 || (dup_extents->target_off + dup_extents->byte_count
+						< dup_extents->target_off)) {
+		return NT_STATUS_INVALID_PARAMETER;	/* wrap */
+	}
+
+	status = vfs_stat_fsp(src_fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * XXX vfs_btrfs and vfs_default have size checks in the copychunk
+	 * handler, as this needs to be rechecked after the src has potentially
+	 * been extended by a previous chunk in the compound copychunk req.
+	 */
+	if (src_fsp->fsp_name->st.st_ex_size
+			< dup_extents->source_off + dup_extents->byte_count) {
+		DEBUG(2, ("dup_extents req exceeds src size\n"));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = vfs_stat_fsp(dst_fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (dst_fsp->fsp_name->st.st_ex_size
+			< dup_extents->target_off + dup_extents->byte_count) {
+
+		if (dst_fsp->fsp_name->st.st_ex_size - dup_extents->target_off
+					> dst_fsp->fsp_name->st.st_ex_size) {
+			return NT_STATUS_INVALID_PARAMETER;	/* wrap */
+		}
+
+		/*
+		 * this server behaviour is pretty hairy, but we need to match
+		 * Windows, so...
+		 */
+		DEBUG(2, ("dup_extents req exceeds target size, capping\n"));
+		dup_extents->byte_count = dst_fsp->fsp_name->st.st_ex_size
+						- dup_extents->target_off;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS fsctl_dup_extents_check_overlap(struct files_struct *src_fsp,
 						struct files_struct *dst_fsp,
 				struct fsctl_dup_extents_to_file *dup_extents)
@@ -169,6 +227,13 @@ static struct tevent_req *fsctl_dup_extents_send(TALLOC_CTX *mem_ctx,
 		 */
 		DBG_ERR("invalid src_fsp for dup_extents\n");
 		tevent_req_nterror(req, NT_STATUS_INVALID_HANDLE);
+		return tevent_req_post(req, ev);
+	}
+
+	status = fsctl_dup_extents_check_lengths(src_fsp, dst_fsp,
+						 &state->dup_extents);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
 	}
 
