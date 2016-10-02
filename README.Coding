@@ -189,7 +189,7 @@ characters or less with whitespace.  For example,
 The previous example is intended to illustrate alignment of function
 parameters across lines and not as encourage for gratuitous line
 splitting.  Never split a line before columns 70 - 79 unless you
-have a really good reason.  Be smart about formatting.
+have a really good reason. Be smart about formatting.
 
 
 If, switch, & Code blocks
