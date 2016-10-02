@@ -191,6 +191,12 @@ parameters across lines and not as encourage for gratuitous line
 splitting.  Never split a line before columns 70 - 79 unless you
 have a really good reason. Be smart about formatting.
 
+One exception to the previous rule is function declarations and
+definitions. In function declarations and definitions, either the
+declaration is a one-liner, or each parameter is listed on its own
+line. The rationale is that if there are many parameters, each one
+should be on its own line to make tracking interface changes easier.
+
 
 If, switch, & Code blocks
 -------------------------
