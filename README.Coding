@@ -90,6 +90,16 @@ displaying trailing whitespace:
   set textwidth=80
   autocmd BufNewFile,BufRead *.c,*.h exec 'match Todo /\%>' . &textwidth . 'v.\+/'
 
+clang-format
+------------
+BasedOnStyle: LLVM
+IndentWidth: 8
+UseTab: true
+BreakBeforeBraces: Linux
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: false
+BinPackParameters: false
+
 
 =========================
 FAQ & Statement Reference
