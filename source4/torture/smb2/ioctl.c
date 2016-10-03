@@ -2543,6 +2543,78 @@ static bool test_ioctl_compress_perms(struct torture_context *torture,
 	return true;
 }
 
+static bool test_ioctl_compress_notsup_get(struct torture_context *torture,
+					   struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+	uint16_t compression_fmt;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	/* skip if the server DOES support compression */
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression supported\n");
+	}
+
+	/*
+	 * Despite not supporting compression, we should get a successful
+	 * response indicating that the file is uncompressed - like WS2016.
+	 */
+	status = test_ioctl_compress_get(torture, tmp_ctx, tree, fh,
+					 &compression_fmt);
+	torture_assert_ntstatus_ok(torture, status, "FSCTL_GET_COMPRESSION");
+
+	torture_assert(torture, (compression_fmt == COMPRESSION_FORMAT_NONE),
+		       "initial compression state not NONE");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
+static bool test_ioctl_compress_notsup_set(struct torture_context *torture,
+					   struct smb2_tree *tree)
+{
+	struct smb2_handle fh;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_new(tree);
+	bool ok;
+
+	ok = test_setup_create_fill(torture, tree, tmp_ctx,
+				    FNAME, &fh, 0, SEC_RIGHTS_FILE_ALL,
+				    FILE_ATTRIBUTE_NORMAL);
+	torture_assert(torture, ok, "setup compression file");
+
+	/* skip if the server DOES support compression */
+	status = test_ioctl_compress_fs_supported(torture, tree, tmp_ctx, &fh,
+						  &ok);
+	torture_assert_ntstatus_ok(torture, status, "SMB2_GETINFO_FS");
+	if (ok) {
+		smb2_util_close(tree, fh);
+		torture_skip(torture, "FS compression supported\n");
+	}
+
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_DEFAULT);
+	torture_assert_ntstatus_equal(torture, status,
+				      NT_STATUS_NOT_SUPPORTED,
+				      "FSCTL_GET_COMPRESSION");
+
+	smb2_util_close(tree, fh);
+	talloc_free(tmp_ctx);
+	return true;
+}
+
 /*
    basic testing of the SMB2 FSCTL_QUERY_NETWORK_INTERFACE_INFO ioctl
 */
@@ -4911,6 +4983,10 @@ struct torture_suite *torture_smb2_ioctl_init(void)
 				     test_ioctl_compress_set_file_attr);
 	torture_suite_add_1smb2_test(suite, "compress_perms",
 				     test_ioctl_compress_perms);
+	torture_suite_add_1smb2_test(suite, "compress_notsup_get",
+				     test_ioctl_compress_notsup_get);
+	torture_suite_add_1smb2_test(suite, "compress_notsup_set",
+				     test_ioctl_compress_notsup_set);
 	torture_suite_add_1smb2_test(suite, "network_interface_info",
 				     test_ioctl_network_interface_info);
 	torture_suite_add_1smb2_test(suite, "sparse_file_flag",
