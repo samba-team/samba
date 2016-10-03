@@ -28,6 +28,7 @@
 #include "torture/local/proto.h"
 #include "system/select.h"
 #include "system/filesys.h"
+#include "lib/crypto/md5.h"
 
 static uint32_t msg_pong;
 
@@ -156,7 +157,8 @@ static bool test_messaging_overflow(struct torture_context *tctx)
 	}
 
 	if (child == 0) {
-		torture_assert(tctx, ret == 0, "close failed");
+		ret = tevent_re_initialise(tctx->ev);
+		torture_assert(tctx, ret == 0, "tevent_re_initialise failed");
 
 		msg_ctx = imessaging_init(tctx, tctx->lp_ctx,
 					  cluster_id(getpid(), 0),
@@ -209,10 +211,193 @@ static bool test_messaging_overflow(struct torture_context *tctx)
 	return true;
 }
 
+struct overflow_parent_child {
+	MD5_CTX md5ctx;
+	bool done;
+};
+
+static void overflow_md5_child_handler(struct imessaging_context *msg,
+				       void *private_data,
+				       uint32_t msg_type,
+				       struct server_id server_id,
+				       DATA_BLOB *data)
+{
+	struct overflow_parent_child *state = private_data;
+
+	if (data->length == 0) {
+		state->done = true;
+		return;
+	}
+
+	MD5Update(&state->md5ctx, data->data, data->length);
+}
+
+struct overflow_child_parent {
+	uint8_t final[16];
+	bool done;
+};
+
+static void overflow_md5_parent_handler(struct imessaging_context *msg_ctx,
+					void *private_data,
+					uint32_t msg_type,
+					struct server_id server_id,
+					DATA_BLOB *data)
+{
+	struct overflow_child_parent *state = private_data;
+
+	if (data->length != sizeof(state->final)) {
+		memset(state->final, 0, sizeof(state->final));
+		state->done = true;
+		return;
+	}
+	memcpy(state->final, data->data, 16);
+	state->done = true;
+}
+
+static bool test_messaging_overflow_check(struct torture_context *tctx)
+{
+	struct imessaging_context *msg_ctx;
+	ssize_t nwritten, nread;
+	pid_t child;
+	char c = 0;
+	int up_pipe[2], down_pipe[2];
+	int i, ret, child_status;
+	MD5_CTX md5ctx;
+	uint8_t final[16];
+	struct overflow_child_parent child_msg = { .done = false };
+	NTSTATUS status;
+
+	ret = pipe(up_pipe);
+	torture_assert(tctx, ret == 0, "pipe failed");
+	ret = pipe(down_pipe);
+	torture_assert(tctx, ret == 0, "pipe failed");
+
+	child = fork();
+	if (child < 0) {
+		torture_fail(tctx, "fork failed");
+	}
+
+	if (child == 0) {
+		struct overflow_parent_child child_state = { .done = false };
+		DATA_BLOB retblob = { .data = final, .length = sizeof(final) };
+
+		ret = tevent_re_initialise(tctx->ev);
+		torture_assert(tctx, ret == 0, "tevent_re_initialise failed");
+
+		MD5Init(&child_state.md5ctx);
+
+		msg_ctx = imessaging_init(tctx, tctx->lp_ctx,
+					  cluster_id(getpid(), 0),
+					  tctx->ev);
+		torture_assert(tctx, msg_ctx != NULL,
+			       "imessaging_init failed");
+
+		status = imessaging_register(msg_ctx, &child_state,
+					     MSG_TMP_BASE-1,
+					     overflow_md5_child_handler);
+		torture_assert(tctx, NT_STATUS_IS_OK(status),
+			       "imessaging_register failed");
+
+		do {
+			nwritten = write(up_pipe[1], &c, 1);
+		} while ((nwritten == -1) && (errno == EINTR));
+
+		ret = close(down_pipe[1]);
+		torture_assert(tctx, ret == 0, "close failed");
+
+		do {
+			nread = read(down_pipe[0], &c, 1);
+		} while ((nread == -1) && (errno == EINTR));
+
+		while (!child_state.done) {
+			tevent_loop_once(tctx->ev);
+		}
+
+		MD5Final(final, &child_state.md5ctx);
+
+		status = imessaging_send(msg_ctx,
+					 cluster_id(getppid(), 0),
+					 MSG_TMP_BASE-2,
+					 &retblob);
+		torture_assert(tctx, NT_STATUS_IS_OK(status),
+			       "imessaging_send failed");
+
+		exit(0);
+	}
+
+	do {
+		nread = read(up_pipe[0], &c, 1);
+	} while ((nread == -1) && (errno == EINTR));
+
+	msg_ctx = imessaging_init(tctx, tctx->lp_ctx, cluster_id(getpid(), 0),
+				  tctx->ev);
+	torture_assert(tctx, msg_ctx != NULL, "imessaging_init failed");
+
+	status = imessaging_register(msg_ctx,
+				     &child_msg,
+				     MSG_TMP_BASE-2,
+				     overflow_md5_parent_handler);
+	torture_assert(tctx,
+		       NT_STATUS_IS_OK(status),
+		       "imessaging_register failed");
+
+	MD5Init(&md5ctx);
+
+	for (i=0; i<1000; i++) {
+		size_t len = ((random() % 100) + 1);
+		uint8_t buf[len];
+		DATA_BLOB blob = { .data = buf, .length = len };
+
+		generate_random_buffer(buf, len);
+
+		MD5Update(&md5ctx, buf, len);
+
+		status = imessaging_send(msg_ctx, cluster_id(child, 0),
+					 MSG_TMP_BASE-1, &blob);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "imessaging_send failed");
+	}
+
+	status = imessaging_send(msg_ctx, cluster_id(child, 0),
+				 MSG_TMP_BASE-1, NULL);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "imessaging_send failed");
+
+	MD5Final(final, &md5ctx);
+
+	do {
+		nwritten = write(down_pipe[1], &c, 1);
+	} while ((nwritten == -1) && (errno == EINTR));
+
+	while (!child_msg.done) {
+		tevent_loop_once(tctx->ev);
+	}
+
+	ret = close(down_pipe[1]);
+	torture_assert(tctx, ret == 0, "close failed");
+
+	talloc_free(msg_ctx);
+
+	ret = waitpid(child, &child_status, 0);
+	torture_assert(tctx, ret == child, "wrong child exited");
+	torture_assert(tctx, child_status == 0, "child failed");
+
+	if (memcmp(final, child_msg.final, 16) != 0) {
+		dump_data_file(final, 16, false, stderr);
+		dump_data_file(child_msg.final, 16, false, stderr);
+		fflush(stderr);
+		torture_fail(tctx, "checksum comparison failed");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_local_messaging(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *s = torture_suite_create(mem_ctx, "messaging");
 	torture_suite_add_simple_test(s, "overflow", test_messaging_overflow);
+	torture_suite_add_simple_test(s, "overflow_check",
+				      test_messaging_overflow_check);
 	torture_suite_add_simple_test(s, "ping_speed", test_ping_speed);
 	return s;
 }
