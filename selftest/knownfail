@@ -215,6 +215,7 @@
 ^samba3.smb2.replay.replay3
 ^samba3.smb2.replay.replay4
 ^samba3.smb2.lock.*replay
+^samba4.smb2.ioctl.compress_notsup.*\(ad_dc_ntvfs\)
 ^samba3.raw.session.*reauth2 # maybe fix this?
 ^samba3.rpc.lsa.secrets.seal # This gives NT_STATUS_LOCAL_USER_SESSION_KEY
 ^samba3.rpc.samr.passwords.badpwdcount.samr.badPwdCount\(nt4_dc\) # We fail this test currently
