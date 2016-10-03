@@ -48,19 +48,24 @@ static NTSTATUS fsctl_get_cmprn(TALLOC_CTX *mem_ctx,
 
 	/* Windows doesn't check for SEC_FILE_READ_ATTRIBUTE permission here */
 
-	if ((fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) == 0) {
-		DEBUG(4, ("FS does not advertise compression support\n"));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	ZERO_STRUCT(cmpr_state);
-	status = SMB_VFS_GET_COMPRESSION(fsp->conn,
-					 mem_ctx,
-					 fsp,
-					 NULL,
-					 &cmpr_state.format);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) {
+		status = SMB_VFS_GET_COMPRESSION(fsp->conn,
+						 mem_ctx,
+						 fsp,
+						 NULL,
+						 &cmpr_state.format);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		/*
+		 * bso#12144: The underlying filesystem doesn't support
+		 * compression, so we should respond with "not-compressed"
+		 * (like WS2016 ReFS) instead of STATUS_NOT_SUPPORTED or
+		 * NT_STATUS_INVALID_DEVICE_REQUEST.
+		 */
+		cmpr_state.format = COMPRESSION_FORMAT_NONE;
 	}
 
 	ndr_ret = ndr_push_struct_blob(&output, mem_ctx,
