@@ -1415,7 +1415,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 					  &user_pol,
-					  16,
+					  UserControlInformation,
 					  &user_info,
 					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1459,7 +1459,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 					  &user_pol,
-					  26,
+					  UserInternal5InformationNew,
 					  &user_info,
 					  &result);
 
@@ -1476,7 +1476,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 		status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 						  &user_pol,
-						  24,
+						  UserInternal5Information,
 						  &user_info,
 						  &result);
 	}
