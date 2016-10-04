@@ -1413,11 +1413,11 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(user_info.info16);
 	user_info.info16.acct_flags = acct_flags;
 
-	status = dcerpc_samr_SetUserInfo(b, mem_ctx,
-					 &user_pol,
-					 16,
-					 &user_info,
-					 &result);
+	status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
+					  &user_pol,
+					  16,
+					  &user_info,
+					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		dcerpc_samr_DeleteUser(b, mem_ctx,
 				       &user_pol,
