@@ -3903,6 +3903,9 @@ bool lp_load_initial_only(const char *pszFname)
 
 /**
  * most common lp_load wrapper, loading only the globals
+ *
+ * If this is used in a daemon or client utility it should be called
+ * after processing popt.
  */
 bool lp_load_global(const char *file_name)
 {
