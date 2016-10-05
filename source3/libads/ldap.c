@@ -1036,6 +1036,11 @@ done:
 		ber_bvfree(ext_bv);
 	}
 
+	if (rc != LDAP_SUCCESS && *res != NULL) {
+		ads_msgfree(ads, *res);
+		*res = NULL;
+	}
+
 	/* if/when we decide to utf8-encode attrs, take out this next line */
 	TALLOC_FREE(search_attrs);
 
@@ -1086,9 +1091,6 @@ static ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 		status = ads_do_paged_search_args(ads, bind_path, scope, expr,
 					      attrs, args, &res2, &count, &cookie);
 		if (!ADS_ERR_OK(status)) {
-			/* Ensure we free all collected results */
-			ads_msgfree(ads, *res);
-			*res = NULL;
 			break;
 		}
 
