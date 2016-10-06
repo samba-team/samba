@@ -39,6 +39,21 @@ static void cli_credentials_invalidate_client_gss_creds(
 					struct cli_credentials *cred,
 					enum credentials_obtained obtained);
 
+/* Free a memory ccache */
+static int free_mccache(struct ccache_container *ccc)
+{
+	krb5_cc_destroy(ccc->smb_krb5_context->krb5_context, ccc->ccache);
+
+	return 0;
+}
+
+/* Free a disk-based ccache */
+static int free_dccache(struct ccache_container *ccc) {
+	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
+
+	return 0;
+}
+
 _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context) 
@@ -118,21 +133,6 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 
 	/* set the ccache_obtained here, as it just got set to UNINITIALISED by the calls above */
 	cred->ccache_obtained = obtained;
-
-	return 0;
-}
-
-/* Free a memory ccache */
-static int free_mccache(struct ccache_container *ccc)
-{
-	krb5_cc_destroy(ccc->smb_krb5_context->krb5_context, ccc->ccache);
-
-	return 0;
-}
-
-/* Free a disk-based ccache */
-static int free_dccache(struct ccache_container *ccc) {
-	krb5_cc_close(ccc->smb_krb5_context->krb5_context, ccc->ccache);
 
 	return 0;
 }
