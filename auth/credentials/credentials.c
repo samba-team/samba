@@ -268,7 +268,11 @@ _PUBLIC_ bool cli_credentials_set_principal(struct cli_credentials *cred,
 {
 	if (obtained >= cred->principal_obtained) {
 		cred->principal = talloc_strdup(cred, val);
+		if (cred->principal == NULL) {
+			return false;
+		}
 		cred->principal_obtained = obtained;
+
 		cli_credentials_invalidate_ccache(cred, cred->principal_obtained);
 		return true;
 	}
