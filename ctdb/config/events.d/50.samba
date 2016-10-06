@@ -65,6 +65,7 @@ service_start ()
 service_stop ()
 {
     service "$CTDB_SERVICE_SMB" stop
+    program_stack_traces "smbd" 5
     if [ -n "$CTDB_SERVICE_NMB" ] ; then
 	service "$CTDB_SERVICE_NMB" stop
     fi

@@ -839,6 +839,23 @@ setup_samba ()
     fi
 }
 
+samba_setup_fake_threads ()
+{
+	export FAKE_SMBD_THREAD_PIDS="$*"
+
+	_nl="
+"
+	_out=""
+	_count=0
+	for _pid ; do
+		[ "$_count" -lt 5 ] || break
+		_t=$(program_stack_trace "smbd" $_pid)
+		_out="${_out:+${_out}${_nl}}${_t}"
+		_count=$((_count + 1))
+	done
+	SAMBA_STACK_TRACES="$_out"
+}
+
 setup_winbind ()
 {
     setup_ctdb
@@ -999,6 +1016,17 @@ nfs_setup_fake_threads ()
     esac
 }
 
+program_stack_trace ()
+{
+	_prog="$1"
+	_pid="$2"
+
+	cat <<EOF
+Stack trace for ${_prog}[${_pid}]:
+[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff
+EOF
+}
+
 program_stack_traces ()
 {
     _prog="$1"
@@ -1008,10 +1036,7 @@ program_stack_traces ()
     for _pid in ${FAKE_NFSD_THREAD_PIDS:-$FAKE_RPC_THREAD_PIDS} ; do
 	[ $_count -le $_max ] || break
 
-	cat <<EOF
-Stack trace for ${_prog}[${_pid}]:
-[<ffffffff87654321>] fake_stack_trace_for_pid_${_pid}/stack+0x0/0xff
-EOF
+	program_stack_trace "$_prog" "$_pid"
 	_count=$(($_count + 1))
     done
 }
