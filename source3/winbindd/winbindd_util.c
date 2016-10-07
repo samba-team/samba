@@ -238,7 +238,6 @@ add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
 		}
 	}
 
-	domain->methods = methods;
 	domain->backend = NULL;
 	domain->internal = is_internal_domain(sid);
 	domain->sequence_number = DOM_SEQUENCE_NONE;

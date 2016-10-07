@@ -147,7 +147,6 @@ void ndr_print_winbindd_domain(struct ndr_print *ndr,
 	ndr_print_bool(ndr, "online", r->online);
 	ndr_print_time_t(ndr, "startup_time", r->startup_time);
 	ndr_print_bool(ndr, "startup", r->startup);
-	ndr_print_winbindd_methods(ndr, "methods", r->methods);
 	ndr_print_winbindd_methods(ndr, "backend", r->backend);
 	ndr_print_ptr(ndr, "private_data", r->private_data);
 	ndr_print_string(ndr, "dcname", r->dcname);

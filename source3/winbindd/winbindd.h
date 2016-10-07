@@ -168,11 +168,10 @@ struct winbindd_domain {
 
 	bool can_do_ncacn_ip_tcp;
 
-	/* Lookup methods for this domain (LDAP or RPC) */
-	struct winbindd_methods *methods;
-
-	/* the backend methods are used by the cache layer to find the right
-	   backend */
+	/*
+	 * Lookup methods for this domain (LDAP or RPC). The backend
+	 * methods are used by the cache layer.
+	 */
 	struct winbindd_methods *backend;
 
         /* Private data for the backends (used for connection cache) */
