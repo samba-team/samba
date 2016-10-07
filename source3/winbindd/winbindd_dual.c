@@ -939,7 +939,6 @@ static void account_lockout_policy_handler(struct tevent_context *ctx,
 	struct winbindd_child *child =
 		(struct winbindd_child *)private_data;
 	TALLOC_CTX *mem_ctx = NULL;
-	struct winbindd_methods *methods;
 	struct samr_DomInfo12 lockout_policy;
 	NTSTATUS result;
 
@@ -955,13 +954,12 @@ static void account_lockout_policy_handler(struct tevent_context *ctx,
 		return;		
 	}
 
-	methods = child->domain->methods;
-
 	mem_ctx = talloc_init("account_lockout_policy_handler ctx");
 	if (!mem_ctx) {
 		result = NT_STATUS_NO_MEMORY;
 	} else {
-		result = methods->lockout_policy(child->domain, mem_ctx, &lockout_policy);
+		result = wb_cache_lockout_policy(child->domain, mem_ctx,
+						 &lockout_policy);
 	}
 	TALLOC_FREE(mem_ctx);
 

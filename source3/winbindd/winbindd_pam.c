@@ -402,7 +402,6 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 				       struct winbindd_response *response)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct winbindd_methods *methods;
 	NTSTATUS status;
 	struct samr_DomInfo1 password_policy;
 
@@ -413,9 +412,8 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	methods = domain->methods;
-
-	status = methods->password_policy(domain, talloc_tos(), &password_policy);
+	status = wb_cache_password_policy(domain, talloc_tos(),
+					  &password_policy);
 	if (NT_STATUS_IS_ERR(status)) {
 		goto done;
 	}
@@ -431,15 +429,12 @@ static NTSTATUS get_max_bad_attempts_from_lockout_policy(struct winbindd_domain 
 							 TALLOC_CTX *mem_ctx,
 							 uint16_t *lockout_threshold)
 {
-	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct samr_DomInfo12 lockout_policy;
 
 	*lockout_threshold = 0;
 
-	methods = domain->methods;
-
-	status = methods->lockout_policy(domain, mem_ctx, &lockout_policy);
+	status = wb_cache_lockout_policy(domain, mem_ctx, &lockout_policy);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
@@ -453,15 +448,12 @@ static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
 				   uint32_t *password_properties)
 {
-	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct samr_DomInfo1 password_policy;
 
 	*password_properties = 0;
 
-	methods = domain->methods;
-
-	status = methods->password_policy(domain, mem_ctx, &password_policy);
+	status = wb_cache_password_policy(domain, mem_ctx, &password_policy);
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}

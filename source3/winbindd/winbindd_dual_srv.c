@@ -62,8 +62,8 @@ NTSTATUS _wbint_LookupSid(struct pipes_struct *p, struct wbint_LookupSid *r)
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->sid_to_name(domain, p->mem_ctx, r->in.sid,
-					      &dom_name, &name, &type);
+	status = wb_cache_sid_to_name(domain, p->mem_ctx, r->in.sid,
+				      &dom_name, &name, &type);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -111,9 +111,9 @@ NTSTATUS _wbint_LookupName(struct pipes_struct *p, struct wbint_LookupName *r)
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->name_to_sid(
-		domain, p->mem_ctx, r->in.domain, r->in.name, r->in.flags,
-		r->out.sid, r->out.type);
+	status = wb_cache_name_to_sid(domain, p->mem_ctx, r->in.domain,
+				      r->in.name, r->in.flags,
+				      r->out.sid, r->out.type);
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
@@ -276,8 +276,8 @@ NTSTATUS _wbint_QueryUser(struct pipes_struct *p, struct wbint_QueryUser *r)
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->query_user(domain, p->mem_ctx, r->in.sid,
-					     r->out.info);
+	status = wb_cache_query_user(domain, p->mem_ctx, r->in.sid,
+				     r->out.info);
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
@@ -292,9 +292,11 @@ NTSTATUS _wbint_LookupUserAliases(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->lookup_useraliases(
-		domain, p->mem_ctx, r->in.sids->num_sids, r->in.sids->sids,
-		&r->out.rids->num_rids, &r->out.rids->rids);
+	status = wb_cache_lookup_useraliases(domain, p->mem_ctx,
+					     r->in.sids->num_sids,
+					     r->in.sids->sids,
+					     &r->out.rids->num_rids,
+					     &r->out.rids->rids);
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
@@ -309,9 +311,9 @@ NTSTATUS _wbint_LookupUserGroups(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->lookup_usergroups(
-		domain, p->mem_ctx, r->in.sid,
-		&r->out.sids->num_sids, &r->out.sids->sids);
+	status = wb_cache_lookup_usergroups(domain, p->mem_ctx, r->in.sid,
+					    &r->out.sids->num_sids,
+					    &r->out.sids->sids);
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
@@ -326,7 +328,7 @@ NTSTATUS _wbint_QuerySequenceNumber(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->sequence_number(domain, r->out.sequence);
+	status = wb_cache_sequence_number(domain, r->out.sequence);
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
@@ -345,9 +347,9 @@ NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->lookup_groupmem(
-		domain, p->mem_ctx, r->in.sid, r->in.type,
-		&num_names, &sid_mem, &names, &name_types);
+	status = wb_cache_lookup_groupmem(domain, p->mem_ctx, r->in.sid,
+					  r->in.type, &num_names, &sid_mem,
+					  &names, &name_types);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -380,9 +382,9 @@ NTSTATUS _wbint_QueryUserList(struct pipes_struct *p,
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->query_user_list(
-		domain, p->mem_ctx, &r->out.users->num_userinfos,
-		&r->out.users->userinfos);
+	status = wb_cache_query_user_list(domain, p->mem_ctx,
+					  &r->out.users->num_userinfos,
+					  &r->out.users->userinfos);
 	reset_cm_connection_on_error(domain, status);
 	return status;
 }
@@ -426,18 +428,18 @@ NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 	}
 
 	if (include_local_groups) {
-		status = domain->methods->enum_local_groups(domain, talloc_tos(),
-							    &num_local_groups,
-							    &local_groups);
+		status = wb_cache_enum_local_groups(domain, talloc_tos(),
+						    &num_local_groups,
+						    &local_groups);
 		reset_cm_connection_on_error(domain, status);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 	}
 
-	status = domain->methods->enum_dom_groups(domain, talloc_tos(),
-						  &num_dom_groups,
-						  &dom_groups);
+	status = wb_cache_enum_dom_groups(domain, talloc_tos(),
+					  &num_dom_groups,
+					  &dom_groups);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -611,9 +613,9 @@ NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
 	}
 
-	status = domain->methods->rids_to_names(
-		domain, talloc_tos(), r->in.domain_sid, r->in.rids->rids,
-		r->in.rids->num_rids, &domain_name, &names, &types);
+	status = wb_cache_rids_to_names(domain, talloc_tos(), r->in.domain_sid,
+					r->in.rids->rids, r->in.rids->num_rids,
+					&domain_name, &names, &types);
 	reset_cm_connection_on_error(domain, status);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

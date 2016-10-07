@@ -160,8 +160,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 	DEBUG(3, ("[%5lu]: list trusted domains\n",
 		  (unsigned long)state->pid));
 
-	result = domain->methods->trusted_domains(domain, state->mem_ctx,
-						  &trusts);
+	result = wb_cache_trusted_domains(domain, state->mem_ctx, &trusts);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(3, ("winbindd_dual_list_trusted_domains: trusted_domains returned %s\n",
