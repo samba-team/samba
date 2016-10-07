@@ -224,8 +224,7 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 	if (ret < 0) {
 		DEBUG(0, ("%s: Failed to set xlator option:"
 			  " snapdir-entry-path\n", volume));
-		glfs_fini(fs);
-		return -1;
+		goto done;
 	}
 
 	ret = glfs_set_logging(fs, logfile, loglevel);
