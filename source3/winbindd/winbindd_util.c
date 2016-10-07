@@ -35,10 +35,7 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 static struct winbindd_domain *
-add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
-			    struct winbindd_methods *methods);
-
-extern struct winbindd_methods cache_methods;
+add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc);
 
 /**
  * @file winbindd_util.c
@@ -125,7 +122,7 @@ static bool is_in_internal_domain(const struct dom_sid *sid)
 
 static struct winbindd_domain *
 add_trusted_domain(const char *domain_name, const char *alt_name,
-		   struct winbindd_methods *methods, const struct dom_sid *sid)
+		   const struct dom_sid *sid)
 {
 	struct winbindd_tdc_domain tdc;
 
@@ -137,15 +134,14 @@ add_trusted_domain(const char *domain_name, const char *alt_name,
 		sid_copy(&tdc.sid, sid);
 	}
 
-	return add_trusted_domain_from_tdc(&tdc, methods);
+	return add_trusted_domain_from_tdc(&tdc);
 }
 
 /* Add a trusted domain out of a trusted domain cache
    entry
 */
 static struct winbindd_domain *
-add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc,
-			    struct winbindd_methods *methods)
+add_trusted_domain_from_tdc(const struct winbindd_tdc_domain *tdc)
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
@@ -435,8 +431,7 @@ static void trustdom_list_done(struct tevent_req *req)
 		 * This is important because we need the SID for sibling
 		 * domains.
 		 */
-		(void)add_trusted_domain_from_tdc(&trust_params,
-						  &cache_methods);
+		(void)add_trusted_domain_from_tdc(&trust_params);
 
 		p = q + strlen(q) + 1;
 	}
@@ -505,8 +500,7 @@ static void rescan_forest_root_trusts( void )
 		d = find_domain_from_name_noinit( dom_list[i].domain_name );
 
 		if ( !d ) {
-			d = add_trusted_domain_from_tdc(&dom_list[i],
-							&cache_methods);
+			d = add_trusted_domain_from_tdc(&dom_list[i]);
 		}
 
 		if (d == NULL) {
@@ -572,8 +566,7 @@ static void rescan_forest_trusts( void )
 			   about it */
 
 			if ( !d ) {
-				d = add_trusted_domain_from_tdc(&dom_list[i],
-								&cache_methods);
+				d = add_trusted_domain_from_tdc(&dom_list[i]);
 			}
 
 			if (d == NULL) {
@@ -700,7 +693,6 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 
 	d = add_trusted_domain(info.netbios_name.string,
 			       info.domain_name.string,
-			       &cache_methods,
 			       info.sid);
 	if (d == NULL) {
 		TALLOC_FREE(frame);
@@ -786,8 +778,7 @@ bool init_domain_list(void)
 
 	/* BUILTIN domain */
 
-	(void)add_trusted_domain("BUILTIN", NULL, &cache_methods,
-				    &global_sid_Builtin);
+	(void)add_trusted_domain("BUILTIN", NULL, &global_sid_Builtin);
 
 	/* Local SAM */
 
@@ -807,7 +798,6 @@ bool init_domain_list(void)
 		}
 		domain = add_trusted_domain(pdb_domain_info->name,
 					pdb_domain_info->dns_domain,
-					&cache_methods,
 					&pdb_domain_info->sid);
 		TALLOC_FREE(pdb_domain_info);
 		if (domain == NULL) {
@@ -857,7 +847,7 @@ bool init_domain_list(void)
 
 	} else {
 		(void)add_trusted_domain(get_global_sam_name(), NULL,
-					 &cache_methods, get_global_sam_sid());
+					 get_global_sam_sid());
 	}
 	/* Add ourselves as the first entry. */
 
@@ -870,8 +860,8 @@ bool init_domain_list(void)
 			return False;
 		}
 
-		domain = add_trusted_domain( lp_workgroup(), lp_realm(),
-					     &cache_methods, &our_sid);
+		domain = add_trusted_domain(lp_workgroup(), lp_realm(),
+					    &our_sid);
 		if (domain) {
 			/* Even in the parent winbindd we'll need to
 			   talk to the DC, so try and see if we can

@@ -4978,25 +4978,6 @@ do_query:
 
 #endif
 
-/* the cache backend methods are exposed via this structure */
-struct winbindd_methods cache_methods = {
-	true,
-	wb_cache_query_user_list,
-	wb_cache_enum_dom_groups,
-	wb_cache_enum_local_groups,
-	wb_cache_name_to_sid,
-	wb_cache_sid_to_name,
-	wb_cache_rids_to_names,
-	wb_cache_query_user,
-	wb_cache_lookup_usergroups,
-	wb_cache_lookup_useraliases,
-	wb_cache_lookup_groupmem,
-	wb_cache_sequence_number,
-	wb_cache_lockout_policy,
-	wb_cache_password_policy,
-	wb_cache_trusted_domains
-};
-
 static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, const char *domain_name,
 			   uint32_t opnum, const DATA_BLOB *req,
 			   TDB_DATA *pkey)
