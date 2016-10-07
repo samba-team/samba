@@ -38,16 +38,16 @@ static void test1(const char *pidfile)
 	assert(ret == 0);
 	assert(pid_ctx != NULL);
 
-	ret = stat(pidfile, &st);
-	assert(ret == 0);
-	assert(S_ISREG(st.st_mode));
-
 	fp = fopen(pidfile, "r");
 	assert(fp != NULL);
 	ret = fscanf(fp, "%d", &pid);
 	assert(ret == 1);
 	assert(pid == getpid());
 	fclose(fp);
+
+	ret = stat(pidfile, &st);
+	assert(ret == 0);
+	assert(S_ISREG(st.st_mode));
 
 	TALLOC_FREE(pid_ctx);
 
