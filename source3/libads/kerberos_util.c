@@ -33,6 +33,10 @@ int ads_kinit_password(ADS_STRUCT *ads)
 	const char *account_name;
 	fstring acct_name;
 
+	if (ads->auth.password == NULL || ads->auth.password[0] == '\0') {
+		return KRB5_LIBOS_CANTREADPWD;
+	}
+
 	if (ads->auth.flags & ADS_AUTH_USER_CREDS) {
 		account_name = ads->auth.user_name;
 		goto got_accountname;
@@ -56,11 +60,6 @@ int ads_kinit_password(ADS_STRUCT *ads)
  got_accountname:
 	if (asprintf(&s, "%s@%s", account_name, ads->auth.realm) == -1) {
 		return KRB5_CC_NOMEM;
-	}
-
-	if (!ads->auth.password) {
-		SAFE_FREE(s);
-		return KRB5_LIBOS_CANTREADPWD;
 	}
 
 	ret = kerberos_kinit_password_ext(s, ads->auth.password,
