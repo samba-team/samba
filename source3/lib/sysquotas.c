@@ -82,6 +82,8 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 	}
 
 	while (true) {
+		char save_ch;
+
 		p = strrchr(stat_mntpath, '/');
 		if (p == NULL) {
 			DBG_ERR("realpath for %s does not begin with a '/'\n",
@@ -93,6 +95,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 			++p;
 		}
 
+		save_ch = *p;
 		*p = 0;
 		if (sys_stat(stat_mntpath, &S, false) != 0) {
 			DBG_WARNING("cannot stat real path component %s - %s\n",
@@ -100,7 +103,7 @@ static int sys_path_to_bdev(const char *path, char **mntpath, char **bdev, char 
 			goto out;
 		}
 		if (S.st_ex_dev != devno) {
-			*p = '/';
+			*p = save_ch;
 			break;
 		}
 
