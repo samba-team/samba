@@ -1453,10 +1453,10 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 
 
 /* Query display info. This is the basic user list fn */
-static NTSTATUS query_user_list(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32_t *num_entries,
-				struct wbint_userinfo **info)
+NTSTATUS wb_cache_query_user_list(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t *num_entries,
+				  struct wbint_userinfo **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1604,10 +1604,10 @@ skip_save:
 }
 
 /* list all domain groups */
-static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32_t *num_entries,
-				struct wb_acct_info **info)
+NTSTATUS wb_cache_enum_dom_groups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t *num_entries,
+				  struct wb_acct_info **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1699,10 +1699,10 @@ skip_save:
 }
 
 /* list all domain groups */
-static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				uint32_t *num_entries,
-				struct wb_acct_info **info)
+NTSTATUS wb_cache_enum_local_groups(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32_t *num_entries,
+				    struct wb_acct_info **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -1847,13 +1847,13 @@ NTSTATUS wcache_name_to_sid(struct winbindd_domain *domain,
 }
 
 /* convert a single name to a sid in a domain */
-static NTSTATUS name_to_sid(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const char *domain_name,
-			    const char *name,
-			    uint32_t flags,
-			    struct dom_sid *sid,
-			    enum lsa_SidType *type)
+NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const char *domain_name,
+			      const char *name,
+			      uint32_t flags,
+			      struct dom_sid *sid,
+			      enum lsa_SidType *type)
 {
 	NTSTATUS status;
 	bool old_status;
@@ -1961,12 +1961,12 @@ static NTSTATUS wcache_sid_to_name(struct winbindd_domain *domain,
 
 /* convert a sid to a user or group name. The sid is guaranteed to be in the domain
    given */
-static NTSTATUS sid_to_name(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const struct dom_sid *sid,
-			    char **domain_name,
-			    char **name,
-			    enum lsa_SidType *type)
+NTSTATUS wb_cache_sid_to_name(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const struct dom_sid *sid,
+			      char **domain_name,
+			      char **name,
+			      enum lsa_SidType *type)
 {
 	NTSTATUS status;
 	bool old_status;
@@ -2024,14 +2024,14 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	return status;
 }
 
-static NTSTATUS rids_to_names(struct winbindd_domain *domain,
-			      TALLOC_CTX *mem_ctx,
-			      const struct dom_sid *domain_sid,
-			      uint32_t *rids,
-			      size_t num_rids,
-			      char **domain_name,
-			      char ***names,
-			      enum lsa_SidType **types)
+NTSTATUS wb_cache_rids_to_names(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *domain_sid,
+				uint32_t *rids,
+				size_t num_rids,
+				char **domain_name,
+				char ***names,
+				enum lsa_SidType **types)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	size_t i;
@@ -2358,10 +2358,10 @@ NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 }
 
 /* Lookup user information from a rid */
-static NTSTATUS query_user(struct winbindd_domain *domain,
-			   TALLOC_CTX *mem_ctx,
-			   const struct dom_sid *user_sid,
-			   struct wbint_userinfo *info)
+NTSTATUS wb_cache_query_user(struct winbindd_domain *domain,
+			     TALLOC_CTX *mem_ctx,
+			     const struct dom_sid *user_sid,
+			     struct wbint_userinfo *info)
 {
 	NTSTATUS status;
 	bool old_status;
@@ -2467,10 +2467,11 @@ NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 }
 
 /* Lookup groups a user is a member of. */
-static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  const struct dom_sid *user_sid,
-				  uint32_t *num_groups, struct dom_sid **user_gids)
+NTSTATUS wb_cache_lookup_usergroups(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *user_sid,
+				    uint32_t *num_groups,
+				    struct dom_sid **user_gids)
 {
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
@@ -2618,10 +2619,12 @@ NTSTATUS wcache_lookup_useraliases(struct winbindd_domain *domain,
 	return status;
 }
 
-static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
-				   TALLOC_CTX *mem_ctx,
-				   uint32_t num_sids, const struct dom_sid *sids,
-				   uint32_t *num_aliases, uint32_t **alias_rids)
+NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
+				     TALLOC_CTX *mem_ctx,
+				     uint32_t num_sids,
+				     const struct dom_sid *sids,
+				     uint32_t *num_aliases,
+				     uint32_t **alias_rids)
 {
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
@@ -2751,13 +2754,14 @@ NTSTATUS wcache_lookup_groupmem(struct winbindd_domain *domain,
 	return status;
 }
 
-static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *group_sid,
-				enum lsa_SidType type,
-				uint32_t *num_names,
-				struct dom_sid **sid_mem, char ***names,
-				uint32_t **name_types)
+NTSTATUS wb_cache_lookup_groupmem(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *group_sid,
+				  enum lsa_SidType type,
+				  uint32_t *num_names,
+				  struct dom_sid **sid_mem,
+				  char ***names,
+				  uint32_t **name_types)
 {
 	struct cache_entry *centry = NULL;
 	NTSTATUS status;
@@ -2826,7 +2830,8 @@ skip_save:
 }
 
 /* find the sequence number for a domain */
-static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
+NTSTATUS wb_cache_sequence_number(struct winbindd_domain *domain,
+				  uint32_t *seq)
 {
 	refresh_sequence_number(domain);
 
@@ -2838,9 +2843,9 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32_t *seq)
 /* enumerate trusted domains 
  * (we need to have the list of trustdoms in the cache when we go offline) -
  * Guenther */
-static NTSTATUS trusted_domains(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				struct netr_DomainTrustList *trusts)
+NTSTATUS wb_cache_trusted_domains(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  struct netr_DomainTrustList *trusts)
 {
  	NTSTATUS status;
 	struct winbind_cache *cache;
@@ -2946,9 +2951,9 @@ do_query:
 }	
 
 /* get lockout policy */
-static NTSTATUS lockout_policy(struct winbindd_domain *domain,
- 			       TALLOC_CTX *mem_ctx,
-			       struct samr_DomInfo12 *policy)
+NTSTATUS wb_cache_lockout_policy(struct winbindd_domain *domain,
+				 TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo12 *policy)
 {
  	struct winbind_cache *cache = get_cache(domain);
  	struct cache_entry *centry = NULL;
@@ -3016,9 +3021,9 @@ do_query:
 }
 
 /* get password policy */
-static NTSTATUS password_policy(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				struct samr_DomInfo1 *policy)
+NTSTATUS wb_cache_password_policy(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  struct samr_DomInfo1 *policy)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
@@ -4976,20 +4981,20 @@ do_query:
 /* the cache backend methods are exposed via this structure */
 struct winbindd_methods cache_methods = {
 	true,
-	query_user_list,
-	enum_dom_groups,
-	enum_local_groups,
-	name_to_sid,
-	sid_to_name,
-	rids_to_names,
-	query_user,
-	lookup_usergroups,
-	lookup_useraliases,
-	lookup_groupmem,
-	sequence_number,
-	lockout_policy,
-	password_policy,
-	trusted_domains
+	wb_cache_query_user_list,
+	wb_cache_enum_dom_groups,
+	wb_cache_enum_local_groups,
+	wb_cache_name_to_sid,
+	wb_cache_sid_to_name,
+	wb_cache_rids_to_names,
+	wb_cache_query_user,
+	wb_cache_lookup_usergroups,
+	wb_cache_lookup_useraliases,
+	wb_cache_lookup_groupmem,
+	wb_cache_sequence_number,
+	wb_cache_lockout_policy,
+	wb_cache_password_policy,
+	wb_cache_trusted_domains
 };
 
 static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, const char *domain_name,

@@ -57,6 +57,74 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from winbindd/winbindd_cache.c  */
 
+NTSTATUS wb_cache_query_user_list(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t *num_entries,
+				  struct wbint_userinfo **info);
+NTSTATUS wb_cache_enum_dom_groups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t *num_entries,
+				  struct wb_acct_info **info);
+NTSTATUS wb_cache_enum_local_groups(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32_t *num_entries,
+				    struct wb_acct_info **info);
+NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const char *domain_name,
+			      const char *name,
+			      uint32_t flags,
+			      struct dom_sid *sid,
+			      enum lsa_SidType *type);
+NTSTATUS wb_cache_sid_to_name(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const struct dom_sid *sid,
+			      char **domain_name,
+			      char **name,
+			      enum lsa_SidType *type);
+NTSTATUS wb_cache_rids_to_names(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				const struct dom_sid *domain_sid,
+				uint32_t *rids,
+				size_t num_rids,
+				char **domain_name,
+				char ***names,
+				enum lsa_SidType **types);
+NTSTATUS wb_cache_query_user(struct winbindd_domain *domain,
+			     TALLOC_CTX *mem_ctx,
+			     const struct dom_sid *user_sid,
+			     struct wbint_userinfo *info);
+NTSTATUS wb_cache_lookup_usergroups(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const struct dom_sid *user_sid,
+				    uint32_t *pnum_sids,
+				    struct dom_sid **psids);
+NTSTATUS wb_cache_lookup_useraliases(struct winbindd_domain *domain,
+				     TALLOC_CTX *mem_ctx,
+				     uint32_t num_sids,
+				     const struct dom_sid *sids,
+				     uint32_t *num_aliases,
+				     uint32_t **alias_rids);
+NTSTATUS wb_cache_lookup_groupmem(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const struct dom_sid *group_sid,
+				  enum lsa_SidType type,
+				  uint32_t *num_names,
+				  struct dom_sid **sid_mem,
+				  char ***names,
+				  uint32_t **name_types);
+NTSTATUS wb_cache_sequence_number(struct winbindd_domain *domain,
+				  uint32_t *seq);
+NTSTATUS wb_cache_lockout_policy(struct winbindd_domain *domain,
+				 TALLOC_CTX *mem_ctx,
+				 struct samr_DomInfo12 *policy);
+NTSTATUS wb_cache_password_policy(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  struct samr_DomInfo1 *policy);
+NTSTATUS wb_cache_trusted_domains(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  struct netr_DomainTrustList *trusts);
+
 NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct dom_sid *sid);
 NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 
 			  TALLOC_CTX *mem_ctx, 
