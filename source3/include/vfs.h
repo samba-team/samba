@@ -193,8 +193,10 @@
 /* Version 35 - Add uint32_t flags to struct smb_filename */
 /* Version 35 - Add get/set/fget/fset dos attribute functions. */
 /* Version 35 - Add bool use_ofd_locks to struct files_struct */
+/* Bump to version 36 - Samba 4.6 will ship with that */
+/* Version 36 - Remove is_offline and set_offline */
 
-#define SMB_VFS_INTERFACE_VERSION 35
+#define SMB_VFS_INTERFACE_VERSION 36
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -867,13 +869,6 @@ struct vfs_fn_pointers {
 
 	/* aio operations */
 	bool (*aio_force_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
-
-	/* offline operations */
-	bool (*is_offline_fn)(struct vfs_handle_struct *handle,
-			   const struct smb_filename *fname,
-			   SMB_STRUCT_STAT *sbuf);
-	int (*set_offline_fn)(struct vfs_handle_struct *handle,
-			   const struct smb_filename *fname);
 
 	/* durable handle operations */
 	NTSTATUS (*durable_cookie_fn)(struct vfs_handle_struct *handle,

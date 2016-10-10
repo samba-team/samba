@@ -985,19 +985,6 @@ static bool skel_aio_force(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_AIO_FORCE(handle, fsp);
 }
 
-static bool skel_is_offline(struct vfs_handle_struct *handle,
-			    const struct smb_filename *fname,
-			    SMB_STRUCT_STAT *sbuf)
-{
-	return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
-}
-
-static int skel_set_offline(struct vfs_handle_struct *handle,
-			    const struct smb_filename *fname)
-{
-	return SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
-}
-
 /* VFS operations structure */
 
 struct vfs_fn_pointers skel_transparent_fns = {
@@ -1129,10 +1116,6 @@ struct vfs_fn_pointers skel_transparent_fns = {
 
 	/* aio operations */
 	.aio_force_fn = skel_aio_force,
-
-	/* offline operations */
-	.is_offline_fn = skel_is_offline,
-	.set_offline_fn = skel_set_offline
 };
 
 static_decl_vfs;

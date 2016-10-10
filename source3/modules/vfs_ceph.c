@@ -1204,20 +1204,6 @@ static bool cephwrap_aio_force(struct vfs_handle_struct *handle, struct files_st
 	return false;
 }
 
-static bool cephwrap_is_offline(struct vfs_handle_struct *handle,
-				const struct smb_filename *fname,
-				SMB_STRUCT_STAT *sbuf)
-{
-	return false;
-}
-
-static int cephwrap_set_offline(struct vfs_handle_struct *handle,
-				const struct smb_filename *fname)
-{
-	errno = ENOTSUP;
-	return -1;
-}
-
 static struct vfs_fn_pointers ceph_fns = {
 	/* Disk operations */
 
@@ -1300,10 +1286,6 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	/* aio operations */
 	.aio_force_fn = cephwrap_aio_force,
-
-	/* offline operations */
-	.is_offline_fn = cephwrap_is_offline,
-	.set_offline_fn = cephwrap_set_offline
 };
 
 NTSTATUS vfs_ceph_init(void);

@@ -2368,79 +2368,6 @@ out:
 	return status;
 }
 
-/*
- * Success: return true
- * Failure: set errno, return false
- */
-static bool mh_is_offline(struct vfs_handle_struct *handle,
-		const struct smb_filename *fname,
-		SMB_STRUCT_STAT *sbuf)
-{
-	// check if sbuf is modified further down the chain.
-	bool ret;
-	struct smb_filename *clientFname;
-	TALLOC_CTX *ctx;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_is_offline\n"));
-	if (!is_in_media_files(fname->base_name))
-	{
-		ret = SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
-		goto out;
-	}
-
-	clientFname = NULL;
-	ctx = talloc_tos();
-
-	if(alloc_get_client_smb_fname(handle, ctx,
-				fname,
-				&clientFname))
-	{
-		ret = -1;
-		goto err;
-	}
-
-	ret = SMB_VFS_NEXT_IS_OFFLINE(handle, clientFname, sbuf);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return ret;
-}
-
-/*
- * Success: return 0 (?)
- * Failure: set errno, return -1
- */
-static int mh_set_offline(struct vfs_handle_struct *handle,
-		const struct smb_filename *fname)
-{
-	int status;
-	struct smb_filename *clientFname;
-	TALLOC_CTX *ctx;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_set_offline\n"));
-	if (!is_in_media_files(fname->base_name))
-	{
-		status = SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
-		goto out;
-	}
-
-	clientFname = NULL;
-	ctx = talloc_tos();
-
-	if ((status = alloc_get_client_smb_fname(handle, ctx,
-				fname,
-				&clientFname)))
-	{
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_SET_OFFLINE(handle, clientFname);
-err:
-	TALLOC_FREE(clientFname);
-out:
-	return status;
-}
-
 /* VFS operations structure */
 
 static struct vfs_fn_pointers vfs_mh_fns = {
@@ -2502,10 +2429,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.setxattr_fn = mh_setxattr,
 
 	/* aio operations */
-
-	/* offline operations */
-	.is_offline_fn = mh_is_offline,
-	.set_offline_fn = mh_set_offline
 };
 
 NTSTATUS vfs_media_harmony_init(void);

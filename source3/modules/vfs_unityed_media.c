@@ -1806,59 +1806,6 @@ err:
 	return status;
 }
 
-static bool um_is_offline(struct vfs_handle_struct *handle,
-			  const struct smb_filename *fname,
-			  SMB_STRUCT_STAT *sbuf)
-{
-	bool ret;
-	struct smb_filename *client_fname = NULL;
-	int status;
-
-	DEBUG(10, ("Entering um_is_offline\n"));
-
-	if (!is_in_media_files(fname->base_name)) {
-		return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    fname, &client_fname);
-	if (status != 0) {
-		ret = false;
-		goto err;
-	}
-
-	ret = SMB_VFS_NEXT_IS_OFFLINE(handle, client_fname, sbuf);
-
-err:
-	TALLOC_FREE(client_fname);
-	return ret;
-}
-
-static int um_set_offline(struct vfs_handle_struct *handle,
-			  const struct smb_filename *fname)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_set_offline\n"));
-
-	if (!is_in_media_files(fname->base_name)) {
-		return SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    fname, &client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_SET_OFFLINE(handle, client_fname);
-
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 static int um_connect(vfs_handle_struct *handle,
 			 const char *service,
 			 const char *user)
@@ -1956,12 +1903,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.listxattr_fn = um_listxattr,
 	.removexattr_fn = um_removexattr,
 	.setxattr_fn = um_setxattr,
-
-	/* aio operations */
-
-	/* offline operations */
-	.is_offline_fn = um_is_offline,
-	.set_offline_fn = um_set_offline
 };
 
 NTSTATUS vfs_unityed_media_init(void);

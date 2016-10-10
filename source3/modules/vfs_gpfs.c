@@ -2575,7 +2575,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fstat_fn = vfs_gpfs_fstat,
 	.lstat_fn = vfs_gpfs_lstat,
 	.ntimes_fn = vfs_gpfs_ntimes,
-	.is_offline_fn = vfs_gpfs_is_offline,
 	.aio_force_fn = vfs_gpfs_aio_force,
 	.sendfile_fn = vfs_gpfs_sendfile,
 	.fallocate_fn = vfs_gpfs_fallocate,

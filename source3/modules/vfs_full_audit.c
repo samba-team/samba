@@ -2376,29 +2376,6 @@ static bool smb_full_audit_aio_force(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static bool smb_full_audit_is_offline(struct vfs_handle_struct *handle,
-				      const struct smb_filename *fname,
-				      SMB_STRUCT_STAT *sbuf)
-{
-	bool result;
-
-	result = SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
-	do_log(SMB_VFS_OP_IS_OFFLINE, result, handle, "%s",
-	       smb_fname_str_do_log(fname));
-	return result;
-}
-
-static int smb_full_audit_set_offline(struct vfs_handle_struct *handle,
-				      const struct smb_filename *fname)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SET_OFFLINE(handle, fname);
-	do_log(SMB_VFS_OP_SET_OFFLINE, result >= 0, handle, "%s",
-	       smb_fname_str_do_log(fname));
-	return result;
-}
-
 static NTSTATUS smb_full_audit_durable_cookie(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				TALLOC_CTX *mem_ctx,
@@ -2575,8 +2552,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.setxattr_fn = smb_full_audit_setxattr,
 	.fsetxattr_fn = smb_full_audit_fsetxattr,
 	.aio_force_fn = smb_full_audit_aio_force,
-	.is_offline_fn = smb_full_audit_is_offline,
-	.set_offline_fn = smb_full_audit_set_offline,
 	.durable_cookie_fn = smb_full_audit_durable_cookie,
 	.durable_disconnect_fn = smb_full_audit_durable_disconnect,
 	.durable_reconnect_fn = smb_full_audit_durable_reconnect,

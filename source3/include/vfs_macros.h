@@ -560,16 +560,6 @@
 #define SMB_VFS_NEXT_AIO_FORCE(handle,fsp) \
 	smb_vfs_call_aio_force((handle)->next,(fsp))
 
-#define SMB_VFS_IS_OFFLINE(conn,fname,sbuf) \
-	smb_vfs_call_is_offline((conn)->vfs_handles,(fname),(sbuf))
-#define SMB_VFS_NEXT_IS_OFFLINE(handle,fname,sbuf) \
-	smb_vfs_call_is_offline((handle)->next,(fname),(sbuf))
-
-#define SMB_VFS_SET_OFFLINE(conn,fname) \
-	smb_vfs_call_set_offline((conn)->vfs_handles,(fname))
-#define SMB_VFS_NEXT_SET_OFFLINE(handle,fname) \
-	smb_vfs_call_set_offline((handle)->next, (fname))
-
 /* durable handle operations */
 
 #define SMB_VFS_DURABLE_COOKIE(fsp, mem_ctx, cookie) \

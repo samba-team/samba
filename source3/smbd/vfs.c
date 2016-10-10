@@ -2531,21 +2531,6 @@ bool smb_vfs_call_aio_force(struct vfs_handle_struct *handle,
 	return handle->fns->aio_force_fn(handle, fsp);
 }
 
-bool smb_vfs_call_is_offline(struct vfs_handle_struct *handle,
-			     const struct smb_filename *fname,
-			     SMB_STRUCT_STAT *sbuf)
-{
-	VFS_FIND(is_offline);
-	return handle->fns->is_offline_fn(handle, fname, sbuf);
-}
-
-int smb_vfs_call_set_offline(struct vfs_handle_struct *handle,
-                             const struct smb_filename *fname)
-{
-	VFS_FIND(set_offline);
-	return handle->fns->set_offline_fn(handle, fname);
-}
-
 NTSTATUS smb_vfs_call_durable_cookie(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     TALLOC_CTX *mem_ctx,

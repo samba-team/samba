@@ -1246,22 +1246,6 @@ static bool vfs_gluster_aio_force(struct vfs_handle_struct *handle,
 	return false;
 }
 
-/* Offline Operations */
-
-static bool vfs_gluster_is_offline(struct vfs_handle_struct *handle,
-				   const struct smb_filename *fname,
-				   SMB_STRUCT_STAT *sbuf)
-{
-	return false;
-}
-
-static int vfs_gluster_set_offline(struct vfs_handle_struct *handle,
-				   const struct smb_filename *fname)
-{
-	errno = ENOTSUP;
-	return -1;
-}
-
 static struct vfs_fn_pointers glusterfs_fns = {
 
 	/* Disk Operations */
@@ -1380,10 +1364,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	/* AIO Operations */
 	.aio_force_fn = vfs_gluster_aio_force,
-
-	/* Offline Operations */
-	.is_offline_fn = vfs_gluster_is_offline,
-	.set_offline_fn = vfs_gluster_set_offline,
 
 	/* Durable handle Operations */
 	.durable_cookie_fn = NULL,
