@@ -2177,7 +2177,7 @@ def provision(logger, session_info, smbconf=None,
         create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,
                          realm=names.realm)
-        logger.info("A Kerberos configuration suitable for Samba 4 has been "
+        logger.info("A Kerberos configuration suitable for Samba AD has been "
                     "generated at %s", paths.krb5conf)
 
         if serverrole == "active directory domain controller":
