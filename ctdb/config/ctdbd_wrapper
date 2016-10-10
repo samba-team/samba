@@ -31,17 +31,21 @@ ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 # ctdbd_is_running()
 
 # Check if ctdbd is running.  ctdbd is only considered to running if
-# the PID in the PID file is active.  Return true if this is the case.
-# Print the PID regardless, since it can be used to kill stale
-# processes in the session.
+# the PID in the PID file is active and is called "ctdbd".  Return
+# true if this is the case.  Print the PID regardless, since it can be
+# used to kill stale processes in the session.
 
 ctdbd_is_running ()
 {
 	if read _pid 2>/dev/null <"$pidfile" ; then
 		echo "$_pid"
 
-		# Return value of kill is used
-		kill -0 "$_pid" 2>/dev/null
+		# This could be optimised with ps options -q and -h.
+		# However, -q is not generally available because it is
+		# fairly new and -h is not in some older distros.  The
+		# options below are portable.
+		_cmd=$(ps -p "$_pid" -o comm | tail -n +2)
+		[ "$_cmd" = "ctdbd" ]
 	else
 		# Missing/empty PID file
 		return 1
