@@ -30,53 +30,22 @@ ctdbd="${CTDBD:-/usr/local/sbin/ctdbd}"
 
 # ctdbd_is_running()
 
-# 1. Check if ctdbd is running.
-#    - If the PID file is being used then, if the PID file is present,
-#      ctdbd is only considered to running if the PID in the file is
-#      active.
-#    - If the PID file is not being used (i.e. we're upgrading from a
-#      version that doesn't support it) then the presence of any ctdbd
-#      processes is enough proof.
-
-# 2. Print a comma-separated list of PIDs that can be
-#    used with "pkill -s".
-#    - If the PID file is being used then this is just the PID in that
-#      file.  This also happens to be the session ID, so can be used
-#      to kill all CTDB processes.
-#    - If the PID file is not being used (i.e. upgrading) then this is
-#      just any ctdbd processes that are running.  Hopefully one of
-#      them is the session ID so that it can be used to kill all CTDB
-#      processes.
-
-# Combining these 2 checks is an optimisation to avoid potentially
-# running too many pgrep/pkill processes on an already loaded system.
-# Trawling through /proc/ can be very expensive.
+# Check if ctdbd is running.  ctdbd is only considered to running if
+# the PID in the PID file is active.  Return true if this is the case.
+# Print the PID regardless, since it can be used to kill stale
+# processes in the session.
 
 ctdbd_is_running ()
 {
-    # If the directory for the PID file exists then respect the
-    # existence of a PID file.
-    _pidfile_dir=$(dirname "$pidfile")
-    if [ -d "$_pidfile_dir" ] ; then
 	if read _pid 2>/dev/null <"$pidfile" ; then
-	    echo "$_pid"
+		echo "$_pid"
 
-	    # Return value of kill is used
-	    kill -0 "$_pid" 2>/dev/null
+		# Return value of kill is used
+		kill -0 "$_pid" 2>/dev/null
 	else
-	    # Missing/empty PID file
-	    return 1
+		# Missing/empty PID file
+		return 1
 	fi
-    else
-	if _pid=$(pgrep -f "${ctdbd}\>") ; then
-		# Use word splitting to squash whitespace
-		# shellcheck disable=SC2086
-	    echo $_pid | sed -e 's@ @,@g'
-	    return 0
-	else
-	    return 1
-	fi
-    fi
 }
 
 ############################################################
