@@ -765,7 +765,7 @@ int ctdbd_db_attach(struct ctdbd_connection *conn,
 int ctdbd_migrate(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key)
 {
 	struct ctdb_req_call_old req;
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = NULL;
 	struct iovec iov[2];
 	ssize_t nwritten;
 	int ret;
