@@ -135,7 +135,6 @@ static bool udv_filter(const struct drsuapi_DsReplicaCursorCtrEx *udv,
 		return true;
 	}
 	return false;
-
 }
 
 static int uint32_t_cmp(uint32_t a1, uint32_t a2)
