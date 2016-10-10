@@ -1027,7 +1027,6 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 {
 	ADS_STATUS status;
 	struct ads_service_principal p;
-	const char *ccache_name = "MEMORY:ads_sasl_gssapi_do_bind";
 
 	status = ads_generate_service_principal(ads, &p);
 	if (!ADS_ERR_OK(status)) {
@@ -1046,10 +1045,6 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 			  "calling kinit\n", ads_errstr(status)));
 	}
 
-	if (ads->auth.ccache_name != NULL) {
-		ccache_name = ads->auth.ccache_name;
-	}
-	setenv(KRB5_ENV_CCNAME, ccache_name, 1);
 	status = ADS_ERROR_KRB5(ads_kinit_password(ads));
 
 	if (ADS_ERR_OK(status)) {
