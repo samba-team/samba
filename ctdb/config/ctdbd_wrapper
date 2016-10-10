@@ -181,7 +181,6 @@ kill_ctdbd ()
 
     if [ -n "$_session" ] ; then
 	pkill -9 -s "$_session" 2>/dev/null
-	rm -f "$pidfile"
     fi
 }
 
