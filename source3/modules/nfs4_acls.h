@@ -65,7 +65,7 @@ typedef struct _SMB_ACE4PROP_T {
 #define	SMB_ACE4_ACCESS_DENIED_ACE_TYPE	0x00000001
 #define	SMB_ACE4_SYSTEM_AUDIT_ACE_TYPE	0x00000002
 #define	SMB_ACE4_SYSTEM_ALARM_ACE_TYPE	0x00000003
-#define SMB_ACE4_MAX_TYPE	ACE4_SYSTEM_ALARM_ACE_TYPE  /* largest valid ACE4_TYPE */
+#define SMB_ACE4_MAX_TYPE	SMB_ACE4_SYSTEM_ALARM_ACE_TYPE  /* largest valid ACE4_TYPE */
 
 	uint32_t aceFlags;	/* Controls Inheritance and such */
 /*The bitmask constants used for the flag field are as follows: */
