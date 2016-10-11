@@ -306,4 +306,3 @@
 ^samba4.rpc.echo.*on.*with.object.echo.sinkdata.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.addone.*nt4_dc
 ^samba4.rpc.echo.*on.*ncacn_ip_tcp.*with.object.*nt4_dc
-^samba4.drs.getnc_exop.python.*getnc_exop.DrsReplicaSyncTestCase.test_edit_rid_master.*
