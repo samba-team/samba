@@ -155,20 +155,20 @@ if ! which mktemp >/dev/null 2>&1 ; then
     # Not perfect, but it will do...
     mktemp ()
     {
-	_dir=false
+	local dir=false
 	if [ "$1" = "-d" ] ; then
-	    _dir=true
+	    dir=true
 	fi
-	_t="${TMPDIR:-/tmp}/tmp.$$.$RANDOM"
+	local t="${TMPDIR:-/tmp}/tmp.$$.$RANDOM"
 	(
 	    umask 077
-	    if $_dir ; then
-		mkdir "$_t"
+	    if $dir ; then
+		mkdir "$t"
 	    else
-		>"$_t"
+		>"$t"
 	    fi
 	)
-	echo "$_t"
+	echo "$t"
     }
 fi
 
@@ -179,12 +179,12 @@ set -o pipefail
 
 run_one_test ()
 {
-    _f="$1"
+    local f="$1"
 
-    [ -x "$_f" ] || die "test \"$_f\" is not executable"
+    [ -x "$f" ] || die "test \"$f\" is not executable"
     tests_total=$(($tests_total + 1))
 
-    ctdb_test_run "$_f" | tee "$tf" | show_progress
+    ctdb_test_run "$f" | tee "$tf" | show_progress
     status=$?
     if [ $status -eq 0 ] ; then
 	tests_passed=$(($tests_passed + 1))
@@ -192,37 +192,39 @@ run_one_test ()
 	tests_failed=$(($tests_failed + 1))
     fi
     if $with_summary ; then
+	local t
 	if [ $status -eq 0 ] ; then
-	    _t=" PASSED "
+	    t=" PASSED "
 	else
-	    _t="*FAILED*"
+	    t="*FAILED*"
 	fi
 	if $with_desc ; then
 	    desc=$(tail -n +4 $tf | head -n 1)
-	    _f="$desc"
+	    f="$desc"
 	fi
-	echo "$_t $_f" >>"$sf"
+	echo "$t $f" >>"$sf"
     fi
 }
 
 find_and_run_one_test ()
 {
-    _t="$1"
-    _dir="$2"
+    local t="$1"
+    local dir="$2"
 
-    _f="${_dir}${_dir:+/}${_t}"
+    local f="${dir}${dir:+/}${t}"
 
-    if [ -d "$_f" ] ; then
-	for _i in $(ls "${_f%/}/"*".sh" 2>/dev/null) ; do
-	    run_one_test "$_i"
+    if [ -d "$f" ] ; then
+	local i
+	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
+	    run_one_test "$i"
 	    if $exit_on_fail && [ $status -ne 0 ] ; then
 		break
 	    fi
 	done
 	# No tests found?  Not a tests directory!  Not found...
 	[ -n "$status" ] || status=127
-    elif [ -f "$_f" ] ; then
-	run_one_test "$_f"
+    elif [ -f "$f" ] ; then
+	run_one_test "$f"
     else
 	status=127
     fi
