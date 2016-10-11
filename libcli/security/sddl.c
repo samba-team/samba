@@ -529,7 +529,7 @@ static char *sddl_encode_ace(TALLOC_CTX *mem_ctx, const struct security_ace *ace
 	if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
 	    ace->type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
 	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
-	    ace->type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT) {
+	    ace->type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
 		if (ace->object.object.flags & SEC_ACE_OBJECT_TYPE_PRESENT) {
 			sddl_object = GUID_string(
 				tmp_ctx, &ace->object.object.type.type);
