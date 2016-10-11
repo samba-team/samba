@@ -59,6 +59,43 @@ static PyObject *py_creds_set_username(PyObject *self, PyObject *args)
 	return PyBool_FromLong(cli_credentials_set_username(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
+static PyObject *py_creds_get_ntlm_username_domain(PyObject *self, PyObject *unused)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *user = NULL;
+	const char *domain = NULL;
+	PyObject *ret = NULL;
+	cli_credentials_get_ntlm_username_domain(PyCredentials_AsCliCredentials(self),
+						 frame, &user, &domain);
+	ret = Py_BuildValue("(OO)",
+			    PyString_FromStringOrNULL(user),
+			    PyString_FromStringOrNULL(domain));
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static PyObject *py_creds_get_principal(PyObject *self, PyObject *unused)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	PyObject *ret = PyString_FromStringOrNULL(cli_credentials_get_principal(PyCredentials_AsCliCredentials(self), frame));
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+static PyObject *py_creds_set_principal(PyObject *self, PyObject *args)
+{
+	char *newval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	return PyBool_FromLong(cli_credentials_set_principal(PyCredentials_AsCliCredentials(self), newval, obt));
+}
+
 static PyObject *py_creds_get_password(PyObject *self, PyObject *unused)
 {
 	return PyString_FromStringOrNULL(cli_credentials_get_password(PyCredentials_AsCliCredentials(self)));
@@ -463,9 +500,17 @@ static PyMethodDef py_creds_methods[] = {
 	{ "set_username", py_creds_set_username, METH_VARARGS,
 		"S.set_username(name, obtained=CRED_SPECIFIED) -> None\n"
 		"Change username." },
+	{ "get_principal", py_creds_get_principal, METH_NOARGS,
+		"S.get_principal() -> user@realm\nObtain user principal." },
+	{ "set_principal", py_creds_set_principal, METH_VARARGS,
+		"S.set_principal(name, obtained=CRED_SPECIFIED) -> None\n"
+		"Change principal." },
 	{ "get_password", py_creds_get_password, METH_NOARGS,
 		"S.get_password() -> password\n"
 		"Obtain password." },
+	{ "get_ntlm_username_domain", py_creds_get_ntlm_username_domain, METH_NOARGS,
+		"S.get_ntlm_username_domain() -> (domain, username)\n"
+		"Obtain NTLM username and domain, split up either as (DOMAIN, user) or (\"\", \"user@realm\")." },
 	{ "set_password", py_creds_set_password, METH_VARARGS,
 		"S.set_password(password, obtained=CRED_SPECIFIED) -> None\n"
 		"Change password." },
