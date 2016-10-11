@@ -209,7 +209,7 @@ def configure(conf):
                     conf.env.CTDB_RUNDIR))
 
     conf.env.CTDB_TEST_DATADIR = os.path.join(conf.env.EXEC_PREFIX,
-                                              'share/ctdb-tests')
+                                              'share/ctdb/tests')
     conf.env.CTDB_TEST_LIBEXECDIR = os.path.join(conf.env.LIBEXECDIR, 'ctdb/tests')
 
     # Allow unified compilation and separate compilation of utilities
