@@ -435,12 +435,13 @@ static int attr_handler2(struct oc_context *ac)
 	}
 
 	if (isSchemaAttr) {
-		/* Before really adding an attribute in the database,
-			* let's check that we can translate it into a dbsd_attribute and
-			* that we can find a valid syntax object.
-			* If not it's better to reject this attribute than not be able
-			* to start samba next time due to schema being unloadable.
-			*/
+		/*
+		 * Before really adding an attribute in the database,
+		 * let's check that we can translate it into a dsdb_attribute and
+		 * that we can find a valid syntax object.
+		 * If not it's better to reject this attribute than not be able
+		 * to start samba next time due to schema being unloadable.
+		 */
 		struct dsdb_attribute *att = talloc(ac, struct dsdb_attribute);
 		const struct dsdb_syntax *attrSyntax;
 		WERROR status;
