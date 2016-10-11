@@ -426,12 +426,23 @@ static int attr_handler2(struct oc_context *ac)
 	 * replicated.
 	 */
 	if (found_must_contain[0] != NULL &&
-	    ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE") == 0 &&
-	    ldb_request_get_control(ac->req, DSDB_CONTROL_DBCHECK) == NULL) {
-		ldb_asprintf_errstring(ldb, "objectclass_attrs: at least one mandatory attribute ('%s') on entry '%s' wasn't specified!",
-				       found_must_contain[0],
-				       ldb_dn_get_linearized(msg->dn));
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
+	    ldb_msg_check_string_attribute(msg, "isDeleted", "TRUE") == 0) {
+
+		for (i = 0; found_must_contain[i] != NULL; i++) {
+			const struct dsdb_attribute *broken_attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
+												     found_must_contain[i]);
+
+			bool replicated = (broken_attr->systemFlags &
+					   (DS_FLAG_ATTR_NOT_REPLICATED | DS_FLAG_ATTR_IS_CONSTRUCTED)) == 0;
+
+			if (replicated) {
+				ldb_asprintf_errstring(ldb, "objectclass_attrs: at least one mandatory "
+						       "attribute ('%s') on entry '%s' wasn't specified!",
+						       found_must_contain[i],
+						       ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
+		}
 	}
 
 	if (isSchemaAttr) {

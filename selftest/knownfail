@@ -292,4 +292,3 @@
 #ntvfs server blocks copychunk with execute access on read handle
 ^samba4.smb2.ioctl.copy_chunk_bad_access
 ^samba4.drs.getnc_exop.python.*getnc_exop.DrsReplicaPrefixMapTestCase.test_regular_prefix_map_ex_attid.*
-^samba4.drs.getnc_exop.python.*getnc_exop.DrsReplicaSyncTestCase.test_edit_rid_master.*
