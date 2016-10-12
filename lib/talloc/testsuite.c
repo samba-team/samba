@@ -1839,8 +1839,8 @@ static bool test_pthread_talloc_passing(void)
 				printf("pthread_cond_wait %d failed (%d)\n", i,
 					ret);
 				talloc_free(mem_ctx);
-				pthread_mutex_unlock(&mtx);
-				return false;
+				ret = pthread_mutex_unlock(&mtx);
+				assert(ret == 0);
 			}
 		}
 
@@ -1849,7 +1849,8 @@ static bool test_pthread_talloc_passing(void)
 
 		/* Tell the sub-threads we're ready for another. */
 		pthread_cond_broadcast(&condvar);
-		pthread_mutex_unlock(&mtx);
+		ret = pthread_mutex_unlock(&mtx);
+		assert(ret == 0);
 	}
 
 	CHECK_SIZE("pthread_talloc_passing", mem_ctx, NUM_THREADS * 100);
