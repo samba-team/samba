@@ -1046,8 +1046,8 @@ int ctdb_fetch_lock(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data)
 {
-	TDB_DATA rec;
-	size_t offset;
+	uint8_t header[sizeof(struct ctdb_ltdb_header)];
+	TDB_DATA rec[2];
 	int ret;
 
 	/* Cannot modify the record if it was obtained as a readonly copy */
@@ -1062,25 +1062,22 @@ int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data)
 		return 0;
 	}
 
-	offset = ctdb_ltdb_header_len(&h->header);
-	rec.dsize = offset + data.dsize;
-	rec.dptr = talloc_size(h, rec.dsize);
-	if (rec.dptr == NULL) {
-		return ENOMEM;
-	}
+	ctdb_ltdb_header_push(&h->header, header);
 
-	ctdb_ltdb_header_push(&h->header, rec.dptr);
-	memcpy(rec.dptr + offset, data.dptr, data.dsize);
+	rec[0].dsize = ctdb_ltdb_header_len(&h->header);
+	rec[0].dptr = header;
 
-	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
+	rec[1].dsize = data.dsize;
+	rec[1].dptr = data.dptr;
+
+	ret = tdb_storev(h->db->ltdb->tdb, h->key, rec, 2, TDB_REPLACE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
-		      ("store_record: %s tdb_store failed, %s\n",
+		      ("store_record: %s tdb_storev failed, %s\n",
 		       h->db->db_name, tdb_errorstr(h->db->ltdb->tdb)));
 		return EIO;
 	}
 
-	talloc_free(rec.dptr);
 	return 0;
 }
 
