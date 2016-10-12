@@ -234,9 +234,6 @@ static int pthreadpool_free(struct pthreadpool *pool)
 {
 	int ret, ret1;
 
-	ret = pthread_mutex_unlock(&pool->mutex);
-	assert(ret == 0);
-
 	ret = pthread_mutex_destroy(&pool->mutex);
 	ret1 = pthread_cond_destroy(&pool->condvar);
 
@@ -275,22 +272,25 @@ int pthreadpool_destroy(struct pthreadpool *pool)
 		return ret;
 	}
 
-	if (pool->num_threads == 0) {
-		ret = pthreadpool_free(pool);
-		return ret;
-	}
-
 	if (pool->shutdown) {
 		ret = pthread_mutex_unlock(&pool->mutex);
 		assert(ret == 0);
 		return EBUSY;
 	}
 
+	pool->shutdown = true;
+
+	if (pool->num_threads == 0) {
+		ret = pthread_mutex_unlock(&pool->mutex);
+		assert(ret == 0);
+
+		ret = pthreadpool_free(pool);
+		return ret;
+	}
+
 	/*
 	 * We have active threads, tell them to finish.
 	 */
-
-	pool->shutdown = true;
 
 	ret = pthread_cond_broadcast(&pool->condvar);
 
@@ -308,16 +308,18 @@ int pthreadpool_destroy(struct pthreadpool *pool)
 static void pthreadpool_server_exit(struct pthreadpool *pool)
 {
 	int ret;
+	bool free_it;
 
 	pool->num_threads -= 1;
 
-	if (pool->shutdown && (pool->num_threads == 0)) {
-		pthreadpool_free(pool);
-		return;
-	}
+	free_it = (pool->shutdown && (pool->num_threads == 0));
 
 	ret = pthread_mutex_unlock(&pool->mutex);
 	assert(ret == 0);
+
+	if (free_it) {
+		pthreadpool_free(pool);
+	}
 }
 
 static bool pthreadpool_get_job(struct pthreadpool *p,
