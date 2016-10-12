@@ -1,0 +1,7 @@
+WARNING:
+
+This is experimental work-in-progress code, don't expect it to do
+anything sensible.
+
+Eventually this *might* turn into a fuse client filesystem. This is
+not a promise for anything.

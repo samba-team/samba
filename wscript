@@ -100,6 +100,8 @@ def configure(conf):
     conf.env.replace_add_global_pthread = True
     conf.RECURSE('lib/replace')
 
+    conf.RECURSE('examples/fuse')
+
     conf.SAMBA_CHECK_PERL(mandatory=True)
     conf.find_program('xsltproc', var='XSLTPROC')
 

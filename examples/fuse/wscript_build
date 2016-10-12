@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+if bld.env.HAVE_FUSE:
+    bld.SAMBA_BINARY('smb2mount',
+                     source='smb2mount.c clifuse.c',
+                     deps='param popt_samba3 libsmb fuse',
+                     install=False)

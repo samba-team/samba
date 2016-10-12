@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+def configure(conf):
+    # Check for fuse support
+    if conf.CHECK_CODE('''
+                       #define FUSE_USE_VERSION 26
+                       #define _FILE_OFFSET_BITS 64
+                       #include "fuse/fuse_lowlevel.h"
+                       int main(void) { return 0; }
+                       ''', 'HAVE_FUSE_FUSE_LOWLEVEL_H',
+                       addmain=False,
+                       execute=False) and conf.CHECK_FUNCS_IN('fuse_mount',
+                                                              'fuse'):
+           conf.DEFINE('HAVE_FUSE', 1)
