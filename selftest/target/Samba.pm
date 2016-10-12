@@ -247,7 +247,7 @@ sub mk_realms_stanza($$$$)
 {
 	my ($realm, $dnsname, $domain, $kdc_ipv4) = @_;
 	my $lc_domain = lc($domain);
-	
+
 	my $realms_stanza = "
  $realm = {
   kdc = $kdc_ipv4:88
