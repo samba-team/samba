@@ -332,16 +332,16 @@ static int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 			return -1;
 		}
 	} else {
-		TDB_DATA h = {
-			.dptr = (void*)hdr,
-			.dsize = ctx->hsize,
-		};
-		if(tdb_store(ctx->tdb, key, h, ctx->tdb_store_flags) == -1) {
+		TDB_DATA rec[2];
+
+		rec[0].dsize = ctx->hsize;
+		rec[0].dptr = (uint8_t *)hdr;
+
+		rec[1].dsize = val.dsize;
+		rec[1].dptr = val.dptr;
+
+		if(tdb_storev(ctx->tdb, key, rec, 2, ctx->tdb_store_flags) == -1) {
 			fprintf(stderr, "tdb_store: %s\n", tdb_errorstr(ctx->tdb));
-			return -1;
-		}
-		if(tdb_append(ctx->tdb, key, val) == -1) {
-			fprintf(stderr, "tdb_append: %s\n", tdb_errorstr(ctx->tdb));
 			return -1;
 		}
 	}
