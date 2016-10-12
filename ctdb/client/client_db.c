@@ -1098,6 +1098,7 @@ struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
 	struct ctdb_delete_record_state *state;
 	struct ctdb_key_data key;
 	struct ctdb_req_control request;
+	uint8_t header[sizeof(struct ctdb_ltdb_header)];
 	TDB_DATA rec;
 	int ret;
 
@@ -1117,16 +1118,12 @@ struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	rec.dsize = ctdb_ltdb_header_len(&h->header);
-	rec.dptr = talloc_size(h, rec.dsize);
-	if (tevent_req_nomem(rec.dptr, req)) {
-		return tevent_req_post(req, ev);
-	}
+	ctdb_ltdb_header_push(&h->header, header);
 
-	ctdb_ltdb_header_push(&h->header, rec.dptr);
+	rec.dsize = ctdb_ltdb_header_len(&h->header);
+	rec.dptr = header;
 
 	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
-	talloc_free(rec.dptr);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("fetch_lock delete: %s tdb_sore failed, %s\n",
