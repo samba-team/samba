@@ -132,7 +132,9 @@ static int test_busydestroy(void)
 	pfd.fd = pthreadpool_pipe_signal_fd(p);
 	pfd.events = POLLIN|POLLERR;
 
-	poll(&pfd, 1, -1);
+	do {
+		ret = poll(&pfd, 1, -1);
+	} while ((ret == -1) && (errno == EINTR));
 
 	ret = pthreadpool_pipe_finished_jobs(p, &jobid, 1);
 	if (ret < 0) {
