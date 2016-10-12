@@ -171,6 +171,7 @@ static bool test_messaging_overflow(struct torture_context *tctx)
 		} while ((nwritten == -1) && (errno == EINTR));
 
 		ret = close(down_pipe[1]);
+		torture_assert(tctx, ret == 0, "close failed");
 
 		do {
 			nread = read(down_pipe[0], &c, 1);
