@@ -704,13 +704,13 @@ static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	if (!found) {
 		gencache_set(cache_key, printer_not_found,
-			     time_mono(NULL) + 300);
+			     time(NULL) + 300);
 		TALLOC_FREE(cache_key);
 		DEBUGADD(4,("Printer not found\n"));
 		return WERR_INVALID_PRINTER_NAME;
 	}
 
-	gencache_set(cache_key, sname, time_mono(NULL) + 300);
+	gencache_set(cache_key, sname, time(NULL) + 300);
 	TALLOC_FREE(cache_key);
 
 	DEBUGADD(4,("set_printer_hnd_name: Printer found: %s -> %s\n", aprinter, sname));
