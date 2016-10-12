@@ -501,7 +501,7 @@ static void wins_hook(const char *operation, struct name_record *namerec, int tt
 	}
 
 	DEBUG(3,("calling wins hook for %s\n", nmb_namestr(&namerec->name)));
-	smbrun(command, NULL);
+	smbrun(command, NULL, NULL);
 	TALLOC_FREE(command);
 }
 

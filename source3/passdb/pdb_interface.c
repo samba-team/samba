@@ -485,7 +485,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		if (!add_script) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		add_ret = smbrun(add_script,NULL);
+		add_ret = smbrun(add_script, NULL, NULL);
 		DEBUG(add_ret ? 0 : 3, ("_samr_create_user: Running the command `%s' gave %d\n",
 					add_script, add_ret));
 		if (add_ret == 0) {
@@ -570,7 +570,7 @@ static int smb_delete_user(const char *unix_user)
 	if (!del_script) {
 		return -1;
 	}
-	ret = smbrun(del_script,NULL);
+	ret = smbrun(del_script, NULL, NULL);
 	flush_pwnam_cache();
 	if (ret == 0) {
 		smb_nscd_flush_user_cache();

@@ -85,7 +85,7 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 		}
 	}
 
-	ret = smbrun_no_sanitize(syscmd,outfd);
+	ret = smbrun_no_sanitize(syscmd, outfd, NULL);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
 

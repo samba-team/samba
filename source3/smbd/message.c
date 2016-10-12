@@ -129,7 +129,7 @@ static void msg_deliver(struct msg_state *state)
 	if (s == NULL) {
 		goto done;
 	}
-	smbrun(s,NULL);
+	smbrun(s, NULL, NULL);
 
  done:
 	TALLOC_FREE(frame);

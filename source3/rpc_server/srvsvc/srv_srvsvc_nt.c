@@ -1904,7 +1904,8 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		if (is_disk_op)
 			become_root();
 
-		if ( (ret = smbrun(command, NULL)) == 0 ) {
+		ret = smbrun(command, NULL, NULL);
+		if (ret == 0) {
 			/* Tell everyone we updated smb.conf. */
 			message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED,
 					 NULL, 0, NULL);
@@ -2106,7 +2107,8 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	/* FIXME: use libnetconf here - gd */
 
-	if ( (ret = smbrun(command, NULL)) == 0 ) {
+	ret = smbrun(command, NULL, NULL);
+	if (ret == 0) {
 		/* Tell everyone we updated smb.conf. */
 		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0,
 				 NULL);
@@ -2213,7 +2215,8 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if ( is_disk_op )
 		become_root();
 
-	if ( (ret = smbrun(command, NULL)) == 0 ) {
+	ret = smbrun(command, NULL, NULL);
+	if (ret == 0) {
 		/* Tell everyone we updated smb.conf. */
 		message_send_all(p->msg_ctx, MSG_SMB_CONF_UPDATED, NULL, 0,
 				 NULL);

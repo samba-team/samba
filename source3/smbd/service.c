@@ -764,7 +764,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->session_info->info->domain_name,
 					lp_root_preexec(talloc_tos(), snum));
 		DEBUG(5,("cmd=%s\n",cmd));
-		ret = smbrun(cmd,NULL);
+		ret = smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_root_preexec_close(snum)) {
 			DEBUG(1,("root preexec gave %d - failing "
@@ -801,7 +801,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
 					lp_preexec(talloc_tos(), snum));
-		ret = smbrun(cmd,NULL);
+		ret = smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_preexec_close(snum)) {
 			DEBUG(1,("preexec gave %d - failing connection\n",
@@ -1199,7 +1199,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
 					lp_postexec(talloc_tos(), SNUM(conn)));
-		smbrun(cmd,NULL);
+		smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		change_to_root_user();
 	}
@@ -1215,7 +1215,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
 					lp_root_postexec(talloc_tos(), SNUM(conn)));
-		smbrun(cmd,NULL);
+		smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 	}
 

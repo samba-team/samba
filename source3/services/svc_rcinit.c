@@ -36,7 +36,7 @@ static WERROR rcinit_stop( const char *service, struct SERVICE_STATUS *status )
 	/* we've already performed the access check when the service was opened */
 
 	become_root();
-	ret = smbrun( command , &fd );
+	ret = smbrun(command, &fd, NULL);
 	unbecome_root();
 
 	DEBUGADD(5, ("rcinit_start: [%s] returned [%d]\n", command, ret));
@@ -70,7 +70,7 @@ static WERROR rcinit_start( const char *service )
 	/* we've already performed the access check when the service was opened */
 
 	become_root();
-	ret = smbrun( command , &fd );
+	ret = smbrun(command, &fd, NULL);
 	unbecome_root();
 
 	DEBUGADD(5, ("rcinit_start: [%s] returned [%d]\n", command, ret));
@@ -99,7 +99,7 @@ static WERROR rcinit_status( const char *service, struct SERVICE_STATUS *status 
 	   is STOPPED */
 
 	become_root();
-	ret = smbrun( command , &fd );
+	ret = smbrun(command, &fd, NULL);
 	unbecome_root();
 
 	DEBUGADD(5, ("rcinit_start: [%s] returned [%d]\n", command, ret));

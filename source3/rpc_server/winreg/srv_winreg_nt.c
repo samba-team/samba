@@ -592,7 +592,7 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 	if ( can_shutdown )
 		become_root();
 
-	ret = smbrun( shutdown_script, NULL );
+	ret = smbrun(shutdown_script, NULL, NULL);
 
 	if ( can_shutdown )
 		unbecome_root();
@@ -626,7 +626,7 @@ WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
 	if ( can_shutdown )
 		become_root();
 
-	ret = smbrun( abort_shutdown_script, NULL );
+	ret = smbrun(abort_shutdown_script, NULL, NULL);
 
 	if ( can_shutdown )
 		unbecome_root();

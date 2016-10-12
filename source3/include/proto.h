@@ -162,8 +162,8 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, struct security_d
 
 /* The following definitions come from lib/smbrun.c  */
 
-int smbrun_no_sanitize(const char *cmd, int *outfd);
-int smbrun(const char *cmd, int *outfd);
+int smbrun_no_sanitize(const char *cmd, int *outfd, char * const *env);
+int smbrun(const char *cmd, int *outfd, char * const *env);
 int smbrunsecret(const char *cmd, const char *secret);
 
 /* The following definitions come from lib/sock_exec.c  */

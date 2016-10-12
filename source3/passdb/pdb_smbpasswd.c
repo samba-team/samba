@@ -1501,7 +1501,7 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 			goto done;
 		}
 
-		rename_ret = smbrun(rename_script, NULL);
+		rename_ret = smbrun(rename_script, NULL, NULL);
 
 		DEBUG(rename_ret ? 0 : 3,("Running the command `%s' gave %d\n", rename_script, rename_ret));
 

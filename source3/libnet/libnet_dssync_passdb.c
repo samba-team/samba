@@ -693,7 +693,7 @@ static NTSTATUS smb_create_user(TALLOC_CTX *mem_ctx,
 		if (!add_script) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		add_ret = smbrun(add_script, NULL);
+		add_ret = smbrun(add_script, NULL, NULL);
 		DEBUG(add_ret ? 0 : 1,("fetch_account: Running the command `%s' "
 			 "gave %d\n", add_script, add_ret));
 		if (add_ret == 0) {

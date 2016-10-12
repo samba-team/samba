@@ -78,7 +78,7 @@ static int _smb_create_user(const char *domain, const char *unix_username, const
 			return -1;
 		}
 	}
-	ret = smbrun(add_script,NULL);
+	ret = smbrun(add_script, NULL, NULL);
 	flush_pwnam_cache();
 	DEBUG(ret ? 0 : 3,
 		("smb_create_user: Running the command `%s' gave %d\n",
@@ -434,7 +434,7 @@ static NTSTATUS log_nt_token(struct security_token *token)
 	}
 
 	DEBUG(8, ("running command: [%s]\n", command));
-	if (smbrun(command, NULL) != 0) {
+	if (smbrun(command, NULL, NULL) != 0) {
 		DEBUG(0, ("Could not log NT token\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;

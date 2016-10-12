@@ -2013,7 +2013,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 					oldname_lower,
 					true,
 					true);
-	rc = smbrun(rename_script, NULL);
+	rc = smbrun(rename_script, NULL, NULL);
 
 	DEBUG(rc ? 0 : 3,("Running the command `%s' gave %d\n",
 			  rename_script, rc));

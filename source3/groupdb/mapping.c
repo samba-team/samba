@@ -227,7 +227,7 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 			return -1;
 		}
 
-		ret = smbrun(add_script, &fd);
+		ret = smbrun(add_script, &fd, NULL);
 		DEBUG(ret ? 0 : 3,("smb_create_group: Running the command `%s' gave %d\n",add_script,ret));
 		if (ret == 0) {
 			smb_nscd_flush_group_cache();
@@ -282,7 +282,7 @@ int smb_delete_group(const char *unix_group)
 		if (!del_script) {
 			return -1;
 		}
-		ret = smbrun(del_script,NULL);
+		ret = smbrun(del_script, NULL, NULL);
 		DEBUG(ret ? 0 : 3,("smb_delete_group: Running the command `%s' gave %d\n",del_script,ret));
 		if (ret == 0) {
 			smb_nscd_flush_group_cache();
@@ -322,7 +322,7 @@ int smb_set_primary_group(const char *unix_group, const char* unix_user)
 		if (!add_script) {
 			return -1;
 		}
-		ret = smbrun(add_script,NULL);
+		ret = smbrun(add_script, NULL, NULL);
 		flush_pwnam_cache();
 		DEBUG(ret ? 0 : 3,("smb_set_primary_group: "
 			 "Running the command `%s' gave %d\n",add_script,ret));
@@ -364,7 +364,7 @@ int smb_add_user_group(const char *unix_group, const char *unix_user)
 		if (!add_script) {
 			return -1;
 		}
-		ret = smbrun(add_script,NULL);
+		ret = smbrun(add_script, NULL, NULL);
 		DEBUG(ret ? 0 : 3,("smb_add_user_group: Running the command `%s' gave %d\n",add_script,ret));
 		if (ret == 0) {
 			smb_nscd_flush_group_cache();
@@ -404,7 +404,7 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 		if (!del_script) {
 			return -1;
 		}
-		ret = smbrun(del_script,NULL);
+		ret = smbrun(del_script, NULL, NULL);
 		DEBUG(ret ? 0 : 3,("smb_delete_user_group: Running the command `%s' gave %d\n",del_script,ret));
 		if (ret == 0) {
 			smb_nscd_flush_group_cache();

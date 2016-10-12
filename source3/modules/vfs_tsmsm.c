@@ -521,7 +521,8 @@ static NTSTATUS tsmsm_set_offline(struct vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 	DEBUG(10, ("tsmsm_set_offline: Running [%s]\n", command));
-	if((result = smbrun(command, NULL)) != 0) {
+	result = smbrun(command, NULL, NULL)
+	if(result != 0) {
 		DEBUG(1,("tsmsm_set_offline: Running [%s] returned %d\n", command, result));
 		TALLOC_FREE(command);
 		return NT_STATUS_INTERNAL_ERROR;

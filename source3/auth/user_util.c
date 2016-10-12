@@ -315,7 +315,7 @@ bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 		}
 
 		DEBUG(10,("Running [%s]\n", command));
-		ret = smbrun(command, &fd);
+		ret = smbrun(command, &fd, NULL);
 		DEBUGADD(10,("returned [%d]\n", ret));
 
 		TALLOC_FREE(command);

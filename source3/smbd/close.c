@@ -91,7 +91,7 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
-	ret = smbrun(p,&tmp_fd);
+	ret = smbrun(p, &tmp_fd, NULL);
 	DEBUG(3,("Invoking magic command %s gave %d\n",
 		p,ret));
 

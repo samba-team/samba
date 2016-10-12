@@ -59,7 +59,7 @@ static NTSTATUS shell_snap_check_path(struct vfs_handle_struct *handle,
 		goto err_tmp_free;
 	}
 
-	ret = smbrun(cmd_run, NULL);
+	ret = smbrun(cmd_run, NULL, NULL);
 	if (ret != 0) {
 		DEBUG(0, ("%s failed with %d\n", cmd_run, ret));
 		status = NT_STATUS_NOT_SUPPORTED;
@@ -116,7 +116,7 @@ static NTSTATUS shell_snap_create(struct vfs_handle_struct *handle,
 		goto err_tmp_free;
 	}
 
-	ret = smbrun(cmd_run, &fd);
+	ret = smbrun(cmd_run, &fd, NULL);
 	talloc_free(cmd_run);
 	if (ret != 0) {
 		if (fd != -1) {
@@ -178,7 +178,7 @@ static NTSTATUS shell_snap_delete(struct vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = smbrun(cmd_run, NULL);
+	ret = smbrun(cmd_run, NULL, NULL);
 	talloc_free(cmd_run);
 	if (ret != 0) {
 		return NT_STATUS_UNSUCCESSFUL;
