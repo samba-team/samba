@@ -5457,9 +5457,9 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			  int argc, const char **argv)
 {
 	struct tdb_context *tdb;
-	TDB_DATA key, data, value;
+	TDB_DATA key, data[2], value;
 	struct ctdb_ltdb_header header;
-	size_t offset;
+	uint8_t header_buf[sizeof(struct ctdb_ltdb_header)];
 	int ret;
 
 	if (argc < 3 || argc > 5) {
@@ -5498,19 +5498,15 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		header.flags = (uint32_t)atol(argv[5]);
 	}
 
-	offset = ctdb_ltdb_header_len(&header);
-	data.dsize = offset + value.dsize;
-	data.dptr = talloc_size(mem_ctx, data.dsize);
-	if (data.dptr == NULL) {
-		fprintf(stderr, "Memory allocation error\n");
-		tdb_close(tdb);
-		return 1;
-	}
+	ctdb_ltdb_header_push(&header, header_buf);
 
-	ctdb_ltdb_header_push(&header, data.dptr);
-	memcpy(data.dptr + offset, value.dptr, value.dsize);
+	data[0].dsize = ctdb_ltdb_header_len(&header);
+	data[0].dptr = header_buf;
 
-	ret = tdb_store(tdb, key, data, TDB_REPLACE);
+	data[1].dsize = value.dsize;
+	data[1].dptr = value.dptr;
+
+	ret = tdb_storev(tdb, key, data, 2, TDB_REPLACE);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to write record %s to file %s\n",
 			argv[1], argv[0]);
