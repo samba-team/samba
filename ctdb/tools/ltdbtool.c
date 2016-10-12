@@ -325,12 +325,10 @@ static int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 {
 	struct write_record_ctx* ctx
 		= (struct write_record_ctx*)write_record_ctx;
+	int ret;
 
 	if (ctx->hsize == 0) {
-		if (tdb_store(ctx->tdb, key, val, ctx->tdb_store_flags) == -1) {
-			fprintf(stderr, "tdb_store: %s\n", tdb_errorstr(ctx->tdb));
-			return -1;
-		}
+		ret = tdb_store(ctx->tdb, key, val, ctx->tdb_store_flags);
 	} else {
 		TDB_DATA rec[2];
 
@@ -340,11 +338,14 @@ static int write_record(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 		rec[1].dsize = val.dsize;
 		rec[1].dptr = val.dptr;
 
-		if(tdb_storev(ctx->tdb, key, rec, 2, ctx->tdb_store_flags) == -1) {
-			fprintf(stderr, "tdb_store: %s\n", tdb_errorstr(ctx->tdb));
-			return -1;
-		}
+		ret = tdb_storev(ctx->tdb, key, rec, 2, ctx->tdb_store_flags);
 	}
+
+	if (ret == -1) {
+		fprintf(stderr, "tdb_store: %s\n", tdb_errorstr(ctx->tdb));
+		return -1;
+	}
+
 	return 0;
 }
 
