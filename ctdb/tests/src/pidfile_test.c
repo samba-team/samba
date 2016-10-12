@@ -43,6 +43,7 @@ static void test1(const char *pidfile)
 	assert(S_ISREG(st.st_mode));
 
 	fp = fopen(pidfile, "r");
+	assert(fp != NULL);
 	ret = fscanf(fp, "%d", &pid);
 	assert(ret == 1);
 	assert(pid == getpid());
