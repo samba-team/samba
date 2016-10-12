@@ -1133,7 +1133,7 @@ static void messaging_dgm_read_handler(struct tevent_context *ev,
 	msghdr_prep_recv_fds(&msg, msgbuf, msgbufsize, INT8_MAX);
 
 #ifdef MSG_CMSG_CLOEXEC
-	flags |= MSG_CMSG_CLOEXEC;
+	msg.msg_flags |= MSG_CMSG_CLOEXEC;
 #endif
 
 	received = recvmsg(ctx->sock, &msg, 0);
