@@ -30,6 +30,29 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 
+uint32_t filename_create_ucf_flags(struct smb_request *req, uint32_t create_disposition)
+{
+	uint32_t ucf_flags = 0;
+
+	if (req != NULL && req->posix_pathnames) {
+		ucf_flags |= UCF_POSIX_PATHNAMES;
+	}
+
+	switch (create_disposition) {
+	case FILE_OPEN:
+	case FILE_OVERWRITE:
+		break;
+	case FILE_SUPERSEDE:
+	case FILE_CREATE:
+	case FILE_OPEN_IF:
+	case FILE_OVERWRITE_IF:
+		ucf_flags |= UCF_PREP_CREATEFILE;
+		break;
+	}
+
+	return ucf_flags;
+}
+
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
 				  struct smb_filename *smb_fname);
