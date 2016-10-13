@@ -29,5 +29,6 @@ char *strv_next(char *strv, const char *entry);
 char *strv_find(char *strv, const char *entry);
 size_t strv_count(char *strv);
 void strv_delete(char **strv, char *entry);
+char * const *strv_to_env(TALLOC_CTX *mem_ctx, char *strv);
 
 #endif

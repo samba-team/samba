@@ -155,3 +155,29 @@ void strv_delete(char **strv, char *entry)
 
 	*strv = talloc_realloc(NULL, *strv, char, len - entry_len);
 }
+
+char * const *strv_to_env(TALLOC_CTX *mem_ctx, char *strv)
+{
+       char **data;
+       char *next = NULL;
+       size_t i;
+       size_t count = strv_count(strv);
+
+       if (strv == NULL) {
+               return NULL;
+       }
+
+       data = talloc_array(mem_ctx, char *, count + 1);
+
+       if (data == NULL) {
+               return NULL;
+       }
+
+       for(i = 0; i < count; i++) {
+               next = strv_next(strv, next);
+               data[i] = next;
+       }
+       data[count] = NULL;
+
+       return data;
+}
