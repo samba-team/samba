@@ -3355,6 +3355,12 @@ void cache_name2sid_trusted(struct winbindd_domain *domain,
 			enum lsa_SidType type,
 			const struct dom_sid *sid)
 {
+	/*
+	 * Ensure we store the mapping with the
+	 * existing sequence number from the cache.
+	 */
+	get_cache(domain);
+	(void)fetch_cache_seqnum(domain, time(NULL));
 	wcache_save_name_to_sid(domain,
 				NT_STATUS_OK,
 				domain_name,
