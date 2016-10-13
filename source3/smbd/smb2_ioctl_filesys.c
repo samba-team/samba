@@ -187,7 +187,7 @@ static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
-	 * MS-FSCC <58> Section 2.3.65
+	 * MS-FSCC <58> Section 2.3.67
 	 * This FSCTL sets the range of bytes to zero (0) without extending the
 	 * file size.
 	 *
