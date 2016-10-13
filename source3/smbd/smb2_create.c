@@ -374,12 +374,12 @@ static bool smb2_lease_key_valid(const struct smb2_lease_key *key)
 	return ((key->data[0] != 0) || (key->data[1] != 0));
 }
 
-static NTSTATUS smbd_smb2_create_durable_lease_check(
+static NTSTATUS smbd_smb2_create_durable_lease_check(struct smb_request *smb1req,
 	const char *requested_filename, const struct files_struct *fsp,
 	const struct smb2_lease *lease_ptr)
 {
 	struct smb_filename *smb_fname = NULL;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE;
+	uint32_t ucf_flags;
 	NTSTATUS status;
 
 	if (lease_ptr == NULL) {
@@ -404,6 +404,7 @@ static NTSTATUS smbd_smb2_create_durable_lease_check(
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	ucf_flags = filename_create_ucf_flags(smb1req, FILE_OPEN);
 	status = filename_convert(talloc_tos(), fsp->conn, false,
 				  requested_filename, ucf_flags,
 				  NULL, &smb_fname);
@@ -1057,7 +1058,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				   (unsigned)result->oplock_type, lease_ptr));
 
 			status = smbd_smb2_create_durable_lease_check(
-				fname, result, lease_ptr);
+				smb1req, fname, result, lease_ptr);
 			if (!NT_STATUS_IS_OK(status)) {
 				close_file(smb1req, result, SHUTDOWN_CLOSE);
 				tevent_req_nterror(req, status);
@@ -1078,7 +1079,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			info = FILE_WAS_OPENED;
 		} else {
 			struct smb_filename *smb_fname = NULL;
-			uint32_t ucf_flags = UCF_PREP_CREATEFILE;
+			uint32_t ucf_flags;
 
 			if (requested_oplock_level == SMB2_OPLOCK_LEVEL_LEASE) {
 				if (lease_ptr == NULL) {
@@ -1102,6 +1103,7 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 				}
 			}
 
+			ucf_flags = filename_create_ucf_flags(smb1req, in_create_disposition);
 			status = filename_convert(req,
 						  smb1req->conn,
 						  smb1req->flags2 & FLAGS2_DFS_PATHNAMES,
