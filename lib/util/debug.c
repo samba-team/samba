@@ -280,7 +280,7 @@ static struct debug_backend {
 
 static struct debug_backend *debug_find_backend(const char *name)
 {
-	int i;
+	unsigned i;
 
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
 		if (strcmp(name, debug_backends[i].name) == 0) {
@@ -348,7 +348,7 @@ static void debug_set_backends(const char *param)
 	size_t str_len = strlen(param);
 	char str[str_len+1];
 	char *tok, *saveptr;
-	int i;
+	unsigned i;
 
 	/*
 	 * initialize new_log_level to detect backends that have been
@@ -389,7 +389,8 @@ static void debug_set_backends(const char *param)
 static void debug_backends_log(const char *msg, int msg_level)
 {
 	char msg_no_nl[FORMAT_BUFR_SIZE];
-	int i, len;
+	unsigned i;
+	int len;
 
 	/*
 	 * Some backends already add an extra newline, so also provide
