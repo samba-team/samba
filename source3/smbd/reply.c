@@ -2111,8 +2111,7 @@ void reply_open(struct smb_request *req)
 	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
 	NTSTATUS status;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopen);
@@ -2140,6 +2139,8 @@ void reply_open(struct smb_request *req)
 		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
+
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 
 	status = filename_convert(ctx,
 				conn,
@@ -2265,8 +2266,7 @@ void reply_open_and_X(struct smb_request *req)
 	uint32_t create_disposition;
 	uint32_t create_options = 0;
 	uint32_t private_flags = 0;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBopenX);
@@ -2312,6 +2312,8 @@ void reply_open_and_X(struct smb_request *req)
 		reply_force_doserror(req, ERRDOS, ERRbadaccess);
 		goto out;
 	}
+
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 
 	status = filename_convert(ctx,
 				conn,
@@ -2525,8 +2527,7 @@ void reply_mknew(struct smb_request *req)
 	uint32_t share_mode = FILE_SHARE_READ|FILE_SHARE_WRITE;
 	uint32_t create_disposition;
 	uint32_t create_options = 0;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcreate);
@@ -2540,6 +2541,14 @@ void reply_mknew(struct smb_request *req)
 	fattr = SVAL(req->vwv+0, 0);
 	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
 
+	if (req->cmd == SMBmknew) {
+		/* We should fail if file exists. */
+		create_disposition = FILE_CREATE;
+	} else {
+		/* Create if file doesn't exist, truncate if it does. */
+		create_disposition = FILE_OVERWRITE_IF;
+	}
+
 	/* mtime. */
 	ft.mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+1));
 
@@ -2550,6 +2559,7 @@ void reply_mknew(struct smb_request *req)
 		goto out;
 	}
 
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
@@ -2572,14 +2582,6 @@ void reply_mknew(struct smb_request *req)
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
 			 "please report this\n",
 			 smb_fname_str_dbg(smb_fname)));
-	}
-
-	if(req->cmd == SMBmknew) {
-		/* We should fail if file exists. */
-		create_disposition = FILE_CREATE;
-	} else {
-		/* Create if file doesn't exist, truncate if it does. */
-		create_disposition = FILE_OVERWRITE_IF;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -2658,8 +2660,7 @@ void reply_ctemp(struct smb_request *req)
 	char *s;
 	NTSTATUS status;
 	int i;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBctemp);
@@ -2696,6 +2697,7 @@ void reply_ctemp(struct smb_request *req)
 			goto out;
 		}
 
+		ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
 		status = filename_convert(ctx, conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				fname,
@@ -6133,8 +6135,7 @@ void reply_mkdir(struct smb_request *req)
 	struct smb_filename *smb_dname = NULL;
 	char *directory = NULL;
 	NTSTATUS status;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBmkdir);
@@ -6146,6 +6147,7 @@ void reply_mkdir(struct smb_request *req)
 		goto out;
 	}
 
+	ucf_flags = filename_create_ucf_flags(req, FILE_CREATE);
 	status = filename_convert(ctx, conn,
 				 req->flags2 & FLAGS2_DFS_PATHNAMES,
 				 directory,

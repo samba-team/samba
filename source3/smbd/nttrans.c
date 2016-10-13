@@ -461,8 +461,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	int oplock_request;
 	uint8_t oplock_granted = NO_OPLOCK_RETURN;
 	struct case_semantics_state *case_state = NULL;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBntcreateX);
@@ -536,6 +535,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		}
 	}
 
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
@@ -1024,8 +1024,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	int oplock_request;
 	uint8_t oplock_granted;
 	struct case_semantics_state *case_state = NULL;
-	uint32_t ucf_flags = UCF_PREP_CREATEFILE |
-			(req->posix_pathnames ? UCF_POSIX_PATHNAMES : 0);
+	uint32_t ucf_flags;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	DEBUG(5,("call_nt_transact_create\n"));
@@ -1106,6 +1105,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		}
 	}
 
+	ucf_flags = filename_create_ucf_flags(req, create_disposition);
 	status = filename_convert(ctx,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
