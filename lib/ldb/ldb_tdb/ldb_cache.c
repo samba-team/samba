@@ -113,7 +113,10 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
-	r = ltdb_search_dn1(module, dn, attrs_msg, 0);
+	r = ltdb_search_dn1(module, dn, attrs_msg,
+			    LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+			    |LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC
+			    |LDB_UNPACK_DATA_FLAG_NO_DN);
 	talloc_free(dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
