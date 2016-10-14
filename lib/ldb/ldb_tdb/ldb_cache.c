@@ -56,26 +56,10 @@ static const struct {
 */
 static void ltdb_attributes_unload(struct ldb_module *module)
 {
-	struct ldb_context *ldb;
-	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	struct ldb_message *msg;
-	unsigned int i;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
-	ldb = ldb_module_get_ctx(module);
+	ldb_schema_attribute_remove_flagged(ldb, LDB_ATTR_FLAG_FROM_DB);
 
-	if (ltdb->cache->attributes == NULL) {
-		/* no previously loaded attributes */
-		return;
-	}
-
-	msg = ltdb->cache->attributes;
-	for (i=0;i<msg->num_elements;i++) {
-		ldb_schema_attribute_remove(ldb, msg->elements[i].name);
-	}
-
-	talloc_free(ltdb->cache->attributes);
-	ltdb->cache->attributes = NULL;
 }
 
 /*
@@ -108,9 +92,7 @@ static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
 static int ltdb_attributes_load(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
-	void *data = ldb_module_get_private(module);
-	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
-	struct ldb_message *msg = ltdb->cache->attributes;
+	struct ldb_message *attrs_msg = NULL;
 	struct ldb_dn *dn;
 	unsigned int i;
 	int r;
@@ -123,10 +105,15 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		return 0;
 	}
 
+	attrs_msg = ldb_msg_new(module);
+	if (attrs_msg == NULL) {
+		goto failed;
+	}
+
 	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
-	r = ltdb_search_dn1(module, dn, msg, 0);
+	r = ltdb_search_dn1(module, dn, attrs_msg, 0);
 	talloc_free(dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
@@ -136,13 +123,15 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	}
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
-	for (i=0;i<msg->num_elements;i++) {
+	for (i=0;i<attrs_msg->num_elements;i++) {
 		unsigned flags;
 		const char *syntax;
 		const struct ldb_schema_syntax *s;
 
-		if (ltdb_attributes_flags(&msg->elements[i], &flags) != 0) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid @ATTRIBUTES element for '%s'", msg->elements[i].name);
+		if (ltdb_attributes_flags(&attrs_msg->elements[i], &flags) != 0) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Invalid @ATTRIBUTES element for '%s'",
+				  attrs_msg->elements[i].name);
 			goto failed;
 		}
 		switch (flags & ~LTDB_FLAG_HIDDEN) {
@@ -158,7 +147,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		default:
 			ldb_debug(ldb, LDB_DEBUG_ERROR, 
 				  "Invalid flag combination 0x%x for '%s' in @ATTRIBUTES",
-				  flags, msg->elements[i].name);
+				  flags, attrs_msg->elements[i].name);
 			goto failed;
 		}
 
@@ -166,18 +155,22 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		if (s == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, 
 				  "Invalid attribute syntax '%s' for '%s' in @ATTRIBUTES",
-				  syntax, msg->elements[i].name);
+				  syntax, attrs_msg->elements[i].name);
 			goto failed;
 		}
 
-		flags |= LDB_ATTR_FLAG_ALLOCATED;
-		if (ldb_schema_attribute_add_with_syntax(ldb, msg->elements[i].name, flags, s) != 0) {
+		flags |= LDB_ATTR_FLAG_ALLOCATED | LDB_ATTR_FLAG_FROM_DB;
+		if (ldb_schema_attribute_add_with_syntax(ldb,
+							 attrs_msg->elements[i].name,
+							 flags, s) != 0) {
 			goto failed;
 		}
 	}
 
+	TALLOC_FREE(attrs_msg);
 	return 0;
 failed:
+	TALLOC_FREE(attrs_msg);
 	return -1;
 }
 
@@ -288,9 +281,7 @@ int ltdb_cache_load(struct ldb_module *module)
 		ltdb->cache = talloc_zero(ltdb, struct ltdb_cache);
 		if (ltdb->cache == NULL) goto failed;
 		ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
-		ltdb->cache->attributes = ldb_msg_new(ltdb->cache);
-		if (ltdb->cache->indexlist == NULL ||
-		    ltdb->cache->attributes == NULL) {
+		if (ltdb->cache->indexlist == NULL) {
 			goto failed;
 		}
 	}
@@ -363,9 +354,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	ltdb_attributes_unload(module); /* calls internally "talloc_free" */
 
 	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
-	ltdb->cache->attributes = ldb_msg_new(ltdb->cache);
-	if (ltdb->cache->indexlist == NULL ||
-	    ltdb->cache->attributes == NULL) {
+	if (ltdb->cache->indexlist == NULL) {
 		goto failed;
 	}
 	ltdb->cache->one_level_indexes = false;

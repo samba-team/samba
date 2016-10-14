@@ -18,7 +18,6 @@ struct ltdb_private {
 
 	struct ltdb_cache {
 		struct ldb_message *indexlist;
-		struct ldb_message *attributes;
 		bool one_level_indexes;
 		bool attribute_indexes;
 	} *cache;
