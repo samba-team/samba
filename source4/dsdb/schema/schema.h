@@ -266,6 +266,57 @@ struct dsdb_schema {
 	bool resolving_in_progress;
 };
 
+#define DSDB_SCHEMA_COMMON_ATTRS			\
+	        "objectClass",				\
+		"cn",				        \
+		"lDAPDisplayName",			\
+		"schemaIDGUID",				\
+		"objectGUID",				\
+		"systemFlags",				\
+		"schemaFlagsEx",			\
+		"msDs-Schema-Extensions",		\
+		"showInAdvancedViewOnly",		\
+		"adminDisplayName",			\
+		"adminDescription",			\
+		"isDefunct",				\
+		"systemOnly"
+
+#define DSDB_SCHEMA_ATTR_ATTRS				\
+	        "attributeID",				\
+		"msDS-IntId",				\
+		"mAPIID",				\
+		"attributeSecurityGUID",		\
+		"searchFlags",				\
+		"isMemberOfPartialAttributeSet",	\
+		"linkID",				\
+		"attributeSyntax",			\
+		"oMSyntax",				\
+		"oMObjectClass",			\
+		"isSingleValued",			\
+		"rangeLower",				\
+		"rangeUpper",				\
+		"extendedCharsAllowed",			\
+		"classDisplayName",			\
+		"isEphemeral"
+
+#define DSDB_SCHEMA_CLASS_ATTRS				\
+                "governsID",				\
+		"objectClassCategory",			\
+		"rDNAttID",				\
+		"defaultObjectCategory",		\
+		"subClassOf",				\
+		"systemAuxiliaryClass",			\
+		"auxiliaryClass",			\
+		"systemMustContain",			\
+		"systemMayContain",			\
+		"mustContain",				\
+		"mayContain",				\
+		"systemPossSuperiors",			\
+		"possSuperiors",			\
+		"defaultSecurityDescriptor",		\
+		"classDisplayName",			\
+		"defaultHidingValue"
+
 enum dsdb_attr_list_query {
 	DSDB_SCHEMA_ALL_MAY,
 	DSDB_SCHEMA_ALL_MUST,

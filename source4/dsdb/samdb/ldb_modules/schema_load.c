@@ -278,10 +278,16 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(ldb);
 	struct ldb_result *schema_res;
 	struct ldb_result *res;
-	static const char *schema_attrs[] = {
+	static const char *schema_head_attrs[] = {
 		"prefixMap",
 		"schemaInfo",
 		"fSMORoleOwner",
+		NULL
+	};
+	static const char *schema_attrs[] = {
+		DSDB_SCHEMA_COMMON_ATTRS,
+		DSDB_SCHEMA_ATTR_ATTRS,
+		DSDB_SCHEMA_CLASS_ATTRS,
 		NULL
 	};
 	unsigned flags;
@@ -299,7 +305,7 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 	 * setup the prefix mappings and schema info
 	 */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
-				    schema_dn, schema_attrs,
+				    schema_dn, schema_head_attrs,
 				    DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_reset_err_string(ldb);
@@ -314,10 +320,11 @@ static int dsdb_schema_from_db(struct ldb_module *module,
 	}
 
 	/*
-	 * load the attribute definitions
+	 * load the attribute definitions.
 	 */
 	ret = dsdb_module_search(module, tmp_ctx, &res,
-				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 schema_dn, LDB_SCOPE_ONELEVEL,
+				 schema_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
 				 NULL,
