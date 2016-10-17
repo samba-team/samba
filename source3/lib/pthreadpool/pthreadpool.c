@@ -234,6 +234,14 @@ static int pthreadpool_free(struct pthreadpool *pool)
 {
 	int ret, ret1;
 
+	ret = pthread_mutex_lock(&pthreadpools_mutex);
+	if (ret != 0) {
+		return ret;
+	}
+	DLIST_REMOVE(pthreadpools, pool);
+	ret = pthread_mutex_unlock(&pthreadpools_mutex);
+	assert(ret == 0);
+
 	ret = pthread_mutex_destroy(&pool->mutex);
 	ret1 = pthread_cond_destroy(&pool->condvar);
 
@@ -243,14 +251,6 @@ static int pthreadpool_free(struct pthreadpool *pool)
 	if (ret1 != 0) {
 		return ret1;
 	}
-
-	ret = pthread_mutex_lock(&pthreadpools_mutex);
-	if (ret != 0) {
-		return ret;
-	}
-	DLIST_REMOVE(pthreadpools, pool);
-	ret = pthread_mutex_unlock(&pthreadpools_mutex);
-	assert(ret == 0);
 
 	free(pool->jobs);
 	free(pool);
