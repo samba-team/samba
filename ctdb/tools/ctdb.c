@@ -4630,9 +4630,9 @@ static void print_scriptstatus_one(struct ctdb_script_list *slist,
 			       slist->script[i].name, options.sep,
 			       slist->script[i].status, options.sep,
 			       status, options.sep,
-			       slist->script[i].start.tv_sec,
+			       (unsigned long)slist->script[i].start.tv_sec,
 			       slist->script[i].start.tv_usec, options.sep,
-			       slist->script[i].finished.tv_sec,
+			       (unsigned long)slist->script[i].finished.tv_sec,
 			       slist->script[i].finished.tv_usec, options.sep,
 			       slist->script[i].output, options.sep);
 			continue;
