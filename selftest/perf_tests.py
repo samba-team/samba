@@ -24,3 +24,26 @@ plantestsuite_loadlist("samba4.ldap.ad_dc_performance.python(ad_dc_ntvfs)",
                         '$SERVER', '-U"$USERNAME%$PASSWORD"',
                         '--workgroup=$DOMAIN',
                         '$LOADLIST', '$LISTOPT'])
+
+plantestsuite_loadlist("samba4.ldap.ad_dc_multi_bind.ntlm.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs",
+                       [python, os.path.join(samba4srcdir,
+                                             "dsdb/tests/python/ad_dc_multi_bind.py"),
+                        '$SERVER', '-U"$USERNAME%$PASSWORD"', '-k no',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST', '$LISTOPT'])
+
+plantestsuite_loadlist("samba4.ldap.ad_dc_multi_bind.krb5.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs",
+                       [python, os.path.join(samba4srcdir,
+                                             "dsdb/tests/python/ad_dc_multi_bind.py"),
+                        '$SERVER', '-U"$USERNAME%$PASSWORD"', '-k yes',
+                        '--realm=$REALM',
+                        '$LOADLIST', '$LISTOPT'])
+
+plantestsuite_loadlist("samba4.ldb.multi_connect.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs",
+                       [python, os.path.join(samba4srcdir,
+                                             "dsdb/tests/python/ad_dc_multi_bind.py"),
+                        'tdb://$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb'
+                        '$LOADLIST', '$LISTOPT'])
