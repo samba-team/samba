@@ -1121,9 +1121,12 @@ static void ldapsrv_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[ldapsrv]");
 
-	/* run the ldap server as a single process */
-	model_ops = process_model_startup("single");
-	if (!model_ops) goto failed;
+	/*
+	 * Here we used to run the ldap server as a single process,
+	 * but we don't want transaction locks for one task in a write
+	 * blocking all other reads, so we go multi-process.
+	 */
+	model_ops = task->model_ops;
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
