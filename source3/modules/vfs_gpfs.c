@@ -2007,13 +2007,12 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 				return -1);
 
 	if (!config->winattr) {
-		return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
+		return false;
 	}
 
 	status = get_full_smb_filename(talloc_tos(), fname, &path);
 	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
+		return false;
 	}
 
 	ret = gpfswrap_get_winattrs_path(path, &attrs);
@@ -2029,7 +2028,7 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 	}
 	DEBUG(10, ("%s is online\n", path));
 	TALLOC_FREE(path);
-	return SMB_VFS_NEXT_IS_OFFLINE(handle, fname, sbuf);
+	return false;
 }
 
 static bool vfs_gpfs_fsp_is_offline(struct vfs_handle_struct *handle,
