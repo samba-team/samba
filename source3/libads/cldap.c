@@ -117,8 +117,21 @@ struct tevent_req *cldap_multi_netlogon_send(
 					   NULL, /* local_addr */
 					   state->servers[i],
 					   &state->cldap[i]);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
+		if (!NT_STATUS_IS_OK(status)) {
+			/*
+			 * Don't error out all sends just
+			 * because one cldap_socket_init() failed.
+			 * Log it here, and the cldap_netlogon_send()
+			 * will catch it (with in.dest_address == NULL)
+			 * and correctly error out in
+			 * cldap_multi_netlogon_done(). This still allows
+			 * the other requests to be concurrently sent.
+			 */
+			DBG_NOTICE("cldap_socket_init failed for %s "
+				" error %s\n",
+				tsocket_address_string(state->servers[i],
+					req),
+				nt_errstr(status));
 		}
 
 		state->ios[i].in.dest_address	= NULL;
