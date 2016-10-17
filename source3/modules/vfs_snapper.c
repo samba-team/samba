@@ -1842,12 +1842,13 @@ static NTSTATUS snapper_get_snap_at_time_call(TALLOC_CTX *mem_ctx,
 	}
 
 	if (num_snaps == 0) {
-		DEBUG(4, ("no snapshots found with time: %lu\n", snaptime));
+		DEBUG(4, ("no snapshots found with time: %lu\n",
+			  (unsigned long)snaptime));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto err_snap_array_free;
 	} else if (num_snaps > 0) {
 		DEBUG(4, ("got %u snapshots for single time %lu, using top\n",
-			  num_snaps, snaptime));
+			  num_snaps, (unsigned long)snaptime));
 	}
 
 	status = snapper_snap_id_to_path(mem_ctx, base_path, snaps[0].id,
