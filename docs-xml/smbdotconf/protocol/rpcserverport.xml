@@ -1,0 +1,14 @@
+<samba:parameter name="rpc server port"
+                 context="G"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Specifies which port the server should listen on for DCE/RPC over TCP/IP traffic.</para>
+	<para>This controls default port for all protocols, except for NETLOGON.  If unset, the first available port after 1024 is used.</para>
+	<para>The NETLOGON server will use the next available port, eg 1025.  To change this port use (eg) rpc server port:netlogon = 4000.</para>
+	<para>Furthermore, all RPC servers can have the port they use specified independenty, with (for example) rpc server port:drsuapi = 5000.</para>
+
+</description>
+<para>The default value 0 causes Samba to select the first available port after 1024.</para>
+<value type="default">0</value>
+</samba:parameter>

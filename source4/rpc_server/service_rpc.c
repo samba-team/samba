@@ -49,16 +49,21 @@ static void dcesrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	struct dcesrv_endpoint *e;
-	const struct model_ops *model_ops;
+	const struct model_ops *single_model_ops;
 
 	dcerpc_server_init(task->lp_ctx);
 
 	task_server_set_title(task, "task[dcesrv]");
 
-	/* run the rpc server as a single process to allow for shard
-	 * handles, and sharing of ldb contexts */
-	model_ops = process_model_startup("single");
-	if (!model_ops) goto failed;
+	/*
+	 * run the rpc server as a single process to allow for shard
+	 * handles, and sharing of ldb contexts.
+	 *
+	 * We make an exception for NETLOGON below, and this follows
+	 * whatever the top level is.
+	 */
+	single_model_ops = process_model_startup("single");
+	if (!single_model_ops) goto failed;
 
 	status = dcesrv_init_context(task->event_ctx,
 				     task->lp_ctx,
@@ -72,17 +77,42 @@ static void dcesrv_task_init(struct task_server *task)
 	}
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
+		const struct model_ops *this_model_ops = single_model_ops;
+
 		enum dcerpc_transport_t transport =
 			dcerpc_binding_get_transport(e->ep_description);
+
+		/*
+		 * Ensure that -Msingle sets e->use_single_process for
+		 * consistency
+		 */
+
+		if (task->model_ops == single_model_ops) {
+			e->use_single_process = true;
+		}
 
 		if (transport == NCACN_HTTP) {
 			/*
 			 * We don't support ncacn_http yet
 			 */
 			continue;
+
+			/*
+			 * For the next two cases, what we are trying
+			 * to do is put the NETLOGON server into the
+			 * standard process model, not single, as it
+			 * has no shared handles and takes a very high
+			 * load.  We only do this for ncacn_np and
+			 * ncacn_ip_tcp as otherwise it is too hard as
+			 * all servers share a socket for ncalrpc and
+			 * unix.
+			 */
+		} else if (e->use_single_process == false) {
+			this_model_ops = task->model_ops;
 		}
 
-		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx, model_ops);
+		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx,
+				       this_model_ops);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
 

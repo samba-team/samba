@@ -347,6 +347,12 @@ struct dcesrv_context {
 			struct dcesrv_if_list *next, *prev;
 			struct dcesrv_interface iface;
 		} *interface_list;
+
+		/*
+		 * Should this service be run in a single process (so far only
+		 * NETLOGON is not run in a single process)
+		 */
+		bool use_single_process;
 	} *endpoint_list;
 
 	/* loadparm context to use for this connection */

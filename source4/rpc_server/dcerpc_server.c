@@ -190,15 +190,21 @@ static bool interface_match(const struct dcesrv_interface *if1,
 }
 
 /*
-  find the interface operations on an endpoint
+  find the interface operations on any endpoint with this binding
 */
-static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoint *endpoint,
-						     const struct dcesrv_interface *iface)
+static const struct dcesrv_interface *find_interface_by_binding(struct dcesrv_context *dce_ctx,
+								struct dcerpc_binding *binding,
+								const struct dcesrv_interface *iface)
 {
-	struct dcesrv_if_list *ifl;
-	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
-		if (interface_match(&(ifl->iface), iface)) {
-			return &(ifl->iface);
+	struct dcesrv_endpoint *ep;
+	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
+		if (endpoints_match(ep->ep_description, binding)) {
+			struct dcesrv_if_list *ifl;
+			for (ifl=ep->interface_list; ifl; ifl=ifl->next) {
+				if (interface_match(&(ifl->iface), iface)) {
+					return &(ifl->iface);
+				}
+			}
 		}
 	}
 	return NULL;
@@ -217,8 +223,8 @@ static bool interface_match_by_uuid(const struct dcesrv_interface *iface,
 /*
   find the interface operations on an endpoint by uuid
 */
-static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
-							     const struct GUID *uuid, uint32_t if_version)
+const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
+						      const struct GUID *uuid, uint32_t if_version)
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
@@ -245,6 +251,15 @@ static struct dcesrv_call_state *dcesrv_find_fragmented_call(struct dcesrv_conne
 
 /*
   register an interface on an endpoint
+
+  An endpoint is one unix domain socket (for ncalrpc), one TCP port
+  (for ncacn_ip_tcp) or one (forwarded) named pipe (for ncacn_np).
+
+  Each endpoint can have many interfaces such as netlogon, lsa or
+  samr.  Some have essentially the full set.
+
+  This is driven from the set of interfaces listed in each IDL file
+  via the PIDL generated *__op_init_server() functions.
 */
 _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
@@ -256,6 +271,9 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	struct dcerpc_binding *binding;
 	bool add_ep = false;
 	NTSTATUS status;
+	enum dcerpc_transport_t transport;
+	char *ep_string = NULL;
+	bool use_single_process = true;
 	
 	status = dcerpc_parse_binding(dce_ctx, ep_name, &binding);
 
@@ -264,9 +282,71 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		return status;
 	}
 
+	transport = dcerpc_binding_get_transport(binding);
+	if (transport == NCACN_IP_TCP) {
+		int port;
+		char port_str[6];
+
+		/* 
+		 * First check if there is already a port specified, eg
+		 * for epmapper on ncacn_ip_tcp:[135]
+		 */
+		const char *endpoint
+			= dcerpc_binding_get_string_option(binding,
+							   "endpoint");
+		if (endpoint == NULL) {
+			port = lpcfg_parm_int(dce_ctx->lp_ctx, NULL,
+					      "rpc server port", iface->name, 0);
+			
+			/*
+			 * For RPC services that are not set to use a single
+			 * process, we do not default to using the 'rpc server
+			 * port' because that would cause a double-bind on
+			 * that port.
+			 */
+			if (port == 0 && !use_single_process) {
+				port = lpcfg_rpc_server_port(dce_ctx->lp_ctx);
+			}
+			if (port != 0) {
+				snprintf(port_str, sizeof(port_str), "%u", port);
+				status = dcerpc_binding_set_string_option(binding,
+									  "endpoint",
+									  port_str);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
+			}
+		}
+	}
+
+	/* see if the interface is already registered on the endpoint */
+	if (find_interface_by_binding(dce_ctx, binding, iface)!=NULL) {
+		DEBUG(0,("dcesrv_interface_register: interface '%s' already registered on endpoint '%s'\n",
+			 iface->name, ep_name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
 	/* check if this endpoint exists
 	 */
-	if ((ep=find_endpoint(dce_ctx, binding))==NULL) {
+	ep = find_endpoint(dce_ctx, binding);
+
+	if (ep != NULL) {
+		/*
+		 * We want a new port on ncacn_ip_tcp for NETLOGON, so
+		 * it can be multi-process.  Other processes can also
+		 * listen on distinct ports, if they have one forced
+		 * in the code above with eg 'rpc server port:drsuapi = 1027'
+		 *
+		 * If we have mulitiple endpoints on port 0, they each
+		 * get an epemeral port (currently by walking up from
+		 * 1024).
+		 */
+		if (!use_single_process && transport == NCACN_IP_TCP) {
+			add_ep = true;
+		}
+	}
+
+	if (ep == NULL || add_ep) {
 		ep = talloc_zero(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
@@ -286,11 +366,16 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		DLIST_ADD(ep->interface_list, ifl);
 	}
 
-	/* see if the interface is already registered on te endpoint */
-	if (find_interface(ep, iface)!=NULL) {
-		DEBUG(0,("dcesrv_interface_register: interface '%s' already registered on endpoint '%s'\n",
-			iface->name, ep_name));
-		return NT_STATUS_OBJECT_NAME_COLLISION;
+	/*
+	 * By default don't force into a single process, but if any
+	 * interface on this endpoint on this service uses handles
+	 * (most do), then we must force into single process mode
+	 *
+	 * By overwriting this each time a new interface is added to
+	 * this endpoint, we end up with the most restrictive setting.
+	 */
+	if (use_single_process) {
+		ep->use_single_process = true;
 	}
 
 	/* talloc a new interface list element */
@@ -335,8 +420,12 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		DLIST_ADD(dce_ctx->endpoint_list, ep);
 	}
 
+	/* Re-get the string as we may have set a port */
+	ep_string = dcerpc_binding_string(dce_ctx, ep->ep_description);
+
 	DEBUG(4,("dcesrv_interface_register: interface '%s' registered on endpoint '%s'\n",
-		iface->name, ep_name));
+		 iface->name, ep_string));
+	TALLOC_FREE(ep_string);
 
 	return NT_STATUS_OK;
 }
@@ -2600,8 +2689,14 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 				     lpcfg_socket_options(dce_ctx->lp_ctx),
 				     dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) failed - %s\n", 
-			 address, port, nt_errstr(status)));
+		struct dcesrv_if_list *iface;
+		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) for ",
+			 address, port));
+		for (iface = e->interface_list; iface; iface = iface->next) {
+			DEBUGADD(0, ("%s ", iface->iface.name));
+		}
+		DEBUGADD(0, ("failed - %s",
+			     nt_errstr(status)));
 		return status;
 	}
 
