@@ -1210,7 +1210,8 @@ static int ltdb_index_add_el(struct ldb_module *module, const char *dn,
   add index entries for all elements in a message
  */
 static int ltdb_index_add_all(struct ldb_module *module, const char *dn,
-			      struct ldb_message_element *elements, int num_el,
+			      struct ldb_message_element *elements,
+			      unsigned int num_el,
 			      bool is_new)
 {
 	struct ltdb_private *ltdb = talloc_get_type(ldb_module_get_private(module), struct ltdb_private);
