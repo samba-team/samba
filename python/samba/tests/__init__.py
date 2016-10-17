@@ -25,13 +25,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from samba import credentials
 from samba.compat import PY3
 if not PY3:
     # Py2 only
     import samba.auth
     from samba import param
     from samba.samdb import SamDB
-    from samba import credentials
     import samba.ndr
     import samba.dcerpc.dcerpc
     import samba.dcerpc.base
