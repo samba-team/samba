@@ -17,6 +17,11 @@ bld.SAMBA3_LIBRARY('non_posix_acls',
                    deps='samba-util vfs',
                    private_library=True)
 
+bld.SAMBA3_SUBSYSTEM('VFS_VIRUSFILTER_UTILS',
+                   source='vfs_virusfilter_utils.c',
+                   deps='strv',
+                   enabled=(bld.SAMBA3_IS_ENABLED_MODULE('vfs_virusfilter')))
+
 bld.SAMBA3_SUBSYSTEM('VFS_AIXACL_UTIL',
                     source='vfs_aixacl_util.c',
                     enabled=(bld.SAMBA3_IS_ENABLED_MODULE('vfs_aixacl') or bld.SAMBA3_IS_ENABLED_MODULE('vfs_aixacl2')))
@@ -504,6 +509,14 @@ bld.SAMBA3_MODULE('vfs_snapper',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_snapper'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_snapper'))
+
+bld.SAMBA3_MODULE('vfs_virusfilter',
+                 subsystem='vfs',
+                 source='vfs_virusfilter.c',
+                 deps='samba-util VFS_VIRUSFILTER_UTILS',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_virusfilter'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_virusfilter'))
 
 bld.SAMBA3_MODULE('vfs_vxfs',
                  subsystem='vfs',
