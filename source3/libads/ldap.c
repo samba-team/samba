@@ -2947,6 +2947,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
 			ads->server.ldap_server )) == NULL )
 		{
+			status = ADS_ERROR(LDAP_NO_MEMORY);
 			goto done;
 		}
 		ads_s->auth.flags = ADS_AUTH_ANON_BIND;
