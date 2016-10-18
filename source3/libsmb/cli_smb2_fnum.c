@@ -2938,7 +2938,7 @@ static struct tevent_req *cli_smb2_shadow_copy_data_fnum_send(
 					bool get_names)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_smb2_close_fnum_state *state;
+	struct cli_smb2_shadow_copy_data_fnum_state *state;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
