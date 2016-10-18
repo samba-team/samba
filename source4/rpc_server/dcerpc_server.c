@@ -2593,6 +2593,14 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 		DEBUG(0,("dcerpc_binding_set_string_option(endpoint, %s) failed - %s\n",
 			 port_str, nt_errstr(status)));
 		return status;
+	} else {
+		struct dcesrv_if_list *iface;
+		DEBUG(4,("Successfully listening on ncacn_ip_tcp endpoint [%s]:[%s] for ",
+			 address, port_str));
+		for (iface = e->interface_list; iface; iface = iface->next) {
+			DEBUGADD(4, ("%s ", iface->iface.name));
+		}
+		DEBUGADD(4, ("\n"));
 	}
 
 	return NT_STATUS_OK;
