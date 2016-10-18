@@ -516,6 +516,7 @@ bld.SAMBA3_MODULE('vfs_virusfilter',
                  vfs_virusfilter.c
                  vfs_virusfilter_sophos.c
                  vfs_virusfilter_fsav.c
+                 vfs_virusfilter_clamav.c
                  ''',
                  deps='samba-util VFS_VIRUSFILTER_UTILS',
                  init_function='',
