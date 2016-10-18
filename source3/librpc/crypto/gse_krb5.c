@@ -373,7 +373,7 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 					 NULL, NULL, NULL, NULL };
 	char *entry_princ_s = NULL;
 	fstring my_name, my_fqdn;
-	int i;
+	unsigned i;
 	int err;
 
 	/* Generate the list of principal names which we expect
