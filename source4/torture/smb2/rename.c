@@ -120,7 +120,7 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (h1.data) {
+	if (h1.data[0] || h1.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = h1;
@@ -199,7 +199,7 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (h1.data) {
+	if (h1.data[0] || h1.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = h1;
@@ -288,7 +288,7 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (h1.data) {
+	if (h1.data[0] || h1.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = h1;
@@ -405,13 +405,13 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (fh.data) {
+	if (fh.data[0] || fh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = fh;
 		status = smb2_close(tree1, &(cl.smb2));
 	}
-	if (dh.data) {
+	if (dh.data[0] || dh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = dh;
@@ -529,13 +529,13 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (fh.data) {
+	if (fh.data[0] || fh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = fh;
 		status = smb2_close(tree1, &(cl.smb2));
 	}
-	if (dh.data) {
+	if (dh.data[0] || dh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = dh;
@@ -663,13 +663,13 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (fh.data) {
+	if (fh.data[0] || fh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = fh;
 		status = smb2_close(tree1, &(cl.smb2));
 	}
-	if (dh.data) {
+	if (dh.data[0] || dh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = dh;
@@ -787,13 +787,13 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (fh.data) {
+	if (fh.data[0] || fh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = fh;
 		status = smb2_close(tree1, &(cl.smb2));
 	}
-	if (dh.data) {
+	if (dh.data[0] || dh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = dh;
@@ -911,13 +911,13 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (fh.data) {
+	if (fh.data[0] || fh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = fh;
 		status = smb2_close(tree1, &(cl.smb2));
 	}
-	if (dh.data) {
+	if (dh.data[0] || dh.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = dh;
@@ -1011,7 +1011,7 @@ done:
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (h1.data) {
+	if (h1.data[0] || h1.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = h1;

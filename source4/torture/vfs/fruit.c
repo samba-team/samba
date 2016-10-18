@@ -2841,7 +2841,7 @@ static bool test_rename_dir_openfile(struct torture_context *torture,
 
 	torture_comment(torture, "Cleaning up\n");
 
-	if (h1.data) {
+	if (h1.data[0] || h1.data[1]) {
 		ZERO_STRUCT(cl.smb2);
 		cl.smb2.level = RAW_CLOSE_SMB2;
 		cl.smb2.in.file.handle = h1;
