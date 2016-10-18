@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_virusfilter_fsav.8">
+
+<refmeta>
+	<refentrytitle>vfs_virusfilter_fsav</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">4.6</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>vfs_virusfilter_fsav</refname>
+	<refpurpose>On access virus scanner</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+                <command>vfs objects = virusfilter_fsav</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This is a set of various Samba VFS modules to scan and filter
+        virus files on Samba file services with an anti-virus scanner.</para>
+
+	<para>This module is stackable.</para>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+        <variablelist>
+
+                <varlistentry>
+                <term>virusfilter_fsav:socket path = PATH</term>
+                <listitem>
+                <para>Path of local socket for the virus scanner.
+                </para>
+                <para>If this option is not set, the default path /tmp/.fsav-0.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:connect timeout = 30000</term>
+                <listitem>
+                <para>Controls how long to wait on connecting to the virus
+                scanning process before timing out. Value is in milliseconds.
+                </para>
+                <para>If this option is not set, the default is 30000.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:io timeout = 60000</term>
+                <listitem>
+                <para>Controls how long to wait on communications with the virus
+                scanning process before timing out. Value is in milliseconds.
+                </para>
+                <para>If this option is not set, the default is 60000.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan on open = yes</term>
+                <listitem>
+                <para>This option controls whether files are scanned on open.
+                </para>
+                <para>If this option is not set, the default is yes.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan on close = no</term>
+                <listitem>
+                <para>This option controls whether files are scanned on open.
+                </para>
+                <para>If this option is not set, the default is no.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:max file size = 100000000</term>
+                <listitem>
+                <para>This is the largest sized file, in bytes, which will be scanned.
+                </para>
+                <para>If this option is not set, the default is 100MB.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:min file size = 10</term>
+                <listitem>
+                <para>This is the largest sized file, in bytes, which will be scanned.
+                </para>
+                <para>If this option is not set, the default is 0.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:infected file action = nothing</term>
+                <listitem>
+                <para>What to do with an infected file. The options are
+                nothing, quarantine, rename, delete. Rename is alias for quarantine
+                with keep tree and keep name both set to yes. I.e. rename is a
+                quarantine in place.</para>
+                <para>If this option is not set, the default is nothing.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:infected file errno on close = 0</term>
+                <listitem>
+                <para>What errno to return on close if the file is infected.
+                </para>
+                <para>If this option is not set, the default is 0.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:infected file errno on open = EACCES</term>
+                <listitem>
+                <para>What errno to return on close if the file is infected.
+                </para>
+                <para>If this option is not set, the default is EACCES.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:quarantine directory  = PATH</term>
+                <listitem>
+                <para>Where to move infected files.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:quarantine prefix = virusfilter.</term>
+                <listitem>
+                <para>Prefix for quarantined files.</para>
+                <para>If this option is not set, the default is "virusfilter.".</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:quarantine suffix = .infected</term>
+                <listitem>
+                <para>Suffix for quarantined files.
+                This option is only used if keep name is true. Otherwise it is ignored.</para>
+                <para>If this option is not set, the default is ".infected".</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:rename prefix = virusfilter.</term>
+                <listitem>
+                <para>Prefix for infected files.</para>
+                <para>If this option is not set, the default is "virusfilter.".</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:rename suffix = .infected</term>
+                <listitem>
+                <para>Suffix for infected files.</para>
+                <para>If this option is not set, the default is ".infected".</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:quarantine keep tree = yes</term>
+                <listitem>
+                <para>If keep tree is set, the directory structure relative
+                to the share is maintained in the quarantine directory.
+                </para>
+                <para>If this option is not set, the default is no.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:quarantine keep name = yes</term>
+                <listitem>
+                <para>Should the file name be left unmodified other than adding a suffix
+                and/or prefix and a random suffix name as defined in virusfilter_fsav:rename prefix
+                and virusfilter_fsav:rename suffix.</para>
+                <para>If this option is not set, the default is no.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:infected file command = @SAMBA_DATADIR@/bin/virusfilter-notify --mail-to virusmaster@example.com --cc "%U@example.com" --from samba@example.com --subject-prefix "Samba: Infected File: "</term>
+                <listitem>
+                <para>External command to run on an infected file is found.</para>
+                <para>If this option is not set, the default is none.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan archive = true</term>
+                <listitem>
+                <para>This defines whether or not to scan archives.</para>
+                <para>The f-sav module supports this and defaults to false.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:max nested scan archive = 1</term>
+                <listitem>
+                <para>This defines the maximum depth to search nested archives.</para>
+                <para>f-secure module supports this and defaults to 1.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan mime = true</term>
+                <listitem>
+                <para>This defines whether or not to scan mime files.</para>
+                <para>f-secure module supports this and defaults to false.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan error command = @SAMBA_DATADIR@/bin/virusfilter-notify --mail-to virusmaster@example.com --from samba@example.com --subject-prefix "Samba: Scan Error: "</term>
+                <listitem>
+                <para>External command to run on scan error.</para>
+                <para>If this option is not set, the default is none.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:exclude files = empty</term>
+                <listitem>
+                <para>Files to exclude from scanning.</para>
+                <para>If this option is not set, the default is empty.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:block access on error = false</term>
+                <listitem>
+                <para>Controls whether or not access should be blocked on
+                a scanning error.</para>
+                <para>If this option is not set, the default is false.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan error errno on close = 0</term>
+                <listitem>
+                <para>What errno to return on close if there is an error in
+                scanning the file and block access on error is true.
+                </para>
+                <para>If this option is not set, the default is 0.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:scan error errno on open = EACCES</term>
+                <listitem>
+                <para>What errno to return on open if there is an error in
+                scanning the file and block access on error is true.
+                </para>
+                <para>If this option is not set, the default is EACCES.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:cache entry limit = 100</term>
+                <listitem>
+                <para>The maximum number of entries in the scanning results
+                cache. Due to how Samba's memcache works, this is approximate.</para>
+                <para>If this option is not set, the default is 100.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:cache time limit = 10</term>
+                <listitem>
+                <para>The maximum number of seconds that a scanning result
+                will stay in the results cache. -1 disables the limit.
+                0 disables caching.</para>
+                <para>If this option is not set, the default is 10.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:quarantine directory mode = 700</term>
+                <listitem>
+                <para>This is the octet mode for the quarantine directory and
+                its subdirectories as they are created.</para>
+                <para>If this option is not set, the default is 700 or S_IRUSR | S_IWUSR | S_IXUSR.</para>
+                </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                <term>virusfilter_fsav:block suspected file = false</term>
+                <listitem>
+                <para>With this option on, suspected malware will be blocked as well.</para>
+                <para>If this option is not set, the default is false.</para>
+                </listitem>
+                </varlistentry>
+
+
+        </variablelist>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is correct for version 4.6 of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
