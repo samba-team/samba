@@ -44,6 +44,8 @@
 		<itemizedlist>
 		  <listitem><para><emphasis>sophos</emphasis>, the Sophos AV
 		  scanner</para></listitem>
+		  <listitem><para><emphasis>fsav</emphasis>, the F-Secure AV
+		  scanner</para></listitem>
 		</itemizedlist>
 		</listitem>
 		</varlistentry>
@@ -58,6 +60,8 @@
 		</para>
 		<para>For the <emphasis>sophos</emphasis>backend the default is
 		<emphasis>/var/run/savdi/sssp.sock</emphasis>.</para>
+		<para>For the <emphasis>fsav</emphasis> backend the default is
+		<emphasis>/tmp/.fsav-0</emphasis>.</para>
 		</listitem>
 		</varlistentry>
 
@@ -219,7 +223,7 @@
 		<term>virusfilter:scan archive = true</term>
 		<listitem>
 		<para>This defines whether or not to scan archives.</para>
-		<para>Sophos supports this and defaults to false.</para>
+		<para>Sophos and F-Secure support this and it defaults to false.</para>
 		</listitem>
 		</varlistentry>
 
@@ -227,7 +231,16 @@
 		<term>virusfilter:max nested scan archive = 1</term>
 		<listitem>
 		<para>This defines the maximum depth to search nested archives.</para>
-		<para>The Sophos module supports this and defaults to 1.</para>
+		<para>The Sophos and F-Secure support this and it defaults to 1.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>virusfilter:scan mime = true</term>
+		<listitem>
+		<para>This defines whether or not to scan mime files.</para>
+		<para>Only the <emphasis>fsav</emphasis>scanner supports this
+		option and defaults to false.</para>
 		</listitem>
 		</varlistentry>
 
@@ -306,6 +319,16 @@
 		<para>Permissions must be such that all users can read and
 		search. I.E. don't mess with this unless you really know what
 		you are doing.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>virusfilter:block suspected file = false</term>
+		<listitem>
+		<para>With this option on, suspected malware will be blocked as
+		well. Only the <emphasis>fsav</emphasis>scanner supports this
+		option.</para>
+		<para>If this option is not set, the default is false.</para>
 		</listitem>
 		</varlistentry>
 

@@ -445,6 +445,9 @@ static int virusfilter_vfs_connect(
 	case VIRUSFILTER_SCANNER_SOPHOS:
 		ret = virusfilter_sophos_init(config);
 		break;
+	case VIRUSFILTER_SCANNER_FSAV:
+		ret = virusfilter_fsav_init(config);
+		break;
 	default:
 		DBG_ERR("Unhandled scanner %d\n", backend);
 		return -1;
