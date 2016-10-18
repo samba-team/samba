@@ -146,4 +146,6 @@ struct virusfilter_backend {
 	void *backend_private;
 };
 
+int virusfilter_sophos_init(struct virusfilter_config *config);
+
 #endif /* _VIRUSFILTER_COMMON_H */

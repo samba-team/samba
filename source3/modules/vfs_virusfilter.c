@@ -441,10 +441,17 @@ static int virusfilter_vfs_connect(
 		return -1;
 	}
 
-	/* This goes away as soon as the next commit adds an actual backend... */
-	if (config->backend == NULL) {
-		DBG_INFO("Not implemented\n");
-		return SMB_VFS_NEXT_CONNECT(handle, svc, user);
+	switch (backend) {
+	case VIRUSFILTER_SCANNER_SOPHOS:
+		ret = virusfilter_sophos_init(config);
+		break;
+	default:
+		DBG_ERR("Unhandled scanner %d\n", backend);
+		return -1;
+	}
+	if (ret != 0) {
+		DBG_ERR("Scanner backend init failed\n");
+		return -1;
 	}
 
 	if (config->backend->fns->connect != NULL) {

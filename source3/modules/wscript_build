@@ -512,7 +512,10 @@ bld.SAMBA3_MODULE('vfs_snapper',
 
 bld.SAMBA3_MODULE('vfs_virusfilter',
                  subsystem='vfs',
-                 source='vfs_virusfilter.c',
+                 source='''
+                 vfs_virusfilter.c
+                 vfs_virusfilter_sophos.c
+                 ''',
                  deps='samba-util VFS_VIRUSFILTER_UTILS',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_virusfilter'),

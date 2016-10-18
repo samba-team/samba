@@ -41,6 +41,10 @@
 		<term>virusfilter:scanner</term>
 		<listitem>
 		<para>The antivirus scan-engine.</para>
+		<itemizedlist>
+		  <listitem><para><emphasis>sophos</emphasis>, the Sophos AV
+		  scanner</para></listitem>
+		</itemizedlist>
 		</listitem>
 		</varlistentry>
 
@@ -52,6 +56,8 @@
 		<para>If this option is not set, the default path depends on the
 		configured AV scanning engine.
 		</para>
+		<para>For the <emphasis>sophos</emphasis>backend the default is
+		<emphasis>/var/run/savdi/sssp.sock</emphasis>.</para>
 		</listitem>
 		</varlistentry>
 
