@@ -1943,7 +1943,7 @@ int getservicebyname(const char *pszServiceName, struct loadparm_service *pservi
 	    (data.dptr != NULL) &&
 	    (data.dsize == sizeof(iService)))
 	{
-		iService = *(int *)data.dptr;
+		memcpy(&iService, data.dptr, sizeof(iService));
 	}
 
 	TALLOC_FREE(canon_name);
