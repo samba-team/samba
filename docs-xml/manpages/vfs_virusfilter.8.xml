@@ -46,6 +46,8 @@
 		  scanner</para></listitem>
 		  <listitem><para><emphasis>fsav</emphasis>, the F-Secure AV
 		  scanner</para></listitem>
+		  <listitem><para><emphasis>clamav</emphasis>, the ClamAV
+		  scanner</para></listitem>
 		</itemizedlist>
 		</listitem>
 		</varlistentry>
@@ -62,6 +64,8 @@
 		<emphasis>/var/run/savdi/sssp.sock</emphasis>.</para>
 		<para>For the <emphasis>fsav</emphasis> backend the default is
 		<emphasis>/tmp/.fsav-0</emphasis>.</para>
+		<para>For the <emphasis>fsav</emphasis> backend the default is
+		<emphasis>/var/run/clamav/clamd.ctl</emphasis>.</para>
 		</listitem>
 		</varlistentry>
 
