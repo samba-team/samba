@@ -38,6 +38,23 @@ class CredentialsTests(samba.tests.TestCase):
         self.creds.set_password("S3CreT")
         self.assertEqual("S3CreT", self.creds.get_password())
 
+    def test_set_utf16_password(self):
+        password = 'S3cRet'
+        passbytes = password.encode('utf-16-le')
+        self.assertTrue(self.creds.set_utf16_password(passbytes))
+        self.assertEqual(password, self.creds.get_password())
+
+    def test_set_old_password(self):
+        self.assertEqual(None, self.creds.get_old_password())
+        self.assertTrue(self.creds.set_old_password("S3c0ndS3CreT"))
+        self.assertEqual("S3c0ndS3CreT", self.creds.get_old_password())
+
+    def test_set_old_utf16_password(self):
+        password = '0ldS3cRet'
+        passbytes = password.encode('utf-16-le')
+        self.assertTrue(self.creds.set_old_utf16_password(passbytes))
+        self.assertEqual(password, self.creds.get_old_password())
+
     def test_set_domain(self):
         self.creds.set_domain("ABMAS")
         self.assertEqual("ABMAS", self.creds.get_domain())
