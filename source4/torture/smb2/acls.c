@@ -99,7 +99,7 @@ static bool test_creator_sid(struct torture_context *tctx, struct smb2_tree *tre
 	struct smb2_create io;
 	const char *fname = BASEDIR "\\creator.txt";
 	bool ret = true;
-	struct smb2_handle handle;
+	struct smb2_handle handle = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig, *sd2;
@@ -301,7 +301,7 @@ static bool test_generic_bits(struct torture_context *tctx, struct smb2_tree *tr
 	struct smb2_create io;
 	const char *fname = BASEDIR "\\generic.txt";
 	bool ret = true;
-	struct smb2_handle handle;
+	struct smb2_handle handle = {{0}};
 	int i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -667,7 +667,7 @@ static bool test_owner_bits(struct torture_context *tctx, struct smb2_tree *tree
 	struct smb2_create io;
 	const char *fname = BASEDIR "\\test_owner_bits.txt";
 	bool ret = true;
-	struct smb2_handle handle;
+	struct smb2_handle handle = {{0}};
 	int i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -803,7 +803,8 @@ static bool test_inheritance(struct torture_context *tctx, struct smb2_tree *tre
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
 	const char *fname2 = BASEDIR "\\inheritance\\testdir";
 	bool ret = true;
-	struct smb2_handle handle, handle2;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	int i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -1278,7 +1279,8 @@ static bool test_inheritance_flags(struct torture_context *tctx,
 	const char *dname = BASEDIR "\\inheritance";
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
 	bool ret = true;
-	struct smb2_handle handle, handle2;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	int i, j;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
@@ -1510,7 +1512,8 @@ static bool test_inheritance_dynamic(struct torture_context *tctx,
 	const char *dname = BASEDIR "\\inheritance";
 	const char *fname1 = BASEDIR "\\inheritance\\testfile";
 	bool ret = true;
-	struct smb2_handle handle, handle2;
+	struct smb2_handle handle = {{0}};
+	struct smb2_handle handle2 = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig=NULL;

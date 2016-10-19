@@ -1918,7 +1918,8 @@ static bool test_durable_open_oplock(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
-	struct smb2_handle h1, h2;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
 	NTSTATUS status;
 	char fname[256];
 	bool ret = true;
@@ -1993,7 +1994,8 @@ static bool test_durable_open_lease(struct torture_context *tctx,
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
 	struct smb2_lease ls1, ls2;
-	struct smb2_handle h1, h2;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
 	NTSTATUS status;
 	char fname[256];
 	bool ret = true;
@@ -2092,7 +2094,7 @@ static bool test_durable_open_lock_oplock(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
-	struct smb2_handle h;
+	struct smb2_handle h = {{0}};
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
 	NTSTATUS status;
@@ -2174,7 +2176,7 @@ static bool test_durable_open_lock_lease(struct torture_context *tctx,
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io;
 	struct smb2_lease ls;
-	struct smb2_handle h;
+	struct smb2_handle h = {{0}};
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
 	NTSTATUS status;
@@ -2279,7 +2281,8 @@ static bool test_durable_open_open2_lease(struct torture_context *tctx,
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
 	struct smb2_lease ls;
-	struct smb2_handle h1, h2;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
 	NTSTATUS status;
 	char fname[256];
 	bool ret = true;
@@ -2385,7 +2388,8 @@ static bool test_durable_open_open2_oplock(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create io1, io2;
-	struct smb2_handle h1, h2;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
 	NTSTATUS status;
 	char fname[256];
 	bool ret = true;

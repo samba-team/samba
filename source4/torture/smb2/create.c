@@ -706,7 +706,8 @@ static bool test_smb2_open(struct torture_context *tctx,
 	const char *fname = DNAME "\\torture_ntcreatex.txt";
 	const char *dname = DNAME "\\torture_ntcreatex.dir";
 	NTSTATUS status;
-	struct smb2_handle h, h1;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h1 = {{0}};
 	bool ret = true;
 	int i;
 	struct {

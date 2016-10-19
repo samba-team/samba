@@ -234,7 +234,8 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	union smb_open io;
 	union smb_close cl;
 	int i, count;
-	struct smb2_handle h1, h2;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
 	struct smb2_request *req, *req2;
 	const char *fname = BASEDIR "\\subdir-name";
 	extern int torture_numops;
@@ -2110,7 +2111,7 @@ static bool torture_smb2_notify_tcon(struct torture_context *torture,
 	NTSTATUS status;
 	union smb_notify notify;
 	union smb_open io;
-	struct smb2_handle h1;
+	struct smb2_handle h1 = {{0}};
 	struct smb2_request *req = NULL;
 	struct smb2_tree *tree1 = NULL;
 	const char *fname = BASEDIR "\\subdir-name";

@@ -675,7 +675,8 @@ static bool test_stream_delete(struct torture_context *tctx,
 	const char *fname = DNAME "\\stream_delete.txt";
 	const char *sname1;
 	bool ret = true;
-	struct smb2_handle h, h1;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h1 = {{0}};
 	struct smb2_read r;
 
 	if (torture_setting_bool(tctx, "samba4", false)) {
@@ -1146,7 +1147,8 @@ static bool test_stream_names2(struct torture_context *tctx,
 	union smb_open io;
 	const char *fname = DNAME "\\stream_names2.txt";
 	bool ret = true;
-	struct smb2_handle h, h1;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h1 = {{0}};
 	uint8_t i;
 
 	smb2_util_unlink(tree, fname);
@@ -1247,7 +1249,8 @@ static bool test_stream_rename(struct torture_context *tctx,
 	union smb_fileinfo finfo1;
 	union smb_setfileinfo sfinfo;
 	bool ret = true;
-	struct smb2_handle h, h1;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h1 = {{0}};
 
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname,
@@ -1506,7 +1509,8 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	const char *default_stream_name = "::$DATA";
 	const char *stream_list[2];
 	bool ret = true;
-	struct smb2_handle h, h1;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h1 = {{0}};
 
 	/* clean slate .. */
 	smb2_util_unlink(tree, fname);

@@ -91,7 +91,8 @@ static bool test_default_acl_posix(struct torture_context *tctx,
 	bool ret = true;
 	const char *dname = BASEDIR "\\testdir";
 	const char *fname = BASEDIR "\\testdir\\testfile";
-	struct smb2_handle fhandle, dhandle;
+	struct smb2_handle fhandle = {{0}};
+	struct smb2_handle dhandle = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd = NULL;
@@ -200,7 +201,8 @@ static bool test_default_acl_win(struct torture_context *tctx,
 	bool ret = true;
 	const char *dname = BASEDIR "\\testdir";
 	const char *fname = BASEDIR "\\testdir\\testfile";
-	struct smb2_handle fhandle, dhandle;
+	struct smb2_handle fhandle = {{0}};
+	struct smb2_handle dhandle = {{0}};
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd = NULL;

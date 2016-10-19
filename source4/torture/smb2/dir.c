@@ -203,7 +203,8 @@ static bool test_fixed(struct torture_context *tctx,
 {
 	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_create create;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	struct smb2_find f;
 	union smb_search_data *d;
 	struct file_elem files[NFILES] = {};
@@ -1265,7 +1266,7 @@ static bool test_large_files(struct torture_context *tctx,
 	NTSTATUS status;
 	struct smb2_create create;
 	struct smb2_find f;
-	struct smb2_handle h;
+	struct smb2_handle h = {{0}};
 	union smb_search_data *d;
 	int i, j, file_count = 0;
 	char **strs = NULL;

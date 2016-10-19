@@ -587,7 +587,8 @@ static bool test_lock(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
@@ -799,7 +800,8 @@ static bool test_async(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
@@ -867,7 +869,8 @@ static bool test_cancel(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
@@ -995,7 +998,8 @@ static bool test_cancel_tdis(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
@@ -1089,7 +1093,8 @@ static bool test_cancel_logoff(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
@@ -1185,7 +1190,8 @@ static bool test_errorcode(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[2];
@@ -1348,7 +1354,8 @@ static bool test_zerobytelength(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	int i;
@@ -1467,7 +1474,8 @@ static bool test_zerobyteread(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
@@ -1585,7 +1593,8 @@ static bool test_unlock(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el1[1];
@@ -2136,7 +2145,8 @@ static bool test_stacking(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
@@ -2339,7 +2349,8 @@ static bool test_contend(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
@@ -2408,7 +2419,8 @@ static bool test_context(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
@@ -2474,7 +2486,8 @@ static bool test_range(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
@@ -2675,7 +2688,9 @@ static bool test_overlap(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2, h3;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
+	struct smb2_handle h3 = {{0}};
 	uint8_t buf[200];
 	bool correct = true;
 
@@ -2775,7 +2790,8 @@ static bool test_truncate(struct torture_context *torture,
 {
 	NTSTATUS status;
 	bool ret = true;
-	struct smb2_handle h, h2;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h2 = {{0}};
 	uint8_t buf[200];
 	struct smb2_lock lck;
 	struct smb2_lock_element el[1];
