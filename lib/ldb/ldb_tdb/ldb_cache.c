@@ -86,15 +86,24 @@ static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
 	return 0;
 }
 
+static int ldb_schema_attribute_compare(const void *p1, const void *p2)
+{
+	const struct ldb_schema_attribute *sa1 = (const struct ldb_schema_attribute *)p1;
+	const struct ldb_schema_attribute *sa2 = (const struct ldb_schema_attribute *)p2;
+	return ldb_attr_cmp(sa1->name, sa2->name);
+}
+
 /*
   register any special handlers from @ATTRIBUTES
 */
 static int ltdb_attributes_load(struct ldb_module *module)
 {
+	struct ldb_schema_attribute *attrs;
 	struct ldb_context *ldb;
 	struct ldb_message *attrs_msg = NULL;
 	struct ldb_dn *dn;
 	unsigned int i;
+	unsigned int num_loaded_attrs = 0;
 	int r;
 
 	ldb = ldb_module_get_ctx(module);
@@ -121,15 +130,36 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed;
 	}
-	if (r == LDB_ERR_NO_SUCH_OBJECT) {
+	if (r == LDB_ERR_NO_SUCH_OBJECT || attrs_msg->num_elements == 0) {
+		TALLOC_FREE(attrs_msg);
 		return 0;
 	}
+
+	attrs = talloc_array(attrs_msg,
+			     struct ldb_schema_attribute,
+			     attrs_msg->num_elements
+			     + ldb->schema.num_attributes);
+	if (attrs == NULL) {
+		goto failed;
+	}
+
+	memcpy(attrs,
+	       ldb->schema.attributes,
+	       sizeof(ldb->schema.attributes[0]) * ldb->schema.num_attributes);
+
 	/* mapping these flags onto ldap 'syntaxes' isn't strictly correct,
 	   but its close enough for now */
 	for (i=0;i<attrs_msg->num_elements;i++) {
 		unsigned flags;
 		const char *syntax;
 		const struct ldb_schema_syntax *s;
+		const struct ldb_schema_attribute *a =
+			ldb_schema_attribute_by_name(ldb,
+						     attrs_msg->elements[i].name);
+		if (a != NULL && a->flags & LDB_ATTR_FLAG_FIXED) {
+			/* Must already be set in the array, and kept */
+			continue;
+		}
 
 		if (ltdb_attributes_flags(&attrs_msg->elements[i], &flags) != 0) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
@@ -149,7 +179,8 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			break;
 		default:
 			ldb_debug(ldb, LDB_DEBUG_ERROR, 
-				  "Invalid flag combination 0x%x for '%s' in @ATTRIBUTES",
+				  "Invalid flag combination 0x%x for '%s' "
+				  "in @ATTRIBUTES",
 				  flags, attrs_msg->elements[i].name);
 			goto failed;
 		}
@@ -157,20 +188,38 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		s = ldb_standard_syntax_by_name(ldb, syntax);
 		if (s == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR, 
-				  "Invalid attribute syntax '%s' for '%s' in @ATTRIBUTES",
+				  "Invalid attribute syntax '%s' for '%s' "
+				  "in @ATTRIBUTES",
 				  syntax, attrs_msg->elements[i].name);
 			goto failed;
 		}
 
 		flags |= LDB_ATTR_FLAG_ALLOCATED | LDB_ATTR_FLAG_FROM_DB;
-		if (ldb_schema_attribute_add_with_syntax(ldb,
-							 attrs_msg->elements[i].name,
-							 flags, s) != 0) {
+
+		r = ldb_schema_attribute_fill_with_syntax(ldb,
+							  attrs,
+							  attrs_msg->elements[i].name,
+							  flags, s,
+							  &attrs[num_loaded_attrs + ldb->schema.num_attributes]);
+		if (r != 0) {
 			goto failed;
 		}
+		num_loaded_attrs++;
 	}
 
+	attrs = talloc_realloc(attrs_msg,
+			       attrs, struct ldb_schema_attribute,
+			       num_loaded_attrs + ldb->schema.num_attributes);
+	if (attrs == NULL) {
+		goto failed;
+	}
+	TYPESAFE_QSORT(attrs, num_loaded_attrs + ldb->schema.num_attributes,
+		       ldb_schema_attribute_compare);
+	talloc_unlink(ldb, ldb->schema.attributes);
+	ldb->schema.attributes = talloc_steal(ldb, attrs);
+	ldb->schema.num_attributes = num_loaded_attrs + ldb->schema.num_attributes;
 	TALLOC_FREE(attrs_msg);
+
 	return 0;
 failed:
 	TALLOC_FREE(attrs_msg);
@@ -354,8 +403,15 @@ int ltdb_cache_load(struct ldb_module *module)
 	}
 
 	talloc_free(ltdb->cache->indexlist);
-	ltdb_attributes_unload(module); /* calls internally "talloc_free" */
-
+	/*
+	 * ltdb_attributes_unload() calls internally talloc_free() on
+	 * any non-fixed elemnts in ldb->schema.attributes.
+	 *
+	 * NOTE WELL: This is per-ldb, not per module, so overwrites
+	 * the handlers across all databases when used under Samba's
+	 * partition module.
+	 */
+	ltdb_attributes_unload(module);
 	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
 	if (ltdb->cache->indexlist == NULL) {
 		goto failed;
@@ -381,6 +437,11 @@ int ltdb_cache_load(struct ldb_module *module)
 		ltdb->cache->attribute_indexes = true;
 	}
 
+	/*
+	 * NOTE WELL: This is per-ldb, not per module, so overwrites
+	 * the handlers across all databases when used under Samba's
+	 * partition module.
+	 */
 	if (ltdb_attributes_load(module) == -1) {
 		goto failed;
 	}
