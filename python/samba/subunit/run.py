@@ -129,7 +129,7 @@ class TestProtocolClient(unittest.TestResult):
         :param error_permitted: If True then error must be supplied.
             If False then error must not be supplied.
         """
-        self._stream.write(("%s: " % outcome) + self._test_id(test))
+        self._stream.write(("%s: " % outcome) + test.id())
         if error_permitted:
             if error is None:
                 raise ValueError
@@ -162,16 +162,10 @@ class TestProtocolClient(unittest.TestResult):
         """
         self._addOutcome("uxsuccess", test, error_permitted=False)
 
-    def _test_id(self, test):
-        result = test.id()
-        if type(result) is not bytes:
-            result = result.encode('utf8')
-        return result
-
     def startTest(self, test):
         """Mark a test as starting its test run."""
         super(TestProtocolClient, self).startTest(test)
-        self._stream.write("test: " + self._test_id(test) + "\n")
+        self._stream.write("test: " + test.id() + "\n")
         self._stream.flush()
 
     def stopTest(self, test):
