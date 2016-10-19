@@ -1060,6 +1060,43 @@ EOF
     fi
 }
 
+# Test creating then deleting a stream file doesn't leave a lost-XXXXX directory.
+test_streams_depot_delete()
+{
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
+    rm -rf "$LOCAL_PATH/lost-*"
+
+    cat > $tmpfile <<EOF
+put ${PREFIX}/smbclient_interactive_prompt_commands foo:bar
+del foo
+ls lost*
+quit
+EOF
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP -mSMB3 $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "failed creating then deleting foo:bar with error $ret"
+	false
+	return
+    fi
+
+    echo "$out" | grep 'NT_STATUS_NO_SUCH_FILE listing \\lost\*'
+    ret=$?
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "deleting foo:bar left lost-XXX directory"
+	rm -rf "$LOCAL_PATH/lost-*"
+	false
+	return
+    fi
+}
+
+
 LOGDIR_PREFIX=test_smbclient_s3
 
 # possibly remove old logdirs:
@@ -1153,6 +1190,10 @@ testit "creating a :stream at root of share" \
 
 testit "Ensure widelinks are restricted" \
     test_widelinks || \
+    failed=`expr $failed + 1`
+
+testit "streams_depot can delete correctly" \
+    test_streams_depot_delete || \
     failed=`expr $failed + 1`
 
 testit "rm -rf $LOGDIR" \
