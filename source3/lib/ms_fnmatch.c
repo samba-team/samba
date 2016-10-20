@@ -161,7 +161,7 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	}
 
 	if (strpbrk(pattern, "<>*?\"") == NULL) {
-		/* this is not just an optmisation - it is essential
+		/* this is not just an optimisation - it is essential
 		   for LANMAN1 correctness */
 		if (is_case_sensitive) {
 			return strcmp(pattern, string);
