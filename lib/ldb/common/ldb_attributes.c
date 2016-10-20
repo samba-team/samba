@@ -216,6 +216,39 @@ void ldb_schema_attribute_remove(struct ldb_context *ldb, const char *name)
 }
 
 /*
+  remove attributes with a specified flag (eg LDB_ATTR_FLAG_FROM_DB) for this ldb context
+
+  This is to permit correct reloads
+*/
+void ldb_schema_attribute_remove_flagged(struct ldb_context *ldb, unsigned int flag)
+{
+	ptrdiff_t i;
+
+	for (i = 0; i < ldb->schema.num_attributes;) {
+		const struct ldb_schema_attribute *a
+			= &ldb->schema.attributes[i];
+		/* FIXED attributes are never removed */
+		if (a->flags & LDB_ATTR_FLAG_FIXED) {
+			i++;
+			continue;
+		}
+		if ((a->flags & flag) == 0) {
+			i++;
+			continue;
+		}
+		if (a->flags & LDB_ATTR_FLAG_ALLOCATED) {
+			talloc_free(discard_const_p(char, a->name));
+		}
+		if (i < ldb->schema.num_attributes - 1) {
+			memmove(&ldb->schema.attributes[i],
+				a+1, sizeof(*a) * (ldb->schema.num_attributes-(i+1)));
+		}
+
+		ldb->schema.num_attributes--;
+	}
+}
+
+/*
   setup a attribute handler using a standard syntax
 */
 int ldb_schema_attribute_add(struct ldb_context *ldb,

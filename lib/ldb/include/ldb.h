@@ -427,6 +427,11 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
  */
 #define LDB_ATTR_FLAG_FORCE_BASE64_LDIF        (1<<5)
 
+/*
+ * The attribute was loaded from a DB, rather than via the C API
+ */
+#define LDB_ATTR_FLAG_FROM_DB      (1<<6)
+
 /**
   LDAP attribute syntax for a DN
 

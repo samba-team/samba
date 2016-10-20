@@ -163,6 +163,12 @@ extern const struct ldb_backend_ops ldb_ldapi_backend_ops;
 extern const struct ldb_backend_ops ldb_ldaps_backend_ops;
 
 int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
+/*
+  remove attributes with a specified flag (eg LDB_ATTR_FLAG_FROM_DB) for this ldb context
+
+  This is to permit correct reloads
+*/
+void ldb_schema_attribute_remove_flagged(struct ldb_context *ldb, unsigned int flag);
 
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *classname);
 void ldb_subclass_remove(struct ldb_context *ldb, const char *classname);
