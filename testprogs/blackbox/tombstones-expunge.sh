@@ -68,6 +68,14 @@ tombstones_expunge() {
     fi
 }
 
+add_dangling_link() {
+    ldif=$release_dir/add-dangling-link.ldif
+    TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif
+    if [ "$?" != "0" ]; then
+	return 1
+    fi
+}
+
 add_two_more_users() {
     ldif=$release_dir/add-two-more-users.ldif
     TZ=UTC $ldbadd -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $ldif
@@ -172,6 +180,7 @@ if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "add_two_more_users" add_two_more_users
     testit "add_four_more_links" add_four_more_links
+    testit "add_dangling_link" add_dangling_link
     testit "remove_one_link" remove_one_link
     testit "remove_one_user" remove_one_user
     testit "check_match_rule_links" check_match_rule_links

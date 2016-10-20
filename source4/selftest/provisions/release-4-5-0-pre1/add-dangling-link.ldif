@@ -1,0 +1,5 @@
+# fred-clone is a duplication of CN=fred,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp with the GUID slightly modified and a different DN
+dn: CN=Domain Users,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+changetype: modify
+add: member
+member: <GUID=2302a65c-5b43-4ca9-850e-12d4a712cfb5>;<RMD_ADDTIME=131116485990000000>;<RMD_CHANGETIME=131116485990000000>;<RMD_FLAGS=1>;<RMD_INVOCID=4e4496a3-7fb8-4f97-8a33-d238db8b5e2d>;<RMD_LOCAL_USN=3745>;<RMD_ORIGINATING_USN=3745>;<RMD_VERSION=1>;<SID=S-1-5-21-4177067393-1453636373-93818738-1111>;CN=fred-clone,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
