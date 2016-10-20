@@ -32,6 +32,41 @@
 #include "ldb_handlers.h"
 
 /*
+  fill in an attribute to the ldb_schema into the supplied buffer
+
+  if flags contains LDB_ATTR_FLAG_ALLOCATED
+  the attribute name string will be copied using
+  talloc_strdup(), otherwise it needs to be a static const
+  string at least with a lifetime longer than the ldb struct!
+
+  the ldb_schema_syntax structure should be a pointer
+  to a static const struct or at least it needs to be
+  a struct with a longer lifetime than the ldb context!
+
+*/
+int ldb_schema_attribute_fill_with_syntax(struct ldb_context *ldb,
+					  TALLOC_CTX *mem_ctx,
+					  const char *attribute,
+					  unsigned flags,
+					  const struct ldb_schema_syntax *syntax,
+					  struct ldb_schema_attribute *a)
+{
+	a->name	= attribute;
+	a->flags	= flags;
+	a->syntax	= syntax;
+
+	if (a->flags & LDB_ATTR_FLAG_ALLOCATED) {
+		a->name = talloc_strdup(mem_ctx, a->name);
+		if (a->name == NULL) {
+			ldb_oom(ldb);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+/*
   add a attribute to the ldb_schema
 
   if flags contains LDB_ATTR_FLAG_ALLOCATED

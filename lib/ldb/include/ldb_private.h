@@ -169,6 +169,12 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb);
   This is to permit correct reloads
 */
 void ldb_schema_attribute_remove_flagged(struct ldb_context *ldb, unsigned int flag);
+int ldb_schema_attribute_fill_with_syntax(struct ldb_context *ldb,
+					  TALLOC_CTX *mem_ctx,
+					  const char *attribute,
+					  unsigned flags,
+					  const struct ldb_schema_syntax *syntax,
+					  struct ldb_schema_attribute *a);
 
 const char **ldb_subclass_list(struct ldb_context *ldb, const char *classname);
 void ldb_subclass_remove(struct ldb_context *ldb, const char *classname);
