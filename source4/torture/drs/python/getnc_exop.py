@@ -256,7 +256,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
         # has an RODC, it can gain links on the server account object
 
     def test_do_ridalloc_get_anc(self):
-        """Test doing a RID allocation with a valid destination DSA guid and """
+        """Test doing a RID allocation with a valid destination DSA guid and GET_ANC flag"""
         fsmo_dn = ldb.Dn(self.ldb_dc1, "CN=RID Manager$,CN=System," + self.ldb_dc1.domain_dn())
         (fsmo_owner, fsmo_not_owner) = self._determine_fSMORoleOwner(fsmo_dn)
 
