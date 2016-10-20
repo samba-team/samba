@@ -1515,7 +1515,7 @@ static int rootdse_become_master(struct ldb_module *module,
 
 	/*
 	 * We always delete the transaction, not commit it, because
-	 * this gives the least supprise to this supprising action (as
+	 * this gives the least surprise to this surprising action (as
 	 * we will never record anything done to this point
 	 */
 	rootdse_del_trans(module);
