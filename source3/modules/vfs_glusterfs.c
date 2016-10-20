@@ -1036,7 +1036,20 @@ static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
 static char *vfs_gluster_realpath(struct vfs_handle_struct *handle,
 				  const char *path)
 {
-	return glfs_realpath(handle->data, path, 0);
+	char *result = NULL;
+	char *resolved_path = SMB_MALLOC_ARRAY(char, PATH_MAX+1);
+
+	if (resolved_path == NULL) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	result = glfs_realpath(handle->data, path, resolved_path);
+	if (result == NULL) {
+		SAFE_FREE(resolved_path);
+	}
+
+	return result;
 }
 
 static bool vfs_gluster_lock(struct vfs_handle_struct *handle,
