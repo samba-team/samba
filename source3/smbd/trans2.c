@@ -242,12 +242,14 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 				char ***pnames,
 				size_t *pnum_names)
 {
+	char smallbuf[1024];
 	/* Get a list of all xattrs. Max namesize is 64k. */
 	size_t ea_namelist_size = 1024;
-	char *ea_namelist = NULL;
+	char *ea_namelist = smallbuf;
+	char *to_free = NULL;
 
 	char *p;
-	char **names, **tmp;
+	char **names;
 	size_t num_names;
 	ssize_t sizeret = -1;
 	NTSTATUS status;
@@ -269,54 +271,45 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	/*
-	 * TALLOC the result early to get the talloc hierarchy right.
-	 */
-
-	names = talloc_array(mem_ctx, char *, 1);
-	if (names == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NT_STATUS_NO_MEMORY;
+	if (fsp && fsp->fh->fd != -1) {
+		sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
+					     ea_namelist_size);
+	} else {
+		sizeret = SMB_VFS_LISTXATTR(conn,
+					    smb_fname->base_name,
+					    ea_namelist,
+					    ea_namelist_size);
 	}
 
-	while (ea_namelist_size <= 65536) {
-
-		ea_namelist = talloc_realloc(
-			names, ea_namelist, char, ea_namelist_size);
+	if ((sizeret == -1) && (errno == ERANGE)) {
+		ea_namelist_size = 65536;
+		ea_namelist = talloc_array(mem_ctx, char, ea_namelist_size);
 		if (ea_namelist == NULL) {
-			DEBUG(0, ("talloc failed\n"));
-			TALLOC_FREE(names);
 			return NT_STATUS_NO_MEMORY;
 		}
+		to_free = ea_namelist;
 
 		if (fsp && fsp->fh->fd != -1) {
 			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
 						     ea_namelist_size);
 		} else {
 			sizeret = SMB_VFS_LISTXATTR(conn,
-					smb_fname->base_name,
-					ea_namelist,
-					ea_namelist_size);
-		}
-
-		if ((sizeret == -1) && (errno == ERANGE)) {
-			ea_namelist_size *= 2;
-		}
-		else {
-			break;
+						    smb_fname->base_name,
+						    ea_namelist,
+						    ea_namelist_size);
 		}
 	}
 
 	if (sizeret == -1) {
-		TALLOC_FREE(names);
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		TALLOC_FREE(to_free);
+		return status;
 	}
 
-	DEBUG(10, ("%s: ea_namelist size = %u\n",
-		   __func__, (unsigned int)sizeret));
+	DBG_DEBUG("ea_namelist size = %zd\n", sizeret);
 
 	if (sizeret == 0) {
-		TALLOC_FREE(names);
+		TALLOC_FREE(to_free);
 		return NT_STATUS_OK;
 	}
 
@@ -325,7 +318,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 	 */
 
 	if (ea_namelist[sizeret-1] != '\0') {
-		TALLOC_FREE(names);
+		TALLOC_FREE(to_free);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -338,26 +331,45 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx,
 		num_names += 1;
 	}
 
-	tmp = talloc_realloc(mem_ctx, names, char *, num_names);
-	if (tmp == NULL) {
+	*pnum_names = num_names;
+
+	if (pnames == NULL) {
+		TALLOC_FREE(to_free);
+		return NT_STATUS_OK;
+	}
+
+	names = talloc_array(mem_ctx, char *, num_names);
+	if (names == NULL) {
 		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(names);
+		TALLOC_FREE(to_free);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	names = tmp;
+	if (ea_namelist == smallbuf) {
+		ea_namelist = talloc_memdup(names, smallbuf, sizeret);
+		if (ea_namelist == NULL) {
+			TALLOC_FREE(names);
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		talloc_steal(names, ea_namelist);
+
+		ea_namelist = talloc_realloc(names, ea_namelist, char,
+					     sizeret);
+		if (ea_namelist == NULL) {
+			TALLOC_FREE(names);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
 	num_names = 0;
 
 	for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p)+1) {
 		names[num_names++] = p;
 	}
 
-	if (pnames) {
-		*pnames = names;
-	} else {
-		TALLOC_FREE(names);
-	}
-	*pnum_names = num_names;
+	*pnames = names;
+
 	return NT_STATUS_OK;
 }
 
