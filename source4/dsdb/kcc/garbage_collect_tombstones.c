@@ -193,8 +193,9 @@ static NTSTATUS garbage_collect_tombstones_part(TALLOC_CTX *mem_ctx,
 
 				guid_buf_str = GUID_buf_string(&guid, &buf_guid);
 				guid_search_str = talloc_asprintf(mem_ctx,
-								  "<GUID=%s>",
-								  guid_buf_str);
+								  "<GUID=%s>;%s",
+								  guid_buf_str,
+								  dsdb_dn_get_linearized(mem_ctx, dn));
 				cleanup_val = data_blob_string_const(guid_search_str);
 
 				talloc_free(dn);

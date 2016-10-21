@@ -306,4 +306,3 @@
 ^samba4.rpc.echo.*on.*with.object.echo.sinkdata.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.addone.*nt4_dc
 ^samba4.rpc.echo.*on.*ncacn_ip_tcp.*with.object.*nt4_dc
-^samba4.blackbox.tombstones-expunge.release-4-5-0-pre1.tombstones_expunge
