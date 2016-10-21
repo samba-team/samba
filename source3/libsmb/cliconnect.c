@@ -687,8 +687,7 @@ static void cli_session_setup_gensec_ready(struct tevent_req *req);
 
 static struct tevent_req *cli_session_setup_gensec_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *user, const char *pass, const char *domain,
-	enum credentials_use_kerberos krb5_state,
+	struct cli_credentials *creds,
 	const char *target_service,
 	const char *target_hostname)
 {
@@ -696,8 +695,6 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	struct cli_session_setup_gensec_state *state;
 	NTSTATUS status;
 	const DATA_BLOB *b = NULL;
-	const char *dest_realm = NULL;
-	struct cli_credentials *creds = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_gensec_state);
@@ -709,27 +706,6 @@ static struct tevent_req *cli_session_setup_gensec_send(
 
 	talloc_set_destructor(
 		state, cli_session_setup_gensec_state_destructor);
-
-	/*
-	 * dest_realm is only valid in the winbindd use case,
-	 * where we also have the account in that realm.
-	 */
-	dest_realm = cli_state_remote_realm(cli);
-
-	creds = cli_session_creds_init(state,
-				       user,
-				       domain,
-				       dest_realm,
-				       pass,
-				       cli->use_kerberos,
-				       cli->fallback_after_kerberos,
-				       cli->use_ccache,
-				       cli->pw_nt_hash);
-	if (tevent_req_nomem(creds, req)) {
-		return tevent_req_post(req, ev);
-	}
-
-	cli_credentials_set_kerberos_state(creds, krb5_state);
 
 	status = auth_generic_client_prepare(state, &state->auth_generic);
 	if (tevent_req_nterror(req, status)) {
@@ -1077,6 +1053,8 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	enum credentials_use_kerberos krb5_state;
 	bool try_kerberos = false;
 	bool need_kinit = false;
+	const char *dest_realm = NULL;
+	struct cli_credentials *creds = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_spnego_state);
@@ -1093,6 +1071,25 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	} else {
 		user_principal = NULL;
 		user_account = "";
+	}
+
+	/*
+	 * dest_realm is only valid in the winbindd use case,
+	 * where we also have the account in that realm.
+	 */
+	dest_realm = cli_state_remote_realm(cli);
+
+	creds = cli_session_creds_init(state,
+				       user_account,
+				       user_domain,
+				       dest_realm,
+				       pass,
+				       cli->use_kerberos,
+				       cli->fallback_after_kerberos,
+				       cli->use_ccache,
+				       cli->pw_nt_hash);
+	if (tevent_req_nomem(creds, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
@@ -1133,15 +1130,7 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		}
 	}
 
-	if (cli->use_kerberos) {
-		if (cli->fallback_after_kerberos) {
-			krb5_state = CRED_AUTO_USE_KERBEROS;
-		} else {
-			krb5_state = CRED_MUST_USE_KERBEROS;
-		}
-	} else {
-		krb5_state = CRED_DONT_USE_KERBEROS;
-	}
+	krb5_state = cli_credentials_get_kerberos_state(creds);
 
 	if (krb5_state != CRED_DONT_USE_KERBEROS) {
 		try_kerberos = true;
@@ -1205,13 +1194,8 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		}
 	}
 
-	subreq = cli_session_setup_gensec_send(state, ev, cli,
-					       user_account,
-					       pass,
-					       user_domain,
-					       krb5_state,
-					       "cifs",
-					       target_hostname);
+	subreq = cli_session_setup_gensec_send(state, ev, cli, creds,
+					       "cifs", target_hostname);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
