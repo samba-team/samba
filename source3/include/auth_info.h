@@ -20,19 +20,7 @@
 #ifndef _AUTH_INFO_H
 #define _AUTH_INFO_H
 
-struct user_auth_info {
-	char *username;
-	char *domain;
-	char *password;
-	bool got_pass;
-	bool use_kerberos;
-	int signing_state;
-	bool smb_encrypt;
-	bool use_machine_account;
-	bool fallback_after_kerberos;
-	bool use_ccache;
-	bool use_pw_nt_hash;
-};
+struct user_auth_info;
 
 struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
 const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info);
