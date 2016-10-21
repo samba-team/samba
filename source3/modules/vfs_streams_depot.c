@@ -128,7 +128,8 @@ static char *stream_dir(vfs_handle_struct *handle,
 	check_valid = lp_parm_bool(SNUM(handle->conn),
 		      "streams_depot", "check_valid", true);
 
-	tmp = talloc_asprintf(talloc_tos(), "%s/.streams", handle->conn->cwd);
+	tmp = talloc_asprintf(talloc_tos(), "%s/.streams",
+		handle->conn->connectpath);
 
 	if (tmp == NULL) {
 		errno = ENOMEM;
