@@ -523,18 +523,11 @@ static struct cli_state *connect_one(const char *share)
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
 
-	if (get_cmdline_auth_info_use_machine_account(smbcquotas_auth_info) &&
-	    !set_cmdline_auth_info_machine_account_creds(smbcquotas_auth_info)) {
-		return NULL;
-	}
-
 	if (get_cmdline_auth_info_use_kerberos(smbcquotas_auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 
 	}
-
-	set_cmdline_auth_info_getpass(smbcquotas_auth_info);
 
 	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
 					    NULL, 0,
@@ -618,12 +611,6 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 
 	fault_setup();
 
-	smbcquotas_auth_info = user_auth_info_init(frame);
-	if (smbcquotas_auth_info == NULL) {
-		exit(1);
-	}
-	popt_common_set_auth_info(smbcquotas_auth_info);
-
 	pc = poptGetContext("smbcquotas", argc, argv_const, long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "//server1/share1");
@@ -689,6 +676,7 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 	if (todo == 0)
 		todo = USER_QUOTA;
 
+	smbcquotas_auth_info = cmdline_auth_info;
 	if (!fix_user) {
 		username_str = talloc_strdup(
 			frame, get_cmdline_auth_info_username(smbcquotas_auth_info));

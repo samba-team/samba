@@ -25,7 +25,7 @@
 #include "libsmb/proto.h"
 #include "clifuse.h"
 
-static struct cli_state *connect_one(struct user_auth_info *auth_info,
+static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 				     const char *server, const char *share)
 {
 	struct cli_state *c = NULL;
@@ -36,13 +36,6 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
-
-	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
-	    !set_cmdline_auth_info_machine_account_creds(auth_info)) {
-		return NULL;
-	}
-
-	set_cmdline_auth_info_getpass(auth_info);
 
 	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
 				NULL, 0,
@@ -78,7 +71,6 @@ int main(int argc, char *argv[])
 {
 	const char **argv_const = discard_const_p(const char *, argv);
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct user_auth_info *auth_info;
 	poptContext pc;
 	int opt, ret;
 	char *unc, *mountpoint, *server, *share;
@@ -95,12 +87,6 @@ int main(int argc, char *argv[])
 	setup_logging(argv[0], DEBUG_STDERR);
 	lp_set_cmdline("client min protocol", "SMB2");
 	lp_set_cmdline("client max protocol", "SMB3_11");
-
-	auth_info = user_auth_info_init(frame);
-	if (auth_info == NULL) {
-		exit(1);
-	}
-	popt_common_set_auth_info(auth_info);
 
 	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
@@ -151,7 +137,7 @@ int main(int argc, char *argv[])
 	*share = 0;
 	share++;
 
-	cli = connect_one(auth_info, server, share);
+	cli = connect_one(cmdline_auth_info, server, share);
 	if (cli == NULL) {
 		return -1;
 	}

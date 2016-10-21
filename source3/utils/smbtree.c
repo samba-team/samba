@@ -79,7 +79,7 @@ static void add_name(const char *machine_name, uint32_t server_type,
 /****************************************************************************
   display tree of smb workgroups, servers and shares
 ****************************************************************************/
-static bool get_workgroups(struct user_auth_info *user_info)
+static bool get_workgroups(const struct user_auth_info *user_info)
 {
         struct cli_state *cli;
         struct sockaddr_storage server_ss;
@@ -131,7 +131,7 @@ static bool get_workgroups(struct user_auth_info *user_info)
 
 /* Retrieve the list of servers for a given workgroup */
 
-static bool get_servers(char *workgroup, struct user_auth_info *user_info)
+static bool get_servers(char *workgroup, const struct user_auth_info *user_info)
 {
         struct cli_state *cli;
         struct sockaddr_storage server_ss;
@@ -220,7 +220,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 }
 
 
-static bool get_shares(char *server_name, struct user_auth_info *user_info)
+static bool get_shares(char *server_name, const struct user_auth_info *user_info)
 {
         struct cli_state *cli;
 
@@ -236,7 +236,7 @@ static bool get_shares(char *server_name, struct user_auth_info *user_info)
         return True;
 }
 
-static bool print_tree(struct user_auth_info *user_info)
+static bool print_tree(const struct user_auth_info *user_info)
 {
         struct smb_name_list *wg, *sv, *sh;
 
@@ -289,7 +289,6 @@ int main(int argc, char *argv[])
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char **argv_const = discard_const_p(const char *, argv);
-	struct user_auth_info *auth_info;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "broadcast", 'b', POPT_ARG_VAL, &use_bcast, True, "Use broadcast instead of using the master browser" },
@@ -308,12 +307,6 @@ int main(int argc, char *argv[])
 
 	setup_logging(argv[0], DEBUG_STDERR);
 
-	auth_info = user_auth_info_init(frame);
-	if (auth_info == NULL) {
-		exit(1);
-	}
-	popt_common_set_auth_info(auth_info);
-
 	pc = poptGetContext("smbtree", argc, argv_const, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
@@ -323,19 +316,9 @@ int main(int argc, char *argv[])
 	lp_load_global(get_dyn_CONFIGFILE());
 	load_interfaces();
 
-	/* Parse command line args */
-
-	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
-	    !set_cmdline_auth_info_machine_account_creds(auth_info)) {
-		TALLOC_FREE(frame);
-		return 1;
-	}
-
-	set_cmdline_auth_info_getpass(auth_info);
-
 	/* Now do our stuff */
 
-        if (!print_tree(auth_info)) {
+        if (!print_tree(cmdline_auth_info)) {
 		TALLOC_FREE(frame);
                 return 1;
 	}

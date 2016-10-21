@@ -5753,11 +5753,7 @@ int main(int argc,char *argv[])
 
 	lp_set_cmdline("log level", "1");
 
-	auth_info = user_auth_info_init(frame);
-	if (auth_info == NULL) {
-		exit(1);
-	}
-	popt_common_set_auth_info(auth_info);
+	popt_common_credentials_set_delay_post();
 
 	/* skip argv(0) */
 	pc = poptGetContext("smbclient", argc, const_argv, long_options, 0);
@@ -5785,9 +5781,9 @@ int main(int argc,char *argv[])
 
 		/* if the service has already been retrieved then check if we have also a password */
 		if (service_opt
-		    && (!get_cmdline_auth_info_got_pass(auth_info))
+		    && (!get_cmdline_auth_info_got_pass(cmdline_auth_info))
 		    && poptPeekArg(pc)) {
-			set_cmdline_auth_info_password(auth_info,
+			set_cmdline_auth_info_password(cmdline_auth_info,
 						       poptGetArg(pc));
 		}
 
@@ -5887,9 +5883,9 @@ int main(int argc,char *argv[])
 
 	/* if the service has already been retrieved then check if we have also a password */
 	if (service_opt
-	    && !get_cmdline_auth_info_got_pass(auth_info)
+	    && !get_cmdline_auth_info_got_pass(cmdline_auth_info)
 	    && poptPeekArg(pc)) {
-		set_cmdline_auth_info_password(auth_info,
+		set_cmdline_auth_info_password(cmdline_auth_info,
 					       poptGetArg(pc));
 	}
 
@@ -5899,11 +5895,6 @@ int main(int argc,char *argv[])
 	if (!lp_load_client(get_dyn_CONFIGFILE())) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
 			argv[0], get_dyn_CONFIGFILE());
-	}
-
-	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
-	    !set_cmdline_auth_info_machine_account_creds(auth_info)) {
-		exit(-1);
 	}
 
 	load_interfaces();
@@ -5926,7 +5917,6 @@ int main(int argc,char *argv[])
 		}
 	}
 
-	smb_encrypt = get_cmdline_auth_info_smb_encrypt(auth_info);
 	if (!init_names()) {
 		fprintf(stderr, "init_names() failed\n");
 		exit(1);
@@ -5946,7 +5936,9 @@ int main(int argc,char *argv[])
 	DEBUG(3,("Client started (version %s).\n", samba_version_string()));
 
 	/* Ensure we have a password (or equivalent). */
-	set_cmdline_auth_info_getpass(auth_info);
+	popt_common_credentials_post();
+	auth_info = cmdline_auth_info;
+	smb_encrypt = get_cmdline_auth_info_smb_encrypt(auth_info);
 
 	max_protocol = lp_client_max_protocol();
 

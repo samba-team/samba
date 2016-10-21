@@ -974,12 +974,6 @@ out_free:
 	setup_logging("rpcclient", DEBUG_STDOUT);
 	lp_set_cmdline("log level", "0");
 
-	rpcclient_auth_info = user_auth_info_init(frame);
-	if (rpcclient_auth_info == NULL) {
-		exit(1);
-	}
-	popt_common_set_auth_info(rpcclient_auth_info);
-
 	/* Parse options */
 
 	pc = poptGetContext("rpcclient", argc, const_argv,
@@ -1018,6 +1012,7 @@ out_free:
 
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
+	rpcclient_auth_info = cmdline_auth_info;
 
 	/* Load smb.conf file */
 
@@ -1050,14 +1045,6 @@ out_free:
 	 * Get password
 	 * from stdin if necessary
 	 */
-
-	if (get_cmdline_auth_info_use_machine_account(rpcclient_auth_info) &&
-	    !set_cmdline_auth_info_machine_account_creds(rpcclient_auth_info)) {
-		result = 1;
-		goto done;
-	}
-
-	set_cmdline_auth_info_getpass(rpcclient_auth_info);
 
 	if ((server[0] == '/' && server[1] == '/') ||
 			(server[0] == '\\' && server[1] ==  '\\')) {

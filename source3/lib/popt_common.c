@@ -347,19 +347,46 @@ static void get_credentials_file(struct user_auth_info *auth_info,
  * 		-C --use-ccache
  */
 
+struct user_auth_info *cmdline_auth_info;
+static bool popt_common_credentials_delay_post;
+
+void popt_common_credentials_set_delay_post(void)
+{
+	popt_common_credentials_delay_post = true;
+}
+
+void popt_common_credentials_post(void)
+{
+	struct user_auth_info *auth_info = cmdline_auth_info;
+
+	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
+	    !set_cmdline_auth_info_machine_account_creds(auth_info))
+	{
+		fprintf(stderr,
+			"Failed to use machine account credentials\n");
+		exit(1);
+	}
+
+	set_cmdline_auth_info_getpass(auth_info);
+}
 
 static void popt_common_credentials_callback(poptContext con,
 					enum poptCallbackReason reason,
 					const struct poptOption *opt,
 					const char *arg, const void *data)
 {
-	const void **pp = discard_const(data);
-	void *p = discard_const(*pp);
-	struct user_auth_info *auth_info =
-		talloc_get_type_abort(p,
-		struct user_auth_info);
+	struct user_auth_info *auth_info = cmdline_auth_info;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
+		if (auth_info == NULL) {
+			auth_info = user_auth_info_init(talloc_autofree_context());
+			if (auth_info == NULL) {
+				fprintf(stderr, "user_auth_info_init() failed\n");
+				exit(1);
+			}
+			cmdline_auth_info = auth_info;
+		}
+
 		set_cmdline_auth_info_username(auth_info, "GUEST");
 
 		if (getenv("LOGNAME")) {
@@ -381,6 +408,15 @@ static void popt_common_credentials_callback(poptContext con,
 			get_password_file(auth_info);
 		}
 
+		return;
+	}
+
+	if (reason == POPT_CALLBACK_REASON_POST) {
+		if (popt_common_credentials_delay_post) {
+			return;
+		}
+
+		popt_common_credentials_post();
 		return;
 	}
 
@@ -444,13 +480,6 @@ static void popt_common_credentials_callback(poptContext con,
 	}
 }
 
-static struct user_auth_info *global_auth_info;
-
-void popt_common_set_auth_info(struct user_auth_info *auth_info)
-{
-	global_auth_info = auth_info;
-}
-
 /**
  * @brief Burn the commandline password.
  *
@@ -499,9 +528,8 @@ void popt_burn_cmdline_password(int argc, char *argv[])
 }
 
 struct poptOption popt_common_credentials[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE,
-	  (void *)popt_common_credentials_callback, 0,
-	  (const void *)&global_auth_info },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+	  (void *)popt_common_credentials_callback, 0, NULL },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
 	{ "no-pass", 'N', POPT_ARG_NONE, NULL, 'N', "Don't ask for a password" },
 	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use kerberos (active directory) authentication" },
