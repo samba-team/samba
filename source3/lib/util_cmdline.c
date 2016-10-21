@@ -162,6 +162,12 @@ bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 	return true;
 }
 
+void set_cmdline_auth_info_signing_state_raw(struct user_auth_info *auth_info,
+					     int signing_state)
+{
+	auth_info->signing_state = signing_state;
+}
+
 int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
 {
 	return auth_info->signing_state;

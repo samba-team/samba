@@ -46,6 +46,8 @@ void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
 const char *get_cmdline_auth_info_password(const struct user_auth_info *auth_info);
 bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
 					 const char *arg);
+void set_cmdline_auth_info_signing_state_raw(struct user_auth_info *auth_info,
+					     int signing_state);
 int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_use_ccache(struct user_auth_info *auth_info,
 				      bool b);
