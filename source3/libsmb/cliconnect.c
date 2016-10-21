@@ -3673,14 +3673,14 @@ struct cli_state *get_ipc_connect(char *server,
 	NTSTATUS nt_status;
 	uint32_t flags = CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
 
-	if (user_info->use_kerberos) {
+	if (get_cmdline_auth_info_use_kerberos(user_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 	}
 
 	nt_status = cli_full_connection(&cli, NULL, server, server_ss, 0, "IPC$", "IPC", 
-					user_info->username ? user_info->username : "",
+					get_cmdline_auth_info_username(user_info),
 					lp_workgroup(),
-					user_info->password ? user_info->password : "",
+					get_cmdline_auth_info_password(user_info),
 					flags,
 					SMB_SIGNING_DEFAULT);
 
