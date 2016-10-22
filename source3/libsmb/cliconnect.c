@@ -1068,48 +1068,25 @@ static void cli_session_setup_spnego_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_session_setup_spnego_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *user, const char *pass, const char *user_domain)
+	struct cli_credentials *creds)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_spnego_state *state;
 	const char *user_principal = NULL;
+	const char *user_account = NULL;
+	const char *user_domain = NULL;
+	const char *pass = NULL;
 	const char *target_hostname = NULL;
 	const DATA_BLOB *server_blob = NULL;
 	enum credentials_use_kerberos krb5_state;
 	bool try_kerberos = false;
 	bool need_kinit = false;
-	const char *dest_realm = NULL;
-	struct cli_credentials *creds = NULL;
+	bool auth_requested = true;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_spnego_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	if (user != NULL && strlen(user) != 0) {
-		user_principal = user;
-	} else {
-		user_principal = NULL;
-	}
-
-	/*
-	 * dest_realm is only valid in the winbindd use case,
-	 * where we also have the account in that realm.
-	 */
-	dest_realm = cli_state_remote_realm(cli);
-
-	creds = cli_session_creds_init(state,
-				       user,
-				       user_domain,
-				       dest_realm,
-				       pass,
-				       cli->use_kerberos,
-				       cli->fallback_after_kerberos,
-				       cli->use_ccache,
-				       cli->pw_nt_hash);
-	if (tevent_req_nomem(creds, req)) {
-		return tevent_req_post(req, ev);
 	}
 
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
@@ -1150,6 +1127,17 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		}
 	}
 
+	auth_requested = cli_credentials_authentication_requested(creds);
+	if (auth_requested) {
+		user_principal = cli_credentials_get_principal(creds, state);
+		if (tevent_req_nomem(user_principal, req)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+	user_account = cli_credentials_get_username(creds);
+	user_domain = cli_credentials_get_domain(creds);
+	pass = cli_credentials_get_password(creds);
+
 	krb5_state = cli_credentials_get_kerberos_state(creds);
 
 	if (krb5_state != CRED_DONT_USE_KERBEROS) {
@@ -1164,13 +1152,15 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		try_kerberos = false;
 	} else if (strequal(target_hostname, STAR_SMBSERVER)) {
 		try_kerberos = false;
-	} else if (user_principal == NULL) {
+	} else if (!auth_requested) {
 		try_kerberos = false;
 	}
 
 	if (krb5_state == CRED_MUST_USE_KERBEROS && !try_kerberos) {
-		DEBUG(0, ("Kerberos auth with '%s' to access '%s' not possible\n",
-			  user_principal, target_hostname));
+		DEBUG(0, ("Kerberos auth with '%s' (%s\\%s) to access "
+			  "'%s' not possible\n",
+			  user_principal, user_domain, user_account,
+			  target_hostname));
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
@@ -1309,6 +1299,8 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	struct cli_session_setup_state *state;
 	char *p;
 	char *user2;
+	const char *dest_realm = NULL;
+	struct cli_credentials *creds = NULL;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 	bool use_spnego = false;
 	bool do_lmresponse = false;
@@ -1360,6 +1352,25 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/*
+	 * dest_realm is only valid in the winbindd use case,
+	 * where we also have the account in that realm.
+	 */
+	dest_realm = cli_state_remote_realm(cli);
+
+	creds = cli_session_creds_init(state,
+				       user,
+				       workgroup,
+				       dest_realm,
+				       pass,
+				       cli->use_kerberos,
+				       cli->fallback_after_kerberos,
+				       cli->use_ccache,
+				       cli->pw_nt_hash);
+	if (tevent_req_nomem(creds, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/*
 	 * Now work out what sort of session setup we are going to
 	 * do. I have split this into separate functions to make the flow a bit
 	 * easier to understand (tridge).
@@ -1380,7 +1391,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 
 	if (use_spnego) {
 		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup);
+			state, ev, cli, creds);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
