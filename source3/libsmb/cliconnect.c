@@ -41,6 +41,9 @@
 
 #define STAR_SMBSERVER "*SMBSERVER"
 
+static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
+					   const char *principal);
+
 static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 						      const char *username,
 						      const char *domain,
@@ -53,6 +56,7 @@ static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 {
 	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;
+	const char *principal = NULL;
 	bool ok;
 
 	creds = cli_credentials_init(mem_ctx);
@@ -87,6 +91,19 @@ static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 			cli_credentials_set_anonymous(creds);
 			return creds;
 		}
+	}
+
+	principal = username;
+	username = cli_session_setup_get_account(creds, principal);
+	if (username == NULL) {
+		goto fail;
+	}
+	ok = strequal(username, principal);
+	if (ok) {
+		/*
+		 * Ok still the same, so it's not a principal
+		 */
+		principal = NULL;
 	}
 
 	if (use_kerberos && fallback_after_kerberos) {
@@ -130,6 +147,15 @@ static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 					CRED_SPECIFIED);
 	if (!ok) {
 		goto fail;
+	}
+
+	if (principal != NULL) {
+		ok = cli_credentials_set_principal(creds,
+						   principal,
+						   CRED_SPECIFIED);
+		if (!ok) {
+			goto fail;
+		}
 	}
 
 	if (realm != NULL) {
@@ -1047,7 +1073,6 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_spnego_state *state;
 	const char *user_principal = NULL;
-	const char *user_account = NULL;
 	const char *target_hostname = NULL;
 	const DATA_BLOB *server_blob = NULL;
 	enum credentials_use_kerberos krb5_state;
@@ -1064,13 +1089,8 @@ static struct tevent_req *cli_session_setup_spnego_send(
 
 	if (user != NULL && strlen(user) != 0) {
 		user_principal = user;
-		user_account = cli_session_setup_get_account(state, user);
-		if (tevent_req_nomem(user_account, req)) {
-			return tevent_req_post(req, ev);
-		}
 	} else {
 		user_principal = NULL;
-		user_account = "";
 	}
 
 	/*
@@ -1080,7 +1100,7 @@ static struct tevent_req *cli_session_setup_spnego_send(
 	dest_realm = cli_state_remote_realm(cli);
 
 	creds = cli_session_creds_init(state,
-				       user_account,
+				       user,
 				       user_domain,
 				       dest_realm,
 				       pass,
