@@ -294,5 +294,3 @@
 #ntvfs server blocks copychunk with execute access on read handle
 ^samba4.smb2.ioctl.copy_chunk_bad_access
 ^samba4.drs.getnc_exop.python.*getnc_exop.DrsReplicaPrefixMapTestCase.test_regular_prefix_map_ex_attid.*
-#ad_member does not support for user@realm NTLM authentication
-^samba3.unix.whoami ntlm user@realm.*\(ad_member

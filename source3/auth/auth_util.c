@@ -107,6 +107,11 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	bool was_mapped;
 	char *internal_username = NULL;
+	bool upn_form = false;
+
+	if (client_domain[0] == '\0' && strchr(smb_name, '@')) {
+		upn_form = true;
+	}
 
 	was_mapped = map_username(talloc_tos(), smb_name, &internal_username);
 	if (!internal_username) {
@@ -126,10 +131,9 @@ NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
 	 * non-domain member box will also map to WORKSTATION\user.
 	 * This also deals with the client passing in a "" domain */
 
-	if (!is_trusted_domain(domain) &&
+	if (!upn_form && !is_trusted_domain(domain) &&
 	    !strequal(domain, my_sam_name()) &&
-	    !strequal(domain, get_global_sam_name()))
-	{
+	    !strequal(domain, get_global_sam_name())) {
 		if (lp_map_untrusted_to_domain())
 			domain = my_sam_name();
 		else
