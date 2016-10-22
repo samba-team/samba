@@ -509,8 +509,6 @@ static NTSTATUS cli_sesssetup_blob_recv(struct tevent_req *req,
 	return status;
 }
 
-#ifdef HAVE_KRB5
-
 /****************************************************************************
  Use in-memory credentials cache
 ****************************************************************************/
@@ -518,8 +516,6 @@ static NTSTATUS cli_sesssetup_blob_recv(struct tevent_req *req,
 static void use_in_memory_ccache(void) {
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
 }
-
-#endif	/* HAVE_KRB5 */
 
 /****************************************************************************
  Do a spnego/NTLMSSP encrypted session setup.
@@ -943,53 +939,6 @@ static NTSTATUS cli_session_setup_gensec_recv(struct tevent_req *req)
 	return NT_STATUS_OK;
 }
 
-#ifdef HAVE_KRB5
-
-static char *cli_session_setup_get_principal(
-	TALLOC_CTX *mem_ctx, const char *spnego_principal,
-	const char *remote_name, const char *dest_realm)
-{
-	char *principal = NULL;
-
-	if (!lp_client_use_spnego_principal() ||
-	    strequal(spnego_principal, ADS_IGNORE_PRINCIPAL)) {
-		spnego_principal = NULL;
-	}
-	if (spnego_principal != NULL) {
-		DEBUG(3, ("cli_session_setup_spnego: using spnego provided "
-			  "principal %s\n", spnego_principal));
-		return talloc_strdup(mem_ctx, spnego_principal);
-	}
-	if (is_ipaddress(remote_name) ||
-	    strequal(remote_name, STAR_SMBSERVER)) {
-		return NULL;
-	}
-
-	DEBUG(3, ("cli_session_setup_spnego: using target "
-		  "hostname not SPNEGO principal\n"));
-
-	if (dest_realm) {
-		char *realm = strupper_talloc(talloc_tos(), dest_realm);
-		if (realm == NULL) {
-			return NULL;
-		}
-		principal = talloc_asprintf(talloc_tos(), "cifs/%s@%s",
-					    remote_name, realm);
-		TALLOC_FREE(realm);
-	} else {
-		principal =
-			smb_krb5_get_principal_from_service_hostname(talloc_tos(),
-								     "cifs",
-								     remote_name,
-								     lp_realm());
-	}
-	DEBUG(3, ("cli_session_setup_spnego: guessed server principal=%s\n",
-		  principal ? principal : "<null>"));
-
-	return principal;
-}
-#endif
-
 static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
 					   const char *principal)
 {
@@ -1014,22 +963,10 @@ static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 struct cli_session_setup_spnego_state {
-	struct tevent_context *ev;
-	struct cli_state *cli;
-	const char *target_hostname;
-	const char *user;
-	const char *account;
-	const char *pass;
-	const char *user_domain;
-	const char *dest_realm;
 	ADS_STATUS result;
 };
 
-#ifdef HAVE_KRB5
-static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq);
-#endif
-
-static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq);
+static void cli_session_setup_spnego_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_session_setup_spnego_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
@@ -1037,175 +974,168 @@ static struct tevent_req *cli_session_setup_spnego_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_spnego_state *state;
-	char *principal = NULL;
-	char *OIDs[ASN1_MAX_OIDS];
-	int i;
-	const char *dest_realm = cli_state_remote_realm(cli);
-	const DATA_BLOB *server_blob;
+	const char *user_principal = NULL;
+	const char *user_account = NULL;
+	const char *target_hostname = NULL;
+	const DATA_BLOB *server_blob = NULL;
+	enum credentials_use_kerberos krb5_state;
+	bool try_kerberos = false;
+	bool need_kinit = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_spnego_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	state->ev = ev;
-	state->cli = cli;
-	state->user = user;
-	state->pass = pass;
-	state->user_domain = user_domain;
-	state->dest_realm = dest_realm;
 
-	state->account = cli_session_setup_get_account(state, user);
-	if (tevent_req_nomem(state->account, req)) {
-		return tevent_req_post(req, ev);
+	if (user != NULL && strlen(user) != 0) {
+		user_principal = user;
+		user_account = cli_session_setup_get_account(state, user);
+		if (tevent_req_nomem(user_account, req)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		user_principal = NULL;
+		user_account = "";
 	}
 
-	state->target_hostname = smbXcli_conn_remote_name(cli->conn);
+	target_hostname = smbXcli_conn_remote_name(cli->conn);
 	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
 
-	DEBUG(3,("Doing spnego session setup (blob length=%lu)\n",
-		 (unsigned long)server_blob->length));
-
 	/* the server might not even do spnego */
-	if (server_blob->length == 0) {
-		DEBUG(3,("server didn't supply a full spnego negprot\n"));
-		goto ntlmssp;
+	if (server_blob != NULL && server_blob->length != 0) {
+		char *principal = NULL;
+		char *OIDs[ASN1_MAX_OIDS];
+		int i;
+
+		/* The server sent us the first part of the SPNEGO exchange in the
+		 * negprot reply. It is WRONG to depend on the principal sent in the
+		 * negprot reply, but right now we do it. If we don't receive one,
+		 * we try to best guess, then fall back to NTLM.  */
+		if (!spnego_parse_negTokenInit(state, *server_blob, OIDs,
+					       &principal, NULL) ||
+				OIDs[0] == NULL) {
+			state->result = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+			tevent_req_done(req);
+			return tevent_req_post(req, ev);
+		}
+		TALLOC_FREE(principal);
+
+		/* make sure the server understands kerberos */
+		for (i = 0; OIDs[i] != NULL; i++) {
+			if (i == 0) {
+				DEBUG(3,("got OID=%s\n", OIDs[i]));
+			} else {
+				DEBUGADD(3,("got OID=%s\n", OIDs[i]));
+			}
+
+			if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
+			    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
+				cli->got_kerberos_mechanism = True;
+			}
+			talloc_free(OIDs[i]);
+		}
 	}
 
-#if 0
-	file_save("negprot.dat", cli->secblob.data, cli->secblob.length);
-#endif
+	if (cli->use_kerberos) {
+		if (cli->fallback_after_kerberos) {
+			krb5_state = CRED_AUTO_USE_KERBEROS;
+		} else {
+			krb5_state = CRED_MUST_USE_KERBEROS;
+		}
+	} else {
+		krb5_state = CRED_DONT_USE_KERBEROS;
+	}
 
-	/* The server sent us the first part of the SPNEGO exchange in the
-	 * negprot reply. It is WRONG to depend on the principal sent in the
-	 * negprot reply, but right now we do it. If we don't receive one,
-	 * we try to best guess, then fall back to NTLM.  */
-	if (!spnego_parse_negTokenInit(state, *server_blob, OIDs,
-				       &principal, NULL) ||
-			OIDs[0] == NULL) {
-		state->result = ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
-		tevent_req_done(req);
+	if (krb5_state != CRED_DONT_USE_KERBEROS) {
+		try_kerberos = true;
+	}
+
+	if (target_hostname == NULL) {
+		try_kerberos = false;
+	} else if (is_ipaddress(target_hostname)) {
+		try_kerberos = false;
+	} else if (strequal(target_hostname, "localhost")) {
+		try_kerberos = false;
+	} else if (strequal(target_hostname, STAR_SMBSERVER)) {
+		try_kerberos = false;
+	} else if (user_principal == NULL) {
+		try_kerberos = false;
+	}
+
+	if (krb5_state == CRED_MUST_USE_KERBEROS && !try_kerberos) {
+		DEBUG(0, ("Kerberos auth with '%s' to access '%s' not possible\n",
+			  user_principal, target_hostname));
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
 	}
 
-	/* make sure the server understands kerberos */
-	for (i=0;OIDs[i];i++) {
-		if (i == 0)
-			DEBUG(3,("got OID=%s\n", OIDs[i]));
-		else
-			DEBUGADD(3,("got OID=%s\n", OIDs[i]));
-		if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
-		    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
-			cli->got_kerberos_mechanism = True;
-		}
-		talloc_free(OIDs[i]);
+	if (pass == NULL || strlen(pass) == 0) {
+		need_kinit = false;
+	} else if (krb5_state == CRED_MUST_USE_KERBEROS) {
+		need_kinit = try_kerberos;
+	} else if (!cli->got_kerberos_mechanism) {
+		/*
+		 * Most likely the server doesn't support
+		 * Kerberos, don't waste time doing a kinit
+		 */
+		need_kinit = false;
+	} else {
+		need_kinit = try_kerberos;
 	}
 
-	DEBUG(3,("got principal=%s\n", principal ? principal : "<null>"));
+	if (need_kinit) {
+		int ret;
 
-#ifdef HAVE_KRB5
-	/* If password is set we reauthenticate to kerberos server
-	 * and do not store results */
+		use_in_memory_ccache();
+		ret = kerberos_kinit_password(user_principal, pass,
+					0 /* no time correction for now */,
+					NULL);
 
-	if (user && *user && cli->got_kerberos_mechanism && cli->use_kerberos) {
-		char *tmp;
-
-		tmp = cli_session_setup_get_principal(
-			talloc_tos(), principal, state->target_hostname, dest_realm);
-		TALLOC_FREE(principal);
-		principal = tmp;
-
-		if (pass && *pass) {
-			int ret;
-
-			use_in_memory_ccache();
-			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
-
-			if (ret){
-				DEBUG(0, ("Kinit for %s to access %s failed: %s\n", user, principal, error_message(ret)));
-				TALLOC_FREE(principal);
-				if (cli->fallback_after_kerberos)
-					goto ntlmssp;
+		if (ret != 0) {
+			DEBUG(0, ("Kinit for %s to access %s failed: %s\n",
+				  user_principal, target_hostname,
+				  error_message(ret)));
+			if (krb5_state == CRED_MUST_USE_KERBEROS) {
 				state->result = ADS_ERROR_KRB5(ret);
 				tevent_req_done(req);
 				return tevent_req_post(req, ev);
 			}
-		}
 
-		if (principal) {
-			subreq = cli_session_setup_gensec_send(
-				state, ev, cli,
-				state->account, pass, user_domain,
-				CRED_MUST_USE_KERBEROS,
-				"cifs", state->target_hostname);
-			if (tevent_req_nomem(subreq, req)) {
-				return tevent_req_post(req, ev);
-			}
-			tevent_req_set_callback(
-				subreq, cli_session_setup_spnego_done_krb,
-				req);
-			return req;
+			/*
+			 * Ignore the error and hope that NTLM will work
+			 */
+			ret = 0;
 		}
 	}
-#endif
 
-ntlmssp:
-	subreq = cli_session_setup_gensec_send(
-		state, state->ev, state->cli,
-		state->account, state->pass, state->user_domain,
-		CRED_DONT_USE_KERBEROS,
-		"cifs", state->target_hostname);
+	subreq = cli_session_setup_gensec_send(state, ev, cli,
+					       user_account,
+					       pass,
+					       user_domain,
+					       krb5_state,
+					       "cifs",
+					       target_hostname);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(
-		subreq, cli_session_setup_spnego_done_ntlmssp, req);
+		subreq, cli_session_setup_spnego_done, req);
 	return req;
 }
 
-#ifdef HAVE_KRB5
-static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
+static void cli_session_setup_spnego_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_session_setup_spnego_state *state = tevent_req_data(
-		req, struct cli_session_setup_spnego_state);
 	NTSTATUS status;
 
 	status = cli_session_setup_gensec_recv(subreq);
 	TALLOC_FREE(subreq);
-	state->result = ADS_ERROR_NT(status);
-
-	if (ADS_ERR_OK(state->result) ||
-	    !state->cli->fallback_after_kerberos) {
-		tevent_req_done(req);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	subreq = cli_session_setup_gensec_send(
-		state, state->ev, state->cli,
-		state->account, state->pass, state->user_domain,
-		CRED_DONT_USE_KERBEROS,
-		"cifs", state->target_hostname);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, cli_session_setup_spnego_done_ntlmssp,
-				req);
-}
-#endif
-
-static void cli_session_setup_spnego_done_ntlmssp(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct cli_session_setup_spnego_state *state = tevent_req_data(
-		req, struct cli_session_setup_spnego_state);
-	NTSTATUS status;
-
-	status = cli_session_setup_gensec_recv(subreq);
-	TALLOC_FREE(subreq);
-	state->result = ADS_ERROR_NT(status);
 	tevent_req_done(req);
 }
 
@@ -1213,6 +1143,11 @@ static ADS_STATUS cli_session_setup_spnego_recv(struct tevent_req *req)
 {
 	struct cli_session_setup_spnego_state *state = tevent_req_data(
 		req, struct cli_session_setup_spnego_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		state->result = ADS_ERROR_NT(status);
+	}
 
 	return state->result;
 }
