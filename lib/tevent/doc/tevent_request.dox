@@ -4,7 +4,7 @@
 
 A specific feature of the library is the tevent request API that provides for
 asynchronous computation and allows much more interconnected working and
-cooperation among func- tions and events. When working with tevent request it
+cooperation among functions and events. When working with tevent request it
 is possible to nest one event under another and handle them bit by bit. This
 enables the creation of sequences of steps, and provides an opportunity to
 prepare for all problems which may unexpectedly happen within the different
