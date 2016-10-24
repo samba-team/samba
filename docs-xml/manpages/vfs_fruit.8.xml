@@ -214,6 +214,34 @@
 	  </varlistentry>
 
 	  <varlistentry>
+	    <term>fruit:time machine = [ yes | no ]</term>
+	    <listitem>
+	      <para>Controls if Time Machine support via the FULLSYNC volume
+	      capability is advertised to clients.</para>
+
+	      <itemizedlist>
+		<listitem><para><command>yes</command> - Enables Time Machine
+		support for this share. Also registers the share with mDNS in
+		case Samba is built with mDNS support.</para></listitem>
+
+		<listitem><para><command>no (default)</command> Disables
+		advertising Time Machine support.</para></listitem>
+
+	      </itemizedlist>
+
+	      <para>This option enforces the following settings per share (or
+	      for all shares if enabled globally):</para>
+	      <itemizedlist>
+		<listitem><para><command>durable handles = yes</command></para></listitem>
+		<listitem><para><command>kernel oplocks = no</command></para></listitem>
+		<listitem><para><command>kernel share modes = no</command></para></listitem>
+		<listitem><para><command>posix locking = no</command></para></listitem>
+	      </itemizedlist>
+
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
 	    <term>fruit:metadata = [ stream | netatalk ]</term>
 	    <listitem>
 	      <para>Controls where the OS X metadata stream is stored:</para>
