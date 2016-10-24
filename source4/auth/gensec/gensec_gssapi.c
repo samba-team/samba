@@ -339,7 +339,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	} else {
 		gensec_gssapi_state->target_principal = talloc_asprintf(gensec_gssapi_state, "%s/%s@%s",
 					    gensec_get_target_service(gensec_security), 
-					    hostname, lpcfg_realm(gensec_security->settings->lp_ctx));
+					    hostname, cli_credentials_get_realm(creds));
 
 		name_type = GSS_C_NT_USER_NAME;
 	}
