@@ -196,6 +196,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 				const char *ccache_name,
 				const char *server,
 				const char *service,
+				const char *realm,
 				const char *username,
 				const char *password,
 				uint32_t add_gss_c_flags,
@@ -233,7 +234,7 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 		smb_krb5_get_principal_from_service_hostname(gse_ctx,
 							     service,
 							     server,
-							     lp_realm());
+							     realm);
 	if (!name_buffer.value) {
 		status = NT_STATUS_NO_MEMORY;
 		goto err_out;
@@ -601,6 +602,7 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	const char *service = gensec_get_target_service(gensec_security);
 	const char *username = cli_credentials_get_username(creds);
 	const char *password = cli_credentials_get_password(creds);
+	const char *realm = cli_credentials_get_realm(creds);
 
 	if (!hostname) {
 		DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
@@ -629,7 +631,7 @@ static NTSTATUS gensec_gse_client_start(struct gensec_security *gensec_security)
 	}
 
 	nt_status = gse_init_client(gensec_security, do_sign, do_seal, NULL,
-				    hostname, service,
+				    hostname, service, realm,
 				    username, password, want_flags,
 				    &gse_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
