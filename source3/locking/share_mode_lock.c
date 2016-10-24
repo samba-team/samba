@@ -623,19 +623,28 @@ fail:
 	return NULL;
 }
 
+struct fetch_share_mode_unlocked_state {
+	TALLOC_CTX *mem_ctx;
+	struct share_mode_lock *lck;
+};
+
 static void fetch_share_mode_unlocked_parser(
 	TDB_DATA key, TDB_DATA data, void *private_data)
 {
-	struct share_mode_lock *lck = talloc_get_type_abort(
-		private_data, struct share_mode_lock);
+	struct fetch_share_mode_unlocked_state *state = private_data;
 
 	if (data.dsize == 0) {
 		/* Likely a ctdb tombstone record, ignore it */
-		lck->data = NULL;
 		return;
 	}
 
-	lck->data = parse_share_modes(lck, key, data);
+	state->lck = talloc(state->mem_ctx, struct share_mode_lock);
+	if (state->lck == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return;
+	}
+
+	state->lck->data = parse_share_modes(state->lck, key, data);
 }
 
 /*******************************************************************
@@ -646,23 +655,16 @@ static void fetch_share_mode_unlocked_parser(
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  struct file_id id)
 {
-	struct share_mode_lock *lck;
+	struct fetch_share_mode_unlocked_state state = { .mem_ctx = mem_ctx };
 	TDB_DATA key = locking_key(&id);
 	NTSTATUS status;
 
-	lck = talloc(mem_ctx, struct share_mode_lock);
-	if (lck == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
 	status = dbwrap_parse_record(
-		lock_db, key, fetch_share_mode_unlocked_parser, lck);
-	if (!NT_STATUS_IS_OK(status) ||
-	    (lck->data == NULL)) {
-		TALLOC_FREE(lck);
+		lock_db, key, fetch_share_mode_unlocked_parser, &state);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	return lck;
+	return state.lck;
 }
 
 struct share_mode_forall_state {
