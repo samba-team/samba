@@ -1,4 +1,131 @@
                    =============================
+                   Release Notes for Samba 4.5.1
+                          October 26, 2016
+                   =============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+Major enhancements in Samba 4.5.1 include:
+
+o  Let winbindd discard expired kerberos tickets when built against
+   (internal) heimdal (BUG #12369).
+o  REGRESSION: smbd segfaults on startup, tevent context being freed
+   (BUG #12283).
+
+
+Changes since 4.5.0:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11259: smbd contacts a domain controller for each session.
+   * BUG 12272: Fix messaging subsystem crash.
+   * BUG 12283: REGRESSION: smbd segfaults on startup, tevent context being
+     freed.
+   * BUG 12381: s3: cldap: cldap_multi_netlogon_send() fails with one bad IPv6
+     address.
+   * BUG 12383: s3: libsmb: Fix cut and paste error using the wrong structure
+     type.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 9945: Setting specific logger levels in smb.conf makes 'samba-tool drs
+     showrepl' crash.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12382: Tombstone expunge does not remove old links.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 8618: s3-printing: Fix migrate printer code.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12256: s3/smbd: In call_trans2qfilepathinfo call lstat when dealing
+     with posix pathnames.
+   * BUG 12261: s3/smbd: Set FILE_ATTRIBUTE_DIRECTORY as necessary.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 12285: "DriverVersion" registry backend parsing incorrect in spoolss.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 12144: smbd/ioctl: Match WS2016 ReFS get compression behaviour.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12259: ctdb-protocol: Fix marshalling for GET_DB_SEQNUM control
+     request.
+   * BUG 12275: ctdb-recovery-helper: Add missing initialisation of ban_credits.
+   * BUG 12287: CTDB PID file handling is too weak.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12045: gencache: Bail out of stabilize if we can not get the allrecord
+     lock.
+   * BUG 12268: smbd: Reset O_NONBLOCK on open files.
+   * BUG 12283: glusterfs: Avoid tevent_internal.h.
+   * BUG 12291: source3/lib/msghdr.c, line 208: syntax error before or at: ;.
+   * BUG 12374: spoolss: Fix caching of printername->sharename.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12283: REGRESSION: smbd segfaults on startup, tevent context being
+     freed.
+   * BUG 12369: Let winbindd discard expired kerberos tickets when built against
+     (internal) heimdal.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 12298: s3/winbindd: Fix using default domain with user@domain.com
+     format.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 12295: winbind: Fix passing idmap failure from wb_sids2xids back to
+     callers.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12269: nss_wins has incorrect function definitions for gethostbyname*.
+   * BUG 12276: s3-lib: Fix %G substitution in AD member environment.
+   * BUG 12364: s3-utils: Fix loading smb.conf in smbcquotas.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 12286: kcc: Don't check schedule if None.
+   * BUG 12382: Tombstone expunge does not remove old links.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 12377: vfs_glusterfs: Fix a memory leak in connect path.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12254: CTDB IP takeover does not complete if there are no public
+     addresses configured.
+   * BUG 12255: ctdb-packaging: Fix systemd network dependency.
+   * BUG 12287: CTDB PID file handling is too weak.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12270: smbcquotas: Fix error message listing quotas.
+   * BUG 12273: s3-sysquotas: Correctly restore path when finding mount point.
+   * BUG 12288: cliquota: Fix param count when setting fs quota.
+   * BUG 12289: smbd: Free talloc context if no quota records are available.
+   * BUG 12307: ntquotas: Support "freeing" an empty quota list.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.5.0
                            September 7, 2016
                    =============================
