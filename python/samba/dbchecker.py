@@ -516,8 +516,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                           "Failed to remove deleted DN attribute %s" % attrname):
             self.report("Removed deleted DN on attribute %s" % attrname)
 
-    def err_missing_dn_GUID(self, dn, attrname, val, dsdb_dn):
-        """handle a missing target DN (both GUID and DN string form are missing)"""
+    def err_missing_target_dn_or_GUID(self, dn, attrname, val, dsdb_dn):
+        """handle a missing target DN (if specified, GUID form can't be found,
+        and otherwise DN string form can't be found)"""
         # check if its a backlink
         linkID, _ = self.get_attr_linkID_and_reverse_name(attrname)
         if (linkID & 1 == 0) and str(dsdb_dn).find('\\0ADEL') == -1:
@@ -525,7 +526,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             return
         self.err_deleted_dn(dn, attrname, val, dsdb_dn, dsdb_dn, False)
 
-    def err_incorrect_dn_GUID(self, dn, attrname, val, dsdb_dn, errstr):
+    def err_missing_dn_GUID_component(self, dn, attrname, val, dsdb_dn, errstr):
         """handle a missing GUID extended DN component"""
         self.report("ERROR: %s component for %s in object %s - %s" % (errstr, attrname, dn, val))
         controls=["extended_dn:1:1", "show_recycled:1"]
@@ -534,11 +535,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                     attrs=[], controls=controls)
         except ldb.LdbError, (enum, estr):
             self.report("unable to find object for DN %s - (%s)" % (dsdb_dn.dn, estr))
-            self.err_missing_dn_GUID(dn, attrname, val, dsdb_dn)
+            if enum != ldb.ERR_NO_SUCH_OBJECT:
+                raise
+            self.err_missing_target_dn_or_GUID(dn, attrname, val, dsdb_dn)
             return
         if len(res) == 0:
             self.report("unable to find object for DN %s" % dsdb_dn.dn)
-            self.err_missing_dn_GUID(dn, attrname, val, dsdb_dn)
+            self.err_missing_target_dn_or_GUID(dn, attrname, val, dsdb_dn)
             return
         dsdb_dn.dn = res[0].dn
 
@@ -821,7 +824,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             guid = dsdb_dn.dn.get_extended_component("GUID")
             if guid is None:
                 error_count += 1
-                self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn,
+                self.err_missing_dn_GUID_component(obj.dn, attrname, val, dsdb_dn,
                     "missing GUID")
                 continue
 
@@ -846,7 +849,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                         ])
             except ldb.LdbError, (enum, estr):
                 error_count += 1
-                self.err_incorrect_dn_GUID(obj.dn, attrname, val, dsdb_dn, "incorrect GUID")
+                self.report("ERROR: no target object found for GUID component for %s in object %s - %s" % (attrname, obj.dn, val))
+                if enum != ldb.ERR_NO_SUCH_OBJECT:
+                    raise
+
+                self.err_missing_target_dn_or_GUID(obj.dn, attrname, val, dsdb_dn)
                 continue
 
             if fixing_msDS_HasInstantiatedNCs:
@@ -897,6 +904,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
                 self.err_deleted_dn(obj.dn, attrname, val, dsdb_dn, res[0].dn, False)
                 continue
+
+            # We should not check for incorrect
+            # components on deleted links, as these are allowed to
+            # go stale (we just need the GUID, not the name)
+            rmd_blob = dsdb_dn.dn.get_extended_component("RMD_FLAGS")
+            if rmd_blob is not None:
+                rmd_flags = int(rmd_blob)
+                if rmd_flags & 1:
+                    continue
 
             # check the DN matches in string form
             if str(res[0].dn) != str(dsdb_dn.dn):
