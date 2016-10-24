@@ -695,7 +695,6 @@ struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
 					       void *logfn_private, pid_t *pid);
 
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
-int ctdb_init_tevent_logging(struct ctdb_context *ctdb);
 
 /* from ctdb_logging_file.c */
 

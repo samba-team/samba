@@ -1283,11 +1283,6 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	tevent_loop_allow_nesting(ctdb->ev);
 	ctdb_tevent_trace_init();
 	tevent_set_trace_callback(ctdb->ev, ctdb_tevent_trace, ctdb);
-	ret = ctdb_init_tevent_logging(ctdb);
-	if (ret != 0) {
-		DEBUG(DEBUG_ALERT,("Failed to initialize TEVENT logging\n"));
-		exit(1);
-	}
 
 	/* set up a handler to pick up sigchld */
 	if (ctdb_init_sigchld(ctdb) == NULL) {
