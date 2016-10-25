@@ -485,6 +485,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 		u_info = user_auth_info_init(frame);
 		if (u_info == NULL) {
+			if (dir) {
+				SAFE_FREE(dir->fname);
+				SAFE_FREE(dir);
+			}
+			TALLOC_FREE(frame);
+			errno = ENOMEM;
 			return NULL;
 		}
 		set_cmdline_auth_info_username(u_info, user);
