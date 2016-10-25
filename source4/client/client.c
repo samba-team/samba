@@ -311,12 +311,14 @@ static bool mask_match(struct smbcli_state *c, const char *string,
 		return false;
 	
 	if (is_case_sensitive)
-		return ms_fnmatch_protocol(pattern, string, 
-				  c->transport->negotiate.protocol) == 0;
+		return ms_fnmatch_protocol(
+			pattern, string, c->transport->negotiate.protocol,
+			true) == 0;
 
 	p2 = strlower_talloc(NULL, pattern);
 	s2 = strlower_talloc(NULL, string);
-	ret = ms_fnmatch_protocol(p2, s2, c->transport->negotiate.protocol) == 0;
+	ret = ms_fnmatch_protocol(p2, s2, c->transport->negotiate.protocol,
+				  true) == 0;
 	talloc_free(p2);
 	talloc_free(s2);
 

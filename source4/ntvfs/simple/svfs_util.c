@@ -101,7 +101,8 @@ struct svfs_dir *svfs_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request *req, 
 		if (!low_name) { continue; }
 
 		/* check it matches the wildcard pattern */
-		if (ms_fnmatch_protocol(low_mask, low_name, PROTOCOL_NT1) != 0) {
+		if (ms_fnmatch_protocol(low_mask, low_name, PROTOCOL_NT1,
+					true) != 0) {
 			continue;
 		}
 		

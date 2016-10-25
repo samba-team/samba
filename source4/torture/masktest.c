@@ -49,7 +49,8 @@ static bool reg_match_one(struct smbcli_state *cli, const char *pattern, const c
 
 	if (ISDOTDOT(file)) file = ".";
 
-	return ms_fnmatch_protocol(pattern, file, cli->transport->negotiate.protocol)==0;
+	return ms_fnmatch_protocol(
+		pattern, file, cli->transport->negotiate.protocol, true)==0;
 }
 
 static char *reg_test(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *pattern, const char *long_name, const char *short_name)

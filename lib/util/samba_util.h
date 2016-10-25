@@ -526,7 +526,8 @@ _PUBLIC_ int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
  * @brief MS-style Filename matching
  */
 
-int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol);
+int ms_fnmatch_protocol(const char *pattern, const char *string, int protocol,
+			bool is_case_sensitive);
 
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string);
