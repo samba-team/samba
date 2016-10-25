@@ -315,3 +315,63 @@ uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
 	memcpy(&buf[buflen], bytes, num_bytes);
 	return buf;
 }
+
+static NTSTATUS internal_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str,
+					bool ucs2, bool align_odd,
+					const uint8_t *buf, size_t buf_len,
+					size_t *pbuf_consumed)
+{
+	size_t pad = 0;
+	char *str = NULL;
+	size_t str_len = 0;
+	bool ok;
+
+	*_str = NULL;
+	if (pbuf_consumed != NULL) {
+		*pbuf_consumed = 0;
+	}
+
+	if (ucs2 &&
+	    ((align_odd && (buf_len % 2 == 0)) ||
+	     (!align_odd && (buf_len % 2 == 1)))) {
+		if (buf_len < 1) {
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
+		pad = 1;
+		buf_len -= pad;
+		buf += pad;
+	}
+
+	if (ucs2) {
+		buf_len = utf16_len_n(buf, buf_len);
+	} else {
+		size_t tmp = strnlen((const char *)buf, buf_len);
+		if (tmp < buf_len) {
+			tmp += 1;
+		}
+		buf_len = tmp;
+	}
+
+	ok = convert_string_talloc(mem_ctx,
+				   ucs2 ? CH_UTF16LE : CH_DOS,
+				   CH_UNIX,
+				   buf, buf_len,
+				   &str, &str_len);
+	if (!ok) {
+		return map_nt_error_from_unix_common(errno);
+	}
+
+	if (pbuf_consumed != NULL) {
+		*pbuf_consumed = buf_len + pad;
+	}
+	*_str = str;
+	return NT_STATUS_OK;;
+}
+
+NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
+			    const uint8_t *buf, size_t buf_len,
+			    size_t *_buf_consumed)
+{
+	return internal_bytes_pull_str(mem_ctx, _str, ucs2, true,
+				       buf, buf_len, _buf_consumed);
+}

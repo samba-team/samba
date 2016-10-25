@@ -36,3 +36,6 @@ uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
 			       size_t *pconverted_size);
 uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
 				 const uint8_t *bytes, size_t num_bytes);
+NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
+			    const uint8_t *buf, size_t buf_len,
+			    size_t *pbuf_consumed);
