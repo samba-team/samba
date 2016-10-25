@@ -2010,8 +2010,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct cli_state *cli,
 					  const char *user,
-					  const char *pass, int passlen,
-					  const char *ntpass, int ntpasslen,
+					  const char *pass,
 					  const char *workgroup)
 {
 	struct tevent_req *req, *subreq;
@@ -2019,6 +2018,18 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	char *p;
 	char *user2;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
+	int passlen = 0;
+
+	if (pass != NULL) {
+		passlen = strlen(pass);
+		if (passlen > 0) {
+			/*
+			 * If we have a realm password
+			 * we include the terminating '\0'
+			 */
+			passlen += 1;
+		}
+	}
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_state);
@@ -2178,7 +2189,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		}
 
 		subreq = cli_session_setup_nt1_send(
-			state, ev, cli, user, pass, passlen, ntpass, ntpasslen,
+			state, ev, cli, user, pass, passlen, pass, passlen,
 			workgroup);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
@@ -2277,8 +2288,7 @@ NTSTATUS cli_session_setup_recv(struct tevent_req *req)
 
 NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *user,
-			   const char *pass, int passlen,
-			   const char *ntpass, int ntpasslen,
+			   const char *pass,
 			   const char *workgroup)
 {
 	struct tevent_context *ev;
@@ -2292,8 +2302,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_session_setup_send(ev, ev, cli, user, pass, passlen,
-				     ntpass, ntpasslen, workgroup);
+	req = cli_session_setup_send(ev, ev, cli, user, pass, workgroup);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -3437,8 +3446,7 @@ static void cli_full_connection_started(struct tevent_req *subreq)
 	}
 	subreq = cli_session_setup_send(
 		state, state->ev, state->cli, state->user,
-		state->password, state->pw_len, state->password, state->pw_len,
-		state->domain);
+		state->password, state->domain);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -3462,7 +3470,7 @@ static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
 		state->flags &= ~CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
 
 		subreq = cli_session_setup_send(
-			state, state->ev, state->cli, "", "", 0, "", 0,
+			state, state->ev, state->cli, "", "",
 			state->domain);
 		if (tevent_req_nomem(subreq, req)) {
 			return;

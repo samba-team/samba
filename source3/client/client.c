@@ -4575,8 +4575,7 @@ static int cmd_logon(void)
 	}
 
 	nt_status = cli_session_setup(cli, l_username,
-				      l_password, strlen(l_password),
-				      l_password, strlen(l_password),
+				      l_password,
 				      lp_workgroup());
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_printf("session setup failed: %s\n", nt_errstr(nt_status));

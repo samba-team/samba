@@ -413,14 +413,12 @@ bool torture_init_connection(struct cli_state **pcli)
 bool torture_cli_session_setup2(struct cli_state *cli, uint16_t *new_vuid)
 {
 	uint16_t old_vuid = cli_state_get_uid(cli);
-	size_t passlen = strlen(password);
 	NTSTATUS status;
 	bool ret;
 
 	cli_state_set_uid(cli, 0);
 	status = cli_session_setup(cli, username,
-				   password, passlen,
-				   password, passlen,
+				   password,
 				   workgroup);
 	ret = NT_STATUS_IS_OK(status);
 	*new_vuid = cli_state_get_uid(cli);
@@ -7115,7 +7113,7 @@ static bool run_error_map_extract(int dummy) {
 		return False;
 	}
 
-	status = cli_session_setup(c_nt, "", "", 0, "", 0, workgroup);
+	status = cli_session_setup(c_nt, "", "", workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the NT-error initial session setup (%s)\n",host, nt_errstr(status));
 		return False;
@@ -7142,7 +7140,7 @@ static bool run_error_map_extract(int dummy) {
 		return False;
 	}
 
-	status = cli_session_setup(c_dos, "", "", 0, "", 0, workgroup);
+	status = cli_session_setup(c_dos, "", "", workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the DOS-error initial session setup (%s)\n",
 			host, nt_errstr(status));
@@ -7156,8 +7154,7 @@ static bool run_error_map_extract(int dummy) {
 		fstr_sprintf(user, "%X", error);
 
 		status = cli_session_setup(c_nt, user,
-					   password, strlen(password),
-					   password, strlen(password),
+					   password,
 					   workgroup);
 		if (NT_STATUS_IS_OK(status)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
@@ -7173,8 +7170,7 @@ static bool run_error_map_extract(int dummy) {
 		}
 
 		status = cli_session_setup(c_dos, user,
-					   password, strlen(password),
-					   password, strlen(password),
+					   password,
 					   workgroup);
 		if (NT_STATUS_IS_OK(status)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
@@ -7227,8 +7223,7 @@ static bool run_sesssetup_bench(int dummy)
 	for (i=0; i<torture_numops; i++) {
 		status = cli_session_setup(
 			c, username,
-			password, strlen(password),
-			password, strlen(password),
+			password,
 			workgroup);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("(%s) cli_session_setup failed: %s\n",
@@ -8168,9 +8163,6 @@ static bool run_large_readx(int dummy)
 		status = cli_session_setup(cli2,
 					username,
 					password,
-					strlen(password)+1,
-					password,
-					strlen(password)+1,
 					workgroup);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;

@@ -95,7 +95,7 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "", 1, "", 0,
+	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "",
 					       workgroup))) {
 		cli_shutdown(cli);
 		return;

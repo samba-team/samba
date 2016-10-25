@@ -84,8 +84,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
 	result = cli_session_setup(cli, user_name,
-				   old_passwd, strlen(old_passwd)+1,
-				   old_passwd, strlen(old_passwd)+1, "");
+				   old_passwd, "");
 
 	if (!NT_STATUS_IS_OK(result)) {
 
@@ -112,7 +111,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
 		 */
 
-		result = cli_session_setup(cli, "", "", 0, "", 0, "");
+		result = cli_session_setup(cli, "", "", "");
 
 		if (!NT_STATUS_IS_OK(result)) {
 			if (asprintf(err_str, "machine %s rejected the session "

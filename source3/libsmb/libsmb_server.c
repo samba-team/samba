@@ -274,7 +274,8 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	const char *server_n = server;
         int is_ipc = (share != NULL && strcmp(share, "IPC$") == 0);
 	uint32_t fs_attrs = 0;
-        const char *username_used;
+	const char *username_used = NULL;
+	const char *password_used = NULL;
  	NTSTATUS status;
 	char *newserver, *newshare;
 	int flags = 0;
@@ -491,22 +492,20 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
 	}
 
-        username_used = *pp_username;
+	username_used = *pp_username;
+	password_used = *pp_password;
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(c, username_used,
-					       *pp_password,
-                                               strlen(*pp_password),
-					       *pp_password,
-                                               strlen(*pp_password),
+					       password_used,
 					       *pp_workgroup))) {
 
                 /* Failed.  Try an anonymous login, if allowed by flags. */
-                username_used = "";
+		username_used = "";
+		password_used = "";
 
                 if (smbc_getOptionNoAutoAnonymousLogin(context) ||
-                    !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
-                                                       *pp_password, 1,
-                                                       *pp_password, 0,
+		    !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
+						       password_used,
                                                        *pp_workgroup))) {
 
                         cli_shutdown(c);
@@ -593,7 +592,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 		/* Attempt UNIX smb encryption. */
 		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
                                                           username_used,
-                                                          *pp_password,
+                                                          password_used,
                                                           *pp_workgroup))) {
 
 			/*

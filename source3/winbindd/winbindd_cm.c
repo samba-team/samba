@@ -1129,9 +1129,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		result = cli_session_setup(*cli,
 					   machine_krb5_principal,
 					   machine_password,
-					   strlen(machine_password)+1,
-					   machine_password,
-					   strlen(machine_password)+1,
 					   machine_domain);
 
 		if (NT_STATUS_IS_OK(result)) {
@@ -1153,9 +1150,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		result = cli_session_setup(*cli,
 					   machine_account,
 					   machine_password,
-					   strlen(machine_password)+1,
-					   machine_password,
-					   strlen(machine_password)+1,
 					   machine_domain);
 	}
 
@@ -1219,9 +1213,6 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	result = cli_session_setup(*cli,
 				   machine_account,
 				   machine_password,
-				   strlen(machine_password)+1,
-				   machine_password,
-				   strlen(machine_password)+1,
 				   machine_domain);
 
 	if (NT_STATUS_IS_OK(result)) {
@@ -1260,7 +1251,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
 	(*cli)->use_kerberos = False;
 
-	result = cli_session_setup(*cli, "", "", 0, "", 0, "");
+	result = cli_session_setup(*cli, "", "", "");
 	if (NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("Connected anonymously\n"));
 		goto session_setup_done;

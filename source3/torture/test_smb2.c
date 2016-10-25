@@ -58,8 +58,7 @@ bool run_smb2_basic(int dummy)
 	}
 
 	status = cli_session_setup(cli, username,
-				   password, strlen(password),
-				   password, strlen(password),
+				   password,
 				   workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_session_setup returned %s\n", nt_errstr(status));
@@ -333,8 +332,7 @@ bool run_smb2_session_reconnect(int dummy)
 	}
 
 	status = cli_session_setup(cli1, username,
-				   password, strlen(password),
-				   password, strlen(password),
+				   password,
 				   workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_session_setup returned %s\n", nt_errstr(status));
@@ -755,8 +753,7 @@ bool run_smb2_tcon_dependence(int dummy)
 	}
 
 	status = cli_session_setup(cli, username,
-				   password, strlen(password),
-				   password, strlen(password),
+				   password,
 				   workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_session_setup returned %s\n", nt_errstr(status));
@@ -910,8 +907,7 @@ bool run_smb2_multi_channel(int dummy)
 	}
 
 	status = cli_session_setup(cli1, username,
-				   password, strlen(password),
-				   password, strlen(password),
+				   password,
 				   workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
@@ -1503,8 +1499,7 @@ bool run_smb2_session_reauth(int dummy)
 	}
 
 	status = cli_session_setup(cli, username,
-				   password, strlen(password),
-				   password, strlen(password),
+				   password,
 				   workgroup);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
