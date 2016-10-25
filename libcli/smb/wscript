@@ -15,46 +15,51 @@ def build(bld):
         )
 
     bld.SAMBA_LIBRARY('cli_smb_common',
-	source='''
-		smb_signing.c smb_seal.c
-        smb2_negotiate_context.c
-		smb2_create_blob.c smb2_signing.c
-                smb2_lease.c
-		util.c
-		smbXcli_base.c
-		smb1cli_trans.c
-		smb1cli_echo.c
-                smb1cli_create.c
-                smb1cli_close.c
-                smb1cli_write.c
-                smb1cli_read.c
-		smb2cli_session.c
-		smb2cli_tcon.c
-                smb2cli_create.c
-                smb2cli_close.c
-		smb2cli_read.c
-		smb2cli_write.c
-		smb2cli_flush.c
-		smb2cli_set_info.c
-		smb2cli_query_info.c
-		smb2cli_query_directory.c
-		smb2cli_ioctl.c
-		smb2cli_echo.c
-                tstream_smbXcli_np.c
-	''',
-	deps='''
-                LIBCRYPTO NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
-                smb_transport
-        ''',
-	public_deps='talloc samba-util iov_buf',
-	private_library=True,
-	private_headers='''
-		smb_common.h smb2_constants.h smb_constants.h
-		smb_signing.h smb_seal.h
-		smb2_create_blob.h smb2_signing.h
-		smb2_lease.h
-		smb_util.h
-		smb_unix_ext.h
-                tstream_smbXcli_np.h
-	''',
-	)
+    source='''
+           smb_signing.c
+           smb_seal.c
+           smb2_negotiate_context.c
+           smb2_create_blob.c smb2_signing.c
+           smb2_lease.c
+           util.c
+           smbXcli_base.c
+           smb1cli_trans.c
+           smb1cli_echo.c
+           smb1cli_create.c
+           smb1cli_close.c
+           smb1cli_write.c
+           smb1cli_read.c
+           smb2cli_session.c
+           smb2cli_tcon.c
+           smb2cli_create.c
+           smb2cli_close.c
+           smb2cli_read.c
+           smb2cli_write.c
+           smb2cli_flush.c
+           smb2cli_set_info.c
+           smb2cli_query_info.c
+           smb2cli_query_directory.c
+           smb2cli_ioctl.c
+           smb2cli_echo.c
+           tstream_smbXcli_np.c
+    ''',
+    deps='''
+        LIBCRYPTO NDR_SMB2_LEASE_STRUCT samba-errors gensec krb5samba
+        smb_transport
+    ''',
+    public_deps='talloc samba-util iov_buf',
+    private_library=True,
+    private_headers='''
+                    smb_common.h
+                    smb2_constants.h
+                    smb_constants.h
+                    smb_signing.h
+                    smb_seal.h
+                    smb2_create_blob.h
+                    smb2_signing.h
+                    smb2_lease.h
+                    smb_util.h
+                    smb_unix_ext.h
+                    tstream_smbXcli_np.h
+    ''',
+    )
