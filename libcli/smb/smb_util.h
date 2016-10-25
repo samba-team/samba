@@ -25,3 +25,14 @@ mode_t wire_perms_to_unix(uint32_t perms);
 mode_t unix_filetype_from_wire(uint32_t wire_type);
 
 bool smb_buffer_oob(uint32_t bufsize, uint32_t offset, uint32_t length);
+
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size);
+uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
+			      const uint8_t *bytes, size_t num_bytes);
+uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
+			       const char *str, size_t str_len,
+			       size_t *pconverted_size);
+uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
+				 const uint8_t *bytes, size_t num_bytes);

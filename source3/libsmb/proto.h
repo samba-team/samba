@@ -376,15 +376,6 @@ NTSTATUS cli_ntcreate(struct cli_state *cli,
 		      uint8_t SecurityFlags,
 		      uint16_t *pfid,
 		      struct smb_create_returns *cr);
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
-			    size_t str_len, size_t *pconverted_size);
-uint8_t *smb_bytes_push_bytes(uint8_t *buf, uint8_t prefix,
-			      const uint8_t *bytes, size_t num_bytes);
-uint8_t *trans2_bytes_push_str(uint8_t *buf, bool ucs2,
-			       const char *str, size_t str_len,
-			       size_t *pconverted_size);
-uint8_t *trans2_bytes_push_bytes(uint8_t *buf,
-				 const uint8_t *bytes, size_t num_bytes);
 struct tevent_req *cli_openx_create(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   struct cli_state *cli, const char *fname,
