@@ -1753,7 +1753,7 @@ bool mask_match(const char *string, const char *pattern, bool is_case_sensitive)
 	if (ISDOT(pattern))
 		return False;
 
-	return ms_fnmatch(pattern, string, Protocol <= PROTOCOL_LANMAN2, is_case_sensitive) == 0;
+	return ms_fnmatch_protocol(pattern, string, Protocol, is_case_sensitive) == 0;
 }
 
 /*******************************************************************
