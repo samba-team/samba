@@ -217,7 +217,7 @@ static int dsdb_module_we_are_master(struct ldb_module *module, struct ldb_dn *d
 		talloc_free(tmp_ctx);
 		return ret;
 	}
-	
+
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
 }
@@ -738,11 +738,11 @@ static int rootdse_filter_operations(struct ldb_module *module, struct ldb_reque
 	if (session_info) {
 		is_anonymous = security_token_is_anonymous(session_info->security_token);
 	}
-	
+
 	if (is_anonymous == false || (priv && priv->block_anonymous == false)) {
 		return LDB_SUCCESS;
 	}
-	
+
 	if (req->operation == LDB_SEARCH) {
 		if (req->op.search.scope == LDB_SCOPE_BASE && ldb_dn_is_null(req->op.search.base)) {
 			return LDB_SUCCESS;
