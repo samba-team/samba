@@ -16817,6 +16817,10 @@ _PUBLIC_ codepoint_t next_codepoint_ext(const char *str, size_t len,
 
 _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 {
+	if ((str[0] & 0x80) == 0) {
+		*size = 1;
+		return str[0];
+	}
 	return next_codepoint_handle(get_iconv_handle(), str, size);
 }
 
