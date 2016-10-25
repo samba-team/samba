@@ -992,15 +992,16 @@ struct cli_sesssetup_blob_state {
 	struct cli_state *cli;
 	DATA_BLOB blob;
 	uint16_t max_blob_size;
-	uint16_t vwv[12];
-	uint8_t *buf;
 
-	DATA_BLOB smb2_blob;
+	DATA_BLOB this_blob;
 	struct iovec *recv_iov;
 
 	NTSTATUS status;
-	uint8_t *inbuf;
+	const uint8_t *inbuf;
 	DATA_BLOB ret_blob;
+
+	char *out_native_os;
+	char *out_native_lm;
 };
 
 static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
@@ -1057,14 +1058,13 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 
 	thistime = MIN(state->blob.length, state->max_blob_size);
 
+	state->this_blob.data = state->blob.data;
+	state->this_blob.length = thistime;
+
+	state->blob.data += thistime;
+	state->blob.length -= thistime;
+
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-
-		state->smb2_blob.data = state->blob.data;
-		state->smb2_blob.length = thistime;
-
-		state->blob.data += thistime;
-		state->blob.length -= thistime;
-
 		subreq = smb2cli_session_setup_send(state, state->ev,
 						    state->cli->conn,
 						    state->cli->timeout,
@@ -1073,49 +1073,52 @@ static bool cli_sesssetup_blob_next(struct cli_sesssetup_blob_state *state,
 						    SMB2_CAP_DFS, /* in_capabilities */
 						    0, /* in_channel */
 						    0, /* in_previous_session_id */
-						    &state->smb2_blob);
+						    &state->this_blob);
 		if (subreq == NULL) {
 			return false;
 		}
-		*psubreq = subreq;
-		return true;
-	}
+	} else {
+		uint16_t in_buf_size = 0;
+		uint16_t in_mpx_max = 0;
+		uint16_t in_vc_num = 0;
+		uint32_t in_sess_key = 0;
+		uint32_t in_capabilities = 0;
+		const char *in_native_os = NULL;
+		const char *in_native_lm = NULL;
 
-	SCVAL(state->vwv+0, 0, 0xFF);
-	SCVAL(state->vwv+0, 1, 0);
-	SSVAL(state->vwv+1, 0, 0);
-	SSVAL(state->vwv+2, 0, CLI_BUFFER_SIZE);
-	SSVAL(state->vwv+3, 0, 2);
-	SSVAL(state->vwv+4, 0, 1);
-	SIVAL(state->vwv+5, 0, 0);
+		in_buf_size = CLI_BUFFER_SIZE;
+		in_mpx_max = smbXcli_conn_max_requests(state->cli->conn);
+		in_vc_num = cli_state_get_vc_num(state->cli);
+		in_sess_key = smb1cli_conn_server_session_key(state->cli->conn);
+		in_capabilities = cli_session_setup_capabilities(state->cli,
+								CAP_EXTENDED_SECURITY);
+		in_native_os = "Unix";
+		in_native_lm = "Samba";
 
-	SSVAL(state->vwv+7, 0, thistime);
+		/*
+		 * For now we keep the same values as before,
+		 * we may remove these in a separate commit later.
+		 */
+		in_mpx_max = 2;
+		in_vc_num = 1;
+		in_sess_key = 0;
 
-	SSVAL(state->vwv+8, 0, 0);
-	SSVAL(state->vwv+9, 0, 0);
-	SIVAL(state->vwv+10, 0,
-		cli_session_setup_capabilities(state->cli, CAP_EXTENDED_SECURITY));
-
-	state->buf = (uint8_t *)talloc_memdup(state, state->blob.data,
-					      thistime);
-	if (state->buf == NULL) {
-		return false;
-	}
-	state->blob.data += thistime;
-	state->blob.length -= thistime;
-
-	state->buf = smb_bytes_push_str(state->buf, smbXcli_conn_use_unicode(state->cli->conn),
-					"Unix", 5, NULL);
-	state->buf = smb_bytes_push_str(state->buf, smbXcli_conn_use_unicode(state->cli->conn),
-					"Samba", 6, NULL);
-	if (state->buf == NULL) {
-		return false;
-	}
-	subreq = cli_smb_send(state, state->ev, state->cli, SMBsesssetupX, 0, 0,
-			      12, state->vwv,
-			      talloc_get_size(state->buf), state->buf);
-	if (subreq == NULL) {
-		return false;
+		subreq = smb1cli_session_setup_ext_send(state, state->ev,
+							state->cli->conn,
+							state->cli->timeout,
+							state->cli->smb1.pid,
+							state->cli->smb1.session,
+							in_buf_size,
+							in_mpx_max,
+							in_vc_num,
+							in_sess_key,
+							state->this_blob,
+							in_capabilities,
+							in_native_os,
+							in_native_lm);
+		if (subreq == NULL) {
+			return false;
+		}
 	}
 	*psubreq = subreq;
 	return true;
@@ -1128,25 +1131,19 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 	struct cli_sesssetup_blob_state *state = tevent_req_data(
 		req, struct cli_sesssetup_blob_state);
 	struct cli_state *cli = state->cli;
-	uint8_t wct;
-	uint16_t *vwv;
-	uint32_t num_bytes;
-	uint8_t *bytes;
 	NTSTATUS status;
-	uint8_t *p;
-	uint16_t blob_length;
-	uint8_t *in;
-	uint8_t *inhdr;
-	ssize_t ret;
 
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		status = smb2cli_session_setup_recv(subreq, state,
 						    &state->recv_iov,
 						    &state->ret_blob);
 	} else {
-		status = cli_smb_recv(subreq, state, &in, 4, &wct, &vwv,
-				      &num_bytes, &bytes);
-		TALLOC_FREE(state->buf);
+		status = smb1cli_session_setup_ext_recv(subreq, state,
+							&state->recv_iov,
+							&state->inbuf,
+							&state->ret_blob,
+							&state->out_native_os,
+							&state->out_native_lm);
 	}
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)
@@ -1155,66 +1152,15 @@ static void cli_sesssetup_blob_done(struct tevent_req *subreq)
 		return;
 	}
 
+	if (cli->server_os == NULL) {
+		cli->server_os = talloc_move(cli, &state->out_native_os);
+	}
+	if (cli->server_type == NULL) {
+		cli->server_type = talloc_move(cli, &state->out_native_lm);
+	}
+
 	state->status = status;
 
-	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
-		goto next;
-	}
-
-	state->inbuf = in;
-	inhdr = in + NBT_HDR_SIZE;
-	cli_state_set_uid(state->cli, SVAL(inhdr, HDR_UID));
-	smb1cli_session_set_action(cli->smb1.session, SVAL(vwv+2, 0));
-
-	blob_length = SVAL(vwv+3, 0);
-	if (blob_length > num_bytes) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
-		return;
-	}
-	state->ret_blob = data_blob_const(bytes, blob_length);
-
-	p = bytes + blob_length;
-
-	status = smb_bytes_talloc_string(cli,
-					inhdr,
-					&cli->server_os,
-					p,
-					bytes+num_bytes-p,
-					&ret);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	p += ret;
-
-	status = smb_bytes_talloc_string(cli,
-					inhdr,
-					&cli->server_type,
-					p,
-					bytes+num_bytes-p,
-					&ret);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	p += ret;
-
-	status = smb_bytes_talloc_string(cli,
-					inhdr,
-					&cli->server_domain,
-					p,
-					bytes+num_bytes-p,
-					&ret);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	p += ret;
-
-next:
 	if (state->blob.length != 0) {
 		/*
 		 * More to send
@@ -1232,34 +1178,35 @@ next:
 static NTSTATUS cli_sesssetup_blob_recv(struct tevent_req *req,
 					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *pblob,
-					uint8_t **pinbuf,
+					const uint8_t **pinbuf,
 					struct iovec **precv_iov)
 {
 	struct cli_sesssetup_blob_state *state = tevent_req_data(
 		req, struct cli_sesssetup_blob_state);
 	NTSTATUS status;
-	uint8_t *inbuf;
 	struct iovec *recv_iov;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		TALLOC_FREE(state->cli->smb2.session);
 		cli_state_set_uid(state->cli, UID_FIELD_INVALID);
+		tevent_req_received(req);
 		return status;
 	}
 
-	inbuf = talloc_move(mem_ctx, &state->inbuf);
 	recv_iov = talloc_move(mem_ctx, &state->recv_iov);
 	if (pblob != NULL) {
 		*pblob = state->ret_blob;
 	}
 	if (pinbuf != NULL) {
-		*pinbuf = inbuf;
+		*pinbuf = state->inbuf;
 	}
 	if (precv_iov != NULL) {
 		*precv_iov = recv_iov;
 	}
         /* could be NT_STATUS_MORE_PROCESSING_REQUIRED */
-	return state->status;
+	status = state->status;
+	tevent_req_received(req);
+	return status;
 }
 
 #ifdef HAVE_KRB5
@@ -1284,7 +1231,7 @@ struct cli_session_setup_gensec_state {
 	struct auth_generic_state *auth_generic;
 	bool is_anonymous;
 	DATA_BLOB blob_in;
-	uint8_t *inbuf;
+	const uint8_t *inbuf;
 	struct iovec *recv_iov;
 	DATA_BLOB blob_out;
 	bool local_ready;
@@ -1557,7 +1504,7 @@ static void cli_session_setup_gensec_remote_done(struct tevent_req *subreq)
 		struct cli_session_setup_gensec_state);
 	NTSTATUS status;
 
-	TALLOC_FREE(state->inbuf);
+	state->inbuf = NULL;
 	TALLOC_FREE(state->recv_iov);
 
 	status = cli_sesssetup_blob_recv(subreq, state, &state->blob_in,
