@@ -74,6 +74,7 @@ static NTSTATUS smb_bytes_talloc_string(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+#if 0
 /****************************************************************************
  Do an old lanman2 style session setup.
 ****************************************************************************/
@@ -290,6 +291,7 @@ static NTSTATUS cli_session_setup_lanman2_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
 }
+#endif
 
 /****************************************************************************
  Work out suitable capabilities to offer the server.
@@ -495,6 +497,7 @@ NTSTATUS cli_session_setup_guest_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+#if 0
 /****************************************************************************
  Do a NT1 plaintext session setup.
 ****************************************************************************/
@@ -977,6 +980,7 @@ static NTSTATUS cli_session_setup_nt1_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
 }
+#endif
 
 /* The following is calculated from :
  * (smb_size-4) = 35
@@ -1938,14 +1942,44 @@ static ADS_STATUS cli_session_setup_spnego_recv(struct tevent_req *req)
 }
 
 struct cli_session_setup_state {
-	uint8_t dummy;
+	struct cli_state *cli;
+	uint8_t nt_hash[16];
+	uint8_t lm_hash[16];
+	DATA_BLOB apassword_blob;
+	DATA_BLOB upassword_blob;
+	DATA_BLOB lm_session_key;
+	DATA_BLOB session_key;
+	char *out_native_os;
+	char *out_native_lm;
+	char *out_primary_domain;
 };
 
-static void cli_session_setup_done_lanman2(struct tevent_req *subreq);
+static void cli_session_setup_cleanup(struct tevent_req *req,
+				      enum tevent_req_state req_state)
+{
+	struct cli_session_setup_state *state = tevent_req_data(
+		req, struct cli_session_setup_state);
+
+	if (req_state != TEVENT_REQ_RECEIVED) {
+		return;
+	}
+
+	/*
+	 * We only call data_blob_clear() as
+	 * some of the blobs point to the same memory.
+	 *
+	 * We let the talloc hierachy free the memory.
+	 */
+	data_blob_clear(&state->apassword_blob);
+	data_blob_clear(&state->upassword_blob);
+	data_blob_clear(&state->lm_session_key);
+	data_blob_clear(&state->session_key);
+	ZERO_STRUCTP(state);
+}
+
 static void cli_session_setup_done_spnego(struct tevent_req *subreq);
-static void cli_session_setup_done_guest(struct tevent_req *subreq);
-static void cli_session_setup_done_plain(struct tevent_req *subreq);
 static void cli_session_setup_done_nt1(struct tevent_req *subreq);
+static void cli_session_setup_done_lm21(struct tevent_req *subreq);
 
 /****************************************************************************
  Send a session setup. The username and workgroup is in UNIX character
@@ -1966,24 +2000,27 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	char *user2;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 	bool use_spnego = false;
-	int passlen = 0;
-
-	if (pass != NULL) {
-		passlen = strlen(pass);
-		if (passlen > 0) {
-			/*
-			 * If we have a realm password
-			 * we include the terminating '\0'
-			 */
-			passlen += 1;
-		}
-	}
+	bool do_lmresponse = false;
+	const char *username = "";
+	const char *domain = "";
+	const char *password = "";
+	DATA_BLOB target_info = data_blob_null;
+	DATA_BLOB challenge = data_blob_null;
+	uint16_t in_buf_size = 0;
+	uint16_t in_mpx_max = 0;
+	uint16_t in_vc_num = 0;
+	uint32_t in_sess_key = 0;
+	const char *in_native_os = NULL;
+	const char *in_native_lm = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	state->cli = cli;
+
+	tevent_req_set_cleanup_fn(req, cli_session_setup_cleanup);
 
 	if (user) {
 		user2 = talloc_strdup(state, user);
@@ -2050,99 +2087,210 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	/* if its an older server then we have to use the older request format */
-
-	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_NT1) {
-		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
-			DEBUG(1, ("Server requested LM password but 'client lanman auth = no'"
-				  " or 'client ntlmv2 auth = yes'\n"));
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
-		    !lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
-				  " or 'client ntlmv2 auth = yes'\n"));
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		subreq = cli_session_setup_lanman2_send(
-			state, ev, cli, user, pass, passlen, workgroup);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_lanman2,
-					req);
-		return req;
+	if (user == NULL || strlen(user) == 0) {
+		/*
+		 * Do an anonymous session setup
+		 */
+		goto non_spnego_creds_done;
 	}
-
-	/* if no user is supplied then we have to do an anonymous connection.
-	   passwords are ignored */
-
-	if (!user || !*user) {
-		subreq = cli_session_setup_guest_send(state, ev, cli);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_guest,
-					req);
-		return req;
-	}
-
-	/* if the server is share level then send a plaintext null
-           password at this point. The password is sent in the tree
-           connect */
 
 	if ((sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) {
-		subreq = cli_session_setup_plain_send(
-			state, ev, cli, user, "", workgroup);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_plain,
-					req);
-		return req;
+		/*
+		 * Do an anonymous session setup,
+		 * the password is passed via the tree connect.
+		 */
+		goto non_spnego_creds_done;
 	}
 
-	/* if the server doesn't support encryption then we have to use 
-	   plaintext. The second password is ignored */
+	username = user;
+	domain = workgroup;
+	if (pass != NULL) {
+		password = pass;
+	}
 
 	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
-		if (!lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested PLAINTEXT password but 'client plaintext auth = no'"
-				  " or 'client ntlmv2 auth = yes'\n"));
+		bool use_unicode = smbXcli_conn_use_unicode(cli->conn);
+		uint8_t *bytes = NULL;
+		size_t bytes_len = 0;
+		const char *pw = password;
+		size_t pw_len = 0;
+
+		if (pw == NULL) {
+			pw = "";
+		}
+		pw_len = strlen(pw) + 1;
+
+		if (!lp_client_plaintext_auth()) {
+			DEBUG(1, ("Server requested PLAINTEXT password but "
+				  "'client plaintext auth = no'\n"));
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return tevent_req_post(req, ev);
 		}
-		subreq = cli_session_setup_plain_send(
-			state, ev, cli, user, pass, workgroup);
-		if (tevent_req_nomem(subreq, req)) {
+
+		bytes = talloc_array(state, uint8_t, 0);
+		bytes = trans2_bytes_push_str(bytes, use_unicode,
+					      pw, pw_len, &bytes_len);
+		if (tevent_req_nomem(bytes, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_plain,
-					req);
-		return req;
+
+		if (use_unicode) {
+			/*
+			 * CAP_UNICODE, can only be negotiated by NT1.
+			 */
+			state->upassword_blob = data_blob_const(bytes,
+								bytes_len);
+		} else {
+			state->apassword_blob = data_blob_const(bytes,
+								bytes_len);
+		}
+
+		goto non_spnego_creds_done;
 	}
 
-	{
-		/* otherwise do a NT1 style session setup */
+	challenge = data_blob_const(smb1cli_conn_server_challenge(cli->conn), 8);
+	E_md4hash(password, state->nt_hash);
+
+	if (smbXcli_conn_protocol(cli->conn) == PROTOCOL_NT1) {
 		if (lp_client_ntlmv2_auth() && lp_client_use_spnego()) {
 			/*
-			 * Don't send an NTLMv2 response without NTLMSSP
-			 * if we want to use spnego support
+			 * Don't send an NTLMv2 response without NTLMSSP if we
+			 * want to use spnego support.
 			 */
 			DEBUG(1, ("Server does not support EXTENDED_SECURITY "
-				  " but 'client use spnego = yes"
-				  " and 'client ntlmv2 auth = yes'\n"));
+				  " but 'client use spnego = yes'"
+				  " and 'client ntlmv2 auth = yes' is set\n"));
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return tevent_req_post(req, ev);
 		}
 
-		subreq = cli_session_setup_nt1_send(
-			state, ev, cli, user, pass, passlen, pass, passlen,
-			workgroup);
+		if (lp_client_ntlmv2_auth()) {
+			bool ok;
+
+			/*
+			 * note that the 'domain' here is a best
+			 * guess - we don't know the server's domain
+			 * at this point. Windows clients also don't
+			 * use hostname...
+			 */
+			target_info = NTLMv2_generate_names_blob(state,
+								 NULL,
+								 domain);
+			if (tevent_req_nomem(target_info.data, req)) {
+				return tevent_req_post(req, ev);
+			}
+
+			ok = SMBNTLMv2encrypt_hash(state,
+						   username,
+						   domain,
+						   state->nt_hash,
+						   &challenge,
+						   NULL, /* server_timestamp */
+						   &target_info,
+						   &state->apassword_blob,
+						   &state->upassword_blob,
+						   &state->lm_session_key,
+						   &state->session_key);
+			if (!ok) {
+				tevent_req_nterror(req,
+						   NT_STATUS_ACCESS_DENIED);
+				return tevent_req_post(req, ev);
+			}
+		} else {
+			state->upassword_blob = data_blob_talloc_zero(state, 24);
+			if (tevent_req_nomem(state->upassword_blob.data, req)) {
+				return tevent_req_post(req, ev);
+			}
+			state->session_key = data_blob_talloc_zero(state, 16);
+			if (tevent_req_nomem(state->session_key.data, req)) {
+				return tevent_req_post(req, ev);
+			}
+
+			SMBNTencrypt_hash(state->nt_hash, challenge.data,
+					  state->upassword_blob.data);
+			SMBsesskeygen_ntv1(state->nt_hash,
+					   state->session_key.data);
+
+			if (lp_client_lanman_auth()) {
+				do_lmresponse = E_deshash(password,
+							  state->lm_hash);
+			}
+		}
+	} else {
+		if (!lp_client_lanman_auth()) {
+			DEBUG(1, ("Server requested LM password but "
+				  "'client lanman auth = no' "
+				  "or 'client ntlmv2 auth = yes' is set\n"));
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		do_lmresponse = E_deshash(password, state->lm_hash);
+	}
+
+	if (do_lmresponse) {
+		state->apassword_blob = data_blob_talloc_zero(state, 24);
+		if (tevent_req_nomem(state->apassword_blob.data, req)) {
+			return tevent_req_post(req, ev);
+		}
+
+		SMBencrypt_hash(state->lm_hash,
+				challenge.data,
+				state->apassword_blob.data);
+	}
+
+	if (state->apassword_blob.length == 0) {
+		if (state->upassword_blob.length == 0) {
+			DEBUG(1, ("Password is > 14 chars in length, and is "
+				  "therefore incompatible with Lanman "
+				  "authentication\n"));
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return tevent_req_post(req, ev);
+		}
+
+		/*
+		 * LM disabled, place NT# in LM field
+		 * instead
+		 */
+		state->apassword_blob = state->upassword_blob;
+	}
+
+non_spnego_creds_done:
+
+	in_buf_size = CLI_BUFFER_SIZE;
+	in_mpx_max = smbXcli_conn_max_requests(cli->conn);
+	in_vc_num = cli_state_get_vc_num(cli);
+	in_sess_key = smb1cli_conn_server_session_key(cli->conn);
+	in_native_os = "Unix";
+	in_native_lm = "Samba";
+
+	if (smbXcli_conn_protocol(cli->conn) == PROTOCOL_NT1) {
+		uint32_t in_capabilities = 0;
+
+		in_capabilities = cli_session_setup_capabilities(cli, 0);
+
+		/*
+		 * For now we keep the same values as before,
+		 * we may remove these in a separate commit later.
+		 */
+		in_mpx_max = 2;
+
+		subreq = smb1cli_session_setup_nt1_send(state, ev,
+							cli->conn,
+							cli->timeout,
+							cli->smb1.pid,
+							cli->smb1.session,
+							in_buf_size,
+							in_mpx_max,
+							in_vc_num,
+							in_sess_key,
+							username,
+							domain,
+							state->apassword_blob,
+							state->upassword_blob,
+							in_capabilities,
+							in_native_os,
+							in_native_lm);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -2151,23 +2299,33 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return req;
 	}
 
-	tevent_req_done(req);
-	return tevent_req_post(req, ev);
-}
+	/*
+	 * For now we keep the same values as before,
+	 * we may remove these in a separate commit later.
+	 */
+	in_mpx_max = 2;
+	in_vc_num = 1;
 
-static void cli_session_setup_done_lanman2(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_session_setup_lanman2_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
+	subreq = smb1cli_session_setup_lm21_send(state, ev,
+						 cli->conn,
+						 cli->timeout,
+						 cli->smb1.pid,
+						 cli->smb1.session,
+						 in_buf_size,
+						 in_mpx_max,
+						 in_vc_num,
+						 in_sess_key,
+						 username,
+						 domain,
+						 state->apassword_blob,
+						 in_native_os,
+						 in_native_lm);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
 	}
-	tevent_req_done(req);
+	tevent_req_set_callback(subreq, cli_session_setup_done_lm21,
+				req);
+	return req;
 }
 
 static void cli_session_setup_done_spnego(struct tevent_req *subreq)
@@ -2186,50 +2344,91 @@ static void cli_session_setup_done_spnego(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static void cli_session_setup_done_guest(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_session_setup_guest_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
-}
-
-static void cli_session_setup_done_plain(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_session_setup_plain_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
-}
-
 static void cli_session_setup_done_nt1(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct cli_session_setup_state *state = tevent_req_data(
+		req, struct cli_session_setup_state);
+	struct cli_state *cli = state->cli;
 	NTSTATUS status;
+	struct iovec *recv_iov = NULL;
+	const uint8_t *inbuf = NULL;
+	bool ok;
 
-	status = cli_session_setup_nt1_recv(subreq);
+	status = smb1cli_session_setup_nt1_recv(subreq, state,
+						&recv_iov,
+						&inbuf,
+						&state->out_native_os,
+						&state->out_native_lm,
+						&state->out_primary_domain);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("cli_session_setup: NT1 session setup "
-			  "failed: %s\n", nt_errstr(status)));
+		DEBUG(3, ("NT1 login failed: %s\n", nt_errstr(status)));
 		tevent_req_nterror(req, status);
 		return;
 	}
+
+	if (cli->server_os == NULL) {
+		cli->server_os = talloc_move(cli, &state->out_native_os);
+	}
+	if (cli->server_type == NULL) {
+		cli->server_type = talloc_move(cli, &state->out_native_lm);
+	}
+	if (cli->server_domain == NULL) {
+		cli->server_domain = talloc_move(cli, &state->out_primary_domain);
+	}
+
+	ok = smb1cli_conn_activate_signing(cli->conn,
+					   state->session_key,
+					   state->upassword_blob);
+	if (ok) {
+		ok = smb1cli_conn_check_signing(cli->conn, inbuf, 1);
+		if (!ok) {
+			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
+
+	if (state->session_key.data) {
+		struct smbXcli_session *session = cli->smb1.session;
+
+		status = smb1cli_session_set_session_key(session,
+							 state->session_key);
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+	}
+
+	tevent_req_done(req);
+}
+
+static void cli_session_setup_done_lm21(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_session_setup_state *state = tevent_req_data(
+		req, struct cli_session_setup_state);
+	struct cli_state *cli = state->cli;
+	NTSTATUS status;
+
+	status = smb1cli_session_setup_lm21_recv(subreq, state,
+						 &state->out_native_os,
+						 &state->out_native_lm);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("LM21 login failed: %s\n", nt_errstr(status)));
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (cli->server_os == NULL) {
+		cli->server_os = talloc_move(cli, &state->out_native_os);
+	}
+	if (cli->server_type == NULL) {
+		cli->server_type = talloc_move(cli, &state->out_native_lm);
+	}
+
 	tevent_req_done(req);
 }
 
