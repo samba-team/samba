@@ -442,16 +442,13 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 		cli_creds = PyCredentials_AsCliCredentials(creds);
 	}
 
-	req = cli_full_connection_send(
+	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
-		cli_credentials_get_username(cli_creds),
-		cli_credentials_get_domain(cli_creds),
-		cli_credentials_get_password(cli_creds),
-		0, 0);
+		cli_creds, 0, 0);
 	if (!py_tevent_req_wait_exc(self->ev, req)) {
 		return -1;
 	}
-	status = cli_full_connection_recv(req, &self->cli);
+	status = cli_full_connection_creds_recv(req, &self->cli);
 	TALLOC_FREE(req);
 
 	if (!NT_STATUS_IS_OK(status)) {

@@ -2830,59 +2830,73 @@ fail:
    @param port (optional) The destination port (0 for default)
    @param service (optional) The share to make the connection to.  Should be 'unqualified' in any way.
    @param service_type The 'type' of serivice. 
-   @param user Username, unix string
-   @param domain User's domain
-   @param password User's password, unencrypted unix string.
+   @param creds The used user credentials
 */
 
-struct cli_full_connection_state {
+struct cli_full_connection_creds_state {
 	struct tevent_context *ev;
 	const char *service;
 	const char *service_type;
-	const char *user;
-	const char *domain;
-	const char *password;
-	int pw_len;
+	struct cli_credentials *creds;
 	int flags;
 	struct cli_state *cli;
 };
 
-static int cli_full_connection_state_destructor(
-	struct cli_full_connection_state *s);
-static void cli_full_connection_started(struct tevent_req *subreq);
-static void cli_full_connection_sess_set_up(struct tevent_req *subreq);
-static void cli_full_connection_done(struct tevent_req *subreq);
+static int cli_full_connection_creds_state_destructor(
+	struct cli_full_connection_creds_state *s);
+static void cli_full_connection_creds_started(struct tevent_req *subreq);
+static void cli_full_connection_creds_sess_set_up(struct tevent_req *subreq);
+static void cli_full_connection_creds_done(struct tevent_req *subreq);
 
-struct tevent_req *cli_full_connection_send(
+struct tevent_req *cli_full_connection_creds_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,
 	const struct sockaddr_storage *dest_ss, int port,
 	const char *service, const char *service_type,
-	const char *user, const char *domain,
-	const char *password, int flags, int signing_state)
+	struct cli_credentials *creds,
+	int flags, int signing_state)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_full_connection_state *state;
+	struct cli_full_connection_creds_state *state;
+	enum credentials_use_kerberos krb5_state;
+	uint32_t gensec_features = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct cli_full_connection_state);
+				struct cli_full_connection_creds_state);
 	if (req == NULL) {
 		return NULL;
 	}
-	talloc_set_destructor(state, cli_full_connection_state_destructor);
+	talloc_set_destructor(state, cli_full_connection_creds_state_destructor);
+
+	flags &= ~CLI_FULL_CONNECTION_USE_KERBEROS;
+	flags &= ~CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+	flags &= ~CLI_FULL_CONNECTION_USE_CCACHE;
+	flags &= ~CLI_FULL_CONNECTION_USE_NT_HASH;
+
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+	switch (krb5_state) {
+	case CRED_MUST_USE_KERBEROS:
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+		flags &= ~CLI_FULL_CONNECTION_DONT_SPNEGO;
+		break;
+	case CRED_AUTO_USE_KERBEROS:
+		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+		break;
+	case CRED_DONT_USE_KERBEROS:
+		break;
+	}
+
+	gensec_features = cli_credentials_get_gensec_features(creds);
+	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
+		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
+	}
 
 	state->ev = ev;
 	state->service = service;
 	state->service_type = service_type;
-	state->user = user;
-	state->domain = domain;
-	state->password = password;
+	state->creds = creds;
 	state->flags = flags;
-
-	state->pw_len = state->password ? strlen(state->password)+1 : 0;
-	if (state->password == NULL) {
-		state->password = "";
-	}
 
 	subreq = cli_start_connection_send(
 		state, ev, my_name, dest_host, dest_ss, port,
@@ -2890,12 +2904,12 @@ struct tevent_req *cli_full_connection_send(
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_full_connection_started, req);
+	tevent_req_set_callback(subreq, cli_full_connection_creds_started, req);
 	return req;
 }
 
-static int cli_full_connection_state_destructor(
-	struct cli_full_connection_state *s)
+static int cli_full_connection_creds_state_destructor(
+	struct cli_full_connection_creds_state *s)
 {
 	if (s->cli != NULL) {
 		cli_shutdown(s->cli);
@@ -2904,14 +2918,13 @@ static int cli_full_connection_state_destructor(
 	return 0;
 }
 
-static void cli_full_connection_started(struct tevent_req *subreq)
+static void cli_full_connection_creds_started(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_full_connection_state *state = tevent_req_data(
-		req, struct cli_full_connection_state);
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
 	NTSTATUS status;
-	struct cli_credentials *creds = NULL;
 
 	status = cli_start_connection_recv(subreq, &state->cli);
 	TALLOC_FREE(subreq);
@@ -2919,33 +2932,20 @@ static void cli_full_connection_started(struct tevent_req *subreq)
 		return;
 	}
 
-	creds = cli_session_creds_init(state,
-				       state->user,
-				       state->domain,
-				       NULL, /* realm (use default) */
-				       state->password,
-				       state->cli->use_kerberos,
-				       state->cli->fallback_after_kerberos,
-				       state->cli->use_ccache,
-				       state->cli->pw_nt_hash);
-	if (tevent_req_nomem(creds, req)) {
-		return;
-	}
-
 	subreq = cli_session_setup_creds_send(
-		state, state->ev, state->cli, creds);
+		state, state->ev, state->cli, state->creds);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, cli_full_connection_sess_set_up, req);
+	tevent_req_set_callback(subreq, cli_full_connection_creds_sess_set_up, req);
 }
 
-static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
+static void cli_full_connection_creds_sess_set_up(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_full_connection_state *state = tevent_req_data(
-		req, struct cli_full_connection_state);
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
 	NTSTATUS status;
 
 	status = cli_session_setup_creds_recv(subreq);
@@ -2953,22 +2953,21 @@ static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
 
 	if (!NT_STATUS_IS_OK(status) &&
 	    (state->flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)) {
-		struct cli_credentials *creds = NULL;
 
 		state->flags &= ~CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
 
-		creds = cli_credentials_init_anon(state);
-		if (tevent_req_nomem(creds, req)) {
+		state->creds = cli_credentials_init_anon(state);
+		if (tevent_req_nomem(state->creds, req)) {
 			return;
 		}
 
 		subreq = cli_session_setup_creds_send(
-			state, state->ev, state->cli, creds);
+			state, state->ev, state->cli, state->creds);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
 		tevent_req_set_callback(
-			subreq, cli_full_connection_sess_set_up, req);
+			subreq, cli_full_connection_creds_sess_set_up, req);
 		return;
 	}
 
@@ -2977,21 +2976,28 @@ static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
 	}
 
 	if (state->service != NULL) {
+		const char *password = cli_credentials_get_password(state->creds);
+		int pw_len = password ? strlen(password)+1 : 0;
+
+		if (password == NULL) {
+			password = "";
+		}
+
 		subreq = cli_tree_connect_send(
 			state, state->ev, state->cli,
 			state->service, state->service_type,
-			state->password, state->pw_len);
+			password, pw_len);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
-		tevent_req_set_callback(subreq, cli_full_connection_done, req);
+		tevent_req_set_callback(subreq, cli_full_connection_creds_done, req);
 		return;
 	}
 
 	tevent_req_done(req);
 }
 
-static void cli_full_connection_done(struct tevent_req *subreq)
+static void cli_full_connection_creds_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -3006,11 +3012,11 @@ static void cli_full_connection_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_full_connection_recv(struct tevent_req *req,
+NTSTATUS cli_full_connection_creds_recv(struct tevent_req *req,
 				  struct cli_state **output_cli)
 {
-	struct cli_full_connection_state *state = tevent_req_data(
-		req, struct cli_full_connection_state);
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -3019,6 +3025,38 @@ NTSTATUS cli_full_connection_recv(struct tevent_req *req,
 	*output_cli = state->cli;
 	talloc_set_destructor(state, NULL);
 	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
+				   const char *my_name,
+				   const char *dest_host,
+				   const struct sockaddr_storage *dest_ss, int port,
+				   const char *service, const char *service_type,
+				   struct cli_credentials *creds,
+				   int flags,
+				   int signing_state)
+{
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_full_connection_creds_send(
+		ev, ev, my_name, dest_host, dest_ss, port, service,
+		service_type, creds, flags, signing_state);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_full_connection_creds_recv(req, output_cli);
+ fail:
+	TALLOC_FREE(ev);
+	return status;
 }
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli,
@@ -3030,27 +3068,55 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *password, int flags,
 			     int signing_state)
 {
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+	bool use_kerberos = false;
+	bool fallback_after_kerberos = false;
+	bool use_ccache = false;
+	bool pw_nt_hash = false;
+	struct cli_credentials *creds = NULL;
 
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		goto fail;
+	if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		use_kerberos = true;
 	}
-	req = cli_full_connection_send(
-		ev, ev, my_name, dest_host, dest_ss, port, service,
-		service_type, user, domain, password, flags, signing_state);
-	if (req == NULL) {
-		goto fail;
+
+	if (flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) {
+		fallback_after_kerberos = true;
 	}
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
+
+	if (flags & CLI_FULL_CONNECTION_USE_CCACHE) {
+		use_ccache = true;
 	}
-	status = cli_full_connection_recv(req, output_cli);
- fail:
-	TALLOC_FREE(ev);
-	return status;
+
+	if (flags & CLI_FULL_CONNECTION_USE_NT_HASH) {
+		pw_nt_hash = true;
+	}
+
+	creds = cli_session_creds_init(frame,
+				       user,
+				       domain,
+				       NULL, /* realm (use default) */
+				       password,
+				       use_kerberos,
+				       fallback_after_kerberos,
+				       use_ccache,
+				       pw_nt_hash);
+	if (creds == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_full_connection_creds(output_cli, my_name,
+					   dest_host, dest_ss, port,
+					   service, service_type,
+					   creds, flags, signing_state);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
