@@ -101,6 +101,7 @@ static const struct dcesrv_iface *find_interface(const struct dcesrv_endpoint *e
 	return NULL;
 }
 
+#if 0
 /*
  * See if a uuid and if_version match to an interface
  */
@@ -109,6 +110,7 @@ static bool interface_match_by_uuid(const struct dcesrv_iface *iface,
 {
 	return GUID_equal(&iface->syntax_id.uuid, uuid);
 }
+#endif
 
 static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_endpoint *endpoint,
 						     const struct dcesrv_iface *iface)
@@ -218,9 +220,16 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			const char *host = NULL;
 			const char *host_addr = NULL;
 
+#if 0
+			/*
+			 * Windows ignores the object uuid by default. There is
+			 * one corner case. It is checked for the mgmt
+			 * interface, which we do not implement here yet.
+			 */
 			if (uuid && !interface_match_by_uuid(iface->iface, uuid)) {
 				continue;
 			}
+#endif
 
 			eps = talloc_realloc(mem_ctx,
 					     eps,
