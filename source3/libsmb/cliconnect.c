@@ -57,6 +57,8 @@ static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;
 	const char *principal = NULL;
+	char *tmp = NULL;
+	char *p = NULL;
 	bool ok;
 
 	creds = cli_credentials_init(mem_ctx);
@@ -91,6 +93,21 @@ static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 			cli_credentials_set_anonymous(creds);
 			return creds;
 		}
+	}
+
+	tmp = talloc_strdup(creds, username);
+	if (tmp == NULL) {
+		goto fail;
+	}
+	username = tmp;
+
+	/* allow for workgroups as part of the username */
+	if ((p = strchr_m(tmp, '\\')) ||
+	    (p = strchr_m(tmp, '/')) ||
+	    (p = strchr_m(tmp, *lp_winbind_separator()))) {
+		*p = 0;
+		username = p + 1;
+		domain = tmp;
 	}
 
 	principal = username;
@@ -1295,8 +1312,6 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct cli_session_setup_state *state;
-	char *p;
-	char *user2;
 	const char *dest_realm = NULL;
 	struct cli_credentials *creds = NULL;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
@@ -1322,32 +1337,6 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 
 	tevent_req_set_cleanup_fn(req, cli_session_setup_cleanup);
-
-	if (user) {
-		user2 = talloc_strdup(state, user);
-	} else {
-		user2 = talloc_strdup(state, "");
-	}
-	if (user2 == NULL) {
-		tevent_req_oom(req);
-		return tevent_req_post(req, ev);
-	}
-
-	if (!workgroup) {
-		workgroup = "";
-	}
-
-	/* allow for workgroups as part of the username */
-	if ((p=strchr_m(user2,'\\')) || (p=strchr_m(user2,'/')) ||
-	    (p=strchr_m(user2,*lp_winbind_separator()))) {
-		*p = 0;
-		user = p+1;
-		if (!strupper_m(user2)) {
-			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-			return tevent_req_post(req, ev);
-		}
-		workgroup = user2;
-	}
 
 	/*
 	 * dest_realm is only valid in the winbindd use case,
