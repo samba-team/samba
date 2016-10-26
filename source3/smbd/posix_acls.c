@@ -2470,9 +2470,10 @@ static bool unpack_canon_ace(files_struct *fsp,
 	 * Now go through the DACL and create the canon_ace lists.
 	 */
 
-	if (!create_canon_ace_lists( fsp, pst, pfile_owner_sid, pfile_grp_sid,
-								&file_ace, &dir_ace, psd->dacl))
+	if (!create_canon_ace_lists(fsp, pst, pfile_owner_sid, pfile_grp_sid,
+				    &file_ace, &dir_ace, psd->dacl)) {
 		return False;
+	}
 
 	if ((file_ace == NULL) && (dir_ace == NULL)) {
 		/* W2K traverse DACL set - ignore. */
