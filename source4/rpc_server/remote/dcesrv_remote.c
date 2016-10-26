@@ -74,7 +74,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 	table = ndr_table_by_syntax(&iface->syntax_id);
 	if (!table) {
-		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
+		dce_call->fault_code = DCERPC_NCA_S_UNKNOWN_IF;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
