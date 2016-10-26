@@ -437,7 +437,7 @@ static const char *create_pai_v1_entries(struct pai_val *paiv,
 				const char *entry_offset,
 				bool def_entry)
 {
-	int i;
+	unsigned int i;
 
 	for (i = 0; i < paiv->num_entries; i++) {
 		struct pai_entry *paie = talloc(talloc_tos(), struct pai_entry);
@@ -1844,7 +1844,7 @@ static bool create_canon_ace_lists(files_struct *fsp,
 	canon_ace *current_ace = NULL;
 	bool got_dir_allow = False;
 	bool got_file_allow = False;
-	int i, j;
+	uint32_t i, j;
 
 	*ppfile_ace = NULL;
 	*ppdir_ace = NULL;
@@ -2755,7 +2755,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 
 bool current_user_in_group(connection_struct *conn, gid_t gid)
 {
-	int i;
+	uint32_t i;
 	const struct security_unix_token *utok = get_current_utok(conn);
 
 	for (i = 0; i < utok->ngroups; i++) {
@@ -3248,7 +3248,7 @@ static void add_or_replace_ace(struct security_ace *nt_ace_list, size_t *num_ace
 				const struct dom_sid *sid, enum security_ace_type type,
 				uint32_t mask, uint8_t flags)
 {
-	int i;
+	size_t i;
 
 	/* first search for a duplicate */
 	for (i = 0; i < *num_aces; i++) {
@@ -3259,7 +3259,7 @@ static void add_or_replace_ace(struct security_ace *nt_ace_list, size_t *num_ace
 	if (i < *num_aces) { /* found */
 		nt_ace_list[i].type = type;
 		nt_ace_list[i].access_mask = mask;
-		DEBUG(10, ("Replacing ACE %d with SID %s and flags %02x\n",
+		DEBUG(10, ("Replacing ACE %zu with SID %s and flags %02x\n",
 			   i, sid_string_dbg(sid), flags));
 		return;
 	}
@@ -3299,7 +3299,6 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 	size_t num_profile_acls = 0;
 	struct dom_sid orig_owner_sid;
 	struct security_descriptor *psd = NULL;
-	int i;
 
 	/*
 	 * Get the owner, group and world SIDs.
@@ -3426,6 +3425,8 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 			num_aces = merge_default_aces(nt_ace_list, num_aces);
 
 			if (lp_profile_acls(SNUM(conn))) {
+				size_t i;
+
 				for (i = 0; i < num_aces; i++) {
 					if (dom_sid_equal(&nt_ace_list[i].trustee, &owner_sid)) {
 						add_or_replace_ace(nt_ace_list, &num_aces,
