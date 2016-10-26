@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
-#include "../librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/ndr/ndr_table.h"
 
 static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 				 TALLOC_CTX *mem_ctx,
@@ -38,14 +38,59 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 	NTSTATUS status;
 	uint32_t result;
 	uint32_t i;
+	const struct ndr_interface_list *l;
+	const char *interface_name = "lsarpc";
+	enum dcerpc_transport_t transport = NCACN_NP;
+	bool ok = false;
 
-	abstract_syntax = ndr_table_lsarpc.syntax_id;
+	if (argc > 3) {
+		d_fprintf(stderr, "Usage: %s [interface_name] [transport]\n",
+			argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc >= 2) {
+		interface_name = argv[1];
+	}
+
+	for (l = ndr_table_list(); l != NULL; l = l->next) {
+
+		ok = strequal(interface_name, l->table->name);
+		if (ok) {
+			abstract_syntax = l->table->syntax_id;
+			break;
+		}
+	}
+
+	if (!ok) {
+		d_fprintf(stderr, "unknown interface: %s\n",
+			interface_name);
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (argc >= 3) {
+		transport = dcerpc_transport_by_name(argv[2]);
+		if (transport == NCA_UNKNOWN) {
+			d_fprintf(stderr, "unknown transport: %s\n",
+				argv[2]);
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+	}
 
 	/* 127.0.0.1[0] => correct? needed? */
 	status = dcerpc_parse_binding(tmp_ctx, "ncacn_np:127.0.0.1[0]",
 				      &map_binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "dcerpc_parse_binding returned %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = dcerpc_binding_set_transport(map_binding, transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "dcerpc_binding_set_transport returned %s\n",
 			  nt_errstr(status));
 		goto done;
 	}
