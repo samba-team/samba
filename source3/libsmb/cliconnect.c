@@ -2063,14 +2063,19 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		workgroup = user2;
 	}
 
+	/*
+	 * Now work out what sort of session setup we are going to
+	 * do. I have split this into separate functions to make the flow a bit
+	 * easier to understand (tridge).
+	 */
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_LANMAN1) {
+		/*
+		 * SessionSetupAndX was introduced by LANMAN 1.0. So we skip
+		 * this step against older servers.
+		 */
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
-
-	/* now work out what sort of session setup we are going to
-           do. I have split this into separate functions to make the
-           flow a bit easier to understand (tridge) */
 
 	/* if its an older server then we have to use the older request format */
 
