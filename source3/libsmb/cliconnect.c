@@ -1244,8 +1244,6 @@ static ADS_STATUS cli_session_setup_spnego_recv(struct tevent_req *req)
 
 struct cli_session_setup_state {
 	struct cli_state *cli;
-	uint8_t nt_hash[16];
-	uint8_t lm_hash[16];
 	DATA_BLOB apassword_blob;
 	DATA_BLOB upassword_blob;
 	DATA_BLOB lm_session_key;
@@ -1303,10 +1301,9 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	struct cli_credentials *creds = NULL;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 	bool use_spnego = false;
-	bool do_lmresponse = false;
+	int flags = 0;
 	const char *username = "";
 	const char *domain = "";
-	const char *password = "";
 	DATA_BLOB target_info = data_blob_null;
 	DATA_BLOB challenge = data_blob_null;
 	uint16_t in_buf_size = 0;
@@ -1315,6 +1312,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	uint32_t in_sess_key = 0;
 	const char *in_native_os = NULL;
 	const char *in_native_lm = NULL;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_state);
@@ -1409,7 +1407,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (user == NULL || strlen(user) == 0) {
+	if (cli_credentials_is_anonymous(creds)) {
 		/*
 		 * Do an anonymous session setup
 		 */
@@ -1424,17 +1422,21 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		goto non_spnego_creds_done;
 	}
 
-	username = user;
-	domain = workgroup;
-	if (pass != NULL) {
-		password = pass;
+	cli_credentials_get_ntlm_username_domain(creds, state,
+						 &username,
+						 &domain);
+	if (tevent_req_nomem(username, req)) {
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nomem(domain, req)) {
+		return tevent_req_post(req, ev);
 	}
 
 	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		bool use_unicode = smbXcli_conn_use_unicode(cli->conn);
 		uint8_t *bytes = NULL;
 		size_t bytes_len = 0;
-		const char *pw = password;
+		const char *pw = cli_credentials_get_password(creds);
 		size_t pw_len = 0;
 
 		if (pw == NULL) {
@@ -1471,7 +1473,6 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	}
 
 	challenge = data_blob_const(smb1cli_conn_server_challenge(cli->conn), 8);
-	E_md4hash(password, state->nt_hash);
 
 	if (smbXcli_conn_protocol(cli->conn) == PROTOCOL_NT1) {
 		if (lp_client_ntlmv2_auth() && lp_client_use_spnego()) {
@@ -1487,7 +1488,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		}
 
 		if (lp_client_ntlmv2_auth()) {
-			bool ok;
+			flags |= CLI_CRED_NTLMv2_AUTH;
 
 			/*
 			 * note that the 'domain' here is a best
@@ -1501,41 +1502,10 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 			if (tevent_req_nomem(target_info.data, req)) {
 				return tevent_req_post(req, ev);
 			}
-
-			ok = SMBNTLMv2encrypt_hash(state,
-						   username,
-						   domain,
-						   state->nt_hash,
-						   &challenge,
-						   NULL, /* server_timestamp */
-						   &target_info,
-						   &state->apassword_blob,
-						   &state->upassword_blob,
-						   &state->lm_session_key,
-						   &state->session_key);
-			if (!ok) {
-				tevent_req_nterror(req,
-						   NT_STATUS_ACCESS_DENIED);
-				return tevent_req_post(req, ev);
-			}
 		} else {
-			state->upassword_blob = data_blob_talloc_zero(state, 24);
-			if (tevent_req_nomem(state->upassword_blob.data, req)) {
-				return tevent_req_post(req, ev);
-			}
-			state->session_key = data_blob_talloc_zero(state, 16);
-			if (tevent_req_nomem(state->session_key.data, req)) {
-				return tevent_req_post(req, ev);
-			}
-
-			SMBNTencrypt_hash(state->nt_hash, challenge.data,
-					  state->upassword_blob.data);
-			SMBsesskeygen_ntv1(state->nt_hash,
-					   state->session_key.data);
-
+			flags |= CLI_CRED_NTLM_AUTH;
 			if (lp_client_lanman_auth()) {
-				do_lmresponse = E_deshash(password,
-							  state->lm_hash);
+				flags |= CLI_CRED_LANMAN_AUTH;
 			}
 		}
 	} else {
@@ -1547,34 +1517,18 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 
-		do_lmresponse = E_deshash(password, state->lm_hash);
+		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (do_lmresponse) {
-		state->apassword_blob = data_blob_talloc_zero(state, 24);
-		if (tevent_req_nomem(state->apassword_blob.data, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		SMBencrypt_hash(state->lm_hash,
-				challenge.data,
-				state->apassword_blob.data);
-	}
-
-	if (state->apassword_blob.length == 0) {
-		if (state->upassword_blob.length == 0) {
-			DEBUG(1, ("Password is > 14 chars in length, and is "
-				  "therefore incompatible with Lanman "
-				  "authentication\n"));
-			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return tevent_req_post(req, ev);
-		}
-
-		/*
-		 * LM disabled, place NT# in LM field
-		 * instead
-		 */
-		state->apassword_blob = state->upassword_blob;
+	status = cli_credentials_get_ntlm_response(creds, state, &flags,
+						   challenge, NULL,
+						   target_info,
+						   &state->apassword_blob,
+						   &state->upassword_blob,
+						   &state->lm_session_key,
+						   &state->session_key);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
 non_spnego_creds_done:
