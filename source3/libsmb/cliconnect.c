@@ -1259,7 +1259,7 @@ static ADS_STATUS cli_session_setup_spnego_recv(struct tevent_req *req)
 	return state->result;
 }
 
-struct cli_session_setup_state {
+struct cli_session_setup_creds_state {
 	struct cli_state *cli;
 	DATA_BLOB apassword_blob;
 	DATA_BLOB upassword_blob;
@@ -1270,11 +1270,11 @@ struct cli_session_setup_state {
 	char *out_primary_domain;
 };
 
-static void cli_session_setup_cleanup(struct tevent_req *req,
-				      enum tevent_req_state req_state)
+static void cli_session_setup_creds_cleanup(struct tevent_req *req,
+					    enum tevent_req_state req_state)
 {
-	struct cli_session_setup_state *state = tevent_req_data(
-		req, struct cli_session_setup_state);
+	struct cli_session_setup_creds_state *state = tevent_req_data(
+		req, struct cli_session_setup_creds_state);
 
 	if (req_state != TEVENT_REQ_RECEIVED) {
 		return;
@@ -1293,9 +1293,9 @@ static void cli_session_setup_cleanup(struct tevent_req *req,
 	ZERO_STRUCTP(state);
 }
 
-static void cli_session_setup_done_spnego(struct tevent_req *subreq);
-static void cli_session_setup_done_nt1(struct tevent_req *subreq);
-static void cli_session_setup_done_lm21(struct tevent_req *subreq);
+static void cli_session_setup_creds_done_spnego(struct tevent_req *subreq);
+static void cli_session_setup_creds_done_nt1(struct tevent_req *subreq);
+static void cli_session_setup_creds_done_lm21(struct tevent_req *subreq);
 
 /****************************************************************************
  Send a session setup. The username and workgroup is in UNIX character
@@ -1303,20 +1303,18 @@ static void cli_session_setup_done_lm21(struct tevent_req *subreq);
  password is in plaintext, the same should be done.
 ****************************************************************************/
 
-struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
-					  struct tevent_context *ev,
-					  struct cli_state *cli,
-					  const char *user,
-					  const char *pass,
-					  const char *workgroup)
+struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					struct cli_credentials *creds)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_session_setup_state *state;
-	const char *dest_realm = NULL;
-	struct cli_credentials *creds = NULL;
+	struct cli_session_setup_creds_state *state;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 	bool use_spnego = false;
 	int flags = 0;
+	enum credentials_use_kerberos krb5_state;
+	uint32_t gensec_features;
 	const char *username = "";
 	const char *domain = "";
 	DATA_BLOB target_info = data_blob_null;
@@ -1330,31 +1328,36 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct cli_session_setup_state);
+				struct cli_session_setup_creds_state);
 	if (req == NULL) {
 		return NULL;
 	}
 	state->cli = cli;
 
-	tevent_req_set_cleanup_fn(req, cli_session_setup_cleanup);
+	tevent_req_set_cleanup_fn(req, cli_session_setup_creds_cleanup);
 
-	/*
-	 * dest_realm is only valid in the winbindd use case,
-	 * where we also have the account in that realm.
-	 */
-	dest_realm = cli_state_remote_realm(cli);
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+	gensec_features = cli_credentials_get_gensec_features(creds);
 
-	creds = cli_session_creds_init(state,
-				       user,
-				       workgroup,
-				       dest_realm,
-				       pass,
-				       cli->use_kerberos,
-				       cli->fallback_after_kerberos,
-				       cli->use_ccache,
-				       cli->pw_nt_hash);
-	if (tevent_req_nomem(creds, req)) {
-		return tevent_req_post(req, ev);
+	switch (krb5_state) {
+	case CRED_MUST_USE_KERBEROS:
+		cli->use_kerberos = true;
+		cli->fallback_after_kerberos = false;
+		break;
+	case CRED_AUTO_USE_KERBEROS:
+		cli->use_kerberos = true;
+		cli->fallback_after_kerberos = true;
+		break;
+	case CRED_DONT_USE_KERBEROS:
+		cli->use_kerberos = false;
+		cli->fallback_after_kerberos = false;
+		break;
+	}
+
+	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
+		cli->use_ccache = true;
+	} else {
+		cli->use_ccache = false;
 	}
 
 	/*
@@ -1382,7 +1385,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
+		tevent_req_set_callback(subreq, cli_session_setup_creds_done_spnego,
 					req);
 		return req;
 	}
@@ -1559,7 +1562,7 @@ non_spnego_creds_done:
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_nt1,
+		tevent_req_set_callback(subreq, cli_session_setup_creds_done_nt1,
 					req);
 		return req;
 	}
@@ -1588,12 +1591,12 @@ non_spnego_creds_done:
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_session_setup_done_lm21,
+	tevent_req_set_callback(subreq, cli_session_setup_creds_done_lm21,
 				req);
 	return req;
 }
 
-static void cli_session_setup_done_spnego(struct tevent_req *subreq)
+static void cli_session_setup_creds_done_spnego(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -1609,12 +1612,12 @@ static void cli_session_setup_done_spnego(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static void cli_session_setup_done_nt1(struct tevent_req *subreq)
+static void cli_session_setup_creds_done_nt1(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_session_setup_state *state = tevent_req_data(
-		req, struct cli_session_setup_state);
+	struct cli_session_setup_creds_state *state = tevent_req_data(
+		req, struct cli_session_setup_creds_state);
 	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 	struct iovec *recv_iov = NULL;
@@ -1668,12 +1671,12 @@ static void cli_session_setup_done_nt1(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static void cli_session_setup_done_lm21(struct tevent_req *subreq)
+static void cli_session_setup_creds_done_lm21(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cli_session_setup_state *state = tevent_req_data(
-		req, struct cli_session_setup_state);
+	struct cli_session_setup_creds_state *state = tevent_req_data(
+		req, struct cli_session_setup_creds_state);
 	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 
@@ -1697,15 +1700,13 @@ static void cli_session_setup_done_lm21(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_session_setup_recv(struct tevent_req *req)
+NTSTATUS cli_session_setup_creds_recv(struct tevent_req *req)
 {
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS cli_session_setup(struct cli_state *cli,
-			   const char *user,
-			   const char *pass,
-			   const char *workgroup)
+NTSTATUS cli_session_setup_creds(struct cli_state *cli,
+				 struct cli_credentials *creds)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -1718,17 +1719,54 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_session_setup_send(ev, ev, cli, user, pass, workgroup);
+	req = cli_session_setup_creds_send(ev, ev, cli, creds);
 	if (req == NULL) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_session_setup_recv(req);
+	status = cli_session_setup_creds_recv(req);
  fail:
 	TALLOC_FREE(ev);
 	return status;
+}
+
+NTSTATUS cli_session_setup(struct cli_state *cli,
+			   const char *user,
+			   const char *pass,
+			   const char *workgroup)
+{
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	const char *dest_realm = NULL;
+	struct cli_credentials *creds = NULL;
+
+	/*
+	 * dest_realm is only valid in the winbindd use case,
+	 * where we also have the account in that realm.
+	 */
+	dest_realm = cli_state_remote_realm(cli);
+
+	creds = cli_session_creds_init(cli,
+				       user,
+				       workgroup,
+				       dest_realm,
+				       pass,
+				       cli->use_kerberos,
+				       cli->fallback_after_kerberos,
+				       cli->use_ccache,
+				       cli->pw_nt_hash);
+	if (creds == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_session_setup_creds(cli, creds);
+	TALLOC_FREE(creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -2854,15 +2892,29 @@ static void cli_full_connection_started(struct tevent_req *subreq)
 	struct cli_full_connection_state *state = tevent_req_data(
 		req, struct cli_full_connection_state);
 	NTSTATUS status;
+	struct cli_credentials *creds = NULL;
 
 	status = cli_start_connection_recv(subreq, &state->cli);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	subreq = cli_session_setup_send(
-		state, state->ev, state->cli, state->user,
-		state->password, state->domain);
+
+	creds = cli_session_creds_init(state,
+				       state->user,
+				       state->domain,
+				       NULL, /* realm (use default) */
+				       state->password,
+				       state->cli->use_kerberos,
+				       state->cli->fallback_after_kerberos,
+				       state->cli->use_ccache,
+				       state->cli->pw_nt_hash);
+	if (tevent_req_nomem(creds, req)) {
+		return;
+	}
+
+	subreq = cli_session_setup_creds_send(
+		state, state->ev, state->cli, creds);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2877,17 +2929,22 @@ static void cli_full_connection_sess_set_up(struct tevent_req *subreq)
 		req, struct cli_full_connection_state);
 	NTSTATUS status;
 
-	status = cli_session_setup_recv(subreq);
+	status = cli_session_setup_creds_recv(subreq);
 	TALLOC_FREE(subreq);
 
 	if (!NT_STATUS_IS_OK(status) &&
 	    (state->flags & CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK)) {
+		struct cli_credentials *creds = NULL;
 
 		state->flags &= ~CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK;
 
-		subreq = cli_session_setup_send(
-			state, state->ev, state->cli, "", "",
-			state->domain);
+		creds = cli_credentials_init_anon(state);
+		if (tevent_req_nomem(creds, req)) {
+			return;
+		}
+
+		subreq = cli_session_setup_creds_send(
+			state, state->ev, state->cli, creds);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
