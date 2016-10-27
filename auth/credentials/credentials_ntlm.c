@@ -36,29 +36,57 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 					   DATA_BLOB *_lm_response, DATA_BLOB *_nt_response, 
 					   DATA_BLOB *_lm_session_key, DATA_BLOB *_session_key) 
 {
-	const char *user, *domain;
-	DATA_BLOB lm_response, nt_response;
-	DATA_BLOB lm_session_key, session_key;
-	const struct samr_Password *nt_hash;
-	lm_session_key = data_blob(NULL, 0);
+	TALLOC_CTX *frame = talloc_stackframe();
+	const char *user = NULL;
+	const char *domain = NULL;
+	DATA_BLOB lm_response = data_blob_null;
+	DATA_BLOB nt_response = data_blob_null;
+	DATA_BLOB lm_session_key = data_blob_null;
+	DATA_BLOB session_key = data_blob_null;
+	const struct samr_Password *nt_hash = NULL;
+
+	if (cred->use_kerberos == CRED_MUST_USE_KERBEROS) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	}
 
 	/* We may already have an NTLM response we prepared earlier.
 	 * This is used for NTLM pass-though authentication */
 	if (cred->nt_response.data || cred->lm_response.data) {
-		*_nt_response = cred->nt_response;
-		*_lm_response = cred->lm_response;
+		if (cred->nt_response.length != 0) {
+			nt_response = data_blob_dup_talloc(frame,
+							   cred->nt_response);
+			if (nt_response.data == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		if (cred->lm_response.length != 0) {
+			lm_response = data_blob_dup_talloc(frame,
+							   cred->lm_response);
+			if (lm_response.data == NULL) {
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
 
-		if (!cred->lm_response.data) {
+		if (cred->lm_response.data == NULL) {
 			*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
 		}
-		*_lm_session_key = data_blob(NULL, 0);
-		*_session_key = data_blob(NULL, 0);
-		return NT_STATUS_OK;
+		goto done;
 	}
 
-	nt_hash = cli_credentials_get_nt_hash(cred, mem_ctx);
+	nt_hash = cli_credentials_get_nt_hash(cred, frame);
 
-	cli_credentials_get_ntlm_username_domain(cred, mem_ctx, &user, &domain);
+	cli_credentials_get_ntlm_username_domain(cred, frame, &user, &domain);
+	if (user == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (domain == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* If we are sending a username@realm login (see function
 	 * above), then we will not send LM, it will not be
@@ -71,22 +99,22 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	if (cred->machine_account) {
 		*flags = *flags & ~CLI_CRED_LANMAN_AUTH;
 	}
-	
-	if (cred->use_kerberos == CRED_MUST_USE_KERBEROS) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
 
 	if (!nt_hash) {
-		static const uint8_t zeros[16];
 		/* do nothing - blobs are zero length */
 
 		/* session key is all zeros */
-		session_key = data_blob_talloc(mem_ctx, zeros, 16);
-		lm_session_key = data_blob_talloc(mem_ctx, zeros, 16);
+		session_key = data_blob_talloc_zero(frame, 16);
+		if (session_key.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+		lm_session_key = data_blob_talloc_zero(frame, 16);
+		if (lm_session_key.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
 
-		lm_response = data_blob(NULL, 0);
-		nt_response = data_blob(NULL, 0);
-		
 		/* not doing NTLM2 without a password */
 		*flags &= ~CLI_CRED_NTLM2;
 	} else if (*flags & CLI_CRED_NTLMv2_AUTH) {
@@ -94,19 +122,21 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		if (!target_info.length) {
 			/* be lazy, match win2k - we can't do NTLMv2 without it */
 			DEBUG(1, ("Server did not provide 'target information', required for NTLMv2\n"));
+			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
 		
-		if (!SMBNTLMv2encrypt_hash(mem_ctx,
+		if (!SMBNTLMv2encrypt_hash(frame,
 					   user, 
 					   domain, 
 					   nt_hash->hash, &challenge, 
 					   server_timestamp, &target_info,
 					   &lm_response, &nt_response, 
 					   NULL, &session_key)) {
+			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -123,103 +153,131 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		uint8_t session_nonce[16];
 		uint8_t session_nonce_hash[16];
 		uint8_t user_session_key[16];
-		
-		lm_response = data_blob_talloc(mem_ctx, NULL, 24);
+
+		lm_response = data_blob_talloc_zero(frame, 24);
+		if (lm_response.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
 		generate_random_buffer(lm_response.data, 8);
-		memset(lm_response.data+8, 0, 16);
 
 		memcpy(session_nonce, challenge.data, 8);
 		memcpy(&session_nonce[8], lm_response.data, 8);
-	
+
 		MD5Init(&md5_session_nonce_ctx);
-		MD5Update(&md5_session_nonce_ctx, challenge.data, 8);
-		MD5Update(&md5_session_nonce_ctx, lm_response.data, 8);
+		MD5Update(&md5_session_nonce_ctx, session_nonce,
+			  sizeof(session_nonce));
 		MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
 
 		DEBUG(5, ("NTLMSSP challenge set by NTLM2\n"));
 		DEBUG(5, ("challenge is: \n"));
 		dump_data(5, session_nonce_hash, 8);
-		
-		nt_response = data_blob_talloc(mem_ctx, NULL, 24);
+
+		nt_response = data_blob_talloc_zero(frame, 24);
+		if (nt_response.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
 		SMBOWFencrypt(nt_hash->hash,
 			      session_nonce_hash,
 			      nt_response.data);
-		
-		session_key = data_blob_talloc(mem_ctx, NULL, 16);
+
+		session_key = data_blob_talloc_zero(frame, 16);
+		if (session_key.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		SMBsesskeygen_ntv1(nt_hash->hash, user_session_key);
 		hmac_md5(user_session_key, session_nonce, sizeof(session_nonce), session_key.data);
+		ZERO_STRUCT(user_session_key);
 		dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
 
 		/* LM Key is incompatible... */
 		*flags &= ~CLI_CRED_LANMAN_AUTH;
 	} else {
+		const char *password = cli_credentials_get_password(cred);
 		uint8_t lm_hash[16];
-		nt_response = data_blob_talloc(mem_ctx, NULL, 24);
+		bool do_lm = false;
+
+		nt_response = data_blob_talloc_zero(frame, 24);
+		if (nt_response.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
 		SMBOWFencrypt(nt_hash->hash, challenge.data,
 			      nt_response.data);
-		
-		session_key = data_blob_talloc(mem_ctx, NULL, 16);
+
+		session_key = data_blob_talloc_zero(frame, 16);
+		if (session_key.data == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
 		SMBsesskeygen_ntv1(nt_hash->hash, session_key.data);
 		dump_data_pw("NT session key:\n", session_key.data, session_key.length);
 
 		/* lanman auth is insecure, it may be disabled.  
 		   We may also not have a password */
-		if (*flags & CLI_CRED_LANMAN_AUTH) {
-			const char *password;
-			password = cli_credentials_get_password(cred);
-			if (!password) {
-				lm_response = nt_response;
-			} else {
-				lm_response = data_blob_talloc(mem_ctx, NULL, 24);
-				if (!SMBencrypt(password,challenge.data,
-						lm_response.data)) {
-					/* If the LM password was too long (and therefore the LM hash being
-					   of the first 14 chars only), don't send it.
 
-					   We don't have any better options but to send the NT response 
-					*/
-					data_blob_free(&lm_response);
-					lm_response = nt_response;
-					/* LM Key is incompatible with 'long' passwords */
-					*flags &= ~CLI_CRED_LANMAN_AUTH;
-				} else if (E_deshash(password, lm_hash)) {
-					lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-					memcpy(lm_session_key.data, lm_hash, 8);
-					memset(&lm_session_key.data[8], '\0', 8);
-					
-					if (!(*flags & CLI_CRED_NTLM_AUTH)) {
-						session_key = lm_session_key;
-					}
-				}
+		if (password != NULL) {
+			do_lm = E_deshash(password, lm_hash);
+		}
+
+		if (*flags & CLI_CRED_LANMAN_AUTH && do_lm) {
+			lm_response = data_blob_talloc_zero(frame, 24);
+			if (lm_response.data == NULL) {
+				ZERO_STRUCT(lm_hash);
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
 			}
+
+			SMBencrypt_hash(lm_hash,
+					challenge.data,
+					lm_response.data);
 		} else {
-			const char *password;
-
-			/* LM Key is incompatible... */
-			lm_response = nt_response;
-			*flags &= ~CLI_CRED_LANMAN_AUTH;
-
-			password = cli_credentials_get_password(cred);
-			if (password && E_deshash(password, lm_hash)) {
-				lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-				memcpy(lm_session_key.data, lm_hash, 8);
-				memset(&lm_session_key.data[8], '\0', 8);
+			/* just copy the nt_response */
+			lm_response = data_blob_dup_talloc(frame, nt_response);
+			if (lm_response.data == NULL) {
+				ZERO_STRUCT(lm_hash);
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
 			}
 		}
+
+		if (do_lm) {
+			lm_session_key = data_blob_talloc_zero(frame, 16);
+			if (lm_session_key.data == NULL) {
+				ZERO_STRUCT(lm_hash);
+				TALLOC_FREE(frame);
+				return NT_STATUS_NO_MEMORY;
+			}
+			memcpy(lm_session_key.data, lm_hash, 8);
+
+			if (!(*flags & CLI_CRED_NTLM_AUTH)) {
+				memcpy(session_key.data, lm_session_key.data, 16);
+			}
+			ZERO_STRUCT(lm_hash);
+		}
 	}
+
+done:
 	if (_lm_response) {
+		talloc_steal(mem_ctx, lm_response.data);
 		*_lm_response = lm_response;
 	}
 	if (_nt_response) {
+		talloc_steal(mem_ctx, nt_response.data);
 		*_nt_response = nt_response;
 	}
 	if (_lm_session_key) {
+		talloc_steal(mem_ctx, lm_session_key.data);
 		*_lm_session_key = lm_session_key;
 	}
 	if (_session_key) {
+		talloc_steal(mem_ctx, session_key.data);
 		*_session_key = session_key;
 	}
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
