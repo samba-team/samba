@@ -152,6 +152,9 @@ static void glfs_clear_preopened(glfs_t *fs)
 			DLIST_REMOVE(glfs_preopened, entry);
 
 			glfs_fini(entry->fs);
+			
+			talloc_free(entry->connectpath);
+			talloc_free(entry->volume);
 			talloc_free(entry);
 		}
 	}
