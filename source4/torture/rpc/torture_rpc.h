@@ -45,6 +45,10 @@ struct torture_rpc_tcase_data {
 NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 				struct dcerpc_pipe **p, 
 				const struct ndr_interface_table *table);
+NTSTATUS torture_rpc_connection_with_binding(struct torture_context *tctx,
+					     struct dcerpc_binding *binding,
+					     struct dcerpc_pipe **p,
+					     const struct ndr_interface_table *table);
 
 struct test_join *torture_join_domain(struct torture_context *tctx,
 					       const char *machine_name, 

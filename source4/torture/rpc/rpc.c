@@ -75,16 +75,29 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 
-	dcerpc_init();
-
 	status = torture_rpc_binding(tctx, &binding);
 	if (NT_STATUS_IS_ERR(status))
 		return status;
 
-	status = dcerpc_pipe_connect_b(tctx, 
+	return torture_rpc_connection_with_binding(tctx, binding, p, table);
+}
+
+/**
+ * open a rpc connection to the chosen binding string
+ */
+_PUBLIC_ NTSTATUS torture_rpc_connection_with_binding(struct torture_context *tctx,
+						      struct dcerpc_binding *binding,
+						      struct dcerpc_pipe **p,
+						      const struct ndr_interface_table *table)
+{
+	NTSTATUS status;
+
+	dcerpc_init();
+
+	status = dcerpc_pipe_connect_b(tctx,
 				     p, binding, table,
 				     cmdline_credentials, tctx->ev, tctx->lp_ctx);
- 
+
 	if (NT_STATUS_IS_ERR(status)) {
 		torture_warning(tctx, "Failed to connect to remote server: %s %s\n",
 			   dcerpc_binding_string(tctx, binding), nt_errstr(status));
