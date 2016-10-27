@@ -563,7 +563,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    smbd/service.c
                    smbd/error.c
                    printing/printspoolss.c
-                   printing/spoolssd.c
                    lib/sessionid_tdb.c
                    lib/conn_tdb.c
                    smbd/fake_file.c
@@ -684,7 +683,7 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     printing/nt_printing_migrate_internal.c
                     printing/nt_printing_ads.c
                     printing/queue_process.c''',
-                    deps='PRINTBASE LIBADS_PRINTER tdb printing_migrate')
+                    deps='PRINTBASE LIBADS_PRINTER tdb printing_migrate SPOOLSSD')
 
 bld.SAMBA3_LIBRARY('printing_migrate',
                     source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
@@ -855,6 +854,13 @@ bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
 bld.SAMBA3_SUBSYSTEM('LIBLSA',
                      source='lib/lsa.c')
 
+bld.SAMBA3_SUBSYSTEM('SPOOLSSD',
+                    source='printing/spoolssd.c',
+                    deps='''
+                         samba-util
+                         RPC_SOCK_HELPER
+                         ''')
+
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',
@@ -865,6 +871,7 @@ bld.SAMBA3_BINARY('smbd/smbd',
                       LSASD
                       FSSD
                       MDSSD
+                      SPOOLSSD
                       ''',
                  install_path='${SBINDIR}')
 
