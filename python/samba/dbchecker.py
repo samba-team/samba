@@ -32,6 +32,7 @@ from samba.dcerpc import security
 from samba.descriptor import get_wellknown_sds, get_diff_sds
 from samba.auth import system_session, admin_session
 from samba.netcmd import CommandError
+from samba.netcmd.fsmo import get_fsmo_roleowner
 
 
 class dbcheck(object):
@@ -79,6 +80,7 @@ class dbcheck(object):
         self.fix_base64_userparameters = False
         self.fix_utf8_userparameters = False
         self.fix_doubled_userparameters = False
+        self.fix_sid_rid_set_conflict = False
         self.reset_well_known_acls = reset_well_known_acls
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
@@ -92,6 +94,7 @@ class dbcheck(object):
         self.fix_all_missing_objectclass = False
         self.fix_missing_deleted_objects = False
         self.fix_replica_locations = False
+        self.fix_missing_rid_set_master = False
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -157,6 +160,27 @@ class dbcheck(object):
         if len(forest) == 1:
             self.dns_partitions.append((ldb.Dn(self.samdb, domaindns_zone), forest[0]))
 
+        fsmo_dn = ldb.Dn(self.samdb, "CN=RID Manager$,CN=System," + self.samdb.domain_dn())
+        rid_master = get_fsmo_roleowner(self.samdb, fsmo_dn, "rid")
+        if ldb.Dn(self.samdb, self.samdb.get_dsServiceName()) == rid_master:
+            self.is_rid_master = True
+        else:
+            self.is_rid_master = False
+
+        # To get your rid set
+        # 1. Get server name
+        res = self.samdb.search(base=ldb.Dn(self.samdb, self.samdb.get_serverName()),
+                                scope=ldb.SCOPE_BASE, attrs=["serverReference"])
+        # 2. Get server reference
+        self.server_ref_dn = ldb.Dn(self.samdb, res[0]['serverReference'][0])
+
+        # 3. Get RID Set
+        res = self.samdb.search(base=self.server_ref_dn,
+                                scope=ldb.SCOPE_BASE, attrs=['rIDSetReferences'])
+        if "rIDSetReferences" in res[0]:
+            self.rid_set_dn = ldb.Dn(self.samdb, res[0]['rIDSetReferences'][0])
+        else:
+            self.rid_set_dn = None
 
     def check_database(self, DN=None, scope=ldb.SCOPE_SUBTREE, controls=[], attrs=['*']):
         '''perform a database check, returning the number of errors found'''
@@ -1846,6 +1870,114 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     # This DC is not in the replica locations
                     self.err_replica_locations(obj, msg.dn, location)
                     error_count += 1
+
+        if dn == self.server_ref_dn:
+            # Check we have a valid RID Set
+            if "*" in attrs or "rIDSetReferences" in attrs:
+                if "rIDSetReferences" not in obj:
+                    # NO RID SET reference
+                    # We are RID master, allocate it.
+                    error_count += 1
+
+                    if self.is_rid_master:
+                        # Allocate a RID Set
+                        if self.confirm_all('Allocate the missing RID set for RID master?',
+                                            'fix_missing_rid_set_master'):
+
+                            # We don't have auto-transaction logic on
+                            # extended operations, so we have to do it
+                            # here.
+
+                            self.samdb.transaction_start()
+
+                            try:
+                                self.samdb.create_own_rid_set()
+
+                            except:
+                                self.samdb.transaction_cancel()
+                                raise
+
+                            self.samdb.transaction_commit()
+
+
+                    elif not self.samdb.am_rodc():
+                        self.report("No RID Set found for this server: %s, and we are not the RID Master (so can not self-allocate)" % dn)
+
+
+        # Check some details of our own RID Set
+        if dn == self.rid_set_dn:
+            res = self.samdb.search(base=self.rid_set_dn, scope=ldb.SCOPE_BASE,
+                                    attrs=["rIDAllocationPool",
+                                           "rIDPreviousAllocationPool",
+                                           "rIDUsedPool",
+                                           "rIDNextRID"])
+            if "rIDAllocationPool" not in res[0]:
+                self.report("No rIDAllocationPool found in %s" % dn)
+                error_count += 1
+            else:
+                next_pool = int(res[0]["rIDAllocationPool"][0])
+
+                high = (0xFFFFFFFF00000000 & next_pool) >> 32
+                low = 0x00000000FFFFFFFF & next_pool
+
+                if high <= low:
+                    self.report("Invalid RID set %d-%s, %d > %d!" % (low, high, low, high))
+                    error_count += 1
+
+                if "rIDNextRID" in res[0]:
+                    next_free_rid = int(res[0]["rIDNextRID"][0])
+                else:
+                    next_free_rid = 0
+
+                if next_free_rid == 0:
+                    next_free_rid = low
+                else:
+                    next_free_rid += 1
+
+                # Check the remainder of this pool for conflicts.  If
+                # ridalloc_allocate_rid() moves to a new pool, this
+                # will be above high, so we will stop.
+                while next_free_rid <= high:
+                    sid = "%s-%d" % (self.samdb.get_domain_sid(), next_free_rid)
+                    try:
+                        res = self.samdb.search(base="<SID=%s>" % sid, scope=ldb.SCOPE_BASE,
+                                                attrs=[])
+                    except ldb.LdbError, (enum, estr):
+                        if enum != ldb.ERR_NO_SUCH_OBJECT:
+                            raise
+                        res = None
+                    if res is not None:
+                        self.report("SID %s for %s conflicts with our current RID set in %s" % (sid, res[0].dn, dn))
+                        error_count += 1
+
+                        if self.confirm_all('Fix conflict between SID %s and RID pool in %s by allocating a new RID?'
+                                            % (sid, dn),
+                                            'fix_sid_rid_set_conflict'):
+                            self.samdb.transaction_start()
+
+                            # This will burn RIDs, which will move
+                            # past the conflict.  We then check again
+                            # to see if the new RID conflicts, until
+                            # the end of the current pool.  We don't
+                            # look at the next pool to avoid burning
+                            # all RIDs in one go in some strange
+                            # failure case.
+                            try:
+                                while True:
+                                    allocated_rid = self.samdb.allocate_rid()
+                                    if allocated_rid >= next_free_rid:
+                                        next_free_rid = allocated_rid + 1
+                                        break
+                            except:
+                                self.samdb.transaction_cancel()
+                                raise
+
+                            self.samdb.transaction_commit()
+                        else:
+                            break
+                    else:
+                        next_free_rid += 1
+
 
         return error_count
 
