@@ -564,7 +564,7 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	struct tevent_req *req;
 	struct cli_session_setup_gensec_state *state;
 	NTSTATUS status;
-	bool use_spnego_principal = lp_client_use_spnego_principal();
+	const DATA_BLOB *b = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_gensec_state);
@@ -653,10 +653,6 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	cli_credentials_set_kerberos_state(state->auth_generic->credentials,
 					   krb5_state);
 
-	if (krb5_state == CRED_DONT_USE_KERBEROS) {
-		use_spnego_principal = false;
-	}
-
 	if (target_service != NULL) {
 		status = gensec_set_target_service(
 				state->auth_generic->gensec_security,
@@ -682,17 +678,11 @@ static struct tevent_req *cli_session_setup_gensec_send(
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
-		use_spnego_principal = false;
-	} else if (target_service != NULL && target_hostname != NULL) {
-		use_spnego_principal = false;
 	}
 
-	if (use_spnego_principal) {
-		const DATA_BLOB *b;
-		b = smbXcli_conn_server_gss_blob(cli->conn);
-		if (b != NULL) {
-			state->blob_in = *b;
-		}
+	b = smbXcli_conn_server_gss_blob(cli->conn);
+	if (b != NULL) {
+		state->blob_in = *b;
 	}
 
 	state->is_anonymous = cli_credentials_is_anonymous(state->auth_generic->credentials);
