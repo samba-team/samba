@@ -1450,6 +1450,8 @@ struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 	uint32_t in_sess_key = 0;
 	const char *in_native_os = NULL;
 	const char *in_native_lm = NULL;
+	enum credentials_use_kerberos krb5_state =
+		cli_credentials_get_kerberos_state(creds);
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -1489,6 +1491,13 @@ struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 		tevent_req_set_callback(subreq, cli_session_setup_creds_done_spnego,
 					req);
 		return req;
+	}
+
+	if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+		DBG_WARNING("Kerberos authentication requested, but "
+			    "the server does not support SPNEGO authentication\n");
+		tevent_req_nterror(req, NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
+		return tevent_req_post(req, ev);
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_LANMAN1) {
