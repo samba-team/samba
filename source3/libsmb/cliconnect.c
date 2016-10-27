@@ -558,8 +558,7 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	const char *user, const char *pass, const char *domain,
 	enum credentials_use_kerberos krb5_state,
 	const char *target_service,
-	const char *target_hostname,
-	const char *target_principal)
+	const char *target_hostname)
 {
 	struct tevent_req *req;
 	struct cli_session_setup_gensec_state *state;
@@ -666,15 +665,6 @@ static struct tevent_req *cli_session_setup_gensec_send(
 		status = gensec_set_target_hostname(
 				state->auth_generic->gensec_security,
 				target_hostname);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-	}
-
-	if (target_principal != NULL) {
-		status = gensec_set_target_principal(
-				state->auth_generic->gensec_security,
-				target_principal);
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
 		}
@@ -1147,7 +1137,7 @@ static struct tevent_req *cli_session_setup_spnego_send(
 				state, ev, cli,
 				state->account, pass, user_domain,
 				CRED_MUST_USE_KERBEROS,
-				"cifs", state->target_hostname, principal);
+				"cifs", state->target_hostname);
 			if (tevent_req_nomem(subreq, req)) {
 				return tevent_req_post(req, ev);
 			}
@@ -1164,7 +1154,7 @@ ntlmssp:
 		state, state->ev, state->cli,
 		state->account, state->pass, state->user_domain,
 		CRED_DONT_USE_KERBEROS,
-		"cifs", state->target_hostname, NULL);
+		"cifs", state->target_hostname);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1196,7 +1186,7 @@ static void cli_session_setup_spnego_done_krb(struct tevent_req *subreq)
 		state, state->ev, state->cli,
 		state->account, state->pass, state->user_domain,
 		CRED_DONT_USE_KERBEROS,
-		"cifs", state->target_hostname, NULL);
+		"cifs", state->target_hostname);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
