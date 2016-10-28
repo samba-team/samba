@@ -4554,6 +4554,7 @@ static int cmd_logon(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *l_username, *l_password;
+	struct cli_credentials *creds = NULL;
 	NTSTATUS nt_status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&l_username,NULL)) {
@@ -4574,9 +4575,21 @@ static int cmd_logon(void)
 		return 1;
 	}
 
-	nt_status = cli_session_setup(cli, l_username,
-				      l_password,
-				      lp_workgroup());
+	creds = cli_session_creds_init(ctx,
+				       l_username,
+				       lp_workgroup(),
+				       NULL, /* realm */
+				       l_password,
+				       false, /* use_kerberos */
+				       false, /* fallback_after_kerberos */
+				       false, /* use_ccache */
+				       false); /* password_is_nt_hash */
+	if (creds == NULL) {
+		d_printf("cli_session_creds_init() failed.\n");
+		return -1;
+	}
+	nt_status = cli_session_setup_creds(cli, creds);
+	TALLOC_FREE(creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_printf("session setup failed: %s\n", nt_errstr(nt_status));
 		return -1;
