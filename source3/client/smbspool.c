@@ -405,6 +405,7 @@ smb_complete_connection(const char *myname,
 {
 	struct cli_state *cli;	/* New connection */
 	NTSTATUS        nt_status;
+	struct cli_credentials *creds = NULL;
 
 	/* Start the SMB connection */
 	*need_auth = false;
@@ -424,9 +425,22 @@ smb_complete_connection(const char *myname,
 		return NULL;
 	}
 
-	nt_status = cli_session_setup(cli, username,
-				      password,
-				      workgroup);
+	creds = cli_session_creds_init(cli,
+				       username,
+				       workgroup,
+				       NULL, /* realm */
+				       password,
+				       cli->use_kerberos,
+				       cli->fallback_after_kerberos,
+				       cli->use_ccache,
+				       cli->pw_nt_hash);
+	if (creds == NULL) {
+		fprintf(stderr, "ERROR: cli_session_creds_init failed\n");
+		cli_shutdown(cli);
+		return NULL;
+	}
+
+	nt_status = cli_session_setup_creds(cli, creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
