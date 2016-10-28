@@ -418,9 +418,7 @@ bool torture_cli_session_setup2(struct cli_state *cli, uint16_t *new_vuid)
 	bool ret;
 
 	cli_state_set_uid(cli, 0);
-	status = cli_session_setup(cli, username,
-				   password,
-				   workgroup);
+	status = cli_session_setup_creds(cli, torture_creds);
 	ret = NT_STATUS_IS_OK(status);
 	*new_vuid = cli_state_get_uid(cli);
 	cli_state_set_uid(cli, old_vuid);
@@ -7152,11 +7150,25 @@ static bool run_error_map_extract(int dummy) {
 	c_dos->map_dos_errors = false;
 
 	for (error=(0xc0000000 | 0x1); error < (0xc0000000| 0xFFF); error++) {
+		struct cli_credentials *user_creds = NULL;
+
 		fstr_sprintf(user, "%X", error);
 
-		status = cli_session_setup(c_nt, user,
-					   password,
-					   workgroup);
+		user_creds = cli_session_creds_init(talloc_tos(),
+						    user,
+						    workgroup,
+						    NULL, /* realm */
+						    password,
+						    false, /* use_kerberos */
+						    false, /* fallback_after_kerberos */
+						    false, /* use_ccache */
+						    false); /* password_is_nt_hash */
+		if (user_creds == NULL) {
+			printf("cli_session_creds_init(%s) failed\n", user);
+			return false;
+		}
+
+		status = cli_session_setup_creds(c_nt, user_creds);
 		if (NT_STATUS_IS_OK(status)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
@@ -7170,9 +7182,7 @@ static bool run_error_map_extract(int dummy) {
 			nt_status = NT_STATUS(0xc0000000);
 		}
 
-		status = cli_session_setup(c_dos, user,
-					   password,
-					   workgroup);
+		status = cli_session_setup_creds(c_dos, user_creds);
 		if (NT_STATUS_IS_OK(status)) {
 			printf("/** Session setup succeeded.  This shouldn't happen...*/\n");
 		}
@@ -7197,6 +7207,8 @@ static bool run_error_map_extract(int dummy) {
 		       smb_dos_err_class(errclass), 
 		       smb_dos_err_name(errclass, errnum), 
 		       get_nt_error_c_code(talloc_tos(), NT_STATUS(error)));
+
+		TALLOC_FREE(user_creds);
 	}
 	return True;
 }
@@ -7222,12 +7234,9 @@ static bool run_sesssetup_bench(int dummy)
 	}
 
 	for (i=0; i<torture_numops; i++) {
-		status = cli_session_setup(
-			c, username,
-			password,
-			workgroup);
+		status = cli_session_setup_creds(c, torture_creds);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_printf("(%s) cli_session_setup failed: %s\n",
+			d_printf("(%s) cli_session_setup_creds failed: %s\n",
 				 __location__, nt_errstr(status));
 			return false;
 		}
@@ -8161,10 +8170,7 @@ static bool run_large_readx(int dummy)
 			goto out;
 		}
 
-		status = cli_session_setup(cli2,
-					username,
-					password,
-					workgroup);
+		status = cli_session_setup_creds(cli2, torture_creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
