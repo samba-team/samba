@@ -560,6 +560,7 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	struct cli_session_setup_gensec_state *state;
 	NTSTATUS status;
 	const DATA_BLOB *b = NULL;
+	const char *dest_realm = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_session_setup_gensec_state);
@@ -571,6 +572,12 @@ static struct tevent_req *cli_session_setup_gensec_send(
 
 	talloc_set_destructor(
 		state, cli_session_setup_gensec_state_destructor);
+
+	/*
+	 * dest_realm is only valid in the winbindd use case,
+	 * where we also have the account in that realm.
+	 */
+	dest_realm = cli_state_remote_realm(cli);
 
 	if (user == NULL || strlen(user) == 0) {
 		if (pass != NULL && strlen(pass) == 0) {
@@ -612,6 +619,17 @@ static struct tevent_req *cli_session_setup_gensec_send(
 	status = auth_generic_set_domain(state->auth_generic, domain);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
+	}
+
+	if (dest_realm != NULL) {
+		bool ok;
+
+		ok = cli_credentials_set_realm(state->auth_generic->credentials,
+					       dest_realm, CRED_SPECIFIED);
+		if (!ok) {
+			tevent_req_oom(req);
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	if (cli->pw_nt_hash) {
