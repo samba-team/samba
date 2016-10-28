@@ -611,6 +611,109 @@ static bool test_AsyncGetPrinterData(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_AsyncCorePrinterDriverInstalled(struct torture_context *tctx,
+						 void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	struct winspool_AsyncCorePrinterDriverInstalled r;
+	int32_t pbDriverInstalled;
+	struct GUID guid;
+
+	r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.pszEnvironment = "";
+	r.in.CoreDriverGUID = GUID_zero();
+	r.in.ftDriverDate = 0;
+	r.in.dwlDriverVersion = 0;
+	r.out.pbDriverInstalled = &pbDriverInstalled;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_werr_equal(tctx,
+		W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_INVALID_ENVIRONMENT,
+		"AsyncCorePrinterDriverInstalled failed");
+
+	r.in.pszEnvironment = SPOOLSS_ARCHITECTURE_x64;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, false,
+				"unexpected driver installed");
+
+	r.in.CoreDriverGUID = GUID_random();
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, false,
+				"unexpected driver installed");
+
+	torture_assert_ntstatus_ok(tctx,
+		GUID_from_string(SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV, &guid), "");
+
+	r.in.CoreDriverGUID = guid;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, true,
+				"xps core driver not installed?");
+
+	r.in.dwlDriverVersion = 0xffffffff;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, true,
+				"xps core driver not installed?");
+
+	r.in.dwlDriverVersion = 1234;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, true,
+				"xps core driver not installed?");
+
+	r.in.ftDriverDate = unix_timespec_to_nt_time(timespec_current());
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, false,
+				"driver too old ?");
+
+	r.in.dwlDriverVersion = 0;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncCorePrinterDriverInstalled_r(b, tctx, &r),
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"AsyncCorePrinterDriverInstalled failed");
+	torture_assert_int_equal(tctx, *r.out.pbDriverInstalled, false,
+				"unexpected driver installed");
+
+	return true;
+}
+
 /*
  * Test if one can close a printserver handle that has been acquired via
  * winspool_AsyncOpenPrinter with a spoolss_ClosePrinter operation.
@@ -681,6 +784,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "AsyncUploadPrinterDriverPackage", test_AsyncUploadPrinterDriverPackage);
 	torture_tcase_add_simple_test(tcase, "AsyncEnumPrinters", test_AsyncEnumPrinters);
 	torture_tcase_add_simple_test(tcase, "AsyncGetPrinterData", test_AsyncGetPrinterData);
+	torture_tcase_add_simple_test(tcase, "AsyncCorePrinterDriverInstalled", test_AsyncCorePrinterDriverInstalled);
 
 	tcase = torture_suite_add_tcase(suite, "handles");
 
