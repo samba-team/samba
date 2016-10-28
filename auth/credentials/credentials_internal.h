@@ -113,6 +113,8 @@ struct cli_credentials {
 
 	/* Whether any callback is currently running */
 	bool callback_running;
+
+	char winbind_separator;
 };
 
 #endif /* __CREDENTIALS_INTERNAL_H__ */

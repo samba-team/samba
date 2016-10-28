@@ -115,6 +115,8 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cred->forced_sasl_mech = NULL;
 
+	cred->winbind_separator = '\\';
+
 	return cred;
 }
 
@@ -746,7 +748,10 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		*p = 0;
 		cli_credentials_set_realm(credentials, p+1, obtained);
 		return;
-	} else if ((p = strchr_m(uname,'\\')) || (p = strchr_m(uname, '/'))) {
+	} else if ((p = strchr_m(uname,'\\'))
+		   || (p = strchr_m(uname, '/'))
+		   || (p = strchr_m(uname, credentials->winbind_separator)))
+	{
 		*p = 0;
 		cli_credentials_set_domain(credentials, uname, obtained);
 		uname = p+1;
@@ -794,6 +799,8 @@ _PUBLIC_ const char *cli_credentials_get_unparsed_name(struct cli_credentials *c
 _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred, 
 			      struct loadparm_context *lp_ctx)
 {
+	const char *sep = NULL;
+
 	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
 	if (lpcfg_parm_is_cmdline(lp_ctx, "workgroup")) {
 		cli_credentials_set_domain(cred, lpcfg_workgroup(lp_ctx), CRED_SPECIFIED);
@@ -809,6 +816,11 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 		cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_SPECIFIED);
 	} else {
 		cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_UNINITIALISED);
+	}
+
+	sep = lpcfg_winbind_separator(lp_ctx);
+	if (sep != NULL && sep[0] != '\0') {
+		cred->winbind_separator = *lpcfg_winbind_separator(lp_ctx);
 	}
 }
 
