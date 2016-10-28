@@ -144,6 +144,44 @@ def drs_DsBind(drs):
     return (handle, info.info.supported_extensions)
 
 
+def drs_get_rodc_partial_attribute_set(samdb):
+    '''get a list of attributes for RODC replication'''
+    partial_attribute_set = drsuapi.DsPartialAttributeSet()
+    partial_attribute_set.version = 1
+
+    attids = []
+
+    # the exact list of attids we send is quite critical. Note that
+    # we do ask for the secret attributes, but set SPECIAL_SECRET_PROCESSING
+    # to zero them out
+    schema_dn = samdb.get_schema_basedn()
+    res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
+                       expression="objectClass=attributeSchema",
+                       attrs=["lDAPDisplayName", "systemFlags",
+                              "searchFlags"])
+
+    for r in res:
+        ldap_display_name = r["lDAPDisplayName"][0]
+        if "systemFlags" in r:
+            system_flags      = r["systemFlags"][0]
+            if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
+                                     samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
+                continue
+        if "searchFlags" in r:
+            search_flags = r["searchFlags"][0]
+            if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
+                continue
+        attid = samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
+        attids.append(int(attid))
+
+    # the attids do need to be sorted, or windows doesn't return
+    # all the attributes we need
+    attids.sort()
+    partial_attribute_set.attids         = attids
+    partial_attribute_set.num_attids = len(attids)
+    return partial_attribute_set
+
+
 class drs_Replicate(object):
     '''DRS replication calls'''
 
@@ -157,43 +195,6 @@ class drs_Replicate(object):
         if invocation_id == misc.GUID("00000000-0000-0000-0000-000000000000"):
             raise RuntimeError("Must not set GUID 00000000-0000-0000-0000-000000000000 as invocation_id")
         self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs, invocation_id)
-
-    def drs_get_rodc_partial_attribute_set(self):
-        '''get a list of attributes for RODC replication'''
-        partial_attribute_set = drsuapi.DsPartialAttributeSet()
-        partial_attribute_set.version = 1
-
-        attids = []
-
-        # the exact list of attids we send is quite critical. Note that
-        # we do ask for the secret attributes, but set SPECIAL_SECRET_PROCESSING
-        # to zero them out
-        schema_dn = self.samdb.get_schema_basedn()
-        res = self.samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
-                                      expression="objectClass=attributeSchema",
-                                      attrs=["lDAPDisplayName", "systemFlags",
-                                             "searchFlags"])
-
-        for r in res:
-            ldap_display_name = r["lDAPDisplayName"][0]
-            if "systemFlags" in r:
-                system_flags      = r["systemFlags"][0]
-                if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
-                                         samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
-                    continue
-            if "searchFlags" in r:
-                search_flags = r["searchFlags"][0]
-                if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
-                    continue
-            attid = self.samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
-            attids.append(int(attid))
-
-        # the attids do need to be sorted, or windows doesn't return
-        # all the attributes we need
-        attids.sort()
-        partial_attribute_set.attids         = attids
-        partial_attribute_set.num_attids = len(attids)
-        return partial_attribute_set
 
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
@@ -237,7 +238,7 @@ class drs_Replicate(object):
         req8.mapping_ctr.mappings = None
 
         if not schema and rodc:
-            req8.partial_attribute_set = self.drs_get_rodc_partial_attribute_set()
+            req8.partial_attribute_set = drs_get_rodc_partial_attribute_set(self.samdb)
 
         if self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
             req_level = 8
