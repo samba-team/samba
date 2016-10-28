@@ -417,21 +417,10 @@ bool run_smb2_session_reconnect(int dummy)
 
 	gensec_want_feature(auth_generic_state->gensec_security,
 			    GENSEC_FEATURE_SESSION_KEY);
-	status = auth_generic_set_username(auth_generic_state, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
-		return false;
-	}
 
-	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	status = auth_generic_set_creds(auth_generic_state, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
-		return false;
-	}
-
-	status = auth_generic_set_password(auth_generic_state, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_creds returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -931,21 +920,10 @@ bool run_smb2_multi_channel(int dummy)
 
 	gensec_want_feature(auth_generic_state->gensec_security,
 			    GENSEC_FEATURE_SESSION_KEY);
-	status = auth_generic_set_username(auth_generic_state, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
-		return false;
-	}
 
-	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	status = auth_generic_set_creds(auth_generic_state, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
-		return false;
-	}
-
-	status = auth_generic_set_password(auth_generic_state, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_creds returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1065,21 +1043,10 @@ bool run_smb2_multi_channel(int dummy)
 
 	gensec_want_feature(auth_generic_state->gensec_security,
 			    GENSEC_FEATURE_SESSION_KEY);
-	status = auth_generic_set_username(auth_generic_state, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
-		return false;
-	}
 
-	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	status = auth_generic_set_creds(auth_generic_state, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
-		return false;
-	}
-
-	status = auth_generic_set_password(auth_generic_state, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_creds returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1251,21 +1218,10 @@ bool run_smb2_multi_channel(int dummy)
 
 	gensec_want_feature(auth_generic_state->gensec_security,
 			    GENSEC_FEATURE_SESSION_KEY);
-	status = auth_generic_set_username(auth_generic_state, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
-		return false;
-	}
 
-	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	status = auth_generic_set_creds(auth_generic_state, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
-		return false;
-	}
-
-	status = auth_generic_set_password(auth_generic_state, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_creds returned %s\n", nt_errstr(status));
 		return false;
 	}
 
@@ -1559,21 +1515,10 @@ bool run_smb2_session_reauth(int dummy)
 
 	gensec_want_feature(auth_generic_state->gensec_security,
 			    GENSEC_FEATURE_SESSION_KEY);
-	status = auth_generic_set_username(auth_generic_state, username);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_username returned %s\n", nt_errstr(status));
-		return false;
-	}
 
-	status = auth_generic_set_domain(auth_generic_state, workgroup);
+	status = auth_generic_set_creds(auth_generic_state, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_domain returned %s\n", nt_errstr(status));
-		return false;
-	}
-
-	status = auth_generic_set_password(auth_generic_state, password);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("auth_generic_set_password returned %s\n", nt_errstr(status));
+		printf("auth_generic_set_creds returned %s\n", nt_errstr(status));
 		return false;
 	}
 
