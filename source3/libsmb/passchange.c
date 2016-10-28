@@ -111,7 +111,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		 * Thanks to <Nicholas.S.Jenkins@cdc.com> for this fix.
 		 */
 
-		result = cli_session_setup(cli, "", "", "");
+		result = cli_session_setup_anon(cli);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			if (asprintf(err_str, "machine %s rejected the session "

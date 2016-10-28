@@ -203,8 +203,8 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		 * try again with a null username. */
 		if (password[0] || !username[0] ||
 			get_cmdline_auth_info_use_kerberos(auth_info) ||
-			!NT_STATUS_IS_OK(status = cli_session_setup(c, "", "",
-					       lp_workgroup()))) {
+			!NT_STATUS_IS_OK(status = cli_session_setup_anon(c)))
+		{
 			d_printf("session setup failed: %s\n",
 				 nt_errstr(status));
 			if (NT_STATUS_EQUAL(status,
