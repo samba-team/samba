@@ -281,6 +281,16 @@ struct dsdb_fsmo_extended_op {
 	struct GUID destination_dsa_guid;
 };
 
+/* this takes no data */
+#define DSDB_EXTENDED_CREATE_OWN_RID_SET "1.3.6.1.4.1.7165.4.4.8"
+
+/* this takes a struct dsdb_extended_allocate_rid */
+#define DSDB_EXTENDED_ALLOCATE_RID "1.3.6.1.4.1.7165.4.4.9"
+
+struct dsdb_extended_allocate_rid {
+	uint32_t rid;
+};
+
 /*
  * passed from the descriptor module in order to
  * store the recalucated nTSecurityDescriptor without

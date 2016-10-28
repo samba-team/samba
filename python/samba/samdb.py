@@ -963,3 +963,11 @@ accountExpires: %u
             return dsdb._dsdb_garbage_collect_tombstones(self, dn,
                                                          current_time,
                                                          tombstone_lifetime)
+
+    def create_own_rid_set(self):
+        '''create a RID set for this DSA'''
+        return dsdb._dsdb_create_own_rid_set(self)
+
+    def allocate_rid(self):
+        '''return a new RID from the RID Pool on this DSA'''
+        return dsdb._dsdb_allocate_rid(self)

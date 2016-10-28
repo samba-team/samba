@@ -1078,6 +1078,74 @@ static PyObject *py_dsdb_am_pdc(PyObject *self, PyObject *args)
 	return PyBool_FromLong(am_pdc);
 }
 
+/*
+  call DSDB_EXTENDED_CREATE_OWN_RID_SET to get a new RID set for this server
+ */
+static PyObject *py_dsdb_create_own_rid_set(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	int ret;
+	struct ldb_result *ext_res;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	/*
+	 * Run DSDB_EXTENDED_CREATE_OWN_RID_SET to get a RID set
+	 */
+
+	ret = ldb_extended(ldb, DSDB_EXTENDED_CREATE_OWN_RID_SET, NULL, &ext_res);
+
+	PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+
+	TALLOC_FREE(ext_res);
+
+	Py_RETURN_NONE;
+}
+
+/*
+  call DSDB_EXTENDED_ALLOCATE_RID to get a new RID set for this server
+ */
+static PyObject *py_dsdb_allocate_rid(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	int ret;
+	uint32_t rid;
+	struct ldb_result *ext_res = NULL;
+	struct dsdb_extended_allocate_rid *rid_return = NULL;
+	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	rid_return = talloc_zero(ldb, struct dsdb_extended_allocate_rid);
+	if (rid_return == NULL) {
+		return PyErr_NoMemory();
+	}
+
+	/*
+	 * Run DSDB_EXTENDED_ALLOCATE_RID to get a new RID
+	 */
+
+	ret = ldb_extended(ldb, DSDB_EXTENDED_ALLOCATE_RID, rid_return, &ext_res);
+	if (ret != LDB_SUCCESS) {
+		TALLOC_FREE(rid_return);
+		TALLOC_FREE(ext_res);
+		PyErr_LDB_ERROR_IS_ERR_RAISE(py_ldb_get_exception(), ret, ldb);
+	}
+
+	rid = rid_return->rid;
+	TALLOC_FREE(rid_return);
+	TALLOC_FREE(ext_res);
+
+	return PyInt_FromLong(rid);
+}
+
 static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *py_list_dn;
@@ -1245,6 +1313,12 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_garbage_collect_tombstones", (PyCFunction)py_dsdb_garbage_collect_tombstones, METH_VARARGS,
 		"_dsdb_kcc_check_deleted(samdb, [dn], current_time, tombstone_lifetime)"
 		" -> (num_objects_expunged, num_links_expunged)" },
+	{ "_dsdb_create_own_rid_set", (PyCFunction)py_dsdb_create_own_rid_set, METH_VARARGS,
+		"_dsdb_create_own_rid_set(samdb)"
+		" -> None" },
+	{ "_dsdb_allocate_rid", (PyCFunction)py_dsdb_allocate_rid, METH_VARARGS,
+		"_dsdb_allocate_rid(samdb)"
+		" -> RID" },
 	{ NULL }
 };
 

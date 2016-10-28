@@ -3869,10 +3869,61 @@ static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct l
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
 
+static int samldb_extended_allocate_rid(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct dsdb_extended_allocate_rid *exop;
+	int ret;
+
+	exop = talloc_get_type(req->op.extended.data,
+			       struct dsdb_extended_allocate_rid);
+	if (!exop) {
+		ldb_set_errstring(ldb,
+				  "samldb_extended_allocate_rid: invalid extended data");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	ret = ridalloc_allocate_rid(module, &exop->rid, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
+static int samldb_extended_create_own_rid_set(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+	struct ldb_dn *dn;
+
+	if (req->op.extended.data != NULL) {
+		ldb_set_errstring(ldb,
+				  "samldb_extended_allocate_rid_pool_for_us: invalid extended data (should be NULL)");
+		return LDB_ERR_PROTOCOL_ERROR;
+	}
+
+	ret = ridalloc_create_own_rid_set(module, req,
+					  &dn, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
+}
+
 static int samldb_extended(struct ldb_module *module, struct ldb_request *req)
 {
 	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_ALLOCATE_RID_POOL) == 0) {
 		return samldb_extended_allocate_rid_pool(module, req);
+	}
+
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_ALLOCATE_RID) == 0) {
+		return samldb_extended_allocate_rid(module, req);
+	}
+
+	if (strcmp(req->op.extended.oid, DSDB_EXTENDED_CREATE_OWN_RID_SET) == 0) {
+		return samldb_extended_create_own_rid_set(module, req);
 	}
 
 	return ldb_next_request(module, req);
