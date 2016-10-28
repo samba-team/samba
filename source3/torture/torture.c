@@ -48,6 +48,7 @@ extern char *optarg;
 extern int optind;
 
 fstring host, workgroup, share, password, username, myname;
+struct cli_credentials *torture_creds;
 static const char *sockops="TCP_NODELAY";
 int torture_nprocs=1;
 static int port_to_use=0;
@@ -10792,6 +10793,20 @@ static void usage(void)
 
 	printf("host=%s share=%s user=%s myname=%s\n", 
 	       host, share, username, myname);
+
+	torture_creds = cli_session_creds_init(frame,
+					       username,
+					       workgroup,
+					       NULL, /* realm */
+					       password,
+					       use_kerberos,
+					       false, /* fallback_after_kerberos */
+					       false, /* use_ccache */
+					       false); /* password_is_nt_hash */
+	if (torture_creds == NULL) {
+		d_printf("cli_session_creds_init() failed.\n");
+		exit(1);
+	}
 
 	if (argc == optind) {
 		correct = run_test("ALL");
