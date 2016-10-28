@@ -95,8 +95,8 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "",
-					       workgroup))) {
+	status = cli_session_setup_anon(cli);
+	if (!NT_STATUS_IS_OK(status)) {
 		cli_shutdown(cli);
 		return;
 	}
