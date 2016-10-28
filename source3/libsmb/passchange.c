@@ -35,24 +35,10 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 				char **err_str)
 {
 	struct cli_state *cli = NULL;
+	struct cli_credentials *creds = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	char *user, *domain, *p;
-
 	NTSTATUS result;
 	bool pass_must_change = False;
-
-	user = talloc_strdup(talloc_tos(), user_name);
-	SMB_ASSERT(user != NULL);
-	domain = talloc_strdup(talloc_tos(), "");
-	SMB_ASSERT(domain != NULL);
-
-	/* allow usernames of the form domain\\user or domain/user */
-	if ((p = strchr_m(user,'\\')) || (p = strchr_m(user,'/')) ||
-	    (p = strchr_m(user,*lp_winbind_separator()))) {
-		*p = 0;
-		domain = user;
-		user = p+1;
-	}
 
 	*err_str = NULL;
 
@@ -66,6 +52,17 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		}
 		return result;
 	}
+
+	creds = cli_session_creds_init(cli,
+				       user_name,
+				       NULL, /* domain */
+				       NULL, /* realm */
+				       old_passwd,
+				       cli->use_kerberos,
+				       cli->fallback_after_kerberos,
+				       cli->use_ccache,
+				       cli->pw_nt_hash);
+	SMB_ASSERT(creds != NULL);
 
 	result = smbXcli_negprot(cli->conn, cli->timeout,
 				 lp_client_ipc_min_protocol(),
@@ -83,8 +80,7 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 
 	/* Given things like SMB signing, restrict anonymous and the like, 
 	   try an authenticated connection first */
-	result = cli_session_setup(cli, user_name,
-				   old_passwd, "");
+	result = cli_session_setup_creds(cli, creds);
 
 	if (!NT_STATUS_IS_OK(result)) {
 
@@ -138,16 +134,14 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 	/* Try not to give the password away too easily */
 
 	if (!pass_must_change) {
-		result = cli_rpc_pipe_open_generic_auth(cli,
-							&ndr_table_samr,
-							NCACN_NP,
-							CRED_DONT_USE_KERBEROS,
-							DCERPC_AUTH_TYPE_NTLMSSP,
-							DCERPC_AUTH_LEVEL_PRIVACY,
-							remote_machine,
-							domain, user,
-							old_passwd,
-							&pipe_hnd);
+		result = cli_rpc_pipe_open_with_creds(cli,
+						      &ndr_table_samr,
+						      NCACN_NP,
+						      DCERPC_AUTH_TYPE_NTLMSSP,
+						      DCERPC_AUTH_LEVEL_PRIVACY,
+						      remote_machine,
+						      creds,
+						      &pipe_hnd);
 	} else {
 		/*
 		 * If the user password must be changed the ntlmssp bind will
