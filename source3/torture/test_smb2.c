@@ -29,6 +29,7 @@
 #include "../librpc/ndr/libndr.h"
 
 extern fstring host, workgroup, share, password, username, myname;
+extern struct cli_credentials *torture_creds;
 
 bool run_smb2_basic(int dummy)
 {
@@ -57,9 +58,7 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = cli_session_setup(cli, username,
-				   password,
-				   workgroup);
+	status = cli_session_setup_creds(cli, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_session_setup returned %s\n", nt_errstr(status));
 		return false;
@@ -331,9 +330,7 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = cli_session_setup(cli1, username,
-				   password,
-				   workgroup);
+	status = cli_session_setup_creds(cli1, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_session_setup returned %s\n", nt_errstr(status));
 		return false;
@@ -752,9 +749,7 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	status = cli_session_setup(cli, username,
-				   password,
-				   workgroup);
+	status = cli_session_setup_creds(cli, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_session_setup returned %s\n", nt_errstr(status));
 		return false;
@@ -906,9 +901,7 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = cli_session_setup(cli1, username,
-				   password,
-				   workgroup);
+	status = cli_session_setup_creds(cli1, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
 		return false;
@@ -1498,9 +1491,7 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = cli_session_setup(cli, username,
-				   password,
-				   workgroup);
+	status = cli_session_setup_creds(cli, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("smb2cli_sesssetup returned %s\n", nt_errstr(status));
 		return false;
