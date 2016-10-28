@@ -44,15 +44,15 @@
 static char *cli_session_setup_get_account(TALLOC_CTX *mem_ctx,
 					   const char *principal);
 
-static struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
-						      const char *username,
-						      const char *domain,
-						      const char *realm,
-						      const char *password,
-						      bool use_kerberos,
-						      bool fallback_after_kerberos,
-						      bool use_ccache,
-						      bool password_is_nt_hash)
+struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
+					       const char *username,
+					       const char *domain,
+					       const char *realm,
+					       const char *password,
+					       bool use_kerberos,
+					       bool fallback_after_kerberos,
+					       bool use_ccache,
+					       bool password_is_nt_hash)
 {
 	struct loadparm_context *lp_ctx = NULL;
 	struct cli_credentials *creds = NULL;
