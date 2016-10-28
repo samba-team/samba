@@ -7113,7 +7113,7 @@ static bool run_error_map_extract(int dummy) {
 		return False;
 	}
 
-	status = cli_session_setup(c_nt, "", "", workgroup);
+	status = cli_session_setup_anon(c_nt);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the NT-error initial session setup (%s)\n",host, nt_errstr(status));
 		return False;
@@ -7140,7 +7140,7 @@ static bool run_error_map_extract(int dummy) {
 		return False;
 	}
 
-	status = cli_session_setup(c_dos, "", "", workgroup);
+	status = cli_session_setup_anon(c_dos);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the DOS-error initial session setup (%s)\n",
 			host, nt_errstr(status));
