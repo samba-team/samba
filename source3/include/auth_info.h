@@ -23,6 +23,9 @@
 struct user_auth_info;
 
 struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
+void set_cmdline_auth_info_guess(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_from_file(struct user_auth_info *auth_info,
+				     const char *filename);
 const char *get_cmdline_auth_info_username(const struct user_auth_info *auth_info);
 void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
 				    const char *username);
@@ -58,5 +61,8 @@ bool get_cmdline_auth_info_smb_encrypt(const struct user_auth_info *auth_info);
 bool get_cmdline_auth_info_use_machine_account(const struct user_auth_info *auth_info);
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 void set_cmdline_auth_info_getpass(struct user_auth_info *auth_info);
+
+struct cli_credentials *get_cmdline_auth_info_creds(
+	const struct user_auth_info *auth_info);
 
 #endif /* _AUTH_INFO_H */
