@@ -1446,15 +1446,21 @@ static int replmd_update_rpmd_rdn_attr(struct ldb_context *ldb,
 				       NTTIME now,
 				       bool is_schema_nc)
 {
+	const char *rdn_name = ldb_dn_get_rdn_name(msg->dn);
+	const struct dsdb_attribute *rdn_attr =
+		dsdb_attribute_by_lDAPDisplayName(ar->schema, rdn_name);
+	const char *attr_name = rdn_attr != NULL ?
+				rdn_attr->lDAPDisplayName :
+				rdn_name;
 	struct ldb_message_element new_el = {
 		.flags = LDB_FLAG_MOD_REPLACE,
-		.name = ldb_dn_get_rdn_name(msg->dn),
+		.name = attr_name,
 		.num_values = 1,
 		.values = discard_const_p(struct ldb_val, rdn_new)
 	};
 	struct ldb_message_element old_el = {
 		.flags = LDB_FLAG_MOD_REPLACE,
-		.name = ldb_dn_get_rdn_name(msg->dn),
+		.name = attr_name,
 		.num_values = rdn_old ? 1 : 0,
 		.values = discard_const_p(struct ldb_val, rdn_old)
 	};
