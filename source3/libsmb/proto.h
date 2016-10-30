@@ -53,10 +53,6 @@ NTSTATUS cli_session_setup_creds_recv(struct tevent_req *req);
 NTSTATUS cli_session_setup_creds(struct cli_state *cli,
 				 struct cli_credentials *creds);
 NTSTATUS cli_session_setup_anon(struct cli_state *cli);
-NTSTATUS cli_session_setup(struct cli_state *cli,
-			   const char *user,
-			   const char *pass,
-			   const char *workgroup);
 struct tevent_req *cli_session_setup_guest_create(TALLOC_CTX *mem_ctx,
 						  struct tevent_context *ev,
 						  struct cli_state *cli,

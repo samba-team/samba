@@ -1775,43 +1775,6 @@ NTSTATUS cli_session_setup_anon(struct cli_state *cli)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_session_setup(struct cli_state *cli,
-			   const char *user,
-			   const char *pass,
-			   const char *workgroup)
-{
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	const char *dest_realm = NULL;
-	struct cli_credentials *creds = NULL;
-
-	/*
-	 * dest_realm is only valid in the winbindd use case,
-	 * where we also have the account in that realm.
-	 */
-	dest_realm = cli_state_remote_realm(cli);
-
-	creds = cli_session_creds_init(cli,
-				       user,
-				       workgroup,
-				       dest_realm,
-				       pass,
-				       cli->use_kerberos,
-				       cli->fallback_after_kerberos,
-				       cli->use_ccache,
-				       cli->pw_nt_hash);
-	if (creds == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = cli_session_setup_creds(cli, creds);
-	TALLOC_FREE(creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
  Send a uloggoff.
 *****************************************************************************/
