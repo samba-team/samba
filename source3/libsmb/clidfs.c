@@ -141,6 +141,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	NTSTATUS status;
 	int flags = 0;
 	int signing_state = get_cmdline_auth_info_signing_state(auth_info);
+	struct cli_credentials *creds = NULL;
 
 	if (force_encrypt) {
 		signing_state = SMB_SIGNING_REQUIRED;
@@ -221,9 +222,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		domain = lp_workgroup();
 	}
 
-	status = cli_session_setup(c, username,
-				   password,
-				   domain);
+	creds = get_cmdline_auth_info_creds(auth_info);
+
+	status = cli_session_setup_creds(c, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
