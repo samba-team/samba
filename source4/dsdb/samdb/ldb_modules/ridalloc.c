@@ -347,8 +347,12 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 
 	/* we need this to go all the way to the top of the module
 	 * stack, as we need all the extra attributes added (including
-	 * complex ones like ntsecuritydescriptor) */
-	ret = dsdb_module_add(module, msg, DSDB_FLAG_TOP_MODULE | DSDB_MODIFY_RELAX, parent);
+	 * complex ones like ntsecuritydescriptor).  We must do this
+	 * as system, otherwise a user might end up owning the RID
+	 * set, and that would be bad... */
+	ret = dsdb_module_add(module, msg,
+			      DSDB_FLAG_TOP_MODULE | DSDB_FLAG_AS_SYSTEM
+			      | DSDB_MODIFY_RELAX, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to add RID Set %s - %s",
 				       ldb_dn_get_linearized(msg->dn),
