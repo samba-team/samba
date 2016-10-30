@@ -406,6 +406,7 @@ smb_complete_connection(const char *myname,
 	struct cli_state *cli;	/* New connection */
 	NTSTATUS        nt_status;
 	struct cli_credentials *creds = NULL;
+	bool use_kerberos = false;
 
 	/* Start the SMB connection */
 	*need_auth = false;
@@ -425,15 +426,19 @@ smb_complete_connection(const char *myname,
 		return NULL;
 	}
 
+	if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		use_kerberos = true;
+	}
+
 	creds = cli_session_creds_init(cli,
 				       username,
 				       workgroup,
 				       NULL, /* realm */
 				       password,
-				       cli->use_kerberos,
-				       cli->fallback_after_kerberos,
-				       cli->use_ccache,
-				       cli->pw_nt_hash);
+				       use_kerberos,
+				       false, /* fallback_after_kerberos */
+				       false, /* use_ccache */
+				       false); /* password_is_nt_hash */
 	if (creds == NULL) {
 		fprintf(stderr, "ERROR: cli_session_creds_init failed\n");
 		cli_shutdown(cli);
