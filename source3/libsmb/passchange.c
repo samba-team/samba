@@ -58,10 +58,10 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 				       NULL, /* domain */
 				       NULL, /* realm */
 				       old_passwd,
-				       cli->use_kerberos,
-				       cli->fallback_after_kerberos,
-				       cli->use_ccache,
-				       cli->pw_nt_hash);
+				       false, /* use_kerberos */
+				       false, /* fallback_after_kerberos */
+				       false, /* use_ccache */
+				       false); /* password_is_nt_hash */
 	SMB_ASSERT(creds != NULL);
 
 	result = smbXcli_negprot(cli->conn, cli->timeout,
