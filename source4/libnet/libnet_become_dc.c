@@ -2684,7 +2684,7 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	struct GUID *source_dsa_invocation_id = NULL;
 	struct drsuapi_DsReplicaHighWaterMark *new_highwatermark = NULL;
 	bool more_data = false;
-	NTSTATUS nt_status;
+	WERROR werr;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		return r->out.result;
@@ -2783,9 +2783,9 @@ static WERROR becomeDC_drsuapi_pull_partition_recv(struct libnet_BecomeDC_state 
 	 */
 	s->_sc.gensec_skey	= &drsuapi_p->gensec_skey;
 
-	nt_status = partition->store_chunk(s->callbacks.private_data, &s->_sc);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ntstatus_to_werror(nt_status);
+	werr = partition->store_chunk(s->callbacks.private_data, &s->_sc);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	return WERR_OK;

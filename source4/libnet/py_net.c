@@ -390,8 +390,8 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 	struct replicate_state *s;
 	unsigned level;
 	unsigned req_level = 0;
-	NTSTATUS (*chunk_handler)(void *private_data, const struct libnet_BecomeDC_StoreChunk *c);
-	NTSTATUS status;
+	WERROR (*chunk_handler)(void *private_data, const struct libnet_BecomeDC_StoreChunk *c);
+	WERROR werr;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OIO|OIO",
 					 discard_const_p(char *, kwnames),
@@ -482,9 +482,9 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 
 	s->chunk.ctr_level = level;
 
-	status = chunk_handler(s->vampire_state, &s->chunk);
-	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_Format(PyExc_TypeError, "Failed to process chunk: %s", nt_errstr(status));
+	werr = chunk_handler(s->vampire_state, &s->chunk);
+	if (!W_ERROR_IS_OK(werr)) {
+		PyErr_Format(PyExc_TypeError, "Failed to process chunk: %s", win_errstr(werr));
 		return NULL;
 	}
 
