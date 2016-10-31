@@ -55,6 +55,7 @@ struct registry_hook reg_hooks[] = {
   { KEY_PRINTING "\\Printers",	&printing_ops },
   { KEY_PRINTING_2K, 		&regdb_ops },
   { KEY_PRINTING_PORTS, 	&regdb_ops },
+  { KEY_PCC,			&regdb_ops },
   { KEY_SHARES,      		&shares_reg_ops },
   { KEY_SMBCONF,      		&smbconf_reg_ops },
   { KEY_NETLOGON_PARAMS,	&netlogon_params_reg_ops },

@@ -316,6 +316,165 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+static WERROR winreg_printer_open_core_driver(TALLOC_CTX *mem_ctx,
+					      struct dcerpc_binding_handle *binding_handle,
+					      const char *architecture,
+					      const char *key,
+					      uint32_t access_mask,
+					      struct policy_handle *hive_handle,
+					      struct policy_handle *key_handle)
+{
+	struct winreg_String wkey, wkeyclass;
+	NTSTATUS status;
+	WERROR result = WERR_OK;
+	WERROR ignore;
+	enum winreg_CreateAction action = REG_ACTION_NONE;
+	const char *path;
+
+	status = dcerpc_winreg_OpenHKLM(binding_handle,
+					mem_ctx,
+					NULL,
+					access_mask,
+					hive_handle,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("winreg_printer_open_core_driver: Could not open HKLM hive: %s\n",
+			  nt_errstr(status)));
+		return ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0,("winreg_printer_open_core_driver: Could not open HKLM hive: %s\n",
+			  win_errstr(result)));
+		return result;
+	}
+
+	ZERO_STRUCT(wkey);
+	wkey.name = TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY;
+
+	ZERO_STRUCT(wkeyclass);
+	wkeyclass.name = "";
+
+	status = dcerpc_winreg_CreateKey(binding_handle,
+					 mem_ctx,
+					 hive_handle,
+					 wkey,
+					 wkeyclass,
+					 0,
+					 access_mask,
+					 NULL,
+					 key_handle,
+					 &action,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	dcerpc_winreg_CloseKey(binding_handle, mem_ctx, key_handle, &ignore);
+
+	path = talloc_asprintf(mem_ctx, "%s\\%s",
+					TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY,
+					architecture);
+	if (path == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	wkey.name = path;
+
+	status = dcerpc_winreg_CreateKey(binding_handle,
+					 mem_ctx,
+					 hive_handle,
+					 wkey,
+					 wkeyclass,
+					 0,
+					 access_mask,
+					 NULL,
+					 key_handle,
+					 &action,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	dcerpc_winreg_CloseKey(binding_handle, mem_ctx, key_handle, &ignore);
+
+	path = talloc_asprintf(mem_ctx, "%s\\%s\\CorePrinterDrivers",
+					TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY,
+					architecture);
+	if (path == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	wkey.name = path;
+
+	status = dcerpc_winreg_CreateKey(binding_handle,
+					 mem_ctx,
+					 hive_handle,
+					 wkey,
+					 wkeyclass,
+					 0,
+					 access_mask,
+					 NULL,
+					 key_handle,
+					 &action,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	dcerpc_winreg_CloseKey(binding_handle, mem_ctx, key_handle, &ignore);
+
+	path = talloc_asprintf(mem_ctx, "%s\\%s\\CorePrinterDrivers\\%s",
+					TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY,
+					architecture,
+					key);
+	if (path == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	wkey.name = path;
+
+	status = dcerpc_winreg_CreateKey(binding_handle,
+					 mem_ctx,
+					 hive_handle,
+					 wkey,
+					 wkeyclass,
+					 0,
+					 access_mask,
+					 NULL,
+					 key_handle,
+					 &action,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+ done:
+	if (is_valid_policy_hnd(hive_handle)) {
+		dcerpc_winreg_CloseKey(binding_handle,
+				       mem_ctx,
+				       hive_handle,
+				       &ignore);
+	}
+	ZERO_STRUCTP(hive_handle);
+
+	return result;
+}
+
 /**
  * @brief Create the registry keyname for the given printer.
  *
@@ -4131,3 +4290,88 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
+WERROR winreg_add_core_driver(TALLOC_CTX *mem_ctx,
+			      struct dcerpc_binding_handle *winreg_handle,
+			      const char *architecture,
+			      const struct spoolss_CorePrinterDriver *r)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct policy_handle hive_hnd, key_hnd;
+	TALLOC_CTX *tmp_ctx = NULL;
+	NTSTATUS status;
+	WERROR result;
+	const char *guid_str;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	guid_str = GUID_string2(tmp_ctx, &r->core_driver_guid);
+	if (guid_str == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	result = winreg_printer_open_core_driver(tmp_ctx,
+						 winreg_handle,
+						 architecture,
+						 guid_str,
+						 access_mask,
+						 &hive_hnd,
+						 &key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_add_core_driver: "
+			  "Could not open core driver key (%s,%s): %s\n",
+			  guid_str, architecture, win_errstr(result)));
+		goto done;
+	}
+
+	result = winreg_printer_write_date(tmp_ctx, winreg_handle,
+					   &key_hnd, "DriverDate",
+					   r->driver_date);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = winreg_printer_write_ver(tmp_ctx, winreg_handle,
+					  &key_hnd, "DriverVersion",
+					  r->driver_version);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "InfPath",
+				      r->szPackageID,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
+		if (is_valid_policy_hnd(&key_hnd)) {
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+

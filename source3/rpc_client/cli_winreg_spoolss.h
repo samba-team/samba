@@ -622,4 +622,24 @@ WERROR winreg_get_core_driver(TALLOC_CTX *mem_ctx,
 			      const struct GUID *core_driver_guid,
 			      struct spoolss_CorePrinterDriver **_core_printer_driver);
 
+/**
+ * @brief This function adds a core printer driver
+ *
+ * @param[in]  mem_ctx	       A talloc memory context.
+ *
+ * @param[in]  b The dcerpc binding handle
+ *
+ * @param[in]  architecture    The architecture type.
+ *
+ * @param[in]  core_driver_driver The core driver.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+
+WERROR winreg_add_core_driver(TALLOC_CTX *mem_ctx,
+			      struct dcerpc_binding_handle *winreg_handle,
+			      const char *architecture,
+			      const struct spoolss_CorePrinterDriver *r);
+
 #endif /* _RPC_CLIENT_CLI_WINREG_SPOOLSS_H_ */

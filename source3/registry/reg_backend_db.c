@@ -121,6 +121,7 @@ static WERROR regdb_trans_do(struct db_context *db,
 
 static const char *builtin_registry_paths[] = {
 	KEY_PRINTING_2K,
+	KEY_PCC,
 	KEY_PRINTING_PORTS,
 	KEY_PRINTING,
 	KEY_PRINTING "\\Forms",
