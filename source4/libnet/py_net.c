@@ -392,6 +392,8 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 	unsigned req_level = 0;
 	WERROR (*chunk_handler)(void *private_data, const struct libnet_BecomeDC_StoreChunk *c);
 	WERROR werr;
+	enum drsuapi_DsExtendedError extended_ret = DRSUAPI_EXOP_ERR_NONE;
+	enum drsuapi_DsExtendedOperation exop = DRSUAPI_EXOP_NONE;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OIO|OIO",
 					 discard_const_p(char *, kwnames),
@@ -412,7 +414,10 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 			return NULL;
 		}
 		s->chunk.ctr1                         = pytalloc_get_ptr(py_ctr);
-		s->partition.nc                       = *s->chunk.ctr1->naming_context;
+		if (s->chunk.ctr1->naming_context != NULL) {
+			s->partition.nc = *s->chunk.ctr1->naming_context;
+		}
+		extended_ret = s->chunk.ctr1->extended_ret;
 		s->partition.more_data                = s->chunk.ctr1->more_data;
 		s->partition.source_dsa_guid          = s->chunk.ctr1->source_dsa_guid;
 		s->partition.source_dsa_invocation_id = s->chunk.ctr1->source_dsa_invocation_id;
@@ -423,7 +428,10 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 			return NULL;
 		}
 		s->chunk.ctr6                         = pytalloc_get_ptr(py_ctr);
-		s->partition.nc                       = *s->chunk.ctr6->naming_context;
+		if (s->chunk.ctr6->naming_context != NULL) {
+			s->partition.nc = *s->chunk.ctr6->naming_context;
+		}
+		extended_ret = s->chunk.ctr6->extended_ret;
 		s->partition.more_data                = s->chunk.ctr6->more_data;
 		s->partition.source_dsa_guid          = s->chunk.ctr6->source_dsa_guid;
 		s->partition.source_dsa_invocation_id = s->chunk.ctr6->source_dsa_invocation_id;
@@ -447,6 +455,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 			}
 
 			s->chunk.req5 = pytalloc_get_ptr(py_req);
+			exop = s->chunk.req5->extended_op;
 			break;
 		case 8:
 			if (!py_check_dcerpc_type(py_req, "samba.dcerpc.drsuapi", "DsGetNCChangesRequest8")) {
@@ -454,6 +463,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 			}
 
 			s->chunk.req8 = pytalloc_get_ptr(py_req);
+			exop = s->chunk.req8->extended_op;
 			break;
 		case 10:
 			if (!py_check_dcerpc_type(py_req, "samba.dcerpc.drsuapi", "DsGetNCChangesRequest10")) {
@@ -461,12 +471,19 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 			}
 
 			s->chunk.req10 = pytalloc_get_ptr(py_req);
+			exop = s->chunk.req10->extended_op;
 			break;
 		default:
 			PyErr_Format(PyExc_TypeError, "Bad req_level %u in replicate_chunk", req_level);
 			return NULL;
 		}
 	}
+
+	if (exop != DRSUAPI_EXOP_NONE && extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
+		PyErr_Format(PyExc_RuntimeError, "Remote EXOP %d failed with %d", exop, extended_ret);
+		return NULL;
+	}
+
 	s->chunk.req_level = req_level;
 
 	chunk_handler = libnet_vampire_cb_store_chunk;
