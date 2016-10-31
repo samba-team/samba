@@ -38,6 +38,72 @@
 
 void initnet(void);
 
+static void PyErr_SetDsExtendedError(enum drsuapi_DsExtendedError ext_err, const char *error_description)
+{
+	PyObject *error = PyObject_GetAttrString(PyImport_ImportModule("samba"),
+						 "DsExtendedError");
+	if (error_description == NULL) {
+		switch (ext_err) {
+			/* Copied out of ndr_drsuapi.c:ndr_print_drsuapi_DsExtendedError() */
+			case DRSUAPI_EXOP_ERR_NONE:
+				error_description = "DRSUAPI_EXOP_ERR_NONE";
+				break;
+			case DRSUAPI_EXOP_ERR_SUCCESS:
+				error_description = "DRSUAPI_EXOP_ERR_SUCCESS";
+				break;
+			case DRSUAPI_EXOP_ERR_UNKNOWN_OP:
+				error_description = "DRSUAPI_EXOP_ERR_UNKNOWN_OP";
+				break;
+			case DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER:
+				error_description = "DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER";
+				break;
+			case DRSUAPI_EXOP_ERR_UPDATE_ERR:
+				error_description = "DRSUAPI_EXOP_ERR_UPDATE_ERR";
+				break;
+			case DRSUAPI_EXOP_ERR_EXCEPTION:
+				error_description = "DRSUAPI_EXOP_ERR_EXCEPTION";
+				break;
+			case DRSUAPI_EXOP_ERR_UNKNOWN_CALLER:
+				error_description = "DRSUAPI_EXOP_ERR_UNKNOWN_CALLER";
+				break;
+			case DRSUAPI_EXOP_ERR_RID_ALLOC:
+				error_description = "DRSUAPI_EXOP_ERR_RID_ALLOC";
+				break;
+			case DRSUAPI_EXOP_ERR_FSMO_OWNER_DELETED:
+				error_description = "DRSUAPI_EXOP_ERR_FSMO_OWNER_DELETED";
+				break;
+			case DRSUAPI_EXOP_ERR_FMSO_PENDING_OP:
+				error_description = "DRSUAPI_EXOP_ERR_FMSO_PENDING_OP";
+				break;
+			case DRSUAPI_EXOP_ERR_MISMATCH:
+				error_description = "DRSUAPI_EXOP_ERR_MISMATCH";
+				break;
+			case DRSUAPI_EXOP_ERR_COULDNT_CONTACT:
+				error_description = "DRSUAPI_EXOP_ERR_COULDNT_CONTACT";
+				break;
+			case DRSUAPI_EXOP_ERR_FSMO_REFUSING_ROLES:
+				error_description = "DRSUAPI_EXOP_ERR_FSMO_REFUSING_ROLES";
+				break;
+			case DRSUAPI_EXOP_ERR_DIR_ERROR:
+				error_description = "DRSUAPI_EXOP_ERR_DIR_ERROR";
+				break;
+			case DRSUAPI_EXOP_ERR_FSMO_MISSING_SETTINGS:
+				error_description = "DRSUAPI_EXOP_ERR_FSMO_MISSING_SETTINGS";
+				break;
+			case DRSUAPI_EXOP_ERR_ACCESS_DENIED:
+				error_description = "DRSUAPI_EXOP_ERR_ACCESS_DENIED";
+				break;
+			case DRSUAPI_EXOP_ERR_PARAM_ERROR:
+				error_description = "DRSUAPI_EXOP_ERR_PARAM_ERROR";
+				break;
+		}
+	}
+	PyErr_SetObject(error,
+			Py_BuildValue(discard_const_p(char, "(i,s)"),
+				      ext_err,
+				      error_description));
+}
+
 static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObject *kwargs)
 {
 	struct libnet_Join_member r;
@@ -65,7 +131,10 @@ static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObjec
 
 	status = libnet_Join_member(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status,
+					     r.out.error_string
+					     ? r.out.error_string
+					     : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -115,8 +184,10 @@ static PyObject *py_net_change_password(py_net_Object *self, PyObject *args, PyO
 
 	status = libnet_ChangePassword(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				r.generic.out.error_string?r.generic.out.error_string:nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status,
+					     r.generic.out.error_string
+					     ? r.generic.out.error_string
+					     : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -164,8 +235,10 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 
 	status = libnet_SetPassword(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				r.generic.out.error_string?r.generic.out.error_string:nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status,
+					     r.generic.out.error_string
+					     ? r.generic.out.error_string
+					     : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -205,8 +278,10 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 
 	status = libnet_RemoteTOD(self->libnet_ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				r.generic.out.error_string?r.generic.out.error_string:nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status,
+					     r.generic.out.error_string
+					     ? r.generic.out.error_string
+					     : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -246,7 +321,10 @@ static PyObject *py_net_user_create(py_net_Object *self, PyObject *args, PyObjec
 
 	status = libnet_CreateUser(self->libnet_ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status,
+					     r.out.error_string
+					     ? r.out.error_string
+					     : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -280,7 +358,10 @@ static PyObject *py_net_user_delete(py_net_Object *self, PyObject *args, PyObjec
 
 	status = libnet_DeleteUser(self->libnet_ctx, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError, r.out.error_string?r.out.error_string:nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status,
+					   r.out.error_string
+					  ? r.out.error_string
+					  : nt_errstr(status));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -358,8 +439,10 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 				    s,
 				    &s->gensec_skey);
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_Format(PyExc_RuntimeError, "Unable to get session key from drspipe: %s",
-			     nt_errstr(status));
+		char *error_string = talloc_asprintf(s,
+						     "Unable to get session key from drspipe: %s",
+						     nt_errstr(status));
+		PyErr_SetNTSTATUS_and_string(status, error_string);
 		talloc_free(s);
 		return NULL;
 	}
@@ -480,7 +563,7 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 	}
 
 	if (exop != DRSUAPI_EXOP_NONE && extended_ret != DRSUAPI_EXOP_ERR_SUCCESS) {
-		PyErr_Format(PyExc_RuntimeError, "Remote EXOP %d failed with %d", exop, extended_ret);
+		PyErr_SetDsExtendedError(extended_ret, NULL);
 		return NULL;
 	}
 
@@ -501,7 +584,12 @@ static PyObject *py_net_replicate_chunk(py_net_Object *self, PyObject *args, PyO
 
 	werr = chunk_handler(s->vampire_state, &s->chunk);
 	if (!W_ERROR_IS_OK(werr)) {
-		PyErr_Format(PyExc_TypeError, "Failed to process chunk: %s", win_errstr(werr));
+		char *error_string
+			= talloc_asprintf(NULL,
+					  "Failed to process 'chunk' of DRS replicated objects: %s",
+					  win_errstr(werr));
+		PyErr_SetWERROR_and_string(werr, error_string);
+		TALLOC_FREE(error_string);
 		return NULL;
 	}
 
@@ -542,7 +630,7 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args, PyObject *kw
 	status = finddcs_cldap(io, io,
 			       lpcfg_resolve_context(self->libnet_ctx->lp_ctx), self->ev);
 	if (NT_STATUS_IS_ERR(status)) {
-		PyErr_SetString(PyExc_RuntimeError, nt_errstr(status));
+		PyErr_SetNTSTATUS(status);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
