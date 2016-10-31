@@ -114,6 +114,7 @@ class dc_join(object):
             ctx.acct_dn = None
             ctx.myname = ctx.server.split('.')[0]
             ctx.ntds_guid = None
+            ctx.rid_manager_dn = None
 
             # Save this early
             ctx.remote_dc_ntds_guid = ctx.samdb.get_ntds_GUID()
@@ -136,6 +137,12 @@ class dc_join(object):
             ctx.SPNs = [ "HOST/%s" % ctx.myname,
                          "HOST/%s" % ctx.dnshostname,
                          "GC/%s/%s" % (ctx.dnshostname, ctx.dnsforest) ]
+
+            res_rid_manager = ctx.samdb.search(scope=ldb.SCOPE_BASE,
+                                               attrs=["rIDManagerReference"],
+                                               base=ctx.base_dn)
+
+            ctx.rid_manager_dn = res_rid_manager[0]["rIDManagerReference"][0]
 
         ctx.domaindns_zone = 'DC=DomainDnsZones,%s' % ctx.base_dn
         ctx.forestdns_zone = 'DC=ForestDnsZones,%s' % ctx.root_dn
@@ -913,6 +920,19 @@ class dc_join(object):
                 repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id,
                         destination_dsa_guid,
                         exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+            elif ctx.rid_manager_dn != None:
+                # Try and get a RID Set if we can.  This is only possible against the RID Master.  Warn otherwise.
+                try:
+                    repl.replicate(ctx.rid_manager_dn, source_dsa_invocation_id,
+                                   destination_dsa_guid,
+                                   exop=drsuapi.DRSUAPI_EXOP_FSMO_RID_ALLOC)
+                except samba.DsExtendedError, (enum, estr):
+                    if enum == drsuapi.DRSUAPI_EXOP_ERR_FSMO_NOT_OWNER:
+                        print "WARNING: Unable to replicate own RID Set, as server %s (the server we joined) is not the RID Master." % ctx.server
+                        print "NOTE: This is normal and expected, Samba will be able to create users after it contacts the RID Master at first startup."
+                    else:
+                        raise
+
             ctx.repl = repl
             ctx.source_dsa_invocation_id = source_dsa_invocation_id
             ctx.destination_dsa_guid = destination_dsa_guid
