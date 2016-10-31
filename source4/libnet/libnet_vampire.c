@@ -216,8 +216,8 @@ NTSTATUS libnet_vampire_cb_check_options(void *private_data,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
-					       const struct libnet_BecomeDC_StoreChunk *c)
+static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
+					     const struct libnet_BecomeDC_StoreChunk *c)
 {
 	WERROR status;
 	struct dsdb_schema_prefixmap *pfm_remote;
@@ -244,9 +244,13 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	DEBUG(0,("Analyze and apply schema objects\n"));
 
 	s_dsa			= talloc_zero(s, struct repsFromTo1);
-	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
+	if (s_dsa == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	s_dsa->other_info	= talloc(s_dsa, struct repsFromTo1OtherInfo);
-	NT_STATUS_HAVE_NO_MEMORY(s_dsa->other_info);
+	if (s_dsa->other_info == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	switch (c->ctr_level) {
 	case 1:
@@ -272,19 +276,19 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 		uptodateness_vector		= c->ctr6->uptodateness_vector;
 		break;
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAMETER;
 	}
 	/* We must set these up to ensure the replMetaData is written
 	 * correctly, before our NTDS Settings entry is replicated */
 	ok = samdb_set_ntds_invocation_id(s->ldb, &c->dest_dsa->invocation_id);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds invocationId\n"));
-		return NT_STATUS_FOOBAR;
+		return WERR_INTERNAL_ERROR;
 	}
 	ok = samdb_set_ntds_objectGUID(s->ldb, &c->dest_dsa->ntds_guid);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
-		return NT_STATUS_FOOBAR;
+		return WERR_INTERNAL_ERROR;
 	}
 
 	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
@@ -292,7 +296,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
 			 win_errstr(status)));
-		return werror_to_ntstatus(status);
+		return status;
 	}
 
 	s_dsa->replica_flags		= DRSUAPI_DRS_WRIT_REP
@@ -301,14 +305,18 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	if (tmp_dns_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	if (tmp_dns_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
 	if (s->self_made_schema == NULL) {
 		DEBUG(0,("libnet_vampire_cb_apply_schema: called with out self_made_schema\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+		return WERR_INTERNAL_ERROR;
 	}
 
 	schema_ldb = provision_get_schema(s, s->lp_ctx,
@@ -323,7 +331,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 		ret = dsdb_reference_schema(s->ldb, provision_schema, false);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
-			return NT_STATUS_UNSUCCESSFUL;
+			return WERR_INTERNAL_ERROR;
 		}
 		talloc_free(schema_ldb);
 	}
@@ -345,7 +353,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0, ("%s: dsdb_repl_resolve_working_schema() failed: %s",
 			  __location__, win_errstr(status)));
-		return werror_to_ntstatus(status);
+		return status;
 	}
 
 	/* free temp objects for 1st conversion phase */
@@ -360,7 +368,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to attach working schema from DRS.\n"));
-		return NT_STATUS_FOOBAR;
+		return WERR_INTERNAL_ERROR;
 	}
 
 	/* we don't want to access the self made schema anymore */
@@ -370,7 +378,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	partition_dn = ldb_dn_new(s, s->ldb, c->partition->nc.dn);
 	if (partition_dn == NULL) {
 		DEBUG(0,("Failed to parse partition DN from DRS.\n"));
-		return NT_STATUS_FOOBAR;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	/* Now convert the schema elements again, using the schema we finalised, ready to actually import */
@@ -389,7 +397,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 						 s, &schema_objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects when trying to import over DRS (2nd pass, to store remote schema): %s\n", win_errstr(status)));
-		return werror_to_ntstatus(status);
+		return status;
 	}
 
 	if (lpcfg_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
@@ -406,11 +414,13 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	status = dsdb_replicated_objects_commit(s->ldb, NULL, schema_objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
-		return werror_to_ntstatus(status);
+		return status;
 	}
 
 	msg = ldb_msg_new(schema_objs);
-	NT_STATUS_HAVE_NO_MEMORY(msg);
+	if (msg == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	msg->dn = schema_objs->partition_dn;
 
 	/* We must ensure a prefixMap has been written.  Unlike other
@@ -420,7 +430,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	 * prefixMap for this entire operation.  */
 	ret = ldb_msg_add_value(msg, "prefixMap", &s->prefixmap_blob, &prefixMap_el);
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_FOOBAR;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 	/* We want to know if a prefixMap was written already, as it
 	 * would mean that the above comment was not true, and we have
@@ -430,7 +440,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	ret = dsdb_modify(s->ldb, msg, DSDB_FLAG_AS_SYSTEM);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to add prefixMap: %s\n", ldb_errstring(s->ldb)));
-		return NT_STATUS_FOOBAR;
+		return WERR_INTERNAL_ERROR;
 	}
 
 	talloc_free(s_dsa);
@@ -439,17 +449,17 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	s->schema = dsdb_get_schema(s->ldb, s);
 	if (!s->schema) {
 		DEBUG(0,("Failed to get loaded dsdb_schema\n"));
-		return NT_STATUS_FOOBAR;
+		return WERR_INTERNAL_ERROR;
 	}
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
-NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
-					const struct libnet_BecomeDC_StoreChunk *c)
+WERROR libnet_vampire_cb_schema_chunk(void *private_data,
+				      const struct libnet_BecomeDC_StoreChunk *c)
 {
 	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
-	WERROR status;
+	WERROR werr;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t nc_object_count;
 	uint32_t nc_total_received = 0;
@@ -477,7 +487,7 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		linked_attributes_count		= c->ctr6->linked_attributes_count;
 		break;
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (!s->schema_part.first_object) {
@@ -495,7 +505,6 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 	}
 
 	if (!s->self_made_schema) {
-		WERROR werr;
 		struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr_without_schema_info;
 		/* Put the DRS prefixmap aside for the schema we are
 		 * about to load in the provision, and into the one we
@@ -510,7 +519,7 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		}
 		werr = dsdb_get_drsuapi_prefixmap_as_blob(&mapping_ctr_without_schema_info, s, &s->prefixmap_blob);
 		if (!W_ERROR_IS_OK(werr)) {
-			return werror_to_ntstatus(werr);
+			return werr;
 		}
 
 		/* Set up two manually-constructed schema - the local
@@ -518,16 +527,18 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		 * one, which will then in turn be used to build the
 		 * other. */
 		s->self_made_schema = dsdb_new_schema(s);
-		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
+		if (s->self_made_schema == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
 
-		status = dsdb_load_prefixmap_from_drsuapi(s->self_made_schema, mapping_ctr);
-		if (!W_ERROR_IS_OK(status)) {
-			return werror_to_ntstatus(status);
+		werr = dsdb_load_prefixmap_from_drsuapi(s->self_made_schema, mapping_ctr);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
 		}
 	} else {
-		status = dsdb_schema_pfm_contains_drsuapi_pfm(s->self_made_schema->prefixmap, mapping_ctr);
-		if (!W_ERROR_IS_OK(status)) {
-			return werror_to_ntstatus(status);
+		werr = dsdb_schema_pfm_contains_drsuapi_pfm(s->self_made_schema->prefixmap, mapping_ctr);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
 		}
 	}
 
@@ -546,11 +557,11 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		return libnet_vampire_cb_apply_schema(s, c);
 	}
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
-NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
-			     const struct libnet_BecomeDC_StoreChunk *c)
+WERROR libnet_vampire_cb_store_chunk(void *private_data,
+				     const struct libnet_BecomeDC_StoreChunk *c)
 {
 	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
 	WERROR status;
@@ -575,9 +586,13 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	struct ldb_dn *nc_root = NULL;
 
 	s_dsa			= talloc_zero(s, struct repsFromTo1);
-	NT_STATUS_HAVE_NO_MEMORY(s_dsa);
+	if (s_dsa == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	s_dsa->other_info	= talloc(s_dsa, struct repsFromTo1OtherInfo);
-	NT_STATUS_HAVE_NO_MEMORY(s_dsa->other_info);
+	if (s_dsa->other_info == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	switch (c->ctr_level) {
 	case 1:
@@ -607,7 +622,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		uptodateness_vector		= c->ctr6->uptodateness_vector;
 		break;
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	switch (c->req_level) {
@@ -634,7 +649,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		req_replica_flags = c->req10->replica_flags;
 		break;
 	default:
-		return NT_STATUS_INVALID_PARAMETER;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (req_replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
@@ -654,9 +669,13 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	memset(s_dsa->schedule, 0x11, sizeof(s_dsa->schedule));
 
 	tmp_dns_name	= GUID_string(s_dsa->other_info, &s_dsa->source_dsa_obj_guid);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	if (tmp_dns_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	tmp_dns_name	= talloc_asprintf_append_buffer(tmp_dns_name, "._msdcs.%s", c->forest->dns_name);
-	NT_STATUS_HAVE_NO_MEMORY(tmp_dns_name);
+	if (tmp_dns_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	s_dsa->other_info->dns_name = tmp_dns_name;
 
 	/* we want to show a count per partition */
@@ -670,7 +689,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	partition_dn = ldb_dn_new(s, s->ldb, c->partition->nc.dn);
 	if (partition_dn == NULL) {
 		DEBUG(0,("Failed to parse partition DN from DRS.\n"));
-		return NT_STATUS_FOOBAR;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	if (is_exop) {
@@ -688,7 +707,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to find nc_root for %s\n",
 				 ldb_dn_get_linearized(partition_dn)));
-			return NT_STATUS_INTERNAL_ERROR;
+			return WERR_INTERNAL_ERROR;
 		}
 	} else {
 		if (nc_object_count) {
@@ -706,7 +725,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	schema = dsdb_get_schema(s->ldb, NULL);
 	if (!schema) {
 		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
+		return WERR_INTERNAL_ERROR;
 	}
 
 	if (req_replica_flags & DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS) {
@@ -732,7 +751,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 						 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
-		return werror_to_ntstatus(status);
+		return status;
 	}
 
 	if (lpcfg_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
@@ -748,7 +767,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	status = dsdb_replicated_objects_commit(s->ldb, NULL, objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
-		return werror_to_ntstatus(status);
+		return status;
 	}
 
 	talloc_free(s_dsa);
@@ -759,19 +778,19 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 
 		if (!linked_attributes[i].identifier) {
 			DEBUG(0, ("No linked attribute identifier\n"));
-			return NT_STATUS_FOOBAR;
+			return WERR_INTERNAL_ERROR;
 		}
 
 		if (!linked_attributes[i].value.blob) {
 			DEBUG(0, ("No linked attribute value\n"));
-			return NT_STATUS_FOOBAR;
+			return WERR_INTERNAL_ERROR;
 		}
 
 		sa = dsdb_attribute_by_attributeID_id(s->schema,
 						      linked_attributes[i].attid);
 		if (!sa) {
 			DEBUG(0, ("Unable to find attribute via attribute id %d\n", linked_attributes[i].attid));
-			return NT_STATUS_FOOBAR;
+			return WERR_INTERNAL_ERROR;
 		}
 
 		if (lpcfg_parm_bool(s->lp_ctx, NULL, "become dc", "dump objects", false)) {
@@ -783,6 +802,6 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 		}
 	}
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 

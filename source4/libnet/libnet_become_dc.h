@@ -97,8 +97,8 @@ struct libnet_BecomeDC_Partition {
 	bool more_data;
 	uint32_t replica_flags;
 
-	NTSTATUS (*store_chunk)(void *private_data,
-				const struct libnet_BecomeDC_StoreChunk *info);
+	WERROR (*store_chunk)(void *private_data,
+			      const struct libnet_BecomeDC_StoreChunk *info);
 };
 
 struct libnet_BecomeDC_StoreChunk {
@@ -123,12 +123,12 @@ struct libnet_BecomeDC_Callbacks {
 				  const struct libnet_BecomeDC_CheckOptions *info);
 	NTSTATUS (*prepare_db)(void *private_data,
 			       const struct libnet_BecomeDC_PrepareDB *info);
-	NTSTATUS (*schema_chunk)(void *private_data,
-				 const struct libnet_BecomeDC_StoreChunk *info);
-	NTSTATUS (*config_chunk)(void *private_data,
-				 const struct libnet_BecomeDC_StoreChunk *info);
-	NTSTATUS (*domain_chunk)(void *private_data,
-				 const struct libnet_BecomeDC_StoreChunk *info);
+	WERROR (*schema_chunk)(void *private_data,
+			       const struct libnet_BecomeDC_StoreChunk *info);
+	WERROR (*config_chunk)(void *private_data,
+			       const struct libnet_BecomeDC_StoreChunk *info);
+	WERROR (*domain_chunk)(void *private_data,
+			       const struct libnet_BecomeDC_StoreChunk *info);
 };
 
 struct libnet_BecomeDC {
