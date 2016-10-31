@@ -648,9 +648,16 @@ plantestsuite("samba4.blackbox.provision-backend", "none", ["PYTHON=%s" % python
 # Test renaming the DC
 plantestsuite("samba4.blackbox.renamedc.sh", "none", ["PYTHON=%s" % python, os.path.join(bbdir, "renamedc.sh"), '$PREFIX/provision'])
 
-for env in ['vampire_dc', 'promoted_dc']:
+# DRS python tests
 
-    # DRS python tests
+env = 'vampire_dc'
+planoldpythontestsuite(env, "ridalloc_exop",
+                       extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                       name="samba4.drs.ridalloc_exop.python(%s)" % env,
+                       environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+
+for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite("%s:local" % env, "samba.tests.blackbox.samba_tool_drs",
                            environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
