@@ -94,6 +94,8 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *dest_host,
 			      const struct sockaddr_storage *dest_ss, int port,
 			      int signing_state, int flags);
+NTSTATUS cli_smb1_setup_encryption(struct cli_state *cli,
+				   struct cli_credentials *creds);
 struct tevent_req *cli_full_connection_creds_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	const char *my_name, const char *dest_host,

@@ -37,6 +37,7 @@
 #include "libsmb/nmblib.h"
 #include "librpc/ndr/libndr.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "../libcli/smb/smb_seal.h"
 #include "lib/param/param.h"
 
 #define STAR_SMBSERVER "*SMBSERVER"
@@ -2860,6 +2861,438 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	}
 	status = cli_start_connection_recv(req, output_cli);
 fail:
+	TALLOC_FREE(ev);
+	return status;
+}
+
+struct cli_smb1_setup_encryption_blob_state {
+	uint16_t setup[1];
+	uint8_t param[4];
+	NTSTATUS status;
+	DATA_BLOB out;
+	uint16_t enc_ctx_id;
+};
+
+static void cli_smb1_setup_encryption_blob_done(struct tevent_req *subreq);
+
+static struct tevent_req *cli_smb1_setup_encryption_blob_send(TALLOC_CTX *mem_ctx,
+							struct tevent_context *ev,
+							struct cli_state *cli,
+							const DATA_BLOB in)
+{
+	struct tevent_req *req = NULL;
+	struct cli_smb1_setup_encryption_blob_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_smb1_setup_encryption_blob_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (in.length > CLI_BUFFER_SIZE) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+
+	SSVAL(state->setup+0,  0, TRANSACT2_SETFSINFO);
+	SSVAL(state->param, 0, 0);
+	SSVAL(state->param, 2, SMB_REQUEST_TRANSPORT_ENCRYPTION);
+
+	subreq = smb1cli_trans_send(state, ev, cli->conn,
+				    SMBtrans2,
+				    0, 0, /* _flags */
+				    0, 0, /* _flags2 */
+				    cli->timeout,
+				    cli->smb1.pid,
+				    cli->smb1.tcon,
+				    cli->smb1.session,
+				    NULL, /* pipe_name */
+				    0, /* fid */
+				    0, /* function */
+				    0, /* flags */
+				    state->setup, 1, 0,
+				    state->param, 4, 2,
+				    in.data, in.length, CLI_BUFFER_SIZE);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq,
+				cli_smb1_setup_encryption_blob_done,
+				req);
+
+	return req;
+}
+
+static void cli_smb1_setup_encryption_blob_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+				struct tevent_req);
+	struct cli_smb1_setup_encryption_blob_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_blob_state);
+	uint8_t *rparam=NULL, *rdata=NULL;
+	uint32_t num_rparam, num_rdata;
+	NTSTATUS status;
+
+	status = smb1cli_trans_recv(subreq, state,
+				    NULL, /* recv_flags */
+				    NULL, 0, NULL, /* rsetup */
+				    &rparam, 0, &num_rparam,
+				    &rdata, 0, &num_rdata);
+	TALLOC_FREE(subreq);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (num_rparam == 2) {
+		state->enc_ctx_id = SVAL(rparam, 0);
+	}
+	TALLOC_FREE(rparam);
+
+	state->out = data_blob_const(rdata, num_rdata);
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_smb1_setup_encryption_blob_recv(struct tevent_req *req,
+						    TALLOC_CTX *mem_ctx,
+						    DATA_BLOB *out,
+						    uint16_t *enc_ctx_id)
+{
+	struct cli_smb1_setup_encryption_blob_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_blob_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	status = state->status;
+
+	*out = state->out;
+	talloc_steal(mem_ctx, out->data);
+
+	*enc_ctx_id = state->enc_ctx_id;
+
+	tevent_req_received(req);
+	return status;
+}
+
+struct cli_smb1_setup_encryption_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	struct smb_trans_enc_state *es;
+	DATA_BLOB blob_in;
+	DATA_BLOB blob_out;
+	bool local_ready;
+	bool remote_ready;
+};
+
+static void cli_smb1_setup_encryption_local_next(struct tevent_req *req);
+static void cli_smb1_setup_encryption_local_done(struct tevent_req *subreq);
+static void cli_smb1_setup_encryption_remote_next(struct tevent_req *req);
+static void cli_smb1_setup_encryption_remote_done(struct tevent_req *subreq);
+static void cli_smb1_setup_encryption_ready(struct tevent_req *req);
+
+static struct tevent_req *cli_smb1_setup_encryption_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						struct cli_state *cli,
+						struct cli_credentials *creds)
+{
+	struct tevent_req *req = NULL;
+	struct cli_smb1_setup_encryption_state *state = NULL;
+	struct auth_generic_state *ags = NULL;
+	const DATA_BLOB *b = NULL;
+	bool auth_requested = false;
+	enum credentials_use_kerberos krb5_state;
+	const char *mech_oid = NULL;
+	const char *target_service = NULL;
+	const char *target_hostname = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_smb1_setup_encryption_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+
+	auth_requested = cli_credentials_authentication_requested(creds);
+	if (!auth_requested) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
+
+	target_service = "cifs";
+	target_hostname = smbXcli_conn_remote_name(cli->conn);
+
+	krb5_state = cli_credentials_get_kerberos_state(creds);
+	if (krb5_state == CRED_MUST_USE_KERBEROS) {
+		mech_oid = GENSEC_OID_SPNEGO;
+
+		b = smbXcli_conn_server_gss_blob(state->cli->conn);
+		if (b != NULL) {
+			state->blob_in = *b;
+		}
+
+		status = cli_session_creds_prepare_krb5(cli, creds);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		/*
+		 * Be compatible with the <= 4.5 client code,
+		 * which used raw NTLMSSP unless kerberos
+		 * was forced.
+		 *
+		 * We need to check with the oldest server implementation
+		 * if we can remove this and always use
+		 * GENSEC_OID_SPNEGO.
+		 */
+		mech_oid = GENSEC_OID_NTLMSSP;
+	}
+
+	state->es = talloc_zero(state, struct smb_trans_enc_state);
+	if (tevent_req_nomem(state->es, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = auth_generic_client_prepare(state->es, &ags);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	gensec_want_feature(ags->gensec_security,
+			    GENSEC_FEATURE_SIGN);
+	gensec_want_feature(ags->gensec_security,
+			    GENSEC_FEATURE_SEAL);
+
+	status = auth_generic_set_creds(ags, creds);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	if (target_service != NULL) {
+		status = gensec_set_target_service(ags->gensec_security,
+						   target_service);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (target_hostname != NULL) {
+		status = gensec_set_target_hostname(ags->gensec_security,
+						    target_hostname);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	gensec_set_max_update_size(ags->gensec_security,
+				   CLI_BUFFER_SIZE);
+
+	status = auth_generic_client_start(ags, mech_oid);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * We only need the gensec_security part from here.
+	 */
+	state->es->gensec_security = talloc_move(state->es,
+						 &ags->gensec_security);
+	TALLOC_FREE(ags);
+
+	cli_smb1_setup_encryption_local_next(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void cli_smb1_setup_encryption_local_next(struct tevent_req *req)
+{
+	struct cli_smb1_setup_encryption_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_state);
+	struct tevent_req *subreq = NULL;
+
+	if (state->local_ready) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	subreq = gensec_update_send(state, state->ev,
+			state->es->gensec_security,
+			state->blob_in);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb1_setup_encryption_local_done, req);
+}
+
+static void cli_smb1_setup_encryption_local_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_smb1_setup_encryption_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_state);
+	NTSTATUS status;
+
+	status = gensec_update_recv(subreq, state, &state->blob_out);
+	TALLOC_FREE(subreq);
+	state->blob_in = data_blob_null;
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if (NT_STATUS_IS_OK(status)) {
+		state->local_ready = true;
+	}
+
+	/*
+	 * We always get NT_STATUS_OK from the server even if it is not ready.
+	 * So guess the server is ready when we are ready and already sent
+	 * our last blob to the server.
+	 */
+	if (state->local_ready && state->blob_out.length == 0) {
+		state->remote_ready = true;
+	}
+
+	if (state->local_ready && state->remote_ready) {
+		cli_smb1_setup_encryption_ready(req);
+		return;
+	}
+
+	cli_smb1_setup_encryption_remote_next(req);
+}
+
+static void cli_smb1_setup_encryption_remote_next(struct tevent_req *req)
+{
+	struct cli_smb1_setup_encryption_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_state);
+	struct tevent_req *subreq = NULL;
+
+	if (state->remote_ready) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	subreq = cli_smb1_setup_encryption_blob_send(state, state->ev,
+						     state->cli, state->blob_out);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				cli_smb1_setup_encryption_remote_done,
+				req);
+}
+
+static void cli_smb1_setup_encryption_remote_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct cli_smb1_setup_encryption_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_state);
+	NTSTATUS status;
+
+	status = cli_smb1_setup_encryption_blob_recv(subreq, state,
+						     &state->blob_in,
+						     &state->es->enc_ctx_num);
+	TALLOC_FREE(subreq);
+	data_blob_free(&state->blob_out);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED))
+	{
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	/*
+	 * We always get NT_STATUS_OK even if the server is not ready.
+	 * So guess the server is ready when we are ready and sent
+	 * our last blob to the server.
+	 */
+	if (state->local_ready) {
+		state->remote_ready = true;
+	}
+
+	if (state->local_ready && state->remote_ready) {
+		cli_smb1_setup_encryption_ready(req);
+		return;
+	}
+
+	cli_smb1_setup_encryption_local_next(req);
+}
+
+static void cli_smb1_setup_encryption_ready(struct tevent_req *req)
+{
+	struct cli_smb1_setup_encryption_state *state =
+		tevent_req_data(req,
+		struct cli_smb1_setup_encryption_state);
+	struct smb_trans_enc_state *es = NULL;
+
+	if (state->blob_in.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	if (state->blob_out.length != 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	es = talloc_move(state->cli->conn, &state->es);
+	es->enc_on = true;
+	smb1cli_conn_set_encryption(state->cli->conn, es);
+	es = NULL;
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_smb1_setup_encryption_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_smb1_setup_encryption(struct cli_state *cli,
+				   struct cli_credentials *creds)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb1_setup_encryption_send(ev, ev, cli, creds);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_smb1_setup_encryption_recv(req);
+ fail:
 	TALLOC_FREE(ev);
 	return status;
 }
