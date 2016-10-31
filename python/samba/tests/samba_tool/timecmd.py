@@ -39,5 +39,5 @@ class TimeCmdTestCase(SambaToolCmdTest):
         """Run time against a non-existent server, and make sure it fails"""
         (result, out, err) = self.runcmd("time", "notaserver")
         self.assertEquals(result, -1, "check for result code")
-        self.assertTrue(err.strip().endswith("NT_STATUS_OBJECT_NAME_NOT_FOUND"), "ensure right error string")
+        self.assertNotEqual(err.strip().find("NT_STATUS_OBJECT_NAME_NOT_FOUND"), -1, "ensure right error string")
         self.assertEquals(out, "", "ensure no output returned")
