@@ -403,3 +403,4 @@ is_ntvfs_fileserver_built = _glue.is_ntvfs_fileserver_built
 NTSTATUSError = _glue.NTSTATUSError
 HRESULTError = _glue.HRESULTError
 WERRORError = _glue.WERRORError
+DsExtendedError = _glue.DsExtendedError
