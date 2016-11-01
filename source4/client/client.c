@@ -1534,15 +1534,26 @@ static int cmd_print(struct smbclient_context *ctx, const char **args)
 	}
 
 	lname = talloc_strdup(ctx, args[1]);
-
-	rname = talloc_strdup(ctx, lname);
-	p = strrchr_m(rname,'/');
-	if (p) {
-		slprintf(rname, sizeof(rname)-1, "%s-%d", p+1, (int)getpid());
+	if (lname == NULL) {
+		d_printf("Out of memory in cmd_print\n");
+		return 1;
 	}
 
-	if (strequal(lname,"-")) {
-		slprintf(rname, sizeof(rname)-1, "stdin-%d", (int)getpid());
+	if (strequal(lname, "-")) {
+		rname = talloc_asprintf(ctx, "stdin-%d", (int)getpid());
+	} else {
+		p = strrchr_m(lname, '/');
+		if (p) {
+			rname = talloc_asprintf(ctx, "%s-%d", p + 1,
+						(int)getpid());
+		} else {
+			rname = talloc_strdup(ctx, lname);
+		}
+	}
+
+	if (rname == NULL) {
+		d_printf("Out of memory in cmd_print (stdin)\n");
+		return 1;
 	}
 
 	return do_put(ctx, rname, lname, false);
