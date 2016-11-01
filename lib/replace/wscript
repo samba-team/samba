@@ -704,9 +704,10 @@ def build(bld):
                       deps='crypt dl nsl socket rt attr' + extra_libs)
 
     bld.SAMBA_SUBSYSTEM('replace-test',
-                      source='''test/testsuite.c test/strptime.c
-                      test/os2_delete.c test/getifaddrs.c''',
-                      deps='replace')
+                        source='''test/testsuite.c test/strptime.c
+                        test/os2_delete.c test/getifaddrs.c''',
+                        deps='replace',
+                        cflags="-Wno-format-length")
 
     if bld.env.standalone_replace:
         bld.SAMBA_BINARY('replace_testsuite',
