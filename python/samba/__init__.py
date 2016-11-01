@@ -399,3 +399,7 @@ generate_random_password = _glue.generate_random_password
 strcasecmp_m = _glue.strcasecmp_m
 strstr_m = _glue.strstr_m
 is_ntvfs_fileserver_built = _glue.is_ntvfs_fileserver_built
+
+NTSTATUSError = _glue.NTSTATUSError
+HRESULTError = _glue.HRESULTError
+WERRORError = _glue.WERRORError

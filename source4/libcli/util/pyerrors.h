@@ -28,11 +28,20 @@
 
 #define PyErr_FromString(str) Py_BuildValue("(s)", discard_const_p(char, str))
 
-#define PyErr_SetWERROR(err) \
-	PyErr_SetObject(PyExc_RuntimeError, PyErr_FromWERROR(err))
+#define PyErr_SetWERROR(werr) \
+        PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
+					       "WERRORError"),	\
+			PyErr_FromWERROR(werr))
+
+#define PyErr_SetHRESULT(hresult) \
+        PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
+					       "HRESULTError"),	\
+			PyErr_FromHRESULT(hresult))
 
 #define PyErr_SetNTSTATUS(status) \
-        PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNTSTATUS(status))
+        PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
+					       "NTSTATUSError"),	\
+			PyErr_FromNTSTATUS(status))
 
 #define PyErr_NTSTATUS_IS_ERR_RAISE(status) \
 	if (NT_STATUS_IS_ERR(status)) { \
