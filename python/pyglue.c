@@ -27,6 +27,7 @@ void init_glue(void);
 static PyObject *PyExc_NTSTATUSError;
 static PyObject *PyExc_WERRORError;
 static PyObject *PyExc_HRESULTError;
+static PyObject *PyExc_DsExtendedError;
 
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
@@ -314,5 +315,12 @@ void init_glue(void)
 		Py_INCREF(PyExc_HRESULTError);
 		PyModule_AddObject(m, "HRESULTError", PyExc_HRESULTError);
 	}
+
+	PyExc_DsExtendedError = PyErr_NewException(discard_const_p(char, "samba.DsExtendedError"), PyExc_RuntimeError, NULL);
+	if (PyExc_DsExtendedError != NULL) {
+		Py_INCREF(PyExc_DsExtendedError);
+		PyModule_AddObject(m, "DsExtendedError", PyExc_DsExtendedError);
+	}
+
 }
 
