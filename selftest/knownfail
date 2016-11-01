@@ -307,7 +307,6 @@
 ^samba4.rpc.echo.*on.*with.object.echo.addone.*nt4_dc
 ^samba4.rpc.echo.*on.*ncacn_ip_tcp.*with.object.*nt4_dc
 ^samba4.drs.ridalloc_exop.python.*ridalloc_exop.DrsReplicaSyncTestCase.test_offline_ridalloc
-^samba4.drs.ridalloc_exop.python.*ridalloc_exop.DrsReplicaSyncTestCase.test_offline_samba_tool_seized_ridalloc
 ^samba4.drs.ridalloc_exop.python.*ridalloc_exop.DrsReplicaSyncTestCase.test_join_time_ridalloc
 ^samba4.drs.ridalloc_exop.python.*ridalloc_exop.DrsReplicaSyncTestCase.test_rid_set_dbcheck_after_seize
 ^samba4.drs.ridalloc_exop.python.*ridalloc_exop.DrsReplicaSyncTestCase.test_rid_set_dbcheck

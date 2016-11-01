@@ -295,12 +295,37 @@ You must provide an Admin user and password."""),
             m["fSMORoleOwner"]= ldb.MessageElement(
                 serviceName, ldb.FLAG_MOD_REPLACE,
                 "fSMORoleOwner")
+
+            samdb.transaction_start()
             try:
                 samdb.modify(m)
+                if role == "rid":
+                    # We may need to allocate the initial RID Set
+                    samdb.create_own_rid_set()
+
             except LdbError, (num, msg):
-                raise CommandError("Failed to seize '%s' role: %s" %
-                                   (role, msg))
+                if role == "rid" and num == ldb.ERR_ENTRY_ALREADY_EXISTS:
+
+                    # Try again without the RID Set allocation
+                    # (normal).  We have to manage the transaction as
+                    # we do not have nested transactions and creating
+                    # a RID set touches multiple objects. :-(
+                    samdb.transaction_cancel()
+                    samdb.transaction_start()
+                    try:
+                        samdb.modify(m)
+                    except LdbError, (num, msg):
+                        samdb.transaction_cancel()
+                        raise CommandError("Failed to seize '%s' role: %s" %
+                                           (role, msg))
+
+                else:
+                    samdb.transaction_cancel()
+                    raise CommandError("Failed to seize '%s' role: %s" %
+                                       (role, msg))
+            samdb.transaction_commit()
             self.outf.write("FSMO seize of '%s' role successful\n" % role)
+
             return True
 
     def seize_dns_role(self, role, samdb, credopts, sambaopts,
