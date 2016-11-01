@@ -1,4 +1,115 @@
                    ==============================
+                   Release Notes for Samba 4.3.12
+                          November 3, 2016
+                   ==============================
+
+
+This is the last bug-fix release of Samba 4.3. There will be only security
+updates beyond this point.
+
+Major enhancements in Samba 4.3.12 include:
+
+o  Let winbindd discard expired kerberos tickets when built against
+   (internal) heimdal (BUG #12369).
+o  REGRESSION: smbd segfaults on startup, tevent context being freed
+   (BUG #12283).
+
+
+Changes since 4.3.11:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11838:  s4: ldb: Ignore case of "range" in sscanf as we've already
+     checked for its presence.
+   * BUG 12021: Fix smbd crash (Signal 4) on File Delete.
+   * BUG 12135: libgpo: Correctly use the 'server' parameter after parsing it
+     out of the GPO path.
+   * BUG 12139: s3: oplock: Fix race condition when closing an oplocked file.
+   * BUG 12272: Fix messaging subsystem crash.
+   * BUG 12283: REGRESSION: smbd segfaults on startup, tevent context being
+     freed.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12025: param: Correct the defaults for "dcerpc endpoint services".
+   * BUG 12026: build: Always build eventlog6.
+   * BUG 12154: ldb-samba: Add "secret" as a value to hide in LDIF files.
+   * BUG 12178: dbcheck: Abandon dbcheck if we get an error during a
+     transaction.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 8618: s3-printing: Fix migrate printer code.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 11801: Fix crash in mdssvc with older glib2 versions.
+   * BUG 11961: idmap_autorid allocates ids for unknown SIDs from other
+     backends.
+   * BUG 12005: smbd: Ignore ctdb tombstone records in
+     fetch_share_mode_unlocked_parser().
+   * BUG 12016: cleanupd terminates main smbd on exit.
+   * BUG 12028: vfs_acl_xattr: Objects without NT ACL xattr.
+   * BUG 12105: async_req: Make async_connect_send() "reentrant".
+   * BUG 12177: vfs_acl_common: Fix unexpected synthesized default ACL from
+     vfs_acl_xattr.
+   * BUG 12181: vfs_acl_xattr|tdb: Enforced settings when
+     "ignore system acls = yes".
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 12285: s3-spoolss: Fix winreg_printer_ver_to_qword.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 11770: Reset TCP Connections during IP failover.
+
+o  Volker Lendecke <vl@samba.org>
+   * glusterfs: Avoid tevent_internal.h.
+   * BUG 11994: gensec/spnego: Work around missing server mechListMIC in SMB
+     servers.
+   * BUG 12268: smbd: Reset O_NONBLOCK on open files.
+   * BUG 12374: spoolss: Fix caching of printername->sharename.
+   * BUG 12045: gencache: Bail out of stabilize if we can not get the allrecord
+     lock.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12007: libads: Ensure the right ccache is used during spnego bind.
+   * BUG 12129: samba-tool/ldapcmp: Ignore differences of whenChanged.
+   * BUG 12283: REGRESSION: smbd segfaults on startup, tevent context being
+     freed.
+   * BUG 12369: Let winbindd discard expired kerberos tickets when built against
+     (internal) heimdal.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12106: ctdb-scripts: Fix regression in updateip code.
+   * BUG 12110: ctdb-daemon: Fix several Coverity IDs.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 12006: auth: Fix a memory leak in gssapi_get_session_key().
+   * BUG 12149: smbd: Allow reading files based on FILE_EXECUTE access right.
+   * BUG 12172: Fix access of snapshot folders via SMB1.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.3.11
                             July 07, 2016
                    ==============================
@@ -68,8 +179,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.3.10
