@@ -43,6 +43,21 @@
 					       "NTSTATUSError"),	\
 			PyErr_FromNTSTATUS(status))
 
+#define PyErr_SetWERROR_and_string(werr, string) \
+        PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
+					       "WERRORError"),	\
+			Py_BuildValue("(i,s)", W_ERROR_V(werr), string))
+
+#define PyErr_SetHRESULT_and_string(hresult, string) \
+        PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
+					       "HRESULTError"),	\
+			Py_BuildValue("(i,s)", HRES_ERROR_V(hresult), string))
+
+#define PyErr_SetNTSTATUS_and_string(status, string)				\
+        PyErr_SetObject(PyObject_GetAttrString(PyImport_ImportModule("samba"),\
+					       "NTSTATUSError"),	\
+			Py_BuildValue("(i,s)", NT_STATUS_V(status), string))
+
 #define PyErr_NTSTATUS_IS_ERR_RAISE(status) \
 	if (NT_STATUS_IS_ERR(status)) { \
 		PyErr_SetNTSTATUS(status); \
