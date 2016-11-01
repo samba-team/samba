@@ -341,8 +341,13 @@ static NTSTATUS gse_get_client_auth_token(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		break;
 	default:
-		DEBUG(0, ("gss_init_sec_context failed with [%s]\n",
-			  gse_errstr(talloc_tos(), gss_maj, gss_min)));
+		if ((gss_maj == GSS_S_FAILURE) &&
+		    (gss_min == KRB5KRB_AP_ERR_TKT_EXPIRED)) {
+			DBG_NOTICE("Ticket expired\n");
+		} else {
+			DBG_ERR("gss_init_sec_context failed with [%s]\n",
+				gse_errstr(talloc_tos(), gss_maj, gss_min));
+		}
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
