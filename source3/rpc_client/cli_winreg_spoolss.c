@@ -4375,3 +4375,92 @@ done:
 	return result;
 }
 
+WERROR winreg_add_driver_package(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *winreg_handle,
+				 const char *package_id,
+				 const char *architecture,
+				 const char *driver_store_path,
+				 const char *cab_path)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct policy_handle hive_hnd, key_hnd;
+	TALLOC_CTX *tmp_ctx = NULL;
+	NTSTATUS status;
+	WERROR result;
+	const char *path;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	path = talloc_asprintf(tmp_ctx, "%s\\%s\\DriverPackages",
+					TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY,
+					architecture);
+	if (path == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	result = winreg_printer_openkey(tmp_ctx,
+					winreg_handle,
+					path,
+					package_id, /* key */
+					true,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(0, ("winreg_add_driver_package: "
+			  "Could not open driver package key (%s,%s): %s\n",
+			  package_id, architecture, win_errstr(result)));
+		goto done;
+	}
+
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "CabPath",
+				      cab_path,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "DriverStorePath",
+				      driver_store_path,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
+		if (is_valid_policy_hnd(&key_hnd)) {
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
+
