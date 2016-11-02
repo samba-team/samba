@@ -694,4 +694,24 @@ WERROR winreg_get_driver_package(TALLOC_CTX *mem_ctx,
 				 const char **driver_store_path,
 				 const char **cab_path);
 
+/**
+ * @brief This function deletes a driver package
+ *
+ * @param[in]  mem_ctx	       A talloc memory context.
+ *
+ * @param[in]  b The dcerpc binding handle
+ *
+ * @param[in]  package_id    The package ID.
+ *
+ * @param[in]  architecture    The architecture type.
+ *
+ * @return              On success WERR_OK, a corresponding DOS error is
+ *                      something went wrong.
+ */
+
+WERROR winreg_del_driver_package(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *winreg_handle,
+				 const char *package_id,
+				 const char *architecture);
+
 #endif /* _RPC_CLIENT_CLI_WINREG_SPOOLSS_H_ */

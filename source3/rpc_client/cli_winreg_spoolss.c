@@ -4595,3 +4595,104 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return result;
 }
+
+WERROR winreg_del_driver_package(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *winreg_handle,
+				 const char *package_id,
+				 const char *architecture)
+{
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct policy_handle hive_hnd, key_hnd;
+	TALLOC_CTX *tmp_ctx;
+	WERROR result;
+	NTSTATUS status;
+	const char *path;
+
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	path = talloc_asprintf(tmp_ctx, "%s\\%s\\DriverPackages",
+					TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY,
+					architecture);
+	if (path == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	result = winreg_printer_openkey(tmp_ctx,
+					winreg_handle,
+					path,
+					package_id, /* key */
+					false,
+					access_mask,
+					&hive_hnd,
+					&key_hnd);
+	if (!W_ERROR_IS_OK(result)) {
+		/* key doesn't exist */
+		if (W_ERROR_EQUAL(result, WERR_FILE_NOT_FOUND)) {
+			result = WERR_OK;
+			goto done;
+		}
+
+		DEBUG(5, ("winreg_del_driver_package: "
+			  "Could not open driver package key (%s,%s): %s\n",
+			  package_id, architecture, win_errstr(result)));
+		goto done;
+	}
+
+
+	if (is_valid_policy_hnd(&key_hnd)) {
+		dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &result);
+	}
+
+	path = talloc_asprintf(tmp_ctx, "%s\\%s\\DriverPackages\\%s",
+					TOP_LEVEL_PRINT_PACKAGEINSTALLATION_KEY,
+					architecture,
+					package_id);
+	if (path == NULL) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
+	status = dcerpc_winreg_delete_subkeys_recursive(tmp_ctx,
+							winreg_handle,
+							&hive_hnd,
+							access_mask,
+							path,
+							&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		DEBUG(5, ("winreg_del_driver_package: "
+			  "Could not delete driver package key (%s,%s): %s\n",
+			  package_id, architecture, nt_errstr(status)));
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(5, ("winreg_del_driver_package: "
+			  "Could not delete driver package key (%s,%s): %s\n",
+			  package_id, architecture, win_errstr(result)));
+		goto done;
+	}
+
+	result = WERR_OK;
+done:
+	if (winreg_handle != NULL) {
+		WERROR ignore;
+
+		if (is_valid_policy_hnd(&key_hnd)) {
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &key_hnd, &ignore);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			dcerpc_winreg_CloseKey(winreg_handle, tmp_ctx, &hive_hnd, &ignore);
+		}
+	}
+
+	TALLOC_FREE(tmp_ctx);
+	return result;
+}
