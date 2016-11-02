@@ -1791,7 +1791,9 @@ class GraphNode(object):
         text = text + "\n\tmax_edges=%d" % self.max_edges
 
         for i, edge in enumerate(self.edge_from):
-            text = text + "\n\tedge_from[%d]=%s" % (i, edge)
+            if isinstance(edge, str):
+                text += "\n\tedge_from[%d]=%s" % (i, edge)
+
         return text
 
     def add_edge_from(self, from_dsa_dnstr):
@@ -1799,7 +1801,7 @@ class GraphNode(object):
 
         :param from_dsa_dnstr: the dsa that the edge emanates from
         """
-        assert from_dsa_dnstr is not None
+        assert isinstance(from_dsa_dnstr, str)
 
         # No edges from myself to myself
         if from_dsa_dnstr == self.dsa_dnstr:
