@@ -714,6 +714,106 @@ static bool test_AsyncCorePrinterDriverInstalled(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_get_core_printer_drivers_arch_guid(struct torture_context *tctx,
+						    struct dcerpc_pipe *p,
+						    const char *architecture,
+						    const char *guid_str,
+						    const char **package_id)
+{
+	struct winspool_AsyncGetCorePrinterDrivers r;
+	DATA_BLOB blob;
+	const char **s;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	s = talloc_zero_array(tctx, const char *, 2);
+	s[0] = guid_str;
+
+	torture_assert(tctx,
+		push_reg_multi_sz(tctx, &blob, s),
+		"push_reg_multi_sz failed");
+
+	r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.pszEnvironment = architecture;
+	r.in.cchCoreDrivers = blob.length/2;
+	r.in.pszzCoreDriverDependencies = (uint16_t *)blob.data;
+	r.in.cCorePrinterDrivers = 1;
+	r.out.pCorePrinterDrivers = talloc_zero_array(tctx, struct spoolss_CorePrinterDriver, r.in.cCorePrinterDrivers);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncGetCorePrinterDrivers_r(b, tctx, &r),
+		"winspool_AsyncCorePrinterDrivers failed");
+	torture_assert_hresult_ok(tctx, r.out.result,
+		"winspool_AsyncCorePrinterDrivers failed");
+
+	if (package_id) {
+		*package_id = r.out.pCorePrinterDrivers[0].szPackageID;
+	}
+
+	return true;
+}
+
+static bool test_AsyncDeletePrintDriverPackage(struct torture_context *tctx,
+					       void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct winspool_AsyncDeletePrinterDriverPackage r;
+
+	const char *architectures[] = {
+/*		SPOOLSS_ARCHITECTURE_NT_X86, */
+		SPOOLSS_ARCHITECTURE_x64
+	};
+	int i;
+
+	for (i=0; i < ARRAY_SIZE(architectures); i++) {
+
+		const char *package_id;
+
+		torture_assert(tctx,
+			test_get_core_printer_drivers_arch_guid(tctx, p,
+								architectures[i],
+								SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV,
+								&package_id),
+			"failed to get core printer driver");
+
+		r.in.pszServer = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+		r.in.pszEnvironment = "";
+		r.in.pszInfPath = "";
+
+		torture_comment(tctx, "Testing AsyncDeletePrinterDriverPackage(%s, %s, %s)\n",
+			r.in.pszServer, architectures[i], package_id);
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winspool_AsyncDeletePrinterDriverPackage_r(b, tctx, &r),
+			"AsyncDeletePrinterDriverPackage failed");
+		torture_assert_werr_equal(tctx,
+			W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_NOT_FOUND,
+			"AsyncDeletePrinterDriverPackage failed");
+
+		r.in.pszInfPath = package_id;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winspool_AsyncDeletePrinterDriverPackage_r(b, tctx, &r),
+			"AsyncDeletePrinterDriverPackage failed");
+		torture_assert_werr_equal(tctx,
+			W_ERROR(WIN32_FROM_HRESULT(r.out.result)), WERR_INVALID_ENVIRONMENT,
+			"AsyncDeletePrinterDriverPackage failed");
+
+		r.in.pszEnvironment = architectures[i];
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_winspool_AsyncDeletePrinterDriverPackage_r(b, tctx, &r),
+			"AsyncDeletePrinterDriverPackage failed");
+		torture_assert_hresult_equal(tctx, r.out.result, HRES_E_ACCESSDENIED,
+			"AsyncDeletePrinterDriverPackage failed");
+	}
+
+	return true;
+}
+
 /*
  * Test if one can close a printserver handle that has been acquired via
  * winspool_AsyncOpenPrinter with a spoolss_ClosePrinter operation.
@@ -785,6 +885,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "AsyncEnumPrinters", test_AsyncEnumPrinters);
 	torture_tcase_add_simple_test(tcase, "AsyncGetPrinterData", test_AsyncGetPrinterData);
 	torture_tcase_add_simple_test(tcase, "AsyncCorePrinterDriverInstalled", test_AsyncCorePrinterDriverInstalled);
+	torture_tcase_add_simple_test(tcase, "AsyncDeletePrintDriverPackage", test_AsyncDeletePrintDriverPackage);
 
 	tcase = torture_suite_add_tcase(suite, "handles");
 
