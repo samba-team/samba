@@ -2307,7 +2307,7 @@ class KCC(object):
                 while candidates and not tnode.has_sufficient_edges():
                     other = random.choice(candidates)
                     DEBUG("trying to add candidate %s" % other.dsa_dnstr)
-                    if not tnode.add_edge_from(other):
+                    if not tnode.add_edge_from(other.dsa_dnstr):
                         debug.DEBUG_RED("could not add %s" % other.dsa_dnstr)
                     candidates.remove(other)
             else:
