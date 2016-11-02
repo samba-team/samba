@@ -612,6 +612,40 @@ WERROR winreg_add_driver_package_internal(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+WERROR winreg_get_driver_package_internal(TALLOC_CTX *mem_ctx,
+				          const struct auth_session_info *session_info,
+				          struct messaging_context *msg_ctx,
+					  const char *package_id,
+					  const char *architecture,
+					  const char **driver_store_path,
+					  const char **cab_path)
+{
+	WERROR result;
+	struct dcerpc_binding_handle *b;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	result = winreg_printer_binding_handle(tmp_ctx, session_info, msg_ctx, &b);
+	if (!W_ERROR_IS_OK(result)) {
+		talloc_free(tmp_ctx);
+		return result;
+	}
+
+	result = winreg_get_driver_package(mem_ctx,
+					   b,
+					   package_id,
+					   architecture,
+					   driver_store_path,
+					   cab_path);
+
+	talloc_free(tmp_ctx);
+	return result;
+}
+
 WERROR winreg_get_printer_secdesc_internal(TALLOC_CTX *mem_ctx,
 					   const struct auth_session_info *session_info,
 					   struct messaging_context *msg_ctx,

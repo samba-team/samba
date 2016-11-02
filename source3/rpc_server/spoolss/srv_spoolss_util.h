@@ -175,4 +175,11 @@ WERROR winreg_add_driver_package_internal(TALLOC_CTX *mem_ctx,
 					  const char *architecture,
 					  const char *driver_store_path,
 					  const char *cab_path);
+WERROR winreg_get_driver_package_internal(TALLOC_CTX *mem_ctx,
+				          const struct auth_session_info *session_info,
+				          struct messaging_context *msg_ctx,
+					  const char *package_id,
+					  const char *architecture,
+					  const char **driver_store_path,
+					  const char **cab_path);
 #endif /* _SRV_SPOOLSS_UITL_H */
