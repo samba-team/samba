@@ -88,6 +88,10 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 		num_dom_users = disp_info.info1.count;
 
 		num_info += num_dom_users;
+		/* If there are no user to enumerate we're done */
+		if (num_info == 0) {
+			return NT_STATUS_OK;
+		}
 
 		info = talloc_realloc(mem_ctx,
 					    info,
