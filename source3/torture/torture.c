@@ -108,15 +108,7 @@ static bool force_cli_encryption(struct cli_state *c,
 		return false;
 	}
 
-	if (c->use_kerberos) {
-		status = cli_gss_smb_encryption_start(c);
-	} else {
-		status = cli_raw_ntlm_smb_encryption_start(c,
-						username,
-						password,
-						workgroup);
-	}
-
+	status = cli_smb1_setup_encryption(c, torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Encryption required and "
 			"setup failed with error %s.\n",
