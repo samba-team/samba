@@ -642,11 +642,11 @@ NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
 
 	if (NT_STATUS_IS_OK(status)) {
 		es->enc_on = true;
-		/* Replace the old state, if any. */
-		/* We only need the gensec_security part from here.
-		 * es is a malloc()ed pointer, so we cannot make
-		 * gensec_security a talloc child */
-		es->gensec_security = talloc_move(NULL,
+		/*
+		 * Replace the old state, if any.
+		 * We only need the gensec_security part from here.
+		 */
+		es->gensec_security = talloc_move(es,
 						  &auth_generic_state->gensec_security);
 		smb1cli_conn_set_encryption(cli->conn, es);
 		es = NULL;
@@ -727,10 +727,10 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 
 	if (NT_STATUS_IS_OK(status)) {
 		es->enc_on = true;
-		/* Replace the old state, if any. */
-		/* We only need the gensec_security part from here.
-		 * es is a malloc()ed pointer, so we cannot make
-		 * gensec_security a talloc child */
+		/*
+		 * Replace the old state, if any.
+		 * We only need the gensec_security part from here.
+		 */
 		es->gensec_security = talloc_move(es,
 						  &auth_generic_state->gensec_security);
 		smb1cli_conn_set_encryption(cli->conn, es);
