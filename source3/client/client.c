@@ -2535,35 +2535,53 @@ static int cmd_posix_encrypt(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *domain = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	struct cli_credentials *creds = NULL;
+	struct cli_credentials *lcreds = NULL;
 
-	if (cli->use_kerberos) {
-		status = cli_gss_smb_encryption_start(cli);
+	if (next_token_talloc(ctx, &cmd_ptr, &domain, NULL)) {
+
+		if (!next_token_talloc(ctx, &cmd_ptr, &user, NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr, &password, NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		lcreds = cli_session_creds_init(ctx,
+						user,
+						domain,
+						NULL, /* realm */
+						password,
+						false, /* use_kerberos */
+						false, /* fallback_after_kerberos */
+						false, /* use_ccache */
+						false); /* password_is_nt_hash */
+		if (lcreds == NULL) {
+			d_printf("cli_session_creds_init() failed.\n");
+			return -1;
+		}
+		creds = lcreds;
 	} else {
-		char *domain = NULL;
-		char *user = NULL;
-		char *password = NULL;
+		bool auth_requested = false;
 
-		if (!next_token_talloc(ctx, &cmd_ptr,&domain,NULL)) {
+		creds = get_cmdline_auth_info_creds(auth_info);
+
+		auth_requested = cli_credentials_authentication_requested(creds);
+		if (!auth_requested) {
 			d_printf("posix_encrypt domain user password\n");
 			return 1;
 		}
-
-		if (!next_token_talloc(ctx, &cmd_ptr,&user,NULL)) {
-			d_printf("posix_encrypt domain user password\n");
-			return 1;
-		}
-
-		if (!next_token_talloc(ctx, &cmd_ptr,&password,NULL)) {
-			d_printf("posix_encrypt domain user password\n");
-			return 1;
-		}
-
-		status = cli_raw_ntlm_smb_encryption_start(cli,
-							user,
-							password,
-							domain);
 	}
 
+	status = cli_smb1_setup_encryption(cli, creds);
+	/* gensec currently references the creds so we can't free them here */
+	talloc_unlink(ctx, lcreds);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
 	} else {
