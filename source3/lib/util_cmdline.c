@@ -265,6 +265,9 @@ void set_cmdline_auth_info_signing_state_raw(struct user_auth_info *auth_info,
 
 int get_cmdline_auth_info_signing_state(const struct user_auth_info *auth_info)
 {
+	if (auth_info->smb_encrypt) {
+		return SMB_SIGNING_REQUIRED;
+	}
 	return auth_info->signing_state;
 }
 
