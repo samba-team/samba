@@ -48,7 +48,10 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 			const char *domain,
 			const char *sharename)
 {
+	uint16_t major, minor;
+	uint32_t caplow, caphigh;
 	NTSTATUS status;
+	struct cli_credentials *creds = NULL;
 
 	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
 		status = smb2cli_session_encryption_on(c->smb2.session);
@@ -64,30 +67,53 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 		return status;
 	}
 
-	status = cli_force_encryption(c,
-					username,
-					password,
-					domain);
-
-	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_SUPPORTED)) {
+	if (!SERVER_HAS_UNIX_CIFS(c)) {
 		d_printf("Encryption required and "
 			"server that doesn't support "
 			"UNIX extensions - failing connect\n");
-	} else if (NT_STATUS_EQUAL(status,NT_STATUS_UNKNOWN_REVISION)) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	status = cli_unix_extensions_version(c, &major, &minor, &caplow,
+					     &caphigh);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Encryption required and "
 			"can't get UNIX CIFS extensions "
 			"version from server.\n");
-	} else if (NT_STATUS_EQUAL(status,NT_STATUS_UNSUPPORTED_COMPRESSION)) {
+		return NT_STATUS_UNKNOWN_REVISION;
+	}
+
+	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
 		d_printf("Encryption required and "
 			"share %s doesn't support "
 			"encryption.\n", sharename);
-	} else if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_UNSUPPORTED_COMPRESSION;
+	}
+
+	creds = cli_session_creds_init(c,
+				       username,
+				       domain,
+				       NULL, /* default realm */
+				       password,
+				       c->use_kerberos,
+				       c->fallback_after_kerberos,
+				       c->use_ccache,
+				       c->pw_nt_hash);
+	if (creds == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_smb1_setup_encryption(c, creds);
+	/* gensec currently references the creds so we can't free them here */
+	talloc_unlink(c, creds);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Encryption required and "
 			"setup failed with error %s.\n",
 			nt_errstr(status));
+		return status;
 	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
