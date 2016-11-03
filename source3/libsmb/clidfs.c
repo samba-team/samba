@@ -42,16 +42,13 @@
  Ensure a connection is encrypted.
 ********************************************************************/
 
-NTSTATUS cli_cm_force_encryption(struct cli_state *c,
-			const char *username,
-			const char *password,
-			const char *domain,
-			const char *sharename)
+NTSTATUS cli_cm_force_encryption_creds(struct cli_state *c,
+				       struct cli_credentials *creds,
+				       const char *sharename)
 {
 	uint16_t major, minor;
 	uint32_t caplow, caphigh;
 	NTSTATUS status;
-	struct cli_credentials *creds = NULL;
 
 	if (smbXcli_conn_protocol(c->conn) >= PROTOCOL_SMB2_02) {
 		status = smb2cli_session_encryption_on(c->smb2.session);
@@ -90,6 +87,26 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 		return NT_STATUS_UNSUPPORTED_COMPRESSION;
 	}
 
+	status = cli_smb1_setup_encryption(c, creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Encryption required and "
+			"setup failed with error %s.\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_cm_force_encryption(struct cli_state *c,
+			const char *username,
+			const char *password,
+			const char *domain,
+			const char *sharename)
+{
+	struct cli_credentials *creds = NULL;
+	NTSTATUS status;
+
 	creds = cli_session_creds_init(c,
 				       username,
 				       domain,
@@ -103,17 +120,10 @@ NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = cli_smb1_setup_encryption(c, creds);
+	status = cli_cm_force_encryption_creds(c, creds, sharename);
 	/* gensec currently references the creds so we can't free them here */
 	talloc_unlink(c, creds);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Encryption required and "
-			"setup failed with error %s.\n",
-			nt_errstr(status));
-		return status;
-	}
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 /********************************************************************
