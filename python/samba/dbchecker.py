@@ -685,7 +685,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report('Not moving object %s into LostAndFound' % (obj.dn))
             return
 
-        keep_transaction = True
+        keep_transaction = False
         self.samdb.transaction_start()
         try:
             nc_root = self.samdb.get_nc_root(obj.dn);
