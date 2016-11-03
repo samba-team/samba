@@ -41,6 +41,12 @@ unix_now = int(time.time())
 MULTISITE_LDIF = os.path.join(os.environ['SRCDIR_ABS'],
                               "testdata/ldif-utils-test-multisite.ldif")
 
+
+# UNCONNECTED_LDIF is a single site, unconnected 5DC database that was
+# created using samba-tool domain join in testenv.
+UNCONNECTED_LDIF = os.path.join(os.environ['SRCDIR_ABS'],
+        "testdata/unconnected-intrasite.ldif")
+
 MULTISITE_LDIF_DSAS = (
     ("CN=WIN08,CN=Servers,CN=Site-4,CN=Sites,CN=Configuration,DC=ad,DC=samba,DC=example,DC=com",
      "Site-4"),
@@ -191,6 +197,24 @@ class KCCMultisiteLdifTests(samba.tests.TestCaseInTempDir):
                    self.lp, self.creds,
                    attempt_live_connections=False)
         self.remove_files(tmpdb)
+
+    def test_unconnected_db(self):
+        """Check that the KCC generates errors on a unconnected db
+        """
+        my_kcc = self._get_kcc('test-verify', verify=True)
+        tmpdb = os.path.join(self.tempdir, 'verify-tmpdb')
+        my_kcc.import_ldif(tmpdb, self.lp, UNCONNECTED_LDIF)
+
+        try:
+            my_kcc.run(None,
+                       self.lp, self.creds,
+                       attempt_live_connections=False)
+        except samba.kcc.graph_utils.GraphError:
+            pass
+        except Exception:
+            self.fail("Did not expect this error.")
+        finally:
+            self.remove_files(tmpdb)
 
     def test_dotfiles(self):
         """Check that KCC writes dot_files when asked.
