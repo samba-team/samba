@@ -688,15 +688,6 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 			       uint64_t *total_file_nodes,
 			       uint64_t *free_file_nodes,
 			       uint64_t *fs_identifier);
-NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli,
-				const char *user,
-				const char *pass,
-				const char *domain);
-NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli);
-NTSTATUS cli_force_encryption(struct cli_state *c,
-			const char *username,
-			const char *password,
-			const char *domain);
 struct tevent_req *cli_posix_whoami_send(TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct cli_state *cli);
