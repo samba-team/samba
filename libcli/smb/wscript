@@ -26,6 +26,7 @@ def build(bld):
            smb1cli_trans.c
            smb1cli_echo.c
            smb1cli_create.c
+           smb1cli_session.c
            smb1cli_close.c
            smb1cli_write.c
            smb1cli_read.c

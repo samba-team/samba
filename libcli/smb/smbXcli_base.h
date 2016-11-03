@@ -201,6 +201,26 @@ NTSTATUS smb1cli_echo_recv(struct tevent_req *req);
 NTSTATUS smb1cli_echo(struct smbXcli_conn *conn, uint32_t timeout_msec,
 		      uint16_t num_echos, DATA_BLOB data);
 
+struct tevent_req *smb1cli_session_setup_lm21_send(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev,
+				struct smbXcli_conn *conn,
+				uint32_t timeout_msec,
+				uint32_t pid,
+				struct smbXcli_session *session,
+				uint16_t in_buf_size,
+				uint16_t in_mpx_max,
+				uint16_t in_vc_num,
+				uint32_t in_sess_key,
+				const char *in_user,
+				const char *in_domain,
+				const DATA_BLOB in_password,
+				const char *in_native_os,
+				const char *in_native_lm);
+NTSTATUS smb1cli_session_setup_lm21_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 char **out_native_os,
+					 char **out_native_lm);
+
 struct tevent_req *smb1cli_ntcreatex_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct smbXcli_conn *conn,
