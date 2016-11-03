@@ -609,11 +609,9 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	if (context->internal->smb_encryption_level) {
 		/* Attempt encryption. */
-		status = cli_cm_force_encryption(c,
-						 username_used,
-						 password_used,
-						 *pp_workgroup,
-						 share);
+		status = cli_cm_force_encryption_creds(c,
+						       creds,
+						       share);
 		if (!NT_STATUS_IS_OK(status)) {
 
 			/*

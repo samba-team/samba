@@ -299,11 +299,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	}
 
 	if (force_encrypt) {
-		status = cli_cm_force_encryption(c,
-					username,
-					password,
-					domain,
-					sharename);
+		status = cli_cm_force_encryption_creds(c,
+						       creds,
+						       sharename);
 		if (!NT_STATUS_IS_OK(status)) {
 			cli_shutdown(c);
 			return status;
