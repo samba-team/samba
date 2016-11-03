@@ -155,29 +155,11 @@ NTSTATUS connect_to_service(struct net_context *c,
 	}
 
 	if (c->smb_encrypt) {
-		nt_status = cli_force_encryption(*cli_ctx,
-					c->opt_user_name,
-					c->opt_password,
-					c->opt_workgroup);
-
-		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_NOT_SUPPORTED)) {
-			d_printf(_("Encryption required and "
-				"server that doesn't support "
-				"UNIX extensions - failing connect\n"));
-		} else if (NT_STATUS_EQUAL(nt_status,NT_STATUS_UNKNOWN_REVISION)) {
-			d_printf(_("Encryption required and "
-				"can't get UNIX CIFS extensions "
-				"version from server.\n"));
-		} else if (NT_STATUS_EQUAL(nt_status,NT_STATUS_UNSUPPORTED_COMPRESSION)) {
-			d_printf(_("Encryption required and "
-				"share %s doesn't support "
-				"encryption.\n"), service_name);
-		} else if (!NT_STATUS_IS_OK(nt_status)) {
-			d_printf(_("Encryption required and "
-				"setup failed with error %s.\n"),
-				nt_errstr(nt_status));
-		}
-
+		nt_status = cli_cm_force_encryption(*cli_ctx,
+						    c->opt_user_name,
+						    c->opt_password,
+						    c->opt_workgroup,
+						    service_name);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			cli_shutdown(*cli_ctx);
 			*cli_ctx = NULL;
