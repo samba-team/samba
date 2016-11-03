@@ -8,7 +8,7 @@
 # rather than mutex locks.
 
 [ -n "$CTDB_BASE" ] || \
-    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
+    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; echo "$PWD")
 
 . "${CTDB_BASE}/functions"
 
