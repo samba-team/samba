@@ -587,11 +587,13 @@ SMBC_server_internal(TALLOC_CTX *ctx,
         }
 
 	if (context->internal->smb_encryption_level) {
-		/* Attempt UNIX smb encryption. */
-		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
-                                                          username_used,
-                                                          password_used,
-                                                          *pp_workgroup))) {
+		/* Attempt encryption. */
+		status = cli_cm_force_encryption(c,
+						 username_used,
+						 password_used,
+						 *pp_workgroup,
+						 share);
+		if (!NT_STATUS_IS_OK(status)) {
 
 			/*
 			 * context->smb_encryption_level == 1
@@ -787,11 +789,13 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 }
 
 		if (context->internal->smb_encryption_level) {
-			/* Attempt UNIX smb encryption. */
-			if (!NT_STATUS_IS_OK(cli_force_encryption(ipc_cli,
-                                                                  *pp_username,
-                                                                  *pp_password,
-                                                                  *pp_workgroup))) {
+			/* Attempt encryption. */
+			nt_status = cli_cm_force_encryption(ipc_cli,
+							    *pp_username,
+							    *pp_password,
+							    *pp_workgroup,
+							    "IPC$");
+			if (!NT_STATUS_IS_OK(nt_status)) {
 
 				/*
 				 * context->smb_encryption_level ==
