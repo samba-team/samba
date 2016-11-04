@@ -58,7 +58,7 @@
  * Local functions...
  */
 
-static int      get_exit_code(struct cli_state * cli, NTSTATUS nt_status);
+static int      get_exit_code(struct cli_state * cli, NTSTATUS nt_status, bool use_kerberos);
 static void     list_devices(void);
 static struct cli_state *smb_complete_connection(const char *, const char *,
 	int, const char *, const char *, const char *, const char *, int, bool *need_auth);
@@ -328,7 +328,8 @@ done:
 
 static int
 get_exit_code(struct cli_state * cli,
-	      NTSTATUS nt_status)
+	      NTSTATUS nt_status,
+	      bool use_kerberos)
 {
 	int i;
 
@@ -355,7 +356,7 @@ get_exit_code(struct cli_state * cli,
 		}
 
 		if (cli) {
-			if (cli->use_kerberos && cli->got_kerberos_mechanism)
+			if (use_kerberos)
 				fputs("ATTR: auth-info-required=negotiate\n", stderr);
 			else
 				fputs("ATTR: auth-info-required=username,password\n", stderr);
@@ -449,7 +450,7 @@ smb_complete_connection(const char *myname,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: Session setup failed: %s\n", nt_errstr(nt_status));
 
-		if (get_exit_code(cli, nt_status) == 2) {
+		if (get_exit_code(cli, nt_status, use_kerberos) == 2) {
 			*need_auth = true;
 		}
 
@@ -463,7 +464,7 @@ smb_complete_connection(const char *myname,
 		fprintf(stderr, "ERROR: Tree connect failed (%s)\n",
 			nt_errstr(nt_status));
 
-		if (get_exit_code(cli, nt_status) == 2) {
+		if (get_exit_code(cli, nt_status, use_kerberos) == 2) {
 			*need_auth = true;
 		}
 
@@ -601,7 +602,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s opening remote spool %s\n",
 			nt_errstr(nt_status), title);
-		return get_exit_code(cli, nt_status);
+		return get_exit_code(cli, nt_status, false);
 	}
 
 	/*
@@ -619,7 +620,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 		status = cli_writeall(cli, fnum, 0, (uint8_t *)buffer,
 				      tbytes, nbytes, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
-			int ret = get_exit_code(cli, status);
+			int ret = get_exit_code(cli, status, false);
 			fprintf(stderr, "ERROR: Error writing spool: %s\n",
 				nt_errstr(status));
 			fprintf(stderr, "DEBUG: Returning status %d...\n",
@@ -635,7 +636,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s closing remote spool %s\n",
 			nt_errstr(nt_status), title);
-		return get_exit_code(cli, nt_status);
+		return get_exit_code(cli, nt_status, false);
 	} else {
 		return (0);
 	}
