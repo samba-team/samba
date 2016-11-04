@@ -80,7 +80,6 @@ struct cli_state {
 	bool fallback_after_kerberos;
 	bool use_ccache;
 	bool pw_nt_hash;
-	bool got_kerberos_mechanism; /* Server supports krb5 in SPNEGO. */
 
 	bool use_oplocks; /* should we use oplocks? */
 

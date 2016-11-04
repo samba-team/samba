@@ -228,6 +228,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	const char *pass = NULL;
 	const char *target_hostname = NULL;
 	const DATA_BLOB *server_blob = NULL;
+	bool got_kerberos_mechanism = false;
 	enum credentials_use_kerberos krb5_state;
 	bool try_kerberos = false;
 	bool need_kinit = false;
@@ -235,9 +236,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	int ret;
 
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
-	if (!cli->got_kerberos_mechanism) {
-		server_blob = smbXcli_conn_server_gss_blob(cli->conn);
-	}
+	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
 
 	/* the server might not even do spnego */
 	if (server_blob != NULL && server_blob->length != 0) {
@@ -275,7 +274,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 
 			if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
 			    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
-				cli->got_kerberos_mechanism = true;
+				got_kerberos_mechanism = true;
 				break;
 			}
 		}
@@ -324,7 +323,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		need_kinit = false;
 	} else if (krb5_state == CRED_MUST_USE_KERBEROS) {
 		need_kinit = try_kerberos;
-	} else if (!cli->got_kerberos_mechanism) {
+	} else if (!got_kerberos_mechanism) {
 		/*
 		 * Most likely the server doesn't support
 		 * Kerberos, don't waste time doing a kinit
