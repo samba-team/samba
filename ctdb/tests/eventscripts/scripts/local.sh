@@ -727,7 +727,7 @@ setup_samba ()
 	eventscript_call ctdb_service_managed
 
         # All possible service names for all known distros.
-	for i in "smb" "nmb" "samba" ; do
+	for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
 	    service "$i" force-started
 	done
 
@@ -747,7 +747,7 @@ setup_samba ()
 	eventscript_call ctdb_service_unmanaged
 
         # All possible service names for all known distros.
-	for i in "smb" "nmb" "samba" ; do
+	for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
 	    service "$i" force-stopped
 	done
 
