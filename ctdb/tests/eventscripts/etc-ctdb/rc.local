@@ -58,5 +58,5 @@ background_with_logging ()
     "$@" 2>&1 </dev/null | sed -e 's@^@\&@'
 }
 
-CTDB_INIT_STYLE="redhat"
+CTDB_INIT_STYLE="${EVENTSCRIPT_TESTS_INIT_STYLE:-redhat}"
 PATH="${EVENTSCRIPTS_PATH}:$PATH"
