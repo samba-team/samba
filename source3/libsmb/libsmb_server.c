@@ -548,9 +548,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 				   not support smbc_smb_encrypt_level type */
 				context->internal->smb_encryption_level ?
 					true : false,
-				*pp_username,
-				*pp_password,
-				*pp_workgroup)) {
+				creds)) {
 		cli_shutdown(c);
 		srv = SMBC_server_internal(ctx, context, connect_if_not_found,
 				newserver, port, newshare, pp_workgroup,

@@ -278,10 +278,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	if (smbXcli_conn_dfs_supported(c->conn) &&
 			cli_check_msdfs_proxy(ctx, c, sharename,
 				&newserver, &newshare,
-				force_encrypt,
-				username,
-				password,
-				domain)) {
+				force_encrypt, creds)) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
 				newshare, auth_info, false,
@@ -1201,9 +1198,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				char **pp_newserver,
 				char **pp_newshare,
 				bool force_encrypt,
-				const char *username,
-				const char *password,
-				const char *domain)
+				struct cli_credentials *creds)
 {
 	struct client_dfs_referral *refs = NULL;
 	size_t num_refs = 0;
@@ -1242,11 +1237,7 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	}
 
 	if (force_encrypt) {
-		status = cli_cm_force_encryption(cli,
-					username,
-					password,
-					domain,
-					"IPC$");
+		status = cli_cm_force_encryption_creds(cli, creds, "IPC$");
 		if (!NT_STATUS_IS_OK(status)) {
 			return false;
 		}
