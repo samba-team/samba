@@ -4162,7 +4162,7 @@ static int cmd_notify(void)
 		TALLOC_FREE(changes);
 	}
 usage:
-	d_printf("notify <file>\n");
+	d_printf("notify <dir name>\n");
 fail:
 	TALLOC_FREE(frame);
 	return 1;
