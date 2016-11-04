@@ -474,11 +474,7 @@ smb_complete_connection(const char *myname,
 #if 0
 	/* Need to work out how to specify this on the URL. */
 	if (smb_encrypt) {
-		if (!cli_cm_force_encryption(cli,
-					     username,
-					     password,
-					     workgroup,
-					     share)) {
+		if (!cli_cm_force_encryption_creds(cli, creds, share)) {
 			fprintf(stderr, "ERROR: encryption setup failed\n");
 			cli_shutdown(cli);
 			return NULL;
