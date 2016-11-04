@@ -503,8 +503,7 @@ void winbindd_add_client(struct winbindd_cli_state *cli);
 void winbindd_remove_client(struct winbindd_cli_state *cli);
 void winbindd_promote_client(struct winbindd_cli_state *cli);
 int winbindd_num_clients(void);
-NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
+NTSTATUS lookup_usergroups_cached(TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *user_sid,
 				  uint32_t *p_num_groups, struct dom_sid **user_sids);
 

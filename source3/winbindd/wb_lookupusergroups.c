@@ -46,8 +46,7 @@ struct tevent_req *wb_lookupusergroups_send(TALLOC_CTX *mem_ctx,
 	}
 	sid_copy(&state->sid, sid);
 
-	status = lookup_usergroups_cached(NULL,
-					  state,
+	status = lookup_usergroups_cached(state,
 					  &state->sid,
 					  &state->sids.num_sids,
 					  &state->sids.sids);

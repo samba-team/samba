@@ -1013,7 +1013,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DEBUG(3,("ads: lookup_usergroups\n"));
 	*p_num_groups = 0;
 
-	status = lookup_usergroups_cached(domain, mem_ctx, sid, 
+	status = lookup_usergroups_cached(mem_ctx, sid,
 					  p_num_groups, user_sids);
 	if (NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;

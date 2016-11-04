@@ -505,8 +505,7 @@ static NTSTATUS msrpc_lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	/* Check if we have a cached user_info_3 */
-	status = lookup_usergroups_cached(domain,
-					  tmp_ctx,
+	status = lookup_usergroups_cached(tmp_ctx,
 					  user_sid,
 					  &num_groups,
 					  &user_grpsids);
