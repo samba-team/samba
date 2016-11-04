@@ -32,35 +32,52 @@ class CredentialsTests(samba.tests.TestCase):
 
     def test_set_username(self):
         self.creds.set_username("somebody")
-        self.assertEquals("somebody", self.creds.get_username())
+        self.assertEqual("somebody", self.creds.get_username())
 
     def test_set_password(self):
         self.creds.set_password("S3CreT")
-        self.assertEquals("S3CreT", self.creds.get_password())
+        self.assertEqual("S3CreT", self.creds.get_password())
+
+    def test_set_utf16_password(self):
+        password = 'S3cRet'
+        passbytes = password.encode('utf-16-le')
+        self.assertTrue(self.creds.set_utf16_password(passbytes))
+        self.assertEqual(password, self.creds.get_password())
+
+    def test_set_old_password(self):
+        self.assertEqual(None, self.creds.get_old_password())
+        self.assertTrue(self.creds.set_old_password("S3c0ndS3CreT"))
+        self.assertEqual("S3c0ndS3CreT", self.creds.get_old_password())
+
+    def test_set_old_utf16_password(self):
+        password = '0ldS3cRet'
+        passbytes = password.encode('utf-16-le')
+        self.assertTrue(self.creds.set_old_utf16_password(passbytes))
+        self.assertEqual(password, self.creds.get_old_password())
 
     def test_set_domain(self):
         self.creds.set_domain("ABMAS")
-        self.assertEquals("ABMAS", self.creds.get_domain())
+        self.assertEqual("ABMAS", self.creds.get_domain())
 
     def test_set_realm(self):
         self.creds.set_realm("myrealm")
-        self.assertEquals("MYREALM", self.creds.get_realm())
+        self.assertEqual("MYREALM", self.creds.get_realm())
 
     def test_parse_string_anon(self):
         self.creds.parse_string("%")
-        self.assertEquals("", self.creds.get_username())
-        self.assertEquals(None, self.creds.get_password())
+        self.assertEqual("", self.creds.get_username())
+        self.assertEqual(None, self.creds.get_password())
 
     def test_parse_string_user_pw_domain(self):
         self.creds.parse_string("dom\\someone%secr")
-        self.assertEquals("someone", self.creds.get_username())
-        self.assertEquals("secr", self.creds.get_password())
-        self.assertEquals("DOM", self.creds.get_domain())
+        self.assertEqual("someone", self.creds.get_username())
+        self.assertEqual("secr", self.creds.get_password())
+        self.assertEqual("DOM", self.creds.get_domain())
 
     def test_bind_dn(self):
-        self.assertEquals(None, self.creds.get_bind_dn())
+        self.assertEqual(None, self.creds.get_bind_dn())
         self.creds.set_bind_dn("dc=foo,cn=bar")
-        self.assertEquals("dc=foo,cn=bar", self.creds.get_bind_dn())
+        self.assertEqual("dc=foo,cn=bar", self.creds.get_bind_dn())
 
     def test_is_anon(self):
         self.creds.set_username("")
@@ -72,14 +89,14 @@ class CredentialsTests(samba.tests.TestCase):
 
     def test_workstation(self):
         # FIXME: This is uninitialised, it should be None
-        #self.assertEquals(None, self.creds.get_workstation())
+        #self.assertEqual(None, self.creds.get_workstation())
         self.creds.set_workstation("myworksta")
-        self.assertEquals("myworksta", self.creds.get_workstation())
+        self.assertEqual("myworksta", self.creds.get_workstation())
 
     def test_get_nt_hash(self):
         self.creds.set_password("geheim")
-        self.assertEquals('\xc2\xae\x1f\xe6\xe6H\x84cRE>\x81o*\xeb\x93',
-                          self.creds.get_nt_hash())
+        self.assertEqual('\xc2\xae\x1f\xe6\xe6H\x84cRE>\x81o*\xeb\x93',
+                         self.creds.get_nt_hash())
 
     def test_guess(self):
         # Just check the method is there and doesn't raise an exception
