@@ -2843,10 +2843,20 @@ struct cli_full_connection_creds_state {
 };
 
 static int cli_full_connection_creds_state_destructor(
-	struct cli_full_connection_creds_state *s);
-static void cli_full_connection_creds_started(struct tevent_req *subreq);
-static void cli_full_connection_creds_sess_set_up(struct tevent_req *subreq);
-static void cli_full_connection_creds_done(struct tevent_req *subreq);
+	struct cli_full_connection_creds_state *s)
+{
+	if (s->cli != NULL) {
+		cli_shutdown(s->cli);
+		s->cli = NULL;
+	}
+	return 0;
+}
+
+static void cli_full_connection_creds_conn_done(struct tevent_req *subreq);
+static void cli_full_connection_creds_sess_start(struct tevent_req *req);
+static void cli_full_connection_creds_sess_done(struct tevent_req *subreq);
+static void cli_full_connection_creds_tcon_start(struct tevent_req *req);
+static void cli_full_connection_creds_tcon_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_full_connection_creds_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
@@ -2904,21 +2914,13 @@ struct tevent_req *cli_full_connection_creds_send(
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, cli_full_connection_creds_started, req);
+	tevent_req_set_callback(subreq,
+				cli_full_connection_creds_conn_done,
+				req);
 	return req;
 }
 
-static int cli_full_connection_creds_state_destructor(
-	struct cli_full_connection_creds_state *s)
-{
-	if (s->cli != NULL) {
-		cli_shutdown(s->cli);
-		s->cli = NULL;
-	}
-	return 0;
-}
-
-static void cli_full_connection_creds_started(struct tevent_req *subreq)
+static void cli_full_connection_creds_conn_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -2932,15 +2934,26 @@ static void cli_full_connection_creds_started(struct tevent_req *subreq)
 		return;
 	}
 
+	cli_full_connection_creds_sess_start(req);
+}
+
+static void cli_full_connection_creds_sess_start(struct tevent_req *req)
+{
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
+	struct tevent_req *subreq = NULL;
+
 	subreq = cli_session_setup_creds_send(
 		state, state->ev, state->cli, state->creds);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, cli_full_connection_creds_sess_set_up, req);
+	tevent_req_set_callback(subreq,
+				cli_full_connection_creds_sess_done,
+				req);
 }
 
-static void cli_full_connection_creds_sess_set_up(struct tevent_req *subreq)
+static void cli_full_connection_creds_sess_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -2961,13 +2974,7 @@ static void cli_full_connection_creds_sess_set_up(struct tevent_req *subreq)
 			return;
 		}
 
-		subreq = cli_session_setup_creds_send(
-			state, state->ev, state->cli, state->creds);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(
-			subreq, cli_full_connection_creds_sess_set_up, req);
+		cli_full_connection_creds_sess_start(req);
 		return;
 	}
 
@@ -2975,29 +2982,44 @@ static void cli_full_connection_creds_sess_set_up(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->service != NULL) {
-		const char *password = cli_credentials_get_password(state->creds);
-		int pw_len = password ? strlen(password)+1 : 0;
+	cli_full_connection_creds_tcon_start(req);
+}
 
-		if (password == NULL) {
-			password = "";
-		}
+static void cli_full_connection_creds_tcon_start(struct tevent_req *req)
+{
+	struct cli_full_connection_creds_state *state = tevent_req_data(
+		req, struct cli_full_connection_creds_state);
+	struct tevent_req *subreq = NULL;
+	const char *password = NULL;
+	int pw_len = 0;
 
-		subreq = cli_tree_connect_send(
-			state, state->ev, state->cli,
-			state->service, state->service_type,
-			password, pw_len);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, cli_full_connection_creds_done, req);
+	if (state->service == NULL) {
+		tevent_req_done(req);
 		return;
 	}
 
-	tevent_req_done(req);
+	password = cli_credentials_get_password(state->creds);
+	if (password == NULL) {
+		password = "";
+		pw_len = 0;
+	} else {
+		pw_len = strlen(password) + 1;
+	}
+
+	subreq = cli_tree_connect_send(state, state->ev,
+				       state->cli,
+				       state->service,
+				       state->service_type,
+				       password, pw_len);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				cli_full_connection_creds_tcon_done,
+				req);
 }
 
-static void cli_full_connection_creds_done(struct tevent_req *subreq)
+static void cli_full_connection_creds_tcon_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
