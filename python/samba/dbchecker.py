@@ -627,15 +627,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_orphaned_backlink(self, obj, attrname, val, link_name, target_dn):
         '''handle a orphaned backlink value'''
         self.report("ERROR: orphaned backlink attribute '%s' in %s for link %s in %s" % (attrname, obj.dn, link_name, target_dn))
-        if not self.confirm_all('Remove orphaned backlink %s' % link_name, 'fix_all_orphaned_backlinks'):
-            self.report("Not removing orphaned backlink %s" % link_name)
+        if not self.confirm_all('Remove orphaned backlink %s' % attrname, 'fix_all_orphaned_backlinks'):
+            self.report("Not removing orphaned backlink %s" % attrname)
             return
         m = ldb.Message()
         m.dn = obj.dn
         m['value'] = ldb.MessageElement(val, ldb.FLAG_MOD_DELETE, attrname)
         if self.do_modify(m, ["show_recycled:1", "relax:0"],
-                          "Failed to fix orphaned backlink %s" % link_name):
-            self.report("Fixed orphaned backlink %s" % (link_name))
+                          "Failed to fix orphaned backlink %s" % attrname):
+            self.report("Fixed orphaned backlink %s" % (attrname))
 
     def err_no_fsmoRoleOwner(self, obj):
         '''handle a missing fSMORoleOwner'''
