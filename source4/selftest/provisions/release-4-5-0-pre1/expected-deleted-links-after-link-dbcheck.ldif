@@ -1,0 +1,23 @@
+# record 1
+dn: CN=helpers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=user1,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# record 2
+dn: CN=leaders,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# record 3
+dn: CN=swimmers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+member: CN=user1x,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=DomainDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# Referral
+ref: ldap:///DC=ForestDnsZones,DC=release-4-5-0-pre1,DC=samba,DC=corp
+
+# returned 6 records
+# 3 entries
+# 3 referrals
