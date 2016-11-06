@@ -52,7 +52,7 @@ tombstones_expunge() {
 
     $PYTHON $BINDIR/samba-tool domain tombstones expunge -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --current-time=2016-07-30 --tombstone-lifetime=4 > $tmpfile
     if [ "$?" != "0" ]; then
-	return $?
+	return 1
     fi
     diff $tmpfile $release_dir/expected-expunge-output.txt
     if [ "$?" != "0" ]; then
