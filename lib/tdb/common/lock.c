@@ -294,7 +294,7 @@ fail:
 static struct tdb_lock_type *find_nestlock(struct tdb_context *tdb,
 					   tdb_off_t offset)
 {
-	unsigned int i;
+	int i;
 
 	for (i=0; i<tdb->num_lockrecs; i++) {
 		if (tdb->lockrecs[i].off == offset) {
@@ -381,7 +381,7 @@ static int tdb_lock_and_recover(struct tdb_context *tdb)
 
 static bool have_data_locks(const struct tdb_context *tdb)
 {
-	unsigned int i;
+	int i;
 
 	for (i = 0; i < tdb->num_lockrecs; i++) {
 		if (tdb->lockrecs[i].off >= lock_offset(-1))
@@ -560,7 +560,8 @@ static int tdb_allrecord_check(struct tdb_context *tdb, int ltype,
 		return -1;
 	}
 
-	if (tdb->allrecord_lock.count && tdb->allrecord_lock.ltype == ltype) {
+	if (tdb->allrecord_lock.count &&
+	    tdb->allrecord_lock.ltype == (uint32_t)ltype) {
 		tdb->allrecord_lock.count++;
 		return 0;
 	}
@@ -706,7 +707,7 @@ int tdb_allrecord_unlock(struct tdb_context *tdb, int ltype, bool mark_lock)
 	}
 
 	/* Upgradable locks are marked as write locks. */
-	if (tdb->allrecord_lock.ltype != ltype
+	if (tdb->allrecord_lock.ltype != (uint32_t)ltype
 	    && (!tdb->allrecord_lock.off || ltype != F_RDLCK)) {
 		tdb->ecode = TDB_ERR_LOCK;
 		return -1;
@@ -945,7 +946,8 @@ bool tdb_have_extra_locks(struct tdb_context *tdb)
 /* The transaction code uses this to remove all locks. */
 void tdb_release_transaction_locks(struct tdb_context *tdb)
 {
-	unsigned int i, active = 0;
+	int i;
+	unsigned int active = 0;
 
 	if (tdb->allrecord_lock.count != 0) {
 		tdb_allrecord_unlock(tdb, tdb->allrecord_lock.ltype, false);
