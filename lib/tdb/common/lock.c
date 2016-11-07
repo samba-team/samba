@@ -321,6 +321,22 @@ int tdb_nest_lock(struct tdb_context *tdb, uint32_t offset, int ltype,
 
 	new_lck = find_nestlock(tdb, offset);
 	if (new_lck) {
+		if ((new_lck->ltype == F_RDLCK) && (ltype == F_WRLCK)) {
+			if (!tdb_have_mutexes(tdb)) {
+				int ret;
+				/*
+				 * Upgrade the underlying fcntl
+				 * lock. Mutexes don't do readlocks,
+				 * so this only applies to fcntl
+				 * locking.
+				 */
+				ret = tdb_brlock(tdb, ltype, offset, 1, flags);
+				if (ret != 0) {
+					return ret;
+				}
+			}
+			new_lck->ltype = F_WRLCK;
+		}
 		/*
 		 * Just increment the in-memory struct, posix locks
 		 * don't stack.
