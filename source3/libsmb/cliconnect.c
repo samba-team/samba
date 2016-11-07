@@ -2018,6 +2018,7 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	char *p;
 	char *user2;
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
+	bool use_spnego = false;
 	int passlen = 0;
 
 	if (pass != NULL) {
@@ -2068,6 +2069,31 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 	 * do. I have split this into separate functions to make the flow a bit
 	 * easier to understand (tridge).
 	 */
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_NT1) {
+		use_spnego = false;
+	} else if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		use_spnego = true;
+	} else if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
+		/*
+		 * if the server supports extended security then use SPNEGO
+		 * even for anonymous connections.
+		 */
+		use_spnego = true;
+	} else {
+		use_spnego = false;
+	}
+
+	if (use_spnego) {
+		subreq = cli_session_setup_spnego_send(
+			state, ev, cli, user, pass, workgroup);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
+					req);
+		return req;
+	}
+
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_LANMAN1) {
 		/*
 		 * SessionSetupAndX was introduced by LANMAN 1.0. So we skip
@@ -2101,32 +2127,6 @@ struct tevent_req *cli_session_setup_send(TALLOC_CTX *mem_ctx,
 			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, cli_session_setup_done_lanman2,
-					req);
-		return req;
-	}
-
-	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
-					req);
-		return req;
-	}
-
-	/*
-	 * if the server supports extended security then use SPNEGO
-	 * even for anonymous connections.
-	 */
-	if (smb1cli_conn_capabilities(cli->conn) & CAP_EXTENDED_SECURITY) {
-		subreq = cli_session_setup_spnego_send(
-			state, ev, cli, user, pass, workgroup);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, cli_session_setup_done_spnego,
 					req);
 		return req;
 	}
