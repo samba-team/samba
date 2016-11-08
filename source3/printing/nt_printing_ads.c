@@ -569,7 +569,9 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 					pinfo2->sharename, info2_mask,
 					sinfo2, NULL, NULL);
 	if (!W_ERROR_IS_OK(win_rc)) {
-		DEBUG(3, ("err %d saving data\n", W_ERROR_V(win_rc)));
+		DBG_NOTICE("Failed to update data for printer [%s] - %s\n",
+			   pinfo2->sharename,
+			   win_errstr(win_rc));
 		goto done;
 	}
 
