@@ -68,7 +68,7 @@
  *
  * The AFP_Resource stream is stored in an AppleDouble file prepending
  * "._" to the filename. On Solaris with ZFS the stream is optionally
- * stored in an EA "org.netatalk.ressource".
+ * stored in an EA "org.netatalk.resource".
  *
  *
  * Extended Attributes
@@ -378,7 +378,7 @@ struct ad_entry_order entry_order_meta_xattr[ADEID_NUM_XATTR + 1] = {
 	{0, 0, 0}
 };
 
-/* AppleDouble ressource fork file (the ones prefixed by "._") */
+/* AppleDouble resource fork file (the ones prefixed by "._") */
 static const
 struct ad_entry_order entry_order_dot_und[ADEID_NUM_DOT_UND + 1] = {
 	{ADEID_FINDERI,    ADEDOFF_FINDERI_DOT_UND,  ADEDLEN_FINDERI},
@@ -387,8 +387,8 @@ struct ad_entry_order entry_order_dot_und[ADEID_NUM_DOT_UND + 1] = {
 };
 
 /*
- * Fake AppleDouble entry oder for ressource fork xattr.  The xattr
- * isn't an AppleDouble file, it simply contains the ressource data,
+ * Fake AppleDouble entry oder for resource fork xattr.  The xattr
+ * isn't an AppleDouble file, it simply contains the resource data,
  * but in order to be able to use some API calls like ad_getentryoff()
  * we build a fake/helper struct adouble with this entry order struct.
  */
@@ -926,7 +926,7 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 		/* Now parse entries */
 		ok = ad_unpack(ad, ADEID_NUM_DOT_UND, sbuf.st_ex_size);
 		if (!ok) {
-			DEBUG(1, ("invalid AppleDouble ressource %s\n", path));
+			DEBUG(1, ("invalid AppleDouble resource %s\n", path));
 			errno = EINVAL;
 			rc = -1;
 			goto exit;
@@ -938,7 +938,7 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 			< ADEDLEN_FINDERI)
 		    || (ad_getentryoff(ad, ADEID_RFORK)
 			< ADEDOFF_RFORK_DOT_UND)) {
-			DEBUG(2, ("invalid AppleDouble ressource %s\n", path));
+			DEBUG(2, ("invalid AppleDouble resource %s\n", path));
 			errno = EINVAL;
 			rc = -1;
 			goto exit;
@@ -1309,10 +1309,27 @@ static int init_fruit_config(vfs_handle_struct *handle)
 		return -1;
 	}
 
+	/*
+	 * Versions up to Samba 4.5.x had a spelling bug in the
+	 * fruit:resource option calling lp_parm_enum with
+	 * "res*s*ource" (ie two s).
+	 *
+	 * In Samba 4.6 we accept both the wrong and the correct
+	 * spelling, in Samba 4.7 the bad spelling will be removed.
+	 */
 	enumval = lp_parm_enum(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
 			       "ressource", fruit_rsrc, FRUIT_RSRC_ADFILE);
 	if (enumval == -1) {
-		DEBUG(1, ("value for %s: ressource type unknown\n",
+		DEBUG(1, ("value for %s: resource type unknown\n",
+			  FRUIT_PARAM_TYPE_NAME));
+		return -1;
+	}
+	config->rsrc = (enum fruit_rsrc)enumval;
+
+	enumval = lp_parm_enum(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+			       "resource", fruit_rsrc, enumval);
+	if (enumval == -1) {
+		DEBUG(1, ("value for %s: resource type unknown\n",
 			  FRUIT_PARAM_TYPE_NAME));
 		return -1;
 	}

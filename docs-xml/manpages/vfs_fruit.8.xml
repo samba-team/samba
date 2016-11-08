@@ -86,7 +86,13 @@
 	  <varlistentry>
 	    <term>fruit:resource = [ file | xattr | stream ]</term>
 	    <listitem>
-	      <para>Controls where the OS X resource fork is stored:</para>
+	      <para>Controls where the OS X resource fork is stored.</para>
+
+	      <para>Due to a spelling bug in all Samba versions older then
+	      4.6.0, this option can also be given as
+	      <emphasis>fruit:ressource</emphasis>, ie with two s.</para>
+
+	      <para>Settings:</para>
 
 	      <itemizedlist>
 		<listitem><para><command>file (default)</command> - use a ._
