@@ -293,7 +293,7 @@ _PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_crede
 					       cli_credentials_get_username(cred),
 					       cli_credentials_get_domain(cred));
 		} else {
-			*obtained = MIN(cred->domain_obtained, cred->username_obtained);
+			*obtained = MIN(cred->realm_obtained, cred->username_obtained);
 			return talloc_asprintf(mem_ctx, "%s@%s", 
 					       cli_credentials_get_username(cred),
 					       cli_credentials_get_realm(cred));
