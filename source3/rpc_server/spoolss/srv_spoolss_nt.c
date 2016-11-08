@@ -4215,6 +4215,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 				      int snum)
 {
 	const struct auth_session_info *session_info;
+	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	char *printer;
 	WERROR werr;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -4233,7 +4234,7 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_printer_published(tmp_ctx, session_info, msg_ctx,
-				 servername, printer, NULL)) {
+				 servername, printer, &pinfo2)) {
 		struct GUID guid;
 		struct GUID_txt_buf guid_txt;
 		werr = nt_printer_guid_get(tmp_ctx, session_info, msg_ctx,
@@ -4246,10 +4247,33 @@ static WERROR construct_printer_info7(TALLOC_CTX *mem_ctx,
 			werr = nt_printer_guid_retrieve(tmp_ctx, printer,
 							&guid);
 			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(1, ("Failed to retrieve GUID for "
-					  "printer [%s] from AD - "
-					  "Is the the printer still "
-					  "published ?\n", printer));
+				DBG_NOTICE("Failed to retrieve GUID for "
+					   "printer [%s] from AD - %s\n",
+					   printer,
+					   win_errstr(werr));
+				if (W_ERROR_EQUAL(werr, WERR_FILE_NOT_FOUND)) {
+					/*
+					 * If we did not find it in AD, then it
+					 * is unpublished and we should reflect
+					 * this in the registry and return
+					 * success.
+					 */
+					DBG_WARNING("Unpublish printer [%s]\n",
+						    pinfo2->sharename);
+					nt_printer_publish(tmp_ctx,
+							   session_info,
+							   msg_ctx,
+							   pinfo2,
+							   DSPRINT_UNPUBLISH);
+					r->guid = talloc_strdup(mem_ctx, "");
+					r->action = DSPRINT_UNPUBLISH;
+
+					if (r->guid == NULL) {
+						werr = WERR_NOT_ENOUGH_MEMORY;
+					} else {
+						werr = WERR_OK;
+					}
+				}
 				goto out_tmp_free;
 			}
 
