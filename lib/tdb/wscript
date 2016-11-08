@@ -34,6 +34,7 @@ tdb1_unit_tests = [
     'run-readonly-check',
     'run-rescue',
     'run-rescue-find_entry',
+    'run-rdlock-upgrade',
     'run-rwlock-check',
     'run-summary',
     'run-transaction-expand',
