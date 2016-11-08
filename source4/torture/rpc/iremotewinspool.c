@@ -814,6 +814,47 @@ static bool test_AsyncDeletePrintDriverPackage(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_AsyncGetPrinterDriverDirectory(struct torture_context *tctx,
+						void *private_data)
+{
+	struct test_iremotewinspool_context *ctx =
+		talloc_get_type_abort(private_data, struct test_iremotewinspool_context);
+
+	struct dcerpc_pipe *p = ctx->iremotewinspool_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct winspool_AsyncGetPrinterDriverDirectory r;
+	uint32_t pcbNeeded;
+	DATA_BLOB blob;
+	const char *s;
+
+	r.in.pName = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.pEnvironment = ctx->environment;
+	r.in.Level = 1;
+	r.in.cbBuf = 0x200;
+	r.in.pDriverDirectory = talloc_zero_array(tctx, uint8_t, r.in.cbBuf);
+	r.out.pcbNeeded = &pcbNeeded;
+	r.out.pDriverDirectory = r.in.pDriverDirectory;
+
+	torture_comment(tctx, "Testing AsyncGetPrinterDriverDirectory(%s, %s)\n",
+		r.in.pName, r.in.pEnvironment);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_winspool_AsyncGetPrinterDriverDirectory_r(b, tctx, &r),
+		"AsyncGetPrinterDriverDirectory failed");
+	torture_assert_werr_ok(tctx, r.out.result,
+		"AsyncGetPrinterDriverDirectory failed");
+
+	blob = data_blob_const(r.out.pDriverDirectory, pcbNeeded);
+
+	torture_assert(tctx,
+		pull_reg_sz(tctx, &blob, &s),
+		"failed to pull reg_sz");
+
+	torture_comment(tctx, "got: %s\n", s);
+
+	return true;
+}
+
 /*
  * Test if one can close a printserver handle that has been acquired via
  * winspool_AsyncOpenPrinter with a spoolss_ClosePrinter operation.
@@ -886,6 +927,7 @@ struct torture_suite *torture_rpc_iremotewinspool(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "AsyncGetPrinterData", test_AsyncGetPrinterData);
 	torture_tcase_add_simple_test(tcase, "AsyncCorePrinterDriverInstalled", test_AsyncCorePrinterDriverInstalled);
 	torture_tcase_add_simple_test(tcase, "AsyncDeletePrintDriverPackage", test_AsyncDeletePrintDriverPackage);
+	torture_tcase_add_simple_test(tcase, "AsyncGetPrinterDriverDirectory", test_AsyncGetPrinterDriverDirectory);
 
 	tcase = torture_suite_add_tcase(suite, "handles");
 
