@@ -95,11 +95,12 @@ typedef struct {
 	struct ldb_control *data;
 } PyLdbControlObject;
 
-#define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) \
+#define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) do { \
 	if (ret != LDB_SUCCESS) { \
 		PyErr_SetLdbError(err, ret, ldb); \
 		return NULL; \
-	}
+	} \
+} while(0)
 
 /* Picked out of thin air. To do this properly, we should probably have some part of the 
  * errors in LDB be allocated to bindings ? */
