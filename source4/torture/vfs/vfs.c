@@ -38,42 +38,44 @@ static bool wrap_2ns_smb2_test(struct torture_context *torture_ctx,
 			       struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, struct smb2_tree *, struct smb2_tree *);
-	bool ret = false;
+	bool ok;
 
-	struct smb2_tree *tree1;
-	struct smb2_tree *tree2;
+	struct smb2_tree *tree1 = NULL;
+	struct smb2_tree *tree2 = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(torture_ctx);
 
-	if (!torture_smb2_con_sopt(torture_ctx, "share1", &tree1)) {
+	if (!torture_smb2_connection(torture_ctx, &tree1)) {
 		torture_fail(torture_ctx,
-		    "Establishing SMB2 connection failed\n");
-		goto done;
+			    "Establishing SMB2 connection failed\n");
+		return false;
 	}
 
+	/*
+	 * This is a trick:
+	 * The test might close the connection. If we steal the tree context
+	 * before that and free the parent instead of tree directly, we avoid
+	 * a double free error.
+	 */
 	talloc_steal(mem_ctx, tree1);
 
-	if (!torture_smb2_con_sopt(torture_ctx, "share2", &tree2)) {
-		torture_fail(torture_ctx,
-		    "Establishing SMB2 connection failed\n");
-		goto done;
+	ok = torture_smb2_con_sopt(torture_ctx, "share2", &tree2);
+	if (ok) {
+		talloc_steal(mem_ctx, tree2);
 	}
-
-	talloc_steal(mem_ctx, tree2);
 
 	fn = test->fn;
 
-	ret = fn(torture_ctx, tree1, tree2);
+	ok = fn(torture_ctx, tree1, tree2);
 
-done:
 	/* the test may already have closed some of the connections */
 	talloc_free(mem_ctx);
 
-	return ret;
+	return ok;
 }
 
 /*
- * Run a test with 2 connected trees, Share names to connect are taken
- * from option strings "torture:share1" and "torture:share2"
+ * Run a test with 2 connected trees, the default share and another
+ * taken from option strings "torture:share2"
  */
 struct torture_test *torture_suite_add_2ns_smb2_test(struct torture_suite *suite,
 						     const char *name,
@@ -107,6 +109,7 @@ NTSTATUS torture_vfs_init(void)
 	suite->description = talloc_strdup(suite, "VFS modules tests");
 
 	torture_suite_add_suite(suite, torture_vfs_fruit());
+	torture_suite_add_suite(suite, torture_vfs_fruit_netatalk());
 	torture_suite_add_suite(suite, torture_acl_xattr());
 
 	torture_register_suite(suite);

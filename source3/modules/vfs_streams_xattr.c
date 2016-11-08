@@ -452,17 +452,17 @@ static int streams_xattr_open(vfs_handle_struct *handle,
         hostfd = SMB_VFS_OPEN(handle->conn, smb_fname_base, fsp,
 			      baseflags, mode);
 
-	TALLOC_FREE(smb_fname_base);
-
         /* It is legit to open a stream on a directory, but the base
          * fd has to be read-only.
          */
         if ((hostfd == -1) && (errno == EISDIR)) {
                 baseflags &= ~O_ACCMODE;
                 baseflags |= O_RDONLY;
-                hostfd = SMB_VFS_OPEN(handle->conn, smb_fname, fsp, baseflags,
+                hostfd = SMB_VFS_OPEN(handle->conn, smb_fname_base, fsp, baseflags,
 				      mode);
         }
+
+	TALLOC_FREE(smb_fname_base);
 
         if (hostfd == -1) {
 		goto fail;

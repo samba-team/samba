@@ -910,7 +910,7 @@ sub provision($$$$$$$$$$)
 	path = $ctx->{share}
 	vfs objects = catia fruit streams_xattr acl_xattr
 	ea support = yes
-	fruit:ressource = file
+	fruit:resource = file
 	fruit:metadata = netatalk
 	fruit:locking = netatalk
 	fruit:encoding = native

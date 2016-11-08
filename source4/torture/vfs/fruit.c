@@ -3527,6 +3527,383 @@ done:
 }
 
 /*
+ * This tests that right after creating the AFP_AfpInfo stream,
+ * reading from the stream returns an empty, default metadata blob of
+ * 60 bytes.
+ *
+ * NOTE: against OS X SMB server this only works if the read request
+ * is compounded with the create that created the stream, is fails
+ * otherwise. We don't care...
+ */
+static bool test_null_afpinfo(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = "test_null_afpinfo";
+	const char *sname = "test_null_afpinfo" AFPINFO_STREAM_NAME;
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_request *req[3];
+	struct smb2_handle handle;
+	struct smb2_create create;
+	struct smb2_read read;
+	AfpInfo *afpinfo = NULL;
+	char *afpinfo_buf = NULL;
+	const char *type_creator = "SMB,OLE!";
+
+	torture_comment(tctx, "Checking create of AfpInfo stream\n");
+
+	smb2_util_unlink(tree, fname);
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA;
+	create.in.share_access = FILE_SHARE_READ | FILE_SHARE_DELETE;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.fname = sname;
+
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	req[0] = smb2_create_send(tree, &create);
+
+	handle.data[0] = UINT64_MAX;
+	handle.data[1] = UINT64_MAX;
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(read);
+	read.in.file.handle = handle;
+	read.in.length = AFP_INFO_SIZE;
+	req[1] = smb2_read_send(tree, &read);
+
+	status = smb2_create_recv(req[0], tree, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create_recv failed");
+
+	handle = create.out.file.handle;
+
+	status = smb2_read_recv(req[1], tree, &read);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_read_recv failed");
+
+	afpinfo = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, afpinfo != NULL, ret, done, "torture_afpinfo_new failed");
+
+	memcpy(afpinfo->afpi_FinderInfo, type_creator, 8);
+
+	afpinfo_buf = torture_afpinfo_pack(tctx, afpinfo);
+	torture_assert_goto(tctx, afpinfo_buf != NULL, ret, done, "torture_afpinfo_new failed");
+
+	status = smb2_util_write(tree, handle, afpinfo_buf, 0, AFP_INFO_SIZE);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_write failed");
+
+	smb2_util_close(tree, handle);
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, type_creator);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+done:
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static bool test_delete_file_with_rfork(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	const char *fname = "torture_write_rfork_io";
+	const char *rfork_content = "1234567890";
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	torture_comment(tctx, "Test deleting file with resource fork\n");
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed\n");
+
+	ret = write_stream(tree, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   10, 10, rfork_content);
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed\n");
+
+	ret = check_stream(tree, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   0, 20, 10, 10, rfork_content);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed\n");
+
+	status = smb2_util_unlink(tree, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "check_stream failed\n");
+
+done:
+	return ret;
+}
+
+static bool test_rename_and_read_rsrc(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_create create, create2;
+	struct smb2_handle h1, h2;
+	const char *fname = "test_rename_openfile";
+	const char *sname = "test_rename_openfile" AFPRESOURCE_STREAM_NAME;
+	const char *fname_renamed = "test_rename_openfile_renamed";
+	const char *data = "1234567890";
+	union smb_setfileinfo sinfo;
+	struct smb2_read r;
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	torture_comment(tctx, "Create file with resource fork\n");
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	ret = write_stream(tree, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME, 0, 10, data);
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed");
+
+	torture_comment(tctx, "Open resource fork\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h1 = create.out.file.handle;
+
+	torture_comment(tctx, "Rename base file\n");
+
+	ZERO_STRUCT(create2);
+	create2.in.desired_access = SEC_FILE_ALL;
+	create2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create2.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create2.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create2.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &create2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h2 = create2.out.file.handle;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h2;
+	sinfo.rename_information.in.overwrite = 0;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = fname_renamed;
+
+	status = smb2_setinfo_file(tree, &sinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_setinfo_file failed");
+
+	smb2_util_close(tree, h2);
+
+	ZERO_STRUCT(r);
+	r.in.file.handle = h1;
+	r.in.length      = 10;
+	r.in.offset      = 0;
+
+	torture_comment(tctx, "Read resource fork of renamed file\n");
+
+	status = smb2_read(tree, tree, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_read failed");
+
+	smb2_util_close(tree, h1);
+
+	torture_assert_goto(tctx, r.out.data.length == 10, ret, done,
+			    talloc_asprintf(tctx, "smb2_read returned %jd bytes, expected 10\n",
+					    (intmax_t)r.out.data.length));
+
+	torture_assert_goto(tctx, memcmp(r.out.data.data, data, 10) == 0, ret, done,
+			    talloc_asprintf(tctx, "Bad data in stream\n"));
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_renamed);
+
+	return ret;
+}
+
+static bool test_readdir_attr_illegal_ntfs(struct torture_context *tctx,
+					   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *name = "test" "\xef\x80\xa2" "aapl"; /* "test:aapl" */
+	const char *fname = BASEDIR "\\test" "\xef\x80\xa2" "aapl"; /* "test:aapl" */
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create io;
+	AfpInfo *info;
+	const char *type_creator = "SMB,OLE!";
+	struct smb2_find f;
+	unsigned int count;
+	union smb_search_data *d;
+	uint64_t rfork_len;
+	int i;
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir failed");
+	smb2_util_close(tree, testdirh);
+
+	torture_comment(tctx, "Enabling AAPL\n");
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	/*
+	 * Now that Requested AAPL extensions are enabled, setup some
+	 * Mac files with metadata and resource fork
+	 */
+
+	torture_comment(tctx, "Preparing file\n");
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_not_null_goto(tctx, info, ret, done, "torture_afpinfo_new failed");
+
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ret = write_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed");
+
+	/*
+	 * Ok, file is prepared, now call smb2/find
+	 */
+
+	torture_comment(tctx, "Issue find\n");
+
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_RIGHTS_DIR_READ;
+	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.share_access = (NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE |
+			      NTCREATEX_SHARE_ACCESS_DELETE);
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.fname = BASEDIR;
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= io.out.file.handle;
+	f.in.pattern		= "*";
+	f.in.max_response_size	= 0x1000;
+	f.in.level              = SMB2_FIND_ID_BOTH_DIRECTORY_INFO;
+
+	status = smb2_find_level(tree, tree, &f, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_find_level failed");
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_close failed");
+
+	torture_comment(tctx, "Checking find response with enriched macOS metadata\n");
+
+	for (i = 0; i < count; i++) {
+		const char *found = d[i].id_both_directory_info.name.s;
+
+		if (!strcmp(found, ".") || !strcmp(found, ".."))
+			continue;
+		break;
+	}
+
+	torture_assert_str_equal_goto(tctx,
+				      d[i].id_both_directory_info.name.s, name,
+				      ret, done, "bad name");
+
+	rfork_len = BVAL(d[i].id_both_directory_info.short_name_buf, 0);
+	torture_assert_int_equal_goto(tctx, rfork_len, 3, ret, done, "bad resource fork length");
+
+	torture_assert_mem_equal_goto(tctx, type_creator,
+				      d[i].id_both_directory_info.short_name_buf + 8,
+				      8, ret, done, "Bad FinderInfo");
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static bool test_invalid_afpinfo(struct torture_context *tctx,
+				 struct smb2_tree *tree1,
+				 struct smb2_tree *tree2)
+{
+	const char *fname = "filtest_invalid_afpinfo";
+	const char *sname = "filtest_invalid_afpinfo" AFPINFO_STREAM_NAME;
+	struct smb2_create create;
+	const char *streams_basic[] = {
+		"::$DATA"
+	};
+	const char *streams_afpinfo[] = {
+		"::$DATA",
+		AFPINFO_STREAM
+	};
+	NTSTATUS status;
+	bool ret = true;
+
+	if (tree2 == NULL) {
+		torture_skip_goto(tctx, done, "need second share without fruit\n");
+	}
+
+	torture_comment(tctx, "Testing invalid AFP_AfpInfo stream\n");
+
+	ret = torture_setup_file(tctx, tree2, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	ret = write_stream(tree2, __location__, tctx, tctx,
+			   fname, AFPINFO_STREAM_NAME,
+			   0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed");
+
+	ret = check_stream_list(tree2, tctx, fname, 2, streams_afpinfo, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	torture_comment(tctx, "Listing streams, bad AFPINFO stream must not be present\n");
+
+	ret = check_stream_list(tree1, tctx, fname, 1, streams_basic, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	torture_comment(tctx, "Try to open AFPINFO stream, must fail\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.fname = sname;
+
+	status = smb2_create(tree1, tctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done, "Stream still around?");
+
+done:
+	smb2_util_unlink(tree1, fname);
+	return ret;
+}
+
+/*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
  * argument with the local path to the share:
@@ -3542,11 +3919,9 @@ struct torture_suite *torture_vfs_fruit(void)
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
 	torture_suite_add_1smb2_test(suite, "copyfile", test_copyfile);
-	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "read metadata", test_read_afpinfo);
 	torture_suite_add_1smb2_test(suite, "write metadata", test_write_atalk_metadata);
 	torture_suite_add_1smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
-	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_1smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
 	torture_suite_add_1smb2_test(suite, "stream names", test_stream_names);
 	torture_suite_add_1smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
@@ -3560,6 +3935,25 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "create delete-on-close AFP_AfpResource", test_create_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo delete-on-close AFP_AfpResource", test_setinfo_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpResource", test_setinfo_eof_resource);
+	torture_suite_add_1smb2_test(suite, "null afpinfo", test_null_afpinfo);
+	torture_suite_add_1smb2_test(suite, "delete", test_delete_file_with_rfork);
+	torture_suite_add_1smb2_test(suite, "read open rsrc after rename", test_rename_and_read_rsrc);
+	torture_suite_add_1smb2_test(suite, "readdir_attr with names with illegal ntfs characters", test_readdir_attr_illegal_ntfs);
+
+	torture_suite_add_2ns_smb2_test(suite, "invalid AFP_AfpInfo", test_invalid_afpinfo);
+
+	return suite;
+}
+
+struct torture_suite *torture_vfs_fruit_netatalk(void)
+{
+	struct torture_suite *suite = torture_suite_create(
+		talloc_autofree_context(), "fruit_netatalk");
+
+	suite->description = talloc_strdup(suite, "vfs_fruit tests for Netatalk interop that require fruit:metadata=netatalk");
+
+	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
+	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 
 	return suite;
 }
