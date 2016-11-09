@@ -2344,13 +2344,19 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		enum ndr_err_code ndr_err;
 		struct spoolss_OSVersion os;
 
+		/*
+		 * Set the default OSVersion to:
+		 *
+		 *     Windows Server 2003R2 SP2 (5.2.3790)
+		 *
+		 * used to be Windows 2000 (5.0.2195)
+		 */
 		os.major		= lp_parm_int(GLOBAL_SECTION_SNUM,
 						      "spoolss", "os_major", 5);
-						      /* Windows 2000 == 5.0 */
 		os.minor		= lp_parm_int(GLOBAL_SECTION_SNUM,
-						      "spoolss", "os_minor", 0);
+						      "spoolss", "os_minor", 2);
 		os.build		= lp_parm_int(GLOBAL_SECTION_SNUM,
-						      "spoolss", "os_build", 2195);
+						      "spoolss", "os_build", 3790);
 		os.extra_string		= "";	/* leave extra string empty */
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os,
