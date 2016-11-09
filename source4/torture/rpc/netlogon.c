@@ -4011,7 +4011,7 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct cli_credentials *anon_creds;
-	const struct dcerpc_binding *binding2;
+	struct dcerpc_binding *binding2;
 	struct dcerpc_pipe *p2;
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -4037,7 +4037,12 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 	anon_creds = cli_credentials_init_anon(tctx);
 	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
 
-	binding2 = p->binding;
+	binding2 = dcerpc_binding_dup(tctx, p->binding);
+	/* Swap the binding details from NETLOGON to LSA */
+	status = dcerpc_epm_map_binding(tctx, binding2, &ndr_table_lsarpc, tctx->ev, tctx->lp_ctx);
+	dcerpc_binding_set_assoc_group_id(binding2, 0);
+	torture_assert_ntstatus_ok(tctx, status, "epm map");
+
 	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_lsarpc,
 						  anon_creds, tctx->lp_ctx,
 						  tctx, &p2);
@@ -4096,6 +4101,65 @@ static bool test_ManyGetDCName(struct torture_context *tctx,
 		torture_comment(tctx, "\tDC for domain %s is %s\n", info->name.string,
 		       dcname ? dcname : "unknown");
 	}
+
+	return true;
+}
+
+static bool test_lsa_over_netlogon(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct cli_credentials *anon_creds;
+	const struct dcerpc_binding *binding2;
+	struct dcerpc_pipe *p2;
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 o;
+	struct policy_handle lsa_handle;
+
+	struct dcerpc_binding_handle *b2;
+
+
+	if (p->conn->transport.transport != NCACN_NP) {
+		torture_skip(tctx, "test_lsa_over_netlogon works only with NCACN_NP");
+	}
+
+	torture_comment(tctx, "Testing if we can access the LSA server over\n"
+			" \\\\pipe\\netlogon rather than \\\\pipe\\lsarpc\n");
+
+	anon_creds = cli_credentials_init_anon(tctx);
+	torture_assert(tctx, anon_creds != NULL, "cli_credentials_init_anon failed");
+
+	binding2 = p->binding;
+
+	status = dcerpc_secondary_auth_connection(p, binding2, &ndr_table_lsarpc,
+						  anon_creds, tctx->lp_ctx,
+						  tctx, &p2);
+	torture_assert_ntstatus_ok(tctx, status, "Failed to create secondary connection");
+	b2 = p2->binding_handle;
+
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	o.in.system_name = "\\";
+	o.in.attr = &attr;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.handle = &lsa_handle;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_OpenPolicy2_r(b2, tctx, &o),
+		"OpenPolicy2 failed");
+	torture_assert_ntstatus_ok(tctx, o.out.result, "OpenPolicy2 failed");
+
+	talloc_free(p2);
 
 	return true;
 }
@@ -4170,6 +4234,8 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo", test_netr_ServerGetTrustInfo);
 	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo_AES", test_netr_ServerGetTrustInfo_AES);
 	torture_rpc_tcase_add_test_creds(tcase, "GetForestTrustInformation", test_netr_GetForestTrustInformation);
+
+	torture_rpc_tcase_add_test(tcase, "lsa_over_netlogon", test_lsa_over_netlogon);
 
 	return suite;
 }
