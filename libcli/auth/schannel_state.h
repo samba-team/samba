@@ -39,4 +39,16 @@ NTSTATUS schannel_check_creds_state(TALLOC_CTX *mem_ctx,
 				    struct netr_Authenticator *return_authenticator,
 				    struct netlogon_creds_CredentialState **creds_out);
 
+NTSTATUS schannel_get_challenge(struct loadparm_context *lp_ctx,
+				struct netr_Credential *client_challenge,
+				struct netr_Credential *server_challenge,
+				const char *computer_name);
+
+NTSTATUS schannel_save_challenge(struct loadparm_context *lp_ctx,
+				 const struct netr_Credential *client_challenge,
+				 const struct netr_Credential *server_challenge,
+				 const char *computer_name);
+
+NTSTATUS schannel_delete_challenge(struct loadparm_context *lp_ctx,
+				   const char *computer_name);
 #endif

@@ -27,7 +27,6 @@
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
 #include "../lib/util/util_ldb.h"
-#include "../lib/util/memcache.h"
 #include "../libcli/auth/schannel.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
@@ -46,13 +45,12 @@
 
 #define DCESRV_INTERFACE_NETLOGON_BIND(call, iface) \
        dcesrv_interface_netlogon_bind(call, iface)
+
 static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_call,
 					       const struct dcesrv_interface *iface)
 {
 	return dcesrv_interface_bind_reject_connect(dce_call, iface);
 }
-
-static struct memcache *global_challenge_table;
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -64,28 +62,9 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 {
 	struct netlogon_server_pipe_state *pipe_state =
 		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
-	DATA_BLOB key, val;
+	NTSTATUS ntstatus;
 
 	ZERO_STRUCTP(r->out.return_credentials);
-
-	if (global_challenge_table == NULL) {
-		/*
-		 * We maintain a global challenge table
-		 * with a fixed size (8k)
-		 *
-		 * This is required for the strange clients
-		 * which use different connections for
-		 * netr_ServerReqChallenge() and netr_ServerAuthenticate3()
-		 *
-		 */
-		global_challenge_table = memcache_init(talloc_autofree_context(),
-						       8192);
-		if (global_challenge_table == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	}
-
-	/* destroyed on pipe shutdown */
 
 	if (pipe_state) {
 		talloc_free(pipe_state);
@@ -104,10 +83,13 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	dce_call->context->private_data = pipe_state;
 
-	key = data_blob_string_const(r->in.computer_name);
-	val = data_blob_const(pipe_state, sizeof(*pipe_state));
-
-	memcache_add(global_challenge_table, SINGLETON_CACHE, key, val);
+	ntstatus = schannel_save_challenge(dce_call->conn->dce_ctx->lp_ctx,
+					   &pipe_state->client_challenge,
+					   &pipe_state->server_challenge,
+					   r->in.computer_name);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		return ntstatus;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -117,7 +99,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 {
 	struct netlogon_server_pipe_state *pipe_state =
 		talloc_get_type(dce_call->context->private_data, struct netlogon_server_pipe_state);
-	DATA_BLOB challenge_key;
 	bool challenge_valid = false;
 	struct netlogon_server_pipe_state challenge;
 	struct netlogon_creds_CredentialState *creds;
@@ -142,7 +123,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	ZERO_STRUCTP(r->out.return_credentials);
 	*r->out.rid = 0;
 
-	challenge_key = data_blob_string_const(r->in.computer_name);
 	if (pipe_state != NULL) {
 		dce_call->context->private_data = NULL;
 
@@ -156,11 +136,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		 * netr_ServerAuthenticate3() on the same dcerpc connection.
 		 */
 		challenge = *pipe_state;
-		TALLOC_FREE(pipe_state);
+
 		challenge_valid = true;
+
 	} else {
-		DATA_BLOB val;
-		bool ok;
+		NTSTATUS ntstatus;
 
 		/*
 		 * Fallback and try to get the challenge from
@@ -168,17 +148,25 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		 *
 		 * If too many clients are using this code path,
 		 * they may destroy their cache entries as the
-		 * global_challenge_table memcache has a fixed size.
+		 * TDB has a fixed size limited via a lossy hash
 		 *
-		 * Note: this handles global_challenge_table == NULL fine
+		 * The TDB used is the schannel store, which is
+		 * initialised at startup.
+		 *
+		 * NOTE: The challenge is deleted from the DB as soon as it is
+		 * fetched, to prevent reuse.
+		 *
 		 */
-		ok = memcache_lookup(global_challenge_table, SINGLETON_CACHE,
-				     challenge_key, &val);
-		if (ok && val.length == sizeof(challenge)) {
-			memcpy(&challenge, val.data, sizeof(challenge));
-			challenge_valid = true;
-		} else {
+
+		ntstatus = schannel_get_challenge(dce_call->conn->dce_ctx->lp_ctx,
+						  &challenge.client_challenge,
+						  &challenge.server_challenge,
+						  r->in.computer_name);
+
+		if (!NT_STATUS_IS_OK(ntstatus)) {
 			ZERO_STRUCT(challenge);
+		} else {
+			challenge_valid = true;
 		}
 	}
 
@@ -232,15 +220,25 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 
 	/*
-	 * At this point we can cleanup the cache entry,
-	 * if we fail the client needs to call netr_ServerReqChallenge
-	 * again.
-	 *
-	 * Note: this handles global_challenge_table == NULL
-	 * and also a non existing record just fine.
+	 * This talloc_free is important to prevent re-use of the
+	 * challenge.  We have to delay it this far due to NETApp
+	 * servers per:
+	 * https://bugzilla.samba.org/show_bug.cgi?id=11291
 	 */
-	memcache_delete(global_challenge_table,
-			SINGLETON_CACHE, challenge_key);
+	TALLOC_FREE(pipe_state);
+
+	/*
+	 * At this point we must also cleanup the TDB cache
+	 * entry, if we fail the client needs to call
+	 * netr_ServerReqChallenge again.
+	 *
+	 * Note: this handles a non existing record just fine,
+	 * the r->in.computer_name might not be the one used
+	 * in netr_ServerReqChallenge(), but we are trying to
+	 * just tidy up the normal case to prevent re-use.
+	 */
+	schannel_delete_challenge(dce_call->conn->dce_ctx->lp_ctx,
+				  r->in.computer_name);
 
 	/*
 	 * According to Microsoft (see bugid #6099)

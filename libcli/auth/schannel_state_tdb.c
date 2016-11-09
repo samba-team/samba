@@ -272,6 +272,267 @@ NTSTATUS schannel_save_creds_state(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+
+/*
+ * Create a very lossy hash of the computer name.
+ *
+ * The idea here is to compress the computer name into small space so
+ * that malicious clients cannot fill the database with junk, as only a
+ * maximum of 16k of entries are possible.
+ *
+ * Collisions are certainly possible, and the design behaves in the
+ * same way as when the hostname is reused, but clients that use the
+ * same connection do not go via the cache, and the cache only needs
+ * to function between the ReqChallenge and ServerAuthenticate
+ * packets.
+ */
+static void hash_computer_name(const char *computer_name,
+			       char keystr[16])
+{
+	unsigned int hash;
+	TDB_DATA computer_tdb_data = {
+		.dptr = (uint8_t *)discard_const_p(char, computer_name),
+		.dsize = strlen(computer_name)
+	};
+	hash = tdb_jenkins_hash(&computer_tdb_data);
+
+	/* we are using 14 bits of the digest to index our connections, so
+	   that we use at most 16,384 buckets.*/
+	snprintf(keystr, 15, "CHALLENGE/%x%x", hash & 0xFF,
+		 (hash & 0xFF00 >> 8) & 0x3f);
+	return;
+}
+
+
+static
+NTSTATUS schannel_store_challenge_tdb(struct db_context *db_sc,
+				      TALLOC_CTX *mem_ctx,
+				      const struct netr_Credential *client_challenge,
+				      const struct netr_Credential *server_challenge,
+				      const char *computer_name)
+{
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	TDB_DATA value;
+	char *name_upper = NULL;
+	NTSTATUS status;
+	char keystr[16] = { 0, };
+	struct netlogon_cache_entry cache_entry;
+
+	if (strlen(computer_name) > 255) {
+		/*
+		 * We don't make this a limit at 15 chars as Samba has
+		 * a test showing this can be longer :-(
+		 */
+		return STATUS_BUFFER_OVERFLOW;
+	}
+
+	name_upper = strupper_talloc(mem_ctx, computer_name);
+	if (name_upper == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	hash_computer_name(name_upper, keystr);
+
+	cache_entry.computer_name = name_upper;
+	cache_entry.client_challenge = *client_challenge;
+	cache_entry.server_challenge = *server_challenge;
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &cache_entry,
+			       (ndr_push_flags_fn_t)ndr_push_netlogon_cache_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	value.dptr = blob.data;
+	value.dsize = blob.length;
+
+	status = dbwrap_store_bystring(db_sc, keystr, value, TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("%s: failed to stored challenge info for '%s' "
+			 "with key %s - %s\n",
+			 __func__, cache_entry.computer_name, keystr,
+			 nt_errstr(status)));
+		return status;
+	}
+
+	DEBUG(3,("%s: stored challenge info for '%s' with key %s\n",
+		__func__, cache_entry.computer_name, keystr));
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netlogon_cache_entry, &cache_entry);
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ Fetch a single challenge from the TDB.
+ ********************************************************************/
+
+static
+NTSTATUS schannel_fetch_challenge_tdb(struct db_context *db_sc,
+				      TALLOC_CTX *mem_ctx,
+				      struct netr_Credential *client_challenge,
+				      struct netr_Credential *server_challenge,
+				      const char *computer_name)
+{
+	NTSTATUS status;
+	TDB_DATA value;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	char keystr[16] = { 0, };
+	struct netlogon_cache_entry cache_entry;
+	char *name_upper = NULL;
+
+	name_upper = strupper_talloc(mem_ctx, computer_name);
+	if (name_upper == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	hash_computer_name(name_upper, keystr);
+
+	status = dbwrap_fetch_bystring(db_sc, mem_ctx, keystr, &value);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3,("%s: Failed to find entry for %s with key %s - %s\n",
+			__func__, name_upper, keystr, nt_errstr(status)));
+		goto done;
+	}
+
+	blob = data_blob_const(value.dptr, value.dsize);
+
+	ndr_err = ndr_pull_struct_blob_all(&blob, mem_ctx, &cache_entry,
+					   (ndr_pull_flags_fn_t)ndr_pull_netlogon_cache_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(3,("%s: Failed to parse entry for %s with key %s - %s\n",
+			__func__, name_upper, keystr, nt_errstr(status)));
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netlogon_cache_entry, &cache_entry);
+	}
+
+	if (strcmp(cache_entry.computer_name, name_upper) != 0) {
+		status = NT_STATUS_NOT_FOUND;
+
+		DEBUG(1, ("%s: HASH COLLISION with key %s ! "
+			  "Wanted to fetch record for %s but got %s.",
+			  __func__, keystr, name_upper,
+			  cache_entry.computer_name));
+	} else {
+
+		DEBUG(3,("%s: restored key %s for %s\n",
+			 __func__, keystr, cache_entry.computer_name));
+
+		*client_challenge = cache_entry.client_challenge;
+		*server_challenge = cache_entry.server_challenge;
+	}
+ done:
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/******************************************************************************
+ Wrapper around schannel_fetch_session_key_tdb()
+ Note we must be root here.
+
+*******************************************************************************/
+
+NTSTATUS schannel_get_challenge(struct loadparm_context *lp_ctx,
+				struct netr_Credential *client_challenge,
+				struct netr_Credential *server_challenge,
+				const char *computer_name)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct db_context *db_sc;
+	NTSTATUS status;
+
+	db_sc = open_schannel_session_store(frame, lp_ctx);
+	if (!db_sc) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = schannel_fetch_challenge_tdb(db_sc, frame,
+					      client_challenge,
+					      server_challenge,
+					      computer_name);
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/******************************************************************************
+ Wrapper around dbwrap_delete_bystring()
+ Note we must be root here.
+
+ This allows the challenge to be removed from the TDB, which should be
+ as soon as the TDB or in-memory copy it is used, to avoid reuse.
+*******************************************************************************/
+
+NTSTATUS schannel_delete_challenge(struct loadparm_context *lp_ctx,
+				   const char *computer_name)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct db_context *db_sc;
+	char *name_upper;
+	char keystr[16] = { 0, };
+
+	db_sc = open_schannel_session_store(frame, lp_ctx);
+	if (!db_sc) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	name_upper = strupper_talloc(frame, computer_name);
+	if (!name_upper) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	hash_computer_name(name_upper, keystr);
+
+	/* Now delete it, we do not want to permit fetch of this twice */
+	dbwrap_delete_bystring(db_sc, keystr);
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
+}
+
+/******************************************************************************
+ Wrapper around schannel_store_session_key_tdb()
+ Note we must be root here.
+*******************************************************************************/
+
+NTSTATUS schannel_save_challenge(struct loadparm_context *lp_ctx,
+				 const struct netr_Credential *client_challenge,
+				 const struct netr_Credential *server_challenge,
+				 const char *computer_name)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct db_context *db_sc;
+	NTSTATUS status;
+
+	db_sc = open_schannel_session_store(frame, lp_ctx);
+	if (!db_sc) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	status = schannel_store_challenge_tdb(db_sc, frame,
+					      client_challenge,
+					      server_challenge,
+					      computer_name);
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /********************************************************************
  Validate an incoming authenticator against the credentials for the
  remote machine stored in the schannel database.
