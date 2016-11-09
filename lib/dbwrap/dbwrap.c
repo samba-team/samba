@@ -498,6 +498,42 @@ NTSTATUS dbwrap_parse_record_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
+			  void (*fn)(struct db_record *rec,
+				     void *private_data),
+			  void *private_data)
+{
+	struct db_record *rec;
+
+	if (db->do_locked != NULL) {
+		struct db_context **lockptr;
+		NTSTATUS status;
+
+		if (db->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+			dbwrap_lock_order_lock(db, &lockptr);
+		}
+
+		status = db->do_locked(db, key, fn, private_data);
+
+		if (db->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+			dbwrap_lock_order_unlock(db, lockptr);
+		}
+
+		return status;
+	}
+
+	rec = dbwrap_fetch_locked(db, db, key);
+	if (rec == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	fn(rec, private_data);
+
+	TALLOC_FREE(rec);
+
+	return NT_STATUS_OK;
+}
+
 int dbwrap_wipe(struct db_context *db)
 {
 	if (db->wipe == NULL) {

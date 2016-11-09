@@ -83,6 +83,11 @@ struct db_record *dbwrap_try_fetch_locked(struct db_context *db,
 					  TDB_DATA key);
 struct db_context *dbwrap_record_get_db(struct db_record *rec);
 
+NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
+			  void (*fn)(struct db_record *rec,
+				     void *private_data),
+			  void *private_data);
+
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 		      TDB_DATA data, int flags);

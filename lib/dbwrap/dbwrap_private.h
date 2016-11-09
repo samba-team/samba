@@ -68,6 +68,10 @@ struct db_context {
 		void *private_data,
 		enum dbwrap_req_state *req_state);
 	NTSTATUS (*parse_record_recv)(struct tevent_req *req);
+	NTSTATUS (*do_locked)(struct db_context *db, TDB_DATA key,
+			      void (*fn)(struct db_record *rec,
+					 void *private_data),
+			      void *private_data);
 	int (*exists)(struct db_context *db,TDB_DATA key);
 	int (*wipe)(struct db_context *db);
 	int (*check)(struct db_context *db);
