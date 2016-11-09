@@ -301,22 +301,30 @@ bool dbwrap_exists(struct db_context *db, TDB_DATA key)
 	return (result == 1);
 }
 
+struct dbwrap_store_state {
+	TDB_DATA data;
+	int flags;
+	NTSTATUS status;
+};
+
+static void dbwrap_store_fn(struct db_record *rec, void *private_data)
+{
+	struct dbwrap_store_state *state = private_data;
+	state->status = dbwrap_record_store(rec, state->data, state->flags);
+}
+
 NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
 		      TDB_DATA data, int flags)
 {
-	struct db_record *rec;
+	struct dbwrap_store_state state = { .data = data, .flags = flags };
 	NTSTATUS status;
-	TALLOC_CTX *frame = talloc_stackframe();
 
-	rec = dbwrap_fetch_locked(db, frame, key);
-	if (rec == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
+	status = dbwrap_do_locked(db, key, dbwrap_store_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	status = dbwrap_record_store(rec, data, flags);
-	TALLOC_FREE(frame);
-	return status;
+	return state.status;
 }
 
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
