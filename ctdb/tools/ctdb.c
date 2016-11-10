@@ -1552,7 +1552,8 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<count; i++) {
 		ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-					       pnn_list[i], TIMEOUT(), &ips);
+					       pnn_list[i], TIMEOUT(),
+					       false, &ips);
 		if (ret != 0) {
 			goto failed;
 		}
@@ -1657,7 +1658,8 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		ret = get_all_public_ips(ctdb, mem_ctx, &ips);
 	} else {
 		ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-					       ctdb->cmd_pnn, TIMEOUT(), &ips);
+					       ctdb->cmd_pnn, TIMEOUT(),
+					       false, &ips);
 	}
 	if (ret != 0) {
 		return ret;
@@ -3809,7 +3811,7 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-				       pnn, TIMEOUT(), &pubip_list);
+				       pnn, TIMEOUT(), false, &pubip_list);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to get Public IPs from node %u\n",
 			pnn);
@@ -3937,7 +3939,8 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT(), &pubip_list);
+				       ctdb->cmd_pnn, TIMEOUT(),
+				       false, &pubip_list);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to get Public IPs from node %u\n",
 			ctdb->cmd_pnn);
@@ -4000,7 +4003,8 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ret = ctdb_ctrl_get_public_ips(mem_ctx, ctdb->ev, ctdb->client,
-				       ctdb->cmd_pnn, TIMEOUT(), &pubip_list);
+				       ctdb->cmd_pnn, TIMEOUT(),
+				       false, &pubip_list);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to get Public IPs from node %u\n",
 			ctdb->cmd_pnn);

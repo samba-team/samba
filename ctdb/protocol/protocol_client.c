@@ -1358,7 +1358,8 @@ int ctdb_reply_control_takeover_ip(struct ctdb_reply_control *reply)
 
 /* CTDB_CONTROL_GET_PUBLIC_IPS */
 
-void ctdb_req_control_get_public_ips(struct ctdb_req_control *request)
+void ctdb_req_control_get_public_ips(struct ctdb_req_control *request,
+				     bool available_only)
 {
 	request->opcode = CTDB_CONTROL_GET_PUBLIC_IPS;
 	request->pad = 0;
@@ -1367,6 +1368,9 @@ void ctdb_req_control_get_public_ips(struct ctdb_req_control *request)
 	request->flags = 0;
 
 	request->rdata.opcode = CTDB_CONTROL_GET_PUBLIC_IPS;
+	if (available_only) {
+		request->flags = CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE;
+	}
 }
 
 int ctdb_reply_control_get_public_ips(struct ctdb_reply_control *reply,

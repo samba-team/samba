@@ -1527,13 +1527,14 @@ int ctdb_ctrl_takeover_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_get_public_ips(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     struct ctdb_client_context *client,
 			     int destnode, struct timeval timeout,
+			     bool available_only,
 			     struct ctdb_public_ip_list **pubip_list)
 {
 	struct ctdb_req_control request;
 	struct ctdb_reply_control *reply;
 	int ret;
 
-	ctdb_req_control_get_public_ips(&request);
+	ctdb_req_control_get_public_ips(&request, available_only);
 	ret = ctdb_client_control(mem_ctx, ev, client, destnode, timeout,
 				  &request, &reply);
 	if (ret != 0) {

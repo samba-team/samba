@@ -412,7 +412,8 @@ void ctdb_req_control_takeover_ip(struct ctdb_req_control *request,
 				  struct ctdb_public_ip *pubip);
 int ctdb_reply_control_takeover_ip(struct ctdb_reply_control *reply);
 
-void ctdb_req_control_get_public_ips(struct ctdb_req_control *request);
+void ctdb_req_control_get_public_ips(struct ctdb_req_control *request,
+				     bool available_only);
 int ctdb_reply_control_get_public_ips(struct ctdb_reply_control *reply,
 				      TALLOC_CTX *mem_ctx,
 				      struct ctdb_public_ip_list **pubip_list);

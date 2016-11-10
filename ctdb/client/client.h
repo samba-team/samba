@@ -470,6 +470,7 @@ int ctdb_ctrl_takeover_ip(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_get_public_ips(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     struct ctdb_client_context *client,
 			     int destnode, struct timeval timeout,
+			     bool available_only,
 			     struct ctdb_public_ip_list **pubip_list);
 
 int ctdb_ctrl_get_nodemap(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
