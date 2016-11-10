@@ -499,6 +499,13 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_BYPASS_OPERATIONAL_NAME "bypassoperational"
 
 /**
+  OID for recalculate RDN (rdn attribute and 'name') control. This control forces
+  the rdn_name module to the recalculate the rdn and name attributes as if the
+  object was just created.
+*/
+#define LDB_CONTROL_RECALCULATE_RDN_OID "1.3.6.1.4.1.7165.4.3.30"
+
+/**
   OID for recalculate SD control. This control force the
   dsdb code to recalculate the SD of the object as if the
   object was just created.
