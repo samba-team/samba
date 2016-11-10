@@ -87,9 +87,19 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	data_in = (uint8_t *)file_load(filename_in, &n, 0, NULL);
+	data_in = (uint8_t *)file_load(filename_in, &n, 0, mem_ctx);
 	if (!data_in) {
 		status = NT_STATUS_NO_SUCH_FILE;
+		goto out;
+	}
+
+	DEBUG(11,("convert_file_from_ucs2: "
+	       "data_in[0]: 0x%x, data_in[1]: 0x%x, data_in[2]: 0x%x\n",
+		data_in[0], data_in[1], data_in[2]));
+
+	if ((data_in[0] != 0xff) || (data_in[1] != 0xfe) || (data_in[2] != 0x0d)) {
+		*filename_out = NULL;
+		status = NT_STATUS_OK;
 		goto out;
 	}
 
@@ -115,20 +125,12 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	/* skip utf8 BOM */
 	DEBUG(11,("convert_file_from_ucs2: "
-	       "data_out[0]: 0x%x, data_out[1]: 0x%x, data_out[2]: 0x%x\n",
-		data_out[0], data_out[1], data_out[2]));
+		 "%s skipping utf16-le BOM\n", tmp_name));
 
-	if ((data_out[0] == 0xef) && (data_out[1] == 0xbb) &&
-	    (data_out[2] == 0xbf)) {
-		DEBUG(11,("convert_file_from_ucs2: "
-			 "%s skipping utf8 BOM\n", tmp_name));
-		data_out += 3;
-		converted_size -= 3;
-	}
+	converted_size -= 3;
 
-	if (write(tmp_fd, data_out, converted_size) != converted_size) {
+	if (write(tmp_fd, data_out + 3, converted_size) != converted_size) {
 		status = map_nt_error_from_unix_common(errno);
 		goto out;
 	}
@@ -143,6 +145,7 @@ static NTSTATUS convert_file_from_ucs2(TALLOC_CTX *mem_ctx,
 	}
 
 	talloc_free(data_in);
+	talloc_free(data_out);
 
 	return status;
 }
@@ -323,7 +326,8 @@ NTSTATUS gp_inifile_init_context(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	rv = pm_process(tmp_filename, change_section, store_keyval_pair, ctx);
+	rv = pm_process(tmp_filename != NULL ? tmp_filename : ini_filename,
+			change_section, store_keyval_pair, ctx);
 	if (!rv) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
@@ -373,7 +377,7 @@ NTSTATUS gp_inifile_init_context_direct(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	rv = pm_process(tmp_filename,
+	rv = pm_process(tmp_filename != NULL ? tmp_filename : unix_path,
 			change_section,
 			store_keyval_pair,
 			gp_ctx);
