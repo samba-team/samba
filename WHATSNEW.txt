@@ -12,6 +12,23 @@ Samba 4.6 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+vfs_fruit option "fruit:resource" spelling correction
+-----------------------------------------------------
+
+Due to a spelling error in the vfs_fruit option parsing for the "fruit:resource"
+option, users who have set this option in their smb.conf were still using the
+default setting "fruit:resource = file" as the parser was looking for the string
+"fruit:ressource" (two "s").
+
+After upgrading to this Samba version 4.6, you MUST either remove the option
+from your smb.conf or set it to the default "fruit:resource = file", otherwise
+your macOS clients will not be able to access the resource fork data.
+
+This version Samba 4.6 accepts both the correct and incorrect spelling, but the
+next Samba version 4.7 will not accept the wrong spelling.
+
+Users who were using the wrong spelling "ressource" with two "s" can keep the
+setting, but are advised to switch to the correct spelling.
 
 NEW FEATURES/CHANGES
 ====================
@@ -53,6 +70,7 @@ smb.conf changes
   --------------                -----------             -------
   kerberos encryption types     New                     all
   inherit owner                 New option
+  fruit:resource                Spelling correction
 
 
 KNOWN ISSUES
