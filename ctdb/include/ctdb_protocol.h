@@ -266,8 +266,6 @@ struct ctdb_control_list_tunable {
 };
 
 
-#define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
-
 struct ctdb_public_ip_info_old {
 	struct ctdb_public_ip ip;
 	uint32_t active_idx;
