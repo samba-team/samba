@@ -5598,6 +5598,10 @@ static int do_host_query(const char *query_host)
 		}
 	}
 
+	if (lp_disable_netbios()) {
+		goto out;
+	}
+
 	if (port != NBT_SMB_PORT) {
 
 		/* Workgroups simply don't make sense over anything
@@ -5621,7 +5625,7 @@ static int do_host_query(const char *query_host)
 
 	cli_set_timeout(cli, io_timeout*1000);
 	list_servers(lp_workgroup());
-
+out:
 	cli_shutdown(cli);
 
 	return(0);
@@ -5675,6 +5679,11 @@ static int do_tar_op(const char *base_directory)
 static int do_message_op(struct user_auth_info *a_info)
 {
 	NTSTATUS status;
+
+	if (lp_disable_netbios()) {
+		d_printf("NetBIOS over TCP disabled.\n");
+		return 1;
+	}
 
 	status = cli_connect_nb(desthost, have_ip ? &dest_ss : NULL,
 				port ? port : NBT_SMB_PORT, name_type,
