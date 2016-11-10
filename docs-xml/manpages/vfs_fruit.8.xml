@@ -119,9 +119,12 @@
 		down to Solaris and derived platforms and
 		ZFS</para></listitem>
 
-		<listitem><para><command>stream</command> - pass the
-		stream on to the next module in the VFS
-		stack</para></listitem>
+		<listitem><para><command>stream (experimental)</command> - pass
+		the stream on to the next module in the VFS stack.
+		<emphasis>Warning: </emphasis> this option should not be used
+		with the <emphasis>streams_xattr</emphasis> module due to the
+		extended attributes size limitations of most
+		filesytems.</para></listitem>
 	      </itemizedlist>
 
 	    </listitem>
