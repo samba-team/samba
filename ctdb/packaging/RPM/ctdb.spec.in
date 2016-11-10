@@ -216,6 +216,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libexecdir}/ctdb/ctdb_eventd
 %{_libexecdir}/ctdb/ctdb_lock_helper
 %{_libexecdir}/ctdb/ctdb_recovery_helper
+%{_libexecdir}/ctdb/ctdb_takeover_helper
 %{_libexecdir}/ctdb/ctdb_mutex_fcntl_helper
 %{_libexecdir}/ctdb/ctdb_event
 %{_libexecdir}/ctdb/ctdb_natgw

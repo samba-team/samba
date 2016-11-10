@@ -512,6 +512,12 @@ def build(bld):
                              samba-util sys_rw replace tdb''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_BINARY('ctdb_takeover_helper',
+                     source='server/ctdb_takeover_helper.c',
+                     deps='''ctdb-client2 ctdb-protocol ctdb-util
+                             samba-util sys_rw replace ctdb-ipalloc popt''',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ctdb_mutex_fcntl_helper',
                      source='server/ctdb_mutex_fcntl_helper.c',
                      deps='sys_rw ctdb-system',
