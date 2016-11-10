@@ -86,7 +86,27 @@
 	  <varlistentry>
 	    <term>fruit:resource = [ file | xattr | stream ]</term>
 	    <listitem>
-	      <para>Controls where the OS X resource fork is stored:</para>
+	      <para>Controls where the OS X resource fork is stored.</para>
+
+	      <para><emphasis>Important: </emphasis>Due to a
+	      misspelling in the option parser in all Samba versions
+	      4.5 and earlier, this options must be given as
+	      <emphasis>fruit:ressource</emphasis>, ie with two
+	      <emphasis>s</emphasis>.</para>
+
+	      <para>Users who set this opion to any non-default
+	      setting were still using the default setting of
+	      <emphasis>file</emphasis> and are advised to adjust
+	      their smb.conf to reflect the effective setting and set
+	      <emphasis>fruit:ressource=file</emphasis> in their
+	      smb.conf. Removing the option line altogether works as
+	      well.</para>
+
+	      <para>Samba 4.6 will accept both the correct and the
+	      wrong spelling, from Samba 4.7 onwards only the correct
+	      spelling will be accepted.</para>
+
+	      <para>Settings:</para>
 
 	      <itemizedlist>
 		<listitem><para><command>file (default)</command> - use a ._
