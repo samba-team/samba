@@ -43,7 +43,11 @@
 	</para>
 
 	<para>
-	This option is only useful if Samba is set up as a logon server.
+	This option is only useful if Samba is set up as a logon server in a classic domain controller role.
+       If Samba is set up as an Active Directory domain controller, LDAP attribute <filename moreinfo="none">scriptPath</filename>
+       is used instead. For configurations where <smbconfoption name="passdb backend">ldapsam</smbconfoption> is in use,
+       this option only defines a default value in case LDAP attribute <filename moreinfo="none">sambaLogonScript</filename>
+       is missing.
 	</para>
 </description>
 <value type="default"></value>
