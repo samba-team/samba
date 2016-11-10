@@ -61,18 +61,21 @@
 /* handle standard printcap - moved from pcap_printer_fn() */
 bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	XFILE *pcap_file;
 	char *pcap_line;
 	struct pcap_cache *pcache = NULL;
+	bool print_warning = false;
 
 	if ((pcap_file = x_fopen(pcap_name, O_RDONLY, 0)) == NULL) {
 		DEBUG(0, ("Unable to open printcap file %s for read!\n", pcap_name));
+		talloc_free(frame);
 		return false;
 	}
 
 	for (; (pcap_line = fgets_slash(NULL, 1024, pcap_file)) != NULL; free(pcap_line)) {
-		char name[MAXPRINTERLEN+1];
-		char comment[62];
+		char *name = NULL;
+		char *comment = NULL;
 		char *p, *q;
 
 		if (*pcap_line == '#' || *pcap_line == 0)
@@ -86,8 +89,8 @@ bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache)
 		 * now find the most likely printer name and comment
 		 * this is pure guesswork, but it's better than nothing
 		 */
-		for (*name = *comment = 0, p = pcap_line; p != NULL; p = q) {
-			bool has_punctuation;
+		for (p = pcap_line; p != NULL; p = q) {
+			bool has_punctuation = false;
 
 			if ((q = strchr_m(p, '|')) != NULL)
 				*q++ = 0;
@@ -101,32 +104,48 @@ bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache)
 			                   strchr_m(p, '(') ||
 			                   strchr_m(p, ')'));
 
-			if (strlen(p) > strlen(comment) && has_punctuation) {
-				strlcpy(comment, p, sizeof(comment));
+			if (name == NULL && !has_punctuation) {
+				name = talloc_strdup(frame, p);
 				continue;
 			}
 
-			if (strlen(p) <= MAXPRINTERLEN && *name == '\0' && !has_punctuation) {
-				strlcpy(name, p, sizeof(name));
-				continue;
-			}
-
-			if (!strchr_m(comment, ' ') &&
-			    strlen(p) > strlen(comment)) {
-				strlcpy(comment, p, sizeof(comment));
+			if (has_punctuation) {
+				comment = talloc_strdup(frame, p);
 				continue;
 			}
 		}
 
-		if ((*name != '\0')
-		 && !pcap_cache_add_specific(&pcache, name, comment, NULL)) {
-			x_fclose(pcap_file);
-			pcap_cache_destroy_specific(&pcache);
-			return false;
+		if (name != NULL) {
+			bool ok;
+
+			if (!print_warning && strlen(name) > MAXPRINTERLEN) {
+				print_warning = true;
+			}
+
+			ok = pcap_cache_add_specific(&pcache,
+						     name,
+						     comment,
+						     NULL);
+			if (!ok) {
+				x_fclose(pcap_file);
+				pcap_cache_destroy_specific(&pcache);
+				talloc_free(frame);
+				return false;
+			}
 		}
+		TALLOC_FREE(name);
+		TALLOC_FREE(comment);
+	}
+
+	if (print_warning) {
+		DBG_WARNING("WARNING: You have some printer names that are "
+			    "longer than %u characters. These may not be "
+			    "accessible to some older clients!\n",
+			    (unsigned int)MAXPRINTERLEN);
 	}
 
 	x_fclose(pcap_file);
 	*_pcache = pcache;
+	talloc_free(frame);
 	return true;
 }
