@@ -243,6 +243,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct rename_context *ac;
 	struct ldb_request *mod_req;
 	const char *rdn_name;
+	const struct ldb_schema_attribute *a = NULL;
 	const struct ldb_val *rdn_val_p;
 	struct ldb_val rdn_val;
 	struct ldb_message *msg;
@@ -284,6 +285,15 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	rdn_name = ldb_dn_get_rdn_name(ac->req->op.rename.newdn);
 	if (rdn_name == NULL) {
 		goto error;
+	}
+
+	a = ldb_schema_attribute_by_name(ldb, rdn_name);
+	if (a == NULL) {
+		goto error;
+	}
+
+	if (a->name != NULL) {
+		rdn_name = a->name;
 	}
 
 	rdn_val_p = ldb_dn_get_rdn_val(msg->dn);
