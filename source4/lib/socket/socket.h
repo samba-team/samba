@@ -183,9 +183,6 @@ _PUBLIC_ void socket_address_set_port(struct socket_address *a,
 struct socket_address *socket_address_copy(TALLOC_CTX *mem_ctx,
 					   const struct socket_address *oaddr);
 const struct socket_ops *socket_getops_byname(const char *name, enum socket_type type);
-bool socket_allow_access(TALLOC_CTX *mem_ctx,
-			 const char **deny_list, const char **allow_list,
-			 const char *cname, const char *caddr);
 bool socket_check_access(struct socket_context *sock, 
 			 const char *service_name,
 			 const char **allow_list, const char **deny_list);

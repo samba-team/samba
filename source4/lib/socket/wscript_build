@@ -24,6 +24,6 @@ bld.SAMBA_MODULE('socket_unix',
 bld.SAMBA_SUBSYSTEM('samba_socket',
     source='socket.c access.c connect_multi.c connect.c',
     public_deps='talloc LIBTSOCKET',
-    deps='cli_composite LIBCLI_RESOLVE socket_ip socket_unix'
+    deps='cli_composite LIBCLI_RESOLVE socket_ip socket_unix access'
     )
 
