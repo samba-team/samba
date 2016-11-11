@@ -97,9 +97,11 @@ bool spoolss_timestr_to_NTTIME(const char *str,
 bool spoolss_driver_version_to_qword(const char *str,
 				     uint64_t *data)
 {
-	unsigned int v1, v2, v3, v4;
+	unsigned int v1, v2, v3, v4 = 0;
 
-	if (sscanf(str, "%u.%u.%u.%u", &v1, &v2, &v3, &v4) != 4) {
+	if ((sscanf(str, "%u.%u.%u.%u", &v1, &v2, &v3, &v4) != 4) &&
+	    (sscanf(str, "%u.%u.%u", &v1, &v2, &v3) != 3))
+	{
 		return false;
 	}
 
