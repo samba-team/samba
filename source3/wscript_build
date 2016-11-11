@@ -334,7 +334,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                    lib/dumpcore.c
                    lib/interface.c
                    lib/username.c
-                   lib/access.c lib/smbrun.c
+                   lib/smbrun.c
                    lib/wins_srv.c
                    lib/substitute.c
                    lib/substitute_generic.c
@@ -374,6 +374,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         messages_util
                         messages_dgm
                         talloc_report
+			access
                         TDB_LIB''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',

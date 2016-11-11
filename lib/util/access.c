@@ -14,6 +14,11 @@
 #include "../lib/util/memcache.h"
 #include "lib/socket/interfaces.h"
 #include "lib/util/samba_util.h"
+#include "lib/util/util_net.h"
+#include "lib/util/samba_util.h"
+#include "lib/util/memory.h"
+#include "lib/util/access.h"
+#include "lib/util/unix_match.h"
 
 #define NAME_INDEX 0
 #define ADDR_INDEX 1

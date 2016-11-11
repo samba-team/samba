@@ -199,3 +199,8 @@ else:
                       deps='talloc tdb strv util_tdb tdb-wrap samba-util',
                       local_include=False,
                       private_library=True)
+
+    bld.SAMBA_SUBSYSTEM('access',
+                        source='access.c',
+                        deps='interfaces samba-util',
+                        local_include=False)
