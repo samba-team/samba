@@ -97,7 +97,7 @@ static bool string_match(const char *tok,const char *s)
 
 	if (tok[0] == '.') {			/* domain: match last fields */
 		if ((str_len = strlen(s)) > (tok_len = strlen(tok))
-		    && strequal(tok, s + str_len - tok_len)) {
+		    && strequal_m(tok, s + str_len - tok_len)) {
 			return true;
 		}
 	} else if (tok[0] == '@') { /* netgroup: look it up */
@@ -150,15 +150,15 @@ static bool string_match(const char *tok,const char *s)
 		DEBUG(0,("access: netgroup support is not configured\n"));
 		return false;
 #endif
-	} else if (strequal(tok, "ALL")) {	/* all: match any */
+	} else if (strequal_m(tok, "ALL")) {	/* all: match any */
 		return true;
-	} else if (strequal(tok, "FAIL")) {	/* fail: match any */
+	} else if (strequal_m(tok, "FAIL")) {	/* fail: match any */
 		return true;
-	} else if (strequal(tok, "LOCAL")) {	/* local: no dots */
-		if (strchr_m(s, '.') == 0 && !strequal(s, "unknown")) {
+	} else if (strequal_m(tok, "LOCAL")) {	/* local: no dots */
+		if (strchr_m(s, '.') == 0 && !strequal_m(s, "unknown")) {
 			return true;
 		}
-	} else if (strequal(tok, s)) {   /* match host name or address */
+	} else if (strequal_m(tok, s)) {   /* match host name or address */
 		return true;
 	} else if (tok[(tok_len = strlen(tok)) - 1] == '.') {	/* network */
 		if (strncmp(tok, s, tok_len) == 0) {
@@ -236,7 +236,7 @@ bool list_match(const char **list,const void *item,
 	 */
 
 	for (; *list ; list++) {
-		if (strequal(*list, "EXCEPT")) {
+		if (strequal_m(*list, "EXCEPT")) {
 			/* EXCEPT: give up */
 			break;
 		}
@@ -248,7 +248,7 @@ bool list_match(const char **list,const void *item,
 	/* Process exceptions to true or FAIL matches. */
 
 	if (match != false) {
-		while (*list  && !strequal(*list, "EXCEPT")) {
+		while (*list  && !strequal_m(*list, "EXCEPT")) {
 			list++;
 		}
 
