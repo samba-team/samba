@@ -681,7 +681,7 @@ static WERROR handle_updates(struct dns_server *dns,
 	werror = check_prerequisites(dns, tmp_ctx, zone, prereqs, pcount);
 	W_ERROR_NOT_OK_GOTO(werror, failed);
 
-	DEBUG(1, ("update count is %u\n", upd_count));
+	DBG_DEBUG("dns update count is %u\n", upd_count);
 
 	for (ri = 0; ri < upd_count; ri++) {
 		werror = handle_one_update(dns, tmp_ctx, zone,

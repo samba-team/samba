@@ -866,7 +866,7 @@ static WERROR handle_tkey(struct dns_server *dns,
 			DEBUG(1, ("More processing required\n"));
 			ret_tkey->rdata.tkey_record.error = DNS_RCODE_BADKEY;
 		} else if (NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Tkey handshake completed\n"));
+			DBG_DEBUG("Tkey handshake completed\n");
 			ret_tkey->rdata.tkey_record.key_size = reply.length;
 			ret_tkey->rdata.tkey_record.key_data = talloc_memdup(ret_tkey,
 								reply.data,
