@@ -13,6 +13,7 @@
 #include "includes.h"
 #include "../lib/util/memcache.h"
 #include "lib/socket/interfaces.h"
+#include "lib/util/samba_util.h"
 
 #define NAME_INDEX 0
 #define ADDR_INDEX 1
@@ -31,14 +32,14 @@ static bool masked_match(const char *tok, const char *slash, const char *s)
 
 	if (*tok == '[') {
 		/* IPv6 address - remove braces. */
-		tok_copy = SMB_STRDUP(tok+1);
+		tok_copy = smb_xstrdup(tok+1);
 		if (!tok_copy) {
 			return false;
 		}
 		/* Remove the terminating ']' */
 		tok_copy[PTR_DIFF(slash,tok)-1] = '\0';
 	} else {
-		tok_copy = SMB_STRDUP(tok);
+		tok_copy = smb_xstrdup(tok);
 		if (!tok_copy) {
 			return false;
 		}
@@ -128,7 +129,7 @@ static bool string_match(const char *tok,const char *s)
 			DEBUG(0,("Unable to get default yp domain. "
 				"Try without it.\n"));
 		}
-		if (!(hostname = SMB_STRDUP(s))) {
+		if (!(hostname = smb_xstrdup(s))) {
 			DEBUG(1,("out of memory for strdup!\n"));
 			return false;
 		}
