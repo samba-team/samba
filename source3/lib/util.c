@@ -1920,17 +1920,9 @@ bool unix_wild_match(const char *pattern, const char *string)
 	char *p;
 	bool ret = false;
 
-	p2 = talloc_strdup(ctx,pattern);
-	s2 = talloc_strdup(ctx,string);
+	p2 = strlower_talloc(ctx, pattern);
+	s2 = strlower_talloc(ctx, string);
 	if (!p2 || !s2) {
-		TALLOC_FREE(ctx);
-		return false;
-	}
-	if (!strlower_m(p2)) {
-		TALLOC_FREE(ctx);
-		return false;
-	}
-	if (!strlower_m(s2)) {
 		TALLOC_FREE(ctx);
 		return false;
 	}
