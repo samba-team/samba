@@ -192,11 +192,11 @@ bool client_match(const char *tok, const void *item)
 	 * Bug #5311 and #7383.
 	 */
 
-	if (strnequal(tok_addr, "::ffff:",7)) {
+	if (strncasecmp_m(tok_addr, "::ffff:", 7) == 0) {
 		tok_addr += 7;
 	}
 
-	if (strnequal(cli_addr,"::ffff:",7)) {
+	if (strncasecmp_m(cli_addr, "::ffff:", 7) == 0) {
 		cli_addr += 7;
 	}
 
