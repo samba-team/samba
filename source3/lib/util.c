@@ -1804,28 +1804,35 @@ static bool unix_do_match(const char *regexp, const char *str)
 			case '*':
 
 				/*
-				 * Look for a character matching 
+				 * Look for a character matching
 				 * the one after the '*'.
 				 */
 				p++;
-				if(!*p)
+				if(!*p) {
 					return true; /* Automatic match */
+				}
 				while(*str) {
 
-					while(*str && (*p != *str))
+					while(*str && (*p != *str)) {
 						str++;
+					}
 
 					/*
-					 * Patch from weidel@multichart.de. In the case of the regexp
-					 * '*XX*' we want to ensure there are at least 2 'X' characters
-					 * in the string after the '*' for a match to be made.
+					 * Patch from weidel@multichart.de.
+					 * In the case of the regexp
+					 * '*XX*' we want to ensure there are
+					 * at least 2 'X' characters in the
+					 * string after the '*' for a match to
+					 * be made.
 					 */
 
 					{
 						int matchcount=0;
 
 						/*
-						 * Eat all the characters that match, but count how many there were.
+						 * Eat all the characters that
+						 * match, but count how many
+						 * there were.
 						 */
 
 						while(*str && (*p == *str)) {
@@ -1834,54 +1841,68 @@ static bool unix_do_match(const char *regexp, const char *str)
 						}
 
 						/*
-						 * Now check that if the regexp had n identical characters that
-						 * matchcount had at least that many matches.
+						 * Now check that if the regexp
+						 * had n identical characters
+						 * that matchcount had at least
+						 * that many matches.
 						 */
 
-						while ( *(p+1) && (*(p+1) == *p)) {
+						while (*(p+1) && (*(p+1)==*p)) {
 							p++;
 							matchcount--;
 						}
 
-						if ( matchcount <= 0 )
+						if ( matchcount <= 0 ) {
 							return false;
+						}
 					}
 
-					str--; /* We've eaten the match char after the '*' */
+					/*
+					 * We've eaten the match char
+					 * after the '*'
+					 */
+					str--;
 
-					if(unix_do_match(p, str))
+					if(unix_do_match(p, str)) {
 						return true;
+					}
 
-					if(!*str)
+					if(!*str) {
 						return false;
-					else
+					} else {
 						str++;
+					}
 				}
 				return false;
 
 			default:
-				if(*str != *p)
+				if(*str != *p) {
 					return false;
+				}
 				str++;
 				p++;
 				break;
 		}
 	}
 
-	if(!*p && !*str)
+	if(!*p && !*str) {
 		return true;
+	}
 
-	if (!*p && str[0] == '.' && str[1] == 0)
+	if (!*p && str[0] == '.' && str[1] == 0) {
 		return true;
+	}
 
 	if (!*str && *p == '?') {
-		while (*p == '?')
+		while (*p == '?') {
 			p++;
+		}
 		return(!*p);
 	}
 
-	if(!*str && (*p == '*' && p[1] == '\0'))
+	if(!*str && (*p == '*' && p[1] == '\0')) {
 		return true;
+	}
 
 	return false;
 }
