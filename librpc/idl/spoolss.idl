@@ -1011,9 +1011,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *parameters;
 		[string,charset(UTF16)] uint16 *driver_name;
-		uint32 *_devmode_ptr; /* pointer to truncated devicemode */
+		uint3264 _devmode_ptr; /* ULONG_PTR */
 		[string,charset(UTF16)] uint16 *text_status;
-		uint32 *_secdesc_ptr;
+		uint3264 _secdesc_ptr; /* ULONG_PTR */
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
@@ -1037,9 +1037,9 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *print_processor;
 		[string,charset(UTF16)] uint16 *parameters;
 		[string,charset(UTF16)] uint16 *driver_name;
-		uint32 *_devmode_ptr; /* pointer to truncated devicemode */
+		uint3264 _devmode_ptr; /* ULONG_PTR */
 		[string,charset(UTF16)] uint16 *text_status;
-		uint32 *_secdesc_ptr;
+		uint3264 _secdesc_ptr; /* ULONG_PTR */
 		spoolss_JobStatus status;
 		[range(0,99)] uint32 priority;
 		uint32 position;
@@ -1201,12 +1201,12 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		[string,charset(UTF16)] uint16 *drivername;
 		[string,charset(UTF16)] uint16 *comment;
 		[string,charset(UTF16)] uint16 *location;
-		uint32 *devmode_ptr;
+		uint3264 devmode_ptr; /* ULONG_PTR */
 		[string,charset(UTF16)] uint16 *sepfile;
 		[string,charset(UTF16)] uint16 *printprocessor;
 		[string,charset(UTF16)] uint16 *datatype;
 		[string,charset(UTF16)] uint16 *parameters;
-		uint32 *secdesc_ptr;
+		uint3264 secdesc_ptr; /* ULONG_PTR */
 		spoolss_PrinterAttributes attributes;
 		[range(0,99)] uint32 priority;
 		uint32 defaultpriority;
@@ -1218,7 +1218,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_SetPrinterInfo2;
 
 	typedef struct {
-		uint32 *sec_desc_ptr;
+		uint3264 sec_desc_ptr; /* ULONG_PTR */
 	} spoolss_SetPrinterInfo3;
 
 	typedef struct {
@@ -1245,11 +1245,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_SetPrinterInfo7;
 
 	typedef struct {
-		uint32 *devmode_ptr;
+		uint3264 devmode_ptr; /* ULONG_PTR */
 	} spoolss_SetPrinterInfo8;
 
 	typedef struct {
-		uint32 *devmode_ptr;
+		uint3264 devmode_ptr; /* ULONG_PTR */
 	} spoolss_SetPrinterInfo9;
 
 	typedef [ms_union,switch_type(uint32)] union {
@@ -2307,7 +2307,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	/* Function: 0x27 */
 	WERROR spoolss_DeletePort(
 	       [in,unique] [string,charset(UTF16)] uint16 *server_name,
-	       [in] uint32 ptr,
+	       [in] uint3264 ptr, /* ULONG_PTR */
 	       [in,ref] [string,charset(UTF16)] uint16 *port_name
 	);
 
