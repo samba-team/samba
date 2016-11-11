@@ -411,7 +411,7 @@ bool ms_has_wild_w(const smb_ucs2_t *s);
 bool mask_match(const char *string, const char *pattern, bool is_case_sensitive);
 bool mask_match_search(const char *string, const char *pattern, bool is_case_sensitive);
 bool mask_match_list(const char *string, char **list, int listLen, bool is_case_sensitive);
-bool unix_wild_match(const char *pattern, const char *string);
+#include "lib/util/unix_match.h"
 bool name_to_fqdn(fstring fqdn, const char *name);
 uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_options);
 
