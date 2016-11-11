@@ -1942,7 +1942,7 @@ bool unix_wild_match(const char *pattern, const char *string)
 		}
 	}
 
-	if (strequal(p2,"*")) {
+	if (p2[0] == '*' && p2[1] == '\0') {
 		TALLOC_FREE(ctx);
 		return true;
 	}
