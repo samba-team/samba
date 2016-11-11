@@ -42,10 +42,13 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 	const char *interface_name = "lsarpc";
 	enum dcerpc_transport_t transport = NCACN_NP;
 	bool ok = false;
+	struct GUID object_uuid = GUID_zero();
 
-	if (argc > 3) {
-		d_fprintf(stderr, "Usage: %s [interface_name] [transport]\n",
-			argv[0]);
+	if (argc > 4) {
+		d_fprintf(stderr,
+			  "Usage: %s [interface_name] [transport] "
+			  "[object_uuid]\n",
+			  argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -75,6 +78,13 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 			d_fprintf(stderr, "unknown transport: %s\n",
 				argv[2]);
 			status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+	}
+
+	if (argc >= 4) {
+		status = GUID_from_string(argv[3], &object_uuid);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}
@@ -115,7 +125,7 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 	ZERO_STRUCT(entry_handle);
 
 	status = dcerpc_epm_Map(
-		b, tmp_ctx, &abstract_syntax.uuid,
+		b, tmp_ctx, &object_uuid,
 		&map_tower, &entry_handle, ARRAY_SIZE(towers),
 		&num_towers, towers, &result);
 	if (!NT_STATUS_IS_OK(status)) {
