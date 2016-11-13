@@ -592,6 +592,9 @@ sub provision_raw_step1($$)
         idmap_ldb:use rfc2307=yes
 	winbind enum users = yes
 	winbind enum groups = yes
+
+        rpc server port:netlogon = 1026
+
 ";
 
 	print CONFFILE "
@@ -1400,6 +1403,7 @@ sub provision_ad_dc_ntvfs($$)
 	ldap server require strong auth = allow_sasl_over_tls
 	allow nt4 crypto = yes
 	lsa over netlogon = yes
+        rpc server port = 1027
 	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
