@@ -260,8 +260,7 @@ _nss_wins_gethostbyname_r(const char *hostname,
 
 	ip = lookup_byname_backend(name);
 	if (ip == NULL) {
-		*errnop = EINVAL;
-		*h_errnop = NETDB_INTERNAL;
+		*h_errnop = HOST_NOT_FOUND;
 		nss_status = NSS_STATUS_NOTFOUND;
 		goto out;
 	}
