@@ -374,6 +374,7 @@ static bool remote_fill_interface(struct dcesrv_interface *iface, const struct n
 	iface->ndr_push = remote_op_ndr_push;
 
 	iface->private_data = if_tabl;
+	iface->flags = 0;
 
 	return true;
 }

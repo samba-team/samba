@@ -46,6 +46,15 @@
 #define DCESRV_INTERFACE_NETLOGON_BIND(call, iface) \
        dcesrv_interface_netlogon_bind(call, iface)
 
+/*
+ * This #define allows the netlogon interface to accept invalid
+ * association groups, because association groups are to coordinate
+ * handles, and handles are not used in NETLOGON. This in turn avoids
+ * the need to coordinate these across multiple possible NETLOGON
+ * processes
+ */
+#define DCESRV_INTERFACE_NETLOGON_FLAGS DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED
+
 static NTSTATUS dcesrv_interface_netlogon_bind(struct dcesrv_call_state *dce_call,
 					       const struct dcesrv_interface *iface)
 {

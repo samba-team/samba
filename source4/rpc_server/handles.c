@@ -44,6 +44,11 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_connection_contex
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
 
+	/*
+	 * For simplicty, ensure we abort here for an interface that has no handles (programmer error)
+	 */
+	SMB_ASSERT((context->iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) == 0);
+
 	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 
 	h = talloc_zero(context->conn->assoc_group, struct dcesrv_handle);
@@ -79,6 +84,11 @@ _PUBLIC_ struct dcesrv_handle *dcesrv_handle_fetch(
 {
 	struct dcesrv_handle *h;
 	struct dom_sid *sid;
+
+	/*
+	 * For simplicty, ensure we abort here for an interface that has no handles (programmer error)
+	 */
+	SMB_ASSERT((context->iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) == 0);
 
 	sid = &context->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
 

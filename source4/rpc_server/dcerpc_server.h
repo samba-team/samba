@@ -67,7 +67,11 @@ struct dcesrv_interface {
 
 	/* for any private use by the interface code */
 	const void *private_data;
+
+	uint64_t flags;
 };
+
+#define DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED 0x00000001
 
 enum dcesrv_call_list {
 	DCESRV_LIST_NONE,
