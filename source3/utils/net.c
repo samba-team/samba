@@ -786,6 +786,7 @@ static struct functable net_func[] = {
 	poptContext pc;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct net_context *c = talloc_zero(frame, struct net_context);
+	NTSTATUS status;
 
 	struct poptOption long_options[] = {
 		{"help",	'h', POPT_ARG_NONE,   0, 'h'},
@@ -905,11 +906,22 @@ static struct functable net_func[] = {
 		exit(1);
 	}
 
-	/*
-	 * Failing to init the msg_ctx isn't a fatal error. Only root-level
-	 * things (joining/leaving domains etc.) will be denied.
-	 */
-	c->msg_ctx = messaging_init(c, samba_tevent_context_init(c));
+	status = messaging_init_client(c,
+				       samba_tevent_context_init(c),
+				       &c->msg_ctx);
+	if (geteuid() != 0 &&
+			NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		/*
+		 * Normal to fail to initialize messaging context
+		 * if we're not root as we don't have ability to
+		 * read lock directory.
+		 */
+		DBG_NOTICE("Unable to initialize messaging context. "
+			"Must be root to do that.\n");
+	} else if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "Failed to init messaging context\n");
+		exit(1);
+	}
 
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		d_fprintf(stderr, "Can't load %s - run testparm to debug it\n",
