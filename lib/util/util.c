@@ -202,8 +202,8 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname,
 	}
 
 	if (errno != ENOENT) {
-		DEBUG(0, ("lstat failed on directory %s: %s\n",
-			  dname, strerror(errno)));
+		DBG_WARNING("lstat failed on directory %s: %s\n",
+			    dname, strerror(errno));
 		return false;
 	}
 
