@@ -49,6 +49,7 @@
 		<arg choice="opt">-m</arg>
 		<arg choice="opt">-n name</arg>
 		<arg choice="opt">-N netbios-name</arg>
+		<arg choice="opt">--ntlmv1</arg>
 		<arg choice="opt">--ntlmv2</arg>
 		<arg choice="opt">--online-status</arg>
 		<arg choice="opt">--own-domain</arg>
@@ -330,8 +331,16 @@
 		</varlistentry>
 
 		<varlistentry>
+		<term>--ntlmv1</term>
+		<listitem><para>Use NTLMv1 cryptography for user authentication.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
 		<term>--ntlmv2</term>
-		<listitem><para>Use NTLMv2 cryptography for user authentication.
+		<listitem><para>Use NTLMv2 cryptography for user
+		authentication. NTLMv2 is the default method, this
+		option is only maintained for compatibility.
 		</para></listitem>
 		</varlistentry>
 

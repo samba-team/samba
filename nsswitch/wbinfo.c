@@ -2228,6 +2228,7 @@ enum {
 	OPT_CHANGE_USER_PASSWORD,
 	OPT_CCACHE_SAVE,
 	OPT_SID_TO_FULLNAME,
+	OPT_NTLMV1,
 	OPT_NTLMV2,
 	OPT_PAM_LOGON,
 	OPT_LOGOFF,
@@ -2249,7 +2250,7 @@ int main(int argc, const char **argv, char **envp)
 	int int_subarg = -1;
 	int result = 1;
 	bool verbose = false;
-	bool use_ntlmv2 = false;
+	bool use_ntlmv2 = true;
 	bool use_lanman = false;
 	char *logoff_user = getenv("USER");
 	int logoff_uid = geteuid();
@@ -2343,6 +2344,8 @@ int main(int argc, const char **argv, char **envp)
 		{ "separator", 0, POPT_ARG_NONE, 0, OPT_SEPARATOR, "Get the active winbind separator", NULL },
 		{ "verbose", 0, POPT_ARG_NONE, 0, OPT_VERBOSE, "Print additional information per command", NULL },
 		{ "change-user-password", 0, POPT_ARG_STRING, &string_arg, OPT_CHANGE_USER_PASSWORD, "Change the password for a user", NULL },
+		{ "ntlmv1", 0, POPT_ARG_NONE, 0, OPT_NTLMV1,
+		  "Use NTLMv1 cryptography for user authentication", NULL},
 		{ "ntlmv2", 0, POPT_ARG_NONE, 0, OPT_NTLMV2, "Use NTLMv2 cryptography for user authentication", NULL},
 		{ "lanman", 0, POPT_ARG_NONE, 0, OPT_LANMAN, "Use lanman cryptography for user authentication", NULL},
 		POPT_COMMON_VERSION
@@ -2371,8 +2374,8 @@ int main(int argc, const char **argv, char **envp)
 		case OPT_VERBOSE:
 			verbose = true;
 			break;
-		case OPT_NTLMV2:
-			use_ntlmv2 = true;
+		case OPT_NTLMV1:
+			use_ntlmv2 = false;
 			break;
 		case OPT_LANMAN:
 			use_lanman = true;
