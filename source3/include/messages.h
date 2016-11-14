@@ -75,6 +75,9 @@ struct ctdbd_connection *messaging_ctdbd_connection(void);
 
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 struct tevent_context *ev);
+NTSTATUS messaging_init_client(TALLOC_CTX *mem_ctx,
+			       struct tevent_context *ev,
+			       struct messaging_context **pmsg_ctx);
 
 struct server_id messaging_server_id(const struct messaging_context *msg_ctx);
 struct tevent_context *messaging_tevent_context(
