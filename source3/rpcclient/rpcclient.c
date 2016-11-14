@@ -1025,9 +1025,19 @@ out_free:
 		goto done;
 	}
 
-	rpcclient_msg_ctx = messaging_init(talloc_autofree_context(),
-			samba_tevent_context_init(talloc_autofree_context()));
-	if (rpcclient_msg_ctx == NULL) {
+	nt_status = messaging_init_client(talloc_autofree_context(),
+					  samba_tevent_context_init(talloc_autofree_context()),
+					  &rpcclient_msg_ctx);
+	if (geteuid() != 0 &&
+			NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
+		/*
+		 * Normal to fail to initialize messaging context
+		 * if we're not root as we don't have ability to
+		 * read lock directory.
+		 */
+		DBG_NOTICE("Unable to initialize messaging context. "
+			"Must be root to do that.\n");
+	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "Could not init messaging context\n");
 		result = 1;
 		goto done;
