@@ -327,8 +327,8 @@ static bool allow_access_internal(const char **deny_list,
 	return true;
 }
 
-/* return true if access should be allowed */
-bool allow_access(const char **deny_list,
+/* return true if access should be allowed - doesn't print log message */
+bool allow_access_nolog(const char **deny_list,
 		const char **allow_list,
 		const char *cname,
 		const char *caddr)
@@ -339,11 +339,24 @@ bool allow_access(const char **deny_list,
 
 	ret = allow_access_internal(deny_list, allow_list, nc_cname, nc_caddr);
 
-	DEBUG(ret ? 3 : 0,
-	      ("%s connection from %s (%s)\n",
-	       ret ? "Allowed" : "Denied", nc_cname, nc_caddr));
-
 	SAFE_FREE(nc_cname);
 	SAFE_FREE(nc_caddr);
+	return ret;
+}
+
+/* return true if access should be allowed - prints log message */
+bool allow_access(const char **deny_list,
+		const char **allow_list,
+		const char *cname,
+		const char *caddr)
+{
+	bool ret;
+
+	ret = allow_access_nolog(deny_list, allow_list, cname, caddr);
+
+	DEBUG(ret ? 3 : 0,
+	      ("%s connection from %s (%s)\n",
+	       ret ? "Allowed" : "Denied", cname, caddr));
+
 	return ret;
 }
