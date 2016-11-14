@@ -234,17 +234,54 @@ static const char *private_path(const char *name)
 	return talloc_asprintf(talloc_tos(), "%s/%s", lp_private_dir(), name);
 }
 
-struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
-					 struct tevent_context *ev)
+static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct messaging_context **pmsg_ctx)
 {
+	TALLOC_CTX *frame;
 	struct messaging_context *ctx;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int ret;
 	const char *lck_path;
 	const char *priv_path;
 	bool ok;
 
-	if (!(ctx = talloc_zero(mem_ctx, struct messaging_context))) {
-		return NULL;
+	lck_path = lock_path("msg.lock");
+	if (lck_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = directory_create_or_exist_strict(lck_path,
+					      sec_initial_uid(),
+					      0755);
+	if (!ok) {
+		DBG_DEBUG("Could not create lock directory: %s\n",
+			  strerror(errno));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	priv_path = private_path("msg.sock");
+	if (priv_path == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = directory_create_or_exist_strict(priv_path, sec_initial_uid(),
+					      0700);
+	if (!ok) {
+		DBG_DEBUG("Could not create msg directory: %s\n",
+			  strerror(errno));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	frame = talloc_stackframe();
+	if (frame == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ctx = talloc_zero(frame, struct messaging_context);
+	if (ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	ctx->id = (struct server_id) {
@@ -255,46 +292,19 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 
 	sec_init();
 
-	lck_path = lock_path("msg.lock");
-	if (lck_path == NULL) {
-		TALLOC_FREE(ctx);
-		return NULL;
-	}
-
-	ok = directory_create_or_exist_strict(lck_path, sec_initial_uid(),
-					      0755);
-	if (!ok) {
-		DEBUG(10, ("%s: Could not create lock directory: %s\n",
-			   __func__, strerror(errno)));
-		TALLOC_FREE(ctx);
-		return NULL;
-	}
-
-	priv_path = private_path("msg.sock");
-	if (priv_path == NULL) {
-		TALLOC_FREE(ctx);
-		return NULL;
-	}
-
-	ok = directory_create_or_exist_strict(priv_path, sec_initial_uid(),
-					      0700);
-	if (!ok) {
-		DEBUG(10, ("%s: Could not create msg directory: %s\n",
-			   __func__, strerror(errno)));
-		TALLOC_FREE(ctx);
-		return NULL;
-	}
-
-	ctx->msg_dgm_ref = messaging_dgm_ref(
-		ctx, ctx->event_ctx, &ctx->id.unique_id,
-		priv_path, lck_path, messaging_recv_cb, ctx, &ret);
-
+	ctx->msg_dgm_ref = messaging_dgm_ref(ctx,
+					     ctx->event_ctx,
+					     &ctx->id.unique_id,
+					     priv_path,
+					     lck_path,
+					     messaging_recv_cb,
+					     ctx,
+					     &ret);
 	if (ctx->msg_dgm_ref == NULL) {
 		DEBUG(2, ("messaging_dgm_ref failed: %s\n", strerror(ret)));
-		TALLOC_FREE(ctx);
-		return NULL;
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
 	}
-
 	talloc_set_destructor(ctx, messaging_context_destructor);
 
 	if (lp_clustering()) {
@@ -303,19 +313,21 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		if (ret != 0) {
 			DEBUG(2, ("messaging_ctdbd_init failed: %s\n",
 				  strerror(ret)));
-			TALLOC_FREE(ctx);
-			return NULL;
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto done;
 		}
 	}
 	ctx->id.vnn = get_my_vnn();
 
-	ctx->names_db = server_id_db_init(
-		ctx, ctx->id, lp_lock_directory(), 0,
-		TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
+	ctx->names_db = server_id_db_init(ctx,
+					  ctx->id,
+					  lp_lock_directory(),
+					  0,
+					  TDB_INCOMPATIBLE_HASH|TDB_CLEAR_IF_FIRST);
 	if (ctx->names_db == NULL) {
-		DEBUG(10, ("%s: server_id_db_init failed\n", __func__));
-		TALLOC_FREE(ctx);
-		return NULL;
+		DBG_DEBUG("server_id_db_init failed\n");
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto done;
 	}
 
 	messaging_register(ctx, NULL, MSG_PING, ping_message);
@@ -329,6 +341,28 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	{
 		struct server_id_buf tmp;
 		DBG_DEBUG("my id: %s\n", server_id_str_buf(ctx->id, &tmp));
+	}
+
+	*pmsg_ctx = talloc_steal(mem_ctx, ctx);
+
+	status = NT_STATUS_OK;
+done:
+	TALLOC_FREE(frame);
+
+	return status;
+}
+
+struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev)
+{
+	struct messaging_context *ctx = NULL;
+	NTSTATUS status;
+
+	status = messaging_init_internal(mem_ctx,
+					 ev,
+					 &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
 	}
 
 	return ctx;
