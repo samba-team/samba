@@ -1229,8 +1229,10 @@ out_free:
 
 		line = smb_readline("rpcclient $> ", NULL, completion_fn);
 
-		if (line == NULL)
+		if (line == NULL) {
+			printf("\n");
 			break;
+		}
 
 		if (line[0] != '\n')
 			process_cmd(rpcclient_auth_info, cli, binding, line);
