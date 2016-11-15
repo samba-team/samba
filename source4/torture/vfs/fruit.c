@@ -3542,11 +3542,9 @@ struct torture_suite *torture_vfs_fruit(void)
 	suite->description = talloc_strdup(suite, "vfs_fruit tests");
 
 	torture_suite_add_1smb2_test(suite, "copyfile", test_copyfile);
-	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "read metadata", test_read_afpinfo);
 	torture_suite_add_1smb2_test(suite, "write metadata", test_write_atalk_metadata);
 	torture_suite_add_1smb2_test(suite, "resource fork IO", test_write_atalk_rfork_io);
-	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 	torture_suite_add_1smb2_test(suite, "SMB2/CREATE context AAPL", test_aapl);
 	torture_suite_add_1smb2_test(suite, "stream names", test_stream_names);
 	torture_suite_add_1smb2_test(suite, "truncate resource fork to 0 bytes", test_rfork_truncate);
@@ -3560,6 +3558,19 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "create delete-on-close AFP_AfpResource", test_create_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo delete-on-close AFP_AfpResource", test_setinfo_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpResource", test_setinfo_eof_resource);
+
+	return suite;
+}
+
+struct torture_suite *torture_vfs_fruit_netatalk(void)
+{
+	struct torture_suite *suite = torture_suite_create(
+		talloc_autofree_context(), "fruit_netatalk");
+
+	suite->description = talloc_strdup(suite, "vfs_fruit tests for Netatalk interop that require fruit:metadata=netatalk");
+
+	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
+	torture_suite_add_1smb2_test(suite, "OS X AppleDouble file conversion", test_adouble_conversion);
 
 	return suite;
 }
