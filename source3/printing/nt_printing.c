@@ -864,7 +864,9 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 					   const char **config_file,
 					   const char **help_file,
 					   struct spoolss_StringArray *dependent_files,
-					   enum spoolss_DriverOSVersion *version)
+					   enum spoolss_DriverOSVersion *version,
+					   uint32_t flags,
+					   const char **driver_directory)
 {
 	const char *short_architecture;
 	int i;
@@ -877,6 +879,43 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 
 	if (!strequal(architecture, SPOOLSS_ARCHITECTURE_4_0) && !*config_file) {
 		return WERR_INVALID_PARAM;
+	}
+
+	if (flags & APD_COPY_FROM_DIRECTORY) {
+		char *path;
+		char *q;
+
+		/*
+		 * driver_path is set to:
+		 *
+		 * \\PRINTSRV\print$\x64\{279245b0-a8bd-4431-bf6f-baee92ac15c0}\pscript5.dll
+		 */
+		path = talloc_strdup(mem_ctx, *driver_path);
+		if (path == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		/* Remove pscript5.dll */
+		q = strrchr_m(path, '\\');
+		if (q == NULL) {
+			return WERR_INVALID_PARAMETER;
+		}
+		*q = '\0';
+
+		/* Get \{279245b0-a8bd-4431-bf6f-baee92ac15c0} */
+		q = strrchr_m(path, '\\');
+		if (q == NULL) {
+			return WERR_INVALID_PARAMETER;
+		}
+
+		/*
+		 * Set driver_directory to:
+		 *
+		 * {279245b0-a8bd-4431-bf6f-baee92ac15c0}
+		 *
+		 * This is the directory where all the files have been uploaded
+		 */
+		*driver_directory = q + 1;
 	}
 
 	/* clean up the driver name.
@@ -931,7 +970,9 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 			      struct auth_session_info *session_info,
-			      struct spoolss_AddDriverInfoCtr *r)
+			      struct spoolss_AddDriverInfoCtr *r,
+			      uint32_t flags,
+			      const char **driver_directory)
 {
 	switch (r->level) {
 	case 3:
@@ -942,7 +983,9 @@ WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 						    &r->info.info3->config_file,
 						    &r->info.info3->help_file,
 						    r->info.info3->dependent_files,
-						    &r->info.info3->version);
+						    &r->info.info3->version,
+						    flags,
+						    driver_directory);
 	case 6:
 		return clean_up_driver_struct_level(mem_ctx, session_info,
 						    r->info.info6->architecture,
@@ -951,7 +994,9 @@ WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 						    &r->info.info6->config_file,
 						    &r->info.info6->help_file,
 						    r->info.info6->dependent_files,
-						    &r->info.info6->version);
+						    &r->info.info6->version,
+						    flags,
+						    driver_directory);
 	default:
 		return WERR_NOT_SUPPORTED;
 	}
@@ -986,7 +1031,8 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 						const char *driver_file,
 						const char *short_architecture,
 						uint32_t driver_version,
-						uint32_t version)
+						uint32_t version,
+						const char *driver_directory)
 {
 	struct smb_filename *smb_fname_old = NULL;
 	struct smb_filename *smb_fname_new = NULL;
@@ -995,9 +1041,21 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	WERROR ret;
 
-	old_name = talloc_asprintf(mem_ctx, "%s/%s",
-				   short_architecture, driver_file);
-	W_ERROR_HAVE_NO_MEMORY(old_name);
+	if (driver_directory != NULL) {
+		old_name = talloc_asprintf(mem_ctx,
+					   "%s/%s/%s",
+					   short_architecture,
+					   driver_directory,
+					   driver_file);
+	} else {
+		old_name = talloc_asprintf(mem_ctx,
+					   "%s/%s",
+					   short_architecture,
+					   driver_file);
+	}
+	if (old_name == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	new_name = talloc_asprintf(mem_ctx, "%s/%d/%s",
 				   short_architecture, driver_version, driver_file);
@@ -1050,7 +1108,8 @@ static WERROR move_driver_file_to_download_area(TALLOC_CTX *mem_ctx,
 }
 
 WERROR move_driver_to_download_area(struct auth_session_info *session_info,
-				    struct spoolss_AddDriverInfoCtr *r)
+				    struct spoolss_AddDriverInfoCtr *r,
+				    const char *driver_directory)
 {
 	struct spoolss_AddDriverInfo3 *driver;
 	struct spoolss_AddDriverInfo3 converted_driver;
@@ -1171,7 +1230,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 							driver->driver_path,
 							short_architecture,
 							driver->version,
-							ver);
+							ver,
+							driver_directory);
 		if (!W_ERROR_IS_OK(err)) {
 			goto err_exit;
 		}
@@ -1185,7 +1245,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 								driver->data_file,
 								short_architecture,
 								driver->version,
-								ver);
+								ver,
+								driver_directory);
 			if (!W_ERROR_IS_OK(err)) {
 				goto err_exit;
 			}
@@ -1201,7 +1262,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 								driver->config_file,
 								short_architecture,
 								driver->version,
-								ver);
+								ver,
+								driver_directory);
 			if (!W_ERROR_IS_OK(err)) {
 				goto err_exit;
 			}
@@ -1218,7 +1280,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 								driver->help_file,
 								short_architecture,
 								driver->version,
-								ver);
+								ver,
+								driver_directory);
 			if (!W_ERROR_IS_OK(err)) {
 				goto err_exit;
 			}
@@ -1243,7 +1306,8 @@ WERROR move_driver_to_download_area(struct auth_session_info *session_info,
 									driver->dependent_files->string[i],
 									short_architecture,
 									driver->version,
-									ver);
+									ver,
+									driver_directory);
 				if (!W_ERROR_IS_OK(err)) {
 					goto err_exit;
 				}

@@ -8438,6 +8438,7 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 {
 	WERROR err = WERR_OK;
 	const char *driver_name = NULL;
+	const char *driver_directory = NULL;
 	uint32_t version;
 	const char *fn;
 
@@ -8461,7 +8462,8 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.flags != APD_COPY_NEW_FILES) {
+	if (!(r->in.flags & APD_COPY_ALL_FILES) &&
+	    !(r->in.flags & APD_COPY_NEW_FILES)) {
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -8476,12 +8478,19 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(p->mem_ctx, p->session_info, r->in.info_ctr);
-	if (!W_ERROR_IS_OK(err))
+	err = clean_up_driver_struct(p->mem_ctx,
+				     p->session_info,
+				     r->in.info_ctr,
+				     r->in.flags,
+				     &driver_directory);
+	if (!W_ERROR_IS_OK(err)) {
 		goto done;
+	}
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	err = move_driver_to_download_area(p->session_info, r->in.info_ctr);
+	err = move_driver_to_download_area(p->session_info,
+					   r->in.info_ctr,
+					   driver_directory);
 	if (!W_ERROR_IS_OK(err)) {
 		goto done;
 	}
