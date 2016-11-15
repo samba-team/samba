@@ -1592,6 +1592,15 @@ static bool ad_empty_finderinfo(const struct adouble *ad)
 	return (cmp == 0);
 }
 
+static bool ai_empty_finderinfo(const AfpInfo *ai)
+{
+	int cmp;
+	char emptybuf[ADEDLEN_FINDERI] = {0};
+
+	cmp = memcmp(emptybuf, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
+	return (cmp == 0);
+}
+
 /**
  * Update btime with btime from Netatalk
  **/
@@ -2847,6 +2856,57 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 	}
 	fsp->base_fsp->fsp_name->base_name = name;
 
+	if (is_afpinfo_stream(fsp->fsp_name)) {
+		/*
+		 * Writing an all 0 blob to the metadata stream
+		 * results in the stream being removed on a macOS
+		 * server. This ensures we behave the same and it
+		 * verified by the "delete AFP_AfpInfo by writing all
+		 * 0" test.
+		 */
+		if (n != AFP_INFO_SIZE || offset != 0) {
+			DEBUG(1, ("unexpected offset=%jd or size=%jd\n",
+				  (intmax_t)offset, (intmax_t)n));
+			rc = -1;
+			goto exit;
+		}
+		ai = afpinfo_unpack(talloc_tos(), data);
+		if (ai == NULL) {
+			rc = -1;
+			goto exit;
+		}
+
+		if (ai_empty_finderinfo(ai)) {
+			switch (config->meta) {
+			case FRUIT_META_STREAM:
+				rc = SMB_VFS_UNLINK(handle->conn, fsp->fsp_name);
+				break;
+
+			case FRUIT_META_NETATALK:
+				rc = SMB_VFS_REMOVEXATTR(
+					handle->conn,
+					fsp->fsp_name->base_name,
+					AFPINFO_EA_NETATALK);
+				break;
+
+			default:
+				DBG_ERR("Unexpected meta config [%d]\n",
+					config->meta);
+				rc = -1;
+				goto exit;
+			}
+
+			if (rc != 0 && errno != ENOENT && errno != ENOATTR) {
+				DBG_WARNING("Can't delete metadata for %s: %s\n",
+					    fsp->fsp_name->base_name, strerror(errno));
+				goto exit;
+			}
+
+			rc = 0;
+			goto exit;
+		}
+	}
+
 	if (ad == NULL) {
 		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 		if (len != n) {
@@ -2862,36 +2922,9 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 	}
 
 	if (ad->ad_type == ADOUBLE_META) {
-		if (n != AFP_INFO_SIZE || offset != 0) {
-			DEBUG(1, ("unexpected offset=%jd or size=%jd\n",
-				  (intmax_t)offset, (intmax_t)n));
-			rc = -1;
-			goto exit;
-		}
-		ai = afpinfo_unpack(talloc_tos(), data);
-		if (ai == NULL) {
-			rc = -1;
-			goto exit;
-		}
 		memcpy(ad_entry(ad, ADEID_FINDERI),
 		       &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
-		if (ad_empty_finderinfo(ad)) {
-			/* Discard metadata */
-			if (config->meta == FRUIT_META_STREAM) {
-				rc = SMB_VFS_FTRUNCATE(fsp, 0);
-			} else {
-				rc = SMB_VFS_REMOVEXATTR(handle->conn,
-							 fsp->fsp_name->base_name,
-							 AFPINFO_EA_NETATALK);
-			}
-			if (rc != 0 && errno != ENOENT && errno != ENOATTR) {
-				DBG_WARNING("Can't delete metadata for %s: %s\n",
-					    fsp->fsp_name->base_name, strerror(errno));
-				goto exit;
-			}
-			rc = 0;
-			goto exit;
-		}
+
 		rc = ad_write(ad, name);
 	} else {
 		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
