@@ -1661,6 +1661,13 @@ sub provision($$$$$$$$)
 	fruit:locking = netatalk
 	fruit:encoding = native
 
+[vfs_fruit_metadata_stream]
+	path = $shrdir
+	vfs objects = fruit streams_xattr acl_xattr
+	ea support = yes
+	fruit:resource = file
+	fruit:metadata = stream
+
 [badname-tmp]
 	path = $badnames_shrdir
 	guest ok = yes
