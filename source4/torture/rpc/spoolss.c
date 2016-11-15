@@ -53,6 +53,7 @@
 #define TORTURE_DRIVER_ADOBE_CUPSADDSMB	"torture_driver_adobe_cupsaddsmb"
 #define TORTURE_DRIVER_TIMESTAMPS	"torture_driver_timestamps"
 #define TORTURE_DRIVER_DELETER		"torture_driver_deleter"
+#define TORTURE_DRIVER_COPY_DIR		"torture_driver_copy_from_directory"
 #define TORTURE_DRIVER_DELETERIN	"torture_driver_deleterin"
 #define TORTURE_PRINTER_STATIC1		"print1"
 
@@ -100,6 +101,7 @@ struct torture_driver_context {
 	} local;
 	struct {
 		const char *driver_directory;
+		const char *driver_upload_directory;
 		const char *environment;
 	} remote;
 	struct spoolss_AddDriverInfo8 info8;
@@ -9837,6 +9839,38 @@ static const char *driver_directory_share(struct torture_context *tctx,
 	return tok;
 }
 
+#define CREATE_PRINTER_DRIVER_PATH(_d, _file) \
+	talloc_asprintf((_d), "%s\\%s\\%s", (_d)->remote.driver_directory, (_d)->remote.driver_upload_directory, (_file))
+
+
+static bool create_printer_driver_directory(struct torture_context *tctx,
+					    struct smbcli_state *cli,
+					    struct torture_driver_context *d)
+{
+	char *driver_dir;
+
+	if (d->remote.driver_upload_directory == NULL) {
+		return true;
+	}
+
+	driver_dir = talloc_asprintf(tctx,
+				     "%s\\%s",
+				     driver_directory_dir(d->remote.driver_directory),
+				     d->remote.driver_upload_directory);
+	torture_assert_not_null(tctx, driver_dir, "ENOMEM");
+
+	torture_comment(tctx,
+			"Create remote driver directory: %s\n",
+			driver_dir);
+
+	torture_assert_ntstatus_ok(tctx,
+				   smbcli_mkdir(cli->tree,
+				                driver_dir),
+				   "Failed to create driver directory");
+
+	return true;
+}
+
 static bool upload_printer_driver_file(struct torture_context *tctx,
 				       struct smbcli_state *cli,
 				       struct torture_driver_context *d,
@@ -9849,12 +9883,33 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 	off_t nread = 0;
 	size_t start = 0;
 	const char *remote_dir = driver_directory_dir(d->remote.driver_directory);
-	const char *local_name = talloc_asprintf(tctx, "%s/%s", d->local.driver_directory, file_name);
-	const char *remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, file_name);
+	const char *remote_name;
+	const char *local_name;
+	const char *p;
 
 	if (!file_name || strlen(file_name) == 0) {
 		return true;
 	}
+
+	p = strrchr(file_name, '\\');
+	if (p == NULL) {
+		p = file_name;
+	} else {
+		p++;
+	}
+
+	local_name = talloc_asprintf(tctx, "%s/%s", d->local.driver_directory, p);
+	torture_assert_not_null(tctx, local_name, "ENOMEM");
+	if (d->remote.driver_upload_directory != NULL) {
+		remote_name = talloc_asprintf(tctx,
+					      "%s\\%s\\%s",
+					      remote_dir,
+					      d->remote.driver_upload_directory,
+					      p);
+	} else {
+		remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, p);
+	}
+	torture_assert_not_null(tctx, remote_name, "ENOMEM");
 
 	torture_comment(tctx, "Uploading %s to %s\n", local_name, remote_name);
 
@@ -9951,6 +10006,10 @@ static bool upload_printer_driver(struct torture_context *tctx,
 
 	torture_comment(tctx, "Uploading printer driver files to \\\\%s\\%s\n",
 		server_name, share_name);
+
+	torture_assert(tctx,
+		       create_printer_driver_directory(tctx, cli, d),
+		       "failed to create driver directory");
 
 	torture_assert(tctx,
 		upload_printer_driver_file(tctx, cli, d, d->info8.driver_path),
@@ -10508,6 +10567,106 @@ static bool test_multiple_drivers(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_driver_copy_from_directory(struct torture_context *tctx,
+					    struct dcerpc_pipe *p)
+{
+	struct torture_driver_context *d;
+	struct spoolss_StringArray *a;
+	uint32_t add_flags = APD_COPY_NEW_FILES|APD_COPY_FROM_DIRECTORY|APD_RETURN_BLOCKING_STATUS_CODE;
+	uint32_t delete_flags = DPD_DELETE_ALL_FILES;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx,
+							"\\\\%s",
+							dcerpc_server_name(p));
+	struct GUID guid = GUID_random();
+	bool ok = false;
+
+	d = talloc_zero(tctx, struct torture_driver_context);
+	torture_assert_not_null(tctx, d, "ENOMEM");
+
+	d->local.environment		=
+		talloc_asprintf(d, SPOOLSS_ARCHITECTURE_x64);
+	torture_assert_not_null_goto(tctx, d->local.environment, ok, done, "ENOMEM");
+
+	d->local.driver_directory	=
+		talloc_asprintf(d, "/usr/share/cups/drivers/x64");
+	torture_assert_not_null_goto(tctx, d->local.driver_directory, ok, done, "ENOMEM");
+
+	d->remote.driver_upload_directory = GUID_string2(d, &guid);
+	torture_assert_not_null_goto(tctx, d->remote.driver_upload_directory, ok, done, "ENOMEM");
+
+	torture_assert(tctx,
+		       fillup_printserver_info(tctx, p, d),
+		       "failed to fillup printserver info");
+
+	d->ex				= true;
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER_COPY_DIR;
+	d->info8.architecture		= d->local.environment;
+
+	d->info8.driver_path		= CREATE_PRINTER_DRIVER_PATH(d, "pscript5.dll");
+	torture_assert_not_null_goto(tctx, d->info8.driver_path, ok, done, "ENOMEM");
+	d->info8.data_file		= CREATE_PRINTER_DRIVER_PATH(d, "cups6.ppd");
+	torture_assert_not_null_goto(tctx, d->info8.data_file, ok, done, "ENOMEM");
+	d->info8.config_file		= CREATE_PRINTER_DRIVER_PATH(d, "cupsui6.dll");
+	torture_assert_not_null_goto(tctx, d->info8.config_file, ok, done, "ENOMEM");
+	d->info8.help_file		= CREATE_PRINTER_DRIVER_PATH(d, "pscript.hlp");
+	torture_assert_not_null_goto(tctx, d->info8.help_file, ok, done, "ENOMEM");
+
+	a				= talloc_zero(d, struct spoolss_StringArray);
+	torture_assert_not_null_goto(tctx, a, ok, done, "ENOMEM");
+	a->string			= talloc_zero_array(a, const char *, 3);
+	torture_assert_not_null_goto(tctx, a->string, ok, done, "ENOMEM");
+	a->string[0]			= CREATE_PRINTER_DRIVER_PATH(d, "cups6.inf");
+	torture_assert_not_null_goto(tctx, a->string[0], ok, done, "ENOMEM");
+	a->string[1]			= CREATE_PRINTER_DRIVER_PATH(d, "cups6.ini");
+	torture_assert_not_null_goto(tctx, a->string[1], ok, done, "ENOMEM");
+
+	d->info8.dependent_files	= a;
+
+	if (!directory_exist(d->local.driver_directory)) {
+		torture_skip(tctx,
+			     "Skipping Printer Driver test as no local drivers "
+			     "are available");
+	}
+
+	torture_assert(tctx,
+		       upload_printer_driver(tctx, dcerpc_server_name(p), d),
+		       "failed to upload printer driver");
+
+	torture_assert(tctx,
+		       test_AddPrinterDriver_args_level_3(tctx,
+							  b,
+							  server_name_slash,
+							  &d->info8,
+							  add_flags,
+							  true,
+							  NULL),
+		       "failed to add driver");
+
+	torture_assert(tctx,
+		       test_DeletePrinterDriverEx(tctx,
+			                          b,
+						  server_name_slash,
+						  d->info8.driver_name,
+						  d->local.environment,
+						  delete_flags,
+						  d->info8.version),
+		       "failed to delete driver");
+
+	torture_assert(tctx,
+		       check_printer_driver_files(tctx,
+						  dcerpc_server_name(p),
+						  d,
+						  false),
+		       "printer driver file check failed");
+
+	ok = true;
+done:
+	talloc_free(d);
+	return ok;
+}
+
 static bool test_del_driver_all_files(struct torture_context *tctx,
 				      struct dcerpc_pipe *p)
 {
@@ -10699,6 +10858,10 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "add_driver_timestamps", test_add_driver_timestamps);
 
 	torture_rpc_tcase_add_test(tcase, "multiple_drivers", test_multiple_drivers);
+
+	torture_rpc_tcase_add_test(tcase,
+				   "test_driver_copy_from_directory",
+				   test_driver_copy_from_directory);
 
 	torture_rpc_tcase_add_test(tcase, "del_driver_all_files", test_del_driver_all_files);
 
