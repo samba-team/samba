@@ -8600,6 +8600,8 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 				     r->in.flags,
 				     &driver_directory);
 	if (!W_ERROR_IS_OK(err)) {
+		DBG_ERR("clean_up_driver_struct failed - %s\n",
+			win_errstr(err));
 		goto done;
 	}
 
@@ -8608,6 +8610,8 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 					   r->in.info_ctr,
 					   driver_directory);
 	if (!W_ERROR_IS_OK(err)) {
+		DBG_ERR("move_driver_to_download_area failed - %s\n",
+			win_errstr(err));
 		goto done;
 	}
 
@@ -8618,6 +8622,8 @@ WERROR _spoolss_AddPrinterDriverEx(struct pipes_struct *p,
 				&driver_name,
 				&version);
 	if (!W_ERROR_IS_OK(err)) {
+		DBG_ERR("winreg_add_driver_internal failed - %s\n",
+			win_errstr(err));
 		goto done;
 	}
 
