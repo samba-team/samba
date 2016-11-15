@@ -170,11 +170,14 @@ bool delete_driver_files(const struct auth_session_info *server_info,
 			 const struct spoolss_DriverInfo8 *r);
 
 WERROR move_driver_to_download_area(struct auth_session_info *session_info,
-				    struct spoolss_AddDriverInfoCtr *r);
+				    struct spoolss_AddDriverInfoCtr *r,
+				    const char *driver_directory);
 
 WERROR clean_up_driver_struct(TALLOC_CTX *mem_ctx,
 			      struct auth_session_info *session_info,
-			      struct spoolss_AddDriverInfoCtr *r);
+			      struct spoolss_AddDriverInfoCtr *r,
+			      uint32_t flags,
+			      const char **driver_directory);
 
 void map_printer_permissions(struct security_descriptor *sd);
 
