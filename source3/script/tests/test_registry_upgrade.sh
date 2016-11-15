@@ -89,6 +89,8 @@ registry_upgrade()
     # create config file
     echo '[global]' > ${CONFIG_FILE}
     echo "	state directory = ${WORKSPACE}" >> ${CONFIG_FILE}
+    echo "	private directory = ${WORKSPACE}" >> ${CONFIG_FILE}
+    echo "	lock directory = ${WORKSPACE}" >> ${CONFIG_FILE}
 
     # set database INFO/version to 1
     #$DBWRAP_TOOL $REGISTRY store 'INFO/version' uint32 1
