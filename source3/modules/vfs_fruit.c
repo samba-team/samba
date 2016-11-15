@@ -3323,30 +3323,6 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int fruit_ftruncate_meta(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				off_t offset,
-				struct adouble *ad)
-{
-	struct fruit_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (offset > 60) {
-		DBG_WARNING("ftruncate %s to %jd",
-			    fsp_str_dbg(fsp), (intmax_t)offset);
-		/* OS X returns NT_STATUS_ALLOTTED_SPACE_EXCEEDED  */
-		errno = EOVERFLOW;
-		return -1;
-	}
-
-	DBG_WARNING("ignoring ftruncate %s to %jd",
-		    fsp_str_dbg(fsp), (intmax_t)offset);
-	/* OS X returns success but does nothing  */
-	return 0;
-}
-
 static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				off_t offset,
@@ -3394,6 +3370,21 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 	DBG_DEBUG("fruit_ftruncate called for file %s offset %.0f\n",
 		   fsp_str_dbg(fsp), (double)offset);
 
+	if (is_afpinfo_stream(fsp->fsp_name)) {
+		if (offset > 60) {
+			DBG_WARNING("ftruncate %s to %jd",
+				    fsp_str_dbg(fsp), (intmax_t)offset);
+			/* OS X returns NT_STATUS_ALLOTTED_SPACE_EXCEEDED  */
+			errno = EOVERFLOW;
+			return -1;
+		}
+
+		DBG_WARNING("ignoring ftruncate %s to %jd",
+			    fsp_str_dbg(fsp), (intmax_t)offset);
+		/* OS X returns success but does nothing  */
+		return 0;
+	}
+
 	if (ad == NULL) {
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 	}
@@ -3403,15 +3394,12 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 	}
 
 	switch (ad->ad_type) {
-	case ADOUBLE_META:
-		rc = fruit_ftruncate_meta(handle, fsp, offset, ad);
-		break;
-
 	case ADOUBLE_RSRC:
 		rc = fruit_ftruncate_rsrc(handle, fsp, offset, ad);
 		break;
 
 	default:
+		DBG_ERR("unexpected ad_type [%d]\n", ad->ad_type);
 		return -1;
 	}
 
