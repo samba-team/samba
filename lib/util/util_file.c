@@ -94,17 +94,25 @@ _PUBLIC_ char *x_fgets_slash(char *s2,int maxlen,XFILE *f)
 			    s[len] = 0;
 		}
 		if (!s2 && len > maxlen-3) {
+			int m;
 			char *t;
 
-			maxlen *= 2;
+			m = maxlen * 2;
+			if (m < maxlen) {
+				DBG_ERR("length overflow");
+				SAFE_FREE(s);
+				return NULL;
+			}
+			maxlen = m;
+
 			t = realloc_p(s, char, maxlen);
 			if (!t) {
 				DBG_ERR("failed to expand buffer!\n");
 				SAFE_FREE(s);
 				return(NULL);
-			} else {
-				s = t;
 			}
+
+			s = t;
 		}
 	}
 	return(s);
