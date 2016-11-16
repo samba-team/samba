@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "printing/pcap.h"
+#include "lib/util/xfile.h"
 
 #ifdef AIX
 bool aix_cache_reload(struct pcap_cache **_pcache)

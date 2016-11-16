@@ -47,6 +47,7 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/base64.h"
+#include "lib/util/xfile.h"
 
 #if HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"

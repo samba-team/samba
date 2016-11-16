@@ -24,6 +24,7 @@
 #include "system/select.h"
 #include "system/readline.h"
 #include "libcli/smbreadline/smbreadline.h"
+#include "lib/util/xfile.h"
 
 #undef malloc
 

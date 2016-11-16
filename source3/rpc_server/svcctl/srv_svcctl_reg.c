@@ -31,6 +31,7 @@
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
 #include "auth.h"
 #include "registry/reg_backend_db.h"
+#include "lib/util/xfile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

@@ -24,6 +24,7 @@
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "lib/param/param.h"
+#include "lib/util/xfile.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 

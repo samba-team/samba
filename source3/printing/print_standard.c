@@ -57,6 +57,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "printing/pcap.h"
+#include "lib/util/xfile.h"
 
 /* handle standard printcap - moved from pcap_printer_fn() */
 bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache)

@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "auth.h"
+#include "lib/util/xfile.h"
 
 /*******************************************************************
  Map a username from a dos name to a unix name by looking in the username

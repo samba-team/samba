@@ -39,6 +39,7 @@
 #include "libsmb/nmblib.h"
 #include "include/ntioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/util/xfile.h"
 
 #ifndef REGISTER
 #define REGISTER 0

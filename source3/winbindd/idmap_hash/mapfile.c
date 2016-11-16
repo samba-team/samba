@@ -24,6 +24,7 @@
 #include "idmap.h"
 #include "idmap_hash.h"
 #include <stdio.h>
+#include "lib/util/xfile.h"
 
 XFILE *lw_map_file = NULL;
 

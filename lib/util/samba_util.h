@@ -46,7 +46,6 @@ extern const char *panic_action;
 
 #include "lib/util/time.h"
 #include "lib/util/data_blob.h"
-#include "lib/util/xfile.h"
 #include "lib/util/byteorder.h"
 #include "lib/util/talloc_stack.h"
 

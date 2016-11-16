@@ -25,6 +25,7 @@
 #define SYNC_DNS 1
 #endif
 
+#include "lib/util/xfile.h"
 #include "libsmb/nmblib.h"
 #include "nmbd/nmbd_proto.h"
 

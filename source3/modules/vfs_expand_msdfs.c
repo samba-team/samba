@@ -24,6 +24,7 @@
 #include "smbd/globals.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/util/xfile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS

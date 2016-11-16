@@ -55,7 +55,6 @@
 #ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #endif
-#include "../lib/util/xfile.h"
 #include "../lib/util/attr.h"
 
 /* debug.h need to be included before samba_util.h for the macro SMB_ASSERT */
