@@ -20,6 +20,9 @@
 #ifndef __MEMCACHE_H__
 #define __MEMCACHE_H__
 
+#include <talloc.h>
+#include "lib/util/data_blob.h"
+
 struct memcache;
 
 /*
