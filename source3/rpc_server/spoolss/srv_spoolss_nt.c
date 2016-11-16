@@ -3870,6 +3870,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	struct timeval setuptime;
 	print_status_struct status;
 	WERROR result;
+	int os_major, os_minor, os_build;
 
 	result = create_printername(mem_ctx, servername, info2->printername, &r->printername);
 	if (!W_ERROR_IS_OK(result)) {
@@ -3916,9 +3917,20 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	 */
 	r->global_counter		= session_counter->counter;
 	r->total_pages			= 0;
+
 	/* in 2.2 we reported ourselves as 0x0004 and 0x0565 */
-	SSVAL(&r->version, 0, 0x0005); /* NT 5 */
-	SSVAL(&r->version, 2, 0x0893); /* build 2195 */
+
+	os_major = lp_parm_int(GLOBAL_SECTION_SNUM,
+			       "spoolss", "os_major", 5);
+	os_minor = lp_parm_int(GLOBAL_SECTION_SNUM,
+			       "spoolss", "os_minor", 2);
+	os_build = lp_parm_int(GLOBAL_SECTION_SNUM,
+			       "spoolss", "os_build", 3790);
+
+	SCVAL(&r->version, 0, os_major);
+	SCVAL(&r->version, 1, os_minor);
+	SSVAL(&r->version, 2, os_build);
+
 	r->free_build			= SPOOLSS_RELEASE_BUILD;
 	r->spooling			= 0;
 	r->max_spooling			= 0;
