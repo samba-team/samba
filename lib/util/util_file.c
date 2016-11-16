@@ -36,7 +36,7 @@ read a line from a file with possible \ continuation chars.
 Blanks at the start or end of a line are stripped.
 The string will be allocated if s2 is NULL
 **/
-_PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
+_PUBLIC_ char *x_fgets_slash(char *s2,int maxlen,XFILE *f)
 {
   char *s=s2;
   int len = 0;
@@ -97,7 +97,7 @@ _PUBLIC_ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 	  maxlen *= 2;
 	  t = realloc_p(s, char, maxlen);
 	  if (!t) {
-	    DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
+	    DBG_ERR("failed to expand buffer!\n");
 	    SAFE_FREE(s);
 	    return(NULL);
 	  } else s = t;

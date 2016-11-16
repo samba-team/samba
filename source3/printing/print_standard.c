@@ -73,7 +73,8 @@ bool std_pcap_cache_reload(const char *pcap_name, struct pcap_cache **_pcache)
 		return false;
 	}
 
-	for (; (pcap_line = fgets_slash(NULL, 1024, pcap_file)) != NULL; free(pcap_line)) {
+	for (; (pcap_line = x_fgets_slash(NULL, 1024, pcap_file)) != NULL;
+	     free(pcap_line)) {
 		char *name = NULL;
 		char *comment = NULL;
 		char *p, *q;

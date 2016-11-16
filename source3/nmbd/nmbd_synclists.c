@@ -262,7 +262,7 @@ static void complete_sync(struct sync_record *s)
 	while (!x_feof(f)) {
 		TALLOC_CTX *frame = NULL;
 
-		if (!fgets_slash(line,sizeof(line),f))
+		if (!x_fgets_slash(line,sizeof(line),f))
 			continue;
 
 		ptr = line;

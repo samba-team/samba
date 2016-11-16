@@ -361,7 +361,7 @@ bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 
 	DEBUG(4,("Scanning username map %s\n",mapfile));
 
-	while((s=fgets_slash(buf,sizeof(buf),f))!=NULL) {
+	while((s=x_fgets_slash(buf,sizeof(buf),f))!=NULL) {
 		char *unixname = s;
 		char *dosname = strchr_m(unixname,'=');
 		char **dosuserlist;

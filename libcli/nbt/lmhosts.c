@@ -66,7 +66,7 @@ bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
 
 		*name_type = -1;
 
-		if (!fgets_slash(line,sizeof(line),fp)) {
+		if (!x_fgets_slash(line,sizeof(line),fp)) {
 			continue;
 		}
 

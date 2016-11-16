@@ -655,7 +655,7 @@ bool initialise_wins(void)
 
 		/* Read a line from the wins.dat file. Strips whitespace
 			from the beginning and end of the line.  */
-		if (!fgets_slash(line,sizeof(line),fp)) {
+		if (!x_fgets_slash(line,sizeof(line),fp)) {
 			continue;
 		}
 

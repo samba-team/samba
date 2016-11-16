@@ -52,7 +52,7 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = fgets_slash(NULL, 1024, pfile)); free(line)) {
+	for (;(line = x_fgets_slash(NULL, 1024, pfile)); free(line)) {
 		bool ok;
 
 		if (*line == '*' || *line == 0)
