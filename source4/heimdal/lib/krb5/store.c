@@ -431,6 +431,7 @@ krb5_ret_int(krb5_storage *sp,
     int ret;
     unsigned char v[8];
     uint64_t w;
+    *value = 0; /* quiets warnings */
     ret = sp->fetch(sp, v, len);
     if (ret < 0)
 	return errno;
