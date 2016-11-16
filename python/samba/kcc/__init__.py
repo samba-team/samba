@@ -909,7 +909,6 @@ class KCC(object):
                                      drsuapi.DRSUAPI_DRS_PER_SYNC |
                                      drsuapi.DRSUAPI_DRS_ADD_REF |
                                      drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
-                                     drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP |
                                      drsuapi.DRSUAPI_DRS_NONGC_RO_REP)
                     if t_repsFrom.replica_flags != replica_flags:
                         t_repsFrom.replica_flags = replica_flags

@@ -518,7 +518,21 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		} else {
 			replica_flags |= DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING;
 		}
+
+		/*
+		 * As per MS-DRSR:
+		 *
+		 * 4.1.10.4
+		 * Client Behavior When Sending the IDL_DRSGetNCChanges Request
+		 *
+		 * 4.1.10.4.1
+		 * ReplicateNCRequestMsg
+		 */
+		replica_flags |= DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP;
+	} else {
+		replica_flags |= DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP;
 	}
+
 	if (state->op->extended_op != DRSUAPI_EXOP_NONE) {
 		/*
 		 * If it's an exop never set the ADD_REF even if it's in
