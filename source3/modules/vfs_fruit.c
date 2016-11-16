@@ -343,7 +343,6 @@ typedef enum {ADOUBLE_META, ADOUBLE_RSRC} adouble_type_t;
 #define ad_getentryoff(ad,eid)     ((ad)->ad_eid[(eid)].ade_off)
 #define ad_setentrylen(ad,eid,len) ((ad)->ad_eid[(eid)].ade_len = (len))
 #define ad_setentryoff(ad,eid,off) ((ad)->ad_eid[(eid)].ade_off = (off))
-#define ad_entry(ad,eid)           ((ad)->ad_data + ad_getentryoff((ad),(eid)))
 
 struct ad_entry {
 	size_t ade_off;
@@ -414,6 +413,23 @@ static int ad_write(struct adouble *ad, const char *path);
 static int adouble_path(TALLOC_CTX *ctx, const char *path_in, char **path_out);
 
 /**
+ * Return a pointer to an AppleDouble entry
+ *
+ * Returns NULL if the entry is not present
+ **/
+static char *ad_get_entry(const struct adouble *ad, int eid)
+{
+	off_t off = ad_getentryoff(ad, eid);
+	size_t len = ad_getentrylen(ad, eid);
+
+	if (off == 0 || len == 0) {
+		return NULL;
+	}
+
+	return ad->ad_data + off;
+}
+
+/**
  * Get a date
  **/
 static int ad_getdate(const struct adouble *ad,
@@ -421,18 +437,19 @@ static int ad_getdate(const struct adouble *ad,
 		      uint32_t *date)
 {
 	bool xlate = (dateoff & AD_DATE_UNIX);
+	char *p = NULL;
 
 	dateoff &= AD_DATE_MASK;
-	if (!ad_getentryoff(ad, ADEID_FILEDATESI)) {
+	p = ad_get_entry(ad, ADEID_FILEDATESI);
+	if (p == NULL) {
 		return -1;
 	}
 
 	if (dateoff > AD_DATE_ACCESS) {
 	    return -1;
 	}
-	memcpy(date,
-	       ad_entry(ad, ADEID_FILEDATESI) + dateoff,
-	       sizeof(uint32_t));
+
+	memcpy(date, p + dateoff, sizeof(uint32_t));
 
 	if (xlate) {
 		*date = AD_DATE_TO_UNIX(*date);
@@ -446,9 +463,11 @@ static int ad_getdate(const struct adouble *ad,
 static int ad_setdate(struct adouble *ad, unsigned int dateoff, uint32_t date)
 {
 	bool xlate = (dateoff & AD_DATE_UNIX);
+	char *p = NULL;
 
-	if (!ad_getentryoff(ad, ADEID_FILEDATESI)) {
-		return 0;
+	p = ad_get_entry(ad, ADEID_FILEDATESI);
+	if (p == NULL) {
+		return -1;
 	}
 
 	dateoff &= AD_DATE_MASK;
@@ -460,7 +479,7 @@ static int ad_setdate(struct adouble *ad, unsigned int dateoff, uint32_t date)
 		return -1;
 	}
 
-	memcpy(ad_entry(ad, ADEID_FILEDATESI) + dateoff, &date, sizeof(date));
+	memcpy(p + dateoff, &date, sizeof(date));
 
 	return 0;
 }
@@ -946,6 +965,9 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 
 		if ((mode == O_RDWR)
 		    && (ad_getentrylen(ad, ADEID_FINDERI) > ADEDLEN_FINDERI)) {
+			char *p_ad = NULL;
+			char *p_meta_ad = NULL;
+
 			rc = ad_convert(ad, fd);
 			if (rc != 0) {
 				rc = -1;
@@ -975,9 +997,18 @@ static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
 				goto exit;
 			}
 
-			memcpy(ad_entry(meta_ad, ADEID_FINDERI),
-			       ad_entry(ad, ADEID_FINDERI),
-			       ADEDLEN_FINDERI);
+			p_ad = ad_get_entry(ad, ADEID_FINDERI);
+			if (p_ad == NULL) {
+				rc = -1;
+				goto exit;
+			}
+			p_meta_ad = ad_get_entry(meta_ad, ADEID_FINDERI);
+			if (p_meta_ad == NULL) {
+				rc = -1;
+				goto exit;
+			}
+
+			memcpy(p_meta_ad, p_ad, ADEDLEN_FINDERI);
 
 			rc = ad_write(meta_ad, path);
 			if (rc != 0) {
@@ -1567,7 +1598,7 @@ static bool ad_empty_finderinfo(const struct adouble *ad)
 	char emptybuf[ADEDLEN_FINDERI] = {0};
 	char *fi = NULL;
 
-	fi = ad_entry(ad, ADEID_FINDERI);
+	fi = ad_get_entry(ad, ADEID_FINDERI);
 	if (fi == NULL) {
 		DBG_ERR("Missing FinderInfo in struct adouble [%p]\n", ad);
 		return false;
@@ -1992,23 +2023,32 @@ static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
 			    ADOUBLE_META);
 		if (ad) {
+			char *p = ad_get_entry(ad, ADEID_FINDERI);
+
+			if (p == NULL) {
+				DBG_ERR("No ADEID_FINDERI for [%s]\n",
+					smb_fname->base_name);
+				status = NT_STATUS_INVALID_PARAMETER;
+				goto out;
+			}
+
 			if (S_ISREG(smb_fname->st.st_ex_mode)) {
 				/* finder_type */
 				memcpy(&attr_data->attr_data.aapl.finder_info[0],
-				       ad_entry(ad, ADEID_FINDERI), 4);
+				       p, 4);
 
 				/* finder_creator */
 				memcpy(&attr_data->attr_data.aapl.finder_info[0] + 4,
-				       ad_entry(ad, ADEID_FINDERI) + 4, 4);
+				       p + 4, 4);
 			}
 
 			/* finder_flags */
 			memcpy(&attr_data->attr_data.aapl.finder_info[0] + 8,
-			       ad_entry(ad, ADEID_FINDERI) + 8, 2);
+			       p + 8, 2);
 
 			/* finder_ext_flags */
 			memcpy(&attr_data->attr_data.aapl.finder_info[0] + 10,
-			       ad_entry(ad, ADEID_FINDERI) + 24, 2);
+			       p + 24, 2);
 
 			/* creation date */
 			date_added = convert_time_t_to_uint32_t(
@@ -2019,6 +2059,7 @@ static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 		}
 	}
 
+out:
 	TALLOC_FREE(ad);
 	return status;
 }
@@ -2753,6 +2794,7 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 
 	if (ad->ad_type == ADOUBLE_META) {
 		char afpinfo_buf[AFP_INFO_SIZE];
+		char *p = NULL;
 
 		ai = afpinfo_new(talloc_tos());
 		if (ai == NULL) {
@@ -2766,9 +2808,16 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 			goto exit;
 		}
 
-		memcpy(&ai->afpi_FinderInfo[0],
-		       ad_entry(ad, ADEID_FINDERI),
-		       ADEDLEN_FINDERI);
+		p = ad_get_entry(ad, ADEID_FINDERI);
+		if (p == NULL) {
+			DBG_ERR("No ADEID_FINDERI for [%s]\n",
+				fsp->fsp_name->base_name);
+			rc = -1;
+			goto exit;
+		}
+
+		memcpy(&ai->afpi_FinderInfo[0], p, ADEDLEN_FINDERI);
+
 		len = afpinfo_pack(ai, afpinfo_buf);
 		if (len != AFP_INFO_SIZE) {
 			rc = -1;
@@ -2907,9 +2956,17 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 	}
 
 	if (ad->ad_type == ADOUBLE_META) {
-		memcpy(ad_entry(ad, ADEID_FINDERI),
-		       &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
+		char *p = NULL;
 
+		p = ad_get_entry(ad, ADEID_FINDERI);
+		if (p == NULL) {
+			DBG_ERR("No ADEID_FINDERI for [%s]\n",
+				fsp->fsp_name->base_name);
+			rc = -1;
+			goto exit;
+		}
+
+		memcpy(p, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
 		rc = ad_write(ad, name);
 	} else {
 		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
@@ -3238,14 +3295,16 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 	DEBUG(10, ("fruit_streaminfo called for %s\n", smb_fname->base_name));
 
 	if (config->meta == FRUIT_META_NETATALK) {
+		bool ok;
+
 		ad = ad_get(talloc_tos(), handle,
 			    smb_fname->base_name, ADOUBLE_META);
-		if (ad && !ad_empty_finderinfo(ad)) {
-			if (!add_fruit_stream(
-				    mem_ctx, pnum_streams, pstreams,
-				    AFPINFO_STREAM_NAME, AFP_INFO_SIZE,
-				    smb_roundup(handle->conn,
-						AFP_INFO_SIZE))) {
+		if ((ad != NULL) && !ad_empty_finderinfo(ad)) {
+			ok = add_fruit_stream(
+				mem_ctx, pnum_streams, pstreams,
+				AFPINFO_STREAM_NAME, AFP_INFO_SIZE,
+				smb_roundup(handle->conn, AFP_INFO_SIZE));
+			if (!ok) {
 				TALLOC_FREE(ad);
 				return NT_STATUS_NO_MEMORY;
 			}
