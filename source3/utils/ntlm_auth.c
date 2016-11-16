@@ -2255,12 +2255,12 @@ enum {
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	int opt;
-	static const char *helper_protocol;
-	static int diagnostics;
+	const char *helper_protocol = NULL;
+	int diagnostics = 0;
 
-	static const char *hex_challenge;
-	static const char *hex_lm_response;
-	static const char *hex_nt_response;
+	const char *hex_challenge = NULL;
+	const char *hex_lm_response = NULL;
+	const char *hex_nt_response = NULL;
 	struct loadparm_context *lp_ctx;
 	poptContext pc;
 
