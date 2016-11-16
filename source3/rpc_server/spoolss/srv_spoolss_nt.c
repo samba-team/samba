@@ -5695,11 +5695,9 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	result = winreg_get_printer(tmp_ctx, b,
 				    lp_const_servicename(snum),
 				    &pinfo2);
-
-	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
-		win_errstr(result)));
-
 	if (!W_ERROR_IS_OK(result)) {
+		DBG_ERR("Failed to get printer info2 for [%s]: %s\n",
+			lp_const_servicename(snum), win_errstr(result));
 		result = WERR_INVALID_PRINTER_NAME;
 		goto done;
 	}
@@ -5716,8 +5714,8 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 				   architecture,
 				   pinfo2->drivername, version, &driver);
 
-	DEBUG(8,("construct_printer_driver_info_level: status: %s\n",
-		win_errstr(result)));
+	DBG_INFO("winreg_get_driver() status: %s\n",
+		 win_errstr(result));
 
 	if (!W_ERROR_IS_OK(result)) {
 		/*
