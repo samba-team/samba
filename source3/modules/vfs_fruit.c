@@ -2690,6 +2690,7 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 	char *name = NULL;
 	char *tmp_base_name = NULL;
 	NTSTATUS status;
+	size_t to_return = n;
 
 	DEBUG(10, ("fruit_pread: offset=%d, size=%d\n", (int)offset, (int)n));
 
@@ -2719,8 +2720,27 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 	}
 	fsp->base_fsp->fsp_name->base_name = name;
 
+	if (is_afpinfo_stream(fsp->fsp_name)) {
+		/*
+		 * OS X has a off-by-1 error in the offset calculation, so we're
+		 * bug compatible here. It won't hurt, as any relevant real
+		 * world read requests from the AFP_AfpInfo stream will be
+		 * offset=0 n=60. offset is ignored anyway, see below.
+		 */
+		if ((offset < 0) || (offset >= AFP_INFO_SIZE + 1)) {
+			len = 0;
+			rc = 0;
+			goto exit;
+		}
+
+		to_return = MIN(n, AFP_INFO_SIZE);
+
+		/* Yes, macOS always reads from offset 0 */
+		offset = 0;
+	}
+
 	if (ad == NULL) {
-		len = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+		len = SMB_VFS_NEXT_PREAD(handle, fsp, data, to_return, offset);
 		if (len == -1) {
 			rc = -1;
 			goto exit;
@@ -2735,21 +2755,6 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 
 	if (ad->ad_type == ADOUBLE_META) {
 		char afpinfo_buf[AFP_INFO_SIZE];
-		size_t to_return;
-
-		/*
-		 * OS X has a off-by-1 error in the offset calculation, so we're
-		 * bug compatible here. It won't hurt, as any relevant real
-		 * world read requests from the AFP_AfpInfo stream will be
-		 * offset=0 n=60. offset is ignored anyway, see below.
-		 */
-		if ((offset < 0) || (offset >= AFP_INFO_SIZE + 1)) {
-			len = 0;
-			rc = 0;
-			goto exit;
-		}
-
-		to_return = MIN(n, AFP_INFO_SIZE);
 
 		ai = afpinfo_new(talloc_tos());
 		if (ai == NULL) {
