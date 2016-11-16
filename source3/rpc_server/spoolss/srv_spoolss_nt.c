@@ -76,6 +76,10 @@
 #define MAX_OPEN_PRINTER_EXS 50
 #endif
 
+#define GLOBAL_SPOOLSS_OS_MAJOR_DEFAULT 5
+#define GLOBAL_SPOOLSS_OS_MINOR_DEFAULT 2
+#define GLOBAL_SPOOLSS_OS_BUILD_DEFAULT 3790
+
 struct notify_back_channel;
 
 /* structure to store the printer handles */
@@ -2352,11 +2356,14 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 		 * used to be Windows 2000 (5.0.2195)
 		 */
 		os.major		= lp_parm_int(GLOBAL_SECTION_SNUM,
-						      "spoolss", "os_major", 5);
+						      "spoolss", "os_major",
+						      GLOBAL_SPOOLSS_OS_MAJOR_DEFAULT);
 		os.minor		= lp_parm_int(GLOBAL_SECTION_SNUM,
-						      "spoolss", "os_minor", 2);
+						      "spoolss", "os_minor",
+						      GLOBAL_SPOOLSS_OS_MINOR_DEFAULT);
 		os.build		= lp_parm_int(GLOBAL_SECTION_SNUM,
-						      "spoolss", "os_build", 3790);
+						      "spoolss", "os_build",
+						      GLOBAL_SPOOLSS_OS_BUILD_DEFAULT);
 		os.extra_string		= "";	/* leave extra string empty */
 
 		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os,
@@ -3919,13 +3926,15 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->total_pages			= 0;
 
 	/* in 2.2 we reported ourselves as 0x0004 and 0x0565 */
-
 	os_major = lp_parm_int(GLOBAL_SECTION_SNUM,
-			       "spoolss", "os_major", 5);
+			       "spoolss", "os_major",
+			       GLOBAL_SPOOLSS_OS_MAJOR_DEFAULT);
 	os_minor = lp_parm_int(GLOBAL_SECTION_SNUM,
-			       "spoolss", "os_minor", 2);
+			       "spoolss", "os_minor",
+			       GLOBAL_SPOOLSS_OS_MINOR_DEFAULT);
 	os_build = lp_parm_int(GLOBAL_SECTION_SNUM,
-			       "spoolss", "os_build", 3790);
+			       "spoolss", "os_build",
+			       GLOBAL_SPOOLSS_OS_BUILD_DEFAULT);
 
 	SCVAL(&r->version, 0, os_major);
 	SCVAL(&r->version, 1, os_minor);
