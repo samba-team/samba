@@ -5704,6 +5704,14 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	if (pinfo2->drivername == NULL || pinfo2->drivername[0] == '\0') {
+		return WERR_UNKNOWN_PRINTER_DRIVER;
+	}
+
+	DBG_INFO("Construct printer driver [%s] for [%s]\n",
+		 pinfo2->drivername,
+		 pinfo2->sharename);
+
 	result = winreg_get_driver(tmp_ctx, b,
 				   architecture,
 				   pinfo2->drivername, version, &driver);
