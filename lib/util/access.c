@@ -10,7 +10,9 @@
    Updated for IPv6 by Jeremy Allison (C) 2007.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "system/locale.h"
+#include "lib/util/debug.h"
 #include "../lib/util/memcache.h"
 #include "lib/socket/interfaces.h"
 #include "lib/util/samba_util.h"
