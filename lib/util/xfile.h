@@ -104,4 +104,11 @@ off_t x_tseek(XFILE *f, off_t offset, int whence);
 
 XFILE *x_fdup(const XFILE *f);
 
+/**
+read a line from a file with possible \ continuation chars.
+Blanks at the start or end of a line are stripped.
+The string will be allocated if s2 is NULL
+**/
+_PUBLIC_ char *x_fgets_slash(char *s2,int maxlen,XFILE *f);
+
 #endif /* _XFILE_H_ */

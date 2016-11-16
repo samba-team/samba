@@ -333,13 +333,6 @@ const char **str_list_make_v3_const(TALLOC_CTX *mem_ctx,
 
 
 /**
-read a line from a file with possible \ continuation chars. 
-Blanks at the start or end of a line are stripped.
-The string will be allocated if s2 is NULL
-**/
-_PUBLIC_ char *x_fgets_slash(char *s2,int maxlen,XFILE *f);
-
-/**
  * Read one line (data until next newline or eof) and allocate it 
  */
 _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint);
