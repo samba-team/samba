@@ -34,14 +34,13 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 
 static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 				    struct torture_context *tctx,
-				    struct policy_handle *handle)
+				    struct policy_handle *handle,
+				    struct policy_handle *sec_handle)
 {
 	NTSTATUS status;
 	struct lsa_CreateSecret r;
 	struct lsa_SetSecret r3;
 	struct lsa_QuerySecret r4;
-	struct policy_handle sec_handle;
-	struct lsa_DeleteObject d;
 	struct lsa_DATA_BUF buf1;
 	struct lsa_DATA_BUF_PTR bufp1;
 	DATA_BLOB enc_key;
@@ -61,7 +60,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 	r.in.handle = handle;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r.out.sec_handle = &sec_handle;
+	r.out.sec_handle = sec_handle;
 
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_CreateSecret_r(b, tctx, &r),
 		"CreateSecret failed");
@@ -72,7 +71,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 	enc_key = sess_encrypt_string(secret1, &session_key);
 
-	r3.in.sec_handle = &sec_handle;
+	r3.in.sec_handle = sec_handle;
 	r3.in.new_val = &buf1;
 	r3.in.old_val = NULL;
 	r3.in.new_val->data = enc_key.data;
@@ -85,7 +84,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 		"SetSecret failed");
 	torture_assert_ntstatus_ok(tctx, r3.out.result, "SetSecret failed");
 
-	r3.in.sec_handle = &sec_handle;
+	r3.in.sec_handle = sec_handle;
 	r3.in.new_val = &buf1;
 	r3.in.old_val = NULL;
 	r3.in.new_val->data = enc_key.data;
@@ -108,7 +107,7 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 	ZERO_STRUCT(old_mtime);
 
 	/* fetch the secret back again */
-	r4.in.sec_handle = &sec_handle;
+	r4.in.sec_handle = sec_handle;
 	r4.in.new_val = &bufp1;
 	r4.in.new_mtime = &new_mtime;
 	r4.in.old_val = NULL;
@@ -129,11 +128,6 @@ static bool test_CreateSecret_basic(struct dcerpc_pipe *p,
 
 	torture_assert_str_equal(tctx, secret1, secret2, "Returned secret invalid");
 
-	d.in.handle = &sec_handle;
-	d.out.handle = &sec_handle;
-	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_DeleteObject_r(b, tctx, &d),
-		"DeleteObject failed");
-	torture_assert_ntstatus_ok(tctx, d.out.result, "delete should have returned OKINVALID_HANDLE");
 	return true;
 }
 
@@ -153,6 +147,8 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 		(const struct secret_settings *)_data;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b;
+	struct policy_handle sec_handle = {0};
+	bool ok;
 
 	lpcfg_set_cmdline(torture->lp_ctx, "ntlmssp client:keyexchange", settings->keyexchange?"True":"False");
 	lpcfg_set_cmdline(torture->lp_ctx, "ntlmssp_client:ntlm2", settings->ntlm2?"True":"False");
@@ -180,14 +176,24 @@ static bool test_secrets(struct torture_context *torture, const void *_data)
 
 	torture_assert(torture, handle, "OpenPolicy2 failed.  This test cannot run against this server");
 
-	if (!test_CreateSecret_basic(p, torture, handle)) {
-		talloc_free(p);
-		return false;
+	ok = test_CreateSecret_basic(p, torture, handle, &sec_handle);
+
+	if (is_valid_policy_hnd(&sec_handle)) {
+		struct lsa_DeleteObject d;
+
+		d.in.handle = &sec_handle;
+		d.out.handle = &sec_handle;
+
+		status = dcerpc_lsa_DeleteObject_r(b, torture, &d);
+		if (!NT_STATUS_IS_OK(status) ||
+		    !NT_STATUS_IS_OK(d.out.result)) {
+			torture_warning(torture,
+					"Failed to delete secrets object");
+		}
 	}
 
 	talloc_free(p);
-
-	return true;
+	return ok;
 }
 
 static struct torture_tcase *add_test(struct torture_suite *suite, uint32_t bindoptions,
