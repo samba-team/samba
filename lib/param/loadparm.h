@@ -237,7 +237,7 @@ enum inheritowner_options {
 };
 
 /* mangled names options */
-enum mangled_names_options {MANGLED_NAMES_NO, MANGLED_NAMES_YES};
+enum mangled_names_options {MANGLED_NAMES_NO, MANGLED_NAMES_YES, MANGLED_NAMES_ILLEGAL};
 
 /*
  * Default passwd chat script.

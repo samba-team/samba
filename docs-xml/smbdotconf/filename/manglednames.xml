@@ -1,5 +1,6 @@
 <samba:parameter name="mangled names"
-                 type="boolean"
+                 type="enum"
+                 enumlist="enum_mangled_names"
                  context="S"
                  parm="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
@@ -10,6 +11,22 @@
 
 	<para>See the section on <smbconfoption name="name mangling"/> for 
 	details on how to control the mangling process.</para>
+
+	<para>Possible option settings are</para>
+
+	<itemizedlist>
+		<listitem><para><emphasis>yes (default)</emphasis> -
+		enables name mangling for all not DOS 8.3 conforming
+		names.</para></listitem>
+
+		<listitem><para><emphasis>no</emphasis> - disables any
+		name mangling.</para></listitem>
+
+		<listitem><para><emphasis>illegal</emphasis> - does
+		mangling for names with illegal NTFS characters. This
+		is the most sensible setting for modern clients that
+		don't use the shortname anymore.</para></listitem>
+	</itemizedlist>
 
 	<para>If mangling is used then the mangling method is as follows:</para>
 
@@ -56,4 +73,5 @@
 	do not change between sessions.</para>
 </description>
 <value type="default">yes</value>
+<value type="example">illegal</value>
 </samba:parameter>

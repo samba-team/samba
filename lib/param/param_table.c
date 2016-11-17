@@ -319,6 +319,7 @@ static const struct enum_list enum_mangled_names[] = {
 	{MANGLED_NAMES_NO, "no"},
 	{MANGLED_NAMES_NO, "false"},
 	{MANGLED_NAMES_NO, "0"},
+	{MANGLED_NAMES_ILLEGAL, "illegal"},
 	{MANGLED_NAMES_YES, "yes"},
 	{MANGLED_NAMES_YES, "true"},
 	{MANGLED_NAMES_YES, "1"},
