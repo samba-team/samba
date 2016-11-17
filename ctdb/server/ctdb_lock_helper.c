@@ -166,6 +166,8 @@ int main(int argc, char *argv[])
 	int ppid;
 	const char *lock_type;
 
+	reset_scheduler();
+
 	progname = argv[0];
 
 	if (argc < 5) {
