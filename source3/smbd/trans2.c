@@ -2440,11 +2440,17 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 	bool ok;
 	uint64_t last_entry_off = 0;
 	NTSTATUS status;
+	enum mangled_names_options mangled_names;
+	bool marshall_with_83_names;
+
+	mangled_names = lp_mangled_names(conn->params);
 
 	ZERO_STRUCT(state);
 	state.conn = conn;
 	state.info_level = info_level;
-	state.check_mangled_names = lp_mangled_names(conn->params);
+	if (mangled_names != MANGLED_NAMES_NO) {
+		state.check_mangled_names = true;
+	}
 	state.has_wild = dptr_has_wild(dirptr);
 	state.got_exact_match = false;
 
@@ -2480,12 +2486,14 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 
 	*got_exact_match = state.got_exact_match;
 
+	marshall_with_83_names = (mangled_names == MANGLED_NAMES_YES);
+
 	status = smbd_marshall_dir_entry(ctx,
 				     conn,
 				     flags2,
 				     info_level,
 				     name_list,
-				     state.check_mangled_names,
+				     marshall_with_83_names,
 				     requires_resume_key,
 				     mode,
 				     fname,

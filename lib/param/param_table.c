@@ -315,6 +315,16 @@ static const struct enum_list enum_inherit_owner_vals[] = {
     {INHERIT_OWNER_UNIX_ONLY, "unix only"},
     {-1, NULL}};
 
+static const struct enum_list enum_mangled_names[] = {
+	{MANGLED_NAMES_NO, "no"},
+	{MANGLED_NAMES_NO, "false"},
+	{MANGLED_NAMES_NO, "0"},
+	{MANGLED_NAMES_YES, "yes"},
+	{MANGLED_NAMES_YES, "true"},
+	{MANGLED_NAMES_YES, "1"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * NOTE: Handling of duplicated (synonym) parameters:
