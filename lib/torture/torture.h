@@ -547,7 +547,7 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} while(0)
 
 #define torture_assert_guid_equal(torture_ctx,got,expected,cmt)\
-	do { struct GUID __got = (got), __expected = (expected); \
+	do {const struct GUID __got = (got), __expected = (expected); \
 	if (!GUID_equal(&__got, &__expected)) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 			__location__": "#got" was %s, expected %s: %s", \
@@ -565,7 +565,7 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} while(0)
 
 #define torture_assert_sid_equal(torture_ctx,got,expected,cmt)\
-	do { struct dom_sid *__got = (got), *__expected = (expected); \
+	do {const struct dom_sid *__got = (got), *__expected = (expected); \
 	if (!dom_sid_equal(__got, __expected)) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 					   __location__": "#got" was %s, expected %s: %s", \
@@ -575,7 +575,7 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} while(0)
 
 #define torture_assert_not_null(torture_ctx,got,cmt)\
-	do { void *__got = (got); \
+	do {const void *__got = (got); \
 	if (__got == NULL) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 			__location__": "#got" was NULL, expected != NULL: %s", \
@@ -585,7 +585,7 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} while(0)
 
 #define torture_assert_not_null_goto(torture_ctx,got,ret,label,cmt)\
-	do { void *__got = (got); \
+	do {const void *__got = (got); \
 	if (__got == NULL) { \
 		torture_result(torture_ctx, TORTURE_FAIL, \
 			__location__": "#got" was NULL, expected != NULL: %s", \
