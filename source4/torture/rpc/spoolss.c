@@ -9427,6 +9427,58 @@ static bool test_printer_log_jobinfo(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_printer_os_versions(struct torture_context *tctx,
+				     void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	union spoolss_PrinterInfo info;
+	DATA_BLOB blob;
+	uint8_t *data;
+	uint32_t length;
+	struct spoolss_OSVersion osversion;
+	uint8_t os_major, os_minor;
+	uint16_t os_build;
+	struct policy_handle server_handle;
+
+	torture_comment(tctx, "Testing OSVersion vs. PRINTER_INFO_STRESS\n");
+
+	torture_assert(tctx,
+		test_GetPrinter_level(tctx, b, &t->handle, 0, &info),
+		"failed to get level 0 printer info");
+
+	torture_assert(tctx,
+		test_OpenPrinter_server(tctx, p, &server_handle),
+		"failed to open printserver");
+
+	torture_assert(tctx,
+		test_GetPrinterData_checktype(tctx, b, &server_handle, "OSVersion",
+					      NULL, NULL, &data, &length),
+		"failed to fetch OSVersion printer data");
+
+	test_ClosePrinter(tctx, b, &server_handle);
+
+	blob = data_blob_const(data, length);
+
+	torture_assert_ndr_success(tctx,
+		ndr_pull_struct_blob(&blob, tctx, &osversion,
+			(ndr_pull_flags_fn_t)ndr_pull_spoolss_OSVersion),
+		"failed to pull OSVersion");
+
+	os_major = CVAL(&info.info0.version, 0);
+	os_minor = CVAL(&info.info0.version, 1);
+	os_build = SVAL(&info.info0.version, 2);
+
+	torture_assert_int_equal(tctx, os_major, osversion.major, "major");
+	torture_assert_int_equal(tctx, os_minor, osversion.minor, "minor");
+	torture_assert_int_equal(tctx, os_build, osversion.build, "build");
+
+	return true;
+}
+
+
 void torture_tcase_printer(struct torture_tcase *tcase)
 {
 	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter_wrap);
@@ -9456,6 +9508,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 				      test_printer_publish_toggle);
 	torture_tcase_add_simple_test(tcase, "print_job_enum", test_print_job_enum);
 	torture_tcase_add_simple_test(tcase, "log_jobinfo", test_printer_log_jobinfo);
+	torture_tcase_add_simple_test(tcase, "os_versions", test_printer_os_versions);
 }
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
