@@ -2345,7 +2345,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 	if (!strcasecmp_m(value, "DefaultSpoolDirectory")) {
 		*type = REG_SZ;
 
-		data->string = talloc_strdup(mem_ctx, "C:\\PRINTERS");
+		data->string = talloc_strdup(mem_ctx, SPOOLSS_DEFAULT_SERVER_PATH);
 		W_ERROR_HAVE_NO_MEMORY(data->string);
 
 		return WERR_OK;
