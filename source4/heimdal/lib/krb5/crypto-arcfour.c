@@ -139,6 +139,10 @@ ARCFOUR_subencrypt(krb5_context context,
     unsigned char k1_c_data[16], k2_c_data[16], k3_c_data[16];
     krb5_error_code ret;
 
+    if (len < 16) {
+	    return KRB5KRB_AP_ERR_INAPP_CKSUM;
+    }
+
     t[0] = (usage >>  0) & 0xFF;
     t[1] = (usage >>  8) & 0xFF;
     t[2] = (usage >> 16) & 0xFF;
@@ -206,6 +210,10 @@ ARCFOUR_subdecrypt(krb5_context context,
     unsigned char k1_c_data[16], k2_c_data[16], k3_c_data[16];
     unsigned char cksum_data[16];
     krb5_error_code ret;
+
+    if (len < 16) {
+	    return KRB5KRB_AP_ERR_INAPP_CKSUM;
+    }
 
     t[0] = (usage >>  0) & 0xFF;
     t[1] = (usage >>  8) & 0xFF;
