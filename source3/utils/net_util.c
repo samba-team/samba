@@ -106,6 +106,7 @@ NTSTATUS connect_to_service(struct net_context *c,
 {
 	NTSTATUS nt_status;
 	int flags = 0;
+	enum smb_signing_setting signing_setting = SMB_SIGNING_DEFAULT;
 
 	c->opt_password = net_prompt_pass(c, c->opt_user_name);
 
@@ -121,12 +122,16 @@ NTSTATUS connect_to_service(struct net_context *c,
 		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
 	}
 
+	if (strequal(service_type, "IPC")) {
+		signing_setting = SMB_SIGNING_IPC_DEFAULT;
+	}
+
 	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
 					server_ss, c->opt_port,
 					service_name, service_type,
 					c->opt_user_name, c->opt_workgroup,
 					c->opt_password, flags,
-					SMB_SIGNING_IPC_DEFAULT);
+					signing_setting);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
 			  server_name);
