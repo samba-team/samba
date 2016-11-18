@@ -338,7 +338,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('ctdb-common',
                         source=bld.SUBDIR('common',
                                           '''ctdb_io.c ctdb_util.c ctdb_ltdb.c
-                                             cmdline.c'''),
+                                          '''),
                         includes='include',
                         deps='replace popt talloc tevent tdb popt ctdb-system')
 

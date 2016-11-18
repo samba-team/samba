@@ -38,7 +38,6 @@
 #include "ctdb_client.h"
 
 #include "common/system.h"
-#include "common/cmdline.h"
 #include "common/common.h"
 #include "common/logging.h"
 

@@ -31,7 +31,6 @@
 #include "lib/util/blocking.h"
 
 #include "protocol/protocol.h"
-#include "common/cmdline.h"
 #include "common/system.h"
 #include "common/logging.h"
 
