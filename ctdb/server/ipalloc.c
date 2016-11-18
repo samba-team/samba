@@ -29,6 +29,8 @@
 #include "common/logging.h"
 #include "common/rb_tree.h"
 
+#include "protocol/protocol_api.h"
+
 #include "server/ipalloc_private.h"
 
 /* Initialise main ipalloc state and sub-structures */
@@ -160,6 +162,37 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 	return ip_list;
 }
 
+static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
+{
+	struct public_ip_list *ip = NULL;
+	int i, j;
+
+	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
+
+		ip->available_on = talloc_zero_array(ip, bool,
+						     ipalloc_state->num);
+		if (ip->available_on == NULL) {
+			return false;
+		}
+
+		for (i = 0; i < ipalloc_state->num; i++) {
+			struct ctdb_public_ip_list *avail =
+				&ipalloc_state->available_public_ips[i];
+
+			/* Check to see if "ip" is available on node "i" */
+			for (j = 0; j < avail->num; j++) {
+				if (ctdb_sock_addr_same_ip(
+					    &ip->addr, &avail->ip[j].addr)) {
+					ip->available_on[i] = true;
+					break;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
 static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
 {
 	int i;
@@ -280,6 +313,10 @@ struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 
 	ipalloc_state->all_ips = create_merged_ip_list(ipalloc_state);
 	if (ipalloc_state->all_ips == NULL) {
+		return NULL;
+	}
+
+	if (!populate_bitmap(ipalloc_state)) {
 		return NULL;
 	}
 
