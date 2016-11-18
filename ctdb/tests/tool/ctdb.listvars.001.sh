@@ -51,7 +51,6 @@ AllowUnhealthyDBRead       = 0
 StatHistoryInterval        = 1
 DeferredAttachTO           = 120
 AllowClientDBAttach        = 1
-RecoverPDBBySeqNum         = 1
 FetchCollapse              = 1
 HopcountMakeSticky         = 50
 StickyDuration             = 600

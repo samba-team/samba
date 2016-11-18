@@ -462,27 +462,6 @@
     </refsect2>
 
     <refsect2>
-      <title>RecoverPDBBySeqNum</title>
-      <para>Default: 1</para>
-      <para>
-	When set to zero, database recovery for persistent databases is
-	record-by-record and recovery process simply collects the most
-	recent version of every individual record.
-      </para>
-      <para>
-	When set to non-zero, persistent databases will instead be
-	recovered as a whole db and not by individual records. The
-	node that contains the highest value stored in the record
-	"__db_sequence_number__" is selected and the copy of that nodes
-	database is used as the recovered database.
-      </para>
-      <para>
-	By default, recovery of persistent databses is done using
-	__db_sequence_number__ record.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>RecoverTimeout</title>
       <para>Default: 120</para>
       <para>

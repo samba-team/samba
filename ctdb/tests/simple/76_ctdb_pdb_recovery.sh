@@ -3,11 +3,7 @@
 test_info()
 {
     cat <<EOF
-The recovery process based on RSN for persistent databases is defective.
-For persistent databases sequence number based recovery method should be
-used. This test checks for the defect in the RSN based recovery method
-for persistent databases and confirms that the same issue is not observed
-when using sequence number based recovery method.
+This test confirms that the deleted records are not resurrected after recovery.
 
 Steps:
 
@@ -20,8 +16,7 @@ Steps:
 
 Expected results:
 
-* Check that the record is deleted (RSN based recovery) and record is
-  present (sequence number based recovery)
+* Check that the deleted record is present after recovery.
 
 EOF
 }
@@ -82,21 +77,6 @@ status=0
 # Create a temporary persistent database to test with
 echo "create persistent test database $TESTDB"
 try_command_on_node 0 $CTDB attach $TESTDB persistent
-
-echo "set RecoverPDBBySeqNum to 0"
-try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 0
-
-do_test
-if try_command_on_node 0 $CTDB pfetch $TESTDB test1 ; then
-	echo "GOOD: Record was not deleted (recovery by RSN worked)"
-else
-	echo "BAD: Record was deleted"
-	status=1
-fi
-
-# Set RecoverPDBBySeqNum = 1
-echo "set RecoverPDBBySeqNum to 1"
-try_command_on_node all $CTDB setvar RecoverPDBBySeqNum 1
 
 do_test
 if try_command_on_node 0 $CTDB pfetch $TESTDB test1 ; then

@@ -1705,7 +1705,7 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 		return;
 	}
 
-	if (state->persistent && state->tun_list->recover_pdb_by_seqnum != 0) {
+	if (state->persistent) {
 		subreq = collect_highseqnum_db_send(
 				state, state->ev, state->client,
 				state->pnn_list, state->count, state->caps,
@@ -1734,7 +1734,7 @@ static void recover_db_collect_done(struct tevent_req *subreq)
 	int ret;
 	bool status;
 
-	if (state->persistent && state->tun_list->recover_pdb_by_seqnum != 0) {
+	if (state->persistent) {
 		status = collect_highseqnum_db_recv(subreq, &ret);
 	} else {
 		status = collect_all_db_recv(subreq, &ret);
