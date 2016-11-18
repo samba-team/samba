@@ -1855,8 +1855,12 @@ _krb5_derive_key(krb5_context context,
 		memcpy(k + i * et->blocksize,
 		       k + (i - 1) * et->blocksize,
 		       et->blocksize);
-	    (*et->encrypt)(context, key, k + i * et->blocksize, et->blocksize,
-			   1, 0, NULL);
+	    ret = (*et->encrypt)(context, key, k + i * et->blocksize,
+				 et->blocksize, 1, 0, NULL);
+	    if (ret) {
+		    krb5_set_error_message(context, ret, N_("encrypt failed", ""));
+		    goto out;
+	    }
 	}
     } else {
 	/* this case is probably broken, but won't be run anyway */
@@ -1869,7 +1873,12 @@ _krb5_derive_key(krb5_context context,
 	    goto out;
 	}
 	memcpy(c, constant, len);
-	(*et->encrypt)(context, key, c, len, 1, 0, NULL);
+	ret = (*et->encrypt)(context, key, c, len, 1, 0, NULL);
+	if (ret) {
+		free(c);
+		krb5_set_error_message(context, ret, N_("encrypt failed", ""));
+		goto out;
+	}
 	k = malloc(res_len);
 	if(res_len != 0 && k == NULL) {
 	    free(c);
