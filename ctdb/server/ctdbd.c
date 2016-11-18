@@ -36,11 +36,12 @@
 
 #include "common/reqid.h"
 #include "common/system.h"
-#include "common/cmdline.h"
 #include "common/common.h"
 #include "common/logging.h"
 
 static struct {
+	const char *socket;
+	const char *debuglevel;
 	const char *nlist;
 	const char *transport;
 	const char *myaddress;
@@ -62,7 +63,9 @@ static struct {
 	int	    script_log_level;
 	int         no_publicipcheck;
 	int         max_persistent_check_errors;
+	int         torture;
 } options = {
+	.socket = CTDB_RUNDIR "/ctdbd.socket",
 	.nlist = NULL,
 	.public_address_list = NULL,
 	.transport = "tcp",
@@ -116,7 +119,8 @@ int main(int argc, const char *argv[])
 
 	struct poptOption popt_options[] = {
 		POPT_AUTOHELP
-		POPT_CTDB_CMDLINE
+		{ "socket", 0, POPT_ARG_STRING, &options.socket, 0, "local socket name", "filename" },
+		{ "debug", 'd', POPT_ARG_STRING, &options.debuglevel, 0, "debug level", NULL },
 		{ "interactive", 'i', POPT_ARG_NONE, &interactive, 0, "don't fork", NULL },
 		{ "public-addresses", 0, POPT_ARG_STRING, &options.public_address_list, 0, "public address list file", "filename" },
 		{ "public-interface", 0, POPT_ARG_STRING, &options.public_interface, 0, "public interface", "interface"},
@@ -143,6 +147,7 @@ int main(int argc, const char *argv[])
 		  &options.max_persistent_check_errors, 0,
 		  "max allowed persistent check errors (default 0)", NULL },
 		{ "sloppy-start", 0, POPT_ARG_NONE, &fast_start, 0, "Do not perform full recovery on start", NULL },
+		{ "torture", 0, POPT_ARG_NONE, &options.torture, 0, "enable nastiness in library", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -150,6 +155,7 @@ int main(int argc, const char *argv[])
 	int extra_argc = 0;
 	poptContext pc;
 	struct tevent_context *ev;
+	enum debug_level log_level;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -180,7 +186,29 @@ int main(int argc, const char *argv[])
 	}
 	tevent_loop_allow_nesting(ev);
 
-	ctdb = ctdb_cmdline_init(ev);
+	ctdb = ctdb_init(ev);
+	if (ctdb == NULL) {
+		fprintf(stderr, "Failed to init ctdb\n");
+		exit(1);
+	}
+
+	if (options.torture == 1) {
+		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
+	}
+
+	/* Set the debug level */
+	if (debug_level_parse(options.debuglevel, &log_level)) {
+		DEBUGLEVEL = debug_level_to_int(log_level);
+	} else {
+		DEBUGLEVEL = debug_level_to_int(DEBUG_NOTICE);
+	}
+
+	setenv("CTDB_SOCKET", options.socket, 1);
+	ret = ctdb_set_socketname(ctdb, options.socket);
+	if (ret == -1) {
+		fprintf(stderr, "ctdb_set_socketname() failed\n");
+		exit(1);
+	}
 
 	ctdb->start_as_disabled = options.start_as_disabled;
 	ctdb->start_as_stopped  = options.start_as_stopped;
