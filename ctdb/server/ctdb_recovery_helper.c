@@ -140,6 +140,7 @@ static struct recdb_context *recdb_create(TALLOC_CTX *mem_ctx, uint32_t db_id,
 	if (recdb->db == NULL) {
 		talloc_free(recdb);
 		LOG("failed to create recovery db %s\n", recdb->db_path);
+		return NULL;
 	}
 
 	recdb->persistent = persistent;
