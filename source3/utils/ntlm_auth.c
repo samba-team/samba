@@ -47,7 +47,6 @@
 #include "nsswitch/libwbclient/wbclient.h"
 #include "lib/param/loadparm.h"
 #include "lib/util/base64.h"
-#include "lib/util/xfile.h"
 
 #if HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"
@@ -193,7 +192,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 	DATA_BLOB in;
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
-		x_fprintf(x_stdout, "BH Query invalid\n");
+		printf("BH Query invalid\n");
 		return;
 	}
 
@@ -210,17 +209,17 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 
 		if (*password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
-			x_fprintf(x_stdout, "BH Out of memory\n");
+			printf("BH Out of memory\n");
 			data_blob_free(&in);
 			return;
 		}
 
-		x_fprintf(x_stdout, "OK\n");
+		printf("OK\n");
 		data_blob_free(&in);
 		return;
 	}
 	DEBUG(1, ("Asked for (and expected) a password\n"));
-	x_fprintf(x_stdout, "BH Expected a password\n");
+	printf("BH Expected a password\n");
 	data_blob_free(&in);
 }
 
@@ -239,14 +238,14 @@ static const char *get_password(struct cli_credentials *credentials)
 	state = talloc_zero(frame, struct ntlm_auth_state);
 	if (state == NULL) {
 		DEBUG(0, ("squid_stream: Failed to talloc ntlm_auth_state\n"));
-		x_fprintf(x_stderr, "ERR\n");
+		fprintf(stderr, "ERR\n");
 		exit(1);
 	}
 
 	state->mem_ctx = state;
 
 	/* Ask for a password */
-	x_fprintf(x_stdout, "PW\n");
+	printf("PW\n");
 
 	manage_squid_request(NUM_HELPER_MODES /* bogus */, NULL, state, manage_gensec_get_pw_request, (void **)&password);
 	talloc_steal(credentials, password);
@@ -1246,7 +1245,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	pass=(char *)memchr(buf,' ',length);
 	if (!pass) {
 		DEBUG(2, ("Password not found. Denying access\n"));
-		x_fprintf(x_stdout, "ERR\n");
+		printf("ERR\n");
 		return;
 	}
 	*pass='\0';
@@ -1258,9 +1257,9 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (check_plaintext_auth(user, pass, False)) {
-		x_fprintf(x_stdout, "OK\n");
+		printf("OK\n");
 	} else {
-		x_fprintf(x_stdout, "ERR\n");
+		printf("ERR\n");
 	}
 }
 
@@ -1293,7 +1292,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	} else {
 		state = talloc_zero(NULL, struct gensec_ntlm_state);
 		if (!state) {
-			x_fprintf(x_stdout, "BH No Memory\n");
+			printf("BH No Memory\n");
 			exit(1);
 		}
 		*private1 = state;
@@ -1304,7 +1303,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("query [%s] invalid", buf));
-		x_fprintf(x_stdout, "BH Query invalid\n");
+		printf("BH Query invalid\n");
 		return;
 	}
 
@@ -1313,7 +1312,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			DEBUG(10, ("Setting flags to negotiate\n"));
 			talloc_free(want_feature_list);
 			want_feature_list = talloc_strndup(state, buf+3, strlen(buf)-3);
-			x_fprintf(x_stdout, "OK\n");
+			printf("OK\n");
 			return;
 		}
 		in = base64_decode_data_blob(buf + 3);
@@ -1328,7 +1327,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		}
 	} else if ( (strncmp(buf, "OK", 2) == 0)) {
 		/* Just return BH, like ntlm_auth from Samba 3 does. */
-		x_fprintf(x_stdout, "BH Command expected\n");
+		printf("BH Command expected\n");
 		data_blob_free(&in);
 		return;
 	} else if ( (strncmp(buf, "TT ", 3) != 0) &&
@@ -1340,7 +1339,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		    (strncmp(buf, "GK", 2) != 0) &&
 		    (strncmp(buf, "GF", 2) != 0)) {
 		DEBUG(1, ("SPNEGO request [%s] invalid prefix\n", buf));
-		x_fprintf(x_stdout, "BH SPNEGO request invalid prefix\n");
+		printf("BH SPNEGO request invalid prefix\n");
 		data_blob_free(&in);
 		return;
 	}
@@ -1388,7 +1387,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			nt_status = ntlm_auth_prepare_gensec_client(state, lp_ctx,
 								    &state->gensec_state);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				x_fprintf(x_stdout, "BH GENSEC mech failed to start: %s\n", nt_errstr(nt_status));
+				printf("BH GENSEC mech failed to start: %s\n",
+				       nt_errstr(nt_status));
 				talloc_free(mem_ctx);
 				return;
 			}
@@ -1422,7 +1422,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			nt_status = ntlm_auth_prepare_gensec_server(state, lp_ctx,
 								    &state->gensec_state);
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				x_fprintf(x_stdout, "BH GENSEC mech failed to start: %s\n", nt_errstr(nt_status));
+				printf("BH GENSEC mech failed to start: %s\n",
+				       nt_errstr(nt_status));
 				talloc_free(mem_ctx);
 				return;
 			}
@@ -1458,7 +1459,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("GENSEC mech failed to start: %s\n", nt_errstr(nt_status)));
-			x_fprintf(x_stdout, "BH GENSEC mech failed to start\n");
+			printf("BH GENSEC mech failed to start\n");
 			talloc_free(mem_ctx);
 			return;
 		}
@@ -1475,7 +1476,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		cli_credentials_set_password(gensec_get_credentials(state->gensec_state),
 					     state->set_password,
 					     CRED_SPECIFIED);
-		x_fprintf(x_stdout, "OK\n");
+		printf("OK\n");
 		data_blob_free(&in);
 		talloc_free(mem_ctx);
 		return;
@@ -1487,13 +1488,13 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		nt_status = gensec_session_key(state->gensec_state, mem_ctx, &session_key);
 		if(!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1, ("gensec_session_key failed: %s\n", nt_errstr(nt_status)));
-			x_fprintf(x_stdout, "BH No session key\n");
+			printf("BH No session key\n");
 			talloc_free(mem_ctx);
 			return;
 		} else {
 			base64_key = base64_encode_data_blob(state, session_key);
 			SMB_ASSERT(base64_key != NULL);
-			x_fprintf(x_stdout, "GK %s\n", base64_key);
+			printf("GK %s\n", base64_key);
 			talloc_free(base64_key);
 		}
 		talloc_free(mem_ctx);
@@ -1507,11 +1508,11 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 		neg_flags = gensec_ntlmssp_neg_flags(state->gensec_state);
 		if (neg_flags == 0) {
-			x_fprintf(x_stdout, "BH\n");
+			printf("BH\n");
 			return;
 		}
 
-		x_fprintf(x_stdout, "GF 0x%08x\n", neg_flags);
+		printf("GF 0x%08x\n", neg_flags);
 		return;
 	}
 
@@ -1579,17 +1580,17 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 	switch (stdio_helper_mode) {
 	case GSS_SPNEGO_SERVER:
-		x_fprintf(x_stdout, "%s %s %s\n", reply_code,
-			  out_base64 ? out_base64 : "*",
-			  reply_arg ? reply_arg : "*");
+		printf("%s %s %s\n", reply_code,
+		       out_base64 ? out_base64 : "*",
+		       reply_arg ? reply_arg : "*");
 		break;
 	default:
 		if (out_base64) {
-			x_fprintf(x_stdout, "%s %s\n", reply_code, out_base64);
+			printf("%s %s\n", reply_code, out_base64);
 		} else if (reply_arg) {
-			x_fprintf(x_stdout, "%s %s\n", reply_code, reply_arg);
+			printf("%s %s\n", reply_code, reply_arg);
 		} else {
-			x_fprintf(x_stdout, "%s\n", reply_code);
+			printf("%s\n", reply_code);
 		}
 	}
 
@@ -1642,24 +1643,25 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 
 	if (strequal(buf, ".")) {
 		if (!full_username && !username) {	
-			x_fprintf(x_stdout, "Error: No username supplied!\n");
+			printf("Error: No username supplied!\n");
 		} else if (plaintext_password) {
 			/* handle this request as plaintext */
 			if (!full_username) {
 				if (asprintf(&full_username, "%s%c%s", domain, winbind_separator(), username) == -1) {
-					x_fprintf(x_stdout, "Error: Out of memory in asprintf!\n.\n");
+					printf("Error: Out of memory in "
+					       "asprintf!\n.\n");
 					return;
 				}
 			}
 			if (check_plaintext_auth(full_username, plaintext_password, False)) {
-				x_fprintf(x_stdout, "Authenticated: Yes\n");
+				printf("Authenticated: Yes\n");
 			} else {
-				x_fprintf(x_stdout, "Authenticated: No\n");
+				printf("Authenticated: No\n");
 			}
 		} else if (!lm_response.data && !nt_response.data) {
-			x_fprintf(x_stdout, "Error: No password supplied!\n");
+			printf("Error: No password supplied!\n");
 		} else if (!challenge.data) {	
-			x_fprintf(x_stdout, "Error: No lanman-challenge supplied!\n");
+			printf("Error: No lanman-challenge supplied!\n");
 		} else {
 			char *error_string = NULL;
 			uchar lm_key[8];
@@ -1672,7 +1674,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 
 				if (!parse_ntlm_auth_domain_user(full_username, fstr_user, fstr_domain)) {
 					/* username might be 'tainted', don't print into our new-line deleimianted stream */
-					x_fprintf(x_stdout, "Error: Could not parse into domain and username\n");
+					printf("Error: Could not parse into "
+					       "domain and username\n");
 				}
 				SAFE_FREE(username);
 				SAFE_FREE(domain);
@@ -1741,14 +1744,15 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			}
 
 			if (!NT_STATUS_IS_OK(nt_status)) {
-				x_fprintf(x_stdout, "Authenticated: No\n");
-				x_fprintf(x_stdout, "Authentication-Error: %s\n.\n", error_string);
+				printf("Authenticated: No\n");
+				printf("Authentication-Error: %s\n.\n",
+				       error_string);
 			} else {
 				static char zeros[16];
 				char *hex_lm_key;
 				char *hex_user_session_key;
 
-				x_fprintf(x_stdout, "Authenticated: Yes\n");
+				printf("Authenticated: Yes\n");
 
 				if (ntlm_server_1_lm_session_key 
 				    && (memcmp(zeros, lm_key, 
@@ -1756,7 +1760,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 					hex_lm_key = hex_encode_talloc(NULL,
 								(const unsigned char *)lm_key,
 								sizeof(lm_key));
-					x_fprintf(x_stdout, "LANMAN-Session-Key: %s\n", hex_lm_key);
+					printf("LANMAN-Session-Key: %s\n",
+					       hex_lm_key);
 					TALLOC_FREE(hex_lm_key);
 				}
 
@@ -1766,7 +1771,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 					hex_user_session_key = hex_encode_talloc(NULL,
 									  (const unsigned char *)user_session_key, 
 									  sizeof(user_session_key));
-					x_fprintf(x_stdout, "User-Session-Key: %s\n", hex_user_session_key);
+					printf("User-Session-Key: %s\n",
+					       hex_user_session_key);
 					TALLOC_FREE(hex_user_session_key);
 				}
 			}
@@ -1782,7 +1788,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		SAFE_FREE(plaintext_password);
 		ntlm_server_1_user_session_key = False;
 		ntlm_server_1_lm_session_key = False;
-		x_fprintf(x_stdout, ".\n");
+		printf(".\n");
 
 		return;
 	}
@@ -1796,7 +1802,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 
 		if (!parameter) {
 			DEBUG(0, ("Parameter not found!\n"));
-			x_fprintf(x_stdout, "Error: Parameter not found!\n.\n");
+			printf("Error: Parameter not found!\n.\n");
 			return;
 		}
 
@@ -1819,25 +1825,28 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	if (strequal(request, "LANMAN-Challenge")) {
 		challenge = strhex_to_data_blob(NULL, parameter);
 		if (challenge.length != 8) {
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 8)\n.\n", 
-				  parameter,
-				  (int)challenge.length);
+			printf("Error: hex decode of %s failed! "
+			       "(got %d bytes, expected 8)\n.\n",
+			       parameter,
+			       (int)challenge.length);
 			challenge = data_blob_null;
 		}
 	} else if (strequal(request, "NT-Response")) {
 		nt_response = strhex_to_data_blob(NULL, parameter);
 		if (nt_response.length < 24) {
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
-				  parameter,
-				  (int)nt_response.length);
+			printf("Error: hex decode of %s failed! "
+			       "(only got %d bytes, needed at least 24)\n.\n",
+			       parameter,
+			       (int)nt_response.length);
 			nt_response = data_blob_null;
 		}
 	} else if (strequal(request, "LANMAN-Response")) {
 		lm_response = strhex_to_data_blob(NULL, parameter);
 		if (lm_response.length != 24) {
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! (got %d bytes, expected 24)\n.\n", 
-				  parameter,
-				  (int)lm_response.length);
+			printf("Error: hex decode of %s failed! "
+			       "(got %d bytes, expected 24)\n.\n",
+			       parameter,
+			       (int)lm_response.length);
 			lm_response = data_blob_null;
 		}
 	} else if (strequal(request, "Password")) {
@@ -1853,7 +1862,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	} else if (strequal(request, "Request-LanMan-Session-Key")) {
 		ntlm_server_1_lm_session_key = strequal(parameter, "Yes");
 	} else {
-		x_fprintf(x_stdout, "Error: Unknown request %s\n.\n", request);
+		printf("Error: Unknown request %s\n.\n", request);
 	}
 }
 
@@ -1926,11 +1935,11 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 		}
 
 		if (!full_username && !username) {	
-			x_fprintf(x_stdout, "Error: No username supplied!\n");
+			printf("Error: No username supplied!\n");
 		} else if ((!new_nt_pswd.data || !old_nt_hash_enc.data) &&
 			   (!new_lm_pswd.data || old_lm_hash_enc.data) ) {
-			x_fprintf(x_stdout, "Error: No NT or LM password "
-				  "blobs supplied!\n");
+			printf("Error: No NT or LM password "
+			       "blobs supplied!\n");
 		} else {
 			char *error_string = NULL;
 
@@ -1944,9 +1953,9 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 					/* username might be 'tainted', don't
 					 * print into our new-line
 					 * deleimianted stream */
-					x_fprintf(x_stdout, "Error: Could not "
-						  "parse into domain and "
-						  "username\n");
+					printf("Error: Could not "
+					       "parse into domain and "
+					       "username\n");
 					SAFE_FREE(username);
 					username = smb_xstrdup(full_username);
 				} else {
@@ -1965,11 +1974,11 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 						    new_lm_pswd,
 						    old_lm_hash_enc,
 						    &error_string))) {
-				x_fprintf(x_stdout, "Password-Change: No\n");
-				x_fprintf(x_stdout, "Password-Change-Error: "
-					  "%s\n.\n", error_string);
+				printf("Password-Change: No\n");
+				printf("Password-Change-Error: %s\n.\n",
+				       error_string);
 			} else {
-				x_fprintf(x_stdout, "Password-Change: Yes\n");
+				printf("Password-Change: Yes\n");
 			}
 
 			SAFE_FREE(error_string);
@@ -1984,7 +1993,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 		SAFE_FREE(domain);
 		SAFE_FREE(newpswd);
 		SAFE_FREE(oldpswd);
-		x_fprintf(x_stdout, ".\n");
+		printf(".\n");
 
 		return;
 	}
@@ -1998,7 +2007,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 
 		if (!parameter)	{
 			DEBUG(0, ("Parameter not found!\n"));
-			x_fprintf(x_stdout, "Error: Parameter not found!\n.\n");
+			printf("Error: Parameter not found!\n.\n");
 			return;
 		}
 
@@ -2020,28 +2029,28 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 	if (strequal(request, "new-nt-password-blob")) {
 		new_nt_pswd = strhex_to_data_blob(NULL, parameter);
 		if (new_nt_pswd.length != 516) {
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
-				  "(got %d bytes, expected 516)\n.\n", 
-				  parameter,
-				  (int)new_nt_pswd.length);
+			printf("Error: hex decode of %s failed! "
+			       "(got %d bytes, expected 516)\n.\n",
+			       parameter,
+			       (int)new_nt_pswd.length);
 			new_nt_pswd = data_blob_null;
 		}
 	} else if (strequal(request, "old-nt-hash-blob")) {
 		old_nt_hash_enc = strhex_to_data_blob(NULL, parameter);
 		if (old_nt_hash_enc.length != 16) {
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
-				  "(got %d bytes, expected 16)\n.\n", 
-				  parameter,
-				  (int)old_nt_hash_enc.length);
+			printf("Error: hex decode of %s failed! "
+			       "(got %d bytes, expected 16)\n.\n",
+			       parameter,
+			       (int)old_nt_hash_enc.length);
 			old_nt_hash_enc = data_blob_null;
 		}
 	} else if (strequal(request, "new-lm-password-blob")) {
 		new_lm_pswd = strhex_to_data_blob(NULL, parameter);
 		if (new_lm_pswd.length != 516) {
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
-				  "(got %d bytes, expected 516)\n.\n", 
-				  parameter,
-				  (int)new_lm_pswd.length);
+			printf("Error: hex decode of %s failed! "
+			       "(got %d bytes, expected 516)\n.\n",
+			       parameter,
+			       (int)new_lm_pswd.length);
 			new_lm_pswd = data_blob_null;
 		}
 	}
@@ -2049,10 +2058,10 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 		old_lm_hash_enc = strhex_to_data_blob(NULL, parameter);
 		if (old_lm_hash_enc.length != 16)
 		{
-			x_fprintf(x_stdout, "Error: hex decode of %s failed! "
-				  "(got %d bytes, expected 16)\n.\n", 
-				  parameter,
-				  (int)old_lm_hash_enc.length);
+			printf("Error: hex decode of %s failed! "
+			       "(got %d bytes, expected 16)\n.\n",
+			       parameter,
+			       (int)old_lm_hash_enc.length);
 			old_lm_hash_enc = data_blob_null;
 		}
 	} else if (strequal(request, "nt-domain")) {
@@ -2066,7 +2075,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 	} else if (strequal(request, "old-password")) {
 		oldpswd = smb_xstrdup(parameter);
 	} else {
-		x_fprintf(x_stdout, "Error: Unknown request %s\n.\n", request);
+		printf("Error: Unknown request %s\n.\n", request);
 	}
 }
 
@@ -2083,7 +2092,7 @@ static void manage_squid_request(enum stdio_helper_mode stdio_helper_mode,
 	buf = talloc_strdup(state->mem_ctx, "");
 	if (!buf) {
 		DEBUG(0, ("Failed to allocate input buffer.\n"));
-		x_fprintf(x_stderr, "ERR\n");
+		fprintf(stderr, "ERR\n");
 		exit(1);
 	}
 
@@ -2107,7 +2116,7 @@ static void manage_squid_request(enum stdio_helper_mode stdio_helper_mode,
 
 		if (buf_size > MAX_BUFFER_SIZE) {
 			DEBUG(2, ("Oversized message\n"));
-			x_fprintf(x_stderr, "ERR\n");
+			fprintf(stderr, "ERR\n");
 			talloc_free(buf);
 			return;
 		}
@@ -2122,7 +2131,7 @@ static void manage_squid_request(enum stdio_helper_mode stdio_helper_mode,
 
 	if (buf[0] == '\0') {
 		DEBUG(2, ("Invalid Request\n"));
-		x_fprintf(x_stderr, "ERR\n");
+		fprintf(stderr, "ERR\n");
 		talloc_free(buf);
 		return;
 	}
@@ -2139,20 +2148,20 @@ static void squid_stream(enum stdio_helper_mode stdio_mode,
 	struct ntlm_auth_state *state;
 
 	/* initialize FDescs */
-	x_setbuf(x_stdout, NULL);
-	x_setbuf(x_stderr, NULL);
+	setbuf(stdout, NULL);
+	setbuf(stderr, NULL);
 
 	mem_ctx = talloc_init("ntlm_auth");
 	if (!mem_ctx) {
 		DEBUG(0, ("squid_stream: Failed to create talloc context\n"));
-		x_fprintf(x_stderr, "ERR\n");
+		fprintf(stderr, "ERR\n");
 		exit(1);
 	}
 
 	state = talloc_zero(mem_ctx, struct ntlm_auth_state);
 	if (!state) {
 		DEBUG(0, ("squid_stream: Failed to talloc ntlm_auth_state\n"));
-		x_fprintf(x_stderr, "ERR\n");
+		fprintf(stderr, "ERR\n");
 		exit(1);
 	}
 
@@ -2180,7 +2189,7 @@ static bool check_auth_crap(void)
 	char *error_string;
 	static uint8_t zeros[16];
 
-	x_setbuf(x_stdout, NULL);
+	setbuf(stdout, NULL);
 
 	if (request_lm_key) 
 		flags |= WBFLAG_PAM_LMKEY;
@@ -2201,9 +2210,8 @@ static bool check_auth_crap(void)
 					      &error_string, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		x_fprintf(x_stdout, "%s (0x%x)\n", 
-			  error_string,
-			  NT_STATUS_V(nt_status));
+		printf("%s (0x%x)\n", error_string,
+		       NT_STATUS_V(nt_status));
 		SAFE_FREE(error_string);
 		return False;
 	}
@@ -2213,7 +2221,7 @@ static bool check_auth_crap(void)
 		       sizeof(lm_key)) != 0)) {
 		hex_lm_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)lm_key,
 					sizeof(lm_key));
-		x_fprintf(x_stdout, "LM_KEY: %s\n", hex_lm_key);
+		printf("LM_KEY: %s\n", hex_lm_key);
 		TALLOC_FREE(hex_lm_key);
 	}
 	if (request_user_session_key 
@@ -2221,7 +2229,7 @@ static bool check_auth_crap(void)
 		       sizeof(user_session_key)) != 0)) {
 		hex_user_session_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)user_session_key, 
 						  sizeof(user_session_key));
-		x_fprintf(x_stdout, "NT_KEY: %s\n", hex_user_session_key);
+		printf("NT_KEY: %s\n", hex_user_session_key);
 		TALLOC_FREE(hex_user_session_key);
 	}
 
@@ -2339,18 +2347,20 @@ enum {
 		case OPT_CHALLENGE:
 			opt_challenge = strhex_to_data_blob(NULL, hex_challenge);
 			if (opt_challenge.length != 8) {
-				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
-					  hex_challenge,
-					  (int)opt_challenge.length);
+				fprintf(stderr, "hex decode of %s failed! "
+					"(only got %d bytes)\n",
+					hex_challenge,
+					(int)opt_challenge.length);
 				exit(1);
 			}
 			break;
 		case OPT_LM: 
 			opt_lm_response = strhex_to_data_blob(NULL, hex_lm_response);
 			if (opt_lm_response.length != 24) {
-				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
-					  hex_lm_response,
-					  (int)opt_lm_response.length);
+				fprintf(stderr, "hex decode of %s failed! "
+					"(only got %d bytes)\n",
+					hex_lm_response,
+					(int)opt_lm_response.length);
 				exit(1);
 			}
 			break;
@@ -2358,9 +2368,10 @@ enum {
 		case OPT_NT: 
 			opt_nt_response = strhex_to_data_blob(NULL, hex_nt_response);
 			if (opt_nt_response.length < 24) {
-				x_fprintf(x_stderr, "hex decode of %s failed! (only got %d bytes)\n", 
-					  hex_nt_response,
-					  (int)opt_nt_response.length);
+				fprintf(stderr, "hex decode of %s failed! "
+					"(only got %d bytes)\n",
+					hex_nt_response,
+					(int)opt_nt_response.length);
 				exit(1);
 			}
 			break;
@@ -2380,7 +2391,7 @@ enum {
 			opt_username = p+1;
 			*p = '\0';
 			if (opt_domain && !strequal(opt_domain, domain)) {
-				x_fprintf(x_stderr, "Domain specified in username (%s) "
+				fprintf(stderr, "Domain specified in username (%s) "
 					"doesn't match specified domain (%s)!\n\n",
 					domain, opt_domain);
 				poptPrintHelp(pc, stderr, 0);
@@ -2403,7 +2414,7 @@ enum {
 
 	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
-		x_fprintf(x_stderr, "loadparm_init_s3() failed!\n");
+		fprintf(stderr, "loadparm_init_s3() failed!\n");
 		exit(1);
 	}
 
@@ -2415,17 +2426,19 @@ enum {
 				exit(0);
 			}
 		}
-		x_fprintf(x_stderr, "unknown helper protocol [%s]\n\nValid helper protools:\n\n", helper_protocol);
+		fprintf(stderr, "unknown helper protocol [%s]\n\n"
+			"Valid helper protools:\n\n", helper_protocol);
 
 		for (i=0; i<NUM_HELPER_MODES; i++) {
-			x_fprintf(x_stderr, "%s\n", stdio_helper_protocols[i].name);
+			fprintf(stderr, "%s\n",
+				stdio_helper_protocols[i].name);
 		}
 
 		exit(1);
 	}
 
 	if (!opt_username || !*opt_username) {
-		x_fprintf(x_stderr, "username must be specified!\n\n");
+		fprintf(stderr, "username must be specified!\n\n");
 		poptPrintHelp(pc, stderr, 0);
 		exit(1);
 	}
