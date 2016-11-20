@@ -42,8 +42,6 @@
 #include "lib/util/samba_modules.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 
-extern const struct dcesrv_interface dcesrv_mgmt_interface;
-
 static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
 				const struct dcerpc_bind *b,
 				struct dcerpc_ack_ctx *ack_ctx_list);
@@ -283,8 +281,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		memcpy(&(ifl->iface), &dcesrv_mgmt_interface, 
-			   sizeof(struct dcesrv_interface));
+		ifl->iface = dcesrv_get_mgmt_interface();
 
 		DLIST_ADD(ep->interface_list, ifl);
 	}

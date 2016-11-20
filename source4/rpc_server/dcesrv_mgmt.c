@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/dcerpc_server_proto.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
 
 #define DCESRV_INTERFACE_MGMT_BIND(call, iface) \
@@ -107,3 +108,8 @@ static WERROR dcesrv_mgmt_inq_princ_name(struct dcesrv_call_state *dce_call, TAL
 
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_mgmt_s.c"
+
+const struct dcesrv_interface dcesrv_get_mgmt_interface(void)
+{
+	return dcesrv_mgmt_interface;
+}
