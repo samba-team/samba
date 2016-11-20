@@ -405,18 +405,16 @@ static bool remote_op_interface_by_name(struct dcesrv_interface *iface, const ch
 NTSTATUS dcerpc_server_remote_init(void)
 {
 	NTSTATUS ret;
-	struct dcesrv_endpoint_server ep_server;
+	static const struct dcesrv_endpoint_server ep_server = {
+		/* fill in our name */
+		.name = "remote",
 
-	ZERO_STRUCT(ep_server);
+		/* fill in all the operations */
+		.init_server = remote_op_init_server,
 
-	/* fill in our name */
-	ep_server.name = "remote";
-
-	/* fill in all the operations */
-	ep_server.init_server = remote_op_init_server;
-
-	ep_server.interface_by_uuid = remote_op_interface_by_uuid;
-	ep_server.interface_by_name = remote_op_interface_by_name;
+		.interface_by_uuid = remote_op_interface_by_uuid,
+		.interface_by_name = remote_op_interface_by_name
+	};
 
 	/* register ourselves with the DCERPC subsystem. */
 	ret = dcerpc_register_ep_server(&ep_server);
