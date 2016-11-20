@@ -787,7 +787,7 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
 
 
 def setup_samdb_partitions(samdb_path, logger, lp, session_info,
-                           provision_backend, names, schema, serverrole,
+                           provision_backend, names, serverrole,
                            erase=False):
     """Setup the partitions for the SAM database.
 
@@ -1191,7 +1191,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     # Also wipes the database
     setup_samdb_partitions(path, logger=logger, lp=lp,
         provision_backend=provision_backend, session_info=session_info,
-        names=names, serverrole=serverrole, schema=schema)
+        names=names, serverrole=serverrole)
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
