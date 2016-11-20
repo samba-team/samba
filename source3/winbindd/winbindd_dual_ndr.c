@@ -300,11 +300,11 @@ enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 					  struct winbindd_cli_state *state)
 {
 	struct pipes_struct p;
-	struct api_struct *fns;
+	const struct api_struct *fns;
 	int num_fns;
 	bool ret;
 
-	winbind_get_pipe_fns(&fns, &num_fns);
+	fns = winbind_get_pipe_fns(&num_fns);
 
 	if (state->request->data.ndrcmd >= num_fns) {
 		return WINBINDD_ERROR;
