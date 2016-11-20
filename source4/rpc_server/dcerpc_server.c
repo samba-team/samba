@@ -1919,11 +1919,9 @@ static int num_ep_servers;
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 
-  The 'type' is used to specify whether this is for a disk, printer or IPC$ share
 */
-_PUBLIC_ NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
+_PUBLIC_ NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server)
 {
-	const struct dcesrv_endpoint_server *ep_server = _ep_server;
 	
 	if (dcesrv_ep_server_byname(ep_server->name) != NULL) {
 		/* its already registered! */

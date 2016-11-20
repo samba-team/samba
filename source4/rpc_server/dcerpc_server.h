@@ -373,7 +373,7 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const char *ep_name,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd);
-NTSTATUS dcerpc_register_ep_server(const void *_ep_server);
+NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
 				      struct loadparm_context *lp_ctx,
 				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx);
