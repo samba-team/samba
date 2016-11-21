@@ -676,10 +676,10 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 	if (pid == 0) {
 		ret = execv(path, discard_const(new_argv));
 		if (ret == -1) {
-			_exit(errno);
+			_exit(64+errno);
 		}
 		/* Should not happen */
-		_exit(ENOEXEC);
+		_exit(64+ENOEXEC);
 	}
 
 	talloc_free(new_argv);
@@ -693,11 +693,20 @@ static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
 	}
 
 	if (WIFEXITED(status)) {
-		ret = WEXITSTATUS(status);
+		int pstatus = WEXITSTATUS(status);
+		if (WIFSIGNALED(status)) {
+			fprintf(stderr, "%s terminated with signal %d\n",
+				command, WTERMSIG(status));
+			ret = EINTR;
+		} else if (pstatus >= 64 && pstatus < 255) {
+			fprintf(stderr, "%s failed with error %d\n",
+				command, pstatus-64);
+			ret = pstatus - 64;
+		} else {
+			ret = pstatus;
+		}
 		return ret;
-	}
-
-	if (WIFSIGNALED(status)) {
+	} else if (WIFSIGNALED(status)) {
 		fprintf(stderr, "%s terminated with signal %d\n",
 			command, WTERMSIG(status));
 		return EINTR;
