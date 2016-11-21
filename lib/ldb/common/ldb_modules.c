@@ -937,13 +937,13 @@ static int ldb_modules_load_path(const char *path, const char *version)
 #ifdef RTLD_DEEPBIND
 	/*
 	 * use deepbind if possible, to avoid issues with different
-	 * system library varients, for example ldb modules may be linked
+	 * system library variants, for example ldb modules may be linked
 	 * against Heimdal while the application may use MIT kerberos.
 	 *
 	 * See the dlopen manpage for details.
 	 *
 	 * One typical user is the bind_dlz module of Samba,
-	 * but symbol versioniong might be enough...
+	 * but symbol versioning might be enough...
 	 *
 	 * We need a way to disable this in order to allow the
 	 * ldb_*ldap modules to work with a preloaded socket wrapper.
