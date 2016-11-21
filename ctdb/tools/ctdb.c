@@ -645,27 +645,44 @@ static int str_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
-static int run_helper(const char *command, const char *path, const char *arg1)
+static int run_helper(TALLOC_CTX *mem_ctx, const char *command,
+		      const char *path, int argc, const char **argv)
 {
 	pid_t pid;
 	int save_errno, status, ret;
+	const char **new_argv;
+	int i;
+
+	new_argv = talloc_array(mem_ctx, const char *, argc + 2);
+	if (new_argv == NULL) {
+		return ENOMEM;
+	}
+
+	new_argv[0] = path;
+	for (i=0; i<argc; i++) {
+		new_argv[i+1] = argv[i];
+	}
+	new_argv[argc+1] = NULL;
 
 	pid = fork();
 	if (pid < 0) {
 		save_errno = errno;
+		talloc_free(new_argv);
 		fprintf(stderr, "Failed to fork %s (%s) - %s\n",
 			command, path, strerror(save_errno));
 		return save_errno;
 	}
 
 	if (pid == 0) {
-		ret = execl(path, path, arg1, NULL);
+		ret = execv(path, discard_const(new_argv));
 		if (ret == -1) {
 			_exit(errno);
 		}
 		/* Should not happen */
 		_exit(ENOEXEC);
 	}
+
+	talloc_free(new_argv);
 
 	ret = waitpid(pid, &status, 0);
 	if (ret == -1) {
@@ -2278,7 +2295,7 @@ static int control_lvs(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	return run_helper("LVS helper", lvs_helper, argv[0]);
+	return run_helper(mem_ctx, "LVS helper", lvs_helper, argc, argv);
 }
 
 static int control_disable_monitor(TALLOC_CTX *mem_ctx,
@@ -4884,13 +4901,15 @@ static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	return run_helper("NAT gateway helper", natgw_helper, argv[0]);
+	return run_helper(mem_ctx, "NAT gateway helper", natgw_helper,
+			  argc, argv);
 }
 
 static int control_natgwlist(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			     int argc, const char **argv)
 {
 	char *t, *natgw_helper = NULL;
+	const char *cmd_argv[] = { "natgwlist", NULL };
 
 	if (argc != 0) {
 		usage("natgwlist");
@@ -4909,7 +4928,8 @@ static int control_natgwlist(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	return run_helper("NAT gateway helper", natgw_helper, "natgwlist");
+	return run_helper(mem_ctx, "NAT gateway helper", natgw_helper,
+			  1, cmd_argv);
 }
 
 /*
