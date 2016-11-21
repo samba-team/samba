@@ -275,6 +275,19 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	char *ep_string = NULL;
 	bool use_single_process = true;
 	
+	/*
+	 * If we are not using handles, there is no need for force
+	 * this service into using a single process.
+	 *
+	 * However, due to the way we listen for RPC packets, we can
+	 * only do this if we have a single service per pipe or TCP
+	 * port, so we still force a single combined process for
+	 * ncalrpc.
+	 */
+	if (iface->flags & DCESRV_INTERFACE_FLAGS_HANDLES_NOT_USED) {
+		use_single_process = false;
+	}
+
 	status = dcerpc_parse_binding(dce_ctx, ep_name, &binding);
 
 	if (NT_STATUS_IS_ERR(status)) {
