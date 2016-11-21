@@ -9533,15 +9533,21 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 {
 	union spoolss_MonitorInfo *info;
 	WERROR result = WERR_OK;
+	const char *architecture;
 
 	info = talloc_array(mem_ctx, union spoolss_MonitorInfo, 2);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	*count = 2;
 
+	architecture = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					    "spoolss",
+					    "architecture",
+					    SPOOLSS_ARCHITECTURE_NT_X86);
+
 	result = fill_monitor_2(info, &info[0].info2,
 				SPL_LOCAL_PORT,
-				"Windows NT X86", /* FIXME */
+				architecture,
 				"localmon.dll");
 	if (!W_ERROR_IS_OK(result)) {
 		goto out;
@@ -9549,7 +9555,7 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 
 	result = fill_monitor_2(info, &info[1].info2,
 				SPL_TCPIP_PORT,
-				"Windows NT X86", /* FIXME */
+				architecture,
 				"tcpmon.dll");
 	if (!W_ERROR_IS_OK(result)) {
 		goto out;
