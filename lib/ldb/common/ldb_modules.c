@@ -901,7 +901,10 @@ static int ldb_modules_load_path(const char *path, const char *version)
 	} *loaded;
 	struct loaded *le;
 	int dlopen_flags;
+
+#ifdef RTLD_DEEPBIND
 	bool deepbind_enabled = (getenv("LDB_MODULES_DISABLE_DEEPBIND") == NULL);
+#endif
 
 	ret = stat(path, &st);
 	if (ret != 0) {
