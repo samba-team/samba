@@ -578,6 +578,7 @@ planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.group")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
 
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.sites")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dnscmd")
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.rpcecho")
 planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.registry", extra_args=['-U"$USERNAME%$PASSWORD"'])
