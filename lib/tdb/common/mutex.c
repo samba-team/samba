@@ -623,6 +623,10 @@ int tdb_mutex_mmap(struct tdb_context *tdb)
 		return 0;
 	}
 
+	if (tdb->mutexes != NULL) {
+		return 0;
+	}
+
 	ptr = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_FILE,
 		   tdb->fd, 0);
 	if (ptr == MAP_FAILED) {
