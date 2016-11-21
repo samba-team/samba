@@ -2354,7 +2354,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 	if (!strcasecmp_m(value, "Architecture")) {
 		*type = REG_SZ;
 		data->string = talloc_strdup(mem_ctx,
-			lp_parm_const_string(GLOBAL_SECTION_SNUM, "spoolss", "architecture", SPOOLSS_ARCHITECTURE_NT_X86));
+			lp_parm_const_string(GLOBAL_SECTION_SNUM, "spoolss", "architecture", SPOOLSS_ARCHITECTURE_x64));
 		W_ERROR_HAVE_NO_MEMORY(data->string);
 
 		return WERR_OK;
@@ -3907,7 +3907,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->num_error_not_ready		= 0x0;		/* number of print failure */
 	r->job_error			= 0x0;
 	r->number_of_processors		= 0x1;
-	r->processor_type		= PROCESSOR_INTEL_PENTIUM; /* 586 Pentium ? */
+	r->processor_type		= PROCESSOR_AMD_X8664;
 	r->high_part_total_bytes	= 0x0;
 
 	/* ChangeID in milliseconds*/
@@ -3918,7 +3918,7 @@ static WERROR construct_printer_info0(TALLOC_CTX *mem_ctx,
 	r->status			= nt_printq_status(status.status);
 	r->enumerate_network_printers	= 0x0;
 	r->c_setprinter			= 0x0;
-	r->processor_architecture	= PROCESSOR_ARCHITECTURE_INTEL;
+	r->processor_architecture	= PROCESSOR_ARCHITECTURE_AMD64;
 	r->processor_level		= 0x6; 		/* 6  ???*/
 	r->ref_ic			= 0;
 	r->reserved2			= 0;
@@ -8662,7 +8662,7 @@ static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 	} else {
 		long_archi = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 						  "spoolss", "architecture",
-						  SPOOLSS_ARCHITECTURE_NT_X86);
+						  SPOOLSS_ARCHITECTURE_x64);
 	}
 
 	/* servername may be empty */
@@ -9502,7 +9502,7 @@ static WERROR enumprintmonitors_level_2(TALLOC_CTX *mem_ctx,
 	architecture = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 					    "spoolss",
 					    "architecture",
-					    SPOOLSS_ARCHITECTURE_NT_X86);
+					    SPOOLSS_ARCHITECTURE_x64);
 
 	result = fill_monitor_2(info, &info[0].info2,
 				SPL_LOCAL_PORT,
