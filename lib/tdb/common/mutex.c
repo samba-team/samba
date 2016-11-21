@@ -603,11 +603,12 @@ int tdb_mutex_init(struct tdb_context *tdb)
 fail:
 	pthread_mutexattr_destroy(&ma);
 fail_munmap:
-	tdb_mutex_munmap(tdb);
 
 	if (ret == 0) {
 		return 0;
 	}
+
+	tdb_mutex_munmap(tdb);
 
 	errno = ret;
 	return -1;
