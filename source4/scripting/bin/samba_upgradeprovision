@@ -94,7 +94,7 @@ __docformat__ = "restructuredText"
 # created
 # This also apply to imported object from reference provision
 replAttrNotCopied = [   "dn", "whenCreated", "whenChanged", "objectGUID",
-                        "parentGUID", "objectCategory", "distinguishedName",
+                        "parentGUID", "distinguishedName",
                         "instanceType", "cn",
                         "lmPwdHistory", "pwdLastSet", "ntPwdHistory",
                         "unicodePwd", "dBCSPwd", "supplementalCredentials",
