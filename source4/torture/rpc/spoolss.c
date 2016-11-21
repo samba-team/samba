@@ -863,6 +863,7 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 				COMPARE_STRING(tctx, cur->info1, ref->info2, monitor_name);
 				break;
 			case 2:
+				torture_assert_str_equal(tctx, ref->info2.environment, ctx->environment, "invalid environment");
 				/* level 2 is our reference, and it makes no sense to compare it to itself */
 				break;
 			}
