@@ -636,13 +636,20 @@ int tdb_mutex_mmap(struct tdb_context *tdb)
 int tdb_mutex_munmap(struct tdb_context *tdb)
 {
 	size_t len;
+	int ret;
 
 	len = tdb_mutex_size(tdb);
 	if (len == 0) {
 		return 0;
 	}
 
-	return munmap(tdb->mutexes, len);
+	ret = munmap(tdb->mutexes, len);
+	if (ret == -1) {
+		return -1;
+	}
+	tdb->mutexes = NULL;
+
+	return 0;
 }
 
 static bool tdb_mutex_locking_cached;
