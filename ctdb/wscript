@@ -481,6 +481,12 @@ def build(bld):
                              samba-util replace''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
+    bld.SAMBA_BINARY('ctdb_event',
+                     source='tools/ctdb_event.c',
+                     deps='''ctdb-client2 ctdb-protocol ctdb-util ctdb-system
+                             samba-util replace''',
+                     install_path='${CTDB_HELPER_BINDIR}')
+
     bld.SAMBA_BINARY('ltdbtool',
                      source='tools/ltdbtool.c',
                      includes='include',
