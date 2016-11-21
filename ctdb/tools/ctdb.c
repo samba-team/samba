@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "system/time.h"
 #include "system/wait.h"
+#include "system/dir.h"
 
 #include <ctype.h>
 #include <popt.h>
@@ -4758,6 +4759,56 @@ static void print_scriptstatus(struct ctdb_script_list **slist,
 	}
 }
 
+static int control_event(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+			 int argc, const char **argv)
+{
+	char *t, *event_helper = NULL;
+	char *eventd_socket = NULL;
+	const char **new_argv;
+	int i;
+
+	t = getenv("CTDB_EVENT_HELPER");
+	if (t != NULL) {
+		event_helper = talloc_strdup(mem_ctx, t);
+	} else {
+		event_helper = talloc_asprintf(mem_ctx, "%s/ctdb_event",
+					       CTDB_HELPER_BINDIR);
+	}
+
+	if (event_helper == NULL) {
+		fprintf(stderr, "Unable to set event daemon helper\n");
+		return 1;
+	}
+
+	t = getenv("CTDB_SOCKET");
+	if (t != NULL) {
+		eventd_socket = talloc_asprintf(mem_ctx, "%s/eventd.sock",
+						dirname(t));
+	} else {
+		eventd_socket = talloc_asprintf(mem_ctx, "%s/eventd.sock",
+						CTDB_RUNDIR);
+	}
+
+	if (eventd_socket == NULL) {
+		fprintf(stderr, "Unable to set event daemon socket\n");
+		return 1;
+	}
+
+	new_argv = talloc_array(mem_ctx, const char *, argc + 1);
+	if (new_argv == NULL) {
+		fprintf(stderr, "Memory allocation error\n");
+		return 1;
+	}
+
+	new_argv[0] = eventd_socket;
+	for (i=0; i<argc; i++) {
+		new_argv[i+1] = argv[i];
+	}
+
+	return run_helper(mem_ctx, "event daemon helper", event_helper,
+			  argc+1, new_argv);
+}
+
 static int control_scriptstatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				int argc, const char **argv)
 {
@@ -6307,6 +6358,8 @@ static const struct ctdb_cmd {
 		"wipe the contents of a database.", "<dbname|dbid>"},
 	{ "recmaster", control_recmaster, false, true,
 		"show the pnn for the recovery master", NULL },
+	{ "event", control_event, true, false,
+		"event and event script commands", NULL },
 	{ "scriptstatus", control_scriptstatus, false, true,
 		"show event script status",
 		"[init|setup|startup|monitor|takeip|releaseip|ipreallocated]" },
