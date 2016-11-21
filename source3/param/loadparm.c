@@ -1062,6 +1062,7 @@ static bool hash_a_service(const char *name, int number);
 static void free_service_byindex(int iService);
 static void show_parameter(int parmIndex);
 static bool is_synonym_of(int parm1, int parm2, bool *inverse);
+static bool lp_parameter_value_is_valid(const char *parm_name, const char *val);
 
 /*
  * This is a helper function for parametrical options support.  It returns a
@@ -1850,6 +1851,71 @@ static void show_parameter(int parmIndex)
 	}
 
 	printf("\n");
+}
+
+/*
+ * Check the value for a P_ENUM
+ */
+static bool check_enum_parameter(struct parm_struct *parm, const char *value)
+{
+	int i;
+
+	for (i = 0; parm->enum_list[i].name; i++) {
+		if (strwicmp(value, parm->enum_list[i].name) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**************************************************************************
+ Check whether the given value is valid for the given parameter name.
+**************************************************************************/
+
+static bool lp_parameter_value_is_valid(const char *parm_name, const char *val)
+{
+	bool ret = false, tmp_bool;
+	int num = lpcfg_map_parameter(parm_name), tmp_int;
+	uint64_t tmp_int64 = 0;
+	struct parm_struct *parm;
+
+	if (num >= 0) {
+		parm = &parm_table[num];
+		switch (parm->type) {
+			case P_BOOL:
+			case P_BOOLREV:
+				ret = set_boolean(val, &tmp_bool);
+				break;
+
+			case P_INTEGER:
+				ret = (sscanf(val, "%d", &tmp_int) == 1);
+				break;
+
+			case P_OCTAL:
+				ret = (sscanf(val, "%o", &tmp_int) == 1);
+				break;
+
+			case P_ENUM:
+				ret = check_enum_parameter(parm, val);
+				break;
+
+			case P_BYTES:
+				if (conv_str_size_error(val, &tmp_int64) &&
+				    tmp_int64 <= INT_MAX) {
+					ret = true;
+				}
+				break;
+
+			case P_CHAR:
+			case P_LIST:
+			case P_STRING:
+			case P_USTRING:
+			case P_CMDLIST:
+				ret = true;
+				break;
+		}
+	}
+	return ret;
 }
 
 /***************************************************************************
