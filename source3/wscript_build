@@ -865,10 +865,15 @@ bld.SAMBA3_LIBRARY('net_keytab',
 
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_DSSYNC',
-                    source='''libnet/libnet_dssync.c
-                    libnet/libnet_dssync_passdb.c
-                    libnet/libnet_dssync_keytab.c''',
-                    deps='LIBNET RPC_NDR_DRSUAPI')
+                    source='''
+                           libnet/libnet_dssync.c
+                           libnet/libnet_dssync_passdb.c
+                           libnet/libnet_dssync_keytab.c
+                           ''',
+                    deps='''
+                         LIBNET
+                         RPC_NDR_DRSUAPI
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('LIBNET_SAMSYNC',
                     source='''libnet/libnet_samsync.c
