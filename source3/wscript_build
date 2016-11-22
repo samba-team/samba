@@ -1248,8 +1248,9 @@ bld.SAMBA3_BINARY('msgtest',
 bld.SAMBA3_BINARY('msg_sink',
                  source='torture/msg_sink.c',
                  deps='''
-                 talloc
-                 param''',
+                      talloc
+                      param
+                      ''',
                  install=False)
 
 bld.SAMBA3_BINARY('msg_source',
