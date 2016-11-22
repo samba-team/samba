@@ -1226,9 +1226,10 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
 bld.SAMBA3_BINARY('smbconftort',
                  source='lib/smbconf/testsuite.c',
                  deps='''
-                 talloc
-                 param
-                 popt_samba3''',
+                      talloc
+                      param
+                      popt_samba3
+                      ''',
                  install=False)
 
 bld.SAMBA3_BINARY('replacetort',
