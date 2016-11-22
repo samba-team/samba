@@ -318,22 +318,33 @@ bld.SAMBA3_SUBSYSTEM('KRBCLIENT',
                      public_deps='krb5samba asn1util k5crypto gssapi LIBTSOCKET CLDAP LIBNMB')
 
 bld.SAMBA3_SUBSYSTEM('samba3util',
-                   source='''lib/system.c
-                   lib/sendfile.c
-                   lib/recvfile.c
-                   lib/time.c
-                   lib/util_sid.c
-                   lib/util_specialsids.c
-                   lib/util_file.c
-                   lib/util.c
-                   lib/util_path.c
-                   lib/util_procid.c
-                   lib/util_sock.c
-                   lib/util_tsock.c
-                   lib/util_transfer_file.c
-                   lib/sys_popen.c
-                   lib/sock_exec.c''',
-                   deps='ndr LIBTSOCKET samba-security NDR_SECURITY samba-util util_tdb sys_rw iov_buf')
+                   source='''
+                          lib/system.c
+                          lib/sendfile.c
+                          lib/recvfile.c
+                          lib/time.c
+                          lib/util_sid.c
+                          lib/util_specialsids.c
+                          lib/util_file.c
+                          lib/util.c
+                          lib/util_path.c
+                          lib/util_procid.c
+                          lib/util_sock.c
+                          lib/util_tsock.c
+                          lib/util_transfer_file.c
+                          lib/sys_popen.c
+                          lib/sock_exec.c
+                          ''',
+                   deps='''
+                        ndr
+                        LIBTSOCKET
+                        samba-security
+                        NDR_SECURITY
+                        samba-util
+                        util_tdb
+                        sys_rw
+                        iov_buf
+                        ''')
 
 if bld.env.with_ctdb:
     SAMBA_CLUSTER_SUPPORT_SOURCES='''
