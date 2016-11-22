@@ -585,22 +585,25 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
                     deps='samba-util krb5samba')
 
 bld.SAMBA3_LIBRARY('smbconf',
-                   source='''lib/smbconf/smbconf_init.c
-                   lib/smbconf/smbconf_reg.c''',
+                   source='''
+                          lib/smbconf/smbconf_init.c
+                          lib/smbconf/smbconf_reg.c
+                          ''',
                    deps='''
-                   CHARSET3
-                   LIBSMBCONF
-                   REG_SMBCONF
-                   SAMBA_VERSION
-                   cap
-                   charset
-                   cli_smb_common
-                   errors3
-                   param
-                   samba-util
-                   smbregistry
-                   talloc
-                   util_reg''',
+                        CHARSET3
+                        LIBSMBCONF
+                        REG_SMBCONF
+                        SAMBA_VERSION
+                        cap
+                        charset
+                        cli_smb_common
+                        errors3
+                        param
+                        samba-util
+                        smbregistry
+                        talloc
+                        util_reg
+                        ''',
                    public_headers='../lib/smbconf/smbconf.h',
                    pc_files=[],
                    vnum='0')
