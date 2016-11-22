@@ -762,16 +762,19 @@ bld.SAMBA3_LIBRARY('smbd_base',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LOCKING',
-                    source='''locking/locking.c
-                    locking/brlock.c
-                    locking/posix.c
-                    locking/share_mode_lock.c''',
+                    source='''
+                           locking/locking.c
+                           locking/brlock.c
+                           locking/posix.c
+                           locking/share_mode_lock.c
+                           ''',
                     deps='''
-                    tdb
-                    talloc
-                    LEASES_DB
-                    NDR_OPEN_FILES
-                    FNAME_UTIL''')
+                         tdb
+                         talloc
+                         LEASES_DB
+                         NDR_OPEN_FILES
+                         FNAME_UTIL
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('LEASES_DB',
                     source='locking/leases_db.c',
