@@ -405,41 +405,43 @@ bld.SAMBA3_LIBRARY('messages_util',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('samba3core',
-                   source='''lib/messages.c
-                   lib/util_cluster.c
-                   lib/id_cache.c
-                   lib/talloc_dict.c
-                   lib/serverid.c
-                   lib/server_id_watch.c
-                   lib/server_id_db_util.c
-                   lib/addrchange.c
-                   ../lib/util/debug_s3.c
-                   lib/dumpcore.c
-                   lib/interface.c
-                   lib/username.c
-                   lib/smbrun.c
-                   lib/wins_srv.c
-                   lib/substitute.c
-                   lib/substitute_generic.c
-                   lib/ms_fnmatch.c
-                   lib/tallocmsg.c
-                   lib/dmallocmsg.c
-                   intl/lang_tdb.c
-                   lib/gencache.c
-                   lib/util_event.c
-                   lib/server_contexts.c
-                   lib/server_prefork.c
-                   lib/server_prefork_util.c
-                   lib/ldap_escape.c
-                   lib/fncall.c
-                   libads/krb5_errs.c
-                   lib/system_smbd.c
-                   lib/audit.c
-                   lib/tevent_wait.c
-                   lib/idmap_cache.c
-                   lib/util_ea.c
-                   lib/background.c
-                   lib/cleanupdb.c''',
+                   source='''
+                          lib/messages.c
+                          lib/util_cluster.c
+                          lib/id_cache.c
+                          lib/talloc_dict.c
+                          lib/serverid.c
+                          lib/server_id_watch.c
+                          lib/server_id_db_util.c
+                          lib/addrchange.c
+                          ../lib/util/debug_s3.c
+                          lib/dumpcore.c
+                          lib/interface.c
+                          lib/username.c
+                          lib/smbrun.c
+                          lib/wins_srv.c
+                          lib/substitute.c
+                          lib/substitute_generic.c
+                          lib/ms_fnmatch.c
+                          lib/tallocmsg.c
+                          lib/dmallocmsg.c
+                          intl/lang_tdb.c
+                          lib/gencache.c
+                          lib/util_event.c
+                          lib/server_contexts.c
+                          lib/server_prefork.c
+                          lib/server_prefork_util.c
+                          lib/ldap_escape.c
+                          lib/fncall.c
+                          libads/krb5_errs.c
+                          lib/system_smbd.c
+                          lib/audit.c
+                          lib/tevent_wait.c
+                          lib/idmap_cache.c
+                          lib/util_ea.c
+                          lib/background.c
+                          lib/cleanupdb.c
+                          ''',
                    deps='''
                         samba3util
                         LIBTSOCKET
@@ -457,8 +459,9 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         messages_util
                         messages_dgm
                         talloc_report
-			access
-                        TDB_LIB''')
+                        access
+                        TDB_LIB
+                        ''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',
                    source='''lib/smbd_shim.c''',
