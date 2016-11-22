@@ -1107,21 +1107,23 @@ bld.SAMBA3_SUBSYSTEM('TDB_VALIDATE',
 
 
 bld.SAMBA3_BINARY('client/smbclient',
-                 source='''client/client.c
-                 client/clitar.c
-                 client/dnsbrowse.c''',
+                 source='''
+                        client/client.c
+                        client/clitar.c
+                        client/dnsbrowse.c
+                        ''',
                  deps='''
-                 talloc
-                 popt_samba3
-                 param
-                 ndr-standard
-                 SMBREADLINE
-                 libsmb
-                 msrpc3
-                 RPC_NDR_SRVSVC
-                 cli_smb_common
-		 archive
-                 ''')
+                      talloc
+                      popt_samba3
+                      param
+                      ndr-standard
+                      SMBREADLINE
+                      libsmb
+                      msrpc3
+                      RPC_NDR_SRVSVC
+                      cli_smb_common
+                      archive
+                      ''')
 
 bld.SAMBA3_BINARY('smbspool',
                  source='client/smbspool.c',
