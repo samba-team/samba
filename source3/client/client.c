@@ -39,7 +39,6 @@
 #include "libsmb/nmblib.h"
 #include "include/ntioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
-#include "lib/util/xfile.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -218,17 +217,17 @@ static int writefile(int f, char *b, int n)
  number read. read approx n bytes.
 ****************************************************************************/
 
-static int readfile(uint8_t *b, int n, XFILE *f)
+static int readfile(uint8_t *b, int n, FILE *f)
 {
 	int i;
 	int c;
 
 	if (!translation)
-		return x_fread(b,1,n,f);
+		return fread(b,1,n,f);
 
 	i = 0;
 	while (i < (n - 1)) {
-		if ((c = x_getc(f)) == EOF) {
+		if ((c = getc(f)) == EOF) {
 			break;
 		}
 
@@ -243,7 +242,7 @@ static int readfile(uint8_t *b, int n, XFILE *f)
 }
 
 struct push_state {
-	XFILE *f;
+	FILE *f;
 	off_t nread;
 };
 
@@ -252,7 +251,7 @@ static size_t push_source(uint8_t *buf, size_t n, void *priv)
 	struct push_state *state = (struct push_state *)priv;
 	int result;
 
-	if (x_feof(state->f)) {
+	if (feof(state->f)) {
 		return 0;
 	}
 
@@ -1873,7 +1872,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	uint16_t fnum;
-	XFILE *f;
+	FILE *f;
 	off_t start = 0;
 	int rc = 0;
 	struct timespec tp_start;
@@ -1922,14 +1921,14 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	   Note that in this case this function will exit(0) rather
 	   than returning. */
 	if (!strcmp(lname, "-")) {
-		f = x_stdin;
+		f = stdin;
 		/* size of file is not known */
 	} else {
-		f = x_fopen(lname,O_RDONLY, 0);
+		f = fopen(lname, "r");
 		if (f && reput) {
-			if (x_tseek(f, start, SEEK_SET) == -1) {
+			if (fseek(f, start, SEEK_SET) == -1) {
 				d_printf("Error seeking local file\n");
-				x_fclose(f);
+				fclose(f);
 				return 1;
 			}
 		}
@@ -1943,7 +1942,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	DEBUG(1,("putting file %s as %s ",lname,
 		 rname));
 
-	x_setvbuf(f, NULL, X_IOFBF, io_bufsize);
+	setvbuf(f, NULL, _IOFBF, io_bufsize);
 
 	state.f = f;
 	state.nread = 0;
@@ -1959,14 +1958,14 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s closing remote file %s\n", nt_errstr(status),
 			 rname);
-		if (f != x_stdin) {
-			x_fclose(f);
+		if (f != stdin) {
+			fclose(f);
 		}
 		return 1;
 	}
 
-	if (f != x_stdin) {
-		x_fclose(f);
+	if (f != stdin) {
+		fclose(f);
 	}
 
 	{
@@ -1983,7 +1982,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
 
-	if (f == x_stdin) {
+	if (f == stdin) {
 		cli_shutdown(cli);
 		exit(rc);
 	}
