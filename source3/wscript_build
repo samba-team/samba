@@ -247,17 +247,19 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
                     deps='samba-util')
 
 bld.SAMBA3_LIBRARY('smbregistry',
-                   source='''registry/reg_api.c
-                   registry/reg_dispatcher.c
-                   registry/reg_cachehook.c
-                   registry/reg_objects.c
-                   registry/reg_util_internal.c
-                   lib/util_nttoken.c
-                   registry/reg_backend_db.c
-                   registry/reg_parse_internal.c
-                   lib/cbuf.c
-                   lib/srprs.c
-                   registry/reg_init_basic.c''',
+                   source='''
+                          registry/reg_api.c
+                          registry/reg_dispatcher.c
+                          registry/reg_cachehook.c
+                          registry/reg_objects.c
+                          registry/reg_util_internal.c
+                          lib/util_nttoken.c
+                          registry/reg_backend_db.c
+                          registry/reg_parse_internal.c
+                          lib/cbuf.c
+                          lib/srprs.c
+                          registry/reg_init_basic.c
+                          ''',
                    deps='''
                         smbd_shim
                         tdb-wrap3
