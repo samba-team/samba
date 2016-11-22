@@ -910,12 +910,14 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                           ''')
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
-                    source='''services/svc_spoolss.c
-                    services/svc_rcinit.c
-                    services/svc_winreg_glue.c
-                    services/svc_netlogon.c
-                    services/svc_winreg.c
-                    services/svc_wins.c''',
+                    source='''
+                           services/svc_spoolss.c
+                           services/svc_rcinit.c
+                           services/svc_winreg_glue.c
+                           services/svc_netlogon.c
+                           services/svc_winreg.c
+                           services/svc_wins.c
+                           ''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
