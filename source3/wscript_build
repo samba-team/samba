@@ -945,7 +945,10 @@ bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
 
 bld.SAMBA3_SUBSYSTEM('SLCACHE',
                     source='libsmb/samlogon_cache.c',
-                    deps='samba-util tdb')
+                    deps='''
+                         samba-util
+                         tdb
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
                     source='''libsmb/namequery_dc.c
