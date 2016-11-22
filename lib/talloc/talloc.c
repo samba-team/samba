@@ -80,9 +80,10 @@
 
 #define TALLOC_MAGIC_BASE 0xe814ec70
 static unsigned int talloc_magic = (
-	TALLOC_MAGIC_BASE +
-	(TALLOC_VERSION_MAJOR << 12) +
-	(TALLOC_VERSION_MINOR << 4));
+	~TALLOC_FLAG_MASK & (
+		TALLOC_MAGIC_BASE +
+		(TALLOC_VERSION_MAJOR << 12) +
+		(TALLOC_VERSION_MINOR << 4)));
 
 /* by default we abort when given a bad pointer (such as when talloc_free() is called
    on a pointer that came from malloc() */
