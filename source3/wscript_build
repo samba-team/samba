@@ -1042,9 +1042,14 @@ bld.SAMBA3_LIBRARY('libcli_netlogon3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('cli_spoolss',
-                   source='''rpc_client/cli_spoolss.c
-                   rpc_client/init_spoolss.c''',
-                   deps='RPC_NDR_SPOOLSS param secrets3',
+                   source='''
+                          rpc_client/cli_spoolss.c
+                          rpc_client/init_spoolss.c
+                          ''',
+                   deps='''
+                        RPC_NDR_SPOOLSS
+                        param
+                        secrets3''',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_WINREG',
