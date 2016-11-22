@@ -790,8 +790,14 @@ else:
                          deps='')
 
 bld.SAMBA3_SUBSYSTEM('PRINTBASE',
-                    source='''printing/notify.c printing/printing_db.c''',
-                    deps='samba-util tdb')
+                    source='''
+                           printing/notify.c
+                           printing/printing_db.c
+                           ''',
+                    deps='''
+                         samba-util
+                         tdb
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                     source='''printing/printing.c
