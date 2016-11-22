@@ -305,6 +305,24 @@ get_checksum_key(krb5_context context,
 		 struct _krb5_key_data **key)
 {
     krb5_error_code ret = 0;
+    struct _krb5_checksum_type *kct = NULL;
+
+    if (crypto == NULL) {
+	krb5_set_error_message(context, KRB5_BAD_ENCTYPE,
+			       N_("Checksum type %s is keyed but no "
+			          "crypto context (key) was passed in", ""),
+			       ct->name);
+	return KRB5_BAD_ENCTYPE;
+    }
+    kct = crypto->et->keyed_checksum;
+    if (kct == NULL || kct->type != ct->type) {
+	krb5_set_error_message(context, KRB5_BAD_ENCTYPE,
+			       N_("Checksum type %s is keyed, but "
+			          "the key type %s passed didnt have that checksum "
+			          "type as the keyed type", ""),
+			       ct->name, crypto->et->name);
+	return KRB5_BAD_ENCTYPE;
+    }
 
     if(ct->flags & F_DERIVED)
 	ret = _get_derived_key(context, crypto, usage, key);
@@ -340,21 +358,12 @@ create_checksum (krb5_context context,
 {
     krb5_error_code ret;
     struct _krb5_key_data *dkey;
-    int keyed_checksum;
 
     if (ct->flags & F_DISABLED) {
 	krb5_clear_error_message (context);
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     }
-    keyed_checksum = (ct->flags & F_KEYED) != 0;
-    if(keyed_checksum && crypto == NULL) {
-	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				N_("Checksum type %s is keyed but no "
-				   "crypto context (key) was passed in", ""),
-				ct->name);
-	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
-    }
-    if(keyed_checksum) {
+    if (ct->flags & F_KEYED) {
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
 	if (ret)
 	    return ret;
@@ -422,7 +431,6 @@ verify_checksum(krb5_context context,
 {
     krb5_error_code ret;
     struct _krb5_key_data *dkey;
-    int keyed_checksum;
     Checksum c;
     struct _krb5_checksum_type *ct;
 
@@ -443,26 +451,7 @@ verify_checksum(krb5_context context,
 
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
-    keyed_checksum = (ct->flags & F_KEYED) != 0;
-    if(keyed_checksum) {
-	struct _krb5_checksum_type *kct;
-	if (crypto == NULL) {
-	    krb5_set_error_message(context, KRB5_PROG_SUMTYPE_NOSUPP,
-				   N_("Checksum type %s is keyed but no "
-				      "crypto context (key) was passed in", ""),
-				   ct->name);
-	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
-	}
-	kct = crypto->et->keyed_checksum;
-	if (kct == NULL || kct->type != ct->type) {
-	    krb5_set_error_message(context, KRB5_PROG_SUMTYPE_NOSUPP,
-				   N_("Checksum type %s is keyed, but "
-				      "the key type %s passed didnt have that checksum "
-				      "type as the keyed type", ""),
-				    ct->name, crypto->et->name);
-	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
-	}
-
+    if (ct->flags & F_KEYED) {
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
 	if (ret)
 	    return ret;
