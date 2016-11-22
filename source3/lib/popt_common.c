@@ -24,7 +24,6 @@
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "lib/param/param.h"
-#include "lib/util/xfile.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 
@@ -285,22 +284,22 @@ static void get_password_file(struct user_auth_info *auth_info)
 static void get_credentials_file(struct user_auth_info *auth_info,
 				 const char *file)
 {
-	XFILE *auth;
+	FILE *auth;
 	fstring buf;
 	uint16_t len = 0;
 	char *ptr, *val, *param;
 
-	if ((auth=x_fopen(file, O_RDONLY, 0)) == NULL)
-	{
+	auth = fopen(file, "r");
+	if (auth == NULL) {
 		/* fail if we can't open the credentials file */
 		d_printf("ERROR: Unable to open credentials file!\n");
 		exit(-1);
 	}
 
-	while (!x_feof(auth))
+	while (!feof(auth))
 	{
 		/* get a line from the file */
-		if (!x_fgets(buf, sizeof(buf), auth))
+		if (!fgets(buf, sizeof(buf), auth))
 			continue;
 		len = strlen(buf);
 
@@ -334,7 +333,7 @@ static void get_credentials_file(struct user_auth_info *auth_info,
 		}
 		memset(buf, 0, sizeof(buf));
 	}
-	x_fclose(auth);
+	fclose(auth);
 }
 
 /* Handle command line options:
