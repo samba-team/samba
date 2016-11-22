@@ -1264,11 +1264,12 @@ bld.SAMBA3_BINARY('msg_source',
 bld.SAMBA3_BINARY('pdbtest',
                  source='torture/pdbtest.c',
                  deps='''
-                 talloc
-                 pdb
-                 popt_samba3
-                 AUTH_COMMON
-                 auth''',
+                      talloc
+                      pdb
+                      popt_samba3
+                      AUTH_COMMON
+                      auth
+                      ''',
                  install=False)
 
 bld.SAMBA3_BINARY('vfstest',
