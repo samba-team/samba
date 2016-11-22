@@ -61,7 +61,7 @@ bool net_conf_param_valid(const char *service,
 		 * So the value must be invalid.
 		 */
 		d_fprintf(stderr, "invalid value '%s' given for "
-			  "parameter '%s'\n", param, valstr);
+			  "parameter '%s'\n", valstr, param);
 		return false;
 	}
 
