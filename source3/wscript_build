@@ -287,17 +287,21 @@ bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                     deps='smbregistry')
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
-                    source='''registry/reg_backend_printing.c
-                    registry/reg_backend_shares.c
-                    registry/reg_backend_netlogon_params.c
-                    registry/reg_backend_prod_options.c
-                    registry/reg_backend_tcpip_params.c
-                    registry/reg_backend_hkpt_params.c
-                    registry/reg_backend_current_version.c
-                    registry/reg_backend_perflib.c
-                    registry/reg_init_full.c
-                    registry/reg_perfcount.c''',
-                    deps='REG_SMBCONF tdb-wrap3')
+                    source='''
+                           registry/reg_backend_printing.c
+                           registry/reg_backend_shares.c
+                           registry/reg_backend_netlogon_params.c
+                           registry/reg_backend_prod_options.c
+                           registry/reg_backend_tcpip_params.c
+                           registry/reg_backend_hkpt_params.c
+                           registry/reg_backend_current_version.c
+                           registry/reg_backend_perflib.c
+                           registry/reg_init_full.c
+                           registry/reg_perfcount.c''',
+                    deps='''
+                         REG_SMBCONF
+                         tdb-wrap3
+                         ''')
 
 bld.SAMBA3_LIBRARY('popt_samba3',
                    source='lib/popt_common.c',
