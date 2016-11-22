@@ -1308,8 +1308,9 @@ bld.SAMBA3_BINARY('rpc_open_tcp',
 bld.SAMBA3_BINARY('vlp',
                  source='printing/tests/vlp.c',
                  deps='''
-                 talloc
-                 param''',
+                      talloc
+                      param
+                      ''',
                  install=False)
 
 bld.SAMBA3_PYTHON('pysmbd',
