@@ -24,7 +24,6 @@
 #include "smbd/globals.h"
 #include "auth.h"
 #include "../lib/tsocket/tsocket.h"
-#include "lib/util/xfile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -45,12 +44,12 @@
 static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile,
 			      const char *clientaddr)
 {
-	XFILE *f;
+	FILE *f;
 	char buf[1024];
 	char *space = buf;
 	bool found = false;
 
-	f = x_fopen(mapfile, O_RDONLY, 0);
+	f = fopen(mapfile, "r");
 
 	if (f == NULL) {
 		DEBUG(0,("can't open IP map %s. Error %s\n",
@@ -60,7 +59,7 @@ static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile,
 
 	DEBUG(10, ("Scanning mapfile [%s]\n", mapfile));
 
-	while (x_fgets(buf, sizeof(buf), f) != NULL) {
+	while (fgets(buf, sizeof(buf), f) != NULL) {
 
 		if ((strlen(buf) > 0) && (buf[strlen(buf)-1] == '\n'))
 			buf[strlen(buf)-1] = '\0';
@@ -82,7 +81,7 @@ static char *read_target_host(TALLOC_CTX *ctx, const char *mapfile,
 		}
 	}
 
-	x_fclose(f);
+	fclose(f);
 
 	if (!found) {
 		return NULL;
