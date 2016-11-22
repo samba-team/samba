@@ -61,15 +61,26 @@ bld.SAMBA3_LIBRARY('gse',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('msrpc3',
-                   source='''rpc_client/cli_pipe.c
-                   rpc_client/rpc_transport_np.c
-                   rpc_client/rpc_transport_sock.c
-                   rpc_client/rpc_transport_tstream.c
-                   librpc/rpc/dcerpc_helpers.c''',
-                   deps='''ndr ndr-standard
-                    RPC_NDR_EPMAPPER NTLMSSP_COMMON COMMON_SCHANNEL LIBCLI_AUTH
-                    LIBTSOCKET gse dcerpc-binding
-                    libsmb ndr-table NETLOGON_CREDS_CLI
+                   source='''
+                          rpc_client/cli_pipe.c
+                          rpc_client/rpc_transport_np.c
+                          rpc_client/rpc_transport_sock.c
+                          rpc_client/rpc_transport_tstream.c
+                          librpc/rpc/dcerpc_helpers.c
+                          ''',
+                   deps='''
+                        ndr
+                        ndr-standard
+                        RPC_NDR_EPMAPPER
+                        NTLMSSP_COMMON
+                        COMMON_SCHANNEL
+                        LIBCLI_AUTH
+                        LIBTSOCKET
+                        gse
+                        dcerpc-binding
+                        libsmb
+                        ndr-table
+                        NETLOGON_CREDS_CLI
                    ''',
                    private_library=True)
 
