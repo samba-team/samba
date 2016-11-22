@@ -256,7 +256,6 @@ bld.SAMBA3_LIBRARY('smbregistry',
                           lib/util_nttoken.c
                           registry/reg_backend_db.c
                           registry/reg_parse_internal.c
-                          lib/cbuf.c
                           lib/srprs.c
                           registry/reg_init_basic.c
                           ''',
@@ -982,6 +981,7 @@ bld.SAMBA3_LIBRARY('samba3-util',
                           lib/util_malloc.c
                           lib/namearray.c
                           lib/file_id.c
+                          lib/cbuf.c
                           ''',
                    deps='''
                         samba-util
