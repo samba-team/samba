@@ -737,7 +737,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                         vfs_default
                         vfs_posixacl
                         inotify
-                        popt_samba3
                         samba3core
                         smbd_conn
                         param_service
@@ -1091,6 +1090,7 @@ bld.SAMBA3_SUBSYSTEM('SPOOLSSD',
 bld.SAMBA3_BINARY('smbd/smbd',
                  source='smbd/server.c smbd/smbd_cleanupd.c',
                  deps='''
+                      popt_samba3
                       smbd_base
                       EPMD
                       LSASD
