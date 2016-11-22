@@ -893,13 +893,21 @@ bld.SAMBA3_SUBSYSTEM('LIBEVENTLOG',
                     deps='NDR_EVENTLOG tdb')
 
 bld.SAMBA3_SUBSYSTEM('LIBNMB',
-                     source='''libsmb/unexpected.c
-                     libsmb/namecache.c
-                     libsmb/nmblib.c
-                     libsmb/namequery.c
-                     libsmb/conncache.c
-                     libads/sitename_cache.c''',
-                     deps='LIBTSOCKET samba3util addns lmhosts resolv')
+                     source='''
+                            libsmb/unexpected.c
+                            libsmb/namecache.c
+                            libsmb/nmblib.c
+                            libsmb/namequery.c
+                            libsmb/conncache.c
+                            libads/sitename_cache.c
+                            ''',
+                     deps='''
+                          LIBTSOCKET
+                          samba3util
+                          addns
+                          lmhosts
+                          resolv
+                          ''')
 
 bld.SAMBA3_SUBSYSTEM('SERVICES',
                     source='''services/svc_spoolss.c
