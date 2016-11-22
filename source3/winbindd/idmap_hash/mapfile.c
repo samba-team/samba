@@ -23,9 +23,8 @@
 #include "winbindd/winbindd.h"
 #include "idmap.h"
 #include "idmap_hash.h"
-#include "lib/util/xfile.h"
 
-static XFILE *lw_map_file = NULL;
+static FILE *lw_map_file = NULL;
 
 /*********************************************************************
  ********************************************************************/
@@ -37,7 +36,7 @@ static bool mapfile_open(void)
 	/* If we have an open handle, just reset it */
 
 	if (lw_map_file) {
-		return (x_tseek(lw_map_file, 0, SEEK_SET) == 0);
+		return (fseek(lw_map_file, 0, SEEK_SET) == 0);
 	}
 
 	mapfile_name = lp_parm_const_string(-1, "idmap_hash", "name_map", NULL);
@@ -45,7 +44,7 @@ static bool mapfile_open(void)
 		return false;
 	}
 
-	lw_map_file = x_fopen(mapfile_name, O_RDONLY, 0);
+	lw_map_file = fopen(mapfile_name, "r");
 	if (!lw_map_file) {
 		DEBUG(0,("can't open idmap_hash:name_map (%s). Error %s\n",
 			 mapfile_name, strerror(errno) ));
@@ -67,7 +66,7 @@ static bool mapfile_read_line(fstring key, fstring value)
 	if (!lw_map_file)
 		return false;
 
-	p = x_fgets(buffer, sizeof(buffer)-1, lw_map_file);
+	p = fgets(buffer, sizeof(buffer)-1, lw_map_file);
 	if (p == NULL) {
 		return false;
 	}
@@ -114,7 +113,7 @@ static bool mapfile_close(void)
 {
 	int ret = 0;
 	if (lw_map_file) {
-		ret = x_fclose(lw_map_file);
+		ret = fclose(lw_map_file);
 		lw_map_file = NULL;
 	}
 
