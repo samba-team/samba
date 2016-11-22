@@ -67,22 +67,23 @@ krb5_c_verify_checksum(krb5_context context, const krb5_keyblock *key,
 		       const krb5_checksum *cksum, krb5_boolean *valid)
 {
     krb5_error_code ret;
-    krb5_checksum data_cksum;
+    krb5_crypto crypto;
 
     *valid = 0;
 
-    ret = krb5_c_make_checksum(context, cksum->cksumtype,
-			       key, usage, data, &data_cksum);
+    ret = krb5_crypto_init(context, key, 0, &crypto);
     if (ret)
 	return ret;
 
-    if (data_cksum.cksumtype == cksum->cksumtype
-	&& krb5_data_ct_cmp(&data_cksum.checksum, &cksum->checksum) == 0)
+    ret = krb5_verify_checksum(context, crypto, usage,
+			       data->data, data->length, cksum);
+    krb5_crypto_destroy(context, crypto);
+
+    if (ret == 0) {
 	*valid = 1;
+    }
 
-    krb5_free_checksum_contents(context, &data_cksum);
-
-    return 0;
+    return ret;
 }
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
