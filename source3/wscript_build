@@ -996,9 +996,18 @@ bld.SAMBA_LIBRARY('xattr_tdb',
                   private_library=True)
 
 bld.SAMBA3_LIBRARY('CHARSET3',
-                    source='''lib/charcnv.c lib/fstring.c''',
-                    public_deps='ICONV_WRAPPER charset',
-                    deps='samba-util samba3-util',
+                    source='''
+                           lib/charcnv.c
+                           lib/fstring.c
+                           ''',
+                    public_deps='''
+                                ICONV_WRAPPER
+                                charset
+                                ''',
+                    deps='''
+                         samba-util
+                         samba3-util
+                         ''',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('errors3',
