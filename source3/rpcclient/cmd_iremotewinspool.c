@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    RPC pipe client
 
-   Copyright (C) 2013      Guenther Deschner <gd@samba.org>
+   Copyright (C) 2013-2016 Guenther Deschner <gd@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -98,6 +98,66 @@ static WERROR cmd_iremotewinspool_async_open_printer(struct rpc_pipe_client *cli
 	return WERR_OK;
 }
 
+static WERROR cmd_iremotewinspool_async_core_printer_driver_installed(struct rpc_pipe_client *cli,
+								      TALLOC_CTX *mem_ctx,
+								      int argc, const char **argv)
+{
+	NTSTATUS status;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	struct GUID uuid, core_printer_driver_guid;
+	struct winspool_AsyncCorePrinterDriverInstalled r;
+	const char *guid_str = SPOOLSS_CORE_PRINT_PACKAGE_FILES_XPSDRV;
+	const char *architecture = SPOOLSS_ARCHITECTURE_x64;
+	int32_t pbDriverInstalled;
+
+	if (argc > 4) {
+		printf("Usage: %s <CORE_PRINTER_DRIVER_GUID> [architecture]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		guid_str = argv[1];
+	}
+
+	if (argc >= 3) {
+		architecture = argv[2];
+	}
+
+	status = GUID_from_string(IREMOTEWINSPOOL_OBJECT_GUID, &uuid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	status = GUID_from_string(guid_str, &core_printer_driver_guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	r.in.pszServer		= NULL;
+	r.in.pszEnvironment	= architecture;
+	r.in.CoreDriverGUID	= core_printer_driver_guid;
+	r.in.ftDriverDate	= 0;
+	r.in.dwlDriverVersion	= 0;
+	r.out.pbDriverInstalled	= &pbDriverInstalled;
+
+	status = dcerpc_binding_handle_call(b,
+					    &uuid,
+					    &ndr_table_iremotewinspool,
+					    NDR_WINSPOOL_ASYNCCOREPRINTERDRIVERINSTALLED,
+					    mem_ctx,
+					    &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+	if (!HRES_IS_OK(r.out.result)) {
+		return W_ERROR(WIN32_FROM_HRESULT(r.out.result));
+	}
+
+	printf("Core Printer Driver %s is%s installed\n", guid_str,
+		*r.out.pbDriverInstalled ? "" : " NOT");
+
+	return WERR_OK;
+}
+
 /* List of commands exported by this module */
 struct cmd_set iremotewinspool_commands[] = {
 
@@ -107,6 +167,11 @@ struct cmd_set iremotewinspool_commands[] = {
 		cmd_iremotewinspool_async_open_printer,
 		&ndr_table_iremotewinspool,
 		NULL, "Open printer handle", "" },
+
+	{ "winspool_AsyncCorePrinterDriverInstalled", RPC_RTYPE_WERROR, NULL,
+		cmd_iremotewinspool_async_core_printer_driver_installed,
+		&ndr_table_iremotewinspool,
+		NULL, "Query Core Printer Driver Installed", "" },
 
 	{ NULL }
 };
