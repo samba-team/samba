@@ -521,11 +521,18 @@ bld.SAMBA3_SUBSYSTEM('CLDAP',
 # PLEASE DO NOT make it depend on high level libraries like PDB, if you are
 # doing that your design is wrong and needs changing. -SSS
 bld.SAMBA3_LIBRARY('secrets3',
-                   source='''passdb/secrets.c
-                   passdb/machine_account_secrets.c
-                   passdb/machine_sid.c
-                   passdb/secrets_lsa.c''',
-                   deps='NDR_SECRETS param samba3util dbwrap',
+                   source='''
+                          passdb/secrets.c
+                          passdb/machine_account_secrets.c
+                          passdb/machine_sid.c
+                          passdb/secrets_lsa.c
+                          ''',
+                   deps='''
+                        NDR_SECRETS
+                        param
+                        samba3util
+                        dbwrap
+                        ''',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('smbldap',
