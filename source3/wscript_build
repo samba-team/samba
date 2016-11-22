@@ -1147,10 +1147,11 @@ bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
 bld.SAMBA3_BINARY('locktest2',
                  source='torture/locktest2.c',
                  deps='''
-                 talloc
-                 param
-                 libsmb
-                 LOCKING''',
+                      talloc
+                      param
+                      libsmb
+                      LOCKING
+                      ''',
                  install=False)
 
 smbstatus_source = 'utils/status.c smbd/notify_msg.c'
