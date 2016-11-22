@@ -39,7 +39,7 @@ bld.SAMBA_MODULE('service_drepl',
 
 bld.SAMBA_LIBRARY('dsdb_garbage_collect_tombstones',
                   source='kcc/garbage_collect_tombstones.c',
-                  deps='samdb param RPC_NDR_DRSUAPI',
+                  deps='samdb RPC_NDR_DRSUAPI',
                   private_library=True)
 
 bld.SAMBA_MODULE('service_kcc',
