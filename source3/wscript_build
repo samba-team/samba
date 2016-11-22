@@ -1273,13 +1273,16 @@ bld.SAMBA3_BINARY('pdbtest',
                  install=False)
 
 bld.SAMBA3_BINARY('vfstest',
-                 source='''torture/cmd_vfs.c
-                 torture/vfstest.c
-                 torture/vfstest_chain.c''',
+                 source='''
+                        torture/cmd_vfs.c
+                        torture/vfstest.c
+                        torture/vfstest_chain.c
+                        ''',
                  deps='''
-                 vfs
-                 popt_samba3
-                 SMBREADLINE''',
+                      vfs
+                      popt_samba3
+                      SMBREADLINE
+                      ''',
                  install=False)
 
 bld.SAMBA3_BINARY('versiontest',
