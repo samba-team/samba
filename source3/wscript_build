@@ -964,7 +964,11 @@ bld.SAMBA3_SUBSYSTEM('DCUTIL',
 
 bld.SAMBA3_LIBRARY('trusts_util',
                    source='libsmb/trusts_util.c',
-                   deps='libcli_netlogon3 msrpc3 samba-passdb',
+                   deps='''
+                        libcli_netlogon3
+                        msrpc3
+                        samba-passdb
+                        ''',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('tdb-wrap3',
