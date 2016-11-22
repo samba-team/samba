@@ -1288,8 +1288,9 @@ bld.SAMBA3_BINARY('vfstest',
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
                  deps='''
-                 SAMBA_VERSION
-                 param''',
+                      SAMBA_VERSION
+                      param
+                      ''',
                  install=False)
 
 bld.SAMBA3_BINARY('timelimit',
