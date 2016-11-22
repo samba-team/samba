@@ -1300,8 +1300,9 @@ bld.SAMBA3_BINARY('timelimit',
 bld.SAMBA3_BINARY('rpc_open_tcp',
                  source='torture/rpc_open_tcp.c',
                  deps='''
-                 talloc
-                 msrpc3''',
+                      talloc
+                      msrpc3
+                      ''',
                  install=False)
 
 bld.SAMBA3_BINARY('vlp',
