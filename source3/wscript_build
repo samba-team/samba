@@ -832,17 +832,23 @@ bld.SAMBA3_LIBRARY('printing_migrate',
                     private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('PRINTING',
-                    source='''printing/pcap.c
-                    printing/print_svid.c
-                    printing/print_aix.c
-                    printing/print_cups.c
-                    printing/print_generic.c
-                    printing/lpq_parse.c
-                    printing/load.c
-                    printing/print_standard.c
-                    printing/print_iprint.c
-                    printing/printer_list.c''',
-                    deps='NDR_PRINTCAP tdb cups')
+                    source='''
+                           printing/pcap.c
+                           printing/print_svid.c
+                           printing/print_aix.c
+                           printing/print_cups.c
+                           printing/print_generic.c
+                           printing/lpq_parse.c
+                           printing/load.c
+                           printing/print_standard.c
+                           printing/print_iprint.c
+                           printing/printer_list.c
+                           ''',
+                    deps='''
+                         NDR_PRINTCAP
+                         tdb
+                         cups
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     source='lib/filename_util.c',
