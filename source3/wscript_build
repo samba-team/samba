@@ -278,10 +278,12 @@ bld.SAMBA3_LIBRARY('smbregistry',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
-                    source='''registry/reg_backend_smbconf.c
-                    registry/reg_init_smbconf.c
-                    registry/reg_util_token.c
-                    registry/reg_api_util.c''',
+                    source='''
+                           registry/reg_backend_smbconf.c
+                           registry/reg_init_smbconf.c
+                           registry/reg_util_token.c
+                           registry/reg_api_util.c
+                           ''',
                     deps='smbregistry')
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
