@@ -921,8 +921,14 @@ bld.SAMBA3_SUBSYSTEM('SERVICES',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
-                    source='''auth/pampass.c auth/pass_check.c''',
-                    deps='pam PAM_ERRORS')
+                    source='''
+                           auth/pampass.c
+                           auth/pass_check.c
+                           ''',
+                    deps='''
+                         pam
+                         PAM_ERRORS
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                     source='libsmb/passchange.c',
