@@ -932,10 +932,12 @@ bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
 
 bld.SAMBA3_SUBSYSTEM('PASSCHANGE',
                     source='libsmb/passchange.c',
-                    deps='''LIBCLI_SAMR
-                    INIT_LSA
-                    msrpc3
-                    krb5samba''')
+                    deps='''
+                         LIBCLI_SAMR
+                         INIT_LSA
+                         msrpc3
+                         krb5samba
+                         ''')
 
 bld.SAMBA3_SUBSYSTEM('SAMBA_VERSION',
                     source='lib/version.c',
