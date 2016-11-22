@@ -104,8 +104,14 @@ bld.SAMBA3_LIBRARY('gpo',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('AVAHI',
-                    source='lib/avahi.c smbd/avahi_register.c',
-                    deps='avahi-common avahi-client',
+                    source='''
+                           lib/avahi.c
+                           smbd/avahi_register.c
+                           ''',
+                    deps='''
+                         avahi-common
+                         avahi-client
+                         ''',
                     enabled=bld.env.with_avahi)
 
 bld.SAMBA3_SUBSYSTEM('GROUPDB',
