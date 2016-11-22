@@ -31,7 +31,6 @@
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
 #include "auth.h"
 #include "registry/reg_backend_db.h"
-#include "lib/util/xfile.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
@@ -188,7 +187,7 @@ static bool read_init_file(TALLOC_CTX *mem_ctx,
 	struct rcinit_file_information *info = NULL;
 	char *filepath = NULL;
 	char str[1024];
-	XFILE *f = NULL;
+	FILE *f = NULL;
 	char *p = NULL;
 
 	info = talloc_zero(mem_ctx, struct rcinit_file_information);
@@ -206,13 +205,13 @@ static bool read_init_file(TALLOC_CTX *mem_ctx,
 	if (filepath == NULL) {
 		return false;
 	}
-	f = x_fopen( filepath, O_RDONLY, 0 );
+	f = fopen( filepath, "r" );
 	if (f == NULL) {
 		DEBUG(0,("read_init_file: failed to open [%s]\n", filepath));
 		return false;
 	}
 
-	while ((x_fgets(str, sizeof(str) - 1, f)) != NULL) {
+	while ((fgets(str, sizeof(str) - 1, f)) != NULL) {
 		/* ignore everything that is not a full line
 		   comment starting with a '#' */
 
@@ -238,7 +237,7 @@ static bool read_init_file(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	x_fclose(f);
+	fclose(f);
 
 	if (info->description == NULL) {
 		info->description = talloc_strdup(info,
