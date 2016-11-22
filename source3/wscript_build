@@ -800,13 +800,21 @@ bld.SAMBA3_SUBSYSTEM('PRINTBASE',
                          ''')
 
 bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
-                    source='''printing/printing.c
-                    printing/nt_printing.c
-                    printing/nt_printing_tdb.c
-                    printing/nt_printing_migrate_internal.c
-                    printing/nt_printing_ads.c
-                    printing/queue_process.c''',
-                    deps='PRINTBASE LIBADS_PRINTER tdb printing_migrate SPOOLSSD')
+                    source='''
+                           printing/printing.c
+                           printing/nt_printing.c
+                           printing/nt_printing_tdb.c
+                           printing/nt_printing_migrate_internal.c
+                           printing/nt_printing_ads.c
+                           printing/queue_process.c
+                           ''',
+                    deps='''
+                         PRINTBASE
+                         LIBADS_PRINTER
+                         tdb
+                         printing_migrate
+                         SPOOLSSD
+                         ''')
 
 bld.SAMBA3_LIBRARY('printing_migrate',
                     source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
