@@ -33,7 +33,7 @@ bld.SAMBA3_BINARY('nmbd',
                  deps='''
                  talloc
                  tevent
-                 param
+                 smbconf
                  libsmb
                  popt_samba3
                  ''',

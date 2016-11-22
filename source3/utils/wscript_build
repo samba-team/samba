@@ -9,14 +9,14 @@ bld.SAMBA3_BINARY('profiles',
                  deps='''
                  talloc
                  popt_samba3
-                 param
+                 smbconf
                  REGFIO''')
 
 bld.SAMBA3_BINARY('smbcontrol',
                  source='smbcontrol.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  popt_samba3
                  PRINTBASE''')
 
@@ -24,7 +24,7 @@ bld.SAMBA3_BINARY('smbtree',
                  source='smbtree.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  libsmb
                  msrpc3
                  popt_samba3
@@ -34,7 +34,7 @@ bld.SAMBA3_BINARY('smbpasswd',
                  source='smbpasswd.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  pdb
                  PASSWD_UTIL
                  PASSCHANGE''')
@@ -43,7 +43,7 @@ bld.SAMBA3_BINARY('pdbedit',
                  source='pdbedit.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  popt_samba3
                  pdb
                  PASSWD_UTIL''')
@@ -59,7 +59,7 @@ bld.SAMBA3_BINARY('nmblookup',
                  source='nmblookup.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  popt_samba3
                  LIBNMB''')
 
@@ -85,7 +85,7 @@ bld.SAMBA3_BINARY('eventlogadm',
                  source='eventlogadm.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  LIBEVENTLOG''')
 
 bld.SAMBA3_BINARY('sharesec',
@@ -110,7 +110,7 @@ bld.SAMBA3_BINARY('smbfilter',
                  source='smbfilter.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  LIBNMB''',
                  install=False)
 
@@ -149,14 +149,14 @@ bld.SAMBA3_BINARY('samba-regedit',
                             regedit_wrap.c regedit_treeview.c
                             regedit_valuelist.c regedit_dialog.c
                             regedit_hexedit.c regedit_list.c""",
-                  deps='ncurses menu panel form registry param popt_samba3 smbregistry',
+                  deps='ncurses menu panel form registry smbconf popt_samba3',
                   enabled=bld.env.build_regedit)
 
 bld.SAMBA3_BINARY('testparm',
                  source='testparm.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  popt_samba3''')
 
 bld.SAMBA3_BINARY('net',
@@ -218,7 +218,7 @@ bld.SAMBA3_BINARY('net',
                  popt_samba3
                  pdb
                  libsmb
-                 param
+                 smbconf
                  KRBCLIENT
                  ndr-standard
                  msrpc3

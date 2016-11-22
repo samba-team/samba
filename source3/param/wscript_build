@@ -6,7 +6,7 @@ bld.SAMBA3_SUBSYSTEM('PARAM_UTIL',
 
 bld.SAMBA3_SUBSYSTEM('LOADPARM_CTX',
                      source='loadparm_ctx.c',
-                     deps='''talloc param''')
+                     deps='''talloc smbconf''')
 
 bld.SAMBA_GENERATOR('s3_param_proto_h',
                     source= '../../script/generate_param.py ../../docs-xml/smbdotconf/parameters.all.xml',
@@ -16,18 +16,18 @@ bld.SAMBA_GENERATOR('s3_param_proto_h',
 
 bld.SAMBA3_PYTHON('pys3param',
                   source='pyparam.c',
-                  deps='param',
+                  deps='smbconf',
                   public_deps='samba-hostconfig pytalloc-util talloc',
                   realname='samba/samba3/param.so')
 
 bld.SAMBA3_SUBSYSTEM('param_service',
                      source='service.c',
-                     deps = 'USER_UTIL param PRINTING')
+                     deps = 'USER_UTIL smbconf PRINTING')
 
 bld.SAMBA3_BINARY('test_lp_load',
                  source='test_lp_load.c',
                  deps='''
                  talloc
-                 param
+                 smbconf
                  popt_samba3''',
                  install=False)

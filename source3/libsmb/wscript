@@ -19,7 +19,7 @@ def build(bld):
                               libsmb_setget.c''',
                        public_deps='''
                                    talloc
-                                   param
+                                   smbconf
                                    libsmb
                                    KRBCLIENT
                                    msrpc3

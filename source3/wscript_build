@@ -57,7 +57,7 @@ bld.SAMBA3_LIBRARY('netapi',
 
 bld.SAMBA3_LIBRARY('gse',
                    source='librpc/crypto/gse_krb5.c librpc/crypto/gse.c',
-                   deps='krb5samba gensec param KRBCLIENT secrets3',
+                   deps='krb5samba gensec smbconf KRBCLIENT secrets3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('msrpc3',
@@ -213,26 +213,6 @@ bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
                      source='lib/server_mutex.c',
                      deps='talloc')
 
-bld.SAMBA3_SUBSYSTEM('param',
-                   source='''
-                          param/loadparm.c
-                          lib/sharesec.c
-                          lib/ldap_debug_handler.c
-                          lib/util_names.c
-                          ''',
-                   deps='''
-                        samba-util
-                        PARAM_UTIL
-                        ldap
-                        lber
-                        LOADPARM_CTX
-                        samba3core
-                        smbconf
-                        param_local.h
-                        param_global.h
-                        cups
-                        ''')
-
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
 bld.SAMBA3_SUBSYSTEM('REG_PARSE_PRS',
@@ -246,7 +226,8 @@ bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
                     source='registry/reg_api_regf.c',
                     deps='samba-util')
 
-bld.SAMBA3_LIBRARY('smbregistry',
+# Do not link against this use 'smbconf'
+bld.SAMBA3_SUBSYSTEM('SMBREGISTRY',
                    source='''
                           registry/reg_api.c
                           registry/reg_dispatcher.c
@@ -272,10 +253,9 @@ bld.SAMBA3_LIBRARY('smbregistry',
                         errors3
                         dbwrap
                         samba3-util
-                        ''',
-                   allow_undefined_symbols=True,
-                   private_library=True)
+                        ''')
 
+# Do not link against this use 'smbconf'
 bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                     source='''
                            registry/reg_backend_smbconf.c
@@ -283,7 +263,7 @@ bld.SAMBA3_SUBSYSTEM('REG_SMBCONF',
                            registry/reg_util_token.c
                            registry/reg_api_util.c
                            ''',
-                    deps='smbregistry')
+                    deps='SMBREGISTRY')
 
 bld.SAMBA3_SUBSYSTEM('REG_FULL',
                     source='''
@@ -298,7 +278,7 @@ bld.SAMBA3_SUBSYSTEM('REG_FULL',
                            registry/reg_init_full.c
                            registry/reg_perfcount.c''',
                     deps='''
-                         REG_SMBCONF
+                         smbconf
                          tdb-wrap3
                          ''')
 
@@ -451,7 +431,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         SAMBA_VERSION
                         PTHREADPOOL
                         interfaces
-                        param
+                        smbconf
                         dbwrap
                         samba3-util
                         errors3
@@ -529,7 +509,7 @@ bld.SAMBA3_LIBRARY('secrets3',
                           ''',
                    deps='''
                         NDR_SECRETS
-                        param
+                        smbconf
                         samba3util
                         dbwrap
                         ''',
@@ -537,7 +517,7 @@ bld.SAMBA3_LIBRARY('secrets3',
 
 bld.SAMBA3_LIBRARY('smbldap',
                     source='lib/smbldap.c',
-                    deps='ldap lber samba-util param',
+                    deps='ldap lber samba-util smbconf',
                     enabled=bld.CONFIG_SET("HAVE_LDAP"),
                     private_library=False,
                     abi_directory='lib/ABI',
@@ -568,7 +548,7 @@ bld.SAMBA3_LIBRARY('ads',
                         ldap
                         lber
                         KRBCLIENT
-                        param
+                        smbconf
                         LIBNMB
                         libsmb
                         DCUTIL
@@ -584,6 +564,27 @@ bld.SAMBA3_SUBSYSTEM('LIBADS_PRINTER',
                     source='libads/ldap_printer.c',
                     deps='samba-util krb5samba')
 
+# Only smbconf should link against this subsystem, else we will create
+# a circular dependency.
+bld.SAMBA3_SUBSYSTEM('SMBCONF_PARAM',
+                   source='''
+                          param/loadparm.c
+                          lib/sharesec.c
+                          lib/ldap_debug_handler.c
+                          lib/util_names.c
+                          ''',
+                   deps='''
+                        samba-util
+                        PARAM_UTIL
+                        ldap
+                        lber
+                        LOADPARM_CTX
+                        samba3core
+                        param_local.h
+                        param_global.h
+                        cups
+                        ''')
+
 bld.SAMBA3_LIBRARY('smbconf',
                    source='''
                           lib/smbconf/smbconf_init.c
@@ -598,9 +599,8 @@ bld.SAMBA3_LIBRARY('smbconf',
                         charset
                         cli_smb_common
                         errors3
-                        param
+                        SMBCONF_PARAM
                         samba-util
-                        smbregistry
                         talloc
                         util_reg
                         ''',
@@ -826,7 +826,7 @@ bld.SAMBA3_LIBRARY('printing_migrate',
                          cli_spoolss
                          RPC_NDR_WINREG
                          LIBCLI_WINREG
-                         param
+                         smbconf
                          ''',
                     private_library=True)
 
@@ -1037,7 +1037,7 @@ bld.SAMBA3_LIBRARY('libcli_netlogon3',
                         RPC_NDR_NETLOGON
                         INIT_NETLOGON
                         cliauth
-                        param
+                        smbconf
                         NETLOGON_CREDS_CLI''',
                    private_library=True)
 
@@ -1048,7 +1048,7 @@ bld.SAMBA3_LIBRARY('cli_spoolss',
                           ''',
                    deps='''
                         RPC_NDR_SPOOLSS
-                        param
+                        smbconf
                         secrets3''',
                    private_library=True)
 
@@ -1116,7 +1116,7 @@ bld.SAMBA3_BINARY('client/smbclient',
                  deps='''
                       talloc
                       popt_samba3
-                      param
+                      smbconf
                       ndr-standard
                       SMBREADLINE
                       libsmb
@@ -1131,7 +1131,7 @@ bld.SAMBA3_BINARY('smbspool',
                  deps='''
                       talloc
                       popt_samba3
-                      param
+                      smbconf
                       libsmb
                       samba3core
                       ''')
@@ -1149,7 +1149,7 @@ bld.SAMBA3_BINARY('locktest2',
                  source='torture/locktest2.c',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       libsmb
                       LOCKING
                       ''',
@@ -1166,7 +1166,7 @@ bld.SAMBA3_BINARY('smbstatus',
                  source=smbstatus_source,
                  deps='''
                       talloc
-                      param
+                      smbconf
                       popt_samba3
                       smbd_base
                       LOCKING
@@ -1209,7 +1209,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         ''',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       libsmb
                       msrpc3
                       TLDAP
@@ -1228,7 +1228,7 @@ bld.SAMBA3_BINARY('smbconftort',
                  source='lib/smbconf/testsuite.c',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       popt_samba3
                       ''',
                  install=False)
@@ -1242,7 +1242,7 @@ bld.SAMBA3_BINARY('msgtest',
                  source='torture/msgtest.c',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       ''',
                  install=False)
 
@@ -1250,7 +1250,7 @@ bld.SAMBA3_BINARY('msg_sink',
                  source='torture/msg_sink.c',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       ''',
                  install=False)
 
@@ -1258,7 +1258,7 @@ bld.SAMBA3_BINARY('msg_source',
                  source='torture/msg_source.c',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       ''',
                  install=False)
 
@@ -1282,6 +1282,7 @@ bld.SAMBA3_BINARY('vfstest',
                  deps='''
                       vfs
                       popt_samba3
+                      smbconf
                       SMBREADLINE
                       ''',
                  install=False)
@@ -1290,7 +1291,7 @@ bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
                  deps='''
                       SAMBA_VERSION
-                      param
+                      smbconf
                       ''',
                  install=False)
 
@@ -1310,7 +1311,7 @@ bld.SAMBA3_BINARY('vlp',
                  source='printing/tests/vlp.c',
                  deps='''
                       talloc
-                      param
+                      smbconf
                       ''',
                  install=False)
 

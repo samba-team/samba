@@ -28,7 +28,7 @@ bld.SAMBA3_BINARY('rpcclient',
                  popt_samba3
                  pdb
                  libsmb
-                 param
+                 smbconf
                  ndr-standard
                  msrpc3
                  SMBREADLINE

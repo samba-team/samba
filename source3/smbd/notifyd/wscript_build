@@ -8,12 +8,12 @@ bld.SAMBA3_BINARY('notifyd-tests',
                   source='tests.c',
                   install=False,
                   deps='''
-                    param
+                       smbconf
                   ''')
 
 bld.SAMBA3_BINARY('notifydd',
                   source='notifydd.c',
                   install=False,
                   deps='''notifyd
-                    param
+                       smbconf
                   ''')
