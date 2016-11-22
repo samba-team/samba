@@ -200,7 +200,10 @@ bld.SAMBA3_SUBSYSTEM('pdb',
                         ''')
 
 bld.SAMBA3_LIBRARY('smbldaphelper',
-                   source='passdb/pdb_ldap_schema.c passdb/pdb_ldap_util.c',
+                   source='''
+                          passdb/pdb_ldap_schema.c
+                          passdb/pdb_ldap_util.c
+                          ''',
                    deps='smbldap secrets3',
                    allow_undefined_symbols=True,
                    enabled=bld.CONFIG_SET('HAVE_LDAP'),
