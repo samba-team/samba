@@ -951,10 +951,16 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
                          ''')
 
 bld.SAMBA3_SUBSYSTEM('DCUTIL',
-                    source='''libsmb/namequery_dc.c
-                    libsmb/trustdom_cache.c
-                    libsmb/dsgetdcname.c''',
-                    deps='ads msrpc3 libcli_lsa3')
+                    source='''
+                           libsmb/namequery_dc.c
+                           libsmb/trustdom_cache.c
+                           libsmb/dsgetdcname.c
+                           ''',
+                    deps='''
+                         ads
+                         msrpc3
+                         libcli_lsa3
+                         ''')
 
 bld.SAMBA3_LIBRARY('trusts_util',
                    source='libsmb/trusts_util.c',
