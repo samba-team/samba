@@ -335,6 +335,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                           lib/sock_exec.c
                           ''',
                    deps='''
+                        CHARSET3
                         ndr
                         LIBTSOCKET
                         samba-security
