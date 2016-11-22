@@ -115,7 +115,10 @@ bld.SAMBA3_SUBSYSTEM('AVAHI',
                     enabled=bld.env.with_avahi)
 
 bld.SAMBA3_SUBSYSTEM('GROUPDB',
-                    source='groupdb/mapping.c groupdb/mapping_tdb.c',
+                    source='''
+                           groupdb/mapping.c
+                           groupdb/mapping_tdb.c
+                           ''',
                     deps='tdb')
 
 bld.SAMBA3_SUBSYSTEM('TLDAP',
