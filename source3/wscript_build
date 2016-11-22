@@ -817,8 +817,18 @@ bld.SAMBA3_SUBSYSTEM('PRINTBACKEND',
                          ''')
 
 bld.SAMBA3_LIBRARY('printing_migrate',
-                    source='printing/nt_printing_migrate.c rpc_client/cli_winreg_spoolss.c printing/nt_printing_os2.c',
-                    deps='NDR_NTPRINTING cli_spoolss RPC_NDR_WINREG LIBCLI_WINREG param',
+                    source='''
+                           printing/nt_printing_migrate.c
+                           rpc_client/cli_winreg_spoolss.c
+                           printing/nt_printing_os2.c
+                           ''',
+                    deps='''
+                         NDR_NTPRINTING
+                         cli_spoolss
+                         RPC_NDR_WINREG
+                         LIBCLI_WINREG
+                         param
+                         ''',
                     private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('PRINTING',
