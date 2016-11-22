@@ -1028,8 +1028,17 @@ bld.SAMBA3_LIBRARY('libcli_lsa3',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('libcli_netlogon3',
-                   source='rpc_client/cli_netlogon.c rpc_client/util_netlogon.c',
-                   deps='msrpc3 RPC_NDR_NETLOGON INIT_NETLOGON cliauth param NETLOGON_CREDS_CLI',
+                   source='''
+                          rpc_client/cli_netlogon.c
+                          rpc_client/util_netlogon.c
+                          ''',
+                   deps='''
+                        msrpc3
+                        RPC_NDR_NETLOGON
+                        INIT_NETLOGON
+                        cliauth
+                        param
+                        NETLOGON_CREDS_CLI''',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('cli_spoolss',
