@@ -591,7 +591,6 @@ bld.SAMBA3_LIBRARY('smbconf',
                           lib/smbconf/smbconf_reg.c
                           ''',
                    deps='''
-                        CHARSET3
                         LIBSMBCONF
                         REG_SMBCONF
                         SAMBA_VERSION
