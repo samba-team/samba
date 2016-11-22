@@ -214,20 +214,24 @@ bld.SAMBA3_SUBSYSTEM('SERVER_MUTEX',
                      deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('param',
-                   source='''param/loadparm.c
-                   lib/sharesec.c
-                   lib/ldap_debug_handler.c
-                   lib/util_names.c''',
-                   deps='''samba-util
-                   PARAM_UTIL
-                   ldap
-                   lber
-                   LOADPARM_CTX
-                   samba3core
-                   smbconf
-                   param_local.h
-                   param_global.h
-                   cups''')
+                   source='''
+                          param/loadparm.c
+                          lib/sharesec.c
+                          lib/ldap_debug_handler.c
+                          lib/util_names.c
+                          ''',
+                   deps='''
+                        samba-util
+                        PARAM_UTIL
+                        ldap
+                        lber
+                        LOADPARM_CTX
+                        samba3core
+                        smbconf
+                        param_local.h
+                        param_global.h
+                        cups
+                        ''')
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
