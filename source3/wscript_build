@@ -375,10 +375,15 @@ bld.SAMBA3_LIBRARY('samba-cluster-support',
                    private_library=True)
 
 bld.SAMBA3_SUBSYSTEM('TDB_LIB',
-                     source='''lib/dbwrap/dbwrap_open.c
-                     lib/dbwrap/dbwrap_watch.c
-                     lib/g_lock.c''',
-                     deps='dbwrap samba-cluster-support')
+                     source='''
+                            lib/dbwrap/dbwrap_open.c
+                            lib/dbwrap/dbwrap_watch.c
+                            lib/g_lock.c
+                            ''',
+                     deps='''
+                          dbwrap
+                          samba-cluster-support
+                          ''')
 
 bld.SAMBA3_LIBRARY('messages_dgm',
                    source='''lib/messages_dgm.c lib/messages_dgm_ref.c''',
