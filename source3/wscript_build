@@ -1164,12 +1164,13 @@ else:
 bld.SAMBA3_BINARY('smbstatus',
                  source=smbstatus_source,
                  deps='''
-                 talloc
-                 param
-                 popt_samba3
-                 smbd_base
-                 LOCKING
-                 PROFILE''')
+                      talloc
+                      param
+                      popt_samba3
+                      smbd_base
+                      LOCKING
+                      PROFILE
+                      ''')
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source='''torture/torture.c
