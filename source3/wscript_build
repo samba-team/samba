@@ -386,8 +386,17 @@ bld.SAMBA3_SUBSYSTEM('TDB_LIB',
                           ''')
 
 bld.SAMBA3_LIBRARY('messages_dgm',
-                   source='''lib/messages_dgm.c lib/messages_dgm_ref.c''',
-                   deps='''talloc samba-debug PTHREADPOOL msghdr genrand''',
+                   source='''
+                          lib/messages_dgm.c
+                          lib/messages_dgm_ref.c
+                          ''',
+                   deps='''
+                        talloc
+                        samba-debug
+                        PTHREADPOOL
+                        msghdr
+                        genrand
+                        ''',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('messages_util',
