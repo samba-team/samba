@@ -174,7 +174,7 @@ ip_reallocate ()
 	    fi
 	    _flags="${_flags}${_flags:+,}${_this}"
 	done
-	CTDB_TEST_LOGLEVEL=2 \
+	CTDB_TEST_LOGLEVEL=NOTICE \
 	    "ctdb_takeover_tests" \
 	    "ipalloc" "$_flags" <"$FAKE_CTDB_IP_LAYOUT" |
 	    sort >"$_t"
