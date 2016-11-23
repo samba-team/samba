@@ -75,7 +75,7 @@ cat <<EOF
 Output (Exit status: ${_rc}):
 --------------------------------------------------
 EOF
-	echo "$_out" | cat $TEST_CAT_RESULTS_OPTS
+	echo "$_out" | result_filter | cat $TEST_CAT_RESULTS_OPTS
     fi
 
     if ! $_passed ; then
