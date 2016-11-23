@@ -1,0 +1,15 @@
+<samba:parameter name="include system krb5 conf"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		Setting this parameter to <value type="example">no</value> will prevent
+		winbind to include the system /etc/krb5.conf file into the krb5.conf file
+		it creates. See also <smbconfoption name="create krb5 conf"/>. This option
+		only applies to Samba built with MIT Kerberos.
+	</para>
+
+</description>
+<value type="default">yes</value>
+</samba:parameter>
