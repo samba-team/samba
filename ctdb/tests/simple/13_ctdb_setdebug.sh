@@ -62,14 +62,24 @@ for new_debug in $levels ; do
     set_and_check_debug $test_node "$new_debug"
 done
 
-i=0
-for new_debug in $levels ; do
+while read new_debug i ; do
     [ "$initial_debug" != "$i" ] || continue
 
     echo
     set_and_check_debug $test_node "$i" "$new_debug"
-    i=$[ $i + 1 ]
-done
+done <<EOF
+ERROR 0
+WARNING 1
+WARNING 2
+NOTICE 3
+NOTICE 4
+INFO 5
+INFO 6
+INFO 7
+INFO 8
+INFO 9
+DEBUG 10
+EOF
 
 if [ "$testfailures" != 1 ] ; then
     echo

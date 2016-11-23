@@ -28,8 +28,14 @@ struct {
 } log_string_map[] = {
 	{ DEBUG_ERR,     "ERROR" },
 	{ DEBUG_WARNING, "WARNING" },
+	{ 2,             "WARNING" },
 	{ DEBUG_NOTICE,  "NOTICE" },
+	{ 4,             "NOTICE" },
 	{ DEBUG_INFO,    "INFO" },
+	{ 6,             "INFO" },
+	{ 7,             "INFO" },
+	{ 8,             "INFO" },
+	{ 9,             "INFO" },
 	{ DEBUG_DEBUG,   "DEBUG" },
 };
 

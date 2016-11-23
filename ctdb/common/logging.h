@@ -20,11 +20,13 @@
 #ifndef __CTDB_LOGGING_H__
 #define __CTDB_LOGGING_H__
 
-#define DEBUG_ERR     0
-#define DEBUG_WARNING 1
-#define DEBUG_NOTICE  2
-#define DEBUG_INFO    3
-#define DEBUG_DEBUG   4
+#include "lib/util/debug.h"
+
+#define DEBUG_ERR     DBGLVL_ERR
+#define DEBUG_WARNING DBGLVL_WARNING
+#define DEBUG_NOTICE  DBGLVL_NOTICE
+#define DEBUG_INFO    DBGLVL_INFO
+#define DEBUG_DEBUG   DBGLVL_DEBUG
 
 /* These are used in many places, so define them here to avoid churn */
 #define DEBUG_ALERT DEBUG_ERR
