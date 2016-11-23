@@ -11,7 +11,7 @@ define_test "2 disjoint groups of nodes/addresses, a node becomes healthy"
 # group has 6 addresses then the "necessarily" goes away and the
 # smaller group won't be rebalanced.
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 required_result <<EOF
 192.168.209.102 3

@@ -4,7 +4,7 @@
 
 define_test "3 nodes, 1 -> all healthy, info logging"
 
-export CTDB_TEST_LOGLEVEL=3
+export CTDB_TEST_LOGLEVEL=INFO
 
 required_result <<EOF
 ${TEST_DATE_STAMP}1 [-121363] -> 192.168.20.253 -> 0 [+0]

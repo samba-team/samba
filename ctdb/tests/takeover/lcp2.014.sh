@@ -4,7 +4,7 @@
 
 define_test "3 nodes, no IPs assigned, all unhealthy"
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 required_result <<EOF
 192.168.21.254 0

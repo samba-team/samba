@@ -6,7 +6,7 @@ define_test "2 disjoint groups of nodes/addresses, continue a stopped node"
 
 # Another LCP2 1.0 bug
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 required_result <<EOF
 10.11.19.46 3

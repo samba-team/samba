@@ -4,7 +4,7 @@
 
 define_test "Node with NODE_FLAGS_NOIPTAKEOVER doesn't gain IPs"
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 required_result <<EOF
 192.168.21.254 1

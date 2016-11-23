@@ -4,7 +4,7 @@
 
 define_test "3 nodes, no IPs assigned, all healthy, 1 in STARTUP runstate"
 
-export CTDB_TEST_LOGLEVEL=2
+export CTDB_TEST_LOGLEVEL=NOTICE
 
 required_result <<EOF
 192.168.21.254 1

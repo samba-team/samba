@@ -4,7 +4,7 @@
 
 define_test "900 IPs, 5 nodes, 0 -> 5 healthy"
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 required_result <<EOF
 192.168.10.90 0

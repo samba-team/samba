@@ -4,7 +4,7 @@
 
 define_test "3 nodes, no IPs assigned, all healthy, all in STARTUP runstate"
 
-export CTDB_TEST_LOGLEVEL=2
+export CTDB_TEST_LOGLEVEL=NOTICE
 
 required_result <<EOF
 ${TEST_DATE_STAMP}Failed to find node to cover ip 192.168.21.254

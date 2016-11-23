@@ -4,7 +4,7 @@
 
 define_test "4 nodes, all healthy/assigned, stays unbalanced"
 
-export CTDB_TEST_LOGLEVEL=3
+export CTDB_TEST_LOGLEVEL=INFO
 
 required_result <<EOF
 130.216.30.181 0

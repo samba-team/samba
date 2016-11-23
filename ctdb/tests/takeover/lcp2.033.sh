@@ -4,7 +4,7 @@
 
 define_test "12+4 IPs, 4 nodes, 2 -> 3 -> 4 healthy"
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 set -e
 

@@ -4,7 +4,7 @@
 
 define_test "12+4 IPs, 4 nodes, multiple transitions"
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 
 set -e
 

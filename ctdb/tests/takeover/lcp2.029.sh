@@ -4,7 +4,7 @@
 
 define_test "4 nodes, some IPs unassigned on target nodes"
 
-export CTDB_TEST_LOGLEVEL=3
+export CTDB_TEST_LOGLEVEL=INFO
 
 required_result <<EOF
 ${TEST_DATE_STAMP} 10.19.99.251 -> 2 [+9216]

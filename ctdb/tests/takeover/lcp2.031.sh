@@ -4,7 +4,7 @@
 
 define_test "12+4 IPs, 4 nodes, 3 -> 4 healthy"
 
-export CTDB_TEST_LOGLEVEL=4
+export CTDB_TEST_LOGLEVEL=DEBUG
 
 required_result <<EOF
 ${TEST_DATE_STAMP} ----------------------------------------

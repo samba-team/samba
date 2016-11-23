@@ -4,7 +4,7 @@
 
 define_test "3 nodes, all IPs assigned, 2->3 unhealthy, NoIPHostOnAllDisabled"
 
-export CTDB_TEST_LOGLEVEL=0
+export CTDB_TEST_LOGLEVEL=ERR
 export CTDB_SET_NoIPHostOnAllDisabled=1
 
 required_result <<EOF
