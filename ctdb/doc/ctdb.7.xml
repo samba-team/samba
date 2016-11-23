@@ -990,11 +990,11 @@ CTDB_NATGW_DEFAULT_GATEWAY=10.0.0.1
     </para>
 
     <simplelist>
-      <member>ERR (0)</member>
-      <member>WARNING (1)</member>
-      <member>NOTICE (2)</member>
-      <member>INFO (3)</member>
-      <member>DEBUG (4)</member>
+      <member>ERR</member>
+      <member>WARNING</member>
+      <member>NOTICE</member>
+      <member>INFO</member>
+      <member>DEBUG</member>
     </simplelist>
   </refsect1>
 

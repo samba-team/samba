@@ -203,7 +203,7 @@
 	<term>CTDB_DEBUGLEVEL=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>
-	    Default is NOTICE (2).  Corresponds to <option>-d</option> or
+	    Default is NOTICE.  Corresponds to <option>-d</option> or
 	    <option>--debug</option>.
 	  </para>
 	</listitem>
@@ -418,7 +418,7 @@
 	<term>CTDB_SCRIPT_LOG_LEVEL=<parameter>DEBUGLEVEL</parameter></term>
 	<listitem>
 	  <para>
-	    Defaults to ERR (0).  Corresponds to
+	    Defaults to ERR.  Corresponds to
 	    <option>--script-log-level</option>.
 	  </para>
 	</listitem>

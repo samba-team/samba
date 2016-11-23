@@ -206,7 +206,7 @@
       <varlistentry><term>-d --debug=<parameter>DEBUGLEVEL</parameter></term>
       <listitem>
 	<para>
-	  Change the debug level for the command. Default is NOTICE (2).
+	  Change the debug level for the command. Default is NOTICE.
 	</para>
       </listitem>
       </varlistentry>

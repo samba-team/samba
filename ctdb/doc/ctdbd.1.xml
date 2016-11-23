@@ -519,7 +519,7 @@
 	<listitem>
 	  <para>
 	    This option sets the debug level of event script output to
-	    DEBUGLEVEL.  The default is ERR (0).
+	    DEBUGLEVEL.  The default is ERR.
 	  </para>
 	  <para>
 	    See the <citetitle>DEBUG LEVELS</citetitle> section in
