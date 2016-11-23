@@ -541,9 +541,35 @@ static void messaging_dgm_out_threaded_job(void *private_data)
 	struct iovec iov = { .iov_base = state->buf,
 			     .iov_len = talloc_get_size(state->buf) };
 	size_t num_fds = talloc_array_length(state->fds);
+	int msec = 1;
 
-	state->sent = messaging_dgm_sendmsg(state->sock, &iov, 1,
+	while (true) {
+		int ret;
+
+		state->sent = messaging_dgm_sendmsg(state->sock, &iov, 1,
 					    state->fds, num_fds, &state->err);
+
+		if (state->sent != -1) {
+			return;
+		}
+		if (errno != ENOBUFS) {
+			return;
+		}
+
+		/*
+		 * ENOBUFS is the FreeBSD way of saying "Try
+		 * again". We have to do polling.
+		 */
+		do {
+			ret = poll(NULL, 0, msec);
+		} while ((ret == -1) && (errno == EINTR));
+
+		/*
+		 * Exponential backoff up to once a second
+		 */
+		msec *= 2;
+		msec = MIN(msec, 1000);
+	}
 }
 
 /*
@@ -617,6 +643,15 @@ static int messaging_dgm_out_send_fragment(
 					      num_fds, &err);
 		if (nsent >= 0) {
 			return 0;
+		}
+
+		if (err == ENOBUFS) {
+			/*
+			 * FreeBSD's way of telling us the dst socket
+			 * is full. EWOULDBLOCK makes us spawn a
+			 * polling helper thread.
+			 */
+			err = EWOULDBLOCK;
 		}
 
 		if (err != EWOULDBLOCK) {
