@@ -22,7 +22,7 @@ timestamp() {
   # mark the start time. With Gnu date, you get nanoseconds from %N
   # (here truncated to microseconds with %6N), but not on BSDs,
   # Solaris, etc, which will apparently leave either %N or N at the end.
-  date -u +'time: %Y-%m-%d %H:%M:%S.%6NZ' | sed 's/%\?NZ$/000000Z/'
+  date -u +'time: %Y-%m-%d %H:%M:%S.%6NZ' | sed 's/\..*NZ$/.000000Z/'
 }
 
 subunit_start_test () {
