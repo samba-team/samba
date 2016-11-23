@@ -139,18 +139,18 @@ static int writefile(int f, const void *_b, int n, bool translation)
   read from a file with LF->CR/LF translation if appropriate. return the 
   number read. read approx n bytes.
 ****************************************************************************/
-static int readfile(void *_b, int n, XFILE *f, bool translation)
+static int readfile(void *_b, int n, FILE *f, bool translation)
 {
 	uint8_t *b = (uint8_t *)_b;
 	int i;
 	int c;
 
 	if (!translation)
-		return x_fread(b,1,n,f);
+		return fread(b,1,n,f);
   
 	i = 0;
 	while (i < (n - 1)) {
-		if ((c = x_getc(f)) == EOF) {
+		if ((c = getc(f)) == EOF) {
 			break;
 		}
       
@@ -1117,7 +1117,7 @@ static int cmd_altname(struct smbclient_context *ctx, const char **args)
 static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool reput)
 {
 	int fnum;
-	XFILE *f;
+	FILE *f;
 	size_t start = 0;
 	off_t nread = 0;
 	uint8_t *buf = NULL;
@@ -1152,14 +1152,14 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 	   Note that in this case this function will exit(0) rather
 	   than returning. */
 	if (!strcmp(lname, "-")) {
-		f = x_stdin;
+		f = stdin;
 		/* size of file is not known */
 	} else {
-		f = x_fopen(lname,O_RDONLY, 0);
+		f = fopen(lname, "r");
 		if (f && reput) {
-			if (x_tseek(f, start, SEEK_SET) == -1) {
+			if (fseek(f, start, SEEK_SET) == -1) {
 				d_printf("Error seeking local file\n");
-				x_fclose(f);
+				fclose(f);
 				return 1;
 			}
 		}
@@ -1177,15 +1177,15 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 	buf = (uint8_t *)malloc(maxwrite);
 	if (!buf) {
 		d_printf("ERROR: Not enough memory!\n");
-		x_fclose(f);
+		fclose(f);
 		return 1;
 	}
-	while (!x_feof(f)) {
+	while (!feof(f)) {
 		int n = maxwrite;
 		int ret;
 
 		if ((n = readfile(buf,n,f,ctx->translation)) < 1) {
-			if((n == 0) && x_feof(f))
+			if((n == 0) && feof(f))
 				break; /* Empty local file. */
 
 			d_printf("Error reading local file: %s\n", strerror(errno));
@@ -1206,14 +1206,14 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 
 	if (NT_STATUS_IS_ERR(smbcli_close(ctx->cli->tree, fnum))) {
 		d_printf("%s closing remote file %s\n",smbcli_errstr(ctx->cli->tree),rname);
-		x_fclose(f);
+		fclose(f);
 		SAFE_FREE(buf);
 		return 1;
 	}
 
 	
-	if (f != x_stdin) {
-		x_fclose(f);
+	if (f != stdin) {
+		fclose(f);
 	}
 
 	SAFE_FREE(buf);
@@ -1234,7 +1234,7 @@ static int do_put(struct smbclient_context *ctx, char *rname, char *lname, bool 
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
 
-	if (f == x_stdin) {
+	if (f == stdin) {
 		talloc_free(ctx);
 		exit(0);
 	}
