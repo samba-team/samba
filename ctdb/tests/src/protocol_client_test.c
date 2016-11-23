@@ -376,11 +376,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_addr_info(mem_ctx, cd->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		fill_ctdb_string(mem_ctx, &cd->data.event_str);
-		assert(cd->data.event_str != NULL);
-		break;
-
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		break;
 
@@ -411,10 +406,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_GET_NODEMAP:
 		break;
 
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		cd->data.event = rand_int(CTDB_EVENT_MAX);
-		break;
-
 	case CTDB_CONTROL_TRAVERSE_KILL:
 		cd->data.traverse_start = talloc(mem_ctx, struct ctdb_traverse_start);
 		assert(cd->data.traverse_start != NULL);
@@ -440,16 +431,6 @@ static void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
 		cd->data.role = rand_int(2);
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		fill_ctdb_string(mem_ctx, &cd->data.script);
-		assert(cd->data.script != NULL);
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
-		fill_ctdb_string(mem_ctx, &cd->data.script);
-		assert(cd->data.script != NULL);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -821,10 +802,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 		verify_ctdb_addr_info(cd->data.addr_info, cd2->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		verify_ctdb_string(cd->data.event_str, cd2->data.event_str);
-		break;
-
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		break;
 
@@ -851,10 +828,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 	case CTDB_CONTROL_GET_NODEMAP:
 		break;
 
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		assert(cd->data.event == cd2->data.event);
-		break;
-
 	case CTDB_CONTROL_TRAVERSE_KILL:
 		verify_ctdb_traverse_start(cd->data.traverse_start,
 					   cd2->data.traverse_start);
@@ -879,14 +852,6 @@ static void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
 		assert(cd->data.role == cd2->data.role);
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		verify_ctdb_string(cd->data.script, cd2->data.script);
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
-		verify_ctdb_string(cd->data.script, cd2->data.script);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -1262,9 +1227,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_DEL_PUBLIC_IP:
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		break;
-
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		cd->data.caps = rand32();
 		break;
@@ -1296,12 +1258,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		fill_ctdb_node_map(mem_ctx, cd->data.nodemap);
 		break;
 
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		cd->data.script_list = talloc(mem_ctx, struct ctdb_script_list);
-		assert(cd->data.script_list != NULL);
-		fill_ctdb_script_list(mem_ctx, cd->data.script_list);
-		break;
-
 	case CTDB_CONTROL_TRAVERSE_KILL:
 		break;
 
@@ -1323,12 +1279,6 @@ static void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -1638,9 +1588,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 	case CTDB_CONTROL_DEL_PUBLIC_IP:
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		break;
-
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		assert(cd->data.caps == cd2->data.caps);
 		break;
@@ -1661,11 +1608,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 
 	case CTDB_CONTROL_GET_NODEMAP:
 		verify_ctdb_node_map(cd->data.nodemap, cd2->data.nodemap);
-		break;
-
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		verify_ctdb_script_list(cd->data.script_list,
-					cd2->data.script_list);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
@@ -1689,12 +1631,6 @@ static void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:

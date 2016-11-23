@@ -856,12 +856,10 @@ struct ctdb_req_control_data {
 		struct ctdb_client_id *cid;
 		struct ctdb_addr_info *addr_info;
 		struct ctdb_transdb *transdb;
-		const char *event_str;
 		struct ctdb_public_ip *pubip;
 		enum ctdb_event event;
 		double reclock_latency;
 		uint32_t role;
-		const char *script;
 		struct ctdb_ban_state *ban_state;
 		struct ctdb_notify_data *notify;
 		uint64_t srvid;
@@ -894,7 +892,6 @@ struct ctdb_reply_control_data {
 		uint32_t caps;
 		struct ctdb_public_ip_list *pubip_list;
 		struct ctdb_node_map *nodemap;
-		struct ctdb_script_list *script_list;
 		const char *reclock_file;
 		struct ctdb_ban_state *ban_state;
 		uint64_t seqnum;

@@ -253,10 +253,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		len = ctdb_addr_info_len(cd->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		len = ctdb_string_len(cd->data.event_str);
-		break;
-
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		break;
 
@@ -275,10 +271,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_GET_NODEMAP:
-		break;
-
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		len = ctdb_uint32_len(cd->data.event);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
@@ -304,14 +296,6 @@ static size_t ctdb_req_control_data_len(struct ctdb_req_control_data *cd)
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
 		len = ctdb_uint32_len(cd->data.role);
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		len = ctdb_string_len(cd->data.script);
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
-		len = ctdb_string_len(cd->data.script);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -574,20 +558,12 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 		ctdb_addr_info_push(cd->data.addr_info, buf);
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		ctdb_string_push(cd->data.event_str, buf);
-		break;
-
 	case CTDB_CONTROL_RELEASE_IP:
 		ctdb_public_ip_push(cd->data.pubip, buf);
 		break;
 
 	case CTDB_CONTROL_TAKEOVER_IP:
 		ctdb_public_ip_push(cd->data.pubip, buf);
-		break;
-
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		ctdb_uint32_push(cd->data.event, buf);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
@@ -604,14 +580,6 @@ static void ctdb_req_control_data_push(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
 		ctdb_uint32_push(cd->data.role, buf);
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		ctdb_string_push(cd->data.script, buf);
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
-		ctdb_string_push(cd->data.script, buf);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -887,11 +855,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 					  &cd->data.addr_info);
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.event_str);
-		break;
-
 	case CTDB_CONTROL_RELEASE_IP:
 		ret = ctdb_public_ip_pull(buf, buflen, mem_ctx,
 					  &cd->data.pubip);
@@ -900,11 +863,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_TAKEOVER_IP:
 		ret = ctdb_public_ip_pull(buf, buflen, mem_ctx,
 					  &cd->data.pubip);
-		break;
-
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
-				       &cd->data.event);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
@@ -925,16 +883,6 @@ static int ctdb_req_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_SET_RECMASTERROLE:
 		ret = ctdb_uint32_pull(buf, buflen, mem_ctx,
 				     &cd->data.role);
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.script);
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
-		ret = ctdb_string_pull(buf, buflen, mem_ctx,
-				       &cd->data.script);
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -1269,9 +1217,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 	case CTDB_CONTROL_DEL_PUBLIC_IP:
 		break;
 
-	case CTDB_CONTROL_RUN_EVENTSCRIPTS:
-		break;
-
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		len = ctdb_uint32_len(cd->data.caps);
 		break;
@@ -1291,10 +1236,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 
 	case CTDB_CONTROL_GET_NODEMAP:
 		len = ctdb_node_map_len(cd->data.nodemap);
-		break;
-
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		len = ctdb_script_list_len(cd->data.script_list);
 		break;
 
 	case CTDB_CONTROL_TRAVERSE_KILL:
@@ -1317,12 +1258,6 @@ static size_t ctdb_reply_control_data_len(struct ctdb_reply_control_data *cd)
 		break;
 
 	case CTDB_CONTROL_SET_RECMASTERROLE:
-		break;
-
-	case CTDB_CONTROL_ENABLE_SCRIPT:
-		break;
-
-	case CTDB_CONTROL_DISABLE_SCRIPT:
 		break;
 
 	case CTDB_CONTROL_SET_BAN_STATE:
@@ -1539,10 +1474,6 @@ static void ctdb_reply_control_data_push(struct ctdb_reply_control_data *cd,
 		ctdb_node_map_push(cd->data.nodemap, buf);
 		break;
 
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		ctdb_script_list_push(cd->data.script_list, buf);
-		break;
-
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		ctdb_string_push(cd->data.reclock_file, buf);
 		break;
@@ -1714,11 +1645,6 @@ static int ctdb_reply_control_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_CONTROL_GET_NODEMAP:
 		ret = ctdb_node_map_pull(buf, buflen, mem_ctx,
 					 &cd->data.nodemap);
-		break;
-
-	case CTDB_CONTROL_GET_EVENT_SCRIPT_STATUS:
-		ret = ctdb_script_list_pull(buf, buflen, mem_ctx,
-					    &cd->data.script_list);
 		break;
 
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
