@@ -101,7 +101,7 @@ loadconfig () {
 # configuration file.
 debug ()
 {
-    if [ "${CTDB_SCRIPT_DEBUGLEVEL:-2}" -ge 4 ] ; then
+    if [ "${CTDB_SCRIPT_DEBUGLEVEL:-NOTICE}" = "DEBUG" ] ; then
 	# If there are arguments then echo them.  Otherwise expect to
 	# use stdin, which allows us to pass lots of debug using a
 	# here document.
