@@ -1688,9 +1688,11 @@ bool lp_canonicalize_parameter(const char *parm_name, const char **canon_parm,
  Turn the value given into the inverse boolean expression when
  the synonym is an invers boolean synonym.
 
- Return true if parm_name is a valid parameter name and
- in case it is an invers boolean synonym, if the val string could
- successfully be converted to the reverse bool.
+ Return true if
+ - parm_name is a valid parameter name and
+ - val is a valid value for this parameter and
+ - in case the parameter is an inverse boolean synonym, if the val
+   string could successfully be converted to the reverse bool.
  Return false in all other cases.
 **************************************************************************/
 
@@ -1701,6 +1703,7 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 {
 	int num;
 	bool inverse;
+	bool ret;
 
 	if (!lp_parameter_is_valid(parm_name)) {
 		*canon_parm = NULL;
@@ -1726,7 +1729,9 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 		*canon_val = val;
 	}
 
-	return true;
+	ret = lp_parameter_value_is_valid(*canon_parm, *canon_val);
+
+	return ret;
 }
 
 /***************************************************************************
