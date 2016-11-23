@@ -90,8 +90,16 @@ test x"${need_binary}" = x"yes" && {
 	}
 }
 
-BATCHFILE_PRE=/tmp/gdb_backtrace_pre.$$
-BATCHFILE_MAIN=/tmp/gdb_backtrace_main.$$
+BATCHFILE_PRE=`mktemp --tmpdir gdb_backtrace_pre.XXXXXXXXXX`
+test -n "${BATCHFILE_PRE}" || {
+	echo "mktemp doesn't work" 1>&2
+	exit 1
+}
+BATCHFILE_MAIN=`mktemp --tmpdir gdb_backtrace_main.XXXXXXXXXX`
+test -n "${BATCHFILE_MAIN}" || {
+	echo "mktemp doesn't work" 1>&2
+	exit 1
+}
 case "${DB}" in
 	ladebug)
 cat << EOF  > ${BATCHFILE_PRE}
