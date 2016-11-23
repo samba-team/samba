@@ -1713,16 +1713,17 @@ bool lp_canonicalize_parameter_with_value(const char *parm_name,
 		/* parametric option */
 		*canon_parm = parm_name;
 		*canon_val = val;
-	} else {
-		*canon_parm = parm_table[num].label;
-		if (inverse) {
-			if (!lp_invert_boolean(val, canon_val)) {
-				*canon_val = NULL;
-				return false;
-			}
-		} else {
-			*canon_val = val;
+		return true;
+	}
+
+	*canon_parm = parm_table[num].label;
+	if (inverse) {
+		if (!lp_invert_boolean(val, canon_val)) {
+			*canon_val = NULL;
+			return false;
 		}
+	} else {
+		*canon_val = val;
 	}
 
 	return true;
