@@ -24,7 +24,6 @@
 #include "system/select.h"
 #include "system/readline.h"
 #include "libcli/smbreadline/smbreadline.h"
-#include "lib/util/xfile.h"
 
 #undef malloc
 
@@ -72,13 +71,13 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 				char **(completion_fn)(const char *text, int start, int end))
 {
 	char *line = NULL;
-	int fd = x_fileno(x_stdin);
+	int fd = fileno(stdin);
 	char *ret;
 
 	/* Prompt might be NULL in non-interactive mode. */
 	if (prompt) {
-		x_fprintf(x_stdout, "%s", prompt);
-		x_fflush(x_stdout);
+		printf("%s", prompt);
+		fflush(stdout);
 	}
 
 	line = (char *)malloc(BUFSIZ);
@@ -94,7 +93,7 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 		pfd.events = POLLIN|POLLHUP;
 
 		if (sys_poll_intr(&pfd, 1, 5000) == 1) {
-			ret = x_fgets(line, BUFSIZ, x_stdin);
+			ret = fgets(line, BUFSIZ, stdin);
 			if (ret == 0) {
 				SAFE_FREE(line);
 			}
@@ -118,7 +117,7 @@ char *smb_readline(const char *prompt, void (*callback)(void),
 	char *ret;
 	bool interactive;
 
-	interactive = isatty(x_fileno(x_stdin)) || getenv("CLI_FORCE_INTERACTIVE");
+	interactive = isatty(fileno(stdin)) || getenv("CLI_FORCE_INTERACTIVE");
 	if (!interactive) {
 		return smb_readline_replacement(NULL, callback, completion_fn);
 	}
