@@ -979,6 +979,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	char *realm_upper = NULL;
 	bool result = false;
 	char *enctypes = NULL;
+	const char *include_system_krb5 = "";
 	mode_t mask;
 
 	if (!lp_create_krb5_conf()) {
@@ -1034,13 +1035,25 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
+#if !defined(SAMBA4_USES_HEIMDAL)
+	if (lp_include_system_krb5_conf()) {
+		include_system_krb5 = "include /etc/krb5.conf";
+	}
+#endif
+
 	file_contents =
-	    talloc_asprintf(fname, "[libdefaults]\n\tdefault_realm = %s\n"
-				   "%s"
-				   "\tdns_lookup_realm = false\n\n"
-				   "[realms]\n\t%s = {\n"
-				   "%s\t}\n",
-			    realm_upper, enctypes, realm_upper, kdc_ip_string);
+	    talloc_asprintf(fname,
+			    "[libdefaults]\n\tdefault_realm = %s\n"
+			    "%s"
+			    "\tdns_lookup_realm = false\n\n"
+			    "[realms]\n\t%s = {\n"
+			    "%s\t}\n"
+			    "%s\n",
+			    realm_upper,
+			    enctypes,
+			    realm_upper,
+			    kdc_ip_string,
+			    include_system_krb5);
 
 	if (!file_contents) {
 		goto done;
