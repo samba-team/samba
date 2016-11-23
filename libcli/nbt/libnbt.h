@@ -24,7 +24,6 @@
 
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/ndr/libndr.h"
-#include "lib/util/xfile.h"
 
 /*
   possible states for pending requests
@@ -361,10 +360,10 @@ NTSTATUS nbt_name_refresh_wins_recv(struct tevent_req *req,
 				    TALLOC_CTX *mem_ctx,
 				    struct nbt_name_refresh_wins *io);
 
-XFILE *startlmhosts(const char *fname);
-bool getlmhostsent(TALLOC_CTX *ctx, XFILE *fp, char **pp_name, int *name_type,
-		struct sockaddr_storage *pss);
-void endlmhosts(XFILE *fp);
+FILE *startlmhosts(const char *fname);
+bool getlmhostsent(TALLOC_CTX *ctx, FILE *fp, char **pp_name, int *name_type,
+		   struct sockaddr_storage *pss);
+void endlmhosts(FILE *fp);
 
 NTSTATUS resolve_lmhosts_file_as_sockaddr(const char *lmhosts_file, 
 					  const char *name, int name_type,

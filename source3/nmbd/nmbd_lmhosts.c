@@ -36,7 +36,7 @@ void load_lmhosts_file(const char *fname)
 	int name_type;
 	struct sockaddr_storage ss;
 	TALLOC_CTX *ctx = talloc_init("load_lmhosts_file");
-	XFILE *fp = startlmhosts( fname );
+	FILE *fp = startlmhosts( fname );
 
 	if (!fp) {
 		DEBUG(2,("load_lmhosts_file: Can't open lmhosts file %s. Error was %s\n",
