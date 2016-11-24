@@ -1,11 +1,6 @@
 # If we're not running on a real cluster then we need a local copy of
 # ctdb (and other stuff) in $PATH and we will use local daemons.
 
-export CTDB_NODES_SOCKETS=""
-for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-    CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${TEST_VAR_DIR}/sock.${i}"
-done
-
 # Use in-tree binaries if running against local daemons.
 # Otherwise CTDB need to be installed on all nodes.
 if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
@@ -46,10 +41,39 @@ have_ip ()
 	[ -n "$t" ]
 }
 
+node_dir ()
+{
+	local pnn="$1"
+
+	echo "${TEST_VAR_DIR}/node.${pnn}"
+}
+
+node_conf ()
+{
+	local pnn="$1"
+
+	local node_dir=$(node_dir "$pnn")
+	echo "${node_dir}/ctdbd.conf"
+}
+
+node_pidfile ()
+{
+	local pnn="$1"
+
+	local node_dir=$(node_dir "$pnn")
+	echo "${node_dir}/ctdbd.pid"
+}
+
+node_socket ()
+{
+	local pnn="$1"
+
+	local node_dir=$(node_dir "$pnn")
+	echo "${node_dir}/ctdbd.socket"
+}
+
 setup_ctdb ()
 {
-    mkdir -p "${TEST_VAR_DIR}/test.db/persistent"
-
     local public_addresses_all="${TEST_VAR_DIR}/public_addresses_all"
     rm -f $CTDB_NODES $public_addresses_all
 
@@ -103,7 +127,10 @@ setup_ctdb ()
 
     local pnn
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	local public_addresses_mine="${TEST_VAR_DIR}/public_addresses.${pnn}"
+	local node_dir=$(node_dir "$pnn")
+	mkdir -p "$node_dir"
+
+	local public_addresses_mine="${node_dir}/public_addresses"
 	local public_addresses
 
 	if  [ "$no_public_ips" = $pnn ] ; then
@@ -116,20 +143,24 @@ setup_ctdb ()
 
 	local node_ip=$(sed -n -e "$(($pnn + 1))p" "$CTDB_NODES")
 
-	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
-	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+	local conf=$(node_conf "$pnn")
+	local socket=$(node_socket "$pnn")
+
+	local db_dir="${node_dir}/db"
+	mkdir -p "${db_dir}/persistent"
+
 	cat >"$conf" <<EOF
 CTDB_RECOVERY_LOCK="${TEST_VAR_DIR}/rec.lock"
 CTDB_NODES="$CTDB_NODES"
 CTDB_NODE_ADDRESS="${node_ip}"
 CTDB_EVENT_SCRIPT_DIR="${TEST_VAR_DIR}/events.d"
-CTDB_LOGGING="file:${TEST_VAR_DIR}/daemon.${pnn}.log"
+CTDB_LOGGING="file:${node_dir}/log.ctdb"
 CTDB_DEBUGLEVEL=3
-CTDB_DBDIR="${TEST_VAR_DIR}/test.db"
-CTDB_DBDIR_PERSISTENT="${TEST_VAR_DIR}/test.db/persistent"
-CTDB_DBDIR_STATE="${TEST_VAR_DIR}/test.db/state"
+CTDB_DBDIR="${db_dir}"
+CTDB_DBDIR_PERSISTENT="${db_dir}/persistent"
+CTDB_DBDIR_STATE="${db_dir}/state"
 CTDB_PUBLIC_ADDRESSES="${public_addresses}"
-CTDB_SOCKET="${TEST_VAR_DIR}/sock.$pnn"
+CTDB_SOCKET="${socket}"
 CTDB_NOSETSCHED=yes
 EOF
 
@@ -145,8 +176,8 @@ daemons_start ()
 
     local pnn
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
-	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+	local pidfile=$(node_pidfile "$pnn")
+	local conf=$(node_conf "$pnn")
 
 	# If there is any CTDB configuration in the environment then
 	# append it to the regular configuration in a temporary
@@ -176,8 +207,8 @@ daemons_stop ()
 
     local pnn
     for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
-	local pidfile="${TEST_VAR_DIR}/ctdbd.${pnn}.pid"
-	local conf="${TEST_VAR_DIR}/ctdbd.${pnn}.conf"
+	local pidfile=$(node_pidfile "$pnn")
+	local conf=$(node_conf "$pnn")
 
 	CTDBD_CONF="$conf" \
 	     ctdbd_wrapper "$pidfile" stop
@@ -208,3 +239,11 @@ ps_ctdbd ()
 	ps -p $(pgrep -f '\<ctdbd\>' | xargs | sed -e 's| |,|g') -o args ww
 	echo
 }
+
+# onnode will use CTDB_NODES_SOCKETS to help the ctdb tool connection
+# to each daemon
+export CTDB_NODES_SOCKETS=""
+for i in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
+    socket=$(node_socket "$i")
+    CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${socket}"
+done
