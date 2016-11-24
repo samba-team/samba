@@ -610,7 +610,7 @@ static bool test_realloc_child(void)
 	void *root;
 	struct el2 {
 		const char *name;
-	} *el2, *el2_2, *el2_3;
+	} *el2, *el2_2, *el2_3, **el_list_save;
 	struct el1 {
 		int count;
 		struct el2 **list, **list2, **list3;
@@ -640,7 +640,13 @@ static bool test_realloc_child(void)
 	el2_3 = talloc(el1->list3, struct el2);
 	CHECK_PARENT("el2", el2_3, el1->list3);
 
+	el_list_save = el1->list;
 	el1->list = talloc_realloc(el1, el1->list, struct el2 *, 100);
+	if (el1->list == el_list_save) {
+		printf("failure: talloc_realloc didn't move pointer");
+		return false;
+	}
+
 	CHECK_PARENT("el1_after_realloc", el1->list, el1);
 	el1->list2 = talloc_realloc(el1, el1->list2, struct el2 *, 200);
 	CHECK_PARENT("el1_after_realloc", el1->list2, el1);
@@ -650,6 +656,12 @@ static bool test_realloc_child(void)
 	CHECK_PARENT("el2", el2, el1->list);
 	CHECK_PARENT("el2", el2_2, el1->list2);
 	CHECK_PARENT("el2", el2_3, el1->list3);
+
+	/* Finally check realloc with multiple children */
+	el1 = talloc_realloc(root, el1, struct el1, 100);
+	CHECK_PARENT("el1->list", el1->list, el1);
+	CHECK_PARENT("el1->list2", el1->list2, el1);
+	CHECK_PARENT("el1->list3", el1->list3, el1);
 
 	talloc_free(root);
 
@@ -970,6 +982,57 @@ static bool test_loop(void)
 	loop_destructor_count = 0;
 
 	printf("success: loop\n");
+	return true;
+}
+
+static int realloc_parent_destructor_count;
+
+static int test_realloc_parent_destructor(char *ptr)
+{
+	realloc_parent_destructor_count++;
+	return 0;
+}
+
+static bool test_realloc_on_destructor_parent(void)
+{
+	void *top = talloc_new(NULL);
+	char *parent;
+	char *a, *b, *C, *D;
+	realloc_parent_destructor_count = 0;
+
+	printf("test: free_for_exit\n# TALLOC FREE FOR EXIT\n");
+
+	parent = talloc_strdup(top, "parent");
+	a = talloc_strdup(parent, "a");
+	b = talloc_strdup(a, "b");
+	C = talloc_strdup(a, "C");
+	D = talloc_strdup(b, "D");
+	talloc_set_destructor(D, test_realloc_parent_destructor);
+	/* Capitalised ones have destructors.
+	 *
+	 * parent --> a -> b -> D
+	 *              -> c
+	 */
+
+	a = talloc_realloc(parent, a, char, 2048);
+
+	torture_assert("check talloc_realloc", a != NULL, "talloc_realloc failed");
+
+	talloc_set_destructor(C, test_realloc_parent_destructor);
+	/*
+	 * parent --> a[2048] -> b -> D
+	 *                    -> C
+	 *
+	 */
+
+	talloc_free(parent);
+
+	torture_assert("check destructor realloc_parent_destructor",
+		       realloc_parent_destructor_count == 2,
+		       "FAILED TO FIRE free_for_exit_destructor\n");
+
+
+	printf("success: free_for_exit\n");
 	return true;
 }
 
@@ -1993,6 +2056,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_loop();
 	test_reset();
 	ret &= test_free_parent_deny_child(); 
+	test_reset();
+	ret &= test_realloc_on_destructor_parent();
 	test_reset();
 	ret &= test_free_parent_reparent_child();
 	test_reset();
