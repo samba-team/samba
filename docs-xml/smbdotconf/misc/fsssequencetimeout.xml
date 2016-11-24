@@ -4,7 +4,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	The File Server Remove VSS Protocol (FSRVP) server includes a message
+	The File Server Remote VSS Protocol (FSRVP) server includes a message
 	sequence timer to ensure cleanup on unexpected client disconnect. This
 	parameter overrides the default timeout between FSRVP operations.
 	FSRVP timeouts can be completely disabled via a value of 0.
