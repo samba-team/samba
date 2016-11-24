@@ -227,6 +227,12 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DBG_INFO(...)		DBG_PREFIX(DBGLVL_INFO,		(__VA_ARGS__))
 #define DBG_DEBUG(...)		DBG_PREFIX(DBGLVL_DEBUG,	(__VA_ARGS__))
 
+#define D_ERR(...)		DEBUG(DBGLVL_ERR,	(__VA_ARGS__))
+#define D_WARNING(...)		DEBUG(DBGLVL_WARNING,	(__VA_ARGS__))
+#define D_NOTICE(...)		DEBUG(DBGLVL_NOTICE,	(__VA_ARGS__))
+#define D_INFO(...)		DEBUG(DBGLVL_INFO,	(__VA_ARGS__))
+#define D_DEBUG(...)		DEBUG(DBGLVL_DEBUG,	(__VA_ARGS__))
+
 /* The following definitions come from lib/debug.c  */
 
 /** Possible destinations for the debug log (in order of precedence -
