@@ -622,6 +622,8 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 	NTSTATUS status;
 	enum smb_encryption_setting encryption_state =
 		cli_credentials_get_smb_encryption(io->in.credentials);
+	enum credentials_use_kerberos krb5_state =
+		cli_credentials_get_kerberos_state(io->in.credentials);
 
 	c = composite_create(session, session->transport->ev);
 	if (c == NULL) return NULL;
@@ -642,6 +644,10 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	/* no session setup at all in earliest protocol varients */
 	if (session->transport->negotiate.protocol < PROTOCOL_LANMAN1) {
+		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+			composite_error(c, NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
+			return c;
+		}
 		ZERO_STRUCT(io->out);
 		composite_done(c);
 		return c;
@@ -649,9 +655,17 @@ struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *se
 
 	/* see what session setup interface we will use */
 	if (session->transport->negotiate.protocol < PROTOCOL_NT1) {
+		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+			composite_error(c, NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
+			return c;
+		}
 		status = session_setup_old(c, session, io, &state->req);
 	} else if (!session->transport->options.use_spnego ||
 		   !(io->in.capabilities & CAP_EXTENDED_SECURITY)) {
+		if (krb5_state == CRED_USE_KERBEROS_REQUIRED) {
+			composite_error(c, NT_STATUS_NETWORK_CREDENTIAL_CONFLICT);
+			return c;
+		}
 		status = session_setup_nt1(c, session, io, &state->req);
 	} else {
 		struct tevent_req *subreq = NULL;
