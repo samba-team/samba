@@ -1851,15 +1851,9 @@ void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code)
  * process must be created using ctdb_fork() and not fork() -
  * ctdb_fork() does some necessary housekeeping.
  */
-int switch_from_server_to_client(struct ctdb_context *ctdb, const char *fmt, ...)
+int switch_from_server_to_client(struct ctdb_context *ctdb)
 {
 	int ret;
-	va_list ap;
-
-	/* Add extra information so we can identify this in the logs */
-	va_start(ap, fmt);
-	debug_extra = talloc_strdup_append(talloc_vasprintf(NULL, fmt, ap), ":");
-	va_end(ap);
 
 	/* get a new event context */
 	ctdb->ev = tevent_context_init(ctdb);

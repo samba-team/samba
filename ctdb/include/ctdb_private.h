@@ -599,8 +599,7 @@ int ctdb_control_getnodesfile(struct ctdb_context *ctdb, uint32_t opcode,
 
 void ctdb_shutdown_sequence(struct ctdb_context *ctdb, int exit_code);
 
-int switch_from_server_to_client(struct ctdb_context *ctdb,
-				 const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
+int switch_from_server_to_client(struct ctdb_context *ctdb);
 
 /* From server/ctdb_fork.c */
 

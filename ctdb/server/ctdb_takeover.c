@@ -3114,7 +3114,7 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 		debug_extra = talloc_asprintf(NULL, "reloadips:");
 
 		prctl_set_comment("ctdb_reloadips");
-		if (switch_from_server_to_client(ctdb, "reloadips-child") != 0) {
+		if (switch_from_server_to_client(ctdb) != 0) {
 			DEBUG(DEBUG_CRIT,("ERROR: Failed to switch reloadips child into client mode\n"));
 			res = -1;
 		} else {

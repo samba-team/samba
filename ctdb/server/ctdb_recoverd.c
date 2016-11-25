@@ -3137,7 +3137,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	srandom(getpid() ^ time(NULL));
 
 	prctl_set_comment("ctdb_recovered");
-	if (switch_from_server_to_client(ctdb, "recoverd") != 0) {
+	if (switch_from_server_to_client(ctdb) != 0) {
 		DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch recovery daemon into client mode. shutting down.\n"));
 		exit(1);
 	}

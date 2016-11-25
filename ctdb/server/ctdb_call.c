@@ -1856,7 +1856,7 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 		debug_extra = talloc_asprintf(NULL, "revokechild-%s:", ctdb_db->db_name);
 
 		prctl_set_comment("ctdb_revokechild");
-		if (switch_from_server_to_client(ctdb, "revokechild-%s", ctdb_db->db_name) != 0) {
+		if (switch_from_server_to_client(ctdb) != 0) {
 			DEBUG(DEBUG_ERR,("Failed to switch from server to client for revokechild process\n"));
 			c = 1;
 			goto child_finished;
