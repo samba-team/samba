@@ -58,11 +58,11 @@ static struct pidfile_context *ctdbd_pidfile_ctx = NULL;
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
+static pid_t __ctdbd_pid;
+
 static void print_exit_message(void)
 {
-	if (debug_extra != NULL && debug_extra[0] != '\0') {
-		DEBUG(DEBUG_NOTICE,("CTDB %s shutting down\n", debug_extra));
-	} else {
+	if (getpid() == __ctdbd_pid) {
 		DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
 
 		/* Wait a second to allow pending log messages to be flushed */
@@ -1265,6 +1265,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	 * This must be the first exit handler to run (so the last to
 	 * be registered.
 	 */
+	__ctdbd_pid = getpid();
 	atexit(print_exit_message);
 
 	if (ctdb->do_setsched) {
