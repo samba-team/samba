@@ -154,7 +154,7 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	poptContext pc;
 	struct tevent_context *ev;
-	enum debug_level log_level;
+	int log_level;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -200,9 +200,9 @@ int main(int argc, const char *argv[])
 
 	/* Set the debug level */
 	if (debug_level_parse(options.debuglevel, &log_level)) {
-		DEBUGLEVEL = debug_level_to_int(log_level);
+		DEBUGLEVEL = log_level;
 	} else {
-		DEBUGLEVEL = debug_level_to_int(DEBUG_NOTICE);
+		DEBUGLEVEL = DEBUG_NOTICE;
 	}
 
 	setenv("CTDB_SOCKET", options.socket, 1);

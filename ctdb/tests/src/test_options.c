@@ -88,7 +88,7 @@ static void set_defaults_database(struct test_options *opts)
 
 static bool verify_options_basic(struct test_options *opts)
 {
-	enum debug_level log_level;
+	int log_level;
 	bool status;
 
 	status = debug_level_parse(opts->debugstr, &log_level);
@@ -98,7 +98,7 @@ static bool verify_options_basic(struct test_options *opts)
 		return false;
 	}
 
-	DEBUGLEVEL = debug_level_to_int(log_level);
+	DEBUGLEVEL = log_level;
 
 	return true;
 }

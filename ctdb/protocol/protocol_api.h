@@ -204,10 +204,10 @@ int ctdb_reply_control_setvnnmap(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_get_debug(struct ctdb_req_control *request);
 int ctdb_reply_control_get_debug(struct ctdb_reply_control *reply,
-				 uint32_t *debug_level);
+				 int *debug_level);
 
 void ctdb_req_control_set_debug(struct ctdb_req_control *request,
-				uint32_t debug_level);
+				int debug_level);
 int ctdb_reply_control_set_debug(struct ctdb_reply_control *reply);
 
 void ctdb_req_control_get_dbmap(struct ctdb_req_control *request);

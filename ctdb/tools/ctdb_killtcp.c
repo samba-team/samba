@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 	struct TALLOC_CONTEXT *mem_ctx = NULL;
 	struct ctdb_connection *conns = NULL;
 	const char *t;
-	enum debug_level debug_level;
+	int debug_level;
 	bool done;
 	int num = 0;
 	int i, ret;
@@ -356,7 +356,9 @@ int main(int argc, char **argv)
 	t = getenv("CTDB_DEBUGLEVEL");
 	if (t != NULL) {
 		if (debug_level_parse(t, &debug_level)) {
-			DEBUGLEVEL = debug_level_to_int(debug_level);
+			DEBUGLEVEL = debug_level;
+		} else {
+			DEBUGLEVEL = DEBUG_ERR;
 		}
 	}
 

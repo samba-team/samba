@@ -109,7 +109,7 @@ struct ctdbd_context {
 	struct timeval recovery_start_time;
 	struct timeval recovery_end_time;
 	bool takeover_disabled;
-	enum debug_level log_level;
+	int log_level;
 	enum ctdb_runstate runstate;
 	struct ctdb_tunable_list tun_list;
 	int monitoring_mode;
@@ -1242,7 +1242,7 @@ static void control_get_debug(TALLOC_CTX *mem_ctx,
 	struct ctdb_reply_control reply;
 
 	reply.rdata.opcode = request->opcode;
-	reply.rdata.data.loglevel = debug_level_to_int(ctdb->log_level);
+	reply.rdata.data.loglevel = (uint32_t)ctdb->log_level;
 	reply.status = 0;
 	reply.errmsg = NULL;
 
@@ -1259,7 +1259,7 @@ static void control_set_debug(TALLOC_CTX *mem_ctx,
 	struct ctdbd_context *ctdb = state->ctdb;
 	struct ctdb_reply_control reply;
 
-	ctdb->log_level = debug_level_from_int(request->rdata.data.loglevel);
+	ctdb->log_level = (int)request->rdata.data.loglevel;
 
 	reply.rdata.opcode = request->opcode;
 	reply.status = 0;
@@ -3165,7 +3165,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *mem_ctx;
 	struct ctdbd_context *ctdb;
 	struct tevent_context *ev;
-	enum debug_level debug_level;
+	int debug_level;
 	poptContext pc;
 	int opt, fd, ret, pfd[2];
 	ssize_t len;
@@ -3192,10 +3192,10 @@ int main(int argc, const char *argv[])
 	}
 
 	if (options.debuglevel == NULL) {
-		DEBUGLEVEL = debug_level_to_int(DEBUG_ERR);
+		DEBUGLEVEL = DEBUG_ERR;
 	} else {
 		if (debug_level_parse(options.debuglevel, &debug_level)) {
-			DEBUGLEVEL = debug_level_to_int(debug_level);
+			DEBUGLEVEL = debug_level;
 		} else {
 			fprintf(stderr, "Invalid debug level\n");
 			poptPrintHelp(pc, stdout, 0);

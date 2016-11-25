@@ -23,7 +23,7 @@
 #include "common/logging.h"
 
 struct {
-	enum debug_level log_level;
+	int log_level;
 	const char *log_string;
 } log_string_map[] = {
 	{ DEBUG_ERR,     "ERROR" },
@@ -33,7 +33,7 @@ struct {
 	{ DEBUG_DEBUG,   "DEBUG" },
 };
 
-bool debug_level_parse(const char *log_string, enum debug_level *log_level)
+bool debug_level_parse(const char *log_string, int *log_level)
 {
 	int i;
 
@@ -45,7 +45,7 @@ bool debug_level_parse(const char *log_string, enum debug_level *log_level)
 		int level = atoi(log_string);
 
 		if (level >= 0 && level < ARRAY_SIZE(log_string_map)) {
-			*log_level = debug_level_from_int(level);
+			*log_level = level;
 			return true;
 		}
 		return false;
@@ -62,7 +62,7 @@ bool debug_level_parse(const char *log_string, enum debug_level *log_level)
 	return false;
 }
 
-const char *debug_level_to_string(enum debug_level log_level)
+const char *debug_level_to_string(int log_level)
 {
 	int i;
 
@@ -74,10 +74,10 @@ const char *debug_level_to_string(enum debug_level log_level)
 	return "UNKNOWN";
 }
 
-enum debug_level debug_level_from_string(const char *log_string)
+int debug_level_from_string(const char *log_string)
 {
 	bool found;
-	enum debug_level log_level;
+	int log_level;
 
 	found = debug_level_parse(log_string, &log_level);
 	if (found) {
@@ -86,22 +86,4 @@ enum debug_level debug_level_from_string(const char *log_string)
 
 	/* Default debug level */
 	return DEBUG_ERR;
-}
-
-int debug_level_to_int(enum debug_level log_level)
-{
-	return (int)log_level;
-}
-
-enum debug_level debug_level_from_int(int level)
-{
-	enum debug_level log_level;
-
-	if (level >= 0 && level < ARRAY_SIZE(log_string_map)) {
-		log_level = log_string_map[level].log_level;
-	} else {
-		log_level = DEBUG_ERR;
-	}
-
-	return log_level;
 }

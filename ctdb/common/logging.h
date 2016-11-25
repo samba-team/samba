@@ -20,22 +20,18 @@
 #ifndef __CTDB_LOGGING_H__
 #define __CTDB_LOGGING_H__
 
-enum debug_level {
-	DEBUG_ERR     =  0,
-	DEBUG_WARNING =  1,
-	DEBUG_NOTICE  =  2,
-	DEBUG_INFO    =  3,
-	DEBUG_DEBUG   =  4,
-};
+#define DEBUG_ERR     0
+#define DEBUG_WARNING 1
+#define DEBUG_NOTICE  2
+#define DEBUG_INFO    3
+#define DEBUG_DEBUG   4
 
 /* These are used in many places, so define them here to avoid churn */
 #define DEBUG_ALERT DEBUG_ERR
 #define	DEBUG_CRIT  DEBUG_ERR
 
-bool debug_level_parse(const char *log_string, enum debug_level *log_level);
-const char *debug_level_to_string(enum debug_level log_level);
-enum debug_level debug_level_from_string(const char *log_string);
-int debug_level_to_int(enum debug_level log_level);
-enum debug_level debug_level_from_int(int log_int);
+bool debug_level_parse(const char *log_string, int *log_level);
+const char *debug_level_to_string(int log_level);
+int debug_level_from_string(const char *log_string);
 
 #endif /* __CTDB_LOGGING_H__ */

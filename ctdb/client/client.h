@@ -240,12 +240,12 @@ int ctdb_ctrl_getvnnmap(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 int ctdb_ctrl_getdebug(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		       struct ctdb_client_context *client,
 		       int destnode, struct timeval timeout,
-		       uint32_t *loglevel);
+		       int *loglevel);
 
 int ctdb_ctrl_setdebug(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		       struct ctdb_client_context *client,
 		       int destnode, struct timeval timeout,
-		       uint32_t loglevel);
+		       int loglevel);
 
 int ctdb_ctrl_get_dbmap(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			struct ctdb_client_context *client,

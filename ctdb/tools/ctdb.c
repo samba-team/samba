@@ -2278,7 +2278,7 @@ static int control_enable_monitor(TALLOC_CTX *mem_ctx,
 static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			    int argc, const char **argv)
 {
-	enum debug_level log_level;
+	int log_level;
 	int ret;
 	bool found;
 
@@ -2307,7 +2307,7 @@ static int control_setdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 static int control_getdebug(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			    int argc, const char **argv)
 {
-	enum debug_level loglevel;
+	int loglevel;
 	const char *log_str;
 	int ret;
 
@@ -6468,7 +6468,7 @@ int main(int argc, const char *argv[])
 	int extra_argc;
 	const struct ctdb_cmd *cmd;
 	const char *ctdb_socket;
-	enum debug_level loglevel;
+	int loglevel;
 	int ret;
 
 	setlinebuf(stdout);

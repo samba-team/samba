@@ -222,14 +222,14 @@ void ctdb_req_control_get_debug(struct ctdb_req_control *request)
 }
 
 int ctdb_reply_control_get_debug(struct ctdb_reply_control *reply,
-				 uint32_t *loglevel)
+				 int *loglevel)
 {
 	if (reply->rdata.opcode != CTDB_CONTROL_GET_DEBUG) {
 		return EPROTO;
 	}
 
 	if (reply->status == 0) {
-		*loglevel = reply->rdata.data.loglevel;
+		*loglevel = (int)reply->rdata.data.loglevel;
 	}
 	return reply->status;
 }
@@ -237,7 +237,7 @@ int ctdb_reply_control_get_debug(struct ctdb_reply_control *reply,
 /* CTDB_CONTROL_SET_DEBUG */
 
 void ctdb_req_control_set_debug(struct ctdb_req_control *request,
-				uint32_t loglevel)
+				int loglevel)
 {
 	request->opcode = CTDB_CONTROL_SET_DEBUG;
 	request->pad = 0;
@@ -246,7 +246,7 @@ void ctdb_req_control_set_debug(struct ctdb_req_control *request,
 	request->flags = 0;
 
 	request->rdata.opcode = CTDB_CONTROL_SET_DEBUG;
-	request->rdata.data.loglevel = loglevel;
+	request->rdata.data.loglevel = (uint32_t)loglevel;
 }
 
 int ctdb_reply_control_set_debug(struct ctdb_reply_control *reply)
