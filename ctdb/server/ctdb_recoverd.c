@@ -2936,6 +2936,7 @@ static void recd_sig_term_handler(struct tevent_context *ev,
 	struct ctdb_recoverd *rec = talloc_get_type_abort(
 		private_data, struct ctdb_recoverd);
 
+	DEBUG(DEBUG_ERR, ("Received SIGTERM, exiting\n"));
 	ctdb_recovery_unlock(rec);
 	exit(0);
 }
