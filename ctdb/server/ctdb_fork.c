@@ -35,20 +35,6 @@
 #include "common/common.h"
 #include "common/logging.h"
 
-void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt, ...)
-{
-	if (child_name_fmt != NULL) {
-		va_list ap;
-		char *t;
-
-		va_start(ap, child_name_fmt);
-		t = talloc_vasprintf(mem_ctx, child_name_fmt, ap);
-		debug_extra = talloc_asprintf(mem_ctx, "%s:", t);
-		talloc_free(t);
-		va_end(ap);
-	}
-}
-
 void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid)
 {
 	char *process;
@@ -81,8 +67,6 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 		return -1;
 	}
 	if (pid == 0) {
-		ctdb_set_child_info(ctdb, NULL);
-
 		/* Close the Unix Domain socket and the TCP socket.
 		 * This ensures that none of the child processes will
 		 * look like the main daemon when it is not running.

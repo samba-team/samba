@@ -604,9 +604,6 @@ int switch_from_server_to_client(struct ctdb_context *ctdb,
 
 /* From server/ctdb_fork.c */
 
-void ctdb_set_child_info(TALLOC_CTX *mem_ctx, const char *child_name_fmt,
-			 ...) PRINTF_ATTRIBUTE(2,3);
-
 void ctdb_track_child(struct ctdb_context *ctdb, pid_t pid);
 
 pid_t ctdb_fork(struct ctdb_context *ctdb);
