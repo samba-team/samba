@@ -10420,7 +10420,7 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 				       struct torture_driver_context *d,
 				       const char *file_name)
 {
-	XFILE *f;
+	FILE *f;
 	int fnum;
 	uint8_t *buf;
 	int maxwrite = 64512;
@@ -10462,23 +10462,23 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 		torture_fail(tctx, talloc_asprintf(tctx, "failed to open remote file: %s\n", remote_name));
 	}
 
-	f = x_fopen(local_name, O_RDONLY, 0);
+	f = fopen(local_name, "r");
 	if (f == NULL) {
 		torture_fail(tctx, talloc_asprintf(tctx, "failed to open local file: %s\n", local_name));
 	}
 
 	buf = talloc_array(tctx, uint8_t, maxwrite);
 	if (!buf) {
-		x_fclose(f);
+		fclose(f);
 		return false;
 	}
 
-	while (!x_feof(f)) {
+	while (!feof(f)) {
 		int n = maxwrite;
 		int ret;
 
-		if ((n = x_fread(buf, 1, n, f)) < 1) {
-			if((n == 0) && x_feof(f))
+		if ((n = fread(buf, 1, n, f)) < 1) {
+			if((n == 0) && feof(f))
 				break; /* Empty local file. */
 
 			torture_warning(tctx,
@@ -10497,7 +10497,7 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 		nread += n;
 	}
 
-	x_fclose(f);
+	fclose(f);
 
 	torture_assert_ntstatus_ok(tctx,
 		smbcli_close(cli->tree, fnum),
