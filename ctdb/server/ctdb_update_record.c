@@ -268,7 +268,6 @@ static struct childwrite_handle *ctdb_childwrite(
 
 		close(result->fd[0]);
 		prctl_set_comment("ctdb_write_persistent");
-		debug_extra = talloc_asprintf(NULL, "childwrite-%s:", ctdb_db->db_name);
 		ret = ctdb_persistent_store(state);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Failed to write persistent data\n"));

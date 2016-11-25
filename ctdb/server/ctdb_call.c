@@ -1853,7 +1853,6 @@ int ctdb_start_revoke_ro_record(struct ctdb_context *ctdb, struct ctdb_db_contex
 	if (rc->child == 0) {
 		char c = 0;
 		close(rc->fd[0]);
-		debug_extra = talloc_asprintf(NULL, "revokechild-%s:", ctdb_db->db_name);
 
 		prctl_set_comment("ctdb_revokechild");
 		if (switch_from_server_to_client(ctdb) != 0) {

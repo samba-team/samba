@@ -3111,7 +3111,6 @@ int32_t ctdb_control_reload_public_ips(struct ctdb_context *ctdb, struct ctdb_re
 		signed char res = 0;
 
 		close(h->fd[0]);
-		debug_extra = talloc_asprintf(NULL, "reloadips:");
 
 		prctl_set_comment("ctdb_reloadips");
 		if (switch_from_server_to_client(ctdb) != 0) {
