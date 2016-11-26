@@ -27,13 +27,12 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "printing/pcap.h"
-#include "lib/util/xfile.h"
 
 #ifdef AIX
 bool aix_cache_reload(struct pcap_cache **_pcache)
 {
 	int iEtat;
-	XFILE *pfile;
+	FILE *pfile;
 	char *line = NULL, *p;
 	char *name = NULL;
 	struct pcap_cache *pcache = NULL;
@@ -45,7 +44,7 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 
 	DEBUG(5, ("reloading aix printcap cache\n"));
 
-	if ((pfile = x_fopen(lp_printcapname(), O_RDONLY, 0)) == NULL) {
+	if ((pfile = fopen(lp_printcapname(), "r")) == NULL) {
 		DEBUG(0,( "Unable to open qconfig file %s for read!\n", lp_printcapname()));
 		TALLOC_FREE(ctx);
 		return false;
@@ -53,16 +52,20 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 
 	iEtat = 0;
 	/* scan qconfig file for searching <printername>:	*/
-	for (;(line = x_fgets_slash(NULL, 1024, pfile)); free(line)) {
+	while (line = fgets_slash(ctx, NULL, 1024, pfile)) {
 		bool ok;
 
-		if (*line == '*' || *line == 0)
+		if (*line == '*' || *line == 0) {
+			TALLOC_FREE(line);
 			continue;
+		}
 
 		switch (iEtat) {
 		case 0: /* locate an entry */
-			if (*line == '\t' || *line == ' ')
+			if (*line == '\t' || *line == ' ') {
+				TALLOC_FREE(line);
 				continue;
+			}
 
 			if ((p = strchr_m(line, ':'))) {
 				char *saveptr;
@@ -72,8 +75,8 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 					name = talloc_strdup(ctx, p);
 					if (!name) {
 						pcap_cache_destroy_specific(&pcache);
-						SAFE_FREE(line);
-						x_fclose(pfile);
+						TALLOC_FREE(line);
+						fclose(pfile);
 						TALLOC_FREE(ctx);
 						return false;
 					}
@@ -95,8 +98,8 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 							     name, NULL, NULL);
 				if (!ok) {
 					pcap_cache_destroy_specific(&pcache);
-					SAFE_FREE(line);
-					x_fclose(pfile);
+					TALLOC_FREE(line);
+					fclose(pfile);
 					TALLOC_FREE(ctx);
 					return false;
 				}
@@ -114,7 +117,7 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 				if (!ok) {
 					pcap_cache_destroy_specific(&pcache);
 					SAFE_FREE(line);
-					x_fclose(pfile);
+					fclose(pfile);
 					TALLOC_FREE(ctx);
 					return false;
 				}
@@ -125,7 +128,7 @@ bool aix_cache_reload(struct pcap_cache **_pcache)
 	}
 
 	*_pcache = pcache;
-	x_fclose(pfile);
+	fclose(pfile);
 	TALLOC_FREE(ctx);
 	return true;
 }
