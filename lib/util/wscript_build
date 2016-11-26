@@ -68,7 +68,7 @@ bld.SAMBA_LIBRARY('talloc_report',
                   )
 
 bld.SAMBA_SUBSYSTEM('samba-util-core',
-                    source='''xfile.c data_blob.c util_file.c time.c
+                    source='''data_blob.c util_file.c time.c
                               signal.c util.c idtree.c fault.c
                               substitute.c util_process.c util_strlist.c
                               strv_util.c''',
@@ -123,7 +123,7 @@ else:
                     tevent_debug.c memcache.c unix_match.c''',
                   deps='samba-util-core DYNCONFIG close-low-fd tini tiniparser genrand',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid systemd systemd-daemon',
-                  public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h xfile.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h',
+                  public_headers='debug.h attr.h byteorder.h data_blob.h memory.h safe_string.h time.h talloc_stack.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,
                   vnum='0.0.1',
