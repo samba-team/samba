@@ -17,8 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include <talloc.h>
 #include "lib/util/bitmap.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
 
 struct bitmap {
 	unsigned int n;
