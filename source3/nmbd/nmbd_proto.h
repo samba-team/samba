@@ -158,7 +158,7 @@ void standard_success_release( struct subnet_record   *subrec,
                                struct in_addr          released_ip );
 void expire_names(time_t t);
 void add_samba_names_to_subnet( struct subnet_record *subrec );
-void dump_name_record( struct name_record *namerec, XFILE *fp);
+void dump_name_record(struct name_record *namerec, FILE *fp);
 void dump_all_namelists(void);
 
 /* The following definitions come from nmbd/nmbd_namequery.c  */
@@ -314,7 +314,7 @@ struct server_record *create_server_on_workgroup(struct work_record *work,
                                                  int ttl, const char *comment);
 void update_server_ttl(struct server_record *servrec, int ttl);
 void expire_servers(struct work_record *work, time_t t);
-void write_browse_list_entry(XFILE *fp, const char *name, uint32_t rec_type,
+void write_browse_list_entry(FILE *fp, const char *name, uint32_t rec_type,
 		const char *local_master_browser_name, const char *description);
 void write_browse_list(time_t t, bool force_write);
 
@@ -346,7 +346,7 @@ struct name_record *find_name_on_wins_subnet(const struct nmb_name *nmbname, boo
 bool wins_store_changed_namerec(const struct name_record *namerec);
 bool add_name_to_wins_subnet(const struct name_record *namerec);
 bool remove_name_from_wins_namelist(struct name_record *namerec);
-void dump_wins_subnet_namelist(XFILE *fp);
+void dump_wins_subnet_namelist(FILE *fp);
 bool packet_is_for_wins_server(struct packet_struct *packet);
 bool initialise_wins(void);
 void wins_process_name_refresh_request( struct subnet_record *subrec,
@@ -363,7 +363,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
 void wins_process_name_release_request(struct subnet_record *subrec,
                                        struct packet_struct *p);
 void initiate_wins_processing(time_t t);
-void wins_write_name_record(struct name_record *namerec, XFILE *fp);
+void wins_write_name_record(struct name_record *namerec, FILE *fp);
 void wins_write_database(time_t t, bool background);
 void nmbd_wins_new_entry(struct messaging_context *msg,
                                        void *private_data,

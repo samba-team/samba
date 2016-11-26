@@ -546,13 +546,13 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
  Dump a name_record struct.
 **************************************************************************/
 
-void dump_name_record( struct name_record *namerec, XFILE *fp)
+void dump_name_record( struct name_record *namerec, FILE *fp)
 {
 	const char *src_type;
 	struct tm *tm;
 	int i;
 
-	x_fprintf(fp,"\tName = %s\t", nmb_namestr(&namerec->name));
+	fprintf(fp,"\tName = %s\t", nmb_namestr(&namerec->name));
 	switch(namerec->data.source) {
 		case LMHOSTS_NAME:
 			src_type = "LMHOSTS_NAME";
@@ -580,7 +580,8 @@ void dump_name_record( struct name_record *namerec, XFILE *fp)
 			break;
 	}
 
-	x_fprintf(fp,"Source = %s\nb_flags = %x\t", src_type, namerec->data.nb_flags);
+	fprintf(fp, "Source = %s\nb_flags = %x\t", src_type,
+		namerec->data.nb_flags);
 
 	if(namerec->data.death_time != PERMANENT_TTL) {
 		const char *asct;
@@ -592,9 +593,9 @@ void dump_name_record( struct name_record *namerec, XFILE *fp)
 		if (!asct) {
 			return;
 		}
-		x_fprintf(fp, "death_time = %s\t", asct);
+		fprintf(fp, "death_time = %s\t", asct);
 	} else {
-		x_fprintf(fp, "death_time = PERMANENT\t");
+		fprintf(fp, "death_time = PERMANENT\t");
 	}
 
 	if(namerec->data.refresh_time != PERMANENT_TTL) {
@@ -607,18 +608,17 @@ void dump_name_record( struct name_record *namerec, XFILE *fp)
 		if (!asct) {
 			return;
 		}
-		x_fprintf(fp, "refresh_time = %s\n", asct);
+		fprintf(fp, "refresh_time = %s\n", asct);
 	} else {
-		x_fprintf(fp, "refresh_time = PERMANENT\n");
+		fprintf(fp, "refresh_time = PERMANENT\n");
 	}
 
-	x_fprintf(fp, "\t\tnumber of IPS = %d", namerec->data.num_ips);
+	fprintf(fp, "\t\tnumber of IPS = %d", namerec->data.num_ips);
 	for(i = 0; i < namerec->data.num_ips; i++) {
-		x_fprintf(fp, "\t%s", inet_ntoa(namerec->data.ip[i]));
+		fprintf(fp, "\t%s", inet_ntoa(namerec->data.ip[i]));
 	}
 
-	x_fprintf(fp, "\n\n");
-	
+	fprintf(fp, "\n\n");
 }
 
 /****************************************************************************
@@ -626,10 +626,10 @@ void dump_name_record( struct name_record *namerec, XFILE *fp)
  into a file. Initiated by SIGHUP - used to debug the state of the namelists.
 **************************************************************************/
 
-static void dump_subnet_namelist( struct subnet_record *subrec, XFILE *fp)
+static void dump_subnet_namelist(struct subnet_record *subrec, FILE *fp)
 {
 	struct name_record *namerec;
-	x_fprintf(fp, "Subnet %s\n----------------------\n", subrec->subnet_name);
+	fprintf(fp, "Subnet %s\n----------------------\n", subrec->subnet_name);
 	for( namerec = subrec->namelist; namerec; namerec = namerec->next) {
 		dump_name_record(namerec, fp);
 	}
@@ -642,7 +642,8 @@ static void dump_subnet_namelist( struct subnet_record *subrec, XFILE *fp)
 
 void dump_all_namelists(void)
 {
-	XFILE *fp;
+	int fd;
+	FILE *fp;
 	struct subnet_record *subrec;
 	char *dump_path;
 
@@ -652,13 +653,21 @@ void dump_all_namelists(void)
 		return;
 	}
 
-	fp = x_fopen(dump_path, (O_WRONLY | O_CREAT | O_TRUNC), 0644);
-	TALLOC_FREE(dump_path);
-	if (!fp) {
-		DEBUG(0,("dump_all_namelists: Can't open file %s. Error was %s\n",
-			"namelist.debug",strerror(errno)));
+	fd = open(dump_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fd == -1) {
+		DBG_ERR("Can't open file %s: %s\n", dump_path,
+			strerror(errno));
 		return;
 	}
+	TALLOC_FREE(dump_path);
+
+	fp = fdopen(fd, "w");
+	if (!fp) {
+		DBG_ERR("fdopen failed: %s\n", strerror(errno));
+		close(fd);
+		return;
+	}
+	fd = -1;
 
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) {
 		dump_subnet_namelist( subrec, fp );
@@ -676,5 +685,5 @@ void dump_all_namelists(void)
 		dump_wins_subnet_namelist(fp );
 	}
 
-	x_fclose( fp );
+	fclose( fp );
 }

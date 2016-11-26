@@ -45,7 +45,7 @@ struct sync_record {
 /* a linked list of current sync connections */
 static struct sync_record *syncs;
 
-static XFILE *fp;
+static FILE *fp;
 
 /*******************************************************************
   This is the NetServerEnum callback.
@@ -55,7 +55,7 @@ static XFILE *fp;
 static void callback(const char *sname, uint32_t stype,
                      const char *comment, void *state)
 {
-	x_fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
+	fprintf(fp,"\"%s\" %08X \"%s\"\n", sname, stype, comment);
 }
 
 /*******************************************************************
@@ -137,6 +137,7 @@ void sync_browse_lists(struct work_record *work,
 {
 	struct sync_record *s;
 	static int counter;
+	int fd;
 
 	/* Check we're not trying to sync with ourselves. This can
 	   happen if we are a domain *and* a local master browser. */
@@ -173,15 +174,21 @@ done:
 	DEBUG(2,("Initiating browse sync for %s to %s(%s)\n",
 		 work->work_group, name, inet_ntoa(ip)));
 
-	fp = x_fopen(s->fname,O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	fd = open(s->fname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+	if (fd == -1) {
+		_exit(1);
+	}
+
+	fp = fdopen(fd, "w");
 	if (!fp) {
 		_exit(1);
 	}
+	fd = -1;
 
 	sync_child(name, nm_type, work->work_group, ip, local, servers,
 		   s->fname);
 
-	x_fclose(fp);
+	fclose(fp);
 	_exit(0);
 }
 
@@ -245,7 +252,7 @@ static void complete_one(struct sync_record *s,
 
 static void complete_sync(struct sync_record *s)
 {
-	XFILE *f;
+	FILE *f;
 	char *server;
 	char *type_str;
 	unsigned type;
@@ -254,15 +261,15 @@ static void complete_sync(struct sync_record *s)
 	const char *ptr;
 	int count=0;
 
-	f = x_fopen(s->fname,O_RDONLY, 0);
+	f = fopen(s->fname, "r");
 
 	if (!f)
 		return;
 
-	while (!x_feof(f)) {
+	while (!feof(f)) {
 		TALLOC_CTX *frame = NULL;
 
-		if (!x_fgets_slash(line,sizeof(line),f))
+		if (!fgets_slash(NULL, line, sizeof(line), f))
 			continue;
 
 		ptr = line;
@@ -282,7 +289,7 @@ static void complete_sync(struct sync_record *s)
 		count++;
 		TALLOC_FREE(frame);
 	}
-	x_fclose(f);
+	fclose(f);
 
 	unlink(s->fname);
 
