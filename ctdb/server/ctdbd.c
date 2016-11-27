@@ -152,7 +152,6 @@ int main(int argc, const char *argv[])
 	};
 	int opt, ret;
 	const char **extra_argv;
-	int extra_argc = 0;
 	poptContext pc;
 	struct tevent_context *ev;
 	enum debug_level log_level;
@@ -168,11 +167,14 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	/* setup the remaining options for the main program to use */
+	/* If there are extra arguments then exit with usage message */
 	extra_argv = poptGetArgs(pc);
 	if (extra_argv) {
 		extra_argv++;
-		while (extra_argv[extra_argc]) extra_argc++;
+		if (extra_argv[0])  {
+			poptPrintHelp(pc, stdout, 0);
+			exit(1);
+		}
 	}
 
 	talloc_enable_null_tracking();
