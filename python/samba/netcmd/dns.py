@@ -1086,11 +1086,6 @@ class cmd_add_record(Command):
         self.creds = credopts.get_credentials(self.lp)
         dns_conn = dns_connect(server, self.lp, self.creds)
 
-        rec_match = dns_record_match(dns_conn, server, zone, name, record_type,
-                data)
-        if rec_match is not None:
-            raise CommandError('Record already exists')
-
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
         add_rec_buf.rec = rec
 
@@ -1206,17 +1201,14 @@ class cmd_delete_record(Command):
             raise CommandError('Deleting record of type %s is not supported' % rtype)
 
         record_type = dns_type_flag(rtype)
+        rec = data_to_dns_record(record_type, data)
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp)
         dns_conn = dns_connect(server, self.lp, self.creds)
 
-        rec_match = dns_record_match(dns_conn, server, zone, name, record_type, data)
-        if not rec_match:
-            raise CommandError('Record or zone does not exist.')
-
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
-        del_rec_buf.rec = rec_match
+        del_rec_buf.rec = rec
 
         try:
             dns_conn.DnssrvUpdateRecord2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
