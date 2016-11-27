@@ -610,7 +610,7 @@ static bool test_realloc_child(void)
 	void *root;
 	struct el2 {
 		const char *name;
-	} *el2;	
+	} *el2, *el2_2, *el2_3;
 	struct el1 {
 		int count;
 		struct el2 **list, **list2, **list3;
@@ -634,13 +634,22 @@ static bool test_realloc_child(void)
 	el1->list3[0]->name = talloc_strdup(el1->list3[0], "testing2");
 	
 	el2 = talloc(el1->list, struct el2);
-	el2 = talloc(el1->list2, struct el2);
-	el2 = talloc(el1->list3, struct el2);
-	(void)el2;
+	CHECK_PARENT("el2", el2, el1->list);
+	el2_2 = talloc(el1->list2, struct el2);
+	CHECK_PARENT("el2", el2_2, el1->list2);
+	el2_3 = talloc(el1->list3, struct el2);
+	CHECK_PARENT("el2", el2_3, el1->list3);
 
 	el1->list = talloc_realloc(el1, el1->list, struct el2 *, 100);
+	CHECK_PARENT("el1_after_realloc", el1->list, el1);
 	el1->list2 = talloc_realloc(el1, el1->list2, struct el2 *, 200);
+	CHECK_PARENT("el1_after_realloc", el1->list2, el1);
 	el1->list3 = talloc_realloc(el1, el1->list3, struct el2 *, 300);
+	CHECK_PARENT("el1_after_realloc", el1->list3, el1);
+
+	CHECK_PARENT("el2", el2, el1->list);
+	CHECK_PARENT("el2", el2_2, el1->list2);
+	CHECK_PARENT("el2", el2_3, el1->list3);
 
 	talloc_free(root);
 
