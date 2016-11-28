@@ -1718,9 +1718,6 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
 {
-	struct gpfs_winattr attrs;
-	char *fname = NULL;
-	NTSTATUS status;
 	int ret;
 	struct gpfs_config_data *config;
 
@@ -1736,66 +1733,12 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 		ret = stat_with_capability(handle, smb_fname, 0);
 	}
 #endif
-	if (ret == -1) {
-		return -1;
-	}
-
-	if (!config->winattr) {
-		return 0;
-	}
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-	ret = gpfswrap_get_winattrs_path(discard_const_p(char, fname), &attrs);
-	TALLOC_FREE(fname);
-	if (ret == 0) {
-		smb_fname->st.st_ex_calculated_birthtime = false;
-		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
-	}
-	return 0;
-}
-
-static int vfs_gpfs_fstat(struct vfs_handle_struct *handle,
-			  struct files_struct *fsp, SMB_STRUCT_STAT *sbuf)
-{
-	struct gpfs_winattr attrs;
-	int ret;
-	struct gpfs_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct gpfs_config_data,
-				return -1);
-
-	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	if (ret == -1) {
-		return -1;
-	}
-	if ((fsp->fh == NULL) || (fsp->fh->fd == -1)) {
-		return 0;
-	}
-	if (!config->winattr) {
-		return 0;
-	}
-
-	ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
-	if (ret == 0) {
-		sbuf->st_ex_calculated_birthtime = false;
-		sbuf->st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-		sbuf->st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
-	}
-	return 0;
+	return ret;
 }
 
 static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 			  struct smb_filename *smb_fname)
 {
-	struct gpfs_winattr attrs;
-	char *path = NULL;
-	NTSTATUS status;
 	int ret;
 	struct gpfs_config_data *config;
 
@@ -1812,27 +1755,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 					   AT_SYMLINK_NOFOLLOW);
 	}
 #endif
-
-	if (ret == -1) {
-		return -1;
-	}
-	if (!config->winattr) {
-		return 0;
-	}
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname, &path);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-	ret = gpfswrap_get_winattrs_path(discard_const_p(char, path), &attrs);
-	TALLOC_FREE(path);
-	if (ret == 0) {
-		smb_fname->st.st_ex_calculated_birthtime = false;
-		smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-		smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
-	}
-	return 0;
+	return ret;
 }
 
 static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
@@ -2577,7 +2500,6 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
 	.fchmod_fn = vfs_gpfs_fchmod,
 	.close_fn = vfs_gpfs_close,
 	.stat_fn = vfs_gpfs_stat,
-	.fstat_fn = vfs_gpfs_fstat,
 	.lstat_fn = vfs_gpfs_lstat,
 	.ntimes_fn = vfs_gpfs_ntimes,
 	.aio_force_fn = vfs_gpfs_aio_force,
