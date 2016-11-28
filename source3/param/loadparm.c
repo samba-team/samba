@@ -1885,6 +1885,12 @@ static bool lp_parameter_value_is_valid(const char *parm_name, const char *val)
 	uint64_t tmp_int64 = 0;
 	struct parm_struct *parm;
 
+	/* parametric options (parameter names containing a colon) cannot
+	   be checked and are therefore considered valid. */
+	if (strchr(parm_name, ':') != NULL) {
+		return true;
+	}
+
 	if (num >= 0) {
 		parm = &parm_table[num];
 		switch (parm->type) {
