@@ -120,7 +120,7 @@ class Command(object):
             force_traceback = True
 
         if force_traceback or samba.get_debug_level() >= 3:
-            traceback.print_tb(etraceback)
+            traceback.print_tb(etraceback, file=self.errf)
 
     def _create_parser(self, prog, epilog=None):
         parser = optparse.OptionParser(
