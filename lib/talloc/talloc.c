@@ -263,7 +263,32 @@ typedef int (*talloc_destructor_t)(void *);
 struct talloc_pool_hdr;
 
 struct talloc_chunk {
+	/*
+	 * flags includes the talloc magic, which is randomised to
+	 * make overwrite attacks harder
+	 */
 	unsigned flags;
+
+	/*
+	 * If you have a logical tree like:
+	 *
+	 *           <parent>
+	 *           /   |   \
+	 *          /    |    \
+	 *         /     |     \
+	 * <child 1> <child 2> <child 3>
+	 *
+	 * The actual talloc tree is:
+	 *
+	 *  <parent>
+	 *     |
+	 *  <child 1> - <child 2> - <child 3>
+	 *
+	 * The children are linked with next/prev pointers, and
+	 * child 1 is linked to the parent with parent/child
+	 * pointers.
+	 */
+
 	struct talloc_chunk *next, *prev;
 	struct talloc_chunk *parent, *child;
 	struct talloc_reference_handle *refs;
