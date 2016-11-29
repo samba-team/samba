@@ -168,6 +168,7 @@ class dc_join(object):
         ctx.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
                              drsuapi.DRSUAPI_DRS_PER_SYNC |
                              drsuapi.DRSUAPI_DRS_GET_ANC |
+                             drsuapi.DRSUAPI_DRS_GET_NC_SIZE |
                              drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
 
         # these elements are optional
