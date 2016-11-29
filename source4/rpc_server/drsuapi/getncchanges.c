@@ -2305,8 +2305,6 @@ allowed:
 
 	getnc_state->num_processed = i;
 
-	r->out.ctr->ctr6.nc_object_count = getnc_state->num_records;
-
 	/* the client can us to call UpdateRefs on its behalf to
 	   re-establish monitoring of the NC */
 	if ((req10->replica_flags & (DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_REF_GCSPN)) &&
@@ -2433,6 +2431,22 @@ allowed:
 		if (getnc_state->la_idx < getnc_state->la_count) {
 			r->out.ctr->ctr6.more_data = true;
 		}
+	}
+
+	if (req10->replica_flags & DRSUAPI_DRS_GET_NC_SIZE) {
+		/*
+		 * TODO: This implementation is wrong
+		 * we should find out the total number of
+		 * objects and links in the whole naming context
+		 * at the start of the cycle and return these
+		 * values in each message.
+		 *
+		 * For now we keep our current strategy and return
+		 * the number of objects for this cycle and the number
+		 * of links we found so far during the cycle.
+		 */
+		r->out.ctr->ctr6.nc_object_count = getnc_state->num_records;
+		r->out.ctr->ctr6.nc_linked_attributes_count = getnc_state->la_count;
 	}
 
 	if (!r->out.ctr->ctr6.more_data) {
