@@ -2185,25 +2185,26 @@ static int fruit_connect(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_open_meta(vfs_handle_struct *handle,
-			   struct smb_filename *smb_fname,
-			   files_struct *fsp, int flags, mode_t mode)
+static int fruit_open_meta_stream(vfs_handle_struct *handle,
+				  struct smb_filename *smb_fname,
+				  files_struct *fsp,
+				  int flags,
+				  mode_t mode)
+{
+	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+}
+
+static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
+				    struct smb_filename *smb_fname,
+				    files_struct *fsp,
+				    int flags,
+				    mode_t mode)
 {
 	int rc = 0;
-	struct fruit_config_data *config = NULL;
 	struct smb_filename *smb_fname_base = NULL;
 	int baseflags;
 	int hostfd = -1;
 	struct adouble *ad = NULL;
-
-	DEBUG(10, ("fruit_open_meta for %s\n", smb_fname_str_dbg(smb_fname)));
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (config->meta == FRUIT_META_STREAM) {
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
 
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
@@ -2295,6 +2296,38 @@ exit:
 		errno = saved_errno;
 	}
 	return hostfd;
+}
+
+static int fruit_open_meta(vfs_handle_struct *handle,
+			   struct smb_filename *smb_fname,
+			   files_struct *fsp, int flags, mode_t mode)
+{
+	int rc;
+	struct fruit_config_data *config = NULL;
+
+	DBG_DEBUG("path [%s]\n", smb_fname_str_dbg(smb_fname));
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->meta) {
+	case FRUIT_META_STREAM:
+		rc = fruit_open_meta_stream(handle, smb_fname,
+					    fsp, flags, mode);
+		break;
+
+	case FRUIT_META_NETATALK:
+		rc = fruit_open_meta_netatalk(handle, smb_fname,
+					      fsp, flags, mode);
+		break;
+
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
+		return -1;
+	}
+
+	DBG_DEBUG("path [%s] rc [%d]\n", smb_fname_str_dbg(smb_fname), rc);
+	return rc;
 }
 
 static int fruit_open_rsrc(vfs_handle_struct *handle,
