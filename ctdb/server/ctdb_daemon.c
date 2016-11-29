@@ -1291,7 +1291,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		exit(1);
 	}
 
-	ctdb_set_child_logging(ctdb);
+	if (do_fork) {
+		ctdb_set_child_logging(ctdb);
+	}
 
 	TALLOC_FREE(ctdb->srv);
 	if (srvid_init(ctdb, &ctdb->srv) != 0) {

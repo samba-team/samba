@@ -198,6 +198,11 @@ int main(int argc, const char *argv[])
 		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
+	/* Log to stderr when running as interactive */
+	if (interactive) {
+		options.logging = "file:";
+	}
+
 	/* Initialize logging and set the debug level */
 	if (!ctdb_logging_init(ctdb, options.logging, options.debuglevel)) {
 		exit(1);
