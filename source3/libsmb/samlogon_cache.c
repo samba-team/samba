@@ -265,25 +265,6 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	SAFE_FREE(data.dptr);
 
 	return info3;
-
-#if 0	/* The netsamlogon cache needs to hang around.  Something about
-	   this feels wrong, but it is the only way we can get all of the
-	   groups.  The old universal groups cache didn't expire either.
-	   --jerry */
-	{
-		time_t		now = time(NULL);
-		uint32_t	time_diff;
-
-		/* is the entry expired? */
-		time_diff = now - t;
-
-		if ( (time_diff < 0 ) || (time_diff > lp_winbind_cache_time()) ) {
-			DEBUG(10,("netsamlogon_cache_get: cache entry expired \n"));
-			tdb_delete( netsamlogon_tdb, key );
-			TALLOC_FREE( user );
-		}
-	}
-#endif
 }
 
 bool netsamlogon_cache_have(const struct dom_sid *user_sid)
