@@ -259,8 +259,9 @@ bool netsamlogon_cache_have(const struct dom_sid *user_sid)
 	struct netr_SamInfo3 *info3 = NULL;
 	bool result;
 
-	if (!mem_ctx)
-		return False;
+	if (mem_ctx == NULL) {
+		return false;
+	}
 
 	info3 = netsamlogon_cache_get(mem_ctx, user_sid);
 
