@@ -29,6 +29,12 @@ bld.SAMBA_SUBSYSTEM('close-low-fd',
                     deps='replace',
                     local_include=False)
 
+bld.SAMBA_LIBRARY('sys_rw',
+                  source='sys_rw.c sys_rw_data.c',
+                  deps='replace iov_buf',
+                  local_include=False,
+                  private_library=True)
+
 samba_debug_add_deps = ''
 samba_debug_add_inc  = ''
 
@@ -77,12 +83,6 @@ bld.SAMBA_LIBRARY('iov_buf',
 
 bld.SAMBA_LIBRARY('msghdr',
                   source='msghdr.c',
-                  deps='replace iov_buf',
-                  local_include=False,
-                  private_library=True)
-
-bld.SAMBA_LIBRARY('sys_rw',
-                  source='sys_rw.c sys_rw_data.c',
                   deps='replace iov_buf',
                   local_include=False,
                   private_library=True)
