@@ -73,7 +73,7 @@ static void usage(void)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage: %s <ctdbd-pid> <output-fd> RECORD <db-path> <db-flags> <db-key>\n", progname);
-	fprintf(stderr, "       %s <ctdbd-pid> <output-fd> DB <db1-path> <db1-flags> [<db2-path> <db2-flags>...]\n", progname);
+	fprintf(stderr, "       %s <ctdbd-pid> <output-fd> DB <db-path> <db-flags>\n", progname);
 }
 
 static uint8_t *hex_decode_talloc(TALLOC_CTX *mem_ctx,
@@ -190,17 +190,14 @@ int main(int argc, char *argv[])
 		result = lock_record(argv[4], argv[5], argv[6]);
 
 	} else if (strcmp(lock_type, "DB") == 0) {
-		int n;
-
-		/* If there are no databases specified, no need for lock */
-		if (argc > 4) {
-			for (n=4; n+1<argc; n+=2) {
-				result = lock_db(argv[n], argv[n+1]);
-				if (result != 0) {
-					break;
-				}
-			}
+		if (argc != 6) {
+			fprintf(stderr,
+				"locking: Invalid number of arguments (%d)\n",
+				argc);
+			usage();
+			exit(1);
 		}
+		result = lock_db(argv[4], argv[5]);
 
 	} else {
 		fprintf(stderr, "locking: Invalid lock-type '%s'\n", lock_type);
