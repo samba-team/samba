@@ -44,6 +44,7 @@ struct drsuapi_getncchanges_state {
 	uint32_t num_records;
 	uint32_t num_processed;
 	struct ldb_dn *ncRoot_dn;
+	struct GUID ncRoot_guid;
 	bool is_schema_nc;
 	uint64_t min_usn;
 	uint64_t max_usn;
@@ -1932,6 +1933,19 @@ allowed:
 		}
 		b_state->getncchanges_state = getnc_state;
 		getnc_state->ncRoot_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
+		if (getnc_state->ncRoot_dn == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
+
+		ret = dsdb_find_guid_by_dn(b_state->sam_ctx_system,
+					   getnc_state->ncRoot_dn,
+					   &getnc_state->ncRoot_guid);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
+				 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		ncRoot->guid = getnc_state->ncRoot_guid;
 
 		/* find out if we are to replicate Schema NC */
 		ret = ldb_dn_compare_base(ldb_get_schema_basedn(b_state->sam_ctx),
@@ -2008,6 +2022,8 @@ allowed:
 			 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
+
+	ncRoot->guid = getnc_state->ncRoot_guid;
 
 	/* we need the session key for encrypting password attributes */
 	status = dcesrv_inherited_session_key(dce_call->conn, &session_key);
@@ -2119,14 +2135,10 @@ allowed:
 	}
 
 	r->out.ctr->ctr6.naming_context = talloc(mem_ctx, struct drsuapi_DsReplicaObjectIdentifier);
-	*r->out.ctr->ctr6.naming_context = *ncRoot;
-
-	if (dsdb_find_guid_by_dn(sam_ctx, getnc_state->ncRoot_dn,
-				 &r->out.ctr->ctr6.naming_context->guid) != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Failed to find GUID of ncRoot_dn %s\n",
-			 ldb_dn_get_linearized(getnc_state->ncRoot_dn)));
-		return WERR_DS_DRA_INTERNAL_ERROR;
+	if (r->out.ctr->ctr6.naming_context == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
+	*r->out.ctr->ctr6.naming_context = *ncRoot;
 
 	/* find the SID if there is one */
 	dsdb_find_sid_by_dn(sam_ctx, getnc_state->ncRoot_dn, &r->out.ctr->ctr6.naming_context->sid);
