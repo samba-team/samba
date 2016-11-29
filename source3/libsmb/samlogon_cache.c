@@ -87,20 +87,6 @@ clear:
 	goto again;
 }
 
-
-/***********************************************************************
- Shutdown samlogon_cache database
-***********************************************************************/
-
-bool netsamlogon_cache_shutdown(void)
-{
-	if (netsamlogon_tdb) {
-		return (tdb_close(netsamlogon_tdb) == 0);
-	}
-
-	return true;
-}
-
 /***********************************************************************
  Clear cache getpwnam and getgroups entries from the winbindd cache
 ***********************************************************************/

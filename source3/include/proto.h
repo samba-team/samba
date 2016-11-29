@@ -842,7 +842,6 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 /* The following definitions come from libsmb/samlogon_cache.c  */
 
 bool netsamlogon_cache_init(void);
-bool netsamlogon_cache_shutdown(void);
 void netsamlogon_clear_cached_user(const struct dom_sid *user_sid);
 bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3);
 struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct dom_sid *user_sid);
