@@ -126,7 +126,6 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	char keystr[DOM_SID_STR_BUFLEN];
 	bool result = false;
 	struct dom_sid	user_sid;
-	time_t t = time(NULL);
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -172,7 +171,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 		info3->base.account_name.string = talloc_strdup(info3, username);
 	}
 
-	r.timestamp = t;
+	r.timestamp = time(NULL);
 	r.info3 = *info3;
 
 	if (DEBUGLEVEL >= 10) {
