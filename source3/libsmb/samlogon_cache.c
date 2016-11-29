@@ -21,9 +21,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "samlogon_cache.h"
 #include "system/filesys.h"
+#include "system/time.h"
+#include "lib/util/debug.h"
+#include "lib/util/talloc_stack.h"
+#include "source3/lib/util_path.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "../libcli/security/security.h"
 #include "util_tdb.h"
