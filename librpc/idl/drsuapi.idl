@@ -58,6 +58,10 @@ interface drsuapi
 		DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP  = 0x80000000
 	} drsuapi_DrsOptions;
 
+	typedef [public,bitmap32bit] bitmap {
+		DRSUAPI_DRS_GET_TGT                   = 0x00000001
+	} drsuapi_DrsMoreOptions;
+
 	/* see DRS_MSG_REPMOD_V1 */
 	typedef [public,bitmap32bit] bitmap {
 		DRSUAPI_DRS_UPDATE_FLAGS              = 0x00000001,
@@ -587,7 +591,7 @@ interface drsuapi
 		drsuapi_DsPartialAttributeSet *partial_attribute_set;
 		drsuapi_DsPartialAttributeSet *partial_attribute_set_ex;
 		drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
-		uint32 more_flags;
+		drsuapi_DrsMoreOptions more_flags;
 	} drsuapi_DsGetNCChangesRequest10;
 
 	typedef [switch_type(uint32)] union {
