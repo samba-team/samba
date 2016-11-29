@@ -43,6 +43,7 @@
 #include "source4/lib/messaging/messaging.h"
 #include "lib/param/param.h"
 #include "lib/async_req/async_sock.h"
+#include "libsmb/samlogon_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

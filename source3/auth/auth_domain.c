@@ -28,6 +28,7 @@
 #include "passdb.h"
 #include "libsmb/libsmb.h"
 #include "libcli/auth/netlogon_creds_cli.h"
+#include "libsmb/samlogon_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

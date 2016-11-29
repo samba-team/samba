@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "samlogon_cache.h"
 #include "system/filesys.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "../libcli/security/security.h"

@@ -30,6 +30,7 @@
 #include "source4/lib/messaging/messaging.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "auth/credentials/credentials.h"
+#include "libsmb/samlogon_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

@@ -34,6 +34,7 @@
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 #include "util_tdb.h"
+#include "libsmb/samlogon_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
