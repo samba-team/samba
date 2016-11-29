@@ -22,8 +22,9 @@
 #include "system/network.h"
 
 #include <talloc.h>
+#include <tdb.h>
 
-#include "ctdb_private.h"
+#include "protocol/protocol.h"
 
 #include "common/system.h"
 
