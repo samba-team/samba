@@ -3527,6 +3527,91 @@ done:
 }
 
 /*
+ * This tests that right after creating the AFP_AfpInfo stream,
+ * reading from the stream returns an empty, default metadata blob of
+ * 60 bytes.
+ *
+ * NOTE: against OS X SMB server this only works if the read request
+ * is compounded with the create that created the stream, is fails
+ * otherwise. We don't care...
+ */
+static bool test_null_afpinfo(struct torture_context *tctx,
+			      struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *fname = "test_null_afpinfo";
+	const char *sname = "test_null_afpinfo" AFPINFO_STREAM_NAME;
+	NTSTATUS status;
+	bool ret = true;
+	struct smb2_request *req[3];
+	struct smb2_handle handle;
+	struct smb2_create create;
+	struct smb2_read read;
+	AfpInfo *afpinfo = NULL;
+	char *afpinfo_buf = NULL;
+	const char *type_creator = "SMB,OLE!";
+
+	torture_comment(tctx, "Checking create of AfpInfo stream\n");
+
+	smb2_util_unlink(tree, fname);
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA;
+	create.in.share_access = FILE_SHARE_READ | FILE_SHARE_DELETE;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	create.in.fname = sname;
+
+	smb2_transport_compound_start(tree->session->transport, 2);
+
+	req[0] = smb2_create_send(tree, &create);
+
+	handle.data[0] = UINT64_MAX;
+	handle.data[1] = UINT64_MAX;
+
+	smb2_transport_compound_set_related(tree->session->transport, true);
+
+	ZERO_STRUCT(read);
+	read.in.file.handle = handle;
+	read.in.length = AFP_INFO_SIZE;
+	req[1] = smb2_read_send(tree, &read);
+
+	status = smb2_create_recv(req[0], tree, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create_recv failed");
+
+	handle = create.out.file.handle;
+
+	status = smb2_read_recv(req[1], tree, &read);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_read_recv failed");
+
+	afpinfo = torture_afpinfo_new(mem_ctx);
+	torture_assert_goto(tctx, afpinfo != NULL, ret, done, "torture_afpinfo_new failed");
+
+	memcpy(afpinfo->afpi_FinderInfo, type_creator, 8);
+
+	afpinfo_buf = torture_afpinfo_pack(tctx, afpinfo);
+	torture_assert_goto(tctx, afpinfo_buf != NULL, ret, done, "torture_afpinfo_new failed");
+
+	status = smb2_util_write(tree, handle, afpinfo_buf, 0, AFP_INFO_SIZE);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_write failed");
+
+	smb2_util_close(tree, handle);
+
+	ret = check_stream(tree, __location__, tctx, mem_ctx, fname, AFPINFO_STREAM,
+			   0, 60, 16, 8, type_creator);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed");
+
+done:
+	smb2_util_unlink(tree, fname);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+/*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
  * argument with the local path to the share:
@@ -3558,6 +3643,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "create delete-on-close AFP_AfpResource", test_create_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo delete-on-close AFP_AfpResource", test_setinfo_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpResource", test_setinfo_eof_resource);
+	torture_suite_add_1smb2_test(suite, "null afpinfo", test_null_afpinfo);
 
 	return suite;
 }
