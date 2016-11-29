@@ -21,6 +21,8 @@
 #include "system/filesys.h"
 #include "system/network.h"
 
+#include "lib/util/sys_rw.h"
+
 /* protocol.h is just needed for ctdb_sock_addr, which is used in system.h */
 #include "protocol/protocol.h"
 #include "common/system.h"

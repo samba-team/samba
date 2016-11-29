@@ -60,9 +60,6 @@ void lockdown_memory(bool valgrinding);
 int mkdir_p(const char *dir, int mode);
 void mkdir_p_or_die(const char *dir, int mode);
 
-ssize_t sys_read(int fd, void *buf, size_t count);
-ssize_t sys_write(int fd, const void *buf, size_t count);
-
 void ctdb_wait_for_process_to_exit(pid_t pid);
 
 int ctdb_parse_connections(FILE *fp, TALLOC_CTX *mem_ctx,

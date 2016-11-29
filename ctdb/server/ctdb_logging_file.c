@@ -25,12 +25,11 @@
 #include <talloc.h>
 
 #include "lib/util/debug.h"
+#include "lib/util/sys_rw.h"
 #include "lib/util/time_basic.h"
 
 #include "ctdb_private.h"
 #include "ctdb_client.h"
-
-#include "common/system.h"
 
 #define CTDB_LOG_FILE_PREFIX "file"
 

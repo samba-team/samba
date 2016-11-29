@@ -27,6 +27,7 @@
 #include <libgen.h>
 
 #include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/sys_rw.h"
 #include "lib/util/time.h"
 #include "lib/util/tevent_unix.h"
 
@@ -54,20 +55,6 @@ static void LOG(const char *fmt, ...)
 /*
  * Utility functions
  */
-
-static ssize_t sys_write(int fd, const void *buf, size_t count)
-{
-        ssize_t ret;
-
-        do {
-                ret = write(fd, buf, count);
-#if defined(EWOULDBLOCK)
-        } while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-        } while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
-        return ret;
-}
 
 static bool generic_recv(struct tevent_req *req, int *perr)
 {

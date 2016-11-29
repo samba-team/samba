@@ -24,6 +24,8 @@
 #include <talloc.h>
 #include <tdb.h>
 
+#include "lib/util/sys_rw.h"
+
 #include "protocol/protocol.h"
 
 #include "common/system.h"

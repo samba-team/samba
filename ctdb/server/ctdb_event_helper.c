@@ -25,6 +25,7 @@
 #include <talloc.h>
 
 #include "lib/util/blocking.h"
+#include "lib/util/sys_rw.h"
 
 #include "ctdb_private.h"
 

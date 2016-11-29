@@ -412,7 +412,8 @@ def build(bld):
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c'''),
                         includes='include',
-                        deps='ctdb-ipalloc replace popt talloc tevent tdb talloc_report')
+                        deps='''ctdb-ipalloc replace sys_rw
+                                popt talloc tevent tdb talloc_report''')
 
     bld.SAMBA_BINARY('ctdbd',
                      source='',
@@ -425,7 +426,7 @@ def build(bld):
     bld.SAMBA_BINARY('ctdb',
                      source='tools/ctdb.c',
                      deps='''ctdb-client2 ctdb-protocol ctdb-util ctdb-system
-                             samba-util popt''',
+                             samba-util sys_rw popt''',
                      install_path='${BINDIR}',
                      manpages='ctdb.1')
 
@@ -444,25 +445,25 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
-                     deps='samba-util ctdb-system talloc tdb',
+                     deps='samba-util sys_rw ctdb-system talloc tdb',
                      includes='include',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_event_helper',
                      source='server/ctdb_event_helper.c',
                      includes='include',
-                     deps='samba-util ctdb-system replace tdb',
+                     deps='samba-util sys_rw ctdb-system replace tdb',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_recovery_helper',
                      source='server/ctdb_recovery_helper.c',
                      deps='''ctdb-client2 ctdb-protocol ctdb-util
-                             samba-util replace tdb''',
+                             samba-util sys_rw replace tdb''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_BINARY('ctdb_mutex_fcntl_helper',
                      source='server/ctdb_mutex_fcntl_helper.c',
-                     deps='ctdb-system',
+                     deps='sys_rw ctdb-system',
                      includes='include',
                      install_path='${CTDB_HELPER_BINDIR}')
 
@@ -739,7 +740,7 @@ def build(bld):
         bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
                          includes='include',
-                         deps='replace talloc ctdb-client ctdb-common' +
+                         deps='replace talloc ctdb-client ctdb-common sys_rw' +
                               ib_deps,
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
