@@ -144,7 +144,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	attribute = ldb_msg_find_element(msg, rdn_name);
 	if (!attribute) {
 		/* add entry with normalised RDN information if possible */
-		if (a->name != NULL) {
+		if (a->name != NULL && strcmp(a->name, "*") != 0) {
 			ret = ldb_msg_add_value(msg, a->name, &rdn_val, NULL);
 		} else {
 			ret = ldb_msg_add_value(msg, rdn_name, &rdn_val, NULL);
@@ -154,7 +154,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	} else {
 		/* normalise attribute name if possible */
-		if (a->name != NULL) {
+		if (a->name != NULL && strcmp(a->name, "*") != 0) {
 			attribute->name = a->name;
 		}
 		/* normalise attribute value */
@@ -292,7 +292,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 		goto error;
 	}
 
-	if (a->name != NULL) {
+	if (a->name != NULL && strcmp(a->name, "*") != 0) {
 		rdn_name = a->name;
 	}
 
@@ -440,7 +440,7 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_module_operr(module);
 		}
 
-		if (a->name != NULL) {
+		if (a->name != NULL && strcmp(a->name, "*") != 0) {
 			rdn_name = a->name;
 		}
 
