@@ -444,7 +444,8 @@ def build(bld):
 
     bld.SAMBA_BINARY('ctdb_lock_helper',
                      source='server/ctdb_lock_helper.c',
-                     deps='samba-util ctdb-system talloc tdb',
+                     deps='''samba-util sys_rw ctdb-system tevent-util
+                             talloc tevent tdb''',
                      includes='include',
                      install_path='${CTDB_HELPER_BINDIR}')
 

@@ -192,7 +192,7 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 		lock_ctx->request->lctx = NULL;
 	}
 	if (lock_ctx->child > 0) {
-		ctdb_kill(lock_ctx->ctdb, lock_ctx->child, SIGKILL);
+		ctdb_kill(lock_ctx->ctdb, lock_ctx->child, SIGTERM);
 		if (lock_ctx->type == LOCK_RECORD) {
 			DLIST_REMOVE(lock_ctx->ctdb_db->lock_current, lock_ctx);
 		} else {
@@ -672,7 +672,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 					    ctdb_lock_timeout_handler,
 					    (void *)lock_ctx);
 	if (lock_ctx->ttimer == NULL) {
-		ctdb_kill(ctdb, lock_ctx->child, SIGKILL);
+		ctdb_kill(ctdb, lock_ctx->child, SIGTERM);
 		lock_ctx->child = -1;
 		close(lock_ctx->fd[0]);
 		return;
@@ -687,7 +687,7 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 				      (void *)lock_ctx);
 	if (lock_ctx->tfd == NULL) {
 		TALLOC_FREE(lock_ctx->ttimer);
-		ctdb_kill(ctdb, lock_ctx->child, SIGKILL);
+		ctdb_kill(ctdb, lock_ctx->child, SIGTERM);
 		lock_ctx->child = -1;
 		close(lock_ctx->fd[0]);
 		return;
