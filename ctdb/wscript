@@ -404,8 +404,6 @@ def build(bld):
                                              ctdb_persistent.c ctdb_keepalive.c
                                              ctdb_cluster_mutex.c
                                              ctdb_logging.c
-                                             ctdb_logging_syslog.c
-                                             ctdb_logging_file.c
                                              ctdb_uptime.c
                                              ctdb_vacuum.c ctdb_banning.c
                                              ctdb_statistics.c

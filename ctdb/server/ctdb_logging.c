@@ -20,7 +20,6 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "system/syslog.h"
 #include "system/time.h"
 
 #include <talloc.h>
@@ -40,12 +39,6 @@
 
 const char *debug_extra = "";
 
-struct ctdb_log_backend {
-	struct ctdb_log_backend *prev, *next;
-	const char *prefix;
-	ctdb_log_setup_fn_t setup;
-};
-
 struct ctdb_log_state {
 	const char *prefix;
 	int fd, pfd;
@@ -53,62 +46,27 @@ struct ctdb_log_state {
 	uint16_t buf_used;
 	void (*logfn)(const char *, uint16_t, void *);
 	void *logfn_private;
-	struct ctdb_log_backend *backends;
 };
 
 /* Used by ctdb_set_child_logging() */
 static struct ctdb_log_state *log_state;
 
-void ctdb_log_register_backend(const char *prefix, ctdb_log_setup_fn_t setup)
-{
-	struct ctdb_log_backend *b;
-
-	b = talloc_zero(log_state, struct ctdb_log_backend);
-	if (b == NULL) {
-		printf("Failed to register backend \"%s\" - no memory\n",
-		       prefix);
-		return;
-	}
-
-	b->prefix = prefix;
-	b->setup = setup;
-
-	DLIST_ADD_END(log_state->backends, b);
-}
-
-
 /* Initialise logging */
 bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging)
 {
-	struct ctdb_log_backend *b;
 	int ret;
 
 	log_state = talloc_zero(mem_ctx, struct ctdb_log_state);
 	if (log_state == NULL) {
-		printf("talloc_zero failed\n");
-		abort();
+		return false;
 	}
 
-	ctdb_log_init_file();
-	ctdb_log_init_syslog();
-
-	for (b = log_state->backends; b != NULL; b = b->next) {
-		size_t l = strlen(b->prefix);
-		/* Exact match with prefix or prefix followed by ':' */
-		if (strncmp(b->prefix, logging, l) == 0 &&
-		    (logging[l] == '\0' || logging[l] == ':')) {
-			ret = b->setup(mem_ctx, logging, "ctdbd");
-			if (ret == 0) {
-				return true;
-			}
-			printf("Log init for \"%s\" failed with \"%s\"\n",
-			       logging, strerror(ret));
-			return false;
-		}
+	ret = logging_init(mem_ctx, logging, NULL, "ctdbd");
+	if (ret != 0) {
+		return false;
 	}
 
-	printf("Unable to find log backend for \"%s\"\n", logging);
-	return false;
+	return true;
 }
 
 /* Note that do_debug always uses the global log state. */
@@ -278,11 +236,6 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 	int p[2];
 	int old_stdout, old_stderr;
 	struct tevent_fd *fde;
-
-	if (log_state->fd == STDOUT_FILENO) {
-		/* not needed for stdout logging */
-		return 0;
-	}
 
 	/* setup a pipe to catch IO from subprocesses */
 	if (pipe(p) != 0) {

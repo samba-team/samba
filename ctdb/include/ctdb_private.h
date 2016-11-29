@@ -676,12 +676,6 @@ struct lock_request *ctdb_lock_db(TALLOC_CTX *mem_ctx,
 
 extern const char *debug_extra;
 
-typedef int (*ctdb_log_setup_fn_t)(TALLOC_CTX *mem_ctx,
-				   const char *logging,
-				   const char *app_name);
-
-void ctdb_log_register_backend(const char *prefix, ctdb_log_setup_fn_t init);
-
 bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging);
 
 struct ctdb_log_state *ctdb_vfork_with_logging(TALLOC_CTX *mem_ctx,
