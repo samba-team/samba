@@ -94,7 +94,7 @@ clear:
 
 void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 {
-	fstring keystr;
+	char keystr[DOM_SID_STR_BUFLEN];
 
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_clear_cached_user: cannot open "
@@ -104,7 +104,7 @@ void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	sid_to_fstring(keystr, user_sid);
+	dom_sid_string_buf(user_sid, keystr, sizeof(keystr));
 
 	DEBUG(10,("netsamlogon_clear_cached_user: SID [%s]\n", keystr));
 
@@ -119,7 +119,7 @@ void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 {
 	TDB_DATA data;
-	fstring keystr;
+	char keystr[DOM_SID_STR_BUFLEN];
 	bool result = false;
 	struct dom_sid	user_sid;
 	time_t t = time(NULL);
@@ -141,7 +141,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid);
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	sid_to_fstring(keystr, &user_sid);
+	dom_sid_string_buf(&user_sid, keystr, sizeof(keystr));
 
 	DEBUG(10,("netsamlogon_cache_store: SID [%s]\n", keystr));
 
@@ -204,7 +204,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	TDB_DATA data;
-	fstring keystr;
+	char keystr[DOM_SID_STR_BUFLEN];
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct netsamlogoncache_entry r;
@@ -216,7 +216,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	sid_to_fstring(keystr, user_sid);
+	dom_sid_string_buf(user_sid, keystr, sizeof(keystr));
 	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
 	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
 
