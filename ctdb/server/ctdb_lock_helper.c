@@ -72,7 +72,7 @@ static void usage(void)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Usage: %s <log-fd> <ctdbd-pid> <output-fd> RECORD <db-path> <db-flags> <db-key>\n",
 		progname);
-	fprintf(stderr, "       %s <log-fd> <ctdbd-pid> <output-fd> DB <db1-path> <db1-flags> [<db2-path> <db2-flags>...]\n",
+	fprintf(stderr, "       %s <log-fd> <ctdbd-pid> <output-fd> DB <db1-path> <db1-flags>\n",
 		progname);
 }
 
@@ -196,17 +196,14 @@ int main(int argc, char *argv[])
 		result = lock_record(argv[5], argv[6], argv[7]);
 
 	} else if (strcmp(lock_type, "DB") == 0) {
-		int n;
-
-		/* If there are no databases specified, no need for lock */
-		if (argc > 5) {
-			for (n=5; n+1<argc; n+=2) {
-				result = lock_db(argv[n], argv[n+1]);
-				if (result != 0) {
-					break;
-				}
-			}
+		if (argc != 7) {
+			fprintf(stderr,
+				"locking: Invalid number of arguments (%d)\n",
+				argc);
+			usage();
+			exit(1);
 		}
+		result = lock_db(argv[5], argv[6]);
 
 	} else {
 		fprintf(stderr, "%s: Invalid lock-type '%s'\n", progname, lock_type);
