@@ -37,8 +37,6 @@
 #include "common/common.h"
 #include "common/logging.h"
 
-const char *debug_extra = "";
-
 struct ctdb_log_state {
 	const char *prefix;
 	int fd, pfd;

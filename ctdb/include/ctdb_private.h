@@ -670,8 +670,6 @@ struct lock_request *ctdb_lock_db(TALLOC_CTX *mem_ctx,
 
 /* from ctdb_logging.c */
 
-extern const char *debug_extra;
-
 bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging,
 		       const char *debug_level);
 
