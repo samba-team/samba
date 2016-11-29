@@ -268,7 +268,7 @@ bool netsamlogon_cache_have(const struct dom_sid *user_sid)
 
 	result = (info3 != NULL);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	return result;
 }
