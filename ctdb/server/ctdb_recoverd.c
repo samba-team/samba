@@ -3111,6 +3111,7 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	int fd[2];
 	struct tevent_signal *se;
 	struct tevent_fd *fde;
+	int ret;
 
 	if (pipe(fd) != 0) {
 		return -1;
@@ -3136,6 +3137,11 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	close(fd[1]);
 
 	srandom(getpid() ^ time(NULL));
+
+	ret = logging_init(ctdb, NULL, NULL, "ctdb-recoverd");
+	if (ret != 0) {
+		return -1;
+	}
 
 	prctl_set_comment("ctdb_recovered");
 	if (switch_from_server_to_client(ctdb) != 0) {
