@@ -165,6 +165,11 @@ class dc_join(object):
 
         ctx.tmp_samdb = None
 
+        ctx.replica_flags = (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                             drsuapi.DRSUAPI_DRS_PER_SYNC |
+                             drsuapi.DRSUAPI_DRS_GET_ANC |
+                             drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+
         # these elements are optional
         ctx.never_reveal_sid = None
         ctx.reveal_sid = None
@@ -891,13 +896,11 @@ class dc_join(object):
                 # Replicate first the critical object for the basedn
                 if not ctx.domain_replica_flags & drsuapi.DRSUAPI_DRS_CRITICAL_ONLY:
                     print "Replicating critical objects from the base DN of the domain"
-                    ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY | drsuapi.DRSUAPI_DRS_GET_ANC
+                    ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
                     repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                 destination_dsa_guid, rodc=ctx.RODC,
                                 replica_flags=ctx.domain_replica_flags)
                     ctx.domain_replica_flags ^= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
-                else:
-                    ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_GET_ANC
                 repl.replicate(ctx.base_dn, source_dsa_invocation_id,
                                destination_dsa_guid, rodc=ctx.RODC,
                                replica_flags=ctx.domain_replica_flags)
@@ -1226,11 +1229,7 @@ def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_
     ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
     ctx.secure_channel_type = misc.SEC_CHAN_RODC
     ctx.RODC = True
-    ctx.replica_flags  =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                           drsuapi.DRSUAPI_DRS_PER_SYNC |
-                           drsuapi.DRSUAPI_DRS_GET_ANC |
-                           drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                           drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
+    ctx.replica_flags |= ( drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
                            drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
     ctx.domain_replica_flags = ctx.replica_flags
     if domain_critical_only:
@@ -1260,12 +1259,8 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
     ctx.SPNs.append('E3514235-4B06-11D1-AB04-00C04FC2DCD2/$NTDSGUID/%s' % ctx.dnsdomain)
     ctx.secure_channel_type = misc.SEC_CHAN_BDC
 
-    ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
-                         drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                         drsuapi.DRSUAPI_DRS_PER_SYNC |
-                         drsuapi.DRSUAPI_DRS_GET_ANC |
-                         drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
-                         drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    ctx.replica_flags |= (drsuapi.DRSUAPI_DRS_WRIT_REP |
+                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS)
     ctx.domain_replica_flags = ctx.replica_flags
     if domain_critical_only:
         ctx.domain_replica_flags |= drsuapi.DRSUAPI_DRS_CRITICAL_ONLY
@@ -1285,12 +1280,8 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
     lp.set("realm", ctx.realm)
     logger.info("realm is %s" % ctx.realm)
 
-    ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
-                         drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                         drsuapi.DRSUAPI_DRS_PER_SYNC |
-                         drsuapi.DRSUAPI_DRS_GET_ANC |
-                         drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
-                         drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    ctx.replica_flags |= (drsuapi.DRSUAPI_DRS_WRIT_REP |
+                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS)
     if not include_secrets:
         ctx.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
     ctx.domain_replica_flags = ctx.replica_flags
@@ -1341,12 +1332,8 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
     ctx.SPNs.append('E3514235-4B06-11D1-AB04-00C04FC2DCD2/$NTDSGUID/%s' % ctx.dnsdomain)
     ctx.secure_channel_type = misc.SEC_CHAN_BDC
 
-    ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
-                         drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                         drsuapi.DRSUAPI_DRS_PER_SYNC |
-                         drsuapi.DRSUAPI_DRS_GET_ANC |
-                         drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
-                         drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    ctx.replica_flags |= (drsuapi.DRSUAPI_DRS_WRIT_REP |
+                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS)
     ctx.domain_replica_flags = ctx.replica_flags
 
     ctx.do_join()
