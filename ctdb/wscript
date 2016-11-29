@@ -348,7 +348,7 @@ def build(bld):
                                              pkt_read.c pkt_write.c comm.c
                                              logging.c rb_tree.c tunable.c
                                              pidfile.c'''),
-                        deps='''samba-util tevent-util
+                        deps='''samba-util sys_rw tevent-util
                                 replace talloc tevent tdb''')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol',

@@ -20,6 +20,7 @@
 #ifndef __CTDB_LOGGING_H__
 #define __CTDB_LOGGING_H__
 
+#include <talloc.h>
 #include "lib/util/debug.h"
 
 #define DEBUG_ERR     DBGLVL_ERR
@@ -35,5 +36,8 @@
 bool debug_level_parse(const char *log_string, int *log_level);
 const char *debug_level_to_string(int log_level);
 int debug_level_from_string(const char *log_string);
+
+int logging_init(TALLOC_CTX *mem_ctx, const char *logging,
+		 const char *debuglevel, const char *app_name);
 
 #endif /* __CTDB_LOGGING_H__ */
