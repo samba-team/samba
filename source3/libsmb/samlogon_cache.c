@@ -201,7 +201,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 
 /***********************************************************************
  Retrieves a netr_SamInfo3 structure from a tdb.  Caller must
- free the user_info struct (malloc()'d memory)
+ free the user_info struct (talloced memory)
 ***********************************************************************/
 
 struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct dom_sid *user_sid)
