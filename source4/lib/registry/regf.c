@@ -2092,7 +2092,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
 	nk.unknown_offset = -1;
 	nk.num_values = 0;
 	nk.values_offset = -1;
-	memset(nk.unk3, 0, 5);
+	memset(nk.unk3, 0, 5 * sizeof(uint32_t));
 	nk.clsname_offset = -1;
 	nk.clsname_length = 0;
 	nk.sk_offset = 0x80;
