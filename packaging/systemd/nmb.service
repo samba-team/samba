@@ -10,6 +10,7 @@ EnvironmentFile=-/etc/sysconfig/samba
 ExecStart=/usr/sbin/nmbd $NMBDOPTIONS
 ExecReload=/usr/bin/kill -HUP $MAINPID
 LimitCORE=infinity
+TimeoutStartSec=0
 
 [Install]
 WantedBy=multi-user.target
