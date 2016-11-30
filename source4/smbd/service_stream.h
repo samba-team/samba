@@ -60,7 +60,7 @@ struct stream_connection {
 	 */
 	struct auth_session_info *session_info;
 
-	bool processing;
+	uint processing;
 	const char *terminate;
 };
 
