@@ -102,6 +102,52 @@ pid_t ctdb_fork(struct ctdb_context *ctdb)
 	return pid;
 }
 
+/*
+ * vfork + exec
+ */
+pid_t ctdb_vfork_exec(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
+		      const char *helper, int helper_argc,
+		      const char **helper_argv)
+{
+	pid_t pid;
+	struct timeval before;
+	double delta_t;
+	char **argv;
+	int i;
+
+	argv = talloc_array(mem_ctx, char *, helper_argc + 1);
+	if (argv == NULL) {
+		DEBUG(DEBUG_ERR, ("Memory allocation error\n"));
+		return -1;
+	}
+
+	argv[0] = discard_const(helper);
+	for (i=0; i<helper_argc; i++) {
+		argv[i+1] = discard_const(helper_argv[i]);
+	}
+
+	before = timeval_current();
+
+	pid = vfork();
+	if (pid == -1) {
+		DEBUG(DEBUG_ERR, ("vfork() failed (%s)\n", strerror(errno)));
+		return -1;
+	}
+
+	if (pid == 0) {
+		execv(helper, argv);
+		_exit(1);
+	}
+
+	delta_t = timeval_elapsed(&before);
+	if (delta_t > 3.0) {
+		DEBUG(DEBUG_WARNING, ("vfork() took %lf seconds\n", delta_t));
+	}
+
+	ctdb_track_child(ctdb, pid);
+	return pid;
+}
+
 static void ctdb_sigchld_handler(struct tevent_context *ev,
 	struct tevent_signal *te, int signum, int count,
 	void *dont_care, 
