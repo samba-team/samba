@@ -1879,7 +1879,7 @@ sub provision_chgdcpass($$)
 	return $ret;
 }
 
-sub teardown_env($$)
+sub teardown_env_terminate($$)
 {
 	my ($self, $envvars) = @_;
 	my $pid;
@@ -1892,28 +1892,50 @@ sub teardown_env($$)
 	my $childpid;
 
 	# This should give it time to write out the gcov data
-	until ($count > 30) {
-	    if (Samba::cleanup_child($pid, "samba") == -1) {
-		last;
+	until ($count > 15) {
+	    if (Samba::cleanup_child($pid, "samba") != 0) {
+		return;
 	    }
 	    sleep(1);
 	    $count++;
 	}
 
-	if ($count > 30 || kill(0, $pid)) {
-	    kill "TERM", $pid;
+	# After 15 Seconds, work out why this thing is still alive
+	warn "server process $pid took more than $count seconds to exit, showing backtrace:\n";
+	system("$self->{srcdir}/selftest/gdb_backtrace $pid");
 
-	    until ($count > 40) {
-		if (Samba::cleanup_child($pid, "samba") == -1) {
-		    last;
-		}
-		sleep(1);
-		$count++;
+	until ($count > 30) {
+	    if (Samba::cleanup_child($pid, "samba") != 0) {
+		return;
 	    }
-	    # If it is still around, kill it
-	    warn "server process $pid took more than $count seconds to exit, killing\n";
+	    sleep(1);
+	    $count++;
+	}
+
+	if (kill(0, $pid)) {
+	    warn "server process $pid took more than $count seconds to exit, sending SIGTERM\n";
+	    kill "TERM", $pid;
+	}
+
+	until ($count > 40) {
+	    if (Samba::cleanup_child($pid, "samba") != 0) {
+		return;
+	    }
+	    sleep(1);
+	    $count++;
+	}
+	# If it is still around, kill it
+	if (kill(0, $pid)) {
+	    warn "server process $pid took more than $count seconds to exit, killing\n with SIGKILL\n";
 	    kill 9, $pid;
 	}
+	return;
+}
+
+sub teardown_env($$)
+{
+	my ($self, $envvars) = @_;
+	teardown_env_terminate($self, $envvars);
 
 	$self->slapd_stop($envvars) if ($self->{ldap});
 
