@@ -2268,6 +2268,33 @@ sub setup_vampire_dc($$$)
 			warn("Failed to replicate\n$cmd_repl");
 			return undef;
 		}
+
+		# Pull in a full set of changes from the main DC
+		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
+		$cmd = "";
+		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+		if (defined($env->{RESOLV_WRAPPER_CONF})) {
+			$cmd .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
+		} else {
+			$cmd .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
+		}
+		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+		$cmd .= " $samba_tool drs replicate $env->{SERVER} $env->{DC_SERVER}";
+		$cmd .= " $dc_vars->{CONFIGURATION}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		# replicate Configuration NC
+		my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
+		unless(system($cmd_repl) == 0) {
+			warn("Failed to replicate\n$cmd_repl");
+			return undef;
+		}
+		# replicate Default NC
+		$cmd_repl = "$cmd \"$base_dn\"";
+		unless(system($cmd_repl) == 0) {
+			warn("Failed to replicate\n$cmd_repl");
+			return undef;
+		}
 	}
 
 	return $env;
