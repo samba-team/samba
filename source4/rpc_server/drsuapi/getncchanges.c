@@ -1471,10 +1471,16 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	//const char *extra_filter;
 	struct drsuapi_getncchanges_state *getnc_state = b_state->getncchanges_state;
+	bool critical_only = false;
+
+	if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+		critical_only = true;
+	}
 
 	if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
 	    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 		scope = LDB_SCOPE_BASE;
+		critical_only = false;
 	}
 
 	//extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
@@ -1490,7 +1496,7 @@ static WERROR getncchanges_collect_objects(struct drsuapi_bind_state *b_state,
 		search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
 	}
 
-	if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+	if (critical_only) {
 		search_filter = talloc_asprintf(mem_ctx,
 						"(&%s(isCriticalSystemObject=TRUE))",
 						search_filter);
