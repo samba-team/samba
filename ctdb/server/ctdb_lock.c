@@ -661,9 +661,9 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 		return;
 	}
 
-	if (!ctdb_vfork_with_logging(lock_ctx, ctdb, "lock_helper",
-				     prog, argc, (const char **)args,
-				     NULL, NULL, &lock_ctx->child)) {
+	lock_ctx->child = ctdb_vfork_exec(lock_ctx, ctdb, prog, argc,
+					  (const char **)args);
+	if (lock_ctx->child == -1) {
 		DEBUG(DEBUG_ERR, ("Failed to create a child in ctdb_lock_schedule\n"));
 		close(lock_ctx->fd[0]);
 		close(lock_ctx->fd[1]);
