@@ -183,7 +183,7 @@ int main(int argc, const char *argv[])
 
 	ev = tevent_context_init(NULL);
 	if (ev == NULL) {
-		DEBUG(DEBUG_ALERT,("tevent_context_init() failed\n"));
+		fprintf(stderr, "tevent_context_init() failed\n");
 		exit(1);
 	}
 	tevent_loop_allow_nesting(ev);
@@ -208,7 +208,7 @@ int main(int argc, const char *argv[])
 	setenv("CTDB_SOCKET", options.socket, 1);
 	ret = ctdb_set_socketname(ctdb, options.socket);
 	if (ret == -1) {
-		fprintf(stderr, "ctdb_set_socketname() failed\n");
+		DEBUG(DEBUG_ERR, ("ctdb_set_socketname() failed\n"));
 		exit(1);
 	}
 
@@ -234,7 +234,7 @@ int main(int argc, const char *argv[])
 	TALLOC_FREE(ctdb->idr);
 	ret = reqid_init(ctdb, 0, &ctdb->idr);;
 	if (ret != 0) {
-		DEBUG(DEBUG_ALERT, ("reqid_init failed (%s)\n", strerror(ret)));
+		DEBUG(DEBUG_ERR, ("reqid_init failed (%s)\n", strerror(ret)));
 		exit(1);
 	}
 
@@ -242,7 +242,8 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_set_transport(ctdb, options.transport);
 	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb)));
+		DEBUG(DEBUG_ERR,("ctdb_set_transport failed - %s\n",
+				 ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
@@ -250,7 +251,8 @@ int main(int argc, const char *argv[])
 	if (options.myaddress) {
 		ret = ctdb_set_address(ctdb, options.myaddress);
 		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb)));
+			DEBUG(DEBUG_ERR,("ctdb_set_address failed - %s\n",
+					 ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}
@@ -284,7 +286,7 @@ int main(int argc, const char *argv[])
 		ctdb->nodes_file =
 			talloc_asprintf(ctdb, "%s/nodes", getenv("CTDB_BASE"));
 		if (ctdb->nodes_file == NULL) {
-			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			exit(1);
 		}
 	}
@@ -310,7 +312,7 @@ int main(int argc, const char *argv[])
 		ctdb->event_script_dir = talloc_asprintf(ctdb, "%s/events.d",
 							 getenv("CTDB_BASE"));
 		if (ctdb->event_script_dir == NULL) {
-			DEBUG(DEBUG_ALERT,(__location__ " Out of memory\n"));
+			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			exit(1);
 		}
 	}
@@ -318,7 +320,7 @@ int main(int argc, const char *argv[])
 	if (options.notification_script != NULL) {
 		ret = ctdb_set_notification_script(ctdb, options.notification_script);
 		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("Unable to setup notification script\n"));
+			DEBUG(DEBUG_ERR,("Unable to setup notification script\n"));
 			exit(1);
 		}
 	}
