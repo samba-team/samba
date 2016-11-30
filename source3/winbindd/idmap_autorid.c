@@ -340,7 +340,8 @@ static NTSTATUS idmap_autorid_unixids_to_sids(struct idmap_domain *dom,
 
 	if (num_tomap == num_mapped) {
 		return NT_STATUS_OK;
-	} else if (num_mapped == 0) {
+	}
+	if (num_mapped == 0) {
 		return NT_STATUS_NONE_MAPPED;
 	}
 
