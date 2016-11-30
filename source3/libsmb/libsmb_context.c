@@ -177,8 +177,8 @@ smbc_new_context(void)
         smbc_setOptionBrowseMaxLmbCount(context, 3);    /* # LMBs to query */
         smbc_setOptionUrlEncodeReaddirEntries(context, False);
         smbc_setOptionOneSharePerServer(context, False);
-	if (getenv("LIBSMBCLIENT_NO_CCACHE") == NULL) {
-		smbc_setOptionUseCCache(context, true);
+	if (getenv("LIBSMBCLIENT_NO_CCACHE") != NULL) {
+		smbc_setOptionUseCCache(context, false);
 	}
 
         smbc_setFunctionAuthData(context, SMBC_get_auth_data);
