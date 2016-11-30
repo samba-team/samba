@@ -430,6 +430,12 @@ NTSTATUS idmap_tdb_common_unixid_to_sid(struct idmap_domain * dom,
 		goto done;
 	}
 
+	if ((data.dsize == 0) || (data.dptr[data.dsize-1] != '\0')) {
+		DBG_DEBUG("Invalid record length %zu\n", data.dsize);
+		ret = NT_STATUS_INTERNAL_DB_ERROR;
+		goto done;
+	}
+
 	if (!string_to_sid(map->sid, (const char *)data.dptr)) {
 		DEBUG(10, ("INVALID SID (%s) in record %s\n",
 			   (const char *)data.dptr, keystr));
