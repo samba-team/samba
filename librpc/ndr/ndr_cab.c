@@ -57,6 +57,10 @@ uint32_t ndr_count_cfdata(const struct cab_file *r)
 	uint32_t count = 0, i;
 
 	for (i = 0; i < r->cfheader.cFolders; i++) {
+		if (count + r->cffolders[i].cCFData < count) {
+			/* Integer wrap. */
+			return 0;
+		}
 		count += r->cffolders[i].cCFData;
 	}
 
