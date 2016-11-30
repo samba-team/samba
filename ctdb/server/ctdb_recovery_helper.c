@@ -35,22 +35,15 @@
 #include "protocol/protocol_api.h"
 #include "client/client.h"
 
+#include "common/logging.h"
+
 static int recover_timeout = 30;
 
 #define NUM_RETRIES	3
 
 #define TIMEOUT()	timeval_current_ofs(recover_timeout, 0)
 
-static void LOG(const char *fmt, ...) PRINTF_ATTRIBUTE(1,2);
-
-static void LOG(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-}
+#define LOG(...)	DEBUG(DEBUG_NOTICE, (__VA_ARGS__))
 
 /*
  * Utility functions
@@ -2720,7 +2713,7 @@ static void recovery_recv(struct tevent_req *req, int *perr)
 
 static void usage(const char *progname)
 {
-	fprintf(stderr, "\nUsage: %s <log-fd> <output-fd> <ctdb-socket-path> <generation>\n",
+	fprintf(stderr, "\nUsage: %s <output-fd> <ctdb-socket-path> <generation>\n",
 		progname);
 }
 
@@ -2730,7 +2723,7 @@ static void usage(const char *progname)
  */
 int main(int argc, char *argv[])
 {
-	int log_fd, write_fd;
+	int write_fd;
 	const char *sockpath;
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
@@ -2739,27 +2732,24 @@ int main(int argc, char *argv[])
 	struct tevent_req *req;
 	uint32_t generation;
 
-	if (argc != 5) {
+	if (argc != 4) {
 		usage(argv[0]);
 		exit(1);
 	}
 
-	log_fd = atoi(argv[1]);
-	if (log_fd != STDOUT_FILENO && log_fd != STDERR_FILENO) {
-		close(STDOUT_FILENO);
-		close(STDERR_FILENO);
-		dup2(log_fd, STDOUT_FILENO);
-		dup2(log_fd, STDERR_FILENO);
-	}
-	close(log_fd);
-
-	write_fd = atoi(argv[2]);
-	sockpath = argv[3];
-	generation = (uint32_t)strtoul(argv[4], NULL, 0);
+	write_fd = atoi(argv[1]);
+	sockpath = argv[2];
+	generation = (uint32_t)strtoul(argv[3], NULL, 0);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
-		LOG("talloc_new() failed\n");
+		fprintf(stderr, "recovery: talloc_new() failed\n");
+		goto failed;
+	}
+
+	ret = logging_init(mem_ctx, NULL, NULL, "ctdb-recovery");
+	if (ret != 0) {
+		fprintf(stderr, "recovery: Unable to initialize logging\n");
 		goto failed;
 	}
 
@@ -2797,6 +2787,6 @@ int main(int argc, char *argv[])
 	return 0;
 
 failed:
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 	return 1;
 }

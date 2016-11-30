@@ -1158,8 +1158,8 @@ static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 
 	setenv("CTDB_DBDIR_STATE", rec->ctdb->db_directory_state, 1);
 
-	if (!ctdb_vfork_with_logging(state, rec->ctdb, "recovery", prog, nargs,
-				     args, NULL, NULL, &state->pid)) {
+	state->pid = ctdb_vfork_exec(state, rec->ctdb, prog, nargs, args);
+	if (state->pid == -1) {
 		DEBUG(DEBUG_ERR,
 		      ("Failed to create child for recovery helper\n"));
 		goto fail;
