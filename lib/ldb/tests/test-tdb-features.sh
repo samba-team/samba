@@ -4,6 +4,11 @@ echo "Running tdb feature tests"
 
 mv $LDB_URL $LDB_URL.2
 
+cat <<EOF | $VALGRIND ldbadd || exit 1
+dn: @MODULES
+@LIST: rdn_name
+EOF
+
 checkcount() {
     count=$1
     expression="$2"
@@ -25,6 +30,7 @@ EOF
 checkcount 1 '(test=foo)'
 checkcount 0 '(test=FOO)'
 checkcount 0 '(test=FO*)'
+checkcount 1 '(cn=t1)'
 
 echo "Making case insensitive"
 cat <<EOF | $VALGRIND ldbmodify || exit 1
@@ -78,6 +84,13 @@ add: *
 EOF
 checkcount 1 '(j=0x100)'
 checkcount 1 '(j=256)'
+
+cat <<EOF | $VALGRIND ldbadd || exit 1
+dn: num=1
+EOF
+
+echo "Testing search for attribute after change to use wildcard"
+checkcount 1 '(num=1)'
 
 echo "Testing class search"
 checkcount 0 '(objectClass=otherclass)'
