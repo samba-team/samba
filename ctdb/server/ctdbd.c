@@ -66,6 +66,7 @@ static struct {
 	int         torture;
 } options = {
 	.socket = CTDB_RUNDIR "/ctdbd.socket",
+	.debuglevel = "NOTICE",
 	.nlist = NULL,
 	.public_address_list = NULL,
 	.transport = "tcp",
@@ -154,7 +155,6 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	poptContext pc;
 	struct tevent_context *ev;
-	int log_level;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -198,12 +198,12 @@ int main(int argc, const char *argv[])
 		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
-	/* Set the debug level */
-	if (debug_level_parse(options.debuglevel, &log_level)) {
-		DEBUGLEVEL = log_level;
-	} else {
-		DEBUGLEVEL = DEBUG_NOTICE;
+	/* Initialize logging and set the debug level */
+	if (!ctdb_logging_init(ctdb, options.logging, options.debuglevel)) {
+		exit(1);
 	}
+	setenv("CTDB_LOGGING", options.logging, 1);
+	setenv("CTDB_DEBUGLEVEL", debug_level_to_string(DEBUGLEVEL), 1);
 
 	setenv("CTDB_SOCKET", options.socket, 1);
 	ret = ctdb_set_socketname(ctdb, options.socket);
@@ -216,10 +216,6 @@ int main(int argc, const char *argv[])
 	ctdb->start_as_stopped  = options.start_as_stopped;
 
 	script_log_level = options.script_log_level;
-
-	if (!ctdb_logging_init(ctdb, options.logging)) {
-		exit(1);
-	}
 
 	DEBUG(DEBUG_NOTICE,("CTDB starting on node\n"));
 

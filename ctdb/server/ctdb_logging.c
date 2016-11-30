@@ -52,7 +52,8 @@ struct ctdb_log_state {
 static struct ctdb_log_state *log_state;
 
 /* Initialise logging */
-bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging)
+bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging,
+		       const char *debug_level)
 {
 	int ret;
 
@@ -61,7 +62,7 @@ bool ctdb_logging_init(TALLOC_CTX *mem_ctx, const char *logging)
 		return false;
 	}
 
-	ret = logging_init(mem_ctx, logging, NULL, "ctdbd");
+	ret = logging_init(mem_ctx, logging, debug_level, "ctdbd");
 	if (ret != 0) {
 		return false;
 	}
