@@ -122,7 +122,8 @@ void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 
 bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 {
-	TDB_DATA data;
+	uint8_t dummy = 0;
+	TDB_DATA data = { .dptr = &dummy, .dsize = sizeof(dummy) };
 	char keystr[DOM_SID_STR_BUFLEN];
 	bool result = false;
 	struct dom_sid	user_sid;
@@ -130,6 +131,7 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
 	struct netsamlogoncache_entry r;
+	int ret;
 
 	if (!info3) {
 		return false;
@@ -138,6 +140,23 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n",
 			NETSAMLOGON_TDB));
+		return false;
+	}
+
+	/*
+	 * First write a record with just the domain sid for
+	 * netsamlogon_cache_domain_known. Use TDB_INSERT to avoid
+	 * overwriting potentially other data. We're just interested
+	 * in the existence of that record.
+	 */
+	dom_sid_string_buf(info3->base.domain_sid, keystr, sizeof(keystr));
+
+	ret = tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_INSERT);
+
+	if ((ret == -1) && (tdb_error(netsamlogon_tdb) != TDB_ERR_EXISTS)) {
+		DBG_WARNING("Could not store domain marker for %s: %s\n",
+			    keystr, tdb_errorstr(netsamlogon_tdb));
+		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
 
