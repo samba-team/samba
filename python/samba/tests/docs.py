@@ -107,7 +107,8 @@ class SmbDotConfTests(TestCase):
                          'queuepause command','lpresume command', 'lppause command',
                          'lprm command', 'lpq command', 'print command', 'template homedir',
                          'spoolss: os_major', 'spoolss: os_minor', 'spoolss: os_build',
-                         'max open files', 'fss: prune stale', 'fss: sequence timeout'])
+                         'max open files', 'fss: prune stale', 'fss: sequence timeout',
+                         'include system krb5 conf'])
 
     def setUp(self):
         super(SmbDotConfTests, self).setUp()
