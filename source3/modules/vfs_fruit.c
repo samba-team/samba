@@ -1999,14 +1999,108 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 	return status;
 }
 
+static bool readdir_attr_meta_finderi_stream(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *smb_fname,
+	AfpInfo *ai)
+{
+	return true;
+}
+
+static bool readdir_attr_meta_finderi_netatalk(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *smb_fname,
+	AfpInfo *ai)
+{
+	struct adouble *ad = NULL;
+	char *p = NULL;
+
+	ad = ad_get(talloc_tos(), handle, smb_fname->base_name, ADOUBLE_META);
+	if (ad == NULL) {
+		return false;
+	}
+
+	p = ad_get_entry(ad, ADEID_FINDERI);
+	if (p == NULL) {
+		DBG_ERR("No ADEID_FINDERI for [%s]\n", smb_fname->base_name);
+		TALLOC_FREE(ad);
+		return false;
+	}
+
+	memcpy(&ai->afpi_FinderInfo[0], p, AFP_FinderSize);
+	TALLOC_FREE(ad);
+	return true;
+}
+
+static bool readdir_attr_meta_finderi(struct vfs_handle_struct *handle,
+				      const struct smb_filename *smb_fname,
+				      struct readdir_attr_data *attr_data)
+{
+	struct fruit_config_data *config = NULL;
+	uint32_t date_added;
+	AfpInfo ai = {0};
+	bool ok;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return false);
+
+	switch (config->meta) {
+	case FRUIT_META_NETATALK:
+		ok = readdir_attr_meta_finderi_netatalk(
+			handle, smb_fname, &ai);
+		break;
+
+	case FRUIT_META_STREAM:
+		ok = readdir_attr_meta_finderi_stream(
+			handle, smb_fname, &ai);
+		break;
+
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
+		return false;
+	}
+
+	if (!ok) {
+		/* Don't bother with errors, it's likely ENOENT */
+		return true;
+	}
+
+	if (S_ISREG(smb_fname->st.st_ex_mode)) {
+		/* finder_type */
+		memcpy(&attr_data->attr_data.aapl.finder_info[0],
+		       &ai.afpi_FinderInfo[0], 4);
+
+		/* finder_creator */
+		memcpy(&attr_data->attr_data.aapl.finder_info[0] + 4,
+		       &ai.afpi_FinderInfo[4], 4);
+	}
+
+	/* finder_flags */
+	memcpy(&attr_data->attr_data.aapl.finder_info[0] + 8,
+	       &ai.afpi_FinderInfo[8], 2);
+
+	/* finder_ext_flags */
+	memcpy(&attr_data->attr_data.aapl.finder_info[0] + 10,
+	       &ai.afpi_FinderInfo[24], 2);
+
+	/* creation date */
+	date_added = convert_time_t_to_uint32_t(
+		smb_fname->st.st_ex_btime.tv_sec - AD_DATE_DELTA);
+
+	RSIVAL(&attr_data->attr_data.aapl.finder_info[0], 12, date_added);
+
+	return true;
+}
+
 static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname,
 				     struct readdir_attr_data *attr_data)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	uint32_t date_added;
 	struct adouble *ad = NULL;
 	struct fruit_config_data *config = NULL;
+	bool ok;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data,
@@ -2035,47 +2129,12 @@ static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 	 */
 
 	if (config->readdir_attr_finder_info) {
-		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
-			    ADOUBLE_META);
-		if (ad) {
-			char *p = ad_get_entry(ad, ADEID_FINDERI);
-
-			if (p == NULL) {
-				DBG_ERR("No ADEID_FINDERI for [%s]\n",
-					smb_fname->base_name);
-				status = NT_STATUS_INVALID_PARAMETER;
-				goto out;
-			}
-
-			if (S_ISREG(smb_fname->st.st_ex_mode)) {
-				/* finder_type */
-				memcpy(&attr_data->attr_data.aapl.finder_info[0],
-				       p, 4);
-
-				/* finder_creator */
-				memcpy(&attr_data->attr_data.aapl.finder_info[0] + 4,
-				       p + 4, 4);
-			}
-
-			/* finder_flags */
-			memcpy(&attr_data->attr_data.aapl.finder_info[0] + 8,
-			       p + 8, 2);
-
-			/* finder_ext_flags */
-			memcpy(&attr_data->attr_data.aapl.finder_info[0] + 10,
-			       p + 24, 2);
-
-			/* creation date */
-			date_added = convert_time_t_to_uint32_t(
-				smb_fname->st.st_ex_btime.tv_sec - AD_DATE_DELTA);
-			RSIVAL(&attr_data->attr_data.aapl.finder_info[0], 12, date_added);
-
-			TALLOC_FREE(ad);
+		ok = readdir_attr_meta_finderi(handle, smb_fname, attr_data);
+		if (!ok) {
+			status = NT_STATUS_INTERNAL_ERROR;
 		}
 	}
 
-out:
-	TALLOC_FREE(ad);
 	return status;
 }
 
