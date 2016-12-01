@@ -172,7 +172,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	sidout->num_auths = 0;
 	if (*q != '-') {
 		/* Just id_auth, no subauths */
-		return true;
+		goto done;
 	}
 
 	q++;
@@ -200,6 +200,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		}
 		q += 1;
 	}
+done:
 	if (endp != NULL) {
 		*endp = q;
 	}
