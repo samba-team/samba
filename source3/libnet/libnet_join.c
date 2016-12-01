@@ -1546,9 +1546,6 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	struct netlogon_creds_CredentialState *creds = NULL;
 	uint32_t netlogon_flags = 0;
 	NTSTATUS status;
-	const char *machine_account = NULL;
-	const char *machine_domain = NULL;
-	const char *machine_password = NULL;
 	int flags = 0;
 
 	if (!dc_name) {
@@ -1572,22 +1569,17 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 	cli_credentials_set_old_password(cli_creds, NULL, CRED_SPECIFIED);
 
 	if (use_kerberos) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
+		cli_credentials_set_kerberos_state(cli_creds,
+				CRED_MUST_USE_KERBEROS);
 	}
 
-	machine_account = cli_credentials_get_username(cli_creds);
-	machine_domain = cli_credentials_get_domain(cli_creds);
-	machine_password = cli_credentials_get_password(cli_creds);
-
-	status = cli_full_connection(&cli, NULL,
-				     dc_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     machine_account,
-				     machine_domain,
-				     machine_password,
-				     flags,
-				     SMB_SIGNING_IPC_DEFAULT);
+	status = cli_full_connection_creds(&cli, NULL,
+					   dc_name,
+					   NULL, 0,
+					   "IPC$", "IPC",
+					   cli_creds,
+					   flags,
+					   SMB_SIGNING_IPC_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		status = cli_full_connection(&cli, NULL,
