@@ -142,7 +142,7 @@ static NTSTATUS idmap_autorid_allocate_id(struct idmap_domain *dom,
 }
 
 /*
- * map a SID to xid using the idmap_tdb like pool
+ * map a xid to SID using the idmap_tdb like pool
  */
 static NTSTATUS idmap_autorid_id_to_sid_alloc(struct idmap_domain *dom,
 					      struct id_map *map)
