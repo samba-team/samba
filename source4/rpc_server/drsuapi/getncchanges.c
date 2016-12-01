@@ -88,7 +88,7 @@ static int drsuapi_DsReplicaHighWaterMark_cmp(const struct drsuapi_DsReplicaHigh
   build a DsReplicaObjectIdentifier from a ldb msg
  */
 static struct drsuapi_DsReplicaObjectIdentifier *get_object_identifier(TALLOC_CTX *mem_ctx,
-								       struct ldb_message *msg)
+								       const struct ldb_message *msg)
 {
 	struct drsuapi_DsReplicaObjectIdentifier *identifier;
 	struct dom_sid *sid;
@@ -189,7 +189,7 @@ fail:
   drsuapi_DsGetNCChanges for one object
 */
 static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItemEx *obj,
-					  struct ldb_message *msg,
+					  const struct ldb_message *msg,
 					  struct ldb_context *sam_ctx,
 					  struct ldb_dn *ncRoot_dn,
 					  bool   is_schema_nc,
@@ -446,7 +446,7 @@ static WERROR get_nc_changes_add_la(TALLOC_CTX *mem_ctx,
 				    struct ldb_context *sam_ctx,
 				    const struct dsdb_schema *schema,
 				    const struct dsdb_attribute *sa,
-				    struct ldb_message *msg,
+				    const struct ldb_message *msg,
 				    struct dsdb_dn *dsdb_dn,
 				    struct drsuapi_DsReplicaLinkedAttribute **la_list,
 				    uint32_t *la_count,
@@ -575,7 +575,7 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       struct dsdb_schema *schema,
 				       uint64_t highest_usn,
 				       uint32_t replica_flags,
-				       struct ldb_message *msg,
+				       const struct ldb_message *msg,
 				       struct drsuapi_DsReplicaLinkedAttribute **la_list,
 				       uint32_t *la_count,
 				       struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
