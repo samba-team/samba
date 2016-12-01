@@ -169,7 +169,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 					struct id_map *map)
 {
 	uint32_t range_number;
-	uint32_t domain_range_index = 0;
+	uint32_t domain_range_index;
 	uint32_t normalized_id;
 	uint32_t reduced_rid;
 	uint32_t rid;
@@ -243,14 +243,28 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		map->status = ID_UNKNOWN;
 		return NT_STATUS_OK;
 	}
-	if (*q != '\0') {
-		if (sscanf(q+1, "%"SCNu32, &domain_range_index) != 1) {
-			DEBUG(10, ("Domain range index not found, "
-				   "ignoring mapping request\n"));
-			TALLOC_FREE(data.dptr);
-			map->status = ID_UNKNOWN;
-			return NT_STATUS_OK;
-		}
+
+	/*
+	 * Allow for sid#range_index, just sid is range index 0
+	 */
+
+	switch (*q) {
+	    case '\0':
+		    domain_range_index = 0;
+		    break;
+	    case '#':
+		    if (sscanf(q+1, "%"SCNu32, &domain_range_index) == 1) {
+			    break;
+		    }
+		    /* If we end up here, something weird is in the record. */
+
+		    /* FALL THROUGH */
+	    default:
+		    DBG_DEBUG("SID/domain range: %s\n",
+			      (const char *)data.dptr);
+		    TALLOC_FREE(data.dptr);
+		    map->status = ID_UNKNOWN;
+		    return NT_STATUS_OK;
 	}
 
 	TALLOC_FREE(data.dptr);
