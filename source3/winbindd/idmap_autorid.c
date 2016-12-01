@@ -243,7 +243,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 		map->status = ID_UNKNOWN;
 		return NT_STATUS_OK;
 	}
-	if ((q != NULL) && (*q != '\0'))
+	if ((q != NULL) && (*q != '\0')) {
 		if (sscanf(q+1, "%"SCNu32, &domain_range_index) != 1) {
 			DEBUG(10, ("Domain range index not found, "
 				   "ignoring mapping request\n"));
@@ -251,6 +251,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 			map->status = ID_UNKNOWN;
 			return NT_STATUS_OK;
 		}
+	}
 
 	TALLOC_FREE(data.dptr);
 
