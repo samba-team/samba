@@ -1414,6 +1414,7 @@ sub provision($$$$$$$$)
 	winbind enum users = yes
 	winbind enum groups = yes
 	winbind separator = /
+	include system krb5 conf = no
 
 #	min receivefile size = 4000
 

@@ -595,6 +595,7 @@ sub write_clientconf($$$)
 	tls cafile = ${cacert}
 	tls crlfile = ${cacrl_pem}
 	tls verify peer = no_check
+	include system krb5 conf = no
 ";
 	close(CF);
 }
