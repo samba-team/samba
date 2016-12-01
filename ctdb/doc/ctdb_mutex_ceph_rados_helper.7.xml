@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry
+	PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+	"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<refentry id="ctdb_mutex_ceph_rados_helper.7">
+
+  <refmeta>
+    <refentrytitle>Ceph RADOS Mutex</refentrytitle>
+    <manvolnum>7</manvolnum>
+    <refmiscinfo class="source">ctdb</refmiscinfo>
+    <refmiscinfo class="manual">CTDB - clustered TDB database</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>ctdb_mutex_ceph_rados_helper</refname>
+    <refpurpose>Ceph RADOS cluster mutex helper</refpurpose>
+  </refnamediv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+    <para>
+      ctdb_mutex_ceph_rados_helper can be used as a recovery lock provider
+      for CTDB.  When configured, split brain avoidance during CTDB recovery
+      will be handled using locks against an object located in a Ceph RADOS
+      pool.
+      To enable this functionality, include the following line in your CTDB
+      config file:
+    </para>
+    <screen format="linespecific">
+CTDB_RECOVERY_LOCK="!ctdb_mutex_ceph_rados_helper [Cluster] [User] [Pool] [Object]"
+
+Cluster: Ceph cluster name (e.g. ceph)
+User: Ceph cluster user name (e.g. client.admin)
+Pool: Ceph RADOS pool name
+Object: Ceph RADOS object name
+    </screen>
+    <para>
+      The Ceph cluster <parameter>Cluster</parameter> must be up and running,
+      with a configuration, and keyring file for <parameter>User</parameter>
+      located in a librados default search path (e.g. /etc/ceph/).
+      <parameter>Pool</parameter> must already exist.
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+    <para>
+      <citerefentry><refentrytitle>ctdb</refentrytitle>
+      <manvolnum>7</manvolnum></citerefentry>,
+
+      <citerefentry><refentrytitle>ctdbd</refentrytitle>
+      <manvolnum>1</manvolnum></citerefentry>,
+
+      <ulink url="http://ctdb.samba.org/"/>
+    </para>
+  </refsect1>
+
+  <refentryinfo>
+    <author>
+      <contrib>
+	This documentation was written by David Disseldorp
+      </contrib>
+    </author>
+
+    <copyright>
+      <year>2016</year>
+      <holder>David Disseldorp</holder>
+    </copyright>
+    <legalnotice>
+      <para>
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License as
+	published by the Free Software Foundation; either version 3 of
+	the License, or (at your option) any later version.
+      </para>
+      <para>
+	This program is distributed in the hope that it will be
+	useful, but WITHOUT ANY WARRANTY; without even the implied
+	warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+      </para>
+      <para>
+	You should have received a copy of the GNU General Public
+	License along with this program; if not, see
+	<ulink url="http://www.gnu.org/licenses"/>.
+      </para>
+    </legalnotice>
+  </refentryinfo>
+
+</refentry>

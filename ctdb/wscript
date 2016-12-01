@@ -58,6 +58,10 @@ manpages_etcd = [
     'ctdb-etcd.7',
 ]
 
+manpages_ceph = [
+    'ctdb_mutex_ceph_rados_helper.7',
+]
+
 
 def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('ctdb')
@@ -273,7 +277,9 @@ def configure(conf):
         conf.env.ctdb_prebuilt_manpages = []
         manpages = manpages_binary + manpages_misc
         if conf.env.etcd_reclock:
-            manpages = manpages + manpages_etcd
+            manpages += manpages_etcd
+        if conf.env.HAVE_LIBRADOS:
+            manpages += manpages_ceph
         for m in manpages:
             if os.path.exists(os.path.join("doc", m)):
                 Logs.info("  %s: yes" % (m))
@@ -572,7 +578,9 @@ def build(bld):
 
     manpages_extra = manpages_misc
     if bld.env.etcd_reclock:
-        manpages_extra = manpages_extra + manpages_etcd
+        manpages_extra += manpages_etcd
+    if bld.env.HAVE_LIBRADOS:
+        manpages_extra += manpages_ceph
     for f in manpages_binary + manpages_extra:
         x = '%s.xml' % (f)
         bld.SAMBA_GENERATOR(x,
@@ -934,7 +942,7 @@ def dist():
     MAN_XSL = '%s/manpages/docbook.xsl' % BASE_URL
     HTML_XSL = '%s/html/docbook.xsl' % BASE_URL
     CMD_TEMPLATE = 'xsltproc --xinclude -o %s --nonet %s %s'
-    manpages = manpages_binary + manpages_misc + manpages_etcd
+    manpages = manpages_binary + manpages_misc + manpages_etcd + manpages_ceph
     for t in manpages:
         cmd = CMD_TEMPLATE % ('doc/%s' % t, MAN_XSL, 'doc/%s.xml' % t)
         ret = samba_utils.RUN_COMMAND(cmd)
