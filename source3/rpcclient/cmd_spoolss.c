@@ -3994,6 +3994,57 @@ static WERROR cmd_spoolss_get_core_printer_drivers(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+static WERROR cmd_spoolss_enum_permachineconnections(struct rpc_pipe_client *cli,
+						     TALLOC_CTX *mem_ctx, int argc,
+						     const char **argv)
+{
+	NTSTATUS status;
+	WERROR result;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	const char *servername = cli->srv_name_slash;
+	DATA_BLOB in = data_blob_null;
+	DATA_BLOB out = data_blob_null;
+	uint32_t needed, count;
+
+	if (argc > 2) {
+		printf("usage: %s [servername]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc > 1) {
+		servername = argv[1];
+	}
+
+	status = dcerpc_spoolss_EnumPerMachineConnections(b, mem_ctx,
+							  servername,
+							  &in,
+							  in.length,
+							  &out,
+							  &needed,
+							  &count,
+							  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
+		in = data_blob_talloc_zero(mem_ctx, needed);
+		status = dcerpc_spoolss_EnumPerMachineConnections(b, mem_ctx,
+							  servername,
+							  &in,
+							  in.length,
+							  &out,
+							  &needed,
+							  &count,
+							  &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+	}
+
+	return result;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -4392,7 +4443,16 @@ struct cmd_set spoolss_commands[] = {
 		.description        = "Get CorePrinterDriver",
 		.usage              = "",
 	},
-
+	{
+		.name               = "enumpermachineconnections",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_spoolss_enum_permachineconnections,
+		.table              = &ndr_table_spoolss,
+		.rpc_pipe           = NULL,
+		.description        = "Enumerate Per Machine Connections",
+		.usage              = "",
+	},
 	{
 		.name = NULL,
 	},
