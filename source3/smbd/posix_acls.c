@@ -802,11 +802,9 @@ static void print_canon_ace(canon_ace *pace, int num)
 	dbgtext( "canon_ace index %d. Type = %s ", num, pace->attr == ALLOW_ACE ? "allow" : "deny" );
 	dbgtext( "SID = %s ", sid_string_dbg(&pace->trustee));
 	if (pace->owner_type == UID_ACE) {
-		const char *u_name = uidtoname(pace->unix_ug.id);
-		dbgtext( "uid %u (%s) ", (unsigned int)pace->unix_ug.id, u_name );
+		dbgtext( "uid %u ", (unsigned int)pace->unix_ug.id);
 	} else if (pace->owner_type == GID_ACE) {
-		char *g_name = gidtoname(pace->unix_ug.id);
-		dbgtext( "gid %u (%s) ", (unsigned int)pace->unix_ug.id, g_name );
+		dbgtext( "gid %u ", (unsigned int)pace->unix_ug.id);
 	} else
 		dbgtext( "other ");
 	switch (pace->type) {
