@@ -1651,7 +1651,7 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 			DEBUG(1, ("Could not parse sid %s\n", p));
 			return false;
 		}
-		if ((q == NULL) || (q[0] != '\n')) {
+		if (q[0] != '\n') {
 			DEBUG(1, ("Got invalid sidstr: %s\n", p));
 			return false;
 		}
