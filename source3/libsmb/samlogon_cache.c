@@ -259,19 +259,16 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const struct do
 
 bool netsamlogon_cache_have(const struct dom_sid *user_sid)
 {
-	TALLOC_CTX *mem_ctx = talloc_init("netsamlogon_cache_have");
-	struct netr_SamInfo3 *info3 = NULL;
-	bool result;
+	char keystr[DOM_SID_STR_BUFLEN];
+	bool ok;
 
-	if (mem_ctx == NULL) {
+	if (!netsamlogon_cache_init()) {
+		DBG_WARNING("Cannot open %s\n", NETSAMLOGON_TDB);
 		return false;
 	}
 
-	info3 = netsamlogon_cache_get(mem_ctx, user_sid);
+	dom_sid_string_buf(user_sid, keystr, sizeof(keystr));
 
-	result = (info3 != NULL);
-
-	TALLOC_FREE(mem_ctx);
-
-	return result;
+	ok = tdb_exists(netsamlogon_tdb, string_term_tdb_data(keystr));
+	return ok;
 }
