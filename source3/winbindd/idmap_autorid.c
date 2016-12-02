@@ -78,6 +78,8 @@
 #include "idmap.h"
 #include "idmap_rw.h"
 #include "../libcli/security/dom_sid.h"
+#include "libsmb/samlogon_cache.h"
+#include "passdb/machine_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -540,7 +542,6 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 	struct autorid_global_config *global =
 		talloc_get_type_abort(common->private_data,
 				      struct autorid_global_config);
-	struct winbindd_tdc_domain *domain;
 	struct autorid_range_config range;
 	uint32_t rid;
 	struct dom_sid domainsid;
@@ -593,26 +594,69 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 	}
 
 	/*
-	 * Check if the domain is around
+	 * Check if we should allocate a domain range. We need to
+	 * protect against unknown domains to not fill our ranges
+	 * needlessly.
 	 */
-	domain = wcache_tdc_fetch_domainbysid(talloc_tos(),
-					      &domainsid);
-	if (domain == NULL) {
-		DEBUG(10, ("Ignoring unknown domain sid %s\n",
-			   sid_string_dbg(&domainsid)));
-		map->status = ID_UNMAPPED;
-		return NT_STATUS_NONE_MAPPED;
-	}
-	TALLOC_FREE(domain);
 
-	ret = idmap_autorid_get_domainrange(autorid_db, &range, dom->read_only);
-	if (NT_STATUS_EQUAL(ret, NT_STATUS_NOT_FOUND) && dom->read_only) {
-		DEBUG(10, ("read-only is enabled, did not allocate "
-			   "new range for domain %s\n",
-			   sid_string_dbg(&domainsid)));
-		map->status = ID_UNMAPPED;
-		return NT_STATUS_NONE_MAPPED;
+	if (sid_check_is_builtin(&domainsid) ||
+	    sid_check_is_our_sam(&domainsid)) {
+		goto allocate;
 	}
+
+	{
+		struct winbindd_domain *domain;
+
+		/*
+		 * Deterministic check for domain members: We can be
+		 * sure that the domain we are member of is worth to
+		 * add a mapping for.
+		 */
+
+		domain = find_our_domain();
+		if ((domain != NULL) &&
+		    dom_sid_equal(&domain->sid, &domainsid)) {
+			goto allocate;
+		}
+	}
+
+	/*
+	 * If we have already allocated range index 0, this domain is
+	 * worth allocating for in higher ranges.
+	 */
+	if (range.domain_range_index != 0) {
+		uint32_t zero_rangenum, zero_low_id;
+
+		ret = idmap_autorid_getrange(autorid_db, range.domsid, 0,
+					     &zero_rangenum, &zero_low_id);
+		if (NT_STATUS_IS_OK(ret)) {
+			goto allocate;
+		}
+	}
+
+	/*
+	 * Check of last resort: A domain is valid if a user from that
+	 * domain has recently logged in. The samlogon_cache these
+	 * days also stores the domain sid.
+	 *
+	 * We used to check the list of trusted domains we received
+	 * from "our" dc, but this is not reliable enough.
+	 */
+	if (netsamlogon_cache_have(&domainsid)) {
+		goto allocate;
+	}
+
+	/*
+	 * Nobody knows this domain, so refuse to allocate a fresh
+	 * range.
+	 */
+
+	DBG_NOTICE("Allocating range for domain %s refused\n", range.domsid);
+	map->status = ID_UNMAPPED;
+	return NT_STATUS_NONE_MAPPED;
+
+allocate:
+	ret = idmap_autorid_get_domainrange(autorid_db, &range, false);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DBG_NOTICE("Could not determine range for domain: %s, "
 			   "check previous messages for reason\n",
