@@ -573,6 +573,18 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 		return NT_STATUS_NONE_MAPPED;
 	}
 
+	sid_to_fstring(range.domsid, &domainsid);
+
+	range.domain_range_index = rid / (global->rangesize);
+
+	ret = idmap_autorid_getrange(autorid_db, range.domsid,
+				     range.domain_range_index,
+				     &range.rangenum, &range.low_id);
+	if (NT_STATUS_IS_OK(ret)) {
+		return idmap_autorid_sid_to_id_rid(
+			global->rangesize, range.low_id, map);
+	}
+
 	/*
 	 * Check if the domain is around
 	 */
@@ -585,10 +597,6 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 		return NT_STATUS_NONE_MAPPED;
 	}
 	TALLOC_FREE(domain);
-
-	sid_to_fstring(range.domsid, &domainsid);
-
-	range.domain_range_index = rid / (global->rangesize);
 
 	ret = idmap_autorid_get_domainrange(autorid_db, &range, dom->read_only);
 	if (NT_STATUS_EQUAL(ret, NT_STATUS_NOT_FOUND) && dom->read_only) {
