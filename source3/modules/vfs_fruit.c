@@ -3577,15 +3577,12 @@ static int fruit_stat_meta(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int fruit_stat_rsrc(vfs_handle_struct *handle,
-			   struct smb_filename *smb_fname,
-			   bool follow_links)
-
+static int fruit_stat_rsrc_netatalk(vfs_handle_struct *handle,
+				    struct smb_filename *smb_fname,
+				    bool follow_links)
 {
 	struct adouble *ad = NULL;
-
-	DEBUG(10, ("fruit_stat_rsrc called for %s\n",
-		   smb_fname_str_dbg(smb_fname)));
+	int ret;
 
 	ad = ad_get(talloc_tos(), handle, smb_fname->base_name, ADOUBLE_RSRC);
 	if (ad == NULL) {
@@ -3594,7 +3591,8 @@ static int fruit_stat_rsrc(vfs_handle_struct *handle,
 	}
 
 	/* Populate the stat struct with info from the base file. */
-	if (fruit_stat_base(handle, smb_fname, follow_links) == -1) {
+	ret = fruit_stat_base(handle, smb_fname, follow_links);
+	if (ret != 0) {
 		TALLOC_FREE(ad);
 		return -1;
 	}
@@ -3604,6 +3602,33 @@ static int fruit_stat_rsrc(vfs_handle_struct *handle,
 					      smb_fname->stream_name);
 	TALLOC_FREE(ad);
 	return 0;
+}
+
+static int fruit_stat_rsrc(vfs_handle_struct *handle,
+			   struct smb_filename *smb_fname,
+			   bool follow_links)
+{
+	struct fruit_config_data *config = NULL;
+	int ret;
+
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+	case FRUIT_RSRC_XATTR:
+	case FRUIT_RSRC_ADFILE:
+		ret = fruit_stat_rsrc_netatalk(handle, smb_fname, follow_links);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		return -1;
+	}
+
+	return ret;
 }
 
 static int fruit_stat(vfs_handle_struct *handle,
