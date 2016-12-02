@@ -656,7 +656,7 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 	return NT_STATUS_NONE_MAPPED;
 
 allocate:
-	ret = idmap_autorid_get_domainrange(autorid_db, &range, false);
+	ret = idmap_autorid_acquire_range(autorid_db, &range);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DBG_NOTICE("Could not determine range for domain: %s, "
 			   "check previous messages for reason\n",
