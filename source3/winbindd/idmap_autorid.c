@@ -585,6 +585,13 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 			global->rangesize, range.low_id, map);
 	}
 
+	if (dom->read_only) {
+		DBG_DEBUG("read-only is enabled, did not allocate "
+			  "new range for domain %s\n", range.domsid);
+		map->status = ID_UNMAPPED;
+		return NT_STATUS_NONE_MAPPED;
+	}
+
 	/*
 	 * Check if the domain is around
 	 */
