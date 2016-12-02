@@ -231,7 +231,9 @@ static void copy_no_nl(char *out,
  */
 
 static void debug_file_log(int msg_level,
-			   const char *msg, const char *msg_no_nl)
+			   const char *msg,
+			   size_t msg_len,
+			   const char *msg_no_nl)
 {
 	struct iovec iov[] = {
 		{
@@ -240,7 +242,7 @@ static void debug_file_log(int msg_level,
 		},
 		{
 			.iov_base = discard_const(msg),
-			.iov_len = strlen(msg),
+			.iov_len = msg_len,
 		},
 	};
 	ssize_t ret;
@@ -283,7 +285,9 @@ static void debug_syslog_reload(bool enabled, bool previously_enabled,
 }
 
 static void debug_syslog_log(int msg_level,
-			     const char *msg, const char *msg_no_nl)
+			     const char *msg,
+			     size_t msg_len,
+			     const char *msg_no_nl)
 {
 	int priority;
 
@@ -305,7 +309,9 @@ static void debug_syslog_log(int msg_level,
 #if defined(HAVE_LIBSYSTEMD_JOURNAL) || defined(HAVE_LIBSYSTEMD)
 #include <systemd/sd-journal.h>
 static void debug_systemd_log(int msg_level,
-			      const char *msg, const char *msg_no_nl)
+			      const char *msg,
+			      size_t msg_len,
+			      const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
 		sd_journal_send("MESSAGE=%s",
@@ -326,7 +332,9 @@ static void debug_systemd_log(int msg_level,
 #ifdef HAVE_LTTNG_TRACEF
 #include <lttng/tracef.h>
 static void debug_lttng_log(int msg_level,
-			    const char *msg, const char *msg_no_nl)
+			    const char *msg,
+			    size_t msg_len,
+			    const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
 		tracef(state.header_str_no_nl);
@@ -361,7 +369,9 @@ static void debug_gpfs_reload(bool enabled, bool previously_enabled,
 }
 
 static void debug_gpfs_log(int msg_level,
-			   const char *msg, const char *msg_no_nl)
+			   const char *msg,
+			   size_t msg_len,
+			   const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
 		gpfswrap_add_trace(msg_level, state.header_str_no_nl);
@@ -419,9 +429,9 @@ static void debug_ringbuf_reload(bool enabled, bool previously_enabled,
 }
 
 static void _debug_ringbuf_log(int msg_level,
-			       const char *msg)
+			       const char *msg,
+			       size_t msglen)
 {
-	size_t msglen = strlen(msg);
 	size_t allowed_size;
 
 	if (debug_ringbuf == NULL) {
@@ -449,12 +459,13 @@ static void _debug_ringbuf_log(int msg_level,
 
 static void debug_ringbuf_log(int msg_level,
 			      const char *msg,
+			      size_t msg_len,
 			      const char *msg_no_nl)
 {
 	if (state.hs_len > 0) {
-		_debug_ringbuf_log(msg_level, state.header_str);
+		_debug_ringbuf_log(msg_level, state.header_str, state.hs_len);
 	}
-	_debug_ringbuf_log(msg_level, msg);
+	_debug_ringbuf_log(msg_level, msg, msg_len);
 }
 
 static struct debug_backend {
@@ -463,7 +474,10 @@ static struct debug_backend {
 	int new_log_level;
 	void (*reload)(bool enabled, bool prev_enabled,
 		       const char *prog_name, char *option);
-	void (*log)(int msg_level, const char *msg, const char *msg_no_nl);
+	void (*log)(int msg_level,
+		    const char *msg,
+		    size_t len,
+		    const char *msg_no_nl);
 	char *option;
 } debug_backends[] = {
 	{
@@ -619,7 +633,7 @@ static void debug_set_backends(const char *param)
 	}
 }
 
-static void debug_backends_log(const char *msg, int msg_level)
+static void debug_backends_log(const char *msg, size_t msg_len, int msg_level)
 {
 	char msg_no_nl[FORMAT_BUFR_SIZE];
 	size_t i;
@@ -628,11 +642,14 @@ static void debug_backends_log(const char *msg, int msg_level)
 	 * Some backends already add an extra newline, so also provide
 	 * a buffer without the newline character.
 	 */
-	copy_no_nl(msg_no_nl, FORMAT_BUFR_SIZE, msg, strlen(msg));
+	copy_no_nl(msg_no_nl, FORMAT_BUFR_SIZE, msg, msg_len);
 
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
 		if (msg_level <= debug_backends[i].log_level) {
-			debug_backends[i].log(msg_level, msg, msg_no_nl);
+			debug_backends[i].log(msg_level,
+					      msg,
+					      msg_len,
+					      msg_no_nl);
 		}
 	}
 
@@ -1113,9 +1130,8 @@ void debug_set_callback(void *private_ptr, debug_callback_fn fn)
 	}
 }
 
-static void debug_callback_log(const char *msg, int msg_level)
+static void debug_callback_log(const char *msg, size_t msg_len, int msg_level)
 {
-	size_t msg_len = strlen(msg);
 	char msg_copy[msg_len];
 
 	if ((msg_len > 0) && (msg[msg_len-1] == '\n')) {
@@ -1464,7 +1480,7 @@ static void Debug1(const char *msg, size_t msg_len)
 
 	switch(state.logtype) {
 	case DEBUG_CALLBACK:
-		debug_callback_log(msg, current_msg_level);
+		debug_callback_log(msg, msg_len, current_msg_level);
 		break;
 	case DEBUG_STDOUT:
 	case DEBUG_STDERR:
@@ -1480,7 +1496,7 @@ static void Debug1(const char *msg, size_t msg_len)
 		}
 		break;
 	case DEBUG_FILE:
-		debug_backends_log(msg, current_msg_level);
+		debug_backends_log(msg, msg_len, current_msg_level);
 		break;
 	};
 
