@@ -127,6 +127,26 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		if (acquire) {
 			DEBUG(10, ("domain range already allocated - "
 				   "Not adding!\n"));
+
+			mem_ctx = talloc_stackframe();
+
+			ret = idmap_autorid_loadconfig(db, mem_ctx,
+						       &globalcfg);
+			if (!NT_STATUS_IS_OK(ret)) {
+				DEBUG(1, ("Fatal error while fetching "
+					  "configuration: %s\n",
+					  nt_errstr(ret)));
+				goto error;
+			}
+
+			range->rangenum = stored_rangenum;
+			range->low_id = globalcfg->minvalue
+				+ range->rangenum * globalcfg->rangesize;
+			range->high_id =
+				range->low_id  + globalcfg->rangesize - 1;
+
+			TALLOC_FREE(mem_ctx);
+
 			return NT_STATUS_OK;
 		}
 
