@@ -54,6 +54,7 @@ class LibsmbTestCase(samba.tests.TestCase):
         lp.load(os.getenv("SMB_CONF_PATH"))
 
         creds = credentials.Credentials()
+        creds.guess(lp)
         creds.set_username(os.getenv("USERNAME"))
         creds.set_password(os.getenv("PASSWORD"))
 
