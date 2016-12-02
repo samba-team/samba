@@ -298,8 +298,8 @@ NTSTATUS idmap_autorid_setrange(struct db_context *db,
 	return status;
 }
 
-static NTSTATUS idmap_autorid_acquire_range(struct db_context *db,
-					    struct autorid_range_config *range)
+NTSTATUS idmap_autorid_acquire_range(struct db_context *db,
+				     struct autorid_range_config *range)
 {
 	return idmap_autorid_addrange(db, range, true);
 }

@@ -82,6 +82,9 @@ NTSTATUS idmap_autorid_setrange(struct db_context *db,
 				uint32_t domain_range_index,
 				uint32_t rangenum);
 
+NTSTATUS idmap_autorid_acquire_range(struct db_context *db,
+				     struct autorid_range_config *range);
+
 /**
  * Delete a domain#index <-> range maping from the database.
  * The mapping is specified by the sid and index.
