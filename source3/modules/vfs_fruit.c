@@ -1561,6 +1561,40 @@ static bool add_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	return true;
 }
 
+static bool filter_empty_rsrc_stream(unsigned int *num_streams,
+				     struct stream_struct **streams)
+{
+	struct stream_struct *tmp = *streams;
+	unsigned int i;
+
+	if (*num_streams == 0) {
+		return true;
+	}
+
+	for (i = 0; i < *num_streams; i++) {
+		if (strequal_m(tmp[i].name, AFPRESOURCE_STREAM)) {
+			break;
+		}
+	}
+
+	if (i == *num_streams) {
+		return true;
+	}
+
+	if (tmp[i].size > 0) {
+		return true;
+	}
+
+	TALLOC_FREE(tmp[i].name);
+	if (*num_streams - 1 > i) {
+		memmove(&tmp[i], &tmp[i+1],
+			(*num_streams - i - 1) * sizeof(struct stream_struct));
+	}
+
+	*num_streams -= 1;
+	return true;
+}
+
 static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 			     struct stream_struct **streams,
 			     const char *name)
@@ -3898,6 +3932,226 @@ exit:
 	return rc;
 }
 
+static NTSTATUS fruit_streaminfo_meta_stream(
+	vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	unsigned int *pnum_streams,
+	struct stream_struct **pstreams)
+{
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_streaminfo_meta_netatalk(
+	vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	unsigned int *pnum_streams,
+	struct stream_struct **pstreams)
+{
+	struct adouble *ad = NULL;
+	bool is_fi_empty;
+	bool ok;
+
+	/* Remove the Netatalk xattr from the list */
+	ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams,
+			      ":" NETATALK_META_XATTR ":$DATA");
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ad = ad_get(talloc_tos(), handle,
+		    smb_fname->base_name, ADOUBLE_META);
+	if (ad == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	is_fi_empty = ad_empty_finderinfo(ad);
+	TALLOC_FREE(ad);
+
+	if (is_fi_empty) {
+		return NT_STATUS_OK;
+	}
+
+	ok = add_fruit_stream(mem_ctx, pnum_streams, pstreams,
+			      AFPINFO_STREAM_NAME, AFP_INFO_SIZE,
+			      smb_roundup(handle->conn, AFP_INFO_SIZE));
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_streaminfo_meta(vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      const struct smb_filename *smb_fname,
+				      TALLOC_CTX *mem_ctx,
+				      unsigned int *pnum_streams,
+				      struct stream_struct **pstreams)
+{
+	struct fruit_config_data *config = NULL;
+	NTSTATUS status;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	switch (config->meta) {
+	case FRUIT_META_NETATALK:
+		status = fruit_streaminfo_meta_netatalk(handle, fsp, smb_fname,
+							mem_ctx, pnum_streams,
+							pstreams);
+		break;
+
+	case FRUIT_META_STREAM:
+		status = fruit_streaminfo_meta_stream(handle, fsp, smb_fname,
+						      mem_ctx, pnum_streams,
+						      pstreams);
+		break;
+
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return status;
+}
+
+static NTSTATUS fruit_streaminfo_rsrc_stream(
+	vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	unsigned int *pnum_streams,
+	struct stream_struct **pstreams)
+{
+	bool ok;
+
+	ok = filter_empty_rsrc_stream(pnum_streams, pstreams);
+	if (!ok) {
+		DBG_ERR("Filtering resource stream failed\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_streaminfo_rsrc_xattr(
+	vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	unsigned int *pnum_streams,
+	struct stream_struct **pstreams)
+{
+	bool ok;
+
+	ok = filter_empty_rsrc_stream(pnum_streams, pstreams);
+	if (!ok) {
+		DBG_ERR("Filtering resource stream failed\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_streaminfo_rsrc_adouble(
+	vfs_handle_struct *handle,
+	struct files_struct *fsp,
+	const struct smb_filename *smb_fname,
+	TALLOC_CTX *mem_ctx,
+	unsigned int *pnum_streams,
+	struct stream_struct **pstreams)
+{
+	struct stream_struct *stream = *pstreams;
+	unsigned int num_streams = *pnum_streams;
+	struct adouble *ad = NULL;
+	bool ok;
+	size_t rlen;
+	int i;
+
+	/*
+	 * Check if there's a AFPRESOURCE_STREAM from the VFS streams backend
+	 * and if yes, remove it from the list
+	 */
+	for (i = 0; i < num_streams; i++) {
+		if (strequal_m(stream[i].name, AFPRESOURCE_STREAM)) {
+			break;
+		}
+	}
+
+	if (i < num_streams) {
+		DBG_WARNING("Unexpected AFPRESOURCE_STREAM on [%s]\n",
+			    smb_fname_str_dbg(smb_fname));
+
+		ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams,
+				      AFPRESOURCE_STREAM);
+		if (!ok) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+	}
+
+	ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
+		    ADOUBLE_RSRC);
+	if (ad == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	rlen = ad_getentrylen(ad, ADEID_RFORK);
+	TALLOC_FREE(ad);
+
+	if (rlen == 0) {
+		return NT_STATUS_OK;
+	}
+
+	ok = add_fruit_stream(mem_ctx, pnum_streams, pstreams,
+			      AFPRESOURCE_STREAM_NAME, rlen,
+			      smb_roundup(handle->conn, rlen));
+	if (!ok) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS fruit_streaminfo_rsrc(vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      const struct smb_filename *smb_fname,
+				      TALLOC_CTX *mem_ctx,
+				      unsigned int *pnum_streams,
+				      struct stream_struct **pstreams)
+{
+	struct fruit_config_data *config = NULL;
+	NTSTATUS status;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	switch (config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+		status = fruit_streaminfo_rsrc_stream(handle, fsp, smb_fname,
+						      mem_ctx, pnum_streams,
+						      pstreams);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		status = fruit_streaminfo_rsrc_xattr(handle, fsp, smb_fname,
+						     mem_ctx, pnum_streams,
+						     pstreams);
+		break;
+
+	case FRUIT_RSRC_ADFILE:
+		status = fruit_streaminfo_rsrc_adouble(handle, fsp, smb_fname,
+						       mem_ctx, pnum_streams,
+						       pstreams);
+		break;
+
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return status;
+}
+
 static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 const struct smb_filename *smb_fname,
@@ -3906,48 +4160,12 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 				 struct stream_struct **pstreams)
 {
 	struct fruit_config_data *config = NULL;
-	struct adouble *ad = NULL;
 	NTSTATUS status;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
-	DEBUG(10, ("fruit_streaminfo called for %s\n", smb_fname->base_name));
 
-	if (config->meta == FRUIT_META_NETATALK) {
-		bool ok;
-
-		ad = ad_get(talloc_tos(), handle,
-			    smb_fname->base_name, ADOUBLE_META);
-		if ((ad != NULL) && !ad_empty_finderinfo(ad)) {
-			ok = add_fruit_stream(
-				mem_ctx, pnum_streams, pstreams,
-				AFPINFO_STREAM_NAME, AFP_INFO_SIZE,
-				smb_roundup(handle->conn, AFP_INFO_SIZE));
-			if (!ok) {
-				TALLOC_FREE(ad);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		TALLOC_FREE(ad);
-	}
-
-	if (config->rsrc != FRUIT_RSRC_STREAM) {
-		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
-			    ADOUBLE_RSRC);
-		if (ad && (ad_getentrylen(ad, ADEID_RFORK) > 0)) {
-			if (!add_fruit_stream(
-				    mem_ctx, pnum_streams, pstreams,
-				    AFPRESOURCE_STREAM_NAME,
-				    ad_getentrylen(ad, ADEID_RFORK),
-				    smb_roundup(handle->conn,
-						ad_getentrylen(
-							ad, ADEID_RFORK)))) {
-				TALLOC_FREE(ad);
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		TALLOC_FREE(ad);
-	}
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
 	status = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
 					 pnum_streams, pstreams);
@@ -3955,13 +4173,16 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 		return status;
 	}
 
-	if (config->meta == FRUIT_META_NETATALK) {
-		/* Remove the Netatalk xattr from the list */
-		if (!del_fruit_stream(mem_ctx, pnum_streams, pstreams,
-				      ":" NETATALK_META_XATTR ":$DATA")) {
-				TALLOC_FREE(ad);
-				return NT_STATUS_NO_MEMORY;
-		}
+	status = fruit_streaminfo_meta(handle, fsp, smb_fname,
+				       mem_ctx, pnum_streams, pstreams);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = fruit_streaminfo_rsrc(handle, fsp, smb_fname,
+				       mem_ctx, pnum_streams, pstreams);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	return NT_STATUS_OK;
