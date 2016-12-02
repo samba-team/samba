@@ -2978,7 +2978,6 @@ static int fruit_chmod(vfs_handle_struct *handle,
 	int rc = -1;
 	char *adp = NULL;
 	struct fruit_config_data *config = NULL;
-	SMB_STRUCT_STAT sb;
 	const char *path = smb_fname->base_name;
 	struct smb_filename *smb_fname_adp = NULL;
 
@@ -2990,14 +2989,16 @@ static int fruit_chmod(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (config->rsrc == FRUIT_RSRC_XATTR) {
+	if (config->rsrc != FRUIT_RSRC_ADFILE) {
 		return 0;
 	}
 
-	/* FIXME: direct sys_lstat(), missing smb_fname */
-	rc = sys_lstat(path, &sb, false);
-	if (rc != 0 || !S_ISREG(sb.st_ex_mode)) {
-		return rc;
+	if (!VALID_STAT(smb_fname->st)) {
+		return 0;
+	}
+
+	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
+		return 0;
 	}
 
 	rc = adouble_path(talloc_tos(), path, &adp);
