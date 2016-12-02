@@ -2673,19 +2673,27 @@ static int fruit_rename(struct vfs_handle_struct *handle,
 	char *src_adouble_path = NULL;
 	char *dst_adouble_path = NULL;
 	struct fruit_config_data *config = NULL;
-
-	rc = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
-
-	if (!VALID_STAT(smb_fname_src->st)
-	    || !S_ISREG(smb_fname_src->st.st_ex_mode)) {
-		return rc;
-	}
+	struct smb_filename *src_adp_smb_fname = NULL;
+	struct smb_filename *dst_adp_smb_fname = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (config->rsrc == FRUIT_RSRC_XATTR) {
-		return rc;
+	if (!VALID_STAT(smb_fname_src->st)) {
+		DBG_ERR("Need valid stat for [%s]\n",
+			smb_fname_str_dbg(smb_fname_src));
+		return -1;
+	}
+
+	rc = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
+	if (rc != 0) {
+		return -1;
+	}
+
+	if ((config->rsrc != FRUIT_RSRC_ADFILE) ||
+	    (!S_ISREG(smb_fname_src->st.st_ex_mode)))
+	{
+		return 0;
 	}
 
 	rc = adouble_path(talloc_tos(), smb_fname_src->base_name,
@@ -2693,24 +2701,43 @@ static int fruit_rename(struct vfs_handle_struct *handle,
 	if (rc != 0) {
 		goto done;
 	}
+	src_adp_smb_fname = synthetic_smb_fname(talloc_tos(),
+						src_adouble_path,
+						NULL, NULL,
+						smb_fname_src->flags);
+	TALLOC_FREE(src_adouble_path);
+	if (src_adp_smb_fname == NULL) {
+		rc = -1;
+		goto done;
+	}
+
 	rc = adouble_path(talloc_tos(), smb_fname_dst->base_name,
 			  &dst_adouble_path);
 	if (rc != 0) {
 		goto done;
 	}
+	dst_adp_smb_fname = synthetic_smb_fname(talloc_tos(),
+						dst_adouble_path,
+						NULL, NULL,
+						smb_fname_dst->flags);
+	TALLOC_FREE(dst_adouble_path);
+	if (dst_adp_smb_fname == NULL) {
+		rc = -1;
+		goto done;
+	}
 
-	DEBUG(10, ("fruit_rename: %s -> %s\n",
-		   src_adouble_path, dst_adouble_path));
+	DBG_DEBUG("%s -> %s\n",
+		  smb_fname_str_dbg(src_adp_smb_fname),
+		  smb_fname_str_dbg(dst_adp_smb_fname));
 
-	rc = rename(src_adouble_path, dst_adouble_path);
+	rc = SMB_VFS_NEXT_RENAME(handle, src_adp_smb_fname, dst_adp_smb_fname);
 	if (errno == ENOENT) {
 		rc = 0;
 	}
 
-	TALLOC_FREE(src_adouble_path);
-	TALLOC_FREE(dst_adouble_path);
-
 done:
+	TALLOC_FREE(src_adp_smb_fname);
+	TALLOC_FREE(dst_adp_smb_fname);
 	return rc;
 }
 
