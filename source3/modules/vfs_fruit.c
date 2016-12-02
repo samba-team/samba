@@ -2193,12 +2193,89 @@ static bool readdir_attr_meta_finderi(struct vfs_handle_struct *handle,
 	return true;
 }
 
+static uint64_t readdir_attr_rfork_size_adouble(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *smb_fname)
+{
+	struct adouble *ad = NULL;
+	uint64_t rfork_size;
+
+	ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
+		    ADOUBLE_RSRC);
+	if (ad == NULL) {
+		return 0;
+	}
+
+	rfork_size = ad_getentrylen(ad, ADEID_RFORK);
+	TALLOC_FREE(ad);
+
+	return rfork_size;
+}
+
+static uint64_t readdir_attr_rfork_size_stream(
+	struct vfs_handle_struct *handle,
+	const struct smb_filename *smb_fname)
+{
+	struct smb_filename *stream_name = NULL;
+	int ret;
+	uint64_t rfork_size;
+
+	stream_name = synthetic_smb_fname(talloc_tos(),
+					  smb_fname->base_name,
+					  AFPRESOURCE_STREAM_NAME,
+					  NULL, 0);
+	if (stream_name == NULL) {
+		return 0;
+	}
+
+	ret = SMB_VFS_STAT(handle->conn, stream_name);
+	if (ret != 0) {
+		TALLOC_FREE(stream_name);
+		return 0;
+	}
+
+	rfork_size = stream_name->st.st_ex_size;
+	TALLOC_FREE(stream_name);
+
+	return rfork_size;
+}
+
+static uint64_t readdir_attr_rfork_size(struct vfs_handle_struct *handle,
+					const struct smb_filename *smb_fname)
+{
+	struct fruit_config_data *config = NULL;
+	uint64_t rfork_size;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return 0);
+
+	switch (config->rsrc) {
+	case FRUIT_RSRC_ADFILE:
+	case FRUIT_RSRC_XATTR:
+		rfork_size = readdir_attr_rfork_size_adouble(handle,
+							     smb_fname);
+		break;
+
+	case FRUIT_META_STREAM:
+		rfork_size = readdir_attr_rfork_size_stream(handle,
+							    smb_fname);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		rfork_size = 0;
+		break;
+	}
+
+	return rfork_size;
+}
+
 static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname,
 				     struct readdir_attr_data *attr_data)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	struct adouble *ad = NULL;
 	struct fruit_config_data *config = NULL;
 	bool ok;
 
@@ -2215,13 +2292,10 @@ static NTSTATUS readdir_attr_macmeta(struct vfs_handle_struct *handle,
 	 */
 
 	if (config->readdir_attr_rsize) {
-		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
-			    ADOUBLE_RSRC);
-		if (ad) {
-			attr_data->attr_data.aapl.rfork_size = ad_getentrylen(
-				ad, ADEID_RFORK);
-			TALLOC_FREE(ad);
-		}
+		uint64_t rfork_size;
+
+		rfork_size = readdir_attr_rfork_size(handle, smb_fname);
+		attr_data->attr_data.aapl.rfork_size = rfork_size;
 	}
 
 	/*
