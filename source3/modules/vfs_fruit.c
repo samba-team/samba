@@ -1626,6 +1626,21 @@ static void update_btime(vfs_handle_struct *handle,
 	uint32_t t;
 	struct timespec creation_time = {0};
 	struct adouble *ad;
+	struct fruit_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
+				return);
+
+	switch (config->meta) {
+	case FRUIT_META_STREAM:
+		return;
+	case FRUIT_META_NETATALK:
+		/* Handled below */
+		break;
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
+		return;
+	}
 
 	ad = ad_get(talloc_tos(), handle, smb_fname->base_name, ADOUBLE_META);
 	if (ad == NULL) {
