@@ -27,11 +27,13 @@
 #include "replace.h"
 #include "system/network.h"
 
+#include "lib/util/bitmap.h"
+
 struct public_ip_list {
 	struct public_ip_list *next;
 	uint32_t pnn;
 	ctdb_sock_addr addr;
-	bool *available_on;
+	struct bitmap *available_on;
 };
 
 #define IP_KEYLEN	4

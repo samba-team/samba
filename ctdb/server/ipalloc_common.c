@@ -65,7 +65,7 @@ static bool can_node_host_ip(struct ipalloc_state *ipalloc_state,
 		return false;
 	}
 
-	return ip->available_on[pnn];
+	return bitmap_query(ip->available_on, pnn);
 }
 
 bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,

@@ -165,8 +165,7 @@ static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 
 	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
 
-		ip->available_on = talloc_zero_array(ip, bool,
-						     ipalloc_state->num);
+		ip->available_on = bitmap_talloc(ip, ipalloc_state->num);
 		if (ip->available_on == NULL) {
 			return false;
 		}
@@ -179,7 +178,7 @@ static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 			for (j = 0; j < avail->num; j++) {
 				if (ctdb_sock_addr_same_ip(
 					    &ip->addr, &avail->ip[j].addr)) {
-					ip->available_on[i] = true;
+					bitmap_set(ip->available_on, i);
 					break;
 				}
 			}
