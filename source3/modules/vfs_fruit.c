@@ -4265,50 +4265,100 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				off_t offset,
-				struct adouble *ad)
+static int fruit_ftruncate_rsrc_xattr(struct vfs_handle_struct *handle,
+				      struct files_struct *fsp,
+				      off_t offset)
+{
+	if (offset == 0) {
+		return SMB_VFS_FREMOVEXATTR(fsp, AFPRESOURCE_EA_NETATALK);
+	}
+
+#ifdef HAVE_ATTROPEN
+	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
+#endif
+	return 0;
+}
+
+static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					off_t offset)
 {
 	int rc;
+        struct adouble *ad =
+		(struct adouble *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	off_t ad_off = ad_getentryoff(ad, ADEID_RFORK);
+
+	if (!fruit_fsp_recheck(ad, fsp)) {
+		return -1;
+	}
+
+	rc = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset + ad_off);
+	if (rc != 0) {
+		return -1;
+	}
+
+	ad_setentrylen(ad, ADEID_RFORK, offset);
+
+	rc = ad_write(ad, NULL);
+	if (rc != 0) {
+		DBG_ERR("ad_write [%s] failed [%s]\n",
+			fsp_str_dbg(fsp), strerror(errno));
+		return -1;
+	}
+
+	DBG_DEBUG("Path [%s] offset [%jd]\n",
+		  fsp_str_dbg(fsp), (intmax_t)offset);
+
+	return 0;
+}
+
+static int fruit_ftruncate_rsrc_stream(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       off_t offset)
+{
+	if (offset == 0) {
+		return SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
+	}
+
+	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
+}
+
+static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				off_t offset)
+{
+	int ret;
 	struct fruit_config_data *config;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (config->rsrc == FRUIT_RSRC_XATTR && offset == 0) {
-		return SMB_VFS_FREMOVEXATTR(fsp,
-					    AFPRESOURCE_EA_NETATALK);
-	}
+	switch (config->rsrc) {
+	case FRUIT_RSRC_XATTR:
+		ret = fruit_ftruncate_rsrc_xattr(handle, fsp, offset);
+		break;
 
-	rc = SMB_VFS_NEXT_FTRUNCATE(
-		handle, fsp,
-		offset + ad_getentryoff(ad, ADEID_RFORK));
-	if (rc != 0) {
+	case FRUIT_RSRC_ADFILE:
+		ret = fruit_ftruncate_rsrc_adouble(handle, fsp, offset);
+		break;
+
+	case FRUIT_RSRC_STREAM:
+		ret = fruit_ftruncate_rsrc_stream(handle, fsp, offset);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
 		return -1;
 	}
 
-	if (config->rsrc == FRUIT_RSRC_ADFILE) {
-		ad_setentrylen(ad, ADEID_RFORK, offset);
-		rc = ad_write(ad, NULL);
-		if (rc != 0) {
-			return -1;
-		}
-		DEBUG(10, ("fruit_ftruncate_rsrc file %s offset %jd\n",
-			   fsp_str_dbg(fsp), (intmax_t)offset));
-	}
 
-	return 0;
+	return ret;
 }
 
 static int fruit_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
 			   off_t offset)
 {
-	int rc = 0;
-        struct adouble *ad =
-		(struct adouble *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-
 	DBG_DEBUG("fruit_ftruncate called for file %s offset %.0f\n",
 		   fsp_str_dbg(fsp), (double)offset);
 
@@ -4327,25 +4377,11 @@ static int fruit_ftruncate(struct vfs_handle_struct *handle,
 		return 0;
 	}
 
-	if (ad == NULL) {
-		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
+	if (is_afpresource_stream(fsp->fsp_name)) {
+		return fruit_ftruncate_rsrc(handle, fsp, offset);
 	}
 
-	if (!fruit_fsp_recheck(ad, fsp)) {
-		return -1;
-	}
-
-	switch (ad->ad_type) {
-	case ADOUBLE_RSRC:
-		rc = fruit_ftruncate_rsrc(handle, fsp, offset, ad);
-		break;
-
-	default:
-		DBG_ERR("unexpected ad_type [%d]\n", ad->ad_type);
-		return -1;
-	}
-
-	return rc;
+	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 }
 
 static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
