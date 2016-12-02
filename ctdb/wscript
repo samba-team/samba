@@ -750,6 +750,11 @@ def build(bld):
                               ib_deps,
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_BINARY('test_mutex_raw',
+                     source='tests/src/test_mutex_raw.c',
+                     deps='pthread',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
     test_subdirs = [
         'complex',
         'cunit',
