@@ -1456,7 +1456,7 @@ void check_log_size( void )
  This is called by format_debug_text().
 ************************************************************************/
 
-static void Debug1(const char *msg)
+static void Debug1(const char *msg, size_t msg_len)
 {
 	int old_errno = errno;
 
@@ -1475,7 +1475,7 @@ static void Debug1(const char *msg)
 			do {
 				ret = write(dbgc_config[DBGC_ALL].fd,
 					    msg,
-					    strlen(msg));
+					    msg_len);
 			} while (ret == -1 && errno == EINTR);
 		}
 		break;
@@ -1496,7 +1496,7 @@ static void Debug1(const char *msg)
 static void bufr_print( void )
 {
 	format_bufr[format_pos] = '\0';
-	(void)Debug1(format_bufr);
+	(void)Debug1(format_bufr, format_pos);
 	format_pos = 0;
 }
 
@@ -1542,8 +1542,9 @@ static void format_debug_text( const char *msg )
 		 * continuation indicator.
 		 */
 		if (format_pos >= FORMAT_BUFR_SIZE - 1) {
+			const char cont[] = " +>\n";
 			bufr_print();
-			(void)Debug1( " +>\n" );
+			(void)Debug1(cont , sizeof(cont) - 1);
 		}
 	}
 
