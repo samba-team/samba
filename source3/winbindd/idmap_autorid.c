@@ -289,7 +289,7 @@ static NTSTATUS idmap_autorid_id_to_sid(struct autorid_global_config *cfg,
 **********************************/
 
 static NTSTATUS idmap_autorid_sid_to_id_rid(
-					struct autorid_global_config *global,
+					uint32_t rangesize,
 					uint32_t low_id,
 					struct id_map *map)
 {
@@ -298,7 +298,7 @@ static NTSTATUS idmap_autorid_sid_to_id_rid(
 
 	sid_peek_rid(map->sid, &rid);
 
-	reduced_rid = rid % global->rangesize;
+	reduced_rid = rid % rangesize;
 
 	map->xid.id = reduced_rid + low_id;
 	map->xid.type = ID_TYPE_BOTH;
@@ -604,7 +604,8 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 		return ret;
 	}
 
-	return idmap_autorid_sid_to_id_rid(global, range.low_id, map);
+	return idmap_autorid_sid_to_id_rid(global->rangesize, range.low_id,
+					   map);
 }
 
 /**********************************
