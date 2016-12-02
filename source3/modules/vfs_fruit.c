@@ -2756,25 +2756,59 @@ done:
 	return rc;
 }
 
-static int fruit_unlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
+static int fruit_unlink_meta_stream(vfs_handle_struct *handle,
+				    const struct smb_filename *smb_fname)
 {
-	int rc = -1;
+	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+}
+
+static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
+				      const struct smb_filename *smb_fname)
+{
+	return SMB_VFS_REMOVEXATTR(handle->conn,
+				   smb_fname->base_name,
+				   AFPINFO_EA_NETATALK);
+}
+
+static int fruit_unlink_meta(vfs_handle_struct *handle,
+			     const struct smb_filename *smb_fname)
+{
 	struct fruit_config_data *config = NULL;
+	int rc;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
-		char *adp = NULL;
+	switch (config->meta) {
+	case FRUIT_META_STREAM:
+		rc = fruit_unlink_meta_stream(handle, smb_fname);
+		break;
 
-		rc = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-		if (rc != 0) {
+	case FRUIT_META_NETATALK:
+		rc = fruit_unlink_meta_netatalk(handle, smb_fname);
+		break;
+
+	default:
+		DBG_ERR("Unsupported meta config [%d]\n", config->meta);
+		return -1;
+	}
+
+	return rc;
+}
+
+static int fruit_unlink_rsrc_stream(vfs_handle_struct *handle,
+				    const struct smb_filename *smb_fname,
+				    bool force_unlink)
+{
+	int ret;
+
+	if (!force_unlink) {
+		struct smb_filename *smb_fname_cp = NULL;
+		off_t size;
+
+		smb_fname_cp = cp_smb_filename(talloc_tos(), smb_fname);
+		if (smb_fname_cp == NULL) {
 			return -1;
-		}
-
-		if (config->rsrc != FRUIT_RSRC_ADFILE) {
-			return 0;
 		}
 
 		/*
@@ -2782,44 +2816,174 @@ static int fruit_unlink(vfs_handle_struct *handle,
 		 * vfs_streaminfo, as a result stream cleanup/deletion of file
 		 * deletion doesn't remove the resourcefork stream.
 		 */
-		rc = adouble_path(talloc_tos(),
-				  smb_fname->base_name, &adp);
-		if (rc != 0) {
+
+		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_cp);
+		if (ret != 0) {
+			TALLOC_FREE(smb_fname_cp);
+			DBG_ERR("stat [%s] failed [%s]\n",
+				smb_fname_str_dbg(smb_fname_cp), strerror(errno));
 			return -1;
 		}
 
-		/* FIXME: direct unlink(), missing smb_fname */
-		DBG_DEBUG("fruit_unlink: %s\n", adp);
-		rc = unlink(adp);
-		if ((rc == -1) && (errno == ENOENT)) {
-			rc = 0;
+		size = smb_fname_cp->st.st_ex_size;
+		TALLOC_FREE(smb_fname_cp);
+
+		if (size > 0) {
+			/* OS X ignores resource fork stream delete requests */
+			return 0;
+		}
+	}
+
+	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	if ((ret != 0) && (errno == ENOENT) && force_unlink) {
+		ret = 0;
+	}
+
+	return ret;
+}
+
+static int fruit_unlink_rsrc_adouble(vfs_handle_struct *handle,
+				     const struct smb_filename *smb_fname,
+				     bool force_unlink)
+{
+	int rc;
+	char *adp = NULL;
+	struct adouble *ad = NULL;
+	struct smb_filename *adp_smb_fname = NULL;
+
+	if (!force_unlink) {
+		ad = ad_get(talloc_tos(), handle, smb_fname->base_name,
+			    ADOUBLE_RSRC);
+		if (ad == NULL) {
+			errno = ENOENT;
+			return -1;
 		}
 
-		TALLOC_FREE(adp);
-		return 0;
+
+		/*
+		 * 0 byte resource fork streams are not listed by
+		 * vfs_streaminfo, as a result stream cleanup/deletion of file
+		 * deletion doesn't remove the resourcefork stream.
+		 */
+
+		if (ad_getentrylen(ad, ADEID_RFORK) > 0) {
+			/* OS X ignores resource fork stream delete requests */
+			TALLOC_FREE(ad);
+			return 0;
+		}
+
+		TALLOC_FREE(ad);
 	}
+
+	rc = adouble_path(talloc_tos(), smb_fname->base_name, &adp);
+	if (rc != 0) {
+		return -1;
+	}
+
+	adp_smb_fname = synthetic_smb_fname(talloc_tos(), adp,
+					    NULL, NULL,
+					    smb_fname->flags);
+	TALLOC_FREE(adp);
+	if (adp_smb_fname == NULL) {
+		return -1;
+	}
+
+	rc = SMB_VFS_NEXT_UNLINK(handle, adp_smb_fname);
+	TALLOC_FREE(adp_smb_fname);
+	if ((rc != 0) && (errno == ENOENT) && force_unlink) {
+		rc = 0;
+	}
+
+	return rc;
+}
+
+static int fruit_unlink_rsrc_xattr(vfs_handle_struct *handle,
+				   const struct smb_filename *smb_fname,
+				   bool force_unlink)
+{
+	/*
+	 * OS X ignores resource fork stream delete requests, so nothing to do
+	 * here. Removing the file will remove the xattr anyway, so we don't
+	 * have to take care of removing 0 byte resource forks that could be
+	 * left behind.
+	 */
+	return 0;
+}
+
+static int fruit_unlink_rsrc(vfs_handle_struct *handle,
+			     const struct smb_filename *smb_fname,
+			     bool force_unlink)
+{
+	struct fruit_config_data *config = NULL;
+	int rc;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+		rc = fruit_unlink_rsrc_stream(handle, smb_fname, force_unlink);
+		break;
+
+	case FRUIT_RSRC_ADFILE:
+		rc = fruit_unlink_rsrc_adouble(handle, smb_fname, force_unlink);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		rc = fruit_unlink_rsrc_xattr(handle, smb_fname, force_unlink);
+		break;
+
+	default:
+		DBG_ERR("Unsupported rsrc config [%d]\n", config->rsrc);
+		return -1;
+	}
+
+	return rc;
+}
+
+static int fruit_unlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	int rc;
+	struct fruit_config_data *config = NULL;
+	struct smb_filename *rsrc_smb_fname = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
 
 	if (is_afpinfo_stream(smb_fname)) {
-		if (config->meta == FRUIT_META_STREAM) {
-			rc = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-		} else {
-			rc = SMB_VFS_REMOVEXATTR(handle->conn,
-						 smb_fname->base_name,
-						 AFPINFO_EA_NETATALK);
-		}
-
-		return rc;
+		return fruit_unlink_meta(handle, smb_fname);
+	} else if (is_afpresource_stream(smb_fname)) {
+		return fruit_unlink_rsrc(handle, smb_fname, false);
+	} if (is_ntfs_stream_smb_fname(smb_fname)) {
+		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 	}
 
-	if (is_afpresource_stream(smb_fname)) {
-		/* OS X ignores deletes on the AFP_Resource stream */
-		return 0;
+	/*
+	 * A request to delete the base file. Because 0 byte resource
+	 * fork streams are not listed by fruit_streaminfo,
+	 * delete_all_streams() can't remove 0 byte resource fork
+	 * streams, so we have to cleanup this here.
+	 */
+	rsrc_smb_fname = synthetic_smb_fname(talloc_tos(),
+					     smb_fname->base_name,
+					     AFPRESOURCE_STREAM_NAME,
+					     NULL,
+					     smb_fname->flags);
+	if (rsrc_smb_fname == NULL) {
+		return -1;
 	}
+
+	rc = fruit_unlink_rsrc(handle, rsrc_smb_fname, true);
+	if ((rc != 0) && (errno != ENOENT)) {
+		DBG_ERR("Forced unlink of [%s] failed [%s]\n",
+			smb_fname_str_dbg(rsrc_smb_fname), strerror(errno));
+		TALLOC_FREE(rsrc_smb_fname);
+		return -1;
+	}
+	TALLOC_FREE(rsrc_smb_fname);
 
 	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-
-
-	return 0;
 }
 
 static int fruit_chmod(vfs_handle_struct *handle,
