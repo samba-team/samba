@@ -3107,9 +3107,9 @@ static int fruit_stat_base(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_stat_meta(vfs_handle_struct *handle,
-			   struct smb_filename *smb_fname,
-			   bool follow_links)
+static int fruit_stat_meta_netatalk(vfs_handle_struct *handle,
+				    struct smb_filename *smb_fname,
+				    bool follow_links)
 {
 	struct adouble *ad = NULL;
 
@@ -3130,6 +3130,30 @@ static int fruit_stat_meta(vfs_handle_struct *handle,
 	smb_fname->st.st_ex_ino = fruit_inode(&smb_fname->st,
 					      smb_fname->stream_name);
 	return 0;
+}
+
+static int fruit_stat_meta(vfs_handle_struct *handle,
+			   struct smb_filename *smb_fname,
+			   bool follow_links)
+{
+	struct fruit_config_data *config = NULL;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->meta) {
+	case FRUIT_META_STREAM:
+	case FRUIT_META_NETATALK:
+		ret = fruit_stat_meta_netatalk(handle, smb_fname, follow_links);
+		break;
+
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", config->meta);
+		return -1;
+	}
+
+	return ret;
 }
 
 static int fruit_stat_rsrc(vfs_handle_struct *handle,
