@@ -94,7 +94,6 @@ struct printer_handle {
 	int printer_type;
 	const char *servername;
 	fstring sharename;
-	uint32_t type;
 	uint32_t access_granted;
 	struct {
 		uint32_t flags;
