@@ -2523,46 +2523,17 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_open_rsrc(vfs_handle_struct *handle,
-			   struct smb_filename *smb_fname,
-			   files_struct *fsp, int flags, mode_t mode)
+static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
+				   struct smb_filename *smb_fname,
+				   files_struct *fsp,
+				   int flags,
+				   mode_t mode)
 {
 	int rc = 0;
-	struct fruit_config_data *config = NULL;
 	struct adouble *ad = NULL;
 	struct smb_filename *smb_fname_base = NULL;
 	char *adpath = NULL;
 	int hostfd = -1;
-
-	DEBUG(10, ("fruit_open_rsrc for %s\n", smb_fname_str_dbg(smb_fname)));
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	switch (config->rsrc) {
-	case FRUIT_RSRC_STREAM:
-		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	case FRUIT_RSRC_XATTR:
-#ifdef HAVE_ATTROPEN
-		hostfd = attropen(smb_fname->base_name,
-				  AFPRESOURCE_EA_NETATALK, flags, mode);
-		if (hostfd == -1) {
-			return -1;
-		}
-		ad = ad_init(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-			     handle, ADOUBLE_RSRC, fsp);
-		if (ad == NULL) {
-			rc = -1;
-			goto exit;
-		}
-		goto exit;
-#else
-		errno = ENOTSUP;
-		return -1;
-#endif
-	default:
-		break;
-	}
 
 	if (!(flags & O_CREAT) && !VALID_STAT(smb_fname->st)) {
 		rc = SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -2658,6 +2629,72 @@ exit:
 		errno = saved_errno;
 	}
 	return hostfd;
+}
+
+static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
+				 struct smb_filename *smb_fname,
+				 files_struct *fsp,
+				 int flags,
+				 mode_t mode)
+{
+#ifdef HAVE_ATTROPEN
+	int fd = -1;
+	struct adouble *ad = NULL;
+
+	ad = ad_init(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
+		     handle, ADOUBLE_RSRC, fsp);
+	if (ad == NULL) {
+		return -1;
+	}
+
+	fd = attropen(smb_fname->base_name,
+			  AFPRESOURCE_EA_NETATALK, flags, mode);
+	if (fd == -1) {
+		return -1;
+	}
+
+	return fd;
+
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+static int fruit_open_rsrc(vfs_handle_struct *handle,
+			   struct smb_filename *smb_fname,
+			   files_struct *fsp, int flags, mode_t mode)
+{
+	int fd;
+	struct fruit_config_data *config = NULL;
+
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	switch (config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+		fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+		break;
+
+	case FRUIT_RSRC_ADFILE:
+		fd = fruit_open_rsrc_adouble(handle, smb_fname,
+					     fsp, flags, mode);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		fd = fruit_open_rsrc_xattr(handle, smb_fname,
+					   fsp, flags, mode);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		return -1;
+	}
+
+	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
+	return fd;
 }
 
 static int fruit_open(vfs_handle_struct *handle,
