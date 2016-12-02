@@ -614,8 +614,9 @@ static NTSTATUS idmap_autorid_sid_to_id(struct idmap_tdb_common_context *common,
 		return NT_STATUS_NONE_MAPPED;
 	}
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(3, ("Could not determine range for domain, "
-			  "check previous messages for reason\n"));
+		DBG_NOTICE("Could not determine range for domain: %s, "
+			   "check previous messages for reason\n",
+			   nt_errstr(ret));
 		return ret;
 	}
 
