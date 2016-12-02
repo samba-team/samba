@@ -4194,9 +4194,15 @@ static int fruit_ntimes(vfs_handle_struct *handle,
 {
 	int rc = 0;
 	struct adouble *ad = NULL;
+	struct fruit_config_data *config = NULL;
 
-	if (null_timespec(ft->create_time)) {
-		goto exit;
+	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
+				return -1);
+
+	if ((config->meta != FRUIT_META_NETATALK) ||
+	    null_timespec(ft->create_time))
+	{
+		return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 	}
 
 	DEBUG(10,("set btime for %s to %s\n", smb_fname_str_dbg(smb_fname),
