@@ -3634,6 +3634,48 @@ static int fruit_stat_rsrc_stream(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int fruit_stat_rsrc_xattr(vfs_handle_struct *handle,
+				 struct smb_filename *smb_fname,
+				 bool follow_links)
+{
+#ifdef HAVE_ATTROPEN
+	int ret;
+	int fd = -1;
+
+	/* Populate the stat struct with info from the base file. */
+	ret = fruit_stat_base(handle, smb_fname, follow_links);
+	if (ret != 0) {
+		return -1;
+	}
+
+	fd = attropen(smb_fname->base_name,
+		      AFPRESOURCE_EA_NETATALK,
+		      O_RDONLY);
+	if (fd == -1) {
+		return 0;
+	}
+
+	ret = sys_fstat(fd, &smb_fname->st, false);
+	if (ret != 0) {
+		close(fd);
+		DBG_ERR("fstat [%s:%s] failed\n", smb_fname->base_name,
+			AFPRESOURCE_EA_NETATALK);
+		return -1;
+	}
+	close(fd);
+	fd = -1;
+
+	smb_fname->st.st_ex_ino = fruit_inode(&smb_fname->st,
+					      smb_fname->stream_name);
+
+	return ret;
+
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
 static int fruit_stat_rsrc(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname,
 			   bool follow_links)
@@ -3652,6 +3694,9 @@ static int fruit_stat_rsrc(vfs_handle_struct *handle,
 		break;
 
 	case FRUIT_RSRC_XATTR:
+		ret = fruit_stat_rsrc_xattr(handle, smb_fname, follow_links);
+		break;
+
 	case FRUIT_RSRC_ADFILE:
 		ret = fruit_stat_rsrc_netatalk(handle, smb_fname, follow_links);
 		break;
