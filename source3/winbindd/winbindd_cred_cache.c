@@ -128,11 +128,19 @@ static void krb5_ticket_refresh_handler(struct tevent_context *event_ctx,
 	/* Kinit again if we have the user password and we can't renew the old
 	 * tgt anymore 
 	 * NB
-	 * This happens when machine are put to sleep for a very long time. */
+	 * This happens when machines are put to sleep for a very long time.
+	 *
+	 * Optionally disable this, since using cached passwords to kinit can
+	 * lockout a user account if their password has changed. */
 
 	if (entry->renew_until < time(NULL)) {
 rekinit:
-		if (cred_ptr && cred_ptr->pass) {
+		const char **pwd_users = lp_winbind_password_kinit();
+		int len_pwd_users = str_list_length(pwd_users);
+
+		if (cred_ptr && cred_ptr->pass &&
+		    ((len_pwd_users == 1 && str_list_check(pwd_users, "*")) ||
+		     (str_list_check(pwd_users, entry->principal_name)))) {
 
 			set_effective_uid(entry->uid);
 
@@ -308,6 +316,8 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 	struct timeval t;
 	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
 	struct winbindd_domain *domain = NULL;
+	const char **pwd_users = lp_winbind_password_kinit();
+	int len_pwd_users = str_list_length(pwd_users);
 #endif
 
 	DBG_DEBUG("event called for: %s, %s\n",
@@ -316,6 +326,11 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 	TALLOC_FREE(entry->event);
 
 #ifdef HAVE_KRB5
+
+	if ((len_pwd_users == 1 && str_list_check(pwd_users, "*")) ||
+	    str_list_check(pwd_users, entry->principal_name)) {
+		return;
+	}
 
 	if (!cred_ptr || !cred_ptr->pass) {
 		DEBUG(10,("krb5_ticket_gain_handler: no memory creds\n"));

@@ -821,6 +821,8 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.winbind_expand_groups = 0;
 	Globals.winbind_nss_info = str_list_make_v3_const(NULL, "template", NULL);
 	Globals.winbind_refresh_tickets = false;
+	Globals.winbind_password_kinit =
+		str_list_make_v3_const(NULL, "*", NULL);
 	Globals.winbind_offline_logon = false;
 	Globals.winbind_scan_trusted_domains = true;
 
