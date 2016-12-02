@@ -3053,7 +3053,6 @@ static int fruit_chown(vfs_handle_struct *handle,
 	char *adp = NULL;
 	struct fruit_config_data *config = NULL;
 	struct smb_filename *adp_smb_fname = NULL;
-	SMB_STRUCT_STAT sb;
 
 	rc = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
 	if (rc != 0) {
@@ -3063,14 +3062,16 @@ static int fruit_chown(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (config->rsrc == FRUIT_RSRC_XATTR) {
-		return rc;
+	if (config->rsrc != FRUIT_RSRC_ADFILE) {
+		return 0;
 	}
 
-	/* FIXME: direct sys_lstat(), need non-const smb_fname */
-	rc = sys_lstat(smb_fname->base_name, &sb, false);
-	if (rc != 0 || !S_ISREG(sb.st_ex_mode)) {
-		return rc;
+	if (!VALID_STAT(smb_fname->st)) {
+		return 0;
+	}
+
+	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
+		return 0;
 	}
 
 	rc = adouble_path(talloc_tos(), smb_fname->base_name, &adp);
