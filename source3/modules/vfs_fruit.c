@@ -3619,6 +3619,21 @@ static int fruit_stat_rsrc_netatalk(vfs_handle_struct *handle,
 	return 0;
 }
 
+static int fruit_stat_rsrc_stream(vfs_handle_struct *handle,
+				  struct smb_filename *smb_fname,
+				  bool follow_links)
+{
+	int ret;
+
+	if (follow_links) {
+		ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+	} else {
+		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+	}
+
+	return ret;
+}
+
 static int fruit_stat_rsrc(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname,
 			   bool follow_links)
@@ -3633,6 +3648,9 @@ static int fruit_stat_rsrc(vfs_handle_struct *handle,
 
 	switch (config->rsrc) {
 	case FRUIT_RSRC_STREAM:
+		ret = fruit_stat_rsrc_stream(handle, smb_fname, follow_links);
+		break;
+
 	case FRUIT_RSRC_XATTR:
 	case FRUIT_RSRC_ADFILE:
 		ret = fruit_stat_rsrc_netatalk(handle, smb_fname, follow_links);
