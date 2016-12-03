@@ -1936,6 +1936,57 @@ static void control_get_capabilities(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
+static void control_get_public_ips(TALLOC_CTX *mem_ctx,
+				   struct tevent_req *req,
+				   struct ctdb_req_header *header,
+				   struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct ctdb_public_ip_list *ips = NULL;
+
+	reply.rdata.opcode = request->opcode;
+
+	if (ctdb->known_ips == NULL) {
+		/* No IPs defined so create a dummy empty struct and ship it */
+		ips = talloc_zero(mem_ctx, struct ctdb_public_ip_list);;
+		if (ips == NULL) {
+			reply.status = ENOMEM;
+			reply.errmsg = "Memory error";
+			goto done;
+		}
+		goto ok;
+	}
+
+	ips = &ctdb->known_ips[header->destnode];
+
+	if (request->flags & CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE) {
+		/* If runstate is not RUNNING or a node is then return
+		 * no available IPs.  Don't worry about interface
+		 * states here - we're not faking down to that level.
+		 */
+		if (ctdb->runstate != CTDB_RUNSTATE_RUNNING) {
+			/* No available IPs: return dummy empty struct */
+			ips = talloc_zero(mem_ctx, struct ctdb_public_ip_list);;
+			if (ips == NULL) {
+				reply.status = ENOMEM;
+				reply.errmsg = "Memory error";
+				goto done;
+			}
+		}
+	}
+
+ok:
+	reply.rdata.data.pubip_list = ips;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+done:
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_nodemap(TALLOC_CTX *mem_ctx,
 				struct tevent_req *req,
 				struct ctdb_req_header *header,
@@ -2971,6 +3022,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		control_get_capabilities(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_PUBLIC_IPS:
+		control_get_public_ips(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_NODEMAP:
