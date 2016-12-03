@@ -2216,6 +2216,83 @@ done:
 	return iface_list;
 }
 
+static void control_get_public_ip_info(TALLOC_CTX *mem_ctx,
+				       struct tevent_req *req,
+				       struct ctdb_req_header *header,
+				       struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	ctdb_sock_addr *addr = request->rdata.data.addr;
+	struct ctdb_public_ip_list *known = NULL;
+	struct ctdb_public_ip_info *info = NULL;
+	unsigned i;
+
+	reply.rdata.opcode = request->opcode;
+
+	info = talloc_zero(mem_ctx, struct ctdb_public_ip_info);
+	if (info == NULL) {
+		reply.status = ENOMEM;
+		reply.errmsg = "Memory error";
+		goto done;
+	}
+
+	reply.rdata.data.ipinfo = info;
+
+	if (ctdb->known_ips != NULL) {
+		known = &ctdb->known_ips[header->destnode];
+	} else {
+		/* No IPs defined so create a dummy empty struct and
+		 * fall through.  The given IP won't be matched
+		 * below...
+		 */
+		known = talloc_zero(mem_ctx, struct ctdb_public_ip_list);;
+		if (known == NULL) {
+			reply.status = ENOMEM;
+			reply.errmsg = "Memory error";
+			goto done;
+		}
+	}
+
+	for (i = 0; i < known->num; i++) {
+		if (ctdb_sock_addr_same_ip(&known->ip[i].addr,
+					   addr)) {
+			break;
+		}
+	}
+
+	if (i == known->num) {
+		D_ERR("GET_PUBLIC_IP_INFO: not known public IP %s\n",
+		      ctdb_sock_addr_to_string(mem_ctx, addr));
+		reply.status = -1;
+		reply.errmsg = "Unknown address";
+		goto done;
+	}
+
+	info->ip = known->ip[i];
+
+	/* The fake PUBLICIPS stanza and resulting known_ips data
+	 * don't know anything about interfaces, so completely fake
+	 * this.
+	 */
+	info->active_idx = 0;
+
+	info->ifaces = get_ctdb_iface_list(mem_ctx, ctdb);
+	if (info->ifaces == NULL) {
+		reply.status = ENOMEM;
+		reply.errmsg = "Memory error";
+		goto done;
+	}
+
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+done:
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_ifaces(TALLOC_CTX *mem_ctx,
 			       struct tevent_req *req,
 			       struct ctdb_req_header *header,
@@ -2922,6 +2999,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_DB_GET_HEALTH:
 		control_db_get_health(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_GET_PUBLIC_IP_INFO:
+		control_get_public_ip_info(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_IFACES:
