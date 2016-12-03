@@ -32,6 +32,8 @@
 
 #include "server/ipalloc.h"
 
+#include "ipalloc_read_known_ips.h"
+
 static void print_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
 				      struct public_ip_list * ips)
 {
@@ -49,86 +51,6 @@ static uint32_t *get_tunable_values(TALLOC_CTX *tmp_ctx,
 static enum ctdb_runstate *get_runstate(TALLOC_CTX *tmp_ctx,
 					int numnodes);
 
-static void add_ip(TALLOC_CTX *mem_ctx,
-		   struct ctdb_public_ip_list *l,
-		   ctdb_sock_addr *addr,
-		   uint32_t pnn)
-{
-
-	l->ip = talloc_realloc(mem_ctx, l->ip,
-			       struct ctdb_public_ip, l->num + 1);
-	assert(l->ip != NULL);
-
-	l->ip[l->num].addr = *addr;
-	l->ip[l->num].pnn  = pnn;
-	l->num++;
-}
-
-/* Format of each line is "IP CURRENT_PNN [ALLOWED_PNN,...]".
- * If multi is true then ALLOWED_PNNs are not allowed.  */
-static void read_ctdb_public_ip_info_node(int numnodes,
-					  bool multi,
-					  struct ctdb_public_ip_list **k,
-					  struct ctdb_public_ip_list *known)
-{
-	char line[1024];
-	ctdb_sock_addr addr;
-	char *t, *tok;
-	int pnn, n;
-
-	/* Known public IPs */
-	*k = talloc_zero(known, struct ctdb_public_ip_list);
-	assert(k != NULL);
-
-	while (fgets(line, sizeof(line), stdin) != NULL) {
-
-		/* Get rid of pesky newline */
-		if ((t = strchr(line, '\n')) != NULL) {
-			*t = '\0';
-		}
-
-		/* Exit on an empty line */
-		if (line[0] == '\0') {
-			break;
-		}
-
-		/* Get the IP address */
-		tok = strtok(line, " \t");
-		if (tok == NULL) {
-			DEBUG(DEBUG_ERR, (__location__ " WARNING, bad line ignored :%s\n", line));
-			continue;
-		}
-
-		if (!parse_ip(tok, NULL, 0, &addr)) {
-			DEBUG(DEBUG_ERR, (__location__ " ERROR, bad address :%s\n", tok));
-			continue;
-		}
-
-		/* Get the PNN */
-		pnn = -1;
-		tok = strtok(NULL, " \t");
-		if (tok != NULL) {
-			pnn = (int) strtol(tok, (char **) NULL, 10);
-		}
-
-		add_ip(*k, *k, &addr, pnn);
-
-		tok = strtok(NULL, " \t#");
-		if (tok == NULL) {
-			continue;
-		}
-
-		/* Handle allowed nodes for addr */
-		assert(multi == false);
-		t = strtok(tok, ",");
-		while (t != NULL) {
-			n = (int) strtol(t, (char **) NULL, 10);
-			add_ip(known, &known[n], &addr, pnn);
-			t = strtok(NULL, ",");
-		}
-	}
-}
-
 static void read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 				     int numnodes,
 				     bool multi,
@@ -136,33 +58,14 @@ static void read_ctdb_public_ip_info(TALLOC_CTX *ctx,
 				     struct ctdb_public_ip_list ** avail)
 {
 	int n;
-	struct ctdb_public_ip_list * k;
 	enum ctdb_runstate *runstate;
 
-	*known = talloc_zero_array(ctx, struct ctdb_public_ip_list,
-				   numnodes);
+	*known = ipalloc_read_known_ips(ctx, numnodes, multi);
 	assert(*known != NULL);
+
 	*avail = talloc_zero_array(ctx, struct ctdb_public_ip_list,
 				   numnodes);
 	assert(*avail != NULL);
-
-	if (multi) {
-		for (n = 0; n < numnodes; n++) {
-			read_ctdb_public_ip_info_node(numnodes, multi,
-						      &k, *known);
-
-			(*known)[n] = *k;
-		}
-	} else {
-		read_ctdb_public_ip_info_node(numnodes, multi, &k, *known);
-
-		/* Assign it to any nodes that don't have a list assigned */
-		for (n = 0; n < numnodes; n++) {
-			if ((*known)[n].num == 0) {
-				(*known)[n] = *k;
-			}
-		}
-	}
 
 	runstate = get_runstate(ctx, numnodes);
 	for (n = 0; n < numnodes; n++) {

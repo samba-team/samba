@@ -799,7 +799,8 @@ def build(bld):
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('ctdb_takeover_tests',
-                     source='tests/src/ctdb_takeover_tests.c',
+                     source='''tests/src/ctdb_takeover_tests.c
+                               tests/src/ipalloc_read_known_ips.c''',
                      deps='''replace popt tdb tevent talloc ctdb-system
                              samba-util tdb-wrap talloc_report
                              ctdb-ipalloc ctdb-protocol ctdb-util''',
