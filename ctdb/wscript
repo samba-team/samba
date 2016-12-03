@@ -808,7 +808,8 @@ def build(bld):
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_BINARY('fake_ctdbd',
-                     source='tests/src/fake_ctdbd.c',
+                     source='''tests/src/fake_ctdbd.c
+                               tests/src/ipalloc_read_known_ips.c''',
                      deps='''ctdb-util ctdb-protocol ctdb-system
                              samba-util tevent-util LIBASYNC_REQ popt''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')

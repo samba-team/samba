@@ -40,6 +40,8 @@
 #include "common/logging.h"
 #include "common/tunable.h"
 
+#include "ipalloc_read_known_ips.h"
+
 
 #define CTDB_PORT 4379
 
@@ -114,6 +116,7 @@ struct ctdbd_context {
 	struct ctdb_tunable_list tun_list;
 	int monitoring_mode;
 	char *reclock;
+	struct ctdb_public_ip_list *known_ips;
 };
 
 /*
@@ -704,6 +707,19 @@ static struct database *database_find(struct database_map *map,
 	return NULL;
 }
 
+static bool public_ips_parse(struct ctdbd_context *ctdb,
+			     uint32_t numnodes)
+{
+	if (numnodes == 0) {
+		D_ERR("Must initialise nodemap before public IPs\n");
+		return false;
+	}
+
+	ctdb->known_ips = ipalloc_read_known_ips(ctdb, numnodes, false);
+
+	return (ctdb->known_ips != NULL);
+}
+
 /*
  * CTDB context setup
  */
@@ -769,6 +785,9 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 			status = vnnmap_parse(ctdb->vnn_map);
 		} else if (strcmp(line, "DBMAP") == 0) {
 			status = dbmap_parse(ctdb->db_map);
+		} else if (strcmp(line, "PUBLICIPS") == 0) {
+			status = public_ips_parse(ctdb,
+						  ctdb->node_map->num_nodes);
 		} else if (strcmp(line, "RECLOCK") == 0) {
 			status = reclock_parse(ctdb);
 		} else {
