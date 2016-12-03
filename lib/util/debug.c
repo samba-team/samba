@@ -96,6 +96,7 @@ static struct {
 	debug_callback_fn callback;
 	void *callback_private;
 	char header_str[300];
+	char header_str_no_nl[300];
 	size_t hs_len;
 } state = {
 	.settings = {
@@ -232,6 +233,16 @@ static void copy_no_nl(char *out,
 static void debug_file_log(int msg_level,
 			   const char *msg, const char *msg_no_nl)
 {
+	struct iovec iov[] = {
+		{
+			.iov_base = discard_const(state.header_str),
+			.iov_len = state.hs_len,
+		},
+		{
+			.iov_base = discard_const(msg),
+			.iov_len = strlen(msg),
+		},
+	};
 	ssize_t ret;
 	int fd;
 
@@ -244,7 +255,7 @@ static void debug_file_log(int msg_level,
 	}
 
 	do {
-		ret = write(fd, msg, strlen(msg));
+		ret = writev(fd, iov, ARRAY_SIZE(iov));
 	} while (ret == -1 && errno == EINTR);
 }
 
@@ -284,6 +295,9 @@ static void debug_syslog_log(int msg_level,
 	 */
 	priority |= SYSLOG_FACILITY;
 
+	if (state.hs_len > 0) {
+		syslog(priority, "%s", state.header_str);
+	}
 	syslog(priority, "%s", msg);
 }
 #endif /* WITH_SYSLOG */
@@ -293,6 +307,15 @@ static void debug_syslog_log(int msg_level,
 static void debug_systemd_log(int msg_level,
 			      const char *msg, const char *msg_no_nl)
 {
+	if (state.hs_len > 0) {
+		sd_journal_send("MESSAGE=%s",
+				state.header_str_no_nl,
+				"PRIORITY=%d",
+				debug_level_to_priority(msg_level),
+				"LEVEL=%d",
+				msg_level,
+				NULL);
+	}
 	sd_journal_send("MESSAGE=%s", msg_no_nl,
 			"PRIORITY=%d", debug_level_to_priority(msg_level),
 			"LEVEL=%d", msg_level,
@@ -305,6 +328,9 @@ static void debug_systemd_log(int msg_level,
 static void debug_lttng_log(int msg_level,
 			    const char *msg, const char *msg_no_nl)
 {
+	if (state.hs_len > 0) {
+		tracef(state.header_str_no_nl);
+	}
 	tracef(msg_no_nl);
 }
 #endif /* WITH_LTTNG_TRACEF */
@@ -337,6 +363,9 @@ static void debug_gpfs_reload(bool enabled, bool previously_enabled,
 static void debug_gpfs_log(int msg_level,
 			   const char *msg, const char *msg_no_nl)
 {
+	if (state.hs_len > 0) {
+		gpfswrap_add_trace(msg_level, state.header_str_no_nl);
+	}
 	gpfswrap_add_trace(msg_level, msg_no_nl);
 }
 #endif /* HAVE_GPFS */
@@ -422,6 +451,9 @@ static void debug_ringbuf_log(int msg_level,
 			      const char *msg,
 			      const char *msg_no_nl)
 {
+	if (state.hs_len > 0) {
+		_debug_ringbuf_log(msg_level, state.header_str);
+	}
 	_debug_ringbuf_log(msg_level, msg);
 }
 
@@ -603,6 +635,9 @@ static void debug_backends_log(const char *msg, int msg_level)
 			debug_backends[i].log(msg_level, msg, msg_no_nl);
 		}
 	}
+
+	/* Only log the header once */
+	state.hs_len = 0;
 }
 
 int debuglevel_get_class(size_t idx)
@@ -1418,7 +1453,7 @@ void check_log_size( void )
 
 /*************************************************************************
  Write an debug message on the debugfile.
- This is called by dbghdr() and format_debug_text().
+ This is called by format_debug_text().
 ************************************************************************/
 
 static void Debug1(const char *msg)
@@ -1540,7 +1575,7 @@ bool dbgsetclass(int level, int cls)
 }
 
 /***************************************************************************
- Print a Debug Header.
+ Put a Debug Header into header_str.
 
  Input:  level    - Debug level of the message (not the system-wide debug
                     level. )
@@ -1686,7 +1721,10 @@ full:
 		state.hs_len = sizeof(state.header_str) - 1;
 	}
 
-	(void)Debug1(state.header_str);
+	copy_no_nl(state.header_str_no_nl,
+		   sizeof(state.header_str_no_nl),
+		   state.header_str,
+		   state.hs_len);
 
 	errno = old_errno;
 	return( true );
