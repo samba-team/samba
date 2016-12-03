@@ -2182,31 +2182,24 @@ static void control_db_get_health(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
-static void control_get_ifaces(TALLOC_CTX *mem_ctx,
-			       struct tevent_req *req,
-			       struct ctdb_req_header *header,
-			       struct ctdb_req_control *request)
+static struct ctdb_iface_list *get_ctdb_iface_list(TALLOC_CTX *mem_ctx,
+						   struct ctdbd_context *ctdb)
 {
-	struct client_state *state = tevent_req_data(
-		req, struct client_state);
-	struct ctdbd_context *ctdb = state->ctdb;
-	struct ctdb_reply_control reply;
 	struct ctdb_iface_list *iface_list;
 	struct interface *iface;
 	int i;
 
-	reply.rdata.opcode = request->opcode;
-
 	iface_list = talloc_zero(mem_ctx, struct ctdb_iface_list);
 	if (iface_list == NULL) {
-		goto fail;
+		goto done;
 	}
 
 	iface_list->num = ctdb->iface_map->num;
 	iface_list->iface = talloc_array(iface_list, struct ctdb_iface,
 					 iface_list->num);
 	if (iface_list->iface == NULL) {
-		goto fail;
+		TALLOC_FREE(iface_list);
+		goto done;
 	}
 
 	for (i=0; i<iface_list->num; i++) {
@@ -2217,6 +2210,28 @@ static void control_get_ifaces(TALLOC_CTX *mem_ctx,
 		};
 		strlcpy(iface_list->iface[i].name, iface->name,
 			sizeof(iface_list->iface[i].name));
+	}
+
+done:
+	return iface_list;
+}
+
+static void control_get_ifaces(TALLOC_CTX *mem_ctx,
+			       struct tevent_req *req,
+			       struct ctdb_req_header *header,
+			       struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct ctdb_iface_list *iface_list;
+
+	reply.rdata.opcode = request->opcode;
+
+	iface_list = get_ctdb_iface_list(mem_ctx, ctdb);
+	if (iface_list == NULL) {
+		goto fail;
 	}
 
 	reply.rdata.data.iface_list = iface_list;
