@@ -3611,6 +3611,38 @@ done:
 	return ret;
 }
 
+static bool test_delete_file_with_rfork(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	const char *fname = "torture_write_rfork_io";
+	const char *rfork_content = "1234567890";
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_util_unlink(tree, fname);
+
+	torture_comment(tctx, "Test deleting file with resource fork\n");
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed\n");
+
+	ret = write_stream(tree, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   10, 10, rfork_content);
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed\n");
+
+	ret = check_stream(tree, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   0, 20, 10, 10, rfork_content);
+	torture_assert_goto(tctx, ret == true, ret, done, "check_stream failed\n");
+
+	status = smb2_util_unlink(tree, fname);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "check_stream failed\n");
+
+done:
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -3644,6 +3676,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "setinfo delete-on-close AFP_AfpResource", test_setinfo_delete_on_close_resource);
 	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpResource", test_setinfo_eof_resource);
 	torture_suite_add_1smb2_test(suite, "null afpinfo", test_null_afpinfo);
+	torture_suite_add_1smb2_test(suite, "delete", test_delete_file_with_rfork);
 
 	return suite;
 }
