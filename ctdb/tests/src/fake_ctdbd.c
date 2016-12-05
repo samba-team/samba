@@ -1936,6 +1936,71 @@ static void control_get_capabilities(TALLOC_CTX *mem_ctx,
 	client_send_control(req, header, &reply);
 }
 
+static void control_release_ip(TALLOC_CTX *mem_ctx,
+			       struct tevent_req *req,
+			       struct ctdb_req_header *header,
+			       struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_public_ip *ip = request->rdata.data.pubip;
+	struct ctdb_reply_control reply;
+	struct ctdb_public_ip_list *ips = NULL;
+	struct ctdb_public_ip *t = NULL;
+	int i;
+
+	reply.rdata.opcode = request->opcode;
+
+	if (ctdb->known_ips == NULL) {
+		D_INFO("RELEASE_IP %s - not a public IP\n",
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		goto done;
+	}
+
+	ips = &ctdb->known_ips[header->destnode];
+
+	t = NULL;
+	for (i = 0; i < ips->num; i++) {
+		if (ctdb_sock_addr_same_ip(&ips->ip[i].addr, &ip->addr)) {
+			t = &ips->ip[i];
+			break;
+		}
+	}
+	if (t == NULL) {
+		D_INFO("RELEASE_IP %s - not a public IP\n",
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr));
+		goto done;
+	}
+
+	if (t->pnn != header->destnode) {
+		if (header->destnode == ip->pnn) {
+			D_ERR("error: RELEASE_IP %s - to TAKE_IP node %d\n",
+			      ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+			      ip->pnn);
+			reply.status = -1;
+			reply.errmsg = "RELEASE_IP to TAKE_IP node";
+			client_send_control(req, header, &reply);
+			return;
+		}
+
+		D_INFO("RELEASE_IP %s - to node %d - redundant\n",
+		       ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+		       ip->pnn);
+		t->pnn = ip->pnn;
+	} else {
+		D_NOTICE("RELEASE_IP %s - to node %d\n",
+			  ctdb_sock_addr_to_string(mem_ctx, &ip->addr),
+			  ip->pnn);
+		t->pnn = ip->pnn;
+	}
+
+done:
+	reply.status = 0;
+	reply.errmsg = NULL;
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_public_ips(TALLOC_CTX *mem_ctx,
 				   struct tevent_req *req,
 				   struct ctdb_req_header *header,
@@ -3022,6 +3087,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_GET_CAPABILITIES:
 		control_get_capabilities(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_RELEASE_IP:
+		control_release_ip(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
