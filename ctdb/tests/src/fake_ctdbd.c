@@ -2626,6 +2626,21 @@ done:
 	client_send_control(req, header, &reply);
 }
 
+static void control_ipreallocated(TALLOC_CTX *mem_ctx,
+				  struct tevent_req *req,
+				  struct ctdb_req_header *header,
+				  struct ctdb_req_control *request)
+{
+	struct ctdb_reply_control reply;
+
+	/* Always succeed */
+	reply.rdata.opcode = request->opcode;
+	reply.status = 0;
+	reply.errmsg = NULL;
+
+	client_send_control(req, header, &reply);
+}
+
 static void control_get_runstate(TALLOC_CTX *mem_ctx,
 				 struct tevent_req *req,
 				 struct ctdb_req_header *header,
@@ -3199,6 +3214,10 @@ static void client_process_control(struct tevent_req *req,
 
 	case CTDB_CONTROL_SET_DB_STICKY:
 		control_set_db_sticky(mem_ctx, req, &header, &request);
+		break;
+
+	case CTDB_CONTROL_IPREALLOCATED:
+		control_ipreallocated(mem_ctx, req, &header, &request);
 		break;
 
 	case CTDB_CONTROL_GET_RUNSTATE:
