@@ -6615,6 +6615,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	struct smb_filename *smb_fname_dst = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	struct share_mode_lock *lck = NULL;
+	uint32_t access_mask = SEC_DIR_ADD_FILE;
 	bool dst_exists, old_is_stream, new_is_stream;
 
 	status = check_name(conn, smb_fname_dst_in->base_name);
@@ -6812,6 +6813,22 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	if (rename_path_prefix_equal(fsp->fsp_name, smb_fname_dst)) {
 		status = NT_STATUS_ACCESS_DENIED;
+		goto out;
+	}
+
+	/* Do we have rights to move into the destination ? */
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		/* We're moving a directory. */
+		access_mask = SEC_DIR_ADD_SUBDIR;
+	}
+	status = check_parent_access(conn,
+				smb_fname_dst,
+				access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("check_parent_access on "
+			"dst %s returned %s\n",
+			smb_fname_str_dbg(smb_fname_dst),
+			nt_errstr(status));
 		goto out;
 	}
 
