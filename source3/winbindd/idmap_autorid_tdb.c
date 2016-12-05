@@ -88,7 +88,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 	NTSTATUS ret;
 	uint32_t hwm;
 	char *numstr;
-	struct autorid_global_config *globalcfg;
+	struct autorid_global_config globalcfg = {0};
 	fstring keystr;
 	uint32_t increment;
 	TALLOC_CTX *mem_ctx = NULL;
@@ -128,10 +128,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 			DEBUG(10, ("domain range already allocated - "
 				   "Not adding!\n"));
 
-			mem_ctx = talloc_stackframe();
-
-			ret = idmap_autorid_loadconfig(db, mem_ctx,
-						       &globalcfg);
+			ret = idmap_autorid_loadconfig(db, &globalcfg);
 			if (!NT_STATUS_IS_OK(ret)) {
 				DEBUG(1, ("Fatal error while fetching "
 					  "configuration: %s\n",
@@ -140,12 +137,10 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 			}
 
 			range->rangenum = stored_rangenum;
-			range->low_id = globalcfg->minvalue
-				+ range->rangenum * globalcfg->rangesize;
+			range->low_id = globalcfg.minvalue
+				+ range->rangenum * globalcfg.rangesize;
 			range->high_id =
-				range->low_id  + globalcfg->rangesize - 1;
-
-			TALLOC_FREE(mem_ctx);
+				range->low_id  + globalcfg.rangesize - 1;
 
 			return NT_STATUS_OK;
 		}
@@ -172,7 +167,7 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 
 	mem_ctx = talloc_stackframe();
 
-	ret = idmap_autorid_loadconfig(db, mem_ctx, &globalcfg);
+	ret = idmap_autorid_loadconfig(db, &globalcfg);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("Fatal error while fetching configuration: %s\n",
 			  nt_errstr(ret)));
@@ -186,11 +181,11 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 		requested_rangenum = hwm;
 	}
 
-	if (requested_rangenum >= globalcfg->maxranges) {
+	if (requested_rangenum >= globalcfg.maxranges) {
 		DEBUG(1, ("Not enough ranges available: New range %u must be "
 			  "smaller than configured maximum number of ranges "
 			  "(%u).\n",
-			  requested_rangenum, globalcfg->maxranges));
+			  requested_rangenum, globalcfg.maxranges));
 		ret = NT_STATUS_NO_MEMORY;
 		goto error;
 	}
@@ -276,9 +271,9 @@ static NTSTATUS idmap_autorid_addrange_action(struct db_context *db,
 
 	range->rangenum = requested_rangenum;
 
-	range->low_id = globalcfg->minvalue
-		      + range->rangenum * globalcfg->rangesize;
-	range->high_id = range->low_id  + globalcfg->rangesize - 1;
+	range->low_id = globalcfg.minvalue
+		      + range->rangenum * globalcfg.rangesize;
+	range->high_id = range->low_id  + globalcfg.rangesize - 1;
 
 	ret = NT_STATUS_OK;
 
@@ -328,7 +323,7 @@ static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 					   struct autorid_range_config *range)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	struct autorid_global_config *globalcfg = NULL;
+	struct autorid_global_config globalcfg = {0};
 	fstring keystr;
 
 	if (db == NULL || range == NULL) {
@@ -353,16 +348,14 @@ static NTSTATUS idmap_autorid_getrange_int(struct db_context *db,
 		goto done;
 	}
 
-	status = idmap_autorid_loadconfig(db, talloc_tos(), &globalcfg);
+	status = idmap_autorid_loadconfig(db, &globalcfg);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to read global configuration"));
 		goto done;
 	}
-	range->low_id = globalcfg->minvalue
-		      + range->rangenum * globalcfg->rangesize;
-	range->high_id = range->low_id  + globalcfg->rangesize - 1;
-
-	TALLOC_FREE(globalcfg);
+	range->low_id = globalcfg.minvalue
+		      + range->rangenum * globalcfg.rangesize;
+	range->high_id = range->low_id  + globalcfg.rangesize - 1;
 done:
 	return status;
 }
@@ -864,10 +857,9 @@ bool idmap_autorid_parse_configstr(const char *configstr,
 }
 
 NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
-				  TALLOC_CTX *mem_ctx,
-				  struct autorid_global_config **result)
+				  struct autorid_global_config *result)
 {
-	struct autorid_global_config *cfg;
+	struct autorid_global_config cfg = {0};
 	NTSTATUS status;
 	bool ok;
 	char *configstr = NULL;
@@ -876,26 +868,20 @@ NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = idmap_autorid_getconfigstr(db, mem_ctx, &configstr);
+	status = idmap_autorid_getconfigstr(db, db, &configstr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	cfg = talloc_zero(mem_ctx, struct autorid_global_config);
-	if (cfg == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ok = idmap_autorid_parse_configstr(configstr, cfg);
+	ok = idmap_autorid_parse_configstr(configstr, &cfg);
 	TALLOC_FREE(configstr);
 	if (!ok) {
-		talloc_free(cfg);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	DEBUG(10, ("Loaded previously stored configuration "
 		   "minvalue:%d rangesize:%d\n",
-		   cfg->minvalue, cfg->rangesize));
+		   cfg.minvalue, cfg.rangesize));
 
 	*result = cfg;
 
@@ -906,7 +892,7 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 				  struct autorid_global_config *cfg)
 {
 
-	struct autorid_global_config *storedconfig = NULL;
+	struct autorid_global_config storedconfig = {0};
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	TDB_DATA data;
 	char *cfgstr;
@@ -928,10 +914,11 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 		goto done;
 	}
 
-	status = idmap_autorid_loadconfig(db, frame, &storedconfig);
+	status = idmap_autorid_loadconfig(db, &storedconfig);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DEBUG(5, ("No configuration found. Storing initial "
 			  "configuration.\n"));
+		storedconfig = *cfg;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Error loading configuration: %s\n",
 			  nt_errstr(status)));
@@ -939,9 +926,8 @@ NTSTATUS idmap_autorid_saveconfig(struct db_context *db,
 	}
 
 	/* did the minimum value or rangesize change? */
-	if (storedconfig &&
-	    ((storedconfig->minvalue != cfg->minvalue) ||
-	     (storedconfig->rangesize != cfg->rangesize)))
+	if ((storedconfig.minvalue != cfg->minvalue) ||
+	    (storedconfig.rangesize != cfg->rangesize))
 	{
 		DEBUG(1, ("New configuration values for rangesize or "
 			  "minimum uid value conflict with previously "

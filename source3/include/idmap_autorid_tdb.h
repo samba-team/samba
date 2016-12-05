@@ -138,8 +138,7 @@ NTSTATUS idmap_autorid_db_init(const char *path,
  * Load the configuration stored in the autorid database.
  */
 NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
-				  TALLOC_CTX *ctx,
-				  struct autorid_global_config **result);
+				  struct autorid_global_config *result);
 
 /**
  * Save the global autorid configuration into the autorid database.
