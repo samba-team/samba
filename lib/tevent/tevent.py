@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 #   Python integration for tevent
 #
