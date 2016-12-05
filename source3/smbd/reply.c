@@ -6812,6 +6812,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	if (rename_path_prefix_equal(fsp->fsp_name, smb_fname_dst)) {
 		status = NT_STATUS_ACCESS_DENIED;
+		goto out;
 	}
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
