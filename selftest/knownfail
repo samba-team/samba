@@ -308,5 +308,6 @@
 ^samba4.rpc.echo.*on.*ncacn_ip_tcp.*with.object.*nt4_dc
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
+^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_reject_invalid_commands
 ^samba.tests.samba_tool.dnscmd.samba.tests.samba_tool.dnscmd.DnsCmdTestCase.test_reject_invalid_commands

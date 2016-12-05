@@ -23,9 +23,10 @@ import ldb
 from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.dcerpc import dnsp, dnsserver
+from samba.dcerpc import dnsp, dnsserver, security
 from samba.tests import RpcInterfaceTestCase, env_get_var_value
 from samba.netcmd.dns import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SRVRecord, TXTRecord
+from samba import sd_utils, descriptor
 
 class DnsserverTests(RpcInterfaceTestCase):
 
@@ -856,3 +857,203 @@ class DnsserverTests(RpcInterfaceTestCase):
                                         select_flags,
                                         None,
                                         None)
+
+    # The following tests do not pass against Samba because the owner and
+    # group are not consistent with Windows, as well as some ACEs.
+    #
+    # The following ACE are also required for 2012R2:
+    #
+    # (OA;CIIO;WP;ea1b7b93-5e48-46d5-bc6c-4df4fda78a35;bf967a86-0de6-11d0-a285-00aa003049e2;PS)
+    # (OA;OICI;RPWP;3f78c3e5-f79a-46bd-a0b8-9d18116ddc79;;PS)"
+    #
+    # [TPM + Allowed-To-Act-On-Behalf-Of-Other-Identity]
+    def test_security_descriptor_msdcs_zone(self):
+        """
+        Make sure that security descriptors of the msdcs zone is
+        as expected.
+        """
+
+        zones = self.samdb.search(base="DC=ForestDnsZones,%s" % self.samdb.get_default_basedn(),
+                                  scope=ldb.SCOPE_SUBTREE,
+                                  expression="(&(objectClass=dnsZone)(name=_msdcs*))",
+                                  attrs=["nTSecurityDescriptor", "objectClass"])
+        self.assertEqual(len(zones), 1)
+        self.assertTrue("nTSecurityDescriptor" in zones[0])
+        tmp = zones[0]["nTSecurityDescriptor"][0]
+        utils = sd_utils.SDUtils(self.samdb)
+        sd = ndr_unpack(security.descriptor, tmp)
+
+        domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+
+        res = self.samdb.search(base=self.samdb.get_default_basedn(), scope=ldb.SCOPE_SUBTREE,
+                                expression="(sAMAccountName=DnsAdmins)",
+                                attrs=["objectSid"])
+
+        dns_admin = str(ndr_unpack(security.dom_sid, res[0]['objectSid'][0]))
+
+        packed_sd = descriptor.sddl2binary("O:SYG:BA" \
+                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+                                           "(A;;CC;;;AU)" \
+                                           "(A;;RPLCLORC;;;WD)" \
+                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+                                           "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)",
+                                           domain_sid, {"DnsAdmins": dns_admin})
+        expected_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_sd))
+
+        diff = descriptor.get_diff_sds(expected_sd, sd, domain_sid)
+        self.assertEqual(diff, '', "SD of msdcs zone different to expected.\n"
+                         "Difference was:\n%s\nExpected: %s\nGot: %s" %
+                         (diff, expected_sd.as_sddl(utils.domain_sid),
+                          sd.as_sddl(utils.domain_sid)))
+
+    def test_security_descriptor_forest_zone(self):
+        """
+        Make sure that security descriptors of forest dns zones are
+        as expected.
+        """
+        forest_zone = "test_forest_zone"
+        zone_create_info = dnsserver.DNS_RPC_ZONE_CREATE_INFO_LONGHORN()
+        zone_create_info.dwZoneType = dnsp.DNS_ZONE_TYPE_PRIMARY
+        zone_create_info.fAging = 0
+        zone_create_info.fDsIntegrated = 1
+        zone_create_info.fLoadExisting = 1
+
+        zone_create_info.pszZoneName = forest_zone
+        zone_create_info.dwDpFlags = dnsserver.DNS_DP_FOREST_DEFAULT
+
+        self.conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                   0,
+                                   self.server,
+                                   None,
+                                   0,
+                                   'ZoneCreate',
+                                   dnsserver.DNSSRV_TYPEID_ZONE_CREATE,
+                                   zone_create_info)
+
+        partition_dn = self.samdb.get_default_basedn()
+        partition_dn.add_child("DC=ForestDnsZones")
+        zones = self.samdb.search(base=partition_dn, scope=ldb.SCOPE_SUBTREE,
+                                  expression="(name=%s)" % forest_zone,
+                                  attrs=["nTSecurityDescriptor"])
+        self.assertEqual(len(zones), 1)
+        current_dn = zones[0].dn
+        self.assertTrue("nTSecurityDescriptor" in zones[0])
+        tmp = zones[0]["nTSecurityDescriptor"][0]
+        utils = sd_utils.SDUtils(self.samdb)
+        sd = ndr_unpack(security.descriptor, tmp)
+
+        domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+
+        res = self.samdb.search(base=self.samdb.get_default_basedn(),
+                                scope=ldb.SCOPE_SUBTREE,
+                                expression="(sAMAccountName=DnsAdmins)",
+                                attrs=["objectSid"])
+
+        dns_admin = str(ndr_unpack(security.dom_sid, res[0]['objectSid'][0]))
+
+        packed_sd = descriptor.sddl2binary("O:DAG:DA" \
+                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+                                           "(A;;CC;;;AU)" \
+                                           "(A;;RPLCLORC;;;WD)" \
+                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+                                           "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)",
+                                           domain_sid, {"DnsAdmins": dns_admin})
+        expected_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_sd))
+
+        packed_msdns = descriptor.get_dns_forest_microsoft_dns_descriptor(domain_sid,
+                                                                          {"DnsAdmins": dns_admin})
+        expected_msdns_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_msdns))
+
+        packed_part_sd = descriptor.get_dns_partition_descriptor(domain_sid)
+        expected_part_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor,
+                                                              packed_part_sd))
+        try:
+            msdns_dn = ldb.Dn(self.samdb, "CN=MicrosoftDNS,%s" % str(partition_dn))
+            security_desc_dict = [(current_dn.get_linearized(),  expected_sd),
+                                  (msdns_dn.get_linearized(), expected_msdns_sd),
+                                  (partition_dn.get_linearized(), expected_part_sd)]
+
+            for (key, sec_desc) in security_desc_dict:
+                zones = self.samdb.search(base=key, scope=ldb.SCOPE_BASE,
+                                          attrs=["nTSecurityDescriptor"])
+                self.assertTrue("nTSecurityDescriptor" in zones[0])
+                tmp = zones[0]["nTSecurityDescriptor"][0]
+                utils = sd_utils.SDUtils(self.samdb)
+
+                sd = ndr_unpack(security.descriptor, tmp)
+                diff = descriptor.get_diff_sds(sec_desc, sd, domain_sid)
+
+                self.assertEqual(diff, '', "Security descriptor of forest DNS zone with DN '%s' different to expected. Difference was:\n%s\nExpected: %s\nGot: %s"
+                                 % (key, diff, sec_desc.as_sddl(utils.domain_sid), sd.as_sddl(utils.domain_sid)))
+
+        finally:
+            self.conn.DnssrvOperation2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                       0,
+                                       self.server,
+                                       forest_zone,
+                                       0,
+                                       'DeleteZoneFromDs',
+                                       dnsserver.DNSSRV_TYPEID_NULL,
+                                       None)
+
+    def test_security_descriptor_domain_zone(self):
+        """
+        Make sure that security descriptors of domain dns zones are
+        as expected.
+        """
+
+        partition_dn = self.samdb.get_default_basedn()
+        partition_dn.add_child("DC=DomainDnsZones")
+        zones = self.samdb.search(base=partition_dn, scope=ldb.SCOPE_SUBTREE,
+                                  expression="(name=%s)" % self.custom_zone,
+                                  attrs=["nTSecurityDescriptor"])
+        self.assertEqual(len(zones), 1)
+        current_dn = zones[0].dn
+        self.assertTrue("nTSecurityDescriptor" in zones[0])
+        tmp = zones[0]["nTSecurityDescriptor"][0]
+        utils = sd_utils.SDUtils(self.samdb)
+        sd = ndr_unpack(security.descriptor, tmp)
+        sddl = sd.as_sddl(utils.domain_sid)
+
+        domain_sid = security.dom_sid(self.samdb.get_domain_sid())
+
+        res = self.samdb.search(base=self.samdb.get_default_basedn(), scope=ldb.SCOPE_SUBTREE,
+                                expression="(sAMAccountName=DnsAdmins)",
+                                attrs=["objectSid"])
+
+        dns_admin = str(ndr_unpack(security.dom_sid, res[0]['objectSid'][0]))
+
+        packed_sd = descriptor.sddl2binary("O:DAG:DA" \
+                                           "D:AI(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" \
+                                           "(A;;CC;;;AU)" \
+                                           "(A;;RPLCLORC;;;WD)" \
+                                           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+                                           "(A;CI;RPWPCRCCDCLCRCWOWDSDDTSW;;;ED)",
+                                           domain_sid, {"DnsAdmins": dns_admin})
+        expected_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_sd))
+
+        packed_msdns = descriptor.get_dns_domain_microsoft_dns_descriptor(domain_sid,
+                                                                          {"DnsAdmins": dns_admin})
+        expected_msdns_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor, packed_msdns))
+
+        packed_part_sd = descriptor.get_dns_partition_descriptor(domain_sid)
+        expected_part_sd = descriptor.get_clean_sd(ndr_unpack(security.descriptor,
+                                                              packed_part_sd))
+
+        msdns_dn = ldb.Dn(self.samdb, "CN=MicrosoftDNS,%s" % str(partition_dn))
+        security_desc_dict = [(current_dn.get_linearized(),  expected_sd),
+                              (msdns_dn.get_linearized(), expected_msdns_sd),
+                              (partition_dn.get_linearized(), expected_part_sd)]
+
+        for (key, sec_desc) in security_desc_dict:
+            zones = self.samdb.search(base=key, scope=ldb.SCOPE_BASE,
+                                      attrs=["nTSecurityDescriptor"])
+            self.assertTrue("nTSecurityDescriptor" in zones[0])
+            tmp = zones[0]["nTSecurityDescriptor"][0]
+            utils = sd_utils.SDUtils(self.samdb)
+
+            sd = ndr_unpack(security.descriptor, tmp)
+            diff = descriptor.get_diff_sds(sec_desc, sd, domain_sid)
+
+            self.assertEqual(diff, '', "Security descriptor of domain DNS zone with DN '%s' different to expected. Difference was:\n%s\nExpected: %s\nGot: %s"
+                             % (key, diff, sec_desc.as_sddl(utils.domain_sid), sd.as_sddl(utils.domain_sid)))
