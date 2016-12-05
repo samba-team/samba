@@ -4898,6 +4898,197 @@ static bool run_rename(int dummy)
 	return correct;
 }
 
+/*
+  Test rename into a directory with an ACL denying it.
+ */
+static bool run_rename_access(int dummy)
+{
+	static struct cli_state *cli = NULL;
+	static struct cli_state *posix_cli = NULL;
+	const char *src = "test.txt";
+	const char *dname = "dir";
+	const char *dst = "dir\\test.txt";
+	const char *dsrc = "test.dir";
+	const char *ddst = "dir\\test.dir";
+	uint16_t fnum = (uint16_t)-1;
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *newsd = NULL;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+	printf("starting rename access test\n");
+
+	/* Windows connection. */
+	if (!torture_open_connection(&cli, 0)) {
+		goto fail;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	/* Posix connection. */
+	if (!torture_open_connection(&posix_cli, 0)) {
+		goto fail;
+	}
+
+	smbXcli_conn_set_sockopt(posix_cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(posix_cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/* Start with a clean slate. */
+	cli_unlink(cli, src, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_unlink(cli, dst, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	cli_rmdir(cli, dsrc);
+	cli_rmdir(cli, ddst);
+	cli_rmdir(cli, dname);
+
+	/*
+	 * Setup the destination directory with a DENY ACE to
+	 * prevent new files within it.
+	 */
+	status = cli_ntcreate(cli,
+				dname,
+				0,
+				FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS|
+					WRITE_DAC_ACCESS|FILE_READ_DATA|
+					WRITE_OWNER_ACCESS,
+				FILE_ATTRIBUTE_DIRECTORY,
+				FILE_SHARE_READ|FILE_SHARE_WRITE,
+				FILE_CREATE,
+				FILE_DIRECTORY_FILE,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s - %s\n", dname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_query_secdesc(cli,
+				fnum,
+				frame,
+				&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_query_secdesc failed for %s (%s)\n",
+			dname, nt_errstr(status));
+		goto fail;
+	}
+
+	newsd = security_descriptor_dacl_create(frame,
+					0,
+					NULL,
+					NULL,
+					SID_WORLD,
+					SEC_ACE_TYPE_ACCESS_DENIED,
+					SEC_DIR_ADD_FILE|SEC_DIR_ADD_SUBDIR,
+					0,
+					NULL);
+	if (newsd == NULL) {
+		goto fail;
+	}
+	sd->dacl = security_acl_concatenate(frame,
+					newsd->dacl,
+					sd->dacl);
+	if (sd->dacl == NULL) {
+		goto fail;
+	}
+	status = cli_set_secdesc(cli, fnum, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_set_secdesc failed for %s (%s)\n",
+			dname, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			dname, nt_errstr(status));
+		goto fail;
+	}
+	/* Now go around the back and chmod to 777 via POSIX. */
+	status = cli_posix_chmod(posix_cli, dname, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_chmod failed for %s (%s)\n",
+			dname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Check we can't create a file within dname via Windows. */
+	status = cli_openx(cli, dst, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		cli_close(posix_cli, fnum);
+		printf("Create of %s should be ACCESS denied, was %s\n",
+			dst, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Make the sample file/directory. */
+	status = cli_openx(cli, src, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n", src, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed (%s)\n", nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_mkdir(cli, dsrc);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_mkdir of %s failed (%s)\n",
+			dsrc, nt_errstr(status));
+		goto fail;
+	}
+
+	/*
+	 * OK - renames of the new file and directory into the
+	 * dst directory should fail.
+	 */
+
+	status = cli_rename(cli, src, dst);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("rename of %s -> %s should be ACCESS denied, was %s\n",
+			src, dst, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_rename(cli, dsrc, ddst);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("rename of %s -> %s should be ACCESS denied, was %s\n",
+			src, dst, nt_errstr(status));
+		goto fail;
+	}
+
+	TALLOC_FREE(frame);
+	return true;
+
+  fail:
+
+	if (posix_cli) {
+		torture_close_connection(posix_cli);
+	}
+
+	if (cli) {
+		if (fnum != -1) {
+			cli_close(cli, fnum);
+		}
+		cli_unlink(cli, src,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		cli_unlink(cli, dst,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		cli_rmdir(cli, dsrc);
+		cli_rmdir(cli, ddst);
+		cli_rmdir(cli, dname);
+
+		torture_close_connection(cli);
+	}
+
+	TALLOC_FREE(frame);
+	return false;
+}
+
 static bool run_pipe_number(int dummy)
 {
 	struct cli_state *cli1;
@@ -10454,6 +10645,7 @@ static struct {
 #endif
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
+	{"RENAME-ACCESS", run_rename_access, 0},
 	{"DELETE", run_deletetest, 0},
 	{"WILDDELETE", run_wild_deletetest, 0},
 	{"DELETE-LN", run_deletetest_ln, 0},
