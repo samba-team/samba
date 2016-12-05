@@ -18,6 +18,7 @@
 */
 
 #include <Python.h>
+#include "python/py3compat.h"
 #include "includes.h"
 #include "version.h"
 #include "param/pyparam.h"
@@ -38,7 +39,7 @@ static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 		return NULL;
 
 	retstr = generate_random_str(NULL, len);
-	ret = PyString_FromString(retstr);
+	ret = PyStr_FromString(retstr);
 	talloc_free(retstr);
 	return ret;
 }
@@ -55,7 +56,7 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 	if (retstr == NULL) {
 		return NULL;
 	}
-	ret = PyString_FromString(retstr);
+	ret = PyStr_FromString(retstr);
 	talloc_free(retstr);
 	return ret;
 }
@@ -121,7 +122,7 @@ static PyObject *py_nttime2string(PyObject *self, PyObject *args)
 	}
 
 	string = nt_time_string(tmp_ctx, nt);
-	ret =  PyString_FromString(string);
+	ret =  PyStr_FromString(string);
 
 	talloc_free(tmp_ctx);
 
@@ -220,7 +221,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 		const char *ip = iface_list_n_ip(ifaces, i);
 
 		if (all_interfaces) {
-			PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
+			PyList_SetItem(pylist, ifcount, PyStr_FromString(ip));
 			ifcount++;
 			continue;
 		}
@@ -241,7 +242,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 			continue;
 		}
 
-		PyList_SetItem(pylist, ifcount, PyString_FromString(ip));
+		PyList_SetItem(pylist, ifcount, PyStr_FromString(ip));
 		ifcount++;
 	}
 	talloc_free(tmp_ctx);
@@ -269,7 +270,7 @@ static PyObject *py_strstr_m(PyObject *self, PyObject *args)
 	if (!ret) {
 		Py_RETURN_NONE;
 	}
-	return PyString_FromString(ret);
+	return PyStr_FromString(ret);
 }
 
 static PyMethodDef py_misc_methods[] = {
@@ -309,19 +310,26 @@ static PyMethodDef py_misc_methods[] = {
 	{ NULL }
 };
 
-void init_glue(void)
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    .m_name = "_glue",
+    .m_doc = "Python bindings for miscellaneous Samba functions.",
+    .m_size = -1,
+    .m_methods = py_misc_methods,
+};
+
+MODULE_INIT_FUNC(_glue)
 {
 	PyObject *m;
 
 	debug_setup_talloc_log();
 
-	m = Py_InitModule3("_glue", py_misc_methods, 
-			   "Python bindings for miscellaneous Samba functions.");
+	m = PyModule_Create(&moduledef);
 	if (m == NULL)
-		return;
+		return NULL;
 
 	PyModule_AddObject(m, "version",
-					   PyString_FromString(SAMBA_VERSION_STRING));
+					   PyStr_FromString(SAMBA_VERSION_STRING));
 	PyExc_NTSTATUSError = PyErr_NewException(discard_const_p(char, "samba.NTSTATUSError"), PyExc_RuntimeError, NULL);
 	if (PyExc_NTSTATUSError != NULL) {
 		Py_INCREF(PyExc_NTSTATUSError);
@@ -346,5 +354,6 @@ void init_glue(void)
 		PyModule_AddObject(m, "DsExtendedError", PyExc_DsExtendedError);
 	}
 
+	return m;
 }
 
