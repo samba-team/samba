@@ -887,6 +887,7 @@ NTSTATUS idmap_autorid_loadconfig(struct db_context *db,
 	}
 
 	ok = idmap_autorid_parse_configstr(configstr, cfg);
+	TALLOC_FREE(configstr);
 	if (!ok) {
 		talloc_free(cfg);
 		return NT_STATUS_INVALID_PARAMETER;
