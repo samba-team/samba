@@ -235,7 +235,7 @@ NTSTATUS smbd_check_access_rights(struct connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS check_parent_access(struct connection_struct *conn,
+NTSTATUS check_parent_access(struct connection_struct *conn,
 				struct smb_filename *smb_fname,
 				uint32_t access_mask)
 {
