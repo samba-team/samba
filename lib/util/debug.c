@@ -1212,21 +1212,21 @@ void dbgflush( void )
 /***************************************************************************
  Print a Debug Header.
 
- Input:  level - Debug level of the message (not the system-wide debug
-                  level. )
-	  cls   - Debuglevel class of the calling module.
-          location  - Pointer to a string containing the name of the file
-                  from which this function was called, or an empty string
-                  if the __FILE__ macro is not implemented.
-          func  - Pointer to a string containing the name of the function
-                  from which this function was called, or an empty string
-                  if the __FUNCTION__ macro is not implemented.
+ Input:  level    - Debug level of the message (not the system-wide debug
+                    level. )
+         cls      - Debuglevel class of the calling module.
+         location - Pointer to a string containing the name of the file
+                    from which this function was called, or an empty string
+                    if the __FILE__ macro is not implemented.
+         func     - Pointer to a string containing the name of the function
+                    from which this function was called, or an empty string
+                    if the __FUNCTION__ macro is not implemented.
 
-  Output: Always true.  This makes it easy to fudge a call to dbghdr()
-          in a macro, since the function can be called as part of a test.
-          Eg: ( (level <= DEBUGLEVEL) && (dbghdr(level,"",line)) )
+ Output: Always true.  This makes it easy to fudge a call to dbghdr()
+         in a macro, since the function can be called as part of a test.
+         Eg: ( (level <= DEBUGLEVEL) && (dbghdr(level,"",line)) )
 
-  Notes:  This function takes care of setting current_msg_level.
+ Notes:  This function takes care of setting current_msg_level.
 
 ****************************************************************************/
 
