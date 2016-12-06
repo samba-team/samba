@@ -189,7 +189,7 @@ def configure(conf):
                        ''',
                     define='HAVE_IPV6',
                     lib='nsl socket',
-                    headers='sys/socket.h netdb.h netinet/in.h')
+                    headers='sys/socket.h netdb.h netinet/in.h net/if.h')
 
     if conf.CONFIG_SET('HAVE_SYS_UCONTEXT_H') and conf.CONFIG_SET('HAVE_SIGNAL_H'):
         conf.CHECK_CODE('''
