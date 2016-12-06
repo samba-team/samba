@@ -1374,6 +1374,14 @@ static int control_stats(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	return 0;
 }
 
+static int ctdb_public_ip_cmp(const void *a, const void *b)
+{
+	const struct ctdb_public_ip *ip_a = a;
+	const struct ctdb_public_ip *ip_b = b;
+
+	return ctdb_sock_addr_cmp(&ip_a->addr, &ip_b->addr);
+}
+
 static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		     struct ctdb_public_ip_list *ips,
 		     struct ctdb_public_ip_info **ipinfo,
@@ -1402,8 +1410,7 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 	}
 
-	/* IPs are reverse sorted */
-	for (i=ips->num-1; i>=0; i--) {
+	for (i = 0; i < ips->num; i++) {
 
 		if (options.machinereadable == 1) {
 			printf("%s%s%s%d%s", options.sep,
@@ -1597,6 +1604,9 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	if (ret != 0) {
 		return ret;
 	}
+
+	qsort(ips->ip, ips->num, sizeof(struct ctdb_public_ip),
+	      ctdb_public_ip_cmp);
 
 	ipinfo = talloc_array(mem_ctx, struct ctdb_public_ip_info *, ips->num);
 	if (ipinfo == NULL) {
