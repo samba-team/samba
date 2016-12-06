@@ -1,7 +1,7 @@
 #include "idl_types.h"
 /*
   dnsserver interface definition
-  for a protocol descrition see [MS-DNSP].pdf
+  for a protocol description see [MS-DNSP].pdf
 */
 
 import "misc.idl", "dnsp.idl";
