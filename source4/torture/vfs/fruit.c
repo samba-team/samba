@@ -3643,6 +3643,100 @@ done:
 	return ret;
 }
 
+static bool test_rename_and_read_rsrc(struct torture_context *tctx,
+				      struct smb2_tree *tree)
+{
+	bool ret = true;
+	NTSTATUS status;
+	struct smb2_create create, create2;
+	struct smb2_handle h1, h2;
+	const char *fname = "test_rename_openfile";
+	const char *sname = "test_rename_openfile" AFPRESOURCE_STREAM_NAME;
+	const char *fname_renamed = "test_rename_openfile_renamed";
+	const char *data = "1234567890";
+	union smb_setfileinfo sinfo;
+	struct smb2_read r;
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	torture_comment(tctx, "Create file with resource fork\n");
+
+	ret = torture_setup_file(tctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	ret = write_stream(tree, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME, 0, 10, data);
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed");
+
+	torture_comment(tctx, "Open resource fork\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.fname = sname;
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h1 = create.out.file.handle;
+
+	torture_comment(tctx, "Rename base file\n");
+
+	ZERO_STRUCT(create2);
+	create2.in.desired_access = SEC_FILE_ALL;
+	create2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create2.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create2.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create2.in.fname = fname;
+
+	status = smb2_create(tree, tctx, &create2);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	h2 = create2.out.file.handle;
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.handle = h2;
+	sinfo.rename_information.in.overwrite = 0;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = fname_renamed;
+
+	status = smb2_setinfo_file(tree, &sinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_setinfo_file failed");
+
+	smb2_util_close(tree, h2);
+
+	ZERO_STRUCT(r);
+	r.in.file.handle = h1;
+	r.in.length      = 10;
+	r.in.offset      = 0;
+
+	torture_comment(tctx, "Read resource fork of renamed file\n");
+
+	status = smb2_read(tree, tree, &r);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_read failed");
+
+	smb2_util_close(tree, h1);
+
+	torture_assert_goto(tctx, r.out.data.length == 10, ret, done,
+			    talloc_asprintf(tctx, "smb2_read returned %jd bytes, expected 10\n",
+					    (intmax_t)r.out.data.length));
+
+	torture_assert_goto(tctx, memcmp(r.out.data.data, data, 10) == 0, ret, done,
+			    talloc_asprintf(tctx, "Bad data in stream\n"));
+
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_util_unlink(tree, fname_renamed);
+
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -3677,6 +3771,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "setinfo eof AFP_AfpResource", test_setinfo_eof_resource);
 	torture_suite_add_1smb2_test(suite, "null afpinfo", test_null_afpinfo);
 	torture_suite_add_1smb2_test(suite, "delete", test_delete_file_with_rfork);
+	torture_suite_add_1smb2_test(suite, "read open rsrc after rename", test_rename_and_read_rsrc);
 
 	return suite;
 }
