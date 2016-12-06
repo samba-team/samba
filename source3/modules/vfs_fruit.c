@@ -3338,9 +3338,6 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	AfpInfo *ai = NULL;
 	ssize_t len = -1;
-	char *name = NULL;
-	char *tmp_base_name = NULL;
-	NTSTATUS status;
 	size_t to_return = n;
 
 	DEBUG(10, ("fruit_pread: offset=%d, size=%d\n", (int)offset, (int)n));
@@ -3351,25 +3348,6 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
-
-	/* fsp_name is not converted with vfs_catia */
-	tmp_base_name = fsp->base_fsp->fsp_name->base_name;
-	status = SMB_VFS_TRANSLATE_NAME(handle->conn,
-					fsp->base_fsp->fsp_name->base_name,
-					vfs_translate_to_unix,
-					talloc_tos(), &name);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
-		name = talloc_strdup(talloc_tos(), tmp_base_name);
-		if (name == NULL) {
-			rc = -1;
-			goto exit;
-		}
-	} else if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		rc = -1;
-		goto exit;
-	}
-	fsp->base_fsp->fsp_name->base_name = name;
 
 	if (is_afpinfo_stream(fsp->fsp_name)) {
 		/*
@@ -3451,8 +3429,6 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 		}
 	}
 exit:
-	fsp->base_fsp->fsp_name->base_name = tmp_base_name;
-	TALLOC_FREE(name);
 	TALLOC_FREE(ai);
 	if (rc != 0) {
 		len = -1;
@@ -3471,9 +3447,6 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	AfpInfo *ai = NULL;
 	ssize_t len;
-	char *name = NULL;
-	char *tmp_base_name = NULL;
-	NTSTATUS status;
 
 	DEBUG(10, ("fruit_pwrite: offset=%d, size=%d\n", (int)offset, (int)n));
 
@@ -3483,24 +3456,6 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
-
-	tmp_base_name = fsp->base_fsp->fsp_name->base_name;
-	status = SMB_VFS_TRANSLATE_NAME(handle->conn,
-					fsp->base_fsp->fsp_name->base_name,
-					vfs_translate_to_unix,
-					talloc_tos(), &name);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
-		name = talloc_strdup(talloc_tos(), tmp_base_name);
-		if (name == NULL) {
-			rc = -1;
-			goto exit;
-		}
-	} else if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		rc = -1;
-		goto exit;
-	}
-	fsp->base_fsp->fsp_name->base_name = name;
 
 	if (is_afpinfo_stream(fsp->fsp_name)) {
 		/*
@@ -3579,7 +3534,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		}
 
 		memcpy(p, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
-		rc = ad_write(ad, name);
+		rc = ad_write(ad, fsp->base_fsp->fsp_name->base_name);
 	} else {
 		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
                                    offset + ad_getentryoff(ad, ADEID_RFORK));
@@ -3589,7 +3544,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		}
 
 		if (config->rsrc == FRUIT_RSRC_ADFILE) {
-			rc = ad_read(ad, name);
+			rc = ad_read(ad, fsp->base_fsp->fsp_name->base_name);
 			if (rc == -1) {
 				goto exit;
 			}
@@ -3597,14 +3552,12 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 
 			if ((len + offset) > ad_getentrylen(ad, ADEID_RFORK)) {
 				ad_setentrylen(ad, ADEID_RFORK, len + offset);
-				rc = ad_write(ad, name);
+				rc = ad_write(ad, fsp->base_fsp->fsp_name->base_name);
 			}
 		}
 	}
 
 exit:
-	fsp->base_fsp->fsp_name->base_name = tmp_base_name;
-	TALLOC_FREE(name);
 	TALLOC_FREE(ai);
 	if (rc != 0) {
 		return -1;
@@ -3948,37 +3901,11 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_STRUCT_STAT *sbuf)
 {
 	int rc;
-	char *name = NULL;
-	char *tmp_base_name = NULL;
-	NTSTATUS status;
 	struct adouble *ad = (struct adouble *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
 	DEBUG(10, ("fruit_fstat called for %s\n",
 		   smb_fname_str_dbg(fsp->fsp_name)));
-
-	if (fsp->base_fsp) {
-		tmp_base_name = fsp->base_fsp->fsp_name->base_name;
-		/* fsp_name is not converted with vfs_catia */
-		status = SMB_VFS_TRANSLATE_NAME(
-			handle->conn,
-			fsp->base_fsp->fsp_name->base_name,
-			vfs_translate_to_unix,
-			talloc_tos(), &name);
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
-			name = talloc_strdup(talloc_tos(), tmp_base_name);
-			if (name == NULL) {
-				rc = -1;
-				goto exit;
-			}
-		} else if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			rc = -1;
-			goto exit;
-		}
-		fsp->base_fsp->fsp_name->base_name = name;
-	}
 
 	if (ad == NULL || fsp->base_fsp == NULL) {
 		rc = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
@@ -4014,10 +3941,6 @@ exit:
 	DEBUG(10, ("fruit_fstat %s, size: %zd\n",
 		   smb_fname_str_dbg(fsp->fsp_name),
 		   (ssize_t)sbuf->st_ex_size));
-	if (tmp_base_name) {
-		fsp->base_fsp->fsp_name->base_name = tmp_base_name;
-	}
-	TALLOC_FREE(name);
 	return rc;
 }
 
