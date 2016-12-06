@@ -3,6 +3,9 @@
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,7 +21,7 @@
 #define MAP_FAILED (int *)-1
 #endif
 
-main()
+int main(void)
 {
 	int *buf;
 	int fd;
