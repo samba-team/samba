@@ -567,7 +567,7 @@ def build(bld):
                       destname='ctdb_diagnostics', chmod=0755)
 
     bld.SAMBA_GENERATOR('ctdb-etcd-lock',
-                        source='tools/ctdb_etcd_lock',
+                        source='utils/etcd/ctdb_etcd_lock',
                         target='ctdb_etcd_lock',
                         rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
     bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_etcd_lock',
