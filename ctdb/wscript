@@ -838,6 +838,7 @@ def build(bld):
         'shellcheck',
         'simple',
         'takeover',
+        'takeover_helper',
         'tool'
     ]
 
