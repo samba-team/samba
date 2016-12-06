@@ -31,6 +31,12 @@
 #ifdef HAVE_CUPS
 #include <cups/cups.h>
 #include <cups/language.h>
+#include <cups/http.h>
+
+/* CUPS prior to version 1.7 doesn't have HTTP_URI_STATUS_OK */
+#if (CUPS_VERSION_MAJOR == 1) && (CUPS_VERSION_MINOR < 7)
+#define HTTP_URI_STATUS_OK HTTP_URI_OK
+#endif
 
 #if (CUPS_VERSION_MAJOR > 1) || (CUPS_VERSION_MINOR > 5)
 #define HAVE_CUPS_1_6 1
