@@ -76,6 +76,9 @@ def set_options(opt):
     opt.add_option('--enable-pmda',
                    help=("Turn on PCP pmda support (default=no)"),
                    action="store_true", dest='ctdb_pmda', default=False)
+    opt.add_option('--enable-etcd-reclock',
+                   help=("Enable etcd recovery lock helper (default=no)"),
+                   action="store_true", dest='ctdb_etcd_reclock', default=False)
 
     opt.add_option('--with-logdir',
                    help=("Path to log directory"),
@@ -186,6 +189,18 @@ def configure(conf):
         conf.define('HAVE_INFINIBAND', 1)
         conf.define('USE_INFINIBAND', 1)
 
+    have_etcd_reclock = False
+    if Options.options.ctdb_etcd_reclock:
+        try:
+            conf.check_python_module('etcd')
+            have_etcd_reclock = True
+        except:
+            Logs.error('etcd support not available')
+            sys.exit(1)
+    if have_etcd_reclock:
+        Logs.info('Building with etcd support')
+    conf.env.etcd_reclock = have_etcd_reclock
+
     conf.env.CTDB_BINDIR = os.path.join(conf.env.EXEC_PREFIX, 'bin')
     conf.env.CTDB_ETCDIR = os.path.join(conf.env.SYSCONFDIR, 'ctdb')
     conf.env.CTDB_VARDIR = os.path.join(conf.env.LOCALSTATEDIR, 'lib/ctdb')
@@ -244,7 +259,9 @@ def configure(conf):
 
         Logs.info("xsltproc unavailable, checking for pre-built manpages")
         conf.env.ctdb_prebuilt_manpages = []
-        manpages = manpages_binary + manpages_misc + manpages_etcd
+        manpages = manpages_binary + manpages_misc
+        if conf.env.etcd_reclock:
+            manpages = manpages + manpages_etcd
         for m in manpages:
             if os.path.exists(os.path.join("doc", m)):
                 Logs.info("  %s: yes" % (m))
@@ -534,7 +551,9 @@ def build(bld):
                        (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5,
                         sed_expr6, sed_expr7)
 
-    manpages_extra = manpages_misc + manpages_etcd
+    manpages_extra = manpages_misc
+    if bld.env.etcd_reclock:
+        manpages_extra = manpages_extra + manpages_etcd
     for f in manpages_binary + manpages_extra:
         x = '%s.xml' % (f)
         bld.SAMBA_GENERATOR(x,
@@ -566,12 +585,13 @@ def build(bld):
     bld.INSTALL_FILES('${BINDIR}', 'ctdb_diagnostics',
                       destname='ctdb_diagnostics', chmod=0755)
 
-    bld.SAMBA_GENERATOR('ctdb-etcd-lock',
-                        source='utils/etcd/ctdb_etcd_lock',
-                        target='ctdb_etcd_lock',
-                        rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
-    bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_etcd_lock',
-                      destname='ctdb_etcd_lock', chmod=0744)
+    if bld.env.etcd_reclock:
+        bld.SAMBA_GENERATOR('ctdb-etcd-lock',
+                            source='utils/etcd/ctdb_etcd_lock',
+                            target='ctdb_etcd_lock',
+                            rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
+        bld.INSTALL_FILES('${CTDB_HELPER_BINDIR}', 'ctdb_etcd_lock',
+                          destname='ctdb_etcd_lock', chmod=0744)
 
     bld.SAMBA_GENERATOR('ctdb-natgw',
                         source='tools/ctdb_natgw',
