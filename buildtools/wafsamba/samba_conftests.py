@@ -438,6 +438,7 @@ def CHECK_UNAME(conf):
     ret = True
     for v in "sysname machine release version".split():
         if not conf.CHECK_CODE('''
+                               int printf(const char *format, ...);
                                struct utsname n;
                                if (uname(&n) == -1) return -1;
                                printf("%%s", n.%s);
