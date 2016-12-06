@@ -46,7 +46,9 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			 struct dnsp_DnssrvRpcRecord **records,
 			 uint16_t *num_records,
 			 bool *tombstoned);
-
+WERROR dns_name_check(TALLOC_CTX *mem_ctx,
+		      size_t len,
+		      const char *name);
 WERROR dns_common_replace(struct ldb_context *samdb,
 			  TALLOC_CTX *mem_ctx,
 			  struct ldb_dn *dn,

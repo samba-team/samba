@@ -397,17 +397,20 @@ WERROR dnsserver_db_add_record(TALLOC_CTX *mem_ctx,
 {
 	const char * const attrs[] = { "dnsRecord", "dNSTombstoned", NULL };
 	struct ldb_result *res;
-	struct dnsp_DnssrvRpcRecord *rec;
+	struct dnsp_DnssrvRpcRecord *rec = NULL;
 	struct ldb_message_element *el;
 	struct ldb_dn *dn;
 	enum ndr_err_code ndr_err;
 	NTTIME t;
 	int ret, i;
 	int serial;
+	WERROR werr;
 	bool was_tombstoned = false;
 
-	rec = dns_to_dnsp_copy(mem_ctx, add_record);
-	W_ERROR_HAVE_NO_MEMORY(rec);
+	werr = dns_to_dnsp_convert(mem_ctx, add_record, &rec, true);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	/* Set the correct rank for the record. */
 	if (z->zoneinfo->dwZoneType == DNS_ZONE_TYPE_PRIMARY) {
@@ -514,18 +517,23 @@ WERROR dnsserver_db_update_record(TALLOC_CTX *mem_ctx,
 {
 	const char * const attrs[] = { "dnsRecord", NULL };
 	struct ldb_result *res;
-	struct dnsp_DnssrvRpcRecord *arec, *drec;
+	struct dnsp_DnssrvRpcRecord *arec = NULL, *drec = NULL;
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
 	NTTIME t;
 	int ret, i;
 	int serial;
+	WERROR werr;
 
-	arec = dns_to_dnsp_copy(mem_ctx, add_record);
-	W_ERROR_HAVE_NO_MEMORY(arec);
+	werr = dns_to_dnsp_convert(mem_ctx, add_record, &arec, true);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
-	drec = dns_to_dnsp_copy(mem_ctx, del_record);
-	W_ERROR_HAVE_NO_MEMORY(drec);
+	werr = dns_to_dnsp_convert(mem_ctx, del_record, &drec, true);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	unix_to_nt_time(&t, time(NULL));
 	t /= 10*1000*1000;
@@ -616,19 +624,22 @@ WERROR dnsserver_db_delete_record(TALLOC_CTX *mem_ctx,
 {
 	const char * const attrs[] = { "dnsRecord", NULL };
 	struct ldb_result *res;
-	struct dnsp_DnssrvRpcRecord *rec;
+	struct dnsp_DnssrvRpcRecord *rec = NULL;
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
 	int ret, i;
 	int serial;
+	WERROR werr;
 
 	serial = dnsserver_update_soa(mem_ctx, samdb, z);
 	if (serial < 0) {
 		return WERR_INTERNAL_DB_ERROR;
 	}
 
-	rec = dns_to_dnsp_copy(mem_ctx, del_record);
-	W_ERROR_HAVE_NO_MEMORY(rec);
+	werr = dns_to_dnsp_convert(mem_ctx, del_record, &rec, false);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	ret = ldb_search(samdb, mem_ctx, &res, z->zone_dn, LDB_SCOPE_ONELEVEL, attrs,
 			"(&(objectClass=dnsNode)(name=%s))", name);

@@ -193,7 +193,9 @@ bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRe
 
 void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 			struct DNS_RPC_RECORD *dns);
-struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns);
+WERROR dns_to_dnsp_convert(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns,
+			   struct dnsp_DnssrvRpcRecord **out_dnsp,
+			   bool check_name);
 
 struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ldb_result *res);
 WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx, struct dnsserver_zone *z,

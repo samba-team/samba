@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "dnsserver.h"
+#include "dns_server/dnsserver_common.h"
 #include "lib/replace/system/network.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include "librpc/gen_ndr/ndr_dnsserver.h"
@@ -412,15 +413,18 @@ void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
 
 }
 
-
-struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns)
+WERROR dns_to_dnsp_convert(TALLOC_CTX *mem_ctx, struct DNS_RPC_RECORD *dns,
+			   struct dnsp_DnssrvRpcRecord **out_dnsp, bool check_name)
 {
+	WERROR res;
 	int i, len;
-	struct dnsp_DnssrvRpcRecord *dnsp;
+	const char *name;
+	char *talloc_res = NULL;
+	struct dnsp_DnssrvRpcRecord *dnsp = NULL;
 
 	dnsp = talloc_zero(mem_ctx, struct dnsp_DnssrvRpcRecord);
 	if (dnsp == NULL) {
-		return NULL;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	dnsp->wDataLength = dns->wDataLength;
@@ -438,25 +442,65 @@ struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RP
 		break;
 
 	case DNS_TYPE_A:
-		dnsp->data.ipv4 = talloc_strdup(mem_ctx, dns->data.ipv4);
+		talloc_res = talloc_strdup(mem_ctx, dns->data.ipv4);
+		if (talloc_res == NULL) {
+			goto fail_nomemory;
+		}
+		dnsp->data.ipv4 = talloc_res;
 		break;
 
 	case DNS_TYPE_NS:
+		name = dns->data.name.str;
 		len = dns->data.name.len;
-		if (dns->data.name.str[len-1] == '.') {
-			dnsp->data.ns = talloc_strndup(mem_ctx, dns->data.name.str, len-1);
-		} else {
-			dnsp->data.ns = talloc_strdup(mem_ctx, dns->data.name.str);
+
+		if (check_name) {
+			res = dns_name_check(mem_ctx, len, name);
+			if (!W_ERROR_IS_OK(res)) {
+				return res;
+			}
 		}
+
+		if (len > 0 && name[len-1] == '.') {
+			talloc_res = talloc_strndup(mem_ctx, name, len-1);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.ns = talloc_res;
+		} else {
+			talloc_res = talloc_strdup(mem_ctx, name);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.ns = talloc_res;
+		}
+
 		break;
 
 	case DNS_TYPE_CNAME:
+		name = dns->data.name.str;
 		len = dns->data.name.len;
-		if (dns->data.name.str[len-1] == '.') {
-			dnsp->data.cname = talloc_strndup(mem_ctx, dns->data.name.str, len-1);
-		} else {
-			dnsp->data.cname = talloc_strdup(mem_ctx, dns->data.name.str);
+
+		if (check_name) {
+			res = dns_name_check(mem_ctx, len, name);
+			if (!W_ERROR_IS_OK(res)) {
+				return res;
+			}
 		}
+
+		if (len > 0 && name[len-1] == '.') {
+			talloc_res = talloc_strndup(mem_ctx, name, len-1);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.cname = talloc_res;
+		} else {
+			talloc_res = talloc_strdup(mem_ctx, name);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.cname = talloc_res;
+		}
+
 		break;
 
 	case DNS_TYPE_SOA:
@@ -466,40 +510,111 @@ struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RP
 		dnsp->data.soa.expire = dns->data.soa.dwExpire;
 		dnsp->data.soa.minimum = dns->data.soa.dwMinimumTtl;
 
+		name = dns->data.soa.NamePrimaryServer.str;
 		len = dns->data.soa.NamePrimaryServer.len;
-		if (dns->data.soa.NamePrimaryServer.str[len-1] == '.') {
-			dnsp->data.soa.mname = talloc_strndup(mem_ctx, dns->data.soa.NamePrimaryServer.str, len-1);
-		} else {
-			dnsp->data.soa.mname = talloc_strdup(mem_ctx, dns->data.soa.NamePrimaryServer.str);
+
+		if (check_name) {
+			res = dns_name_check(mem_ctx, len, name);
+			if (!W_ERROR_IS_OK(res)) {
+				return res;
+			}
 		}
 
-		len = dns->data.soa.ZoneAdministratorEmail.len;
-		if (dns->data.soa.ZoneAdministratorEmail.str[len-1] == '.') {
-			dnsp->data.soa.rname = talloc_strndup(mem_ctx, dns->data.soa.ZoneAdministratorEmail.str, len-1);
+		if (len > 0 && name[len-1] == '.') {
+			talloc_res = talloc_strndup(mem_ctx, name, len-1);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.soa.mname = talloc_res;
 		} else {
-			dnsp->data.soa.rname = talloc_strdup(mem_ctx, dns->data.soa.ZoneAdministratorEmail.str);
+			talloc_res = talloc_strdup(mem_ctx, name);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.soa.mname = talloc_res;
 		}
+
+		name = dns->data.soa.ZoneAdministratorEmail.str;
+		len = dns->data.soa.ZoneAdministratorEmail.len;
+
+		res = dns_name_check(mem_ctx, len, name);
+		if (!W_ERROR_IS_OK(res)) {
+			return res;
+		}
+
+		if (len > 0 && name[len-1] == '.') {
+			talloc_res = talloc_strndup(mem_ctx, name, len-1);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.soa.rname = talloc_res;
+		} else {
+			talloc_res = talloc_strdup(mem_ctx, name);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.soa.rname = talloc_res;
+		}
+
 		break;
 
 	case DNS_TYPE_PTR:
-		dnsp->data.ptr = talloc_strdup(mem_ctx, dns->data.ptr.str);
+		name = dns->data.ptr.str;
+		len = dns->data.ptr.len;
+
+		if (check_name) {
+			res = dns_name_check(mem_ctx, len, name);
+			if (!W_ERROR_IS_OK(res)) {
+				return res;
+			}
+		}
+
+		talloc_res = talloc_strdup(mem_ctx, name);
+		if (talloc_res == NULL) {
+			goto fail_nomemory;
+		}
+		dnsp->data.ptr = talloc_res;
+
 		break;
 
 	case DNS_TYPE_MX:
 		dnsp->data.mx.wPriority = dns->data.mx.wPreference;
+
+		name = dns->data.mx.nameExchange.str;
 		len = dns->data.mx.nameExchange.len;
-		if (dns->data.mx.nameExchange.str[len-1] == '.') {
-			dnsp->data.mx.nameTarget = talloc_strndup(mem_ctx, dns->data.mx.nameExchange.str, len-1);
-		} else {
-			dnsp->data.mx.nameTarget = talloc_strdup(mem_ctx, dns->data.mx.nameExchange.str);
+
+		if (check_name) {
+			res = dns_name_check(mem_ctx, len, name);
+			if (!W_ERROR_IS_OK(res)) {
+				return res;
+			}
 		}
+
+		if (len > 0 && name[len-1] == '.') {
+			talloc_res = talloc_strndup(mem_ctx, name, len-1);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.mx.nameTarget = talloc_res;
+		} else {
+			talloc_res = talloc_strdup(mem_ctx, name);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.mx.nameTarget = talloc_res;
+		}
+
 		break;
 
 	case DNS_TYPE_TXT:
 		dnsp->data.txt.count = dns->data.txt.count;
 		dnsp->data.txt.str = talloc_array(mem_ctx, const char *, dns->data.txt.count);
 		for (i=0; i<dns->data.txt.count; i++) {
-			dnsp->data.txt.str[i] = talloc_strdup(mem_ctx, dns->data.txt.str[i].str);
+			talloc_res = talloc_strdup(mem_ctx, dns->data.txt.str[i].str);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.txt.str[i] = talloc_res;
 		}
 		break;
 
@@ -512,23 +627,43 @@ struct dnsp_DnssrvRpcRecord *dns_to_dnsp_copy(TALLOC_CTX *mem_ctx, struct DNS_RP
 		dnsp->data.srv.wWeight = dns->data.srv.wWeight;
 		dnsp->data.srv.wPort = dns->data.srv.wPort;
 
+		name = dns->data.srv.nameTarget.str;
 		len = dns->data.srv.nameTarget.len;
-		if (dns->data.srv.nameTarget.str[len-1] == '.') {
-			dnsp->data.srv.nameTarget = talloc_strndup(mem_ctx, dns->data.srv.nameTarget.str, len-1);
-		} else {
-			dnsp->data.srv.nameTarget = talloc_strdup(mem_ctx, dns->data.srv.nameTarget.str);
+
+		if (check_name) {
+			res = dns_name_check(mem_ctx, len, name);
+			if (!W_ERROR_IS_OK(res)) {
+				return res;
+			}
 		}
+
+		if (len > 0 && name[len-1] == '.') {
+			talloc_res = talloc_strndup(mem_ctx, name, len-1);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.srv.nameTarget = talloc_res;
+		} else {
+			talloc_res = talloc_strdup(mem_ctx, name);
+			if (talloc_res == NULL) {
+				goto fail_nomemory;
+			}
+			dnsp->data.srv.nameTarget = talloc_res;
+		}
+
 		break;
 
 	default:
 		memcpy(&dnsp->data, &dns->data, sizeof(union dnsRecordData));
 		DEBUG(0, ("dnsserver: Found Unhandled DNS record type=%d", dns->wType));
-
 	}
 
-	return dnsp;
-}
+	*out_dnsp = dnsp;
+	return WERR_OK;
 
+fail_nomemory:
+	return WERR_NOT_ENOUGH_MEMORY;
+}
 
 /* Intialize tree with given name as the root */
 static struct dns_tree *dns_tree_init(TALLOC_CTX *mem_ctx, const char *name, void *data)
