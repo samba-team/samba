@@ -1215,14 +1215,12 @@ void dbgflush( void )
  Input:  level - Debug level of the message (not the system-wide debug
                   level. )
 	  cls   - Debuglevel class of the calling module.
-          file  - Pointer to a string containing the name of the file
+          location  - Pointer to a string containing the name of the file
                   from which this function was called, or an empty string
                   if the __FILE__ macro is not implemented.
           func  - Pointer to a string containing the name of the function
                   from which this function was called, or an empty string
                   if the __FUNCTION__ macro is not implemented.
-         line  - line number of the call to dbghdr, assuming __LINE__
-                 works.
 
   Output: Always true.  This makes it easy to fudge a call to dbghdr()
           in a macro, since the function can be called as part of a test.
