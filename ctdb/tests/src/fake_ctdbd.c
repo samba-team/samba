@@ -100,6 +100,14 @@ struct srvid_register_state {
 	uint64_t srvid;
 };
 
+struct fake_control_failure {
+	struct fake_control_failure  *prev, *next;
+	enum ctdb_controls opcode;
+	uint32_t pnn;
+	const char *error;
+	const char *comment;
+};
+
 struct ctdbd_context {
 	struct node_map *node_map;
 	struct interface_map *iface_map;
@@ -117,6 +125,7 @@ struct ctdbd_context {
 	int monitoring_mode;
 	char *reclock;
 	struct ctdb_public_ip_list *known_ips;
+	struct fake_control_failure *control_failures;
 };
 
 /*
@@ -720,6 +729,96 @@ static bool public_ips_parse(struct ctdbd_context *ctdb,
 	return (ctdb->known_ips != NULL);
 }
 
+/* Read information about controls to fail.  Format is:
+ *   <opcode> <pnn> {ERROR|TIMEOUT} <comment>
+ */
+static bool control_failures_parse(struct ctdbd_context *ctdb)
+{
+	char line[1024];
+
+	while ((fgets(line, sizeof(line), stdin) != NULL)) {
+		char *tok, *t;
+		enum ctdb_controls opcode;
+		uint32_t pnn;
+		const char *error;
+		const char *comment;
+		struct fake_control_failure *failure = NULL;
+
+		if (line[0] == '\n') {
+			break;
+		}
+
+		/* Get rid of pesky newline */
+		if ((t = strchr(line, '\n')) != NULL) {
+			*t = '\0';
+		}
+
+		/* Get opcode */
+		tok = strtok(line, " \t");
+		if (tok == NULL) {
+			D_ERR("bad line (%s) - missing opcode\n", line);
+			continue;
+		}
+		opcode = (enum ctdb_controls)strtoul(tok, NULL, 0);
+
+		/* Get PNN */
+		tok = strtok(NULL, " \t");
+		if (tok == NULL) {
+			D_ERR("bad line (%s) - missing PNN\n", line);
+			continue;
+		}
+		pnn = (uint32_t)strtoul(tok, NULL, 0);
+
+		/* Get error */
+		tok = strtok(NULL, " \t");
+		if (tok == NULL) {
+			D_ERR("bad line (%s) - missing errno\n", line);
+			continue;
+		}
+		error = talloc_strdup(ctdb, tok);
+		if (error == NULL) {
+			goto fail;
+		}
+		if (strcmp(error, "ERROR") != 0 &&
+		    strcmp(error, "TIMEOUT") != 0) {
+			D_ERR("bad line (%s) "
+			      "- error must be \"ERROR\" or \"TIMEOUT\"\n",
+			      line);
+			goto fail;
+		}
+
+		/* Get comment */
+		tok = strtok(NULL, "\n"); /* rest of line */
+		if (tok == NULL) {
+			D_ERR("bad line (%s) - missing comment\n", line);
+			continue;
+		}
+		comment = talloc_strdup(ctdb, tok);
+		if (comment == NULL) {
+			goto fail;
+		}
+
+		failure = talloc_zero(ctdb, struct fake_control_failure);
+		if (failure == NULL) {
+			goto fail;
+		}
+
+		failure->opcode = opcode;
+		failure->pnn = pnn;
+		failure->error = error;
+		failure->comment = comment;
+
+		DLIST_ADD(ctdb->control_failures, failure);
+	}
+
+	D_INFO("Parsing fake control failures done\n");
+	return true;
+
+fail:
+	D_INFO("Parsing fake control failures failed\n");
+	return false;
+}
+
 /*
  * CTDB context setup
  */
@@ -790,6 +889,8 @@ static struct ctdbd_context *ctdbd_setup(TALLOC_CTX *mem_ctx)
 						  ctdb->node_map->num_nodes);
 		} else if (strcmp(line, "RECLOCK") == 0) {
 			status = reclock_parse(ctdb);
+		} else if (strcmp(line, "CONTROLFAILS") == 0) {
+			status = control_failures_parse(ctdb);
 		} else {
 			fprintf(stderr, "Unknown line %s\n", line);
 			status = false;
@@ -2686,6 +2787,44 @@ fail:
 	client_send_control(req, header, &reply);
 }
 
+static bool fake_control_failure(TALLOC_CTX *mem_ctx,
+				 struct tevent_req *req,
+				 struct ctdb_req_header *header,
+				 struct ctdb_req_control *request)
+{
+	struct client_state *state = tevent_req_data(
+		req, struct client_state);
+	struct ctdbd_context *ctdb = state->ctdb;
+	struct ctdb_reply_control reply;
+	struct fake_control_failure *f = NULL;
+
+	D_DEBUG("Checking fake control failure for control %u on node %u\n",
+		request->opcode, header->destnode);
+	for (f = ctdb->control_failures; f != NULL; f = f->next) {
+		if (f->opcode == request->opcode &&
+		    (f->pnn == header->destnode ||
+		     f->pnn == CTDB_UNKNOWN_PNN)) {
+
+			reply.rdata.opcode = request->opcode;
+			if (strcmp(f->error, "TIMEOUT") == 0) {
+				/* Causes no reply */
+				D_ERR("Control %u fake timeout on node %u\n",
+				      request->opcode, header->destnode);
+				return true;
+			} else if (strcmp(f->error, "ERROR") == 0) {
+				D_ERR("Control %u fake error on node %u\n",
+				      request->opcode, header->destnode);
+				reply.status = -1;
+				reply.errmsg = f->comment;
+				client_send_control(req, header, &reply);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 static void control_error(TALLOC_CTX *mem_ctx,
 			  struct tevent_req *req,
 			  struct ctdb_req_header *header,
@@ -3047,6 +3186,10 @@ static void client_process_control(struct tevent_req *req,
 	DEBUG(DEBUG_INFO, ("request opcode = %u, reqid = %u\n",
 			   request.opcode, header.reqid));
 
+	if (fake_control_failure(mem_ctx, req, &header, &request)) {
+		goto done;
+	}
+
 	switch (request.opcode) {
 	case CTDB_CONTROL_PROCESS_EXISTS:
 		control_process_exists(mem_ctx, req, &header, &request);
@@ -3235,6 +3378,7 @@ static void client_process_control(struct tevent_req *req,
 		break;
 	}
 
+done:
 	talloc_free(mem_ctx);
 }
 
