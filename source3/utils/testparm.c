@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Test validity of smb.conf
    Copyright (C) Karl Auer 1993, 1994-1998
 
    Extensively modified by Andrew Tridgell, 1995
    Converted to popt by Jelmer Vernooij (jelmer@nl.linux.org), 2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -324,7 +324,7 @@ static int do_global_checks(void)
 		fprintf(stderr, "ERROR: passdb backend must have a value or be "
 				"left out\n\n");
 	}
-	
+
 	if (lp_os_level() > 255) {
 		fprintf(stderr, "WARNING: Maximum value for 'os level' is "
 				"255!\n\n");
@@ -336,7 +336,7 @@ static int do_global_checks(void)
 	}
 
 	return ret;
-}   
+}
 
 /**
  * per-share logic tests
@@ -491,7 +491,7 @@ static void do_per_share_checks(int s)
 	 */
 	lp_set_cmdline("log level", "2");
 
-	pc = poptGetContext(NULL, argc, argv, long_options, 
+	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptSetOtherOptionHelp(pc, "[OPTION...] <config-file> [host-name] [host-ip]");
 
@@ -504,7 +504,7 @@ static void do_per_share_checks(int s)
 
 	setup_logging(poptGetArg(pc), DEBUG_STDERR);
 
-	if (poptPeekArg(pc)) 
+	if (poptPeekArg(pc))
 		config_file = poptGetArg(pc);
 
 	cname = poptGetArg(pc);
