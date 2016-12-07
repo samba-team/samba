@@ -296,17 +296,61 @@ static bool test_guid_from_string_null(struct torture_context *tctx)
 static bool test_guid_from_string_invalid(struct torture_context *tctx)
 {
 	struct GUID g1;
-	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER,
-				      GUID_from_string("bla", &g1),
-				      "parameter not invalid");
+	bool failed = false;
+	int i;
+	const char *bad_guids[] = {
+		"bla",
+		"",
+		/*
+		"00000001-0002-0003-0405-060708090a0b",  correct
+		*/
+		"00000001-0002-0003-0405-060708090a0b1", /* too long */
+		"00000001-0002-0003-0405-060708090a0",  /* too short */
+		"00000001-0002-0003-0405--060708090a0",  /* negative */
+		"00000001-0002-0003--0405-060708090a0",  /* negative */
+		"-0000001-0002-0003-0405-060708090a0b",  /* negative */
+		"-0000001-0002-0003-04-5-060708090a0b",  /* negative */
+		"d0000001-0002-0003-0405-060708090a-b",  /* negative */
+		"00000001-  -2-0003-0405-060708090a0b",  /* negative, space */
+		"00000001-0002-0003-0405- 060708090a0",  /* whitespace */
+		" 0000001-0002-0003--0405-060708090a0",  /* whitespace */
+		"00000001-0002-0003--0405-060708090a ",  /* whitespace */
+		"0000001-00002-0003-04050-60708090a0b",  /* misshapen */
+		"00000010-0002-0003-04050-60708090a0b",  /* misshapen */
+		"00000001-0002-0003-0405-0z0708090a0b",  /* bad char */
+		"00000001-00x2-0x03-0405-060708090a0b",  /* bad char (00x) */
+		"0x000001-0002-0003-0405-060708090a0b",  /* 0x char */
+		"00000001-0x02-0x03-0405-060708090a0b",  /* 0x char */
+	};
+
+	for (i = 0; i < ARRAY_SIZE(bad_guids); i++) {
+		NTSTATUS status = GUID_from_string(bad_guids[i], &g1);
+		if (! NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			torture_comment(tctx, "bad guid %s parsed as OK\n",
+					bad_guids[i]);
+			failed = true;
+		}
+	}
+	if (failed) {
+		torture_fail(tctx, "wrongly allowing invalid guids");
+	}
 	return true;
 }
 
 static bool test_guid_from_string(struct torture_context *tctx)
 {
 	struct GUID g1, exp;
+	/* we are asserting all these guids are valid and equal */
+	const char *guids[4] = {
+		"00000001-0002-0003-0405-060708090a0b",
+		"{00000001-0002-0003-0405-060708090a0b}",
+		"{00000001-0002-0003-0405-060708090a0B}", /* mixed */
+		"00000001-0002-0003-0405-060708090A0B",   /* upper */
+	};
+	int i;
+
 	torture_assert_ntstatus_ok(tctx,
-				   GUID_from_string("00000001-0002-0003-0405-060708090a0b", &g1),
+				   GUID_from_string(guids[0], &g1),
 				   "invalid return code");
 	exp.time_low = 1;
 	exp.time_mid = 2;
@@ -319,12 +363,14 @@ static bool test_guid_from_string(struct torture_context *tctx)
 	exp.node[3] = 9;
 	exp.node[4] = 10;
 	exp.node[5] = 11;
-	torture_assert(tctx, GUID_equal(&g1, &exp), "UUID parsed incorrectly");
-	torture_assert_ntstatus_ok(tctx,
-				   GUID_from_string("{00000001-0002-0003-0405-060708090a0b}", &g1),
-				   "invalid return code");
-	torture_assert(tctx, GUID_equal(&g1, &exp), "UUID parsed incorrectly");
 
+	for (i = 1; i < ARRAY_SIZE(guids); i++) {
+		torture_assert_ntstatus_ok(tctx,
+					   GUID_from_string(guids[i], &g1),
+					   "invalid return code");
+		torture_assert(tctx, GUID_equal(&g1, &exp),
+			       "UUID parsed incorrectly");
+	}
 	return true;
 }
 
