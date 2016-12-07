@@ -1502,9 +1502,8 @@ struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		if (!lp_client_lanman_auth()) {
-			DEBUG(1, ("Server requested LM password but "
-				  "'client lanman auth = no' "
-				  "or 'client ntlmv2 auth = yes' is set\n"));
+			DEBUG(1, ("Server requested user level LM password but "
+				  "'client lanman auth = no' is set.\n"));
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return tevent_req_post(req, ev);
 		}
