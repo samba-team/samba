@@ -491,12 +491,11 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 	struct ldb_dn *dn;
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
+	WERROR werr;
 
 	if (name == NULL) {
 		return DNS_ERR(FORMAT_ERROR);
 	}
-
-	/*TODO: Check if 'name' is a valid DNS name */
 
 	if (strcmp(name, "") == 0) {
 		base = ldb_get_default_basedn(samdb);
@@ -504,6 +503,12 @@ WERROR dns_common_name2dn(struct ldb_context *samdb,
 		ldb_dn_add_child_fmt(dn, "DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System");
 		*_dn = dn;
 		return WERR_OK;
+	}
+
+	/* Check non-empty names */
+	werr = dns_name_check(mem_ctx, strlen(name), name);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	for (z = zones; z != NULL; z = z->next) {
