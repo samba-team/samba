@@ -2338,6 +2338,25 @@ fail:
 	return status;
 }
 
+NTSTATUS cli_tree_connect_creds(struct cli_state *cli,
+				const char *share, const char *dev,
+				struct cli_credentials *creds)
+{
+	const char *pw = NULL;
+	size_t pw_len = 0;
+
+	if (creds != NULL) {
+		pw = cli_credentials_get_password(creds);
+	}
+
+	if (pw == NULL) {
+		pw = "";
+	}
+	pw_len = strlen(pw) + 1;
+
+	return cli_tree_connect(cli, share, dev, pw, pw_len);
+}
+
 /****************************************************************************
  Send a tree disconnect.
 ****************************************************************************/
