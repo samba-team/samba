@@ -261,21 +261,29 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	}
 
 done:
-	if (_lm_response) {
+	if (_lm_response != NULL) {
 		talloc_steal(mem_ctx, lm_response.data);
 		*_lm_response = lm_response;
+	} else {
+		data_blob_clear(&lm_response);
 	}
-	if (_nt_response) {
+	if (_nt_response != NULL) {
 		talloc_steal(mem_ctx, nt_response.data);
 		*_nt_response = nt_response;
+	} else {
+		data_blob_clear(&nt_response);
 	}
-	if (_lm_session_key) {
+	if (_lm_session_key != NULL) {
 		talloc_steal(mem_ctx, lm_session_key.data);
 		*_lm_session_key = lm_session_key;
+	} else {
+		data_blob_clear(&lm_session_key);
 	}
-	if (_session_key) {
+	if (_session_key != NULL) {
 		talloc_steal(mem_ctx, session_key.data);
 		*_session_key = session_key;
+	} else {
+		data_blob_clear(&session_key);
 	}
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
