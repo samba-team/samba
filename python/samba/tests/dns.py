@@ -894,7 +894,7 @@ class TestComplexQueries(DNSTest):
 
         self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_CNAME)
         self.assertEquals(response.answers[1].name, name2)
-        self.assertEquals(response.answers[1].rdata, name3)
+        self.assertEquals(response.answers[1].rdata, name0)
 
 class TestInvalidQueries(DNSTest):
 
