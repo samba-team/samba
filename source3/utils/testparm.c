@@ -313,6 +313,32 @@ static int do_global_checks(void)
 		fprintf(stderr, "'algorithmic rid base' must be even.\n\n");
 	}
 
+	if (lp_server_role() != ROLE_STANDALONE) {
+		const char *default_backends[] = {
+			"tdb", "tdb2", "ldap", "autorid", "hash"
+		};
+		const char *idmap_backend;
+		bool valid_backend = false;
+		uint32_t i;
+		bool ok;
+
+		idmap_backend = lp_idmap_default_backend();
+
+		for (i = 0; i < ARRAY_SIZE(default_backends); i++) {
+			ok = strequal(idmap_backend, default_backends[i]);
+			if (ok) {
+				valid_backend = true;
+			}
+		}
+
+		if (!valid_backend) {
+			ret = 1;
+			fprintf(stderr, "ERROR: Do not use the '%s' backend "
+					"as the default idmap backend!\n\n",
+					idmap_backend);
+		}
+	}
+
 #ifndef HAVE_DLOPEN
 	if (lp_preload_modules()) {
 		fprintf(stderr, "WARNING: 'preload modules = ' set while loading "
