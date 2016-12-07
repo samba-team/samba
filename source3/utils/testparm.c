@@ -36,6 +36,8 @@
 #include "popt_common.h"
 #include "lib/param/loadparm.h"
 
+#include <regex.h>
+
 /*******************************************************************
  Check if a directory exists.
 ********************************************************************/
@@ -55,6 +57,145 @@ static bool directory_exist_stat(const char *dname,SMB_STRUCT_STAT *st)
 	if(!ret)
 		errno = ENOTDIR;
 	return ret;
+}
+
+struct idmap_config {
+	const char *domain_name;
+	const char *backend;
+	uint32_t high;
+	uint32_t low;
+};
+
+struct idmap_domains {
+	struct idmap_config *c;
+	uint32_t count;
+	uint32_t size;
+};
+
+static bool lp_scan_idmap_found_domain(const char *string,
+				       regmatch_t matches[],
+				       void *private_data)
+{
+	bool ok = false;
+
+	if (matches[1].rm_so == -1) {
+		fprintf(stderr, "Found match, but no name - invalid idmap config");
+		return false;
+	}
+	if (matches[1].rm_eo <= matches[1].rm_so) {
+		fprintf(stderr, "Invalid match - invalid idmap config");
+		return false;
+	}
+
+	{
+		struct idmap_domains *d = private_data;
+		struct idmap_config *c = &d->c[d->count];
+		regoff_t len = matches[1].rm_eo - matches[1].rm_so;
+		char domname[len + 1];
+
+		if (d->count >= d->size) {
+			return false;
+		}
+
+		memcpy(domname, string + matches[1].rm_so, len);
+		domname[len] = '\0';
+
+		c->domain_name = talloc_strdup_upper(d->c, domname);
+		if (c->domain_name == NULL) {
+			return false;
+		}
+		c->backend = talloc_strdup(d->c, lp_idmap_backend(domname));
+		if (c->backend == NULL) {
+			return false;
+		}
+
+		ok = lp_idmap_range(domname, &c->low, &c->high);
+		if (!ok) {
+			fprintf(stderr,
+				"ERROR: Invalid idmap range for domain "
+				"%s!\n\n",
+				c->domain_name);
+			return false;
+		}
+
+		d->count++;
+	}
+
+	return false; /* Keep scanning */
+}
+
+static bool do_idmap_check(void)
+{
+	struct idmap_domains *d;
+	uint32_t i;
+	bool ok = false;
+	int rc;
+
+	d = talloc_zero(talloc_tos(), struct idmap_domains);
+	if (d == NULL) {
+		return false;
+	}
+	d->count = 0;
+	d->size = 32;
+
+	d->c = talloc_array(d, struct idmap_config, d->size);
+	if (d->c == NULL) {
+		goto done;
+	}
+
+	rc = lp_wi_scan_global_parametrics("idmapconfig\\(.*\\):backend",
+					   2,
+					   lp_scan_idmap_found_domain,
+					   d);
+	if (rc != 0) {
+		fprintf(stderr,
+			"FATAL: wi_scan_global_parametrics failed: %d",
+			rc);
+	}
+
+	for (i = 0; i < d->count; i++) {
+		struct idmap_config *c = &d->c[i];
+		uint32_t j;
+
+		for (j = 0; j < d->count && j != i; j++) {
+			struct idmap_config *x = &d->c[j];
+
+			if ((c->low >= x->low && c->low <= x->high) ||
+			    (c->high >= x->low && c->high <= x->high)) {
+				/* Allow overlapping ranges for idmap_ad */
+				ok = strequal(c->backend, x->backend);
+				if (ok) {
+					ok = strequal(c->backend, "ad");
+					if (ok) {
+						fprintf(stderr,
+							"NOTE: The idmap_ad "
+							"range for the domain "
+							"%s overlaps with the "
+							"range of %s.\n\n",
+							c->domain_name,
+							x->domain_name);
+						continue;
+					}
+				}
+
+				fprintf(stderr,
+					"ERROR: The idmap range for the domain "
+					"%s (%s) overlaps with the range of "
+					"%s (%s)!\n\n",
+					c->domain_name,
+					c->backend,
+					x->domain_name,
+					x->backend);
+				ok = false;
+				goto done;
+			}
+		}
+	}
+
+	ok = true;
+done:
+	TALLOC_FREE(d);
+	return ok;
 }
 
 /***********************************************
@@ -336,6 +477,11 @@ static int do_global_checks(void)
 			fprintf(stderr, "ERROR: Do not use the '%s' backend "
 					"as the default idmap backend!\n\n",
 					idmap_backend);
+		}
+
+		ok = do_idmap_check();
+		if (!ok) {
+			ret = 1;
 		}
 	}
 
