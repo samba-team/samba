@@ -865,6 +865,15 @@ class TestComplexQueries(DNSTest):
         self.assertEquals(response.answers[2].rdata,
                           self.server_ip)
 
+    def test_invalid_empty_cname(self):
+        name0 = "cnamedotprefix0.%s" % self.get_dns_domain()
+        try:
+            self.make_dns_update(name0, "", dns.DNS_QTYPE_CNAME)
+        except AssertionError as e:
+            pass
+        else:
+            self.fail("Successfully added empty CNAME, which is invalid.")
+
     def test_cname_two_chain_not_matching_qtype(self):
         name0 = "cnamechain0.%s" % self.get_dns_domain()
         name1 = "cnamechain1.%s" % self.get_dns_domain()
