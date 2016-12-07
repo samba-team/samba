@@ -521,6 +521,81 @@ class DnsCmdTestCase(SambaToolCmdTest):
                         "Invalid error message '%s' when attempting to " \
                         "add record of type SOA." % err)
 
+    def test_add_overlapping_different_type(self):
+        """
+        Make sure that we can add an entry with the same name as an existing one but a different type.
+        """
+
+        i = 0
+        for dnstype1 in self.good_records:
+            record1 = self.good_records[dnstype1][0]
+            for dnstype2 in self.good_records:
+                # Only do some subset of dns types, otherwise it takes a long time.
+                i += 1
+                if i % 4 != 0:
+                    continue
+
+                if dnstype1 == dnstype2:
+                    continue
+
+                record2 = self.good_records[dnstype2][0]
+
+                result, out, err = self.runsubcmd("dns", "add",
+                                                  os.environ["SERVER"],
+                                                  self.zone, "testrecord",
+                                                  dnstype1, record1,
+                                                  self.creds_string)
+                self.assertCmdSuccess(result, out, err, "Failed to add record " \
+                                      "'%s' of type '%s'." % (record1, dnstype1))
+
+                result, out, err = self.runsubcmd("dns", "add",
+                                                  os.environ["SERVER"],
+                                                  self.zone, "testrecord",
+                                                  dnstype2, record2,
+                                                  self.creds_string)
+                self.assertCmdSuccess(result, out, err, "Failed to add record " \
+                                      "'%s' of type '%s' when a record '%s' " \
+                                      "of type '%s' with the same name exists."
+                                      % (record1, dnstype1, record2, dnstype2))
+
+                result, out, err = self.runsubcmd("dns", "query",
+                                                  os.environ["SERVER"],
+                                                  self.zone, "testrecord",
+                                                  dnstype1, self.creds_string)
+                self.assertCmdSuccess(result, out, err, "Failed to query for " \
+                                      "record '%s' of type '%s' when a new " \
+                                      "record '%s' of type '%s' with the same " \
+                                      "name was added."
+                                      % (record1, dnstype1, record2, dnstype2))
+
+                result, out, err = self.runsubcmd("dns", "query",
+                                                  os.environ["SERVER"],
+                                                  self.zone, "testrecord",
+                                                  dnstype2, self.creds_string)
+                self.assertCmdSuccess(result, out, err, "Failed to query " \
+                                      "record '%s' of type '%s' which should " \
+                                      "have been added with the same name as " \
+                                      "record '%s' of type '%s'."
+                                      % (record2, dnstype2, record1, dnstype1))
+
+                result, out, err = self.runsubcmd("dns", "delete",
+                                                  os.environ["SERVER"],
+                                                  self.zone, "testrecord",
+                                                  dnstype1, record1,
+                                                  self.creds_string)
+                self.assertCmdSuccess(result, out, err, "Failed to delete " \
+                                      "record '%s' of type '%s'."
+                                      % (record1, dnstype1))
+
+                result, out, err = self.runsubcmd("dns", "delete",
+                                                  os.environ["SERVER"],
+                                                  self.zone, "testrecord",
+                                                  dnstype2, record2,
+                                                  self.creds_string)
+                self.assertCmdSuccess(result, out, err, "Failed to delete " \
+                                      "record '%s' of type '%s'."
+                                      % (record2, dnstype2))
+
     def test_query_deleted_record(self):
         self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
                        "testrecord", "A", self.testip, self.creds_string)
@@ -532,6 +607,35 @@ class DnsCmdTestCase(SambaToolCmdTest):
                                           self.zone, "testrecord",
                                           "A", self.creds_string)
         self.assertCmdFail(result)
+
+    def test_add_duplicate_record(self):
+        for record_type in self.good_records:
+            result, out, err = self.runsubcmd("dns", "add",
+                                              os.environ["SERVER"],
+                                              self.zone, "testrecord",
+                                              record_type,
+                                              self.good_records[record_type][0],
+                                              self.creds_string)
+            self.assertCmdSuccess(result, out, err)
+            result, out, err = self.runsubcmd("dns", "add",
+                                              os.environ["SERVER"],
+                                              self.zone, "testrecord",
+                                              record_type,
+                                              self.good_records[record_type][0],
+                                              self.creds_string)
+            self.assertCmdFail(result)
+            result, out, err = self.runsubcmd("dns", "query",
+                                              os.environ["SERVER"],
+                                              self.zone, "testrecord",
+                                              record_type, self.creds_string)
+            self.assertCmdSuccess(result, out, err)
+            result, out, err = self.runsubcmd("dns", "delete",
+                                              os.environ["SERVER"],
+                                              self.zone, "testrecord",
+                                              record_type,
+                                              self.good_records[record_type][0],
+                                              self.creds_string)
+            self.assertCmdSuccess(result, out, err)
 
     def test_remove_deleted_record(self):
         self.runsubcmd("dns", "add", os.environ["SERVER"], self.zone,
