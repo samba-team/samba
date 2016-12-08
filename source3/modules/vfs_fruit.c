@@ -349,7 +349,8 @@ struct ad_entry {
 
 struct adouble {
 	vfs_handle_struct        *ad_handle;
-	files_struct             *ad_fsp;
+	int                       ad_fd;
+	bool                      ad_opened;
 	adouble_type_t            ad_type;
 	uint32_t                  ad_magic;
 	uint32_t                  ad_version;
@@ -402,12 +403,21 @@ static const uint32_t set_eid[] = {
 	AD_DEV, AD_INO, AD_SYN, AD_ID
 };
 
+struct fio {
+	/* tcon config handle */
+	struct fruit_config_data *config;
+
+	/* Denote stream type, meta or rsrc */
+	adouble_type_t type;
+};
+
 /*
  * Forward declarations
  */
 static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
-			       adouble_type_t type, files_struct *fsp);
-static int ad_write(struct adouble *ad, const char *path);
+			       adouble_type_t type);
+static int ad_set(struct adouble *ad, const char *path);
+static int ad_fset(struct adouble *ad, files_struct *fsp);
 static int adouble_path(TALLOC_CTX *ctx, const char *path_in, char **path_out);
 
 /**
@@ -769,7 +779,7 @@ exit:
 /**
  * Read and parse Netatalk AppleDouble metadata xattr
  **/
-static ssize_t ad_header_read_meta(struct adouble *ad, const char *path)
+static ssize_t ad_read_meta(struct adouble *ad, const char *path)
 {
 	int      rc = 0;
 	ssize_t  ealen;
@@ -841,196 +851,220 @@ exit:
 	return ealen;
 }
 
+static int ad_open_meta(const char *path, int flags, mode_t mode)
+{
+	return open(path, flags, mode);
+}
+
+static int ad_open_rsrc_xattr(const char *path, int flags, mode_t mode)
+{
+#ifdef HAVE_ATTROPEN
+	/* FIXME: direct Solaris xattr syscall */
+	return attropen(path, AFPRESOURCE_EA_NETATALK, flags, mode);
+#else
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+static int ad_open_rsrc_adouble(const char *path, int flags, mode_t mode)
+{
+	char *adp = NULL;
+	int ret;
+	int fd;
+
+	ret = adouble_path(talloc_tos(), path, &adp);
+	if (ret != 0) {
+		return -1;
+	}
+
+	fd = open(adp, flags, mode);
+	TALLOC_FREE(adp);
+
+	return fd;
+}
+
+static int ad_open_rsrc(vfs_handle_struct *handle,
+			const char *path,
+			int flags,
+			mode_t mode)
+{
+	struct fruit_config_data *config = NULL;
+	int fd;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	if (config->rsrc == FRUIT_RSRC_XATTR) {
+		fd = ad_open_rsrc_xattr(path, flags, mode);
+	} else {
+		fd = ad_open_rsrc_adouble(path, flags, mode);
+	}
+
+	return fd;
+}
+
+static int ad_open(vfs_handle_struct *handle,
+		   struct adouble *ad,
+		   const char *path,
+		   adouble_type_t t,
+		   int flags,
+		   mode_t mode)
+{
+	int fd;
+
+	DBG_DEBUG("Path [%s] type [%s]\n",
+		  path, t == ADOUBLE_META ? "meta" : "rsrc");
+
+	if (t == ADOUBLE_META) {
+		fd = ad_open_meta(path, flags, mode);
+	} else {
+		fd = ad_open_rsrc(handle, path, flags, mode);
+	}
+
+	if (fd != -1) {
+		ad->ad_opened = true;
+		ad->ad_fd = fd;
+	}
+
+	DBG_DEBUG("Path [%s] type [%s] fd [%d]\n",
+		  path, t == ADOUBLE_META ? "meta" : "rsrc", fd);
+
+	return fd;
+}
+
+static ssize_t ad_read_rsrc_xattr(struct adouble *ad,
+				  const char *path)
+{
+	int ret;
+	SMB_STRUCT_STAT st;
+
+	/* FIXME: direct sys_fstat(), don't have an fsp */
+	ret = sys_fstat(ad->ad_fd, &st,
+			lp_fake_directory_create_times(
+				SNUM(ad->ad_handle->conn)));
+	if (ret != 0) {
+		return -1;
+	}
+
+	ad_setentrylen(ad, ADEID_RFORK, st.st_ex_size);
+	return st.st_ex_size;
+}
+
+static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
+				    const char *path)
+{
+	struct adouble *meta_ad = NULL;
+	SMB_STRUCT_STAT sbuf;
+	char *p_ad = NULL;
+	char *p_meta_ad = NULL;
+	ssize_t len;
+	int ret;
+	bool ok;
+
+	len = sys_pread(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	if (len != AD_DATASZ_DOT_UND) {
+		DBG_NOTICE("%s %s: bad size: %zd\n",
+			   path, strerror(errno), len);
+		return -1;
+	}
+
+	ret = sys_fstat(ad->ad_fd, &sbuf, lp_fake_directory_create_times(
+				SNUM(ad->ad_handle->conn)));
+	if (ret != 0) {
+		return -1;
+	}
+
+	/* Now parse entries */
+	ok = ad_unpack(ad, ADEID_NUM_DOT_UND, sbuf.st_ex_size);
+	if (!ok) {
+		DBG_ERR("invalid AppleDouble resource %s\n", path);
+		errno = EINVAL;
+		return -1;
+	}
+
+	if ((ad_getentryoff(ad, ADEID_FINDERI) != ADEDOFF_FINDERI_DOT_UND)
+	    || (ad_getentrylen(ad, ADEID_FINDERI) < ADEDLEN_FINDERI)
+	    || (ad_getentryoff(ad, ADEID_RFORK)	< ADEDOFF_RFORK_DOT_UND)) {
+		DBG_ERR("invalid AppleDouble resource %s\n", path);
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (ad_getentrylen(ad, ADEID_FINDERI) == ADEDLEN_FINDERI) {
+		return len;
+	}
+
+	/*
+	 * Try to fixup AppleDouble files created by OS X with xattrs
+	 * appended to the ADEID_FINDERI entry. We simply remove the
+	 * xattrs blob, this means any fancy xattr that was stored
+	 * there is lost.
+	 */
+
+	ret = ad_convert(ad, ad->ad_fd);
+	if (ret != 0) {
+		DBG_WARNING("Failed to convert [%s]\n", path);
+		return len;
+	}
+
+	ok = ad_pack(ad);
+	if (!ok) {
+		DBG_WARNING("ad_pack [%s] failed\n", path);
+		return -1;
+	}
+
+	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	if (len != AD_DATASZ_DOT_UND) {
+		DBG_ERR("%s: bad size: %zd\n", path, len);
+		return -1;
+	}
+
+	meta_ad = ad_init(talloc_tos(), ad->ad_handle, ADOUBLE_META);
+	if (meta_ad == NULL) {
+		return -1;
+	}
+
+	p_ad = ad_get_entry(ad, ADEID_FINDERI);
+	if (p_ad == NULL) {
+		TALLOC_FREE(meta_ad);
+		return -1;
+	}
+	p_meta_ad = ad_get_entry(meta_ad, ADEID_FINDERI);
+	if (p_meta_ad == NULL) {
+		TALLOC_FREE(meta_ad);
+		return -1;
+	}
+
+	memcpy(p_meta_ad, p_ad, ADEDLEN_FINDERI);
+
+	ret = ad_set(meta_ad, path);
+	TALLOC_FREE(meta_ad);
+	if (ret != 0) {
+		return -1;
+	}
+
+	return len;
+}
+
 /**
  * Read and parse resource fork, either ._ AppleDouble file or xattr
  **/
-static ssize_t ad_header_read_rsrc(struct adouble *ad, const char *path)
+static ssize_t ad_read_rsrc(struct adouble *ad,
+			    const char *path)
 {
 	struct fruit_config_data *config = NULL;
-	int fd = -1;
-	int rc = 0;
 	ssize_t len;
-	char *adpath = NULL;
-	bool opened = false;
-	int mode;
-	struct adouble *meta_ad = NULL;
-	SMB_STRUCT_STAT sbuf;
-	bool ok;
-	int saved_errno = 0;
 
 	SMB_VFS_HANDLE_GET_DATA(ad->ad_handle, config,
 				struct fruit_config_data, return -1);
 
-	/* Try rw first so we can use the fd in ad_convert() */
-	mode = O_RDWR;
-
-	if (ad->ad_fsp && ad->ad_fsp->fh && (ad->ad_fsp->fh->fd != -1)) {
-		fd = ad->ad_fsp->fh->fd;
-	} else {
-		if (config->rsrc == FRUIT_RSRC_XATTR) {
-			adpath = talloc_strdup(talloc_tos(), path);
-		} else {
-			rc = adouble_path(talloc_tos(), path, &adpath);
-			if (rc != 0) {
-				goto exit;
-			}
-		}
-
-	retry:
-		if (config->rsrc == FRUIT_RSRC_XATTR) {
-#ifndef HAVE_ATTROPEN
-			errno = ENOSYS;
-			rc = -1;
-			goto exit;
-#else
-			/* FIXME: direct Solaris xattr syscall */
-			fd = attropen(adpath, AFPRESOURCE_EA_NETATALK,
-				      mode, 0);
-#endif
-		} else {
-			/* FIXME: direct open(), don't have an fsp */
-			fd = open(adpath, mode);
-		}
-
-		if (fd == -1) {
-			switch (errno) {
-			case EROFS:
-			case EACCES:
-				if (mode == O_RDWR) {
-					mode = O_RDONLY;
-					goto retry;
-				}
-				/* fall through ... */
-			default:
-				DEBUG(2, ("open AppleDouble: %s, %s\n",
-					  adpath, strerror(errno)));
-				rc = -1;
-				goto exit;
-			}
-		}
-		opened = true;
-	}
-
 	if (config->rsrc == FRUIT_RSRC_XATTR) {
-		/* FIXME: direct sys_fstat(), don't have an fsp */
-		rc = sys_fstat(
-			fd, &sbuf,
-			lp_fake_directory_create_times(
-				SNUM(ad->ad_handle->conn)));
-		if (rc != 0) {
-			goto exit;
-		}
-		len = sbuf.st_ex_size;
-		ad_setentrylen(ad, ADEID_RFORK, len);
+		len = ad_read_rsrc_xattr(ad, path);
 	} else {
-		/* FIXME: direct sys_pread(), don't have an fsp */
-		len = sys_pread(fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-		if (len != AD_DATASZ_DOT_UND) {
-			DEBUG(2, ("%s: bad size: %zd\n",
-				  strerror(errno), len));
-			rc = -1;
-			goto exit;
-		}
-
-		/* FIXME: direct sys_fstat(), we don't have an fsp */
-		rc = sys_fstat(fd, &sbuf,
-			       lp_fake_directory_create_times(
-				       SNUM(ad->ad_handle->conn)));
-		if (rc != 0) {
-			goto exit;
-		}
-
-		/* Now parse entries */
-		ok = ad_unpack(ad, ADEID_NUM_DOT_UND, sbuf.st_ex_size);
-		if (!ok) {
-			DEBUG(1, ("invalid AppleDouble resource %s\n", path));
-			errno = EINVAL;
-			rc = -1;
-			goto exit;
-		}
-
-		if ((ad_getentryoff(ad, ADEID_FINDERI)
-		     != ADEDOFF_FINDERI_DOT_UND)
-		    || (ad_getentrylen(ad, ADEID_FINDERI)
-			< ADEDLEN_FINDERI)
-		    || (ad_getentryoff(ad, ADEID_RFORK)
-			< ADEDOFF_RFORK_DOT_UND)) {
-			DEBUG(2, ("invalid AppleDouble resource %s\n", path));
-			errno = EINVAL;
-			rc = -1;
-			goto exit;
-		}
-
-		if ((mode == O_RDWR)
-		    && (ad_getentrylen(ad, ADEID_FINDERI) > ADEDLEN_FINDERI)) {
-			char *p_ad = NULL;
-			char *p_meta_ad = NULL;
-
-			rc = ad_convert(ad, fd);
-			if (rc != 0) {
-				rc = -1;
-				goto exit;
-			}
-			/*
-			 * Can't use ad_write() because we might not have a fsp
-			 */
-			ok = ad_pack(ad);
-			if (!ok) {
-				rc = -1;
-				goto exit;
-			}
-			/* FIXME: direct sys_pwrite(), don't have an fsp */
-			len = sys_pwrite(fd, ad->ad_data,
-					 AD_DATASZ_DOT_UND, 0);
-			if (len != AD_DATASZ_DOT_UND) {
-				DEBUG(2, ("%s: bad size: %zd\n", adpath, len));
-				rc = -1;
-				goto exit;
-			}
-
-			meta_ad = ad_init(talloc_tos(), ad->ad_handle,
-					  ADOUBLE_META, NULL);
-			if (meta_ad == NULL) {
-				rc = -1;
-				goto exit;
-			}
-
-			p_ad = ad_get_entry(ad, ADEID_FINDERI);
-			if (p_ad == NULL) {
-				rc = -1;
-				goto exit;
-			}
-			p_meta_ad = ad_get_entry(meta_ad, ADEID_FINDERI);
-			if (p_meta_ad == NULL) {
-				rc = -1;
-				goto exit;
-			}
-
-			memcpy(p_meta_ad, p_ad, ADEDLEN_FINDERI);
-
-			rc = ad_write(meta_ad, path);
-			if (rc != 0) {
-				rc = -1;
-				goto exit;
-			}
-		}
+		len = ad_read_rsrc_adouble(ad, path);
 	}
 
-	DEBUG(10, ("opened AppleDouble: %s\n", path));
-
-exit:
-	if (rc != 0) {
-		saved_errno = errno;
-		len = -1;
-	}
-	if (opened && fd != -1) {
-		close(fd);
-	}
-	TALLOC_FREE(adpath);
-	TALLOC_FREE(meta_ad);
-	if (rc != 0) {
-		errno = saved_errno;
-	}
 	return len;
 }
 
@@ -1041,12 +1075,21 @@ static ssize_t ad_read(struct adouble *ad, const char *path)
 {
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
-		return ad_header_read_meta(ad, path);
+		return ad_read_meta(ad, path);
 	case ADOUBLE_RSRC:
-		return ad_header_read_rsrc(ad, path);
+		return ad_read_rsrc(ad, path);
 	default:
 		return -1;
 	}
+}
+
+static int adouble_destructor(struct adouble *ad)
+{
+	if ((ad->ad_fd != -1) && ad->ad_opened) {
+		close(ad->ad_fd);
+		ad->ad_fd = -1;
+	}
+	return 0;
 }
 
 /**
@@ -1058,14 +1101,11 @@ static ssize_t ad_read(struct adouble *ad, const char *path)
  * @param[in] ctx        talloc context
  * @param[in] handle     vfs handle
  * @param[in] type       type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
-
- * @param[in] fsp        if not NULL (for stream IO), the adouble handle is
- *                       added as an fsp extension
  *
  * @return               adouble handle
  **/
 static struct adouble *ad_alloc(TALLOC_CTX *ctx, vfs_handle_struct *handle,
-				adouble_type_t type, files_struct *fsp)
+				adouble_type_t type)
 {
 	int rc = 0;
 	size_t adsize = 0;
@@ -1088,39 +1128,27 @@ static struct adouble *ad_alloc(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	if (!fsp) {
-		ad = talloc_zero(ctx, struct adouble);
-		if (ad == NULL) {
-			rc = -1;
-			goto exit;
-		}
-		if (adsize) {
-			ad->ad_data = talloc_zero_array(ad, char, adsize);
-		}
-	} else {
-		ad = (struct adouble *)VFS_ADD_FSP_EXTENSION(handle, fsp,
-							     struct adouble,
-							     NULL);
-		if (ad == NULL) {
-			rc = -1;
-			goto exit;
-		}
-		if (adsize) {
-			ad->ad_data = talloc_zero_array(
-				VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-				char, adsize);
-		}
-		ad->ad_fsp = fsp;
-	}
-
-	if (adsize && ad->ad_data == NULL) {
+	ad = talloc_zero(ctx, struct adouble);
+	if (ad == NULL) {
 		rc = -1;
 		goto exit;
 	}
+
+	if (adsize) {
+		ad->ad_data = talloc_zero_array(ad, char, adsize);
+		if (ad->ad_data == NULL) {
+			rc = -1;
+			goto exit;
+		}
+	}
+
 	ad->ad_handle = handle;
 	ad->ad_type = type;
 	ad->ad_magic = AD_MAGIC;
 	ad->ad_version = AD_VERSION;
+	ad->ad_fd = -1;
+
+	talloc_set_destructor(ad, adouble_destructor);
 
 exit:
 	if (rc != 0) {
@@ -1135,12 +1163,11 @@ exit:
  * @param[in] ctx        talloc context
  * @param[in] handle     vfs handle
  * @param[in] type       type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
- * @param[in] fsp        file handle, may be NULL for a type of e_ad_meta
  *
  * @return               adouble handle, initialized
  **/
 static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
-			       adouble_type_t type, files_struct *fsp)
+			       adouble_type_t type)
 {
 	int rc = 0;
 	const struct ad_entry_order  *eid;
@@ -1166,7 +1193,7 @@ static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ad = ad_alloc(ctx, handle, type, fsp);
+	ad = ad_alloc(ctx, handle, type);
 	if (ad == NULL) {
 		return NULL;
 	}
@@ -1205,14 +1232,40 @@ static struct adouble *ad_get(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 	int rc = 0;
 	ssize_t len;
 	struct adouble *ad = NULL;
+	int fd;
+	int mode;
 
 	DEBUG(10, ("ad_get(%s) called for %s\n",
 		   type == ADOUBLE_META ? "meta" : "rsrc", path));
 
-	ad = ad_alloc(ctx, handle, type, NULL);
+	ad = ad_alloc(ctx, handle, type);
 	if (ad == NULL) {
 		rc = -1;
 		goto exit;
+	}
+
+	/*
+	 * Here's the deal: for ADOUBLE_META we can do without an fd
+	 * as we can issue path based xattr calls. For ADOUBLE_RSRC
+	 * however we need a full-fledged fd for file IO on the ._
+	 * file.
+	 */
+	if (type == ADOUBLE_RSRC) {
+		/* Try rw first so we can use the fd in ad_convert() */
+		mode = O_RDWR;
+
+		fd = ad_open(handle, ad, path, ADOUBLE_RSRC, mode, 0);
+		if (fd == -1 && ((errno == EROFS) || (errno == EACCES))) {
+			mode = O_RDONLY;
+			fd = ad_open(handle, ad, path, ADOUBLE_RSRC, mode, 0);
+		}
+
+		if (fd == -1) {
+			DBG_DEBUG("ad_open [%s] error [%s]\n",
+				  path, strerror(errno));
+			rc = -1;
+			goto exit;
+		}
 	}
 
 	len = ad_read(ad, path);
@@ -1233,20 +1286,143 @@ exit:
 }
 
 /**
- * Set AppleDouble metadata on a file or directory
+ * Return AppleDouble data for a file
  *
- * @param[in] ad      adouble handle
-
- * @param[in] path    pathname to file or directory, may be NULL for a
- *                    resource fork
+ * @param[in] ctx      talloc context
+ * @param[in] handle   vfs handle
+ * @param[in] fsp      fsp to use for IO
+ * @param[in] type     type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
  *
- * @return            status code, 0 means success
+ * @return             talloced struct adouble or NULL on error
  **/
-static int ad_write(struct adouble *ad, const char *path)
+static struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
+			       files_struct *fsp, adouble_type_t type)
 {
 	int rc = 0;
 	ssize_t len;
+	struct adouble *ad = NULL;
+	char *path = fsp->base_fsp->fsp_name->base_name;
+
+	DBG_DEBUG("ad_get(%s) path [%s]\n",
+		  type == ADOUBLE_META ? "meta" : "rsrc",
+		  fsp_str_dbg(fsp));
+
+	ad = ad_alloc(ctx, handle, type);
+	if (ad == NULL) {
+		rc = -1;
+		goto exit;
+	}
+
+	if ((fsp->fh != NULL) && (fsp->fh->fd != -1)) {
+		ad->ad_fd = fsp->fh->fd;
+	} else {
+		/*
+		 * Here's the deal: for ADOUBLE_META we can do without an fd
+		 * as we can issue path based xattr calls. For ADOUBLE_RSRC
+		 * however we need a full-fledged fd for file IO on the ._
+		 * file.
+		 */
+		int fd;
+		int mode;
+
+		if (type == ADOUBLE_RSRC) {
+			/* Try rw first so we can use the fd in ad_convert() */
+			mode = O_RDWR;
+
+			fd = ad_open(handle, ad, path, ADOUBLE_RSRC, mode, 0);
+			if (fd == -1 &&
+			    ((errno == EROFS) || (errno == EACCES)))
+			{
+				mode = O_RDONLY;
+				fd = ad_open(handle, ad, path, ADOUBLE_RSRC,
+					     mode, 0);
+			}
+
+			if (fd == -1) {
+				DBG_DEBUG("error opening AppleDouble for %s\n", path);
+				rc = -1;
+				goto exit;
+			}
+		}
+	}
+
+	len = ad_read(ad, path);
+	if (len == -1) {
+		DBG_DEBUG("error reading AppleDouble for %s\n", path);
+		rc = -1;
+		goto exit;
+	}
+
+exit:
+	DBG_DEBUG("ad_get(%s) path [%s] rc [%d]\n",
+		  type == ADOUBLE_META ? "meta" : "rsrc",
+		  fsp_str_dbg(fsp), rc);
+
+	if (rc != 0) {
+		TALLOC_FREE(ad);
+	}
+	return ad;
+}
+
+/**
+ * Set AppleDouble metadata on a file or directory
+ *
+ * @param[in] ad      adouble handle
+ *
+ * @param[in] path    pathname to file or directory
+ *
+ * @return            status code, 0 means success
+ **/
+static int ad_set(struct adouble *ad, const char *path)
+{
 	bool ok;
+	int ret;
+
+	DBG_DEBUG("Path [%s]\n", path);
+
+	if (ad->ad_type != ADOUBLE_META) {
+		DBG_ERR("ad_set on [%s] used with ADOUBLE_RSRC\n", path);
+		return -1;
+	}
+
+	ok = ad_pack(ad);
+	if (!ok) {
+		return -1;
+	}
+
+	ret = SMB_VFS_SETXATTR(ad->ad_handle->conn,
+			       path,
+			       AFPINFO_EA_NETATALK,
+			       ad->ad_data,
+			       AD_DATASZ_XATTR, 0);
+
+	DBG_DEBUG("Path [%s] ret [%d]\n", path, ret);
+
+	return ret;
+}
+
+/**
+ * Set AppleDouble metadata on a file or directory
+ *
+ * @param[in] ad      adouble handle
+ * @param[in] fsp     file handle
+ *
+ * @return            status code, 0 means success
+ **/
+static int ad_fset(struct adouble *ad, files_struct *fsp)
+{
+	int rc = -1;
+	ssize_t len;
+	bool ok;
+
+	DBG_DEBUG("Path [%s]\n", fsp_str_dbg(fsp));
+
+	if ((fsp == NULL)
+	    || (fsp->fh == NULL)
+	    || (fsp->fh->fd == -1))
+	{
+		smb_panic("bad fsp");
+	}
 
 	ok = ad_pack(ad);
 	if (!ok) {
@@ -1255,31 +1431,32 @@ static int ad_write(struct adouble *ad, const char *path)
 
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
-		rc = SMB_VFS_SETXATTR(ad->ad_handle->conn, path,
-				      AFPINFO_EA_NETATALK, ad->ad_data,
-				      AD_DATASZ_XATTR, 0);
+		rc = SMB_VFS_NEXT_FSETXATTR(ad->ad_handle,
+					    fsp,
+					    AFPINFO_EA_NETATALK,
+					    ad->ad_data,
+					    AD_DATASZ_XATTR, 0);
 		break;
+
 	case ADOUBLE_RSRC:
-		if ((ad->ad_fsp == NULL)
-		    || (ad->ad_fsp->fh == NULL)
-		    || (ad->ad_fsp->fh->fd == -1)) {
-			rc = -1;
-			goto exit;
+		len = SMB_VFS_NEXT_PWRITE(ad->ad_handle,
+					  fsp,
+					  ad->ad_data,
+					  talloc_get_size(ad->ad_data),
+					  0);
+		if (len != (ssize_t)talloc_get_size(ad->ad_data)) {
+			DBG_ERR("short write on %s: %zd", fsp_str_dbg(fsp), len);
+			return -1;
 		}
-		/* FIXME: direct sys_pwrite(), don't have an fsp */
-		len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data,
-				 talloc_get_size(ad->ad_data), 0);
-		if (len != talloc_get_size(ad->ad_data)) {
-			DEBUG(1, ("short write on %s: %zd",
-				  fsp_str_dbg(ad->ad_fsp), len));
-			rc = -1;
-			goto exit;
-		}
+		rc = 0;
 		break;
+
 	default:
 		return -1;
 	}
-exit:
+
+	DBG_DEBUG("Path [%s] rc [%d]\n", fsp_str_dbg(fsp), rc);
+
 	return rc;
 }
 
@@ -1535,19 +1712,6 @@ static SMB_INO_T fruit_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 		   sname, (unsigned long long)result));
 
 	return result;
-}
-
-/**
- * Ensure ad_fsp is still valid
- **/
-static bool fruit_fsp_recheck(struct adouble *ad, files_struct *fsp)
-{
-	if (ad->ad_fsp == fsp) {
-		return true;
-	}
-	ad->ad_fsp = fsp;
-
-	return true;
 }
 
 static bool add_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
@@ -2577,29 +2741,22 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 		 * The attribute does not exist or needs to be truncated,
 		 * create an AppleDouble EA
 		 */
-		ad = ad_init(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-			     handle, ADOUBLE_META, fsp);
+		ad = ad_init(fsp, handle, ADOUBLE_META);
 		if (ad == NULL) {
 			rc = -1;
 			goto exit;
 		}
 
-		rc = ad_write(ad, smb_fname->base_name);
+		fsp->fh->fd = hostfd;
+
+		rc = ad_fset(ad, fsp);
+		fsp->fh->fd = -1;
 		if (rc != 0) {
 			rc = -1;
 			goto exit;
 		}
-	} else {
-		ad = ad_alloc(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-			      handle, ADOUBLE_META, fsp);
-		if (ad == NULL) {
-			rc = -1;
-			goto exit;
-		}
-		if (ad_read(ad, smb_fname->base_name) == -1) {
-			rc = -1;
-			goto exit;
-		}
+
+		TALLOC_FREE(ad);
 	}
 
 exit:
@@ -2714,28 +2871,21 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	fsp->fh->fd = hostfd;
 
 	if (flags & (O_CREAT | O_TRUNC)) {
-		ad = ad_init(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-			     handle, ADOUBLE_RSRC, fsp);
+		ad = ad_init(fsp, handle, ADOUBLE_RSRC);
 		if (ad == NULL) {
 			rc = -1;
 			goto exit;
 		}
-		rc = ad_write(ad, smb_fname->base_name);
+
+		fsp->fh->fd = hostfd;
+
+		rc = ad_fset(ad, fsp);
+		fsp->fh->fd = -1;
 		if (rc != 0) {
 			rc = -1;
 			goto exit;
 		}
-	} else {
-		ad = ad_alloc(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-			      handle, ADOUBLE_RSRC, fsp);
-		if (ad == NULL) {
-			rc = -1;
-			goto exit;
-		}
-		if (ad_read(ad, smb_fname->base_name) == -1) {
-			rc = -1;
-			goto exit;
-		}
+		TALLOC_FREE(ad);
 	}
 
 exit:
@@ -3399,11 +3549,6 @@ static ssize_t fruit_pread(vfs_handle_struct *handle,
 		goto exit;
 	}
 
-	if (!fruit_fsp_recheck(ad, fsp)) {
-		rc = -1;
-		goto exit;
-	}
-
 	if (ad->ad_type == ADOUBLE_META) {
 		char afpinfo_buf[AFP_INFO_SIZE];
 		char *p = NULL;
@@ -3539,11 +3684,6 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		goto exit;
 	}
 
-	if (!fruit_fsp_recheck(ad, fsp)) {
-		rc = -1;
-		goto exit;
-	}
-
 	if (ad->ad_type == ADOUBLE_META) {
 		char *p = NULL;
 
@@ -3556,7 +3696,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		}
 
 		memcpy(p, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
-		rc = ad_write(ad, fsp->base_fsp->fsp_name->base_name);
+		rc = ad_fset(ad, fsp);
 	} else {
 		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
                                    offset + ad_getentryoff(ad, ADEID_RFORK));
@@ -3574,7 +3714,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 
 			if ((len + offset) > ad_getentrylen(ad, ADEID_RFORK)) {
 				ad_setentrylen(ad, ADEID_RFORK, len + offset);
-				rc = ad_write(ad, fsp->base_fsp->fsp_name->base_name);
+				rc = ad_fset(ad, fsp);
 			}
 		}
 	}
@@ -3934,11 +4074,6 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		goto exit;
 	}
 
-	if (!fruit_fsp_recheck(ad, fsp)) {
-		rc = -1;
-		goto exit;
-	}
-
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
 		rc = fruit_fstat_meta(handle, fsp, sbuf);
@@ -4250,7 +4385,7 @@ static int fruit_ntimes(vfs_handle_struct *handle,
 	ad_setdate(ad, AD_DATE_CREATE | AD_DATE_UNIX,
 		   convert_time_t_to_uint32_t(ft->create_time.tv_sec));
 
-	rc = ad_write(ad, smb_fname->base_name);
+	rc = ad_set(ad, smb_fname->base_name);
 
 exit:
 
@@ -4273,10 +4408,6 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 
 	if (ad == NULL) {
 		return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
-	}
-
-	if (!fruit_fsp_recheck(ad, fsp)) {
-		return -1;
 	}
 
 	/* Let the pwrite code path handle it. */
@@ -4303,13 +4434,15 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 					off_t offset)
 {
 	int rc;
-        struct adouble *ad =
-		(struct adouble *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
-	off_t ad_off = ad_getentryoff(ad, ADEID_RFORK);
+	struct adouble *ad = NULL;
+	off_t ad_off;
 
-	if (!fruit_fsp_recheck(ad, fsp)) {
+	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_RSRC);
+	if (ad == NULL) {
 		return -1;
 	}
+
+	ad_off = ad_getentryoff(ad, ADEID_RFORK);
 
 	rc = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset + ad_off);
 	if (rc != 0) {
@@ -4318,7 +4451,7 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 
 	ad_setentrylen(ad, ADEID_RFORK, offset);
 
-	rc = ad_write(ad, NULL);
+	rc = ad_fset(ad, fsp);
 	if (rc != 0) {
 		DBG_ERR("ad_write [%s] failed [%s]\n",
 			fsp_str_dbg(fsp), strerror(errno));
