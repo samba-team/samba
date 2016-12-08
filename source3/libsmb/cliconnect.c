@@ -2975,8 +2975,6 @@ static struct tevent_req *cli_smb1_setup_encryption_send(TALLOC_CTX *mem_ctx,
 	struct auth_generic_state *ags = NULL;
 	const DATA_BLOB *b = NULL;
 	bool auth_requested = false;
-	enum credentials_use_kerberos krb5_state;
-	const char *mech_oid = NULL;
 	const char *target_service = NULL;
 	const char *target_hostname = NULL;
 	NTSTATUS status;
@@ -2998,30 +2996,9 @@ static struct tevent_req *cli_smb1_setup_encryption_send(TALLOC_CTX *mem_ctx,
 	target_service = "cifs";
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
 
-	krb5_state = cli_credentials_get_kerberos_state(creds);
-	if (krb5_state == CRED_MUST_USE_KERBEROS) {
-		mech_oid = GENSEC_OID_SPNEGO;
-
-		b = smbXcli_conn_server_gss_blob(state->cli->conn);
-		if (b != NULL) {
-			state->blob_in = *b;
-		}
-
-		status = cli_session_creds_prepare_krb5(cli, creds);
-		if (tevent_req_nterror(req, status)) {
-			return tevent_req_post(req, ev);
-		}
-	} else {
-		/*
-		 * Be compatible with the <= 4.5 client code,
-		 * which used raw NTLMSSP unless kerberos
-		 * was forced.
-		 *
-		 * We need to check with the oldest server implementation
-		 * if we can remove this and always use
-		 * GENSEC_OID_SPNEGO.
-		 */
-		mech_oid = GENSEC_OID_NTLMSSP;
+	status = cli_session_creds_prepare_krb5(cli, creds);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
 	}
 
 	state->es = talloc_zero(state, struct smb_trans_enc_state);
@@ -3063,7 +3040,12 @@ static struct tevent_req *cli_smb1_setup_encryption_send(TALLOC_CTX *mem_ctx,
 	gensec_set_max_update_size(ags->gensec_security,
 				   CLI_BUFFER_SIZE);
 
-	status = auth_generic_client_start(ags, mech_oid);
+	b = smbXcli_conn_server_gss_blob(state->cli->conn);
+	if (b != NULL) {
+		state->blob_in = *b;
+	}
+
+	status = auth_generic_client_start(ags, GENSEC_OID_SPNEGO);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
