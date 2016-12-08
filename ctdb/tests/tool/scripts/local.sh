@@ -21,6 +21,10 @@ define_test ()
 	    _cmd="${_cmd%.*}" # Strip test number
 	    export CTDB="ctdb --socket $ctdbd_socket"
 	    export CTDB_DEBUGLEVEL=NOTICE
+	    if [ -z "$FAKE_CTDBD_DEBUGLEVEL" ] ; then
+		    FAKE_CTDBD_DEBUGLEVEL="ERR"
+	    fi
+	    export FAKE_CTDBD_DEBUGLEVEL
 	    test_args="$_cmd"
 	    ;;
 	*)
@@ -46,7 +50,8 @@ setup_ctdbd ()
 {
 	debug "Setting up fake ctdbd"
 
-	$VALGRIND fake_ctdbd -s "$ctdbd_socket" -p "$ctdbd_pidfile"
+	$VALGRIND fake_ctdbd -d "$FAKE_CTDBD_DEBUGLEVEL" \
+		  -s "$ctdbd_socket" -p "$ctdbd_pidfile"
 	test_cleanup cleanup_ctdbd
 }
 
