@@ -2280,6 +2280,74 @@ static NTSTATUS catia_readdir_attr(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS catia_get_dos_attributes(struct vfs_handle_struct *handle,
+					 struct smb_filename *smb_fname,
+					 uint32_t *dosmode)
+{
+	char *mapped_name = NULL;
+	const char *path = smb_fname->base_name;
+	struct smb_filename *mapped_smb_fname = NULL;
+	NTSTATUS status;
+
+	status = catia_string_replace_allocate(handle->conn,
+				path, &mapped_name, vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return status;
+	}
+	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (mapped_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
+						 mapped_smb_fname,
+						 dosmode);
+	TALLOC_FREE(mapped_name);
+	TALLOC_FREE(mapped_smb_fname);
+
+	return status;
+}
+
+static NTSTATUS catia_set_dos_attributes(struct vfs_handle_struct *handle,
+					 const struct smb_filename *smb_fname,
+					 uint32_t dosmode)
+{
+	char *mapped_name = NULL;
+	const char *path = smb_fname->base_name;
+	struct smb_filename *mapped_smb_fname = NULL;
+	NTSTATUS status;
+
+	status = catia_string_replace_allocate(handle->conn,
+				path, &mapped_name, vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return status;
+	}
+	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (mapped_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_SET_DOS_ATTRIBUTES(handle,
+						 mapped_smb_fname,
+						 dosmode);
+	TALLOC_FREE(mapped_name);
+	TALLOC_FREE(mapped_smb_fname);
+
+	return status;
+}
+
 static struct vfs_fn_pointers vfs_catia_fns = {
 	/* Directory operations */
 	.mkdir_fn = catia_mkdir,
@@ -2324,6 +2392,8 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.strict_unlock_fn = catia_strict_unlock,
 	.translate_name_fn = catia_translate_name,
 	.fsctl_fn = catia_fsctl,
+	.get_dos_attributes_fn = catia_get_dos_attributes,
+	.set_dos_attributes_fn = catia_set_dos_attributes,
 	.fset_dos_attributes_fn = catia_fset_dos_attributes,
 	.fget_dos_attributes_fn = catia_fget_dos_attributes,
 	.get_compression_fn = catia_get_compression,
