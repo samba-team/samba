@@ -5089,6 +5089,391 @@ static bool run_rename_access(int dummy)
 	return false;
 }
 
+/*
+  Test owner rights ACE.
+ */
+static bool run_owner_rights(int dummy)
+{
+	static struct cli_state *cli = NULL;
+	const char *fname = "owner_rights.txt";
+	uint16_t fnum = (uint16_t)-1;
+	struct security_descriptor *sd = NULL;
+	struct security_descriptor *newsd = NULL;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+	printf("starting owner rights test\n");
+
+	/* Windows connection. */
+	if (!torture_open_connection(&cli, 0)) {
+		goto fail;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	/* Start with a clean slate. */
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create the test file. */
+	/* Now try and open for read and write-dac. */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				GENERIC_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Get the original SD. */
+	status = cli_query_secdesc(cli,
+				fnum,
+				frame,
+				&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_query_secdesc failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/*
+	 * Add an "owner-rights" ACE denying WRITE_DATA,
+	 * and an "owner-rights" ACE allowing READ_DATA.
+	 */
+
+	newsd = security_descriptor_dacl_create(frame,
+					0,
+					NULL,
+					NULL,
+					SID_OWNER_RIGHTS,
+					SEC_ACE_TYPE_ACCESS_DENIED,
+					FILE_WRITE_DATA,
+					0,
+					SID_OWNER_RIGHTS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					FILE_READ_DATA,
+					0,
+					NULL);
+	if (newsd == NULL) {
+		goto fail;
+	}
+	sd->dacl = security_acl_concatenate(frame,
+					newsd->dacl,
+					sd->dacl);
+	if (sd->dacl == NULL) {
+		goto fail;
+	}
+	status = cli_set_secdesc(cli, fnum, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_set_secdesc failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Try and open for FILE_WRITE_DATA */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				FILE_WRITE_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("Open of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Now try and open for FILE_READ_DATA */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				FILE_READ_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Open of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Restore clean slate. */
+	TALLOC_FREE(sd);
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create the test file. */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				GENERIC_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Get the original SD. */
+	status = cli_query_secdesc(cli,
+				fnum,
+				frame,
+				&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_query_secdesc failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/*
+	 * Add an "owner-rights ACE denying WRITE_DATA,
+	 * and an "owner-rights ACE allowing READ_DATA|WRITE_DATA.
+	 */
+
+	newsd = security_descriptor_dacl_create(frame,
+					0,
+					NULL,
+					NULL,
+					SID_OWNER_RIGHTS,
+					SEC_ACE_TYPE_ACCESS_DENIED,
+					FILE_WRITE_DATA,
+					0,
+					SID_OWNER_RIGHTS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					FILE_READ_DATA|FILE_WRITE_DATA,
+					0,
+					NULL);
+	if (newsd == NULL) {
+		goto fail;
+	}
+	sd->dacl = security_acl_concatenate(frame,
+					newsd->dacl,
+					sd->dacl);
+	if (sd->dacl == NULL) {
+		goto fail;
+	}
+	status = cli_set_secdesc(cli, fnum, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_set_secdesc failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Try and open for FILE_WRITE_DATA */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				FILE_WRITE_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+		printf("Open of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Now try and open for FILE_READ_DATA */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				FILE_READ_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Open of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Restore clean slate. */
+	TALLOC_FREE(sd);
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+
+	/* Create the test file. */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				GENERIC_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Create of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/* Get the original SD. */
+	status = cli_query_secdesc(cli,
+				fnum,
+				frame,
+				&sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_query_secdesc failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+
+	/*
+	 * Add an "authenticated users" ACE allowing READ_DATA,
+	 * add an "owner-rights" denying READ_DATA,
+	 * and an "authenticated users" ACE allowing WRITE_DATA.
+	 */
+
+	newsd = security_descriptor_dacl_create(frame,
+					0,
+					NULL,
+					NULL,
+					SID_NT_AUTHENTICATED_USERS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					FILE_READ_DATA,
+					0,
+					SID_OWNER_RIGHTS,
+					SEC_ACE_TYPE_ACCESS_DENIED,
+					FILE_READ_DATA,
+					0,
+				        SID_NT_AUTHENTICATED_USERS,
+					SEC_ACE_TYPE_ACCESS_ALLOWED,
+					FILE_WRITE_DATA,
+					0,
+					NULL);
+	if (newsd == NULL) {
+		printf("newsd == NULL\n");
+		goto fail;
+	}
+	sd->dacl = security_acl_concatenate(frame,
+					newsd->dacl,
+					sd->dacl);
+	if (sd->dacl == NULL) {
+		printf("sd->dacl == NULL\n");
+		goto fail;
+	}
+	status = cli_set_secdesc(cli, fnum, sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_set_secdesc failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+	fnum = (uint16_t)-1;
+
+	/* Now try and open for FILE_READ_DATA|FILE_WRITE_DATA */
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				FILE_READ_DATA|FILE_WRITE_DATA,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_READ|FILE_SHARE_WRITE|
+					FILE_SHARE_DELETE,
+				FILE_OPEN,
+				0,
+				0,
+				&fnum,
+				NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Open of %s - %s\n", fname, nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed for %s (%s)\n",
+			fname, nt_errstr(status));
+		goto fail;
+	}
+
+	cli_unlink(cli, fname,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	TALLOC_FREE(frame);
+	return true;
+
+  fail:
+
+	if (cli) {
+		if (fnum != -1) {
+			cli_close(cli, fnum);
+		}
+		cli_unlink(cli, fname,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+		torture_close_connection(cli);
+	}
+
+	TALLOC_FREE(frame);
+	return false;
+}
+
 static bool run_pipe_number(int dummy)
 {
 	struct cli_state *cli1;
@@ -10646,6 +11031,7 @@ static struct {
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
 	{"RENAME-ACCESS", run_rename_access, 0},
+	{"OWNER-RIGHTS", run_owner_rights, 0},
 	{"DELETE", run_deletetest, 0},
 	{"WILDDELETE", run_wild_deletetest, 0},
 	{"DELETE-LN", run_deletetest_ln, 0},
