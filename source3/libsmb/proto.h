@@ -43,6 +43,8 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 					       bool fallback_after_kerberos,
 					       bool use_ccache,
 					       bool password_is_nt_hash);
+NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
+					struct cli_credentials *creds);
 struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
