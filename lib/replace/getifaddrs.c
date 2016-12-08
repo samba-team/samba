@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
    Copyright (C) Andrew Tridgell 1998
@@ -94,17 +94,17 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		return -1;
 	}
-  
+
 	ifc.ifc_len = sizeof(buff);
 	ifc.ifc_buf = buff;
 
 	if (ioctl(fd, SIOCGIFCONF, &ifc) != 0) {
 		close(fd);
 		return -1;
-	} 
+	}
 
 	ifr = ifc.ifc_req;
-  
+
 	n = ifc.ifc_len / sizeof(struct ifreq);
 
 	/* Loop through interfaces, looking for given IP address */
@@ -171,7 +171,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	close(fd);
 
 	return 0;
-}  
+}
 
 #define _FOUND_IFACE_ANY
 #endif /* HAVE_IFACE_IFCONF */
@@ -200,14 +200,14 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		return -1;
 	}
-  
+
 	strioctl.ic_cmd = SIOCGIFCONF;
 	strioctl.ic_dp  = buff;
 	strioctl.ic_len = sizeof(buff);
 	if (ioctl(fd, I_STR, &strioctl) < 0) {
 		close(fd);
 		return -1;
-	} 
+	}
 
 	/* we can ignore the possible sizeof(int) here as the resulting
 	   number of interface structures won't change */
@@ -217,16 +217,16 @@ int rep_getifaddrs(struct ifaddrs **ifap)
            at the start of the buffer if the offered size is a
            multiple of the structure size plus an int */
 	if (n*sizeof(struct ifreq) + sizeof(int) == strioctl.ic_len) {
-		ifr = (struct ifreq *)(buff + sizeof(int));  
+		ifr = (struct ifreq *)(buff + sizeof(int));
 	} else {
-		ifr = (struct ifreq *)buff;  
+		ifr = (struct ifreq *)buff;
 	}
 
 	/* Loop through interfaces */
 
 	for (i = 0; i<n; i++) {
 		ifreq = ifr[i];
-  
+
 		curif = calloc(1, sizeof(struct ifaddrs));
 		if (lastif == NULL) {
 			*ifap = curif;
