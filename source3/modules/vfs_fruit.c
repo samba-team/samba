@@ -4644,10 +4644,9 @@ static int fruit_fallocate(struct vfs_handle_struct *handle,
 			   off_t offset,
 			   off_t len)
 {
-        struct adouble *ad =
-		(struct adouble *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	if (ad == NULL) {
+	if (fio == NULL) {
 		return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
 	}
 
