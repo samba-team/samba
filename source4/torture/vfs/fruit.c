@@ -3737,6 +3737,114 @@ done:
 	return ret;
 }
 
+static bool test_readdir_attr_illegal_ntfs(struct torture_context *tctx,
+					   struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *name = "test" "\xef\x80\xa2" "aapl"; /* "test:aapl" */
+	const char *fname = BASEDIR "\\test" "\xef\x80\xa2" "aapl"; /* "test:aapl" */
+	NTSTATUS status;
+	struct smb2_handle testdirh;
+	bool ret = true;
+	struct smb2_create io;
+	AfpInfo *info;
+	const char *type_creator = "SMB,OLE!";
+	struct smb2_find f;
+	unsigned int count;
+	union smb_search_data *d;
+	uint64_t rfork_len;
+	int i;
+
+	smb2_deltree(tree, BASEDIR);
+
+	status = torture_smb2_testdir(tree, BASEDIR, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "torture_smb2_testdir failed");
+	smb2_util_close(tree, testdirh);
+
+	torture_comment(tctx, "Enabling AAPL\n");
+
+	ret = enable_aapl(tctx, tree);
+	torture_assert_goto(tctx, ret == true, ret, done, "enable_aapl failed");
+
+	/*
+	 * Now that Requested AAPL extensions are enabled, setup some
+	 * Mac files with metadata and resource fork
+	 */
+
+	torture_comment(tctx, "Preparing file\n");
+
+	ret = torture_setup_file(mem_ctx, tree, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file failed");
+
+	info = torture_afpinfo_new(mem_ctx);
+	torture_assert_not_null_goto(tctx, info, ret, done, "torture_afpinfo_new failed");
+
+	memcpy(info->afpi_FinderInfo, type_creator, 8);
+	ret = torture_write_afpinfo(tree, tctx, mem_ctx, fname, info);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_write_afpinfo failed");
+
+	ret = write_stream(tree, __location__, tctx, mem_ctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed");
+
+	/*
+	 * Ok, file is prepared, now call smb2/find
+	 */
+
+	torture_comment(tctx, "Issue find\n");
+
+	ZERO_STRUCT(io);
+	io.in.desired_access = SEC_RIGHTS_DIR_READ;
+	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
+	io.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.share_access = (NTCREATEX_SHARE_ACCESS_READ |
+			      NTCREATEX_SHARE_ACCESS_WRITE |
+			      NTCREATEX_SHARE_ACCESS_DELETE);
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.fname = BASEDIR;
+	status = smb2_create(tree, tctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_create failed");
+
+	ZERO_STRUCT(f);
+	f.in.file.handle	= io.out.file.handle;
+	f.in.pattern		= "*";
+	f.in.max_response_size	= 0x1000;
+	f.in.level              = SMB2_FIND_ID_BOTH_DIRECTORY_INFO;
+
+	status = smb2_find_level(tree, tree, &f, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_find_level failed");
+
+	status = smb2_util_close(tree, io.out.file.handle);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done, "smb2_util_close failed");
+
+	torture_comment(tctx, "Checking find response with enriched macOS metadata\n");
+
+	for (i = 0; i < count; i++) {
+		const char *found = d[i].id_both_directory_info.name.s;
+
+		if (!strcmp(found, ".") || !strcmp(found, ".."))
+			continue;
+		break;
+	}
+
+	torture_assert_str_equal_goto(tctx,
+				      d[i].id_both_directory_info.name.s, name,
+				      ret, done, "bad name");
+
+	rfork_len = BVAL(d[i].id_both_directory_info.short_name_buf, 0);
+	torture_assert_int_equal_goto(tctx, rfork_len, 3, ret, done, "bad resource fork length");
+
+	torture_assert_mem_equal_goto(tctx, type_creator,
+				      d[i].id_both_directory_info.short_name_buf + 8,
+				      8, ret, done, "Bad FinderInfo");
+done:
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, BASEDIR);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -3772,6 +3880,7 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "null afpinfo", test_null_afpinfo);
 	torture_suite_add_1smb2_test(suite, "delete", test_delete_file_with_rfork);
 	torture_suite_add_1smb2_test(suite, "read open rsrc after rename", test_rename_and_read_rsrc);
+	torture_suite_add_1smb2_test(suite, "readdir_attr with names with illegal ntfs characters", test_readdir_attr_illegal_ntfs);
 
 	return suite;
 }
