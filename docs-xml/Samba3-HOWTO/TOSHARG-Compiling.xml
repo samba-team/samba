@@ -15,7 +15,7 @@
 
 <para>
 You can obtain the Samba source file from the
-<ulink url="http://samba.org/">Samba Web site</ulink>. To obtain a development version, 
+<ulink url="https://www.samba.org/">Samba Web site</ulink>. To obtain a development version,
 you can download Samba from Subversion or using <command>rsync</command>.
 </para>
 
@@ -82,9 +82,9 @@ With that said, go ahead and download the following files:
 </para>
 
 <para><screen>
-&prompt;<userinput>wget http://samba.org/samba/ftp/samba-latest.tar.asc</userinput>
-&prompt;<userinput>wget http://samba.org/samba/ftp/samba-latest.tar.gz</userinput>
-&prompt;<userinput>wget http://samba.org/samba/ftp/samba-pubkey.asc</userinput>
+&prompt;<userinput>wget https://www.samba.org/samba/ftp/samba-latest.tar.asc</userinput>
+&prompt;<userinput>wget https://www.samba.org/samba/ftp/samba-latest.tar.gz</userinput>
+&prompt;<userinput>wget https://www.samba.org/samba/ftp/samba-pubkey.asc</userinput>
 </screen></para>
 
 

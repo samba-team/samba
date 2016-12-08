@@ -648,7 +648,7 @@ member servers.
 <indexterm><primary>domain control</primary></indexterm>
 Domain control was a new area for Samba, but there are now many examples that we may refer to.
 Updated information will be published as they become available and may be found in later Samba releases or
-from the Samba Web <ulink url="http://samba.org">site</ulink>; refer in particular to the
+from the Samba Web <ulink url="https://www.samba.org">site</ulink>; refer in particular to the
 <filename>WHATSNEW.txt</filename> in the Samba release tarball. The book, <quote>Samba-3 by Example</quote>
 documents well tested and proven configuration examples. You can obtain a copy of this
 <ulink url="http://www.samba.org/samba/docs/Samba3-ByExample.pdf">book</ulink> for the Samba web site.

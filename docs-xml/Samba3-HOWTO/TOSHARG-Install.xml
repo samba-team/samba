@@ -19,7 +19,7 @@
 	<para>
 	<indexterm><primary>packages</primary></indexterm>
 	Binary packages of Samba are included in almost any Linux or UNIX distribution. There are also some
-	packages available at <ulink url="http://samba.org/">the Samba home page</ulink>. Refer to the manual of your
+	packages available at <ulink url="https://www.samba.org/">the Samba home page</ulink>. Refer to the manual of your
 	operating system for details on installing packages for your specific operating system.
 	</para>
 

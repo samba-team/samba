@@ -429,8 +429,8 @@
 	<manvolnum>1</manvolnum></citerefentry>, and the 
 	Internet RFC's	<filename>rfc1001.txt</filename>, <filename>rfc1002.txt</filename>. 
 	In addition the CIFS (formerly SMB) specification is available 
-	as a link from the Web page <ulink noescape="1" url="http://samba.org/cifs/"> 
-	http://samba.org/cifs/</ulink>.</para>
+	as a link from the Web page <ulink noescape="1" url="https://www.samba.org/cifs/">
+	https://www.samba.org/cifs/</ulink>.</para>
 </refsect1>
 
 <refsect1>

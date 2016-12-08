@@ -2,7 +2,7 @@
 <!-- vim:set sts=2 shiftwidth=2 syntax=xml: -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:exsl="http://exslt.org/common"
-                xmlns:samba="http://samba.org/common"
+                xmlns:samba="https://www.samba.org/common"
 		version="1.1"
                 extension-element-prefixes="exsl">
 

@@ -590,7 +590,7 @@ way things are going.
 <indexterm><primary>winbindd</primary></indexterm>
 <indexterm><primary>daemon</primary></indexterm>
 The latest version of Samba includes a functioning winbindd daemon. Please refer to the <ulink
-url="http://samba.org/">main Samba Web page</ulink>, or better yet, your closest Samba mirror site for
+url="https://www.samba.org/">main Samba Web page</ulink>, or better yet, your closest Samba mirror site for
 instructions on downloading the source code.
 </para>
 
