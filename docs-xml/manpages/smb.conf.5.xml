@@ -754,6 +754,66 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 </refsect1>
 
+<refsect1 ID="IDMAPCONSIDERATIONS">
+	<title>IDENTITY MAPPING CONSIDERATIONS</title>
+
+	<para>
+	In the SMB protocol, users, groups, and machines are represented by their security identifiers (SIDs).
+	On POSIX system Samba processes need to run under corresponding POSIX user identities and
+	with supplemental POSIX groups to allow access to the files owned by those users and groups.
+	The process of mapping SIDs to POSIX users and groups is called <emphasis>IDENTITY MAPPING</emphasis>
+	or, in short, <emphasis>ID MAPPING</emphasis>.
+	</para>
+
+	<para>
+	Samba supports multiple ways to map SIDs to POSIX users and groups. The configuration is driven by
+	the <smbconfoption name="idmap config DOMAIN : OPTION"/> option which allows one to specify identity
+	mapping (idmap) options for each domain	separately.
+	</para>
+
+	<para>
+	Identity mapping modules implement different strategies for mapping of SIDs to POSIX user and group
+	identities. They are applicable to different use cases and scenarios. It is advised to read the documentation
+	of the individual identity mapping modules before choosing a specific scenario to use. Each identity
+	management module is documented in a separate manual page. The standard idmap backends are
+	tdb (<citerefentry><refentrytitle>idmap_tdb</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	tdb2 (<citerefentry><refentrytitle>idmap_tdb2</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	ldap (<citerefentry><refentrytitle>idmap_ldap</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	rid (<citerefentry><refentrytitle>idmap_rid</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	hash (<citerefentry><refentrytitle>idmap_hash</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	autorid (<citerefentry><refentrytitle>idmap_autorid</refentrytitle><manvolnum>8</manvolnum></citerefentry>),
+	ad (<citerefentry><refentrytitle>idmap_ad</refentrytitle> <manvolnum>8</manvolnum></citerefentry>),
+	nss (<citerefentry><refentrytitle>idmap_nss</refentrytitle> <manvolnum>8</manvolnum></citerefentry>), and
+	rfc2307 (<citerefentry><refentrytitle>idmap_rfc2307</refentrytitle> <manvolnum>8</manvolnum></citerefentry>).
+	</para>
+
+	<para>
+	Overall, ID mapping configuration should be decided carefully. Changes to the already deployed ID mapping
+	configuration may create the risk of losing access to the data or disclosing the data to the wrong parties.
+	</para>
+
+	<para>
+	This example shows how to configure two domains with <citerefentry><refentrytitle>idmap_rid</refentrytitle>
+	<manvolnum>8</manvolnum> </citerefentry>, the principal domain and a trusted domain,
+	leaving the default id mapping scheme at tdb.
+	</para>
+
+	<programlisting>
+	[global]
+	security = domain
+	workgroup = MAIN
+
+	idmap config * : backend        = tdb
+	idmap config * : range          = 1000000-1999999
+
+	idmap config MAIN : backend     = rid
+	idmap config MAIN : range       = 5000000-5999999
+
+	idmap config TRUSTED : backend  = rid
+	idmap config TRUSTED : range    = 6000000-6999999
+	</programlisting>
+</refsect1>
+
 <refsect1>
 	<title>EXPLANATION OF EACH PARAMETER</title>
 	
