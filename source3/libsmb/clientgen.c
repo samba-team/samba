@@ -308,11 +308,6 @@ void cli_shutdown(struct cli_state *cli)
 	_cli_shutdown(cli);
 }
 
-const char *cli_state_remote_realm(struct cli_state *cli)
-{
-	return cli->remote_realm;
-}
-
 uint16_t cli_state_get_vc_num(struct cli_state *cli)
 {
 	return cli->smb1.vc_num;
