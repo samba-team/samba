@@ -1444,7 +1444,7 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				conf = talloc_strdup(mem_ctx, iface->name);
 			} else {
 				conf = talloc_asprintf_append(
-						mem_ctx, ",%s", iface->name);
+						conf, ",%s", iface->name);
 			}
 
 			if (ipinfo[i]->active_idx == j) {
@@ -1459,7 +1459,7 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 				avail = talloc_strdup(mem_ctx, iface->name);
 			} else {
 				avail = talloc_asprintf_append(
-						mem_ctx, ",%s", iface->name);
+						avail, ",%s", iface->name);
 			}
 		}
 
