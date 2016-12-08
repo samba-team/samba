@@ -47,3 +47,7 @@ class NdrDumpTests(BlackboxTestCase):
 
     def test_ndrdump_with_validate(self):
         self.check_run("ndrdump --validate samr samr_CreateUser in %s" % (self.data_path("samr-CreateUser-in.dat")))
+
+    def test_ndrdump_with_hex(self):
+        self.check_run("ndrdump dns decode_dns_name_packet in --hex-input %s" %
+                       self.data_path("dns-decode_dns_name_packet-hex.dat"))
