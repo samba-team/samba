@@ -220,7 +220,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 				owner_rights_allowed |= ace->access_mask;
 				owner_rights_default = false;
 			} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
-				owner_rights_denied |= ace->access_mask;
+				owner_rights_denied |= (bits_remaining & ace->access_mask);
 				owner_rights_default = false;
 			}
 			continue;
