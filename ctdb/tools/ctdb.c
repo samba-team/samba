@@ -1475,8 +1475,9 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			       avail ? avail : "", options.sep,
 			       conf ? conf : "", options.sep);
 		} else {
-			printf(" node[%u] active[%s] available[%s] configured[%s]\n",
-			       ips->ip[i].pnn, active ? active : "",
+			printf(" node[%d] active[%s] available[%s]"
+			       " configured[%s]\n",
+			       (int)ips->ip[i].pnn, active ? active : "",
 			       avail ? avail : "", conf ? conf : "");
 		}
 	}
