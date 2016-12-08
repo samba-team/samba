@@ -365,4 +365,8 @@ struct addrinfo {
 #endif /* HAVE_LINUX_IPV6_V6ONLY_26 */
 #endif /* HAVE_IPV6 */
 
+#ifndef SCOPE_DELIMITER
+#define SCOPE_DELIMITER '%'
+#endif
+
 #endif
