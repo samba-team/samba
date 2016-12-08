@@ -87,7 +87,6 @@ struct cli_state {
 	char *dfs_mountpoint;
 
 	struct smbXcli_conn *conn;
-	const char *remote_realm;
 
 	struct {
 		uint32_t pid;

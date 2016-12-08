@@ -1030,8 +1030,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	*cli = cli_state_create(NULL, sockfd,
-				controller, domain->alt_name,
+	*cli = cli_state_create(NULL, sockfd, controller,
 				smb_sign_client_connections, flags);
 	if (*cli == NULL) {
 		close(sockfd);

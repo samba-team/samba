@@ -2686,7 +2686,7 @@ static void cli_connect_nb_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->cli = cli_state_create(state, fd, state->desthost, NULL,
+	state->cli = cli_state_create(state, fd, state->desthost,
 				      state->signing_state, state->flags);
 	if (tevent_req_nomem(state->cli, req)) {
 		close(fd);
