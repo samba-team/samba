@@ -93,7 +93,7 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 	char **domains;
 	char **names;
 
-	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
+	status = cli_tree_connect(cli, "IPC$", "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto tcon_fail;
 	}
@@ -173,7 +173,7 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 	struct dom_sid *sids;
 	enum lsa_SidType *types;
 
-	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
+	status = cli_tree_connect(cli, "IPC$", "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto tcon_fail;
 	}

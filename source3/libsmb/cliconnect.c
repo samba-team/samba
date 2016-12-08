@@ -2204,10 +2204,16 @@ static void cli_tree_connect_raw_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_tree_connect_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev, struct cli_state *cli,
-	const char *share, const char *dev, const char *pass, int passlen)
+	const char *share, const char *dev, const char *pass)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_tree_connect_state *state;
+	int passlen;
+
+	if (pass == NULL) {
+		pass = "";
+	}
+	passlen = strlen(pass) + 1;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_tree_connect_state);
@@ -2312,7 +2318,7 @@ static NTSTATUS cli_tree_connect_recv(struct tevent_req *req)
 }
 
 NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
-			  const char *dev, const char *pass, int passlen)
+			  const char *dev, const char *pass)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
@@ -2325,7 +2331,7 @@ NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_tree_connect_send(ev, ev, cli, share, dev, pass, passlen);
+	req = cli_tree_connect_send(ev, ev, cli, share, dev, pass);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -2343,18 +2349,12 @@ NTSTATUS cli_tree_connect_creds(struct cli_state *cli,
 				struct cli_credentials *creds)
 {
 	const char *pw = NULL;
-	size_t pw_len = 0;
 
 	if (creds != NULL) {
 		pw = cli_credentials_get_password(creds);
 	}
 
-	if (pw == NULL) {
-		pw = "";
-	}
-	pw_len = strlen(pw) + 1;
-
-	return cli_tree_connect(cli, share, dev, pw, pw_len);
+	return cli_tree_connect(cli, share, dev, pw);
 }
 
 /****************************************************************************
@@ -3009,7 +3009,6 @@ static void cli_full_connection_creds_tcon_start(struct tevent_req *req)
 		req, struct cli_full_connection_creds_state);
 	struct tevent_req *subreq = NULL;
 	const char *password = NULL;
-	int pw_len = 0;
 
 	if (state->service == NULL) {
 		tevent_req_done(req);
@@ -3017,18 +3016,12 @@ static void cli_full_connection_creds_tcon_start(struct tevent_req *req)
 	}
 
 	password = cli_credentials_get_password(state->creds);
-	if (password == NULL) {
-		password = "";
-		pw_len = 0;
-	} else {
-		pw_len = strlen(password) + 1;
-	}
 
 	subreq = cli_tree_connect_send(state, state->ev,
 				       state->cli,
 				       state->service,
 				       state->service_type,
-				       password, pw_len);
+				       password);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

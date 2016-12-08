@@ -1227,7 +1227,7 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 		smbXcli_session_set_disconnect_expired((*cli)->smb2.session);
 	}
 
-	result = cli_tree_connect(*cli, "IPC$", "IPC", "", 0);
+	result = cli_tree_connect(*cli, "IPC$", "IPC", NULL);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));

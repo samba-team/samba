@@ -57,7 +57,7 @@ static NTSTATUS cli_lsa_lookup_domain_sid(struct cli_state *cli,
 	NTSTATUS status, result;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = cli_tree_connect(cli, "IPC$", "?????", "", 0);
+	status = cli_tree_connect(cli, "IPC$", "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

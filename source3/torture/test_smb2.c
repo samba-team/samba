@@ -64,7 +64,7 @@ bool run_smb2_basic(int dummy)
 		return false;
 	}
 
-	status = cli_tree_connect(cli, share, "?????", "", 0);
+	status = cli_tree_connect(cli, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -336,7 +336,7 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = cli_tree_connect(cli1, share, "?????", "", 0);
+	status = cli_tree_connect(cli1, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -527,7 +527,7 @@ bool run_smb2_session_reconnect(int dummy)
 		return false;
 	}
 
-	status = cli_tree_connect(cli1, share, "?????", "", 0);
+	status = cli_tree_connect(cli1, share, "?????", NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_USER_SESSION_DELETED)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -651,7 +651,7 @@ bool run_smb2_session_reconnect(int dummy)
 
 	/* now do a new tcon and test file calls again */
 
-	status = cli_tree_connect(cli2, share, "?????", "", 0);
+	status = cli_tree_connect(cli2, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -744,7 +744,7 @@ bool run_smb2_tcon_dependence(int dummy)
 		return false;
 	}
 
-	status = cli_tree_connect(cli, share, "?????", "", 0);
+	status = cli_tree_connect(cli, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -896,7 +896,7 @@ bool run_smb2_multi_channel(int dummy)
 		return false;
 	}
 
-	status = cli_tree_connect(cli1, share, "?????", "", 0);
+	status = cli_tree_connect(cli1, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -1453,7 +1453,7 @@ bool run_smb2_session_reauth(int dummy)
 		return false;
 	}
 
-	status = cli_tree_connect(cli, share, "?????", "", 0);
+	status = cli_tree_connect(cli, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -1702,7 +1702,7 @@ bool run_smb2_session_reauth(int dummy)
 				0, /* flags */
 				0, /* capabilities */
 				0  /* maximal_access */);
-	status = cli_tree_connect(cli, share, "?????", "", 0);
+	status = cli_tree_connect(cli, share, "?????", NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;
@@ -1882,7 +1882,7 @@ bool run_smb2_session_reauth(int dummy)
 				0, /* flags */
 				0, /* capabilities */
 				0  /* maximal_access */);
-	status = cli_tree_connect(cli, share, "?????", "", 0);
+	status = cli_tree_connect(cli, share, "?????", NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_tree_connect returned %s\n", nt_errstr(status));
 		return false;

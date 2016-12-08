@@ -1341,8 +1341,7 @@ static bool run_tcon_test(int dummy)
 		return False;
 	}
 
-	status = cli_tree_connect(cli, share, "?????",
-				  password, strlen(password)+1);
+	status = cli_tree_connect(cli, share, "?????", password);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		       nt_errstr(status));
@@ -1467,8 +1466,7 @@ static bool tcon_devtest(struct cli_state *cli,
 	NTSTATUS status;
 	bool ret;
 
-	status = cli_tree_connect(cli, myshare, devtype,
-				  password, strlen(password)+1);
+	status = cli_tree_connect(cli, myshare, devtype, password);
 
 	if (NT_STATUS_IS_OK(expected_error)) {
 		if (NT_STATUS_IS_OK(status)) {
@@ -2792,7 +2790,7 @@ static bool run_fdsesstest(int dummy)
 		return False;
 
 	saved_cnum = cli_state_get_tid(cli);
-	if (!NT_STATUS_IS_OK(cli_tree_connect(cli, share, "?????", "", 1)))
+	if (!NT_STATUS_IS_OK(cli_tree_connect(cli, share, "?????", NULL)))
 		return False;
 	new_cnum = cli_state_get_tid(cli);
 	cli_state_set_tid(cli, saved_cnum);
@@ -8377,8 +8375,7 @@ static bool run_large_readx(int dummy)
 		status = cli_tree_connect(cli2,
 					share,
 					"?????",
-					password,
-					strlen(password)+1);
+					password);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}

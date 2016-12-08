@@ -82,7 +82,7 @@ NTSTATUS cli_tree_connect_creds(struct cli_state *cli,
 				const char *share, const char *dev,
 				struct cli_credentials *creds);
 NTSTATUS cli_tree_connect(struct cli_state *cli, const char *share,
-			  const char *dev, const char *pass, int passlen);
+			  const char *dev, const char *pass);
 NTSTATUS cli_tdis(struct cli_state *cli);
 NTSTATUS cli_connect_nb(const char *host, const struct sockaddr_storage *dest_ss,
 			uint16_t port, int name_type, const char *myname,
