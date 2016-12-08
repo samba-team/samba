@@ -2678,6 +2678,8 @@ static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
 	int hostfd = -1;
 	struct adouble *ad = NULL;
 
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
+
 	/* Create an smb_filename with stream_name == NULL. */
 	smb_fname_base = synthetic_smb_fname(talloc_tos(),
 					smb_fname->base_name,
@@ -2767,8 +2769,9 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 			   struct smb_filename *smb_fname,
 			   files_struct *fsp, int flags, mode_t mode)
 {
-	int rc;
+	int fd;
 	struct fruit_config_data *config = NULL;
+	struct fio *fio = NULL;
 
 	DBG_DEBUG("path [%s]\n", smb_fname_str_dbg(smb_fname));
 
@@ -2777,12 +2780,12 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 
 	switch (config->meta) {
 	case FRUIT_META_STREAM:
-		rc = fruit_open_meta_stream(handle, smb_fname,
+		fd = fruit_open_meta_stream(handle, smb_fname,
 					    fsp, flags, mode);
 		break;
 
 	case FRUIT_META_NETATALK:
-		rc = fruit_open_meta_netatalk(handle, smb_fname,
+		fd = fruit_open_meta_netatalk(handle, smb_fname,
 					      fsp, flags, mode);
 		break;
 
@@ -2791,8 +2794,17 @@ static int fruit_open_meta(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	DBG_DEBUG("path [%s] rc [%d]\n", smb_fname_str_dbg(smb_fname), rc);
-	return rc;
+	DBG_DEBUG("path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
+
+	if (fd == -1) {
+		return -1;
+	}
+
+	fio = (struct fio *)VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
+	fio->type = ADOUBLE_META;
+	fio->config = config;
+
+	return fd;
 }
 
 static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
@@ -2804,8 +2816,12 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	int rc = 0;
 	struct adouble *ad = NULL;
 	struct smb_filename *smb_fname_base = NULL;
+	struct fruit_config_data *config = NULL;
 	char *adpath = NULL;
 	int hostfd = -1;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
 
 	if (!(flags & O_CREAT) && !VALID_STAT(smb_fname->st)) {
 		rc = SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -2851,9 +2867,6 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 		rc = -1;
 		goto exit;
 	}
-
-	/* REVIEW: we need this in ad_write() */
-	fsp->fh->fd = hostfd;
 
 	if (flags & (O_CREAT | O_TRUNC)) {
 		ad = ad_init(fsp, handle, ADOUBLE_RSRC);
@@ -2904,16 +2917,11 @@ static int fruit_open_rsrc_xattr(vfs_handle_struct *handle,
 {
 #ifdef HAVE_ATTROPEN
 	int fd = -1;
-	struct adouble *ad = NULL;
-
-	ad = ad_init(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-		     handle, ADOUBLE_RSRC, fsp);
-	if (ad == NULL) {
-		return -1;
-	}
 
 	fd = attropen(smb_fname->base_name,
-			  AFPRESOURCE_EA_NETATALK, flags, mode);
+		      AFPRESOURCE_EA_NETATALK,
+		      flags,
+		      mode);
 	if (fd == -1) {
 		return -1;
 	}
@@ -2932,6 +2940,7 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 {
 	int fd;
 	struct fruit_config_data *config = NULL;
+	struct fio *fio = NULL;
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
@@ -2959,6 +2968,15 @@ static int fruit_open_rsrc(vfs_handle_struct *handle,
 	}
 
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
+
+	if (fd == -1) {
+		return -1;
+	}
+
+	fio = (struct fio *)VFS_ADD_FSP_EXTENSION(handle, fsp, struct fio, NULL);
+	fio->type = ADOUBLE_RSRC;
+	fio->config = config;
+
 	return fd;
 }
 
@@ -2966,20 +2984,25 @@ static int fruit_open(vfs_handle_struct *handle,
                       struct smb_filename *smb_fname,
                       files_struct *fsp, int flags, mode_t mode)
 {
-	DEBUG(10, ("fruit_open called for %s\n",
-		   smb_fname_str_dbg(smb_fname)));
+	int fd;
+
+	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
 	if (!is_ntfs_stream_smb_fname(smb_fname)) {
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
 	if (is_afpinfo_stream(smb_fname)) {
-		return fruit_open_meta(handle, smb_fname, fsp, flags, mode);
+		fd = fruit_open_meta(handle, smb_fname, fsp, flags, mode);
 	} else if (is_afpresource_stream(smb_fname)) {
-		return fruit_open_rsrc(handle, smb_fname, fsp, flags, mode);
+		fd = fruit_open_rsrc(handle, smb_fname, fsp, flags, mode);
+	} else {
+		fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
-	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(smb_fname), fd);
+
+	return fd;
 }
 
 static int fruit_rename(struct vfs_handle_struct *handle,
