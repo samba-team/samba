@@ -891,13 +891,24 @@ def dist():
         sys.exit(ret)
     samba_dist.DIST_FILES('ctdb/%s:%s' % (t, t), extend=True)
 
-    cmd = 'make -C doc'
-    ret = samba_utils.RUN_COMMAND(cmd)
-    if ret != 0:
-        print('Command "%s" failed with exit status %d' % (cmd, ret))
-        sys.exit(ret)
+    BASE_URL = 'http://docbook.sourceforge.net/release/xsl/current'
+    MAN_XSL = '%s/manpages/docbook.xsl' % BASE_URL
+    HTML_XSL = '%s/html/docbook.xsl' % BASE_URL
+    CMD_TEMPLATE = 'xsltproc --xinclude -o %s --nonet %s %s'
     manpages = manpages_binary + manpages_misc + manpages_etcd
     for t in manpages:
+        cmd = CMD_TEMPLATE % ('doc/%s' % t, MAN_XSL, 'doc/%s.xml' % t)
+        ret = samba_utils.RUN_COMMAND(cmd)
+        if ret != 0:
+            print('Command %s failed with exit status %d' % (cmd, ret))
+            sys.exit(ret)
+
+        cmd = CMD_TEMPLATE % ('doc/%s.html' % t, HTML_XSL, 'doc/%s.xml' % t)
+        ret = samba_utils.RUN_COMMAND(cmd)
+        if ret != 0:
+            print('Command %s failed with exit status %d' % (cmd, ret))
+            sys.exit(ret)
+
         samba_dist.DIST_FILES('ctdb/doc/%s:doc/%s' % (t, t), extend=True)
         samba_dist.DIST_FILES('ctdb/doc/%s.html:doc/%s.html' % (t, t),
                               extend=True)
