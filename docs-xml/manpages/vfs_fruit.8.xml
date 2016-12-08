@@ -168,9 +168,13 @@
 
 	      <para>Controls how the set of illegal NTFS ASCII
 	      character, commonly used by OS X clients, are stored in
-	      the filesystem:</para>
+	      the filesystem.</para>
 
-	      <itemizedlist>
+	      <para><emphasis>Important:</emphasis> this is known to not fully
+	      work with <emphasis>fruit:metadata=stream</emphasis> or
+	      <emphasis>fruit:resource=stream</emphasis>.</para>
+
+ 	      <itemizedlist>
 
 		<listitem><para><command>private (default)</command> -
 		store characters as encoded by the OS X client: mapped
