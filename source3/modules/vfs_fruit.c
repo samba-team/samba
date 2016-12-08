@@ -4694,6 +4694,8 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 
 	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_RSRC);
 	if (ad == NULL) {
+		DBG_DEBUG("ad_get [%s] failed [%s]\n",
+			  fsp_str_dbg(fsp), strerror(errno));
 		return -1;
 	}
 
@@ -4701,6 +4703,7 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 
 	rc = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset + ad_off);
 	if (rc != 0) {
+		TALLOC_FREE(ad);
 		return -1;
 	}
 
@@ -4708,14 +4711,13 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 
 	rc = ad_fset(ad, fsp);
 	if (rc != 0) {
-		DBG_ERR("ad_write [%s] failed [%s]\n",
+		DBG_ERR("ad_fset [%s] failed [%s]\n",
 			fsp_str_dbg(fsp), strerror(errno));
+		TALLOC_FREE(ad);
 		return -1;
 	}
 
-	DBG_DEBUG("Path [%s] offset [%jd]\n",
-		  fsp_str_dbg(fsp), (intmax_t)offset);
-
+	TALLOC_FREE(ad);
 	return 0;
 }
 
@@ -4734,13 +4736,10 @@ static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
 				off_t offset)
 {
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	int ret;
-	struct fruit_config_data *config;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	switch (config->rsrc) {
+	switch (fio->config->rsrc) {
 	case FRUIT_RSRC_XATTR:
 		ret = fruit_ftruncate_rsrc_xattr(handle, fsp, offset);
 		break;
@@ -4754,7 +4753,7 @@ static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
 		break;
 
 	default:
-		DBG_ERR("Unexpected rsrc config [%d]\n", config->rsrc);
+		DBG_ERR("Unexpected rsrc config [%d]\n", fio->config->rsrc);
 		return -1;
 	}
 
@@ -4762,33 +4761,45 @@ static int fruit_ftruncate_rsrc(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int fruit_ftruncate_meta(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				off_t offset)
+{
+	if (offset > 60) {
+		DBG_WARNING("ftruncate %s to %jd",
+			    fsp_str_dbg(fsp), (intmax_t)offset);
+		/* OS X returns NT_STATUS_ALLOTTED_SPACE_EXCEEDED  */
+		errno = EOVERFLOW;
+		return -1;
+	}
+
+	/* OS X returns success but does nothing  */
+	DBG_INFO("ignoring ftruncate %s to %jd\n",
+		 fsp_str_dbg(fsp), (intmax_t)offset);
+	return 0;
+}
+
 static int fruit_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp,
 			   off_t offset)
 {
-	DBG_DEBUG("fruit_ftruncate called for file %s offset %.0f\n",
-		   fsp_str_dbg(fsp), (double)offset);
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	int ret;
 
-	if (is_afpinfo_stream(fsp->fsp_name)) {
-		if (offset > 60) {
-			DBG_WARNING("ftruncate %s to %jd",
-				    fsp_str_dbg(fsp), (intmax_t)offset);
-			/* OS X returns NT_STATUS_ALLOTTED_SPACE_EXCEEDED  */
-			errno = EOVERFLOW;
-			return -1;
-		}
+	DBG_DEBUG("Path [%s] offset [%zd]\n", fsp_str_dbg(fsp), offset);
 
-		DBG_WARNING("ignoring ftruncate %s to %jd",
-			    fsp_str_dbg(fsp), (intmax_t)offset);
-		/* OS X returns success but does nothing  */
-		return 0;
+	if (fio == NULL) {
+		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 	}
 
-	if (is_afpresource_stream(fsp->fsp_name)) {
-		return fruit_ftruncate_rsrc(handle, fsp, offset);
+	if (fio->type == ADOUBLE_META) {
+		ret = fruit_ftruncate_meta(handle, fsp, offset);
+	} else {
+		ret = fruit_ftruncate_rsrc(handle, fsp, offset);
 	}
 
-	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
+	DBG_DEBUG("Path [%s] result [%d]\n", fsp_str_dbg(fsp), ret);
+	return ret;
 }
 
 static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
