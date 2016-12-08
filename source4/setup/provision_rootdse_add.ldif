@@ -21,7 +21,7 @@ schemaNamingContext: ${SCHEMADN}
 supportedLDAPVersion: 2
 supportedLDAPVersion: 3
 isSynchronized: FALSE
-vendorName: Samba Team (http://samba.org)
+vendorName: Samba Team (https://www.samba.org)
 supportedCapabilities: 1.2.840.113556.1.4.800
 supportedCapabilities: 1.2.840.113556.1.4.1670
 supportedCapabilities: 1.2.840.113556.1.4.1791
