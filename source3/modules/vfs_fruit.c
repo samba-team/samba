@@ -4206,17 +4206,24 @@ static int fruit_lstat(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_fstat_meta(vfs_handle_struct *handle,
-			    files_struct *fsp,
-			    SMB_STRUCT_STAT *sbuf)
+static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   SMB_STRUCT_STAT *sbuf)
 {
-	DEBUG(10, ("fruit_fstat_meta called for %s\n",
-		   smb_fname_str_dbg(fsp->base_fsp->fsp_name)));
+	return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+}
 
-	/* Populate the stat struct with info from the base file. */
-	if (fruit_stat_base(handle, fsp->base_fsp->fsp_name, false) == -1) {
+static int fruit_fstat_meta_netatalk(vfs_handle_struct *handle,
+				     files_struct *fsp,
+				     SMB_STRUCT_STAT *sbuf)
+{
+	int ret;
+
+	ret = fruit_stat_base(handle, fsp->base_fsp->fsp_name, false);
+	if (ret != 0) {
 		return -1;
 	}
+
 	*sbuf = fsp->base_fsp->fsp_name->st;
 	sbuf->st_ex_size = AFP_INFO_SIZE;
 	sbuf->st_ex_ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
@@ -4224,65 +4231,119 @@ static int fruit_fstat_meta(vfs_handle_struct *handle,
 	return 0;
 }
 
-static int fruit_fstat_rsrc(vfs_handle_struct *handle, files_struct *fsp,
-			    SMB_STRUCT_STAT *sbuf)
+static int fruit_fstat_meta(vfs_handle_struct *handle,
+			    files_struct *fsp,
+			    SMB_STRUCT_STAT *sbuf,
+			    struct fio *fio)
 {
-	struct fruit_config_data *config;
-	struct adouble *ad = (struct adouble *)VFS_FETCH_FSP_EXTENSION(
-		handle, fsp);
+	int ret;
 
-	DEBUG(10, ("fruit_fstat_rsrc called for %s\n",
-		   smb_fname_str_dbg(fsp->base_fsp->fsp_name)));
+	DBG_DEBUG("Path [%s]\n", fsp_str_dbg(fsp));
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
+	switch (fio->config->meta) {
+	case FRUIT_META_STREAM:
+		ret = fruit_fstat_meta_stream(handle, fsp, sbuf);
+		break;
 
-	if (config->rsrc == FRUIT_RSRC_STREAM) {
-		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	}
+	case FRUIT_META_NETATALK:
+		ret = fruit_fstat_meta_netatalk(handle, fsp, sbuf);
+		break;
 
-	/* Populate the stat struct with info from the base file. */
-	if (fruit_stat_base(handle, fsp->base_fsp->fsp_name, false) == -1) {
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", fio->config->meta);
 		return -1;
 	}
+
+	DBG_DEBUG("Path [%s] ret [%d]\n", fsp_str_dbg(fsp), ret);
+	return ret;
+}
+
+static int fruit_fstat_rsrc_xattr(vfs_handle_struct *handle,
+				  files_struct *fsp,
+				  SMB_STRUCT_STAT *sbuf)
+{
+	return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+}
+
+static int fruit_fstat_rsrc_stream(vfs_handle_struct *handle,
+				   files_struct *fsp,
+				   SMB_STRUCT_STAT *sbuf)
+{
+	return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+}
+
+static int fruit_fstat_rsrc_adouble(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    SMB_STRUCT_STAT *sbuf)
+{
+	struct adouble *ad = NULL;
+	int ret;
+
+	/* Populate the stat struct with info from the base file. */
+	ret = fruit_stat_base(handle, fsp->base_fsp->fsp_name, false);
+	if (ret == -1) {
+		return -1;
+	}
+
+	ad = ad_get(talloc_tos(), handle,
+		    fsp->base_fsp->fsp_name->base_name,
+		    ADOUBLE_RSRC);
+	if (ad == NULL) {
+		DBG_ERR("ad_get [%s] failed [%s]\n",
+			fsp_str_dbg(fsp), strerror(errno));
+		return -1;
+	}
+
 	*sbuf = fsp->base_fsp->fsp_name->st;
 	sbuf->st_ex_size = ad_getentrylen(ad, ADEID_RFORK);
 	sbuf->st_ex_ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
 
-	DEBUG(10, ("fruit_fstat_rsrc %s, size: %zd\n",
-		   smb_fname_str_dbg(fsp->fsp_name),
-		   (ssize_t)sbuf->st_ex_size));
-
+	TALLOC_FREE(ad);
 	return 0;
+}
+
+static int fruit_fstat_rsrc(vfs_handle_struct *handle, files_struct *fsp,
+			    SMB_STRUCT_STAT *sbuf, struct fio *fio)
+{
+	int ret;
+
+	switch (fio->config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+		ret = fruit_fstat_rsrc_stream(handle, fsp, sbuf);
+		break;
+
+	case FRUIT_RSRC_ADFILE:
+		ret = fruit_fstat_rsrc_adouble(handle, fsp, sbuf);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		ret = fruit_fstat_rsrc_xattr(handle, fsp, sbuf);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", fio->config->rsrc);
+		return -1;
+	}
+
+	return ret;
 }
 
 static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_STRUCT_STAT *sbuf)
 {
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	int rc;
-	struct adouble *ad = (struct adouble *)
-		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
-	DEBUG(10, ("fruit_fstat called for %s\n",
-		   smb_fname_str_dbg(fsp->fsp_name)));
-
-	if (ad == NULL || fsp->base_fsp == NULL) {
-		rc = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-		goto exit;
+	if (fio == NULL) {
+		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	}
 
-	switch (ad->ad_type) {
-	case ADOUBLE_META:
-		rc = fruit_fstat_meta(handle, fsp, sbuf);
-		break;
-	case ADOUBLE_RSRC:
-		rc = fruit_fstat_rsrc(handle, fsp, sbuf);
-		break;
-	default:
-		DEBUG(10, ("fruit_fstat %s: bad type\n",
-			   smb_fname_str_dbg(fsp->fsp_name)));
-		rc = -1;
-		goto exit;
+	DBG_DEBUG("Path [%s]\n", fsp_str_dbg(fsp));
+
+	if (fio->type == ADOUBLE_META) {
+		rc = fruit_fstat_meta(handle, fsp, sbuf, fio);
+	} else {
+		rc = fruit_fstat_rsrc(handle, fsp, sbuf, fio);
 	}
 
 	if (rc == 0) {
@@ -4291,10 +4352,8 @@ static int fruit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		sbuf->st_ex_blocks = sbuf->st_ex_size / STAT_ST_BLOCKSIZE + 1;
 	}
 
-exit:
-	DEBUG(10, ("fruit_fstat %s, size: %zd\n",
-		   smb_fname_str_dbg(fsp->fsp_name),
-		   (ssize_t)sbuf->st_ex_size));
+	DBG_DEBUG("Path [%s] rc [%d] size [%zd]\n",
+		  fsp_str_dbg(fsp), rc, sbuf->st_ex_size);
 	return rc;
 }
 
