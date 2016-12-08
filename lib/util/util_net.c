@@ -86,7 +86,7 @@ static char *normalize_ipv6_literal(const char *str, char *buf, size_t *_len)
 			cnt_delimiter += 1;
 			break;
 		case 's':
-			buf[i] = '%';
+			buf[i] = SCOPE_DELIMITER;
 			idx_chars += 1;
 			break;
 		case '0':
@@ -131,7 +131,7 @@ static char *normalize_ipv6_literal(const char *str, char *buf, size_t *_len)
 
 	for (; idx_chars != 0 && i < len; i++) {
 		switch (str[i]) {
-		case '%':
+		case SCOPE_DELIMITER:
 		case ':':
 			return NULL;
 		default:
@@ -185,7 +185,7 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	}
 
 	if (strchr_m(str, ':')) {
-		char *p = strchr_m(str, '%');
+		char *p = strchr_m(str, SCOPE_DELIMITER);
 
 		/*
 		 * Cope with link-local.
@@ -502,7 +502,7 @@ bool is_ipaddress_v6(const char *str)
 		unsigned int idx = 0;
 		struct in6_addr ip6;
 
-		p = strchr_m(str, '%');
+		p = strchr_m(str, SCOPE_DELIMITER);
 		if (p && (p > str)) {
 			len = PTR_DIFF(p, str);
 			idxs = p + 1;
