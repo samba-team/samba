@@ -37,19 +37,25 @@ samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/async_req:lib/async_req
                         buildtools:buildtools third_party/waf:third_party/waf''')
 
-manpages = [
+manpages_binary = [
     'ctdb.1',
-    'ctdb.7',
-    'ctdb_diagnostics.1',
     'ctdbd.1',
-    'ctdbd.conf.5',
+    'ltdbtool.1',
+    'ping_pong.1'
+]
+
+manpages_misc = [
+    'ctdb_diagnostics.1',
     'ctdbd_wrapper.1',
-    'ctdb-etcd.7',
+    'onnode.1',
+    'ctdbd.conf.5',
+    'ctdb.7',
     'ctdb-statistics.7',
     'ctdb-tunables.7',
-    'ltdbtool.1',
-    'onnode.1',
-    'ping_pong.1'
+]
+
+manpages_etcd = [
+    'ctdb-etcd.7',
 ]
 
 
@@ -238,6 +244,7 @@ def configure(conf):
 
         Logs.info("xsltproc unavailable, checking for pre-built manpages")
         conf.env.ctdb_prebuilt_manpages = []
+        manpages = manpages_binary + manpages_misc + manpages_etcd
         for m in manpages:
             if os.path.exists(os.path.join("doc", m)):
                 Logs.info("  %s: yes" % (m))
@@ -527,7 +534,8 @@ def build(bld):
                        (sed_expr1, sed_expr2, sed_expr3, sed_expr4, sed_expr5,
                         sed_expr6, sed_expr7)
 
-    for f in manpages:
+    manpages_extra = manpages_misc + manpages_etcd
+    for f in manpages_binary + manpages_extra:
         x = '%s.xml' % (f)
         bld.SAMBA_GENERATOR(x,
                             source=os.path.join('doc', x),
@@ -535,10 +543,7 @@ def build(bld):
                             rule='sed %s ${SRC} > ${TGT}' % (sed_cmdline))
 
     if bld.env.ctdb_generate_manpages:
-        bld.MANPAGES('''onnode.1 ctdbd_wrapper.1 ctdbd.conf.5
-                        ctdb.7 ctdb-statistics.7 ctdb-tunables.7
-                        ctdb_diagnostics.1 ctdb-etcd.7''',
-                      True)
+        bld.MANPAGES(' '.join(manpages_extra), True)
     else:
         for m in bld.env.ctdb_prebuilt_manpages:
             bld.SAMBA_GENERATOR(m,
@@ -891,6 +896,7 @@ def dist():
     if ret != 0:
         print('Command "%s" failed with exit status %d' % (cmd, ret))
         sys.exit(ret)
+    manpages = manpages_binary + manpages_misc + manpages_etcd
     for t in manpages:
         samba_dist.DIST_FILES('ctdb/doc/%s:doc/%s' % (t, t), extend=True)
         samba_dist.DIST_FILES('ctdb/doc/%s.html:doc/%s.html' % (t, t),
