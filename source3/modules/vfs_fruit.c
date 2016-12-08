@@ -3508,231 +3508,405 @@ exit_rmdir:
 	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
 
+static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
+				       files_struct *fsp, void *data,
+				       size_t n, off_t offset)
+{
+	return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+}
+
+static ssize_t fruit_pread_meta_adouble(vfs_handle_struct *handle,
+					files_struct *fsp, void *data,
+					size_t n, off_t offset)
+{
+	AfpInfo *ai = NULL;
+	struct adouble *ad = NULL;
+	char afpinfo_buf[AFP_INFO_SIZE];
+	char *p = NULL;
+	ssize_t nread;
+
+	ai = afpinfo_new(talloc_tos());
+	if (ai == NULL) {
+		return -1;
+	}
+
+	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_META);
+	if (ad == NULL) {
+		nread = -1;
+		goto fail;
+	}
+
+	p = ad_get_entry(ad, ADEID_FINDERI);
+	if (p == NULL) {
+		DBG_ERR("No ADEID_FINDERI for [%s]\n", fsp_str_dbg(fsp));
+		nread = -1;
+		goto fail;
+	}
+
+	memcpy(&ai->afpi_FinderInfo[0], p, ADEDLEN_FINDERI);
+
+	nread = afpinfo_pack(ai, afpinfo_buf);
+	if (nread != AFP_INFO_SIZE) {
+		nread = -1;
+		goto fail;
+	}
+
+	memcpy(data, afpinfo_buf, n);
+	nread = n;
+
+fail:
+	TALLOC_FREE(ai);
+	return nread;
+}
+
+static ssize_t fruit_pread_meta(vfs_handle_struct *handle,
+				files_struct *fsp, void *data,
+				size_t n, off_t offset)
+{
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t nread;
+	ssize_t to_return;
+
+	/*
+	 * OS X has a off-by-1 error in the offset calculation, so we're
+	 * bug compatible here. It won't hurt, as any relevant real
+	 * world read requests from the AFP_AfpInfo stream will be
+	 * offset=0 n=60. offset is ignored anyway, see below.
+	 */
+	if ((offset < 0) || (offset >= AFP_INFO_SIZE + 1)) {
+		return 0;
+	}
+
+	/* Yes, macOS always reads from offset 0 */
+	offset = 0;
+	to_return = MIN(n, AFP_INFO_SIZE);
+
+	switch (fio->config->meta) {
+	case FRUIT_META_STREAM:
+		nread = fruit_pread_meta_stream(handle, fsp, data,
+						to_return, offset);
+		break;
+
+	case FRUIT_META_NETATALK:
+		nread = fruit_pread_meta_adouble(handle, fsp, data,
+						 to_return, offset);
+		break;
+
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", fio->config->meta);
+		return -1;
+	}
+
+	return nread;
+}
+
+static ssize_t fruit_pread_rsrc_stream(vfs_handle_struct *handle,
+				       files_struct *fsp, void *data,
+				       size_t n, off_t offset)
+{
+	return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+}
+
+static ssize_t fruit_pread_rsrc_xattr(vfs_handle_struct *handle,
+				      files_struct *fsp, void *data,
+				      size_t n, off_t offset)
+{
+	return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+}
+
+static ssize_t fruit_pread_rsrc_adouble(vfs_handle_struct *handle,
+					files_struct *fsp, void *data,
+					size_t n, off_t offset)
+{
+	struct adouble *ad = NULL;
+	ssize_t nread;
+
+	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_RSRC);
+	if (ad == NULL) {
+		return -1;
+	}
+
+	nread = SMB_VFS_NEXT_PREAD(handle, fsp, data, n,
+				   offset + ad_getentryoff(ad, ADEID_RFORK));
+
+	TALLOC_FREE(ad);
+	return nread;
+}
+
+static ssize_t fruit_pread_rsrc(vfs_handle_struct *handle,
+				files_struct *fsp, void *data,
+				size_t n, off_t offset)
+{
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t nread;
+
+	switch (fio->config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+		nread = fruit_pread_rsrc_stream(handle, fsp, data, n, offset);
+		break;
+
+	case FRUIT_RSRC_ADFILE:
+		nread = fruit_pread_rsrc_adouble(handle, fsp, data, n, offset);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		nread = fruit_pread_rsrc_xattr(handle, fsp, data, n, offset);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", fio->config->rsrc);
+		return -1;
+	}
+
+	return nread;
+}
+
 static ssize_t fruit_pread(vfs_handle_struct *handle,
 			   files_struct *fsp, void *data,
 			   size_t n, off_t offset)
 {
-	int rc = 0;
-        struct adouble *ad = (struct adouble *)VFS_FETCH_FSP_EXTENSION(
-		handle, fsp);
-	struct fruit_config_data *config = NULL;
-	AfpInfo *ai = NULL;
-	ssize_t len = -1;
-	size_t to_return = n;
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t nread;
 
-	DEBUG(10, ("fruit_pread: offset=%d, size=%d\n", (int)offset, (int)n));
+	DBG_DEBUG("Path [%s] offset=%zd, size=%zd\n",
+		  fsp_str_dbg(fsp), offset, n);
 
-	if (!fsp->base_fsp) {
+	if (fio == NULL) {
 		return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 	}
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (is_afpinfo_stream(fsp->fsp_name)) {
-		/*
-		 * OS X has a off-by-1 error in the offset calculation, so we're
-		 * bug compatible here. It won't hurt, as any relevant real
-		 * world read requests from the AFP_AfpInfo stream will be
-		 * offset=0 n=60. offset is ignored anyway, see below.
-		 */
-		if ((offset < 0) || (offset >= AFP_INFO_SIZE + 1)) {
-			len = 0;
-			rc = 0;
-			goto exit;
-		}
-
-		to_return = MIN(n, AFP_INFO_SIZE);
-
-		/* Yes, macOS always reads from offset 0 */
-		offset = 0;
-	}
-
-	if (ad == NULL) {
-		len = SMB_VFS_NEXT_PREAD(handle, fsp, data, to_return, offset);
-		if (len == -1) {
-			rc = -1;
-			goto exit;
-		}
-		goto exit;
-	}
-
-	if (ad->ad_type == ADOUBLE_META) {
-		char afpinfo_buf[AFP_INFO_SIZE];
-		char *p = NULL;
-
-		ai = afpinfo_new(talloc_tos());
-		if (ai == NULL) {
-			rc = -1;
-			goto exit;
-		}
-
-		len = ad_read(ad, fsp->base_fsp->fsp_name->base_name);
-		if (len == -1) {
-			rc = -1;
-			goto exit;
-		}
-
-		p = ad_get_entry(ad, ADEID_FINDERI);
-		if (p == NULL) {
-			DBG_ERR("No ADEID_FINDERI for [%s]\n",
-				fsp->fsp_name->base_name);
-			rc = -1;
-			goto exit;
-		}
-
-		memcpy(&ai->afpi_FinderInfo[0], p, ADEDLEN_FINDERI);
-
-		len = afpinfo_pack(ai, afpinfo_buf);
-		if (len != AFP_INFO_SIZE) {
-			rc = -1;
-			goto exit;
-		}
-
-		/*
-		 * OS X ignores offset when reading from AFP_AfpInfo stream!
-		 */
-		memcpy(data, afpinfo_buf, to_return);
-		len = to_return;
+	if (fio->type == ADOUBLE_META) {
+		nread = fruit_pread_meta(handle, fsp, data, n, offset);
 	} else {
-		len = SMB_VFS_NEXT_PREAD(
-			handle, fsp, data, n,
-			offset + ad_getentryoff(ad, ADEID_RFORK));
-		if (len == -1) {
-			rc = -1;
-			goto exit;
+		nread = fruit_pread_rsrc(handle, fsp, data, n, offset);
+	}
+
+	DBG_DEBUG("Path [%s] nread [%zd]\n", fsp_str_dbg(fsp), nread);
+	return nread;
+}
+
+static ssize_t fruit_pwrite_meta_stream(vfs_handle_struct *handle,
+					files_struct *fsp, const void *data,
+					size_t n, off_t offset)
+{
+	AfpInfo *ai = NULL;
+	int ret;
+
+	ai = afpinfo_unpack(talloc_tos(), data);
+	if (ai == NULL) {
+		return -1;
+	}
+
+	if (ai_empty_finderinfo(ai)) {
+		ret = SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
+		if (ret != 0 && errno != ENOENT && errno != ENOATTR) {
+			DBG_ERR("Can't delete metadata for %s: %s\n",
+				fsp_str_dbg(fsp), strerror(errno));
+			TALLOC_FREE(ai);
+			return -1;
+		}
+
+		return n;
+	}
+
+	return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+}
+
+static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
+					  files_struct *fsp, const void *data,
+					  size_t n, off_t offset)
+{
+	struct adouble *ad = NULL;
+	AfpInfo *ai = NULL;
+	char *p = NULL;
+	int ret;
+
+	ai = afpinfo_unpack(talloc_tos(), data);
+	if (ai == NULL) {
+		return -1;
+	}
+
+	if (ai_empty_finderinfo(ai)) {
+		ret = SMB_VFS_REMOVEXATTR(handle->conn,
+					  fsp->fsp_name->base_name,
+					  AFPINFO_EA_NETATALK);
+
+		if (ret != 0 && errno != ENOENT && errno != ENOATTR) {
+			DBG_ERR("Can't delete metadata for %s: %s\n",
+				fsp_str_dbg(fsp), strerror(errno));
+			return -1;
+		}
+
+		return n;
+	}
+
+	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_META);
+	if (ad == NULL) {
+		ad = ad_init(talloc_tos(), handle, ADOUBLE_META);
+		if (ad == NULL) {
+			return -1;
 		}
 	}
-exit:
-	TALLOC_FREE(ai);
-	if (rc != 0) {
-		len = -1;
+	p = ad_get_entry(ad, ADEID_FINDERI);
+	if (p == NULL) {
+		DBG_ERR("No ADEID_FINDERI for [%s]\n", fsp_str_dbg(fsp));
+		TALLOC_FREE(ad);
+		return -1;
 	}
-	DEBUG(10, ("fruit_pread: rc=%d, len=%zd\n", rc, len));
-	return len;
+
+	memcpy(p, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
+
+	ret = ad_fset(ad, fsp);
+	if (ret != 0) {
+		DBG_ERR("ad_pwrite [%s] failed\n", fsp_str_dbg(fsp));
+		TALLOC_FREE(ad);
+		return -1;
+	}
+
+	TALLOC_FREE(ad);
+	return n;
+}
+
+static ssize_t fruit_pwrite_meta(vfs_handle_struct *handle,
+				 files_struct *fsp, const void *data,
+				 size_t n, off_t offset)
+{
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t nwritten;
+
+	/*
+	 * Writing an all 0 blob to the metadata stream
+	 * results in the stream being removed on a macOS
+	 * server. This ensures we behave the same and it
+	 * verified by the "delete AFP_AfpInfo by writing all
+	 * 0" test.
+	 */
+	if (n != AFP_INFO_SIZE || offset != 0) {
+		DBG_ERR("unexpected offset=%jd or size=%jd\n",
+			(intmax_t)offset, (intmax_t)n);
+		return -1;
+	}
+
+	switch (fio->config->meta) {
+	case FRUIT_META_STREAM:
+		nwritten = fruit_pwrite_meta_stream(handle, fsp, data,
+						    n, offset);
+		break;
+
+	case FRUIT_META_NETATALK:
+		nwritten = fruit_pwrite_meta_netatalk(handle, fsp, data,
+						      n, offset);
+		break;
+
+	default:
+		DBG_ERR("Unexpected meta config [%d]\n", fio->config->meta);
+		return -1;
+	}
+
+	return nwritten;
+}
+
+static ssize_t fruit_pwrite_rsrc_stream(vfs_handle_struct *handle,
+					files_struct *fsp, const void *data,
+					size_t n, off_t offset)
+{
+	return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+}
+
+static ssize_t fruit_pwrite_rsrc_xattr(vfs_handle_struct *handle,
+				       files_struct *fsp, const void *data,
+				       size_t n, off_t offset)
+{
+	return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
+}
+
+static ssize_t fruit_pwrite_rsrc_adouble(vfs_handle_struct *handle,
+					 files_struct *fsp, const void *data,
+					 size_t n, off_t offset)
+{
+	struct adouble *ad = NULL;
+	ssize_t nwritten;
+	int ret;
+
+	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_RSRC);
+	if (ad == NULL) {
+		DBG_ERR("ad_get [%s] failed\n", fsp_str_dbg(fsp));
+		return -1;
+	}
+
+	nwritten = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
+				       offset + ad_getentryoff(ad, ADEID_RFORK));
+	if (nwritten != n) {
+		DBG_ERR("Short write on [%s] [%zd/%zd]\n",
+			fsp_str_dbg(fsp), nwritten, n);
+		TALLOC_FREE(ad);
+		return -1;
+	}
+
+	if ((n + offset) > ad_getentrylen(ad, ADEID_RFORK)) {
+		ad_setentrylen(ad, ADEID_RFORK, n + offset);
+		ret = ad_fset(ad, fsp);
+		if (ret != 0) {
+			DBG_ERR("ad_pwrite [%s] failed\n", fsp_str_dbg(fsp));
+			TALLOC_FREE(ad);
+			return -1;
+		}
+	}
+
+	TALLOC_FREE(ad);
+	return n;
+}
+
+static ssize_t fruit_pwrite_rsrc(vfs_handle_struct *handle,
+				 files_struct *fsp, const void *data,
+				 size_t n, off_t offset)
+{
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t nwritten;
+
+	switch (fio->config->rsrc) {
+	case FRUIT_RSRC_STREAM:
+		nwritten = fruit_pwrite_rsrc_stream(handle, fsp, data, n, offset);
+		break;
+
+	case FRUIT_RSRC_ADFILE:
+		nwritten = fruit_pwrite_rsrc_adouble(handle, fsp, data, n, offset);
+		break;
+
+	case FRUIT_RSRC_XATTR:
+		nwritten = fruit_pwrite_rsrc_xattr(handle, fsp, data, n, offset);
+		break;
+
+	default:
+		DBG_ERR("Unexpected rsrc config [%d]\n", fio->config->rsrc);
+		return -1;
+	}
+
+	return nwritten;
 }
 
 static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 			    files_struct *fsp, const void *data,
 			    size_t n, off_t offset)
 {
-	int rc = 0;
-	struct adouble *ad = (struct adouble *)VFS_FETCH_FSP_EXTENSION(
-		handle, fsp);
-	struct fruit_config_data *config = NULL;
-	AfpInfo *ai = NULL;
-	ssize_t len;
+	struct fio *fio = (struct fio *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+	ssize_t nwritten;
 
-	DEBUG(10, ("fruit_pwrite: offset=%d, size=%d\n", (int)offset, (int)n));
+	DBG_DEBUG("Path [%s] offset=%zd, size=%zd\n",
+		  fsp_str_dbg(fsp), offset, n);
 
-	if (!fsp->base_fsp) {
+	if (fio == NULL) {
 		return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 	}
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (is_afpinfo_stream(fsp->fsp_name)) {
-		/*
-		 * Writing an all 0 blob to the metadata stream
-		 * results in the stream being removed on a macOS
-		 * server. This ensures we behave the same and it
-		 * verified by the "delete AFP_AfpInfo by writing all
-		 * 0" test.
-		 */
-		if (n != AFP_INFO_SIZE || offset != 0) {
-			DEBUG(1, ("unexpected offset=%jd or size=%jd\n",
-				  (intmax_t)offset, (intmax_t)n));
-			rc = -1;
-			goto exit;
-		}
-		ai = afpinfo_unpack(talloc_tos(), data);
-		if (ai == NULL) {
-			rc = -1;
-			goto exit;
-		}
-
-		if (ai_empty_finderinfo(ai)) {
-			switch (config->meta) {
-			case FRUIT_META_STREAM:
-				rc = SMB_VFS_UNLINK(handle->conn, fsp->fsp_name);
-				break;
-
-			case FRUIT_META_NETATALK:
-				rc = SMB_VFS_REMOVEXATTR(
-					handle->conn,
-					fsp->fsp_name->base_name,
-					AFPINFO_EA_NETATALK);
-				break;
-
-			default:
-				DBG_ERR("Unexpected meta config [%d]\n",
-					config->meta);
-				rc = -1;
-				goto exit;
-			}
-
-			if (rc != 0 && errno != ENOENT && errno != ENOATTR) {
-				DBG_WARNING("Can't delete metadata for %s: %s\n",
-					    fsp->fsp_name->base_name, strerror(errno));
-				goto exit;
-			}
-
-			rc = 0;
-			goto exit;
-		}
-	}
-
-	if (ad == NULL) {
-		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
-		if (len != n) {
-			rc = -1;
-			goto exit;
-		}
-		goto exit;
-	}
-
-	if (ad->ad_type == ADOUBLE_META) {
-		char *p = NULL;
-
-		p = ad_get_entry(ad, ADEID_FINDERI);
-		if (p == NULL) {
-			DBG_ERR("No ADEID_FINDERI for [%s]\n",
-				fsp->fsp_name->base_name);
-			rc = -1;
-			goto exit;
-		}
-
-		memcpy(p, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
-		rc = ad_fset(ad, fsp);
+	if (fio->type == ADOUBLE_META) {
+		nwritten = fruit_pwrite_meta(handle, fsp, data, n, offset);
 	} else {
-		len = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n,
-                                   offset + ad_getentryoff(ad, ADEID_RFORK));
-		if (len != n) {
-			rc = -1;
-			goto exit;
-		}
-
-		if (config->rsrc == FRUIT_RSRC_ADFILE) {
-			rc = ad_read(ad, fsp->base_fsp->fsp_name->base_name);
-			if (rc == -1) {
-				goto exit;
-			}
-			rc = 0;
-
-			if ((len + offset) > ad_getentrylen(ad, ADEID_RFORK)) {
-				ad_setentrylen(ad, ADEID_RFORK, len + offset);
-				rc = ad_fset(ad, fsp);
-			}
-		}
+		nwritten = fruit_pwrite_rsrc(handle, fsp, data, n, offset);
 	}
 
-exit:
-	TALLOC_FREE(ai);
-	if (rc != 0) {
-		return -1;
-	}
-	return n;
+	DBG_DEBUG("Path [%s] nwritten=%zd\n", fsp_str_dbg(fsp), nwritten);
+	return nwritten;
 }
 
 /**
