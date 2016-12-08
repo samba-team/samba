@@ -67,7 +67,7 @@ the schema file will be read from standard input.
 	<title>AUTHOR</title>
 
 	<para> ldb was written by 
-		 <ulink url="http://samba.org/~tridge/">Andrew Tridgell</ulink>.
+		 <ulink url="https://www.samba.org/~tridge/">Andrew Tridgell</ulink>.
 		oLschema2ldif was written by <ulink url="mailto:idra@samba.org">Simo Sorce</ulink>.
 	</para>
 
