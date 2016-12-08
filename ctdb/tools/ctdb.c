@@ -1436,6 +1436,10 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		avail = NULL;
 		active = NULL;
 
+		if (ipinfo[i] == NULL) {
+			goto skip_ipinfo;
+		}
+
 		for (j=0; j<ipinfo[i]->ifaces->num; j++) {
 			struct ctdb_iface *iface;
 
@@ -1462,6 +1466,8 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 						avail, ",%s", iface->name);
 			}
 		}
+
+	skip_ipinfo:
 
 		if (options.machinereadable == 1) {
 			printf("%s%s%s%s%s%s\n",
@@ -1619,6 +1625,10 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			pnn = ips->ip[i].pnn;
 		} else {
 			pnn = ctdb->cmd_pnn;
+		}
+		if (pnn == CTDB_UNKNOWN_PNN) {
+			ipinfo[i] = NULL;
+			continue;
 		}
 		ret = ctdb_ctrl_get_public_ip_info(mem_ctx, ctdb->ev,
 						   ctdb->client, pnn,
