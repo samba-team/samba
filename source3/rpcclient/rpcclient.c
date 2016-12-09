@@ -949,7 +949,6 @@ out_free:
 	char *user, *domain, *q;
 	const char *host;
 	int signing_state = SMB_SIGNING_IPC_DEFAULT;
-	bool ok;
 
 	/* make sure the vars that get altered (4th field) are in
 	   a fixed location or certain compilers complain */
@@ -1016,17 +1015,6 @@ out_free:
 	popt_burn_cmdline_password(argc, argv);
 	rpcclient_auth_info = cmdline_auth_info;
 
-	/* Load smb.conf file */
-
-	ok = lp_load_global(get_dyn_CONFIGFILE());
-	if (!ok) {
-		fprintf(stderr,
-			"Can't load %s - run testparm to debug it\n",
-			get_dyn_CONFIGFILE());
-		result = 1;
-		goto done;
-	}
-
 	nt_status = messaging_init_client(talloc_autofree_context(),
 					  samba_tevent_context_init(talloc_autofree_context()),
 					  &rpcclient_msg_ctx);
@@ -1044,9 +1032,6 @@ out_free:
 		result = 1;
 		goto done;
 	}
-
-	/* We must load interfaces after we load the smb.conf */
-	load_interfaces();
 
 	if (!init_names()) {
 		result = 1;

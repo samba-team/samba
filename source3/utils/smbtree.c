@@ -307,14 +307,13 @@ int main(int argc, char *argv[])
 
 	setup_logging(argv[0], DEBUG_STDERR);
 
+	popt_common_credentials_set_ignore_missing_conf();
+
 	pc = poptGetContext("smbtree", argc, argv_const, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	while(poptGetNextOpt(pc) != -1);
 	poptFreeContext(pc);
 	popt_burn_cmdline_password(argc, argv);
-
-	lp_load_global(get_dyn_CONFIGFILE());
-	load_interfaces();
 
 	/* Now do our stuff */
 

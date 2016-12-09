@@ -831,6 +831,8 @@ int main(int argc, char *argv[])
 
 	setlinebuf(stdout);
 
+	popt_common_credentials_set_ignore_missing_conf();
+
 	pc = poptGetContext("smbcacls", argc, argv_const, long_options, 0);
 
 	poptSetOtherOptionHelp(pc, "//server1/share1 filename\nACLs look like: "
@@ -893,9 +895,6 @@ int main(int argc, char *argv[])
 		poptPrintUsage(pc, stderr, 0);
 		return -1;
 	}
-
-	lp_load_global(get_dyn_CONFIGFILE());
-	load_interfaces();
 
 	filename = talloc_strdup(frame, poptGetArg(pc));
 	if (!filename) {

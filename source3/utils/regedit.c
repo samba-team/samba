@@ -781,11 +781,6 @@ int main(int argc, const char **argv)
 		/* TODO */
 	}
 
-	if (!lp_load_global(get_dyn_CONFIGFILE())) {
-		DEBUG(0, ("ERROR loading config file...\n"));
-		exit(1);
-	}
-
 	rv = reg_open_samba3(frame, &ctx);
 	if (!W_ERROR_IS_OK(rv)) {
 		fprintf(stderr, "Unable to open registry: %s\n",

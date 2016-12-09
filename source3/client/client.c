@@ -5765,6 +5765,7 @@ int main(int argc,char *argv[])
 
 	lp_set_cmdline("log level", "1");
 
+	popt_common_credentials_set_ignore_missing_conf();
 	popt_common_credentials_set_delay_post();
 
 	/* skip argv(0) */
@@ -5900,16 +5901,6 @@ int main(int argc,char *argv[])
 		set_cmdline_auth_info_password(cmdline_auth_info,
 					       poptGetArg(pc));
 	}
-
-	if ( override_logfile )
-		setup_logging( lp_logfile(talloc_tos()), DEBUG_FILE );
-
-	if (!lp_load_client(get_dyn_CONFIGFILE())) {
-		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
-			argv[0], get_dyn_CONFIGFILE());
-	}
-
-	load_interfaces();
 
 	if (service_opt && service) {
 		size_t len;

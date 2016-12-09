@@ -348,7 +348,13 @@ static void get_credentials_file(struct user_auth_info *auth_info,
  */
 
 struct user_auth_info *cmdline_auth_info;
+static bool popt_common_credentials_ignore_missing_conf;
 static bool popt_common_credentials_delay_post;
+
+void popt_common_credentials_set_ignore_missing_conf(void)
+{
+	popt_common_credentials_delay_post = true;
+}
 
 void popt_common_credentials_set_delay_post(void)
 {
@@ -412,6 +418,25 @@ static void popt_common_credentials_callback(poptContext con,
 	}
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
+		bool ok;
+
+		if (override_logfile) {
+			setup_logging(lp_logfile(talloc_tos()), DEBUG_FILE );
+		}
+
+		ok = lp_load_client(get_dyn_CONFIGFILE());
+		if (!ok) {
+			const char *pname = poptGetInvocationName(con);
+
+			fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",
+				pname, get_dyn_CONFIGFILE());
+			if (!popt_common_credentials_ignore_missing_conf) {
+				exit(1);
+			}
+		}
+
+		load_interfaces();
+
 		if (popt_common_credentials_delay_post) {
 			return;
 		}

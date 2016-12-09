@@ -50,6 +50,7 @@ extern const struct poptOption popt_common_dynconfig[];
 
 extern struct user_auth_info *cmdline_auth_info;
 
+void popt_common_credentials_set_ignore_missing_conf(void);
 void popt_common_credentials_set_delay_post(void);
 void popt_common_credentials_post(void);
 void popt_burn_cmdline_password(int argc, char *argv[]);
