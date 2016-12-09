@@ -444,7 +444,7 @@ static int py_cli_state_init(struct py_cli_state *self, PyObject *args,
 
 	req = cli_full_connection_creds_send(
 		NULL, self->ev, "myname", host, NULL, 0, share, "?????",
-		cli_creds, 0, 0);
+		cli_creds, 0, SMB_SIGNING_DEFAULT);
 	if (!py_tevent_req_wait_exc(self->ev, req)) {
 		return -1;
 	}
