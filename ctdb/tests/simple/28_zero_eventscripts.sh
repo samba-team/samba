@@ -38,3 +38,5 @@ wait_until_ready
 ps_ctdbd
 
 echo "Good, that seems to work!"
+
+daemons_stop
