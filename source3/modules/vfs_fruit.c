@@ -3114,7 +3114,7 @@ static int fruit_rmdir(struct vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (!handle->conn->cwd || !path || (config->rsrc == FRUIT_RSRC_XATTR)) {
+	if (config->rsrc != FRUIT_RSRC_ADFILE) {
 		goto exit_rmdir;
 	}
 
