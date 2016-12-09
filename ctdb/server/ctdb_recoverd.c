@@ -995,6 +995,124 @@ static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 	}
 }
 
+struct helper_state {
+	int fd[2];
+	pid_t pid;
+	int result;
+	bool done;
+};
+
+static void helper_handler(struct tevent_context *ev,
+			   struct tevent_fd *fde,
+			   uint16_t flags, void *private_data)
+{
+	struct helper_state *state = talloc_get_type_abort(
+		private_data, struct helper_state);
+	int ret;
+
+	ret = sys_read(state->fd[0], &state->result, sizeof(state->result));
+	if (ret != sizeof(state->result)) {
+		state->result = EPIPE;
+	}
+
+	state->done = true;
+}
+
+static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
+		      const char *prog, const char *arg, const char *type)
+{
+	struct helper_state *state;
+	struct tevent_fd *fde;
+	const char **args;
+	int nargs, ret;
+
+	state = talloc_zero(mem_ctx, struct helper_state);
+	if (state == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		return -1;
+	}
+
+	state->pid = -1;
+
+	ret = pipe(state->fd);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to create pipe for %s helper\n", type));
+		goto fail;
+	}
+
+	set_close_on_exec(state->fd[0]);
+
+	nargs = 4;
+	args = talloc_array(state, const char *, nargs);
+	if (args == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		goto fail;
+	}
+
+	args[0] = talloc_asprintf(args, "%d", state->fd[1]);
+	if (args[0] == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+		goto fail;
+	}
+	args[1] = rec->ctdb->daemon.name;
+	args[2] = arg;
+	args[3] = NULL;
+
+	if (args[2] == NULL) {
+		nargs = 3;
+	}
+
+	state->pid = ctdb_vfork_exec(state, rec->ctdb, prog, nargs, args);
+	if (state->pid == -1) {
+		DEBUG(DEBUG_ERR,
+		      ("Failed to create child for %s helper\n", type));
+		goto fail;
+	}
+
+	close(state->fd[1]);
+	state->fd[1] = -1;
+
+	state->done = false;
+
+	fde = tevent_add_fd(rec->ctdb->ev, rec->ctdb, state->fd[0],
+			    TEVENT_FD_READ, helper_handler, state);
+	if (fde == NULL) {
+		goto fail;
+	}
+	tevent_fd_set_auto_close(fde);
+
+	while (!state->done) {
+		tevent_loop_once(rec->ctdb->ev);
+	}
+
+	close(state->fd[0]);
+	state->fd[0] = -1;
+
+	if (state->result != 0) {
+		goto fail;
+	}
+
+	ctdb_kill(rec->ctdb, state->pid, SIGKILL);
+	talloc_free(state);
+	return 0;
+
+fail:
+	if (state->fd[0] != -1) {
+		close(state->fd[0]);
+	}
+	if (state->fd[1] != -1) {
+		close(state->fd[1]);
+	}
+	if (state->pid != -1) {
+		ctdb_kill(rec->ctdb, state->pid, SIGKILL);
+	}
+	talloc_free(state);
+	return -1;
+}
+
+
+
 static bool do_takeover_run(struct ctdb_recoverd *rec,
 			    struct ctdb_node_map_old *nodemap)
 {
@@ -1084,37 +1202,10 @@ done:
 	return ok;
 }
 
-struct recovery_helper_state {
-	int fd[2];
-	pid_t pid;
-	int result;
-	bool done;
-};
-
-static void ctdb_recovery_handler(struct tevent_context *ev,
-				  struct tevent_fd *fde,
-				  uint16_t flags, void *private_data)
-{
-	struct recovery_helper_state *state = talloc_get_type_abort(
-		private_data, struct recovery_helper_state);
-	int ret;
-
-	ret = sys_read(state->fd[0], &state->result, sizeof(state->result));
-	if (ret != sizeof(state->result)) {
-		state->result = EPIPE;
-	}
-
-	state->done = true;
-}
-
-
 static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 {
 	static char prog[PATH_MAX+1] = "";
-	const char **args;
-	struct recovery_helper_state *state;
-	struct tevent_fd *fde;
-	int nargs, ret;
+	const char *arg;
 
 	if (!ctdb_set_helper("recovery_helper", prog, sizeof(prog),
 			     "CTDB_RECOVERY_HELPER", CTDB_HELPER_BINDIR,
@@ -1122,88 +1213,15 @@ static int db_recovery_parallel(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		ctdb_die(rec->ctdb, "Unable to set recovery helper\n");
 	}
 
-	state = talloc_zero(mem_ctx, struct recovery_helper_state);
-	if (state == NULL) {
+	arg = talloc_asprintf(mem_ctx, "%u", new_generation());
+	if (arg == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
 		return -1;
 	}
 
-	state->pid = -1;
-
-	ret = pipe(state->fd);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("Failed to create pipe for recovery helper\n"));
-		goto fail;
-	}
-
-	set_close_on_exec(state->fd[0]);
-
-	nargs = 4;
-	args = talloc_array(state, const char *, nargs);
-	if (args == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
-		goto fail;
-	}
-
-	args[0] = talloc_asprintf(args, "%d", state->fd[1]);
-	args[1] = rec->ctdb->daemon.name;
-	args[2] = talloc_asprintf(args, "%u", new_generation());
-	args[3] = NULL;
-
-	if (args[0] == NULL || args[2] == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
-		goto fail;
-	}
-
 	setenv("CTDB_DBDIR_STATE", rec->ctdb->db_directory_state, 1);
 
-	state->pid = ctdb_vfork_exec(state, rec->ctdb, prog, nargs, args);
-	if (state->pid == -1) {
-		DEBUG(DEBUG_ERR,
-		      ("Failed to create child for recovery helper\n"));
-		goto fail;
-	}
-
-	close(state->fd[1]);
-	state->fd[1] = -1;
-
-	state->done = false;
-
-	fde = tevent_add_fd(rec->ctdb->ev, rec->ctdb, state->fd[0],
-			    TEVENT_FD_READ, ctdb_recovery_handler, state);
-	if (fde == NULL) {
-		goto fail;
-	}
-	tevent_fd_set_auto_close(fde);
-
-	while (!state->done) {
-		tevent_loop_once(rec->ctdb->ev);
-	}
-
-	close(state->fd[0]);
-	state->fd[0] = -1;
-
-	if (state->result != 0) {
-		goto fail;
-	}
-
-	ctdb_kill(rec->ctdb, state->pid, SIGKILL);
-	talloc_free(state);
-	return 0;
-
-fail:
-	if (state->fd[0] != -1) {
-		close(state->fd[0]);
-	}
-	if (state->fd[1] != -1) {
-		close(state->fd[1]);
-	}
-	if (state->pid != -1) {
-		ctdb_kill(rec->ctdb, state->pid, SIGKILL);
-	}
-	talloc_free(state);
-	return -1;
+	return helper_run(rec, mem_ctx, prog, arg, "recovery");
 }
 
 /*
