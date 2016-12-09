@@ -281,7 +281,7 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 
 	/* must be a normal share */
 
-	status = cli_tree_connect(c, sharename, "?????", password);
+	status = cli_tree_connect_creds(c, sharename, "?????", creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("tree connect failed: %s\n", nt_errstr(status));
 		cli_shutdown(c);
