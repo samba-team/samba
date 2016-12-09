@@ -1112,6 +1112,35 @@ fail:
 }
 
 
+static int ctdb_takeover(struct ctdb_recoverd *rec,
+			 uint32_t *force_rebalance_nodes)
+{
+	static char prog[PATH_MAX+1] = "";
+	char *arg;
+	int i;
+
+	if (!ctdb_set_helper("takeover_helper", prog, sizeof(prog),
+			     "CTDB_TAKEOVER_HELPER", CTDB_HELPER_BINDIR,
+			     "ctdb_takeover_helper")) {
+		ctdb_die(rec->ctdb, "Unable to set takeover helper\n");
+	}
+
+	arg = NULL;
+	for (i = 0; i < talloc_array_length(force_rebalance_nodes); i++) {
+		uint32_t pnn = force_rebalance_nodes[i];
+		if (arg == NULL) {
+			arg = talloc_asprintf(rec, "%u", pnn);
+		} else {
+			arg = talloc_asprintf_append(arg, ",%u", pnn);
+		}
+		if (arg == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " memory error\n"));
+			return -1;
+		}
+	}
+
+	return helper_run(rec, rec, prog, arg, "takeover");
+}
 
 static bool do_takeover_run(struct ctdb_recoverd *rec,
 			    struct ctdb_node_map_old *nodemap)
@@ -1166,8 +1195,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 		}
 	}
 
-	ret = ctdb_takeover_run(rec->ctdb, nodemap,
-				rec->force_rebalance_nodes);
+	ret = ctdb_takeover(rec, rec->force_rebalance_nodes);
 
 	/* Reenable takeover runs and IP checks on other nodes */
 	dtr.timeout = 0;

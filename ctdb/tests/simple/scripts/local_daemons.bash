@@ -11,6 +11,7 @@ if [ -n "$ctdb_dir" -a -d "${ctdb_dir}/bin" ] ; then
 	export CTDB_EVENT_HELPER="${hdir}/ctdb_event"
 	export CTDB_LOCK_HELPER="${hdir}/ctdb_lock_helper"
 	export CTDB_RECOVERY_HELPER="${hdir}/ctdb_recovery_helper"
+	export CTDB_TAKEOVER_HELPER="${hdir}/ctdb_takeover_helper"
 	export CTDB_CLUSTER_MUTEX_HELPER="${hdir}/ctdb_mutex_fcntl_helper"
 fi
 
