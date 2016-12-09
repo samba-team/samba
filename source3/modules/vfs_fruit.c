@@ -2176,7 +2176,60 @@ static int fruit_open_meta_stream(vfs_handle_struct *handle,
 				  int flags,
 				  mode_t mode)
 {
-	return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+	AfpInfo *ai = NULL;
+	char afpinfo_buf[AFP_INFO_SIZE];
+	ssize_t len, written;
+	int hostfd = -1;
+	int rc = -1;
+
+	hostfd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
+	if (hostfd == -1) {
+		return -1;
+	}
+
+	if (!(flags & (O_CREAT | O_TRUNC))) {
+		return hostfd;
+	}
+
+	ai = afpinfo_new(talloc_tos());
+	if (ai == NULL) {
+		rc = -1;
+		goto fail;
+	}
+
+	len = afpinfo_pack(ai, afpinfo_buf);
+	if (len != AFP_INFO_SIZE) {
+		rc = -1;
+		goto fail;
+	}
+
+	/* Set fd, needed in SMB_VFS_NEXT_PWRITE() */
+	fsp->fh->fd = hostfd;
+
+	written = SMB_VFS_NEXT_PWRITE(handle, fsp, afpinfo_buf,
+				      AFP_INFO_SIZE, 0);
+	fsp->fh->fd = -1;
+	if (written != AFP_INFO_SIZE) {
+		DBG_ERR("bad write [%zd/%d]\n", written, AFP_INFO_SIZE);
+		rc = -1;
+		goto fail;
+	}
+
+	rc = 0;
+
+fail:
+	DBG_DEBUG("rc=%d, fd=%d\n", rc, hostfd);
+
+	if (rc != 0) {
+		int saved_errno = errno;
+		if (hostfd >= 0) {
+			fsp->fh->fd = hostfd;
+			SMB_VFS_NEXT_CLOSE(handle, fsp);
+		}
+		hostfd = -1;
+		errno = saved_errno;
+	}
+	return hostfd;
 }
 
 static int fruit_open_meta_netatalk(vfs_handle_struct *handle,
