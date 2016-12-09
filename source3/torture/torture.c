@@ -1341,7 +1341,7 @@ static bool run_tcon_test(int dummy)
 		return False;
 	}
 
-	status = cli_tree_connect(cli, share, "?????", password);
+	status = cli_tree_connect_creds(cli, share, "?????", torture_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
 		       nt_errstr(status));
@@ -1466,7 +1466,7 @@ static bool tcon_devtest(struct cli_state *cli,
 	NTSTATUS status;
 	bool ret;
 
-	status = cli_tree_connect(cli, myshare, devtype, password);
+	status = cli_tree_connect_creds(cli, myshare, devtype, torture_creds);
 
 	if (NT_STATUS_IS_OK(expected_error)) {
 		if (NT_STATUS_IS_OK(status)) {
