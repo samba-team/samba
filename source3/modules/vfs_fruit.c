@@ -1576,16 +1576,20 @@ static bool del_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	return true;
 }
 
-static bool empty_finderinfo(const struct adouble *ad)
+static bool ad_empty_finderinfo(const struct adouble *ad)
 {
-
+	int cmp;
 	char emptybuf[ADEDLEN_FINDERI] = {0};
-	if (memcmp(emptybuf,
-		   ad_entry(ad, ADEID_FINDERI),
-		   ADEDLEN_FINDERI) == 0) {
-		return true;
+	char *fi = NULL;
+
+	fi = ad_entry(ad, ADEID_FINDERI);
+	if (fi == NULL) {
+		DBG_ERR("Missing FinderInfo in struct adouble [%p]\n", ad);
+		return false;
 	}
-	return false;
+
+	cmp = memcmp(emptybuf, fi, ADEDLEN_FINDERI);
+	return (cmp == 0);
 }
 
 /**
@@ -2871,7 +2875,7 @@ static ssize_t fruit_pwrite(vfs_handle_struct *handle,
 		}
 		memcpy(ad_entry(ad, ADEID_FINDERI),
 		       &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
-		if (empty_finderinfo(ad)) {
+		if (ad_empty_finderinfo(ad)) {
 			/* Discard metadata */
 			if (config->meta == FRUIT_META_STREAM) {
 				rc = SMB_VFS_FTRUNCATE(fsp, 0);
@@ -3218,7 +3222,7 @@ static NTSTATUS fruit_streaminfo(vfs_handle_struct *handle,
 	if (config->meta == FRUIT_META_NETATALK) {
 		ad = ad_get(talloc_tos(), handle,
 			    smb_fname->base_name, ADOUBLE_META);
-		if (ad && !empty_finderinfo(ad)) {
+		if (ad && !ad_empty_finderinfo(ad)) {
 			if (!add_fruit_stream(
 				    mem_ctx, pnum_streams, pstreams,
 				    AFPINFO_STREAM_NAME, AFP_INFO_SIZE,
