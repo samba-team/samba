@@ -2019,7 +2019,73 @@ static bool readdir_attr_meta_finderi_stream(
 	const struct smb_filename *smb_fname,
 	AfpInfo *ai)
 {
-	return true;
+	struct smb_filename *stream_name = NULL;
+	files_struct *fsp = NULL;
+	ssize_t nread;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+	uint8_t buf[AFP_INFO_SIZE];
+
+	stream_name = synthetic_smb_fname(talloc_tos(),
+					  smb_fname->base_name,
+					  AFPINFO_STREAM_NAME,
+					  NULL, smb_fname->flags);
+	if (stream_name == NULL) {
+		return false;
+	}
+
+	ret = SMB_VFS_STAT(handle->conn, stream_name);
+	if (ret != 0) {
+		return false;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		handle->conn,                           /* conn */
+		NULL,                                   /* req */
+		0,                                      /* root_dir_fid */
+		stream_name,				/* fname */
+		FILE_READ_DATA,                         /* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |   /* share_access */
+			FILE_SHARE_DELETE),
+		FILE_OPEN,                              /* create_disposition*/
+		0,                                      /* create_options */
+		0,                                      /* file_attributes */
+		INTERNAL_OPEN_ONLY,                     /* oplock_request */
+		NULL,					/* lease */
+                0,                                      /* allocation_size */
+		0,                                      /* private_flags */
+		NULL,                                   /* sd */
+		NULL,                                   /* ea_list */
+		&fsp,                                   /* result */
+		NULL,                                   /* pinfo */
+		NULL, NULL);				/* create context */
+
+	TALLOC_FREE(stream_name);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	nread = SMB_VFS_PREAD(fsp, &buf[0], AFP_INFO_SIZE, 0);
+	if (nread != AFP_INFO_SIZE) {
+		DBG_ERR("short read [%s] [%zd/%d]\n",
+			smb_fname_str_dbg(stream_name), nread, AFP_INFO_SIZE);
+		ok = false;
+		goto fail;
+	}
+
+	memcpy(&ai->afpi_FinderInfo[0], &buf[AFP_OFF_FinderInfo],
+	       AFP_FinderSize);
+
+	ok = true;
+
+fail:
+	if (fsp != NULL) {
+		close_file(NULL, fsp, NORMAL_CLOSE);
+	}
+
+	return ok;
 }
 
 static bool readdir_attr_meta_finderi_netatalk(
