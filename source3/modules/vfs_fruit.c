@@ -3109,7 +3109,6 @@ static int fruit_rmdir(struct vfs_handle_struct *handle,
 	DIR *dh = NULL;
 	struct dirent *de;
 	struct fruit_config_data *config;
-	const char *path = smb_fname->base_name;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
@@ -3122,24 +3121,58 @@ static int fruit_rmdir(struct vfs_handle_struct *handle,
 	 * Due to there is no way to change bDeleteVetoFiles variable
 	 * from this module, need to clean up ourselves
 	 */
-	dh = opendir(path);
+
+	dh = SMB_VFS_OPENDIR(handle->conn, smb_fname, NULL, 0);
 	if (dh == NULL) {
 		goto exit_rmdir;
 	}
 
-	while ((de = readdir(dh)) != NULL) {
-		if ((strncmp(de->d_name,
-			     ADOUBLE_NAME_PREFIX,
-			     strlen(ADOUBLE_NAME_PREFIX))) == 0) {
-			char *p = talloc_asprintf(talloc_tos(),
-						  "%s/%s",
-						  path, de->d_name);
-			if (p == NULL) {
-				goto exit_rmdir;
-			}
-			DEBUG(10, ("fruit_rmdir: delete %s\n", p));
-			(void)unlink(p);
+	while ((de = SMB_VFS_READDIR(handle->conn, dh, NULL)) != NULL) {
+		int match;
+		struct adouble *ad = NULL;
+		char *p = NULL;
+		struct smb_filename *ad_smb_fname = NULL;
+		int ret;
+
+		match = strncmp(de->d_name,
+				ADOUBLE_NAME_PREFIX,
+				strlen(ADOUBLE_NAME_PREFIX));
+		if (match != 0) {
+			continue;
+		}
+
+		p = talloc_asprintf(talloc_tos(), "%s/%s",
+				    smb_fname->base_name, de->d_name);
+		if (p == NULL) {
+			DBG_ERR("talloc_asprintf failed\n");
+			return -1;
+		}
+
+		/*
+		 * Check whether it's a valid AppleDouble file, if
+		 * yes, delete it, ignore it otherwise.
+		 */
+		ad = ad_get(talloc_tos(), handle, p, ADOUBLE_RSRC);
+		if (ad == NULL) {
 			TALLOC_FREE(p);
+			continue;
+		}
+		TALLOC_FREE(ad);
+
+		ad_smb_fname = synthetic_smb_fname(talloc_tos(), p,
+						    NULL, NULL,
+						    smb_fname->flags);
+		TALLOC_FREE(p);
+		if (ad_smb_fname == NULL) {
+			DBG_ERR("synthetic_smb_fname failed\n");
+			return -1;
+		}
+
+		ret = SMB_VFS_NEXT_UNLINK(handle, ad_smb_fname);
+		TALLOC_FREE(ad_smb_fname);
+		if (ret != 0) {
+			DBG_ERR("Deleting [%s] failed\n",
+				smb_fname_str_dbg(ad_smb_fname));
 		}
 	}
 
