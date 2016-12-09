@@ -536,6 +536,7 @@ static void usage(void)
 	argv += optind;
 
 	max_protocol = lp_client_max_protocol();
+	max_protocol = MIN(max_protocol, PROTOCOL_NT1);
 
 	if (!got_pass) {
 		char pwd[256] = {0};
