@@ -218,8 +218,7 @@ static struct cli_state *connect_one(char *share)
 
 	DEBUG(4,(" session setup ok\n"));
 
-	status = cli_tree_connect(c, share, "?????", password,
-				  strlen(password)+1);
+	status = cli_tree_connect_creds(c, share, "?????", test_creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("tree connect failed: %s\n", nt_errstr(status)));
 		cli_shutdown(c);
