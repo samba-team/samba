@@ -38,6 +38,7 @@ struct ipalloc_state *
 ipalloc_state_init(TALLOC_CTX *mem_ctx,
 		   uint32_t num_nodes,
 		   enum ipalloc_algorithm algorithm,
+		   bool no_ip_takeover,
 		   bool no_ip_failback,
 		   uint32_t *force_rebalance_nodes)
 {
@@ -50,14 +51,6 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 
 	ipalloc_state->num = num_nodes;
 
-	ipalloc_state->noiptakeover =
-		talloc_zero_array(ipalloc_state,
-				  bool,
-				  ipalloc_state->num);
-	if (ipalloc_state->noiptakeover == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " Out of memory\n"));
-		goto fail;
-	}
 	ipalloc_state->noiphost =
 		talloc_zero_array(ipalloc_state,
 				  bool,
@@ -68,6 +61,7 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 	}
 
 	ipalloc_state->algorithm = algorithm;
+	ipalloc_state->no_ip_takeover = no_ip_takeover;
 	ipalloc_state->no_ip_failback = no_ip_failback;
 	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
@@ -210,7 +204,6 @@ static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
 
 /* Set internal flags for IP allocation:
  *   Clear ip flags
- *   Set NOIPTAKOVER ip flags from per-node NoIPTakeover tunable
  *   Set NOIPHOST ip flag for each INACTIVE node
  *   if all nodes are disabled:
  *     Set NOIPHOST ip flags from per-node NoIPHostOnAllDisabled tunable
@@ -219,17 +212,11 @@ static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
  */
 void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_node_map *nodemap,
-			    uint32_t *tval_noiptakeover,
 			    uint32_t *tval_noiphostonalldisabled)
 {
 	int i;
 
 	for (i=0;i<nodemap->num;i++) {
-		/* Can not take IPs on node with NoIPTakeover set */
-		if (tval_noiptakeover[i] != 0) {
-			ipalloc_state->noiptakeover[i] = true;
-		}
-
 		/* Can not host IPs on INACTIVE node */
 		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
 			ipalloc_state->noiphost[i] = true;

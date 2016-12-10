@@ -1373,15 +1373,8 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 			struct ipalloc_state *ipalloc_state,
 			struct ctdb_node_map_old *nodemap)
 {
-	uint32_t *tval_noiptakeover;
 	uint32_t *tval_noiphostonalldisabled;
 	struct ctdb_node_map *new;
-
-	tval_noiptakeover = get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
-						   "NoIPTakeover", 0);
-	if (tval_noiptakeover == NULL) {
-		return false;
-	}
 
 	tval_noiphostonalldisabled =
 		get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
@@ -1397,10 +1390,8 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 	}
 
 	ipalloc_set_node_flags(ipalloc_state, new,
-			     tval_noiptakeover,
 			     tval_noiphostonalldisabled);
 
-	talloc_free(tval_noiptakeover);
 	talloc_free(tval_noiphostonalldisabled);
 	talloc_free(new);
 
@@ -1573,6 +1564,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 
 	ipalloc_state = ipalloc_state_init(tmp_ctx, ctdb->num_nodes,
 					   determine_algorithm(&ctdb->tunable),
+					   (ctdb->tunable.no_ip_takeover != 0),
 					   (ctdb->tunable.no_ip_failback != 0),
 					   force_rebalance_nodes);
 	if (ipalloc_state == NULL) {

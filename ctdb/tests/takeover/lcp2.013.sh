@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-define_test "Node with NODE_FLAGS_NOIPTAKEOVER doesn't lose IPs"
+define_test "NoIPTakeover: nodes don't lose IPs"
 
 export CTDB_TEST_LOGLEVEL=ERR
 
@@ -18,7 +18,7 @@ required_result <<EOF
 192.168.20.249 0
 EOF
 
-export CTDB_SET_NoIPTakeover="1,0,0"
+export CTDB_SET_NoIPTakeover=1
 
 simple_test 0,0,0 <<EOF
 192.168.20.249 0

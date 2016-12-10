@@ -51,8 +51,8 @@ num=`try_command_on_node -v 1 "$CTDB ip" | grep -v Public | egrep " 1$" | wc -l`
 echo "Number of addresses on node 1 : $num"
 
 
-echo "Turning on NoIPTakeover on node 1"
-try_command_on_node 1 "$CTDB setvar NoIPTakeover 1"
+echo "Turning on NoIPTakeover on all nodes"
+try_command_on_node all "$CTDB setvar NoIPTakeover 1"
 try_command_on_node 1 "$CTDB ipreallocate"
 
 echo Disable node 1

@@ -72,7 +72,7 @@ bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
 			  int32_t pnn,
 			  struct public_ip_list *ip)
 {
-	if (ipalloc_state->noiptakeover[pnn]) {
+	if (ipalloc_state->no_ip_takeover) {
 		return false;
 	}
 
