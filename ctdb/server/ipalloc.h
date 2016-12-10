@@ -51,11 +51,11 @@ struct ipalloc_state * ipalloc_state_init(TALLOC_CTX *mem_ctx,
 					  enum ipalloc_algorithm algorithm,
 					  bool no_ip_takeover,
 					  bool no_ip_failback,
+					  bool no_ip_host_on_all_disabled,
 					  uint32_t *force_rebalance_nodes);
 
 void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
-			    struct ctdb_node_map *nodemap,
-			    uint32_t *tval_noiphostonalldisabled);
+			    struct ctdb_node_map *nodemap);
 
 void ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
 			    struct ctdb_public_ip_list *known_ips,

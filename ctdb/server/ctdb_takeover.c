@@ -1236,118 +1236,6 @@ ctdb_fetch_remote_public_ips(struct ctdb_context *ctdb,
 	return public_ips;
 }
 
-struct get_tunable_callback_data {
-	const char *tunable;
-	uint32_t *out;
-	bool fatal;
-};
-
-static void get_tunable_callback(struct ctdb_context *ctdb, uint32_t pnn,
-				 int32_t res, TDB_DATA outdata,
-				 void *callback)
-{
-	struct get_tunable_callback_data *cd =
-		(struct get_tunable_callback_data *)callback;
-	int size;
-
-	if (res != 0) {
-		/* Already handled in fail callback */
-		return;
-	}
-
-	if (outdata.dsize != sizeof(uint32_t)) {
-		DEBUG(DEBUG_ERR,("Wrong size of returned data when reading \"%s\" tunable from node %d. Expected %d bytes but received %d bytes\n",
-				 cd->tunable, pnn, (int)sizeof(uint32_t),
-				 (int)outdata.dsize));
-		cd->fatal = true;
-		return;
-	}
-
-	size = talloc_array_length(cd->out);
-	if (pnn >= size) {
-		DEBUG(DEBUG_ERR,("Got %s reply from node %d but nodemap only has %d entries\n",
-				 cd->tunable, pnn, size));
-		return;
-	}
-
-		
-	cd->out[pnn] = *(uint32_t *)outdata.dptr;
-}
-
-static void get_tunable_fail_callback(struct ctdb_context *ctdb, uint32_t pnn,
-				       int32_t res, TDB_DATA outdata,
-				       void *callback)
-{
-	struct get_tunable_callback_data *cd =
-		(struct get_tunable_callback_data *)callback;
-
-	switch (res) {
-	case -ETIME:
-		DEBUG(DEBUG_ERR,
-		      ("Timed out getting tunable \"%s\" from node %d\n",
-		       cd->tunable, pnn));
-		cd->fatal = true;
-		break;
-	case -EINVAL:
-	case -1:
-		DEBUG(DEBUG_WARNING,
-		      ("Tunable \"%s\" not implemented on node %d\n",
-		       cd->tunable, pnn));
-		break;
-	default:
-		DEBUG(DEBUG_ERR,
-		      ("Unexpected error getting tunable \"%s\" from node %d\n",
-		       cd->tunable, pnn));
-		cd->fatal = true;
-	}
-}
-
-static uint32_t *get_tunable_from_nodes(struct ctdb_context *ctdb,
-					TALLOC_CTX *tmp_ctx,
-					struct ctdb_node_map_old *nodemap,
-					const char *tunable,
-					uint32_t default_value)
-{
-	TDB_DATA data;
-	struct ctdb_control_get_tunable *t;
-	uint32_t *nodes;
-	uint32_t *tvals;
-	struct get_tunable_callback_data callback_data;
-	int i;
-
-	tvals = talloc_array(tmp_ctx, uint32_t, nodemap->num);
-	CTDB_NO_MEMORY_NULL(ctdb, tvals);
-	for (i=0; i<nodemap->num; i++) {
-		tvals[i] = default_value;
-	}
-		
-	callback_data.out = tvals;
-	callback_data.tunable = tunable;
-	callback_data.fatal = false;
-
-	data.dsize = offsetof(struct ctdb_control_get_tunable, name) + strlen(tunable) + 1;
-	data.dptr  = talloc_size(tmp_ctx, data.dsize);
-	t = (struct ctdb_control_get_tunable *)data.dptr;
-	t->length = strlen(tunable)+1;
-	memcpy(t->name, tunable, t->length);
-	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
-	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_TUNABLE,
-				      nodes, 0, TAKEOVER_TIMEOUT(),
-				      false, data,
-				      get_tunable_callback,
-				      get_tunable_fail_callback,
-				      &callback_data) != 0) {
-		if (callback_data.fatal) {
-			talloc_free(tvals);
-			tvals = NULL;
-		}
-	}
-	talloc_free(nodes);
-	talloc_free(data.dptr);
-
-	return tvals;
-}
-
 static struct ctdb_node_map *
 ctdb_node_map_old_to_new(TALLOC_CTX *mem_ctx,
 			 const struct ctdb_node_map_old *old)
@@ -1373,26 +1261,15 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 			struct ipalloc_state *ipalloc_state,
 			struct ctdb_node_map_old *nodemap)
 {
-	uint32_t *tval_noiphostonalldisabled;
 	struct ctdb_node_map *new;
-
-	tval_noiphostonalldisabled =
-		get_tunable_from_nodes(ctdb, ipalloc_state, nodemap,
-				       "NoIPHostOnAllDisabled", 0);
-	if (tval_noiphostonalldisabled == NULL) {
-		/* Caller frees tmp_ctx */
-		return false;
-	}
 
 	new = ctdb_node_map_old_to_new(ipalloc_state, nodemap);
 	if (new == NULL) {
 		return false;
 	}
 
-	ipalloc_set_node_flags(ipalloc_state, new,
-			     tval_noiphostonalldisabled);
+	ipalloc_set_node_flags(ipalloc_state, new);
 
-	talloc_free(tval_noiphostonalldisabled);
 	talloc_free(new);
 
 	return true;
@@ -1562,11 +1439,13 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodem
 		goto ipreallocated;
 	}
 
-	ipalloc_state = ipalloc_state_init(tmp_ctx, ctdb->num_nodes,
-					   determine_algorithm(&ctdb->tunable),
-					   (ctdb->tunable.no_ip_takeover != 0),
-					   (ctdb->tunable.no_ip_failback != 0),
-					   force_rebalance_nodes);
+	ipalloc_state = ipalloc_state_init(
+		tmp_ctx, ctdb->num_nodes,
+		determine_algorithm(&ctdb->tunable),
+		(ctdb->tunable.no_ip_takeover != 0),
+		(ctdb->tunable.no_ip_failback != 0),
+		(ctdb->tunable.no_ip_host_on_all_disabled != 0),
+		force_rebalance_nodes);
 	if (ipalloc_state == NULL) {
 		talloc_free(tmp_ctx);
 		return -1;

@@ -40,6 +40,7 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 		   enum ipalloc_algorithm algorithm,
 		   bool no_ip_takeover,
 		   bool no_ip_failback,
+		   bool no_ip_host_on_all_disabled,
 		   uint32_t *force_rebalance_nodes)
 {
 	struct ipalloc_state *ipalloc_state =
@@ -63,6 +64,7 @@ ipalloc_state_init(TALLOC_CTX *mem_ctx,
 	ipalloc_state->algorithm = algorithm;
 	ipalloc_state->no_ip_takeover = no_ip_takeover;
 	ipalloc_state->no_ip_failback = no_ip_failback;
+	ipalloc_state->no_ip_host_on_all_disabled = no_ip_host_on_all_disabled;
 	ipalloc_state->force_rebalance_nodes = force_rebalance_nodes;
 
 	return ipalloc_state;
@@ -211,33 +213,25 @@ static bool all_nodes_are_disabled(struct ctdb_node_map *nodemap)
  *     Set NOIPHOST ip flags for disabled nodes
  */
 void ipalloc_set_node_flags(struct ipalloc_state *ipalloc_state,
-			    struct ctdb_node_map *nodemap,
-			    uint32_t *tval_noiphostonalldisabled)
+			    struct ctdb_node_map *nodemap)
 {
 	int i;
+	bool all_disabled = all_nodes_are_disabled(nodemap);
 
 	for (i=0;i<nodemap->num;i++) {
 		/* Can not host IPs on INACTIVE node */
 		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
 			ipalloc_state->noiphost[i] = true;
 		}
-	}
 
-	if (all_nodes_are_disabled(nodemap)) {
-		/* If all nodes are disabled, can not host IPs on node
-		 * with NoIPHostOnAllDisabled set
+		/* If node is disabled then it can only host IPs if
+		 * all nodes are disabled and NoIPHostOnAllDisabled is
+		 * unset
 		 */
-		for (i=0;i<nodemap->num;i++) {
-			if (tval_noiphostonalldisabled[i] != 0) {
-				ipalloc_state->noiphost[i] = true;
-			}
-		}
-	} else {
-		/* If some nodes are not disabled, then can not host
-		 * IPs on DISABLED node
-		 */
-		for (i=0;i<nodemap->num;i++) {
-			if (nodemap->node[i].flags & NODE_FLAGS_DISABLED) {
+		if (nodemap->node[i].flags & NODE_FLAGS_DISABLED) {
+			if (!(all_disabled &&
+			      ipalloc_state->no_ip_host_on_all_disabled == 0)) {
+
 				ipalloc_state->noiphost[i] = true;
 			}
 		}

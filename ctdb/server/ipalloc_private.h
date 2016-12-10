@@ -38,6 +38,7 @@ struct ipalloc_state {
 	enum ipalloc_algorithm algorithm;
 	bool no_ip_failback;
 	bool no_ip_takeover;
+	bool no_ip_host_on_all_disabled;
 	uint32_t *force_rebalance_nodes;
 };
 

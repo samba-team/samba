@@ -158,7 +158,7 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 	const char *t;
 	struct ctdb_node_map *nodemap;
 	uint32_t noiptakeover;
-	uint32_t *tval_noiptakeoverondisabled;
+	uint32_t noiphostonalldisabled;
 	ctdb_sock_addr sa_zero = { .ip = { 0 } };
 	enum ipalloc_algorithm algorithm;
 
@@ -202,10 +202,19 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 		noiptakeover = 0;
 	}
 
+	t = getenv("CTDB_SET_NoIPHostOnAllDisabled");
+	if (t != NULL) {
+		noiphostonalldisabled = (uint32_t) strtol(t, NULL, 0);
+	} else {
+		noiphostonalldisabled = 0;
+	}
+
 	*ipalloc_state = ipalloc_state_init(mem_ctx, nodemap->num,
 					    algorithm,
 					    (noiptakeover != 0),
-					    false, NULL);
+					    false,
+					    (noiphostonalldisabled != 0),
+					    NULL);
 	assert(*ipalloc_state != NULL);
 
 	read_ctdb_public_ip_info(mem_ctx, nodemap->num,
@@ -214,13 +223,7 @@ static void ctdb_test_init(TALLOC_CTX *mem_ctx,
 
 	ipalloc_set_public_ips(*ipalloc_state, known, avail);
 
-	tval_noiptakeoverondisabled =
-		get_tunable_values(mem_ctx, nodemap->num,
-				   "CTDB_SET_NoIPHostOnAllDisabled");
-	assert(tval_noiptakeoverondisabled != NULL);
-
-	ipalloc_set_node_flags(*ipalloc_state, nodemap,
-			       tval_noiptakeoverondisabled);
+	ipalloc_set_node_flags(*ipalloc_state, nodemap);
 }
 
 /* IP layout is read from stdin.  See comment for ctdb_test_init() for
