@@ -19,8 +19,19 @@
 
 from samba import param
 import samba.tests
+import os
 
-class LoadParmTestCase(samba.tests.TestCase):
+
+class LoadParmTestCase(samba.tests.TestCaseInTempDir):
+
+    def setUp(self):
+        super(LoadParmTestCase, self).setUp()
+        self.tempf = os.path.join(self.tempdir, "test")
+        open(self.tempf, 'w').write("empty")
+
+    def tearDown(self):
+        os.unlink(self.tempf)
+        super(LoadParmTestCase, self).tearDown()
 
     def test_init(self):
         file = param.LoadParm()
@@ -61,3 +72,36 @@ class LoadParmTestCase(samba.tests.TestCase):
         samba_lp.set("log level", "5 auth:4")
         self.assertEquals(5, samba_lp.log_level())
 
+    def test_dump(self):
+        samba_lp = param.LoadParm()
+        # Just test successfull method execution (outputs to stdout)
+        self.assertEquals(None, samba_lp.dump())
+
+    def test_dump_to_file(self):
+        samba_lp = param.LoadParm()
+        self.assertEquals(None, samba_lp.dump(False, self.tempf))
+        content = open(self.tempf, 'r').read()
+        self.assertIn('[global]', content)
+        self.assertIn('interfaces', content)
+
+    def test_dump_a_parameter(self):
+        samba_lp = param.LoadParm()
+        samba_lp.load_default()
+        # Just test successfull method execution
+        self.assertEquals(None, samba_lp.dump_a_parameter('interfaces'))
+
+    def test_dump_a_parameter_to_file(self):
+        samba_lp = param.LoadParm()
+        samba_lp.load_default()
+        self.assertEquals(None,
+                          samba_lp.dump_a_parameter('interfaces',
+                                                    'global',
+                                                    self.tempf))
+        content = open(self.tempf, 'r').read()
+        self.assertIn('127.0.0.', content)
+
+    def test_samdb_url(self):
+        samba_lp = param.LoadParm()
+        samdb_url = samba_lp.samdb_url()
+        self.assertTrue(samdb_url.startswith('tdb://'))
+        self.assertTrue(samdb_url.endswith('/sam.ldb'))
