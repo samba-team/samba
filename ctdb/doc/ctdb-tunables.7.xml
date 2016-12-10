@@ -30,6 +30,14 @@
     </para>
 
     <para>
+      Unless otherwise stated, tunables should be set to the same
+      value on all nodes.  Setting tunables to different values across
+      nodes may produce unexpected results.  Future releases may set
+      (some or most) tunables globally across the cluster but doing so
+      is currently a manual process.
+    </para>
+
+    <para>
       The tunable variables are listed alphabetically.
     </para>
 
@@ -177,13 +185,12 @@
       <title>EnableBans</title>
       <para>Default: 1</para>
       <para>
-        This parameter allows ctdb to ban a node if the node is misbehaving.
+	This parameter allows ctdb to ban a node if the node is misbehaving.
       </para>
       <para>
 	When set to 0, this disables banning completely in the cluster
 	and thus nodes can not get banned, even it they break. Don't
-	set to 0 unless you know what you are doing.  You should set
-	this to the same value on all nodes to avoid unexpected behaviour.
+	set to 0 unless you know what you are doing.
       </para>
     </refsect2>
 
@@ -362,10 +369,9 @@
 	If no nodes are HEALTHY then by default ctdb will happily host
 	public IPs on disabled (unhealthy or administratively disabled)
 	nodes.	This can cause problems, for example if the underlying
-	cluster filesystem is not mounted.  When set to 1 on a node and
-	that node is disabled, any IPs hosted by this node will be
-	released and the node will not takeover any IPs until it is no
-	longer disabled.
+	cluster filesystem is not mounted.  When set to 1 and a node
+	is disabled, any IPs hosted by this node will be released and
+	the node will not takeover any IPs until it is no longer disabled.
       </para>
     </refsect2>
 
@@ -374,9 +380,11 @@
       <para>Default: 0</para>
       <para>
 	When set to 1, ctdb will not allow IP addresses to be failed
-	over onto this node. Any IP addresses that the node currently
-	hosts will remain on the node but no new IP addresses can be
-	failed over to the node.
+	over to other nodes.  Any IP addresses already hosted on
+	healthy nodes will remain.  Usually IP addresses hosted on
+	unhealthy nodes will also remain, if NoIPHostOnAllDisabled is
+	0.  However, if NoIPHostOnAllDisabled is 1 then IP addresses
+	will be released by unhealthy nodes and will become un-hosted.
       </para>
     </refsect2>
 
