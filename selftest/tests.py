@@ -52,14 +52,14 @@ else:
     planpythontestsuite("none", "subunit.tests.test_suite")
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
 planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests/python'])
-planpythontestsuite("none", "samba.tests.credentials")
+planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.registry")
 planpythontestsuite("none", "samba.tests.auth")
 planpythontestsuite("none", "samba.tests.get_opt")
 planpythontestsuite("none", "samba.tests.security")
 planpythontestsuite("none", "samba.tests.dcerpc.misc")
 planpythontestsuite("none", "samba.tests.dcerpc.integer")
-planpythontestsuite("none", "samba.tests.param")
+planpythontestsuite("none", "samba.tests.param", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.upgrade")
 planpythontestsuite("none", "samba.tests.core")
 planpythontestsuite("none", "samba.tests.provision")
@@ -134,6 +134,7 @@ plantestsuite(
     "script.traffic_summary", "none",
     [os.path.join(srcdir(), "script/tests/test_traffic_summary.sh"),
      configuration])
+planpythontestsuite("none", "samba.tests.glue", py3_compatible=True)
 
 if with_cmocka:
     plantestsuite("samba.unittests.krb5samba", "none",
