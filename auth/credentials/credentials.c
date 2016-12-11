@@ -1149,7 +1149,7 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
 		if (strwicmp("password", param) == 0) {
 			cli_credentials_set_password(cred, val, obtained);
 		} else if (strwicmp("username", param) == 0) {
-			cli_credentials_set_username(cred, val, obtained);
+			cli_credentials_parse_string(cred, val, obtained);
 		} else if (strwicmp("domain", param) == 0) {
 			cli_credentials_set_domain(cred, val, obtained);
 		} else if (strwicmp("realm", param) == 0) {
