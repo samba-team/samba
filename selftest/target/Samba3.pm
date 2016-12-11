@@ -1674,6 +1674,16 @@ sub provision($$$$$$$$)
 	fruit:resource = stream
 	fruit:metadata = stream
 
+[vfs_wo_fruit]
+	path = $shrdir
+	vfs objects = streams_xattr acl_xattr
+	ea support = yes
+
+[vfs_wo_fruit_stream_depot]
+	path = $shrdir
+	vfs objects = streams_depot acl_xattr
+	ea support = yes
+
 [badname-tmp]
 	path = $badnames_shrdir
 	guest ok = yes
