@@ -3845,6 +3845,64 @@ done:
 	return ret;
 }
 
+static bool test_invalid_afpinfo(struct torture_context *tctx,
+				 struct smb2_tree *tree1,
+				 struct smb2_tree *tree2)
+{
+	const char *fname = "filtest_invalid_afpinfo";
+	const char *sname = "filtest_invalid_afpinfo" AFPINFO_STREAM_NAME;
+	struct smb2_create create;
+	const char *streams_basic[] = {
+		"::$DATA"
+	};
+	const char *streams_afpinfo[] = {
+		"::$DATA",
+		AFPINFO_STREAM
+	};
+	NTSTATUS status;
+	bool ret = true;
+
+	if (tree2 == NULL) {
+		torture_skip_goto(tctx, done, "need second share without fruit\n");
+	}
+
+	torture_comment(tctx, "Testing invalid AFP_AfpInfo stream\n");
+
+	ret = torture_setup_file(tctx, tree2, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	ret = write_stream(tree2, __location__, tctx, tctx,
+			   fname, AFPINFO_STREAM_NAME,
+			   0, 3, "foo");
+	torture_assert_goto(tctx, ret == true, ret, done, "write_stream failed");
+
+	ret = check_stream_list(tree2, tctx, fname, 2, streams_afpinfo, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	torture_comment(tctx, "Listing streams, bad AFPINFO stream must not be present\n");
+
+	ret = check_stream_list(tree1, tctx, fname, 1, streams_basic, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "Bad streams");
+
+	torture_comment(tctx, "Try to open AFPINFO stream, must fail\n");
+
+	ZERO_STRUCT(create);
+	create.in.desired_access = SEC_FILE_ALL;
+	create.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	create.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	create.in.create_disposition = NTCREATEX_DISP_OPEN;
+	create.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION;
+	create.in.fname = sname;
+
+	status = smb2_create(tree1, tctx, &create);
+	torture_assert_ntstatus_equal_goto(tctx, status, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+					   ret, done, "Stream still around?");
+
+done:
+	smb2_util_unlink(tree1, fname);
+	return ret;
+}
+
 /*
  * Note: This test depends on "vfs objects = catia fruit streams_xattr".  For
  * some tests torture must be run on the host it tests and takes an additional
@@ -3881,6 +3939,8 @@ struct torture_suite *torture_vfs_fruit(void)
 	torture_suite_add_1smb2_test(suite, "delete", test_delete_file_with_rfork);
 	torture_suite_add_1smb2_test(suite, "read open rsrc after rename", test_rename_and_read_rsrc);
 	torture_suite_add_1smb2_test(suite, "readdir_attr with names with illegal ntfs characters", test_readdir_attr_illegal_ntfs);
+
+	torture_suite_add_2ns_smb2_test(suite, "invalid AFP_AfpInfo", test_invalid_afpinfo);
 
 	return suite;
 }
