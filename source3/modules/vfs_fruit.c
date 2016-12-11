@@ -3512,7 +3512,26 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 				       files_struct *fsp, void *data,
 				       size_t n, off_t offset)
 {
-	return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+	ssize_t nread;
+	int ret;
+
+	nread = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
+
+	if (nread == n) {
+		return nread;
+	}
+
+	DBG_ERR("Removing [%s] after short read [%zd]\n",
+		fsp_str_dbg(fsp), nread);
+
+	ret = SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
+	if (ret != 0) {
+		DBG_ERR("Removing [%s] failed\n", fsp_str_dbg(fsp));
+		return -1;
+	}
+
+	errno = EINVAL;
+	return -1;
 }
 
 static ssize_t fruit_pread_meta_adouble(vfs_handle_struct *handle,
@@ -4350,6 +4369,50 @@ static NTSTATUS fruit_streaminfo_meta_stream(
 	unsigned int *pnum_streams,
 	struct stream_struct **pstreams)
 {
+	struct stream_struct *stream = *pstreams;
+	unsigned int num_streams = *pnum_streams;
+	struct smb_filename *sname = NULL;
+	int i;
+	int ret;
+	bool ok;
+
+	for (i = 0; i < num_streams; i++) {
+		if (strequal_m(stream[i].name, AFPINFO_STREAM)) {
+			break;
+		}
+	}
+
+	if (i == num_streams) {
+		return NT_STATUS_OK;
+	}
+
+	if (stream[i].size == AFP_INFO_SIZE) {
+		return NT_STATUS_OK;
+	}
+
+	DBG_ERR("Removing invalid AFPINFO_STREAM size [%zd] from [%s]\n",
+		stream[i].size, smb_fname_str_dbg(smb_fname));
+
+	ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams, AFPINFO_STREAM);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	sname = synthetic_smb_fname(talloc_tos(),
+				    smb_fname->base_name,
+				    AFPINFO_STREAM_NAME,
+				    NULL, 0);
+	if (sname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = SMB_VFS_NEXT_UNLINK(handle, sname);
+	TALLOC_FREE(sname);
+	if (ret != 0) {
+		DBG_ERR("Removing [%s] failed\n", smb_fname_str_dbg(sname));
+		return map_nt_error_from_unix(errno);
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -4361,8 +4424,11 @@ static NTSTATUS fruit_streaminfo_meta_netatalk(
 	unsigned int *pnum_streams,
 	struct stream_struct **pstreams)
 {
+	struct stream_struct *stream = *pstreams;
+	unsigned int num_streams = *pnum_streams;
 	struct adouble *ad = NULL;
 	bool is_fi_empty;
+	int i;
 	bool ok;
 
 	/* Remove the Netatalk xattr from the list */
@@ -4370,6 +4436,27 @@ static NTSTATUS fruit_streaminfo_meta_netatalk(
 			      ":" NETATALK_META_XATTR ":$DATA");
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Check if there's a AFPINFO_STREAM from the VFS streams
+	 * backend and if yes, remove it from the list
+	 */
+	for (i = 0; i < num_streams; i++) {
+		if (strequal_m(stream[i].name, AFPINFO_STREAM)) {
+			break;
+		}
+	}
+
+	if (i < num_streams) {
+		DBG_WARNING("Unexpected AFPINFO_STREAM on [%s]\n",
+			    smb_fname_str_dbg(smb_fname));
+
+		ok = del_fruit_stream(mem_ctx, pnum_streams, pstreams,
+				      AFPINFO_STREAM);
+		if (!ok) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	ad = ad_get(talloc_tos(), handle,
