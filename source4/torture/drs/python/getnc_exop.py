@@ -34,6 +34,7 @@ import drs_base
 from drs_base import AbstractLink
 
 import samba.tests
+import random
 
 import ldb
 from ldb import SCOPE_BASE
@@ -134,7 +135,12 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(ctr6.linked_attributes, [])
         self.assertEqual(ctr6.drs_error[0], 0)
 
-    def test_link_utdv_hwm(self):
+    def test_do_single_repl(self):
+        """
+        Make sure that DRSU_EXOP_REPL_OBJ never replicates more than
+        one object, even when we use DRS_GET_ANC.
+        """
+
         ou1 = "OU=get_anc1,%s" % self.ou
         self.ldb_dc1.add({
             "dn": ou1,
@@ -154,6 +160,166 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
             })
         dc3_id = self._get_indentifier(self.ldb_dc1, dc3)
+
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=self.ldb_dc1.get_invocation_id(),
+                               nc_dn_str=ou1,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+        self._check_ctr6(ctr, [ou1])
+
+        # DRSUAPI_DRS_WRIT_REP means that we should only replicate the dn we give (dc3).
+        # DRSUAPI_DRS_GET_ANC means that we should also replicate its ancestors, but
+        # Windows doesn't do this if we use both.
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=self.ldb_dc1.get_invocation_id(),
+                               nc_dn_str=dc3,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               replica_flags=drsuapi.DRSUAPI_DRS_WRIT_REP |
+                                             drsuapi.DRSUAPI_DRS_GET_ANC)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+        self._check_ctr6(ctr, [dc3])
+
+        # Even though the ancestor of ou2 (ou1) has changed since last hwm, and we're
+        # sending DRSUAPI_DRS_GET_ANC, the expected response is that it will only try
+        # and replicate the single object still.
+        req8 = self._exop_req8(dest_dsa=None,
+                               invocation_id=self.ldb_dc1.get_invocation_id(),
+                               nc_dn_str=ou2,
+                               exop=drsuapi.DRSUAPI_EXOP_REPL_OBJ,
+                               replica_flags=drsuapi.DRSUAPI_DRS_CRITICAL_ONLY |
+                                             drsuapi.DRSUAPI_DRS_GET_ANC)
+        (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+        self._check_ctr6(ctr, [ou2])
+
+    def test_link_utdv_hwm(self):
+        """Test verify the DRS_GET_ANC behavior."""
+
+        ou1 = "OU=get_anc1,%s" % self.ou
+        self.ldb_dc1.add({
+            "dn": ou1,
+            "objectclass": "organizationalUnit"
+            })
+        ou1_id = self._get_indentifier(self.ldb_dc1, ou1)
+        ou2 = "OU=get_anc2,%s" % ou1
+        self.ldb_dc1.add({
+            "dn": ou2,
+            "objectclass": "organizationalUnit"
+            })
+        ou2_id = self._get_indentifier(self.ldb_dc1, ou2)
+        dc3 = "CN=test_anc_dc_%u,%s" % (random.randint(0, 4294967295), ou2)
+        self.ldb_dc1.add({
+            "dn": dc3,
+            "objectclass": "computer",
+            "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
+            })
+        dc3_id = self._get_indentifier(self.ldb_dc1, dc3)
+
+        (hwm1, utdv1) = self._check_replication([ou1,ou2,dc3],
+                                                drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        self._check_replication([ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
+
+        self._check_replication([ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, ou1)
+        m["displayName"] = ldb.MessageElement("OU1", ldb.FLAG_MOD_ADD, "displayName")
+        self.ldb_dc1.modify(m)
+
+        (hwm2, utdv2) = self._check_replication([ou2,dc3,ou1],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        self._check_replication([ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
+
+        self._check_replication([ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([ou1],
+            drsuapi.DRSUAPI_DRS_WRIT_REP,
+            highwatermark=hwm1)
+
+        self._check_replication([ou1],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            highwatermark=hwm1)
+
+        self._check_replication([ou1],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            uptodateness_vector=utdv1)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, ou2)
+        m["displayName"] = ldb.MessageElement("OU2", ldb.FLAG_MOD_ADD, "displayName")
+        self.ldb_dc1.modify(m)
+
+        (hwm3, utdv3) = self._check_replication([dc3,ou1,ou2],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        self._check_replication([ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
+
+        self._check_replication([ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([ou1,ou2],
+            drsuapi.DRSUAPI_DRS_WRIT_REP,
+            highwatermark=hwm1)
+
+        self._check_replication([ou1,ou2],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            highwatermark=hwm1)
+
+        self._check_replication([ou1,ou2],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            uptodateness_vector=utdv1)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, self.ou)
+        m["displayName"] = ldb.MessageElement("OU", ldb.FLAG_MOD_ADD, "displayName")
+        self.ldb_dc1.modify(m)
+
+        (hwm4, utdv4) = self._check_replication([dc3,ou1,ou2,self.ou],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        self._check_replication([self.ou,ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
+
+        self._check_replication([self.ou,ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([self.ou,ou2],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            uptodateness_vector=utdv2)
+
         cn3 = "CN=get_anc3,%s" % ou2
         self.ldb_dc1.add({
             "dn": cn3,
@@ -161,69 +327,182 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             })
         cn3_id = self._get_indentifier(self.ldb_dc1, cn3)
 
+        (hwm5, utdv5) = self._check_replication([dc3,ou1,ou2,self.ou,cn3],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP)
+
+        self._check_replication([self.ou,ou1,ou2,dc3,cn3],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
+
+        self._check_replication([self.ou,ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
         m = ldb.Message()
-        m.dn = ldb.Dn(self.ldb_dc1, ou1)
+        m.dn = ldb.Dn(self.ldb_dc1, ou2)
         m["managedBy"] = ldb.MessageElement(dc3, ldb.FLAG_MOD_ADD, "managedBy")
         self.ldb_dc1.modify(m)
-        ou1_managedBy_dc3 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+        ou2_managedBy_dc3 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
                                 drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
-                                ou1_id.guid, dc3_id.guid)
+                                ou2_id.guid, dc3_id.guid)
 
-        (hwm0, utdv0) = self._check_replication([ou2,dc3,cn3,ou1],
+        (hwm6, utdv6) = self._check_replication([dc3,ou1,self.ou,cn3,ou2],
                             drsuapi.DRSUAPI_DRS_WRIT_REP,
-                            expected_links=[ou1_managedBy_dc3])
+                            expected_links=[ou2_managedBy_dc3])
+
+        # Can fail against Windows due to equal precedence of dc3, cn3
+        self._check_replication([self.ou,ou1,ou2,dc3,cn3],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[ou2_managedBy_dc3])
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY)
+
+        self._check_replication([self.ou,ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC)
+
+        self._check_replication([],
+                          drsuapi.DRSUAPI_DRS_WRIT_REP,
+                          uptodateness_vector=utdv5,
+                          expected_links=[ou2_managedBy_dc3])
+
+        self._check_replication([],
+                          drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+                          uptodateness_vector=utdv5)
+
+        self._check_replication([],
+                          drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+                          uptodateness_vector=utdv5)
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.ldb_dc1, dc3)
-        m["managedBy"] = ldb.MessageElement(ou2, ldb.FLAG_MOD_ADD, "managedBy")
+        m["managedBy"] = ldb.MessageElement(ou1, ldb.FLAG_MOD_ADD, "managedBy")
         self.ldb_dc1.modify(m)
+        dc3_managedBy_ou1 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                                drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                                dc3_id.guid, ou1_id.guid)
+
+        (hwm7, utdv7) = self._check_replication([ou1,self.ou,cn3,ou2,dc3],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP,
+                            expected_links=[ou2_managedBy_dc3,dc3_managedBy_ou1])
+
+        # Can fail against Windows due to equal precedence of dc3, cn3
+        #self._check_replication([self.ou,ou1,ou2,dc3,cn3],
+        #    drsuapi.DRSUAPI_DRS_WRIT_REP|
+        #    drsuapi.DRSUAPI_DRS_GET_ANC,
+        #    expected_links=[ou2_managedBy_dc3,dc3_managedBy_ou1])
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            expected_links=[dc3_managedBy_ou1])
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            expected_links=[dc3_managedBy_ou1])
+
+        self._check_replication([self.ou,ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[dc3_managedBy_ou1])
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            more_flags=drsuapi.DRSUAPI_DRS_GET_TGT,
+            expected_links=[dc3_managedBy_ou1])
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, dc3)
+        m["managedBy"] = ldb.MessageElement(ou2, ldb.FLAG_MOD_REPLACE, "managedBy")
+        self.ldb_dc1.modify(m)
+        dc3_managedBy_ou1.flags &= ~drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE
         dc3_managedBy_ou2 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
                                 drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
                                 dc3_id.guid, ou2_id.guid)
 
+        (hwm8, utdv8) = self._check_replication([ou1,self.ou,cn3,ou2,dc3],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP,
+                            expected_links=[ou2_managedBy_dc3,dc3_managedBy_ou1,dc3_managedBy_ou2])
+
+        # Can fail against Windows due to equal precedence of dc3, cn3
+        #self._check_replication([self.ou,ou1,ou2,dc3,cn3],
+        #    drsuapi.DRSUAPI_DRS_WRIT_REP|
+        #    drsuapi.DRSUAPI_DRS_GET_ANC,
+        #    expected_links=[ou2_managedBy_dc3,dc3_managedBy_ou1,dc3_managedBy_ou2])
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2])
+
+        self._check_replication([self.ou,ou1,ou2,dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2])
+
+        self._check_replication([dc3],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            more_flags=drsuapi.DRSUAPI_DRS_GET_TGT,
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2])
+
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP,
-            expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            highwatermark=hwm7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP|
             drsuapi.DRSUAPI_DRS_GET_ANC,
-            expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            highwatermark=hwm7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
-            expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            highwatermark=hwm7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
             drsuapi.DRSUAPI_DRS_GET_ANC,
-            expected_links=[dc3_managedBy_ou2],
-            highwatermark=hwm0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            highwatermark=hwm7)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            more_flags=drsuapi.DRSUAPI_DRS_GET_TGT,
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            highwatermark=hwm7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP,
-            expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            uptodateness_vector=utdv7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_WRIT_REP|
             drsuapi.DRSUAPI_DRS_GET_ANC,
-            expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            uptodateness_vector=utdv7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
-            expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            uptodateness_vector=utdv7)
 
         self._check_replication([],
             drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
             drsuapi.DRSUAPI_DRS_GET_ANC,
-            expected_links=[dc3_managedBy_ou2],
-            uptodateness_vector=utdv0)
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            uptodateness_vector=utdv7)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            more_flags=drsuapi.DRSUAPI_DRS_GET_TGT,
+            expected_links=[dc3_managedBy_ou1,dc3_managedBy_ou2],
+            uptodateness_vector=utdv7)
 
     def test_FSMONotOwner(self):
         """Test role transfer with against DC not owner of the role"""
