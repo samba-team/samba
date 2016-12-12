@@ -1689,6 +1689,25 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
+	{
+		size_t i;
+		const char *idmap_backend;
+		const char *invalid_backends[] = {
+			"ad", "rfc2307", "rid",
+		};
+
+		idmap_backend = lp_idmap_default_backend();
+		for (i = 0; i < ARRAY_SIZE(invalid_backends); i++) {
+			ok = strequal(idmap_backend, invalid_backends[i]);
+			if (ok) {
+				DBG_ERR("FATAL: Invalid idmap backend %s "
+					"configured as the default backend!\n",
+					idmap_backend);
+				exit(1);
+			}
+		}
+	}
+
 	ok = directory_create_or_exist(lp_lock_directory(), 0755);
 	if (!ok) {
 		DEBUG(0, ("Failed to create directory %s for lock files - %s\n",
