@@ -203,7 +203,9 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		/* If a password was not supplied then
 		 * try again with a null username. */
 		if (password[0] || !username[0] ||
+			force_encrypt || smbXcli_conn_signing_mandatory(c->conn) ||
 			get_cmdline_auth_info_use_kerberos(auth_info) ||
+			get_cmdline_auth_info_use_ccache(auth_info) ||
 			!NT_STATUS_IS_OK(status = cli_session_setup(c, "",
 				    		"", 0,
 						"", 0,
