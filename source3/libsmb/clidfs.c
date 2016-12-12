@@ -26,6 +26,7 @@
 #include "trans2.h"
 #include "libsmb/nmblib.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "auth/credentials/credentials.h"
 
 /********************************************************************
  Important point.
@@ -144,9 +145,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 	char *servicename;
 	char *sharename;
 	char *newserver, *newshare;
-	const char *username;
-	const char *password;
-	const char *domain;
 	NTSTATUS status;
 	int flags = 0;
 	enum protocol_types protocol = PROTOCOL_NONE;
@@ -229,21 +227,15 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		smb2cli_conn_set_max_credits(c->conn, DEFAULT_SMB2_MAX_CREDITS);
 	}
 
-	username = get_cmdline_auth_info_username(auth_info);
-	password = get_cmdline_auth_info_password(auth_info);
-	domain = get_cmdline_auth_info_domain(auth_info);
-	if ((domain == NULL) || (domain[0] == '\0')) {
-		domain = lp_workgroup();
-	}
-
 	creds = get_cmdline_auth_info_creds(auth_info);
 
 	status = cli_session_setup_creds(c, creds);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* If a password was not supplied then
 		 * try again with a null username. */
-		if (password[0] || !username[0] ||
-			get_cmdline_auth_info_use_kerberos(auth_info) ||
+		if (force_encrypt || smbXcli_conn_signing_mandatory(c->conn) ||
+			cli_credentials_authentication_requested(creds) ||
+			cli_credentials_is_anonymous(creds) ||
 			!NT_STATUS_IS_OK(status = cli_session_setup_anon(c)))
 		{
 			d_printf("session setup failed: %s\n",
