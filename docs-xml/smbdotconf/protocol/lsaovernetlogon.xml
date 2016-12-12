@@ -1,0 +1,21 @@
+<samba:parameter name="lsa over netlogon"
+                 context="G"
+                 type="boolean"
+                 deprecated="1"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>Setting this deprecated option will allow the RPC server
+	in the AD DC to answer the LSARPC interface on the
+	<command>\pipe\netlogon</command> IPC pipe.</para>
+
+	<para>When enabled, this matches the behaviour of Microsoft's
+	Windows, due to their internal implementation choices.</para>
+
+	<para>If it is disabled (the default), the AD DC can offer
+	improved performance, as the netlogon server is decoupled and
+	can run as multiple processes.</para>
+
+</description>
+
+<value type="default">no</value>
+</samba:parameter>
