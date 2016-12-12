@@ -1829,6 +1829,10 @@ fail:
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	if (!NT_STATUS_IS_OK(status)) {
+		cli->raw_status = status;
+	}
+
 	TALLOC_FREE(frame);
 	return status;
 }
