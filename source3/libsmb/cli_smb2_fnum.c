@@ -886,6 +886,9 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
+
+	cli->raw_status = status;
+
 	TALLOC_FREE(subframe);
 	TALLOC_FREE(frame);
 	return status;
@@ -957,7 +960,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 		return status;
 	}
 
-	cli_smb2_close_fnum(cli, fnum);
+	status = cli_smb2_close_fnum(cli, fnum);
 
 	ZERO_STRUCTP(sbuf);
 
@@ -967,7 +970,7 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 	sbuf->st_ex_size = cr.end_of_file;
 	*attributes = cr.file_attributes;
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 /***************************************************************
@@ -1133,6 +1136,9 @@ NTSTATUS cli_smb2_qpathinfo_alt_name(struct cli_state *cli,
 	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
+
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1232,6 +1238,8 @@ NTSTATUS cli_smb2_qfileinfo_basic(struct cli_state *cli,
 
   fail:
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1262,6 +1270,8 @@ NTSTATUS cli_smb2_getattrE(struct cli_state *cli,
 					&write_time_ts,
 					&change_time_ts,
                                         NULL);
+
+	cli->raw_status = status;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1340,6 +1350,8 @@ NTSTATUS cli_smb2_getatr(struct cli_state *cli,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1409,6 +1421,8 @@ NTSTATUS cli_smb2_qpathinfo2(struct cli_state *cli,
 	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
+
+	cli->raw_status = status;
 
 	TALLOC_FREE(frame);
 	return status;
@@ -1498,6 +1512,8 @@ NTSTATUS cli_smb2_qpathinfo_streams(struct cli_state *cli,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1580,6 +1596,8 @@ NTSTATUS cli_smb2_setatr(struct cli_state *cli,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1636,7 +1654,7 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 		put_long_date((char *)inbuf.data + 16, write_time);
 	}
 
-	return smb2cli_set_info(cli->conn,
+	cli->raw_status = smb2cli_set_info(cli->conn,
 				cli->timeout,
 				cli->smb2.session,
 				cli->smb2.tcon,
@@ -1646,6 +1664,8 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 				0, /* in_additional_info */
 				ph->fid_persistent,
 				ph->fid_volatile);
+
+	return cli->raw_status;
 }
 
 /***************************************************************
@@ -1752,6 +1772,8 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, const char *path,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1829,9 +1851,7 @@ fail:
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
-		cli->raw_status = status;
-	}
+	cli->raw_status = status;
 
 	TALLOC_FREE(frame);
 	return status;
@@ -1913,6 +1933,8 @@ NTSTATUS cli_smb2_query_security_descriptor(struct cli_state *cli,
 
   fail:
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -1975,6 +1997,8 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 				ph->fid_volatile);
 
   fail:
+
+	cli->raw_status = status;
 
 	TALLOC_FREE(frame);
 	return status;
@@ -2090,6 +2114,8 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -2183,6 +2209,8 @@ NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 
   fail:
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -2237,6 +2265,8 @@ NTSTATUS cli_smb2_set_ea_path(struct cli_state *cli,
 	if (fnum != 0xffff) {
 		cli_smb2_close_fnum(cli, fnum);
 	}
+
+	cli->raw_status = status;
 
 	return status;
 }
@@ -2348,6 +2378,8 @@ NTSTATUS cli_smb2_get_ea_list_path(struct cli_state *cli,
 		cli_smb2_close_fnum(cli, fnum);
 	}
 
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -2433,6 +2465,8 @@ NTSTATUS cli_smb2_get_user_quota(struct cli_state *cli,
 	}
 
 fail:
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -2506,6 +2540,8 @@ NTSTATUS cli_smb2_list_user_quota_step(struct cli_state *cli,
 				       pqt_list);
 
 cleanup:
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -2559,6 +2595,8 @@ NTSTATUS cli_smb2_get_fs_quota_info(struct cli_state *cli,
 	status = parse_fs_quota_buffer(outbuf.data, outbuf.length, pqt);
 
 cleanup:
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -2607,6 +2645,9 @@ NTSTATUS cli_smb2_set_user_quota(struct cli_state *cli,
 				  0,		     /* in_additional_info */
 				  ph->fid_persistent, ph->fid_volatile);
 cleanup:
+
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 
 	return status;
@@ -2652,6 +2693,8 @@ NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
 	    0,				     /* in_additional_info */
 	    ph->fid_persistent, ph->fid_volatile);
 cleanup:
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
@@ -3526,6 +3569,8 @@ NTSTATUS cli_smb2_shadow_copy_data(TALLOC_CTX *mem_ctx,
 						pnames,
 						pnum_names);
  fail:
+	cli->raw_status = status;
+
 	TALLOC_FREE(frame);
 	return status;
 }
