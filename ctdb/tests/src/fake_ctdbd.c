@@ -3165,7 +3165,6 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX *mem_ctx;
 	struct ctdbd_context *ctdb;
 	struct tevent_context *ev;
-	int debug_level;
 	poptContext pc;
 	int opt, fd, ret, pfd[2];
 	ssize_t len;
@@ -3191,21 +3190,16 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	if (options.debuglevel == NULL) {
-		DEBUGLEVEL = DEBUG_ERR;
-	} else {
-		if (debug_level_parse(options.debuglevel, &debug_level)) {
-			DEBUGLEVEL = debug_level;
-		} else {
-			fprintf(stderr, "Invalid debug level\n");
-			poptPrintHelp(pc, stdout, 0);
-			exit(1);
-		}
-	}
-
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		fprintf(stderr, "Memory error\n");
+		exit(1);
+	}
+
+	ret = logging_init(mem_ctx, "file:", options.debuglevel, "fake-ctdbd");
+	if (ret != 0) {
+		fprintf(stderr, "Invalid debug level\n");
+		poptPrintHelp(pc, stdout, 0);
 		exit(1);
 	}
 
