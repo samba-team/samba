@@ -1399,6 +1399,7 @@ sub provision_ad_dc_ntvfs($$)
         server services = +winbind -winbindd
 	ldap server require strong auth = allow_sasl_over_tls
 	allow nt4 crypto = yes
+	lsa over netlogon = yes
 	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
