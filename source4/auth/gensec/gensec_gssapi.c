@@ -221,7 +221,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		ret = cli_credentials_get_server_gss_creds(machine_account, 
 							   gensec_security->settings->lp_ctx, &gcc);
 		if (ret) {
-			DEBUG(1, ("Aquiring acceptor credentials failed: %s\n", 
+			DEBUG(1, ("Acquiring acceptor credentials failed: %s\n",
 				  error_message(ret)));
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
