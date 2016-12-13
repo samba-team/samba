@@ -39,6 +39,17 @@ from samba.samba3 import param as s3param
 
 class PosixAclMappingTests(TestCaseInTempDir):
 
+    def print_posix_acl(self, posix_acl):
+        aclstr = ""
+        for entry in posix_acl.acl:
+            aclstr += "a_type: %d\n" % entry.a_type
+            aclstr += "a_perm: %o\n" % entry.a_perm
+            if entry.a_type == smb_acl.SMB_ACL_USER:
+                aclstr += "uid: %d\n" % entry.info.uid
+            if entry.a_type == smb_acl.SMB_ACL_GROUP:
+                aclstr += "gid: %d\n" % entry.info.gid
+        return aclstr
+
     def test_setntacl(self):
         acl = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
         setntacl(self.lp, self.tempf, acl, "S-1-5-21-2212615479-2695158682-2101375467", use_ntvfs=False)
@@ -182,7 +193,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
     def test_setposixacl_getposixacl(self):
         smbd.set_simple_acl(self.tempf, 0640)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
-        self.assertEquals(posix_acl.count, 4)
+        self.assertEquals(posix_acl.count, 4, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[0].a_perm, 6)
@@ -251,7 +262,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
     def test_setposixacl_getposixacl(self):
         smbd.set_simple_acl(self.tempf, 0640)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
-        self.assertEquals(posix_acl.count, 4)
+        self.assertEquals(posix_acl.count, 4, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[0].a_perm, 6)
@@ -268,7 +279,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
     def test_setposixacl_dir_getposixacl(self):
         smbd.set_simple_acl(self.tempdir, 0750)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
-        self.assertEquals(posix_acl.count, 4)
+        self.assertEquals(posix_acl.count, 4, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -290,7 +301,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         smbd.set_simple_acl(self.tempf, 0670, BA_gid)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
 
-        self.assertEquals(posix_acl.count, 5)
+        self.assertEquals(posix_acl.count, 5, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
         self.assertEquals(posix_acl.acl[0].a_perm, 6)
@@ -344,7 +355,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 13)
+        self.assertEquals(posix_acl.count, 13, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -484,7 +495,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (AU_gid,AU_type) = s4_passdb.sid_to_id(AU_sid)
         self.assertEquals(AU_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 13)
+        self.assertEquals(posix_acl.count, 13, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -580,7 +591,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
         self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 15)
+        self.assertEquals(posix_acl.count, 15, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
@@ -693,7 +704,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         (PA_gid,PA_type) = s4_passdb.sid_to_id(PA_sid)
         self.assertEquals(PA_type, idmap.ID_TYPE_BOTH)
 
-        self.assertEquals(posix_acl.count, 15)
+        self.assertEquals(posix_acl.count, 15, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_GROUP)
         self.assertEquals(posix_acl.acl[0].a_perm, 7)
