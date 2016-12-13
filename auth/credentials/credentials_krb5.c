@@ -1151,16 +1151,17 @@ _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred,
 	}
 
 	if (ktc->password_based || obtained < CRED_SPECIFIED) {
-		/* This creates a GSSAPI cred_id_t for match-by-key with only the keytab set */
-		maj_stat = smb_gss_krb5_import_cred(&min_stat, smb_krb5_context->krb5_context,
-						    NULL, NULL, ktc->keytab,
-						    &gcc->creds);
-	} else {
-		/* This creates a GSSAPI cred_id_t with the principal and keytab set, matching by name */
-		maj_stat = smb_gss_krb5_import_cred(&min_stat, smb_krb5_context->krb5_context,
-						    NULL, princ, ktc->keytab,
-						    &gcc->creds);
+		/*
+		 * This creates a GSSAPI cred_id_t for match-by-key with only
+		 * the keytab set
+		 */
+		princ = NULL;
 	}
+	maj_stat = smb_gss_krb5_import_cred(&min_stat,
+					    smb_krb5_context->krb5_context,
+					    NULL, princ,
+					    ktc->keytab,
+					    &gcc->creds);
 	if (maj_stat) {
 		if (min_stat) {
 			ret = min_stat;
