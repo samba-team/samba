@@ -12,7 +12,7 @@
 
 #include "pam_winbind.h"
 
-enum pam_winbind_request_type 
+enum pam_winbind_request_type
 {
 	PAM_WINBIND_AUTHENTICATE,
 	PAM_WINBIND_SETCRED,
@@ -490,12 +490,12 @@ config_from_pam:
 		else if (!strcasecmp(*v, "unknown_ok"))
 			ctrl |= WINBIND_UNKNOWN_OK_ARG;
 		else if ((type == PAM_WINBIND_AUTHENTICATE
-			  || type == PAM_WINBIND_SETCRED) 
+			  || type == PAM_WINBIND_SETCRED)
 			 && !strncasecmp(*v, "require_membership_of",
 					 strlen("require_membership_of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
-		else if ((type == PAM_WINBIND_AUTHENTICATE 
-			  || type == PAM_WINBIND_SETCRED) 
+		else if ((type == PAM_WINBIND_AUTHENTICATE
+			  || type == PAM_WINBIND_SETCRED)
 			 && !strncasecmp(*v, "require-membership-of",
 					 strlen("require-membership-of")))
 			ctrl |= WINBIND_REQUIRED_MEMBERSHIP;
@@ -2502,7 +2502,7 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 }
 
 static int _pam_delete_cred(pam_handle_t *pamh, int flags,
-			    int argc, enum pam_winbind_request_type type, 
+			    int argc, enum pam_winbind_request_type type,
 			    const char **argv)
 {
 	int retval = PAM_SUCCESS;
