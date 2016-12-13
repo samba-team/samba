@@ -792,6 +792,14 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	/*
 	 * Try to negotiate one new presentation context.
+	 *
+	 * Deep in here we locate the iface (by uuid) that the client
+	 * requested, from the list of interfaces on the
+	 * call->conn->endpoint, and call iface->bind() on that iface.
+	 *
+	 * call->conn was set up at the accept() of the socket, and
+	 * call->conn->endpoint has a list of interfaces restricted to
+	 * this port or pipe.
 	 */
 	status = dcesrv_negotiate_contexts(call, &call->pkt.u.bind, ack_ctx_list);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_RPC_PROTOCOL_ERROR)) {
@@ -800,6 +808,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	/*
+	 * At this point we know which interface (eg netlogon, lsa,
+	 * drsuapi) the caller requested.  This is available on
+	 * call->conntext->iface.
+	 */
 
 	if ((call->pkt.pfc_flags & DCERPC_PFC_FLAG_CONC_MPX) &&
 	    (call->state_flags & DCESRV_CALL_STATE_FLAG_MULTIPLEXED)) {
@@ -811,7 +825,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		call->conn->state_flags |= DCESRV_CALL_STATE_FLAG_PROCESS_PENDING_CALL;
 	}
 
-	/* handle any authentication that is being requested */
+	/*
+	 * After finding the interface and setting up the NDR
+	 * transport negotiation etc, handle any authentication that
+	 * is being requested.
+	 */
 	if (!dcesrv_auth_bind(call)) {
 		struct dcesrv_auth *auth = &call->conn->auth_state;
 
@@ -2245,6 +2263,13 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 			return;
 		}
 	}
+
+	/*
+	 * This fills in dcesrv_conn->endpoint with the endpoint
+	 * associated with the socket.  From this point on we know
+	 * which (group of) services we are handling, but not the
+	 * specific interface.
+	 */
 
 	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx,
 					 srv_conn,
