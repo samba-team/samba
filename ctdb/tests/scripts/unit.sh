@@ -209,6 +209,16 @@ script_test ()
     result_check || exit $?
 }
 
+# Simple test harness for running tests without tracing
+unit_test_notrace ()
+{
+    test_header "$@"
+
+    _out=$("$@" 2>&1)
+
+    result_check || exit $?
+}
+
 test_cleanup_hooks=""
 
 test_cleanup ()
