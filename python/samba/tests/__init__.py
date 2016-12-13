@@ -21,22 +21,25 @@
 import os
 import ldb
 import samba
-import samba.auth
 from samba import param
-from samba.samdb import SamDB
 from samba import credentials
-import samba.ndr
-import samba.dcerpc.dcerpc
-import samba.dcerpc.base
-import samba.dcerpc.epmapper
 from samba.credentials import Credentials
-from samba import gensec
 import socket
 import struct
 import subprocess
 import sys
 import tempfile
 import unittest
+from samba.compat import PY3
+if not PY3:
+    # Py2 only
+    import samba.auth
+    from samba.samdb import SamDB
+    import samba.ndr
+    import samba.dcerpc.dcerpc
+    import samba.dcerpc.base
+    import samba.dcerpc.epmapper
+    from samba import gensec
 
 try:
     from unittest import SkipTest
@@ -136,7 +139,7 @@ class TestCase(unittest.TestCase):
             try:
                 try:
                     self.setUp()
-                except SkipTest, e:
+                except SkipTest as e:
                     self._addSkip(result, str(e))
                     return
                 except KeyboardInterrupt:
@@ -149,7 +152,7 @@ class TestCase(unittest.TestCase):
                 try:
                     testMethod()
                     ok = True
-                except SkipTest, e:
+                except SkipTest as e:
                     self._addSkip(result, str(e))
                     return
                 except self.failureException:
@@ -161,7 +164,7 @@ class TestCase(unittest.TestCase):
 
                 try:
                     self.tearDown()
-                except SkipTest, e:
+                except SkipTest as e:
                     self._addSkip(result, str(e))
                 except KeyboardInterrupt:
                     raise
@@ -380,5 +383,6 @@ def connect_samdb_env(env_url, env_username, env_password, lp=None):
 def delete_force(samdb, dn):
     try:
         samdb.delete(dn)
-    except ldb.LdbError, (num, errstr):
+    except ldb.LdbError as error:
+        (num, errstr) = error.args
         assert num == ldb.ERR_NO_SUCH_OBJECT, "ldb.delete() failed: %s" % errstr

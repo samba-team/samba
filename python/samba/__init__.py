@@ -25,7 +25,15 @@ __docformat__ = "restructuredText"
 import os
 import sys
 import time
+import ldb
+from samba.compat import PY3
 import samba.param
+from samba import _glue
+if not PY3:
+    from samba._ldb import Ldb as _Ldb
+else:
+    # samba._ldb is not yet ported to Python 3
+    _Ldb = object
 
 
 def source_tree_topdir():
@@ -45,10 +53,6 @@ def in_source_tree():
     except RuntimeError:
         return False
     return True
-
-
-import ldb
-from samba._ldb import Ldb as _Ldb
 
 
 class Ldb(_Ldb):
@@ -98,7 +102,7 @@ class Ldb(_Ldb):
 
         # TODO set debug
         def msg(l, text):
-            print text
+            print(text)
         #self.set_debug(msg)
 
         self.set_utf8_casefold()
@@ -109,7 +113,7 @@ class Ldb(_Ldb):
             if nosync_p is not None and nosync_p:
                 flags |= ldb.FLG_NOSYNC
 
-        self.set_create_perms(0600)
+        self.set_create_perms(0o600)
 
         if url is not None:
             self.connect(url, flags, options)
@@ -141,7 +145,8 @@ class Ldb(_Ldb):
         try:
             res = self.search(base=dn, scope=ldb.SCOPE_SUBTREE, attrs=[],
                       expression="(|(objectclass=user)(objectclass=computer))")
-        except ldb.LdbError, (errno, _):
+        except ldb.LdbError as error:
+            (errno, estr) = error.args
             if errno == ldb.ERR_NO_SUCH_OBJECT:
                 # Ignore no such object errors
                 return
@@ -151,7 +156,8 @@ class Ldb(_Ldb):
         try:
             for msg in res:
                 self.delete(msg.dn, ["relax:0"])
-        except ldb.LdbError, (errno, _):
+        except ldb.LdbError as error:
+            (errno, estr) = error.args
             if errno != ldb.ERR_NO_SUCH_OBJECT:
                 # Ignore no such object errors
                 raise
@@ -175,7 +181,8 @@ class Ldb(_Ldb):
                        [], controls=["show_deleted:0", "show_recycled:0"]):
             try:
                 self.delete(msg.dn, ["relax:0"])
-            except ldb.LdbError, (errno, _):
+            except ldb.LdbError as error:
+                (errno, estr) = error.args
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore no such object errors
                     raise
@@ -190,7 +197,8 @@ class Ldb(_Ldb):
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
                 self.delete(attr, ["relax:0"])
-            except ldb.LdbError, (errno, _):
+            except ldb.LdbError as error:
+                (errno, estr) = error.args
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore missing dn errors
                     raise
@@ -203,7 +211,8 @@ class Ldb(_Ldb):
         for attr in ["@INDEXLIST", "@ATTRIBUTES"]:
             try:
                 self.delete(attr, ["relax:0"])
-            except ldb.LdbError, (errno, _):
+            except ldb.LdbError as error:
+                (errno, estr) = error.args
                 if errno != ldb.ERR_NO_SUCH_OBJECT:
                     # Ignore missing dn errors
                     raise
@@ -386,7 +395,6 @@ def arcfour_encrypt(key, data):
     raise Exception("arcfour_encrypt() requires " +
                     "python*-crypto or python*-m2crypto or m2crypto")
 
-import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
