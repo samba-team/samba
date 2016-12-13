@@ -1535,11 +1535,34 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 			ip.pnn = ips->ip[j].pnn;
 			ip.addr = ips->ip[j].addr;
 
-			ret = db_hash_add(ipdb, (uint8_t *)&ip.addr,
-					  sizeof(ip.addr),
-					  (uint8_t *)&ip, sizeof(ip));
-			if (ret != 0) {
-				goto failed;
+			if (pnn_list[i] == ip.pnn) {
+				/* Node claims IP is hosted on it, so
+				 * save that information
+				 */
+				ret = db_hash_add(ipdb, (uint8_t *)&ip.addr,
+						  sizeof(ip.addr),
+						  (uint8_t *)&ip, sizeof(ip));
+				if (ret != 0) {
+					goto failed;
+				}
+			} else {
+				/* Node thinks IP is hosted elsewhere,
+				 * so overwrite with CTDB_UNKNOWN_PNN
+				 * if there's no existing entry
+				 */
+				ret = db_hash_exists(ipdb, (uint8_t *)&ip.addr,
+						     sizeof(ip.addr));
+				if (ret == ENOENT) {
+					ip.pnn = CTDB_UNKNOWN_PNN;
+					ret = db_hash_add(ipdb,
+							  (uint8_t *)&ip.addr,
+							  sizeof(ip.addr),
+							  (uint8_t *)&ip,
+							  sizeof(ip));
+					if (ret != 0) {
+						goto failed;
+					}
+				}
 			}
 		}
 
