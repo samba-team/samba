@@ -113,7 +113,9 @@ static void dcesrv_task_init(struct task_server *task)
 
 		status = dcesrv_add_ep(dce_ctx, task->lp_ctx, e, task->event_ctx,
 				       this_model_ops);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) {
+			goto failed;
+		}
 	}
 
 	irpc_add_name(task->msg_ctx, "rpc_server");
