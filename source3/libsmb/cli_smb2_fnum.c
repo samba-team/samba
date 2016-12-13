@@ -2682,7 +2682,7 @@ NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
 
 	status = build_fs_quota_buffer(talloc_tos(), pqt, &inbuf, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto cleanup;
 	}
 
 	status = smb2cli_set_info(
