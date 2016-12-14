@@ -339,18 +339,31 @@ _PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
 				  enum credentials_obtained obtained)
 {
 	if (obtained >= cred->password_obtained) {
-		cred->password_tries = 0;
-		cred->password = talloc_strdup(cred, val);
-		if (cred->password) {
-			/* Don't print the actual password in talloc memory dumps */
-			talloc_set_name_const(cred->password, "password set via cli_credentials_set_password");
-		}
-		cred->password_obtained = obtained;
-		cli_credentials_invalidate_ccache(cred, cred->password_obtained);
 
+		cred->lm_response = data_blob_null;
+		cred->nt_response = data_blob_null;
 		cred->nt_hash = NULL;
-		cred->lm_response = data_blob(NULL, 0);
-		cred->nt_response = data_blob(NULL, 0);
+		cred->password = NULL;
+
+		cli_credentials_invalidate_ccache(cred, obtained);
+
+		cred->password_tries = 0;
+
+		if (val == NULL) {
+			cred->password_obtained = obtained;
+			return true;
+		}
+
+		cred->password = talloc_strdup(cred, val);
+		if (cred->password == NULL) {
+			return false;
+		}
+
+		/* Don't print the actual password in talloc memory dumps */
+		talloc_set_name_const(cred->password,
+			"password set via cli_credentials_set_password");
+		cred->password_obtained = obtained;
+
 		return true;
 	}
 
