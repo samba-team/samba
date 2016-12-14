@@ -30,6 +30,20 @@ next Samba version 4.7 will not accept the wrong spelling.
 Users who were using the wrong spelling "ressource" with two "s" can keep the
 setting, but are advised to switch to the correct spelling.
 
+ID Mapping
+----------
+We discovered that the majority of users have an invalid or incorrect
+ID mapping configuration. We implemented checks in the 'testparm' tool to
+validate the ID mapping configuration. You should run it and check if it prints
+any warnings or errors after upgrading! If it does you should fix them. See the
+'IDENTITY MAPPING CONSIDERATIONS' section in the smb.conf manpage.
+There are some ID mapping backends which are not allowed to be used for the
+default backend. Winbind will no longer start if an invalid backend is
+configured as the default backend.
+
+To avoid problems in future we advise all users to run 'testparm' after
+changing the smb.conf file!
+
 NEW FEATURES/CHANGES
 ====================
 
