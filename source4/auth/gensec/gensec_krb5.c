@@ -378,8 +378,8 @@ static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_s
 		ret = krb5_mk_req(gensec_krb5_state->smb_krb5_context->krb5_context, 
 				  &gensec_krb5_state->auth_context,
 				  gensec_krb5_state->ap_req_options,
-				  gensec_get_target_service(gensec_security),
-				  hostname,
+				  discard_const_p(char, gensec_get_target_service(gensec_security)),
+				  discard_const_p(char, hostname),
 				  in_data_p, ccache_container->ccache, 
 				  &gensec_krb5_state->enc_ticket);
 	}
