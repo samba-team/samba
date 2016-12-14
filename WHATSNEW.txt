@@ -48,6 +48,15 @@ only allows AES-based algorithms to be negotiated. Setting the parameter to
 This can solves some corner cases of mixed environments with Server 2003R2 and
 newer DCs.
 
+Printing
+--------
+Support for uploading printer drivers from newer Windows clients (Windows 10)
+has been added until our implementation of [MS-PAR] protocol is ready.
+Several issues with uploading different printing drivers have been addressed.
+
+The OS Version for the printing server has been increased to announce
+Windows Server 2003 R2 SP2. If a driver needs a newer version then you should
+check the smb.conf manpage for details.
 
 new option for owner inheritance
 --------------------------------
