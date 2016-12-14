@@ -431,7 +431,7 @@ static krb5_error_code fill_mem_keytab_from_system_keytab(krb5_context krbctx,
 	ZERO_STRUCT(kt_entry);
 	ZERO_STRUCT(kt_cursor);
 
-	ret = smb_krb5_kt_open(krbctx, NULL, false, &keytab);
+	ret = smb_krb5_kt_open_relative(krbctx, NULL, false, &keytab);
 	if (ret) {
 		DEBUG(1, ("smb_krb5_kt_open failed (%s)\n",
 			  error_message(ret)));
