@@ -797,9 +797,40 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
 		   || (p = strchr_m(uname, '/'))
 		   || (p = strchr_m(uname, credentials->winbind_separator)))
 	{
+		const char *domain = NULL;
+
+		domain = uname;
 		*p = 0;
-		cli_credentials_set_domain(credentials, uname, obtained);
 		uname = p+1;
+
+		if (obtained == credentials->realm_obtained &&
+		    !strequal_m(credentials->domain, domain))
+		{
+			/*
+			 * We need to undo a former set with the same level
+			 * in order to get the expected result from
+			 * cli_credentials_get_principal().
+			 *
+			 * But we only need to do that if the domain
+			 * actually changes.
+			 */
+			cli_credentials_set_realm(credentials, domain, obtained);
+		}
+		cli_credentials_set_domain(credentials, domain, obtained);
+	}
+	if (obtained == credentials->principal_obtained &&
+	    !strequal_m(credentials->username, uname))
+	{
+		/*
+		 * We need to undo a former set with the same level
+		 * in order to get the expected result from
+		 * cli_credentials_get_principal().
+		 *
+		 * But we only need to do that if the username
+		 * actually changes.
+		 */
+		credentials->principal_obtained = CRED_UNINITIALISED;
+		credentials->principal = NULL;
 	}
 	cli_credentials_set_username(credentials, uname, obtained);
 }
