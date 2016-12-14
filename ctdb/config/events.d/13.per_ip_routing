@@ -367,8 +367,6 @@ service_reconfigure ()
 
 ctdb_check_args "$@"
 
-ctdb_service_check_reconfigure
-
 case "$1" in
 startup)
 	flush_rules_and_routes
@@ -434,6 +432,10 @@ releaseip)
 ipreallocated)
 	add_missing_routes
 	remove_bogus_routes
+	;;
+
+reconfigure)
+	ctdb_service_reconfigure
 	;;
 esac
 

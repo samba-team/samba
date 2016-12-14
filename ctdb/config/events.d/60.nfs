@@ -254,8 +254,6 @@ ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
-ctdb_service_check_reconfigure
-
 case "$1" in
 startup)
 	nfs_callout "$@"
@@ -273,6 +271,12 @@ takeip)
 releaseip)
 	nfs_callout "$@"
 	ctdb_service_set_reconfigure
+	;;
+
+ipreallocated)
+	if ctdb_service_needs_reconfigure ; then
+		ctdb_service_reconfigure
+	fi
 	;;
 
 monitor)
