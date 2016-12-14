@@ -115,6 +115,8 @@ struct cli_credentials {
 	bool callback_running;
 
 	char winbind_separator;
+
+	bool password_will_be_nt_hash;
 };
 
 #endif /* __CREDENTIALS_INTERNAL_H__ */

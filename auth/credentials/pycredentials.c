@@ -299,6 +299,21 @@ static PyObject *py_creds_parse_string(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_cli_credentials_set_password_will_be_nt_hash(PyObject *self, PyObject *args)
+{
+	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
+	PyObject *py_val = NULL;
+	bool val = false;
+
+	if (!PyArg_ParseTuple(args, "O!", &PyBool_Type, &py_val)) {
+		return NULL;
+	}
+	val = PyObject_IsTrue(py_val);
+
+	cli_credentials_set_password_will_be_nt_hash(creds, val);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_get_nt_hash(PyObject *self, PyObject *unused)
 {
 	PyObject *ret;
@@ -564,6 +579,11 @@ static PyMethodDef py_creds_methods[] = {
 	{ "parse_string", py_creds_parse_string, METH_VARARGS,
 		"S.parse_string(text, obtained=CRED_SPECIFIED) -> None\n"
 		"Parse credentials string." },
+	{ "set_password_will_be_nt_hash",
+		py_cli_credentials_set_password_will_be_nt_hash, METH_VARARGS,
+		"S.set_password_will_be_nt_hash(bool) -> None\n"
+		"Alters the behaviour of S.set_password() "
+		"to expect the NTHASH as hexstring." },
 	{ "get_nt_hash", py_creds_get_nt_hash, METH_NOARGS,
 		NULL },
 	{ "get_kerberos_state", py_creds_get_kerberos_state, METH_NOARGS,

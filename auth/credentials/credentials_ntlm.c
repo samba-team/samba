@@ -301,6 +301,8 @@ _PUBLIC_ bool cli_credentials_set_utf16_password(struct cli_credentials *cred,
 						 const DATA_BLOB *password_utf16,
 						 enum credentials_obtained obtained)
 {
+	cred->password_will_be_nt_hash = false;
+
 	if (password_utf16 == NULL) {
 		return cli_credentials_set_password(cred, NULL, obtained);
 	}
@@ -389,10 +391,27 @@ _PUBLIC_ bool cli_credentials_set_old_utf16_password(struct cli_credentials *cre
 	return true;
 }
 
+_PUBLIC_ void cli_credentials_set_password_will_be_nt_hash(struct cli_credentials *cred,
+							   bool val)
+{
+	/*
+	 * We set this here and the next cli_credentials_set_password()
+	 * that resets the password or password callback
+	 * will pick this up.
+	 *
+	 * cli_credentials_set_nt_hash() and
+	 * cli_credentials_set_utf16_password() will reset this
+	 * to false.
+	 */
+	cred->password_will_be_nt_hash = val;
+}
+
 _PUBLIC_ bool cli_credentials_set_nt_hash(struct cli_credentials *cred,
 				 const struct samr_Password *nt_hash, 
 				 enum credentials_obtained obtained)
 {
+	cred->password_will_be_nt_hash = false;
+
 	if (obtained >= cred->password_obtained) {
 		cli_credentials_set_password(cred, NULL, obtained);
 		if (nt_hash) {

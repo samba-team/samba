@@ -318,7 +318,8 @@ _PUBLIC_ const char *cli_credentials_get_password(struct cli_credentials *cred)
 	}
 
 	if (cred->password_obtained == CRED_CALLBACK && 
-	    !cred->callback_running) {
+	    !cred->callback_running &&
+	    !cred->password_will_be_nt_hash) {
 		cred->callback_running = true;
 		cred->password = cred->password_cb(cred);
 		cred->callback_running = false;
@@ -350,6 +351,29 @@ _PUBLIC_ bool cli_credentials_set_password(struct cli_credentials *cred,
 		cred->password_tries = 0;
 
 		if (val == NULL) {
+			cred->password_obtained = obtained;
+			return true;
+		}
+
+		if (cred->password_will_be_nt_hash) {
+			struct samr_Password *nt_hash = NULL;
+			size_t val_len = strlen(val);
+			size_t converted;
+
+			nt_hash = talloc(cred, struct samr_Password);
+			if (nt_hash == NULL) {
+				return false;
+			}
+
+			converted = strhex_to_str((char *)nt_hash->hash,
+						  sizeof(nt_hash->hash),
+						  val, val_len);
+			if (converted != sizeof(nt_hash->hash)) {
+				TALLOC_FREE(nt_hash);
+				return false;
+			}
+
+			cred->nt_hash = nt_hash;
 			cred->password_obtained = obtained;
 			return true;
 		}
@@ -424,32 +448,85 @@ _PUBLIC_ bool cli_credentials_set_old_password(struct cli_credentials *cred,
 _PUBLIC_ struct samr_Password *cli_credentials_get_nt_hash(struct cli_credentials *cred,
 							   TALLOC_CTX *mem_ctx)
 {
+	enum credentials_obtained password_obtained;
+	enum credentials_obtained ccache_threshold;
+	enum credentials_obtained client_gss_creds_threshold;
+	bool password_is_nt_hash;
 	const char *password = NULL;
+	struct samr_Password *nt_hash = NULL;
 
 	if (cred->nt_hash != NULL) {
-		struct samr_Password *nt_hash = talloc(mem_ctx, struct samr_Password);
-		if (!nt_hash) {
-			return NULL;
-		}
-
-		*nt_hash = *cred->nt_hash;
-
-		return nt_hash;
+		/*
+		 * If we already have a hash it's easy.
+		 */
+		goto return_hash;
 	}
 
+	/*
+	 * This is a bit tricky, with password_will_be_nt_hash
+	 * we still need to get the value via the password_callback
+	 * but if we did that we should not remember it's state
+	 * in the long run so we need to undo it.
+	 */
+
+	password_obtained = cred->password_obtained;
+	ccache_threshold = cred->ccache_threshold;
+	client_gss_creds_threshold = cred->client_gss_creds_threshold;
+	password_is_nt_hash = cred->password_will_be_nt_hash;
+
+	cred->password_will_be_nt_hash = false;
 	password = cli_credentials_get_password(cred);
-	if (password) {
-		struct samr_Password *nt_hash = talloc(mem_ctx, struct samr_Password);
-		if (!nt_hash) {
-			return NULL;
-		}
 
-		E_md4hash(password, nt_hash->hash);
-
-		return nt_hash;
+	cred->password_will_be_nt_hash = password_is_nt_hash;
+	if (password_is_nt_hash && password_obtained == CRED_CALLBACK) {
+		/*
+		 * We got the nt_hash as string via the callback,
+		 * so we need to undo the state change.
+		 *
+		 * And also don't remember it as plaintext password.
+		 */
+		cred->client_gss_creds_threshold = client_gss_creds_threshold;
+		cred->ccache_threshold = ccache_threshold;
+		cred->password_obtained = password_obtained;
+		cred->password = NULL;
 	}
 
-	return NULL;
+	if (password == NULL) {
+		return NULL;
+	}
+
+	nt_hash = talloc(cred, struct samr_Password);
+	if (nt_hash == NULL) {
+		return NULL;
+	}
+
+	if (password_is_nt_hash) {
+		size_t password_len = strlen(password);
+		size_t converted;
+
+		converted = strhex_to_str((char *)nt_hash->hash,
+					  sizeof(nt_hash->hash),
+					  password, password_len);
+		if (converted != sizeof(nt_hash->hash)) {
+			TALLOC_FREE(nt_hash);
+			return false;
+		}
+	} else {
+		E_md4hash(password, nt_hash->hash);
+	}
+
+	cred->nt_hash = nt_hash;
+	nt_hash = NULL;
+
+return_hash:
+	nt_hash = talloc(mem_ctx, struct samr_Password);
+	if (nt_hash == NULL) {
+		return NULL;
+	}
+
+	*nt_hash = *cred->nt_hash;
+
+	return nt_hash;
 }
 
 /**
