@@ -1023,8 +1023,8 @@ krb5_error_code smb_krb5_kt_open_relative(krb5_context context,
 			goto out;
 		}
 
-		if ((strncmp(keytab_name_req, "WRFILE:/", 8) == 0) ||
-		    (strncmp(keytab_name_req, "FILE:/", 6) == 0)) {
+		if ((strncmp(keytab_name_req, "WRFILE:", 7) == 0) ||
+		    (strncmp(keytab_name_req, "FILE:", 5) == 0)) {
 			tmp = keytab_name_req;
 			goto resolve;
 		}
