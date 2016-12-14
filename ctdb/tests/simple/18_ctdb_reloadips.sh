@@ -81,8 +81,6 @@ EOF
 
 try_command_on_node any $CTDB sync
 
-select_test_node_and_ips
-
 echo "Removing IP $test_ip from node $test_node"
 
 try_command_on_node $test_node "mv $addresses $backup && grep -v '^${test_ip}/' $backup >$addresses"
