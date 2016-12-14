@@ -1130,12 +1130,29 @@ krb5_error_code smb_krb5_kt_open(krb5_context context,
 				 bool write_access,
 				 krb5_keytab *keytab)
 {
-	if (keytab_name_req != NULL) {
-		if (keytab_name_req[0] != '/') {
-			return KRB5_KT_BADNAME;
-		}
+	int cmp;
+
+	if (keytab_name_req == NULL) {
+		return KRB5_KT_BADNAME;
 	}
 
+	if (keytab_name_req[0] == '/') {
+		goto open_keytab;
+	}
+
+	cmp = strncmp(keytab_name_req, "FILE:/", 6);
+	if (cmp == 0) {
+		goto open_keytab;
+	}
+
+	cmp = strncmp(keytab_name_req, "WRFILE:/", 8);
+	if (cmp == 0) {
+		goto open_keytab;
+	}
+
+	return KRB5_KT_BADNAME;
+
+open_keytab:
 	return smb_krb5_kt_open_relative(context,
 					 keytab_name_req,
 					 write_access,
