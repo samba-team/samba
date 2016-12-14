@@ -33,7 +33,7 @@ setting, but are advised to switch to the correct spelling.
 NEW FEATURES/CHANGES
 ====================
 
-kerberos client encryption types
+Kerberos client encryption types
 --------------------------------
 Some parts of Samba (most notably winbindd) perform Kerberos client
 operations based on a Samba-generated krb5.conf file. A new
