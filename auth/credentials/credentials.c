@@ -36,84 +36,10 @@
  */
 _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx) 
 {
-	struct cli_credentials *cred = talloc(mem_ctx, struct cli_credentials);
+	struct cli_credentials *cred = talloc_zero(mem_ctx, struct cli_credentials);
 	if (cred == NULL) {
 		return cred;
 	}
-
-	cred->workstation_obtained = CRED_UNINITIALISED;
-	cred->username_obtained = CRED_UNINITIALISED;
-	cred->password_obtained = CRED_UNINITIALISED;
-	cred->domain_obtained = CRED_UNINITIALISED;
-	cred->realm_obtained = CRED_UNINITIALISED;
-	cred->ccache_obtained = CRED_UNINITIALISED;
-	cred->client_gss_creds_obtained = CRED_UNINITIALISED;
-	cred->principal_obtained = CRED_UNINITIALISED;
-	cred->keytab_obtained = CRED_UNINITIALISED;
-	cred->server_gss_creds_obtained = CRED_UNINITIALISED;
-
-	cred->ccache_threshold = CRED_UNINITIALISED;
-	cred->client_gss_creds_threshold = CRED_UNINITIALISED;
-
-	cred->workstation = NULL;
-	cred->username = NULL;
-	cred->password = NULL;
-	cred->old_password = NULL;
-	cred->domain = NULL;
-	cred->realm = NULL;
-	cred->principal = NULL;
-	cred->salt_principal = NULL;
-	cred->impersonate_principal = NULL;
-	cred->self_service = NULL;
-	cred->target_service = NULL;
-
-	cred->bind_dn = NULL;
-
-	cred->nt_hash = NULL;
-	cred->old_nt_hash = NULL;
-
-	cred->lm_response.data = NULL;
-	cred->lm_response.length = 0;
-	cred->nt_response.data = NULL;
-	cred->nt_response.length = 0;
-
-	cred->ccache = NULL;
-	cred->client_gss_creds = NULL;
-	cred->keytab = NULL;
-	cred->server_gss_creds = NULL;
-
-	cred->workstation_cb = NULL;
-	cred->password_cb = NULL;
-	cred->username_cb = NULL;
-	cred->domain_cb = NULL;
-	cred->realm_cb = NULL;
-	cred->principal_cb = NULL;
-
-	cred->priv_data = NULL;
-
-	cred->netlogon_creds = NULL;
-	cred->secure_channel_type = SEC_CHAN_NULL;
-
-	cred->kvno = 0;
-
-	cred->password_last_changed_time = 0;
-
-	cred->smb_krb5_context = NULL;
-
-	cred->machine_account_pending = false;
-	cred->machine_account_pending_lp_ctx = NULL;
-
-	cred->machine_account = false;
-
-	cred->password_tries = 0;
-
-	cred->callback_running = false;
-
-	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
-	cli_credentials_set_gensec_features(cred, 0);
-	cli_credentials_set_krb_forwardable(cred, CRED_AUTO_KRB_FORWARDABLE);
-
-	cred->forced_sasl_mech = NULL;
 
 	cred->winbind_separator = '\\';
 
