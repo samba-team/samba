@@ -860,7 +860,6 @@ sub provision($$$$$$$$$$)
 	server max protocol = SMB2
 	host msdfs = $msdfs
 	lanman auth = yes
-	allow nt4 crypto = yes
 
 	# fruit:copyfile is a global option
 	fruit:copyfile = yes
@@ -1399,6 +1398,7 @@ sub provision_ad_dc_ntvfs($$)
         my $extra_conf_options = "netbios aliases = localDC1-a
         server services = +winbind -winbindd
 	ldap server require strong auth = allow_sasl_over_tls
+	allow nt4 crypto = yes
 	";
 	my $ret = $self->provision($prefix,
 				   "domain controller",
