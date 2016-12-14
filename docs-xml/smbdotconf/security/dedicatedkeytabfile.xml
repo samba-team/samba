@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	  Specifies the path to the kerberos keytab file when
+	  Specifies the absolute path to the kerberos keytab file when
 	  <smbconfoption name="kerberos method"/> is set to "dedicated
 	  keytab".
 	</para>
