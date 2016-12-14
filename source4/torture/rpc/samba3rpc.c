@@ -1070,7 +1070,7 @@ static bool auth2(struct torture_context *tctx,
 		goto done;
 	}
 
-	negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	E_md4hash(cli_credentials_get_password(wks_cred), mach_pw.hash);
 
 	a.in.server_name = talloc_asprintf(
