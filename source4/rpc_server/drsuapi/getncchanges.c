@@ -582,8 +582,20 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 				       struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector)
 {
 	unsigned int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	TALLOC_CTX *tmp_ctx = NULL;
 	uint64_t uSNChanged = ldb_msg_find_attr_as_int(msg, "uSNChanged", -1);
+	bool is_critical = ldb_msg_find_attr_as_bool(msg, "isCriticalSystemObject", false);
+
+	if (replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+		if (!is_critical) {
+			return WERR_OK;
+		}
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 
 	for (i=0; i<msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
