@@ -709,7 +709,7 @@ bool torture_rpc_schannel2(struct torture_context *torture)
 	struct dcerpc_binding *b;
 	struct dcerpc_pipe *p1 = NULL, *p2 = NULL;
 	struct cli_credentials *credentials1, *credentials2;
-	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SIGN;
+	uint32_t dcerpc_flags = DCERPC_SCHANNEL | DCERPC_SCHANNEL_AUTO | DCERPC_SIGN;
 
 	join_ctx = torture_join_domain(torture, talloc_asprintf(torture, "%s2", TEST_MACHINE_NAME),
 				       ACB_WSTRUST, &credentials1);
