@@ -605,8 +605,10 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 		for (j=0; j<el->num_values; j++) {
 			struct dsdb_dn *dsdb_dn;
 			uint64_t local_usn;
-			NTSTATUS status;
+			uint64_t originating_usn;
+			NTSTATUS status, status2;
 			WERROR werr;
+			struct GUID originating_invocation_id;
 
 			dsdb_dn = dsdb_dn_parse(tmp_ctx, sam_ctx, &el->values[j], sa->syntax->ldap_oid);
 			if (dsdb_dn == NULL) {
@@ -633,6 +635,21 @@ static WERROR get_nc_changes_add_links(struct ldb_context *sam_ctx,
 
 			if (local_usn < highest_usn) {
 				continue;
+			}
+
+			status = dsdb_get_extended_dn_guid(dsdb_dn->dn,
+							   &originating_invocation_id,
+							   "RMD_INVOCID");
+			status2 = dsdb_get_extended_dn_uint64(dsdb_dn->dn,
+							      &originating_usn,
+							      "RMD_ORIGINATING_USN");
+
+			if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(status2)) {
+				if (udv_filter(uptodateness_vector,
+					       &originating_invocation_id,
+					       originating_usn)) {
+					continue;
+				}
 			}
 
 			werr = get_nc_changes_add_la(mem_ctx, sam_ctx, schema,
