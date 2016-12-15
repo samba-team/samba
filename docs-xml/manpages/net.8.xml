@@ -108,7 +108,6 @@
 		</varlistentry>
 
 		&stdarg.netbios.name;
-		&stdarg.configfile;
 
 		<varlistentry>
 		<term>-S|--server server</term>

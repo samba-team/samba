@@ -50,7 +50,6 @@
 
 	<variablelist>
 		&popt.autohelp;
-		&stdarg.configfile;
 		&popt.common.samba.client;
 		<varlistentry>
 		<term>-t|--timeout</term>
