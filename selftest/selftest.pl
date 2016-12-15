@@ -654,6 +654,7 @@ if ($#testlists == -1) {
 
 $ENV{SELFTEST_PREFIX} = "$prefix_abs";
 $ENV{SELFTEST_TMPDIR} = "$tmpdir_abs";
+$ENV{TMPDIR} = "$tmpdir_abs";
 $ENV{TEST_DATA_PREFIX} = "$tmpdir_abs";
 if ($opt_socket_wrapper) {
 	$ENV{SELFTEST_INTERFACES} = $interfaces;
