@@ -1830,6 +1830,10 @@ sub provision($$$$$$$$)
 	copy = tmp
 	acl_xattr:ignore system acls = yes
 	acl_xattr:default acl style = windows
+
+[mangle_illegal]
+	copy = tmp
+        mangled names = illegal
 	";
 	close(CONF);
 

@@ -8440,6 +8440,152 @@ static bool run_mangle1(int dummy)
 	return true;
 }
 
+static NTSTATUS mangle_illegal_list_shortname_fn(const char *mntpoint,
+						 struct file_info *f,
+						 const char *mask,
+						 void *state)
+{
+	if (f->short_name == NULL) {
+		return NT_STATUS_OK;
+	}
+
+	if (strlen(f->short_name) == 0) {
+		return NT_STATUS_OK;
+	}
+
+	printf("unexpected shortname: %s\n", f->short_name);
+
+	return NT_STATUS_OBJECT_NAME_INVALID;
+}
+
+static NTSTATUS mangle_illegal_list_name_fn(const char *mntpoint,
+					    struct file_info *f,
+					    const char *mask,
+					    void *state)
+{
+	char *name = state;
+
+	printf("name: %s\n", f->name);
+	fstrcpy(name, f->name);
+	return NT_STATUS_OK;
+}
+
+static bool run_mangle_illegal(int dummy)
+{
+	struct cli_state *cli = NULL;
+	struct cli_state *cli_posix = NULL;
+	const char *fname = "\\MANGLE_ILLEGAL\\this_is_a_long_fname_to_be_mangled.txt";
+	const char *illegal_fname = "MANGLE_ILLEGAL/foo:bar";
+	char *mangled_path = NULL;
+	uint16_t fnum;
+	fstring name;
+	fstring alt_name;
+	NTSTATUS status;
+
+	printf("starting mangle-illegal test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return False;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	if (!torture_open_connection(&cli_posix, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli_posix->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli_posix);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	cli_rmdir(cli, "\\MANGLE_ILLEGAL");
+	status = cli_mkdir(cli, "\\MANGLE_ILLEGAL");
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("mkdir1 failed : %s\n", nt_errstr(status));
+		return False;
+	}
+
+	/*
+	 * Create a file with illegal NTFS characters and test that we
+	 * get a usable mangled name
+	 */
+
+	cli_setatr(cli_posix, illegal_fname, 0, 0);
+	cli_posix_unlink(cli_posix, illegal_fname);
+
+	status = cli_posix_open(cli_posix, illegal_fname, O_RDWR|O_CREAT|O_EXCL,
+				0600, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("POSIX create of %s failed (%s)\n",
+		       illegal_fname, nt_errstr(status));
+		return false;
+	}
+
+	status = cli_close(cli_posix, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close failed (%s)\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_list(cli, "\\MANGLE_ILLEGAL\\*", 0, mangle_illegal_list_name_fn, &name);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_list failed: %s\n", nt_errstr(status));
+		return false;
+	}
+
+	mangled_path = talloc_asprintf(talloc_tos(), "\\MANGLE_ILLEGAL\\%s", name);
+	if (mangled_path == NULL) {
+		return false;
+	}
+
+	status = cli_openx(cli, mangled_path, O_RDONLY, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_openx(%s) failed: %s\n", mangled_path, nt_errstr(status));
+		TALLOC_FREE(mangled_path);
+		return false;
+	}
+	TALLOC_FREE(mangled_path);
+	cli_close(cli, fnum);
+
+	cli_setatr(cli_posix, illegal_fname, 0, 0);
+	cli_posix_unlink(cli_posix, illegal_fname);
+
+	/*
+	 * Create a file with a long name and check that we got *no* short name.
+	 */
+
+	status = cli_ntcreate(cli, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
+			      FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
+			      0, 0, &fnum, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("open %s failed: %s\n", fname, nt_errstr(status));
+		return false;
+	}
+	cli_close(cli, fnum);
+
+	status = cli_list(cli, fname, 0, mangle_illegal_list_shortname_fn, &alt_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_list failed\n");
+		return false;
+	}
+
+	cli_unlink(cli, fname, 0);
+	cli_rmdir(cli, "\\MANGLE_ILLEGAL");
+
+	if (!torture_close_connection(cli_posix)) {
+		return false;
+	}
+
+	if (!torture_close_connection(cli)) {
+		return false;
+	}
+
+	return true;
+}
+
 static size_t null_source(uint8_t *buf, size_t n, void *priv)
 {
 	size_t *to_pull = (size_t *)priv;
@@ -11034,6 +11180,7 @@ static struct {
 	{"PROPERTIES", run_properties, 0},
 	{"MANGLE", torture_mangle, 0},
 	{"MANGLE1", run_mangle1, 0},
+	{"MANGLE-ILLEGAL", run_mangle_illegal, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
