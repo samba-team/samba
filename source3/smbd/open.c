@@ -366,8 +366,7 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	struct smb_filename *smb_fname = fsp->fsp_name;
 	NTSTATUS status = NT_STATUS_OK;
 
-#ifdef O_NOFOLLOW
-	/* 
+	/*
 	 * Never follow symlinks on a POSIX client. The
 	 * client should be doing this.
 	 */
@@ -375,12 +374,10 @@ NTSTATUS fd_open(struct connection_struct *conn,
 	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) || !lp_follow_symlinks(SNUM(conn))) {
 		flags |= O_NOFOLLOW;
 	}
-#endif
 
 	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
 		int posix_errno = errno;
-#ifdef O_NOFOLLOW
 #if defined(ENOTSUP) && defined(OSF1)
 		/* handle special Tru64 errno */
 		if (errno == ENOTSUP) {
@@ -397,7 +394,6 @@ NTSTATUS fd_open(struct connection_struct *conn,
 		if (errno == EMLINK) {
 			posix_errno = ELOOP;
 		}
-#endif /* O_NOFOLLOW */
 		status = map_nt_error_from_unix(posix_errno);
 		if (errno == EMFILE) {
 			static time_t last_warned = 0L;
