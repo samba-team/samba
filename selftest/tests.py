@@ -26,12 +26,19 @@ except KeyError:
     samba4bindir = bindir()
     config_h = os.path.join(samba4bindir, "default/include/config.h")
 
-# define here var to check what we support
+# check available features
+config_hash = dict()
 f = open(config_h, 'r')
 try:
-    have_man_pages_support = ("XSLTPROC_MANPAGES 1" in f.read())
+    lines = f.readlines()
+    config_hash = dict((x[0], ' '.join(x[1:]))
+            for x in map(lambda line: line.strip().split(' ')[1:],
+                         filter(lambda line: (line[0:7] == '#define') and (len(line.split(' ')) > 2), lines)))
 finally:
     f.close()
+
+have_man_pages_support = ("XSLTPROC_MANPAGES" in config_hash)
+with_cmocka = ("HAVE_CMOCKA" in config_hash)
 
 planpythontestsuite("none", "samba.tests.source")
 if have_man_pages_support:
@@ -123,3 +130,7 @@ planpythontestsuite("none", "samba.tests.kcc.graph_utils")
 planpythontestsuite("none", "samba.tests.kcc.kcc_utils")
 planpythontestsuite("none", "samba.tests.kcc.ldif_import_export")
 plantestsuite("wafsamba.duplicate_symbols", "none", [os.path.join(srcdir(), "buildtools/wafsamba/test_duplicate_symbol.sh")])
+
+if with_cmocka:
+    plantestsuite("samba.unittests.krb5samba", "none",
+                  [os.path.join(bindir(), "default/testsuite/unittests/test_krb5samba")])
