@@ -355,6 +355,31 @@ static NTSTATUS check_base_file_access(struct connection_struct *conn,
 }
 
 /****************************************************************************
+ Handle differing symlink errno's
+****************************************************************************/
+
+static int link_errno_convert(int err)
+{
+#if defined(ENOTSUP) && defined(OSF1)
+	/* handle special Tru64 errno */
+	if (err == ENOTSUP) {
+		err = ELOOP;
+	}
+#endif /* ENOTSUP */
+#ifdef EFTYPE
+	/* fix broken NetBSD errno */
+	if (err == EFTYPE) {
+		err = ELOOP;
+	}
+#endif /* EFTYPE */
+	/* fix broken FreeBSD errno */
+	if (err == EMLINK) {
+		err = ELOOP;
+	}
+	return err;
+}
+
+/****************************************************************************
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
@@ -377,23 +402,7 @@ NTSTATUS fd_open(struct connection_struct *conn,
 
 	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
-		int posix_errno = errno;
-#if defined(ENOTSUP) && defined(OSF1)
-		/* handle special Tru64 errno */
-		if (errno == ENOTSUP) {
-			posix_errno = ELOOP;
-		}
-#endif /* ENOTSUP */
-#ifdef EFTYPE
-		/* fix broken NetBSD errno */
-		if (errno == EFTYPE) {
-			posix_errno = ELOOP;
-		}
-#endif /* EFTYPE */
-		/* fix broken FreeBSD errno */
-		if (errno == EMLINK) {
-			posix_errno = ELOOP;
-		}
+		int posix_errno = link_errno_convert(errno);
 		status = map_nt_error_from_unix(posix_errno);
 		if (errno == EMFILE) {
 			static time_t last_warned = 0L;
