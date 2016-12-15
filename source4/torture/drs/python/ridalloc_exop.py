@@ -46,45 +46,7 @@ from samba.dbchecker import dbcheck
 from samba.ndr import ndr_pack
 from samba.dcerpc import security
 
-class ExopBaseTest:
-    def _exop_req8(self, dest_dsa, invocation_id, nc_dn_str, exop,
-                   replica_flags=0, max_objects=0, partial_attribute_set=None,
-                   partial_attribute_set_ex=None, mapping_ctr=None):
-        req8 = drsuapi.DsGetNCChangesRequest8()
-
-        req8.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
-        req8.source_dsa_invocation_id = misc.GUID(invocation_id)
-        req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn = unicode(nc_dn_str)
-        req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
-        req8.highwatermark.tmp_highest_usn = 0
-        req8.highwatermark.reserved_usn = 0
-        req8.highwatermark.highest_usn = 0
-        req8.uptodateness_vector = None
-        req8.replica_flags = replica_flags
-        req8.max_object_count = max_objects
-        req8.max_ndr_size = 402116
-        req8.extended_op = exop
-        req8.fsmo_info = 0
-        req8.partial_attribute_set = partial_attribute_set
-        req8.partial_attribute_set_ex = partial_attribute_set_ex
-        if mapping_ctr:
-            req8.mapping_ctr = mapping_ctr
-        else:
-            req8.mapping_ctr.num_mappings = 0
-            req8.mapping_ctr.mappings = None
-
-        return req8
-
-    def _ds_bind(self, server_name):
-        binding_str = "ncacn_ip_tcp:%s[seal]" % server_name
-
-        drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
-        (drs_handle, supported_extensions) = drs_DsBind(drs)
-        return (drs, drs_handle)
-
-
-class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     """Intended as a semi-black box test case for DsGetNCChanges
        implementation for extended operations. It should be testing
        how DsGetNCChanges handles different input params (mostly invalid).

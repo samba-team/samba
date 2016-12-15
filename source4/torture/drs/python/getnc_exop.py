@@ -29,6 +29,8 @@
 #
 
 import drs_base
+from drs_base import AbstractLink
+
 import samba.tests
 
 import ldb
@@ -62,60 +64,8 @@ def _linked_attribute_compare(la1, la2):
     # Ascending target object GUID
     return cmp(ndr_pack(la1_target), ndr_pack(la2_target))
 
-class AbstractLink:
-    def __init__(self, attid, flags, identifier, targetGUID):
-        self.attid = attid
-        self.flags = flags
-        self.identifier = identifier
-        self.targetGUID = targetGUID
 
-    def __eq__(self, other):
-        return isinstance(other, AbstractLink) and \
-            ((self.attid, self.flags, self.identifier, self.targetGUID) ==
-             (other.attid, other.flags, other.identifier, other.targetGUID))
-
-    def __hash__(self):
-        return hash((self.attid, self.flags, self.identifier, self.targetGUID))
-
-class ExopBaseTest:
-    def _exop_req8(self, dest_dsa, invocation_id, nc_dn_str, exop,
-                   replica_flags=0, max_objects=0, partial_attribute_set=None,
-                   partial_attribute_set_ex=None, mapping_ctr=None):
-        req8 = drsuapi.DsGetNCChangesRequest8()
-
-        req8.destination_dsa_guid = misc.GUID(dest_dsa) if dest_dsa else misc.GUID()
-        req8.source_dsa_invocation_id = misc.GUID(invocation_id)
-        req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn = unicode(nc_dn_str)
-        req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
-        req8.highwatermark.tmp_highest_usn = 0
-        req8.highwatermark.reserved_usn = 0
-        req8.highwatermark.highest_usn = 0
-        req8.uptodateness_vector = None
-        req8.replica_flags = replica_flags
-        req8.max_object_count = max_objects
-        req8.max_ndr_size = 402116
-        req8.extended_op = exop
-        req8.fsmo_info = 0
-        req8.partial_attribute_set = partial_attribute_set
-        req8.partial_attribute_set_ex = partial_attribute_set_ex
-        if mapping_ctr:
-            req8.mapping_ctr = mapping_ctr
-        else:
-            req8.mapping_ctr.num_mappings = 0
-            req8.mapping_ctr.mappings = None
-
-        return req8
-
-    def _ds_bind(self, server_name):
-        binding_str = "ncacn_ip_tcp:%s[seal]" % server_name
-
-        drs = drsuapi.drsuapi(binding_str, self.get_loadparm(), self.get_credentials())
-        (drs_handle, supported_extensions) = drs_DsBind(drs)
-        return (drs, drs_handle)
-
-
-class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
     """Intended as a semi-black box test case for DsGetNCChanges
        implementation for extended operations. It should be testing
        how DsGetNCChanges handles different input params (mostly invalid).
@@ -124,8 +74,20 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
 
     def setUp(self):
         super(DrsReplicaSyncTestCase, self).setUp()
+        self.base_dn = self.ldb_dc1.get_default_basedn()
+        self.ou = "OU=test_getncchanges,%s" % self.base_dn
+        self.ldb_dc1.add({
+            "dn": self.ou,
+            "objectclass": "organizationalUnit"})
+        (self.drs, self.drs_handle) = self._ds_bind(self.dnsname_dc1)
+        (self.default_hwm, self.default_utdv) = self._get_highest_hwm_utdv(self.ldb_dc1)
 
     def tearDown(self):
+        try:
+            self.ldb_dc1.delete(self.ou, ["tree_delete:1"])
+        except ldb.LdbError as (enum, string):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                pass
         super(DrsReplicaSyncTestCase, self).tearDown()
 
     def _determine_fSMORoleOwner(self, fsmo_obj_dn):
@@ -204,7 +166,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
         self.assertEqual(ctr.source_dsa_guid, misc.GUID(fsmo_owner["ntds_guid"]))
         self.assertEqual(ctr.source_dsa_invocation_id, misc.GUID(fsmo_owner["invocation_id"]))
 
-class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaPrefixMapTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
@@ -553,7 +515,7 @@ class DrsReplicaPrefixMapTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
         pfm.ctr.num_mappings += 1
         return pfm.ctr
 
-class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
+class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase):
     def setUp(self):
         super(DrsReplicaSyncSortTestCase, self).setUp()
         self.base_dn = self.ldb_dc1.get_default_basedn()
@@ -596,14 +558,14 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
         self.ldb_dc1.add({"dn": user3_dn, "objectclass": "user"})
         self.ldb_dc1.add({"dn": group_dn, "objectclass": "group"})
 
-        u1_guid = str(misc.GUID(self.ldb_dc1.search(base=user1_dn,
-                      attrs=["objectGUID"])[0]['objectGUID'][0]))
-        u2_guid = str(misc.GUID(self.ldb_dc1.search(base=user2_dn,
-                      attrs=["objectGUID"])[0]['objectGUID'][0]))
-        u3_guid = str(misc.GUID(self.ldb_dc1.search(base=user3_dn,
-                      attrs=["objectGUID"])[0]['objectGUID'][0]))
-        g_guid = str(misc.GUID(self.ldb_dc1.search(base=group_dn,
-                     attrs=["objectGUID"])[0]['objectGUID'][0]))
+        u1_guid = misc.GUID(self.ldb_dc1.search(base=user1_dn,
+                      attrs=["objectGUID"])[0]['objectGUID'][0])
+        u2_guid = misc.GUID(self.ldb_dc1.search(base=user2_dn,
+                      attrs=["objectGUID"])[0]['objectGUID'][0])
+        u3_guid = misc.GUID(self.ldb_dc1.search(base=user3_dn,
+                      attrs=["objectGUID"])[0]['objectGUID'][0])
+        g_guid = misc.GUID(self.ldb_dc1.search(base=group_dn,
+                     attrs=["objectGUID"])[0]['objectGUID'][0])
 
         self.add_linked_attribute(group_dn, user1_dn,
                                   attr='member')
@@ -662,8 +624,8 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
                                      link.value.blob).guid
             no_inactive.append((link, target_guid))
             self.assertTrue(AbstractLink(link.attid, link.flags,
-                                         str(link.identifier.guid),
-                                         str(target_guid)) in expected_links)
+                                         link.identifier.guid,
+                                         target_guid) in expected_links)
 
         no_inactive.sort(cmp=_linked_attribute_compare)
 
@@ -686,8 +648,8 @@ class DrsReplicaSyncSortTestCase(drs_base.DrsBaseTestCase, ExopBaseTest):
                                      link.value.blob).guid
             has_inactive.append((link, target_guid))
             self.assertTrue(AbstractLink(link.attid, link.flags,
-                                         str(link.identifier.guid),
-                                         str(target_guid)) in expected_links)
+                                         link.identifier.guid,
+                                         target_guid) in expected_links)
 
         has_inactive.sort(cmp=_linked_attribute_compare)
 
