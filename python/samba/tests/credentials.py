@@ -26,7 +26,7 @@ import samba.tests
 import os
 import binascii
 
-class CredentialsTests(samba.tests.TestCase):
+class CredentialsTests(samba.tests.TestCaseInTempDir):
 
     def setUp(self):
         super(CredentialsTests, self).setUp()
@@ -155,6 +155,28 @@ class CredentialsTests(samba.tests.TestCase):
         self.assertEqual(creds.get_realm(), None)
         self.assertEqual(creds.is_anonymous(), True)
         self.assertEqual(creds.authentication_requested(), False)
+
+    def test_parse_file_1(self):
+        realm="realm.example.com"
+        domain="dom"
+        password="pass"
+        username="user"
+
+        passwd_file_name = os.path.join(self.tempdir, "parse_file")
+        passwd_file_fd = open(passwd_file_name, 'wx')
+        passwd_file_fd.write("realm=%s\n" % realm)
+        passwd_file_fd.write("domain=%s\n" % domain)
+        passwd_file_fd.write("username=%s\n" % username)
+        passwd_file_fd.write("password=%s\n" % password)
+        passwd_file_fd.close()
+        self.creds.parse_file(passwd_file_name)
+        self.assertEqual(self.creds.get_username(), username)
+        self.assertEqual(self.creds.get_password(), password)
+        self.assertEqual(self.creds.get_domain(), domain.upper())
+        self.assertEqual(self.creds.get_realm(), realm.upper())
+        self.assertEqual(self.creds.is_anonymous(), False)
+        self.assertEqual(self.creds.authentication_requested(), True)
+        os.unlink(passwd_file_name)
 
     def test_parse_username(self):
         creds = credentials.Credentials()
