@@ -60,10 +60,12 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
     def test_set_domain(self):
         self.creds.set_domain("ABMAS")
         self.assertEqual("ABMAS", self.creds.get_domain())
+        self.assertEqual(self.creds.get_principal(), None)
 
     def test_set_realm(self):
         self.creds.set_realm("myrealm")
         self.assertEqual("MYREALM", self.creds.get_realm())
+        self.assertEqual(self.creds.get_principal(), None)
 
     def test_parse_string_anon(self):
         self.creds.parse_string("%")
@@ -140,7 +142,8 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         creds.guess(lp)
         self.assertEqual(creds.get_username(), "env_user")
         self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
-        self.assertEqual(creds.get_realm(), lp.get("realm").upper())
+        self.assertEqual(creds.get_realm(), None)
+        self.assertEqual(creds.get_principal(), "env_user@%s" % creds.get_domain())
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), False)
 
@@ -153,6 +156,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_username(), "")
         self.assertEqual(creds.get_domain(), "")
         self.assertEqual(creds.get_realm(), None)
+        self.assertEqual(creds.get_principal(), None)
         self.assertEqual(creds.is_anonymous(), True)
         self.assertEqual(creds.authentication_requested(), False)
 
@@ -186,7 +190,8 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         creds.parse_string("user")
         self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
-        self.assertEqual(creds.get_realm(), lp.get("realm").upper())
+        self.assertEqual(creds.get_realm(), None)
+        self.assertEqual(creds.get_principal(), "user@%s" % lp.get("workgroup").upper())
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 
@@ -198,7 +203,8 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         creds.parse_string("domain\user")
         self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_domain(), "DOMAIN")
-        self.assertEqual(creds.get_realm(), lp.get("realm").upper())
+        self.assertEqual(creds.get_realm(), None)
+        self.assertEqual(creds.get_principal(), "user@DOMAIN")
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 
@@ -211,6 +217,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_username(), "env_user")
         self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
         self.assertEqual(creds.get_realm(), "SAMBA.ORG")
+        self.assertEqual(creds.get_principal(), "user@samba.org")
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 
@@ -223,7 +230,8 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_password(), "pass")
         self.assertEqual(creds.get_domain(), lp.get("workgroup"))
-        self.assertEqual(creds.get_realm(), lp.get("realm"))
+        self.assertEqual(creds.get_realm(), None)
+        self.assertEqual(creds.get_principal(), "user@%s" % lp.get("workgroup"))
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 
@@ -236,7 +244,8 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_domain(), "DOMAIN")
         self.assertEqual(creds.get_password(), "pass")
-        self.assertEqual(creds.get_realm(), lp.get("realm"))
+        self.assertEqual(creds.get_realm(), None)
+        self.assertEqual(creds.get_principal(), "user@DOMAIN")
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 

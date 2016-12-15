@@ -213,16 +213,37 @@ _PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_crede
 
 	if (cred->principal_obtained < cred->username_obtained
 	    || cred->principal_obtained < MAX(cred->domain_obtained, cred->realm_obtained)) {
+		const char *effective_username = NULL;
+		const char *effective_realm = NULL;
+		enum credentials_obtained effective_obtained;
+
+		effective_username = cli_credentials_get_username(cred);
+		if (effective_username == NULL || strlen(effective_username) == 0) {
+			*obtained = cred->username_obtained;
+			return NULL;
+		}
+
 		if (cred->domain_obtained > cred->realm_obtained) {
-			*obtained = MIN(cred->domain_obtained, cred->username_obtained);
-			return talloc_asprintf(mem_ctx, "%s@%s", 
-					       cli_credentials_get_username(cred),
-					       cli_credentials_get_domain(cred));
+			effective_realm = cli_credentials_get_domain(cred);
+			effective_obtained = MIN(cred->domain_obtained,
+						 cred->username_obtained);
 		} else {
-			*obtained = MIN(cred->realm_obtained, cred->username_obtained);
+			effective_realm = cli_credentials_get_realm(cred);
+			effective_obtained = MIN(cred->realm_obtained,
+						 cred->username_obtained);
+		}
+
+		if (effective_realm == NULL || strlen(effective_realm) == 0) {
+			effective_realm = cli_credentials_get_domain(cred);
+			effective_obtained = MIN(cred->domain_obtained,
+						 cred->username_obtained);
+		}
+
+		if (effective_realm != NULL && strlen(effective_realm) != 0) {
+			*obtained = effective_obtained;
 			return talloc_asprintf(mem_ctx, "%s@%s", 
-					       cli_credentials_get_username(cred),
-					       cli_credentials_get_realm(cred));
+					       effective_username,
+					       effective_realm);
 		}
 	}
 	*obtained = cred->principal_obtained;
@@ -816,6 +837,7 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 			      struct loadparm_context *lp_ctx)
 {
 	const char *sep = NULL;
+	const char *realm = lpcfg_realm(lp_ctx);
 
 	cli_credentials_set_username(cred, "", CRED_UNINITIALISED);
 	if (lpcfg_parm_is_cmdline(lp_ctx, "workgroup")) {
@@ -828,10 +850,13 @@ _PUBLIC_ void cli_credentials_set_conf(struct cli_credentials *cred,
 	} else {
 		cli_credentials_set_workstation(cred, lpcfg_netbios_name(lp_ctx), CRED_UNINITIALISED);
 	}
+	if (realm != NULL && strlen(realm) == 0) {
+		realm = NULL;
+	}
 	if (lpcfg_parm_is_cmdline(lp_ctx, "realm")) {
-		cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_SPECIFIED);
+		cli_credentials_set_realm(cred, realm, CRED_SPECIFIED);
 	} else {
-		cli_credentials_set_realm(cred, lpcfg_realm(lp_ctx), CRED_UNINITIALISED);
+		cli_credentials_set_realm(cred, realm, CRED_UNINITIALISED);
 	}
 
 	sep = lpcfg_winbind_separator(lp_ctx);
