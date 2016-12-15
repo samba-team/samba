@@ -379,6 +379,244 @@ static int link_errno_convert(int err)
 	return err;
 }
 
+static int non_widelink_open(struct connection_struct *conn,
+			const char *conn_rootdir,
+			files_struct *fsp,
+			struct smb_filename *smb_fname,
+			int flags,
+			mode_t mode,
+			unsigned int link_depth);
+
+/****************************************************************************
+ Follow a symlink in userspace.
+****************************************************************************/
+
+static int process_symlink_open(struct connection_struct *conn,
+			const char *conn_rootdir,
+			files_struct *fsp,
+			struct smb_filename *smb_fname,
+			int flags,
+			mode_t mode,
+			unsigned int link_depth)
+{
+	int fd = -1;
+	char *link_target = NULL;
+	int link_len = -1;
+	char *oldwd = NULL;
+	size_t rootdir_len = 0;
+	char *resolved_name = NULL;
+	bool matched = false;
+	int saved_errno = 0;
+
+	/*
+	 * Ensure we don't get stuck in a symlink loop.
+	 */
+	link_depth++;
+	if (link_depth >= 20) {
+		errno = ELOOP;
+		goto out;
+	}
+
+	/* Allocate space for the link target. */
+	link_target = talloc_array(talloc_tos(), char, PATH_MAX);
+	if (link_target == NULL) {
+		errno = ENOMEM;
+		goto out;
+	}
+
+	/* Read the link target. */
+	link_len = SMB_VFS_READLINK(conn,
+				smb_fname->base_name,
+				link_target,
+				PATH_MAX - 1);
+	if (link_len == -1) {
+		goto out;
+	}
+
+	/* Ensure it's at least null terminated. */
+	link_target[link_len] = '\0';
+
+	/* Convert to an absolute path. */
+	resolved_name = SMB_VFS_REALPATH(conn, link_target);
+	if (resolved_name == NULL) {
+		goto out;
+	}
+
+	/*
+	 * We know conn_rootdir starts with '/' and
+	 * does not end in '/'. FIXME ! Should we
+	 * smb_assert this ?
+	 */
+	rootdir_len = strlen(conn_rootdir);
+
+	matched = (strncmp(conn_rootdir, resolved_name, rootdir_len) == 0);
+	if (!matched) {
+		errno = EACCES;
+		goto out;
+	}
+
+	/*
+	 * Turn into a path relative to the share root.
+	 */
+	if (resolved_name[rootdir_len] == '\0') {
+		/* Link to the root of the share. */
+		smb_fname->base_name = talloc_strdup(talloc_tos(), ".");
+		if (smb_fname->base_name == NULL) {
+			errno = ENOMEM;
+			goto out;
+		}
+	} else if (resolved_name[rootdir_len] == '/') {
+		smb_fname->base_name = &resolved_name[rootdir_len+1];
+	} else {
+		errno = EACCES;
+		goto out;
+	}
+
+	oldwd = vfs_GetWd(talloc_tos(), conn);
+	if (oldwd == NULL) {
+		goto out;
+	}
+
+	/* Ensure we operate from the root of the share. */
+	if (vfs_ChDir(conn, conn_rootdir) == -1) {
+		goto out;
+	}
+
+	/* And do it all again.. */
+	fd = non_widelink_open(conn,
+				conn_rootdir,
+				fsp,
+				smb_fname,
+				flags,
+				mode,
+				link_depth);
+	if (fd == -1) {
+		saved_errno = errno;
+	}
+
+  out:
+
+	SAFE_FREE(resolved_name);
+	TALLOC_FREE(link_target);
+	if (oldwd != NULL) {
+		int ret = vfs_ChDir(conn, oldwd);
+		if (ret == -1) {
+			smb_panic("unable to get back to old directory\n");
+		}
+		TALLOC_FREE(oldwd);
+	}
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return fd;
+}
+
+/****************************************************************************
+ Non-widelink open.
+****************************************************************************/
+
+static int non_widelink_open(struct connection_struct *conn,
+			const char *conn_rootdir,
+			files_struct *fsp,
+			struct smb_filename *smb_fname,
+			int flags,
+			mode_t mode,
+			unsigned int link_depth)
+{
+	NTSTATUS status;
+	int fd = -1;
+	struct smb_filename *smb_fname_rel = NULL;
+	int saved_errno = 0;
+	char *oldwd = NULL;
+	char *parent_dir = NULL;
+	const char *final_component = NULL;
+
+	if (!parent_dirname(talloc_tos(),
+			smb_fname->base_name,
+			&parent_dir,
+			&final_component)) {
+		goto out;
+	}
+
+	oldwd = vfs_GetWd(talloc_tos(), conn);
+	if (oldwd == NULL) {
+		goto out;
+	}
+
+	/* Pin parent directory in place. */
+	if (vfs_ChDir(conn, parent_dir) == -1) {
+		goto out;
+	}
+
+	/* Ensure the relative path is below the share. */
+	status = check_reduced_name(conn, final_component);
+	if (!NT_STATUS_IS_OK(status)) {
+		saved_errno = map_errno_from_nt_status(status);
+		goto out;
+	}
+
+	smb_fname_rel = synthetic_smb_fname(talloc_tos(),
+				final_component,
+				smb_fname->stream_name,
+				&smb_fname->st,
+				smb_fname->flags);
+
+	flags |= O_NOFOLLOW;
+
+	{
+		struct smb_filename *tmp_name = fsp->fsp_name;
+		fsp->fsp_name = smb_fname_rel;
+		fd = SMB_VFS_OPEN(conn, smb_fname_rel, fsp, flags, mode);
+		fsp->fsp_name = tmp_name;
+	}
+
+	if (fd == -1) {
+		saved_errno = link_errno_convert(errno);
+		if (saved_errno == ELOOP) {
+			if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
+				/* Never follow symlinks on posix open. */
+				goto out;
+			}
+			if (!lp_follow_symlinks(SNUM(conn))) {
+				/* Explicitly no symlinks. */
+				goto out;
+			}
+			/*
+			 * We have a symlink. Follow in userspace
+			 * to ensure it's under the share definition.
+			 */
+			fd = process_symlink_open(conn,
+					conn_rootdir,
+					fsp,
+					smb_fname_rel,
+					flags,
+					mode,
+					link_depth);
+			if (fd == -1) {
+				saved_errno =
+					link_errno_convert(errno);
+			}
+		}
+	}
+
+  out:
+
+	TALLOC_FREE(parent_dir);
+	TALLOC_FREE(smb_fname_rel);
+
+	if (oldwd != NULL) {
+		int ret = vfs_ChDir(conn, oldwd);
+		if (ret == -1) {
+			smb_panic("unable to get back to old directory\n");
+		}
+		TALLOC_FREE(oldwd);
+	}
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return fd;
+}
+
 /****************************************************************************
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
