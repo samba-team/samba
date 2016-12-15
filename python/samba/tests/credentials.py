@@ -70,6 +70,16 @@ class CredentialsTests(samba.tests.TestCase):
         self.assertEqual("", self.creds.get_username())
         self.assertEqual(None, self.creds.get_password())
 
+    def test_parse_string_empty_pw(self):
+        self.creds.parse_string("someone%")
+        self.assertEqual("someone", self.creds.get_username())
+        self.assertEqual("", self.creds.get_password())
+
+    def test_parse_string_none_pw(self):
+        self.creds.parse_string("someone")
+        self.assertEqual("someone", self.creds.get_username())
+        self.assertEqual(None, self.creds.get_password())
+
     def test_parse_string_user_pw_domain(self):
         self.creds.parse_string("dom\\someone%secr")
         self.assertEqual("someone", self.creds.get_username())
