@@ -8,7 +8,8 @@ Verify that  'ctdb moveip' allows movement of public IPs between cluster nodes.
 This test does not do any network level checks to make sure IP
 addresses are actually on interfaces.  It just consults "ctdb ip".
 
-To work, this test unsets DeterministicIPs and sets NoIPFailback.
+To work, this test ensures that IPAllocAlgorithm is not set to 0
+(Deterministic IPs) and sets NoIPFailback.
 EOF
 }
 
@@ -49,8 +50,8 @@ fi
 
 echo "Target node is ${to_node}"
 
-echo "Turning off DeterministicIPs..."
-try_command_on_node -q all $CTDB setvar DeterministicIPs 0
+echo "Setting IPAllocAlgorithm=2 to avoid Deterministic IPs..."
+try_command_on_node -q all $CTDB setvar IPAllocAlgorithm 2
 
 echo "Turning on NoIPFailback..."
 try_command_on_node -q all $CTDB setvar NoIPFailback 1

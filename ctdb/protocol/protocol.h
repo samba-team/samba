@@ -631,6 +631,7 @@ struct ctdb_tunable_list {
 	uint32_t lock_processes_per_db;
 	uint32_t rec_buffer_size_limit;
 	uint32_t queue_buffer_size;
+	uint32_t ip_alloc_algorithm;
 };
 
 struct ctdb_tickle_list {

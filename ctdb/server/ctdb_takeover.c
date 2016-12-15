@@ -1278,13 +1278,16 @@ static bool set_ipflags(struct ctdb_context *ctdb,
 static enum ipalloc_algorithm
 determine_algorithm(const struct ctdb_tunable_list *tunables)
 {
-	if (1 == tunables->lcp2_public_ip_assignment) {
-		return IPALLOC_LCP2;
-	} else if (1 == tunables->deterministic_public_ips) {
+	switch (tunables->ip_alloc_algorithm) {
+	case 0:
 		return IPALLOC_DETERMINISTIC;
-	} else {
+	case 1:
 		return IPALLOC_NONDETERMINISTIC;
-	}
+	case 2:
+		return IPALLOC_LCP2;
+	default:
+		return IPALLOC_LCP2;
+	};
 }
 
 struct takeover_callback_data {

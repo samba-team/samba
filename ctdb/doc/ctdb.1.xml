@@ -813,8 +813,6 @@ DatabaseHashSize        = 100001
 DatabaseMaxDead         = 5
 RerecoveryTimeout       = 10
 EnableBans              = 1
-DeterministicIPs        = 0
-LCP2PublicIPs           = 1
 NoIPFailback            = 0
 DisableIPFailover       = 0
 VerboseMemoryNames      = 0
@@ -845,9 +843,11 @@ DBRecordSizeWarn        = 10000000
 DBSizeWarn              = 100000000
 PullDBPreallocation     = 10485760
 NoIPHostOnAllDisabled   = 0
-Samba3AvoidDeadlocks    = 0
 TDBMutexEnabled         = 0
 LockProcessesPerDB      = 200
+RecBufferSizeLimit      = 1000000
+QueueBufferSize         = 1024
+IPAllocAlgorithm        = 2
 	</screen>
       </refsect3>
     </refsect2>
@@ -1201,7 +1201,7 @@ DB Statistics: locking.tdb
 	when you have changed the tunables for the daemon to:
       </para>
       <para>
-	DeterministicIPs = 0
+	IPAllocAlgorithm != 0
       </para>
       <para>
 	NoIPFailback = 1

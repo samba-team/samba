@@ -75,9 +75,9 @@ static struct {
 		offsetof(struct ctdb_tunable_list, rerecovery_timeout) },
 	{ "EnableBans", 1, false,
 		offsetof(struct ctdb_tunable_list, enable_bans) },
-	{ "DeterministicIPs", 0, false,
+	{ "DeterministicIPs", 0, true,
 		offsetof(struct ctdb_tunable_list, deterministic_public_ips) },
-	{ "LCP2PublicIPs", 1, false,
+	{ "LCP2PublicIPs", 1, true,
 		offsetof(struct ctdb_tunable_list, lcp2_public_ip_assignment) },
 	{ "ReclockPingPeriod", 60, true,
 		offsetof(struct ctdb_tunable_list,  reclock_ping_period) },
@@ -153,6 +153,8 @@ static struct {
 		offsetof(struct ctdb_tunable_list, rec_buffer_size_limit) },
 	{ "QueueBufferSize", 1024, false,
 		offsetof(struct ctdb_tunable_list, queue_buffer_size) },
+	{ "IPAllocAlgorithm", 2, false,
+		offsetof(struct ctdb_tunable_list, ip_alloc_algorithm) },
 	{ NULL, 0, true, }
 };
 

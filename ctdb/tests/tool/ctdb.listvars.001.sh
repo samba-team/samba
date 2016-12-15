@@ -31,8 +31,6 @@ DatabaseHashSize           = 100001
 DatabaseMaxDead            = 5
 RerecoveryTimeout          = 10
 EnableBans                 = 1
-DeterministicIPs           = 0
-LCP2PublicIPs              = 1
 NoIPFailback               = 0
 DisableIPFailover          = 0
 VerboseMemoryNames         = 0
@@ -65,6 +63,7 @@ TDBMutexEnabled            = 0
 LockProcessesPerDB         = 200
 RecBufferSizeLimit         = 1000000
 QueueBufferSize            = 1024
+IPAllocAlgorithm           = 2
 EOF
 
 simple_test

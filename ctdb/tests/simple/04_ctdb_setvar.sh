@@ -18,8 +18,8 @@ Steps:
 1. Verify that the status on all of the ctdb nodes is 'OK'.
 2. Get a list of all the ctdb tunable variables, using the 'ctdb
    listvars' command.
-3. Set the value of one of the variables using the 'setvar' control on
-   one of the nodes.  E.g. 'ctdb setvar DeterministicIPs 0'.
+3. Increment the value of one of the variables using the 'setvar' control on
+   one of the nodes.  E.g. 'ctdb setvar RecoverTimeout 31'.
 4. Verify that the 'listvars' control now shows the new value for the
    variable.
 

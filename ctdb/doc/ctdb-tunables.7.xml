@@ -136,24 +136,6 @@
     </refsect2>
 
     <refsect2>
-      <title>DeterministicIPs</title>
-      <para>Default: 0</para>
-      <para>
-	When set to 1, ctdb will try to keep public IP addresses locked
-	to specific nodes as far as possible. This makes it easier
-	for debugging since you can know that as long as all nodes are
-	healthy public IP X will always be hosted by node Y.
-      </para>
-      <para>
-	The cost of using deterministic IP address assignment is that it
-	disables part of the logic where ctdb tries to reduce the number
-	of public IP assignment changes in the cluster. This tunable may
-	increase the number of IP failover/failbacks that are performed
-	on the cluster by a small margin.
-      </para>
-    </refsect2>
-
-    <refsect2>
       <title>DisableIPFailover</title>
       <para>Default: 0</para>
       <para>
@@ -250,6 +232,70 @@
     </refsect2>
 
     <refsect2>
+      <title>IPAllocAlgorithm</title>
+      <para>Default: 2</para>
+      <para>
+	Selects the algorithm that CTDB should use when doing public
+	IP address allocation.  Meaningful values are:
+      </para>
+      <variablelist>
+	<varlistentry>
+	  <term>0</term>
+	  <listitem>
+	    <para>
+	      Deterministic IP address allocation.
+	    </para>
+	    <para>
+	      This is a simple and fast option.  However, it can cause
+	      unnecessary address movement during fail-over because
+	      each address has a "home" node.  Works badly when some
+	      nodes do not have any addresses defined.  Should be used
+	      with care when addresses are defined across multiple
+	      networks.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>1</term>
+	  <listitem>
+	    <para>
+	      Non-deterministic IP address allocation.
+	    </para>
+	    <para>
+	      This is a relatively fast option that attempts to do a
+	      minimise unnecessary address movements.  Addresses do
+	      not have a "home" node.  Rebalancing is limited but it
+	      usually adequate.  Works badly when addresses are
+	      defined across multiple networks.
+	    </para>
+	  </listitem>
+	</varlistentry>
+	<varlistentry>
+	  <term>2</term>
+	  <listitem>
+	    <para>
+	      LCP2 IP address allocation.
+	    </para>
+	    <para>
+	      Uses a heuristic to assign addresses defined across
+	      multiple networks, usually balancing addresses on each
+	      network evenly across nodes.  Addresses do not have a
+	      "home" node.  Minimises unnecessary address movements.
+	      The algorithm is complex, so is slower than other
+	      choices for a large number of addresses.  However, it
+	      can calculate an optimal assignment of 900 addresses in
+	      under 10 seconds on modern hardware.
+	    </para>
+	  </listitem>
+	</varlistentry>
+      </variablelist>
+      <para>
+	If the specified value is not one of these then the default
+	will be used.
+      </para>
+    </refsect2>
+
+    <refsect2>
       <title>KeepaliveInterval</title>
       <para>Default: 5</para>
       <para>
@@ -273,14 +319,6 @@
 	a recovery. This limit should not be set too high to enable
 	early detection and avoid any application timeouts (e.g. SMB1)
 	to kick in before the fail over is completed.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>LCP2PublicIPs</title>
-      <para>Default: 1</para>
-      <para>
-	When set to 1, ctdb uses the LCP2 ip allocation algorithm.
       </para>
     </refsect2>
 

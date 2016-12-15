@@ -49,7 +49,8 @@ bool ipalloc_deterministic(struct ipalloc_state *ipalloc_state)
 	 * back IPs to their "home" node.
 	 */
 	if (ipalloc_state->no_ip_failback) {
-		DEBUG(DEBUG_WARNING, ("WARNING: 'NoIPFailback' set but ignored - incompatible with 'DeterministicIPs\n"));
+		D_WARNING("WARNING: 'NoIPFailback' set but ignored - "
+			  "incompatible with 'Deterministic IPs\n");
 	}
 
 	unassign_unsuitable_ips(ipalloc_state);
