@@ -182,7 +182,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(self.creds.authentication_requested(), True)
         os.unlink(passwd_file_name)
 
-    def test_parse_username(self):
+    def test_parse_username_0(self):
         creds = credentials.Credentials()
         lp = samba.tests.env_loadparm()
         os.environ["USER"] = "env_user"
@@ -192,6 +192,21 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
         self.assertEqual(creds.get_realm(), None)
         self.assertEqual(creds.get_principal(), "user@%s" % lp.get("workgroup").upper())
+        self.assertEqual(creds.is_anonymous(), False)
+        self.assertEqual(creds.authentication_requested(), True)
+
+    def test_parse_username_1(self):
+        creds = credentials.Credentials()
+        lp = samba.tests.env_loadparm()
+        os.environ["USER"] = "env_user"
+        creds.guess(lp)
+        realm = "realm.example.com"
+        creds.set_realm(realm, credentials.UNINITIALISED)
+        creds.parse_string("user")
+        self.assertEqual(creds.get_username(), "user")
+        self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
+        self.assertEqual(creds.get_realm(), realm.upper())
+        self.assertEqual(creds.get_principal(), "user@%s" % realm.upper())
         self.assertEqual(creds.is_anonymous(), False)
         self.assertEqual(creds.authentication_requested(), True)
 
