@@ -24,6 +24,7 @@ the functionality, that's already done in other tests.
 from samba import credentials
 import samba.tests
 import os
+import binascii
 
 class CredentialsTests(samba.tests.TestCase):
 
@@ -95,8 +96,19 @@ class CredentialsTests(samba.tests.TestCase):
         self.assertEqual("myworksta", self.creds.get_workstation())
 
     def test_get_nt_hash(self):
-        self.creds.set_password("geheim")
-        self.assertEqual('\xc2\xae\x1f\xe6\xe6H\x84cRE>\x81o*\xeb\x93',
+        password="geheim"
+        hex_nthash="c2ae1fe6e648846352453e816f2aeb93"
+        self.creds.set_password(password)
+        self.assertEqual(password, self.creds.get_password())
+        self.assertEqual(binascii.a2b_hex(hex_nthash),
+                         self.creds.get_nt_hash())
+
+    def test_get_nt_hash_string(self):
+        self.creds.set_password_will_be_nt_hash(True)
+        hex_nthash="c2ae1fe6e648846352453e816f2aeb93"
+        self.creds.set_password(hex_nthash)
+        self.assertEqual(None, self.creds.get_password())
+        self.assertEqual(binascii.a2b_hex(hex_nthash),
                          self.creds.get_nt_hash())
 
     def test_set_cmdline_callbacks(self):
