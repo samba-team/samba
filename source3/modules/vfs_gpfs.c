@@ -1675,10 +1675,10 @@ static NTSTATUS vfs_gpfs_fset_dos_attributes(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-#if defined(HAVE_FSTATAT)
 static int stat_with_capability(struct vfs_handle_struct *handle,
 				struct smb_filename *smb_fname, int flag)
 {
+#if defined(HAVE_FSTATAT)
 	int fd = -1;
 	bool b;
 	char *dir_name;
@@ -1712,8 +1712,10 @@ static int stat_with_capability(struct vfs_handle_struct *handle,
 	}
 
 	return ret;
-}
+#else
+	return -1;
 #endif
+}
 
 static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 			 struct smb_filename *smb_fname)
@@ -1726,13 +1728,11 @@ static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
 				return -1);
 
 	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
-#if defined(HAVE_FSTATAT)
 	if (ret == -1 && errno == EACCES) {
 		DEBUG(10, ("Trying stat with capability for %s\n",
 			   smb_fname->base_name));
 		ret = stat_with_capability(handle, smb_fname, 0);
 	}
-#endif
 	return ret;
 }
 
@@ -1747,14 +1747,12 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 				return -1);
 
 	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-#if defined(HAVE_FSTATAT)
 	if (ret == -1 && errno == EACCES) {
 		DEBUG(10, ("Trying lstat with capability for %s\n",
 			   smb_fname->base_name));
 		ret = stat_with_capability(handle, smb_fname,
 					   AT_SYMLINK_NOFOLLOW);
 	}
-#endif
 	return ret;
 }
 
