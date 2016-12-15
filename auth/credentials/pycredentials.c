@@ -299,6 +299,21 @@ static PyObject *py_creds_parse_string(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_parse_file(PyObject *self, PyObject *args)
+{
+	char *newval;
+	enum credentials_obtained obt = CRED_SPECIFIED;
+	int _obt = obt;
+
+	if (!PyArg_ParseTuple(args, "s|i", &newval, &_obt)) {
+		return NULL;
+	}
+	obt = _obt;
+
+	cli_credentials_parse_file(PyCredentials_AsCliCredentials(self), newval, obt);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_cli_credentials_set_password_will_be_nt_hash(PyObject *self, PyObject *args)
 {
 	struct cli_credentials *creds = PyCredentials_AsCliCredentials(self);
@@ -579,6 +594,9 @@ static PyMethodDef py_creds_methods[] = {
 	{ "parse_string", py_creds_parse_string, METH_VARARGS,
 		"S.parse_string(text, obtained=CRED_SPECIFIED) -> None\n"
 		"Parse credentials string." },
+	{ "parse_file", py_creds_parse_file, METH_VARARGS,
+		"S.parse_file(filename, obtained=CRED_SPECIFIED) -> None\n"
+		"Parse credentials file." },
 	{ "set_password_will_be_nt_hash",
 		py_cli_credentials_set_password_will_be_nt_hash, METH_VARARGS,
 		"S.set_password_will_be_nt_hash(bool) -> None\n"
