@@ -638,7 +638,28 @@ NTSTATUS fd_open(struct connection_struct *conn,
 		flags |= O_NOFOLLOW;
 	}
 
-	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
+	/* Ensure path is below share definition. */
+	if (!lp_widelinks(SNUM(conn))) {
+		const char *conn_rootdir = SMB_VFS_CONNECTPATH(conn,
+						smb_fname->base_name);
+		if (conn_rootdir == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		/*
+		 * Only follow symlinks within a share
+		 * definition.
+		 */
+		fsp->fh->fd = non_widelink_open(conn,
+					conn_rootdir,
+					fsp,
+					smb_fname,
+					flags,
+					mode,
+					0);
+	} else {
+		fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, mode);
+	}
+
 	if (fsp->fh->fd == -1) {
 		int posix_errno = link_errno_convert(errno);
 		status = map_nt_error_from_unix(posix_errno);
