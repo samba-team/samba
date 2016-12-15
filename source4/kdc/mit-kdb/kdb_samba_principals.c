@@ -78,12 +78,10 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 
 	*kentry_ptr = NULL;
 
-	kentry = malloc(sizeof(krb5_db_entry));
+	kentry = calloc(1, sizeof(krb5_db_entry));
 	if (kentry == NULL) {
 		return ENOMEM;
 	}
-
-	ZERO_STRUCTP(kentry);
 
 	kentry->magic = KRB5_KDB_MAGIC_NUMBER;
 	kentry->len = KRB5_KDB_V1_BASE_LENGTH;
