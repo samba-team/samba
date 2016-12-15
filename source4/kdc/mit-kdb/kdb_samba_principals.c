@@ -156,8 +156,6 @@ static krb5_error_code ks_create_principal(krb5_context context,
 		return ENOMEM;
 	}
 
-	ZERO_STRUCTP(kentry);
-
 	kentry->magic = KRB5_KDB_MAGIC_NUMBER;
 	kentry->len = KRB5_KDB_V1_BASE_LENGTH;
 
