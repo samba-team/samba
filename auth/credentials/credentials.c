@@ -1117,6 +1117,10 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
 	char *ptr, *val, *param;
 	char **lines;
 	int i, numlines;
+	const char *realm = NULL;
+	const char *domain = NULL;
+	const char *password = NULL;
+	const char *username = NULL;
 
 	lines = file_lines_load(file, &numlines, 0, NULL);
 
@@ -1147,17 +1151,57 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
 			val++;
 
 		if (strwicmp("password", param) == 0) {
-			cli_credentials_set_password(cred, val, obtained);
+			password = val;
 		} else if (strwicmp("username", param) == 0) {
-			cli_credentials_parse_string(cred, val, obtained);
+			username = val;
 		} else if (strwicmp("domain", param) == 0) {
-			cli_credentials_set_domain(cred, val, obtained);
+			domain = val;
 		} else if (strwicmp("realm", param) == 0) {
-			cli_credentials_set_realm(cred, val, obtained);
+			realm = val;
 		}
-		memset(lines[i], 0, len);
+
+		/*
+		 * We need to readd '=' in order to let
+		 * the strlen() work in the last loop
+		 * that clears the memory.
+		 */
+		*ptr = '=';
 	}
 
+	if (realm != NULL && strlen(realm) != 0) {
+		/*
+		 * only overwrite with a valid string
+		 */
+		cli_credentials_set_realm(cred, realm, obtained);
+	}
+
+	if (domain != NULL && strlen(domain) != 0) {
+		/*
+		 * only overwrite with a valid string
+		 */
+		cli_credentials_set_domain(cred, domain, obtained);
+	}
+
+	if (password != NULL) {
+		/*
+		 * Here we allow "".
+		 */
+		cli_credentials_set_password(cred, password, obtained);
+	}
+
+	if (username != NULL) {
+		/*
+		 * The last "username" line takes preference
+		 * if the string also contains domain, realm or
+		 * password.
+		 */
+		cli_credentials_parse_string(cred, username, obtained);
+	}
+
+	for (i = 0; i < numlines; i++) {
+		len = strlen(lines[i]);
+		memset(lines[i], 0, len);
+	}
 	talloc_free(lines);
 
 	return true;
