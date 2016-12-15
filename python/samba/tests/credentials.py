@@ -178,6 +178,55 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         self.assertEqual(self.creds.get_password(), password)
         self.assertEqual(self.creds.get_domain(), domain.upper())
         self.assertEqual(self.creds.get_realm(), realm.upper())
+        self.assertEqual(self.creds.get_principal(), "%s@%s" % (username, realm.upper()))
+        self.assertEqual(self.creds.is_anonymous(), False)
+        self.assertEqual(self.creds.authentication_requested(), True)
+        os.unlink(passwd_file_name)
+
+    def test_parse_file_2(self):
+        realm="realm.example.com"
+        domain="dom"
+        password="pass"
+        username="user"
+
+        passwd_file_name = os.path.join(self.tempdir, "parse_file")
+        passwd_file_fd = open(passwd_file_name, 'wx')
+        passwd_file_fd.write("realm=%s\n" % realm)
+        passwd_file_fd.write("domain=%s\n" % domain)
+        passwd_file_fd.write("username=%s\\%s\n" % (domain, username))
+        passwd_file_fd.write("password=%s\n" % password)
+        passwd_file_fd.close()
+        self.creds.parse_file(passwd_file_name)
+        self.assertEqual(self.creds.get_username(), username)
+        self.assertEqual(self.creds.get_password(), password)
+        self.assertEqual(self.creds.get_domain(), domain.upper())
+        self.assertEqual(self.creds.get_realm(), realm.upper())
+        self.assertEqual(self.creds.get_principal(), "%s@%s" % (username, realm.upper()))
+        self.assertEqual(self.creds.is_anonymous(), False)
+        self.assertEqual(self.creds.authentication_requested(), True)
+        os.unlink(passwd_file_name)
+
+    def test_parse_file_3(self):
+        realm="realm.example.com"
+        domain="domain"
+        password="password"
+        username="username"
+
+        userdom="userdom"
+
+        passwd_file_name = os.path.join(self.tempdir, "parse_file")
+        passwd_file_fd = open(passwd_file_name, 'wx')
+        passwd_file_fd.write("realm=%s\n" % realm)
+        passwd_file_fd.write("domain=%s\n" % domain)
+        passwd_file_fd.write("username=%s/%s\n" % (userdom, username))
+        passwd_file_fd.write("password=%s\n" % password)
+        passwd_file_fd.close()
+        self.creds.parse_file(passwd_file_name)
+        self.assertEqual(self.creds.get_username(), username)
+        self.assertEqual(self.creds.get_password(), password)
+        self.assertEqual(self.creds.get_domain(), userdom.upper())
+        self.assertEqual(self.creds.get_realm(), userdom.upper())
+        self.assertEqual(self.creds.get_principal(), "%s@%s" % (username, userdom.upper()))
         self.assertEqual(self.creds.is_anonymous(), False)
         self.assertEqual(self.creds.authentication_requested(), True)
         os.unlink(passwd_file_name)
