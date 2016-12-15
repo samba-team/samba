@@ -1565,6 +1565,9 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 	}
 
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(attrs.winAttrs);
+	smb_fname->st.st_ex_calculated_birthtime = false;
+	smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+	smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 
 	return NT_STATUS_OK;
 }
@@ -1597,6 +1600,9 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	}
 
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(attrs.winAttrs);
+	fsp->fsp_name->st.st_ex_calculated_birthtime = false;
+	fsp->fsp_name->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
+	fsp->fsp_name->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
 
 	return NT_STATUS_OK;
 }
