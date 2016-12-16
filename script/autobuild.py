@@ -276,7 +276,7 @@ class builder(object):
         self.stderr = open(self.stderr_path, 'w')
         self.stdin  = open("/dev/null", 'r')
         self.sdir = "%s/%s" % (testbase, self.tag)
-        self.prefix = "%s/prefix/%s" % (testbase, self.tag)
+        self.prefix = "%s/%s" % (test_prefix, self.tag)
         run_cmd("rm -rf %s" % self.sdir)
         if cp:
             run_cmd("cp --recursive --link --archive %s %s" % (test_master, self.sdir), dir=test_master, show=True)
@@ -708,6 +708,7 @@ if options.retry:
 
 testbase = "%s/b%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
+test_prefix = "%s/prefix" % testbase
 
 # get the top commit message, for emails
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
@@ -730,6 +731,7 @@ start_time = time.time()
 while True:
     try:
         run_cmd("rm -rf %s" % test_master)
+        run_cmd("rm -rf %s" % test_prefix)
         run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except Exception:
         cleanup()
