@@ -278,8 +278,6 @@ class builder(object):
         self.sdir = "%s/%s" % (testbase, self.tag)
         self.prefix = "%s/prefix/%s" % (testbase, self.tag)
         run_cmd("rm -rf %s" % self.sdir)
-        os.makedirs(self.sdir)
-        run_cmd("rm -rf %s" % self.sdir)
         if cp:
             run_cmd("cp --recursive --link --archive %s %s" % (test_master, self.sdir), dir=test_master, show=True)
         else:
