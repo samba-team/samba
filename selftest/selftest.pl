@@ -668,6 +668,9 @@ if ($opt_quick) {
 }
 $ENV{SELFTEST_MAXTIME} = $torture_maxtime;
 
+my $selftest_krbt_ccache_path = "$tmpdir_abs/selftest.krb5_ccache";
+$ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.global";
+
 my @available = ();
 foreach my $fn (@testlists) {
 	foreach (read_testlist($fn)) {
@@ -886,6 +889,8 @@ sub setup_env($$)
 
 	$option = "client" if $option eq "";
 
+	$ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.${envname}/ignore";
+
 	if (defined(get_running_env($envname))) {
 		$testenv_vars = get_running_env($envname);
 		if (not $testenv_vars->{target}->check_env($testenv_vars)) {
@@ -927,6 +932,9 @@ sub setup_env($$)
 		}
 	}
 
+	my $krb5_ccache_path = "${selftest_krbt_ccache_path}.${envname}.${option}";
+	unlink($krb5_ccache_path);
+	$ENV{KRB5CCNAME} = "FILE:${krb5_ccache_path}";
 	return $testenv_vars;
 }
 
