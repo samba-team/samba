@@ -709,6 +709,8 @@ if options.retry:
 testbase = "%s/b%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
 test_prefix = "%s/prefix" % testbase
+test_tmpdir = "%s/tmp" % testbase
+os.environ['TMPDIR'] = test_tmpdir
 
 # get the top commit message, for emails
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
@@ -732,6 +734,8 @@ while True:
     try:
         run_cmd("rm -rf %s" % test_master)
         run_cmd("rm -rf %s" % test_prefix)
+        run_cmd("rm -rf %s" % test_tmpdir)
+        os.makedirs(test_tmpdir)
         run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except Exception:
         cleanup()
