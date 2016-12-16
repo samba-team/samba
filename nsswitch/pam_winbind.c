@@ -667,7 +667,7 @@ static const char *_get_ntstatus_error_string(const char *nt_status_string)
 
 static int converse(const pam_handle_t *pamh,
 		    int nargs,
-		    struct pam_message **message,
+		    const struct pam_message **message,
 		    struct pam_response **response)
 {
 	int retval;
@@ -690,7 +690,8 @@ static int _make_remark(struct pwb_context *ctx,
 {
 	int retval = PAM_SUCCESS;
 
-	struct pam_message *pmsg[1], msg[1];
+	const struct pam_message *pmsg[1];
+	struct pam_message msg[1];
 	struct pam_response *resp;
 
 	if (ctx->flags & WINBIND_SILENT) {
@@ -843,7 +844,8 @@ static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
 #if defined(HAVE_PAM_RADIO_TYPE)
 static bool _pam_winbind_change_pwd(struct pwb_context *ctx)
 {
-	struct pam_message msg, *pmsg;
+	struct pam_message msg;
+	const struct pam_message *pmsg;
 	struct pam_response *resp = NULL;
 	int ret;
 	bool retval = false;
@@ -2194,7 +2196,8 @@ static int _winbind_read_password(struct pwb_context *ctx,
 	 */
 
 	{
-		struct pam_message msg[3], *pmsg[3];
+		struct pam_message msg[3];
+		const struct pam_message *pmsg[3];
 		struct pam_response *resp;
 		int i, replies;
 
