@@ -72,10 +72,6 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 	}
 	cli_credentials_set_conf(creds, lp_ctx);
 
-	if (domain == NULL) {
-		domain = "";
-	}
-
 	if (username == NULL) {
 		username = "";
 	}
@@ -159,11 +155,13 @@ struct cli_credentials *cli_session_creds_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	ok = cli_credentials_set_domain(creds,
-					domain,
-					CRED_SPECIFIED);
-	if (!ok) {
-		goto fail;
+	if (domain != NULL) {
+		ok = cli_credentials_set_domain(creds,
+						domain,
+						CRED_SPECIFIED);
+		if (!ok) {
+			goto fail;
+		}
 	}
 
 	if (principal != NULL) {
