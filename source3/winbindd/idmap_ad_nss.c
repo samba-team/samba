@@ -502,29 +502,24 @@ static struct nss_info_methods nss_sfu20_methods = {
 
 NTSTATUS idmap_ad_nss_init(void)
 {
-	static NTSTATUS status_nss_rfc2307 = NT_STATUS_UNSUCCESSFUL;
-	static NTSTATUS status_nss_sfu = NT_STATUS_UNSUCCESSFUL;
-	static NTSTATUS status_nss_sfu20 = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
-	if ( !NT_STATUS_IS_OK( status_nss_rfc2307 ) ) {
-		status_nss_rfc2307 = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
-							    "rfc2307",  &nss_rfc2307_methods );
-		if ( !NT_STATUS_IS_OK(status_nss_rfc2307) )
-			return status_nss_rfc2307;
+	status = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
+					"rfc2307",  &nss_rfc2307_methods);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if ( !NT_STATUS_IS_OK( status_nss_sfu ) ) {
-		status_nss_sfu = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
-							"sfu",  &nss_sfu_methods );
-		if ( !NT_STATUS_IS_OK(status_nss_sfu) )
-			return status_nss_sfu;
+	status = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
+					"sfu",  &nss_sfu_methods);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if ( !NT_STATUS_IS_OK( status_nss_sfu20 ) ) {
-		status_nss_sfu20 = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
-							"sfu20",  &nss_sfu20_methods );
-		if ( !NT_STATUS_IS_OK(status_nss_sfu20) )
-			return status_nss_sfu20;
+	status = smb_register_idmap_nss(SMB_NSS_INFO_INTERFACE_VERSION,
+					"sfu20",  &nss_sfu20_methods);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	return NT_STATUS_OK;
