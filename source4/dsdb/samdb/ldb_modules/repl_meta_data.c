@@ -1827,6 +1827,7 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			  const char *ldap_oid, struct ldb_request *parent)
 {
 	unsigned int i;
+	bool values_are_sorted = true;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	if (el == NULL) {
@@ -1876,13 +1877,18 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		} else if (!NT_STATUS_IS_OK(status)) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-
+		if (i > 0 && values_are_sorted) {
+			int cmp = parsed_dn_compare(p, &(*pdn)[i - 1]);
+			if (cmp < 0) {
+				values_are_sorted = false;
+			}
+		}
 		/* keep a pointer to the original ldb_val */
 		p->v = v;
 	}
-
-	TYPESAFE_QSORT(*pdn, el->num_values, parsed_dn_compare);
-
+	if (! values_are_sorted) {
+		TYPESAFE_QSORT(*pdn, el->num_values, parsed_dn_compare);
+	}
 	return LDB_SUCCESS;
 }
 
