@@ -757,33 +757,6 @@ ctdb_setup_service_state_dir ()
 	echo "$_service_state_dir"
 }
 
-########################################################
-# Managed status history, for auto-start/stop
-
-_ctdb_managed_common ()
-{
-    _ctdb_managed_file="${CTDB_SCRIPT_VARDIR}/managed_history/${service_name}"
-}
-
-ctdb_service_managed ()
-{
-    _ctdb_managed_common
-    mkdir -p "${_ctdb_managed_file%/*}" # dirname
-    touch "$_ctdb_managed_file"
-}
-
-ctdb_service_unmanaged ()
-{
-    _ctdb_managed_common
-    rm -f "$_ctdb_managed_file"
-}
-
-is_ctdb_previously_managed_service ()
-{
-    _ctdb_managed_common
-    [ -f "$_ctdb_managed_file" ]
-}
-
 ##################################################################
 # Reconfigure a service on demand
 
@@ -829,7 +802,7 @@ service_reconfigure ()
 }
 
 ##################################################################
-# Does CTDB manage this service? - and associated auto-start/stop
+# Does CTDB manage this service?
 
 ctdb_compat_managed_service ()
 {
@@ -866,24 +839,6 @@ is_ctdb_managed_service ()
 
     # Return 0 if "<space>$service_name<space>" appears in $t
     [ "${t#* ${service_name} }" != "${t}" ]
-}
-
-ctdb_service_start ()
-{
-    # The service is marked managed if we've ever tried to start it.
-    ctdb_service_managed
-
-    service_start || return $?
-
-    # Intentionally have this use $service_name as default
-    # shellcheck disable=SC2119
-    ctdb_counter_init
-}
-
-ctdb_service_stop ()
-{
-    ctdb_service_unmanaged
-    service_stop
 }
 
 # Default service_start() and service_stop() functions.

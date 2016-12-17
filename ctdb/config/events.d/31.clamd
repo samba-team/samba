@@ -35,12 +35,12 @@ is_ctdb_managed_service || exit 0
 
 case "$1" in
 startup)
-	ctdb_service_start
-        ;;
+	service_start
+	;;
 
 shutdown)
-        ctdb_service_stop
-        ;;
+	service_stop
+	;;
 
 monitor)
         ctdb_check_unix_socket "$CTDB_CLAMD_SOCKET" || exit $?

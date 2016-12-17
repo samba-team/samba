@@ -155,11 +155,11 @@ is_ctdb_managed_service || exit 0
 
 case "$1" in
 startup)
-	ctdb_service_start
+	service_start
 	;;
 
 shutdown)
-	ctdb_service_stop
+	service_stop
 	;;
 
 monitor)
