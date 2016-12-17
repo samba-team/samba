@@ -27,8 +27,6 @@ nfs_callout_pre ()
 
 nfs_callout_init "$service_state_dir"
 
-ctdb_start_stop_service
-
 is_ctdb_managed_service || exit 0
 
 case "$1" in

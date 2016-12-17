@@ -1485,19 +1485,6 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	  </listitem>
 	</varlistentry>
 
-	<varlistentry>
-	  <term>CTDB_SERVICE_AUTOSTARTSTOP=yes|no</term>
-	  <listitem>
-	    <para>
-	      When CTDB should start and stop services if they become
-	      managed or unmanaged.
-	    </para>
-	    <para>
-	      Default is no.
-	    </para>
-	  </listitem>
-	</varlistentry>
-
       </variablelist>
 
     </refsect2>

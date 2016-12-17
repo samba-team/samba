@@ -893,56 +893,6 @@ is_ctdb_managed_service ()
     [ "${t#* ${service_name} }" != "${t}" ]
 }
 
-ctdb_start_stop_service ()
-{
-    assert_service_name
-
-    # Allow service-start/service-stop pseudo-events to start/stop
-    # services when we're not auto-starting/stopping and we're not
-    # monitoring.
-    case "$event_name" in
-	service-start)
-	    if is_ctdb_managed_service ; then
-		die 'service-start event not permitted when service is managed'
-	    fi
-	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
-		die 'service-start event not permitted with CTDB_SERVICE_AUTOSTARTSTOP=yes'
-	    fi
-	    ctdb_service_start
-	    exit $?
-	    ;;
-	service-stop)
-	    if is_ctdb_managed_service ; then
-		die 'service-stop event not permitted when service is managed'
-	    fi
-	    if [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] ; then
-		die 'service-stop event not permitted with CTDB_SERVICE_AUTOSTARTSTOP=yes'
-	    fi
-	    ctdb_service_stop
-	    exit $?
-	    ;;
-    esac
-
-    # Do nothing unless configured to...
-    [ "$CTDB_SERVICE_AUTOSTARTSTOP" = "yes" ] || return 0
-
-    [ "$event_name" = "monitor" ] || return 0
-
-    if is_ctdb_managed_service ; then
-	if ! is_ctdb_previously_managed_service ; then
-	    echo "Starting service \"$service_name\" - now managed"
-	    background_with_logging ctdb_service_start
-	    exit $?
-	fi
-    else
-	if is_ctdb_previously_managed_service ; then
-	    echo "Stopping service \"$service_name\" - no longer managed"
-	    background_with_logging ctdb_service_stop
-	    exit $?
-	fi
-    fi
-}
-
 ctdb_service_start ()
 {
     # The service is marked managed if we've ever tried to start it.
@@ -1168,4 +1118,3 @@ update_tickles ()
 }
 
 script_name="${0##*/}"       # basename
-event_name="$1"

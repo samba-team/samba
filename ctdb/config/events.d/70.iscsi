@@ -13,8 +13,6 @@ service_name="iscsi"
 
 loadconfig
 
-ctdb_start_stop_service
-
 is_ctdb_managed_service || exit 0
 
 [ -z "$CTDB_START_ISCSI_SCRIPTS" ] && {
