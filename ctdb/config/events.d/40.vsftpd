@@ -7,16 +7,6 @@
 . "${CTDB_BASE}/functions"
 
 service_name="vsftpd"
-# make sure the service is stopped first
-service_start ()
-{
-    service $service_name stop > /dev/null 2>&1
-    service $service_name start
-}
-service_stop ()
-{
-    service $service_name stop
-}
 
 service_reconfigure ()
 {
@@ -29,12 +19,13 @@ is_ctdb_managed_service || exit 0
 
 case "$1" in
 startup)
-	service_start
+	service "$service_name" stop > /dev/null 2>&1
+	service "$service_name" start
 	ctdb_counter_init
 	;;
 
 shutdown)
-	service_stop
+	service "$service_name" stop
 	;;
 
 takeip|releaseip)
