@@ -485,7 +485,7 @@ smbc_option_get(SMBCCTX *context,
 
                 for (s = context->internal->servers; s; s = s->next) {
                         num_servers++;
-                        if (!smb1cli_conn_encryption_on(s->cli->conn)) {
+                        if (!cli_state_is_encryption_on(s->cli)) {
                                 return (void *)false;
                         }
                 }
