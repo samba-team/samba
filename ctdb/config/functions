@@ -358,24 +358,6 @@ ctdb_check_directories()
 # usage: ctdb_check_tcp_ports <ports...>
 ######################################################
 
-# This flag file is created when a service is initially started.  It
-# is deleted the first time TCP port checks for that service succeed.
-# Until then ctdb_check_tcp_ports() prints a more subtle "error"
-# message if a port check fails.
-_ctdb_check_tcp_common ()
-{
-    assert_service_name
-    _d="${CTDB_SCRIPT_VARDIR}/failcount"
-    _ctdb_service_started_file="${_d}/${service_name}.started"
-}
-
-ctdb_check_tcp_init ()
-{
-    _ctdb_check_tcp_common
-    mkdir -p "${_ctdb_service_started_file%/*}" # dirname
-    touch "$_ctdb_service_started_file"
-}
-
 # Check whether something is listening on all of the given TCP ports
 # using the "ctdb checktcpport" command.
 ctdb_check_tcp_ports()
@@ -896,7 +878,6 @@ ctdb_service_start ()
     # Intentionally have this use $service_name as default
     # shellcheck disable=SC2119
     ctdb_counter_init
-    ctdb_check_tcp_init
 }
 
 ctdb_service_stop ()
