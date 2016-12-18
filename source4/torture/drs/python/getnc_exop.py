@@ -28,6 +28,8 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN getnc_exop -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
+import random
+
 import drs_base
 from drs_base import AbstractLink
 
@@ -131,6 +133,106 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self.assertEqual(ctr6.linked_attributes_count, 0)
         self.assertEqual(ctr6.linked_attributes, [])
         self.assertEqual(ctr6.drs_error[0], 0)
+
+    def test_link_utdv_hwm(self):
+        ou1 = "OU=get_anc1,%s" % self.ou
+        self.ldb_dc1.add({
+            "dn": ou1,
+            "objectclass": "organizationalUnit"
+            })
+        ou1_id = self._get_indentifier(self.ldb_dc1, ou1)
+        ou2 = "OU=get_anc2,%s" % ou1
+        self.ldb_dc1.add({
+            "dn": ou2,
+            "objectclass": "organizationalUnit"
+            })
+        ou2_id = self._get_indentifier(self.ldb_dc1, ou2)
+        dc3 = "CN=test_anc_dc_%u,%s" % (random.randint(0, 4294967295), ou2)
+        self.ldb_dc1.add({
+            "dn": dc3,
+            "objectclass": "computer",
+            "userAccountControl": "%d" % (samba.dsdb.UF_ACCOUNTDISABLE | samba.dsdb.UF_SERVER_TRUST_ACCOUNT)
+            })
+        dc3_id = self._get_indentifier(self.ldb_dc1, dc3)
+        cn3 = "CN=get_anc3,%s" % ou2
+        self.ldb_dc1.add({
+            "dn": cn3,
+            "objectclass": "container",
+            })
+        cn3_id = self._get_indentifier(self.ldb_dc1, cn3)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, ou1)
+        m["managedBy"] = ldb.MessageElement(dc3, ldb.FLAG_MOD_ADD, "managedBy")
+        self.ldb_dc1.modify(m)
+        ou1_managedBy_dc3 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                                drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                                ou1_id.guid, dc3_id.guid)
+
+        (hwm0, utdv0) = self._check_replication([ou2,dc3,cn3,ou1],
+                            drsuapi.DRSUAPI_DRS_WRIT_REP,
+                            expected_links=[ou1_managedBy_dc3],
+                            nc_object_count=4)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb_dc1, dc3)
+        m["managedBy"] = ldb.MessageElement(ou2, ldb.FLAG_MOD_ADD, "managedBy")
+        self.ldb_dc1.modify(m)
+        dc3_managedBy_ou2 = AbstractLink(drsuapi.DRSUAPI_ATTID_managedBy,
+                                drsuapi.DRSUAPI_DS_LINKED_ATTRIBUTE_FLAG_ACTIVE,
+                                dc3_id.guid, ou2_id.guid)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_WRIT_REP,
+            expected_links=[dc3_managedBy_ou2],
+            highwatermark=hwm0,
+            nc_object_count=1)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[dc3_managedBy_ou2],
+            highwatermark=hwm0,
+            nc_object_count=1)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            expected_links=[dc3_managedBy_ou2],
+            highwatermark=hwm0,
+            nc_object_count=1)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[dc3_managedBy_ou2],
+            highwatermark=hwm0,
+            nc_object_count=1)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_WRIT_REP,
+            expected_links=[dc3_managedBy_ou2],
+            uptodateness_vector=utdv0,
+            nc_object_count=4)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_WRIT_REP|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[dc3_managedBy_ou2],
+            uptodateness_vector=utdv0,
+            nc_object_count=4)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY,
+            expected_links=[dc3_managedBy_ou2],
+            uptodateness_vector=utdv0,
+            nc_object_count=1)
+
+        self._check_replication([],
+            drsuapi.DRSUAPI_DRS_CRITICAL_ONLY|
+            drsuapi.DRSUAPI_DRS_GET_ANC,
+            expected_links=[dc3_managedBy_ou2],
+            uptodateness_vector=utdv0,
+            nc_object_count=1)
 
     def test_FSMONotOwner(self):
         """Test role transfer with against DC not owner of the role"""
