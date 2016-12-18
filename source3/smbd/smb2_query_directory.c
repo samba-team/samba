@@ -193,10 +193,23 @@ static void smbd_smb2_request_find_done(struct tevent_req *subreq)
 	}
 }
 
+static struct tevent_req *fetch_write_time_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						connection_struct *conn,
+						struct file_id id,
+						int info_level,
+						char *entry_marshall_buf,
+						bool *stop);
+static NTSTATUS fetch_write_time_recv(struct tevent_req *req);
+
+
 struct smbd_smb2_query_directory_state {
 	struct smbd_smb2_request *smb2req;
+	uint64_t async_count;
 	DATA_BLOB out_output_buffer;
 };
+
+static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -226,6 +239,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	uint32_t dirtype = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
 	bool dont_descend = false;
 	bool ask_sharemode = false;
+	bool async_ask_sharemode = false;
 	bool wcard_has_wild = false;
 	struct tm tm;
 	char *p;
@@ -462,9 +476,24 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 					     true);
 	}
 
+	if (ask_sharemode && lp_clustering()) {
+		ask_sharemode = false;
+		async_ask_sharemode = true;
+
+		/*
+		 * Should we only set async_internal
+		 * if we're not the last request in
+		 * a compound chain?
+		 */
+		smb2_request_set_async_internal(smb2req, true);
+	}
+
 	while (true) {
 		bool got_exact_match = false;
 		int space_remaining = in_output_buffer_length - off;
+		int cur_off = off;
+		struct file_id file_id;
+		bool stop = false;
 
 		SMB_ASSERT(space_remaining >= 0);
 
@@ -487,7 +516,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 					       &got_exact_match,
 					       &last_entry_off,
 					       NULL,
-					       NULL);
+					       &file_id);
 
 		off = (int)PTR_DIFF(pdata, base_data);
 
@@ -499,9 +528,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 				 */
 				continue;
 			} else if (num > 0) {
-				SIVAL(state->out_output_buffer.data, last_entry_off, 0);
-				tevent_req_done(req);
-				return tevent_req_post(req, ev);
+				goto last_entry_done;
 			} else if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 				tevent_req_nterror(req, NT_STATUS_INFO_LENGTH_MISMATCH);
 				return tevent_req_post(req, ev);
@@ -511,20 +538,75 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
+		if (async_ask_sharemode) {
+			struct tevent_req *subreq = NULL;
+
+			subreq = fetch_write_time_send(req,
+						       ev,
+						       conn,
+						       file_id,
+						       info_level,
+						       base_data + cur_off,
+						       &stop);
+			if (tevent_req_nomem(subreq, req)) {
+				return tevent_req_post(req, ev);
+			}
+			tevent_req_set_callback(
+				subreq,
+				smb2_query_directory_fetch_write_time_done,
+				req);
+
+			state->async_count++;
+		}
+
 		num++;
 		state->out_output_buffer.length = off;
 
-		if (num < max_count) {
+		if (num >= max_count) {
+			stop = true;
+		}
+
+		if (!stop) {
 			continue;
 		}
 
+last_entry_done:
 		SIVAL(state->out_output_buffer.data, last_entry_off, 0);
+		if (state->async_count > 0) {
+			DBG_DEBUG("Stopping after %zu async mtime updates\n",
+				  state->async_count);
+			return req;
+		}
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
 	tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	return tevent_req_post(req, ev);
+}
+
+static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_query_directory_state *state = tevent_req_data(
+		req, struct smbd_smb2_query_directory_state);
+	NTSTATUS status;
+
+	state->async_count--;
+
+	status = fetch_write_time_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->async_count > 0) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
 }
 
 static NTSTATUS smbd_smb2_query_directory_recv(struct tevent_req *req,
@@ -542,6 +624,120 @@ static NTSTATUS smbd_smb2_query_directory_recv(struct tevent_req *req,
 
 	*out_output_buffer = state->out_output_buffer;
 	talloc_steal(mem_ctx, out_output_buffer->data);
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
+struct fetch_write_time_state {
+	connection_struct *conn;
+	struct file_id id;
+	int info_level;
+	char *entry_marshall_buf;
+};
+
+static void fetch_write_time_done(struct tevent_req *subreq);
+
+static struct tevent_req *fetch_write_time_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						connection_struct *conn,
+						struct file_id id,
+						int info_level,
+						char *entry_marshall_buf,
+						bool *stop)
+{
+	struct tevent_req *req = NULL;
+	struct fetch_write_time_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	bool req_queued;
+
+	*stop = false;
+
+	req = tevent_req_create(mem_ctx, &state, struct fetch_write_time_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	*state = (struct fetch_write_time_state) {
+		.conn = conn,
+		.id = id,
+		.info_level = info_level,
+		.entry_marshall_buf = entry_marshall_buf,
+	};
+
+	subreq = fetch_share_mode_send(state, ev, id, &req_queued);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fetch_write_time_done, req);
+
+	if (req_queued) {
+		*stop = true;
+	}
+	return req;
+}
+
+static void fetch_write_time_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct fetch_write_time_state *state = tevent_req_data(
+		req, struct fetch_write_time_state);
+	struct timespec write_time;
+	struct share_mode_lock *lck = NULL;
+	NTSTATUS status;
+	size_t off;
+
+	status = fetch_share_mode_recv(subreq, state, &lck);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		tevent_req_done(req);
+		return;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	write_time = get_share_mode_write_time(lck);
+	TALLOC_FREE(lck);
+
+	if (null_timespec(write_time)) {
+		tevent_req_done(req);
+		return;
+	}
+
+	switch (state->info_level) {
+	case SMB_FIND_FILE_DIRECTORY_INFO:
+	case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
+	case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+	case SMB_FIND_ID_FULL_DIRECTORY_INFO:
+	case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
+		off = 24;
+		break;
+
+	default:
+		DBG_ERR("Unsupported info_level [%d]\n", state->info_level);
+		tevent_req_nterror(req, NT_STATUS_INVALID_LEVEL);
+		return;
+	}
+
+	put_long_date_timespec(state->conn->ts_res,
+			       state->entry_marshall_buf + off,
+			       write_time);
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS fetch_write_time_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
