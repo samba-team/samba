@@ -52,9 +52,6 @@ void print_spool_terminate(struct connection_struct *conn,
  ***************************************************************************/
 
 #define DOCNAME_DEFAULT "Remote Downlevel Document"
-#ifndef PRINT_SPOOL_PREFIX
-#define PRINT_SPOOL_PREFIX "smbprn."
-#endif
 
 NTSTATUS print_spool_open(files_struct *fsp,
 			  const char *fname,
