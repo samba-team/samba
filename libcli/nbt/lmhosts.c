@@ -159,9 +159,9 @@ void endlmhosts(FILE *fp)
  Resolve via "lmhosts" method.
 *********************************************************/
 
-NTSTATUS resolve_lmhosts_file_as_sockaddr(const char *lmhosts_file, 
+NTSTATUS resolve_lmhosts_file_as_sockaddr(const char *lmhosts_file,
 					  const char *name, int name_type,
-					  TALLOC_CTX *mem_ctx, 
+					  TALLOC_CTX *mem_ctx,
 					  struct sockaddr_storage **return_iplist,
 					  int *return_count)
 {
@@ -205,8 +205,8 @@ NTSTATUS resolve_lmhosts_file_as_sockaddr(const char *lmhosts_file,
 			TALLOC_FREE(lmhost_name);
 			continue;
 		}
-		
-		*return_iplist = talloc_realloc(ctx, (*return_iplist), 
+
+		*return_iplist = talloc_realloc(ctx, (*return_iplist),
 						struct sockaddr_storage,
 						(*return_count)+1);
 
