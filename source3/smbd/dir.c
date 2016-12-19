@@ -1588,7 +1588,8 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
  Open a directory.
 ********************************************************************/
 
-struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
+static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
 			const char *name,
 			const char *mask,
 			uint32_t attr)
@@ -1626,6 +1627,18 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
   fail:
 	TALLOC_FREE(dirp);
 	return NULL;
+}
+
+struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
+			const char *name,
+			const char *mask,
+			uint32_t attr)
+{
+	return OpenDir_internal(mem_ctx,
+				conn,
+				name,
+				mask,
+				attr);
 }
 
 /*******************************************************************
