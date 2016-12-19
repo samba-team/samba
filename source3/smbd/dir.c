@@ -1797,18 +1797,13 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	}
 
 	if (dirp->dir == NULL) {
-		/* FDOPENDIR didn't work. Use OPENDIR instead. */
-		dirp->dir = SMB_VFS_OPENDIR(conn,
-					dirp->dir_smb_fname,
+		/* FDOPENDIR is not supported. Use OPENDIR instead. */
+		TALLOC_FREE(dirp);
+		return open_dir_safely(mem_ctx,
+					conn,
+					fsp->fsp_name,
 					mask,
 					attr);
-	}
-
-	if (!dirp->dir) {
-		DEBUG(5,("OpenDir_fsp: Can't open %s. %s\n",
-			dirp->dir_smb_fname->base_name,
-			strerror(errno) ));
-		goto fail;
 	}
 
 	if (sconn && !sconn->using_smb2) {
