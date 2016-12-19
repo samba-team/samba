@@ -916,6 +916,42 @@ NTSTATUS node_status_query(TALLOC_CTX *mem_ctx, struct nmb_name *name,
 	return status;
 }
 
+static bool name_status_lmhosts(const struct sockaddr_storage *paddr,
+				int qname_type, fstring pname)
+{
+	FILE *f;
+	char *name;
+	int name_type;
+	struct sockaddr_storage addr;
+
+	if (paddr->ss_family != AF_INET) {
+		return false;
+	}
+
+	f = startlmhosts(get_dyn_LMHOSTSFILE());
+	if (f == NULL) {
+		return false;
+	}
+
+	while (getlmhostsent(talloc_tos(), f, &name, &name_type, &addr)) {
+		if (addr.ss_family != AF_INET) {
+			continue;
+		}
+		if (name_type != qname_type) {
+			continue;
+		}
+		if (memcmp(&((const struct sockaddr_in *)paddr)->sin_addr,
+			   &((const struct sockaddr_in *)&addr)->sin_addr,
+			   sizeof(struct in_addr)) == 0) {
+			fstrcpy(pname, name);
+			endlmhosts(f);
+			return true;
+		}
+	}
+	endlmhosts(f);
+	return false;
+}
+
 /****************************************************************************
  Find the first type XX name in a node status reply - used for finding
  a servers name given its IP. Return the matched name in *name.
@@ -955,6 +991,13 @@ bool name_status_find(const char *q_name,
 	if (to_ss->ss_family != AF_INET) {
 		/* Can't do node status to IPv6 */
 		return false;
+	}
+
+	result = name_status_lmhosts(to_ss, type, name);
+	if (result) {
+		DBG_DEBUG("Found name %s in lmhosts\n", name);
+		namecache_status_store(q_name, q_type, type, to_ss, name);
+		return true;
 	}
 
 	set_socket_addr_v4(&ss);
