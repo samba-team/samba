@@ -1728,11 +1728,6 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	if (sconn && !sconn->using_smb2) {
-		sconn->searches.dirhandles_open++;
-	}
-	talloc_set_destructor(dirp, smb_Dir_destructor);
-
 	dirp->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
 	if (dirp->dir != NULL) {
 		dirp->fsp = fsp;
@@ -1756,6 +1751,11 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			 strerror(errno) ));
 		goto fail;
 	}
+
+	if (sconn && !sconn->using_smb2) {
+		sconn->searches.dirhandles_open++;
+	}
+	talloc_set_destructor(dirp, smb_Dir_destructor);
 
 	return dirp;
 
