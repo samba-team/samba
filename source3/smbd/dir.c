@@ -1797,7 +1797,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			dirp->dir_smb_fname->base_name,
 			strerror(errno)));
 		if (errno != ENOSYS) {
-			return NULL;
+			goto fail;
 		}
 	}
 
