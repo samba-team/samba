@@ -117,6 +117,7 @@ bld.RECURSE('libcli/echo')
 bld.RECURSE('libcli/dns')
 bld.RECURSE('libcli/samsync')
 bld.RECURSE('libcli/registry')
+bld.RECURSE('lib/mscat')
 bld.RECURSE('source4/lib/policy')
 bld.RECURSE('libcli/named_pipe_auth')
 if bld.CONFIG_GET('ENABLE_SELFTEST'):

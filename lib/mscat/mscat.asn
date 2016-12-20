@@ -1,0 +1,136 @@
+--
+--  ASN.1 Description for Microsoft Catalog Files
+--
+--    Copyright 2016 Andreas Schneider <asn@samba.org>
+--    Copyright 2016 Nikos Mavrogiannopoulos <nmav@redhat.com>
+--
+--  This program is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU Lesser General Public License as published
+--  by the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU Lesser General Public License for more details.
+--
+--  You should have received a copy of the GNU Lesser General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--
+CATALOG {}
+DEFINITIONS IMPLICIT TAGS ::= -- assuming implicit tags, should try explicit too
+
+BEGIN
+
+-- CATALOG_NAME_VALUE
+CatalogNameValue ::= SEQUENCE { -- 180
+    name       BMPString,
+    flags      INTEGER, -- 10010001
+    value      OCTET STRING -- UTF-16-LE
+}
+
+-- CATALOG_MEMBER_INFO
+CatalogMemberInfo ::= SEQUENCE {
+    name       BMPString,
+    id         INTEGER -- 0200
+}
+
+CatalogMemberInfo2 ::= SEQUENCE {
+    memId       OBJECT IDENTIFIER,
+    unknown     SET OF SpcLink
+}
+
+-- SPC_INDIRECT_DATA
+SpcIndirectData ::= SEQUENCE {
+    data        SpcAttributeTypeAndOptionalValue,
+    messageDigest DigestInfo
+}
+
+SpcAttributeTypeAndOptionalValue ::= SEQUENCE {
+    type        OBJECT IDENTIFIER,
+    value       ANY DEFINED BY type OPTIONAL
+}
+
+DigestInfo ::= SEQUENCE {
+    digestAlgorithm AlgorithmIdentifier,
+    digest OCTET STRING
+}
+
+AlgorithmIdentifier ::=  SEQUENCE  {
+    algorithm   OBJECT IDENTIFIER,
+    parameters  ANY DEFINED BY algorithm OPTIONAL
+                -- contains a value of the type
+}
+
+-- SPC_PE_IMAGE_DATA
+SpcPEImageData ::= SEQUENCE {
+    flags       SpcPeImageFlags DEFAULT includeResources,
+    link        [0] EXPLICIT SpcLink OPTIONAL
+}
+
+SpcPeImageFlags ::= BIT STRING {
+    includeResources            (0),
+    includeDebugInfo            (1),
+    includeImportAddressTable   (2)
+}
+
+SpcLink ::= CHOICE {
+    url         [0]    IMPLICIT IA5String,
+    moniker     [1]    IMPLICIT SpcSerializedObject,
+    file        [2]    EXPLICIT SpcString
+}
+
+SpcSerializedObject ::= SEQUENCE {
+    classId     OCTET STRING, -- GUID
+    data        OCTET STRING  -- Binary structure
+}
+
+SpcString ::= CHOICE {
+    unicode     [0] IMPLICIT BMPString,
+    ascii       [1] IMPLICIT IA5String
+}
+
+-- SPC_IMAGE_DATA_FILE
+SpcImageDataFile ::= SEQUENCE {
+    flags       BIT STRING,
+    file        SpcLink
+}
+
+-----------------------------------------------------------
+-- CERT_TRUST_LIST STRUCTURE
+-----------------------------------------------------------
+
+CatalogListId ::= SEQUENCE {
+    oid OBJECT IDENTIFIER
+}
+
+CatalogListMemberId ::= SEQUENCE {
+    oid OBJECT IDENTIFIER,
+    optional NULL
+}
+
+MemberAttribute ::= SEQUENCE {
+    contentType OBJECT IDENTIFIER,
+    content SET OF ANY DEFINED BY contentType
+}
+
+CatalogListMember ::= SEQUENCE {
+    checksum OCTET STRING, -- The member checksum (e.g. SHA1)
+    attributes SET OF MemberAttribute OPTIONAL
+}
+
+CatalogAttribute ::= SEQUENCE {
+    dataId OBJECT IDENTIFIER,
+    encapsulated_data OCTET STRING -- encapsulates CatNameValue or SpcPeImageData
+}
+
+CertTrustList ::= SEQUENCE {
+    catalogListId CatalogListId,
+    unknownString OCTET STRING, -- 16 bytes MD5 hash?
+    trustUtcTime UTCTime,
+    catalogListMemberId CatalogListMemberId,
+    members SEQUENCE OF CatalogListMember,
+    attributes [0] EXPLICIT SEQUENCE OF CatalogAttribute OPTIONAL
+}
+
+END

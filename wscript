@@ -279,6 +279,7 @@ def configure(conf):
     if conf.env.with_ctdb:
         conf.RECURSE('ctdb')
     conf.RECURSE('lib/socket')
+    conf.RECURSE('lib/mscat')
     conf.RECURSE('packaging')
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()

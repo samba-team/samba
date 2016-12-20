@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+import os
+import Logs
+import sys
+
+def configure(conf):
+    pkg_name = 'libtasn1'
+    pkg_minversion = '3.8'
+
+    if conf.CHECK_BUNDLED_SYSTEM_PKG(pkg_name, minversion=pkg_minversion):
+        if not conf.find_program('asn1Parser', var='ASN1PARSER'):
+            Logs.warn('WARNING: ans1Parser hasn\'t been found! Please install it (e.g. libtasn1-bin)')
+
+    conf.CHECK_FUNCS_IN('gnutls_pkcs7_get_embedded_data_oid', 'gnutls')
+
+def build(bld):
+    if (bld.CONFIG_SET('HAVE_LIBTASN1') and
+        bld.env.ASN1PARSER and
+        bld.CONFIG_SET('HAVE_GNUTLS_PKCS7_GET_EMBEDDED_DATA_OID')):
+
+        bld.SAMBA_GENERATOR('MSCAT_PARSER',
+                            source='mscat.asn',
+                            target='mscat_asn1_tab.c',
+                            rule='${ASN1PARSER} --output ${TGT} ${SRC}',
+                            group='build_source')
+
+        bld.SAMBA_LIBRARY('mscat',
+                          source='''
+                                 mscat_asn1_tab.c
+                                 mscat_ctl.c
+                                 mscat_pkcs7.c
+                                 ''',
+                          deps='''
+                               talloc
+                               gnutls
+                               libtasn1
+                               samba-util
+                               ''',
+                          private_library=True)
+
+        bld.SAMBA_BINARY('dumpmscat',
+                         source='dumpmscat.c',
+                         deps='mscat')
