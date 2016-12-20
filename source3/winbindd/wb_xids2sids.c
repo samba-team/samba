@@ -262,7 +262,20 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 			continue;
 		}
 
-		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx++]);
+		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx]);
+
+		/*
+		 * Prime the cache after an xid2sid call. It's
+		 * important that we use state->dom_xids for the xid
+		 * value, not state->all_xids: state->all_xids carries
+		 * what we asked for, e.g. a
+		 * ID_TYPE_UID. state->dom_xids holds something the
+		 * idmap child possibly changed to ID_TYPE_BOTH.
+		 */
+		idmap_cache_set_sid2unixid(
+			&state->all_sids[i], &state->dom_xids[dom_sid_idx]);
+
+		dom_sid_idx += 1;
 	}
 
 	tevent_req_done(req);
