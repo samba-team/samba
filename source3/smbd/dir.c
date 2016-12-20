@@ -1655,12 +1655,6 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 	dirp->conn = conn;
 	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
-	dirp->dir_smb_fname = cp_smb_filename(dirp, smb_dname);
-	if (!dirp->dir_smb_fname) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
 	if (sconn && !sconn->using_smb2) {
 		sconn->searches.dirhandles_open++;
 	}
@@ -1673,12 +1667,81 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
+/****************************************************************************
+ Open a directory handle by pathname, ensuring it's under the share path.
+****************************************************************************/
+
+static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
+					connection_struct *conn,
+					const struct smb_filename *smb_dname,
+					const char *wcard,
+					uint32_t attr)
+{
+	struct smb_Dir *dir_hnd = NULL;
+	struct smb_filename *smb_fname_cwd = NULL;
+	char *saved_dir = vfs_GetWd(ctx, conn);
+	NTSTATUS status;
+
+	if (saved_dir == NULL) {
+		return NULL;
+	}
+
+	if (vfs_ChDir(conn, smb_dname->base_name) == -1) {
+		goto out;
+	}
+
+	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
+					".",
+					NULL,
+					NULL,
+					smb_dname->flags);
+	if (smb_fname_cwd == NULL) {
+		goto out;
+	}
+
+	/*
+	 * Now the directory is pinned, use
+	 * REALPATH to ensure we can access it.
+	 */
+	status = check_name(conn, ".");
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	dir_hnd = OpenDir_internal(ctx,
+				conn,
+				smb_fname_cwd,
+				wcard,
+				attr);
+
+	if (dir_hnd == NULL) {
+		goto out;
+	}
+
+	/*
+	 * OpenDir_internal only gets "." as the dir name.
+	 * Store the real dir name here.
+	 */
+
+	dir_hnd->dir_smb_fname = cp_smb_filename(dir_hnd, smb_dname);
+	if (!dir_hnd->dir_smb_fname) {
+		TALLOC_FREE(dir_hnd);
+		errno = ENOMEM;
+	}
+
+  out:
+
+	vfs_ChDir(conn, saved_dir);
+	TALLOC_FREE(saved_dir);
+	return dir_hnd;
+}
+
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const struct smb_filename *smb_dname,
 			const char *mask,
 			uint32_t attr)
 {
-	return OpenDir_internal(mem_ctx,
+	return open_dir_safely(mem_ctx,
 				conn,
 				smb_dname,
 				mask,
