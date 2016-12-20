@@ -115,7 +115,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "mutual", true)) {
 		gensec_gssapi_state->gss_want_flags |= GSS_C_MUTUAL_FLAG;
 	}
-	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation", false)) {
 		gensec_gssapi_state->gss_want_flags |= GSS_C_DELEG_FLAG;
 	}
 	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "replay", true)) {

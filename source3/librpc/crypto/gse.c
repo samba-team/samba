@@ -142,7 +142,6 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	memcpy(&gse_ctx->gss_mech, gss_mech_krb5, sizeof(gss_OID_desc));
 
 	gse_ctx->gss_want_flags = GSS_C_MUTUAL_FLAG |
-				GSS_C_DELEG_FLAG |
 				GSS_C_DELEG_POLICY_FLAG |
 				GSS_C_REPLAY_FLAG |
 				GSS_C_SEQUENCE_FLAG;

@@ -39,6 +39,28 @@ krb5_error_code check_pac_checksum(DATA_BLOB pac_data,
 	krb5_boolean checksum_valid = false;
 	krb5_data input;
 
+	switch (sig->type) {
+	case CKSUMTYPE_HMAC_MD5:
+		/* ignores the key type */
+		break;
+	case CKSUMTYPE_HMAC_SHA1_96_AES_256:
+		if (KRB5_KEY_TYPE(keyblock) != ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
+			return EINVAL;
+		}
+		/* ok */
+		break;
+	case CKSUMTYPE_HMAC_SHA1_96_AES_128:
+		if (KRB5_KEY_TYPE(keyblock) != ENCTYPE_AES128_CTS_HMAC_SHA1_96) {
+			return EINVAL;
+		}
+		/* ok */
+		break;
+	default:
+		DEBUG(2,("check_pac_checksum: Checksum Type %d is not supported\n",
+			(int)sig->type));
+		return EINVAL;
+	}
+
 #ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM /* Heimdal */
 	cksum.cksumtype	= (krb5_cksumtype)sig->type;
 	cksum.checksum.length	= sig->signature.length;

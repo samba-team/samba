@@ -56,7 +56,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 		uint8_t sublen, newlen;
 		NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &sublen));
 		newlen = total_len + sublen;
+		if (newlen < total_len) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE,
+					      "Failed to pull dnsp_name");
+		}
 		if (i != count-1) {
+			if (newlen == UINT8_MAX) {
+				return ndr_pull_error(
+					ndr, NDR_ERR_RANGE,
+					"Failed to pull dnsp_name");
+			}
 			newlen++; /* for the '.' */
 		}
 		ret = talloc_realloc(ndr->current_mem_ctx, ret, char, newlen);
