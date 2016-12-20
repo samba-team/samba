@@ -1643,6 +1643,15 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	dirp->dir = SMB_VFS_OPENDIR(conn, smb_dname, mask, attr);
+
+	if (!dirp->dir) {
+		DEBUG(5,("OpenDir: Can't open %s. %s\n",
+			smb_dname->base_name,
+			strerror(errno) ));
+		goto fail;
+	}
+
 	dirp->conn = conn;
 	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
@@ -1656,15 +1665,6 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 		sconn->searches.dirhandles_open++;
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
-
-	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_smb_fname, mask, attr);
-
-	if (!dirp->dir) {
-		DEBUG(5,("OpenDir: Can't open %s. %s\n",
-			dirp->dir_smb_fname->base_name,
-			strerror(errno) ));
-		goto fail;
-	}
 
 	return dirp;
 
