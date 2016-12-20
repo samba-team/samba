@@ -81,6 +81,57 @@ A new option, "unix only", enables this feature only for the UNIX owner
 of the file, not affecting the SID owner in the Windows NT ACL of the
 file. This can be used to emulate something very similar to folder quotas.
 
+CTDB changes
+------------
+
+* "ctdb event" is a new top-level command for interacting with event scripts
+
+  "ctdb event status" replaces "ctdb scriptstatus" - the latter is
+  maintained for backward compatibility but the output format has been
+  cleaned up
+
+  "ctdb event run" replaces "ctdb eventscript"
+
+  "ctdb event script enable" replaces "ctdb enablescript"
+
+  "ctdb event script disable" replaces "ctdb disablescript"
+
+  The new command "ctdb event script list" lists event scripts.
+
+* CTDB's back-end for running event scripts has been replaced by a
+  separate, long-running daemon ctdbd_eventd.
+
+* Running ctdb interactively will log to stderr
+
+* CTDB logs now include process id for each process
+
+* CTDB tags log messages differently.  Changes include:
+
+  ctdb-recoverd: Messages from CTDB's recovery daemon
+  ctdb-recovery: Messages from CTDB database recovery
+  ctdb-eventd: Messages from CTDB's event daemon
+  ctdb-takeover: Messgaes from CTDB's public IP takeover subsystem
+
+* The mapping between symbolic and numeric debug levels has changed
+
+  Configurations containing numeric debug levels should be updated.
+  Symbolic debug levels are recommended.  See the DEBUG LEVEL section
+  of ctdb(7) for details.
+
+*  Tunable IPAllocAlgorithm replaces LCP2PublicIPs, DeterministicIPs
+
+   See ctdb-tunables(7) for details
+
+* CTDB's configuration tunables should be consistently set across a cluster
+
+  This has always been the cases for most tunables but this fact is
+  now documented.
+
+* CTDB ships with recovery lock helper call-outs for etcd and Ceph RADOS
+
+  To build/install these, use the --enable-etcd-reclock and
+  --enable-ceph-reclock configure options.
+
 
 REMOVED FEATURES
 ================
