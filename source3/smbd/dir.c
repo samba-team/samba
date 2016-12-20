@@ -1601,15 +1601,9 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	dirp->dir_path = talloc_strdup(dirp, name);
-	if (!dirp->dir_path) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
-	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
+	dirp->dir = SMB_VFS_OPENDIR(conn, name, mask, attr);
 	if (!dirp->dir) {
-		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path,
+		DEBUG(5,("OpenDir: Can't open %s. %s\n", name,
 			 strerror(errno) ));
 		goto fail;
 	}
@@ -1629,12 +1623,70 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
+/****************************************************************************
+ Open a directory handle by pathname, ensuring it's under the share path.
+****************************************************************************/
+
+static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
+					connection_struct *conn,
+					const char *name,
+					const char *wcard,
+					uint32_t attr)
+{
+	struct smb_Dir *dir_hnd = NULL;
+	char *saved_dir = vfs_GetWd(ctx, conn);
+	NTSTATUS status;
+
+	if (saved_dir == NULL) {
+		return NULL;
+	}
+
+	if (vfs_ChDir(conn, name) == -1) {
+		goto out;
+	}
+
+	/*
+	 * Now the directory is pinned, use
+	 * REALPATH to ensure we can access it.
+	 */
+	status = check_name(conn, ".");
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	dir_hnd = OpenDir_internal(ctx,
+				conn,
+				".",
+				wcard,
+				attr);
+
+	if (dir_hnd == NULL) {
+		goto out;
+	}
+
+	/*
+	 * OpenDir_internal only gets "." as the dir name.
+	 * Store the real dir name here.
+	 */
+
+	dir_hnd->dir_path = talloc_strdup(dir_hnd, name);
+	if (!dir_hnd->dir_path) {
+		errno = ENOMEM;
+	}
+
+  out:
+
+	vfs_ChDir(conn, saved_dir);
+	TALLOC_FREE(saved_dir);
+	return dir_hnd;
+}
+
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *name,
 			const char *mask,
 			uint32_t attr)
 {
-	return OpenDir_internal(mem_ctx,
+	return open_dir_safely(mem_ctx,
 				conn,
 				name,
 				mask,
