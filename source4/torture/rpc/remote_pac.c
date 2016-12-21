@@ -122,6 +122,23 @@ static NTSTATUS test_generate_session_info_pac(struct auth4_context *auth_ctx,
 
 /* Check to see if we can pass the PAC across to the NETLOGON server for validation */
 
+static const struct PAC_BUFFER *get_pac_buffer(const struct PAC_DATA *pac_data,
+					       enum PAC_TYPE type)
+{
+	const struct PAC_BUFFER *pac_buf = NULL;
+	uint32_t i;
+
+	for (i = 0; i < pac_data->num_buffers; ++i) {
+		pac_buf = &pac_data->buffers[i];
+
+		if (pac_buf->type == type) {
+			break;
+		}
+	}
+
+	return pac_buf;
+}
+
 /* Also happens to be a really good one-step verfication of our Kerberos stack */
 
 static bool test_PACVerify(struct torture_context *tctx,
@@ -274,42 +291,45 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, pac_data_struct.version, 0, "version");
 	torture_assert_int_equal(tctx, pac_data_struct.num_buffers, num_pac_buffers, "num_buffers");
 
-	pac_buf = pac_data_struct.buffers;
-	torture_assert_int_equal(tctx, pac_buf->type,
-				 PAC_TYPE_LOGON_INFO, "PAC_TYPE_LOGON_INFO");
-	torture_assert(tctx, pac_buf->info != NULL,
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_LOGON_INFO);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_LOGON_INFO");
+	torture_assert(tctx,
+		       pac_buf->info != NULL,
 		       "PAC_TYPE_LOGON_INFO info");
-	pac_buf++;
+
 	if (pkinit_in_use) {
-		torture_assert_int_equal(tctx, pac_buf->type,
-					 PAC_TYPE_CREDENTIAL_INFO,
-					 "PAC_TYPE_CREDENTIAL_INFO");
-		torture_assert(tctx, pac_buf->info != NULL,
+		pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_CREDENTIAL_INFO);
+		torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_CREDENTIAL_INFO");
+		torture_assert(tctx,
+			       pac_buf->info != NULL,
 			       "PAC_TYPE_CREDENTIAL_INFO info");
-		pac_buf++;
 	}
-	torture_assert_int_equal(tctx, pac_buf->type,
-				 PAC_TYPE_LOGON_NAME, "PAC_TYPE_LOGON_NAME");
-	torture_assert(tctx, pac_buf->info != NULL,
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_LOGON_NAME);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_LOGON_NAME");
+	torture_assert(tctx,
+		       pac_buf->info != NULL,
 		       "PAC_TYPE_LOGON_NAME info");
-	pac_buf++;
+
 	if (expect_pac_upn_dns_info) {
-		torture_assert_int_equal(tctx, pac_buf->type,
-					 PAC_TYPE_UPN_DNS_INFO, "PAC_TYPE_UPN_DNS_INFO");
-		torture_assert(tctx, pac_buf->info != NULL,
+		pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_UPN_DNS_INFO);
+		torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_UPN_DNS_INFO");
+		torture_assert(tctx,
+			       pac_buf->info != NULL,
 			       "PAC_TYPE_UPN_DNS_INFO info");
-		pac_buf++;
 	}
-	torture_assert_int_equal(tctx, pac_buf->type,
-				 PAC_TYPE_SRV_CHECKSUM, "PAC_TYPE_SRV_CHECKSUM");
-	torture_assert(tctx, pac_buf->info != NULL,
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_SRV_CHECKSUM);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_SRV_CHECKSUM");
+	torture_assert(tctx,
+		       pac_buf->info != NULL,
 		       "PAC_TYPE_SRV_CHECKSUM info");
-	pac_buf++;
-	torture_assert_int_equal(tctx, pac_buf->type,
-				 PAC_TYPE_KDC_CHECKSUM, "PAC_TYPE_KDC_CHECKSUM");
-	torture_assert(tctx, pac_buf->info != NULL,
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_KDC_CHECKSUM);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_KDC_CHECKSUM");
+	torture_assert(tctx,
+		       pac_buf->info != NULL,
 		       "PAC_TYPE_KDC_CHECKSUM info");
-	pac_buf++;
 
 	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
 	pac_wrapped_struct.SignatureType = pac_data->pac_kdc_sig->type;
