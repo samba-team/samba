@@ -274,12 +274,12 @@ bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
 /**
  * Store a mapping in the idmap cache
  * @param[in] sid		the sid to map
- * @param[in] gid		the gid to map
+ * @param[in] unix_id		the unix_id to map
  *
  * If both parameters are valid values, then a positive mapping in both
  * directions is stored. If "is_null_sid(sid)" is true, then this will be a
- * negative mapping of gid, we want to cache that for this gid we could not
- * find anything. Likewise if "gid==-1", then we want to cache that we did not
+ * negative mapping of xid, we want to cache that for this xid we could not
+ * find anything. Likewise if "xid==-1", then we want to cache that we did not
  * find a mapping for the sid passed here.
  */
 
@@ -315,7 +315,7 @@ void idmap_cache_set_sid2unixid(const struct dom_sid *sid, struct unixid *unix_i
 	}
 	if (unix_id->id != -1) {
 		if (is_null_sid(sid)) {
-			/* negative gid mapping */
+			/* negative xid mapping */
 			fstrcpy(value, "-");
 			timeout = lp_idmap_negative_cache_time();
 		}
