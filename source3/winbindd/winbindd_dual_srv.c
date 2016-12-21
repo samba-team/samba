@@ -233,6 +233,7 @@ NTSTATUS _wbint_UnixIDs2Sids(struct pipes_struct *p,
 	}
 
 	for (i=0; i<r->in.num_ids; i++) {
+		r->out.xids[i] = maps[i]->xid;
 		sid_copy(&r->out.sids[i], maps[i]->sid);
 	}
 
