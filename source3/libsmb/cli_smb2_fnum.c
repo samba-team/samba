@@ -3143,3 +3143,68 @@ NTSTATUS cli_smb2_shadow_copy_data(TALLOC_CTX *mem_ctx,
 	TALLOC_FREE(frame);
 	return status;
 }
+
+/***************************************************************
+ Wrapper that allows SMB2 to truncate a file.
+ Synchronous only.
+***************************************************************/
+
+NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
+			uint16_t fnum,
+			uint64_t newsize)
+{
+	NTSTATUS status;
+	DATA_BLOB inbuf = data_blob_null;
+	struct smb2_hnd *ph = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	status = map_fnum_to_smb2_handle(cli,
+					fnum,
+					&ph);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	inbuf = data_blob_talloc_zero(frame, 8);
+	if (inbuf.data == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	SBVAL(inbuf.data, 0, newsize);
+
+	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
+	   level 20 (SMB_FILE_END_OF_FILE_INFORMATION - 1000). */
+
+	status = smb2cli_set_info(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				1, /* in_info_type */
+					/* in_file_info_class */
+				SMB_FILE_END_OF_FILE_INFORMATION - 1000,
+				&inbuf, /* in_input_buffer */
+				0, /* in_additional_info */
+				ph->fid_persistent,
+				ph->fid_volatile);
+
+  fail:
+
+	cli->raw_status = status;
+
+	TALLOC_FREE(frame);
+	return status;
+}
