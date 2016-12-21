@@ -94,3 +94,8 @@ struct ctdbd_connection *messaging_ctdbd_connection(void)
 {
 	return NULL;
 }
+
+int ctdb_async_ctx_reinit(TALLOC_CTX *mem_ctx, struct tevent_context *ev)
+{
+	return ENOSYS;
+}
