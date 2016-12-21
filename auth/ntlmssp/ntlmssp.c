@@ -107,6 +107,10 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_security *gensec_securi
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 			break;
+		default:
+			DEBUG(1, ("NTLMSSP state has invalid role %d\n",
+				  gensec_ntlmssp->ntlmssp_state->role));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	} else {
 		if (!msrpc_parse(gensec_ntlmssp->ntlmssp_state,
