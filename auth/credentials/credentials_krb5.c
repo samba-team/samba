@@ -107,7 +107,8 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 					   enum credentials_obtained obtained,
 					   const char **error_string)
 {
-	
+	bool ok;
+	char *realm;
 	krb5_principal princ;
 	krb5_error_code ret;
 	char *name;
@@ -134,11 +135,24 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 		return ret;
 	}
 
-	cli_credentials_set_principal(cred, name, obtained);
-
+	ok = cli_credentials_set_principal(cred, name, obtained);
+	if (!ok) {
+		krb5_free_principal(ccache->smb_krb5_context->krb5_context, princ);
+		return ENOMEM;
+	}
 	free(name);
 
+	realm = smb_krb5_principal_get_realm(ccache->smb_krb5_context->krb5_context,
+					     princ);
 	krb5_free_principal(ccache->smb_krb5_context->krb5_context, princ);
+	if (realm == NULL) {
+		return ENOMEM;
+	}
+	ok = cli_credentials_set_realm(cred, realm, obtained);
+	SAFE_FREE(realm);
+	if (!ok) {
+		return ENOMEM;
+	}
 
 	/* set the ccache_obtained here, as it just got set to UNINITIALISED by the calls above */
 	cred->ccache_obtained = obtained;
