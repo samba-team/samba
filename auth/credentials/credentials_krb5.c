@@ -581,7 +581,11 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 
 	maj_stat = gss_krb5_import_cred(&min_stat, ccache->ccache, NULL, NULL, 
 					&gcc->creds);
-	if ((maj_stat == GSS_S_FAILURE) && (min_stat == (OM_uint32)KRB5_CC_END || min_stat == (OM_uint32) KRB5_CC_NOTFOUND)) {
+	if ((maj_stat == GSS_S_FAILURE) &&
+	    (min_stat == (OM_uint32)KRB5_CC_END ||
+	     min_stat == (OM_uint32)KRB5_CC_NOTFOUND ||
+	     min_stat == (OM_uint32)KRB5_FCC_NOFILE))
+	{
 		/* This CCACHE is no good.  Ensure we don't use it again */
 		cli_credentials_unconditionally_invalidate_ccache(cred);
 
