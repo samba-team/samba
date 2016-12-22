@@ -203,7 +203,6 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	struct gse_context *gse_ctx;
 	OM_uint32 gss_maj, gss_min;
 	gss_buffer_desc name_buffer = GSS_C_EMPTY_BUFFER;
-	gss_OID_set_desc mech_set;
 #ifdef HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X
 	gss_buffer_desc empty_buffer = GSS_C_EMPTY_BUFFER;
 #endif
@@ -248,20 +247,26 @@ static NTSTATUS gse_init_client(TALLOC_CTX *mem_ctx,
 	/* TODO: get krb5 ticket using username/password, if no valid
 	 * one already available in ccache */
 
-	mech_set.count = 1;
-	mech_set.elements = &gse_ctx->gss_mech;
-
-	gss_maj = gss_acquire_cred(&gss_min,
-				   GSS_C_NO_NAME,
-				   GSS_C_INDEFINITE,
-				   &mech_set,
-				   GSS_C_INITIATE,
-				   &gse_ctx->creds,
-				   NULL, NULL);
+	gss_maj = gss_krb5_import_cred(&gss_min,
+				       gse_ctx->ccache,
+				       NULL, /* keytab_principal */
+				       NULL, /* keytab */
+				       &gse_ctx->creds);
 	if (gss_maj) {
-		DEBUG(5, ("gss_acquire_creds failed for GSS_C_NO_NAME with [%s] -"
+		char *ccache = NULL;
+		int kret;
+
+		kret = krb5_cc_get_full_name(gse_ctx->k5ctx,
+					     gse_ctx->ccache,
+					     &ccache);
+		if (kret != 0) {
+			ccache = NULL;
+		}
+
+		DEBUG(5, ("gss_krb5_import_cred ccache[%s] failed with [%s] -"
 			  "the caller may retry after a kinit.\n",
-			  gse_errstr(gse_ctx, gss_maj, gss_min)));
+			  ccache, gse_errstr(gse_ctx, gss_maj, gss_min)));
+		SAFE_FREE(ccache);
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
