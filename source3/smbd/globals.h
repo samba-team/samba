@@ -206,7 +206,8 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       int space_remaining,
 			       bool *got_exact_match,
 			       int *_last_entry_off,
-			       struct ea_list *name_list);
+			       struct ea_list *name_list,
+			       struct file_id *file_id);
 
 NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 				    const struct smb_filename *smb_fname,

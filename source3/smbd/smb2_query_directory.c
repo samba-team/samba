@@ -478,6 +478,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 					       space_remaining,
 					       &got_exact_match,
 					       &last_entry_off,
+					       NULL,
 					       NULL);
 
 		off = (int)PTR_DIFF(pdata, base_data);

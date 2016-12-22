@@ -2456,7 +2456,8 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 			       int space_remaining,
 			       bool *got_exact_match,
 			       int *_last_entry_off,
-			       struct ea_list *name_list)
+			       struct ea_list *name_list,
+			       struct file_id *file_id)
 {
 	const char *p;
 	const char *mask = NULL;
@@ -2537,6 +2538,11 @@ NTSTATUS smbd_dirptr_lanman2_entry(TALLOC_CTX *ctx,
 		DEBUG(1,("Conversion error: illegal character: %s\n",
 			 smb_fname_str_dbg(smb_fname)));
 	}
+
+	if (file_id != NULL) {
+		*file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+	}
+
 	TALLOC_FREE(fname);
 	TALLOC_FREE(smb_fname);
 	if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
@@ -2584,7 +2590,7 @@ static NTSTATUS get_lanman2_dir_entry(TALLOC_CTX *ctx,
 					 ppdata, base_data, end_data,
 					 space_remaining,
 					 got_exact_match,
-					 last_entry_off, name_list);
+					 last_entry_off, name_list, NULL);
 }
 
 /****************************************************************************
