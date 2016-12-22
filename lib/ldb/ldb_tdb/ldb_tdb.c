@@ -947,7 +947,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 					if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE &&
 					    control_permissive) {
 						ret = LDB_SUCCESS;
-					} else {
+					} else if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 						ldb_asprintf_errstring(ldb,
 								       "attribute '%s': no matching attribute value while deleting attribute on '%s'",
 								       msg->elements[i].name, dn);
