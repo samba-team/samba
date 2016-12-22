@@ -63,6 +63,130 @@ static int free_dccache(struct ccache_container *ccc)
 	return 0;
 }
 
+static uint32_t smb_gss_krb5_copy_ccache(uint32_t *min_stat,
+					 gss_cred_id_t cred,
+					 struct ccache_container *ccc)
+{
+#ifndef SAMBA4_USES_HEIMDAL /* MIT 1.10 */
+	krb5_context context = ccc->smb_krb5_context->krb5_context;
+	krb5_ccache dummy_ccache = NULL;
+	krb5_creds creds = {0};
+	krb5_cc_cursor cursor = NULL;
+	krb5_principal princ = NULL;
+	krb5_error_code code;
+	char *dummy_name;
+	uint32_t maj_stat = GSS_S_FAILURE;
+
+	dummy_name = talloc_asprintf(ccc,
+				     "MEMORY:gss_krb5_copy_ccache-%p",
+				     &ccc->ccache);
+	if (dummy_name == NULL) {
+		*min_stat = ENOMEM;
+		return GSS_S_FAILURE;
+	}
+
+	/*
+	 * Create a dummy ccache, so we can iterate over the credentials
+	 * and find the default principal for the ccache we want to
+	 * copy. The new ccache needs to be initialized with this
+	 * principal.
+	 */
+	code = krb5_cc_resolve(context, dummy_name, &dummy_ccache);
+	TALLOC_FREE(dummy_name);
+	if (code != 0) {
+		*min_stat = code;
+		return GSS_S_FAILURE;
+	}
+
+	/*
+	 * We do not need set a default principal on the temporary dummy
+	 * ccache, as we do consume it at all in this function.
+	 */
+	maj_stat = gss_krb5_copy_ccache(min_stat, cred, dummy_ccache);
+	if (maj_stat != 0) {
+		krb5_cc_close(context, dummy_ccache);
+		return maj_stat;
+	}
+
+	code = krb5_cc_start_seq_get(context, dummy_ccache, &cursor);
+	if (code != 0) {
+		krb5_cc_close(context, dummy_ccache);
+		*min_stat = EINVAL;
+		return GSS_S_FAILURE;
+	}
+
+	code = krb5_cc_next_cred(context,
+				 dummy_ccache,
+				 &cursor,
+				 &creds);
+	if (code != 0) {
+		krb5_cc_close(context, dummy_ccache);
+		*min_stat = EINVAL;
+		return GSS_S_FAILURE;
+	}
+
+	do {
+		if (creds.ticket_flags & TKT_FLG_PRE_AUTH) {
+			krb5_data *tgs;
+
+			tgs = krb5_princ_component(context,
+						   creds.server,
+						   0);
+			if (tgs != NULL && tgs->length >= 1) {
+				int cmp;
+
+				cmp = memcmp(tgs->data,
+					     KRB5_TGS_NAME,
+					     tgs->length);
+				if (cmp == 0 && creds.client != NULL) {
+					princ = creds.client;
+					code = KRB5_CC_END;
+					break;
+				}
+			}
+		}
+
+		krb5_free_cred_contents(context, &creds);
+
+		code = krb5_cc_next_cred(context,
+					 dummy_ccache,
+					 &cursor,
+					 &creds);
+	} while (code == 0);
+
+	if (code == KRB5_CC_END) {
+		krb5_cc_end_seq_get(context, dummy_ccache, &cursor);
+		code = 0;
+	}
+	krb5_cc_close(context, dummy_ccache);
+
+	if (code != 0 || princ == NULL) {
+		krb5_free_cred_contents(context, &creds);
+		*min_stat = EINVAL;
+		return GSS_S_FAILURE;
+	}
+
+	/*
+	 * Set the default principal for the cache we copy
+	 * into. This is needed to be able that other calls
+	 * can read it with e.g. gss_acquire_cred() or
+	 * krb5_cc_get_principal().
+	 */
+	code = krb5_cc_initialize(context, ccc->ccache, princ);
+	if (code != 0) {
+		krb5_free_cred_contents(context, &creds);
+		*min_stat = EINVAL;
+		return GSS_S_FAILURE;
+	}
+	krb5_free_cred_contents(context, &creds);
+
+#endif /* SAMBA4_USES_HEIMDAL */
+
+	return gss_krb5_copy_ccache(min_stat,
+				    cred,
+				    ccc->ccache);
+}
+
 _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context) 
@@ -712,8 +836,8 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 {
 	int ret;
 	OM_uint32 maj_stat, min_stat;
-	struct ccache_container *ccc;
-	struct gssapi_creds_container *gcc;
+	struct ccache_container *ccc = NULL;
+	struct gssapi_creds_container *gcc = NULL;
 	if (cred->client_gss_creds_obtained > obtained) {
 		return 0;
 	}
@@ -729,8 +853,9 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 		return ret;
 	}
 
-	maj_stat = gss_krb5_copy_ccache(&min_stat, 
-					gssapi_cred, ccc->ccache);
+	maj_stat = smb_gss_krb5_copy_ccache(&min_stat,
+					    gssapi_cred,
+					    ccc);
 	if (maj_stat) {
 		if (min_stat) {
 			ret = min_stat;
