@@ -172,8 +172,8 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 	k5ret = krb5_cc_resolve(gse_ctx->k5ctx, ccache_name,
 				&gse_ctx->ccache);
 	if (k5ret) {
-		DEBUG(1, ("Failed to resolve credential cache! (%s)\n",
-			  error_message(k5ret)));
+		DEBUG(1, ("Failed to resolve credential cache '%s'! (%s)\n",
+			  ccache_name, error_message(k5ret)));
 		status = NT_STATUS_INTERNAL_ERROR;
 		goto err_out;
 	}
