@@ -200,7 +200,7 @@ static void usage( void)
 		exit(1);
 	}
 
-	while ((c = getopt( argc, argv, "hd:ec")) != -1) {
+	while ((c = getopt( argc, argv, "hd:eic")) != -1) {
 		switch (c) {
 		case 'h':
 			usage();
