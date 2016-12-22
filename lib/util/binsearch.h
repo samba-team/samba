@@ -103,7 +103,7 @@
 	if ((array_size) > 0) {					\
 		for (_b = 0, _e = (array_size)-1; _b <= _e; ) {	\
 			int32_t _i = (_b + _e) / 2;			\
-			int _r = comparison_fn(target, array[_i]); \
+			int _r = comparison_fn(target, &array[_i]); \
 			if (_r == 0) {					\
 				(exact) = &array[_i];			\
 				_e = _i - 1;				\

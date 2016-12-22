@@ -232,7 +232,7 @@ static int send_referrals(struct results_store *store,
 /* vlv_value_compare() is used in a binary search */
 
 static int vlv_value_compare(struct vlv_sort_context *target,
-			     struct GUID guid)
+			     struct GUID *guid)
 {
 	struct ldb_result *result = NULL;
 	struct ldb_message_element *el = NULL;
@@ -243,7 +243,7 @@ static int vlv_value_compare(struct vlv_sort_context *target,
 		NULL
 	};
 
-	ret = vlv_search_by_dn_guid(ac->module, ac, &result, &guid, attrs);
+	ret = vlv_search_by_dn_guid(ac->module, ac, &result, guid, attrs);
 
 	if (ret != LDB_SUCCESS) {
 		target->status = ret;
@@ -259,7 +259,7 @@ static int vlv_value_compare(struct vlv_sort_context *target,
 
 /* The same as vlv_value_compare() but sorting in the opposite direction. */
 static int vlv_value_compare_rev(struct vlv_sort_context *target,
-			     struct GUID guid)
+			     struct GUID *guid)
 {
 	return -vlv_value_compare(target, guid);
 }

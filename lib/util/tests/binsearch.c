@@ -31,6 +31,11 @@ static int int_cmp(int a, int b)
 	return a - b;
 }
 
+static int int_cmp_p(int a, int *b)
+{
+	return a - *b;
+}
+
 static bool test_binsearch_v(struct torture_context *tctx)
 {
 	int array[] = { -11, -7, 0, 1, 723, 1000000};
@@ -72,7 +77,7 @@ static bool test_binsearch_gte(struct torture_context *tctx)
 				i, target);
 
 		BINARY_ARRAY_SEARCH_GTE(array, a_len, target,
-					int_cmp, result, next);
+					int_cmp_p, result, next);
 
 		if (result == NULL) {
 			/* we think there is no exact match */
@@ -134,7 +139,7 @@ static bool test_binsearch_gte(struct torture_context *tctx)
 				i, target);
 
 		BINARY_ARRAY_SEARCH_GTE(array, a_len, target,
-					int_cmp, result, result);
+					int_cmp_p, result, result);
 
 		if (result == NULL) {
 			/* we think the target is greater than all elements */
