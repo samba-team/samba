@@ -81,6 +81,48 @@ A new option, "unix only", enables this feature only for the UNIX owner
 of the file, not affecting the SID owner in the Windows NT ACL of the
 file. This can be used to emulate something very similar to folder quotas.
 
+Multi-process Netlogon support
+------------------------------
+
+The Netlogon server in the Samba AD DC can now run as multiple
+processes.  The Netlogon server is a part of the AD DC that handles
+NTLM authentication on behalf of domain members, including file
+servers, NTLM-authenticated web servers and 802.1x gateways.  The
+previous restriction to running as a single process has been removed,
+and it will now run in the same process model as the rest of the
+'samba' binary.
+
+As part of this change, the NETLOGON service will now run on a distinct
+TCP port, rather than being shared with all other RPC services (LSA,
+SAMR, DRSUAPI etc).
+
+new options for controlling TCP ports used for RPC services
+-----------------------------------------------------------
+
+The new 'rpc server port' option controls the default port used for
+RPC services other than Netlogon.  The Netlogon server honours instead
+the 'rpc server port:netlogon' option.  The default value for both
+these options is the first available port including or after 1024.
+
+Improve AD performance and replication improvements
+---------------------------------------------------
+
+Samba's LDB and replication code continues to improve, particularly in
+respect to the handling of large numbers of linked attributes.  We now
+respect an 'uptodateness vector' which will dramatically reduce the
+over-replication of links from new DCs.  We have also made the parsing
+of on-disk linked attributes much more efficient.
+
+DNS improvements
+---------------------------
+
+The samba-tool dns subcommand is now much more robust and can delete
+records in a number of situations where it was not possible to do so
+in the past.
+
+On the server side, DNS names are now more strictly validated.
+
+
 CTDB changes
 ------------
 
@@ -145,6 +187,8 @@ smb.conf changes
   kerberos encryption types     New                     all
   inherit owner                 New option
   fruit:resource                Spelling correction
+  lsa over netlogon             New (deprecated)        no
+  rpc server port               New                     0
 
 
 KNOWN ISSUES
