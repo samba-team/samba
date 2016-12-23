@@ -2899,6 +2899,18 @@ krb5_error_code smb_krb5_cc_copy_creds(krb5_context context,
 #ifdef HAVE_KRB5_CC_COPY_CACHE /* Heimdal */
 	return krb5_cc_copy_cache(context, incc, outcc);
 #elif defined(HAVE_KRB5_CC_COPY_CREDS)
+	krb5_error_code ret;
+	krb5_principal princ = NULL;
+
+	ret = krb5_cc_get_principal(context, incc, &princ);
+	if (ret != 0) {
+		return ret;
+	}
+	ret = krb5_cc_initialize(context, outcc, princ);
+	krb5_free_principal(context, princ);
+	if (ret != 0) {
+		return ret;
+	}
 	return krb5_cc_copy_creds(context, incc, outcc);
 #else
 #error UNKNOWN_KRB5_CC_COPY_CACHE_OR_CREDS_FUNCTION
