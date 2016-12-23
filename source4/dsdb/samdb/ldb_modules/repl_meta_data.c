@@ -1522,7 +1522,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	bool rmd_is_provided;
 	bool rmd_is_just_resorted = false;
 	const char *not_rename_attrs[4 + msg->num_elements];
-	
+
 	if (rename_attrs) {
 		attrs = rename_attrs;
 	} else {
@@ -4128,9 +4128,9 @@ static int replmd_op_possible_conflict_callback(struct ldb_request *req, struct 
 		 * We are on an RODC, or were a GC for this
 		 * partition, so we have to fail this until
 		 * someone who owns the partition sorts it
-		 * out 
+		 * out
 		 */
-		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module), 
+		ldb_asprintf_errstring(ldb_module_get_ctx(ar->module),
 				       "Conflict adding object '%s' from incoming replication as we are read only for the partition.  \n"
 				       " - We must fail the operation until a master for this partition resolves the conflict",
 				       ldb_dn_get_linearized(conflict_dn));
@@ -4552,7 +4552,7 @@ static int replmd_replicated_apply_search_for_parent_callback(struct ldb_request
 						       ldb_dn_get_linearized(parent_msg->dn));
 				return ldb_module_done(ar->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 			}
-			
+
 			ret = dsdb_wellknown_dn(ldb_module_get_ctx(ar->module), msg,
 						nc_root,
 						DS_GUID_LOSTANDFOUND_CONTAINER,
@@ -4682,7 +4682,7 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
 				   ar->req);
 	LDB_REQ_SET_LOCATION(search_req);
 
-	ret = dsdb_request_add_controls(search_req, 
+	ret = dsdb_request_add_controls(search_req,
 					DSDB_SEARCH_SHOW_RECYCLED|
 					DSDB_SEARCH_SHOW_DELETED|
 					DSDB_SEARCH_SHOW_EXTENDED_DN);
