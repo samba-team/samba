@@ -1,0 +1,6 @@
+# GSS_KRB5_CRED_NO_CI_FLAGS_X is not available in older MIT releases (< 1.14)
+^samba3.rpc.lsa.lookupsids.krb5.*ncacn.*packet.*ktest
+^samba3.rpc.lsa.lookupsids.krb5.*ncacn.*sign.*ktest
+^samba3.blackbox.rpcclient.krb5.*ncacn.*krb5\].*ktest
+^samba3.blackbox.rpcclient.krb5.*ncacn.*packet\].*ktest
+^samba3.blackbox.rpcclient.krb5.*ncacn.*sign\].*ktest

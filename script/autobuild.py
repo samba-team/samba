@@ -169,7 +169,7 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       # we currently cannot run a full make test, a limited list of tests could be run
                       # via "make test TESTS=sometests"
-                      # ("test", "make test FAIL_IMMEDIATELY=1", "text/plain"),
+                      ("test", "make test FAIL_IMMEDIATELY=1 TESTS='samba3.*ktest'", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain")

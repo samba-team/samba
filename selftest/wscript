@@ -231,6 +231,10 @@ def cmd_testonly(opt):
     # FIXME REMOVE ME!
     env.OPTIONS += " --use-dns-faking"
 
+    if not CONFIG_GET(opt, 'HAVE_GSS_KRB5_CRED_NO_CI_FLAGS_X'):
+        # older MIT krb5 libraries (< 1.14) don't have
+        # GSS_KRB5_CRED_NO_CI_FLAGS_X
+        env.OPTIONS += " --exclude=${srcdir}/selftest/skip.no-GSS_KRB5_CRED_NO_CI_FLAGS_X"
 
     subunit_cache = None
     # We use the full path rather than relative path to avoid problems on some platforms (ie. solaris 8).
