@@ -225,7 +225,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	uint32_t num = 0;
 	uint32_t dirtype = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
 	bool dont_descend = false;
-	bool ask_sharemode = true;
+	bool ask_sharemode = false;
 	bool wcard_has_wild = false;
 	struct tm tm;
 	char *p;
@@ -450,9 +450,17 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		dont_descend = true;
 	}
 
-	ask_sharemode = lp_parm_bool(SNUM(conn),
-				     "smbd", "search ask sharemode",
-				     true);
+	/*
+	 * SMB_FIND_FILE_NAMES_INFO doesn't need stat information
+	 *
+	 * This may change when we try to improve the delete on close
+	 * handling in future.
+	 */
+	if (info_level != SMB_FIND_FILE_NAMES_INFO) {
+		ask_sharemode = lp_parm_bool(SNUM(conn),
+					     "smbd", "search ask sharemode",
+					     true);
+	}
 
 	while (true) {
 		bool got_exact_match = false;
