@@ -35,7 +35,7 @@ static bool wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
 				const struct dom_sid *domain_sid,
 				int num_rids, uint32_t *rids);
 
-static void wb_gettoken_gotgroups(struct tevent_req *subreq);
+static void wb_gettoken_gotuser(struct tevent_req *subreq);
 static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq);
 static void wb_gettoken_gotbuiltins(struct tevent_req *subreq);
 
@@ -45,7 +45,6 @@ struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct wb_gettoken_state *state;
-	struct winbindd_domain *domain;
 
 	req = tevent_req_create(mem_ctx, &state, struct wb_gettoken_state);
 	if (req == NULL) {
@@ -54,30 +53,15 @@ struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
 	sid_copy(&state->usersid, sid);
 	state->ev = ev;
 
-	domain = find_domain_from_sid_noinit(sid);
-	if (domain == NULL) {
-		DEBUG(5, ("Could not find domain from SID %s\n",
-			  sid_string_dbg(sid)));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
-		return tevent_req_post(req, ev);
-	}
-
-	if (lp_winbind_trusted_domains_only() && domain->primary) {
-		DEBUG(7, ("wb_gettoken: My domain -- rejecting getgroups() "
-			  "for %s.\n", sid_string_tos(sid)));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = wb_lookupusergroups_send(state, ev, domain, &state->usersid);
+	subreq = wb_queryuser_send(state, ev, &state->usersid);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_gettoken_gotgroups, req);
+	tevent_req_set_callback(subreq, wb_gettoken_gotuser, req);
 	return req;
 }
 
-static void wb_gettoken_gotgroups(struct tevent_req *subreq)
+static void wb_gettoken_gotuser(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -85,24 +69,51 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 		req, struct wb_gettoken_state);
         struct dom_sid *sids;
 	struct winbindd_domain *domain;
+	struct wbint_userinfo *info;
+	uint32_t num_groups;
+	struct dom_sid *groups;
 	NTSTATUS status;
 
-	status = wb_lookupusergroups_recv(subreq, state, &state->num_sids,
-					  &state->sids);
+	status = wb_queryuser_recv(subreq, state, &info);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	sids = talloc_realloc(state, state->sids, struct dom_sid,
-			      state->num_sids + 1);
+	sids = talloc_array(state, struct dom_sid, 2);
 	if (tevent_req_nomem(sids, req)) {
 		return;
 	}
-	memmove(&sids[1], &sids[0], state->num_sids * sizeof(sids[0]));
-	sid_copy(&sids[0], &state->usersid);
-	state->num_sids += 1;
 	state->sids = sids;
+	state->num_sids = 2;
+
+	sid_copy(&state->sids[0], &info->user_sid);
+	sid_copy(&state->sids[1], &info->group_sid);
+
+	status = lookup_usergroups_cached(
+		state, &info->user_sid, &num_groups, &groups);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("lookup_usergroups_cached failed (%s), not doing "
+			  "supplementary group lookups\n", nt_errstr(status));
+		tevent_req_done(req);
+		return;
+	}
+
+	if (num_groups + state->num_sids < num_groups) {
+		tevent_req_nterror(req, NT_STATUS_INTEGER_OVERFLOW);
+		return;
+	}
+
+	sids = talloc_realloc(state, state->sids, struct dom_sid,
+			      state->num_sids+num_groups);
+	if (tevent_req_nomem(sids, req)) {
+		return;
+	}
+	state->sids = sids;
+
+	memcpy(&state->sids[state->num_sids], groups,
+	       num_groups * sizeof(struct dom_sid));
+	state->num_sids += num_groups;
 
 	/*
 	 * Expand our domain's aliases
