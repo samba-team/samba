@@ -1295,11 +1295,6 @@ NTSTATUS lookup_usergroups_cached(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (info3->base.groups.count == 0) {
-		TALLOC_FREE(info3);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
 	/*
 	 * Before bug #7843 the "Domain Local" groups were added with a
 	 * lookupuseraliases call, but this isn't done anymore for our domain
