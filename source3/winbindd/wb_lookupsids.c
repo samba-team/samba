@@ -272,8 +272,7 @@ static bool wb_lookupsids_bulk(const struct dom_sid *sid)
 		return true;
 	}
 
-	if ((lp_server_role() == ROLE_DOMAIN_PDC) ||
-	    (lp_server_role() == ROLE_DOMAIN_BDC)) {
+	if (IS_DC) {
 		/*
 		 * Bulk lookups to trusted DCs
 		 */
