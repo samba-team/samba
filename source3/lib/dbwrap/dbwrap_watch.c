@@ -552,6 +552,88 @@ static NTSTATUS dbwrap_watched_parse_record(
 	return NT_STATUS_OK;
 }
 
+static void dbwrap_watched_parse_record_done(struct tevent_req *subreq);
+
+static struct tevent_req *dbwrap_watched_parse_record_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct db_context *db,
+	TDB_DATA key,
+	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data),
+	void *private_data,
+	enum dbwrap_req_state *req_state)
+{
+	struct db_watched_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_watched_ctx);
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct dbwrap_watched_parse_record_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct dbwrap_watched_parse_record_state);
+	if (req == NULL) {
+		*req_state = DBWRAP_REQ_ERROR;
+		return NULL;
+	}
+
+	*state = (struct dbwrap_watched_parse_record_state) {
+		.parser = parser,
+		.private_data = private_data,
+		.deleted = false,
+	};
+
+	subreq = dbwrap_parse_record_send(state,
+					  ev,
+					  ctx->backend,
+					  key,
+					  dbwrap_watched_parse_record_parser,
+					  state,
+					  req_state);
+	if (tevent_req_nomem(subreq, req)) {
+		*req_state = DBWRAP_REQ_ERROR;
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, dbwrap_watched_parse_record_done, req);
+	return req;
+}
+
+static void dbwrap_watched_parse_record_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct dbwrap_watched_parse_record_state *state = tevent_req_data(
+		req, struct dbwrap_watched_parse_record_state);
+	NTSTATUS status;
+
+	status = dbwrap_parse_record_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (state->deleted) {
+		tevent_req_nterror(req, NT_STATUS_NOT_FOUND);
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+static NTSTATUS dbwrap_watched_parse_record_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
+}
+
 static int dbwrap_watched_exists(struct db_context *db, TDB_DATA key)
 {
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
@@ -601,6 +683,8 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 	db->transaction_commit = dbwrap_watched_transaction_commit;
 	db->transaction_cancel = dbwrap_watched_transaction_cancel;
 	db->parse_record = dbwrap_watched_parse_record;
+	db->parse_record_send = dbwrap_watched_parse_record_send;
+	db->parse_record_recv = dbwrap_watched_parse_record_recv;
 	db->exists = dbwrap_watched_exists;
 	db->id = dbwrap_watched_id;
 	db->name = dbwrap_name(ctx->backend);
