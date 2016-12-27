@@ -353,6 +353,32 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	if (winbindd_use_idmap_cache()) {
+		uint32_t i;
+
+		for (i=0; i<num_xids; i++) {
+			struct dom_sid sid;
+			bool ok, expired;
+
+			switch (xids[i].type) {
+			    case ID_TYPE_UID:
+				    ok = idmap_cache_find_uid2sid(
+					    xids[i].id, &sid, &expired);
+				    break;
+			    case ID_TYPE_GID:
+				    ok = idmap_cache_find_gid2sid(
+					    xids[i].id, &sid, &expired);
+				    break;
+			    default:
+				    ok = false;
+			}
+
+			if (ok && !expired) {
+				sid_copy(&state->sids[i], &sid);
+			}
+		}
+	}
+
 	wb_xids2sids_init_dom_maps();
 	num_domains = talloc_array_length(dom_maps);
 
