@@ -183,6 +183,8 @@ static int messaging_ctdbd_init_internal(struct messaging_context *msg_ctx,
 	int ret, ctdb_fd;
 
 	if (reinit) {
+		TALLOC_FREE(ctx->fde);
+
 		ret = ctdbd_reinit_connection(ctx,
 					      lp_ctdbd_socket(),
 					      lp_ctdb_timeout(),
