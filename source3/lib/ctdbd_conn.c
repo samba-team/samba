@@ -50,7 +50,6 @@ struct ctdbd_connection {
 	uint64_t rand_srvid;
 	struct ctdbd_srvid_cb *callbacks;
 	int fd;
-	struct tevent_fd *fde;
 	int timeout;
 };
 
@@ -394,7 +393,6 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 
 static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 {
-	TALLOC_FREE(c->fde);
 	if (c->fd != -1) {
 		close(c->fd);
 		c->fd = -1;
