@@ -166,7 +166,7 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 
 	idmap_ctx->lp_ctx = lp_ctx;
 
-	idmap_ctx->ldb_ctx = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
+	idmap_ctx->ldb_ctx = ldb_wrap_connect(idmap_ctx, ev_ctx, lp_ctx,
 					      "idmap.ldb",
 					      system_session(lp_ctx),
 					      NULL, 0);
@@ -174,12 +174,14 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	idmap_ctx->unix_groups_sid = dom_sid_parse_talloc(mem_ctx, "S-1-22-2");
+	idmap_ctx->unix_groups_sid = dom_sid_parse_talloc(
+		idmap_ctx, "S-1-22-2");
 	if (idmap_ctx->unix_groups_sid == NULL) {
 		return NULL;
 	}
 
-	idmap_ctx->unix_users_sid = dom_sid_parse_talloc(mem_ctx, "S-1-22-1");
+	idmap_ctx->unix_users_sid = dom_sid_parse_talloc(
+		idmap_ctx, "S-1-22-1");
 	if (idmap_ctx->unix_users_sid == NULL) {
 		return NULL;
 	}
