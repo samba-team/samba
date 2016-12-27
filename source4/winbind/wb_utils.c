@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "param/param.h"
 #include "libcli/security/dom_sid.h"
-#include "winbind/wb_async_helpers.h"
 #include "winbind/wb_helper.h"
 
 
