@@ -17,11 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "system/passwd.h"
+#include "replace.h"
 #include "util_unixsids.h"
 #include "../libcli/security/security.h"
-#include "../lib/util/util_pw.h"
 
 bool sid_check_is_unix_users(const struct dom_sid *sid)
 {
