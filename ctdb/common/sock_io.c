@@ -53,7 +53,6 @@ int sock_connect(const char *sockpath)
 	fd = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (fd == -1) {
 		D_ERR("socket() failed, errno=%d\n", errno);
-		close(fd);
 		return -1;
 	}
 
