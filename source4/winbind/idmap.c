@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "lib/util_unixsids.h"
 #include <ldb.h>
 #include "ldb_wrap.h"
 #include "param/param.h"
@@ -180,12 +181,6 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	idmap_ctx->unix_users_sid = dom_sid_parse_talloc(
-		idmap_ctx, "S-1-22-1");
-	if (idmap_ctx->unix_users_sid == NULL) {
-		goto fail;
-	}
-	
 	idmap_ctx->samdb = samdb_connect(idmap_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
 	if (idmap_ctx->samdb == NULL) {
 		DEBUG(0, ("Failed to load sam.ldb in idmap_init\n"));
@@ -412,7 +407,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *sam_attrs[] = {"uidNumber", "gidNumber", "samAccountType", NULL};
 
-	if (dom_sid_in_domain(idmap_ctx->unix_users_sid, sid)) {
+	if (sid_check_is_in_unix_users(sid)) {
 		uint32_t rid;
 		DEBUG(6, ("This is a local unix uid, just calculate that.\n"));
 		status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
