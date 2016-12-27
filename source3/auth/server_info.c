@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "auth.h"
+#include "lib/util_unixsids.h"
 #include "../lib/crypto/arcfour.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "../libcli/security/security.h"

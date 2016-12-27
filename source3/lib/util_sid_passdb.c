@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "lib/util_sid_passdb.h"
+#include "lib/util_unixsids.h"
 #include "passdb/machine_sid.h"
 #include "passdb.h"
 

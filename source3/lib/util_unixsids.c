@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "util_unixsids.h"
 #include "../libcli/security/security.h"
 #include "../lib/util/util_pw.h"
 

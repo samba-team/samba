@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "lib/util_unixsids.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"

@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "winbindd_rpc.h"
+#include "lib/util_unixsids.h"
 #include "rpc_client/rpc_client.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"

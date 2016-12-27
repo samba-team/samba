@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "passdb.h"
+#include "lib/util_unixsids.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "secrets.h"
 #include "../lib/util/memcache.h"

@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth.h"
+#include "lib/util_unixsids.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_lsa.h"
