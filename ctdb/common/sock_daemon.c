@@ -282,7 +282,7 @@ static int sock_socket_init(TALLOC_CTX *mem_ctx, const char *sockpath,
 
 static int sock_socket_destructor(struct sock_socket *sock)
 {
-	if (sock->fd == -1) {
+	if (sock->fd != -1) {
 		close(sock->fd);
 		sock->fd = -1;
 	}
