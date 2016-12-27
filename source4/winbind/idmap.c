@@ -221,7 +221,8 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 	struct ldb_context *ldb = idmap_ctx->ldb_ctx;
 	struct ldb_result *res = NULL;
 	struct ldb_message *msg;
-	struct dom_sid *unix_sid, *new_sid;
+	const struct dom_sid *unix_sid;
+	struct dom_sid *new_sid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const char *id_type;
 
@@ -359,13 +360,9 @@ static NTSTATUS idmap_xid_to_sid(struct idmap_context *idmap_ctx,
 
 	/* For local users/groups , we just create a rid = uid/gid */
 	if (unixid->type == ID_TYPE_UID) {
-		unix_sid = dom_sid_parse_talloc(tmp_ctx, "S-1-22-1");
+		unix_sid = &global_sid_Unix_Users;
 	} else {
-		unix_sid = dom_sid_parse_talloc(tmp_ctx, "S-1-22-2");
-	}
-	if (unix_sid == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto failed;
+		unix_sid = &global_sid_Unix_Groups;
 	}
 
 	new_sid = dom_sid_add_rid(mem_ctx, unix_sid, unixid->id);
