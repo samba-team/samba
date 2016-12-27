@@ -20,6 +20,9 @@
 #ifndef _LIBCLI_SECURITY_SECURITY_H_
 #define _LIBCLI_SECURITY_SECURITY_H_
 
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+
 #include "librpc/gen_ndr/security.h"
 
 #define PRIMARY_USER_SID_INDEX 0
