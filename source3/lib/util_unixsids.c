@@ -61,25 +61,6 @@ const char *unix_users_domain_name(void)
 	return "Unix User";
 }
 
-bool lookup_unix_user_name(const char *name, struct dom_sid *sid)
-{
-	struct passwd *pwd;
-	bool ret;
-
-	pwd = Get_Pwnam_alloc(talloc_tos(), name);
-	if (pwd == NULL) {
-		return False;
-	}
-
-	/*
-	 * For 64-bit uid's we have enough space in the whole SID,
-	 * should they become necessary
-	 */
-	ret = sid_compose(sid, &global_sid_Unix_Users, pwd->pw_uid);
-	TALLOC_FREE(pwd);
-	return ret;
-}
-
 bool sid_check_is_unix_groups(const struct dom_sid *sid)
 {
 	return dom_sid_equal(sid, &global_sid_Unix_Groups);
@@ -98,20 +79,4 @@ bool sid_check_is_in_unix_groups(const struct dom_sid *sid)
 const char *unix_groups_domain_name(void)
 {
 	return "Unix Group";
-}
-
-bool lookup_unix_group_name(const char *name, struct dom_sid *sid)
-{
-	struct group *grp;
-
-	grp = getgrnam(name);
-	if (grp == NULL) {
-		return False;
-	}
-
-	/*
-	 * For 64-bit gid's we have enough space in the whole SID,
-	 * should they become necessary
-	 */
-	return sid_compose(sid, &global_sid_Unix_Groups, grp->gr_gid);
 }

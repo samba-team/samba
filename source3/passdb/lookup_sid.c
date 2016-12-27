@@ -30,6 +30,41 @@
 #include "lib/winbind_util.h"
 #include "../librpc/gen_ndr/idmap.h"
 
+static bool lookup_unix_user_name(const char *name, struct dom_sid *sid)
+{
+	struct passwd *pwd;
+	bool ret;
+
+	pwd = Get_Pwnam_alloc(talloc_tos(), name);
+	if (pwd == NULL) {
+		return False;
+	}
+
+	/*
+	 * For 64-bit uid's we have enough space in the whole SID,
+	 * should they become necessary
+	 */
+	ret = sid_compose(sid, &global_sid_Unix_Users, pwd->pw_uid);
+	TALLOC_FREE(pwd);
+	return ret;
+}
+
+static bool lookup_unix_group_name(const char *name, struct dom_sid *sid)
+{
+	struct group *grp;
+
+	grp = getgrnam(name);
+	if (grp == NULL) {
+		return False;
+	}
+
+	/*
+	 * For 64-bit gid's we have enough space in the whole SID,
+	 * should they become necessary
+	 */
+	return sid_compose(sid, &global_sid_Unix_Groups, grp->gr_gid);
+}
+
 /*****************************************************************
  Dissect a user-provided name into domain, name, sid and type.
 
