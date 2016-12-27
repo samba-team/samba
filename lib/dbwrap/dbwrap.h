@@ -22,6 +22,7 @@
 
 #include "replace.h"
 #include <talloc.h>
+#include <tevent.h>
 #include "libcli/util/ntstatus.h"
 #include "tdb.h"
 #include "lib/param/loadparm.h"
@@ -98,6 +99,38 @@ NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 			     void (*parser)(TDB_DATA key, TDB_DATA data,
 					    void *private_data),
 			     void *private_data);
+/**
+ * Async implementation of dbwrap_parse_record
+ *
+ * @param[in]  mem_ctx      talloc memory context to use.
+ *
+ * @param[in]  ev           tevent context to use
+ *
+ * @param[in]  db           Database to query
+ *
+ * @param[in]  key          Record key, the function makes a copy of this
+ *
+ * @param[in]  parser       Parser callback function
+ *
+ * @param[in]  private_data Private data for the callback function
+ *
+ * @param[out] req_state    Pointer to a enum dbwrap_req_state variable
+ *
+ * @note req_state is updated in the send function. To determine the final
+ * result of the request the caller should therefor not rely on req_state. The
+ * primary use case is to give the caller an indication whether the request is
+ * already sent to ctdb (DBWRAP_REQ_DISPATCHED) or if it's still stuck in the
+ * sendqueue (DBWRAP_REQ_QUEUED).
+ **/
+struct tevent_req *dbwrap_parse_record_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct db_context *db,
+	TDB_DATA key,
+	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data),
+	void *private_data,
+	enum dbwrap_req_state *req_state);
+NTSTATUS dbwrap_parse_record_recv(struct tevent_req *req);
 int dbwrap_wipe(struct db_context *db);
 int dbwrap_check(struct db_context *db);
 int dbwrap_get_seqnum(struct db_context *db);

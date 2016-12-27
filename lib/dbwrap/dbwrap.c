@@ -26,6 +26,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
 #include "lib/util/util_tdb.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /*
  * Fall back using fetch if no genuine exists operation is provided
@@ -366,6 +367,117 @@ NTSTATUS dbwrap_parse_record(struct db_context *db, TDB_DATA key,
 		parser = dbwrap_null_parser;
 	}
 	return db->parse_record(db, key, parser, private_data);
+}
+
+struct dbwrap_parse_record_state {
+	struct db_context *db;
+	TDB_DATA key;
+	uint8_t _keybuf[64];
+};
+
+static void dbwrap_parse_record_done(struct tevent_req *subreq);
+
+struct tevent_req *dbwrap_parse_record_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct db_context *db,
+	TDB_DATA key,
+	void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data),
+	void *private_data,
+	enum dbwrap_req_state *req_state)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct dbwrap_parse_record_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct dbwrap_parse_record_state);
+	if (req == NULL) {
+		*req_state = DBWRAP_REQ_ERROR;
+		return NULL;
+	}
+
+	*state = (struct dbwrap_parse_record_state) {
+		.db = db,
+	};
+
+	if (parser == NULL) {
+		parser = dbwrap_null_parser;
+	}
+
+	*req_state = DBWRAP_REQ_INIT;
+
+	if (db->parse_record_send == NULL) {
+		/*
+		 * Backend doesn't implement async version, call sync one
+		 */
+		status = db->parse_record(db, key, parser, private_data);
+		if (tevent_req_nterror(req, status)) {
+			*req_state = DBWRAP_REQ_DONE;
+			return tevent_req_post(req, ev);
+		}
+
+		*req_state = DBWRAP_REQ_DONE;
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * Copy the key into our state ensuring the key data buffer is always
+	 * available to the all dbwrap backend over the entire lifetime of the
+	 * async request. Otherwise the caller might have free'd the key buffer.
+	 */
+	if (key.dsize > sizeof(state->_keybuf)) {
+		state->key.dptr = talloc_memdup(state, key.dptr, key.dsize);
+		if (tevent_req_nomem(state->key.dptr, req)) {
+			return tevent_req_post(req, ev);
+		}
+	} else {
+		memcpy(state->_keybuf, key.dptr, key.dsize);
+		state->key.dptr = state->_keybuf;
+	}
+	state->key.dsize = key.dsize;
+
+	subreq = db->parse_record_send(state,
+				       ev,
+				       db,
+				       state->key,
+				       parser,
+				       private_data,
+				       req_state);
+	if (tevent_req_nomem(subreq, req)) {
+		*req_state = DBWRAP_REQ_ERROR;
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq,
+				dbwrap_parse_record_done,
+				req);
+	return req;
+}
+
+static void dbwrap_parse_record_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct dbwrap_parse_record_state *state = tevent_req_data(
+		req, struct dbwrap_parse_record_state);
+	NTSTATUS status;
+
+	status = state->db->parse_record_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+NTSTATUS dbwrap_parse_record_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 int dbwrap_wipe(struct db_context *db)
