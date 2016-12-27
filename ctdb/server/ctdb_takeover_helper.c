@@ -111,7 +111,7 @@ static struct tevent_req *get_public_ips_send(
 
 	req = tevent_req_create(mem_ctx, &state, struct get_public_ips_state);
 	if (req == NULL) {
-		return tevent_req_post(req, ev);
+		return NULL;
 	}
 
 	state->pnns = pnns;
