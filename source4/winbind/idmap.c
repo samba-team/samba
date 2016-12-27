@@ -171,28 +171,31 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 					      system_session(lp_ctx),
 					      NULL, 0);
 	if (idmap_ctx->ldb_ctx == NULL) {
-		return NULL;
+		goto fail;
 	}
 
 	idmap_ctx->unix_groups_sid = dom_sid_parse_talloc(
 		idmap_ctx, "S-1-22-2");
 	if (idmap_ctx->unix_groups_sid == NULL) {
-		return NULL;
+		goto fail;
 	}
 
 	idmap_ctx->unix_users_sid = dom_sid_parse_talloc(
 		idmap_ctx, "S-1-22-1");
 	if (idmap_ctx->unix_users_sid == NULL) {
-		return NULL;
+		goto fail;
 	}
 	
 	idmap_ctx->samdb = samdb_connect(idmap_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
 	if (idmap_ctx->samdb == NULL) {
 		DEBUG(0, ("Failed to load sam.ldb in idmap_init\n"));
-		return NULL;
+		goto fail;
 	}
 
 	return idmap_ctx;
+fail:
+	TALLOC_FREE(idmap_ctx);
+	return NULL;
 }
 
 /**
