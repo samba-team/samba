@@ -27,7 +27,6 @@
 struct idmap_context {
 	struct loadparm_context *lp_ctx;
 	struct ldb_context *ldb_ctx;
-	struct dom_sid *unix_groups_sid;
 	struct ldb_context *samdb;
 };
 

@@ -175,12 +175,6 @@ struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	idmap_ctx->unix_groups_sid = dom_sid_parse_talloc(
-		idmap_ctx, "S-1-22-2");
-	if (idmap_ctx->unix_groups_sid == NULL) {
-		goto fail;
-	}
-
 	idmap_ctx->samdb = samdb_connect(idmap_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
 	if (idmap_ctx->samdb == NULL) {
 		DEBUG(0, ("Failed to load sam.ldb in idmap_init\n"));
@@ -423,7 +417,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (dom_sid_in_domain(idmap_ctx->unix_groups_sid, sid)) {
+	if (sid_check_is_in_unix_groups(sid)) {
 		uint32_t rid;
 		DEBUG(6, ("This is a local unix gid, just calculate that.\n"));
 		status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
