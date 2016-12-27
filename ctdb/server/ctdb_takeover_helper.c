@@ -1160,7 +1160,8 @@ int main(int argc, const char *argv[])
 		force_rebalance_nodes = parse_node_list(mem_ctx, argv[3]);
 		if (force_rebalance_nodes == NULL) {
 			usage(argv[0]);
-			exit(1);
+			ret = EINVAL;
+			goto done;
 		}
 	}
 
