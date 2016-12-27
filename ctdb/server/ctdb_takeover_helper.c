@@ -1164,7 +1164,12 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	logging_init(mem_ctx, NULL, NULL, "ctdb-takeover");
+	ret = logging_init(mem_ctx, NULL, NULL, "ctdb-takeover");
+	if (ret != 0) {
+		fprintf(stderr,
+			"ctdb-takeover: Unable to initialize logging\n");
+		goto done;
+	}
 
 	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
