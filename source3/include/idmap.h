@@ -32,9 +32,13 @@
 
 #include "librpc/gen_ndr/idmap.h"
 
+struct wbint_userinfo;
+
 struct idmap_domain {
 	const char *name;
 	struct idmap_methods *methods;
+	NTSTATUS (*query_user)(struct idmap_domain *domain,
+			       struct wbint_userinfo *info);
 	uint32_t low_id;
 	uint32_t high_id;
 	bool read_only;

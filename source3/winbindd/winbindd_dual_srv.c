@@ -283,6 +283,20 @@ NTSTATUS _wbint_QueryUser(struct pipes_struct *p, struct wbint_QueryUser *r)
 	return status;
 }
 
+NTSTATUS _wbint_GetNssInfo(struct pipes_struct *p, struct wbint_GetNssInfo *r)
+{
+	struct idmap_domain *domain;
+	NTSTATUS status;
+
+	domain = idmap_find_domain(r->in.info->domain_name);
+	if ((domain == NULL) || (domain->query_user == NULL)) {
+		return NT_STATUS_REQUEST_NOT_ACCEPTED;
+	}
+
+	status = domain->query_user(domain, r->in.info);
+	return status;
+}
+
 NTSTATUS _wbint_LookupUserAliases(struct pipes_struct *p,
 				  struct wbint_LookupUserAliases *r)
 {
