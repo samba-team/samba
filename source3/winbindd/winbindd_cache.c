@@ -2140,7 +2140,7 @@ NTSTATUS wb_cache_rids_to_names(struct winbindd_domain *domain,
 						names, types);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_IO_TIMEOUT) ||
-		NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
+	    NT_STATUS_EQUAL(result, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
 		if (!domain->internal && old_status) {
 			set_domain_offline(domain);
 		}
