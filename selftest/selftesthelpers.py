@@ -67,7 +67,11 @@ def plantestsuite(name, env, cmdline):
     :param cmdline: Command line to run
     """
     print "-- TEST --"
-    print name
+    if env == "none":
+        fullname = name
+    else:
+        fullname = "%s(%s)" % (name, env)
+    print fullname
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
