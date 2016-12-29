@@ -2051,10 +2051,10 @@ uint32_t dcerpc_auth_level(struct dcecli_connection *c)
 		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
 	} else if (c->flags & DCERPC_SIGN) {
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	} else if (c->flags & DCERPC_CONNECT) {
-		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 	} else if (c->flags & DCERPC_PACKET) {
 		auth_level = DCERPC_AUTH_LEVEL_PACKET;
+	} else if (c->flags & DCERPC_CONNECT) {
+		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 	} else {
 		auth_level = DCERPC_AUTH_LEVEL_NONE;
 	}
