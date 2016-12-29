@@ -330,6 +330,16 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (realm == NULL) {
+		char *cred_name = cli_credentials_get_unparsed_name(creds,
+								gensec_security);
+		DEBUG(3, ("cli_credentials(%s) without realm, "
+			  "cannot use kerberos for this connection %s/%s\n",
+			  cred_name, service, hostname));
+		TALLOC_FREE(cred_name);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 do_start:
 
 	nt_status = gensec_gssapi_start(gensec_security);
