@@ -39,7 +39,13 @@ struct idmap_ad_context {
 	struct tldap_context *ld;
 	struct idmap_ad_schema_names *schema;
 	const char *default_nc;
+
+	bool unix_primary_group;
+	bool unix_nss_info;
 };
+
+static NTSTATUS idmap_ad_get_context(struct idmap_domain *dom,
+				     struct idmap_ad_context **pctx);
 
 static char *get_schema_path(TALLOC_CTX *mem_ctx, struct tldap_context *ld)
 {
@@ -396,6 +402,11 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ctx->unix_primary_group = lp_parm_bool(
+		-1, schema_config_option, "unix_primary_group", false);
+	ctx->unix_nss_info = lp_parm_bool(
+		-1, schema_config_option, "unix_nss_info", false);
+
 	schema_mode = lp_parm_const_string(
 		-1, schema_config_option, "schema_mode", "rfc2307");
 	TALLOC_FREE(schema_config_option);
@@ -412,8 +423,107 @@ static NTSTATUS idmap_ad_context_create(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS idmap_ad_query_user(struct idmap_domain *domain,
+				    struct wbint_userinfo *info)
+{
+	struct idmap_ad_context *ctx;
+	TLDAPRC rc;
+	NTSTATUS status;
+	char *sidstr, *filter;
+	const char *attrs[4];
+	size_t i, num_msgs;
+	struct tldap_message **msgs;
+
+	status = idmap_ad_get_context(domain, &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!(ctx->unix_primary_group || ctx->unix_nss_info)) {
+		return NT_STATUS_OK;
+	}
+
+	attrs[0] = ctx->schema->gid;
+	attrs[1] = ctx->schema->gecos;
+	attrs[2] = ctx->schema->dir;
+	attrs[3] = ctx->schema->shell;
+
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), &info->user_sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	filter = talloc_asprintf(talloc_tos(), "(objectsid=%s)", sidstr);
+	TALLOC_FREE(sidstr);
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("Filter: [%s]\n", filter);
+
+	rc = tldap_search(ctx->ld, ctx->default_nc, TLDAP_SCOPE_SUB, filter,
+			  attrs, ARRAY_SIZE(attrs), 0, NULL, 0, NULL, 0,
+			  0, 0, 0, talloc_tos(), &msgs);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		return NT_STATUS_LDAP(TLDAP_RC_V(rc));
+	}
+
+	TALLOC_FREE(filter);
+
+	num_msgs = talloc_array_length(msgs);
+
+	for (i=0; i<num_msgs; i++) {
+		struct tldap_message *msg = msgs[i];
+
+		if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
+			continue;
+		}
+
+		if (ctx->unix_primary_group) {
+			bool ok;
+			uint32_t gid;
+
+			ok = tldap_pull_uint32(msg, ctx->schema->gid, &gid);
+			if (ok) {
+				DBG_DEBUG("Setting primary group "
+					  "to %"PRIu32" from attr %s\n",
+					  gid, ctx->schema->gid);
+				info->primary_gid = gid;
+			}
+		}
+
+		if (ctx->unix_nss_info) {
+			char *attr;
+
+			attr = tldap_talloc_single_attribute(
+				msg, ctx->schema->dir, talloc_tos());
+			if (attr != NULL) {
+				info->homedir = talloc_move(info, &attr);
+			}
+			TALLOC_FREE(attr);
+
+			attr = tldap_talloc_single_attribute(
+				msg, ctx->schema->shell, talloc_tos());
+			if (attr != NULL) {
+				info->shell = talloc_move(info, &attr);
+			}
+			TALLOC_FREE(attr);
+
+			attr = tldap_talloc_single_attribute(
+				msg, ctx->schema->gecos, talloc_tos());
+			if (attr != NULL) {
+				info->full_name = talloc_move(info, &attr);
+			}
+			TALLOC_FREE(attr);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom)
 {
+	dom->query_user = idmap_ad_query_user;
 	dom->private_data = NULL;
 	return NT_STATUS_OK;
 }

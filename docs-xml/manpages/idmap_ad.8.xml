@@ -74,6 +74,20 @@
 			via the "primaryGroupID" LDAP attribute.
 		</para></listitem>
 		</varlistentry>
+		<varlistentry>
+		<term>unix_primary_group = yes/no</term>
+		<listitem><para>
+		  Defines whether to retrieve the user's primary group
+		  from the SFU attributes.
+		</para></listitem>
+		</varlistentry>
+		<varlistentry>
+		<term>unix_nss_info = yes/no</term>
+		<listitem><para>
+		  Defines whether to retrieve the login shell and
+		  home directory from the SFU attributes.
+		</para></listitem>
+		</varlistentry>
 	</variablelist>
 </refsect1>
 
