@@ -193,7 +193,7 @@ _PUBLIC_ const char *cli_credentials_get_bind_dn(struct cli_credentials *cred)
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-_PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained)
+_PUBLIC_ char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained)
 {
 	if (cred->machine_account_pending) {
 		cli_credentials_set_machine_account(cred,
@@ -256,7 +256,7 @@ _PUBLIC_ const char *cli_credentials_get_principal_and_obtained(struct cli_crede
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-_PUBLIC_ const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx)
 {
 	enum credentials_obtained obtained;
 	return cli_credentials_get_principal_and_obtained(cred, mem_ctx, &obtained);
@@ -848,12 +848,12 @@ _PUBLIC_ void cli_credentials_parse_string(struct cli_credentials *credentials, 
  * @param mem_ctx The memory context to place the result on
  */
 
-_PUBLIC_ const char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx)
+_PUBLIC_ char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx)
 {
 	const char *bind_dn = cli_credentials_get_bind_dn(credentials);
-	const char *domain;
-	const char *username;
-	const char *name;
+	const char *domain = NULL;
+	const char *username = NULL;
+	char *name = NULL;
 
 	if (bind_dn) {
 		name = talloc_strdup(mem_ctx, bind_dn);

@@ -113,7 +113,7 @@ void cli_credentials_set_machine_account_pending(struct cli_credentials *cred,
 						 struct loadparm_context *lp_ctx);
 void cli_credentials_set_conf(struct cli_credentials *cred, 
 			      struct loadparm_context *lp_ctx);
-const char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx);
+char *cli_credentials_get_principal(struct cli_credentials *cred, TALLOC_CTX *mem_ctx);
 int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc);
@@ -189,7 +189,7 @@ bool cli_credentials_set_bind_dn(struct cli_credentials *cred,
 				 const char *bind_dn);
 const char *cli_credentials_get_bind_dn(struct cli_credentials *cred);
 bool cli_credentials_parse_file(struct cli_credentials *cred, const char *file, enum credentials_obtained obtained);
-const char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx);
+char *cli_credentials_get_unparsed_name(struct cli_credentials *credentials, TALLOC_CTX *mem_ctx);
 bool cli_credentials_set_password_callback(struct cli_credentials *cred,
 					   const char *(*password_cb) (struct cli_credentials *));
 enum netr_SchannelType cli_credentials_get_secure_channel_type(struct cli_credentials *cred);
@@ -257,7 +257,7 @@ bool cli_credentials_set_username_callback(struct cli_credentials *cred,
  * @retval The username set on this context.
  * @note Return value will never be NULL except by programmer error.
  */
-const char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained);
+char *cli_credentials_get_principal_and_obtained(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, enum credentials_obtained *obtained);
 bool cli_credentials_set_principal(struct cli_credentials *cred, 
 				   const char *val, 
 				   enum credentials_obtained obtained);
