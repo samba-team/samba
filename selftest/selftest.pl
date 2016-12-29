@@ -142,7 +142,6 @@ sub run_testsuite($$$$$)
 	Subunit::progress_pop();
 
 	if ($? == -1) {
-		Subunit::progress_pop();
 		Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
 		exit(1);
 	} elsif ($? & 127) {
