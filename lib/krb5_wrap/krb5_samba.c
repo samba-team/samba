@@ -1942,6 +1942,7 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 	krb5_principal target_princ;
 	krb5_ccache tmp_cc;
 	const char *self_realm;
+	const char *client_realm = NULL;
 	krb5_principal blacklist_principal = NULL;
 	krb5_principal whitelist_principal = NULL;
 
@@ -2271,6 +2272,29 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 	if (code != 0) {
 		krb5_free_cred_contents(ctx, &store_creds);
 		return code;
+	}
+
+	client_realm = krb5_principal_get_realm(ctx, store_creds.client);
+	if (client_realm != NULL) {
+		/*
+		 * Because the CANON flag doesn't have any impact
+		 * on the impersonate_principal => store_creds.client
+		 * realm mapping. We need to store the credentials twice,
+		 * once with the returned realm and once with the
+		 * realm of impersonate_principal.
+		 */
+		code = krb5_principal_set_realm(ctx, store_creds.server,
+						client_realm);
+		if (code != 0) {
+			krb5_free_cred_contents(ctx, &store_creds);
+			return code;
+		}
+
+		code = krb5_cc_store_cred(ctx, store_cc, &store_creds);
+		if (code != 0) {
+			krb5_free_cred_contents(ctx, &store_creds);
+			return code;
+		}
 	}
 
 	if (expire_time) {
