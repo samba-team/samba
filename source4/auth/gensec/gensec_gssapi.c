@@ -307,7 +307,15 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gss_buffer_desc name_token;
 	gss_OID name_type;
 	OM_uint32 maj_stat, min_stat;
+	const char *target_principal = NULL;
 	const char *hostname = gensec_get_target_hostname(gensec_security);
+	const char *service = gensec_get_target_service(gensec_security);
+	const char *realm = cli_credentials_get_realm(creds);
+
+	target_principal = gensec_get_target_principal(gensec_security);
+	if (target_principal != NULL) {
+		goto do_start;
+	}
 
 	if (!hostname) {
 		DEBUG(3, ("No hostname for target computer passed in, cannot use kerberos for this connection\n"));
@@ -322,6 +330,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+do_start:
+
 	nt_status = gensec_gssapi_start(gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -333,16 +343,18 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 		gensec_gssapi_state->gss_want_flags &= ~(GSS_C_DELEG_FLAG|GSS_C_DELEG_POLICY_FLAG);
 	}
 
-	gensec_gssapi_state->target_principal = gensec_get_target_principal(gensec_security);
-	if (gensec_gssapi_state->target_principal) {
+	if (target_principal != NULL) {
 		name_type = GSS_C_NULL_OID;
 	} else {
-		gensec_gssapi_state->target_principal = talloc_asprintf(gensec_gssapi_state, "%s/%s@%s",
-					    gensec_get_target_service(gensec_security), 
-					    hostname, cli_credentials_get_realm(creds));
-
+		target_principal = talloc_asprintf(gensec_gssapi_state,
+					"%s/%s@%s", service, hostname, realm);
+		if (target_principal == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		name_type = GSS_C_NT_USER_NAME;
 	}
+	gensec_gssapi_state->target_principal = target_principal;
+
 	name_token.value  = discard_const_p(uint8_t, gensec_gssapi_state->target_principal);
 	name_token.length = strlen(gensec_gssapi_state->target_principal);
 
