@@ -147,6 +147,10 @@ interface winbind
 	[out] wbint_Principals *groups
 	);
 
+    NTSTATUS wbint_QueryUserRidList(
+	[out] wbint_RidArray *rids
+	);
+
     NTSTATUS wbint_DsGetDcName(
 	[in,string,charset(UTF8)]		char *domain_name,
 	[in,unique]				GUID *domain_guid,
