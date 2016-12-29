@@ -142,9 +142,13 @@ sub run_testsuite($$$$$)
 	Subunit::progress_pop();
 
 	if ($? == -1) {
+		print "command: $cmd\n";
+		printf "expanded command: %s\n", expand_environment_strings($cmd);
 		Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
 		exit(1);
 	} elsif ($? & 127) {
+		print "command: $cmd\n";
+		printf "expanded command: %s\n", expand_environment_strings($cmd);
 		Subunit::end_testsuite($name, "error",
 			sprintf("%s died with signal %d, %s coredump\n", $cmd, ($? & 127),  ($? & 128) ? 'with' : 'without'));
 		exit(1);
