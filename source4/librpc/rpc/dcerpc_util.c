@@ -661,7 +661,7 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	 * if not doing sign or seal
 	 */
 	if (conn->transport.transport == NCACN_NP &&
-	    !(conn->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+	    !(conn->flags & (DCERPC_PACKET|DCERPC_SIGN|DCERPC_SEAL))) {
 		auth_none_req = dcerpc_bind_auth_none_send(c, s->pipe, s->table);
 		composite_continue(c, auth_none_req, continue_auth_none, c);
 		return c;
