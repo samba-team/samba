@@ -2339,13 +2339,14 @@ static int replmd_modify_la_add(struct ldb_module *module,
 				struct GUID *msg_guid,
 				struct ldb_request *parent)
 {
-	unsigned int i;
+	unsigned int i, j;
 	struct parsed_dn *dns, *old_dns;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	int ret;
 	struct ldb_val *new_values = NULL;
-	unsigned int num_new_values = 0;
-	unsigned old_num_values = old_el?old_el->num_values:0;
+	unsigned old_num_values = old_el ? old_el->num_values : 0;
+	unsigned num_values = 0;
+	unsigned max_num_values;
 	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	NTTIME now;
@@ -2389,42 +2390,63 @@ static int replmd_modify_la_add(struct ldb_module *module,
 		return ret;
 	}
 
-	/* for each new value, see if it exists already with the same GUID */
-	for (i=0; i<el->num_values; i++) {
-		struct parsed_dn *p;
+	max_num_values = old_num_values + el->num_values;
+	if (max_num_values < old_num_values) {
+		DEBUG(0, ("we seem to have overflow in replmd_modify_la_add. "
+			  "old values: %u, new values: %u, sum: %u",
+			  old_num_values, el->num_values, max_num_values));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	new_values = talloc_zero_array(tmp_ctx, struct ldb_val, max_num_values);
+
+	if (new_values == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/*
+	 * For each new value, find where it would go in the list. If there is
+	 * a matching GUID there, we update the existing value; otherwise we
+	 * put it in place.
+	 */
+	j = 0;
+	for (i = 0; i < el->num_values; i++) {
+		struct parsed_dn *exact;
 		struct parsed_dn *next;
+		unsigned offset;
 		int err = parsed_dn_find(ldb, old_dns, old_num_values,
 					 &dns[i].guid,
 					 dns[i].dsdb_dn->dn,
-					 &p, &next,
+					 &exact, &next,
 					 schema_attr->syntax->ldap_oid);
 		if (err != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return err;
 		}
-		if (p == NULL) {
-			/* this is a new linked attribute value */
-			new_values = talloc_realloc(tmp_ctx, new_values, struct ldb_val, num_new_values+1);
-			if (new_values == NULL) {
-				ldb_module_oom(module);
-				talloc_free(tmp_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			ret = replmd_build_la_val(new_values, &new_values[num_new_values], dns[i].dsdb_dn,
-						  invocation_id, seq_num, seq_num, now, 0, false);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-			num_new_values++;
-		} else {
-			/* this is only allowed if the GUID was
-			   previously deleted. */
-			uint32_t rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
+
+		if (exact != NULL) {
+			/*
+			 * We are trying to add one that exists, which is only
+			 * allowed if it was previously deleted.
+			 *
+			 * When we do undelete a link we change it in place.
+			 * It will be copied across into the right spot in due
+			 * course.
+			 */
+			uint32_t rmd_flags;
+			rmd_flags = dsdb_dn_rmd_flags(exact->dsdb_dn->dn);
+
 			if (!(rmd_flags & DSDB_RMD_FLAG_DELETED)) {
 				struct GUID_txt_buf guid_str;
-				ldb_asprintf_errstring(ldb, "Attribute %s already exists for target GUID %s",
-						       el->name, GUID_buf_string(&p->guid, &guid_str));
+				ldb_asprintf_errstring(ldb,
+						       "Attribute %s already "
+						       "exists for target GUID %s",
+						       el->name,
+						       GUID_buf_string(&exact->guid,
+								       &guid_str));
 				talloc_free(tmp_ctx);
 				/* error codes for 'member' need to be
 				   special cased */
@@ -2434,37 +2456,86 @@ static int replmd_modify_la_add(struct ldb_module *module,
 					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 				}
 			}
-			ret = replmd_update_la_val(old_el->values, p->v, dns[i].dsdb_dn, p->dsdb_dn,
-						   invocation_id, seq_num, seq_num, now, 0, false);
+
+			ret = replmd_update_la_val(new_values, exact->v,
+						   dns[i].dsdb_dn,
+						   exact->dsdb_dn,
+						   invocation_id, seq_num,
+						   seq_num, now, 0, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
 			}
+
+			ret = replmd_add_backlink(module, replmd_private,
+						  schema, msg_guid,
+						  &dns[i].guid, true,
+						  schema_attr, true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+				}
+			continue;
+		}
+		/*
+		 * Here we don't have an exact match.
+		 *
+		 * If next is NULL, this one goes beyond the end of the
+		 * existing list, so we need to add all of those ones first.
+		 *
+		 * If next is not NULL, we need to add all the ones before
+		 * next.
+		 */
+		if (next == NULL) {
+			offset = old_num_values;
+		} else {
+			/* next should have been parsed, but let's make sure */
+			if (next->dsdb_dn == NULL) {
+				ret = really_parse_trusted_dn(tmp_ctx, ldb, next,
+							      schema_attr->syntax->ldap_oid);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+			offset = MIN(next - old_dns, old_num_values);
+		}
+
+		/* put all the old ones before next on the list */
+		for (; j < offset; j++) {
+			new_values[num_values] = *old_dns[j].v;
+			num_values++;
 		}
 
 		ret = replmd_add_backlink(module, replmd_private,
 					  schema, msg_guid, &dns[i].guid,
 					  true, schema_attr, true);
+		/* Make the new linked attribute ldb_val. */
+		ret = replmd_build_la_val(new_values, &new_values[num_values],
+					  dns[i].dsdb_dn, invocation_id,
+					  seq_num, seq_num,
+					  now, 0, false);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		num_values++;
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
 	}
-
-	/* add the new ones on to the end of the old values, constructing a new el->values */
-	el->values = talloc_realloc(msg->elements, old_el?old_el->values:NULL,
-				    struct ldb_val,
-				    old_num_values+num_new_values);
-	if (el->values == NULL) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+	/* copy the rest of the old ones (if any) */
+	for (; j < old_num_values; j++) {
+		new_values[num_values] = *old_dns[j].v;
+		num_values++;
 	}
 
-	memcpy(&el->values[old_num_values], new_values, num_new_values*sizeof(struct ldb_val));
-	el->num_values = old_num_values + num_new_values;
-
-	talloc_steal(msg->elements, el->values);
-	talloc_steal(el->values, new_values);
+	talloc_steal(msg->elements, new_values);
+	if (old_el != NULL) {
+		talloc_steal(msg->elements, old_el->values);
+	}
+	el->values = new_values;
+	el->num_values = num_values;
 
 	talloc_free(tmp_ctx);
 
