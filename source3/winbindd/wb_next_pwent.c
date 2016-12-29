@@ -20,11 +20,13 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "libcli/security/dom_sid.h"
 #include "passdb/machine_sid.h"
 
 struct wb_next_pwent_state {
 	struct tevent_context *ev;
 	struct getpwent_state *gstate;
+	struct dom_sid next_sid;
 	struct winbindd_pw *pw;
 };
 
@@ -36,8 +38,9 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 {
 	struct tevent_req *subreq;
 
-	if (state->gstate->next_user >= state->gstate->num_users) {
-		TALLOC_FREE(state->gstate->users);
+	if (state->gstate->next_user >= state->gstate->rids.num_rids) {
+		TALLOC_FREE(state->gstate->rids.rids);
+		state->gstate->rids.num_rids = 0;
 
 		state->gstate->domain = wb_next_domain(state->gstate->domain);
 		if (state->gstate->domain == NULL) {
@@ -45,8 +48,10 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 			return;
 		}
 
-		subreq = wb_query_user_list_send(state, state->ev,
-						 state->gstate->domain);
+		subreq = dcerpc_wbint_QueryUserRidList_send(
+			state, state->ev,
+			dom_child_handle(state->gstate->domain),
+			&state->gstate->rids);
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -55,9 +60,11 @@ static void wb_next_pwent_send_do(struct tevent_req *req,
 		return;
 	}
 
-	subreq = wb_fill_pwent_send(state, state->ev,
-				&state->gstate->users[state->gstate->next_user],
-				state->pw);
+	sid_compose(&state->next_sid, &state->gstate->domain->sid,
+		    state->gstate->rids.rids[state->gstate->next_user]);
+
+	subreq = wb_getpwsid_send(state, state->ev, &state->next_sid,
+				  state->pw);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -95,18 +102,17 @@ static void wb_next_pwent_fetch_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_next_pwent_state *state = tevent_req_data(
 		req, struct wb_next_pwent_state);
-	NTSTATUS status;
+	NTSTATUS status, result;
 
-	status = wb_query_user_list_recv(subreq, state->gstate,
-					 &state->gstate->num_users,
-					 &state->gstate->users);
+	status = dcerpc_wbint_QueryUserRidList_recv(subreq, state->gstate,
+						    &result);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		/* Ignore errors here, just log it */
 		DEBUG(10, ("query_user_list for domain %s returned %s\n",
 			   state->gstate->domain->name,
 			   nt_errstr(status)));
-		state->gstate->num_users = 0;
+		state->gstate->rids.num_rids = 0;
 	}
 
 	state->gstate->next_user = 0;
@@ -122,13 +128,13 @@ static void wb_next_pwent_fill_done(struct tevent_req *subreq)
 		req, struct wb_next_pwent_state);
 	NTSTATUS status;
 
-	status = wb_fill_pwent_recv(subreq);
+	status = wb_getpwsid_recv(subreq);
 	TALLOC_FREE(subreq);
 	/*
 	 * When you try to enumerate users with 'getent passwd' and the user
 	 * doesn't have a uid set we should just move on.
 	 */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 		state->gstate->next_user += 1;
 
 		wb_next_pwent_send_do(req, state);

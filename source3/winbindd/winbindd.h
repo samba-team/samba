@@ -75,9 +75,8 @@ struct winbindd_cli_state {
 
 struct getpwent_state {
 	struct winbindd_domain *domain;
-	int next_user;
-	int num_users;
-	struct wbint_userinfo *users;
+	uint32_t next_user;
+	struct wbint_RidArray rids;
 };
 
 struct getgrent_state {
