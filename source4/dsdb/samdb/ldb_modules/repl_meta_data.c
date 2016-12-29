@@ -1993,7 +1993,9 @@ static int replmd_update_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct d
 /*
   check if any links need upgrading from w2k format
 
-  The parent_ctx is the ldb_message_element which contains the values array that dns[i].v points at, and which should be used for allocating any new value.
+  The parent_ctx is the ldb_message_element which contains the values array
+  that dns[i].v points at, and which should be used for allocating any new
+  value.
  */
 static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, struct ldb_message_element *parent_ctx, const struct GUID *invocation_id)
 {
@@ -2003,14 +2005,29 @@ static int replmd_check_upgrade_links(struct parsed_dn *dns, uint32_t count, str
 		uint32_t version;
 		int ret;
 
-		status = dsdb_get_extended_dn_uint32(dns[i].dsdb_dn->dn, &version, "RMD_VERSION");
+		status = dsdb_get_extended_dn_uint32(dns[i].dsdb_dn->dn,
+						     &version, "RMD_VERSION");
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			/*
+			 *  We optimistically assume they are all the same; if
+			 *  the first one is fixed, they are all fixed.
+			 *
+			 *  If the first one was *not* fixed and we find a
+			 *  later one that is, that is an occasion to shout
+			 *  with DEBUG(0).
+			 */
+			if (i == 0) {
+				return LDB_SUCCESS;
+			}
+			DEBUG(0, ("Mixed w2k and fixed format "
+				  "linked attributes\n"));
 			continue;
 		}
 
 		/* it's an old one that needs upgrading */
-		ret = replmd_update_la_val(parent_ctx->values, dns[i].v, dns[i].dsdb_dn, dns[i].dsdb_dn, invocation_id,
-					   1, 1, 0, 0, false);
+		ret = replmd_update_la_val(parent_ctx->values, dns[i].v,
+					   dns[i].dsdb_dn, dns[i].dsdb_dn,
+					   invocation_id, 1, 1, 0, 0, false);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
