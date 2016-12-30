@@ -51,7 +51,7 @@ struct spnego_state {
 	enum spnego_message_type expected_packet;
 	enum spnego_state_position state_position;
 	struct gensec_security *sub_sec_security;
-	bool no_response_expected;
+	bool sub_sec_ready;
 
 	const char *neg_oid;
 
@@ -90,7 +90,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
-	spnego_state->no_response_expected = false;
+	spnego_state->sub_sec_ready = false;
 	spnego_state->mech_types = data_blob_null;
 	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
 	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -114,7 +114,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
-	spnego_state->no_response_expected = false;
+	spnego_state->sub_sec_ready = false;
 	spnego_state->mech_types = data_blob_null;
 	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
 	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -536,7 +536,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_state->neg_oid = all_sec[i].oid;
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->no_response_expected = true;
+			spnego_state->sub_sec_ready = true;
 		}
 
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
@@ -769,7 +769,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->no_response_expected = true;
+			spnego_state->sub_sec_ready = true;
 		}
 
 		spnego_free_data(&spnego);
@@ -951,7 +951,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid),
 				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech)));
 			spnego_state->downgraded = true;
-			spnego_state->no_response_expected = false;
+			spnego_state->sub_sec_ready = false;
 			talloc_free(spnego_state->sub_sec_security);
 			nt_status = gensec_subcontext_start(spnego_state,
 							    gensec_security,
@@ -995,7 +995,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		}
 
 		if (spnego.negTokenTarg.mechListMIC.length > 0) {
-			if (spnego_state->no_response_expected) {
+			if (spnego_state->sub_sec_ready) {
 				spnego_state->needs_mic_check = true;
 			}
 		}
@@ -1041,7 +1041,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			goto client_response;
 		}
 
-		if (!spnego_state->no_response_expected) {
+		if (!spnego_state->sub_sec_ready) {
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						  out_mem_ctx, ev,
 						  spnego.negTokenTarg.responseToken, 
@@ -1050,12 +1050,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				goto client_response;
 			}
 
-			spnego_state->no_response_expected = true;
+			spnego_state->sub_sec_ready = true;
 		} else {
 			nt_status = NT_STATUS_OK;
 		}
 
-		if (spnego_state->no_response_expected &&
+		if (spnego_state->sub_sec_ready &&
 		    !spnego_state->done_mic_check)
 		{
 			bool have_sign = true;
