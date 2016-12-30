@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "librpc/gen_ndr/ndr_schannel.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
@@ -450,9 +452,48 @@ static size_t schannel_sig_size(struct gensec_security *gensec_security, size_t 
 	return netsec_outgoing_sig_size(state);
 }
 
-static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
-				struct tevent_context *ev,
-				const DATA_BLOB in, DATA_BLOB *out)
+struct schannel_update_state {
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static NTSTATUS schannel_update_internal(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 const DATA_BLOB in, DATA_BLOB *out);
+
+static struct tevent_req *schannel_update_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct gensec_security *gensec_security,
+					       const DATA_BLOB in)
+{
+	struct tevent_req *req;
+	struct schannel_update_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct schannel_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = schannel_update_internal(gensec_security,
+					  state, in,
+					  &state->out);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS schannel_update_internal(struct gensec_security *gensec_security,
+					 TALLOC_CTX *out_mem_ctx,
+					 const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct schannel_state *state =
 		talloc_get_type(gensec_security->private_data,
@@ -609,6 +650,29 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		return NT_STATUS_OK;
 	}
 	return NT_STATUS_INVALID_PARAMETER;
+}
+
+static NTSTATUS schannel_update_recv(struct tevent_req *req,
+				     TALLOC_CTX *out_mem_ctx,
+				     DATA_BLOB *out)
+{
+	struct schannel_update_state *state =
+		tevent_req_data(req,
+		struct schannel_update_state);
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	status = state->status;
+	talloc_steal(out_mem_ctx, state->out.data);
+	*out = state->out;
+	tevent_req_received(req);
+	return status;
 }
 
 /**
@@ -772,7 +836,8 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.auth_type	= DCERPC_AUTH_TYPE_SCHANNEL,
 	.client_start   = schannel_client_start,
 	.server_start   = schannel_server_start,
-	.update 	= schannel_update,
+	.update_send	= schannel_update_send,
+	.update_recv	= schannel_update_recv,
 	.seal_packet 	= schannel_seal_packet,
 	.sign_packet   	= schannel_sign_packet,
 	.check_packet	= schannel_check_packet,
