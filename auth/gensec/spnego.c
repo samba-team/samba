@@ -270,6 +270,9 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 							  ev,
 							  unwrapped_in,
 							  unwrapped_out);
+				if (NT_STATUS_IS_OK(nt_status)) {
+					spnego_state->sub_sec_ready = true;
+				}
 				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
 					/* Pretend we never started it (lets the first run find some incompatible demand) */
@@ -324,6 +327,9 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 						  ev,
 						  data_blob_null,
 						  unwrapped_out);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->sub_sec_ready = true;
+			}
 
 			/* it is likely that a NULL input token will
 			 * not be liked by most server mechs, but if
@@ -463,6 +469,9 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 						  ev,
 						  data_blob_null,
 						  &unwrapped_out);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->sub_sec_ready = true;
+			}
 
 			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
 			    && !NT_STATUS_IS_OK(nt_status)) {
@@ -534,10 +543,6 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 
 		/* set next state */
 		spnego_state->neg_oid = all_sec[i].oid;
-
-		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->sub_sec_ready = true;
-		}
 
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	} 
@@ -768,10 +773,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		spnego_state->expected_packet = SPNEGO_NEG_TOKEN_TARG;
 		spnego_state->state_position = SPNEGO_CLIENT_TARG;
 
-		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->sub_sec_ready = true;
-		}
-
 		spnego_free_data(&spnego);
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
@@ -837,6 +838,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 					     out_mem_ctx, ev,
 					     spnego.negTokenTarg.responseToken,
 					     &unwrapped_out);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			spnego_state->sub_sec_ready = true;
+		}
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			goto server_response;
 		}
@@ -1046,11 +1050,12 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 						  out_mem_ctx, ev,
 						  spnego.negTokenTarg.responseToken, 
 						  &unwrapped_out);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->sub_sec_ready = true;
+			}
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				goto client_response;
 			}
-
-			spnego_state->sub_sec_ready = true;
 		} else {
 			nt_status = NT_STATUS_OK;
 		}
