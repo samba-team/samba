@@ -159,7 +159,7 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 	 * Now expand the builtin groups
 	 */
 
-	domain = find_builtin_domain();
+	domain = find_domain_from_sid(&global_sid_Builtin);
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;

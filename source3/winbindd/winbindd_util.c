@@ -994,18 +994,6 @@ struct winbindd_domain *find_root_domain(void)
 	return find_domain_from_name( ours->forest_name );
 }
 
-struct winbindd_domain *find_builtin_domain(void)
-{
-	struct winbindd_domain *domain;
-
-	domain = find_domain_from_sid(&global_sid_Builtin);
-	if (domain == NULL) {
-		smb_panic("Could not find BUILTIN domain");
-	}
-
-	return domain;
-}
-
 /* Find the appropriate domain to lookup a name or SID */
 
 struct winbindd_domain *find_lookup_domain_from_sid(const struct dom_sid *sid)
