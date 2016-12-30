@@ -617,10 +617,10 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_st
 	return nt_status;
 }
 
-
-static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
-				     struct tevent_context *ev,
-				     const DATA_BLOB in, DATA_BLOB *out) 
+static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_security,
+					    TALLOC_CTX *out_mem_ctx,
+					    struct tevent_context *ev,
+					    const DATA_BLOB in, DATA_BLOB *out)
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
 	DATA_BLOB mech_list_mic = data_blob_null;
@@ -634,69 +634,6 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 	/* and switch into the state machine */
 
 	switch (spnego_state->state_position) {
-	case SPNEGO_FALLBACK:
-		return gensec_update_ev(spnego_state->sub_sec_security,
-					out_mem_ctx, ev, in, out);
-	case SPNEGO_SERVER_START:
-	{
-		NTSTATUS nt_status;
-		if (in.length) {
-
-			len = spnego_read_data(gensec_security, in, &spnego);
-			if (len == -1) {
-				return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
-									 ev, out_mem_ctx, in, out);
-			}
-			/* client sent NegTargetInit, we send NegTokenTarg */
-
-			/* OK, so it's real SPNEGO, check the packet's the one we expect */
-			if (spnego.type != spnego_state->expected_packet) {
-				DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
-					  spnego_state->expected_packet));
-				dump_data(1, in.data, in.length);
-				spnego_free_data(&spnego);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
-								     spnego_state,
-								     out_mem_ctx, 
-								     ev,
-								     spnego.negTokenInit.mechTypes,
-								     spnego.negTokenInit.mechToken, 
-								     &unwrapped_out);
-
-			if (spnego_state->simulate_w2k) {
-				/*
-				 * Windows 2000 returns the unwrapped token
-				 * also in the mech_list_mic field.
-				 *
-				 * In order to verify our client code,
-				 * we need a way to have a server with this
-				 * broken behaviour
-				 */
-				mech_list_mic = unwrapped_out;
-			}
-
-			nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
-								      out_mem_ctx,
-								      nt_status,
-								      unwrapped_out,
-								      mech_list_mic,
-								      out);
-
-			spnego_free_data(&spnego);
-
-			return nt_status;
-		} else {
-			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state, 
-								      out_mem_ctx, ev, in, out);
-			spnego_state->state_position = SPNEGO_SERVER_START;
-			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
-			return nt_status;
-		}
-	}
-
 	case SPNEGO_CLIENT_START:
 	{
 		/* The server offers a list of mechanisms */
@@ -781,140 +718,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		spnego_free_data(&spnego);
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	}
-	case SPNEGO_SERVER_TARG:
-	{
-		NTSTATUS nt_status;
-		bool have_sign = true;
-		bool new_spnego = false;
 
-		if (!in.length) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		len = spnego_read_data(gensec_security, in, &spnego);
-
-		if (len == -1) {
-			DEBUG(1, ("Invalid SPNEGO request:\n"));
-			dump_data(1, in.data, in.length);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* OK, so it's real SPNEGO, check the packet's the one we expect */
-		if (spnego.type != spnego_state->expected_packet) {
-			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type, 
-				  spnego_state->expected_packet));
-			dump_data(1, in.data, in.length);
-			spnego_free_data(&spnego);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		spnego_state->num_targs++;
-
-		if (!spnego_state->sub_sec_security) {
-			DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
-			spnego_free_data(&spnego);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		if (spnego_state->needs_mic_check) {
-			if (spnego.negTokenTarg.responseToken.length != 0) {
-				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
-				spnego_free_data(&spnego);
-				return NT_STATUS_INVALID_PARAMETER;
-			}
-
-			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							&spnego.negTokenTarg.mechListMIC);
-			if (NT_STATUS_IS_OK(nt_status)) {
-				spnego_state->needs_mic_check = false;
-				spnego_state->done_mic_check = true;
-			} else {
-				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
-					nt_errstr(nt_status)));
-			}
-			goto server_response;
-		}
-
-		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-					     out_mem_ctx, ev,
-					     spnego.negTokenTarg.responseToken,
-					     &unwrapped_out);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->sub_sec_ready = true;
-		}
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			goto server_response;
-		}
-
-		have_sign = gensec_have_feature(spnego_state->sub_sec_security,
-						GENSEC_FEATURE_SIGN);
-		if (spnego_state->simulate_w2k) {
-			have_sign = false;
-		}
-		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
-						 GENSEC_FEATURE_NEW_SPNEGO);
-		if (spnego.negTokenTarg.mechListMIC.length > 0) {
-			new_spnego = true;
-		}
-
-		if (have_sign && new_spnego) {
-			spnego_state->needs_mic_check = true;
-			spnego_state->needs_mic_sign = true;
-		}
-
-		if (have_sign && spnego.negTokenTarg.mechListMIC.length > 0) {
-			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							spnego_state->mech_types.data,
-							spnego_state->mech_types.length,
-							&spnego.negTokenTarg.mechListMIC);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
-					nt_errstr(nt_status)));
-				goto server_response;
-			}
-
-			spnego_state->needs_mic_check = false;
-			spnego_state->done_mic_check = true;
-		}
-
-		if (spnego_state->needs_mic_sign) {
-			nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
-						       out_mem_ctx,
-						       spnego_state->mech_types.data,
-						       spnego_state->mech_types.length,
-						       spnego_state->mech_types.data,
-						       spnego_state->mech_types.length,
-						       &mech_list_mic);
-			if (!NT_STATUS_IS_OK(nt_status)) {
-				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
-					nt_errstr(nt_status)));
-				goto server_response;
-			}
-			spnego_state->needs_mic_sign = false;
-		}
-
-		if (spnego_state->needs_mic_check) {
-			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
-		}
-
- server_response:
-		nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
-							      out_mem_ctx, 
-							      nt_status,
-							      unwrapped_out,
-							      mech_list_mic,
-							      out);
-
-		spnego_free_data(&spnego);
-
-		return nt_status;
-	}
 	case SPNEGO_CLIENT_TARG:
 	{
 		NTSTATUS nt_status = NT_STATUS_INTERNAL_ERROR;
@@ -1238,6 +1042,258 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		return nt_status;
 	}
+
+	default:
+		break;
+	}
+
+	smb_panic(__location__);
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
+static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_security,
+					    TALLOC_CTX *out_mem_ctx,
+					    struct tevent_context *ev,
+					    const DATA_BLOB in, DATA_BLOB *out)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+	DATA_BLOB mech_list_mic = data_blob_null;
+	DATA_BLOB unwrapped_out = data_blob_null;
+	struct spnego_data spnego;
+	ssize_t len;
+
+	/* and switch into the state machine */
+
+	switch (spnego_state->state_position) {
+	case SPNEGO_SERVER_START:
+	{
+		NTSTATUS nt_status;
+		if (in.length) {
+
+			len = spnego_read_data(gensec_security, in, &spnego);
+			if (len == -1) {
+				return gensec_spnego_server_try_fallback(gensec_security, spnego_state,
+									 ev, out_mem_ctx, in, out);
+			}
+			/* client sent NegTargetInit, we send NegTokenTarg */
+
+			/* OK, so it's real SPNEGO, check the packet's the one we expect */
+			if (spnego.type != spnego_state->expected_packet) {
+				DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type,
+					  spnego_state->expected_packet));
+				dump_data(1, in.data, in.length);
+				spnego_free_data(&spnego);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			nt_status = gensec_spnego_parse_negTokenInit(gensec_security,
+								     spnego_state,
+								     out_mem_ctx,
+								     ev,
+								     spnego.negTokenInit.mechTypes,
+								     spnego.negTokenInit.mechToken,
+								     &unwrapped_out);
+
+			if (spnego_state->simulate_w2k) {
+				/*
+				 * Windows 2000 returns the unwrapped token
+				 * also in the mech_list_mic field.
+				 *
+				 * In order to verify our client code,
+				 * we need a way to have a server with this
+				 * broken behaviour
+				 */
+				mech_list_mic = unwrapped_out;
+			}
+
+			nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
+								      out_mem_ctx,
+								      nt_status,
+								      unwrapped_out,
+								      mech_list_mic,
+								      out);
+
+			spnego_free_data(&spnego);
+
+			return nt_status;
+		} else {
+			nt_status = gensec_spnego_create_negTokenInit(gensec_security, spnego_state,
+								      out_mem_ctx, ev, in, out);
+			spnego_state->state_position = SPNEGO_SERVER_START;
+			spnego_state->expected_packet = SPNEGO_NEG_TOKEN_INIT;
+			return nt_status;
+		}
+	}
+
+	case SPNEGO_SERVER_TARG:
+	{
+		NTSTATUS nt_status;
+		bool have_sign = true;
+		bool new_spnego = false;
+
+		if (!in.length) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		len = spnego_read_data(gensec_security, in, &spnego);
+
+		if (len == -1) {
+			DEBUG(1, ("Invalid SPNEGO request:\n"));
+			dump_data(1, in.data, in.length);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/* OK, so it's real SPNEGO, check the packet's the one we expect */
+		if (spnego.type != spnego_state->expected_packet) {
+			DEBUG(1, ("Invalid SPNEGO request: %d, expected %d\n", spnego.type,
+				  spnego_state->expected_packet));
+			dump_data(1, in.data, in.length);
+			spnego_free_data(&spnego);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		spnego_state->num_targs++;
+
+		if (!spnego_state->sub_sec_security) {
+			DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
+			spnego_free_data(&spnego);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		if (spnego_state->needs_mic_check) {
+			if (spnego.negTokenTarg.responseToken.length != 0) {
+				DEBUG(1, ("SPNEGO: Did not setup a mech in NEG_TOKEN_INIT\n"));
+				spnego_free_data(&spnego);
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							&spnego.negTokenTarg.mechListMIC);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->needs_mic_check = false;
+				spnego_state->done_mic_check = true;
+			} else {
+				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+			}
+			goto server_response;
+		}
+
+		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
+					     out_mem_ctx, ev,
+					     spnego.negTokenTarg.responseToken,
+					     &unwrapped_out);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			spnego_state->sub_sec_ready = true;
+		}
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			goto server_response;
+		}
+
+		have_sign = gensec_have_feature(spnego_state->sub_sec_security,
+						GENSEC_FEATURE_SIGN);
+		if (spnego_state->simulate_w2k) {
+			have_sign = false;
+		}
+		new_spnego = gensec_have_feature(spnego_state->sub_sec_security,
+						 GENSEC_FEATURE_NEW_SPNEGO);
+		if (spnego.negTokenTarg.mechListMIC.length > 0) {
+			new_spnego = true;
+		}
+
+		if (have_sign && new_spnego) {
+			spnego_state->needs_mic_check = true;
+			spnego_state->needs_mic_sign = true;
+		}
+
+		if (have_sign && spnego.negTokenTarg.mechListMIC.length > 0) {
+			nt_status = gensec_check_packet(spnego_state->sub_sec_security,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							spnego_state->mech_types.data,
+							spnego_state->mech_types.length,
+							&spnego.negTokenTarg.mechListMIC);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to verify mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+				goto server_response;
+			}
+
+			spnego_state->needs_mic_check = false;
+			spnego_state->done_mic_check = true;
+		}
+
+		if (spnego_state->needs_mic_sign) {
+			nt_status = gensec_sign_packet(spnego_state->sub_sec_security,
+						       out_mem_ctx,
+						       spnego_state->mech_types.data,
+						       spnego_state->mech_types.length,
+						       spnego_state->mech_types.data,
+						       spnego_state->mech_types.length,
+						       &mech_list_mic);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				DEBUG(2,("GENSEC SPNEGO: failed to sign mechListMIC: %s\n",
+					nt_errstr(nt_status)));
+				goto server_response;
+			}
+			spnego_state->needs_mic_sign = false;
+		}
+
+		if (spnego_state->needs_mic_check) {
+			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		}
+
+ server_response:
+		nt_status = gensec_spnego_server_negTokenTarg(spnego_state,
+							      out_mem_ctx,
+							      nt_status,
+							      unwrapped_out,
+							      mech_list_mic,
+							      out);
+
+		spnego_free_data(&spnego);
+
+		return nt_status;
+	}
+
+	default:
+		break;
+	}
+
+	smb_panic(__location__);
+	return NT_STATUS_INTERNAL_ERROR;
+}
+
+
+static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx,
+				     struct tevent_context *ev,
+				     const DATA_BLOB in, DATA_BLOB *out)
+{
+	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
+
+	*out = data_blob_null;
+
+	/* and switch into the state machine */
+
+	switch (spnego_state->state_position) {
+	case SPNEGO_FALLBACK:
+		return gensec_update_ev(spnego_state->sub_sec_security,
+					out_mem_ctx, ev, in, out);
+
+	case SPNEGO_CLIENT_START:
+	case SPNEGO_CLIENT_TARG:
+		return gensec_spnego_update_client(gensec_security, out_mem_ctx,
+						   ev, in, out);
+
+	case SPNEGO_SERVER_START:
+	case SPNEGO_SERVER_TARG:
+		return gensec_spnego_update_server(gensec_security, out_mem_ctx,
+						   ev, in, out);
+
 	case SPNEGO_DONE:
 		/* We should not be called after we are 'done' */
 		return NT_STATUS_INVALID_PARAMETER;
