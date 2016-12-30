@@ -124,183 +124,6 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	return NT_STATUS_OK;
 }
 
-/*
-  wrappers for the spnego_*() functions
-*/
-static NTSTATUS gensec_spnego_unseal_packet(struct gensec_security *gensec_security, 
-					    uint8_t *data, size_t length, 
-					    const uint8_t *whole_pdu, size_t pdu_length, 
-					    const DATA_BLOB *sig)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_unseal_packet(spnego_state->sub_sec_security, 
-				    data, length, 
-				    whole_pdu, pdu_length,
-				    sig); 
-}
-
-static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_security, 
-					   const uint8_t *data, size_t length, 
-					   const uint8_t *whole_pdu, size_t pdu_length, 
-					   const DATA_BLOB *sig)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_check_packet(spnego_state->sub_sec_security, 
-				   data, length, 
-				   whole_pdu, pdu_length,
-				   sig);
-}
-
-static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_security, 
-					  TALLOC_CTX *mem_ctx, 
-					  uint8_t *data, size_t length, 
-					  const uint8_t *whole_pdu, size_t pdu_length, 
-					  DATA_BLOB *sig)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_seal_packet(spnego_state->sub_sec_security, 
-				  mem_ctx, 
-				  data, length, 
-				  whole_pdu, pdu_length,
-				  sig);
-}
-
-static NTSTATUS gensec_spnego_sign_packet(struct gensec_security *gensec_security, 
-					  TALLOC_CTX *mem_ctx, 
-					  const uint8_t *data, size_t length, 
-					  const uint8_t *whole_pdu, size_t pdu_length, 
-					  DATA_BLOB *sig)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_sign_packet(spnego_state->sub_sec_security, 
-				  mem_ctx, 
-				  data, length, 
-				  whole_pdu, pdu_length,
-				  sig);
-}
-
-static NTSTATUS gensec_spnego_wrap(struct gensec_security *gensec_security, 
-				   TALLOC_CTX *mem_ctx, 
-				   const DATA_BLOB *in, 
-				   DATA_BLOB *out)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_wrap: wrong state for wrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_wrap(spnego_state->sub_sec_security, 
-			   mem_ctx, in, out);
-}
-
-static NTSTATUS gensec_spnego_unwrap(struct gensec_security *gensec_security, 
-				     TALLOC_CTX *mem_ctx, 
-				     const DATA_BLOB *in, 
-				     DATA_BLOB *out)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		DEBUG(1, ("gensec_spnego_unwrap: wrong state for unwrap\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_unwrap(spnego_state->sub_sec_security, 
-			     mem_ctx, in, out);
-}
-
-static size_t gensec_spnego_sig_size(struct gensec_security *gensec_security, size_t data_size) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return 0;
-	}
-
-	return gensec_sig_size(spnego_state->sub_sec_security, data_size);
-}
-
-static size_t gensec_spnego_max_input_size(struct gensec_security *gensec_security) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return 0;
-	}
-
-	return gensec_max_input_size(spnego_state->sub_sec_security);
-}
-
-static size_t gensec_spnego_max_wrapped_size(struct gensec_security *gensec_security) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (spnego_state->state_position != SPNEGO_DONE 
-	    && spnego_state->state_position != SPNEGO_FALLBACK) {
-		return 0;
-	}
-
-	return gensec_max_wrapped_size(spnego_state->sub_sec_security);
-}
-
-static NTSTATUS gensec_spnego_session_key(struct gensec_security *gensec_security, 
-					  TALLOC_CTX *mem_ctx,
-					  DATA_BLOB *session_key)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	if (!spnego_state->sub_sec_security) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_session_key(spnego_state->sub_sec_security, 
-				  mem_ctx,
-				  session_key);
-}
-
-static NTSTATUS gensec_spnego_session_info(struct gensec_security *gensec_security,
-					   TALLOC_CTX *mem_ctx,
-					   struct auth_session_info **session_info)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	if (!spnego_state->sub_sec_security) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return gensec_session_info(spnego_state->sub_sec_security, 
-				   mem_ctx,
-				   session_info);
-}
-
 /** Fallback to another GENSEC mechanism, based on magic strings 
  *
  * This is the 'fallback' case, where we don't get SPNEGO, and have to
@@ -1513,24 +1336,23 @@ static NTSTATUS gensec_spnego_update_out(struct gensec_security *gensec_security
 
 	*_out = data_blob_null;
 
-	if (spnego_state->out_frag.length == 0) {
-		return spnego_state->out_status;
-	}
-
-	/*
-	 * There is still more data to be delivered
-	 * to the remote peer.
-	 */
-
 	if (spnego_state->out_frag.length <= spnego_state->out_max_length) {
 		/*
 		 * Fast path, we can deliver everything
 		 */
 
 		*_out = spnego_state->out_frag;
-		talloc_steal(out_mem_ctx, _out->data);
-		spnego_state->out_frag = data_blob_null;
-		return spnego_state->out_status;
+		if (spnego_state->out_frag.length > 0) {
+			talloc_steal(out_mem_ctx, _out->data);
+			spnego_state->out_frag = data_blob_null;
+		}
+
+		if (!NT_STATUS_IS_OK(spnego_state->out_status)) {
+			return spnego_state->out_status;
+		}
+
+		return gensec_child_ready(gensec_security,
+					  spnego_state->sub_sec_security);
 	}
 
 	out = spnego_state->out_frag;
@@ -1595,8 +1417,6 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 	if (NT_STATUS_IS_OK(status)) {
 		bool reset_full = true;
 
-		gensec_security->child_security = spnego_state->sub_sec_security;
-
 		reset_full = !spnego_state->done_mic_check;
 
 		status = gensec_may_reset_crypto(spnego_state->sub_sec_security,
@@ -1614,68 +1434,6 @@ static NTSTATUS gensec_spnego_update_wrapper(struct gensec_security *gensec_secu
 					out);
 }
 
-static void gensec_spnego_want_feature(struct gensec_security *gensec_security,
-				       uint32_t feature)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	gensec_security->want_features |= feature;
-	if (!spnego_state || !spnego_state->sub_sec_security) {
-		return;
-	}
-
-	gensec_want_feature(spnego_state->sub_sec_security,
-			    feature);
-}
-
-static bool gensec_spnego_have_feature(struct gensec_security *gensec_security,
-				       uint32_t feature) 
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
-		/*
-		 * All mechs with sub (child) mechs need to provide DCERPC
-		 * header signing! This is required because the negotiation
-		 * of header signing is done before the authentication
-		 * is completed.
-		 *
-		 * Currently all our backends support DCERPC with:
-		 * GENSEC_FEATURE_SIGN_PKT_HEADER.
-		 */
-		return true;
-	}
-
-	if (!spnego_state->sub_sec_security) {
-		return false;
-	}
-
-	return gensec_have_feature(spnego_state->sub_sec_security, 
-				   feature);
-}
-
-static NTTIME gensec_spnego_expire_time(struct gensec_security *gensec_security)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (!spnego_state->sub_sec_security) {
-		return GENSEC_EXPIRE_TIME_INFINITY;
-	}
-
-	return gensec_expire_time(spnego_state->sub_sec_security);
-}
-
-static const char *gensec_spnego_final_auth_type(struct gensec_security *gensec_security)
-{
-	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-
-	if (!spnego_state->sub_sec_security) {
-		return "NONE";
-	} else {
-		return gensec_final_auth_type(spnego_state->sub_sec_security);
-	}
-}
-
 static const char *gensec_spnego_oids[] = { 
 	GENSEC_OID_SPNEGO,
 	NULL 
@@ -1689,21 +1447,21 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.client_start     = gensec_spnego_client_start,
 	.server_start     = gensec_spnego_server_start,
 	.update 	  = gensec_spnego_update_wrapper,
-	.seal_packet	  = gensec_spnego_seal_packet,
-	.sign_packet	  = gensec_spnego_sign_packet,
-	.sig_size	  = gensec_spnego_sig_size,
-	.max_wrapped_size = gensec_spnego_max_wrapped_size,
-	.max_input_size	  = gensec_spnego_max_input_size,
-	.check_packet	  = gensec_spnego_check_packet,
-	.unseal_packet	  = gensec_spnego_unseal_packet,
-	.wrap             = gensec_spnego_wrap,
-	.unwrap           = gensec_spnego_unwrap,
-	.session_key	  = gensec_spnego_session_key,
-	.session_info     = gensec_spnego_session_info,
-	.want_feature     = gensec_spnego_want_feature,
-	.have_feature     = gensec_spnego_have_feature,
-	.expire_time      = gensec_spnego_expire_time,
-	.final_auth_type  = gensec_spnego_final_auth_type,
+	.seal_packet	  = gensec_child_seal_packet,
+	.sign_packet	  = gensec_child_sign_packet,
+	.sig_size	  = gensec_child_sig_size,
+	.max_wrapped_size = gensec_child_max_wrapped_size,
+	.max_input_size	  = gensec_child_max_input_size,
+	.check_packet	  = gensec_child_check_packet,
+	.unseal_packet	  = gensec_child_unseal_packet,
+	.wrap             = gensec_child_wrap,
+	.unwrap           = gensec_child_unwrap,
+	.session_key	  = gensec_child_session_key,
+	.session_info     = gensec_child_session_info,
+	.want_feature     = gensec_child_want_feature,
+	.have_feature     = gensec_child_have_feature,
+	.expire_time      = gensec_child_expire_time,
+	.final_auth_type  = gensec_child_final_auth_type,
 	.enabled          = true,
 	.priority         = GENSEC_SPNEGO
 };
