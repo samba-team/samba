@@ -109,6 +109,8 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 			src = &(disp_info.info1.entries[j]);
 			dst = &(info[i]);
 
+			*dst = (struct wbint_userinfo) {0};
+
 			dst->acct_name = talloc_strdup(info,
 						       src->account_name.string);
 			if (dst->acct_name == NULL) {
