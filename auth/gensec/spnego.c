@@ -212,15 +212,24 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 						 struct spnego_state *spnego_state, 
 						 TALLOC_CTX *out_mem_ctx, 
 						 struct tevent_context *ev,
-						 const char * const *mechType,
-						 const DATA_BLOB unwrapped_in, DATA_BLOB *unwrapped_out) 
+						 struct spnego_data *spnego_in,
+						 DATA_BLOB *unwrapped_out)
 {
 	int i;
 	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
+	const char * const *mechType = NULL;
+	DATA_BLOB unwrapped_in = data_blob_null;
 	bool ok;
+	const struct gensec_security_ops_wrapper *all_sec = NULL;
 
-	const struct gensec_security_ops_wrapper *all_sec
-		= gensec_security_by_oid_list(gensec_security, 
+	if (spnego_in->type != SPNEGO_NEG_TOKEN_INIT) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	mechType = spnego_in->negTokenInit.mechTypes;
+	unwrapped_in = spnego_in->negTokenInit.mechToken;
+
+	all_sec = gensec_security_by_oid_list(gensec_security,
 					      out_mem_ctx, 
 					      mechType,
 					      GENSEC_OID_SPNEGO);
@@ -310,6 +319,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	/* Having tried any optimistic token from the client (if we
 	 * were the server), if we didn't get anywhere, walk our list
 	 * in our preference order */
+	unwrapped_in = data_blob_null;
 
 	if (!spnego_state->sub_sec_security) {
 		for (i=0; all_sec && all_sec[i].op; i++) {
@@ -336,7 +346,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  ev,
-						  data_blob_null,
+						  unwrapped_in,
 						  unwrapped_out);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				spnego_state->sub_sec_ready = true;
@@ -688,8 +698,7 @@ static NTSTATUS gensec_spnego_update_client(struct gensec_security *gensec_secur
 							     spnego_state,
 							     out_mem_ctx, 
 							     ev,
-							     spnego.negTokenInit.mechTypes,
-							     spnego.negTokenInit.mechToken, 
+							     &spnego,
 							     &unwrapped_out);
 
 		if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) && !NT_STATUS_IS_OK(nt_status)) {
@@ -1105,8 +1114,7 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 							     spnego_state,
 							     out_mem_ctx,
 							     ev,
-							     spnego.negTokenInit.mechTypes,
-							     spnego.negTokenInit.mechToken,
+							     &spnego,
 							     &unwrapped_out);
 
 		if (spnego_state->simulate_w2k) {
