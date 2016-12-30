@@ -215,7 +215,6 @@ bld.SAMBA3_BINARY('winbindd',
                  wb_getgrsid.c
                  wb_query_user_list.c
                  wb_query_group_list.c
-                 wb_fill_pwent.c
                  wb_next_pwent.c
                  wb_next_grent.c
                  wb_dsgetdcname.c
