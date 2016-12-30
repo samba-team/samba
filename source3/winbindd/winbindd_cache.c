@@ -1020,11 +1020,14 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status,
 	centry = centry_start(domain, status);
 	if (!centry)
 		return;
+	centry_put_string(centry, info->domain_name);
 	centry_put_string(centry, info->acct_name);
 	centry_put_string(centry, info->full_name);
 	centry_put_string(centry, info->homedir);
 	centry_put_string(centry, info->shell);
+	centry_put_uint32(centry, info->uid);
 	centry_put_uint32(centry, info->primary_gid);
+	centry_put_string(centry, info->primary_group_name);
 	centry_put_sid(centry, &info->user_sid);
 	centry_put_sid(centry, &info->group_sid);
 	centry_end(centry, "U/%s", sid_to_fstring(sid_string,
@@ -1483,10 +1486,14 @@ do_fetch_cache:
 		smb_panic_fn("query_user_list out of memory");
 	}
 	for (i=0; i<(*num_entries); i++) {
+		(*info)[i].domain_name = centry_string(centry, mem_ctx);
 		(*info)[i].acct_name = centry_string(centry, mem_ctx);
 		(*info)[i].full_name = centry_string(centry, mem_ctx);
 		(*info)[i].homedir = centry_string(centry, mem_ctx);
 		(*info)[i].shell = centry_string(centry, mem_ctx);
+		(*info)[i].uid = centry_uint32(centry);
+		(*info)[i].primary_gid = centry_uint32(centry);
+		(*info)[i].primary_group_name = centry_string(centry, mem_ctx);
 		centry_sid(centry, &(*info)[i].user_sid);
 		centry_sid(centry, &(*info)[i].group_sid);
 	}
@@ -1576,10 +1583,14 @@ do_query:
 		goto skip_save;
 	centry_put_uint32(centry, *num_entries);
 	for (i=0; i<(*num_entries); i++) {
+		centry_put_string(centry, (*info)[i].domain_name);
 		centry_put_string(centry, (*info)[i].acct_name);
 		centry_put_string(centry, (*info)[i].full_name);
 		centry_put_string(centry, (*info)[i].homedir);
 		centry_put_string(centry, (*info)[i].shell);
+		centry_put_uint32(centry, (*info)[i].uid);
+		centry_put_uint32(centry, (*info)[i].primary_gid);
+		centry_put_string(centry, (*info)[i].primary_group_name);
 		centry_put_sid(centry, &(*info)[i].user_sid);
 		centry_put_sid(centry, &(*info)[i].group_sid);
 		if (domain->backend && domain->backend->consistent) {
@@ -2308,11 +2319,14 @@ NTSTATUS wcache_query_user(struct winbindd_domain *domain,
 	   and the rest of the data doesn't matter */
 	status = centry->status;
 	if (NT_STATUS_IS_OK(status)) {
+		info->domain_name = centry_string(centry, mem_ctx);
 		info->acct_name = centry_string(centry, mem_ctx);
 		info->full_name = centry_string(centry, mem_ctx);
 		info->homedir = centry_string(centry, mem_ctx);
 		info->shell = centry_string(centry, mem_ctx);
+		info->uid = centry_uint32(centry);
 		info->primary_gid = centry_uint32(centry);
+		info->primary_group_name = centry_string(centry, mem_ctx);
 		centry_sid(centry, &info->user_sid);
 		centry_sid(centry, &info->group_sid);
 	}
@@ -3762,7 +3776,10 @@ static int validate_u(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	(void)centry_string(centry, mem_ctx);
 	(void)centry_string(centry, mem_ctx);
 	(void)centry_string(centry, mem_ctx);
+	(void)centry_string(centry, mem_ctx);
 	(void)centry_uint32(centry);
+	(void)centry_uint32(centry);
+	(void)centry_string(centry, mem_ctx);
 	(void)centry_sid(centry, &sid);
 	(void)centry_sid(centry, &sid);
 
@@ -3864,6 +3881,10 @@ static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_string(centry, mem_ctx);
+		(void)centry_uint32(centry);
+		(void)centry_uint32(centry);
 		(void)centry_string(centry, mem_ctx);
 		(void)centry_sid(centry, &sid);
 		(void)centry_sid(centry, &sid);
