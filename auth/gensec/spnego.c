@@ -1060,9 +1060,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			nt_status = NT_STATUS_OK;
 		}
 
-		if (spnego_state->sub_sec_ready &&
-		    !spnego_state->done_mic_check)
-		{
+		if (!spnego_state->done_mic_check) {
 			bool have_sign = true;
 			bool new_spnego = false;
 
