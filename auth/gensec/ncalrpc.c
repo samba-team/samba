@@ -21,6 +21,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/util/tevent_ntstatus.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h"
@@ -71,11 +73,52 @@ static NTSTATUS gensec_ncalrpc_server_start(struct gensec_security *gensec_secur
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS gensec_ncalrpc_update(struct gensec_security *gensec_security,
-				      TALLOC_CTX *mem_ctx,
-				      struct tevent_context *ev,
-				      const DATA_BLOB in,
-				      DATA_BLOB *out)
+struct gensec_ncalrpc_update_state {
+	NTSTATUS status;
+	DATA_BLOB out;
+};
+
+static NTSTATUS gensec_ncalrpc_update_internal(
+				struct gensec_security *gensec_security,
+				TALLOC_CTX *mem_ctx,
+				const DATA_BLOB in,
+				DATA_BLOB *out);
+
+static struct tevent_req *gensec_ncalrpc_update_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct gensec_security *gensec_security,
+					const DATA_BLOB in)
+{
+	struct tevent_req *req;
+	struct gensec_ncalrpc_update_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct gensec_ncalrpc_update_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = gensec_ncalrpc_update_internal(gensec_security,
+						state, in,
+						&state->out);
+	state->status = status;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		status = NT_STATUS_OK;
+	}
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS gensec_ncalrpc_update_internal(
+				struct gensec_security *gensec_security,
+				TALLOC_CTX *mem_ctx,
+				const DATA_BLOB in,
+				DATA_BLOB *out)
 {
 	struct gensec_ncalrpc_state *state =
 		talloc_get_type_abort(gensec_security->private_data,
@@ -197,6 +240,29 @@ static NTSTATUS gensec_ncalrpc_update(struct gensec_security *gensec_security,
 	return NT_STATUS_INTERNAL_ERROR;
 }
 
+static NTSTATUS gensec_ncalrpc_update_recv(struct tevent_req *req,
+					   TALLOC_CTX *out_mem_ctx,
+					   DATA_BLOB *out)
+{
+	struct gensec_ncalrpc_update_state *state =
+		tevent_req_data(req,
+		struct gensec_ncalrpc_update_state);
+	NTSTATUS status;
+
+	*out = data_blob_null;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	status = state->status;
+	talloc_steal(out_mem_ctx, state->out.data);
+	*out = state->out;
+	tevent_req_received(req);
+	return status;
+}
+
 static NTSTATUS gensec_ncalrpc_session_info(struct gensec_security *gensec_security,
 					    TALLOC_CTX *mem_ctx,
 					    struct auth_session_info **psession_info)
@@ -264,7 +330,8 @@ static const struct gensec_security_ops gensec_ncalrpc_security_ops = {
 	.auth_type      = DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM,
 	.client_start   = gensec_ncalrpc_client_start,
 	.server_start   = gensec_ncalrpc_server_start,
-	.update         = gensec_ncalrpc_update,
+	.update_send    = gensec_ncalrpc_update_send,
+	.update_recv    = gensec_ncalrpc_update_recv,
 	.session_info   = gensec_ncalrpc_session_info,
 	.have_feature   = gensec_ncalrpc_have_feature,
 	.enabled        = true,
