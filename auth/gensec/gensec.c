@@ -330,6 +330,10 @@ _PUBLIC_ NTSTATUS gensec_update_ev(struct gensec_security *gensec_security,
 	struct tevent_req *subreq = NULL;
 	bool ok;
 
+	if (gensec_security->child_security != NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (ops->update_send == NULL) {
 
 		if (ev == NULL) {
@@ -479,6 +483,11 @@ _PUBLIC_ struct tevent_req *gensec_update_send(TALLOC_CTX *mem_ctx,
 
 	state->ops = gensec_security->ops;
 	state->gensec_security = gensec_security;
+
+	if (gensec_security->child_security != NULL) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
 
 	if (state->ops->update_send == NULL) {
 		state->in = in;

@@ -545,6 +545,25 @@ _PUBLIC_ const char **gensec_security_oids(struct gensec_security *gensec_securi
 	return gensec_security_oids_from_ops(gensec_security, mem_ctx, ops, skip);
 }
 
+static int gensec_security_destructor(struct gensec_security *gctx)
+{
+	if (gctx->parent_security != NULL) {
+		if (gctx->parent_security->child_security == gctx) {
+			gctx->parent_security->child_security = NULL;
+		}
+		gctx->parent_security = NULL;
+	}
+
+	if (gctx->child_security != NULL) {
+		if (gctx->child_security->parent_security == gctx) {
+			gctx->child_security->parent_security = NULL;
+		}
+		gctx->child_security = NULL;
+	}
+
+	return 0;
+}
+
 /**
   Start the GENSEC system, returning a context pointer.
   @param mem_ctx The parent TALLOC memory context.
@@ -571,6 +590,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	 * from it */
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, auth_context);
 
+	talloc_set_destructor((*gensec_security), gensec_security_destructor);
 	return NT_STATUS_OK;
 }
 
@@ -586,6 +606,10 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 				 struct gensec_security *parent,
 				 struct gensec_security **gensec_security)
 {
+	if (parent->child_security != NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
@@ -601,6 +625,23 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 
+	talloc_set_destructor((*gensec_security), gensec_security_destructor);
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS gensec_child_ready(struct gensec_security *parent,
+				     struct gensec_security *child)
+{
+	if (parent->child_security != NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (child->parent_security != NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	parent->child_security = child;
+	child->parent_security = parent;
 	return NT_STATUS_OK;
 }
 
@@ -670,6 +711,14 @@ static NTSTATUS gensec_start_mech(struct gensec_security *gensec_security)
 	talloc_unlink(gensec_security, gensec_security->private_data);
 	gensec_security->private_data = NULL;
 
+	if (gensec_security->child_security != NULL) {
+		/*
+		 * The talloc_unlink(.., gensec_security->private_data)
+		 * should have cleared this via
+		 * gensec_security_destructor().
+		 */
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if (gensec_security->credentials) {
 		const char *forced_mech = cli_credentials_get_forced_sasl_mech(gensec_security->credentials);

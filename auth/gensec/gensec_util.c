@@ -110,3 +110,199 @@ NTSTATUS gensec_magic_check_krb5_oid(struct gensec_security *unused,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
+
+void gensec_child_want_feature(struct gensec_security *gensec_security,
+			       uint32_t feature)
+{
+	struct gensec_security *child_security = gensec_security->child_security;
+
+	gensec_security->want_features |= feature;
+	if (child_security == NULL) {
+		return;
+	}
+	gensec_want_feature(child_security, feature);
+}
+
+bool gensec_child_have_feature(struct gensec_security *gensec_security,
+			       uint32_t feature)
+{
+	struct gensec_security *child_security = gensec_security->child_security;
+
+	if (feature & GENSEC_FEATURE_SIGN_PKT_HEADER) {
+		/*
+		 * All mechs with sub (child) mechs need to provide DCERPC
+		 * header signing! This is required because the negotiation
+		 * of header signing is done before the authentication
+		 * is completed.
+		 */
+		return true;
+	}
+
+	if (child_security == NULL) {
+		return false;
+	}
+
+	return gensec_have_feature(child_security, feature);
+}
+
+NTSTATUS gensec_child_unseal_packet(struct gensec_security *gensec_security,
+				    uint8_t *data, size_t length,
+				    const uint8_t *whole_pdu, size_t pdu_length,
+				    const DATA_BLOB *sig)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_unseal_packet(gensec_security->child_security,
+				    data, length,
+				    whole_pdu, pdu_length,
+				    sig);
+}
+
+NTSTATUS gensec_child_check_packet(struct gensec_security *gensec_security,
+				   const uint8_t *data, size_t length,
+				   const uint8_t *whole_pdu, size_t pdu_length,
+				   const DATA_BLOB *sig)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_check_packet(gensec_security->child_security,
+				   data, length,
+				   whole_pdu, pdu_length,
+				   sig);
+}
+
+NTSTATUS gensec_child_seal_packet(struct gensec_security *gensec_security,
+				  TALLOC_CTX *mem_ctx,
+				  uint8_t *data, size_t length,
+				  const uint8_t *whole_pdu, size_t pdu_length,
+				  DATA_BLOB *sig)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_seal_packet(gensec_security->child_security,
+				  mem_ctx,
+				  data, length,
+				  whole_pdu, pdu_length,
+				  sig);
+}
+
+NTSTATUS gensec_child_sign_packet(struct gensec_security *gensec_security,
+				  TALLOC_CTX *mem_ctx,
+				  const uint8_t *data, size_t length,
+				  const uint8_t *whole_pdu, size_t pdu_length,
+				  DATA_BLOB *sig)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_sign_packet(gensec_security->child_security,
+				  mem_ctx,
+				  data, length,
+				  whole_pdu, pdu_length,
+				  sig);
+}
+
+NTSTATUS gensec_child_wrap(struct gensec_security *gensec_security,
+			   TALLOC_CTX *mem_ctx,
+			   const DATA_BLOB *in,
+			   DATA_BLOB *out)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_wrap(gensec_security->child_security,
+			   mem_ctx, in, out);
+}
+
+NTSTATUS gensec_child_unwrap(struct gensec_security *gensec_security,
+			     TALLOC_CTX *mem_ctx,
+			     const DATA_BLOB *in,
+			     DATA_BLOB *out)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_unwrap(gensec_security->child_security,
+			     mem_ctx, in, out);
+}
+
+size_t gensec_child_sig_size(struct gensec_security *gensec_security,
+			     size_t data_size)
+{
+	if (gensec_security->child_security == NULL) {
+		return 0;
+	}
+
+	return gensec_sig_size(gensec_security->child_security, data_size);
+}
+
+size_t gensec_child_max_input_size(struct gensec_security *gensec_security)
+{
+	if (gensec_security->child_security == NULL) {
+		return 0;
+	}
+
+	return gensec_max_input_size(gensec_security->child_security);
+}
+
+size_t gensec_child_max_wrapped_size(struct gensec_security *gensec_security)
+{
+	if (gensec_security->child_security == NULL) {
+		return 0;
+	}
+
+	return gensec_max_wrapped_size(gensec_security->child_security);
+}
+
+NTSTATUS gensec_child_session_key(struct gensec_security *gensec_security,
+				  TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *session_key)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_session_key(gensec_security->child_security,
+				  mem_ctx,
+				  session_key);
+}
+
+NTSTATUS gensec_child_session_info(struct gensec_security *gensec_security,
+				   TALLOC_CTX *mem_ctx,
+				   struct auth_session_info **session_info)
+{
+	if (gensec_security->child_security == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return gensec_session_info(gensec_security->child_security,
+				   mem_ctx,
+				   session_info);
+}
+
+NTTIME gensec_child_expire_time(struct gensec_security *gensec_security)
+{
+	if (gensec_security->child_security == NULL) {
+		return GENSEC_EXPIRE_TIME_INFINITY;
+	}
+
+	return gensec_expire_time(gensec_security->child_security);
+}
+
+const char *gensec_child_final_auth_type(struct gensec_security *gensec_security)
+{
+	if (gensec_security->child_security == NULL) {
+		return "NONE";
+	}
+
+	return gensec_final_auth_type(gensec_security->child_security);
+}
