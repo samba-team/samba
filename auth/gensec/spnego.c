@@ -1213,15 +1213,19 @@ static NTSTATUS gensec_spnego_update_server(struct gensec_security *gensec_secur
 			goto server_response;
 		}
 
-		nt_status = gensec_update_ev(spnego_state->sub_sec_security,
-					     out_mem_ctx, ev,
-					     spnego.negTokenTarg.responseToken,
-					     &unwrapped_out);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			spnego_state->sub_sec_ready = true;
-		}
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			goto server_response;
+		if (!spnego_state->sub_sec_ready) {
+			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
+						     out_mem_ctx, ev,
+						     spnego.negTokenTarg.responseToken,
+						     &unwrapped_out);
+			if (NT_STATUS_IS_OK(nt_status)) {
+				spnego_state->sub_sec_ready = true;
+			}
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				goto server_response;
+			}
+		} else {
+			nt_status = NT_STATUS_OK;
 		}
 
 		have_sign = gensec_have_feature(spnego_state->sub_sec_security,
