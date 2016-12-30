@@ -91,7 +91,7 @@ static NTSTATUS gensec_spnego_client_start(struct gensec_security *gensec_securi
 	spnego_state->state_position = SPNEGO_CLIENT_START;
 	spnego_state->sub_sec_security = NULL;
 	spnego_state->no_response_expected = false;
-	spnego_state->mech_types = data_blob(NULL, 0);
+	spnego_state->mech_types = data_blob_null;
 	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
 	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 
@@ -115,7 +115,7 @@ static NTSTATUS gensec_spnego_server_start(struct gensec_security *gensec_securi
 	spnego_state->state_position = SPNEGO_SERVER_START;
 	spnego_state->sub_sec_security = NULL;
 	spnego_state->no_response_expected = false;
-	spnego_state->mech_types = data_blob(NULL, 0);
+	spnego_state->mech_types = data_blob_null;
 	spnego_state->out_max_length = gensec_max_update_size(gensec_security);
 	spnego_state->out_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 
@@ -212,7 +212,6 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 {
 	int i;
 	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
-	DATA_BLOB null_data_blob = data_blob(NULL,0);
 	bool ok;
 
 	const struct gensec_security_ops_wrapper *all_sec
@@ -323,7 +322,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  ev,
-						  null_data_blob, 
+						  data_blob_null,
 						  unwrapped_out);
 
 			/* it is likely that a NULL input token will
@@ -383,7 +382,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		 * time */
 
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER)) {
-			*unwrapped_out = data_blob(NULL, 0);
+			*unwrapped_out = data_blob_null;
 			nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 		}
 
@@ -426,9 +425,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 {
 	int i;
 	NTSTATUS nt_status = NT_STATUS_INVALID_PARAMETER;
-	DATA_BLOB null_data_blob = data_blob(NULL,0);
 	const char **mechTypes = NULL;
-	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
+	DATA_BLOB unwrapped_out = data_blob_null;
 	const struct gensec_security_ops_wrapper *all_sec;
 
 	mechTypes = gensec_security_oids(gensec_security, 
@@ -463,7 +461,7 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			nt_status = gensec_update_ev(spnego_state->sub_sec_security,
 						  out_mem_ctx, 
 						  ev,
-						  null_data_blob,
+						  data_blob_null,
 						  &unwrapped_out);
 
 			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED) 
@@ -517,14 +515,14 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 
 		/* List the remaining mechs as options */
 		spnego_out.negTokenInit.mechTypes = send_mech_types;
-		spnego_out.negTokenInit.reqFlags = null_data_blob;
+		spnego_out.negTokenInit.reqFlags = data_blob_null;
 		spnego_out.negTokenInit.reqFlagsPadding = 0;
 
 		if (spnego_state->state_position == SPNEGO_SERVER_START) {
 			spnego_out.negTokenInit.mechListMIC
 				= data_blob_string_const(ADS_IGNORE_PRINCIPAL);
 		} else {
-			spnego_out.negTokenInit.mechListMIC = null_data_blob;
+			spnego_out.negTokenInit.mechListMIC = data_blob_null;
 		}
 
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
@@ -564,7 +562,6 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_st
 						  DATA_BLOB *out)
 {
 	struct spnego_data spnego_out;
-	DATA_BLOB null_data_blob = data_blob(NULL, 0);
 
 	/* compose reply */
 	spnego_out.type = SPNEGO_NEG_TOKEN_TARG;
@@ -589,7 +586,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct spnego_state *spnego_st
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
 		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
-		spnego_out.negTokenTarg.mechListMIC = null_data_blob;
+		spnego_out.negTokenTarg.mechListMIC = data_blob_null;
 		DEBUG(2, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
 		spnego_state->state_position = SPNEGO_DONE;
 	}
@@ -611,15 +608,14 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 				     const DATA_BLOB in, DATA_BLOB *out) 
 {
 	struct spnego_state *spnego_state = (struct spnego_state *)gensec_security->private_data;
-	DATA_BLOB null_data_blob = data_blob(NULL, 0);
-	DATA_BLOB mech_list_mic = data_blob(NULL, 0);
-	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
+	DATA_BLOB mech_list_mic = data_blob_null;
+	DATA_BLOB unwrapped_out = data_blob_null;
 	struct spnego_data spnego_out;
 	struct spnego_data spnego;
 
 	ssize_t len;
 
-	*out = data_blob(NULL, 0);
+	*out = data_blob_null;
 
 	if (!out_mem_ctx) {
 		out_mem_ctx = spnego_state;
@@ -750,9 +746,9 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		/* compose reply */
 		spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 		spnego_out.negTokenInit.mechTypes = my_mechs;
-		spnego_out.negTokenInit.reqFlags = null_data_blob;
+		spnego_out.negTokenInit.reqFlags = data_blob_null;
 		spnego_out.negTokenInit.reqFlagsPadding = 0;
-		spnego_out.negTokenInit.mechListMIC = null_data_blob;
+		spnego_out.negTokenInit.mechListMIC = data_blob_null;
 		spnego_out.negTokenInit.mechToken = unwrapped_out;
 
 		if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
@@ -1222,7 +1218,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		} else {
 
 			/* all done - server has accepted, and we agree */
-			*out = null_data_blob;
+			*out = data_blob_null;
 
 			if (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
 				/* unless of course it did not accept */
