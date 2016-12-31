@@ -1229,17 +1229,13 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 {
 	krb5_error_code ret;
 	krb5_kt_cursor cursor;
-	krb5_kt_cursor zero_csr;
 	krb5_keytab_entry kt_entry;
-	krb5_keytab_entry zero_kt_entry;
 	char *ktprinc = NULL;
 	krb5_kvno old_kvno = kvno - 1;
 	TALLOC_CTX *tmp_ctx;
 
 	ZERO_STRUCT(cursor);
-	ZERO_STRUCT(zero_csr);
 	ZERO_STRUCT(kt_entry);
-	ZERO_STRUCT(zero_kt_entry);
 
 	ret = krb5_kt_start_seq_get(context, keytab, &cursor);
 	if (ret == KRB5_KT_END || ret == ENOENT ) {
@@ -1374,10 +1370,10 @@ krb5_error_code smb_krb5_kt_seek_and_delete_old_entries(krb5_context context,
 
 out:
 	talloc_free(tmp_ctx);
-	if (memcmp(&zero_kt_entry, &kt_entry, sizeof(krb5_keytab_entry))) {
+	if (!all_zero((uint8_t *)&kt_entry, sizeof(kt_entry))) {
 		smb_krb5_kt_free_entry(context, &kt_entry);
 	}
-	if (memcmp(&cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) {
+	if (!all_zero((uint8_t *)&cursor, sizeof(cursor))) {
 		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
 	return ret;
