@@ -932,7 +932,6 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	NTSTATUS status;
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
-	static const struct netr_Authenticator auth_zero;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
@@ -1032,7 +1031,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
 					 "LogonSamLogon invalid  *r.out.authoritative");
 		torture_assert(tctx,
-			       memcmp(&auth2, &auth_zero, sizeof(auth2)) == 0,
+			       all_zero((uint8_t *)&auth2, sizeof(auth2)),
 			       "Return authenticator non zero");
 	}
 
@@ -1070,7 +1069,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 			"LogonSamLogon expected INVALID_PARAMETER");
 
 		torture_assert(tctx,
-			       memcmp(&auth2, &auth_zero, sizeof(auth2)) == 0,
+			       all_zero((uint8_t *)&auth2, sizeof(auth2)),
 			       "Return authenticator non zero");
 		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
 					 "LogonSamLogon invalid  *r.out.authoritative");
@@ -1091,7 +1090,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 			"LogonSamLogon expected INVALID_PARAMETER");
 
 		torture_assert(tctx,
-			       memcmp(&auth2, &auth_zero, sizeof(auth2)) == 0,
+			       all_zero((uint8_t *)&auth2, sizeof(auth2)),
 			       "Return authenticator non zero");
 		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
 					 "LogonSamLogon invalid  *r.out.authoritative");
