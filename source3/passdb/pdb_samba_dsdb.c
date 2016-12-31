@@ -443,10 +443,10 @@ static int pdb_samba_dsdb_replace_by_sam(struct pdb_samba_dsdb_state *state,
 				invalid_history = true;
 			} else {
 				unsigned int i;
-				static const uint8_t zeros[16];
 				/* Parse the history into the correct format */
 				for (i = 0; i < current_hist_len; i++) {
-					if (memcmp(&history[i*PW_HISTORY_ENTRY_LEN], zeros, 16) != 0) {
+					if (!all_zero(&history[i*PW_HISTORY_ENTRY_LEN],
+						      16)) {
 						/* If the history is in the old format, with a salted hash, then we can't migrate it to AD format */
 						invalid_history = true;
 						break;
