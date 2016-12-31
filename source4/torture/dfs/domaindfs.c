@@ -307,9 +307,6 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 	const char* str;
 	struct dfs_GetDFSReferral r, r2, r3;
 	struct dfs_referral_resp resp, resp2, resp3;
-	uint8_t zeros[16];
-
-	memset(zeros, 0, sizeof(zeros));
 
 	r.in.req.max_referral_level = 3;
 	r.in.req.servername = "";
@@ -394,8 +391,8 @@ static bool test_getsysvolreferral(struct torture_context *tctx,
 				 talloc_asprintf(tctx,
 					"Not expected version for referral entry 0 got %d expected 4",
 					resp3.referral_entries[0].version));
-	torture_assert_int_equal(tctx, memcmp(resp3.referral_entries[0].referral.v3.service_site_guid.value, zeros, 16), 0,
-				 talloc_asprintf(tctx,
+	torture_assert(tctx, all_zero(resp3.referral_entries[0].referral.v3.service_site_guid.value, 16),
+		       talloc_asprintf(tctx,
 					"Service_site_guid is not NULL as expected"));
 #if 0
 	/* Shouldn't be needed anymore*/
