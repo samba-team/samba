@@ -283,13 +283,9 @@ static krb5_error_code fill_mem_keytab_from_secrets(krb5_context krbctx,
 		}
 	}
 
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&kt_cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && *keytab) {
-			krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
-		}
-        }
+	if (!all_zero((uint8_t *)&kt_cursor, sizeof(kt_cursor)) && *keytab) {
+		krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
+	}
 
 	/* keytab is not up to date, fill it up */
 
@@ -347,13 +343,9 @@ out:
 	SAFE_FREE(pwd);
 	SAFE_FREE(pwd_old);
 
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&kt_cursor, &zero_csr, sizeof(krb5_kt_cursor)) != 0) && *keytab) {
-			krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
-		}
-        }
+	if (!all_zero((uint8_t *)&kt_cursor, sizeof(kt_cursor)) && *keytab) {
+		krb5_kt_end_seq_get(krbctx, *keytab, &kt_cursor);
+	}
 
 	if (princ) {
 		krb5_free_principal(krbctx, princ);
@@ -495,22 +487,12 @@ out:
 
 	TALLOC_FREE(entry_princ_s);
 
-	{
-		krb5_keytab_entry zero_kt_entry;
-		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry,
-			   sizeof(krb5_keytab_entry))) {
-			smb_krb5_kt_free_entry(krbctx, &kt_entry);
-		}
+	if (!all_zero((uint8_t *)&kt_entry, sizeof(kt_entry))) {
+		smb_krb5_kt_free_entry(krbctx, &kt_entry);
 	}
 
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&kt_cursor, &zero_csr,
-			    sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(krbctx, keytab, &kt_cursor);
-		}
+	if (!all_zero((uint8_t *)&kt_cursor, sizeof(kt_cursor)) && keytab) {
+		krb5_kt_end_seq_get(krbctx, keytab, &kt_cursor);
 	}
 
 	if (keytab) {
