@@ -512,7 +512,6 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 						     union netr_Validation *validation,
 						     bool do_encrypt)
 {
-	static const char zeros[16];
 	struct netr_SamBaseInfo *base = NULL;
 
 	if (validation == NULL) {
@@ -549,8 +548,7 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 		/* they aren't encrypted! */
 	} else if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-		if (memcmp(base->key.key, zeros,
-			   sizeof(base->key.key)) != 0) {
+		if (!all_zero(base->key.key, sizeof(base->key.key))) {
 			if (do_encrypt) {
 				netlogon_creds_aes_encrypt(creds,
 					    base->key.key,
@@ -562,8 +560,8 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 			}
 		}
 
-		if (memcmp(base->LMSessKey.key, zeros,
-			   sizeof(base->LMSessKey.key)) != 0) {
+		if (!all_zero(base->LMSessKey.key,
+			      sizeof(base->LMSessKey.key))) {
 			if (do_encrypt) {
 				netlogon_creds_aes_encrypt(creds,
 					    base->LMSessKey.key,
@@ -577,23 +575,22 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 		}
 	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-		if (memcmp(base->key.key, zeros,
-			   sizeof(base->key.key)) != 0) {
+		if (!all_zero(base->key.key, sizeof(base->key.key))) {
 			netlogon_creds_arcfour_crypt(creds,
 					    base->key.key,
 					    sizeof(base->key.key));
 		}
 
-		if (memcmp(base->LMSessKey.key, zeros,
-			   sizeof(base->LMSessKey.key)) != 0) {
+		if (!all_zero(base->LMSessKey.key,
+			      sizeof(base->LMSessKey.key))) {
 			netlogon_creds_arcfour_crypt(creds,
 					    base->LMSessKey.key,
 					    sizeof(base->LMSessKey.key));
 		}
 	} else {
 		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
-		if (memcmp(base->LMSessKey.key, zeros,
-			   sizeof(base->LMSessKey.key)) != 0) {
+		if (!all_zero(base->LMSessKey.key,
+			      sizeof(base->LMSessKey.key))) {
 			if (do_encrypt) {
 				netlogon_creds_des_encrypt_LMKey(creds,
 						&base->LMSessKey);
@@ -626,8 +623,6 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 						union netr_LogonLevel *logon,
 						bool do_encrypt)
 {
-	static const char zeros[16];
-
 	if (logon == NULL) {
 		return;
 	}
@@ -645,7 +640,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 			uint8_t *h;
 
 			h = logon->password->lmpassword.hash;
-			if (memcmp(h, zeros, 16) != 0) {
+			if (!all_zero(h, 16)) {
 				if (do_encrypt) {
 					netlogon_creds_aes_encrypt(creds, h, 16);
 				} else {
@@ -654,7 +649,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 			}
 
 			h = logon->password->ntpassword.hash;
-			if (memcmp(h, zeros, 16) != 0) {
+			if (!all_zero(h, 16)) {
 				if (do_encrypt) {
 					netlogon_creds_aes_encrypt(creds, h, 16);
 				} else {
@@ -665,19 +660,19 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 			uint8_t *h;
 
 			h = logon->password->lmpassword.hash;
-			if (memcmp(h, zeros, 16) != 0) {
+			if (!all_zero(h, 16)) {
 				netlogon_creds_arcfour_crypt(creds, h, 16);
 			}
 
 			h = logon->password->ntpassword.hash;
-			if (memcmp(h, zeros, 16) != 0) {
+			if (!all_zero(h, 16)) {
 				netlogon_creds_arcfour_crypt(creds, h, 16);
 			}
 		} else {
 			struct samr_Password *p;
 
 			p = &logon->password->lmpassword;
-			if (memcmp(p->hash, zeros, 16) != 0) {
+			if (!all_zero(p->hash, 16)) {
 				if (do_encrypt) {
 					netlogon_creds_des_encrypt(creds, p);
 				} else {
@@ -685,7 +680,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 				}
 			}
 			p = &logon->password->ntpassword;
-			if (memcmp(p->hash, zeros, 16) != 0) {
+			if (!all_zero(p->hash, 16)) {
 				if (do_encrypt) {
 					netlogon_creds_des_encrypt(creds, p);
 				} else {
