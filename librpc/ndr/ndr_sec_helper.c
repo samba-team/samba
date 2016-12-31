@@ -128,13 +128,9 @@ size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags)
 
 size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags)
 {
-	struct dom_sid zero_sid;
-
 	if (!sid) return 0;
 
-	ZERO_STRUCT(zero_sid);
-
-	if (memcmp(&zero_sid, sid, sizeof(zero_sid)) == 0) {
+	if (all_zero((const uint8_t *)sid, sizeof(struct dom_sid))) {
 		return 0;
 	}
 
@@ -287,8 +283,6 @@ enum ndr_err_code ndr_pull_dom_sid0(struct ndr_pull *ndr, int ndr_flags, struct 
 */
 enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *sid)
 {
-	struct dom_sid zero_sid;
-
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return NDR_ERR_SUCCESS;
 	}
@@ -297,9 +291,7 @@ enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const s
 		return NDR_ERR_SUCCESS;
 	}
 
-	ZERO_STRUCT(zero_sid);
-
-	if (memcmp(&zero_sid, sid, sizeof(zero_sid)) == 0) {
+	if (all_zero((const uint8_t *)sid, sizeof(struct dom_sid))) {
 		return NDR_ERR_SUCCESS;
 	}
 
