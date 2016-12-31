@@ -44,15 +44,12 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	struct netr_DELTA_USER *user = delta->delta_union.user;
 	struct samr_Password lm_hash;
 	struct samr_Password nt_hash;
-	unsigned char zero_buf[16];
-
-	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Note that win2000 may send us all zeros
 	 * for the hashes if it doesn't
 	 * think this channel is secure enough. */
 	if (user->lm_password_present) {
-		if (memcmp(user->lmpassword.hash, zero_buf, 16) != 0) {
+		if (!all_zero(user->lmpassword.hash, 16)) {
 			sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
 		} else {
 			memset(lm_hash.hash, '\0', sizeof(lm_hash.hash));
@@ -61,7 +58,7 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 	}
 
 	if (user->nt_password_present) {
-		if (memcmp(user->ntpassword.hash, zero_buf, 16) != 0) {
+		if (!all_zero(user->ntpassword.hash, 16)) {
 			sam_rid_crypt(rid, user->ntpassword.hash, nt_hash.hash, 0);
 		} else {
 			memset(nt_hash.hash, '\0', sizeof(nt_hash.hash));
@@ -90,8 +87,8 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		 * for the hashes if it doesn't
 		 * think this channel is secure enough. */
 		if (keys.keys.keys2.lmpassword.length == 16) {
-			if (memcmp(keys.keys.keys2.lmpassword.pwd.hash,
-					zero_buf, 16) != 0) {
+			if (!all_zero(keys.keys.keys2.lmpassword.pwd.hash,
+				      16)) {
 				sam_rid_crypt(rid,
 					      keys.keys.keys2.lmpassword.pwd.hash,
 					      lm_hash.hash, 0);
@@ -102,8 +99,8 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 			user->lm_password_present = true;
 		}
 		if (keys.keys.keys2.ntpassword.length == 16) {
-			if (memcmp(keys.keys.keys2.ntpassword.pwd.hash,
-						zero_buf, 16) != 0) {
+			if (!all_zero(keys.keys.keys2.ntpassword.pwd.hash,
+				      16)) {
 				sam_rid_crypt(rid,
 					      keys.keys.keys2.ntpassword.pwd.hash,
 					      nt_hash.hash, 0);
