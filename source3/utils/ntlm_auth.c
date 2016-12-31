@@ -946,7 +946,6 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 				 void **server_returned_info,
 				 DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
-	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
 	char *error_string = NULL;
 	uint8_t lm_key[8]; 
@@ -964,13 +963,13 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 					      &error_string, &unix_name);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		if (memcmp(lm_key, zeros, 8) != 0) {
+		if (!all_zero(lm_key, 8)) {
 			*lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 			memcpy(lm_session_key->data, lm_key, 8);
 			memset(lm_session_key->data+8, '\0', 8);
 		}
 
-		if (memcmp(user_sess_key, zeros, 16) != 0) {
+		if (!all_zero(user_sess_key, 16)) {
 			*session_key = data_blob_talloc(mem_ctx, user_sess_key, 16);
 		}
 		*server_returned_info = talloc_strdup(mem_ctx,
@@ -1748,15 +1747,14 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				printf("Authentication-Error: %s\n.\n",
 				       error_string);
 			} else {
-				static char zeros[16];
 				char *hex_lm_key;
 				char *hex_user_session_key;
 
 				printf("Authenticated: Yes\n");
 
 				if (ntlm_server_1_lm_session_key 
-				    && (memcmp(zeros, lm_key, 
-					       sizeof(lm_key)) != 0)) {
+				    && (!all_zero(lm_key,
+						  sizeof(lm_key)))) {
 					hex_lm_key = hex_encode_talloc(NULL,
 								(const unsigned char *)lm_key,
 								sizeof(lm_key));
@@ -1766,8 +1764,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				}
 
 				if (ntlm_server_1_user_session_key 
-				    && (memcmp(zeros, user_session_key, 
-					       sizeof(user_session_key)) != 0)) {
+				    && (!all_zero(user_session_key,
+						  sizeof(user_session_key)))) {
 					hex_user_session_key = hex_encode_talloc(NULL,
 									  (const unsigned char *)user_session_key, 
 									  sizeof(user_session_key));
@@ -2187,7 +2185,6 @@ static bool check_auth_crap(void)
 	char *hex_lm_key;
 	char *hex_user_session_key;
 	char *error_string;
-	static uint8_t zeros[16];
 
 	setbuf(stdout, NULL);
 
@@ -2217,16 +2214,15 @@ static bool check_auth_crap(void)
 	}
 
 	if (request_lm_key 
-	    && (memcmp(zeros, lm_key, 
-		       sizeof(lm_key)) != 0)) {
+	    && (!all_zero((uint8_t *)lm_key, sizeof(lm_key)))) {
 		hex_lm_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)lm_key,
 					sizeof(lm_key));
 		printf("LM_KEY: %s\n", hex_lm_key);
 		TALLOC_FREE(hex_lm_key);
 	}
 	if (request_user_session_key 
-	    && (memcmp(zeros, user_session_key, 
-		       sizeof(user_session_key)) != 0)) {
+	    && (!all_zero((uint8_t *)user_session_key,
+			  sizeof(user_session_key)))) {
 		hex_user_session_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)user_session_key, 
 						  sizeof(user_session_key));
 		printf("NT_KEY: %s\n", hex_user_session_key);
