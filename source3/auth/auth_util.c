@@ -811,7 +811,6 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_info, struct auth_serversupplied_info **server_info)
 {
-	static const char zeros[16] = {0};
 	const char *guest_account = lp_guest_account();
 	const char *domain = lp_netbios_name();
 	struct netr_SamInfo3 info3;
@@ -861,7 +860,7 @@ static NTSTATUS make_new_session_info_guest(struct auth_session_info **session_i
 
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
-	(*session_info)->session_key = data_blob(zeros, sizeof(zeros));
+	(*session_info)->session_key = data_blob_talloc_zero(NULL, 16);
 
 	status = NT_STATUS_OK;
 done:
