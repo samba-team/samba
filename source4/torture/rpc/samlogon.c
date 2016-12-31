@@ -921,14 +921,11 @@ static bool test_lmv2_ntlm_broken(struct samlogon_state *samlogon_state,
 				pass = false;
 			}
 		} else {
-			static const uint8_t zeros[8];
-			if (memcmp(zeros, lm_session_key,
-				   sizeof(lm_session_key)) != 0) {
+			if (!all_zero(lm_session_key,
+				      sizeof(lm_session_key))) {
 				torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations (zeros)!\n");
 				torture_comment(samlogon_state->tctx, "lm_session_key:\n");
 				dump_data(1, lm_session_key, 8);
-				torture_comment(samlogon_state->tctx, "expected:\n");
-				dump_data(1, zeros, 8);
 				pass = false;
 			}
 		}
@@ -1176,14 +1173,10 @@ static bool test_ntlm2(struct samlogon_state *samlogon_state, char **error_strin
 			pass = false;
 		}
 	} else {
-		static const uint8_t zeros[8];
-		if (memcmp(zeros, lm_key,
-			   sizeof(lm_key)) != 0) {
+		if (!all_zero(lm_key, sizeof(lm_key))) {
 			torture_comment(samlogon_state->tctx, "LM Session Key does not match expectations (zeros)!\n");
 			torture_comment(samlogon_state->tctx, "lm_key:\n");
 			dump_data(1, lm_key, 8);
-			torture_comment(samlogon_state->tctx, "expected:\n");
-			dump_data(1, zeros, 8);
 			pass = false;
 		}
 	}
