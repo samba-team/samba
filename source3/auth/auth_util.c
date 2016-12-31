@@ -1358,8 +1358,6 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info,
 				const struct netr_SamInfo3 *info3)
 {
-	static const char zeros[16] = {0, };
-
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *found_username = NULL;
 	const char *nt_domain;
@@ -1460,7 +1458,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	/* ensure we are never given NULL session keys */
 
-	if (memcmp(info3->base.key.key, zeros, sizeof(zeros)) == 0) {
+	if (all_zero(info3->base.key.key, sizeof(info3->base.key.key))) {
 		result->session_key = data_blob_null;
 	} else {
 		result->session_key = data_blob_talloc(
@@ -1468,7 +1466,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 			sizeof(info3->base.key.key));
 	}
 
-	if (memcmp(info3->base.LMSessKey.key, zeros, 8) == 0) {
+	if (all_zero(info3->base.LMSessKey.key,
+		     sizeof(info3->base.LMSessKey.key))) {
 		result->lm_session_key = data_blob_null;
 	} else {
 		result->lm_session_key = data_blob_talloc(
