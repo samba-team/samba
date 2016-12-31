@@ -293,7 +293,6 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
-	const static uint8_t zeros[8];
 	DATA_BLOB tmp_sess_key;
 	const char *upper_client_domain = NULL;
 
@@ -314,8 +313,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 
 	/* Check for cleartext netlogon. Used by Exchange 5.5. */
 	if ((logon_parameters & MSV1_0_CLEARTEXT_PASSWORD_ALLOWED)
-	    && challenge->length == sizeof(zeros) 
-	    && (memcmp(challenge->data, zeros, challenge->length) == 0 )) {
+	    && challenge->length == 8
+	    && (all_zero(challenge->data, challenge->length))) {
 		struct samr_Password client_nt;
 		struct samr_Password client_lm;
 		char *unix_pw = NULL;
