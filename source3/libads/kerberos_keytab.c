@@ -553,18 +553,10 @@ done:
 	TALLOC_FREE(frame);
 
 	if (context) {
-		krb5_keytab_entry zero_kt_entry;
-		krb5_kt_cursor zero_csr;
-
-		ZERO_STRUCT(zero_kt_entry);
-		ZERO_STRUCT(zero_csr);
-
-		if (memcmp(&zero_kt_entry, &kt_entry,
-				sizeof(krb5_keytab_entry))) {
+		if (!all_zero((uint8_t *)&kt_entry, sizeof(kt_entry))) {
 			smb_krb5_kt_free_entry(context, &kt_entry);
 		}
-		if ((memcmp(&cursor, &zero_csr,
-				sizeof(krb5_kt_cursor)) != 0) && keytab) {
+		if (!all_zero((uint8_t *)&cursor, sizeof(cursor)) && keytab) {
 			krb5_kt_end_seq_get(context, keytab, &cursor);
 		}
 		if (keytab) {
@@ -657,21 +649,11 @@ int ads_keytab_list(const char *keytab_name)
 	ZERO_STRUCT(cursor);
 out:
 
-	{
-		krb5_keytab_entry zero_kt_entry;
-		ZERO_STRUCT(zero_kt_entry);
-		if (memcmp(&zero_kt_entry, &kt_entry,
-				sizeof(krb5_keytab_entry))) {
-			smb_krb5_kt_free_entry(context, &kt_entry);
-		}
+	if (!all_zero((uint8_t *)&kt_entry, sizeof(kt_entry))) {
+		smb_krb5_kt_free_entry(context, &kt_entry);
 	}
-	{
-		krb5_kt_cursor zero_csr;
-		ZERO_STRUCT(zero_csr);
-		if ((memcmp(&cursor, &zero_csr,
-				sizeof(krb5_kt_cursor)) != 0) && keytab) {
-			krb5_kt_end_seq_get(context, keytab, &cursor);
-		}
+	if (!all_zero((uint8_t *)&cursor, sizeof(cursor)) && keytab) {
+		krb5_kt_end_seq_get(context, keytab, &cursor);
 	}
 
 	if (keytab) {
