@@ -324,7 +324,6 @@ const char *my_sam_name(void);
 
 enum protocol_types get_Protocol(void);
 void set_Protocol(enum protocol_types  p);
-bool all_zero(const uint8_t *ptr, size_t size);
 void gfree_names(void);
 void gfree_all( void );
 const char *my_netbios_names(int i);
