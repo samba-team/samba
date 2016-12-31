@@ -289,7 +289,6 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 	}
 
 	for (i = 1; i < MIN(history_len, 3); i++) {
-		static const struct samr_Password zero_hash;
 		struct samr_Password zero_string_hash;
 		struct samr_Password zero_string_des_hash;
 		struct samr_Password *nt_history_pwd = NULL;
@@ -328,8 +327,8 @@ static NTSTATUS authsam_password_check_and_record(struct auth4_context *auth_con
 		}
 
 		/* Skip over all-zero hashes in the history */
-		if (memcmp(nt_history_pwd->hash, zero_hash.hash, 
-			   sizeof(zero_hash.hash)) == 0) {
+		if (all_zero(nt_history_pwd->hash,
+			     sizeof(nt_history_pwd->hash))) {
 			continue;
 		}
 
