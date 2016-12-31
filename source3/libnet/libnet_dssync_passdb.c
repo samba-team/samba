@@ -1105,7 +1105,6 @@ static NTSTATUS sam_account_from_object(struct samu *account,
 	TALLOC_CTX *mem_ctx = account;
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
-	uchar zero_buf[16];
 	NTSTATUS status;
 
 	NTTIME lastLogon;
@@ -1133,8 +1132,6 @@ static NTSTATUS sam_account_from_object(struct samu *account,
 	uint32_t rid = 0;
 	uint32_t acct_flags;
 	uint32_t units_per_week;
-
-	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	objectSid = cur->object.identifier->sid;
 	GET_STRING_EX(sAMAccountName, true);
@@ -1329,11 +1326,11 @@ static NTSTATUS sam_account_from_object(struct samu *account,
 	   think this channel is secure enough - don't set the passwords at all
 	   in that case
 	*/
-	if (dBCSPwd.length == 16 && memcmp(dBCSPwd.data, zero_buf, 16) != 0) {
+	if (dBCSPwd.length == 16 && !all_zero(dBCSPwd.data, 16)) {
 		pdb_set_lanman_passwd(account, dBCSPwd.data, PDB_CHANGED);
 	}
 
-	if (unicodePwd.length == 16 && memcmp(unicodePwd.data, zero_buf, 16) != 0) {
+	if (unicodePwd.length == 16 && !all_zero(unicodePwd.data, 16)) {
 		pdb_set_nt_passwd(account, unicodePwd.data, PDB_CHANGED);
 	}
 

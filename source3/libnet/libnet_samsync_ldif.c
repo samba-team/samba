@@ -652,12 +652,9 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	char *flags, *user_rdn;
 	const char *ou;
 	const char* nopasswd = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-	uchar zero_buf[16];
 	uint32_t rid = 0, group_rid = 0, gidNumber = 0;
 	time_t unix_time;
 	int i, ret;
-
-	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Get the username */
 	fstrcpy(username, r->account_name.string);
@@ -703,12 +700,12 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	fstrcpy(profilepath, r->profile_path.string);
 
 	/* Get lm and nt password data */
-	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+	if (!all_zero(r->lmpassword.hash, 16)) {
 		pdb_sethexpwd(hex_lm_passwd, r->lmpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
-	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+	if (!all_zero(r->ntpassword.hash, 16)) {
 		pdb_sethexpwd(hex_nt_passwd, r->ntpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);

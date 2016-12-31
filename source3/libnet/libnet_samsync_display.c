@@ -60,19 +60,17 @@ static void display_account_info(uint32_t rid,
 				 struct netr_DELTA_USER *r)
 {
 	fstring hex_nt_passwd, hex_lm_passwd;
-	uchar zero_buf[16];
 
-	memset(zero_buf, '\0', sizeof(zero_buf));
 
 	/* Decode hashes from password hash (if they are not NULL) */
 
-	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+	if (!all_zero(r->lmpassword.hash, 16)) {
 		pdb_sethexpwd(hex_lm_passwd, r->lmpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
 
-	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+	if (!all_zero(r->ntpassword.hash, 16)) {
 		pdb_sethexpwd(hex_nt_passwd, r->ntpassword.hash, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);

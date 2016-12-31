@@ -35,7 +35,6 @@ struct libnet_keytab_context {
 	const char *keytab_name;
 	struct ads_struct *ads;
 	const char *dns_domain_name;
-	uint8_t zero_buf[16];
 	uint32_t count;
 	struct libnet_keytab_entry *entries;
 	bool clean_old_entries;

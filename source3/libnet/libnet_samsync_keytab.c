@@ -76,7 +76,7 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 	uint32_t kvno = 0;
 	DATA_BLOB blob;
 
-	if (memcmp(r->ntpassword.hash, ctx->zero_buf, 16) == 0) {
+	if (all_zero(r->ntpassword.hash, 16)) {
 		return NT_STATUS_OK;
 	}
 
