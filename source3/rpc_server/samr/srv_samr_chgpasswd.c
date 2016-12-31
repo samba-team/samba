@@ -838,7 +838,6 @@ static bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
 				uint32_t pw_history_len,
 				const uint8_t *pw_history)
 {
-	static const uint8_t zero_md5_nt_pw[SALTED_MD5_HASH_LEN] = { 0, };
 	int i;
 
 	dump_data(100, nt_pw, NT_HASH_LEN);
@@ -852,15 +851,12 @@ static bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
 		current_salt = &pw_history[i*PW_HISTORY_ENTRY_LEN];
 		old_nt_pw_salted_md5_hash = current_salt + PW_HISTORY_SALT_LEN;
 
-		if (memcmp(zero_md5_nt_pw, old_nt_pw_salted_md5_hash,
-			   SALTED_MD5_HASH_LEN) == 0) {
+		if (all_zero(old_nt_pw_salted_md5_hash, SALTED_MD5_HASH_LEN)) {
 			/* Ignore zero valued entries. */
 			continue;
 		}
 
-		if (memcmp(zero_md5_nt_pw, current_salt,
-			   PW_HISTORY_SALT_LEN) == 0)
-		{
+		if (all_zero(current_salt, PW_HISTORY_SALT_LEN)) {
 			/*
 			 * New format: zero salt and then plain nt hash.
 			 * Directly compare the hashes.
