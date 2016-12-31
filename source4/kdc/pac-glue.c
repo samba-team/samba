@@ -120,8 +120,6 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 {
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
-	int ret;
-	static const struct samr_Password zero_hash;
 	struct samr_Password *lm_hash = NULL;
 	struct samr_Password *nt_hash = NULL;
 	struct PAC_CREDENTIAL_NTLM_SECPKG ntlm_secpkg = {
@@ -142,8 +140,8 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 
 	lm_hash = samdb_result_hash(mem_ctx, msg, "dBCSPwd");
 	if (lm_hash != NULL) {
-		ret = memcmp(lm_hash->hash, zero_hash.hash, 16);
-		if (ret == 0) {
+		bool zero = all_zero(lm_hash->hash, 16);
+		if (zero) {
 			lm_hash = NULL;
 		}
 	}
@@ -157,8 +155,8 @@ NTSTATUS samba_get_cred_info_ndr_blob(TALLOC_CTX *mem_ctx,
 
 	nt_hash = samdb_result_hash(mem_ctx, msg, "unicodePwd");
 	if (nt_hash != NULL) {
-		ret = memcmp(nt_hash->hash, zero_hash.hash, 16);
-		if (ret == 0) {
+		bool zero = all_zero(nt_hash->hash, 16);
+		if (zero) {
 			nt_hash = NULL;
 		}
 	}
