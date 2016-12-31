@@ -322,7 +322,6 @@ static bool need_to_increment_bad_pw_count(
 	username = pdb_get_username(sampass);
 
 	for (i=1; i < MIN(MIN(3, policy_pwhistory_len), pwhistory_len); i++) {
-		static const uint8_t zero16[SALTED_MD5_HASH_LEN];
 		const uint8_t *salt;
 		const uint8_t *nt_pw;
 		NTSTATUS status;
@@ -332,12 +331,12 @@ static bool need_to_increment_bad_pw_count(
 		salt = &pwhistory[i*PW_HISTORY_ENTRY_LEN];
 		nt_pw = salt + PW_HISTORY_SALT_LEN;
 
-		if (memcmp(zero16, nt_pw, NT_HASH_LEN) == 0) {
+		if (all_zero(nt_pw, NT_HASH_LEN)) {
 			/* skip zero password hash */
 			continue;
 		}
 
-		if (memcmp(zero16, salt, PW_HISTORY_SALT_LEN) != 0) {
+		if (!all_zero(salt, PW_HISTORY_SALT_LEN)) {
 			/* skip nonzero salt (old format entry) */
 			continue;
 		}
