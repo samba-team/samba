@@ -1203,8 +1203,7 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	uint8_t user_session_key[16];
 	uint8_t lm_key[16];
 	uint8_t lm_hash[16];
-	static const uint8_t zeros[8];
-	DATA_BLOB chall = data_blob_talloc(samlogon_state->mem_ctx, zeros, sizeof(zeros));
+	DATA_BLOB chall = data_blob_talloc_zero(samlogon_state->mem_ctx, 8);
 	bool lm_good = E_deshash(samlogon_state->password, lm_hash);
 
 	ZERO_STRUCT(user_session_key);
