@@ -17,8 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/debug.h"
+#include "lib/util/fault.h"
 #include "lib/util/server_id.h"
+#include "lib/util/byteorder.h"
 #include "librpc/gen_ndr/server_id.h"
 
 bool server_id_same_process(const struct server_id *p1,
