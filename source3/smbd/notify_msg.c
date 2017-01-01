@@ -22,6 +22,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "lib/dbwrap/dbwrap.h"
 #include "lib/dbwrap/dbwrap_rbt.h"
+#include "lib/util/server_id.h"
 #include "messages.h"
 #include "proto.h"
 #include "globals.h"

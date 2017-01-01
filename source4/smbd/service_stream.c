@@ -23,6 +23,7 @@
 #include "includes.h"
 #include <tevent.h>
 #include "process_model.h"
+#include "lib/util/server_id.h"
 #include "lib/messaging/irpc.h"
 #include "cluster/cluster.h"
 #include "param/param.h"

@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "lib/util/server_id.h"
 #include "system/filesys.h"
 #include "messaging/messaging.h"
 #include "../lib/util/dlinklist.h"

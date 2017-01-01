@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/server_id.h"
 #include "librpc/gen_ndr/server_id.h"
 
 bool server_id_same_process(const struct server_id *p1,

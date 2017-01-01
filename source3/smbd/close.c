@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/server_id.h"
 #include "printing.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"

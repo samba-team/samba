@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include <tevent.h>
+#include "lib/util/server_id.h"
 #include "lib/util/data_blob.h"
 #include "librpc/gen_ndr/notify.h"
 #include "librpc/gen_ndr/messaging.h"

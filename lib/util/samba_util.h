@@ -688,36 +688,6 @@ char *data_path(TALLOC_CTX *mem_ctx, const char *name);
  **/
 const char *shlib_ext(void);
 
-struct server_id;
-
-struct server_id_buf { char buf[48]; }; /* probably a bit too large ... */
-char *server_id_str_buf(struct server_id id, struct server_id_buf *dst);
-size_t server_id_str_buf_unique(struct server_id id, char *buf, size_t buflen);
-
-bool server_id_same_process(const struct server_id *p1,
-			    const struct server_id *p2);
-bool server_id_equal(const struct server_id *p1, const struct server_id *p2);
-struct server_id server_id_from_string(uint32_t local_vnn,
-				       const char *pid_string);
-
-/**
- * Set the serverid to the special value that represents a disconnected
- * client for (e.g.) durable handles.
- */
-void server_id_set_disconnected(struct server_id *id);
-
-/**
- * check whether a serverid is the special placeholder for
- * a disconnected client
- */
-bool server_id_is_disconnected(const struct server_id *id);
-
-#define SERVER_ID_BUF_LENGTH 24
-void server_id_put(uint8_t buf[SERVER_ID_BUF_LENGTH],
-		   const struct server_id id);
-void server_id_get(struct server_id *id,
-		   const uint8_t buf[SERVER_ID_BUF_LENGTH]);
-
 /*
  * Samba code should use samba_tevent_context_init() instead of
  * tevent_context_init() in order to get the debug output.

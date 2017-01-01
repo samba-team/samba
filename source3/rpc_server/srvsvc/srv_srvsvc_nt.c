@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/passwd.h"
+#include "lib/util/server_id.h"
 #include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../libcli/security/security.h"

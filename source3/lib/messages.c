@@ -46,6 +46,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/server_id.h"
 #include "dbwrap/dbwrap.h"
 #include "serverid.h"
 #include "messages.h"

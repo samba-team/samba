@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "lib/util/server_id.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "serverid.h"

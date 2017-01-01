@@ -31,6 +31,7 @@
  */
 
 #include "includes.h"
+#include "lib/util/server_id.h"
 #include "smbd/globals.h"
 #include "system/filesys.h"
 #include "popt_common.h"

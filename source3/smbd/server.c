@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/server_id.h"
 #include "popt_common.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"

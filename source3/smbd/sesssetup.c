@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/util/server_id.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "auth.h"

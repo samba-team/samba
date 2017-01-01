@@ -25,6 +25,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/server_id.h"
 #include "popt_common.h"
 #include "librpc/gen_ndr/spoolss.h"
 #include "nt_printing.h"

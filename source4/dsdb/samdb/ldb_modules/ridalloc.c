@@ -29,6 +29,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
+#include "lib/util/server_id.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/messaging/irpc.h"

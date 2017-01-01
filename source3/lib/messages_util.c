@@ -18,6 +18,7 @@
  */
 
 #include "replace.h"
+#include "lib/util/server_id.h"
 #include "lib/util/samba_util.h"
 #include "librpc/gen_ndr/server_id.h"
 #include "lib/util/byteorder.h"

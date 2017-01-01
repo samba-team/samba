@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include "includes.h"
+#include "lib/util/server_id.h"
 #include "messages.h"
 #include "lib/util/tevent_unix.h"
 #include <stdio.h>

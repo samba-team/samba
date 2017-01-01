@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "net.h"
+#include "lib/util/server_id.h"
 #include "g_lock.h"
 #include "messages.h"
 

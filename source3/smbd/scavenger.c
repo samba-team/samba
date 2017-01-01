@@ -19,12 +19,12 @@
 */
 
 #include "includes.h"
-
 #include "messages.h"
 #include "serverid.h"
 #include "smbd/globals.h"
 #include "smbd/scavenger.h"
 #include "locking/proto.h"
+#include "lib/util/server_id.h"
 #include "lib/util/util_process.h"
 #include "lib/util/sys_rw_data.h"
 

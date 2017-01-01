@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include "system/filesys.h"
+#include "lib/util/server_id.h"
 #include "lib/util/server_id_db.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/strv.h"

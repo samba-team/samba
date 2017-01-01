@@ -19,6 +19,7 @@
 
 #include "replace.h"
 #include "server_id_db_util.h"
+#include "lib/util/server_id.h"
 #include "serverid.h"
 #include "lib/util/samba_util.h"
 

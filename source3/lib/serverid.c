@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "lib/util/server_id.h"
 #include "serverid.h"
 #include "util_tdb.h"
 #include "dbwrap/dbwrap.h"

@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "lib/util/server_id.h"
 #include "lib/util/tevent_unix.h"
 #include "lib/util/server_id_db.h"
 #include "messages.h"
