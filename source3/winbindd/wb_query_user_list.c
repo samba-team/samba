@@ -20,11 +20,18 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/util/strv.h"
 
 struct wb_query_user_list_state {
-	struct wbint_userinfos users;
+	struct tevent_context *ev;
+	struct winbindd_domain *domain;
+	struct wbint_RidArray rids;
+	const char *domain_name;
+	struct wbint_Principals names;
+	char *users;
 };
 
+static void wb_query_user_list_gotrids(struct tevent_req *subreq);
 static void wb_query_user_list_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_query_user_list_send(TALLOC_CTX *mem_ctx,
@@ -39,15 +46,44 @@ struct tevent_req *wb_query_user_list_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
+	state->domain = domain;
 
-	subreq = dcerpc_wbint_QueryUserList_send(state, ev,
-						 dom_child_handle(domain),
-						 &state->users);
+	subreq = dcerpc_wbint_QueryUserRidList_send(
+		state, ev, dom_child_handle(domain), &state->rids);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, wb_query_user_list_done, req);
+	tevent_req_set_callback(subreq, wb_query_user_list_gotrids, req);
 	return req;
+}
+
+static void wb_query_user_list_gotrids(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wb_query_user_list_state *state = tevent_req_data(
+		req, struct wb_query_user_list_state);
+	NTSTATUS status, result;
+
+	status = dcerpc_wbint_QueryUserRidList_recv(subreq, state, &result);
+	TALLOC_FREE(subreq);
+	if (any_nt_status_not_ok(status, result, &status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	DEBUG(10, ("dcerpc_wbint_QueryUserList returned %d users\n",
+		   state->rids.num_rids));
+
+	subreq = dcerpc_wbint_LookupRids_send(
+		state, state->ev, dom_child_handle(state->domain),
+		&state->domain->sid, &state->rids,
+		&state->domain_name, &state->names);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wb_query_user_list_done, req);
 }
 
 static void wb_query_user_list_done(struct tevent_req *subreq)
@@ -57,22 +93,34 @@ static void wb_query_user_list_done(struct tevent_req *subreq)
 	struct wb_query_user_list_state *state = tevent_req_data(
 		req, struct wb_query_user_list_state);
 	NTSTATUS status, result;
+	int i;
 
-	status = dcerpc_wbint_QueryUserList_recv(subreq, state, &result);
+	status = dcerpc_wbint_LookupRids_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
 	if (any_nt_status_not_ok(status, result, &status)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	DEBUG(10, ("dcerpc_wbint_QueryUserList returned %d users\n",
-		   state->users.num_userinfos));
+	for (i=0; i<state->names.num_principals; i++) {
+		struct wbint_Principal *p = &state->names.principals[i];
+		fstring name;
+		int ret;
+
+		fill_domain_username(name, state->domain_name, p->name, true);
+
+		ret = strv_add(state, &state->users, name);
+		if (ret != 0) {
+			tevent_req_nterror(req, map_nt_error_from_unix(ret));
+			return;
+		}
+	}
 
 	tevent_req_done(req);
 }
 
 NTSTATUS wb_query_user_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
-				 int *num_users, struct wbint_userinfo **users)
+				 char **users)
 {
 	struct wb_query_user_list_state *state = tevent_req_data(
 		req, struct wb_query_user_list_state);
@@ -82,7 +130,7 @@ NTSTATUS wb_query_user_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	*num_users = state->users.num_userinfos;
-	*users = talloc_move(mem_ctx, &state->users.userinfos);
+	*users = talloc_move(mem_ctx, &state->users);
+
 	return NT_STATUS_OK;
 }
