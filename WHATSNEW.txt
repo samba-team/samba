@@ -1,4 +1,86 @@
                    =============================
+                   Release Notes for Samba 4.4.9
+                           January 2, 2017
+                   =============================
+
+
+This is the latest stable release of Samba 4.4.
+
+
+Changes since 4.4.8:
+--------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 12404: vfs:glusterfs: Preallocate result for glfs_realpath.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12299: Fix unitialized variable warnings in smbd open.c and close.c.
+   * BUG 12387: s3: vfs: streams_depot. Use conn->connectpath not conn->cwd.
+   * BUG 12436: s3/smbd: Fix the last resort check that sets the file type
+     attribute.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12395: build: Fix build with perl on debian sid.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12412: Fix typo in vfs_fruit: fruit:ressource -> fruit:resource.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 11197: spoolss: Use correct values for secdesc and devmode pointers.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12366: provision: Add support for BIND 9.11.x.
+   * BUG 12392: ctdb-locking: Reset real-time priority in lock helper.
+   * BUG 12434: ctdb-recovery: Avoid NULL dereference in failure case.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 10297: s3:smbd: Only pass UCF_PREP_CREATEFILE to filename_convert() if
+     we may create a new file.
+   * BUG 12471: Fix build with MIT Kerberos.
+
+o  Mathieu Parent <math.parent@gmail.com>
+   * BUG 12371: ctdb-scripts: Fix Debian init in Samba eventscript.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12183: s3-printing: Correctly encode CUPS printer URIs.
+   * BUG 12195: s3-printing: Allow printer names longer than 16 chars.
+   * BUG 12269: nss_wins: Fix errno values for HOST_NOT_FOUND.
+   * BUG 12405: s3-winbind: Do not return NO_MEMORY if we have an empty user
+     list.
+   * BUG 12415: s3:spoolss: Add support for COPY_FROM_DIRECTORY in
+     AddPrinterDriverEx.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12104: ctdb-packaging: Move CTDB tests to /usr/local/share/ctdb/tests/.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 12372: ctdb-conn: Add missing variable initialization.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.4.8
                          December 19, 2016
                    =============================
@@ -77,8 +159,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.4.7
