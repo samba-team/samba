@@ -84,11 +84,6 @@ interface winbind
 	dom_sid group_sid;
     } wbint_userinfo;
 
-    NTSTATUS wbint_QueryUser(
-	[in] dom_sid *sid,
-	[out] wbint_userinfo *info
-	);
-
     NTSTATUS wbint_GetNssInfo(
 	[in,out] wbint_userinfo *info
 	);

@@ -268,21 +268,6 @@ NTSTATUS _wbint_AllocateGid(struct pipes_struct *p, struct wbint_AllocateGid *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_QueryUser(struct pipes_struct *p, struct wbint_QueryUser *r)
-{
-	struct winbindd_domain *domain = wb_child_domain();
-	NTSTATUS status;
-
-	if (domain == NULL) {
-		return NT_STATUS_REQUEST_NOT_ACCEPTED;
-	}
-
-	status = wb_cache_query_user(domain, p->mem_ctx, r->in.sid,
-				     r->out.info);
-	reset_cm_connection_on_error(domain, status);
-	return status;
-}
-
 NTSTATUS _wbint_GetNssInfo(struct pipes_struct *p, struct wbint_GetNssInfo *r)
 {
 	struct idmap_domain *domain;
