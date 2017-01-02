@@ -30,14 +30,14 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import samba.auth
+import samba.dcerpc.base
 from samba.compat import PY3
 if not PY3:
     # Py2 only
-    import samba.auth
     from samba.samdb import SamDB
     import samba.ndr
     import samba.dcerpc.dcerpc
-    import samba.dcerpc.base
     import samba.dcerpc.epmapper
     from samba import gensec
 
