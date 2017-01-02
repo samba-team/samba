@@ -263,12 +263,6 @@ struct winbindd_methods {
 				  char ***names,
 				  enum lsa_SidType **types);
 
-	/* lookup user info for a given SID */
-	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
-			       TALLOC_CTX *mem_ctx, 
-			       const struct dom_sid *user_sid,
-			       struct wbint_userinfo *user_info);
-
 	/* lookup all groups that a user is a member of. The backend
 	   can also choose to lookup by username or rid for this
 	   function */

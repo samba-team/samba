@@ -201,24 +201,6 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 	return result;
 }
 
-/* Lookup user information from a rid or username. */
-static NTSTATUS query_user(struct winbindd_domain *domain, 
-			   TALLOC_CTX *mem_ctx, 
-			   const struct dom_sid *user_sid,
-			   struct wbint_userinfo *user_info)
-{
-	NTSTATUS result;
-
-	result = msrpc_methods.query_user(domain, mem_ctx, user_sid,
-					  user_info);
-
-	if (reconnect_need_retry(result, domain))
-		result = msrpc_methods.query_user(domain, mem_ctx, user_sid,
-						  user_info);
-
-	return result;
-}
-
 /* Lookup groups a user is a member of.  I wish Unix had a call like this! */
 static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
@@ -354,7 +336,6 @@ struct winbindd_methods reconnect_methods = {
 	name_to_sid,
 	sid_to_name,
 	rids_to_names,
-	query_user,
 	lookup_usergroups,
 	lookup_useraliases,
 	lookup_groupmem,

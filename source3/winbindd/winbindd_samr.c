@@ -225,59 +225,6 @@ done:
 	return status;
 }
 
-/* Lookup user information from a rid or username. */
-static NTSTATUS sam_query_user(struct winbindd_domain *domain,
-			       TALLOC_CTX *mem_ctx,
-			       const struct dom_sid *user_sid,
-			       struct wbint_userinfo *user_info)
-{
-	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status, result;
-	struct dcerpc_binding_handle *b = NULL;
-
-	DEBUG(3,("sam_query_user\n"));
-
-	ZERO_STRUCT(dom_pol);
-
-	/* Paranoia check */
-	if (!sid_check_is_in_our_sam(user_sid)) {
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	user_info->homedir = NULL;
-	user_info->shell = NULL;
-	user_info->primary_gid = (gid_t) -1;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	b = samr_pipe->binding_handle;
-
-	status = rpc_query_user(tmp_ctx,
-				samr_pipe,
-				&dom_pol,
-				&domain->sid,
-				user_sid,
-				user_info);
-
-done:
-	if (b && is_valid_policy_hnd(&dom_pol)) {
-		dcerpc_samr_Close(b, mem_ctx, &dom_pol, &result);
-	}
-
-	TALLOC_FREE(tmp_ctx);
-	return status;
-}
-
 /* get a list of trusted domains - builtin domain */
 static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
@@ -445,15 +392,6 @@ static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 	return NT_STATUS_OK;
-}
-
-/* Lookup user information from a rid or username. */
-static NTSTATUS builtin_query_user(struct winbindd_domain *domain,
-				TALLOC_CTX *mem_ctx,
-				const struct dom_sid *user_sid,
-				struct wbint_userinfo *user_info)
-{
-	return NT_STATUS_NO_SUCH_USER;
 }
 
 /* get a list of trusted domains - builtin domain */
@@ -1040,7 +978,6 @@ struct winbindd_methods builtin_passdb_methods = {
 	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = sam_rids_to_names,
-	.query_user            = builtin_query_user,
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
@@ -1060,7 +997,6 @@ struct winbindd_methods sam_passdb_methods = {
 	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = sam_rids_to_names,
-	.query_user            = sam_query_user,
 	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
