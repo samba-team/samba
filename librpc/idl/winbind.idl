@@ -129,10 +129,6 @@ interface winbind
 	[size_is(num_userinfos)] wbint_userinfo userinfos[];
     } wbint_userinfos;
 
-    NTSTATUS wbint_QueryUserList(
-	[out] wbint_userinfos *users
-	);
-
     NTSTATUS wbint_QueryGroupList(
 	[out] wbint_Principals *groups
 	);

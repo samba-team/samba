@@ -355,23 +355,6 @@ NTSTATUS _wbint_LookupGroupMembers(struct pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_QueryUserList(struct pipes_struct *p,
-			      struct wbint_QueryUserList *r)
-{
-	struct winbindd_domain *domain = wb_child_domain();
-	NTSTATUS status;
-
-	if (domain == NULL) {
-		return NT_STATUS_REQUEST_NOT_ACCEPTED;
-	}
-
-	status = wb_cache_query_user_list(domain, p->mem_ctx,
-					  &r->out.users->num_userinfos,
-					  &r->out.users->userinfos);
-	reset_cm_connection_on_error(domain, status);
-	return status;
-}
-
 NTSTATUS _wbint_QueryGroupList(struct pipes_struct *p,
 			       struct wbint_QueryGroupList *r)
 {
