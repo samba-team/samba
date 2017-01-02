@@ -29,11 +29,7 @@ import ldb
 from samba.compat import PY3
 import samba.param
 from samba import _glue
-if not PY3:
-    from samba._ldb import Ldb as _Ldb
-else:
-    # samba._ldb is not yet ported to Python 3
-    _Ldb = object
+from samba._ldb import Ldb as _Ldb
 
 
 def source_tree_topdir():
