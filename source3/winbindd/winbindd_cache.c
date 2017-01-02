@@ -2372,56 +2372,6 @@ NTSTATUS wcache_query_user_fullname(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-/* Lookup user information from a rid */
-NTSTATUS wb_cache_query_user(struct winbindd_domain *domain,
-			     TALLOC_CTX *mem_ctx,
-			     const struct dom_sid *user_sid,
-			     struct wbint_userinfo *info)
-{
-	NTSTATUS status;
-	bool old_status;
-
-	old_status = domain->online;
-	status = wcache_query_user(domain, mem_ctx, user_sid, info);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		return status;
-	}
-
-	ZERO_STRUCTP(info);
-
-	/* Return status value returned by seq number check */
-
-	if (!NT_STATUS_IS_OK(domain->last_status))
-		return domain->last_status;
-
-	DEBUG(10,("query_user: [Cached] - doing backend query for info for domain %s\n",
-		domain->name ));
-
-	status = domain->backend->query_user(domain, mem_ctx, user_sid, info);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
-		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
-		if (!domain->internal && old_status) {
-			set_domain_offline(domain);
-		}
-		if (!domain->internal &&
-			!domain->online &&
-			old_status) {
-			NTSTATUS cache_status;
-			cache_status = wcache_query_user(domain, mem_ctx, user_sid, info);
-			return cache_status;
-		}
-	}
-	/* and save it */
-	refresh_sequence_number(domain);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	wcache_save_user(domain, status, info);
-
-	return status;
-}
-
 NTSTATUS wcache_lookup_usergroups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  const struct dom_sid *user_sid,
