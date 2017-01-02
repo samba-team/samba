@@ -20,17 +20,18 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/ndr_winbind_c.h"
+#include "lib/util/strv.h"
 
 struct winbindd_list_users_domstate {
 	struct tevent_req *subreq;
 	struct winbindd_domain *domain;
-	struct wbint_userinfos users;
+	char *users;
 };
 
 struct winbindd_list_users_state {
-	int num_received;
+        size_t num_received;
 	/* All domains */
-	int num_domains;
+	size_t num_domains;
 	struct winbindd_list_users_domstate *domains;
 };
 
@@ -44,7 +45,7 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req;
 	struct winbindd_list_users_state *state;
 	struct winbindd_domain *domain;
-	int i;
+	size_t i;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_list_users_state);
@@ -90,9 +91,8 @@ struct tevent_req *winbindd_list_users_send(TALLOC_CTX *mem_ctx,
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_users_domstate *d = &state->domains[i];
 
-		d->subreq = dcerpc_wbint_QueryUserList_send(
-			state->domains, ev, dom_child_handle(d->domain),
-			&d->users);
+		d->subreq = wb_query_user_list_send(
+			state->domains, ev, d->domain);
 		if (tevent_req_nomem(d->subreq, req)) {
 			TALLOC_FREE(state->domains);
 			return tevent_req_post(req, ev);
@@ -110,33 +110,31 @@ static void winbindd_list_users_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct winbindd_list_users_state *state = tevent_req_data(
 		req, struct winbindd_list_users_state);
-	NTSTATUS status, result;
-	int i;
-
-	status = dcerpc_wbint_QueryUserList_recv(subreq, state->domains,
-						 &result);
+	struct winbindd_list_users_domstate *d;
+	NTSTATUS status;
+	size_t i;
 
 	for (i=0; i<state->num_domains; i++) {
 		if (subreq == state->domains[i].subreq) {
 			break;
 		}
 	}
-	if (i < state->num_domains) {
-		struct winbindd_list_users_domstate *d = &state->domains[i];
-
-		DEBUG(10, ("Domain %s returned %d users\n", d->domain->name,
-			   d->users.num_userinfos));
-
-		d->subreq = NULL;
-
-		if (!NT_STATUS_IS_OK(status) || !NT_STATUS_IS_OK(result)) {
-			DEBUG(10, ("List_users for domain %s failed\n",
-				   d->domain->name));
-			d->users.num_userinfos = 0;
-		}
+	if (i == state->num_domains) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
 	}
 
+	d = &state->domains[i];
+
+	status = wb_query_user_list_recv(subreq, state->domains,
+					 &d->users);
 	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Just skip this domain
+		 */
+		d->users = NULL;
+	}
 
 	state->num_received += 1;
 
@@ -152,55 +150,45 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 		req, struct winbindd_list_users_state);
 	NTSTATUS status;
 	char *result;
-	int i;
-	uint32_t j;
-	size_t len;
+	size_t i, len;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 
-	len = 0;
-	response->data.num_entries = 0;
+	result = NULL;
+
 	for (i=0; i<state->num_domains; i++) {
 		struct winbindd_list_users_domstate *d = &state->domains[i];
+		int ret;
 
-		for (j=0; j<d->users.num_userinfos; j++) {
-			fstring name;
-			fill_domain_username(name, d->domain->name,
-					     d->users.userinfos[j].acct_name,
-					     True);
-			len += strlen(name)+1;
+		if (d->users == NULL) {
+			continue;
 		}
-		response->data.num_entries += d->users.num_userinfos;
-	}
 
-	result = talloc_array(response, char, len+1);
-	if (result == 0) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	len = 0;
-	for (i=0; i<state->num_domains; i++) {
-		struct winbindd_list_users_domstate *d = &state->domains[i];
-
-		for (j=0; j<d->users.num_userinfos; j++) {
-			fstring name;
-			size_t this_len;
-			fill_domain_username(name, d->domain->name,
-					     d->users.userinfos[j].acct_name,
-					     True);
-			this_len = strlen(name);
-			memcpy(result+len, name, this_len);
-			len += this_len;
-			result[len] = ',';
-			len += 1;
+		ret = strv_append(state, &result, d->users);
+		if (ret != 0) {
+			return map_nt_error_from_unix(ret);
 		}
 	}
-	result[len-1] = '\0';
+
+	len = talloc_get_size(result);
 
 	response->extra_data.data = result;
 	response->length += len;
+	response->data.num_entries = 0;
+
+	if (len >= 1) {
+		len -= 1;
+		response->data.num_entries = 1;
+
+		for (i=0; i<len; i++) {
+			if (result[i] == '\0') {
+				result[i] = ',';
+				response->data.num_entries += 1;
+			}
+		}
+	}
 
 	return NT_STATUS_OK;
 }
