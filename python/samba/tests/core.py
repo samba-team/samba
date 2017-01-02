@@ -54,7 +54,7 @@ class ArcfourTestCase(TestCase):
     def test_arcfour_direct(self):
         key = '12345678'
         plain = 'abcdefghi'
-        crypt_expected = '\xda\x91Z\xb0l\xd7\xb9\xcf\x99'
+        crypt_expected = b'\xda\x91Z\xb0l\xd7\xb9\xcf\x99'
         crypt_calculated = arcfour_encrypt(key, plain)
         self.assertEquals(crypt_expected, crypt_calculated)
 
@@ -72,7 +72,7 @@ class LdbExtensionTests(TestCaseInTempDir):
         l = samba.Ldb(path)
         try:
             l.add({"dn": "foo=dc", "bar": "bla"})
-            self.assertEquals("bla",
+            self.assertEquals(b"bla",
                 l.searchone(basedn=ldb.Dn(l, "foo=dc"), attribute="bar"))
         finally:
             del l
