@@ -34,17 +34,14 @@ extern struct winbindd_methods ads_methods;
 /* List all users */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32_t *num_entries,
-				struct wbint_userinfo **info)
+				uint32_t **rids)
 {
 	NTSTATUS result;
 
-	result = ads_methods.query_user_list(domain, mem_ctx,
-					     num_entries, info);
+	result = ads_methods.query_user_list(domain, mem_ctx, rids);
 
 	if (reconnect_need_retry(result, domain)) {
-		result = ads_methods.query_user_list(domain, mem_ctx,
-						     num_entries, info);
+		result = ads_methods.query_user_list(domain, mem_ctx, rids);
 	}
 
 	return result;

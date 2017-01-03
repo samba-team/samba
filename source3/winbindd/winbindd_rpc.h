@@ -31,8 +31,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *samr_pipe,
 			     struct policy_handle *samr_policy,
 			     const struct dom_sid *domain_sid,
-			     uint32_t *pnum_info,
-			     struct wbint_userinfo **pinfo);
+			     uint32_t **prids);
 
 NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *samr_pipe,

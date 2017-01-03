@@ -466,8 +466,6 @@ NTSTATUS _wbint_QueryUserRidList(struct pipes_struct *p,
 				 struct wbint_QueryUserRidList *r)
 {
 	struct winbindd_domain *domain = wb_child_domain();
-	uint32_t i, num_userinfos;
-	struct wbint_userinfo *userinfos;
 	NTSTATUS status;
 
 	if (domain == NULL) {
@@ -480,33 +478,16 @@ NTSTATUS _wbint_QueryUserRidList(struct pipes_struct *p,
 	 */
 
 	status = wb_cache_query_user_list(domain, p->mem_ctx,
-					  &num_userinfos, &userinfos);
+					  &r->out.rids->rids);
 	reset_cm_connection_on_error(domain, status);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	r->out.rids->rids = talloc_array(r->out.rids, uint32_t, num_userinfos);
-	if (r->out.rids->rids == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	r->out.rids->num_rids = talloc_array_length(r->out.rids->rids);
 
-	for (i=0; i<num_userinfos; i++) {
-		struct wbint_userinfo *info = &userinfos[i];
-
-		if (!dom_sid_in_domain(&domain->sid, &info->user_sid)) {
-			fstring sidstr, domstr;
-			DBG_WARNING("Got sid %s in domain %s\n",
-				    sid_to_fstring(sidstr, &info->user_sid),
-				    sid_to_fstring(domstr, &domain->sid));
-			continue;
-		}
-		sid_split_rid(&info->user_sid,
-			      &r->out.rids->rids[r->out.rids->num_rids++]);
-	}
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)

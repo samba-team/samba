@@ -59,8 +59,7 @@ NTSTATUS rpc_lookup_sids(TALLOC_CTX *mem_ctx,
 
 NTSTATUS wb_cache_query_user_list(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32_t *num_entries,
-				  struct wbint_userinfo **info);
+				  uint32_t **prids);
 NTSTATUS wb_cache_enum_dom_groups(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t *num_entries,

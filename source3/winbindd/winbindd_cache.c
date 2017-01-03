@@ -1006,36 +1006,6 @@ static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS sta
 	centry_free(centry);
 }
 
-
-static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status,
-			     struct wbint_userinfo *info)
-{
-	struct cache_entry *centry;
-	fstring sid_string;
-
-	if (is_null_sid(&info->user_sid)) {
-		return;
-	}
-
-	centry = centry_start(domain, status);
-	if (!centry)
-		return;
-	centry_put_string(centry, info->domain_name);
-	centry_put_string(centry, info->acct_name);
-	centry_put_string(centry, info->full_name);
-	centry_put_string(centry, info->homedir);
-	centry_put_string(centry, info->shell);
-	centry_put_uint32(centry, info->uid);
-	centry_put_uint32(centry, info->primary_gid);
-	centry_put_string(centry, info->primary_group_name);
-	centry_put_sid(centry, &info->user_sid);
-	centry_put_sid(centry, &info->group_sid);
-	centry_end(centry, "U/%s", sid_to_fstring(sid_string,
-						  &info->user_sid));
-	DEBUG(10,("wcache_save_user: %s (acct_name %s)\n", sid_string, info->acct_name));
-	centry_free(centry);
-}
-
 static void wcache_save_lockout_policy(struct winbindd_domain *domain,
 				       NTSTATUS status,
 				       struct samr_DomInfo12 *lockout_policy)
@@ -1459,14 +1429,17 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 /* Query display info. This is the basic user list fn */
 NTSTATUS wb_cache_query_user_list(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
-				  uint32_t *num_entries,
-				  struct wbint_userinfo **info)
+				  uint32_t **prids)
 {
 	struct winbind_cache *cache = get_cache(domain);
 	struct cache_entry *centry = NULL;
+	uint32_t num_rids = 0;
+	uint32_t *rids = NULL;
 	NTSTATUS status;
 	unsigned int i, retry;
 	bool old_status = domain->online;
+
+	*prids = NULL;
 
 	if (!cache->tdb)
 		goto do_query;
@@ -1476,26 +1449,19 @@ NTSTATUS wb_cache_query_user_list(struct winbindd_domain *domain,
 		goto do_query;
 
 do_fetch_cache:
-	*num_entries = centry_uint32(centry);
+	num_rids = centry_uint32(centry);
 
-	if (*num_entries == 0)
+	if (num_rids == 0) {
 		goto do_cached;
-
-	(*info) = talloc_array(mem_ctx, struct wbint_userinfo, *num_entries);
-	if (! (*info)) {
-		smb_panic_fn("query_user_list out of memory");
 	}
-	for (i=0; i<(*num_entries); i++) {
-		(*info)[i].domain_name = centry_string(centry, mem_ctx);
-		(*info)[i].acct_name = centry_string(centry, mem_ctx);
-		(*info)[i].full_name = centry_string(centry, mem_ctx);
-		(*info)[i].homedir = centry_string(centry, mem_ctx);
-		(*info)[i].shell = centry_string(centry, mem_ctx);
-		(*info)[i].uid = centry_uint32(centry);
-		(*info)[i].primary_gid = centry_uint32(centry);
-		(*info)[i].primary_group_name = centry_string(centry, mem_ctx);
-		centry_sid(centry, &(*info)[i].user_sid);
-		centry_sid(centry, &(*info)[i].group_sid);
+
+	rids = talloc_array(mem_ctx, uint32_t, num_rids);
+	if (rids == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_rids; i++) {
+		rids[i] = centry_uint32(centry);
 	}
 
 do_cached:	
@@ -1508,8 +1474,6 @@ do_cached:
 	return status;
 
 do_query:
-	*num_entries = 0;
-	*info = NULL;
 
 	/* Return status value returned by seq number check */
 
@@ -1530,7 +1494,11 @@ do_query:
 		DEBUG(10,("query_user_list: [Cached] - doing backend query for list for domain %s\n",
 			domain->name ));
 
-		status = domain->backend->query_user_list(domain, mem_ctx, num_entries, info);
+		rids = NULL;
+		status = domain->backend->query_user_list(domain, mem_ctx,
+							  &rids);
+		num_rids = talloc_array_length(rids);
+
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("query_user_list: returned 0x%08x, "
 				  "retrying\n", NT_STATUS_V(status)));
@@ -1546,7 +1514,7 @@ do_query:
 				set_domain_offline(domain);
 			}
 			/* store partial response. */
-			if (*num_entries > 0) {
+			if (num_rids > 0) {
 				/*
 				 * humm, what about the status used for cache?
 				 * Should it be NT_STATUS_OK?
@@ -1581,35 +1549,14 @@ do_query:
 	centry = centry_start(domain, status);
 	if (!centry)
 		goto skip_save;
-	centry_put_uint32(centry, *num_entries);
-	for (i=0; i<(*num_entries); i++) {
-		centry_put_string(centry, (*info)[i].domain_name);
-		centry_put_string(centry, (*info)[i].acct_name);
-		centry_put_string(centry, (*info)[i].full_name);
-		centry_put_string(centry, (*info)[i].homedir);
-		centry_put_string(centry, (*info)[i].shell);
-		centry_put_uint32(centry, (*info)[i].uid);
-		centry_put_uint32(centry, (*info)[i].primary_gid);
-		centry_put_string(centry, (*info)[i].primary_group_name);
-		centry_put_sid(centry, &(*info)[i].user_sid);
-		centry_put_sid(centry, &(*info)[i].group_sid);
-		if (domain->backend && domain->backend->consistent) {
-			/* when the backend is consistent we can pre-prime some mappings */
-			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
-						domain->name,
-						(*info)[i].acct_name, 
-						&(*info)[i].user_sid,
-						SID_NAME_USER);
-			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
-						&(*info)[i].user_sid,
-						domain->name,
-						(*info)[i].acct_name, 
-						SID_NAME_USER);
-			wcache_save_user(domain, NT_STATUS_OK, &(*info)[i]);
-		}
+	centry_put_uint32(centry, num_rids);
+	for (i=0; i<num_rids; i++) {
+		centry_put_uint32(centry, rids[i]);
 	}	
 	centry_end(centry, "UL/%s", domain->name);
 	centry_free(centry);
+
+	*prids = rids;
 
 skip_save:
 	return status;
@@ -3692,17 +3639,7 @@ static int validate_ul(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	num_entries = (int32_t)centry_uint32(centry);
 
 	for (i=0; i< num_entries; i++) {
-		struct dom_sid sid;
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_string(centry, mem_ctx);
 		(void)centry_uint32(centry);
-		(void)centry_uint32(centry);
-		(void)centry_string(centry, mem_ctx);
-		(void)centry_sid(centry, &sid);
-		(void)centry_sid(centry, &sid);
 	}
 
 	centry_free(centry);

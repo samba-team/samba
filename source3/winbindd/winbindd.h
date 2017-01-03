@@ -222,8 +222,7 @@ struct winbindd_methods {
 	/* get a list of users, returning a wbint_userinfo for each one */
 	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
 				   TALLOC_CTX *mem_ctx,
-				   uint32_t *num_entries,
-				   struct wbint_userinfo **info);
+				   uint32_t **rids);
 
 	/* get a list of domain groups */
 	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,

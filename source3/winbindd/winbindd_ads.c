@@ -288,18 +288,18 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 /* Query display info for a realm. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
-			       uint32_t *num_entries,
-			       struct wbint_userinfo **pinfo)
+			       uint32_t **prids)
 {
 	ADS_STRUCT *ads = NULL;
-	const char *attrs[] = { "*", NULL };
-	int i, count;
+	const char *attrs[] = { "sAMAccountType", "objectSid", NULL };
+	int count;
+	uint32_t *rids;
 	ADS_STATUS rc;
 	LDAPMessage *res = NULL;
 	LDAPMessage *msg = NULL;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
-	*num_entries = 0;
+	*prids = NULL;
 
 	DEBUG(3,("ads: query_user_list\n"));
 
@@ -332,8 +332,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	(*pinfo) = talloc_zero_array(mem_ctx, struct wbint_userinfo, count);
-	if (!*pinfo) {
+	rids = talloc_zero_array(mem_ctx, uint32_t, count);
+	if (rids == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -341,8 +341,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	count = 0;
 
 	for (msg = ads_first_entry(ads, res); msg; msg = ads_next_entry(ads, msg)) {
-		struct wbint_userinfo *info = &((*pinfo)[count]);
-		uint32_t group;
+		struct dom_sid user_sid;
 		uint32_t atype;
 		bool ok;
 
@@ -356,59 +355,30 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			continue;
 		}
 
-		info->acct_name = ads_pull_username(ads, mem_ctx, msg);
-		info->full_name = ads_pull_string(ads, mem_ctx, msg, "displayName");
-		if (info->full_name == NULL) {
-			info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
-		}
-		info->homedir = NULL;
-		info->shell = NULL;
-		info->primary_gid = (gid_t)-1;
-
-		if (!ads_pull_sid(ads, msg, "objectSid",
-				  &info->user_sid)) {
-			DEBUG(1, ("No sid for %s !?\n", info->acct_name));
+		if (!ads_pull_sid(ads, msg, "objectSid", &user_sid)) {
+			DBG_INFO("No sid for %s !?\n",
+				 ads_get_dn(ads, talloc_tos(), msg));
 			continue;
 		}
 
-		if (!ads_pull_uint32(ads, msg, "primaryGroupID", &group)) {
-			DEBUG(1, ("No primary group for %s !?\n",
-				  info->acct_name));
+		if (!dom_sid_in_domain(&domain->sid, &user_sid)) {
+			fstring sidstr, domstr;
+			DBG_WARNING("Got sid %s in domain %s\n",
+				    sid_to_fstring(sidstr, &user_sid),
+				    sid_to_fstring(domstr, &domain->sid));
 			continue;
 		}
-		sid_compose(&info->group_sid, &domain->sid, group);
 
+		sid_split_rid(&user_sid, &rids[count]);
 		count += 1;
 	}
 
-	(*num_entries) = count;
-	ads_msgfree(ads, res);
-
-	for (i=0; i<count; i++) {
-		struct wbint_userinfo *info = &((*pinfo)[i]);
-		const char *gecos = NULL;
-		gid_t primary_gid = (gid_t)-1;
-
-		status = nss_get_info_cached(domain, &info->user_sid, mem_ctx,
-					     &info->homedir, &info->shell,
-					     &gecos, &primary_gid);
-		if (!NT_STATUS_IS_OK(status)) {
-			/*
-			 * Deliberately ignore this error, there might be more
-			 * users to fill
-			 */
-			continue;
-		}
-
-		if (gecos != NULL) {
-			info->full_name = gecos;
-		}
-		info->primary_gid = primary_gid;
-	}
+	rids = talloc_realloc(mem_ctx, rids, uint32_t, count);
+	*prids = rids;
 
 	status = NT_STATUS_OK;
 
-	DEBUG(3,("ads query_user_list gave %d entries\n", (*num_entries)));
+	DBG_NOTICE("ads query_user_list gave %d entries\n", count);
 
 done:
 	return status;

@@ -49,21 +49,15 @@ static NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
    application. */
 static NTSTATUS msrpc_query_user_list(struct winbindd_domain *domain,
 				      TALLOC_CTX *mem_ctx,
-				      uint32_t *pnum_info,
-				      struct wbint_userinfo **pinfo)
+				      uint32_t **prids)
 {
 	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle dom_pol;
-	struct wbint_userinfo *info = NULL;
-	uint32_t num_info = 0;
+	uint32_t *rids;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
 	DEBUG(3, ("msrpc_query_user_list\n"));
-
-	if (pnum_info) {
-		*pnum_info = 0;
-	}
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -86,18 +80,13 @@ static NTSTATUS msrpc_query_user_list(struct winbindd_domain *domain,
 				     samr_pipe,
 				     &dom_pol,
 				     &domain->sid,
-				     &num_info,
-				     &info);
+				     &rids);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	if (pnum_info) {
-		*pnum_info = num_info;
-	}
-
-	if (pinfo) {
-		*pinfo = talloc_move(mem_ctx, &info);
+	if (prids) {
+		*prids = talloc_move(mem_ctx, &rids);
 	}
 
 done:

@@ -167,13 +167,11 @@ error:
 /* Query display info for a domain */
 static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    uint32_t *pnum_info,
-				    struct wbint_userinfo **pinfo)
+				    uint32_t **prids)
 {
 	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle dom_pol;
-	struct wbint_userinfo *info = NULL;
-	uint32_t num_info = 0;
+	uint32_t *rids;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
@@ -182,9 +180,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 
 	ZERO_STRUCT(dom_pol);
 
-	if (pnum_info) {
-		*pnum_info = 0;
-	}
+	*prids = NULL;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -202,18 +198,13 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				     samr_pipe,
 				     &dom_pol,
 				     &domain->sid,
-				     &num_info,
-				     &info);
+				     &rids);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	if (pnum_info) {
-		*pnum_info = num_info;
-	}
-
-	if (pinfo) {
-		*pinfo = talloc_move(mem_ctx, &info);
+	if (prids) {
+		*prids = talloc_move(mem_ctx, &rids);
 	}
 
 done:
@@ -385,12 +376,10 @@ static NTSTATUS builtin_enum_dom_groups(struct winbindd_domain *domain,
 /* Query display info for a domain */
 static NTSTATUS builtin_query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32_t *num_entries,
-				struct wbint_userinfo **info)
+				uint32_t **rids)
 {
 	/* We don't have users */
-	*num_entries = 0;
-	*info = NULL;
+	*rids = NULL;
 	return NT_STATUS_OK;
 }
 
