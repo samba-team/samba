@@ -3763,29 +3763,6 @@ static int validate_de(TALLOC_CTX *mem_ctx, const char *keystr, TDB_DATA dbuf,
 	return 0;
 }
 
-static int validate_pwinfo(TALLOC_CTX *mem_ctx, const char *keystr,
-			   TDB_DATA dbuf, struct tdb_validation_status *state)
-{
-	struct cache_entry *centry = create_centry_validate(keystr, dbuf, state);
-
-	if (!centry) {
-		return 1;
-	}
-
-	(void)centry_string(centry, mem_ctx);
-	(void)centry_string(centry, mem_ctx);
-	(void)centry_string(centry, mem_ctx);
-	(void)centry_uint32(centry);
-
-	centry_free(centry);
-
-	if (!(state->success)) {
-		return 1;
-	}
-	DEBUG(10,("validate_pwinfo: %s ok\n", keystr));
-	return 0;
-}
-
 static int validate_nss_an(TALLOC_CTX *mem_ctx, const char *keystr,
 			   TDB_DATA dbuf,
 			   struct tdb_validation_status *state)
@@ -3907,7 +3884,6 @@ struct key_val_struct {
 	{"GM/", validate_gm},
 	{"DR/", validate_dr},
 	{"DE/", validate_de},
-	{"NSS/PWINFO/", validate_pwinfo},
 	{"TRUSTDOMCACHE/", validate_trustdomcache},
 	{"NSS/NA/", validate_nss_na},
 	{"NSS/AN/", validate_nss_an},
@@ -4638,98 +4614,6 @@ void wcache_tdc_clear( void )
 
 	return;	
 }
-
-
-/*********************************************************************
- ********************************************************************/
-
-static void wcache_save_user_pwinfo(struct winbindd_domain *domain, 
-				    NTSTATUS status,
-				    const struct dom_sid *user_sid,
-				    const char *homedir,
-				    const char *shell,
-				    const char *gecos,
-				    uint32_t gid)
-{
-	struct cache_entry *centry;
-	fstring tmp;
-
-	if ( (centry = centry_start(domain, status)) == NULL )
-		return;
-
-	centry_put_string( centry, homedir );
-	centry_put_string( centry, shell );
-	centry_put_string( centry, gecos );
-	centry_put_uint32( centry, gid );
-
-	centry_end(centry, "NSS/PWINFO/%s", sid_to_fstring(tmp, user_sid) );
-
-	DEBUG(10,("wcache_save_user_pwinfo: %s\n", sid_string_dbg(user_sid) ));
-
-	centry_free(centry);
-}
-
-#ifdef HAVE_ADS
-
-NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
-			      const struct dom_sid *user_sid,
-			      TALLOC_CTX *ctx,
-			      const char **homedir, const char **shell,
-			      const char **gecos, gid_t *p_gid)
-{
-	struct winbind_cache *cache = get_cache(domain);
-	struct cache_entry *centry = NULL;
-	NTSTATUS nt_status;
-	fstring tmp;
-
-	if (!cache->tdb)
-		goto do_query;
-
-	centry = wcache_fetch(cache, domain, "NSS/PWINFO/%s",
-			      sid_to_fstring(tmp, user_sid));
-
-	if (!centry)
-		goto do_query;
-
-	*homedir = centry_string( centry, ctx );
-	*shell   = centry_string( centry, ctx );
-	*gecos   = centry_string( centry, ctx );
-	*p_gid   = centry_uint32( centry );	
-
-	centry_free(centry);
-
-	DEBUG(10,("nss_get_info_cached: [Cached] - user_sid %s\n",
-		  sid_string_dbg(user_sid)));
-
-	return NT_STATUS_OK;
-
-do_query:
-
-	nt_status = nss_get_info( domain->name, user_sid, ctx,
-				  homedir, shell, gecos, p_gid );
-
-	DEBUG(10, ("nss_get_info returned %s\n", nt_errstr(nt_status)));
-
-	if ( NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(10, ("result:\n\thomedir = '%s'\n", *homedir));
-                DEBUGADD(10, ("\tshell = '%s'\n", *shell));
-                DEBUGADD(10, ("\tgecos = '%s'\n", *gecos));
-                DEBUGADD(10, ("\tgid = '%u'\n", (unsigned int)*p_gid));
-
-		wcache_save_user_pwinfo( domain, nt_status, user_sid,
-					 *homedir, *shell, *gecos, *p_gid );
-	}	
-
-	if ( NT_STATUS_EQUAL( nt_status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND ) ) {
-		DEBUG(5,("nss_get_info_cached: Setting domain %s offline\n",
-			 domain->name ));
-		set_domain_offline( domain );
-	}
-
-	return nt_status;	
-}
-
-#endif
 
 static bool wcache_ndr_key(TALLOC_CTX *mem_ctx, const char *domain_name,
 			   uint32_t opnum, const DATA_BLOB *req,
