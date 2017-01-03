@@ -91,10 +91,14 @@ case "$1" in
                 printf "/statd-state@%s@/p\n", ip }')
 	# Intentional multi-word expansion for multiple files
 	# shellcheck disable=SC2086
-        if sed -n "$sed_expr" $files | $CTDB ptrans "ctdb.tdb" ; then
-            rm $files
+	items=$(sed -n "$sed_expr" $files)
+	if [ -n "$items" ] ; then
+		if echo "$items"  | $CTDB ptrans "ctdb.tdb" ; then
+			# shellcheck disable=SC2086
+			rm $files
+		fi
 	fi
-        ;;
+	;;
 
     notify)
 	# we must restart the lockmanager (on all nodes) so that we get
