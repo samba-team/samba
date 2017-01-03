@@ -27,6 +27,7 @@
 #include "auth/gensec/gensec.h"
 #include "auth_generic.h"
 #include "../librpc/ndr/libndr.h"
+#include "libsmb/clirap.h"
 
 extern fstring host, workgroup, share, password, username, myname;
 
@@ -1960,4 +1961,163 @@ bool run_smb2_session_reauth(int dummy)
 	cli->smb2.tcon = saved_tcon;
 
 	return true;
+}
+
+static NTSTATUS check_size(struct cli_state *cli,
+				uint16_t fnum,
+				const char *fname,
+				size_t size)
+{
+	off_t size_read = 0;
+
+	NTSTATUS status = cli_qfileinfo_basic(cli,
+				fnum,
+				NULL,
+				&size_read,
+				NULL,
+				NULL,
+				NULL,
+				NULL,
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_smb2_qfileinfo_basic of %s failed (%s)\n",
+			fname,
+			nt_errstr(status));
+		return status;
+	}
+
+	if (size != size_read) {
+		printf("size (%u) != size_read(%u) for %s\n",
+			(unsigned int)size,
+			(unsigned int)size_read,
+			fname);
+		/* Use EOF to mean bad size. */
+		return NT_STATUS_END_OF_FILE;
+	}
+	return NT_STATUS_OK;
+}
+
+/* Ensure cli_ftruncate() works for SMB2. */
+
+bool run_smb2_ftruncate(int dummy)
+{
+	struct cli_state *cli = NULL;
+	const char *fname = "smb2_ftruncate.txt";
+	uint16_t fnum = (uint16_t)-1;
+	bool correct = false;
+	size_t buflen = 1024*1024;
+	uint8_t *buf = NULL;
+	unsigned int i;
+	NTSTATUS status;
+
+	printf("Starting SMB2-FTRUNCATE\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn, cli->timeout,
+				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup(cli, username,
+				   password, strlen(password),
+				   password, strlen(password),
+				   workgroup);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	cli_setatr(cli, fname, 0, 0);
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	status = cli_ntcreate(cli,
+				fname,
+				0,
+				GENERIC_ALL_ACCESS,
+				FILE_ATTRIBUTE_NORMAL,
+				FILE_SHARE_NONE,
+				FILE_CREATE,
+				0,
+				0,
+				&fnum,
+				NULL);
+
+        if (!NT_STATUS_IS_OK(status)) {
+                printf("open of %s failed (%s)\n", fname, nt_errstr(status));
+                goto fail;
+        }
+
+	buf = talloc_zero_array(cli, uint8_t, buflen);
+	if (buf == NULL) {
+		goto fail;
+	}
+
+	/* Write 1MB. */
+	status = cli_writeall(cli,
+				fnum,
+				0,
+				buf,
+				0,
+				buflen,
+				NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("write of %u to %s failed (%s)\n",
+			(unsigned int)buflen,
+			fname,
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = check_size(cli, fnum, fname, buflen);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	/* Now ftruncate. */
+	for ( i = 0; i < 10; i++) {
+		status = cli_ftruncate(cli, fnum, i*1024);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("cli_ftruncate %u of %s failed (%s)\n",
+				(unsigned int)i*1024,
+				fname,
+				nt_errstr(status));
+			goto fail;
+		}
+		status = check_size(cli, fnum, fname, i*1024);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+	}
+
+	correct = true;
+
+  fail:
+
+	if (cli == NULL) {
+		return false;
+	}
+
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli, fnum);
+	}
+	cli_setatr(cli, fname, 0, 0);
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+	return correct;
 }
