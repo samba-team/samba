@@ -12,7 +12,5 @@
 	varaible.</para>
 </description>
 
-<related>winbindd privileged socket directory</related>
-
 <value type="default">&pathconfig.WINBINDD_SOCKET_DIR;</value>
 </samba:parameter>

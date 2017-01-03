@@ -13,7 +13,6 @@ vars = {
     "lock dir" : "${PREFIX}/var/locks",
     "pid directory" : "${PREFIX}/var/run",
     "winbindd socket directory" : "${PREFIX}/var/run/winbindd",
-    "winbindd privileged socket directory" : "${PREFIX}/var/lib/winbindd_privileged",
     "ntp signd socket directory" : "${PREFIX}/var/run/ntp_signd"
 }
 

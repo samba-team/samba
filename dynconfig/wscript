@@ -221,11 +221,6 @@ dynconfig = {
          'FHS-PATH':  '${SOCKET_DIR}/winbindd',
          'DELAY':     True,
     },
-    'WINBINDD_PRIVILEGED_SOCKET_DIR' : {
-         'STD-PATH':  '${PRIVILEGED_SOCKET_DIR}/winbindd_privileged',
-         'FHS-PATH':  '${PRIVILEGED_SOCKET_DIR}/winbindd_privileged',
-         'DELAY':     True,
-    },
     'NMBDSOCKETDIR' : {
          'STD-PATH':  '${SOCKET_DIR}/nmbd',
          'FHS-PATH':  '${SOCKET_DIR}/nmbd',

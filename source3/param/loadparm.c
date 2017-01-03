@@ -890,10 +890,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	lpcfg_string_set(Globals.ctx, &Globals.ntp_signd_socket_directory,
 			 get_dyn_NTP_SIGND_SOCKET_DIR());
 
-	lpcfg_string_set(Globals.ctx,
-			 &Globals.winbindd_privileged_socket_directory,
-			 get_dyn_WINBINDD_PRIVILEGED_SOCKET_DIR());
-
 	s = talloc_asprintf(talloc_tos(), "%s/samba_kcc", get_dyn_SCRIPTSBINDIR());
 	if (s == NULL) {
 		smb_panic("init_globals: ENOMEM");
