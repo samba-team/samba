@@ -274,74 +274,6 @@ bool winbind_allocate_gid(gid_t *gid)
 	return (ret == WBC_ERR_SUCCESS);
 }
 
-bool winbind_get_groups(TALLOC_CTX * mem_ctx, const char *account, uint32_t *num_groups, gid_t **_groups)
-{
-	wbcErr ret;
-	uint32_t ngroups;
-	gid_t *group_list = NULL;
-
-	ret = wbcGetGroups(account, &ngroups, &group_list);
-	if (ret != WBC_ERR_SUCCESS)
-		return false;
-
-	*_groups = talloc_array(mem_ctx, gid_t, ngroups);
-	if (*_groups == NULL) {
-	    wbcFreeMemory(group_list);
-	    return false;
-	}
-
-	memcpy(*_groups, group_list, ngroups* sizeof(gid_t));
-	*num_groups = ngroups;
-
-	wbcFreeMemory(group_list);
-	return true;
-}
-
-bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
-			     const struct dom_sid *dom_sid,
-			     const struct dom_sid *members,
-			     size_t num_members,
-			     uint32_t **pp_alias_rids,
-			     size_t *p_num_alias_rids)
-{
-	wbcErr ret;
-	struct wbcDomainSid domain_sid;
-	struct wbcDomainSid *sid_list = NULL;
-	size_t i;
-	uint32_t * rids;
-	uint32_t num_rids;
-
-	memcpy(&domain_sid, dom_sid, sizeof(*dom_sid));
-
-	sid_list = talloc_array(mem_ctx, struct wbcDomainSid, num_members);
-
-	for (i=0; i < num_members; i++) {
-	    memcpy(&sid_list[i], &members[i], sizeof(sid_list[i]));
-	}
-
-	ret = wbcGetSidAliases(&domain_sid,
-			       sid_list,
-			       num_members,
-			       &rids,
-			       &num_rids);
-	if (ret != WBC_ERR_SUCCESS) {
-		return false;
-	}
-
-	*pp_alias_rids = talloc_array(mem_ctx, uint32_t, num_rids);
-	if (*pp_alias_rids == NULL) {
-		wbcFreeMemory(rids);
-		return false;
-	}
-
-	memcpy(*pp_alias_rids, rids, sizeof(uint32_t) * num_rids);
-
-	*p_num_alias_rids = num_rids;
-	wbcFreeMemory(rids);
-
-	return true;
-}
-
 bool winbind_lookup_usersids(TALLOC_CTX *mem_ctx,
 			     const struct dom_sid *user_sid,
 			     uint32_t *p_num_sids,
@@ -466,21 +398,6 @@ bool winbind_allocate_uid(uid_t *uid)
 /* Ask Winbind to allocate a new gid for us */
 
 bool winbind_allocate_gid(gid_t *gid)
-{
-	return false;
-}
-
-bool winbind_get_groups(TALLOC_CTX *mem_ctx, const char *account, uint32_t *num_groups, gid_t **_groups)
-{
-	return false;
-}
-
-bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
-			     const struct dom_sid *dom_sid,
-			     const struct dom_sid *members,
-			     size_t num_members,
-			     uint32_t **pp_alias_rids,
-			     size_t *p_num_alias_rids)
 {
 	return false;
 }
