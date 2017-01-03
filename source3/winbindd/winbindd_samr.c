@@ -112,7 +112,7 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 				    struct wb_acct_info **pinfo)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -120,8 +120,6 @@ static NTSTATUS sam_enum_dom_groups(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_enum_dom_groups\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	if (pnum_info) {
 		*pnum_info = 0;
@@ -170,15 +168,13 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				    uint32_t **prids)
 {
 	struct rpc_pipe_client *samr_pipe = NULL;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	uint32_t *rids;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("samr_query_user_list\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	*prids = NULL;
 
@@ -222,7 +218,7 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 				    struct netr_DomainTrustList *ptrust_list)
 {
 	struct rpc_pipe_client *lsa_pipe;
-	struct policy_handle lsa_policy;
+	struct policy_handle lsa_policy = { 0 };
 	struct netr_DomainTrust *trusts = NULL;
 	uint32_t num_trusts = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -230,8 +226,6 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("samr: trusted domains\n"));
-
-	ZERO_STRUCT(lsa_policy);
 
 	if (ptrust_list) {
 		ZERO_STRUCTP(ptrust_list);
@@ -283,7 +277,7 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 				    uint32_t **pname_types)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 
 	uint32_t num_names = 0;
 	struct dom_sid *sid_mem = NULL;
@@ -295,8 +289,6 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_lookup_groupmem\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	/* Paranoia check */
 	if (sid_check_is_in_builtin(group_sid) && (type != SID_NAME_ALIAS)) {
@@ -403,7 +395,7 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 				      struct wb_acct_info **pinfo)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	struct wb_acct_info *info = NULL;
 	uint32_t num_info = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -411,8 +403,6 @@ static NTSTATUS sam_enum_local_groups(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("samr: enum local groups\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	if (pnum_info) {
 		*pnum_info = 0;
@@ -466,7 +456,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 				   enum lsa_SidType *ptype)
 {
 	struct rpc_pipe_client *lsa_pipe;
-	struct policy_handle lsa_policy;
+	struct policy_handle lsa_policy = { 0 };
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
@@ -474,8 +464,6 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_name_to_sid\n"));
-
-	ZERO_STRUCT(lsa_policy);
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -526,7 +514,7 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 				enum lsa_SidType *ptype)
 {
 	struct rpc_pipe_client *lsa_pipe;
-	struct policy_handle lsa_policy;
+	struct policy_handle lsa_policy = { 0 };
 	char *domain_name = NULL;
 	char *name = NULL;
 	enum lsa_SidType type;
@@ -535,8 +523,6 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_sid_to_name\n"));
-
-	ZERO_STRUCT(lsa_policy);
 
 	/* Paranoia check */
 	if (!sid_check_is_in_builtin(sid) &&
@@ -605,7 +591,7 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 				  enum lsa_SidType **ptypes)
 {
 	struct rpc_pipe_client *lsa_pipe;
-	struct policy_handle lsa_policy;
+	struct policy_handle lsa_policy = { 0 };
 	enum lsa_SidType *types = NULL;
 	char *domain_name = NULL;
 	char **names = NULL;
@@ -614,8 +600,6 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_rids_to_names for %s\n", domain->name));
-
-	ZERO_STRUCT(lsa_policy);
 
 	/* Paranoia check */
 	if (!sid_check_is_builtin(domain_sid) &&
@@ -680,15 +664,13 @@ static NTSTATUS sam_lockout_policy(struct winbindd_domain *domain,
 				   struct samr_DomInfo12 *lockout_policy)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	union samr_DomainInfo *info = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_lockout_policy\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -732,15 +714,13 @@ static NTSTATUS sam_password_policy(struct winbindd_domain *domain,
 				    struct samr_DomInfo1 *passwd_policy)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	union samr_DomainInfo *info = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_password_policy\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -787,7 +767,7 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 				       uint32_t **palias_rids)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	uint32_t num_aliases = 0;
 	uint32_t *alias_rids = NULL;
 	TALLOC_CTX *tmp_ctx;
@@ -795,8 +775,6 @@ static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_lookup_useraliases\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	if (pnum_aliases) {
 		*pnum_aliases = 0;
@@ -847,15 +825,13 @@ static NTSTATUS sam_sequence_number(struct winbindd_domain *domain,
 				    uint32_t *pseq)
 {
 	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
+	struct policy_handle dom_pol = { 0 };
 	uint32_t seq = DOM_SEQUENCE_NONE;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("samr: sequence number\n"));
-
-	ZERO_STRUCT(dom_pol);
 
 	if (pseq) {
 		*pseq = DOM_SEQUENCE_NONE;
