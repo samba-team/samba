@@ -36,7 +36,6 @@ struct tevent_req *winbindd_getuserdomgroups_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req, *subreq;
 	struct winbindd_getuserdomgroups_state *state;
-	struct winbindd_domain *domain;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_getuserdomgroups_state);
@@ -56,15 +55,7 @@ struct tevent_req *winbindd_getuserdomgroups_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	domain = find_domain_from_sid_noinit(&state->sid);
-	if (domain == NULL) {
-		DEBUG(1,("could not find domain entry for sid %s\n",
-			 request->data.sid));
-		tevent_req_nterror(req, NT_STATUS_NO_SUCH_DOMAIN);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = wb_lookupusergroups_send(state, ev, domain, &state->sid);
+	subreq = wb_gettoken_send(state, ev, &state->sid, false);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -80,8 +71,8 @@ static void winbindd_getuserdomgroups_done(struct tevent_req *subreq)
 		req, struct winbindd_getuserdomgroups_state);
 	NTSTATUS status;
 
-	status = wb_lookupusergroups_recv(subreq, state, &state->num_sids,
-					  &state->sids);
+	status = wb_gettoken_recv(subreq, state, &state->num_sids,
+				  &state->sids);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
