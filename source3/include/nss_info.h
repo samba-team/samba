@@ -61,11 +61,6 @@ struct nss_domain_entry {
 
 struct nss_info_methods {
 	NTSTATUS (*init)( struct nss_domain_entry *e );
-	NTSTATUS (*get_nss_info)( struct nss_domain_entry *e, 
-				  const struct dom_sid *sid,
-				  TALLOC_CTX *ctx, 
-				  const char **homedir, const char **shell,
-				  const char **gecos, gid_t *p_gid);
 	NTSTATUS (*map_to_alias)(TALLOC_CTX *mem_ctx,
 				 struct nss_domain_entry *e,
 				 const char *name, char **alias);

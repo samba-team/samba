@@ -285,46 +285,6 @@ static NTSTATUS nss_hash_init(struct nss_domain_entry *e )
 /**********************************************************************
  *********************************************************************/
 
-static NTSTATUS nss_hash_get_info(struct nss_domain_entry *e,
-				    const struct dom_sid *sid,
-				    TALLOC_CTX *ctx,
-				    const char **homedir,
-				    const char **shell,
-				    const char **gecos,
-				    gid_t *p_gid )
-{
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-
-	nt_status = nss_hash_init(e);
-	BAIL_ON_NTSTATUS_ERROR(nt_status);
-
-	if (!homedir || !shell || !gecos) {
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		BAIL_ON_NTSTATUS_ERROR(nt_status);
-	}
-
-	*homedir = talloc_strdup(ctx, lp_template_homedir());
-	BAIL_ON_PTR_NT_ERROR(*homedir, nt_status);
-
-	*shell   = talloc_strdup(ctx, lp_template_shell());
-	BAIL_ON_PTR_NT_ERROR(*shell, nt_status);
-
-	*gecos   = NULL;
-
-	/* Initialize the gid so that the upper layer fills
-	   in the proper Windows primary group */
-
-	if (*p_gid) {
-		*p_gid = (gid_t)-1;
-	}
-
-done:
-	return nt_status;
-}
-
-/**********************************************************************
- *********************************************************************/
-
 static NTSTATUS nss_hash_map_to_alias(TALLOC_CTX *mem_ctx,
 					struct nss_domain_entry *e,
 					const char *name,
@@ -374,7 +334,6 @@ static struct idmap_methods hash_idmap_methods = {
 
 static struct nss_info_methods hash_nss_methods = {
 	.init           = nss_hash_init,
-	.get_nss_info   = nss_hash_get_info,
 	.map_to_alias   = nss_hash_map_to_alias,
 	.map_from_alias = nss_hash_map_from_alias,
 	.close_fn       = nss_hash_close

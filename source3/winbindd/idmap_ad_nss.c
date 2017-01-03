@@ -197,109 +197,6 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 	return nss_ad_generic_init(e, WB_POSIX_MAP_RFC2307);
 }
 
-
-/************************************************************************
- ***********************************************************************/
-
-static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
-				  const struct dom_sid *sid,
-				  TALLOC_CTX *mem_ctx,
-				  const char **homedir,
-				  const char **shell,
-				  const char **gecos,
-				  gid_t *p_gid )
-{
-	const char *attrs[] = {NULL, /* attr_homedir */
-			       NULL, /* attr_shell */
-			       NULL, /* attr_gecos */
-			       NULL, /* attr_gidnumber */
-			       NULL };
-	char *filter = NULL;
-	LDAPMessage *msg_internal = NULL;
-	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	char *sidstr = NULL;
-	struct idmap_domain *dom;
-	struct idmap_ad_context *ctx;
-
-	DEBUG(10, ("nss_ad_get_info called for sid [%s] in domain '%s'\n",
-		   sid_string_dbg(sid), e->domain?e->domain:"NULL"));
-
-	/* Only do query if we are online */
-	if (idmap_is_offline())	{
-		return NT_STATUS_FILE_IS_OFFLINE;
-	}
-
-	dom = talloc_get_type(e->state, struct idmap_domain);
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
-	ads_status = ad_idmap_cached_connection(dom);
-	if (!ADS_ERR_OK(ads_status)) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (!ctx->ad_schema) {
-		DEBUG(10, ("nss_ad_get_info: no ad_schema configured!\n"));
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	if (!sid || !homedir || !shell || !gecos) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* Have to do our own query */
-
-	DEBUG(10, ("nss_ad_get_info: no ads connection given, doing our "
-		   "own query\n"));
-
-	attrs[0] = ctx->ad_schema->posix_homedir_attr;
-	attrs[1] = ctx->ad_schema->posix_shell_attr;
-	attrs[2] = ctx->ad_schema->posix_gecos_attr;
-	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
-
-	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
-	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr);
-	TALLOC_FREE(sidstr);
-
-	if (!filter) {
-		nt_status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	ads_status = ads_search_retry(ctx->ads, &msg_internal, filter, attrs);
-	if (!ADS_ERR_OK(ads_status)) {
-		nt_status = ads_ntstatus(ads_status);
-		goto done;
-	}
-
-	*homedir = ads_pull_string(ctx->ads, mem_ctx, msg_internal, ctx->ad_schema->posix_homedir_attr);
-	*shell   = ads_pull_string(ctx->ads, mem_ctx, msg_internal, ctx->ad_schema->posix_shell_attr);
-	*gecos   = ads_pull_string(ctx->ads, mem_ctx, msg_internal, ctx->ad_schema->posix_gecos_attr);
-
-	if (p_gid != NULL) {
-		uint32_t gid = UINT32_MAX;
-		bool ok;
-
-		ok = ads_pull_uint32(ctx->ads, msg_internal,
-				     ctx->ad_schema->posix_gidnumber_attr,
-				     &gid);
-		if (ok) {
-			*p_gid = gid;
-		} else {
-			*p_gid = (gid_t)-1;
-		}
-	}
-
-	nt_status = NT_STATUS_OK;
-
-done:
-	if (msg_internal) {
-		ads_msgfree(ctx->ads, msg_internal);
-	}
-
-	return nt_status;
-}
-
 /**********************************************************************
  *********************************************************************/
 
@@ -475,21 +372,18 @@ done:
 
 static struct nss_info_methods nss_rfc2307_methods = {
 	.init           = nss_rfc2307_init,
-	.get_nss_info   = nss_ad_get_info,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
 };
 
 static struct nss_info_methods nss_sfu_methods = {
 	.init           = nss_sfu_init,
-	.get_nss_info   = nss_ad_get_info,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
 };
 
 static struct nss_info_methods nss_sfu20_methods = {
 	.init           = nss_sfu20_init,
-	.get_nss_info   = nss_ad_get_info,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
 };
