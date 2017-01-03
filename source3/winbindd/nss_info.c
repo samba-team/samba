@@ -306,32 +306,6 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 /********************************************************************
  *******************************************************************/
 
-NTSTATUS nss_get_info( const char *domain, const struct dom_sid *user_sid,
-		       TALLOC_CTX *ctx,
-		       const char **homedir, const char **shell,
-		       const char **gecos, gid_t *p_gid)
-{
-	struct nss_domain_entry *p;
-	struct nss_info_methods *m;
-
-	DEBUG(10, ("nss_get_info called for sid [%s] in domain '%s'\n",
-		   sid_string_dbg(user_sid), domain?domain:"NULL"));
-
-	if ( (p = find_nss_domain( domain )) == NULL ) {
-		DEBUG(4,("nss_get_info: Failed to find nss domain pointer for %s\n",
-			 domain ));
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	m = p->backend->methods;
-
-	return m->get_nss_info( p, user_sid, ctx,
-				homedir, shell, gecos, p_gid );
-}
-
-/********************************************************************
- *******************************************************************/
-
  NTSTATUS nss_map_to_alias( TALLOC_CTX *mem_ctx, const char *domain,
 			    const char *name, char **alias )
 {

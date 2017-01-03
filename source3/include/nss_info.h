@@ -82,11 +82,6 @@ NTSTATUS smb_register_idmap_nss(int version,
 				const char *name, 
 				struct nss_info_methods *methods);
 
-NTSTATUS nss_get_info( const char *domain, const struct dom_sid *user_sid,
-		       TALLOC_CTX *ctx,
-		       const char **homedir, const char **shell,
-		       const char **gecos, gid_t *p_gid);
-
 NTSTATUS nss_map_to_alias( TALLOC_CTX *mem_ctx, const char *domain,
 			   const char *name, char **alias );
 
