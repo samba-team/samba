@@ -44,6 +44,7 @@ configured as the default backend.
 To avoid problems in future we advise all users to run 'testparm' after
 changing the smb.conf file!
 
+
 NEW FEATURES/CHANGES
 ====================
 
@@ -114,14 +115,13 @@ over-replication of links from new DCs.  We have also made the parsing
 of on-disk linked attributes much more efficient.
 
 DNS improvements
----------------------------
+----------------
 
 The samba-tool dns subcommand is now much more robust and can delete
 records in a number of situations where it was not possible to do so
 in the past.
 
 On the server side, DNS names are now more strictly validated.
-
 
 CTDB changes
 ------------
@@ -173,10 +173,6 @@ CTDB changes
 
   To build/install these, use the --enable-etcd-reclock and
   --enable-ceph-reclock configure options.
-
-
-REMOVED FEATURES
-================
 
 
 smb.conf changes
