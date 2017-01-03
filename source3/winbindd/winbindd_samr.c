@@ -790,69 +790,6 @@ error:
 	return status;
 }
 
-/* Lookup groups a user is a member of. */
-static NTSTATUS sam_lookup_usergroups(struct winbindd_domain *domain,
-				      TALLOC_CTX *mem_ctx,
-				      const struct dom_sid *user_sid,
-				      uint32_t *pnum_groups,
-				      struct dom_sid **puser_grpsids)
-{
-	struct rpc_pipe_client *samr_pipe;
-	struct policy_handle dom_pol;
-	struct dom_sid *user_grpsids = NULL;
-	uint32_t num_groups = 0;
-	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status, result;
-	struct dcerpc_binding_handle *b = NULL;
-
-	DEBUG(3,("sam_lookup_usergroups\n"));
-
-	ZERO_STRUCT(dom_pol);
-
-	if (pnum_groups) {
-		*pnum_groups = 0;
-	}
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = open_internal_samr_conn(tmp_ctx, domain, &samr_pipe, &dom_pol);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	b = samr_pipe->binding_handle;
-
-	status = rpc_lookup_usergroups(tmp_ctx,
-				       samr_pipe,
-				       &dom_pol,
-				       &domain->sid,
-				       user_sid,
-				       &num_groups,
-				       &user_grpsids);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	if (pnum_groups) {
-		*pnum_groups = num_groups;
-	}
-
-	if (puser_grpsids) {
-		*puser_grpsids = talloc_move(mem_ctx, &user_grpsids);
-	}
-
-done:
-	if (b && is_valid_policy_hnd(&dom_pol)) {
-		dcerpc_samr_Close(b, mem_ctx, &dom_pol, &result);
-	}
-
-	TALLOC_FREE(tmp_ctx);
-	return status;
-}
-
 static NTSTATUS sam_lookup_useraliases(struct winbindd_domain *domain,
 				       TALLOC_CTX *mem_ctx,
 				       uint32_t num_sids,
@@ -978,7 +915,6 @@ struct winbindd_methods builtin_passdb_methods = {
 	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = sam_rids_to_names,
-	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = sam_sequence_number,
@@ -997,7 +933,6 @@ struct winbindd_methods sam_passdb_methods = {
 	.name_to_sid           = sam_name_to_sid,
 	.sid_to_name           = sam_sid_to_name,
 	.rids_to_names         = sam_rids_to_names,
-	.lookup_usergroups     = sam_lookup_usergroups,
 	.lookup_useraliases    = sam_lookup_useraliases,
 	.lookup_groupmem       = sam_lookup_groupmem,
 	.sequence_number       = sam_sequence_number,

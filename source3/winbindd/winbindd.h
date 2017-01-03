@@ -263,14 +263,6 @@ struct winbindd_methods {
 				  char ***names,
 				  enum lsa_SidType **types);
 
-	/* lookup all groups that a user is a member of. The backend
-	   can also choose to lookup by username or rid for this
-	   function */
-	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
-				      TALLOC_CTX *mem_ctx,
-				      const struct dom_sid *user_sid,
-				      uint32_t *num_groups, struct dom_sid **user_gids);
-
 	/* Lookup all aliases that the sids delivered are member of. This is
 	 * to implement 'domain local groups' correctly */
 	NTSTATUS (*lookup_useraliases)(struct winbindd_domain *domain,
