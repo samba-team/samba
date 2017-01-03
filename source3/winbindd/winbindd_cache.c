@@ -3801,7 +3801,7 @@ static int validate_nss_na(TALLOC_CTX *mem_ctx, const char *keystr,
 	if (!(state->success)) {
 		return 1;
 	}
-	DEBUG(10,("validate_pwinfo: %s ok\n", keystr));
+	DBG_DEBUG("%s ok\n", keystr);
 	return 0;
 }
 
