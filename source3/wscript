@@ -1663,7 +1663,7 @@ main() {
 
     forced_static_modules.extend(TO_LIST('auth_domain auth_builtin auth_sam auth_winbind'))
     default_static_modules.extend(TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
-                                      auth_unix auth_wbc
+                                      auth_unix
                                       nss_info_template idmap_tdb idmap_passdb
                                       idmap_nss'''))
 

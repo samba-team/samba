@@ -46,14 +46,6 @@ bld.SAMBA3_MODULE('auth_winbind',
                  init_function='',
                  internal_module=True)
 
-bld.SAMBA3_MODULE('auth_wbc',
-                 subsystem='auth',
-                 source='auth_wbc.c',
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_wbc'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_wbc'))
-
 bld.SAMBA3_MODULE('auth_domain',
                  subsystem='auth',
                  source='auth_domain.c',
