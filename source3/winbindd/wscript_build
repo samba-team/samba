@@ -206,7 +206,6 @@ bld.SAMBA3_BINARY('winbindd',
                  wb_xids2sids.c
                  wb_queryuser.c
                  wb_lookupuseraliases.c
-                 wb_lookupusergroups.c
                  wb_getpwsid.c
                  wb_gettoken.c
                  wb_seqnum.c
