@@ -99,7 +99,7 @@ static void winbindd_getgroups_lookupname_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = wb_gettoken_send(state, state->ev, &state->sid);
+	subreq = wb_gettoken_send(state, state->ev, &state->sid, true);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}

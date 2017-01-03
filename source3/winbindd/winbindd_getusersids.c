@@ -55,7 +55,7 @@ struct tevent_req *winbindd_getusersids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = wb_gettoken_send(state, ev, &state->sid);
+	subreq = wb_gettoken_send(state, ev, &state->sid, true);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}

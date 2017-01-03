@@ -26,6 +26,7 @@
 struct wb_gettoken_state {
 	struct tevent_context *ev;
 	struct dom_sid usersid;
+	bool expand_local_aliases;
 	int num_sids;
 	struct dom_sid *sids;
 };
@@ -41,7 +42,8 @@ static void wb_gettoken_gotbuiltins(struct tevent_req *subreq);
 
 struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
-				    const struct dom_sid *sid)
+				    const struct dom_sid *sid,
+				    bool expand_local_aliases)
 {
 	struct tevent_req *req, *subreq;
 	struct wb_gettoken_state *state;
@@ -52,6 +54,7 @@ struct tevent_req *wb_gettoken_send(TALLOC_CTX *mem_ctx,
 	}
 	sid_copy(&state->usersid, sid);
 	state->ev = ev;
+	state->expand_local_aliases = expand_local_aliases;
 
 	subreq = wb_queryuser_send(state, ev, &state->usersid);
 	if (tevent_req_nomem(subreq, req)) {
@@ -114,6 +117,11 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 	memcpy(&state->sids[state->num_sids], groups,
 	       num_groups * sizeof(struct dom_sid));
 	state->num_sids += num_groups;
+
+	if (!state->expand_local_aliases) {
+		tevent_req_done(req);
+		return;
+	}
 
 	/*
 	 * Expand our domain's aliases
