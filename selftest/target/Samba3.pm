@@ -1239,7 +1239,6 @@ sub provision($$$$$$$$)
 
 	# this gets autocreated by winbindd
 	my $wbsockdir="$prefix_abs/winbindd";
-	my $wbsockprivdir="$lockdir/winbindd_privileged";
 
 	my $nmbdsockdir="$prefix_abs/nmbd";
 	unlink($nmbdsockdir);
@@ -1963,7 +1962,6 @@ force_user:x:$gid_force_user:
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;
 	$ret{SELFTEST_WINBINDD_SOCKET_DIR} = $wbsockdir;
-	$ret{WINBINDD_PRIV_PIPE_DIR} = $wbsockprivdir;
 	$ret{NMBD_SOCKET_DIR} = $nmbdsockdir;
 	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} = $swiface;
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
