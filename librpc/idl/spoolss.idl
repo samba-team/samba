@@ -42,11 +42,11 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	typedef [v1_enum] enum {
 		PROCESSOR_ARM				= 0x00000000,
-		PROCESSOR_INTEL_386			= 0x00000182,
-		PROCESSOR_INTEL_486			= 0x000001E6,
-		PROCESSOR_INTEL_PENTIUM			= 0x0000024A,
-		PROCESSOR_INTEL_IA64			= 0x00000898,
-		PROCESSOR_AMD_X8664			= 0x000022A0
+		PROCESSOR_INTEL_386			= 0x00000182, /* 386 */
+		PROCESSOR_INTEL_486			= 0x000001E6, /* 486 */
+		PROCESSOR_INTEL_PENTIUM			= 0x0000024A, /* 586 */
+		PROCESSOR_INTEL_IA64			= 0x00000898, /* 2200 */
+		PROCESSOR_AMD_X8664			= 0x000021D8  /* 8664 */
 	} spoolss_ProcessorType;
 
 	typedef [v1_enum] enum {
