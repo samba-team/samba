@@ -736,6 +736,7 @@ def build(bld):
         'pidfile_test',
         'run_proc_test',
         'sock_daemon_test',
+        'sock_io_test',
     ]
 
     for target in ctdb_unit_tests:
