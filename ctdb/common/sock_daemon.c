@@ -420,77 +420,33 @@ static bool sock_socket_start_recv(struct tevent_req *req, int *perr)
  * Send message to a client
  */
 
-struct sock_socket_write_state {
-	int status;
-};
-
-static void sock_socket_write_done(struct tevent_req *subreq);
-
 struct tevent_req *sock_socket_write_send(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev,
 					 struct sock_client_context *client_ctx,
 					 uint8_t *buf, size_t buflen)
 {
-	struct tevent_req *req, *subreq;
-	struct sock_socket_write_state *state;
+	struct tevent_req *req;
 
-	req = tevent_req_create(mem_ctx, &state,
-				struct sock_socket_write_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	subreq = comm_write_send(state, ev, client_ctx->comm, buf, buflen);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, sock_socket_write_done, req);
+	req = comm_write_send(mem_ctx, ev, client_ctx->comm, buf, buflen);
 
 	return req;
 }
 
-static void sock_socket_write_done(struct tevent_req *subreq)
+bool sock_socket_write_recv(struct tevent_req *req, int *perr)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct sock_socket_write_state *state = tevent_req_data(
-		req, struct sock_socket_write_state);
 	int ret;
 	bool status;
 
-	status = comm_write_recv(subreq, &ret);
-	TALLOC_FREE(subreq);
+	status = comm_write_recv(req, &ret);
 	if (! status) {
-		state->status = ret;
-		return;
-	}
-}
-
-bool sock_socket_write_recv(struct tevent_req *req, int *perr)
-{
-	struct sock_socket_write_state *state = tevent_req_data(
-		req, struct sock_socket_write_state);
-	int ret;
-
-	if (tevent_req_is_unix_error(req, &ret)) {
 		if (perr != NULL) {
 			*perr = ret;
 		}
-		return false;
 	}
 
-	if (state->status != 0) {
-		if (perr != NULL) {
-			*perr = state->status;
-		}
-		return false;
-	}
-
-	if (perr != NULL) {
-		*perr = 0;
-	}
-	return true;
+	return status;
 }
+
 /*
  * Socket daemon
  */
