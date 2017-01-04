@@ -1,41 +1,26 @@
 # record 1
 dn: CN=swimmers,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=fred,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=user1,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 2
 dn: CN=Domain Users,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=fred-clone,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 3
 dn: CN=ddg\0ADEL:fb8c2fe3-5448-43de-99f9-e1d3b9357cfc,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 4
 dn: CN=dsg\0ADEL:6d66d0ef-cad7-4e5d-b1b6-4a233a21c269,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 5
 dn: CN=gdg\0ADEL:e0f581e7-14ee-4fc2-839c-8f46f581c72a,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 6
 dn: CN=gsg\0ADEL:91aa85cc-fc19-4b8c-9fc7-aaba425439c7,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 7
 dn: CN=udg\0ADEL:7cff5537-51b1-4d26-a295-0225dbea8525,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # record 8
 dn: CN=usg\0ADEL:d012e8f5-a4bd-40ea-a2a1-68ff2508847d,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
-member: CN=User1 UT. Tester,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp
 
 # Referral
 ref: ldap:///CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp

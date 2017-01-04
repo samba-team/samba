@@ -110,7 +110,7 @@ remove_one_user() {
 
 check_match_rule_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-match-rule-links.ldif.tmp
-    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
+    TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted no_attrs > $tmpldif
     diff $tmpldif $release_dir/expected-match-rule-links.ldif
     if [ "$?" != "0" ]; then
 	return 1
