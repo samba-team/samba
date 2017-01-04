@@ -76,7 +76,7 @@ struct sock_queue {
 	struct tevent_queue *queue;
 	struct tevent_fd *fde;
 	uint8_t *buf;
-	size_t buflen, offset;
+	size_t buflen, begin, end;
 };
 
 static bool sock_queue_set_fd(struct sock_queue *queue, int fd);
@@ -181,20 +181,20 @@ static void sock_queue_handler(struct tevent_context *ev,
 		goto fail;
 	}
 
-	if (num_ready > queue->buflen - queue->offset) {
+	if (num_ready > queue->buflen - queue->end) {
 		queue->buf = talloc_realloc_size(queue, queue->buf,
-						 queue->offset + num_ready);
+						 queue->end + num_ready);
 		if (queue->buf == NULL) {
 			goto fail;
 		}
-		queue->buflen = queue->offset + num_ready;
+		queue->buflen = queue->end + num_ready;
 	}
 
-	nread = sys_read(queue->fd, queue->buf + queue->offset, num_ready);
+	nread = sys_read(queue->fd, queue->buf + queue->end, num_ready);
 	if (nread < 0) {
 		goto fail;
 	}
-	queue->offset += nread;
+	queue->end += nread;
 
 	sock_queue_process(queue);
 	return;
@@ -207,33 +207,35 @@ static void sock_queue_process(struct sock_queue *queue)
 {
 	uint32_t pkt_size;
 
-	if (queue->offset < sizeof(uint32_t)) {
+	if ((queue->end - queue->begin) < sizeof(uint32_t)) {
 		/* not enough data */
 		return;
 	}
 
-	pkt_size = *(uint32_t *)queue->buf;
+	pkt_size = *(uint32_t *)(queue->buf + queue->begin);
 	if (pkt_size == 0) {
 		D_ERR("Invalid packet of length 0\n");
 		queue->callback(NULL, 0, queue->private_data);
 	}
 
-	if (queue->offset < pkt_size) {
+	if ((queue->end - queue->begin) < pkt_size) {
 		/* not enough data */
 		return;
 	}
 
-	queue->callback(queue->buf, pkt_size, queue->private_data);
-	queue->offset += pkt_size;
+	queue->callback(queue->buf + queue->begin, pkt_size,
+			queue->private_data);
+	queue->begin += pkt_size;
 
-	if (queue->offset < queue->buflen) {
+	if (queue->begin < queue->end) {
 		/* more data to be processed */
 		tevent_schedule_immediate(queue->im, queue->ev,
 					  sock_queue_process_event, queue);
 	} else {
 		TALLOC_FREE(queue->buf);
 		queue->buflen = 0;
-		queue->offset = 0;
+		queue->begin = 0;
+		queue->end = 0;
 	}
 }
 
