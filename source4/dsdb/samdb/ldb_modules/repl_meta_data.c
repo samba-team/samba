@@ -1824,9 +1824,33 @@ static int really_parse_trusted_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
+/*
+ * We choose, as the sort order, the same order as is used in DRS replication,
+ * which is the memcmp() order of the NDR GUID, not that obtained from
+ * GUID_compare().
+ *
+ * This means that sorted links will be in the same order as a new DC would
+ * see them.
+ */
+static int ndr_guid_compare(struct GUID *guid1, struct GUID *guid2)
+{
+	uint8_t v1_data[16];
+	struct ldb_val v1 = data_blob_const(v1_data, sizeof(v1_data));
+	uint8_t v2_data[16];
+	struct ldb_val v2 = data_blob_const(v2_data, sizeof(v2_data));
+
+	/* This can't fail */
+	ndr_push_struct_into_fixed_blob(&v1, guid1,
+					(ndr_push_flags_fn_t)ndr_push_GUID);
+	/* This can't fail */
+	ndr_push_struct_into_fixed_blob(&v2, guid2,
+					(ndr_push_flags_fn_t)ndr_push_GUID);
+	return data_blob_cmp(&v1, &v2);
+}
+
 static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 {
-	return GUID_compare(&pdn1->guid, &pdn2->guid);
+	return ndr_guid_compare(&pdn1->guid, &pdn2->guid);
 }
 
 static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
@@ -1863,7 +1887,7 @@ static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
 		}
 	}
 
-	return GUID_compare(ctx->guid, &p->guid);
+	return ndr_guid_compare(ctx->guid, &p->guid);
 }
 
 
