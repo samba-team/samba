@@ -606,27 +606,288 @@ static void test5(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(ret == 0);
 }
 
+struct test6_pkt {
+	uint32_t len;
+	uint32_t data;
+};
+
+struct test6_client_state {
+	bool done;
+};
+
+static void test6_client_callback(uint8_t *buf, size_t buflen,
+				  void *private_data)
+{
+	struct test6_client_state *state =
+		(struct test6_client_state *)private_data;
+	struct test6_pkt *pkt;
+
+	assert(buflen == sizeof(struct test6_pkt));
+	pkt = (struct test6_pkt *)buf;
+	assert(pkt->len == sizeof(struct test6_pkt));
+	assert(pkt->data == 0xffeeddcc);
+
+	state->done = true;
+}
+
+static void test6_client(const char *sockpath)
+{
+	struct tevent_context *ev;
+	struct test6_client_state state;
+	struct sock_queue *queue;
+	struct test6_pkt pkt;
+	int conn, ret;
+
+	ev = tevent_context_init(NULL);
+	assert(ev != NULL);
+
+	conn = sock_connect(sockpath);
+	assert(conn != -1);
+
+	state.done = false;
+
+	queue = sock_queue_setup(ev, ev, conn,
+				 test6_client_callback, &state);
+	assert(queue != NULL);
+
+	pkt.len = 8;
+	pkt.data = 0xaabbccdd;
+
+	ret = sock_queue_write(queue, (uint8_t *)&pkt,
+			       sizeof(struct test6_pkt));
+	assert(ret == 0);
+
+	while (! state.done) {
+		tevent_loop_once(ev);
+	}
+
+	talloc_free(ev);
+}
+
+struct test6_server_state {
+	struct sock_daemon_context *sockd;
+	int done;
+};
+
+struct test6_read_state {
+	struct test6_server_state *server_state;
+	struct test6_pkt reply;
+};
+
+static void test6_read_done(struct tevent_req *subreq);
+
+static struct tevent_req *test6_read_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct sock_client_context *client,
+					  uint8_t *buf, size_t buflen,
+					  void *private_data)
+{
+	struct test6_server_state *server_state =
+		(struct test6_server_state *)private_data;
+	struct tevent_req *req, *subreq;
+	struct test6_read_state *state;
+	struct test6_pkt *pkt;
+
+	req = tevent_req_create(mem_ctx, &state, struct test6_read_state);
+	assert(req != NULL);
+
+	state->server_state = server_state;
+
+	assert(buflen == sizeof(struct test6_pkt));
+
+	pkt = (struct test6_pkt *)buf;
+	assert(pkt->data == 0xaabbccdd);
+
+	state->reply.len = sizeof(struct test6_pkt);
+	state->reply.data = 0xffeeddcc;
+
+	subreq = sock_socket_write_send(state, ev, client,
+					(uint8_t *)&state->reply,
+					state->reply.len);
+	assert(subreq != NULL);
+
+	tevent_req_set_callback(subreq, test6_read_done, req);
+
+	return req;
+}
+
+static void test6_read_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct test6_read_state *state = tevent_req_data(
+		req, struct test6_read_state);
+	int ret;
+	bool status;
+
+	status = sock_socket_write_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	state->server_state->done = 1;
+	tevent_req_done(req);
+}
+
+static bool test6_read_recv(struct tevent_req *req, int *perr)
+{
+	int ret;
+
+	if (tevent_req_is_unix_error(req, &ret)) {
+		if (perr != NULL) {
+			*perr = ret;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+static struct sock_socket_funcs test6_client_funcs = {
+	.read_send = test6_read_send,
+	.read_recv = test6_read_recv,
+};
+
+static void test6_startup(void *private_data)
+{
+	int fd = *(int *)private_data;
+	int ret = 1;
+	ssize_t nwritten;
+
+	nwritten = write(fd, &ret, sizeof(ret));
+	assert(nwritten == sizeof(ret));
+	close(fd);
+}
+
+static struct sock_daemon_funcs test6_funcs = {
+	.startup = test6_startup,
+};
+
+static void test6_handler(struct tevent_context *ev,
+			  struct tevent_timer *te,
+			  struct timeval curtime,
+			  void *private_data)
+{
+	struct test6_server_state *state =
+		(struct test6_server_state *)private_data;
+
+	if (state->done == 0) {
+		kill(0, SIGTERM);
+		return;
+	}
+
+	talloc_free(state->sockd);
+}
+
+static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
+		  const char *sockpath)
+{
+	pid_t pid_server, pid;
+	int fd[2], ret;
+	ssize_t n;
+
+	pid = getpid();
+
+	ret = pipe(fd);
+	assert(ret == 0);
+
+	pid_server = fork();
+	assert(pid_server != -1);
+
+	if (pid_server == 0) {
+		struct tevent_context *ev;
+		struct sock_daemon_context *sockd;
+		struct test6_server_state state;
+		struct tevent_timer *te;
+
+		close(fd[0]);
+
+		ev = tevent_context_init(mem_ctx);
+		assert(ev != NULL);
+
+		ret = sock_daemon_setup(mem_ctx, "test6", "file:", "NOTICE",
+					pidfile, &test6_funcs, &fd[1], &sockd);
+		assert(ret == 0);
+
+		state.sockd = sockd;
+		state.done = 0;
+
+		ret = sock_daemon_add_unix(sockd, sockpath,
+					   &test6_client_funcs, &state);
+		assert(ret == 0);
+
+		te = tevent_add_timer(ev, ev, tevent_timeval_current_ofs(10,0),
+				      test6_handler, &state);
+		assert(te != NULL);
+
+		ret = sock_daemon_run(ev, sockd, pid);
+		assert(ret == 0);
+
+		exit(0);
+	}
+
+	close(fd[1]);
+
+	n = read(fd[0], &ret, sizeof(ret));
+	assert(n == sizeof(ret));
+	assert(ret == 1);
+
+	close(fd[0]);
+
+	test6_client(sockpath);
+
+	pid = wait(&ret);
+	assert(pid != -1);
+}
+
 int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	const char *pidfile, *sockpath;
+	int num;
 
-	if (argc != 3) {
-		fprintf(stderr, "%s <pidfile> <sockpath>\n", argv[0]);
+	if (argc != 4) {
+		fprintf(stderr, "%s <pidfile> <sockpath> <testnum>\n", argv[0]);
 		exit(1);
 	}
 
 	pidfile = argv[1];
 	sockpath = argv[2];
+	num = atoi(argv[3]);
 
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	test1(mem_ctx, pidfile, sockpath);
-	test2(mem_ctx, pidfile, sockpath);
-	test3(mem_ctx, pidfile, sockpath);
-	test4(mem_ctx, pidfile, sockpath);
-	test5(mem_ctx, pidfile, sockpath);
+	switch (num) {
+	case 1:
+		test1(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 2:
+		test2(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 3:
+		test3(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 4:
+		test4(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 5:
+		test5(mem_ctx, pidfile, sockpath);
+		break;
+
+	case 6:
+		test6(mem_ctx, pidfile, sockpath);
+		break;
+
+	default:
+		fprintf(stderr, "Unknown test number %d\n", num);
+	}
 
 	return 0;
 }
