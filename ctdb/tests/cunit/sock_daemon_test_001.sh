@@ -24,21 +24,42 @@ result_filter ()
 
 ok <<EOF
 test1[PID]: listening on $sockpath
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 1
+
+ok <<EOF
 test2[PID]: listening on $sockpath
 test2[PID]: daemon started, pid=PID
 test2[PID]: Received signal 1
 test2[PID]: Received signal 10
 test2[PID]: Received signal 15
 test2[PID]: Shutting down
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 2
+
+ok <<EOF
 test3[PID]: listening on $sockpath
 test3[PID]: daemon started, pid=PID
 test3[PID]: PID PID gone away, exiting
 test3[PID]: Shutting down
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 3
+
+ok <<EOF
 test4[PID]: daemon started, pid=PID
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 4
+
+ok <<EOF
 test5[PID]: listening on $sockpath
 test5[PID]: daemon started, pid=PID
 test5[PID]: Received signal 15
 test5[PID]: Shutting down
 EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 5
 
-unit_test sock_daemon_test "$pidfile" "$sockpath"
+ok <<EOF
+test6[PID]: listening on $sockpath
+test6[PID]: daemon started, pid=PID
+EOF
+unit_test sock_daemon_test "$pidfile" "$sockpath" 6
