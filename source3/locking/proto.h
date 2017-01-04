@@ -153,6 +153,13 @@ struct share_mode_lock *get_share_mode_lock(
 	const struct timespec *old_write_time);
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  struct file_id id);
+struct tevent_req *fetch_share_mode_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct file_id id,
+					 bool *queued);
+NTSTATUS fetch_share_mode_recv(struct tevent_req *req,
+			       TALLOC_CTX *mem_ctx,
+			       struct share_mode_lock **_lck);
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			struct file_id id,

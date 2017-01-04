@@ -50,6 +50,7 @@
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "locking/leases_db.h"
 #include "../lib/util/memcache.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
@@ -665,6 +666,130 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	return state.lck;
+}
+
+static void fetch_share_mode_done(struct tevent_req *subreq);
+
+struct fetch_share_mode_state {
+	struct file_id id;
+	TDB_DATA key;
+	struct share_mode_lock *lck;
+	enum dbwrap_req_state req_state;
+};
+
+/**
+ * @brief Get a share_mode_lock without locking or refcounting
+ *
+ * This can be used in a clustered Samba environment where the async dbwrap
+ * request is sent over a socket to the local ctdbd. If the send queue is full
+ * and the caller was issuing multiple async dbwrap requests in a loop, the
+ * caller knows it's probably time to stop sending requests for now and try
+ * again later.
+ *
+ * @param[in]  mem_ctx The talloc memory context to use.
+ *
+ * @param[in]  ev      The event context to work on.
+ *
+ * @param[in]  id      The file id for the locking.tdb key
+ *
+ * @param[out] queued  This boolean out parameter tells the caller whether the
+ *                     async request is blocked in a full send queue:
+ *
+ *                     false := request is dispatched
+ *
+ *                     true  := send queue is full, request waiting to be
+ *                              dispatched
+ *
+ * @return             The new async request, NULL on error.
+ **/
+struct tevent_req *fetch_share_mode_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 struct file_id id,
+					 bool *queued)
+{
+	struct tevent_req *req = NULL;
+	struct fetch_share_mode_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+
+	*queued = false;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct fetch_share_mode_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->id = id;
+	state->key = locking_key(&state->id);
+	state->lck = talloc_zero(state, struct share_mode_lock);
+	if (tevent_req_nomem(state->lck, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = dbwrap_parse_record_send(state,
+					  ev,
+					  lock_db,
+					  state->key,
+					  fetch_share_mode_unlocked_parser,
+					  state->lck,
+					  &state->req_state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, fetch_share_mode_done, req);
+
+	if (state->req_state < DBWRAP_REQ_DISPATCHED) {
+		*queued = true;
+	}
+	return req;
+}
+
+static void fetch_share_mode_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = dbwrap_parse_record_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+	return;
+}
+
+NTSTATUS fetch_share_mode_recv(struct tevent_req *req,
+			       TALLOC_CTX *mem_ctx,
+			       struct share_mode_lock **_lck)
+{
+	struct fetch_share_mode_state *state = tevent_req_data(
+		req, struct fetch_share_mode_state);
+	struct share_mode_lock *lck = NULL;
+
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	if (state->lck->data == NULL) {
+		tevent_req_received(req);
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	lck = talloc_move(mem_ctx, &state->lck);
+
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("share_mode_data:\n");
+		NDR_PRINT_DEBUG(share_mode_data, lck->data);
+	}
+
+	*_lck = lck;
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 struct share_mode_forall_state {
