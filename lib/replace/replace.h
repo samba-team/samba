@@ -171,6 +171,10 @@
 #include <sys/types.h>
 #endif
 
+#ifdef HAVE_SYS_SYSMACROS_H
+#include <sys/sysmacros.h>
+#endif
+
 #ifdef HAVE_SETPROCTITLE_H
 #include <setproctitle.h>
 #endif
