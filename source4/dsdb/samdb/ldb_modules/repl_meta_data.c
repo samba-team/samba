@@ -2595,13 +2595,14 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 	struct ldb_control *vanish_links_ctrl = NULL;
 	bool vanish_links = false;
 	unsigned int num_to_delete = el->num_values;
+	uint32_t rmd_flags;
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
 
 	if (old_el == NULL || old_el->num_values == 0) {
 		/* there is nothing to delete... */
-		if (el->num_values == 0) {
+		if (num_to_delete == 0) {
 			/* and we're deleting nothing, so that's OK */
 			return LDB_SUCCESS;
 		}
@@ -2613,13 +2614,17 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = get_parsed_dns(module, tmp_ctx, el, &dns, schema_attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns(module, tmp_ctx, el, &dns,
+			     schema_attr->syntax->ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	ret = get_parsed_dns(module, tmp_ctx, old_el, &old_dns, schema_attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns_trusted(module, replmd_private,
+				     tmp_ctx, old_el, &old_dns,
+				     schema_attr->syntax->ldap_oid, parent);
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -2647,30 +2652,83 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		}
 	}
 
+	/* we empty out el->values here to avoid damage if we return early. */
 	el->num_values = 0;
 	el->values = NULL;
 
-	/* see if we are being asked to delete any links that
-	   don't exist or are already deleted */
-	for (i=0; i < num_to_delete; i++) {
+	/*
+	 * If vanish links is set, we are actually removing members of
+	 *  old_el->values; otherwise we are just marking them deleted.
+	 *
+	 * There is a special case when no values are given: we remove them
+	 * all. When we have the vanish_links control we just have to remove
+	 * the backlinks and change our element to replace the existing values
+	 * with the empty list.
+	 */
+
+	if (num_to_delete == 0) {
+		for (i = 0; i < old_el->num_values; i++) {
+			struct parsed_dn *p = &old_dns[i];
+			if (p->dsdb_dn == NULL) {
+				ret = really_parse_trusted_dn(tmp_ctx, ldb, p,
+							      schema_attr->syntax->ldap_oid);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+			ret = replmd_add_backlink(module, replmd_private,
+						  schema, msg_guid, &p->guid,
+						  false, schema_attr, true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			if (vanish_links) {
+				continue;
+			}
+
+			rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
+			if (rmd_flags & DSDB_RMD_FLAG_DELETED) {
+				continue;
+			}
+
+			ret = replmd_update_la_val(old_el->values, p->v,
+						   p->dsdb_dn, p->dsdb_dn,
+						   invocation_id, seq_num,
+						   seq_num, now, 0, true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+		}
+
+		if (vanish_links) {
+			el->flags = LDB_FLAG_MOD_REPLACE;
+			talloc_free(tmp_ctx);
+			return LDB_SUCCESS;
+		}
+	}
+
+
+	for (i = 0; i < num_to_delete; i++) {
 		struct parsed_dn *p = &dns[i];
-		struct parsed_dn *p2;
+		struct parsed_dn *exact = NULL;
 		struct parsed_dn *next = NULL;
-		uint32_t rmd_flags;
 		ret = parsed_dn_find(ldb, old_dns, old_el->num_values,
 				     &p->guid,
 				     NULL,
-				     &p2, &next,
+				     &exact, &next,
 				     schema_attr->syntax->ldap_oid);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
-
-		if (!p2) {
+		if (exact == NULL) {
 			struct GUID_txt_buf buf;
-			ldb_asprintf_errstring(ldb, "Attribute %s doesn't exist for target GUID %s",
-					       el->name, GUID_buf_string(&p->guid, &buf));
+			ldb_asprintf_errstring(ldb, "Attribute %s doesn't "
+					       "exist for target GUID %s",
+					       el->name,
+					       GUID_buf_string(&p->guid, &buf));
 			if (ldb_attr_cmp(el->name, "member") == 0) {
 				talloc_free(tmp_ctx);
 				return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -2679,17 +2737,45 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}
 		}
-		rmd_flags = dsdb_dn_rmd_flags(p2->dsdb_dn->dn);
+
+		if (vanish_links) {
+			if (CHECK_DEBUGLVL(5)) {
+				rmd_flags = dsdb_dn_rmd_flags(exact->dsdb_dn->dn);
+				if ((rmd_flags & DSDB_RMD_FLAG_DELETED)) {
+					struct GUID_txt_buf buf;
+					const char *guid_str = \
+						GUID_buf_string(&p->guid, &buf);
+					DEBUG(5, ("Deleting deleted linked "
+						  "attribute %s to %s, because "
+						  "vanish_links control is set\n",
+						  el->name, guid_str));
+				}
+			}
+
+			/* remove the backlink */
+			ret = replmd_add_backlink(module,
+						  replmd_private,
+						  schema, msg_guid,
+						  &p->guid,
+						  false, schema_attr,
+						  true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+
+			/* We flag the deletion and tidy it up later. */
+			exact->v = NULL;
+			continue;
+		}
+
+		rmd_flags = dsdb_dn_rmd_flags(exact->dsdb_dn->dn);
+
 		if (rmd_flags & DSDB_RMD_FLAG_DELETED) {
 			struct GUID_txt_buf buf;
 			const char *guid_str = GUID_buf_string(&p->guid, &buf);
-			if (vanish_links) {
-				DEBUG(0, ("Deleting deleted linked attribute %s to %s, "
-					  "because vanish_links control is set\n",
-					  el->name, guid_str));
-				continue;
-			}
-			ldb_asprintf_errstring(ldb, "Attribute %s already deleted for target GUID %s",
+			ldb_asprintf_errstring(ldb, "Attribute %s already "
+					       "deleted for target GUID %s",
 					       el->name, guid_str);
 			if (ldb_attr_cmp(el->name, "member") == 0) {
 				talloc_free(tmp_ctx);
@@ -2699,116 +2785,35 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 				return LDB_ERR_NO_SUCH_ATTRIBUTE;
 			}
 		}
+
+		ret = replmd_update_la_val(old_el->values, exact->v,
+					   exact->dsdb_dn, exact->dsdb_dn,
+					   invocation_id, seq_num, seq_num,
+					   now, 0, true);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		ret = replmd_add_backlink(module, replmd_private,
+					  schema, msg_guid, &p->guid,
+					  false, schema_attr, true);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	if (vanish_links) {
-		if (num_to_delete == old_el->num_values || num_to_delete == 0) {
-			el->flags = LDB_FLAG_MOD_REPLACE;
-
-			for (i = 0; i < old_el->num_values; i++) {
-				ret = replmd_add_backlink(module,
-							  replmd_private,
-							  schema, msg_guid,
-							  &old_dns[i].guid,
-							  false, schema_attr,
-							  true);
-				if (ret != LDB_SUCCESS) {
-					talloc_free(tmp_ctx);
-					return ret;
-				}
-			}
-			talloc_free(tmp_ctx);
-			return LDB_SUCCESS;
-		} else {
-			unsigned int num_values = 0;
-			unsigned int j = 0;
-			struct parsed_dn *exact = NULL, *next = NULL;
-
-			for (i = 0; i < old_el->num_values; i++) {
-				ret = parsed_dn_find(ldb, dns, num_to_delete,
-						     &old_dns[i].guid,
-						     NULL,
-						     &exact, &next,
-						     schema_attr->syntax->ldap_oid);
-				if (ret != LDB_SUCCESS) {
-					talloc_free(tmp_ctx);
-					return ret;
-				}
-
-				if (exact != NULL) {
-					/* The element is in the delete list.
-					   mark it dead. */
-					ret = replmd_add_backlink(module,
-								  replmd_private,
-								  schema,
-								  msg_guid,
-								  &old_dns[i].guid,
-								  false,
-								  schema_attr,
-								  true);
-					if (ret != LDB_SUCCESS) {
-						talloc_free(tmp_ctx);
-						return ret;
-					}
-					old_dns[i].v->length = 0;
-				} else {
-					num_values++;
-				}
-			}
-			for (i = 0; i < old_el->num_values; i++) {
-				if (old_el->values[i].length != 0) {
-					old_el->values[j] = old_el->values[i];
-					j++;
-					if (j == num_values) {
-						break;
-					}
-				}
-			}
-			old_el->num_values = num_values;
-		}
-	} else {
-
-		/* for each new value, see if it exists already with the same GUID
-		   if it is not already deleted and matches the delete list then delete it
-		*/
-		for (i=0; i<old_el->num_values; i++) {
-			struct parsed_dn *p = &old_dns[i];
-			struct parsed_dn *exact = NULL, *next = NULL;
-			uint32_t rmd_flags;
-
-			if (num_to_delete != 0) {
-				ret = parsed_dn_find(ldb, dns, num_to_delete,
-						     &p->guid,
-						     NULL,
-						     &exact, &next,
-						     schema_attr->syntax->ldap_oid);
-				if (ret != LDB_SUCCESS) {
-					talloc_free(tmp_ctx);
-					return ret;
-				}
-				if (exact == NULL) {
-					continue;
-				}
-			}
-
-			rmd_flags = dsdb_dn_rmd_flags(p->dsdb_dn->dn);
-			if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
-
-			ret = replmd_update_la_val(old_el->values, p->v, p->dsdb_dn, p->dsdb_dn,
-						   invocation_id, seq_num, seq_num, now, 0, true);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-			ret = replmd_add_backlink(module, replmd_private,
-						  schema, msg_guid, &p->guid,
-						  false, schema_attr, true);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
+		unsigned j = 0;
+		for (i = 0; i < old_el->num_values; i++) {
+			if (old_dns[i].v != NULL) {
+				old_el->values[j] = *old_dns[i].v;
+				j++;
 			}
 		}
+		old_el->num_values = j;
 	}
+
 	el->values = talloc_steal(msg->elements, old_el->values);
 	el->num_values = old_el->num_values;
 
