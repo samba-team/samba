@@ -36,6 +36,7 @@ struct cluster_wait_state {
 	struct ctdb_client_context *client;
 	int num_nodes;
 	bool *ready;
+	bool join_done;
 };
 
 static void cluster_wait_join_registered(struct tevent_req *subreq);
@@ -44,8 +45,8 @@ static void cluster_wait_join(struct tevent_req *subreq);
 static void cluster_wait_join_sent(struct tevent_req *subreq);
 static void cluster_wait_join_handler(uint64_t srvid, TDB_DATA data,
 				      void *private_data);
-static void cluster_wait_sync_sent(struct tevent_req *subreq);
 static void cluster_wait_join_unregistered(struct tevent_req *subreq);
+static void cluster_wait_sync_sent(struct tevent_req *subreq);
 static void cluster_wait_sync_handler(uint64_t srvid, TDB_DATA data,
 				      void *private_data);
 static void cluster_wait_sync_unregistered(struct tevent_req *subreq);
@@ -66,6 +67,8 @@ struct tevent_req *cluster_wait_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->client = client;
 	state->num_nodes = num_nodes;
+
+	state->join_done = false;
 
 	if (ctdb_client_pnn(client) == 0) {
 		state->ready = talloc_zero_array(state, bool, num_nodes);
@@ -201,7 +204,6 @@ static void cluster_wait_join_handler(uint64_t srvid, TDB_DATA data,
 		private_data, struct tevent_req);
 	struct cluster_wait_state *state = tevent_req_data(
 		req, struct cluster_wait_state);
-	struct ctdb_req_message msg;
 	struct tevent_req *subreq;
 	uint32_t pnn;
 	int i;
@@ -228,6 +230,36 @@ static void cluster_wait_join_handler(uint64_t srvid, TDB_DATA data,
 		}
 	}
 
+	if (state->join_done) {
+		return;
+	}
+
+	state->join_done = true;
+	subreq = ctdb_client_remove_message_handler_send(
+					state, state->ev, state->client,
+					MSG_ID_JOIN, req);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cluster_wait_join_unregistered, req);
+}
+
+static void cluster_wait_join_unregistered(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cluster_wait_state *state = tevent_req_data(
+		req, struct cluster_wait_state);
+	struct ctdb_req_message msg;
+	bool status;
+	int ret;
+
+	status = ctdb_client_remove_message_handler_recv(subreq, &ret);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
 	msg.srvid = MSG_ID_SYNC;
 	msg.data.data = tdb_null;
 
@@ -243,35 +275,11 @@ static void cluster_wait_sync_sent(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct cluster_wait_state *state = tevent_req_data(
-		req, struct cluster_wait_state);
 	bool status;
 	int ret;
 
 	status = ctdb_client_message_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
-	if (! status) {
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	subreq = ctdb_client_remove_message_handler_send(
-					state, state->ev, state->client,
-					MSG_ID_JOIN, req);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, cluster_wait_join_unregistered, req);
-}
-
-static void cluster_wait_join_unregistered(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	bool status;
-	int ret;
-
-	status = ctdb_client_remove_message_handler_recv(subreq, &ret);
 	if (! status) {
 		tevent_req_error(req, ret);
 		return;
