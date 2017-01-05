@@ -2599,13 +2599,12 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 
 	unix_to_nt_time(&now, t);
 
-	/* check if there is nothing to delete */
-	if ((!old_el || old_el->num_values == 0) &&
-	    el->num_values == 0) {
-		return LDB_SUCCESS;
-	}
-
-	if (!old_el || old_el->num_values == 0) {
+	if (old_el == NULL || old_el->num_values == 0) {
+		/* there is nothing to delete... */
+		if (el->num_values == 0) {
+			/* and we're deleting nothing, so that's OK */
+			return LDB_SUCCESS;
+		}
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
