@@ -2608,7 +2608,16 @@ static bool test_ioctl_compress_notsup_set(struct torture_context *torture,
 					 COMPRESSION_FORMAT_DEFAULT);
 	torture_assert_ntstatus_equal(torture, status,
 				      NT_STATUS_NOT_SUPPORTED,
-				      "FSCTL_GET_COMPRESSION");
+				      "FSCTL_SET_COMPRESSION default");
+
+	/*
+	 * Despite not supporting compression, we should get a successful
+	 * response for set(COMPRESSION_FORMAT_NONE) - like WS2016 ReFS.
+	 */
+	status = test_ioctl_compress_set(torture, tmp_ctx, tree, fh,
+					 COMPRESSION_FORMAT_NONE);
+	torture_assert_ntstatus_ok(torture, status,
+				   "FSCTL_SET_COMPRESSION none");
 
 	smb2_util_close(tree, fh);
 	talloc_free(tmp_ctx);
