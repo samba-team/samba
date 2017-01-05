@@ -441,7 +441,7 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		req->preauth = &req->xconn->smb2.preauth;
 	}
 
-	if (in_cipher != NULL) {
+	if ((capabilities & SMB2_CAP_ENCRYPTION) && (in_cipher != NULL)) {
 		size_t needed = 2;
 		uint16_t cipher_count;
 		const uint8_t *p;
