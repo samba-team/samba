@@ -104,11 +104,6 @@ static NTSTATUS fsctl_set_cmprn(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if ((fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) == 0) {
-		DEBUG(4, ("FS does not advertise compression support\n"));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	ndr_ret = ndr_pull_struct_blob(in_input, mem_ctx, &cmpr_state,
 			(ndr_pull_flags_fn_t)ndr_pull_compression_state);
 	if (ndr_ret != NDR_ERR_SUCCESS) {
@@ -116,15 +111,22 @@ static NTSTATUS fsctl_set_cmprn(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = SMB_VFS_SET_COMPRESSION(fsp->conn,
-					 mem_ctx,
-					 fsp,
-					 cmpr_state.format);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	status = NT_STATUS_NOT_SUPPORTED;
+	if (fsp->conn->fs_capabilities & FILE_FILE_COMPRESSION) {
+		status = SMB_VFS_SET_COMPRESSION(fsp->conn,
+						 mem_ctx,
+						 fsp,
+						 cmpr_state.format);
+	} else if (cmpr_state.format == COMPRESSION_FORMAT_NONE) {
+		/*
+		 * bso#12144: The underlying filesystem doesn't support
+		 * compression. We should still accept set(FORMAT_NONE) requests
+		 * (like WS2016 ReFS).
+		 */
+		status = NT_STATUS_OK;
 	}
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 static NTSTATUS fsctl_zero_data(TALLOC_CTX *mem_ctx,
