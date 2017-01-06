@@ -101,7 +101,7 @@ new options for controlling TCP ports used for RPC services
 -----------------------------------------------------------
 
 The new 'rpc server port' option controls the default port used for
-RPC services other than Netlogon.  The Netlogon server honours instead
+RPC services other than Netlogon.  The Netlogon server honors instead
 the 'rpc server port:netlogon' option.  The default value for both
 these options is the first available port including or after 1024.
 
