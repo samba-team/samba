@@ -2827,32 +2827,61 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 				    struct GUID *msg_guid,
 				    struct ldb_request *parent)
 {
-	unsigned int i;
+	unsigned int i, old_i, new_i;
 	struct parsed_dn *dns, *old_dns;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
 	int ret;
 	const struct GUID *invocation_id;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_val *new_values = NULL;
-	unsigned int num_new_values = 0;
-	unsigned int old_num_values = old_el?old_el->num_values:0;
+	const char *ldap_oid = schema_attr->syntax->ldap_oid;
+	unsigned int old_num_values;
+	unsigned int repl_num_values;
+	unsigned int max_num_values;
 	NTTIME now;
 
 	unix_to_nt_time(&now, t);
 
-	/* check if there is nothing to replace */
-	if ((!old_el || old_el->num_values == 0) &&
-	    el->num_values == 0) {
+	/*
+	 * The replace operation is unlike the replace and delete cases in that
+	 * we need to look at every existing link to see whether it is being
+	 * retained or deleted. In other words, we can't avoid parsing the GUIDs.
+	 *
+	 * As we are trying to combine two sorted lists, the algorithm we use
+	 * is akin to the merge phase of a merge sort. We interleave the two
+	 * lists, doing different things depending on which side the current
+	 * item came from.
+	 *
+	 * There are three main cases, with some sub-cases.
+	 *
+	 *  - a DN is in the old list but not the new one. It needs to be
+	 *    marked as deleted (but left in the list).
+	 *     - maybe it is already deleted, and we have less to do.
+	 *
+	 *  - a DN is in both lists. The old data gets replaced by the new,
+	 *    and the list doesn't grow. The old link may have been marked as
+	 *    deleted, in which case we undelete it.
+	 *
+	 *  - a DN is in the new list only. We add it in the right place.
+	 */
+
+	old_num_values = old_el ? old_el->num_values : 0;
+	repl_num_values = el->num_values;
+	max_num_values = old_num_values + repl_num_values;
+
+	if (max_num_values == 0) {
+		/* There is nothing to do! */
 		return LDB_SUCCESS;
 	}
 
-	ret = get_parsed_dns(module, tmp_ctx, el, &dns, schema_attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns(module, tmp_ctx, el, &dns, ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	ret = get_parsed_dns(module, tmp_ctx, old_el, &old_dns, schema_attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns(module, tmp_ctx, old_el, &old_dns,
+			     ldap_oid, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -2864,128 +2893,142 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 	}
 
 	ret = replmd_check_upgrade_links(ldb, old_dns, old_num_values,
-					 old_el, invocation_id,
-					 schema_attr->syntax->ldap_oid);
+					 old_el, invocation_id, ldap_oid);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
 	}
 
-	/* mark all the old ones as deleted */
-	for (i=0; i<old_num_values; i++) {
-		struct parsed_dn *old_p = &old_dns[i];
-		struct parsed_dn *exact = NULL, *next = NULL;
-		uint32_t rmd_flags = dsdb_dn_rmd_flags(old_p->dsdb_dn->dn);
-
-		if (rmd_flags & DSDB_RMD_FLAG_DELETED) continue;
-
-		ret = replmd_add_backlink(module, replmd_private,
-					  schema, msg_guid, &old_dns[i].guid,
-					  false, schema_attr, false);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-
-		ret = parsed_dn_find(ldb, dns, el->num_values,
-				     &old_p->guid,
-				     NULL,
-				     &exact, &next,
-				     schema_attr->syntax->ldap_oid);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-		if (exact) {
-			/* we don't delete it if we are re-adding it */
-			continue;
-		}
-
-		ret = replmd_update_la_val(old_el->values, old_p->v, old_p->dsdb_dn, old_p->dsdb_dn,
-					   invocation_id, seq_num, seq_num, now, 0, true);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
+	new_values = talloc_array(tmp_ctx, struct ldb_val, max_num_values);
+	if (new_values == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* for each new value, either update its meta-data, or add it
-	 * to old_el
-	*/
-	for (i=0; i<el->num_values; i++) {
-		struct parsed_dn *p = &dns[i];
-		struct parsed_dn *old_p = NULL, *next = NULL;
-
-		if (old_dns) {
-			ret = parsed_dn_find(ldb, old_dns, old_num_values,
-					     &p->guid,
-					     NULL,
-					     &old_p, &next,
-					     schema_attr->syntax->ldap_oid);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-		}
-
-		if (old_p != NULL) {
-			/* update in place */
-			ret = replmd_update_la_val(old_el->values, old_p->v, p->dsdb_dn,
-						   old_p->dsdb_dn, invocation_id,
-						   seq_num, seq_num, now, 0, false);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
+	old_i = 0;
+	new_i = 0;
+	for (i = 0; i < max_num_values; i++) {
+		int cmp;
+		struct parsed_dn *old_p, *new_p;
+		if (old_i < old_num_values && new_i < repl_num_values) {
+			old_p = &old_dns[old_i];
+			new_p = &dns[new_i];
+			cmp = parsed_dn_compare(old_p, new_p);
+		} else if (old_i < old_num_values) {
+			/* the new list is empty, read the old list */
+			old_p = &old_dns[old_i];
+			new_p = NULL;
+			cmp = -1;
+		} else if (new_i < repl_num_values) {
+			/* the old list is empty, read new list */
+			old_p = NULL;
+			new_p = &dns[new_i];
+			cmp = 1;
 		} else {
-			/* add a new one */
-			new_values = talloc_realloc(tmp_ctx, new_values, struct ldb_val,
-						    num_new_values+1);
-			if (new_values == NULL) {
-				ldb_module_oom(module);
-				talloc_free(tmp_ctx);
-				return LDB_ERR_OPERATIONS_ERROR;
+			break;
+		}
+
+		if (cmp < 0) {
+			/*
+			 * An old ones that come before the next replacement
+			 * (if any). We mark it as deleted and add it to the
+			 * final list.
+			 */
+			uint32_t rmd_flags = dsdb_dn_rmd_flags(old_p->dsdb_dn->dn);
+			if ((rmd_flags & DSDB_RMD_FLAG_DELETED) == 0) {
+				ret = replmd_update_la_val(new_values, old_p->v,
+							   old_p->dsdb_dn,
+							   old_p->dsdb_dn,
+							   invocation_id,
+							   seq_num, seq_num,
+							   now, 0, true);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return ret;
+				}
+
+				ret = replmd_add_backlink(module, replmd_private,
+							  schema, msg_guid,
+							  &old_p->guid, false,
+							  schema_attr, true);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return ret;
+				}
 			}
-			ret = replmd_build_la_val(new_values, &new_values[num_new_values], dns[i].dsdb_dn,
-						  invocation_id, seq_num, seq_num, now, 0, false);
+			new_values[i] = *old_p->v;
+			old_i++;
+		} else if (cmp == 0) {
+			/*
+			 * We are overwriting one. If it was previously
+			 * deleted, we need to add a backlink.
+			 *
+			 * Note that if any RMD_FLAGs in an extended new DN
+			 * will be ignored.
+			 */
+			uint32_t rmd_flags;
+
+			ret = replmd_update_la_val(new_values, old_p->v,
+						   new_p->dsdb_dn,
+						   old_p->dsdb_dn,
+						   invocation_id,
+						   seq_num, seq_num,
+						   now, 0, false);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(tmp_ctx);
 				return ret;
 			}
-			num_new_values++;
-		}
 
-		ret = replmd_add_backlink(module, replmd_private,
-					  schema, msg_guid, &dns[i].guid,
-					  true, schema_attr, false);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(tmp_ctx);
-			return ret;
+			rmd_flags = dsdb_dn_rmd_flags(old_p->dsdb_dn->dn);
+			if ((rmd_flags & DSDB_RMD_FLAG_DELETED) != 0) {
+				ret = replmd_add_backlink(module, replmd_private,
+							  schema, msg_guid,
+							  &new_p->guid, true,
+							  schema_attr, true);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return ret;
+				}
+			}
+
+			new_values[i] = *old_p->v;
+			old_i++;
+			new_i++;
+		} else {
+			/*
+			 * Replacements that don't match an existing one. We
+			 * just add them to the final list.
+			 */
+			ret = replmd_build_la_val(new_values,
+						  new_p->v,
+						  new_p->dsdb_dn,
+						  invocation_id,
+						  seq_num, seq_num,
+						  now, 0, false);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			ret = replmd_add_backlink(module, replmd_private,
+						  schema, msg_guid,
+						  &new_p->guid, true,
+						  schema_attr, true);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			new_values[i] = *new_p->v;
+			new_i++;
 		}
 	}
-
-	/* add the new values to the end of old_el */
-	if (num_new_values != 0) {
-		el->values = talloc_realloc(msg->elements, old_el?old_el->values:NULL,
-					    struct ldb_val, old_num_values+num_new_values);
-		if (el->values == NULL) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		memcpy(&el->values[old_num_values], &new_values[0],
-		       sizeof(struct ldb_val)*num_new_values);
-		el->num_values = old_num_values + num_new_values;
-		talloc_steal(msg->elements, new_values);
-	} else {
-		el->values = old_el->values;
-		el->num_values = old_el->num_values;
-		talloc_steal(msg->elements, el->values);
+	if (old_el != NULL) {
+		talloc_steal(msg->elements, old_el->values);
 	}
-
+	el->values = talloc_steal(msg->elements, new_values);
+	el->num_values = i;
 	talloc_free(tmp_ctx);
 
-	/* we now tell the backend to replace all existing values
-	   with the one we have constructed */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
 	return LDB_SUCCESS;
