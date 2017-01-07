@@ -236,6 +236,84 @@ static void debug_gpfs_log(int msg_level,
 }
 #endif /* HAVE_GPFS */
 
+#define DEBUG_RINGBUF_SIZE (1024 * 1024)
+#define DEBUG_RINGBUF_SIZE_OPT "size="
+
+static char *debug_ringbuf;
+static size_t debug_ringbuf_size;
+static size_t debug_ringbuf_ofs;
+
+/* We ensure in debug_ringbuf_log() that this is always \0 terminated */
+char *debug_get_ringbuf(void)
+{
+	return debug_ringbuf;
+}
+
+/* Return the size of the ringbuf (including a \0 terminator) */
+size_t debug_get_ringbuf_size(void)
+{
+	return debug_ringbuf_size;
+}
+
+static void debug_ringbuf_reload(bool enabled, bool previously_enabled,
+				 const char *prog_name, char *option)
+{
+	bool cmp;
+	size_t optlen = strlen(DEBUG_RINGBUF_SIZE_OPT);
+
+	debug_ringbuf_size = DEBUG_RINGBUF_SIZE;
+	debug_ringbuf_ofs = 0;
+
+	SAFE_FREE(debug_ringbuf);
+
+	if (!enabled) {
+		return;
+	}
+
+	if (option != NULL) {
+		cmp = strncmp(option, DEBUG_RINGBUF_SIZE_OPT, optlen);
+		if (cmp == 0) {
+			debug_ringbuf_size = (size_t)strtoull(
+				option + optlen, NULL, 10);
+		}
+	}
+
+	debug_ringbuf = calloc(debug_ringbuf_size, sizeof(char));
+	if (debug_ringbuf == NULL) {
+		return;
+	}
+}
+
+static void debug_ringbuf_log(int msg_level,
+			      const char *msg,
+			      const char *msg_no_nl)
+{
+	size_t msglen = strlen(msg);
+	size_t allowed_size;
+
+	if (debug_ringbuf == NULL) {
+		return;
+	}
+
+	/* Ensure the buffer is always \0 terminated */
+	allowed_size = debug_ringbuf_size - 1;
+
+	if (msglen > allowed_size) {
+		return;
+	}
+
+	if ((debug_ringbuf_ofs + msglen) < debug_ringbuf_ofs) {
+		return;
+	}
+
+	if ((debug_ringbuf_ofs + msglen) > allowed_size) {
+		debug_ringbuf_ofs = 0;
+	}
+
+	memcpy(debug_ringbuf + debug_ringbuf_ofs, msg, msglen);
+	debug_ringbuf_ofs += msglen;
+}
+
 static struct debug_backend {
 	const char *name;
 	int log_level;
@@ -278,6 +356,11 @@ static struct debug_backend {
 		.log = debug_gpfs_log,
 	},
 #endif
+	{
+		.name = "ringbuf",
+		.log = debug_ringbuf_log,
+		.reload = debug_ringbuf_reload,
+	},
 };
 
 static struct debug_backend *debug_find_backend(const char *name)

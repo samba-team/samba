@@ -287,4 +287,7 @@ typedef void (*debug_callback_fn)(void *private_ptr, int level, const char *msg)
  */
 void debug_set_callback(void *private_ptr, debug_callback_fn fn);
 
+char *debug_get_ringbuf(void);
+size_t debug_get_ringbuf_size(void);
+
 #endif /* _SAMBA_DEBUG_H */
