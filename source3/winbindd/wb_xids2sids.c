@@ -43,19 +43,11 @@ static bool wb_xids2sids_add_dom(const char *domname,
 	struct wb_xids2sids_dom_map *map = NULL;
 	size_t num_maps = talloc_array_length(dom_maps);
 	size_t i;
-	char *config_option;
 	const char *range;
 	unsigned low_id, high_id;
 	int ret;
 
-	config_option = talloc_asprintf(
-		talloc_tos(), "idmap config %s", domname);
-	if (config_option == NULL) {
-		return false;
-	}
-	range = lp_parm_const_string(-1, config_option, "range", NULL);
-	TALLOC_FREE(config_option);
-
+	range = idmap_config_const_string(domname, "range", NULL);
 	if (range == NULL) {
 		DBG_DEBUG("No range for domain %s found\n", domname);
 		return false;
