@@ -177,6 +177,22 @@ static bool idmap_init(void)
 	return true;
 }
 
+const char *idmap_config_const_string(const char *domname, const char *option,
+				      const char *def)
+{
+	int len = snprintf(NULL, 0, "idmap config %s", domname);
+
+	if (len == -1) {
+		return NULL;
+	}
+	{
+		char config_option[len+1];
+		snprintf(config_option, sizeof(config_option),
+			 "idmap config %s", domname);
+		return lp_parm_const_string(-1, config_option, option, def);
+	}
+}
+
 bool domain_has_idmap_config(const char *domname)
 {
 	int i;
