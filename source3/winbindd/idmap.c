@@ -454,7 +454,6 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 						    const char *domname)
 {
 	struct idmap_domain *result = NULL;
-	char *config_option;
 	const char *backend;
 	bool ok;
 
@@ -463,14 +462,7 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	config_option = talloc_asprintf(talloc_tos(), "idmap config %s",
-					domname);
-	if (config_option == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		goto fail;
-	}
-
-	backend = lp_parm_const_string(-1, config_option, "backend", NULL);
+	backend = idmap_config_const_string(domname, "backend", NULL);
 	if (backend == NULL) {
 		DEBUG(10, ("no idmap backend configured for domain '%s'\n",
 			   domname));
@@ -482,11 +474,9 @@ static struct idmap_domain *idmap_init_named_domain(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	TALLOC_FREE(config_option);
 	return result;
 
 fail:
-	TALLOC_FREE(config_option);
 	TALLOC_FREE(result);
 	return NULL;
 }
