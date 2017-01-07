@@ -149,7 +149,7 @@ static void debug_file_log(int msg_level,
 
 #ifdef WITH_SYSLOG
 static void debug_syslog_reload(bool enabled, bool previously_enabled,
-				const char *prog_name)
+				const char *prog_name, char *option)
 {
 	if (enabled && !previously_enabled) {
 #ifdef LOG_DAEMON
@@ -207,7 +207,7 @@ static void debug_lttng_log(int msg_level,
 #ifdef HAVE_GPFS
 #include "gpfswrap.h"
 static void debug_gpfs_reload(bool enabled, bool previously_enabled,
-			      const char *prog_name)
+			      const char *prog_name, char *option)
 {
 	gpfswrap_init();
 
@@ -240,8 +240,10 @@ static struct debug_backend {
 	const char *name;
 	int log_level;
 	int new_log_level;
-	void (*reload)(bool enabled, bool prev_enabled, const char *prog_name);
+	void (*reload)(bool enabled, bool prev_enabled,
+		       const char *prog_name, char *option);
 	void (*log)(int msg_level, const char *msg, const char *msg_no_nl);
+	char *option;
 } debug_backends[] = {
 	{
 		.name = "file",
@@ -297,6 +299,7 @@ static struct debug_backend *debug_find_backend(const char *name)
 static void debug_backend_parse_token(char *tok)
 {
 	char *backend_name_option, *backend_name,*backend_level, *saveptr;
+	char *backend_option;
 	struct debug_backend *b;
 
 	/*
@@ -317,12 +320,7 @@ static void debug_backend_parse_token(char *tok)
 		return;
 	}
 
-	/*
-	 * No backend is using the option yet.
-	 */
-#if 0
 	backend_option = strtok_r(NULL, "\0", &saveptr);
-#endif
 
 	/*
 	 * Find and update backend
@@ -336,6 +334,13 @@ static void debug_backend_parse_token(char *tok)
 		b->new_log_level = MAX_DEBUG_LEVEL;
 	} else {
 		b->new_log_level = atoi(backend_level);
+	}
+
+	if (backend_option != NULL) {
+		b->option = strdup(backend_option);
+		if (b->option == NULL) {
+			return;
+		}
 	}
 }
 
@@ -355,6 +360,7 @@ static void debug_set_backends(const char *param)
 	 * disabled
 	 */
 	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		SAFE_FREE(debug_backends[i].option);
 		debug_backends[i].new_log_level = -1;
 	}
 
@@ -380,7 +386,8 @@ static void debug_set_backends(const char *param)
 			bool enabled = b->new_log_level > -1;
 			bool previously_enabled = b->log_level > -1;
 
-			b->reload(enabled, previously_enabled, state.prog_name);
+			b->reload(enabled, previously_enabled, state.prog_name,
+				  b->option);
 		}
 		b->log_level = b->new_log_level;
 	}
@@ -508,6 +515,8 @@ static void debug_init(void);
 
 void gfree_debugsyms(void)
 {
+	unsigned i;
+
 	TALLOC_FREE(classname_table);
 
 	if ( DEBUGLEVEL_CLASS != debug_class_list_initial ) {
@@ -518,6 +527,10 @@ void gfree_debugsyms(void)
 	debug_num_classes = 0;
 
 	state.initialized = false;
+
+	for (i = 0; i < ARRAY_SIZE(debug_backends); i++) {
+		SAFE_FREE(debug_backends[i].option);
+	}
 }
 
 /****************************************************************************
