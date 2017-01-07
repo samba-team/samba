@@ -582,7 +582,6 @@ static NTSTATUS idmap_script_db_init(struct idmap_domain *dom)
 {
 	NTSTATUS ret;
 	struct idmap_script_context *ctx;
-	char *config_option = NULL;
 	const char * idmap_script = NULL;
 
 	DEBUG(10, ("%s called ...\n", __func__));
@@ -594,14 +593,7 @@ static NTSTATUS idmap_script_db_init(struct idmap_domain *dom)
 		goto failed;
 	}
 
-	config_option = talloc_asprintf(ctx, "idmap config %s", dom->name);
-	if (config_option == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto failed;
-	}
-	ctx->script = lp_parm_const_string(-1, config_option, "script", NULL);
-	talloc_free(config_option);
+	ctx->script = idmap_config_const_string(dom->name, "script", NULL);
 
 	/* Do we even need to handle this? */
 	idmap_script = lp_parm_const_string(-1, "idmap", "script", NULL);
