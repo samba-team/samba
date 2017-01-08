@@ -20,7 +20,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include <talloc.h>
+#include "libcli/util/ntstatus.h"
+#include "lib/util/memory.h"
+#include "lib/util/byteorder.h"
 #include "system/filesys.h"
 #include "../lib/tdb/include/tdb.h"
 #include "../lib/util/util_tdb.h"
