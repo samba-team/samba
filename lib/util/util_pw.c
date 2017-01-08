@@ -24,7 +24,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
+#include <talloc.h>
 #include "system/passwd.h"
 #include "lib/util/util_pw.h"
 
