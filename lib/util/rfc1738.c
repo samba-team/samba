@@ -48,8 +48,8 @@
  *
  */
 
-#include "includes.h"
-
+#include "replace.h"
+#include <talloc.h>
 #include "lib/util/samba_util.h"
 
 /*
