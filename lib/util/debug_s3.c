@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "messages.h"
+#include "lib/util/memory.h"
 
 /* This is the Samba3-specific implementation of reopen_logs(), which
  * calls out to the s3 loadparm code, and means that we don't depend
@@ -98,9 +99,30 @@ static void debuglevel_message(struct messaging_context *msg_ctx,
 
 	TALLOC_FREE(message);
 }
+
+static void debug_ringbuf_log(struct messaging_context *msg_ctx,
+			      void *private_data,
+			      uint32_t msg_type,
+			      struct server_id src,
+			      DATA_BLOB *data)
+{
+	char *log = debug_get_ringbuf();
+	size_t logsize = debug_get_ringbuf_size();
+
+	if (log == NULL) {
+		log = discard_const_p(char, "*disabled*\n");
+		logsize = strlen(log) + 1;
+	}
+
+	messaging_send_buf(msg_ctx, src, MSG_RINGBUF_LOG, (uint8_t *)log,
+			   logsize);
+}
+
 void debug_register_msgs(struct messaging_context *msg_ctx)
 {
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, debug_message);
 	messaging_register(msg_ctx, NULL, MSG_REQ_DEBUGLEVEL,
 			   debuglevel_message);
+	messaging_register(msg_ctx, NULL, MSG_REQ_RINGBUF_LOG,
+			   debug_ringbuf_log);
 }
