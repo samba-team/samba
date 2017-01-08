@@ -18,11 +18,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "../lib/util/dlinklist.h"
+#include "replace.h"
 #include "system/iconv.h"
 #include "system/filesys.h"
-#include "charset_proto.h"
+#include "lib/util/byteorder.h"
+#include "lib/util/dlinklist.h"
+#include "lib/util/charset/charset.h"
+#include "lib/util/charset/charset_proto.h"
 
 #ifdef strcasecmp
 #undef strcasecmp
