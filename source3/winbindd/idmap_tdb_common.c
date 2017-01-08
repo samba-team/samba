@@ -51,10 +51,8 @@ static NTSTATUS idmap_tdb_common_allocate_id_action(struct db_context *db,
 						    void *private_data)
 {
 	NTSTATUS ret;
-	struct idmap_tdb_common_allocate_id_context *state;
+	struct idmap_tdb_common_allocate_id_context *state = private_data;
 	uint32_t hwm;
-
-	state = (struct idmap_tdb_common_allocate_id_context *)private_data;
 
 	ret = dbwrap_fetch_uint32_bystring(db, state->hwmkey, &hwm);
 	if (!NT_STATUS_IS_OK(ret)) {
@@ -180,10 +178,8 @@ static NTSTATUS idmap_tdb_common_set_mapping_action(struct db_context *db,
 {
 	TDB_DATA data;
 	NTSTATUS ret;
-	struct idmap_tdb_common_set_mapping_context *state;
+	struct idmap_tdb_common_set_mapping_context *state = private_data;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-
-	state = (struct idmap_tdb_common_set_mapping_context *)private_data;
 
 	DEBUG(10, ("Storing %s <-> %s map\n", state->ksidstr, state->kidstr));
 
@@ -546,11 +542,9 @@ struct idmap_tdb_common_sids_to_unixids_context {
 static NTSTATUS idmap_tdb_common_sids_to_unixids_action(struct db_context *db,
 							void *private_data)
 {
-	struct idmap_tdb_common_sids_to_unixids_context *state;
+	struct idmap_tdb_common_sids_to_unixids_context *state = private_data;
 	int i, num_mapped = 0;
 	NTSTATUS ret = NT_STATUS_OK;
-
-	state = (struct idmap_tdb_common_sids_to_unixids_context *)private_data;
 
 	DEBUG(10, ("idmap_tdb_common_sids_to_unixids: "
 		   " domain: [%s], allocate: %s\n",
