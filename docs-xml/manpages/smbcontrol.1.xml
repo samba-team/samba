@@ -257,6 +257,13 @@
 	</varlistentry>
 
 	<varlistentry>
+	<term>ringbuf-log</term>
+	<listitem><para>Fetch and print the ringbuf log. Requires
+	<parameter>logging = ringbuf</parameter>. Available for smbd, winbindd
+	and nmbd.</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
 	<term>drvupgrade</term>
 	<listitem><para>Force clients of printers using specified driver 
 	to update their local version of the driver. Can only be 

@@ -886,6 +886,50 @@ static bool do_poolusage(struct tevent_context *ev_ctx,
 	return num_replies;
 }
 
+/* Fetch and print the ringbuf log */
+
+static void print_ringbuf_log_cb(struct messaging_context *msg,
+				 void *private_data,
+				 uint32_t msg_type,
+				 struct server_id pid,
+				 DATA_BLOB *data)
+{
+	printf("%s", (const char *)data->data);
+	num_replies++;
+}
+
+static bool do_ringbuflog(struct tevent_context *ev_ctx,
+			  struct messaging_context *msg_ctx,
+			  const struct server_id pid,
+			  const int argc, const char **argv)
+{
+	if (argc != 1) {
+		fprintf(stderr, "Usage: smbcontrol <dest> ringbuf-log\n");
+		return false;
+	}
+
+	messaging_register(msg_ctx, NULL, MSG_RINGBUF_LOG,
+			   print_ringbuf_log_cb);
+
+	/* Send a message and register our interest in a reply */
+
+	if (!send_message(msg_ctx, pid, MSG_REQ_RINGBUF_LOG, NULL, 0)) {
+		return false;
+	}
+
+	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
+
+	/* No replies were received within the timeout period */
+
+	if (num_replies == 0) {
+		printf("No replies received\n");
+	}
+
+	messaging_deregister(msg_ctx, MSG_RINGBUF_LOG, NULL);
+
+	return num_replies != 0;
+}
+
 /* Perform a dmalloc mark */
 
 static bool do_dmalloc_mark(struct tevent_context *ev_ctx,
@@ -1385,6 +1429,7 @@ static const struct {
 	{ "lockretry", do_lockretry, "Force a blocking lock retry" },
 	{ "brl-revalidate", do_brl_revalidate, "Revalidate all brl entries" },
 	{ "pool-usage", do_poolusage, "Display talloc memory usage" },
+	{ "ringbuf-log", do_ringbuflog, "Display ringbuf log" },
 	{ "dmalloc-mark", do_dmalloc_mark, "" },
 	{ "dmalloc-log-changed", do_dmalloc_changed, "" },
 	{ "shutdown", do_shutdown, "Shut down daemon" },
