@@ -20,7 +20,7 @@
   linux/lib/rbtree.c
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "rbtree.h"
 
 #define	RB_RED		0
