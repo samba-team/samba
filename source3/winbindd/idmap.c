@@ -208,6 +208,21 @@ bool idmap_config_bool(const char *domname, const char *option, bool def)
 	}
 }
 
+int idmap_config_int(const char *domname, const char *option, int def)
+{
+	int len = snprintf(NULL, 0, "idmap config %s", domname);
+
+	if (len == -1) {
+		return def;
+	}
+	{
+		char config_option[len+1];
+		snprintf(config_option, sizeof(config_option),
+			 "idmap config %s", domname);
+		return lp_parm_int(-1, config_option, option, def);
+	}
+}
+
 bool domain_has_idmap_config(const char *domname)
 {
 	int i;
