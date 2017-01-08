@@ -20,10 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
-#include "includes.h"
+#include "replace.h"
 #include "lib/util/charset/charset.h"
 #include "system/locale.h"
 #include "dynconfig/dynconfig.h"
+#include "lib/util/debug.h"
+#include "lib/util/byteorder.h"
 
 #ifdef strcasecmp
 #undef strcasecmp
