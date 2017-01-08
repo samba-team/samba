@@ -33,6 +33,7 @@
 #include "system/wait.h"
 #include "debug.h"
 #include "samba_util.h"
+#include "lib/util/select.h"
 
 #undef malloc
 #undef strcasecmp
@@ -292,48 +293,7 @@ _PUBLIC_ bool directory_create_or_exist_strict(const char *dname,
 
 _PUBLIC_ void smb_msleep(unsigned int t)
 {
-#if defined(HAVE_NANOSLEEP)
-	struct timespec ts;
-	int ret;
-
-	ts.tv_sec = t/1000;
-	ts.tv_nsec = 1000000*(t%1000);
-
-	do {
-		errno = 0;
-		ret = nanosleep(&ts, &ts);
-	} while (ret < 0 && errno == EINTR && (ts.tv_sec > 0 || ts.tv_nsec > 0));
-#else
-	unsigned int tdiff=0;
-	struct timeval tval,t1,t2;
-	fd_set fds;
-
-	GetTimeOfDay(&t1);
-	t2 = t1;
-
-	while (tdiff < t) {
-		tval.tv_sec = (t-tdiff)/1000;
-		tval.tv_usec = 1000*((t-tdiff)%1000);
-
-		/* Never wait for more than 1 sec. */
-		if (tval.tv_sec > 1) {
-			tval.tv_sec = 1;
-			tval.tv_usec = 0;
-		}
-
-		FD_ZERO(&fds);
-		errno = 0;
-		select(0,&fds,NULL,NULL,&tval);
-
-		GetTimeOfDay(&t2);
-		if (t2.tv_sec < t1.tv_sec) {
-			/* Someone adjusted time... */
-			t1 = t2;
-		}
-
-		tdiff = usec_time_diff(&t2,&t1)/1000;
-	}
-#endif
+	sys_poll_intr(NULL, 0, t);
 }
 
 /**
