@@ -23,6 +23,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "lib/dbwrap/dbwrap.h"
 #include <tdb.h>
 #include <tevent.h>
 
@@ -36,6 +37,7 @@ int ctdbd_init_connection(TALLOC_CTX *mem_ctx,
 int ctdbd_reinit_connection(TALLOC_CTX *mem_ctx,
 			    const char *sockname, int timeout,
 			    struct ctdbd_connection *conn);
+int ctdbd_setup_fde(struct ctdbd_connection *conn, struct tevent_context *ev);
 
 uint32_t ctdbd_vnn(const struct ctdbd_connection *conn);
 
@@ -93,5 +95,18 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 				  void *private_data),
 			void *private_data);
 int ctdbd_probe(const char *sockname, int timeout);
+
+struct tevent_req *ctdbd_parse_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    struct ctdbd_connection *conn,
+				    uint32_t db_id,
+				    TDB_DATA key,
+				    bool local_copy,
+				    void (*parser)(TDB_DATA key,
+						   TDB_DATA data,
+						   void *private_data),
+				    void *private_data,
+				    enum dbwrap_req_state *req_state);
+int ctdbd_parse_recv(struct tevent_req *req);
 
 #endif /* _CTDBD_CONN_H */
