@@ -2257,27 +2257,11 @@ sub setup_vampire_dc($$$)
 		# force replicated DC to update repsTo/repsFrom
 		# for vampired partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-		my $cmd = "";
-		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
-		if (defined($env->{RESOLV_WRAPPER_CONF})) {
-			$cmd .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
-		} else {
-			$cmd .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
-		}
-		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-		$cmd .= " $samba_tool drs kcc -k no $env->{DC_SERVER}";
-		$cmd .= " $env->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
-		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc on remote DC\n$cmd");
-			return undef;
-		}
 
 		# as 'vampired' dc may add data in its local replica
 		# we need to synchronize data between DCs
 		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
-		$cmd = "";
+		my $cmd = "";
 		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 		if (defined($env->{RESOLV_WRAPPER_CONF})) {
 			$cmd .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
@@ -2350,30 +2334,6 @@ sub setup_promoted_dc($$$)
 		# for vampired partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 		my $cmd = "";
-		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
-		$cmd .= " $env->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
-		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc on remote DC\n$cmd");
-			return undef;
-		}
-
-		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-		my $cmd = "";
-		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-		$cmd .= " $samba_tool drs kcc $env->{SERVER}";
-		$cmd .= " $env->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
-		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc on promoted DC\n$cmd");
-			return undef;
-		}
-
 		# as 'vampired' dc may add data in its local replica
 		# we need to synchronize data between DCs
 		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
@@ -2417,17 +2377,6 @@ sub setup_subdom_dc($$$)
 		# for primary domain partitions
 		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
 		my $cmd = "";
-		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
-		$cmd .= " $env->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD} --realm=$dc_vars->{DC_REALM}";
-		unless (system($cmd) == 0) {
-			warn("Failed to exec kcc on remote DC\n$cmd");
-			return undef;
-		}
-
 		# as 'subdomain' dc may add data in its local replica
 		# we need to synchronize data between DCs
 		my $base_dn = "DC=".join(",DC=", split(/\./, $env->{REALM}));
