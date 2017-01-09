@@ -97,26 +97,6 @@ loadconfig () {
 
 ##############################################################
 
-# CTDB_SCRIPT_DEBUGLEVEL can be overwritten by setting it in a
-# configuration file.
-debug ()
-{
-    if [ "${CTDB_SCRIPT_DEBUGLEVEL:-NOTICE}" = "DEBUG" ] ; then
-	# If there are arguments then echo them.  Otherwise expect to
-	# use stdin, which allows us to pass lots of debug using a
-	# here document.
-	if [ -n "$1" ] ; then
-	    echo "DEBUG: $*"
-	else
-	    sed -e 's@^@DEBUG: @'
-	fi
-    else
-	if [ -z "$1" ] ; then
-	    cat >/dev/null
-	fi
-    fi
-}
-
 die ()
 {
     _msg="$1"

@@ -1684,20 +1684,6 @@ CTDB_SET_MonitorInterval=20
       </varlistentry>
 
       <varlistentry>
-	<term>CTDB_SCRIPT_DEBUGLEVEL=<parameter>DEBUGLEVEL</parameter></term>
-	<listitem>
-	  <para>
-	    DEBUGLEVEL is the level debugging messages printed by CTDB
-	    scripts.  Setting this to a higher level (e.g. DEBUG) will
-	    cause some scripts to log more messages.
-	  </para>
-	  <para>
-	    Default is NOTICE.
-	  </para>
-	</listitem>
-      </varlistentry>
-
-      <varlistentry>
 	<term>CTDB_SUPPRESS_COREFILE=yes|no</term>
 	<listitem>
 	  <para>
