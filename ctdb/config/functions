@@ -408,21 +408,6 @@ ctdb_check_unix_socket() {
     fi
 }
 
-######################################################
-# check a command returns zero status
-# usage: ctdb_check_command <command>
-######################################################
-ctdb_check_command ()
-{
-    _out=$("$@" 2>&1) || {
-	echo "ERROR: $* returned error"
-	if [ -n "$_out" ] ; then
-		debug "$_out"
-	fi
-	exit 1
-    }
-}
-
 ################################################
 # kill off any TCP connections with the given IP
 ################################################

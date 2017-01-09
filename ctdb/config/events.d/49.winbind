@@ -48,7 +48,11 @@ shutdown)
 	;;
 
 monitor)
-	ctdb_check_command wbinfo -p
+	if ! out=$(wbinfo -p 2>&1) ; then
+		echo "ERROR: wbinfo -p returned error"
+		echo "$out"
+		exit 1
+	fi
 	;;
 esac
 
