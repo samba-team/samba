@@ -104,7 +104,7 @@ schemaUpdateNow: 1
         obj_dn = "CN=%s,%s" % (obj_name, self.schema_dn)
         return (obj_name, obj_ldap_name, obj_dn)
 
-    def _make_attr_ldif(self, attr_name, attr_dn):
+    def _make_attr_ldif(self, attr_name, attr_dn, sub_oid):
         ldif = """
 dn: """ + attr_dn + """
 objectClass: top
@@ -112,7 +112,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9940
+attributeId: 1.3.6.1.4.1.7165.4.6.1.7.%d.""" % sub_oid + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -127,7 +127,7 @@ systemOnly: FALSE
 
         # create names for an attribute to add
         (attr_name, attr_ldap_name, attr_dn) = self._make_obj_names("schemaInfo-Attr-")
-        ldif = self._make_attr_ldif(attr_name, attr_dn)
+        ldif = self._make_attr_ldif(attr_name, attr_dn, 1)
 
         # add the new attribute
         self.sam_db.add_ldif(ldif)
@@ -149,7 +149,7 @@ systemOnly: FALSE
         pass
 
 
-    def _make_class_ldif(self, class_name, class_dn):
+    def _make_class_ldif(self, class_name, class_dn, sub_oid):
         ldif = """
 dn: """ + class_dn + """
 objectClass: top
@@ -157,7 +157,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.7.%d.""" % sub_oid + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -173,7 +173,7 @@ systemOnly: FALSE
 
         # create names for a Class to add
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("schemaInfo-Class-")
-        ldif = self._make_class_ldif(class_name, class_dn)
+        ldif = self._make_class_ldif(class_name, class_dn, 1)
 
         # add the new Class
         self.sam_db.add_ldif(ldif)

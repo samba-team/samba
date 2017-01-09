@@ -108,7 +108,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.3.6.1.4.1.7165.4.6.1.""" + rand + """
+attributeId: 1.3.6.1.4.1.7165.4.6.1.6.1.""" + rand + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -152,7 +152,7 @@ defaultObjectCategory: CN=_
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.1.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -175,7 +175,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.2.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -257,7 +257,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.3.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalUnit
@@ -307,7 +307,7 @@ instanceType: 4
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.2." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -350,7 +350,7 @@ systemOnly: FALSE
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.3." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -394,7 +394,7 @@ systemOnly: FALSE
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.4." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -436,7 +436,7 @@ systemOnly: FALSE
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.5." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -480,7 +480,7 @@ systemOnly: FALSE
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.6." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -526,8 +526,8 @@ systemOnly: FALSE
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
-        governsID = "1.3.6.1.4.1.7165.4.6.2." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.7." + rand
+        governsID   = "1.3.6.1.4.1.7165.4.6.2.6.4." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -573,7 +573,7 @@ systemOnly: FALSE
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.8." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -627,7 +627,7 @@ ldapDisplayName: """ + attr_ldap_display_name + """
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.9." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -680,7 +680,7 @@ attributeId: """ + attributeID + """
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.10." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -715,7 +715,7 @@ replace: ldapDisplayName
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.11." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -748,7 +748,7 @@ ldapDisplayName: """ + attr_ldap_display_name + """2
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.12." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -785,7 +785,7 @@ attributeId: """ + attributeID + """.1
         rand = str(random.randint(1,100000))
         attr_name = "test-Attr" + time.strftime("%s", time.gmtime()) + "-" + rand
         attr_ldap_display_name = attr_name.replace("-", "")
-        attributeID = "1.3.6.1.4.1.7165.4.6.1." + rand
+        attributeID = "1.3.6.1.4.1.7165.4.6.1.6.13." + rand
         ldif = """
 dn: CN=%s,%s""" % (attr_name, self.schema_dn) + """
 objectClass: top
@@ -822,7 +822,7 @@ attributeId: """ + attributeID + """
         rand = str(random.randint(1,100000))
         class_name = "test-Class" + time.strftime("%s", time.gmtime()) + "-" + rand
         class_ldap_display_name = class_name.replace("-", "")
-        governsID = "1.3.6.1.4.1.7165.4.6.2." + rand
+        governsID = "1.3.6.1.4.1.7165.4.6.2.6.5." + rand
         ldif = """
 dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
 objectClass: top
@@ -860,7 +860,7 @@ governsId: """ + governsID + """.1
         rand = str(random.randint(1,100000))
         class_name = "test-Class" + time.strftime("%s", time.gmtime()) + "-" + rand
         class_ldap_display_name = class_name.replace("-", "")
-        governsID = "1.3.6.1.4.1.7165.4.6.2." + rand
+        governsID = "1.3.6.1.4.1.7165.4.6.2.6.6." + rand
         ldif = """
 dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
 objectClass: top
@@ -907,7 +907,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.7.""" + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalUnit
@@ -996,7 +996,7 @@ objectClass: attributeSchema
 adminDescription: """ + attr_name + """
 adminDisplayName: """ + attr_name + """
 cn: """ + attr_name + """
-attributeId: 1.3.6.1.4.1.7165.4.6.1.""" + str(random.randint(1,100000)) + """
+attributeId: 1.3.6.1.4.1.7165.4.6.1.6.14.""" + str(random.randint(1,100000)) + """
 attributeSyntax: 2.5.5.12
 omSyntax: 64
 instanceType: 4
@@ -1104,7 +1104,7 @@ systemOnly: FALSE
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
 
-    def _make_class_ldif(self, class_dn, class_name):
+    def _make_class_ldif(self, class_dn, class_name, sub_oid):
         ldif = """
 dn: """ + class_dn + """
 objectClass: top
@@ -1112,7 +1112,7 @@ objectClass: classSchema
 adminDescription: """ + class_name + """
 adminDisplayName: """ + class_name + """
 cn: """ + class_name + """
-governsId: 1.3.6.1.4.1.7165.4.6.2.""" + str(random.randint(1,100000)) + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.6.%d.""" % sub_oid + str(random.randint(1,100000)) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -1131,7 +1131,7 @@ systemOnly: FALSE
         # level is >= DS_DOMAIN_FUNCTION_2003
         # and missing otherwise
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-1-")
-        ldif = self._make_class_ldif(class_dn, class_name)
+        ldif = self._make_class_ldif(class_dn, class_name, 8)
 
         # try to add msDS-IntId during Class creation
         ldif_add = ldif + "msDS-IntId: -1993108831\n"
@@ -1144,7 +1144,7 @@ systemOnly: FALSE
 
         # add a new Class and update schema
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-2-")
-        ldif = self._make_class_ldif(class_dn, class_name)
+        ldif = self._make_class_ldif(class_dn, class_name, 9)
 
         self.ldb.add_ldif(ldif)
         self._ldap_schemaUpdateNow()
@@ -1168,7 +1168,7 @@ systemOnly: FALSE
         # level is >= DS_DOMAIN_FUNCTION_2003
         # and missing otherwise
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-3-")
-        ldif = self._make_class_ldif(class_dn, class_name)
+        ldif = self._make_class_ldif(class_dn, class_name, 10)
         ldif += "systemFlags: 16\n"
 
         # try to add msDS-IntId during Class creation
@@ -1181,7 +1181,7 @@ systemOnly: FALSE
 
         # add the new Class and update schema
         (class_name, class_ldap_name, class_dn) = self._make_obj_names("msDS-IntId-Class-4-")
-        ldif = self._make_class_ldif(class_dn, class_name)
+        ldif = self._make_class_ldif(class_dn, class_name, 11)
         ldif += "systemFlags: 16\n"
 
         self.ldb.add_ldif(ldif)
