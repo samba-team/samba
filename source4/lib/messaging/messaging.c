@@ -114,6 +114,27 @@ static void pool_message(struct imessaging_context *msg, void *private_data,
 	talloc_free(report);
 }
 
+static void ringbuf_log_msg(struct imessaging_context *msg,
+			    void *private_data,
+			    uint32_t msg_type,
+			    struct server_id src,
+			    DATA_BLOB *data)
+{
+	char *log = debug_get_ringbuf();
+	size_t logsize = debug_get_ringbuf_size();
+	DATA_BLOB blob;
+
+	if (log == NULL) {
+		log = discard_const_p(char, "*disabled*\n");
+		logsize = strlen(log) + 1;
+	}
+
+	blob.data = (uint8_t *)log;
+	blob.length = logsize;
+
+	imessaging_send(msg, src, MSG_RINGBUF_LOG, &blob);
+}
+
 /*
   return uptime of messaging server via irpc
 */
@@ -408,6 +429,7 @@ struct imessaging_context *imessaging_init(TALLOC_CTX *mem_ctx,
 	imessaging_register(msg, NULL, MSG_PING, ping_message);
 	imessaging_register(msg, NULL, MSG_REQ_POOL_USAGE, pool_message);
 	imessaging_register(msg, NULL, MSG_IRPC, irpc_handler);
+	imessaging_register(msg, NULL, MSG_REQ_RINGBUF_LOG, ringbuf_log_msg);
 	IRPC_REGISTER(msg, irpc, IRPC_UPTIME, irpc_uptime, msg);
 
 	DLIST_ADD(msg_ctxs, msg);
