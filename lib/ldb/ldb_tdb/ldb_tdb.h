@@ -16,6 +16,7 @@ struct kv_db_ops {
 	int (*finish_write)(struct ltdb_private *);
 	int (*error)(struct ltdb_private *ltdb);
 	const char * (*name)(struct ltdb_private *ltdb);
+	bool (*has_changed)(struct ltdb_private *ltdb);
 };
 
 /* this private structure is used by the ltdb backend in the

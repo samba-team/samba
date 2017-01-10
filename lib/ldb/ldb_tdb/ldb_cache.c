@@ -391,8 +391,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	ldb = ldb_module_get_ctx(module);
 
 	/* a very fast check to avoid extra database reads */
-	if (ltdb->cache != NULL && 
-	    tdb_get_seqnum(ltdb->tdb) == ltdb->tdb_seqnum) {
+	if (ltdb->cache != NULL && !ltdb->kv_ops->has_changed(ltdb)) {
 		return 0;
 	}
 
@@ -432,7 +431,8 @@ int ltdb_cache_load(struct ldb_module *module)
 		}
 	}
 
-	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+	/* Ignore the result, and update the sequence number */
+	ltdb->kv_ops->has_changed(ltdb);
 
 	/* if the current internal sequence number is the same as the one
 	   in the database then assume the rest of the cache is OK */
@@ -594,7 +594,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	/* updating the tdb_seqnum here avoids us reloading the cache
 	   records due to our own modification */
-	ltdb->tdb_seqnum = tdb_get_seqnum(ltdb->tdb);
+	ltdb->kv_ops->has_changed(ltdb);
 
 	return ret;
 }
