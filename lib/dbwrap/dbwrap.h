@@ -43,6 +43,29 @@ enum dbwrap_lock_order {
 #define DBWRAP_FLAG_NONE                     0x0000000000000000ULL
 #define DBWRAP_FLAG_OPTIMIZE_READONLY_ACCESS 0x0000000000000001ULL
 
+enum dbwrap_req_state {
+	/**
+	 * We are creating the request
+	 */
+	DBWRAP_REQ_INIT,
+	/**
+	 * The request is queued and waiting to be dispatched
+	 */
+	DBWRAP_REQ_QUEUED,
+	/**
+	 * We are waiting to receive the reply
+	 */
+	DBWRAP_REQ_DISPATCHED,
+	/**
+	 * The request is finished
+	 */
+	DBWRAP_REQ_DONE,
+	/**
+	 * The request errored out
+	 */
+	DBWRAP_REQ_ERROR
+};
+
 /* The following definitions come from lib/dbwrap.c  */
 
 TDB_DATA dbwrap_record_get_key(const struct db_record *rec);
