@@ -4,9 +4,20 @@
 #include "tdb.h"
 #include "ldb_module.h"
 
+struct ltdb_private;
+struct kv_db_ops {
+	int (*store)(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags);
+	int (*delete)(struct ltdb_private *ltdb, TDB_DATA key);
+	int (*lock_read)(struct ldb_module *);
+	int (*unlock_read)(struct ldb_module *);
+	int (*error)(struct ltdb_private *ltdb);
+	const char * (*name)(struct ltdb_private *ltdb);
+};
+
 /* this private structure is used by the ltdb backend in the
    ldb_context */
 struct ltdb_private {
+	const struct kv_db_ops *kv_ops;
 	TDB_CONTEXT *tdb;
 	unsigned int connect_flags;
 	

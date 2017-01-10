@@ -413,6 +413,16 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 	return ret;
 }
 
+static int ltdb_tdb_store(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags)
+{
+	return tdb_store(ltdb->tdb, key, data, flags);
+}
+
+static int ltdb_error(struct ltdb_private *ltdb)
+{
+	return ltdb_err_map(tdb_error(ltdb->tdb));
+}
+
 /*
   store a record into the db
 */
@@ -633,6 +643,11 @@ static int ltdb_add(struct ltdb_context *ctx)
 				req->op.add.message, true);
 
 	return ret;
+}
+
+static int ltdb_tdb_delete(struct ltdb_private *ltdb, TDB_DATA tdb_key)
+{
+	return tdb_delete(ltdb->tdb, tdb_key);
 }
 
 /*
@@ -1671,6 +1686,20 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
+{
+	return tdb_name(ltdb->tdb);
+}
+
+static const struct kv_db_ops key_value_ops = {
+	.store = ltdb_tdb_store,
+	.delete = ltdb_tdb_delete,
+	.lock_read = ltdb_lock_read,
+	.unlock_read = ltdb_unlock_read,
+	.error = ltdb_error,
+	.name = ltdb_tdb_name,
+};
+
 static void ltdb_callback(struct tevent_context *ev,
 			  struct tevent_timer *te,
 			  struct timeval t,
@@ -1934,6 +1963,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	}
 
 	ltdb->sequence_number = 0;
+	ltdb->kv_ops = &key_value_ops;
 
 	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
 	if (!module) {
