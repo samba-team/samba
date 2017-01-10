@@ -470,6 +470,17 @@ int messaging_send_iov_from(struct messaging_context *msg_ctx,
 	ret = messaging_dgm_send(dst.pid, iov2, iovlen+1, fds, num_fds);
 	unbecome_root();
 
+	if (ret == ECONNREFUSED) {
+		/*
+		 * Linux returns this when a socket exists in the file
+		 * system without a listening process. This is not
+		 * documented in susv4 or the linux manpages, but it's
+		 * easily testable. For the higher levels this is the
+		 * same as "destination does not exist"
+		 */
+		ret = ENOENT;
+	}
+
 	return ret;
 }
 
