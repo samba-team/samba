@@ -208,6 +208,7 @@ done:
 		dcerpc_samr_Close(b, mem_ctx, &dom_pol, &result);
 	}
 
+	TALLOC_FREE(rids);
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
