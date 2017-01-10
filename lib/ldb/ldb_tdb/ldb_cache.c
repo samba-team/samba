@@ -415,7 +415,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	/* possibly initialise the baseinfo */
 	if (r == LDB_ERR_NO_SUCH_OBJECT) {
 
-		if (tdb_transaction_start(ltdb->tdb) != 0) {
+		if (ltdb->kv_ops->begin_write(ltdb) != 0) {
 			goto failed;
 		}
 
@@ -423,7 +423,9 @@ int ltdb_cache_load(struct ldb_module *module)
 		   looking for the record again. */
 		ltdb_baseinfo_init(module);
 
-		tdb_transaction_commit(ltdb->tdb);
+		if (ltdb->kv_ops->finish_write(ltdb) != 0) {
+			goto failed;
+		}
 
 		if (ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0) != LDB_SUCCESS) {
 			goto failed;
