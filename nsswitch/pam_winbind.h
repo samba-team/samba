@@ -216,10 +216,4 @@ struct pwb_context {
 	struct wbcContext *wbc_ctx;
 };
 
-#ifndef TALLOC_FREE
-#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
-#endif
-#define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
-#define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-
 #endif /* _NSSWITCH_PAM_WINBIND_H_ */
