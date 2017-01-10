@@ -4,9 +4,7 @@
 import optparse
 import sys
 import os
-import base64
-import random
-import re
+import itertools
 
 sys.path.insert(0, "bin/python")
 import samba
@@ -18,8 +16,6 @@ from samba.auth import system_session
 import ldb
 from samba.samdb import SamDB
 from samba.dcerpc import misc
-
-import time
 
 parser = optparse.OptionParser("linked_attributes.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -61,7 +57,7 @@ class LATests(samba.tests.TestCase):
     def setUp(self):
         super(LATests, self).setUp()
         self.samdb = SamDB(host, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+                           session_info=system_session(lp), lp=lp)
 
         self.base_dn = self.samdb.domain_dn()
         self.ou = "OU=la,%s" % self.base_dn
@@ -85,8 +81,8 @@ class LATests(samba.tests.TestCase):
     def add_object(self, cn, objectclass):
         dn = "CN=%s,%s" % (cn, self.ou)
         self.samdb.add({'cn': cn,
-                      'objectclass': objectclass,
-                      'dn': dn})
+                        'objectclass': objectclass,
+                        'dn': dn})
 
         return dn
 
@@ -250,10 +246,10 @@ class LATests(samba.tests.TestCase):
         self.samdb.delete(g2)
         self.assert_back_links(u1, [g1], show_deleted=1, show_recycled=1,
                                show_deactivated_link=0,
-                                  reveal_internals=0)
+                               reveal_internals=0)
         self.assert_back_links(u2, set(), show_deleted=1, show_recycled=1,
                                show_deactivated_link=0,
-                                  reveal_internals=0)
+                               reveal_internals=0)
         self.assert_forward_links(g1, [u1], show_deleted=1, show_recycled=1,
                                   show_deactivated_link=0,
                                   reveal_internals=0)
@@ -318,6 +314,7 @@ class LATests(samba.tests.TestCase):
                                   show_deactivated_link=0,
                                   reveal_internals=0
         )
+
     def test_la_links_delete_link_reveal(self):
         if opts.no_reveal_internals:
             print 'skipping because --no-reveal-internals'
