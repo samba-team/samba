@@ -1374,7 +1374,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 {
 	int snum;
 	int n_services = lp_numservices();
-	bool in_use = False;
+	bool in_use = false;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	WERROR result;
 
@@ -1399,7 +1399,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		}
 
 		if (strequal(r->driver_name, pinfo2->drivername)) {
-			in_use = True;
+			in_use = true;
 		}
 
 		TALLOC_FREE(pinfo2);
@@ -1416,26 +1416,31 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		/* we can still remove the driver if there is one of
 		   "Windows NT x86" version 2 or 3 left */
 
-		if (!strequal("Windows NT x86", r->architecture)) {
+		if (strequal(SPOOLSS_ARCHITECTURE_NT_X86, r->architecture)) {
+			if (r->version == 2) {
+				werr = winreg_get_driver(mem_ctx, b,
+							 r->architecture,
+							 r->driver_name,
+							 3, &driver);
+			} else if (r->version == 3) {
+				werr = winreg_get_driver(mem_ctx, b,
+							 r->architecture,
+							 r->driver_name,
+							 2, &driver);
+			} else {
+				DBG_ERR("Unknown driver version (%d)\n",
+					r->version);
+				werr = WERR_UNKNOWN_PRINTER_DRIVER;
+			}
+		} else if (strequal(SPOOLSS_ARCHITECTURE_x64, r->architecture)) {
 			werr = winreg_get_driver(mem_ctx, b,
-						 "Windows NT x86",
+						 SPOOLSS_ARCHITECTURE_NT_X86,
 						 r->driver_name,
 						 DRIVER_ANY_VERSION,
 						 &driver);
-		} else if (r->version == 2) {
-			werr = winreg_get_driver(mem_ctx, b,
-						 "Windows NT x86",
-						 r->driver_name,
-						 3, &driver);
-		} else if (r->version == 3) {
-			werr = winreg_get_driver(mem_ctx, b,
-						 "Windows NT x86",
-						 r->driver_name,
-						 2, &driver);
 		} else {
-			DEBUG(0, ("printer_driver_in_use: ERROR!"
-				  " unknown driver version (%d)\n",
-				  r->version));
+			DBG_ERR("Unknown driver architecture: %s\n",
+				r->architecture);
 			werr = WERR_UNKNOWN_PRINTER_DRIVER;
 		}
 
@@ -1443,7 +1448,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 
 		if ( W_ERROR_IS_OK(werr) ) {
 			/* it's ok to remove the driver, we have other architctures left */
-			in_use = False;
+			in_use = false;
 			talloc_free(driver);
 		}
 	}
