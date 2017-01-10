@@ -174,7 +174,7 @@ NTSTATUS winbindd_list_users_recv(struct tevent_req *req,
 
 	len = talloc_get_size(result);
 
-	response->extra_data.data = result;
+	response->extra_data.data = talloc_steal(response, result);
 	response->length += len;
 	response->data.num_entries = 0;
 
