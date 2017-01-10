@@ -77,6 +77,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 		}
 		if (!NT_STATUS_IS_OK(result)) {
 			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+				TALLOC_FREE(rids);
 				return result;
 			}
 		}
