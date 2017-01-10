@@ -391,7 +391,7 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 		if (ltdb->warn_reindex) {
 			ldb_debug(ldb_module_get_ctx(module),
 				LDB_DEBUG_ERROR, "Reindexing %s due to modification on %s",
-				tdb_name(ltdb->tdb), ldb_dn_get_linearized(dn));
+				ltdb->kv_ops->name(ltdb), ldb_dn_get_linearized(dn));
 		}
 		ret = ltdb_reindex(module);
 	}
@@ -459,10 +459,10 @@ int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flg
 	tdb_data.dptr = ldb_data.data;
 	tdb_data.dsize = ldb_data.length;
 
-	ret = tdb_store(ltdb->tdb, tdb_key, tdb_data, flgs);
+	ret = ltdb->kv_ops->store(ltdb, tdb_key, tdb_data, flgs);
 	if (ret != 0) {
 		bool is_special = ldb_dn_is_special(msg->dn);
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		ret = ltdb->kv_ops->error(ltdb);
 
 		/*
 		 * LDB_ERR_ENTRY_ALREADY_EXISTS means the DN, not
@@ -677,11 +677,11 @@ int ltdb_delete_noindex(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	ret = tdb_delete(ltdb->tdb, tdb_key);
+	ret = ltdb->kv_ops->delete(ltdb, tdb_key);
 	TALLOC_FREE(tdb_key_ctx);
 
 	if (ret != 0) {
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		ret = ltdb->kv_ops->error(ltdb);
 	}
 
 	return ret;
@@ -1412,7 +1412,7 @@ static int ltdb_start_trans(struct ldb_module *module)
 	}
 
 	if (tdb_transaction_start(ltdb->tdb) != 0) {
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	ltdb->in_transaction++;
@@ -1473,7 +1473,7 @@ static int ltdb_end_trans(struct ldb_module *module)
 	ltdb->prepared_commit = false;
 
 	if (tdb_transaction_commit(ltdb->tdb) != 0) {
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		ret = ltdb->kv_ops->error(ltdb);
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "Failure during tdb_transaction_commit(): %s -> %s",
 				       tdb_errorstr(ltdb->tdb),
@@ -1493,7 +1493,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 
 	if (ltdb_index_transaction_cancel(module) != 0) {
 		tdb_transaction_cancel(ltdb->tdb);
-		return ltdb_err_map(tdb_error(ltdb->tdb));
+		return ltdb->kv_ops->error(ltdb);
 	}
 
 	tdb_transaction_cancel(ltdb->tdb);

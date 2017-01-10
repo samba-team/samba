@@ -256,7 +256,7 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 			       ltdb_parse_data_unpack, &ctx); 
 	
 	if (ret == -1) {
-		ret = ltdb_err_map(tdb_error(ltdb->tdb));
+		ret = ltdb->kv_ops->error(ltdb);
 		if (ret == LDB_SUCCESS) {
 			/*
 			 * Just to be sure we don't turn errors
