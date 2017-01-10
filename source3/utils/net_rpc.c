@@ -5644,7 +5644,7 @@ static int rpc_file_close(struct net_context *c, int argc, const char **argv)
 
 static void display_file_info_3(struct FILE_INFO_3 *r)
 {
-	d_printf("%-7.1d %-20.20s 0x%-4.2x %-6.1d %s\n",
+	d_printf("%-7.1" PRIu32 " %-20.20s 0x%-4.2x %-6.1u %s\n",
 		 r->fi3_id, r->fi3_username, r->fi3_permissions,
 		 r->fi3_num_locks, r->fi3_pathname);
 }
