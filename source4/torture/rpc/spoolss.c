@@ -8559,21 +8559,42 @@ static bool torture_rpc_spoolss_printerdm_setup(struct torture_context *tctx, vo
 }
 #endif
 
+static bool test_DeletePrinterDriverEx_exp(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   const char *server,
+					   const char *driver,
+					   const char *environment,
+					   uint32_t delete_flags,
+					   uint32_t version,
+					   WERROR expected_result);
+
 static bool torture_rpc_spoolss_printer_teardown_common(struct torture_context *tctx, struct torture_printer_context *t)
 {
 	bool found = false;
 	struct dcerpc_pipe *p = t->spoolss_pipe;
-	struct dcerpc_binding_handle *b;
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	const char *printer_name = t->info2.printername;
+	const char *server_name_slash;
+
+	server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	if (t->added_driver) {
 		torture_assert(tctx,
-			remove_printer_driver(tctx, dcerpc_server_name(t->spoolss_pipe), &t->driver),
+			remove_printer_driver(tctx, dcerpc_server_name(p), &t->driver),
 			"failed to remove printer driver");
+
+		torture_assert(tctx,
+			test_DeletePrinterDriverEx_exp(tctx, b,
+						       server_name_slash,
+						       t->driver.info8.driver_name,
+						       t->driver.info8.architecture,
+						       DPD_DELETE_ALL_FILES,
+						       t->driver.info8.version,
+						       WERR_OK),
+			"failed to delete printer driver via spoolss");
 	}
 
 	if (p && !t->wellknown) {
-		b = p->binding_handle;
 
 		torture_assert(tctx,
 			test_DeletePrinter(tctx, b, &t->handle),
