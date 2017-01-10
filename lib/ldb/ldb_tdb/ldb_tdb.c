@@ -94,7 +94,7 @@ int ltdb_err_map(enum TDB_ERROR tdb_code)
 /*
   lock the database for read - use by ltdb_search and ltdb_sequence_number
 */
-int ltdb_lock_read(struct ldb_module *module)
+static int ltdb_lock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -124,7 +124,7 @@ int ltdb_lock_read(struct ldb_module *module)
 /*
   unlock the database after a ltdb_lock_read()
 */
-int ltdb_unlock_read(struct ldb_module *module)
+static int ltdb_unlock_read(struct ldb_module *module)
 {
 	void *data = ldb_module_get_private(module);
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
@@ -1529,6 +1529,8 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct ldb_seqnum_request *seq;
 	struct ldb_seqnum_result *res;
@@ -1547,7 +1549,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
-	if (ltdb_lock_read(module) != 0) {
+	if (ltdb->kv_ops->lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1609,7 +1611,8 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 
 done:
 	talloc_free(tmp_ctx);
-	ltdb_unlock_read(module);
+
+	ltdb->kv_ops->unlock_read(module);
 	return ret;
 }
 
@@ -1872,6 +1875,21 @@ static int ltdb_init_rootdse(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
+
+static int generic_lock_read(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	return ltdb->kv_ops->lock_read(module);
+}
+
+static int generic_unlock_read(struct ldb_module *module)
+{
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
+	return ltdb->kv_ops->unlock_read(module);
+}
+
 static const struct ldb_module_ops ltdb_ops = {
 	.name              = "tdb",
 	.init_context      = ltdb_init_rootdse,
@@ -1885,8 +1903,8 @@ static const struct ldb_module_ops ltdb_ops = {
 	.end_transaction   = ltdb_end_trans,
 	.prepare_commit    = ltdb_prepare_commit,
 	.del_transaction   = ltdb_del_trans,
-	.read_lock         = ltdb_lock_read,
-	.read_unlock       = ltdb_unlock_read,
+	.read_lock         = generic_lock_read,
+	.read_unlock       = generic_unlock_read,
 };
 
 /*
@@ -1905,7 +1923,6 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	 * We hold locks, so we must use a private event context
 	 * on each returned handle
 	 */
-
 	ldb_set_require_private_event_context(ldb);
 
 	/* parse the url */

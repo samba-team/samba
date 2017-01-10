@@ -165,8 +165,6 @@ int ltdb_filter_attrs(TALLOC_CTX *mem_ctx,
 int ltdb_search(struct ltdb_context *ctx);
 
 /* The following definitions come from lib/ldb/ldb_tdb/ldb_tdb.c  */
-int ltdb_lock_read(struct ldb_module *module);
-int ltdb_unlock_read(struct ldb_module *module);
 /* 
  * Determine if this key could hold a record.  We allow the new GUID
  * index, the old DN index and a possible future ID=
@@ -185,6 +183,7 @@ int ltdb_idx_to_key(struct ldb_module *module,
 		    TALLOC_CTX *mem_ctx,
 		    const struct ldb_val *idx_val,
 		    TDB_DATA *key);
+TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn);
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs);
 int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *msg, struct ldb_request *req);
 int ltdb_delete_noindex(struct ldb_module *module,
