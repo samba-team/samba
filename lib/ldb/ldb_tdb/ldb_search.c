@@ -252,9 +252,9 @@ int ltdb_search_key(struct ldb_module *module, struct ltdb_private *ltdb,
 	msg->num_elements = 0;
 	msg->elements = NULL;
 
-	ret = tdb_parse_record(ltdb->tdb, tdb_key, 
-			       ltdb_parse_data_unpack, &ctx); 
-	
+	ret = ltdb->kv_ops->fetch_and_parse(ltdb, tdb_key,
+					    ltdb_parse_data_unpack, &ctx);
+
 	if (ret == -1) {
 		ret = ltdb->kv_ops->error(ltdb);
 		if (ret == LDB_SUCCESS) {

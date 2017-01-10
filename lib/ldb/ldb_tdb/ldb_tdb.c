@@ -1714,6 +1714,14 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx, ext, ret);
 }
 
+static int ltdb_tdb_parse_record(struct ltdb_private *ltdb, TDB_DATA key,
+				 int (*parser)(TDB_DATA key, TDB_DATA data,
+					       void *private_data),
+				 void *ctx)
+{
+	return tdb_parse_record(ltdb->tdb, key, parser, ctx);
+}
+
 static const char * ltdb_tdb_name(struct ltdb_private *ltdb)
 {
 	return tdb_name(ltdb->tdb);
@@ -1731,6 +1739,7 @@ static bool ltdb_tdb_changed(struct ltdb_private *ltdb)
 static const struct kv_db_ops key_value_ops = {
 	.store = ltdb_tdb_store,
 	.delete = ltdb_tdb_delete,
+	.fetch_and_parse = ltdb_tdb_parse_record,
 	.lock_read = ltdb_lock_read,
 	.unlock_read = ltdb_unlock_read,
 	.begin_write = ltdb_tdb_transaction_start,

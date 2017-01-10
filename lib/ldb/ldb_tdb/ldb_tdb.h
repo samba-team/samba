@@ -8,6 +8,10 @@ struct ltdb_private;
 struct kv_db_ops {
 	int (*store)(struct ltdb_private *ltdb, TDB_DATA key, TDB_DATA data, int flags);
 	int (*delete)(struct ltdb_private *ltdb, TDB_DATA key);
+	int (*fetch_and_parse)(struct ltdb_private *ltdb, TDB_DATA key,
+                               int (*parser)(TDB_DATA key, TDB_DATA data,
+                                             void *private_data),
+                               void *ctx);
 	int (*lock_read)(struct ldb_module *);
 	int (*unlock_read)(struct ldb_module *);
 	int (*begin_write)(struct ltdb_private *);
