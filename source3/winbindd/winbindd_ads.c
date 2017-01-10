@@ -356,8 +356,9 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		if (!ads_pull_sid(ads, msg, "objectSid", &user_sid)) {
-			DBG_INFO("No sid for %s !?\n",
-				 ads_get_dn(ads, talloc_tos(), msg));
+			char *dn = ads_get_dn(ads, talloc_tos(), msg);
+			DBG_INFO("No sid for %s !?\n", dn);
+			TALLOC_FREE(dn);
 			continue;
 		}
 
