@@ -23,6 +23,9 @@
 #ifndef __DBWRAP_PRIVATE_H__
 #define __DBWRAP_PRIVATE_H__
 
+struct tevent_context;
+struct tevent_req;
+
 struct db_record {
 	struct db_context *db;
 	TDB_DATA key, value;
@@ -55,6 +58,15 @@ struct db_context {
 				 void (*parser)(TDB_DATA key, TDB_DATA data,
 						void *private_data),
 				 void *private_data);
+	struct tevent_req *(*parse_record_send)(
+		TALLOC_CTX *mem_ctx,
+		struct tevent_context *ev,
+		struct db_context *db,
+		TDB_DATA key,
+		void (*parser)(TDB_DATA key, TDB_DATA data, void *private_data),
+		void *private_data,
+		enum dbwrap_req_state *req_state);
+	NTSTATUS (*parse_record_recv)(struct tevent_req *req);
 	int (*exists)(struct db_context *db,TDB_DATA key);
 	int (*wipe)(struct db_context *db);
 	int (*check)(struct db_context *db);
