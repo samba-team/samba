@@ -221,6 +221,13 @@ static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
 			goto normal_read;
 		}
 
+		if (errno == ENOTSUP) {
+			set_use_sendfile(SNUM(fsp->conn), false);
+			DBG_WARNING("Disabling sendfile use as sendfile is "
+				    "not supported by the system\n");
+			goto normal_read;
+		}
+
 		if (errno == EINTR) {
 			/*
 			 * Special hack for broken Linux with no working sendfile. If we
