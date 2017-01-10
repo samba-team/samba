@@ -90,6 +90,7 @@ static NTSTATUS msrpc_query_user_list(struct winbindd_domain *domain,
 	}
 
 done:
+	TALLOC_FREE(rids);
 	TALLOC_FREE(tmp_ctx);
 	return status;
 }
