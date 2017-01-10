@@ -1457,6 +1457,7 @@ do_fetch_cache:
 
 	rids = talloc_array(mem_ctx, uint32_t, num_rids);
 	if (rids == NULL) {
+		centry_free(centry);
 		return NT_STATUS_NO_MEMORY;
 	}
 
