@@ -107,6 +107,12 @@ class LATests(samba.tests.TestCase):
         m[attr] = ldb.MessageElement(dest, ldb.FLAG_MOD_DELETE, attr)
         self.samdb.modify(m)
 
+    def replace_linked_attribute(self, src, dest, attr='member'):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, src)
+        m[attr] = ldb.MessageElement(dest, ldb.FLAG_MOD_REPLACE, attr)
+        self.samdb.modify(m)
+
     def attr_search(self, obj, expected, attr, scope=ldb.SCOPE_BASE,
                     **controls):
         if opts.no_reveal_internals:
@@ -298,6 +304,8 @@ class LATests(samba.tests.TestCase):
         self.assert_forward_links(g2, [u1])
         self.remove_linked_attribute(g2, u1)
         self.assert_forward_links(g2, [])
+        self.remove_linked_attribute(g1, [])
+        self.assert_forward_links(g1, [])
 
     def _test_la_links_delete_link_reveal(self):
         u1, u2 = self.add_objects(2, 'user', 'u_del_link_reveal')
@@ -372,6 +380,130 @@ class LATests(samba.tests.TestCase):
                                   show_deleted=1, show_recycled=1,
                                   show_deactivated_link=0,
                                   reveal_internals=0)
+
+    def test_multiple_links(self):
+        u1, u2, u3, u4 = self.add_objects(4, 'user', 'u_multiple_links')
+        g1, g2, g3 = self.add_objects(3, 'group', 'g_multiple_links')
+
+        self.add_linked_attribute(g1, [u1, u2, u3, u4])
+        self.add_linked_attribute(g2, [u3, u1])
+        self.add_linked_attribute(g3, u2)
+
+        self.assert_forward_links(g1, [u1, u2, u3, u4])
+        self.assert_forward_links(g2, [u3, u1])
+        self.assert_forward_links(g3, [u2])
+        self.assert_back_links(u1, [g2, g1])
+        self.assert_back_links(u2, [g3, g1])
+        self.assert_back_links(u3, [g2, g1])
+        self.assert_back_links(u4, [g1])
+
+        self.remove_linked_attribute(g2, [u1, u3])
+        self.remove_linked_attribute(g1, [u1, u3])
+
+        self.assert_forward_links(g1, [u2, u4])
+        self.assert_forward_links(g2, [])
+        self.assert_forward_links(g3, [u2])
+        self.assert_back_links(u1, [])
+        self.assert_back_links(u2, [g3, g1])
+        self.assert_back_links(u3, [])
+        self.assert_back_links(u4, [g1])
+
+        self.add_linked_attribute(g1, [u1, u3])
+        self.add_linked_attribute(g2, [u3, u1])
+        self.add_linked_attribute(g3, [u1, u3])
+
+        self.assert_forward_links(g1, [u1, u2, u3, u4])
+        self.assert_forward_links(g2, [u1, u3])
+        self.assert_forward_links(g3, [u1, u2, u3])
+        self.assert_back_links(u1, [g1, g2, g3])
+        self.assert_back_links(u2, [g3, g1])
+        self.assert_back_links(u3, [g3, g2, g1])
+        self.assert_back_links(u4, [g1])
+
+    def test_la_links_replace(self):
+        u1, u2, u3, u4 = self.add_objects(4, 'user', 'u_replace')
+        g1, g2, g3, g4 = self.add_objects(4, 'group', 'g_replace')
+
+        self.add_linked_attribute(g1, [u1, u2])
+        self.add_linked_attribute(g2, [u1, u3])
+        self.add_linked_attribute(g3, u1)
+
+        self.replace_linked_attribute(g1, [u2])
+        self.replace_linked_attribute(g2, [u2, u3])
+        self.replace_linked_attribute(g3, [u1, u3])
+        self.replace_linked_attribute(g4, [u4])
+
+        self.assert_forward_links(g1, [u2])
+        self.assert_forward_links(g2, [u3, u2])
+        self.assert_forward_links(g3, [u3, u1])
+        self.assert_forward_links(g4, [u4])
+        self.assert_back_links(u1, [g3])
+        self.assert_back_links(u2, [g1, g2])
+        self.assert_back_links(u3, [g2, g3])
+        self.assert_back_links(u4, [g4])
+
+        self.replace_linked_attribute(g1, [u1, u2, u3])
+        self.replace_linked_attribute(g2, [u1])
+        self.replace_linked_attribute(g3, [u2])
+        self.replace_linked_attribute(g4, [])
+
+        self.assert_forward_links(g1, [u1, u2, u3])
+        self.assert_forward_links(g2, [u1])
+        self.assert_forward_links(g3, [u2])
+        self.assert_forward_links(g4, [])
+        self.assert_back_links(u1, [g1, g2])
+        self.assert_back_links(u2, [g1, g3])
+        self.assert_back_links(u3, [g1])
+        self.assert_back_links(u4, [])
+
+
+    def test_la_links_replace2(self):
+        users = self.add_objects(12, 'user', 'u_replace2')
+        g1, = self.add_objects(1, 'group', 'g_replace2')
+
+        self.add_linked_attribute(g1, users[:6])
+        self.assert_forward_links(g1, users[:6])
+        self.replace_linked_attribute(g1, users)
+        self.assert_forward_links(g1, users)
+        self.replace_linked_attribute(g1, users[6:])
+        self.assert_forward_links(g1, users[6:])
+        self.remove_linked_attribute(g1, users[6:9])
+        self.assert_forward_links(g1, users[9:])
+        self.remove_linked_attribute(g1, users[9:])
+        self.assert_forward_links(g1, [])
+
+    def test_la_links_permutations(self):
+        """Make sure the order in which we add links doesn't matter."""
+        users = self.add_objects(3, 'user', 'u_permutations')
+        groups = self.add_objects(6, 'group', 'g_permutations')
+
+        for g, p in zip(groups, itertools.permutations(users)):
+            self.add_linked_attribute(g, p)
+
+        # everyone should be in every group
+        for g in groups:
+            self.assert_forward_links(g, users)
+
+        for u in users:
+            self.assert_back_links(u, groups)
+
+        for g, p in zip(groups[::-1], itertools.permutations(users)):
+            self.replace_linked_attribute(g, p)
+
+        for g in groups:
+            self.assert_forward_links(g, users)
+
+        for u in users:
+            self.assert_back_links(u, groups)
+
+        for g, p in zip(groups, itertools.permutations(users)):
+            self.remove_linked_attribute(g, p)
+
+        for g in groups:
+            self.assert_forward_links(g, [])
+
+        for u in users:
+            self.assert_back_links(u, [])
 
     def _test_la_links_sort_order(self):
         u1, u2, u3 = self.add_objects(3, 'user', 'u_sort_order')
