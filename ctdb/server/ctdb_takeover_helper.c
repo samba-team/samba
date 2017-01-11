@@ -295,6 +295,12 @@ static struct tevent_req *release_ip_send(TALLOC_CTX *mem_ctx,
 			}
 		}
 
+		if (substate->count == 0) {
+			/* No releases to send for this address... */
+			TALLOC_FREE(substate);
+			continue;
+		}
+
 		ip.pnn = tmp_ip->pnn;
 		ip.addr = tmp_ip->addr;
 		ctdb_req_control_release_ip(&request, &ip);
@@ -309,6 +315,12 @@ static struct tevent_req *release_ip_send(TALLOC_CTX *mem_ctx,
 		tevent_req_set_callback(subreq, release_ip_done, substate);
 
 		state->num_sent++;
+	}
+
+	/* None sent, finished... */
+	if (state->num_sent == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
 
 	return req;
