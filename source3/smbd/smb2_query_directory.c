@@ -204,12 +204,15 @@ static NTSTATUS fetch_write_time_recv(struct tevent_req *req);
 
 
 struct smbd_smb2_query_directory_state {
+	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	uint64_t async_count;
+	uint32_t find_async_delay_usec;
 	DATA_BLOB out_output_buffer;
 };
 
 static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq);
+static void smb2_query_directory_waited(struct tevent_req *subreq);
 
 static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
@@ -249,6 +252,7 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
 	state->smb2req = smb2req;
 	state->out_output_buffer = data_blob_null;
 
@@ -488,6 +492,13 @@ static struct tevent_req *smbd_smb2_query_directory_send(TALLOC_CTX *mem_ctx,
 		smb2_request_set_async_internal(smb2req, true);
 	}
 
+	/*
+	 * This gets set in autobuild for some tests
+	 */
+	state->find_async_delay_usec = lp_parm_ulong(SNUM(conn), "smbd",
+						     "find async delay usec",
+						     0);
+
 	while (true) {
 		bool got_exact_match = false;
 		int space_remaining = in_output_buffer_length - off;
@@ -577,6 +588,30 @@ last_entry_done:
 				  state->async_count);
 			return req;
 		}
+
+		if (state->find_async_delay_usec > 0) {
+			struct timeval tv;
+			struct tevent_req *subreq = NULL;
+
+			/*
+			 * Should we only set async_internal
+			 * if we're not the last request in
+			 * a compound chain?
+			 */
+			smb2_request_set_async_internal(smb2req, true);
+
+			tv = timeval_current_ofs(0, state->find_async_delay_usec);
+
+			subreq = tevent_wakeup_send(state, ev, tv);
+			if (tevent_req_nomem(subreq, req)) {
+				return tevent_req_post(req, ev);
+			}
+			tevent_req_set_callback(subreq,
+						smb2_query_directory_waited,
+						req);
+			return req;
+		}
+
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
@@ -605,8 +640,39 @@ static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq
 		return;
 	}
 
+	if (state->find_async_delay_usec > 0) {
+		struct timeval tv;
+
+		tv = timeval_current_ofs(0, state->find_async_delay_usec);
+
+		subreq = tevent_wakeup_send(state, state->ev, tv);
+		if (tevent_req_nomem(subreq, req)) {
+			tevent_req_post(req, state->ev);
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					smb2_query_directory_waited,
+					req);
+		return;
+	}
+
 	tevent_req_done(req);
 	return;
+}
+
+static void smb2_query_directory_waited(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_oom(req);
+		return;
+	}
+	tevent_req_done(req);
 }
 
 static NTSTATUS smbd_smb2_query_directory_recv(struct tevent_req *req,
