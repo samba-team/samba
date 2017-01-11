@@ -455,6 +455,8 @@ class buildlist(object):
 def cleanup():
     if options.nocleanup:
         return
+    run_cmd("stat %s" % test_tmpdir, show=True)
+    run_cmd("stat %s" % testbase, show=True)
     do_print("Cleaning up ....")
     for d in cleanup_list:
         run_cmd("rm -rf %s" % d)
@@ -744,10 +746,10 @@ start_time = time.time()
 
 while True:
     try:
-        run_cmd("rm -rf %s" % test_master)
-        run_cmd("rm -rf %s" % test_prefix)
-        run_cmd("rm -rf %s" % test_tmpdir)
+        run_cmd("rm -rf %s" % test_tmpdir, show=True)
         os.makedirs(test_tmpdir)
+        run_cmd("stat %s" % test_tmpdir, show=True)
+        run_cmd("stat %s" % testbase, show=True)
         run_cmd("git clone --recursive --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except Exception:
         cleanup()
@@ -778,6 +780,8 @@ while True:
 
 cleanup_list.append(gitroot + "/autobuild.pid")
 
+do_print(errstr)
+
 blist.kill_kids()
 if options.tail:
     do_print("waiting for tail to flush")
@@ -785,7 +789,6 @@ if options.tail:
 
 elapsed_time = time.time() - start_time
 if status == 0:
-    do_print(errstr)
     if options.passcmd is not None:
         do_print("Running passcmd: %s" % options.passcmd)
         run_cmd(options.passcmd, dir=test_master)
