@@ -1867,26 +1867,14 @@ static int la_guid_compare_with_trusted_dn(struct compare_ctx *ctx,
 	 * We assume the second argument refers to a DN is from the database
 	 * and has a GUID -- but this GUID might not have been parsed out yet.
 	 */
-	NTSTATUS status;
-
-	if (GUID_all_zero(&p->guid)) {
-
-		if (p->dsdb_dn == NULL) {
-			p->dsdb_dn = dsdb_dn_parse_trusted(ctx->mem_ctx, ctx->ldb, p->v,
-							  ctx->ldap_oid);
-			if (p->dsdb_dn == NULL) {
-				ctx->err = LDB_ERR_INVALID_DN_SYNTAX;
-				return 0;
-			}
-		}
-
-		status = dsdb_get_extended_dn_guid(p->dsdb_dn->dn, &p->guid, "GUID");
-		if (!NT_STATUS_IS_OK(status)) {
-			ctx->err = LDB_ERR_OPERATIONS_ERROR;
+	if (p->dsdb_dn == NULL) {
+		int ret = really_parse_trusted_dn(ctx->mem_ctx, ctx->ldb, p,
+						  ctx->ldap_oid);
+		if (ret != LDB_SUCCESS) {
+			ctx->err = ret;
 			return 0;
 		}
 	}
-
 	return ndr_guid_compare(ctx->guid, &p->guid);
 }
 
@@ -1941,16 +1929,14 @@ static int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 			int cmp;
 			p = &pdn[i];
 			if (p->dsdb_dn == NULL) {
-				p->dsdb_dn = dsdb_dn_parse_trusted(pdn, ldb,
-								   p->v, ldap_oid);
-				if (p->dsdb_dn == NULL) {
+				int ret = really_parse_trusted_dn(pdn, ldb, p, ldap_oid);
+				if (ret != LDB_SUCCESS) {
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
 			}
+
 			cmp = ldb_dn_compare(p->dsdb_dn->dn, target_dn);
 			if (cmp == 0) {
-				dsdb_get_extended_dn_guid(p->dsdb_dn->dn,
-							  &p->guid, "GUID");
 				*exact = p;
 				return LDB_SUCCESS;
 			}
