@@ -46,6 +46,7 @@ defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-l
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
+ctdb_configure_params = " --enable-developer --picky-developer ${PREFIX}"
 samba_configure_params = " --picky-developer ${PREFIX} ${EXTRA_PYTHON} --with-profiling-data"
 
 samba_libs_envvars =  "PYTHONPATH=${PYTHON_PREFIX}/site-packages:$PYTHONPATH"
@@ -62,7 +63,7 @@ else:
 
 tasks = {
     "ctdb" : [ ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
-               ("configure", "./configure ${PREFIX}", "text/plain"),
+               ("configure", "./configure " + ctdb_configure_params, "text/plain"),
                ("make", "make all", "text/plain"),
                ("install", "make install", "text/plain"),
                ("test", "make autotest", "text/plain"),
