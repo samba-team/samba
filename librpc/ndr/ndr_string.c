@@ -648,6 +648,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 
 	if (required) {
 		size_t size = 0;
+
+		if (var == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+
 		if (!convert_string(CH_UNIX, chset,
 			     var, strlen(var),
 			     ndr->data+ndr->offset, required, &size)) {
@@ -664,6 +669,17 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset(struct ndr_push *ndr, int ndr_flags,
 	ndr->offset += required;
 
 	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_charset_to_null(struct ndr_push *ndr, int ndr_flags, const char *var, uint32_t length, uint8_t byte_mul, charset_t chset)
+{
+	const char *str = var;
+
+	if (str == NULL) {
+		str = "";
+	}
+
+	return ndr_push_charset(ndr, ndr_flags, str, length, byte_mul, chset);
 }
 
 /* Return number of elements in a string in the specified charset */
