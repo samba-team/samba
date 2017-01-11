@@ -272,6 +272,12 @@ static int smbd_smb2_request_destructor(struct smbd_smb2_request *req)
 	return 0;
 }
 
+void smb2_request_set_async_internal(struct smbd_smb2_request *req,
+				     bool async_internal)
+{
+	req->async_internal = async_internal;
+}
+
 static struct smbd_smb2_request *smbd_smb2_request_allocate(TALLOC_CTX *mem_ctx)
 {
 	TALLOC_CTX *mem_pool;
@@ -1365,6 +1371,17 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
+	if (req->async_internal) {
+		/*
+		 * An SMB2 request implementation wants to handle the request
+		 * asynchronously "internally" while keeping synchronous
+		 * behaviour for the SMB2 request. This means we don't send an
+		 * interim response and we can allow processing of compound SMB2
+		 * requests (cf the subsequent check) for all cases.
+		 */
+		return NT_STATUS_OK;
+	}
+
 	if (req->in.vector_count > req->current_idx + SMBD_SMB2_NUM_IOV_PER_REQ) {
 		/*
 		 * We're trying to go async in a compound request
@@ -2292,6 +2309,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		encryption_required = x->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED;
 	}
 
+	req->async_internal = false;
 	req->do_signing = false;
 	req->do_encryption = false;
 	req->was_encrypted = false;
