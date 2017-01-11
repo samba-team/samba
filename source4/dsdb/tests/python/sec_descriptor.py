@@ -64,24 +64,23 @@ class DescriptorTests(samba.tests.TestCase):
     def get_users_domain_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
-    def get_unique_schema_class_name(self):
+    def create_schema_class(self, _ldb, desc=None):
         while True:
-            class_name = "test-class%s" % random.randint(1,100000)
+            class_id = random.randint(0,65535)
+            class_name = "descriptor-test-class%s" % class_id
             class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
             try:
-                self.ldb_admin.search(base=class_dn, attrs=["*"])
+                self.ldb_admin.search(base=class_dn, attrs=["name"])
             except LdbError, (num, _):
                 self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-                return class_name
+                break
 
-    def create_schema_class(self, _ldb, object_dn, desc=None):
         ldif = """
-dn: """ + object_dn + """
+dn: """ + class_dn + """
 objectClass: classSchema
 objectCategory: CN=Class-Schema,""" + self.schema_dn + """
-defaultObjectCategory: """ + object_dn + """
-distinguishedName: """ + object_dn + """
-governsId: 1.3.6.1.4.1.7165.4.6.3.""" + str(random.randint(1,100000)) + """
+defaultObjectCategory: """ + class_dn + """
+governsId: 1.3.6.1.4.1.7165.4.6.2.3.""" + str(class_id) + """
 instanceType: 4
 objectClassCategory: 1
 subClassOf: organizationalPerson
@@ -97,6 +96,7 @@ systemOnly: FALSE
             elif isinstance(desc, security.descriptor):
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         _ldb.add_ldif(ldif)
+        return class_dn
 
     def create_configuration_container(self, _ldb, object_dn, desc=None):
         ldif = """
@@ -688,9 +688,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -705,9 +703,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -722,9 +718,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -740,9 +734,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -757,9 +749,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -774,9 +764,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -791,9 +779,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -808,9 +794,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         mod = "(A;CI;WDCC;;;AU)"
         self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn)
+        class_dn = self.create_schema_class(_ldb)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
@@ -829,9 +813,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
@@ -847,9 +829,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
@@ -864,9 +844,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -881,9 +859,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -899,9 +875,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
@@ -917,9 +891,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
@@ -935,9 +907,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
@@ -953,9 +923,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
-        class_name = self.get_unique_schema_class_name()
-        class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
-        self.create_schema_class(_ldb, class_dn, desc_sddl)
+        class_dn = self.create_schema_class(_ldb, desc_sddl)
         desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
