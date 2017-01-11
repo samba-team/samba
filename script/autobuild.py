@@ -15,6 +15,8 @@ from email.mime.multipart import MIMEMultipart
 from distutils.sysconfig import get_python_lib
 import platform
 
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 # This speeds up testing remarkably.
 os.environ['TDB_NO_FSYNC'] = '1'
 
