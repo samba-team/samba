@@ -162,6 +162,7 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_suite(suite, torture_smb2_dir_init());
 	torture_suite_add_suite(suite, torture_smb2_lease_init());
 	torture_suite_add_suite(suite, torture_smb2_compound_init());
+	torture_suite_add_suite(suite, torture_smb2_compound_find_init());
 	torture_suite_add_suite(suite, torture_smb2_oplocks_init());
 	torture_suite_add_suite(suite, torture_smb2_kernel_oplocks_init());
 	torture_suite_add_suite(suite, torture_smb2_streams_init());
