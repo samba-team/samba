@@ -2739,9 +2739,6 @@ _PUBLIC_ size_t talloc_get_size(const void *context)
 	struct talloc_chunk *tc;
 
 	if (context == NULL) {
-		context = null_context;
-	}
-	if (context == NULL) {
 		return 0;
 	}
 
