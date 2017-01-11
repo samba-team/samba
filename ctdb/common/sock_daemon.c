@@ -529,7 +529,7 @@ int sock_daemon_add_unix(struct sock_daemon_context *sockd,
  * Run socket daemon
  */
 
-struct sock_daemon_start_state {
+struct sock_daemon_run_state {
 	struct tevent_context *ev;
 	struct sock_daemon_context *sockd;
 	pid_t pid_watch;
@@ -542,10 +542,10 @@ static void sock_daemon_signal_handler(struct tevent_context *ev,
 				       struct tevent_signal *se,
 				       int signum, int count, void *siginfo,
 				       void *private_data);
+static void sock_daemon_reconfigure(struct sock_daemon_run_state *state);
+static void sock_daemon_shutdown(struct sock_daemon_run_state *state);
 static void sock_daemon_socket_fail(struct tevent_req *subreq);
 static void sock_daemon_watch_pid(struct tevent_req *subreq);
-static void sock_daemon_reconfigure(struct sock_daemon_start_state *state);
-static void sock_daemon_shutdown(struct sock_daemon_start_state *state);
 
 struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -553,12 +553,12 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 					pid_t pid_watch)
 {
 	struct tevent_req *req, *subreq;
-	struct sock_daemon_start_state *state;
+	struct sock_daemon_run_state *state;
 	struct tevent_signal *se;
 	struct sock_socket *sock;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct sock_daemon_start_state);
+				struct sock_daemon_run_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -627,8 +627,8 @@ static void sock_daemon_started(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct sock_daemon_start_state *state = tevent_req_data(
-		req, struct sock_daemon_start_state);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
 	struct sock_daemon_context *sockd = state->sockd;
 
 	D_NOTICE("daemon started, pid=%u\n", getpid());
@@ -645,8 +645,8 @@ static void sock_daemon_signal_handler(struct tevent_context *ev,
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
-	struct sock_daemon_start_state *state = tevent_req_data(
-		req, struct sock_daemon_start_state);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
 
 	D_NOTICE("Received signal %d\n", signum);
 
@@ -661,7 +661,7 @@ static void sock_daemon_signal_handler(struct tevent_context *ev,
 	}
 }
 
-static void sock_daemon_reconfigure(struct sock_daemon_start_state *state)
+static void sock_daemon_reconfigure(struct sock_daemon_run_state *state)
 {
 	struct sock_daemon_context *sockd = state->sockd;
 
@@ -670,7 +670,7 @@ static void sock_daemon_reconfigure(struct sock_daemon_start_state *state)
 	}
 }
 
-static void sock_daemon_shutdown(struct sock_daemon_start_state *state)
+static void sock_daemon_shutdown(struct sock_daemon_run_state *state)
 {
 	struct sock_daemon_context *sockd = state->sockd;
 	struct sock_socket *sock;
@@ -694,8 +694,8 @@ static void sock_daemon_socket_fail(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct sock_daemon_start_state *state = tevent_req_data(
-		req, struct sock_daemon_start_state);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
 	int ret = 0;
 	bool status;
 
@@ -714,8 +714,8 @@ static void sock_daemon_watch_pid(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct sock_daemon_start_state *state = tevent_req_data(
-		req, struct sock_daemon_start_state);
+	struct sock_daemon_run_state *state = tevent_req_data(
+		req, struct sock_daemon_run_state);
 	int ret;
 	bool status;
 
