@@ -38,6 +38,7 @@ struct ltdb_private {
 	const struct kv_db_ops *kv_ops;
 	struct ldb_module *module;
 	TDB_CONTEXT *tdb;
+	struct lmdb_private *lmdb_private;
 	unsigned int connect_flags;
 	
 	unsigned long long sequence_number;
