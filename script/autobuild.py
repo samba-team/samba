@@ -246,11 +246,16 @@ tasks = {
     'fail' : [ ("fail", 'echo failing && /bin/false', "text/plain") ]
 }
 
+def do_print(msg):
+    print "%s" % msg
+    sys.stdout.flush()
+    sys.stderr.flush()
+
 def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show is None:
         show = options.verbose
     if show:
-        print("Running: '%s' in '%s'" % (cmd, dir))
+        do_print("Running: '%s' in '%s'" % (cmd, dir))
     if output:
         return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
     elif checkfail:
@@ -272,8 +277,8 @@ class builder(object):
         self.stdout_path = "%s/%s.stdout" % (gitroot, self.tag)
         self.stderr_path = "%s/%s.stderr" % (gitroot, self.tag)
         if options.verbose:
-            print("stdout for %s in %s" % (self.name, self.stdout_path))
-            print("stderr for %s in %s" % (self.name, self.stderr_path))
+            do_print("stdout for %s in %s" % (self.name, self.stdout_path))
+            do_print("stderr for %s in %s" % (self.name, self.stderr_path))
         run_cmd("rm -f %s %s" % (self.stdout_path, self.stderr_path))
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
@@ -293,7 +298,7 @@ class builder(object):
             if not options.nocleanup:
                 run_cmd("rm -rf %s" % self.sdir)
                 run_cmd("rm -rf %s" % self.prefix)
-            print '%s: Completed OK' % self.name
+            do_print('%s: Completed OK' % self.name)
             self.done = True
             return
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
@@ -304,7 +309,7 @@ class builder(object):
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
-        print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
+        do_print('%s: [%s] Running %s' % (self.name, self.stage, self.cmd))
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
         self.proc = Popen(self.cmd, shell=True,
@@ -402,7 +407,7 @@ class buildlist(object):
             b = self.wait_one()
             if options.retry and self.need_retry:
                 self.kill_kids()
-                print("retry needed")
+                do_print("retry needed")
                 return (0, None, None, None, "retry")
             if b is None:
                 break
@@ -450,7 +455,7 @@ class buildlist(object):
 def cleanup():
     if options.nocleanup:
         return
-    print("Cleaning up ....")
+    do_print("Cleaning up ....")
     for d in cleanup_list:
         run_cmd("rm -rf %s" % d)
 
@@ -497,7 +502,7 @@ def write_pidfile(fname):
 
 def rebase_tree(rebase_url, rebase_branch = "master"):
     rebase_remote = "rebaseon"
-    print("Rebasing on %s" % rebase_url)
+    do_print("Rebasing on %s" % rebase_url)
     run_cmd("git describe HEAD", show=True, dir=test_master)
     run_cmd("git remote add -t %s %s %s" %
             (rebase_branch, rebase_remote, rebase_url),
@@ -515,7 +520,7 @@ def rebase_tree(rebase_url, rebase_branch = "master"):
                    (rebase_remote, rebase_branch),
                    dir=test_master, output=True)
     if diff == '':
-        print("No differences between HEAD and %s/%s - exiting" %
+        do_print("No differences between HEAD and %s/%s - exiting" %
               (rebase_remote, rebase_branch))
         sys.exit(0)
     run_cmd("git describe %s/%s" %
@@ -528,7 +533,7 @@ def rebase_tree(rebase_url, rebase_branch = "master"):
 
 def push_to(push_url, push_branch = "master"):
     push_remote = "pushto"
-    print("Pushing to %s" % push_url)
+    do_print("Pushing to %s" % push_url)
     if options.mark:
         run_cmd("git config --replace-all core.editor script/commit_mark.sh", dir=test_master)
         run_cmd("git commit --amend -c HEAD", dir=test_master)
@@ -730,7 +735,7 @@ cleanup_list.append(testbase)
 
 if options.daemon:
     logfile = os.path.join(testbase, "log")
-    print "Forking into the background, writing progress to %s" % logfile
+    do_print("Forking into the background, writing progress to %s" % logfile)
     daemonize(logfile)
 
 write_pidfile(gitroot + "/autobuild.pid")
@@ -775,25 +780,25 @@ cleanup_list.append(gitroot + "/autobuild.pid")
 
 blist.kill_kids()
 if options.tail:
-    print("waiting for tail to flush")
+    do_print("waiting for tail to flush")
     time.sleep(1)
 
 elapsed_time = time.time() - start_time
 if status == 0:
-    print errstr
+    do_print(errstr)
     if options.passcmd is not None:
-        print("Running passcmd: %s" % options.passcmd)
+        do_print("Running passcmd: %s" % options.passcmd)
         run_cmd(options.passcmd, dir=test_master)
     if options.pushto is not None:
         push_to(options.pushto, push_branch=options.branch)
     if options.keeplogs or options.attach_logs:
         blist.tarlogs("logs.tar.gz")
-        print("Logs in logs.tar.gz")
+        do_print("Logs in logs.tar.gz")
     if options.always_email:
         email_success(elapsed_time, log_base=options.log_base)
     blist.remove_logs()
     cleanup()
-    print(errstr)
+    do_print(errstr)
     sys.exit(0)
 
 # something failed, gather a tar of the logs
@@ -822,6 +827,6 @@ the autobuild has been abandoned. Please fix the error and resubmit.
 ''' % (options.branch, platform.node(), elapsed_minutes, failed_task, errstr)
 
 cleanup()
-print(errstr)
-print("Logs in logs.tar.gz")
+do_print(errstr)
+do_print("Logs in logs.tar.gz")
 sys.exit(status)
