@@ -169,14 +169,12 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle dom_pol = { 0 };
-	uint32_t *rids;
+	uint32_t *rids = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status, result;
 	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("samr_query_user_list\n"));
-
-	*prids = NULL;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -199,7 +197,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if (prids) {
+	if (prids != NULL) {
 		*prids = talloc_move(mem_ctx, &rids);
 	}
 
