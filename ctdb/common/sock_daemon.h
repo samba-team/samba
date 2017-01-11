@@ -50,12 +50,24 @@ struct sock_client_context;
  * startup() is called when the daemon starts running
  *            either via sock_daemon_run() or via sock_daemon_run_send()
  * reconfigure() is called when process receives SIGUSR1 or SIGHUP
- * shutdown() is called when process receives SIGINT or SIGTERM
+ * shutdown() is called when process receives SIGINT or SIGTERM or
+ *             when wait computation has finished
+ *
+ * wait_send() starts the async computation to keep running the daemon
+ * wait_recv() ends the async computation to keep running the daemon
+ *
+ * If wait_send()/wait_recv() is NULL, then daemon will keep running forever.
+ * If wait_send() returns req, then when req is over, daemon will shutdown.
  */
 struct sock_daemon_funcs {
 	void (*startup)(void *private_data);
 	void (*reconfigure)(void *private_data);
 	void (*shutdown)(void *private_data);
+
+	struct tevent_req * (*wait_send)(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 void *private_data);
+	bool (*wait_recv)(struct tevent_req *req, int *perr);
 };
 
 /**
