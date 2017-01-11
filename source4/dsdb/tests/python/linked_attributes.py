@@ -505,28 +505,6 @@ class LATests(samba.tests.TestCase):
         for u in users:
             self.assert_back_links(u, [])
 
-    def _test_la_links_sort_order(self):
-        u1, u2, u3 = self.add_objects(3, 'user', 'u_sort_order')
-        g1, g2, g3 = self.add_objects(3, 'group', 'g_sort_order')
-
-        # Add these in a haphazard order
-        self.add_linked_attribute(g2, u3)
-        self.add_linked_attribute(g3, u2)
-        self.add_linked_attribute(g1, u3)
-        self.add_linked_attribute(g1, u1)
-        self.add_linked_attribute(g2, u1)
-        self.add_linked_attribute(g2, u2)
-        self.add_linked_attribute(g3, u3)
-        self.add_linked_attribute(g3, u1)
-
-        self.assert_forward_links(g1, [u3, u1], sorted=True)
-        self.assert_forward_links(g2, [u3, u2, u1], sorted=True)
-        self.assert_forward_links(g3, [u3, u2, u1], sorted=True)
-
-        self.assert_back_links(u1, [g3, g2, g1], sorted=True)
-        self.assert_back_links(u2, [g3, g2], sorted=True)
-        self.assert_back_links(u3, [g3, g2, g1], sorted=True)
-
     def test_one_way_attributes(self):
         e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
                                   'e_one_way')
