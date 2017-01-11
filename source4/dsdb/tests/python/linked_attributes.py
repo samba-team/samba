@@ -127,8 +127,7 @@ class LATests(samba.tests.TestCase):
                                 controls=controls)
         return res
 
-    def assert_links(self, obj, expected, attr, sorted=False, msg='',
-                     **kwargs):
+    def assert_links(self, obj, expected, attr, msg='', **kwargs):
         res = self.attr_search(obj, expected, attr, **kwargs)
 
         if len(expected) == 0:
@@ -141,9 +140,8 @@ class LATests(samba.tests.TestCase):
         except KeyError:
             self.fail("missing attr '%s' on %s" % (attr, obj))
 
-        if sorted == False:
-            results = set(results)
-            expected = set(expected)
+        expected = sorted(expected)
+        results = sorted(results)
 
         if expected != results:
             print msg
