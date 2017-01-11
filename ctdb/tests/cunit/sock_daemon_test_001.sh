@@ -47,6 +47,7 @@ unit_test sock_daemon_test "$pidfile" "$sockpath" 3
 
 ok <<EOF
 test4[PID]: daemon started, pid=PID
+test4[PID]: Shutting down
 EOF
 unit_test sock_daemon_test "$pidfile" "$sockpath" 4
 
@@ -61,5 +62,6 @@ unit_test sock_daemon_test "$pidfile" "$sockpath" 5
 ok <<EOF
 test6[PID]: listening on $sockpath
 test6[PID]: daemon started, pid=PID
+test6[PID]: Shutting down
 EOF
 unit_test sock_daemon_test "$pidfile" "$sockpath" 6

@@ -254,16 +254,67 @@ static void test3(TALLOC_CTX *mem_ctx, const char *pidfile,
 	assert(ret == -1);
 }
 
-static void test4_handler(struct tevent_context *ev,
-			  struct tevent_timer *te,
-			  struct timeval curtime,
-			  void *private_data)
-{
-	struct sock_daemon_context *sockd = talloc_get_type_abort(
-		private_data, struct sock_daemon_context);
+struct test4_wait_state {
+};
 
-	talloc_free(sockd);
+static void test4_wait_done(struct tevent_req *subreq);
+
+static struct tevent_req *test4_wait_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct test4_wait_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct test4_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = tevent_wakeup_send(state, ev,
+				    tevent_timeval_current_ofs(10,0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, test4_wait_done, req);
+
+	return req;
 }
+
+static void test4_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool status;
+
+	status = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (! status) {
+		tevent_req_error(req, EIO);
+	} else {
+		tevent_req_done(req);
+	}
+}
+
+static bool test4_wait_recv(struct tevent_req *req, int *perr)
+{
+	int ret;
+
+	if (tevent_req_is_unix_error(req, &ret)) {
+		if (perr != NULL) {
+			*perr = ret;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+static struct sock_daemon_funcs test4_funcs = {
+	.wait_send = test4_wait_send,
+	.wait_recv = test4_wait_recv,
+};
 
 static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
@@ -278,18 +329,13 @@ static void test4(TALLOC_CTX *mem_ctx, const char *pidfile,
 	if (pid == 0) {
 		struct tevent_context *ev;
 		struct sock_daemon_context *sockd;
-		struct tevent_timer *te;
 
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
 		ret = sock_daemon_setup(mem_ctx, "test4", "file:", "NOTICE",
-					NULL, NULL, NULL, &sockd);
+					pidfile, &test4_funcs, NULL, &sockd);
 		assert(ret == 0);
-
-		te = tevent_add_timer(ev, ev, tevent_timeval_current_ofs(10,0),
-				      test4_handler, sockd);
-		assert(te != NULL);
 
 		ret = sock_daemon_run(ev, sockd, -1);
 		assert(ret == 0);
@@ -666,7 +712,7 @@ static void test6_client(const char *sockpath)
 
 struct test6_server_state {
 	struct sock_daemon_context *sockd;
-	int done;
+	int fd, done;
 };
 
 struct test6_read_state {
@@ -752,34 +798,89 @@ static struct sock_socket_funcs test6_client_funcs = {
 
 static void test6_startup(void *private_data)
 {
-	int fd = *(int *)private_data;
+	struct test6_server_state *server_state =
+		(struct test6_server_state *)private_data;
 	int ret = 1;
 	ssize_t nwritten;
 
-	nwritten = write(fd, &ret, sizeof(ret));
+	nwritten = write(server_state->fd, &ret, sizeof(ret));
 	assert(nwritten == sizeof(ret));
-	close(fd);
+	close(server_state->fd);
+	server_state->fd = -1;
+}
+
+struct test6_wait_state {
+	struct test6_server_state *server_state;
+};
+
+static void test6_wait_done(struct tevent_req *subreq);
+
+static struct tevent_req *test6_wait_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct test6_wait_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct test6_wait_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->server_state = (struct test6_server_state *)private_data;
+
+	subreq = tevent_wakeup_send(state, ev,
+				    tevent_timeval_current_ofs(10,0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, test6_wait_done, req);
+
+	return req;
+}
+
+static void test6_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct test6_wait_state *state = tevent_req_data(
+		req, struct test6_wait_state);
+	bool status;
+
+	status = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, EIO);
+		return;
+	}
+
+	if (state->server_state->done == 0) {
+		tevent_req_error(req, EIO);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static bool test6_wait_recv(struct tevent_req *req, int *perr)
+{
+	int ret;
+
+	if (tevent_req_is_unix_error(req, &ret)) {
+		if (perr != NULL) {
+			*perr = ret;
+		}
+		return false;
+	}
+
+	return true;
 }
 
 static struct sock_daemon_funcs test6_funcs = {
 	.startup = test6_startup,
+	.wait_send = test6_wait_send,
+	.wait_recv = test6_wait_recv,
 };
-
-static void test6_handler(struct tevent_context *ev,
-			  struct tevent_timer *te,
-			  struct timeval curtime,
-			  void *private_data)
-{
-	struct test6_server_state *state =
-		(struct test6_server_state *)private_data;
-
-	if (state->done == 0) {
-		kill(0, SIGTERM);
-		return;
-	}
-
-	talloc_free(state->sockd);
-}
 
 static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 		  const char *sockpath)
@@ -799,28 +900,26 @@ static void test6(TALLOC_CTX *mem_ctx, const char *pidfile,
 	if (pid_server == 0) {
 		struct tevent_context *ev;
 		struct sock_daemon_context *sockd;
-		struct test6_server_state state;
-		struct tevent_timer *te;
+		struct test6_server_state server_state = { 0 };
 
 		close(fd[0]);
 
 		ev = tevent_context_init(mem_ctx);
 		assert(ev != NULL);
 
+		server_state.fd = fd[1];
+
 		ret = sock_daemon_setup(mem_ctx, "test6", "file:", "NOTICE",
-					pidfile, &test6_funcs, &fd[1], &sockd);
+					pidfile, &test6_funcs, &server_state,
+					&sockd);
 		assert(ret == 0);
 
-		state.sockd = sockd;
-		state.done = 0;
+		server_state.sockd = sockd;
+		server_state.done = 0;
 
 		ret = sock_daemon_add_unix(sockd, sockpath,
-					   &test6_client_funcs, &state);
+					   &test6_client_funcs, &server_state);
 		assert(ret == 0);
-
-		te = tevent_add_timer(ev, ev, tevent_timeval_current_ofs(10,0),
-				      test6_handler, &state);
-		assert(te != NULL);
 
 		ret = sock_daemon_run(ev, sockd, pid);
 		assert(ret == 0);
