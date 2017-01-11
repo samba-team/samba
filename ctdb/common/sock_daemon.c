@@ -703,13 +703,12 @@ static void sock_daemon_run_socket_fail(struct tevent_req *subreq)
 
 	status = sock_socket_start_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
+	sock_daemon_run_shutdown(req);
 	if (! status) {
 		tevent_req_error(req, ret);
 	} else {
 		tevent_req_done(req);
 	}
-
-	sock_daemon_run_shutdown(req);
 }
 
 static void sock_daemon_run_watch_pid(struct tevent_req *subreq)
