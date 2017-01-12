@@ -537,15 +537,15 @@ struct sock_daemon_run_state {
 	int fd;
 };
 
-static void sock_daemon_started(struct tevent_req *subreq);
-static void sock_daemon_signal_handler(struct tevent_context *ev,
-				       struct tevent_signal *se,
-				       int signum, int count, void *siginfo,
-				       void *private_data);
-static void sock_daemon_reconfigure(struct sock_daemon_run_state *state);
-static void sock_daemon_shutdown(struct sock_daemon_run_state *state);
-static void sock_daemon_socket_fail(struct tevent_req *subreq);
-static void sock_daemon_watch_pid(struct tevent_req *subreq);
+static void sock_daemon_run_started(struct tevent_req *subreq);
+static void sock_daemon_run_signal_handler(struct tevent_context *ev,
+					   struct tevent_signal *se,
+					   int signum, int count, void *siginfo,
+					   void *private_data);
+static void sock_daemon_run_reconfigure(struct sock_daemon_run_state *state);
+static void sock_daemon_run_shutdown(struct sock_daemon_run_state *state);
+static void sock_daemon_run_socket_fail(struct tevent_req *subreq);
+static void sock_daemon_run_watch_pid(struct tevent_req *subreq);
 
 struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -573,28 +573,28 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, sock_daemon_started, req);
+	tevent_req_set_callback(subreq, sock_daemon_run_started, req);
 
 	se = tevent_add_signal(ev, state, SIGHUP, 0,
-			       sock_daemon_signal_handler, req);
+			       sock_daemon_run_signal_handler, req);
 	if (tevent_req_nomem(se, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	se = tevent_add_signal(ev, state, SIGUSR1, 0,
-			       sock_daemon_signal_handler, req);
+			       sock_daemon_run_signal_handler, req);
 	if (tevent_req_nomem(se, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	se = tevent_add_signal(ev, state, SIGINT, 0,
-			       sock_daemon_signal_handler, req);
+			       sock_daemon_run_signal_handler, req);
 	if (tevent_req_nomem(se, req)) {
 		return tevent_req_post(req, ev);
 	}
 
 	se = tevent_add_signal(ev, state, SIGTERM, 0,
-			       sock_daemon_signal_handler, req);
+			       sock_daemon_run_signal_handler, req);
 	if (tevent_req_nomem(se, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -604,7 +604,8 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, sock_daemon_socket_fail, req);
+		tevent_req_set_callback(subreq, sock_daemon_run_socket_fail,
+					req);
 
 		sock->req = subreq;
 	}
@@ -615,7 +616,8 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
-		tevent_req_set_callback(subreq, sock_daemon_watch_pid, req);
+		tevent_req_set_callback(subreq, sock_daemon_run_watch_pid,
+					req);
 	}
 
 	sockd->req = req;
@@ -623,7 +625,7 @@ struct tevent_req *sock_daemon_run_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void sock_daemon_started(struct tevent_req *subreq)
+static void sock_daemon_run_started(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -638,10 +640,10 @@ static void sock_daemon_started(struct tevent_req *subreq)
 	}
 }
 
-static void sock_daemon_signal_handler(struct tevent_context *ev,
-				       struct tevent_signal *se,
-				       int signum, int count, void *siginfo,
-				       void *private_data)
+static void sock_daemon_run_signal_handler(struct tevent_context *ev,
+					   struct tevent_signal *se,
+					   int signum, int count, void *siginfo,
+					   void *private_data)
 {
 	struct tevent_req *req = talloc_get_type_abort(
 		private_data, struct tevent_req);
@@ -651,17 +653,17 @@ static void sock_daemon_signal_handler(struct tevent_context *ev,
 	D_NOTICE("Received signal %d\n", signum);
 
 	if (signum == SIGHUP || signum == SIGUSR1) {
-		sock_daemon_reconfigure(state);
+		sock_daemon_run_reconfigure(state);
 		return;
 	}
 
 	if (signum == SIGINT || signum == SIGTERM) {
-		sock_daemon_shutdown(state);
+		sock_daemon_run_shutdown(state);
 		tevent_req_error(req, EINTR);
 	}
 }
 
-static void sock_daemon_reconfigure(struct sock_daemon_run_state *state)
+static void sock_daemon_run_reconfigure(struct sock_daemon_run_state *state)
 {
 	struct sock_daemon_context *sockd = state->sockd;
 
@@ -670,7 +672,7 @@ static void sock_daemon_reconfigure(struct sock_daemon_run_state *state)
 	}
 }
 
-static void sock_daemon_shutdown(struct sock_daemon_run_state *state)
+static void sock_daemon_run_shutdown(struct sock_daemon_run_state *state)
 {
 	struct sock_daemon_context *sockd = state->sockd;
 	struct sock_socket *sock;
@@ -690,7 +692,7 @@ static void sock_daemon_shutdown(struct sock_daemon_run_state *state)
 	TALLOC_FREE(sockd->pid_ctx);
 }
 
-static void sock_daemon_socket_fail(struct tevent_req *subreq)
+static void sock_daemon_run_socket_fail(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -707,10 +709,10 @@ static void sock_daemon_socket_fail(struct tevent_req *subreq)
 		tevent_req_done(req);
 	}
 
-	sock_daemon_shutdown(state);
+	sock_daemon_run_shutdown(state);
 }
 
-static void sock_daemon_watch_pid(struct tevent_req *subreq)
+static void sock_daemon_run_watch_pid(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -730,7 +732,7 @@ static void sock_daemon_watch_pid(struct tevent_req *subreq)
 	if (ret == -1) {
 		if (errno == ESRCH) {
 			D_ERR("PID %d gone away, exiting\n", state->pid_watch);
-			sock_daemon_shutdown(state);
+			sock_daemon_run_shutdown(state);
 			tevent_req_error(req, ESRCH);
 			return;
 		} else {
@@ -744,7 +746,7 @@ static void sock_daemon_watch_pid(struct tevent_req *subreq)
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, sock_daemon_watch_pid, req);
+	tevent_req_set_callback(subreq, sock_daemon_run_watch_pid, req);
 }
 
 bool sock_daemon_run_recv(struct tevent_req *req, int *perr)
