@@ -186,8 +186,9 @@ def generatePythonFile(out_file):
     out_file.write("\tm = Py_InitModule3(\"ntstatus\", NULL, \"NTSTATUS error defines\");\n");
     out_file.write("\tif (m == NULL)\n");
     out_file.write("\t\treturn;\n\n");
-    for err in ErrorsToUse:
-        line = "\tPyModule_AddObject(m, \"%s\", ndr_PyLong_FromUnsignedLongLong(0x%08x));\n" % (err.err_define, err.err_code)
+    for err in Errors:
+        line = """\tPyModule_AddObject(m, \"%s\", 
+                  \t\tndr_PyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
     out_file.write("}\n");
 
@@ -253,23 +254,24 @@ def main ():
         sys.exit()
 
     # read in the data
-    file_contents = open(input_file1,"r")
+    file_contents = open(input_file1, "r")
     parseHeaderFile(file_contents)
-    file_contents = open(input_file2,"r")
+    file_contents = open(input_file2, "r")
     parseErrorDescriptions(file_contents, False)
-    file_contents = open(input_file3,"r")
+    file_contents = open(input_file3, "r")
     has_already_desc = file_contents.readlines()
     processErrorDescription(has_already_desc)
-    print "writing new headerfile: %s"%headerfile_name
-    out_file = open(headerfile_name,"w")
+
+    print "writing new headerfile: %s" % headerfile_name
+    out_file = open(gen_headerfile_name, "w")
     generateHeaderFile(out_file)
     out_file.close()
-    print "writing new headerfile: %s"%sourcefile_name
-    out_file = open(sourcefile_name,"w")
+    print "writing new headerfile: %s" % sourcefile_name
+    out_file = open(sourcefile_name, "w")
     generateSourceFile(out_file)
     out_file.close()
-    print "writing new headerfile: %s"%pythonfile_name
-    out_file = open(pythonfile_name,"w")
+    print "writing new headerfile: %s" % pythonfile_name
+    out_file = open(pythonfile_name, "w")
     generatePythonFile(out_file)
     out_file.close()
 
