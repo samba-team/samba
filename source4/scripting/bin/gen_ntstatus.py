@@ -25,13 +25,6 @@ import sys, os.path, io, string
 
 # parsed error data
 Errors = []
-# error definitions to output
-ErrorsToUse = []
-ErrorsToCreatDescFor = []
-
-# some lookup dictionaries
-DefineToErrCode = {};
-ErrCodeToDefine = {};
 
 # error data model
 class ErrorDef:
@@ -77,8 +70,8 @@ def parseErrorDescriptions( file_contents, isWinError ):
             Errors.append(newError)
         else:
             if len(Errors) == 0:
-                print "Error parsing file as line %d"%count
-                sys.exit()
+                # It's the license
+                continue
             err = Errors[-1]
             if err.err_define == None:
                 err.err_define = transformErrorName(content[0])
@@ -93,77 +86,45 @@ def parseErrorDescriptions( file_contents, isWinError ):
             count = count + 1
     print "parsed %d lines generated %d error definitions"%(count,len(Errors))
 
-def parseErrCodeString(error_code_string):
-    # we could develop this more and *really* parse it but realistically 
-    # we are only interested in NT_STATUS( mask | code ) or NT_STATUS( code )
-    parts = error_code_string.split('|',1)
-    code = None
-    try:
-        if len(parts) > 1:
-            if len(parts) > 2: #something weird, better warn
-                print "warning something weird unexpected errorcode format ->%s<-"%error_code_string
-            code = int(parts[0],0) | int(parts[1],0)
-        else:
-            code = int(error_code_string,0)
-    except:
-        pass
-    return code
-
-def parseHeaderFile(file_contents):
-    count = 0
-    for line in file_contents:
-        contents = line.strip().split(None,2)
-        err_code_string = None
-        err_code = None
-
-        if len(contents) > 2:
-            if contents[0] == "#define" and contents[2].startswith("NT_STATUS("):
-                # hairy parsing of lines like
-                # "#define SOMETHING NT_STATUS( num1 | num2 )" etc...
-                err_code_string = contents[2].split('(')[1].split(')')[0]
-                err_code = parseErrCodeString( err_code_string ) 
-                if  err_code != None:
-                    const_define = contents[1]
-#                    print "%s 0x%x"%(const_define, err_code)
-                    DefineToErrCode[const_define] = err_code
-                    ErrCodeToDefine[err_code] = const_define
-                else:
-                    print "warning: failed to process line[%d] ->%s<-"%(count,line)
-        count = count + 1
-    print "read %d error declarations from header file"%len(ErrCodeToDefine)
-
 def generateHeaderFile(out_file):
-    out_file.write("\n\n")
     out_file.write("/*\n")
-    out_file.write(" * New descriptions for new errors generated from\n")
+    out_file.write(" * Descriptions for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n\n")
-    for err in ErrorsToUse:
-        line = "#define {0:49} NT_STATUS(0x{1:08X})\n".format(err.err_define ,err.err_code)
+    out_file.write("#ifndef _NTSTATUS_GEN_H\n")
+    out_file.write("#define _NTSTATUS_GEN_H\n")
+    for err in Errors:
+        line = "#define %s NT_STATUS(%s)\n" % (err.err_define, hex(err.err_code))
         out_file.write(line)
-
+    out_file.write("\n#endif /* _NTSTATUS_GEN_H */\n")
 
 def generateSourceFile(out_file):
     out_file.write("/*\n")
-    out_file.write(" * New descriptions for existing errors generated from\n")
+    out_file.write(" * Names for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
-    for err in ErrorsToCreatDescFor:
-        out_file.write("	{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
-    out_file.write("\n\n")
-    out_file.write("/*\n")
-    out_file.write(" * New descriptions for new errors generated from\n")
+
+    out_file.write("static const nt_err_code_struct nt_errs[] = \n")
+    out_file.write("{\n")
+    for err in Errors:
+        out_file.write("\t{ \"%s\", %s },\n" % (err.err_define, err.err_define))
+    out_file.write("{ 0, NT_STATUS(0) }\n")
+    out_file.write("};\n")
+
+    out_file.write("\n/*\n")
+    out_file.write(" * Descriptions for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n")
-    for err in ErrorsToUse:
-        out_file.write("	{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
-    out_file.write("\n\n");
-    out_file.write("/*\n")
-    out_file.write(" * New descriptions for new errors generated from\n")
-    out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
-    out_file.write(" */\n")
-    for err in ErrorsToUse:
-        out_file.write("	{ \"%s\", %s },\n"%(err.err_define, err.err_define))
+
+    out_file.write("static const nt_err_code_struct nt_err_desc[] = \n")
+    out_file.write("{\n")
+    for err in Errors:
+        # Account for the possibility that some errors may not have descriptions
+        if err.err_string == "":
+            continue
+        out_file.write("\t{ N_(\"%s\"), %s },\n"%(err.err_string, err.err_define))
+    out_file.write("{ 0, NT_STATUS(0) }\n")
+    out_file.write("};")
 
 def generatePythonFile(out_file):
     out_file.write("/*\n")
@@ -196,86 +157,41 @@ def generatePythonFile(out_file):
         out_file.write(line)
     out_file.write("}\n");
 
-def def_in_list(define, err_def_with_desc):
-    for item in err_def_with_desc:
-        if item.strip() == define:
-            return True
-    return False
-
-def processErrorDescription(err_def_with_desc):
-    print "processing error descriptions...."
-    count = 0 
-    for err in Errors:
-        # do we have an error with this error code  already ?
-        if ErrCodeToDefine.has_key(err.err_code):
-            already_has_desc = def_in_list(ErrCodeToDefine[err.err_code], err_def_with_desc)
-            # no 'full' error description for this error code so create a new
-            # one
-            if already_has_desc == False:
-                # synthesise a new Error object to create desc from
-                new_error = ErrorDef()
-                new_error.err_define =  ErrCodeToDefine[err.err_code]
-                new_error.err_code = err.err_code
-                new_error.err_string = err.err_string
-                new_error.linenum = err.linenum
-                ErrorsToCreatDescFor.append(new_error)
-            count = count + 1
-        else:
-           ErrorsToUse.append(err) 
-    if count > 0:
-        print "skipped %d existing definitions"%count
-    print "imported %d new error definitions"%(len(ErrorsToUse))
-    print "created %d new error descriptions for existing errors"%(len(ErrorsToCreatDescFor))
-
-# Very simple script to generate files ntstatus.c & ntstatus.h, these
-# files contain generated content used to add to the existing content
-# of files nterr.c & ntstatus.h. 
-# The script takes 3 inputs
-# 1. location of the existing ntstatus.h (which is used to build a list of
-#     existing error defines
-# 2. a text file, format which is very simple and is just the content of a 
-#    html table ( such as that found in
-#    http://msdn.microsoft.com/en-us/library/cc231200.aspx ) copied and
-#    pasted into a text file
-# 3. finally a text file containing names of the error defines (1 per line)
-#    that already are in ntstatus.h/nterr.c but that only have the 'short'
-#    error description ( short error description is where the description is
-#    the name of the error itself e.g. "NT_STATUS_SUCCESS" etc.
-
+# Very simple script to generate files nterr_gen.c & ntstatus_gen.h.
+# These files contain generated definitions.
+# This script takes four inputs:
+# [1]: The name of the text file which is the content of an HTML table
+#      (e.g. the one found at http://msdn.microsoft.com/en-us/library/cc231200.aspx)
+#      copied and pasted.
+# [2]: The name of the output generated header file with NTStatus #defines
+# [3]: The name of the output generated source file with C arrays
+# [4]: The name of the output generated python file
 def main ():
-    input_file1 = None;
-    input_file2 = None;
-    filename = "ntstatus"
-    headerfile_name = filename + ".h"
-    sourcefile_name = filename + ".c"
-    pythonfile_name = "py_" + filename + ".c"
-    if len(sys.argv) > 3:
-        input_file1 =  sys.argv[1]
-        input_file2 =  sys.argv[2]
-        input_file3 =  sys.argv[3]
+    input_file = None;
+
+    if len(sys.argv) == 5:
+        input_file =  sys.argv[1]
+        gen_headerfile_name = sys.argv[2]
+        gen_sourcefile_name = sys.argv[3]
+        gen_pythonfile_name = sys.argv[4]
     else:
-        print "usage: %s headerfile winerrorfile existing_short_descs"%(sys.argv[0])
+        print "usage: %s winerrorfile headerfile sourcefile pythonfile" % (sys.argv[0])
         sys.exit()
 
     # read in the data
-    file_contents = open(input_file1, "r")
-    parseHeaderFile(file_contents)
-    file_contents = open(input_file2, "r")
+    file_contents = open(input_file, "r")
     parseErrorDescriptions(file_contents, False)
-    file_contents = open(input_file3, "r")
-    has_already_desc = file_contents.readlines()
-    processErrorDescription(has_already_desc)
 
-    print "writing new headerfile: %s" % headerfile_name
+    print "writing new header file: %s" % gen_headerfile_name
     out_file = open(gen_headerfile_name, "w")
     generateHeaderFile(out_file)
     out_file.close()
-    print "writing new headerfile: %s" % sourcefile_name
-    out_file = open(sourcefile_name, "w")
+    print "writing new source file: %s" % gen_sourcefile_name
+    out_file = open(gen_sourcefile_name, "w")
     generateSourceFile(out_file)
     out_file.close()
-    print "writing new headerfile: %s" % pythonfile_name
-    out_file = open(pythonfile_name, "w")
+    print "writing new python file: %s" % gen_pythonfile_name
+    out_file = open(gen_pythonfile_name, "w")
     generatePythonFile(out_file)
     out_file.close()
 
