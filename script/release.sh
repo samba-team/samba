@@ -830,7 +830,8 @@ announcement_samba_stable() {
 			top=$(cat ${TMPDIR}/WHATSNEW.txt | wc -l)
 		}
 		local skip=$(cat ${TMPDIR}/WHATSNEW.txt | grep -n '^[^ ]' | head -1 | cut -d ':' -f1)
-		local bottom=$(expr ${top} - \( ${skip} - 1 \))
+		local headlimit=$(expr ${top} - 1 )
+		local taillimit=$(expr ${headlimit} - \( ${skip} - 1 \))
 
 		cat "announce.${tagname}.quotation.txt"
 		echo ""
@@ -838,7 +839,7 @@ announcement_samba_stable() {
 		echo "Release Announcements"
 		echo "---------------------"
 		echo ""
-		head -${top} ${TMPDIR}/WHATSNEW.txt | tail -${bottom}
+		head -${headlimit} ${TMPDIR}/WHATSNEW.txt | tail -${taillimit}
 		echo ""
 		echo "================"
 		echo "Download Details"
