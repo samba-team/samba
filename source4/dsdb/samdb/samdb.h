@@ -314,4 +314,6 @@ struct dsdb_extended_sec_desc_propagation_op {
  */
 #define DSDB_FLAG_INTERNAL_FORCE_META_DATA 0x10000
 
+#define SAMBA_COMPATIBLE_FEATURES_ATTR "compatibleFeatures"
+#define SAMBA_REQUIRED_FEATURES_ATTR "requiredFeatures"
 #endif /* __SAMDB_H__ */
