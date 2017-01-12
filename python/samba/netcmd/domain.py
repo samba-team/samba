@@ -34,6 +34,7 @@ import logging
 import subprocess
 import time
 from samba import ntstatus
+from samba import NTSTATUSError
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
@@ -2064,7 +2065,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             local_tdo_info = local_tdo_full.info_ex
             local_tdo_posix = local_tdo_full.posix_offset
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("trusted domain object does not exist for domain [%s]" % domain)
 
@@ -2073,7 +2074,7 @@ class cmd_domain_trust_show(DomainTrustCommand):
         try:
             local_tdo_enctypes = local_lsa.QueryTrustedDomainInfoByName(local_policy,
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES)
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_INVALID_PARAMETER):
                 error = None
             if self.check_runtime_error(error, ntstatus.NT_STATUS_INVALID_INFO_CLASS):
@@ -2371,7 +2372,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             local_old_netbios = local_lsa.QueryTrustedDomainInfoByName(local_policy,
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise self.LocalRuntimeError(self, error,
                                 "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
@@ -2382,7 +2383,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
             local_old_dns = local_lsa.QueryTrustedDomainInfoByName(local_policy,
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
             raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise self.LocalRuntimeError(self, error,
                                 "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
@@ -2394,7 +2395,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 remote_old_netbios = remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
                                             lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
                 raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
-            except RuntimeError as error:
+            except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error,
                                     "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
@@ -2405,7 +2406,7 @@ class cmd_domain_trust_create(DomainTrustCommand):
                 remote_old_dns = remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
                                             lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_FULL_INFO)
                 raise CommandError("TrustedDomain %s already exist'" % lsaString.string)
-            except RuntimeError as error:
+            except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error,
                                     "QueryTrustedDomainInfoByName(%s, FULL_INFO) failed" % (
@@ -2735,7 +2736,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
             lsaString.string = domain
             local_tdo_info = local_lsa.QueryTrustedDomainInfoByName(local_policy,
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("Failed to find trust for domain '%s'" % domain)
             raise self.RemoteRuntimeError(self, error, "failed to locate remote server")
@@ -2774,7 +2775,7 @@ class cmd_domain_trust_delete(DomainTrustCommand):
                 lsaString.string = local_lsa_info.dns_domain.string
                 remote_tdo_info = remote_lsa.QueryTrustedDomainInfoByName(remote_policy,
                                             lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
-            except RuntimeError as error:
+            except NTSTATUSError as error:
                 if not self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                     raise self.RemoteRuntimeError(self, error, "QueryTrustedDomainInfoByName(%s)" % (
                                                   lsaString.string))
@@ -2878,7 +2879,7 @@ class cmd_domain_trust_validate(DomainTrustCommand):
             lsaString.string = domain
             local_tdo_info = local_lsa.QueryTrustedDomainInfoByName(local_policy,
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("trusted domain object does not exist for domain [%s]" % domain)
 
@@ -3450,7 +3451,7 @@ class cmd_domain_trust_namespaces(DomainTrustCommand):
             lsaString.string = domain
             local_tdo_info = local_lsa.QueryTrustedDomainInfoByName(local_policy,
                                         lsaString, lsa.LSA_TRUSTED_DOMAIN_INFO_INFO_EX)
-        except RuntimeError as error:
+        except NTSTATUSError as error:
             if self.check_runtime_error(error, ntstatus.NT_STATUS_OBJECT_NAME_NOT_FOUND):
                 raise CommandError("trusted domain object does not exist for domain [%s]" % domain)
 
