@@ -1,178 +1,20 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.6.  This is *not*
+This is the first preview release of Samba 4.7.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.6 will be the next version of the Samba suite.
+Samba 4.7 will be the next version of the Samba suite.
 
 
 UPGRADING
 =========
 
-vfs_fruit option "fruit:resource" spelling correction
------------------------------------------------------
-
-Due to a spelling error in the vfs_fruit option parsing for the "fruit:resource"
-option, users who have set this option in their smb.conf were still using the
-default setting "fruit:resource = file" as the parser was looking for the string
-"fruit:ressource" (two "s").
-
-After upgrading to this Samba version 4.6, you MUST either remove the option
-from your smb.conf or set it to the default "fruit:resource = file", otherwise
-your macOS clients will not be able to access the resource fork data.
-
-This version Samba 4.6 accepts both the correct and incorrect spelling, but the
-next Samba version 4.7 will not accept the wrong spelling.
-
-Users who were using the wrong spelling "ressource" with two "s" can keep the
-setting, but are advised to switch to the correct spelling.
-
-ID Mapping
-----------
-We discovered that the majority of users have an invalid or incorrect
-ID mapping configuration. We implemented checks in the 'testparm' tool to
-validate the ID mapping configuration. You should run it and check if it prints
-any warnings or errors after upgrading! If it does you should fix them. See the
-'IDENTITY MAPPING CONSIDERATIONS' section in the smb.conf manpage.
-There are some ID mapping backends which are not allowed to be used for the
-default backend. Winbind will no longer start if an invalid backend is
-configured as the default backend.
-
-To avoid problems in future we advise all users to run 'testparm' after
-changing the smb.conf file!
-
 
 NEW FEATURES/CHANGES
 ====================
-
-Kerberos client encryption types
---------------------------------
-Some parts of Samba (most notably winbindd) perform Kerberos client
-operations based on a Samba-generated krb5.conf file. A new
-parameter, "kerberos encryption types" allows configuring the
-encryption types set in this file, thereby allowing the user to
-enforce strong or legacy encryption in Kerberos exchanges.
-
-The default value of "all" is compatible with previous behavior, allowing
-all encryption algorithms to be negotiated. Setting the parameter to "strong"
-only allows AES-based algorithms to be negotiated. Setting the parameter to
-"legacy" allows only RC4-HMAC-MD5 - the legacy algorithm for Active Directory.
-This can solves some corner cases of mixed environments with Server 2003R2 and
-newer DCs.
-
-Printing
---------
-Support for uploading printer drivers from newer Windows clients (Windows 10)
-has been added until our implementation of [MS-PAR] protocol is ready.
-Several issues with uploading different printing drivers have been addressed.
-
-The OS Version for the printing server has been increased to announce
-Windows Server 2003 R2 SP2. If a driver needs a newer version then you should
-check the smb.conf manpage for details.
-
-new option for owner inheritance
---------------------------------
-The "inherit owner" smb.conf parameter instructs smbd to set the
-owner of files to be the same as the parent directory's owner.
-Up until now, this parameter could be set to "yes" or "no".
-A new option, "unix only", enables this feature only for the UNIX owner
-of the file, not affecting the SID owner in the Windows NT ACL of the
-file. This can be used to emulate something very similar to folder quotas.
-
-Multi-process Netlogon support
-------------------------------
-
-The Netlogon server in the Samba AD DC can now run as multiple
-processes.  The Netlogon server is a part of the AD DC that handles
-NTLM authentication on behalf of domain members, including file
-servers, NTLM-authenticated web servers and 802.1x gateways.  The
-previous restriction to running as a single process has been removed,
-and it will now run in the same process model as the rest of the
-'samba' binary.
-
-As part of this change, the NETLOGON service will now run on a distinct
-TCP port, rather than being shared with all other RPC services (LSA,
-SAMR, DRSUAPI etc).
-
-new options for controlling TCP ports used for RPC services
------------------------------------------------------------
-
-The new 'rpc server port' option controls the default port used for
-RPC services other than Netlogon.  The Netlogon server honors instead
-the 'rpc server port:netlogon' option.  The default value for both
-these options is the first available port including or after 1024.
-
-Improve AD performance and replication improvements
----------------------------------------------------
-
-Samba's LDB and replication code continues to improve, particularly in
-respect to the handling of large numbers of linked attributes.  We now
-respect an 'uptodateness vector' which will dramatically reduce the
-over-replication of links from new DCs.  We have also made the parsing
-of on-disk linked attributes much more efficient.
-
-DNS improvements
-----------------
-
-The samba-tool dns subcommand is now much more robust and can delete
-records in a number of situations where it was not possible to do so
-in the past.
-
-On the server side, DNS names are now more strictly validated.
-
-CTDB changes
-------------
-
-* "ctdb event" is a new top-level command for interacting with event scripts
-
-  "ctdb event status" replaces "ctdb scriptstatus" - the latter is
-  maintained for backward compatibility but the output format has been
-  cleaned up
-
-  "ctdb event run" replaces "ctdb eventscript"
-
-  "ctdb event script enable" replaces "ctdb enablescript"
-
-  "ctdb event script disable" replaces "ctdb disablescript"
-
-  The new command "ctdb event script list" lists event scripts.
-
-* CTDB's back-end for running event scripts has been replaced by a
-  separate, long-running daemon ctdbd_eventd.
-
-* Running ctdb interactively will log to stderr
-
-* CTDB logs now include process id for each process
-
-* CTDB tags log messages differently.  Changes include:
-
-  ctdb-recoverd: Messages from CTDB's recovery daemon
-  ctdb-recovery: Messages from CTDB database recovery
-  ctdb-eventd: Messages from CTDB's event daemon
-  ctdb-takeover: Messgaes from CTDB's public IP takeover subsystem
-
-* The mapping between symbolic and numeric debug levels has changed
-
-  Configurations containing numeric debug levels should be updated.
-  Symbolic debug levels are recommended.  See the DEBUG LEVEL section
-  of ctdb(7) for details.
-
-*  Tunable IPAllocAlgorithm replaces LCP2PublicIPs, DeterministicIPs
-
-   See ctdb-tunables(7) for details
-
-* CTDB's configuration tunables should be consistently set across a cluster
-
-  This has always been the cases for most tunables but this fact is
-  now documented.
-
-* CTDB ships with recovery lock helper call-outs for etcd and Ceph RADOS
-
-  To build/install these, use the --enable-etcd-reclock and
-  --enable-ceph-reclock configure options.
 
 
 smb.conf changes
@@ -180,11 +22,6 @@ smb.conf changes
 
   Parameter Name                Description             Default
   --------------                -----------             -------
-  kerberos encryption types     New                     all
-  inherit owner                 New option
-  fruit:resource                Spelling correction
-  lsa over netlogon             New (deprecated)        no
-  rpc server port               New                     0
 
 
 KNOWN ISSUES
