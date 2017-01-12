@@ -2,7 +2,8 @@
 
 
 bld.SAMBA_LIBRARY('samba-errors',
-                  public_headers='error.h ntstatus.h doserr.h werror.h hresult.h',
+                  public_headers='error.h ntstatus.h ntstatus_gen.h doserr.h werror.h hresult.h',
+                  private_headers='nterr_private.h',
                   header_path='core',
                   source='doserr.c errormap.c nterr.c errmap_unix.c hresult.c',
                   public_deps='talloc samba-debug',
@@ -10,4 +11,11 @@ bld.SAMBA_LIBRARY('samba-errors',
                   pc_files=[],
                   vnum='1',
                   )
+
+bld.SAMBA_GENERATOR('ntstatus_generated',
+                    source='../../source4/scripting/bin/gen_ntstatus.py ntstatus_err_table.txt',
+                    target='ntstatus_gen.h nterr_gen.c py_ntstatus.c',
+                    group='build_source',
+                    rule='${PYTHON} ${SRC[0].abspath(env)} ${SRC[1].abspath(env)} ${TGT[0].abspath(env)} ${TGT[1].abspath(env)} ${TGT[2].abspath(env)}'
+                   )
 
