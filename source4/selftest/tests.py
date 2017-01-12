@@ -625,6 +625,11 @@ plantestsuite_loadlist("samba4.deletetest.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [
 plantestsuite("samba4.blackbox.samba3dump", "none", [os.path.join(samba4srcdir, "selftest/test_samba3dump.sh")])
 plantestsuite("samba4.blackbox.upgrade", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_s3upgrade.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.provision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision.sh"), '$PREFIX/provision'])
+plantestsuite("samba4.blackbox.supported_features", "none",
+              ["PYTHON=%s" % python,
+               os.path.join(samba4srcdir,
+                            "setup/tests/blackbox_supported_features.sh"),
+               '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.upgradeprovision.current", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_upgradeprovision.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.setpassword.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_setpassword.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.newuser.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_newuser.sh"), '$PREFIX/provision'])

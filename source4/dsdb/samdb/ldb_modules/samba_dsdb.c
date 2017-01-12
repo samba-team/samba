@@ -231,7 +231,7 @@ static int set_ldap_credentials(struct ldb_context *ldb, bool use_external)
 static int samba_dsdb_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int ret, len, i;
+	int ret, len, i, j;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_result *res;
 	struct ldb_message *rootdse_msg = NULL, *partition_msg;
@@ -317,10 +317,14 @@ static int samba_dsdb_init(struct ldb_module *module)
 	static const char *openldap_backend_modules[] = {
 		"dsdb_flags_ignore", "entryuuid", "simple_dn", NULL };
 
-	static const char *samba_dsdb_attrs[] = { "backendType", NULL };
+	static const char *samba_dsdb_attrs[] = { "backendType",
+						  SAMBA_COMPATIBLE_FEATURES_ATTR,
+						  SAMBA_REQUIRED_FEATURES_ATTR, NULL };
 	static const char *partition_attrs[] = { "ldapBackend", NULL };
 	const char *backendType, *backendUrl;
 	bool use_sasl_external = false;
+
+	const char *current_supportedFeatures[] = {};
 
 	if (!tmp_ctx) {
 		return ldb_oom(ldb);
@@ -357,7 +361,77 @@ static int samba_dsdb_init(struct ldb_module *module)
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		backendType = "ldb";
 	} else if (ret == LDB_SUCCESS) {
+		struct ldb_message_element *requiredFeatures;
+		struct ldb_message_element *old_compatibleFeatures;
+
 		backendType = ldb_msg_find_attr_as_string(res->msgs[0], "backendType", "ldb");
+
+		requiredFeatures = ldb_msg_find_element(res->msgs[0], SAMBA_REQUIRED_FEATURES_ATTR);
+		if (requiredFeatures != NULL) {
+			ldb_set_errstring(ldb, "This Samba database was created with "
+					  "a newer Samba version and is marked with "
+					  "requiredFeatures in @SAMBA_DSDB.  "
+					  "This database can not safely be read by this Samba version");
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		old_compatibleFeatures = ldb_msg_find_element(res->msgs[0],
+							      SAMBA_COMPATIBLE_FEATURES_ATTR);
+
+		if (old_compatibleFeatures) {
+			struct ldb_message *features_msg;
+			struct ldb_message_element *features_el;
+
+			features_msg = ldb_msg_new(res);
+			if (features_msg == NULL) {
+				return ldb_module_operr(module);
+			}
+			features_msg->dn = samba_dsdb_dn;
+
+			ldb_msg_add_empty(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
+					  LDB_FLAG_MOD_DELETE, &features_el);
+
+			for (i = 0;
+			     old_compatibleFeatures && i < old_compatibleFeatures->num_values;
+			     i++) {
+				for (j = 0;
+				     j < ARRAY_SIZE(current_supportedFeatures); j++) {
+					if (strcmp((char *)old_compatibleFeatures->values[i].data,
+						   current_supportedFeatures[j]) == 0) {
+						break;
+					}
+				}
+				if (j == ARRAY_SIZE(current_supportedFeatures)) {
+					/*
+					 * Add to list of features to remove
+					 * (rather than all features)
+					 */
+					ret = ldb_msg_add_value(features_msg, SAMBA_COMPATIBLE_FEATURES_ATTR,
+								&old_compatibleFeatures->values[i],
+								NULL);
+					if (ret != LDB_SUCCESS) {
+						return ret;
+					}
+				}
+			}
+			if (features_el->num_values > 0) {
+				/* Delete by list */
+				ret = ldb_next_start_trans(module);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+				ret = dsdb_module_modify(module, features_msg, DSDB_FLAG_NEXT_MODULE, NULL);
+				if (ret != LDB_SUCCESS) {
+					ldb_next_del_trans(module);
+					return ret;
+				}
+				ret = ldb_next_end_trans(module);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+		}
+
 	} else {
 		talloc_free(tmp_ctx);
 		return ret;
