@@ -57,6 +57,8 @@ struct partition_private_data {
 	uint32_t in_transaction;
 
 	struct ldb_message *forced_module_msg;
+
+	const char *backend_db_store;
 };
 
 #include "dsdb/samdb/ldb_modules/partition_proto.h"

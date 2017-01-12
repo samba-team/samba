@@ -139,7 +139,7 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 	struct ldb_result *res;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const char *attrs[] = { "partition", "replicateEntries", "modules", "ldapBackend",
-				"partialReplica", NULL };
+				"partialReplica", "backendStore", NULL };
 	/* perform search for @PARTITION, looking for module, replicateEntries and ldapBackend */
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, 
 				    ldb_dn_new(mem_ctx, ldb, DSDB_PARTITION_DN),
@@ -201,8 +201,8 @@ static const char **find_modules_for_dn(struct partition_private_data *data, str
 static int new_partition_from_dn(struct ldb_context *ldb, struct partition_private_data *data, 
 				 TALLOC_CTX *mem_ctx, 
 				 struct ldb_dn *dn, const char *filename,
+				 const char *backend_db_store,
 				 struct dsdb_partition **partition) {
-	const char *backend_url;
 	struct dsdb_control_current_partition *ctrl;
 	struct ldb_module *backend_module;
 	struct ldb_module *module_chain;
@@ -225,29 +225,31 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		(*partition)->backend_url = data->ldapBackend;
 	} else {
 		/* the backend LDB is the DN (base64 encoded if not 'plain') followed by .ldb */
-		backend_url = ldb_relative_path(ldb, 
-						  *partition, 
-						  filename);
-		if (!backend_url) {
+		char *backend_path = ldb_relative_path(ldb,
+						       *partition,
+						       filename);
+		if (!backend_path) {
 			ldb_asprintf_errstring(ldb, 
 					       "partition_init: unable to determine an relative path for partition: %s", filename);
 			talloc_free(*partition);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		(*partition)->backend_url = talloc_steal((*partition), backend_url);
+		(*partition)->backend_url = talloc_asprintf(*partition, "%s://%s",
+							    backend_db_store,
+							    backend_path);
 
 		if (!(ldb_module_flags(ldb) & LDB_FLG_RDONLY)) {
 			char *p;
-			char *backend_dir = talloc_strdup(*partition, backend_url);
-			
-			p = strrchr(backend_dir, '/');
+			char *backend_dir;
+
+			p = strrchr(backend_path, '/');
 			if (p) {
 				p[0] = '\0';
 			}
+			backend_dir = backend_path;
 
 			/* Failure is quite reasonable, it might alredy exist */
 			mkdir(backend_dir, 0700);
-			talloc_free(backend_dir);
 		}
 
 	}
@@ -417,6 +419,13 @@ int partition_reload_if_required(struct ldb_module *module,
 
 	partition_attributes = ldb_msg_find_element(msg, "partition");
 	partial_replicas     = ldb_msg_find_element(msg, "partialReplica");
+	data->backend_db_store
+		= talloc_strdup(data, ldb_msg_find_attr_as_string(msg, "backendStore", "tdb"));
+
+	if (data->backend_db_store == NULL) {
+		talloc_free(mem_ctx);
+		return ldb_module_oom(module);
+	}
 
 	for (i=0; partition_attributes && i < partition_attributes->num_values; i++) {
 		unsigned int j;
@@ -498,7 +507,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		 * correctly.  We don't want to mess that up as the
 		 * schema isn't loaded yet */
 		ret = new_partition_from_dn(ldb, data, data->partitions, dn, 
-					    filename,
+					    filename, data->backend_db_store,
 					    &partition);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
@@ -816,7 +825,9 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		}
 		
 		/* Make a partition structure for this new partition, so we can copy in the template structure */ 
-		ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn), filename, &partition);
+		ret = new_partition_from_dn(ldb, data, req, ldb_dn_copy(req, dn),
+					    filename, data->backend_db_store,
+					    &partition);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
