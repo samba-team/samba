@@ -171,6 +171,15 @@ int ctdb_start_eventd(struct ctdb_context *ctdb)
 
 	ectx = ctdb->ectx;
 
+	ret = unlink(ectx->socket);
+	if (ret == 0) {
+		D_WARNING("Removed stale eventd socket %s\n", ectx->socket);
+	} else if (errno != ENOENT) {
+		D_ERR("Failed to remove stale eventd socket %s\n",
+		      ectx->socket);
+		return -1;
+	}
+
 	argv = talloc_array(ectx, const char *, 14);
 	if (argv == NULL) {
 		return -1;
