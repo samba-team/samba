@@ -40,7 +40,7 @@ struct wb_sids2xids_state {
 	/*
 	 * Domain array to use for the idmap call. The output from
 	 * lookupsids cannot be used directly since for migrated
-	 * objects the returned domain SID can be different that the
+	 * objects the returned domain SID can be different than the
 	 * original one. The new domain SID cannot be combined with
 	 * the RID from the previous domain.
 	 *
