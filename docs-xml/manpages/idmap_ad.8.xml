@@ -70,23 +70,34 @@
 			For SFU 3.0 or 3.5 please choose "sfu", for SFU 2.0
 			please choose "sfu20".
 
-			Please note that primary group membership is currently always calculated
-			via the "primaryGroupID" LDAP attribute.
+			Please note that the behavior of primary group membership is
+			controlled by the <emphasis>unix_primary_group</emphasis> option.
 		</para></listitem>
 		</varlistentry>
 		<varlistentry>
 		<term>unix_primary_group = yes/no</term>
 		<listitem><para>
-		  Defines whether to retrieve the user's primary group
-		  from the SFU attributes.
-		</para></listitem>
+		  Defines whether the user's primary group is fetched from the SFU
+		  attributes or the AD primary group. If set to
+		  <parameter>yes</parameter> the primary group membership is fetched
+		  from the LDAP attributes (gidNumber).
+		  If set to <parameter>no</parameter> the primary group membership is
+		  calculated via the "primaryGroupID" LDAP attribute.
+		</para>
+		<para>Default: no</para>
+		</listitem>
 		</varlistentry>
 		<varlistentry>
 		<term>unix_nss_info = yes/no</term>
 		<listitem><para>
-		  Defines whether to retrieve the login shell and
-		  home directory from the SFU attributes.
-		</para></listitem>
+		  If set to <parameter>yes</parameter> winbind will retrieve the login
+		  shell and home directory from the LDAP attributes. If set to
+		  <parameter>no</parameter> the or the AD LDAP entry lacks the SFU
+		  attributes the options <emphasis>template shell</emphasis> and
+		  <emphasis>template homedir</emphasis> are used.
+		</para>
+		<para>Default: no</para>
+		</listitem>
 		</varlistentry>
 	</variablelist>
 </refsect1>
