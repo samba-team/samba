@@ -184,8 +184,8 @@ clean_up_table_ids ()
 	    -v pre="$table_id_prefix" \
 	    '/^#/ ||
 	     !(min <= $1 && $1 <= max) &&
-	     !(index($2, pre) == 1)
-	     { print $0 }' "$rt_tables" >"$_tmp"
+	     !(index($2, pre) == 1) {
+		print $0 }' "$rt_tables" >"$_tmp"
 
 	mv "$_tmp" "$rt_tables"
     ) 9>"$rt_tables_lock"
