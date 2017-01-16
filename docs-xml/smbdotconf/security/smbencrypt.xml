@@ -180,7 +180,11 @@
 			<listitem>
 			<para>
 			Setting it to <emphasis>off</emphasis> globally will
-			completely disable the encryption feature.
+			completely disable the encryption feature for all
+			connections. Setting <parameter>smb encrypt =
+			required</parameter> for individual shares (while it's
+			globally off) will deny access to this shares for all
+			clients.
 			</para>
 			</listitem>
 
