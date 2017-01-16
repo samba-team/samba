@@ -268,7 +268,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	}
 
 	if ((lp_smb_encrypt(snum) >= SMB_SIGNING_DESIRED) &&
-	    (conn->smb2.client.capabilities & SMB2_CAP_ENCRYPTION)) {
+	    (conn->smb2.server.cipher != 0))
+	{
 		encryption_desired = true;
 	}
 
