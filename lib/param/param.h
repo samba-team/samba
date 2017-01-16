@@ -313,6 +313,9 @@ void lpcfg_default_kdc_policy(struct loadparm_context *lp_ctx,
 				time_t *usr_tkt_lifetime,
 				time_t *renewal_lifetime);
 
+int lpcfg_rpc_port_low(struct loadparm_context *lp_ctx);
+int lpcfg_rpc_port_high(struct loadparm_context *lp_ctx);
+
 /* The following definitions come from lib/version.c  */
 
 const char *samba_version_string(void);

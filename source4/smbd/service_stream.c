@@ -30,10 +30,6 @@
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/util_net.h"
 
-/* the range of ports to try for dcerpc over tcp endpoints */
-#define SERVER_TCP_LOW_PORT  49152
-#define SERVER_TCP_HIGH_PORT 65535
-
 /* size of listen() backlog in smbd */
 #define SERVER_LISTEN_BACKLOG 10
 
@@ -332,7 +328,9 @@ NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
 	if (!port) {
 		status = socket_listen(stream_socket->sock, socket_address, SERVER_LISTEN_BACKLOG, 0);
 	} else if (*port == 0) {
-		for (i=SERVER_TCP_LOW_PORT;i<= SERVER_TCP_HIGH_PORT;i++) {
+		for (i = lpcfg_rpc_low_port(lp_ctx);
+		     i <= lpcfg_rpc_high_port(lp_ctx);
+		     i++) {
 			socket_address->port = i;
 			status = socket_listen(stream_socket->sock, socket_address, 
 					       SERVER_LISTEN_BACKLOG, 0);

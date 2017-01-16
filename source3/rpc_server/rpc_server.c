@@ -34,9 +34,6 @@
 #include "rpc_server/srv_pipe_hnd.h"
 #include "rpc_server/srv_pipe.h"
 
-#define SERVER_TCP_LOW_PORT  49152
-#define SERVER_TCP_HIGH_PORT 65535
-
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
 int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
@@ -608,7 +605,7 @@ int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port)
 	if (*port == 0) {
 		uint16_t i;
 
-		for (i = SERVER_TCP_LOW_PORT; i <= SERVER_TCP_HIGH_PORT; i++) {
+		for (i = lp_rpc_low_port(); i <= lp_rpc_high_port(); i++) {
 			fd = open_socket_in(SOCK_STREAM,
 					    i,
 					    0,

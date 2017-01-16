@@ -1,0 +1,22 @@
+<samba:parameter name="rpc server dynamic port range"
+                 context="G"
+                 type="string"
+                 handler="handle_rpc_server_dynamic_port_range"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+		This parameter tells the RPC server which port range it is
+		allowed to use to create a listening socket for LSA, SAM,
+		Netlogon and others without wellknown tcp ports.
+		The first value is the lowest number of the port
+		range and the second the hightest.
+	</para>
+	<para>
+		This applies to RPC servers in all server roles.
+	</para>
+</description>
+
+<related>rpc server port</related>
+
+<value type="default">49152-65535</value>
+</samba:parameter>

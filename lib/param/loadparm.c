@@ -83,6 +83,16 @@ struct loadparm_service *lpcfg_default_service(struct loadparm_context *lp_ctx)
 	return lp_ctx->sDefault;
 }
 
+int lpcfg_rpc_low_port(struct loadparm_context *lp_ctx)
+{
+	return lp_ctx->globals->rpc_low_port;
+}
+
+int lpcfg_rpc_high_port(struct loadparm_context *lp_ctx)
+{
+	return lp_ctx->globals->rpc_high_port;
+}
+
 /**
  * Convenience routine to grab string parameters into temporary memory
  * and run standard_sub_basic on them.
@@ -1435,6 +1445,37 @@ bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *
 	return true;
 }
 
+bool handle_rpc_server_dynamic_port_range(struct loadparm_context *lp_ctx,
+					  struct loadparm_service *service,
+					  const char *pszParmValue,
+					  char **ptr)
+{
+	int low_port = -1, high_port = -1;
+	int rc;
+
+	if (pszParmValue == NULL || pszParmValue[0] == '\0') {
+		return false;
+	}
+
+	rc = sscanf(pszParmValue, "%d - %d", &low_port, &high_port);
+	if (rc != 2) {
+		return false;
+	}
+
+	if (low_port > high_port) {
+		return false;
+	}
+
+	if (low_port < SERVER_TCP_PORT_MIN|| high_port > SERVER_TCP_PORT_MAX) {
+		return false;
+	}
+
+	lp_ctx->globals->rpc_low_port = low_port;
+	lp_ctx->globals->rpc_high_port = high_port;
+
+	return true;
+}
+
 bool handle_smb2_max_credits(struct loadparm_context *lp_ctx,
 			     struct loadparm_service *service,
 			     const char *pszParmValue, char **ptr)
@@ -2498,6 +2539,8 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->globals = talloc_zero(lp_ctx, struct loadparm_global);
 	/* This appears odd, but globals in s3 isn't a pointer */
 	lp_ctx->globals->ctx = lp_ctx->globals;
+	lp_ctx->globals->rpc_low_port = SERVER_TCP_LOW_PORT;
+	lp_ctx->globals->rpc_high_port = SERVER_TCP_HIGH_PORT;
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
 	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, num_parameters());
 
@@ -2900,6 +2943,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "smb2 leases", "yes");
 
 	lpcfg_do_global_parameter(lp_ctx, "kerberos encryption types", "all");
+
+	lpcfg_do_global_parameter(lp_ctx,
+				  "rpc server dynamic port range",
+				  "49152-65535");
 
 	/* Allow modules to adjust defaults */
 	for (defaults_hook = defaults_hooks; defaults_hook;

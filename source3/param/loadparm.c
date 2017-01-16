@@ -929,6 +929,12 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.aio_max_threads = 100;
 
+	lpcfg_string_set(Globals.ctx,
+			 &Globals.rpc_server_dynamic_port_range,
+			 "49152-65535");
+	Globals.rpc_low_port = SERVER_TCP_LOW_PORT;
+	Globals.rpc_high_port = SERVER_TCP_HIGH_PORT;
+
 	/* Now put back the settings that were set with lp_set_cmdline() */
 	apply_lp_set_cmdline();
 }
@@ -4546,6 +4552,16 @@ int lp_client_ipc_signing(void)
 		return SMB_SIGNING_REQUIRED;
 	}
 	return client_ipc_signing;
+}
+
+int lp_rpc_low_port(void)
+{
+	return Globals.rpc_low_port;
+}
+
+int lp_rpc_high_port(void)
+{
+	return Globals.rpc_high_port;
 }
 
 struct loadparm_global * get_globals(void)

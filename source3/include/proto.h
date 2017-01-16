@@ -889,6 +889,8 @@ int lp_client_ipc_signing(void);
 int lp_smb2_max_credits(void);
 int lp_cups_encrypt(void);
 bool lp_widelinks(int );
+int lp_rpc_low_port(void);
+int lp_rpc_high_port(void);
 
 int lp_wi_scan_global_parametrics(
 	const char *regex, size_t max_matches,

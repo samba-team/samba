@@ -108,7 +108,7 @@ class SmbDotConfTests(TestCase):
                          'lprm command', 'lpq command', 'print command', 'template homedir',
                          'spoolss: os_major', 'spoolss: os_minor', 'spoolss: os_build',
                          'max open files', 'fss: prune stale', 'fss: sequence timeout',
-                         'include system krb5 conf'])
+                         'include system krb5 conf', 'rpc server dynamic port range'])
 
     def setUp(self):
         super(SmbDotConfTests, self).setUp()
@@ -162,14 +162,16 @@ class SmbDotConfTests(TestCase):
             exceptions = ['client lanman auth',
                           'client plaintext auth',
                           'registry shares',
-                          'smb ports'])
+                          'smb ports',
+                          'rpc server dynamic port range'])
         self._test_empty(['bin/testparm'])
 
     def test_default_s4(self):
         self._test_default(['bin/samba-tool', 'testparm'])
         self._set_defaults(['bin/samba-tool', 'testparm'])
         self._set_arbitrary(['bin/samba-tool', 'testparm'],
-            exceptions = ['smb ports'])
+            exceptions = ['smb ports',
+                          'rpc server dynamic port range'])
         self._test_empty(['bin/samba-tool', 'testparm'])
 
     def _test_default(self, program):
@@ -178,6 +180,7 @@ class SmbDotConfTests(TestCase):
 
         for tuples in self.defaults:
             param, default, context, param_type = tuples
+
             if param in self.special_cases:
                 continue
             section = None
@@ -206,7 +209,7 @@ class SmbDotConfTests(TestCase):
         for tuples in self.defaults:
             param, default, context, param_type = tuples
 
-            if param in ['printing']:
+            if param in ['printing', 'rpc server dynamic port range']:
                 continue
 
             section = None
