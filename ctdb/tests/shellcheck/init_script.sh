@@ -4,7 +4,7 @@
 
 define_test "init script"
 
-script="$CTDB_SCRIPTS_INIT_DIR"
+script="$CTDB_SCRIPTS_INIT_SCRIPT"
 
 if [ -z "$script" ] ; then
 	script="/etc/init.d/ctdb"
