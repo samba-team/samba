@@ -396,7 +396,7 @@ takeip)
 	# flush our route cache
 	set_proc sys/net/ipv4/route/flush 1
 
-	$CTDB gratiousarp "$ip" "$iface"
+	$CTDB gratarp "$ip" "$iface"
 	;;
 
 updateip)
@@ -414,7 +414,7 @@ updateip)
 	# flush our route cache
 	set_proc sys/net/ipv4/route/flush 1
 
-	$CTDB gratiousarp "$ip" "$niface"
+	$CTDB gratarp "$ip" "$niface"
 	tickle_tcp_connections "$ip"
 	;;
 
