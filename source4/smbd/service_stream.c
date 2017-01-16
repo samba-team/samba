@@ -31,8 +31,8 @@
 #include "lib/util/util_net.h"
 
 /* the range of ports to try for dcerpc over tcp endpoints */
-#define SERVER_TCP_LOW_PORT  1024
-#define SERVER_TCP_HIGH_PORT 1300
+#define SERVER_TCP_LOW_PORT  49152
+#define SERVER_TCP_HIGH_PORT 65535
 
 /* size of listen() backlog in smbd */
 #define SERVER_LISTEN_BACKLOG 10

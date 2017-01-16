@@ -34,8 +34,8 @@
 #include "rpc_server/srv_pipe_hnd.h"
 #include "rpc_server/srv_pipe.h"
 
-#define SERVER_TCP_LOW_PORT  1024
-#define SERVER_TCP_HIGH_PORT 1300
+#define SERVER_TCP_LOW_PORT  49152
+#define SERVER_TCP_HIGH_PORT 65535
 
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
