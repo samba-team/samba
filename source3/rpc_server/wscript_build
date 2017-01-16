@@ -39,6 +39,10 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
                     NDR_NAMED_PIPE_AUTH
                     ''')
 
+bld.SAMBA3_SUBSYSTEM('RPC_MODULES',
+                    source='rpc_modules.c',
+                    deps='samba-util')
+
 ### RPC_SERVICES
 bld.SAMBA3_SUBSYSTEM('RPC_DSSETUP',
                     source='''dssetup/srv_dssetup_nt.c
@@ -150,11 +154,12 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVICE',
-                    source='rpc_service_setup.c rpc_modules.c',
+                    source='rpc_service_setup.c',
                     deps='''
                     rpc
                     RPC_SERVER
                     RPC_SERVER_REGISTER
+		    RPC_MODULES
                     RPC_SAMR
                     RPC_LSARPC
                     RPC_WINREG
@@ -192,6 +197,6 @@ bld.SAMBA3_SUBSYSTEM('FSSD',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('MDSSD',
-                    source='mdssd.c rpc_modules.c',
-                    deps='RPC_SOCK_HELPER samba-util',
+                    source='mdssd.c',
+                    deps='RPC_SOCK_HELPER RPC_MODULES samba-util',
                     enabled=bld.env.with_spotlight)
