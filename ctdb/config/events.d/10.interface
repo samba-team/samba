@@ -215,7 +215,7 @@ updateip)
 	# 2) remove the IP from the old interface (and new interface, to be sure)
 	# 3) add the IP to the new interface
 	# 4) remove the firewall rule
-	# 5) use ctdb gratiousarp to propagate the new mac address
+	# 5) use ctdb gratarp to propagate the new mac address
 	# 6) use netstat -tn to find existing connections, and tickle them
 	_oiface=$2
 	niface=$3
@@ -240,7 +240,7 @@ updateip)
 	flush_route_cache
 
 	# propagate the new mac address
-	$CTDB gratiousarp "$ip" "$niface"
+	$CTDB gratarp "$ip" "$niface"
 
 	# tickle all existing connections, so that dropped packets
 	# are retransmited and the tcp streams work

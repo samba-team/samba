@@ -445,7 +445,7 @@ case "$1" in
 	    echo "|${2:-monitor}|${_b}|${_code}|${_status}|${_d1}|${_d2}|${_err_out}|"
 	done
 	;;
-    gratiousarp) : ;;  # Do nothing for now
+    gratarp) : ;;  # Do nothing for now
     ip)            ctdb_ip "$@" ;;
     pnn|xpnn)      ctdb_pnn ;;
     enable)        ctdb_enable "$@";;

@@ -1353,9 +1353,9 @@ dbid:0xb775fff6 name:secrets.tdb path:/usr/local/var/lib/ctdb/persistent/secrets
     </refsect2>
 
     <refsect2>
-      <title>gratiousarp <parameter>IPADDR</parameter> <parameter>INTERFACE</parameter></title>
+      <title>gratarp <parameter>IPADDR</parameter> <parameter>INTERFACE</parameter></title>
       <para>
-	Send out a gratious ARP for the specified interface through
+	Send out a gratuitous ARP for the specified interface through
 	the specified interface. This command is mainly used by the
 	ctdb eventscripts.
       </para>
