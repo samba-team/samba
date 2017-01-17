@@ -39,7 +39,6 @@ if not PY3:
     import samba.ndr
     import samba.dcerpc.dcerpc
     import samba.dcerpc.epmapper
-    from samba import gensec
 
 try:
     from unittest import SkipTest
