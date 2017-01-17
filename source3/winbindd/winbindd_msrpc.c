@@ -53,7 +53,7 @@ static NTSTATUS msrpc_query_user_list(struct winbindd_domain *domain,
 {
 	struct rpc_pipe_client *samr_pipe = NULL;
 	struct policy_handle dom_pol;
-	uint32_t *rids;
+	uint32_t *rids = NULL;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 
