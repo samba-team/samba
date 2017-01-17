@@ -260,11 +260,11 @@ static int cli_credentials_set_from_ccache(struct cli_credentials *cred,
 	}
 
 	ok = cli_credentials_set_principal(cred, name, obtained);
+	krb5_free_unparsed_name(ccache->smb_krb5_context->krb5_context, name);
 	if (!ok) {
 		krb5_free_principal(ccache->smb_krb5_context->krb5_context, princ);
 		return ENOMEM;
 	}
-	free(name);
 
 	realm = smb_krb5_principal_get_realm(ccache->smb_krb5_context->krb5_context,
 					     princ);
