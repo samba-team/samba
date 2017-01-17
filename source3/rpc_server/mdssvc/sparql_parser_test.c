@@ -1,6 +1,6 @@
 #include "includes.h"
 #include "mdssvc.h"
-#include "sparql_parser.h"
+#include "rpc_server/mdssvc/sparql_parser.tab.h"
 
 /*
  * Examples:

@@ -10,6 +10,7 @@ import wafsamba, Options, Logs, Utils, Scripting
 import build.charset
 import samba_utils, samba_version
 import samba3
+import bison, flex
 
 default_prefix = Options.default_prefix = '/usr/local/samba'
 
@@ -1644,6 +1645,17 @@ main() {
     conf.env['libtracker']=''
     conf.env.with_spotlight = False
     if Options.options.with_spotlight:
+
+        Logs.info("Requested Spotlight support, checking for bison")
+        bison.detect(conf)
+        if not conf.env['BISON']:
+            conf.fatal("Spotlight support requested but bison missing")
+        conf.CHECK_COMMAND('%s --version | head -n1' % conf.env['BISON'], msg='Using bison version', define=None, on_target=False)
+        Logs.info("Requested Spotlight support, checking for flex")
+        flex.detect(conf)
+        if not conf.env['FLEX']:
+            conf.fatal("Spotlight support requested but flex missing")
+        conf.CHECK_COMMAND('%s --version' % conf.env['FLEX'], msg='Using flex version', define=None, on_target=False)
         versions = ['1.0', '0.16', '0.14']
         for version in versions:
             testlib = 'tracker-sparql-' + version

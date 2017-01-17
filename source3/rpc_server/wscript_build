@@ -145,8 +145,8 @@ bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   mdssvc/dalloc.c
                   mdssvc/marshalling.c
                   mdssvc/sparql_mapping.c
-                  mdssvc/sparql_parser.c
-                  mdssvc/sparql_lexer.c
+                  mdssvc/sparql_parser.y
+                  mdssvc/sparql_lexer.l
                   mdssvc/srv_mdssvc_nt.c
                   ../../librpc/gen_ndr/srv_mdssvc.c''',
                   init_function='',

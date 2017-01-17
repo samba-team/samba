@@ -20,9 +20,9 @@
 
 %{
 	#include "includes.h"
-	#include "mdssvc.h"
-	#include "sparql_parser.h"
-	#include "sparql_mapping.h"
+	#include "rpc_server/mdssvc/mdssvc.h"
+	#include "rpc_server/mdssvc/sparql_parser.tab.h"
+	#include "rpc_server/mdssvc/sparql_mapping.h"
 
 	#define YYMALLOC SMB_MALLOC
 	#define YYREALLOC SMB_REALLOC
@@ -52,7 +52,7 @@
 
 %code provides {
 	#include <stdbool.h>
-	#include "mdssvc.h"
+	#include "rpc_server/mdssvc/mdssvc.h"
 	#define SPRAW_TIME_OFFSET 978307200
 	extern int mdsyywrap(void);
 	extern bool map_spotlight_to_sparql_query(struct sl_query *slq);

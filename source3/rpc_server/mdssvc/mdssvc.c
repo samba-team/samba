@@ -27,7 +27,7 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "libcli/security/dom_sid.h"
 #include "mdssvc.h"
-#include "sparql_parser.h"
+#include "rpc_server/mdssvc/sparql_parser.tab.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

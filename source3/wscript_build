@@ -1329,8 +1329,8 @@ bld.SAMBA3_PYTHON('pylibsmb',
 bld.SAMBA3_BINARY('spotlight2sparql',
                  source='''
                  rpc_server/mdssvc/sparql_parser_test.c
-                 rpc_server/mdssvc/sparql_parser.c
-                 rpc_server/mdssvc/sparql_lexer.c
+                 rpc_server/mdssvc/sparql_parser.y
+                 rpc_server/mdssvc/sparql_lexer.l
                  rpc_server/mdssvc/sparql_mapping.c''',
                  deps='samba3-util talloc ' + bld.env['libtracker'],
                  enabled=bld.env.with_spotlight,

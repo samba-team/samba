@@ -20,7 +20,7 @@
 
 %{
 #include "includes.h"
-#include "sparql_parser.h"
+#include "rpc_server/mdssvc/sparql_parser.tab.h"
 
 #define YY_NO_INPUT
 #define yyalloc SMB_MALLOC
