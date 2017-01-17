@@ -1,4 +1,77 @@
                    =============================
+                   Release Notes for Samba 4.5.4
+                          January 18, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+
+Changes since 4.5.3:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 12460: rename_internals_fsp missing ACL permission-check on destination
+     folder.
+   * BUG 12466: lib: security: se_access_check() incorrectly processes owner
+     rights (S-1-3-4) DENY ace entries.
+   * BUG 12467: s3: ntlm_auth: Don't corrupt the output stream with debug
+     messages.
+   * BUG 12479: s3: libsmb: Add cli_smb2_ftruncate(), plumb into
+     cli_ftruncate().
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 12396: s3/smbd: Remove a misleading error message.
+   * BUG 12412: vfs_fruit: Fix "fruit:resource" option spelling, but not
+     behaviour.
+   * BUG 12485: ctdbd_conn: Fix a resource leak.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 12144: smbd/ioctl: match WS2016 ReFS set compression behaviour.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 2210: pam: Map more NT password errors to PAM errors.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12484: winbindd: Use idmap cache in xids2sids.
+   * BUG 12509: messaging: Fix dead but not cleaned-up-yet destination sockets.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12480: kinit succeeded but ads_sasl_spnego_gensec_bind(KRB5) failed: An
+     internal error occurred (with MIT krb5).
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 12183: printing: Fix building with CUPS version older than 1.7.
+   * BUG 12441: s3:libads: Include system /etc/krb5.conf if we use MIT Kerberos.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12470: Fix ctdb ip bugs.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.5.3
                           December 19, 2016
                    =============================
@@ -77,8 +150,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.5.2
