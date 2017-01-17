@@ -2,6 +2,6 @@
 
 bld.SAMBA_LIBRARY('interfaces',
     source='interfaces.c',
-    deps='samba-util',
+    deps='samba-util samba-debug',
     private_library=True
     )
