@@ -579,6 +579,7 @@ sub setup_simpleserver($$)
 	ntlm auth = yes
 	vfs objects = xattr_tdb streams_depot time_audit full_audit
 	change notify = no
+	smb encrypt = off
 
 	full_audit:syslog = no
 	full_audit:success = none
@@ -596,6 +597,11 @@ sub setup_simpleserver($$)
 	store dos attributes = yes
 	hide files = /hidefile/
 	hide dot files = yes
+
+[enc_desired]
+	path = $prefix_abs/share
+	vfs objects =
+	smb encrypt = desired
 ";
 
 	my $vars = $self->provision($path,
