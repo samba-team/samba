@@ -547,6 +547,7 @@ sub setup_simpleserver($$)
 	lanman auth = yes
 	vfs objects = xattr_tdb streams_depot
 	change notify = no
+	smb encrypt = off
 
 [vfs_aio_fork]
 	path = $prefix_abs/share
@@ -560,6 +561,11 @@ sub setup_simpleserver($$)
 	store dos attributes = yes
 	hide files = /hidefile/
 	hide dot files = yes
+
+[enc_desired]
+	path = $prefix_abs/share
+	vfs objects =
+	smb encrypt = desired
 ";
 
 	my $vars = $self->provision($path,
