@@ -27,7 +27,6 @@ from samba.credentials import (
     DONT_USE_KERBEROS,
     MUST_USE_KERBEROS,
     )
-from samba.hostconfig import Hostconfig
 import sys
 
 
@@ -78,7 +77,7 @@ class SambaOptions(optparse.OptionGroup):
         a = arg.split('=')
         try:
             self._lp.set(a[0], a[1])
-        except Exception, e:
+        except Exception as e:
             raise optparse.OptionValueError(
                 "invalid --option option value %r: %s" % (arg, e))
 
@@ -92,9 +91,6 @@ class SambaOptions(optparse.OptionGroup):
             self._lp.load_default()
         return self._lp
 
-    def get_hostconfig(self):
-        return Hostconfig(self.get_loadparm())
-
 
 class VersionOptions(optparse.OptionGroup):
     """Command line option for printing Samba version."""
@@ -106,7 +102,7 @@ class VersionOptions(optparse.OptionGroup):
 
     def _display_version(self, option, opt_str, arg, parser):
         import samba
-        print samba.version
+        print(samba.version)
         sys.exit(0)
 
 
