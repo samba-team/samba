@@ -37,10 +37,15 @@ def readLine(pipe):
     Read a line from the child's pipe, returns the string read.
     Throws ReadChildError if the read fails.
     """
-    buf = os.read(pipe, 2047)
-    newline = buf.find('\n')
-    if newline == -1:
-        raise ReadChildError()
+    newline = -1
+    buf = ""
+    while newline == -1:
+        more = os.read(pipe, 2047)
+        buf = buf + more
+        newline = buf.find('\n')
+        if more == "":
+            raise ReadChildError()
+
     return buf[:newline]
 
 def writeLine(pipe, buf):
