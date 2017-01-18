@@ -544,6 +544,8 @@ void reply_negprot(struct smb_request *req)
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
 	bool signing_required = true;
+	int max_proto;
+	int min_proto;
 
 	START_PROFILE(SMBnegprot);
 
@@ -688,11 +690,28 @@ void reply_negprot(struct smb_request *req)
 			  FLAG_MSG_GENERAL|FLAG_MSG_SMBD
 			  |FLAG_MSG_PRINT_GENERAL);
 
+	/*
+	 * Anything higher than PROTOCOL_SMB2_10 still
+	 * needs to go via "SMB 2.???", which is marked
+	 * as PROTOCOL_SMB2_10.
+	 *
+	 * The real negotiation happens via reply_smb20ff()
+	 * using SMB2 Negotiation.
+	 */
+	max_proto = lp_server_max_protocol();
+	if (max_proto > PROTOCOL_SMB2_10) {
+		max_proto = PROTOCOL_SMB2_10;
+	}
+	min_proto = lp_server_min_protocol();
+	if (min_proto > PROTOCOL_SMB2_10) {
+		min_proto = PROTOCOL_SMB2_10;
+	}
+
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
 		i = 0;
-		if ((supported_protocols[protocol].protocol_level <= lp_server_max_protocol()) &&
-				(supported_protocols[protocol].protocol_level >= lp_server_min_protocol()))
+		if ((supported_protocols[protocol].protocol_level <= max_proto) &&
+		    (supported_protocols[protocol].protocol_level >= min_proto))
 			while (i < num_cliprotos) {
 				if (strequal(cliprotos[i],supported_protocols[protocol].proto_name)) {
 					choice = i;
