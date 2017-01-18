@@ -55,7 +55,7 @@ planpythontestsuite("none", "api", name="ldb.python", extra_path=['lib/ldb/tests
 planpythontestsuite("none", "samba.tests.credentials", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.registry")
 planpythontestsuite("none", "samba.tests.auth", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.get_opt")
+planpythontestsuite("none", "samba.tests.get_opt", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.security")
 planpythontestsuite("none", "samba.tests.dcerpc.misc", py3_compatible=True)
 planpythontestsuite("none", "samba.tests.dcerpc.integer")
