@@ -339,6 +339,10 @@ NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 {
 	struct dom_sid *tmp;
 
+	if ((*num) == UINT32_MAX) {
+		return NT_STATUS_INTEGER_OVERFLOW;
+	}
+
 	tmp = talloc_realloc(mem_ctx, *sids, struct dom_sid, (*num)+1);
 	if (tmp == NULL) {
 		*num = 0;
