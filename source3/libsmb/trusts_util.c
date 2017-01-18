@@ -54,6 +54,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 			 bool force)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const char *context_name = NULL;
 	struct trust_pw_change_state *state;
 	struct cli_credentials *creds = NULL;
 	const struct samr_Password *current_nt_hash = NULL;
@@ -181,6 +182,12 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		return NT_STATUS_OK;
 	}
 
+	context_name = netlogon_creds_cli_debug_string(context, talloc_tos());
+	if (context_name == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/*
 	 * Create a random machine account password
 	 * We create a random buffer and convert that to utf8.
@@ -215,11 +222,15 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 					 *current_nt_hash,
 					 previous_nt_hash);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("netlogon_creds_cli_auth for domain %s - %s!\n",
-			  domain, nt_errstr(status)));
+		DEBUG(0, ("netlogon_creds_cli_auth(%s) failed for old password - %s!\n",
+			  context_name, nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
 	}
+
+	DEBUG(0,("%s : %s(%s): Verified old password remotely using %s\n",
+		 current_timestring(talloc_tos(), false),
+		 __func__, domain, context_name));
 
 	/*
 	 * Return the result of trying to write the new password
@@ -260,22 +271,24 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		break;
 	}
 
-	DEBUG(1,("%s : %s(%s): Changed password locally\n",
+	DEBUG(0,("%s : %s(%s): Changed password locally\n",
 		 current_timestring(talloc_tos(), false), __func__, domain));
 
 	status = netlogon_creds_cli_ServerPasswordSet(context, b,
 						      new_trust_passwd,
 						      new_trust_version);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("%s : %s(%s) remote password change set failed - %s\n",
-			 current_timestring(talloc_tos(), false), __func__,
-			 domain, nt_errstr(status)));
+		DEBUG(0,("%s : %s(%s) remote password change set with %s failed - %s\n",
+			 current_timestring(talloc_tos(), false),
+			 __func__, domain, context_name,
+			 nt_errstr(status)));
 		TALLOC_FREE(frame);
 		return status;
 	}
 
-	DEBUG(1,("%s : %s(%s): Changed password remotely.\n",
-		 current_timestring(talloc_tos(), false), __func__, domain));
+	DEBUG(0,("%s : %s(%s): Changed password remotely using %s\n",
+		 current_timestring(talloc_tos(), false),
+		 __func__, domain, context_name));
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
