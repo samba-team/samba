@@ -1747,7 +1747,11 @@ struct tevent_req *netlogon_creds_cli_ServerPasswordSet_send(TALLOC_CTX *mem_ctx
 	/*
 	 * netr_ServerPasswordSet
 	 */
-	E_md4hash(new_password, state->samr_password.hash);
+	ok = E_md4hash(new_password, state->samr_password.hash);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER_MIX);
+		return tevent_req_post(req, ev);
+	}
 
 	/*
 	 * netr_ServerPasswordSet2
