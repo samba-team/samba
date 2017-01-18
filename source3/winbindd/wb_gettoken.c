@@ -27,14 +27,15 @@ struct wb_gettoken_state {
 	struct tevent_context *ev;
 	struct dom_sid usersid;
 	bool expand_local_aliases;
-	int num_sids;
+	uint32_t num_sids;
 	struct dom_sid *sids;
 };
 
-static bool wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
-				int *pnum_sids, struct dom_sid **psids,
-				const struct dom_sid *domain_sid,
-				int num_rids, uint32_t *rids);
+static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
+				    uint32_t *pnum_sids,
+				    struct dom_sid **psids,
+				    const struct dom_sid *domain_sid,
+				    int num_rids, uint32_t *rids);
 
 static void wb_gettoken_gotuser(struct tevent_req *subreq);
 static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq);
@@ -70,10 +71,9 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct wb_gettoken_state *state = tevent_req_data(
 		req, struct wb_gettoken_state);
-        struct dom_sid *sids;
 	struct winbindd_domain *domain;
 	struct wbint_userinfo *info;
-	uint32_t num_groups;
+	uint32_t i, num_groups;
 	struct dom_sid *groups;
 	NTSTATUS status;
 
@@ -83,11 +83,10 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 		return;
 	}
 
-	sids = talloc_array(state, struct dom_sid, 2);
-	if (tevent_req_nomem(sids, req)) {
+	state->sids = talloc_array(state, struct dom_sid, 2);
+	if (tevent_req_nomem(state->sids, req)) {
 		return;
 	}
-	state->sids = sids;
 	state->num_sids = 2;
 
 	sid_copy(&state->sids[0], &info->user_sid);
@@ -102,21 +101,14 @@ static void wb_gettoken_gotuser(struct tevent_req *subreq)
 		return;
 	}
 
-	if (num_groups + state->num_sids < num_groups) {
-		tevent_req_nterror(req, NT_STATUS_INTEGER_OVERFLOW);
-		return;
-	}
+	for (i=0; i<num_groups; i++) {
+		status = add_sid_to_array_unique(
+			state, &groups[i], &state->sids, &state->num_sids);
 
-	sids = talloc_realloc(state, state->sids, struct dom_sid,
-			      state->num_sids+num_groups);
-	if (tevent_req_nomem(sids, req)) {
-		return;
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
 	}
-	state->sids = sids;
-
-	memcpy(&state->sids[state->num_sids], groups,
-	       num_groups * sizeof(struct dom_sid));
-	state->num_sids += num_groups;
 
 	if (!state->expand_local_aliases) {
 		tevent_req_done(req);
@@ -156,9 +148,10 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	if (!wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
-				 get_global_sam_sid(), num_rids, rids)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+
+	status = wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
+				     get_global_sam_sid(), num_rids, rids);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	TALLOC_FREE(rids);
@@ -196,9 +189,9 @@ static void wb_gettoken_gotbuiltins(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	if (!wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
-				 &global_sid_Builtin, num_rids, rids)) {
-		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+	status = wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
+				     &global_sid_Builtin, num_rids, rids);
+	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 	tevent_req_done(req);
@@ -219,24 +212,26 @@ NTSTATUS wb_gettoken_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static bool wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
-				int *pnum_sids, struct dom_sid **psids,
-				const struct dom_sid *domain_sid,
-				int num_rids, uint32_t *rids)
+static NTSTATUS wb_add_rids_to_sids(TALLOC_CTX *mem_ctx,
+				    uint32_t *pnum_sids,
+				    struct dom_sid **psids,
+				    const struct dom_sid *domain_sid,
+				    int num_rids, uint32_t *rids)
 {
-	struct dom_sid *sids;
 	int i;
 
-	sids = talloc_realloc(mem_ctx, *psids, struct dom_sid,
-			      *pnum_sids + num_rids);
-	if (sids == NULL) {
-		return false;
-	}
 	for (i=0; i<num_rids; i++) {
-		sid_compose(&sids[i+*pnum_sids], domain_sid, rids[i]);
+		NTSTATUS status;
+		struct dom_sid sid;
+
+		sid_compose(&sid, domain_sid, rids[i]);
+
+		status = add_sid_to_array_unique(
+			mem_ctx, &sid, psids, pnum_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
-	*pnum_sids += num_rids;
-	*psids = sids;
-	return true;
+	return NT_STATUS_OK;
 }
