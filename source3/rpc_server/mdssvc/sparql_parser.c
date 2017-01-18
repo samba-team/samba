@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.2"
+#define YYBISON_VERSION "3.0.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -59,7 +59,15 @@
 #define YYPULL 1
 
 
+/* Substitute the variable and function names.  */
+#define yyparse         mdsyyparse
+#define yylex           mdsyylex
+#define yyerror         mdsyyerror
+#define yydebug         mdsyydebug
+#define yynerrs         mdsyynerrs
 
+#define yylval          mdsyylval
+#define yychar          mdsyychar
 
 /* Copy the first part of user declarations.  */
 #line 21 "sparql_parser.y" /* yacc.c:339  */
@@ -74,11 +82,11 @@
 
 	struct yy_buffer_state;
 	typedef struct yy_buffer_state *YY_BUFFER_STATE;
-	extern int yylex (void);
-	extern void yyerror (char const *);
-	extern void *yyterminate(void);
-	extern YY_BUFFER_STATE yy_scan_string( const char *str);
-	extern void yy_delete_buffer ( YY_BUFFER_STATE buffer );
+	extern int mdsyylex (void);
+	extern void mdsyyerror (char const *);
+	extern void *mdsyyterminate(void);
+	extern YY_BUFFER_STATE mdsyy_scan_string( const char *str);
+	extern void mdsyy_delete_buffer ( YY_BUFFER_STATE buffer );
 
 	/* forward declarations */
 	static const char *map_expr(const char *attr, char op, const char *val);
@@ -94,7 +102,7 @@
 		const char *result;
 	} *global_sparql_parser_state;
 
-#line 98 "sparql_parser.c" /* yacc.c:339  */
+#line 106 "sparql_parser.c" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -114,14 +122,14 @@
 
 /* In a future release of Bison, this section will be replaced
    by #include "sparql_parser.h".  */
-#ifndef YY_YY_SPARQL_PARSER_H_INCLUDED
-# define YY_YY_SPARQL_PARSER_H_INCLUDED
+#ifndef YY_MDSYY_SPARQL_PARSER_H_INCLUDED
+# define YY_MDSYY_SPARQL_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+extern int mdsyydebug;
 #endif
 
 /* Token type.  */
@@ -148,7 +156,7 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
+
 union YYSTYPE
 {
 #line 61 "sparql_parser.y" /* yacc.c:355  */
@@ -158,32 +166,34 @@ union YYSTYPE
 	bool bval;
 	time_t tval;
 
-#line 162 "sparql_parser.c" /* yacc.c:355  */
+#line 170 "sparql_parser.c" /* yacc.c:355  */
 };
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
 
 
-extern YYSTYPE yylval;
+extern YYSTYPE mdsyylval;
 
-int yyparse (void);
+int mdsyyparse (void);
 /* "%code provides" blocks.  */
 #line 53 "sparql_parser.y" /* yacc.c:355  */
 
 	#include <stdbool.h>
 	#include "mdssvc.h"
 	#define SPRAW_TIME_OFFSET 978307200
-	extern int yywrap(void);
+	extern int mdsyywrap(void);
 	extern bool map_spotlight_to_sparql_query(struct sl_query *slq);
 
-#line 181 "sparql_parser.c" /* yacc.c:355  */
+#line 191 "sparql_parser.c" /* yacc.c:355  */
 
-#endif /* !YY_YY_SPARQL_PARSER_H_INCLUDED  */
+#endif /* !YY_MDSYY_SPARQL_PARSER_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 187 "sparql_parser.c" /* yacc.c:358  */
+#line 197 "sparql_parser.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -241,7 +251,9 @@ typedef short int yytype_int16;
 #endif
 
 #ifndef YY_ATTRIBUTE
-# if HAVE___ATTRIBUTE__
+# if (defined __GNUC__                                               \
+      && (2 < __GNUC__ || (__GNUC__ == 2 && 96 <= __GNUC_MINOR__)))  \
+     || defined __SUNPRO_C && 0x5110 <= __SUNPRO_C
 #  define YY_ATTRIBUTE(Spec) __attribute__(Spec)
 # else
 #  define YY_ATTRIBUTE(Spec) /* empty */
@@ -480,9 +492,9 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    83,    83,    85,    89,    95,   118,   125,   128,   131,
-     134,   137,   147,   151,   155,   159,   163,   167,   171,   175,
-     182,   189,   190
+       0,    84,    84,    86,    90,    96,   119,   126,   129,   132,
+     135,   138,   148,   152,   156,   160,   164,   168,   172,   176,
+     183,   190,   191
 };
 #endif
 
@@ -1280,15 +1292,15 @@ yyreduce:
   switch (yyn)
     {
         case 4:
-#line 89 "sparql_parser.y" /* yacc.c:1646  */
+#line 90 "sparql_parser.y" /* yacc.c:1646  */
     {
 	global_sparql_parser_state->result = (yyvsp[0].sval);
 }
-#line 1290 "sparql_parser.c" /* yacc.c:1646  */
+#line 1300 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 95 "sparql_parser.y" /* yacc.c:1646  */
+#line 96 "sparql_parser.y" /* yacc.c:1646  */
     {
 	/*
 	 * We can't properly handle these in expressions, fortunately this
@@ -1300,11 +1312,11 @@ yyreduce:
 	 */
 	YYABORT;
 }
-#line 1306 "sparql_parser.c" /* yacc.c:1646  */
+#line 1316 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 118 "sparql_parser.y" /* yacc.c:1646  */
+#line 119 "sparql_parser.y" /* yacc.c:1646  */
     {
 	if (strcmp((yyvsp[-2].sval), (yyvsp[0].sval)) != 0) {
 		(yyval.sval) = talloc_asprintf(talloc_tos(), "{ %s } UNION { %s }", (yyvsp[-2].sval), (yyvsp[0].sval));
@@ -1312,43 +1324,43 @@ yyreduce:
 		(yyval.sval) = talloc_asprintf(talloc_tos(), "%s", (yyvsp[-2].sval));
 	}
 }
-#line 1318 "sparql_parser.c" /* yacc.c:1646  */
+#line 1328 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 125 "sparql_parser.y" /* yacc.c:1646  */
+#line 126 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = (yyvsp[0].sval);
 }
-#line 1326 "sparql_parser.c" /* yacc.c:1646  */
+#line 1336 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 128 "sparql_parser.y" /* yacc.c:1646  */
+#line 129 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = (yyvsp[0].sval);
 }
-#line 1334 "sparql_parser.c" /* yacc.c:1646  */
+#line 1344 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 9:
-#line 131 "sparql_parser.y" /* yacc.c:1646  */
+#line 132 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = talloc_asprintf(talloc_tos(), "%s", (yyvsp[-1].sval));
 }
-#line 1342 "sparql_parser.c" /* yacc.c:1646  */
+#line 1352 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 10:
-#line 134 "sparql_parser.y" /* yacc.c:1646  */
+#line 135 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = talloc_asprintf(talloc_tos(), "%s . %s", (yyvsp[-2].sval), (yyvsp[0].sval));
 }
-#line 1350 "sparql_parser.c" /* yacc.c:1646  */
+#line 1360 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 11:
-#line 137 "sparql_parser.y" /* yacc.c:1646  */
+#line 138 "sparql_parser.y" /* yacc.c:1646  */
     {
 	if (strcmp((yyvsp[-2].sval), (yyvsp[0].sval)) != 0) {
 		(yyval.sval) = talloc_asprintf(talloc_tos(), "{ %s } UNION { %s }", (yyvsp[-2].sval), (yyvsp[0].sval));
@@ -1356,104 +1368,104 @@ yyreduce:
 		(yyval.sval) = talloc_asprintf(talloc_tos(), "%s", (yyvsp[-2].sval));
 	}
 }
-#line 1362 "sparql_parser.c" /* yacc.c:1646  */
+#line 1372 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 12:
-#line 147 "sparql_parser.y" /* yacc.c:1646  */
+#line 148 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-4].sval), '=', (yyvsp[-1].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1371 "sparql_parser.c" /* yacc.c:1646  */
+#line 1381 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 13:
-#line 151 "sparql_parser.y" /* yacc.c:1646  */
+#line 152 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-4].sval), '!', (yyvsp[-1].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1380 "sparql_parser.c" /* yacc.c:1646  */
+#line 1390 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 14:
-#line 155 "sparql_parser.y" /* yacc.c:1646  */
+#line 156 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-4].sval), '<', (yyvsp[-1].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1389 "sparql_parser.c" /* yacc.c:1646  */
+#line 1399 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 159 "sparql_parser.y" /* yacc.c:1646  */
+#line 160 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-4].sval), '>', (yyvsp[-1].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1398 "sparql_parser.c" /* yacc.c:1646  */
+#line 1408 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 163 "sparql_parser.y" /* yacc.c:1646  */
+#line 164 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-5].sval), '=', (yyvsp[-2].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1407 "sparql_parser.c" /* yacc.c:1646  */
+#line 1417 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 167 "sparql_parser.y" /* yacc.c:1646  */
+#line 168 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-5].sval), '!', (yyvsp[-2].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1416 "sparql_parser.c" /* yacc.c:1646  */
+#line 1426 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 18:
-#line 171 "sparql_parser.y" /* yacc.c:1646  */
+#line 172 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-5].sval), '<', (yyvsp[-2].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1425 "sparql_parser.c" /* yacc.c:1646  */
+#line 1435 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 19:
-#line 175 "sparql_parser.y" /* yacc.c:1646  */
+#line 176 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_expr((yyvsp[-5].sval), '>', (yyvsp[-2].sval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1434 "sparql_parser.c" /* yacc.c:1646  */
+#line 1444 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 182 "sparql_parser.y" /* yacc.c:1646  */
+#line 183 "sparql_parser.y" /* yacc.c:1646  */
     {
 	(yyval.sval) = map_daterange((yyvsp[-5].sval), (yyvsp[-3].tval), (yyvsp[-1].tval));
 	if ((yyval.sval) == NULL) YYABORT;
 }
-#line 1443 "sparql_parser.c" /* yacc.c:1646  */
+#line 1453 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 21:
-#line 189 "sparql_parser.y" /* yacc.c:1646  */
+#line 190 "sparql_parser.y" /* yacc.c:1646  */
     {(yyval.tval) = isodate2unix((yyvsp[-1].sval));}
-#line 1449 "sparql_parser.c" /* yacc.c:1646  */
+#line 1459 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
   case 22:
-#line 190 "sparql_parser.y" /* yacc.c:1646  */
+#line 191 "sparql_parser.y" /* yacc.c:1646  */
     {(yyval.tval) = atoi((yyvsp[0].sval)) + SPRAW_TIME_OFFSET;}
-#line 1455 "sparql_parser.c" /* yacc.c:1646  */
+#line 1465 "sparql_parser.c" /* yacc.c:1646  */
     break;
 
 
-#line 1459 "sparql_parser.c" /* yacc.c:1646  */
+#line 1469 "sparql_parser.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1681,7 +1693,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 193 "sparql_parser.y" /* yacc.c:1906  */
+#line 194 "sparql_parser.y" /* yacc.c:1906  */
 
 
 static time_t isodate2unix(const char *s)
@@ -1922,12 +1934,12 @@ static const char *map_expr(const char *attr, char op, const char *val)
 	return sparql;
 }
 
-void yyerror(const char *str)
+void mdsyyerror(const char *str)
 {
-	DEBUG(1, ("yyerror: %s\n", str));
+	DEBUG(1, ("mdsyyerror: %s\n", str));
 }
 
-int yywrap(void)
+int mdsyywrap(void)
 {
 	return 1;
 }
@@ -1943,15 +1955,15 @@ bool map_spotlight_to_sparql_query(struct sl_query *slq)
 	};
 	int result;
 
-	s.s = yy_scan_string(slq->query_string);
+	s.s = mdsyy_scan_string(slq->query_string);
 	if (s.s == NULL) {
 		TALLOC_FREE(s.frame);
 		return false;
 	}
 	global_sparql_parser_state = &s;
-	result = yyparse();
+	result = mdsyyparse();
 	global_sparql_parser_state = NULL;
-	yy_delete_buffer(s.s);
+	mdsyy_delete_buffer(s.s);
 
 	if (result != 0) {
 		TALLOC_FREE(s.frame);

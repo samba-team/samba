@@ -29,11 +29,11 @@
 
 	struct yy_buffer_state;
 	typedef struct yy_buffer_state *YY_BUFFER_STATE;
-	extern int yylex (void);
-	extern void yyerror (char const *);
-	extern void *yyterminate(void);
-	extern YY_BUFFER_STATE yy_scan_string( const char *str);
-	extern void yy_delete_buffer ( YY_BUFFER_STATE buffer );
+	extern int mdsyylex (void);
+	extern void mdsyyerror (char const *);
+	extern void *mdsyyterminate(void);
+	extern YY_BUFFER_STATE mdsyy_scan_string( const char *str);
+	extern void mdsyy_delete_buffer ( YY_BUFFER_STATE buffer );
 
 	/* forward declarations */
 	static const char *map_expr(const char *attr, char op, const char *val);
@@ -54,7 +54,7 @@
 	#include <stdbool.h>
 	#include "mdssvc.h"
 	#define SPRAW_TIME_OFFSET 978307200
-	extern int yywrap(void);
+	extern int mdsyywrap(void);
 	extern bool map_spotlight_to_sparql_query(struct sl_query *slq);
 }
 
@@ -65,6 +65,7 @@
 	time_t tval;
 }
 
+%name-prefix "mdsyy"
 %expect 5
 %error-verbose
 
@@ -430,12 +431,12 @@ static const char *map_expr(const char *attr, char op, const char *val)
 	return sparql;
 }
 
-void yyerror(const char *str)
+void mdsyyerror(const char *str)
 {
-	DEBUG(1, ("yyerror: %s\n", str));
+	DEBUG(1, ("mdsyyerror: %s\n", str));
 }
 
-int yywrap(void)
+int mdsyywrap(void)
 {
 	return 1;
 }
@@ -451,15 +452,15 @@ bool map_spotlight_to_sparql_query(struct sl_query *slq)
 	};
 	int result;
 
-	s.s = yy_scan_string(slq->query_string);
+	s.s = mdsyy_scan_string(slq->query_string);
 	if (s.s == NULL) {
 		TALLOC_FREE(s.frame);
 		return false;
 	}
 	global_sparql_parser_state = &s;
-	result = yyparse();
+	result = mdsyyparse();
 	global_sparql_parser_state = NULL;
-	yy_delete_buffer(s.s);
+	mdsyy_delete_buffer(s.s);
 
 	if (result != 0) {
 		TALLOC_FREE(s.frame);

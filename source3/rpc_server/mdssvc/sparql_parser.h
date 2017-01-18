@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,14 +30,14 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_SPARQL_PARSER_H_INCLUDED
-# define YY_YY_SPARQL_PARSER_H_INCLUDED
+#ifndef YY_MDSYY_SPARQL_PARSER_H_INCLUDED
+# define YY_MDSYY_SPARQL_PARSER_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+extern int mdsyydebug;
 #endif
 
 /* Token type.  */
@@ -64,7 +64,7 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
+
 union YYSTYPE
 {
 #line 61 "sparql_parser.y" /* yacc.c:1909  */
@@ -76,23 +76,25 @@ union YYSTYPE
 
 #line 78 "sparql_parser.h" /* yacc.c:1909  */
 };
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
 
 
-extern YYSTYPE yylval;
+extern YYSTYPE mdsyylval;
 
-int yyparse (void);
+int mdsyyparse (void);
 /* "%code provides" blocks.  */
 #line 53 "sparql_parser.y" /* yacc.c:1909  */
 
 	#include <stdbool.h>
 	#include "mdssvc.h"
 	#define SPRAW_TIME_OFFSET 978307200
-	extern int yywrap(void);
+	extern int mdsyywrap(void);
 	extern bool map_spotlight_to_sparql_query(struct sl_query *slq);
 
-#line 97 "sparql_parser.h" /* yacc.c:1909  */
+#line 99 "sparql_parser.h" /* yacc.c:1909  */
 
-#endif /* !YY_YY_SPARQL_PARSER_H_INCLUDED  */
+#endif /* !YY_MDSYY_SPARQL_PARSER_H_INCLUDED  */
