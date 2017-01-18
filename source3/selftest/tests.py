@@ -499,6 +499,11 @@ plantestsuite("samba3.blackbox.rpcclient.pw-nt-hash", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                os.path.join(bindir(), "rpcclient")])
 
+plantestsuite("samba3.blackbox.smbclient.encryption_off", "simpleserver",
+              [os.path.join(samba3srcdir, "script/tests/test_smbclient_encryption_off.sh"),
+               "$USERNAME", "$PASSWORD", "$SERVER",
+               smbclient3])
+
 options_list = ["", "-e"]
 for options in options_list:
     plantestsuite("samba3.blackbox.smbclient_krb5 old ccache %s" % options, "ktest:local",
