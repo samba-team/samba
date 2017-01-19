@@ -3807,7 +3807,7 @@ static void fruit_copy_chunk_done(struct tevent_req *subreq)
 	}
 
 	/*
-	 * Now copy all reamining streams. We know the share supports
+	 * Now copy all remaining streams. We know the share supports
 	 * streams, because we're in vfs_fruit. We don't do this async
 	 * because streams are few and small.
 	 */
