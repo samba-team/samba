@@ -359,7 +359,7 @@ NTSTATUS gp_inifile_init_context_direct(TALLOC_CTX *mem_ctx,
 {
 	struct gp_inifile_context *gp_ctx = NULL;
 	NTSTATUS status;
-	int rv;
+	bool rv;
 	char *tmp_filename = NULL;
 
 	if (unix_path == NULL || pgp_ctx == NULL) {
@@ -382,7 +382,7 @@ NTSTATUS gp_inifile_init_context_direct(TALLOC_CTX *mem_ctx,
 				   change_section,
 				   store_keyval_pair,
 				   gp_ctx);
-	if (rv != 0) {
+	if (!rv) {
 		return NT_STATUS_NO_SUCH_FILE;
 	}
 
