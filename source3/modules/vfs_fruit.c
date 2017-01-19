@@ -1553,9 +1553,12 @@ static int init_fruit_config(vfs_handle_struct *handle)
 	}
 	config->encoding = (enum fruit_encoding)enumval;
 
-	config->veto_appledouble = lp_parm_bool(
-		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
-		"veto_appledouble", true);
+	if (config->rsrc == FRUIT_RSRC_ADFILE) {
+		config->veto_appledouble = lp_parm_bool(SNUM(handle->conn),
+							FRUIT_PARAM_TYPE_NAME,
+							"veto_appledouble",
+							true);
+	}
 
 	config->use_aapl = lp_parm_bool(
 		-1, FRUIT_PARAM_TYPE_NAME, "aapl", true);

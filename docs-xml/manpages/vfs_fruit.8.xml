@@ -235,10 +235,14 @@
 	  <varlistentry>
 	    <term>fruit:veto_appledouble = yes | no</term>
 	    <listitem>
-	      <para>Whether ._ AppleDouble files are vetoed which
-	      prevents the client from seing and accessing internal
-	      AppleDouble files created by vfs_fruit itself for the
-	      purpose of storing a Mac resource fork.</para>
+	      <para><emphasis>Note:</emphasis> this option only applies when
+	      <parameter>fruit:resource</parameter> is set to
+	      <parameter>file</parameter> (the default).</para>
+
+	      <para>When <parameter>fruit:resource</parameter> is set to
+	      <parameter>file</parameter>, vfs_fruit may create ._ AppleDouble
+	      files. This options controls whether these ._ AppleDouble files
+	      are vetoed which prevents the client from accessing them.</para>
 	      <para>Vetoing ._ files may break some applications, eg
 	      extracting Mac ZIP archives from Mac clients failes,
 	      because they contain ._ files. Setting this option to
