@@ -1537,7 +1537,7 @@ static struct tevent_req *vfswrap_copy_chunk_send(struct vfs_handle_struct *hand
 			saved_errno = errno;
 		}
 
-		SMB_VFS_STRICT_UNLOCK(src_fsp->conn, src_fsp, &lck);
+		SMB_VFS_STRICT_UNLOCK(dest_fsp->conn, dest_fsp, &lck);
 
 		if (ret == -1) {
 			errno = saved_errno;
