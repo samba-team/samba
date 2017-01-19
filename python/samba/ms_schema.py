@@ -117,6 +117,7 @@ def __read_folded_line(f, buffer):
 
 def __read_raw_entries(f):
     """reads an LDIF entry, only unfolding lines"""
+    import sys
 
     # will not match options after the attribute type
     attr_type_re = re.compile("^([A-Za-z]+[A-Za-z0-9-]*):")
