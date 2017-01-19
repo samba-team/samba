@@ -138,12 +138,8 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 					(s[2] == '/' || s[2] == '\0')) {
 				/* Uh oh - "/../" or "/..\0" ! */
 
-				/* Go past the ../ or .. */
-				if (s[2] == '/') {
-					s += 3;
-				} else {
-					s += 2; /* Go past the .. */
-				}
+				/* Go past the .. leaving us on the / or '\0' */
+				s += 2;
 
 				/* If  we just added a '/' - delete it */
 				if ((d > destname) && (*(d-1) == '/')) {
@@ -169,6 +165,16 @@ char *canonicalize_absolute_path(TALLOC_CTX *ctx, const char *abs_path)
 						break;
 					}
 				}
+
+				/*
+				 * Are we at the start ?
+				 * Can't go back further if so.
+				 */
+				if (d <= destname) {
+					*d++ = '/'; /* Can't delete root */
+					continue;
+				}
+
 				/*
 				 * We're still at the start of a name
 				 * component, just the previous one.
