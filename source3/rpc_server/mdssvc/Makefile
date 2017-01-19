@@ -1,6 +1,5 @@
 BISON=bison
 FLEX=flex
-SED=sed
 
 PARSER=sparql_parser
 LEXER=sparql_lexer
@@ -12,5 +11,3 @@ $(PARSER).c: $(PARSER).y
 
 $(LEXER).c: $(LEXER).l
 	$(FLEX) -o $@ $<
-	$(SED) -i s/malloc/SMB_MALLOC/g $@
-	$(SED) -i s/realloc/SMB_REALLOC/g $@

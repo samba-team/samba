@@ -23,9 +23,11 @@
 #include "sparql_parser.h"
 
 #define YY_NO_INPUT
+#define yyalloc SMB_MALLOC
+#define yyrealloc SMB_REALLOC
 %}
 
-%option nounput
+%option nounput noyyalloc noyyrealloc
 
 ASC     [a-zA-Z0-9_\*\:\-\.]
 U       [\x80-\xbf]
