@@ -802,8 +802,6 @@ setup_samba ()
     if [ "$1" != "down" ] ; then
 
 	debug "Marking Samba services as up, listening and managed by CTDB"
-        # Get into known state.
-	eventscript_call ctdb_service_managed
 
         # All possible service names for all known distros.
 	for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
@@ -822,8 +820,6 @@ setup_samba ()
 	export FAKE_SLEEP_FORCE=0.1
     else
 	debug "Marking Samba services as down, not listening and not managed by CTDB"
-        # Get into known state.
-	eventscript_call ctdb_service_unmanaged
 
         # All possible service names for all known distros.
 	for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
@@ -865,8 +861,6 @@ setup_winbind ()
     if [ "$1" != "down" ] ; then
 
 	debug "Marking Winbind service as up and managed by CTDB"
-        # Get into known state.
-	eventscript_call ctdb_service_managed
 
 	service "winbind" force-started
 
@@ -876,8 +870,6 @@ setup_winbind ()
 
     else
 	debug "Marking Winbind service as down and not managed by CTDB"
-        # Get into known state.
-	eventscript_call ctdb_service_unmanaged
 
 	service "winbind" force-stopped
 
@@ -919,7 +911,6 @@ setup_nfs ()
     if [ "$1" != "down" ] ; then
 	debug "Setting up NFS environment: all RPC services up, NFS managed by CTDB"
 
-	eventscript_call ctdb_service_managed
 	service "nfs" force-started
 	service "nfslock" force-started
 
@@ -933,7 +924,6 @@ setup_nfs ()
     else
 	debug "Setting up NFS environment: all RPC services down, NFS not managed by CTDB"
 
-	eventscript_call ctdb_service_unmanaged
 	service "nfs" force-stopped
 	service "nfslock" force-stopped
 
@@ -1187,7 +1177,6 @@ setup_vsftpd ()
     else
 	debug "Setting up VSFTPD environment: service down, not managed by CTDB"
 
-	eventscript_call ctdb_service_unmanaged
 	service vsftpd force-stopped
 
 	export CTDB_MANAGED_SERVICES="foo"
@@ -1207,7 +1196,6 @@ setup_httpd ()
 	debug "Setting up HTTPD environment: service down, not managed by CTDB"
 
 	for service_name in "apache2" "httpd" ; do
-	    eventscript_call ctdb_service_unmanaged
 	    service "$service_name" force-stopped
 	done
 
