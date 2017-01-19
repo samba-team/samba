@@ -37,6 +37,8 @@ nfs_check_services ()
 
     # Files must end with .check - avoids editor backups, RPM fu, ...
     for _f in "$_dir"/[0-9][0-9].*.check ; do
+	[ -r "$_f" ] || continue
+
 	_t="${_f%.check}"
 	_progname="${_t##*/[0-9][0-9].}"
 
