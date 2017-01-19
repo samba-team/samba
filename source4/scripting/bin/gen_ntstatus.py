@@ -22,83 +22,21 @@
 #
 
 import sys, os.path, io, string
+from gen_error_common import parseErrorDescriptions, ErrorDef
 
-# parsed error data
-Errors = []
-
-# error data model
-class ErrorDef:
-
-    def __init__(self):
-        self.err_code = None
-        self.err_define = None
-        self.err_string = ""
-        self.linenum = ""
-
-def escapeString( input ):
-    output = input.replace('"','\\"')
-    output = output.replace("\\<","\\\\<")
-    output = output.replace('\t',"")
-    return output
-
-def transformErrorName( error_name ):
-    new_name = error_name
-    if error_name.startswith("STATUS_"):
-        error_name = error_name.replace("STATUS_","",1)
-    elif error_name.startswith("RPC_NT_"):
-        error_name = error_name.replace("RPC_NT_","RPC_",1)
-    elif error_name.startswith("EPT_NT_"):
-        error_name = error_name.replace("EPT_NT_","EPT_",1)
-    new_name = "NT_STATUS_" + error_name
-    return new_name
-
-def parseErrorDescriptions( file_contents, isWinError ):
-    count = 0
-    for line in file_contents:
-        if line == None or line == '\t' or line == "" or line == '\n':
-            continue
-        content = line.strip().split(None,1)
-        # start new error definition ?
-        if line.startswith("0x"):
-            newError = ErrorDef()
-            newError.err_code = int(content[0],0)
-            # escape the usual suspects
-            if len(content) > 1:
-                newError.err_string = escapeString(content[1])
-            newError.linenum = count
-            newError.isWinError = isWinError
-            Errors.append(newError)
-        else:
-            if len(Errors) == 0:
-                # It's the license
-                continue
-            err = Errors[-1]
-            if err.err_define == None:
-                err.err_define = transformErrorName(content[0])
-            else:
-                if len(content) > 0:
-                    desc =  escapeString(line.strip())
-                    if len(desc):
-                        if err.err_string == "":
-                            err.err_string = desc
-                        else:
-                            err.err_string = err.err_string + " " + desc
-            count = count + 1
-    print "parsed %d lines generated %d error definitions"%(count,len(Errors))
-
-def generateHeaderFile(out_file):
+def generateHeaderFile(out_file, errors):
     out_file.write("/*\n")
     out_file.write(" * Descriptions for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
     out_file.write(" */\n\n")
     out_file.write("#ifndef _NTSTATUS_GEN_H\n")
     out_file.write("#define _NTSTATUS_GEN_H\n")
-    for err in Errors:
+    for err in errors:
         line = "#define %s NT_STATUS(%s)\n" % (err.err_define, hex(err.err_code))
         out_file.write(line)
     out_file.write("\n#endif /* _NTSTATUS_GEN_H */\n")
 
-def generateSourceFile(out_file):
+def generateSourceFile(out_file, errors):
     out_file.write("/*\n")
     out_file.write(" * Names for errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
@@ -106,7 +44,7 @@ def generateSourceFile(out_file):
 
     out_file.write("static const nt_err_code_struct nt_errs[] = \n")
     out_file.write("{\n")
-    for err in Errors:
+    for err in errors:
         out_file.write("\t{ \"%s\", %s },\n" % (err.err_define, err.err_define))
     out_file.write("{ 0, NT_STATUS(0) }\n")
     out_file.write("};\n")
@@ -118,7 +56,7 @@ def generateSourceFile(out_file):
 
     out_file.write("static const nt_err_code_struct nt_err_desc[] = \n")
     out_file.write("{\n")
-    for err in Errors:
+    for err in errors:
         # Account for the possibility that some errors may not have descriptions
         if err.err_string == "":
             continue
@@ -126,7 +64,7 @@ def generateSourceFile(out_file):
     out_file.write("{ 0, NT_STATUS(0) }\n")
     out_file.write("};")
 
-def generatePythonFile(out_file):
+def generatePythonFile(out_file, errors):
     out_file.write("/*\n")
     out_file.write(" * New descriptions for existing errors generated from\n")
     out_file.write(" * [MS-ERREF] http://msdn.microsoft.com/en-us/library/cc704588.aspx\n")
@@ -151,11 +89,20 @@ def generatePythonFile(out_file):
     out_file.write("\tm = Py_InitModule3(\"ntstatus\", NULL, \"NTSTATUS error defines\");\n");
     out_file.write("\tif (m == NULL)\n");
     out_file.write("\t\treturn;\n\n");
-    for err in Errors:
+    for err in errors:
         line = """\tPyModule_AddObject(m, \"%s\", 
                   \t\tndr_PyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
     out_file.write("}\n");
+
+def transformErrorName( error_name ):
+    if error_name.startswith("STATUS_"):
+        error_name = error_name.replace("STATUS_", "", 1)
+    elif error_name.startswith("RPC_NT_"):
+        error_name = error_name.replace("RPC_NT_", "RPC_", 1)
+    elif error_name.startswith("EPT_NT_"):
+        error_name = error_name.replace("EPT_NT_", "EPT_", 1)
+    return "NT_STATUS_" + error_name
 
 # Very simple script to generate files nterr_gen.c & ntstatus_gen.h.
 # These files contain generated definitions.
@@ -180,19 +127,20 @@ def main ():
 
     # read in the data
     file_contents = open(input_file, "r")
-    parseErrorDescriptions(file_contents, False)
+
+    errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
     print "writing new header file: %s" % gen_headerfile_name
     out_file = open(gen_headerfile_name, "w")
-    generateHeaderFile(out_file)
+    generateHeaderFile(out_file, errors)
     out_file.close()
     print "writing new source file: %s" % gen_sourcefile_name
     out_file = open(gen_sourcefile_name, "w")
-    generateSourceFile(out_file)
+    generateSourceFile(out_file, errors)
     out_file.close()
     print "writing new python file: %s" % gen_pythonfile_name
     out_file = open(gen_pythonfile_name, "w")
-    generatePythonFile(out_file)
+    generatePythonFile(out_file, errors)
     out_file.close()
 
 if __name__ == '__main__':
