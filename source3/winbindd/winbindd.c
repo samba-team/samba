@@ -243,8 +243,6 @@ static void terminate(bool is_parent)
 
 	idmap_close();
 
-	trustdom_cache_shutdown();
-
 	gencache_stabilize();
 
 #if 0

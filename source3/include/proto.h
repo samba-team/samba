@@ -847,8 +847,6 @@ WERROR map_werror_from_unix(int error);
 
 /* The following definitions come from libsmb/trustdom_cache.c  */
 
-bool trustdom_cache_enable(void);
-bool trustdom_cache_shutdown(void);
 bool trustdom_cache_store(const char *name, const char *alt_name,
 			  const struct dom_sid *sid, time_t timeout);
 bool trustdom_cache_fetch(const char* name, struct dom_sid* sid);

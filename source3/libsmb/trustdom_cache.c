@@ -44,34 +44,6 @@
  **/
 
 /**
- * Initialise trustdom name caching system. Call gencache
- * initialisation routine to perform necessary activities.
- *
- * @return true upon successful cache initialisation or
- *         false if cache init failed
- **/
-
-bool trustdom_cache_enable(void)
-{
-	return True;
-}
-
-
-/**
- * Shutdown trustdom name caching system. Calls gencache
- * shutdown function.
- *
- * @return true upon successful cache close or
- *         false if it failed
- **/
-
-bool trustdom_cache_shutdown(void)
-{
-	return True;
-}
-
-
-/**
  * Form up trustdom name key. It is based only
  * on domain name now.
  *
