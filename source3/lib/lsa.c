@@ -19,7 +19,9 @@
  init_lsa_ref_domain_list - adds a domain if it's not already in, returns index.
 ***************************************************************************/
 
-#include "includes.h"
+#include "replace.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
 #include "libcli/security/dom_sid.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "lsa.h"
