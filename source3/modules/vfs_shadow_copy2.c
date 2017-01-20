@@ -2335,8 +2335,18 @@ static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 	char *parent_dir = NULL;
 	int saved_errno;
 	size_t rootpath_len = 0;
+	struct shadow_copy2_private *priv = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return NULL);
 
 	DBG_DEBUG("Calc connect path for [%s]\n", fname);
+
+	if (priv->shadow_connectpath != NULL) {
+		DBG_DEBUG("cached connect path is [%s]\n",
+			priv->shadow_connectpath);
+		return priv->shadow_connectpath;
+	}
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
 					 &timestamp, &stripped)) {
