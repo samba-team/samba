@@ -412,11 +412,12 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
  * handed in via the smb layer.
  * Returns the parsed timestamp and the stripped filename.
  */
-static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
+static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
 					const char *name,
 					time_t *ptimestamp,
-					char **pstripped)
+					char **pstripped,
+					char **psnappath)
 {
 	struct tm tm;
 	time_t timestamp = 0;
@@ -596,6 +597,20 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 no_snapshot:
 	*ptimestamp = 0;
 	return true;
+}
+
+static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
+					struct vfs_handle_struct *handle,
+					const char *orig_name,
+					time_t *ptimestamp,
+					char **pstripped)
+{
+	return shadow_copy2_strip_snapshot_internal(mem_ctx,
+					handle,
+					orig_name,
+					ptimestamp,
+					pstripped,
+					NULL);
 }
 
 static char *shadow_copy2_find_mount_point(TALLOC_CTX *mem_ctx,
