@@ -228,10 +228,10 @@ static bool shadow_copy2_strip_snapshot(TALLOC_CTX *mem_ctx,
 					char **pstripped)
 {
 	struct tm tm;
-	time_t timestamp;
+	time_t timestamp = 0;
 	const char *p;
 	char *q;
-	char *stripped;
+	char *stripped = NULL;
 	size_t rest_len, dst_len;
 	struct shadow_copy2_config *config;
 	const char *snapdir;
@@ -694,8 +694,8 @@ static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 					    const char *mask,
 					    uint32_t attr)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	DIR *ret;
 	int saved_errno;
 	char *conv;
@@ -723,7 +723,8 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 			       const struct smb_filename *smb_fname_src,
 			       const struct smb_filename *smb_fname_dst)
 {
-	time_t timestamp_src, timestamp_dst;
+	time_t timestamp_src = 0;
+	time_t timestamp_dst = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
 					 smb_fname_src->base_name,
@@ -749,7 +750,8 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 static int shadow_copy2_symlink(vfs_handle_struct *handle,
 				const char *oldname, const char *newname)
 {
-	time_t timestamp_old, timestamp_new;
+	time_t timestamp_old = 0;
+	time_t timestamp_new = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, oldname,
 					 &timestamp_old, NULL)) {
@@ -769,7 +771,8 @@ static int shadow_copy2_symlink(vfs_handle_struct *handle,
 static int shadow_copy2_link(vfs_handle_struct *handle,
 			     const char *oldname, const char *newname)
 {
-	time_t timestamp_old, timestamp_new;
+	time_t timestamp_old = 0;
+	time_t timestamp_new = 0;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, oldname,
 					 &timestamp_old, NULL)) {
@@ -789,8 +792,9 @@ static int shadow_copy2_link(vfs_handle_struct *handle,
 static int shadow_copy2_stat(vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname)
 {
-	time_t timestamp;
-	char *stripped, *tmp;
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	char *tmp;
 	int ret, saved_errno;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
@@ -828,8 +832,9 @@ static int shadow_copy2_stat(vfs_handle_struct *handle,
 static int shadow_copy2_lstat(vfs_handle_struct *handle,
 			      struct smb_filename *smb_fname)
 {
-	time_t timestamp;
-	char *stripped, *tmp;
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	char *tmp;
 	int ret, saved_errno;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
@@ -867,7 +872,7 @@ static int shadow_copy2_lstat(vfs_handle_struct *handle,
 static int shadow_copy2_fstat(vfs_handle_struct *handle, files_struct *fsp,
 			      SMB_STRUCT_STAT *sbuf)
 {
-	time_t timestamp;
+	time_t timestamp = 0;
 	int ret;
 
 	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
@@ -889,8 +894,9 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname, files_struct *fsp,
 			     int flags, mode_t mode)
 {
-	time_t timestamp;
-	char *stripped, *tmp;
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	char *tmp;
 	int ret, saved_errno;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
@@ -925,8 +931,8 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 static int shadow_copy2_unlink(vfs_handle_struct *handle,
 			       const struct smb_filename *smb_fname)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	struct smb_filename *conv;
 
@@ -959,8 +965,8 @@ static int shadow_copy2_unlink(vfs_handle_struct *handle,
 static int shadow_copy2_chmod(vfs_handle_struct *handle, const char *fname,
 			      mode_t mode)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -986,8 +992,8 @@ static int shadow_copy2_chmod(vfs_handle_struct *handle, const char *fname,
 static int shadow_copy2_chown(vfs_handle_struct *handle, const char *fname,
 			      uid_t uid, gid_t gid)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1013,8 +1019,8 @@ static int shadow_copy2_chown(vfs_handle_struct *handle, const char *fname,
 static int shadow_copy2_chdir(vfs_handle_struct *handle,
 			      const char *fname)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1041,8 +1047,8 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 			       const struct smb_filename *smb_fname,
 			       struct smb_file_time *ft)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	struct smb_filename *conv;
 
@@ -1075,8 +1081,8 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 static int shadow_copy2_readlink(vfs_handle_struct *handle,
 				 const char *fname, char *buf, size_t bufsiz)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1102,8 +1108,8 @@ static int shadow_copy2_readlink(vfs_handle_struct *handle,
 static int shadow_copy2_mknod(vfs_handle_struct *handle,
 			      const char *fname, mode_t mode, SMB_DEV_T dev)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1129,7 +1135,7 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 				   const char *fname)
 {
-	time_t timestamp;
+	time_t timestamp = 0;
 	char *stripped = NULL;
 	char *tmp = NULL;
 	char *result = NULL;
@@ -1462,8 +1468,8 @@ static NTSTATUS shadow_copy2_fget_nt_acl(vfs_handle_struct *handle,
 					 TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	NTSTATUS status;
 	char *conv;
 
@@ -1494,8 +1500,8 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					struct security_descriptor **ppdesc)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	NTSTATUS status;
 	char *conv;
 
@@ -1521,8 +1527,8 @@ static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 static int shadow_copy2_mkdir(vfs_handle_struct *handle,
 			      const char *fname, mode_t mode)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1547,8 +1553,8 @@ static int shadow_copy2_mkdir(vfs_handle_struct *handle,
 
 static int shadow_copy2_rmdir(vfs_handle_struct *handle, const char *fname)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1574,8 +1580,8 @@ static int shadow_copy2_rmdir(vfs_handle_struct *handle, const char *fname)
 static int shadow_copy2_chflags(vfs_handle_struct *handle, const char *fname,
 				unsigned int flags)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1602,8 +1608,8 @@ static ssize_t shadow_copy2_getxattr(vfs_handle_struct *handle,
 				     const char *fname, const char *aname,
 				     void *value, size_t size)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
@@ -1632,8 +1638,8 @@ static ssize_t shadow_copy2_listxattr(struct vfs_handle_struct *handle,
 				      const char *fname,
 				      char *list, size_t size)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
@@ -1660,8 +1666,8 @@ static ssize_t shadow_copy2_listxattr(struct vfs_handle_struct *handle,
 static int shadow_copy2_removexattr(vfs_handle_struct *handle,
 				    const char *fname, const char *aname)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret, saved_errno;
 	char *conv;
 
@@ -1689,8 +1695,8 @@ static int shadow_copy2_setxattr(struct vfs_handle_struct *handle,
 				 const char *aname, const void *value,
 				 size_t size, int flags)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
@@ -1718,8 +1724,8 @@ static int shadow_copy2_setxattr(struct vfs_handle_struct *handle,
 static int shadow_copy2_chmod_acl(vfs_handle_struct *handle,
 				  const char *fname, mode_t mode)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
@@ -1749,8 +1755,8 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 					  TALLOC_CTX *mem_ctx,
 					  char **found_name)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
@@ -1788,7 +1794,7 @@ static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
 					    const char *fname)
 {
-	time_t timestamp;
+	time_t timestamp = 0;
 	char *stripped = NULL;
 	char *tmp = NULL;
 	char *result = NULL;
@@ -1863,8 +1869,8 @@ static uint64_t shadow_copy2_disk_free(vfs_handle_struct *handle,
 				       const char *path, uint64_t *bsize,
 				       uint64_t *dfree, uint64_t *dsize)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	ssize_t ret;
 	int saved_errno;
 	char *conv;
@@ -1897,8 +1903,8 @@ static int shadow_copy2_get_quota(vfs_handle_struct *handle, const char *path,
 				  enum SMB_QUOTA_TYPE qtype, unid_t id,
 				  SMB_DISK_QUOTA *dq)
 {
-	time_t timestamp;
-	char *stripped;
+	time_t timestamp = 0;
+	char *stripped = NULL;
 	int ret;
 	int saved_errno;
 	char *conv;
