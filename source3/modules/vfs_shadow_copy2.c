@@ -2626,6 +2626,11 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		}
 	}
 
+	trim_string(config->mount_point, NULL, "/");
+	trim_string(config->rel_connectpath, "/", "/");
+	trim_string(config->snapdir, NULL, "/");
+	trim_string(config->snapshot_basepath, NULL, "/");
+
 	DEBUG(10, ("shadow_copy2_connect: configuration:\n"
 		   "  share root: '%s'\n"
 		   "  mountpoint: '%s'\n"
