@@ -35,6 +35,7 @@
 #include "system/filesys.h"
 #include "include/ntioctl.h"
 #include "util_tdb.h"
+#include "lib/util_path.h"
 
 struct shadow_copy2_config {
 	char *gmt_format;
@@ -405,6 +406,50 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
 	}
 
 	return result;
+}
+
+static char *make_path_absolute(TALLOC_CTX *mem_ctx,
+				struct shadow_copy2_private *priv,
+				const char *name)
+{
+	char *newpath = NULL;
+	char *abs_path = NULL;
+
+	if (name[0] != '/') {
+		newpath = talloc_asprintf(mem_ctx,
+					"%s/%s",
+					priv->shadow_cwd,
+					name);
+		if (newpath == NULL) {
+			return NULL;
+		}
+		name = newpath;
+	}
+	abs_path = canonicalize_absolute_path(mem_ctx, name);
+	TALLOC_FREE(newpath);
+	return abs_path;
+}
+
+/* Return a $cwd-relative path. */
+static bool make_relative_path(const char *cwd, char *abs_path)
+{
+	size_t cwd_len = strlen(cwd);
+	size_t abs_len = strlen(abs_path);
+
+	if (abs_len < cwd_len) {
+		return false;
+	}
+	if (memcmp(abs_path, cwd, cwd_len) != 0) {
+		return false;
+	}
+	if (abs_path[cwd_len] != '/' && abs_path[cwd_len] != '\0') {
+		return false;
+	}
+	if (abs_path[cwd_len] == '/') {
+		cwd_len++;
+	}
+	memmove(abs_path, &abs_path[cwd_len], abs_len + 1 - cwd_len);
+	return true;
 }
 
 /**
