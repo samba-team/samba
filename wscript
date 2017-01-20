@@ -48,12 +48,12 @@ def set_options(opt):
     opt.samba_add_onoff_option('pthreadpool', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--with-system-mitkrb5',
-                   help='enable system MIT krb5 build (includes Samba 4 client and Samba 3 code base).'+
+                   help='build Samba with system MIT Kerberos. ' +
                         'You may specify list of paths where Kerberos is installed (e.g. /usr/local /usr/kerberos) to search krb5-config',
                    action='callback', callback=system_mitkrb5_callback, dest='with_system_mitkrb5', default=False)
 
     opt.add_option('--without-ad-dc',
-                   help='disable AD DC functionality (enables Samba 4 client and Samba 3 code base).',
+                   help='disable AD DC functionality (enables only Samba FS (File Server, Winbind, NMBD) and client utilities.',
                    action='store_true', dest='without_ad_dc', default=False)
 
     opt.add_option('--with-ntvfs-fileserver',

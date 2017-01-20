@@ -3,6 +3,16 @@ import Logs, Options, sys
 # Check for kerberos
 have_gssapi=False
 
+krb5_min_required_version = "1.9"
+
+# Requried versions
+krb5_required_version = krb5_min_required_version
+if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
+    krb5_required_version = "1.15.1"
+
+def parse_version(v):
+    return tuple(map(int, (v.split("."))))
+
 def krb5_define_syslib(conf, lib, deps):
     found = 'FOUND_SYSTEMLIB_' + lib
     if found in conf.env:
@@ -44,19 +54,21 @@ if conf.env.KRB5_CONFIG:
     if conf.env.KRB5_VENDOR != 'heimdal':
         conf.define('USING_SYSTEM_KRB5', 1)
         del conf.env.HEIMDAL_KRB5_CONFIG
-        kversion = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG), dict()).strip()
-        kversion_split = kversion.split(' ')[-1].split('.')
+        krb5_conf_version = conf.cmd_and_log("%(path)s --version" % dict(path=conf.env.KRB5_CONFIG), dict()).strip()
+
+        krb5_version = krb5_conf_version.split()[-1]
+
         # drop '-prerelease' suffix
-        if kversion_split[-1].find('-') > 0:
-            last_digit = kversion_split[-1].split('-')[0]
-            kversion_split[-1] = last_digit
-        kversion_check = map(int, kversion_split)
-        if kversion_check < [1, 9]:
-            Logs.error('ERROR: MIT krb5 build requires at least 1.9.0. %s is found and cannot be used' % (kversion))
+        if krb5_version.find('-') > 0:
+            krb5_version = krb5_version.split("-")[0]
+
+        if parse_version(krb5_version) < parse_version(krb5_required_version):
+            Logs.error('ERROR: MIT KRB5 build with Samba AD requires at least %s. %s has been found and cannot be used' % (krb5_required_version, krb5_version))
+            Logs.error('ERROR: If you want to just build Samba FS use the option --without-ad-dc which requires version %s' % (krb5_min_required_version))
             Logs.error('ERROR: You may try to build with embedded Heimdal Kerebros by not specifying --with-system-mitkrb5')
             sys.exit(1)
         else:
-            Logs.info('%s is detected, MIT krb5 build can proceed' % (kversion))
+            Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
 
 conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')
