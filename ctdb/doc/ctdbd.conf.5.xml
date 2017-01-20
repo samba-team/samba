@@ -1103,6 +1103,34 @@ CTDB_PER_IP_ROUTING_TABLE_ID_HIGH=9000
 	</varlistentry>
 
 	<varlistentry>
+	  <term>CTDB_NFS_CHECKS_DIR=<parameter>DIRECTORY</parameter></term>
+	  <listitem>
+	    <para>
+	      Specifies the path to a DIRECTORY containing files that
+	      describe how to monitor the responsiveness of NFS RPC
+	      services.  See the README file for this directory for an
+	      explanation of the contents of these "check" files.
+	    </para>
+	    <para>
+	      CTDB_NFS_CHECKS_DIR can be used to point to different
+	      sets of checks for different NFS servers.
+	    </para>
+	    <para>
+	      One way of using this is to have it point to, say,
+	      <filename>/usr/local/etc/ctdb/nfs-checks-enabled.d</filename>
+	      and populate it with symbolic links to the desired check
+	      files.  This avoids duplication and is upgrade-safe.
+	    </para>
+	    <para>
+	      Default is
+	      <filename>/usr/local/etc/ctdb/nfs-checks.d</filename>,
+	      which contains NFS RPC checks suitable for Linux kernel
+	      NFS.
+	    </para>
+	  </listitem>
+	</varlistentry>
+
+	<varlistentry>
 	  <term>CTDB_NFS_SKIP_SHARE_CHECK=yes|no</term>
 	  <listitem>
 	    <para>
