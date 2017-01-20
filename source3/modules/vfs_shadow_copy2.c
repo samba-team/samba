@@ -414,7 +414,7 @@ static char *shadow_copy2_snapshot_path(TALLOC_CTX *mem_ctx,
  */
 static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 					struct vfs_handle_struct *handle,
-					const char *name,
+					const char *orig_name,
 					time_t *ptimestamp,
 					char **pstripped,
 					char **psnappath)
@@ -429,6 +429,7 @@ static bool shadow_copy2_strip_snapshot_internal(TALLOC_CTX *mem_ctx,
 	const char *snapdir;
 	ssize_t snapdirlen;
 	ptrdiff_t len_before_gmt;
+	const char *name = orig_name;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
 				return false);
