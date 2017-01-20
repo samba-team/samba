@@ -1328,30 +1328,85 @@ static int shadow_copy2_chown(vfs_handle_struct *handle,
 	return ret;
 }
 
+static void store_cwd_data(vfs_handle_struct *handle,
+				const char *connectpath)
+{
+	struct shadow_copy2_private *priv = NULL;
+	char *cwd = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, priv, struct shadow_copy2_private,
+				return);
+
+	TALLOC_FREE(priv->shadow_cwd);
+	cwd = SMB_VFS_NEXT_GETWD(handle);
+	if (cwd == NULL) {
+		smb_panic("getwd failed\n");
+	}
+	DBG_DEBUG("shadow cwd = %s\n", cwd);
+	priv->shadow_cwd = talloc_strdup(priv, cwd);
+	SAFE_FREE(cwd);
+	if (priv->shadow_cwd == NULL) {
+		smb_panic("talloc failed\n");
+	}
+	TALLOC_FREE(priv->shadow_connectpath);
+	if (connectpath) {
+		DBG_DEBUG("shadow conectpath = %s\n", connectpath);
+		priv->shadow_connectpath = talloc_strdup(priv, connectpath);
+		if (priv->shadow_connectpath == NULL) {
+			smb_panic("talloc failed\n");
+		}
+	}
+}
+
 static int shadow_copy2_chdir(vfs_handle_struct *handle,
 			      const char *fname)
 {
 	time_t timestamp = 0;
 	char *stripped = NULL;
-	int ret, saved_errno;
-	char *conv;
+	char *snappath = NULL;
+	int ret = -1;
+	int saved_errno = 0;
+	char *conv = NULL;
+	size_t rootpath_len = 0;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, fname,
-					 &timestamp, &stripped)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, fname,
+					&timestamp, &stripped, &snappath)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_CHDIR(handle, fname);
+	if (stripped != NULL) {
+		conv = shadow_copy2_do_convert(talloc_tos(),
+						handle,
+						stripped,
+						timestamp,
+						&rootpath_len);
+		TALLOC_FREE(stripped);
+		if (conv == NULL) {
+			return -1;
+		}
+		fname = conv;
 	}
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
+
+	ret = SMB_VFS_NEXT_CHDIR(handle, fname);
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+
+	if (ret == 0) {
+		if (conv != NULL && rootpath_len != 0) {
+			conv[rootpath_len] = '\0';
+		} else if (snappath != 0) {
+			TALLOC_FREE(conv);
+			conv = snappath;
+		}
+		store_cwd_data(handle, conv);
+	}
+
 	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_CHDIR(handle, conv);
-	saved_errno = errno;
 	TALLOC_FREE(conv);
-	errno = saved_errno;
+
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
 	return ret;
 }
 
