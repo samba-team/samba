@@ -74,6 +74,9 @@ struct shadow_copy2_snaplist_info {
 struct shadow_copy2_private {
 	struct shadow_copy2_config *config;
 	struct shadow_copy2_snaplist_info *snaps;
+	char *shadow_cwd; /* Absolute $cwd path. */
+	/* Absolute connectpath - can vary depending on $cwd. */
+	char *shadow_connectpath;
 };
 
 static int shadow_copy2_get_shadow_copy_data(
