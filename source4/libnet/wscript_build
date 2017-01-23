@@ -8,11 +8,14 @@ bld.SAMBA_LIBRARY('samba-net',
 	)
 
 
-bld.SAMBA_PYTHON('python_net',
-	source='py_net.c',
-	deps='samba-net pyrpc_util pytalloc-util',
-	realname='samba/net.so'
-	)
+for env in bld.gen_python_environments():
+	pytalloc_util = bld.pyembed_libname('pytalloc-util')
+	pyrpc_util = bld.pyembed_libname('pyrpc_util')
+	bld.SAMBA_PYTHON('python_net',
+		source='py_net.c',
+		deps='samba-net %s %s' % (pyrpc_util, pytalloc_util),
+		realname='samba/net.so'
+		)
 
 bld.SAMBA_PYTHON('python_dckeytab',
 	source='py_net_dckeytab.c libnet_export_keytab.c',
