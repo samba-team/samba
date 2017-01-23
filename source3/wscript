@@ -1869,12 +1869,3 @@ main() {
         Logs.info("%s: %s" % (shared_env, ','.join(conf.env[shared_env])))
 
     conf.SAMBA_CONFIG_H('include/config.h')
-
-def ctags(ctx):
-    "build 'tags' file using ctags"
-    import Utils
-    source_root = os.path.dirname(Utils.g_module.root_path)
-    cmd = 'ctags $(find %s/.. -name "*.[ch]" | grep -v "*_proto\.h")' % source_root
-    print("Running: %s" % cmd)
-    os.system(cmd)
-
