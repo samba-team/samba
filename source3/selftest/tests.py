@@ -284,7 +284,7 @@ plantestsuite("samba3.async_req", "nt4_dc",
 
 #smbtorture4 tests
 
-base = ["base.attr", "base.charset", "base.chkpath", "base.defer_open", "base.delaywrite", "base.delete",
+base = ["base.attr", "base.charset", "base.chkpath", "base.createx_access", "base.defer_open", "base.delaywrite", "base.delete",
         "base.deny1", "base.deny2", "base.deny3", "base.denydos", "base.dir1", "base.dir2",
         "base.disconnect", "base.fdpass", "base.lock",
         "base.mangle", "base.negnowait", "base.ntdeny1",
@@ -339,6 +339,8 @@ tests= base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap
 
 for t in tests:
     if t == "base.delaywrite":
+        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD -k yes --maximum-runtime=900')
+    if t == "base.createx_access":
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD -k yes --maximum-runtime=900')
     elif t == "rap.sam":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
