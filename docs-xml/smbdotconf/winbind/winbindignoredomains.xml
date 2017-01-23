@@ -1,0 +1,14 @@
+<samba:parameter name="winbind:ignore domains"
+                 context="G"
+                 type="cmdlist"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+       <para>Allows to enter a list of trusted domains winbind should
+       ignore (untrust). This can avoid the overhead of resources from
+       attempting to login to DCs that should not be communicated with.
+       </para>
+
+</description>
+<value type="default"></value>
+<value type="example">DOMAIN1, DOMAIN2</value>
+</samba:parameter>
