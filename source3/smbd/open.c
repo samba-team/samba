@@ -2275,6 +2275,12 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 	uint32_t orig_access_mask = access_mask;
 	uint32_t rejected_share_access;
 
+	if (access_mask & SEC_MASK_INVALID) {
+		DBG_DEBUG("access_mask [%8x] contains invalid bits\n",
+			  access_mask);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/*
 	 * Convert GENERIC bits to specific bits.
 	 */
