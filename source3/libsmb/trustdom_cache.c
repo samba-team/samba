@@ -52,12 +52,9 @@
  * @return cache key for use in gencache mechanism
  **/
 
-static char* trustdom_cache_key(const char* name)
+static char *trustdom_cache_key(TALLOC_CTX *mem_ctx, const char *name)
 {
-	char* keystr = NULL;
-	asprintf_strupper_m(&keystr, TDOMKEY_FMT, name);
-
-	return keystr;
+	return talloc_asprintf_strupper_m(mem_ctx, TDOMKEY_FMT, name);
 }
 
 
@@ -82,14 +79,14 @@ bool trustdom_cache_store(const char *name, const struct dom_sid *sid)
 	DEBUG(5, ("trustdom_store: storing SID %s of domain %s\n",
 	          sid_string_dbg(sid), name));
 
-	key = trustdom_cache_key(name);
+	key = trustdom_cache_key(talloc_tos(), name);
 
 	/* Generate string representation domain SID */
 	sid_to_fstring(sid_string, sid);
 
 	ret = gencache_set(key, sid_string,
 			   time(NULL) + TRUSTDOM_UPDATE_INTERVAL);
-	SAFE_FREE(key);
+	TALLOC_FREE(key);
 	return ret;
 }
 
@@ -115,16 +112,16 @@ bool trustdom_cache_fetch(const char* name, struct dom_sid* sid)
 		return False;
 
 	/* prepare a key and get the value */
-	key = trustdom_cache_key(name);
+	key = trustdom_cache_key(talloc_tos(), name);
 	if (!key)
 		return False;
 
 	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
 		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 		return False;
 	} else {
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 		DEBUG(5, ("trusted domain %s found (%s)\n", name, value));
 	}
 
@@ -200,11 +197,13 @@ static void flush_trustdom_name(const char* key, const char *value, time_t timeo
 
 void trustdom_cache_flush(void)
 {
+	char *key = trustdom_cache_key(talloc_tos(), "*");
 	/*
 	 * iterate through each TDOM cache's entry and flush it
 	 * by flush_trustdom_name function
 	 */
-	gencache_iterate(flush_trustdom_name, NULL, trustdom_cache_key("*"));
+	gencache_iterate(flush_trustdom_name, NULL, key);
+	TALLOC_FREE(key);
 	DEBUG(5, ("Trusted domains cache flushed\n"));
 }
 
