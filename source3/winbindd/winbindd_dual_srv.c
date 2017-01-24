@@ -601,7 +601,7 @@ NTSTATUS _wbint_LookupRids(struct pipes_struct *p, struct wbint_LookupRids *r)
 	enum lsa_SidType *types;
 	struct wbint_Principal *result;
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
