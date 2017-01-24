@@ -157,7 +157,7 @@ bool trustdom_cache_fetch(const char* name, struct dom_sid* sid)
  fetch the timestamp from the last update
 *******************************************************************/
 
-uint32_t trustdom_cache_fetch_timestamp( void )
+static uint32_t trustdom_cache_fetch_timestamp(void)
 {
 	char *value = NULL;
 	time_t timeout;
@@ -179,7 +179,7 @@ uint32_t trustdom_cache_fetch_timestamp( void )
  store the timestamp from the last update
 *******************************************************************/
 
-bool trustdom_cache_store_timestamp( uint32_t t, time_t timeout )
+static bool trustdom_cache_store_timestamp(uint32_t t, time_t timeout)
 {
 	fstring value;
 

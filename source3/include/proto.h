@@ -850,8 +850,6 @@ WERROR map_werror_from_unix(int error);
 bool trustdom_cache_store(const char *name, const char *alt_name,
 			  const struct dom_sid *sid, time_t timeout);
 bool trustdom_cache_fetch(const char* name, struct dom_sid* sid);
-uint32_t trustdom_cache_fetch_timestamp( void );
-bool trustdom_cache_store_timestamp( uint32_t t, time_t timeout );
 void trustdom_cache_flush(void);
 void update_trustdom_cache( void );
 
