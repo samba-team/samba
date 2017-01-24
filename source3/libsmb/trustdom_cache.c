@@ -31,6 +31,7 @@
 
 #define TDOMKEY_FMT  "TDOM/%s"
 #define TDOMTSKEY    "TDOMCACHE/TIMESTAMP"
+#define TRUSTDOM_UPDATE_INTERVAL	600
 
 
 /**
@@ -72,10 +73,9 @@ static char* trustdom_cache_key(const char* name)
  *         false if store attempt failed
  **/
 
-bool trustdom_cache_store(const char *name, const char *alt_name,
-			  const struct dom_sid *sid, time_t timeout)
+bool trustdom_cache_store(const char *name, const struct dom_sid *sid)
 {
-	char *key, *alt_key;
+	char *key;
 	fstring sid_string;
 	bool ret;
 
@@ -83,25 +83,12 @@ bool trustdom_cache_store(const char *name, const char *alt_name,
 	          sid_string_dbg(sid), name));
 
 	key = trustdom_cache_key(name);
-	alt_key = alt_name ? trustdom_cache_key(alt_name) : NULL;
 
 	/* Generate string representation domain SID */
 	sid_to_fstring(sid_string, sid);
 
-	/*
-	 * try to put the names in the cache
-	 */
-	if (alt_key) {
-		ret = gencache_set(alt_key, sid_string, timeout);
-		if ( ret ) {
-			ret = gencache_set(key, sid_string, timeout);
-		}
-		SAFE_FREE(alt_key);
-		SAFE_FREE(key);
-		return ret;
-	}
-
-	ret = gencache_set(key, sid_string, timeout);
+	ret = gencache_set(key, sid_string,
+			   time(NULL) + TRUSTDOM_UPDATE_INTERVAL);
 	SAFE_FREE(key);
 	return ret;
 }
@@ -323,7 +310,6 @@ done:
 /********************************************************************
  update the trustdom_cache if needed
 ********************************************************************/
-#define TRUSTDOM_UPDATE_INTERVAL	600
 
 void update_trustdom_cache( void )
 {
@@ -362,8 +348,7 @@ void update_trustdom_cache( void )
 	if ( enumerate_domain_trusts(mem_ctx, lp_workgroup(), &domain_names,
 		&num_domains, &dom_sids)) {
 		for ( i=0; i<num_domains; i++ ) {
-			trustdom_cache_store( domain_names[i], NULL, &dom_sids[i],
-				now+TRUSTDOM_UPDATE_INTERVAL);
+			trustdom_cache_store(domain_names[i], &dom_sids[i]);
 		}
 	} else {
 		/* we failed to fetch the list of trusted domains - restore the old
