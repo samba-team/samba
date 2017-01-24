@@ -106,36 +106,33 @@ bool trustdom_cache_fetch(const char* name, struct dom_sid* sid)
 {
 	char *key = NULL, *value = NULL;
 	time_t timeout;
+	bool ok;
 
 	/* exit now if null pointers were passed as they're required further */
-	if (!sid)
-		return False;
+	if (sid == NULL) {
+		return false;
+	}
 
 	/* prepare a key and get the value */
 	key = trustdom_cache_key(talloc_tos(), name);
-	if (!key)
-		return False;
-
-	if (!gencache_get(key, talloc_tos(), &value, &timeout)) {
-		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
-		TALLOC_FREE(key);
-		return False;
-	} else {
-		TALLOC_FREE(key);
-		DEBUG(5, ("trusted domain %s found (%s)\n", name, value));
+	if (key == NULL) {
+		return false;
 	}
+
+	ok = gencache_get(key, talloc_tos(), &value, &timeout);
+	TALLOC_FREE(key);
+	if (!ok) {
+		DEBUG(5, ("no entry for trusted domain %s found.\n", name));
+		return false;
+	}
+
+	DEBUG(5, ("trusted domain %s found (%s)\n", name, value));
 
 	/* convert sid string representation into struct dom_sid structure */
-	if(! string_to_sid(sid, value)) {
-		sid = NULL;
-		TALLOC_FREE(value);
-		return False;
-	}
-
+	ok = string_to_sid(sid, value);
 	TALLOC_FREE(value);
-	return True;
+	return ok;
 }
-
 
 /*******************************************************************
  fetch the timestamp from the last update
