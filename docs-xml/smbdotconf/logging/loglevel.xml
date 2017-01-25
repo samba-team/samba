@@ -37,6 +37,10 @@
 	<listitem><para><parameter moreinfo="none">msdfs</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">dmapi</parameter></para></listitem>
 	<listitem><para><parameter moreinfo="none">registry</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">scavenger</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">dns</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">ldb</parameter></para></listitem>
+        <listitem><para><parameter moreinfo="none">tevent</parameter></para></listitem>
     </itemizedlist>
     
 </description>
