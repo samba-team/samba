@@ -174,6 +174,53 @@ CTDB changes
   To build/install these, use the --enable-etcd-reclock and
   --enable-ceph-reclock configure options.
 
+winbind changes
+---------------
+
+4.6 winbind simplifies the calculation of supplementary groups to make
+it more reliable and predictable. Before 4.6, winbind contained code
+that tried to emulate the group membership calculation that domain
+controllers do when a user logs in. This group membership calculation
+is a very complex process, in particular for domain trust relationship
+situations. Also, in many scenarios it is impossible for winbind to
+correctly do this calculation due to access restrictions in the
+domains: winbind using its machine account simply does not have the
+rights to ask for an arbitrary user's group memberships.
+
+When a user logs in to a Samba server, the domain controller correctly
+calculates the user's group memberships authoritatively and makes the
+information available to the Samba server. This is the only reliable
+way Samba can get informed about the groups a user is member of.
+
+Because of its flakiness, the fallback group membership code was
+removed.
+
+This means that "id <username>" without the user having logged in
+previously stops showing any supplementary groups. Also, it will show
+"DOMAIN\Domain Users" as the primary group. Once the user has logged
+in, "id <username>" will correctly show the primary group and
+supplementary group list.
+
+winbind primary group and nss info
+----------------------------------
+
+With 4.6, it will be possible to optionally use the primary group as
+set in the "Unix Attributes" tab for the local unix token of a domain
+user.  Before 4.6, the Windows primary group was always chosen as
+primary group for the local unix token.
+
+To activate the unix primary group, set
+
+idmap config <DOMAIN> : unix_primary_group = yes
+
+Similarly, set
+
+idmap config <DOMAIN> : unix_nss_info = yes
+
+to retrieve the home directory and login shell from the "Unix
+Attributes" of the user. This supersedes the "winbind nss info"
+parameter with a per-domain configuration option.
+
 
 smb.conf changes
 ================
