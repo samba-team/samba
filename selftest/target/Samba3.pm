@@ -791,6 +791,8 @@ sub setup_ktest($$$)
 	security = ads
         username map = $prefix/lib/username.map
         server signing = required
+	server min protocol = SMB3_00
+	client max protocol = SMB3
 ";
 
 	my $ret = $self->provision($prefix,

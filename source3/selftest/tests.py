@@ -454,8 +454,12 @@ for s in signseal_options:
 
     # We should try more combinations in future, but this is all
     # the pre-calculated credentials cache supports at the moment
+    #
+    # As the ktest env requires SMB3_00 we need to use "smb2" until
+    # dcerpc client code in smbtorture support autonegotiation
+    # of any smb dialect.
     e = ""
-    a = ""
+    a = "smb2"
     binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
     options = binding_string + " -k yes --krb5-ccache=$PREFIX/ktest/krb5_ccache-2"
     plansmbtorture4testsuite(test, "ktest", options, 'krb5 with old ccache ncacn_np with [%s%s%s] ' % (a, s, e))
