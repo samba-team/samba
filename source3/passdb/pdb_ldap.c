@@ -65,7 +65,6 @@
 #include "smbldap.h"
 #include "passdb/pdb_ldap.h"
 #include "passdb/pdb_nds.h"
-#include "passdb/pdb_ipa.h"
 #include "passdb/pdb_ldap_util.h"
 #include "passdb/pdb_ldap_schema.h"
 
@@ -6634,8 +6633,6 @@ NTSTATUS pdb_ldapsam_init(void)
 
 	/* Let pdb_nds register backends */
 	pdb_nds_init();
-
-	pdb_ipa_init();
 
 	return NT_STATUS_OK;
 }
