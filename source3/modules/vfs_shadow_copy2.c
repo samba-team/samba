@@ -2533,6 +2533,15 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
+	/* config->gmt_format must not contain a path separator. */
+	if (strchr(config->gmt_format, '/') != NULL) {
+		DEBUG(0, ("shadow:format %s must not contain a /"
+			"character. Unable to initialize module.\n",
+			config->gmt_format));
+		errno = EINVAL;
+		return -1;
+	}
+
 	config->use_sscanf = lp_parm_bool(SNUM(handle->conn),
 					  "shadow", "sscanf", false);
 
