@@ -1,7 +1,7 @@
 # DRS utility code
 #
 # Copyright Andrew Tridgell 2010
-# Copyright Andrew Bartlett 2010
+# Copyright Andrew Bartlett 2017
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -213,6 +213,7 @@ class drs_Replicate(object):
         req8.highwatermark.reserved_usn = 0
         req8.highwatermark.highest_usn = 0
         req8.uptodateness_vector = None
+
         if replica_flags is not None:
             req8.replica_flags = replica_flags
         elif exop == drsuapi.DRSUAPI_EXOP_REPL_SECRET:
@@ -251,12 +252,25 @@ class drs_Replicate(object):
                     setattr(req5, a, getattr(req8, a))
             req = req5
 
+        num_objects = 0
+        num_links = 0
         while True:
             (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, req_level, req)
             if ctr.first_object is None and ctr.object_count != 0:
                 raise RuntimeError("DsGetNCChanges: NULL first_object with object_count=%u" % (ctr.object_count))
             self.net.replicate_chunk(self.replication_state, level, ctr,
                 schema=schema, req_level=req_level, req=req)
+
+            num_objects += ctr.object_count
+
+            # Cope with servers that do not return level 6, so do not return any links
+            try:
+                num_links += ctr.linked_attributes_count
+            except AttributeError:
+                pass
+
             if ctr.more_data == 0:
                 break
             req.highwatermark = ctr.new_highwatermark
+
+        return (num_objects, num_links)
