@@ -188,7 +188,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	int ret;
 	int sflags = 0;
 
-	kentry = malloc(sizeof(krb5_db_entry));
+	kentry = calloc(1, sizeof(krb5_db_entry));
 	if (kentry == NULL) {
 		return ENOMEM;
 	}
