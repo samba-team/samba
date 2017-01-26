@@ -47,10 +47,6 @@ int mit_samba_get_firstkey(struct mit_samba_context *ctx,
 int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 			  krb5_db_entry **_kentry);
 
-int mit_samba_get_pac_data(struct mit_samba_context *ctx,
-			   krb5_db_entry *client,
-			   DATA_BLOB *data);
-
 int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		      krb5_context context,
 		      krb5_db_entry *client,

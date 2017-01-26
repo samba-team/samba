@@ -331,41 +331,6 @@ int mit_samba_get_nextkey(struct mit_samba_context *ctx,
 	return ret;
 }
 
-int mit_samba_get_pac_data(struct mit_samba_context *ctx,
-			   krb5_db_entry *client,
-			   DATA_BLOB *data)
-{
-	TALLOC_CTX *tmp_ctx;
-	DATA_BLOB *pac_blob;
-	NTSTATUS nt_status;
-	struct samba_kdc_entry *skdc_entry;
-
-	skdc_entry = talloc_get_type_abort(client->e_data,
-					   struct samba_kdc_entry);
-
-	tmp_ctx = talloc_named(ctx, 0, "mit_samba_get_pac_data context");
-	if (!tmp_ctx) {
-		return ENOMEM;
-	}
-
-	nt_status = samba_kdc_get_pac_blob(tmp_ctx, skdc_entry, &pac_blob);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return EINVAL;
-	}
-
-	data->data = (uint8_t *)malloc(pac_blob->length);
-	if (!data->data) {
-		talloc_free(tmp_ctx);
-		return ENOMEM;
-	}
-	memcpy(data->data, pac_blob->data, pac_blob->length);
-	data->length = pac_blob->length;
-
-	talloc_free(tmp_ctx);
-	return 0;
-}
-
 int mit_samba_get_pac(struct mit_samba_context *smb_ctx,
 		      krb5_context context,
 		      krb5_db_entry *client,
