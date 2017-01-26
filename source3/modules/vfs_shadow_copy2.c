@@ -452,6 +452,114 @@ static bool make_relative_path(const char *cwd, char *abs_path)
 	return true;
 }
 
+static bool shadow_copy2_snapshot_to_gmt(vfs_handle_struct *handle,
+					const char *name,
+					char *gmt, size_t gmt_len);
+
+/*
+ * Check if an incoming filename is already a snapshot converted pathname.
+ *
+ * If so, it returns the pathname truncated at the snapshot point which
+ * will be used as the connectpath.
+ */
+
+static int check_for_converted_path(TALLOC_CTX *mem_ctx,
+				struct vfs_handle_struct *handle,
+				struct shadow_copy2_private *priv,
+				char *abs_path,
+				bool *ppath_already_converted,
+				char **pconnectpath)
+{
+	size_t snapdirlen = 0;
+	char *p = strstr_m(abs_path, priv->config->snapdir);
+	char *q = NULL;
+	char *connect_path = NULL;
+	char snapshot[GMT_NAME_LEN+1];
+
+	*ppath_already_converted = false;
+
+	if (p == NULL) {
+		/* Must at least contain shadow:snapdir. */
+		return 0;
+	}
+
+	if (priv->config->snapdir[0] == '/' &&
+			p != abs_path) {
+		/* Absolute shadow:snapdir must be at the start. */
+		return 0;
+	}
+
+	snapdirlen = strlen(priv->config->snapdir);
+	if (p[snapdirlen] != '/') {
+		/* shadow:snapdir must end as a separate component. */
+		return 0;
+	}
+
+	if (p > abs_path && p[-1] != '/') {
+		/* shadow:snapdir must start as a separate component. */
+		return 0;
+	}
+
+	p += snapdirlen;
+	p++; /* Move past the / */
+
+	/*
+	 * Need to return up to the next path
+	 * component after the time.
+	 * This will be used as the connectpath.
+	 */
+	q = strchr(p, '/');
+	if (q == NULL) {
+		/*
+		 * No next path component.
+		 * Use entire string.
+		 */
+		connect_path = talloc_strdup(mem_ctx,
+					abs_path);
+	} else {
+		connect_path = talloc_strndup(mem_ctx,
+					abs_path,
+					q - abs_path);
+	}
+	if (connect_path == NULL) {
+		return ENOMEM;
+	}
+
+	/*
+	 * Point p at the same offset in connect_path as
+	 * it is in abs_path.
+	 */
+
+	p = &connect_path[p - abs_path];
+
+	/*
+	 * Now ensure there is a time string at p.
+	 * The SMB-format @GMT-token string is returned
+	 * in snapshot.
+	 */
+
+	if (!shadow_copy2_snapshot_to_gmt(handle,
+				p,
+				snapshot,
+				sizeof(snapshot))) {
+		TALLOC_FREE(connect_path);
+		return 0;
+	}
+
+	if (pconnectpath != NULL) {
+		*pconnectpath = connect_path;
+	}
+
+	*ppath_already_converted = true;
+
+	DBG_DEBUG("path |%s| is already converted. "
+		"connect path = |%s|\n",
+		abs_path,
+		connect_path);
+
+	return 0;
+}
+
 /**
  * Strip a snapshot component from a filename as
  * handed in via the smb layer.
