@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first preview release of Samba 4.6.  This is *not*
+This is the second release candidate of Samba 4.6.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -238,6 +238,36 @@ KNOWN ISSUES
 ============
 
 Currently none.
+
+
+CHANGES SINCE 4.5.0rc1
+======================
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12469: CTDB lock helper getting stuck trying to lock a record.
+   * BUG 12500: ctdb-common: Fix a bug in packet reading code for generic socket
+     I/O.
+   * BUG 12510: sock_daemon_test 4 crashes with SEGV.
+   * BUG 12513: ctdb-daemon: Remove stale eventd socket.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 12535: vfs_default: Unlock the right file in copy chunk.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 12509: messaging: Fix dead but not cleaned-up-yet destination sockets.
+   * BUG 12538: Backport winbind fixes.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12501: s3:winbindd: talloc_steal the extra_data in
+     winbindd_list_users_recv().
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12511: ctdb-takeover: Handle case where there are no RELEASE_IPs to
+     send.
+   * BUG 12512: ctdb-scripts: Fix remaining uses of "ctdb gratiousarp".
+   * BUG 12516: /etc/iproute2/rt_tables gets populated with multiple
+     'default' entries.
+
 
 #######################################
 Reporting bugs & Development Discussion
