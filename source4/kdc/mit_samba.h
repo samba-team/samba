@@ -63,16 +63,6 @@ krb5_error_code mit_samba_reget_pac(struct mit_samba_context *ctx,
 				    krb5_keyblock *krbtgt_keyblock,
 				    krb5_pac *pac);
 
-int mit_samba_update_pac_data(struct mit_samba_context *ctx,
-			      krb5_db_entry *client,
-			      DATA_BLOB *pac_data,
-			      DATA_BLOB *logon_data);
-
-int mit_samba_update_pac_data(struct mit_samba_context *ctx,
-			      krb5_db_entry *client,
-			      DATA_BLOB *pac_data,
-			      DATA_BLOB *logon_data);
-
 int mit_samba_check_client_access(struct mit_samba_context *ctx,
 				  krb5_db_entry *client,
 				  const char *client_name,
