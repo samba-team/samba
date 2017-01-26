@@ -1182,7 +1182,7 @@ per-user settings using the Domain User Manager (as with MS Windows NT4/200x). <
 <itemizedlist>
 	<listitem><para>A profile unique to that user.</para></listitem>
 	<listitem><para>A mandatory profile (one the user cannot change).</para></listitem>
-	<listitem><para>A group profile (really should be mandatory &smbmdash; that is, unchangable).</para></listitem>
+	<listitem><para>A group profile (really should be mandatory &smbmdash; that is, unchangeable).</para></listitem>
 </itemizedlist>
 
 </sect2>
