@@ -145,7 +145,7 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
         out = self.check_output("samba-tool drs replicate -P --local %s %s %s" % (self.dc1,
                                                                                   self.dc2,
                                                                                   nc_name))
-        self.assertTrue("Replicate from" in out)
+        self.assertTrue("Incremental" in out)
         self.assertTrue("was successful" in out)
 
     def test_samba_tool_replicate_local(self):
@@ -157,7 +157,7 @@ class SambaToolDrsTests(samba.tests.BlackboxTestCase):
                                                                                   self.dc2,
                                                                                   nc_name,
                                                                                   self.cmdline_creds))
-        self.assertTrue("Replicate from" in out)
+        self.assertTrue("Incremental" in out)
         self.assertTrue("was successful" in out)
 
     def test_samba_tool_replicate_machine_creds_P(self):

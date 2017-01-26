@@ -1,6 +1,7 @@
 # implement samba_tool drs commands
 #
 # Copyright Andrew Tridgell 2010
+# Copyright Andrew Bartlett 2017
 #
 # based on C implementation by Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
 #
@@ -21,6 +22,7 @@
 import samba.getopt as options
 import ldb
 import logging
+import common
 
 from samba.auth import system_session
 from samba.netcmd import (
@@ -32,8 +34,9 @@ from samba.netcmd import (
 from samba.samdb import SamDB
 from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
-import common
 from samba.join import join_clone
+from samba.ndr import ndr_unpack
+from samba.dcerpc import drsblobs
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -238,7 +241,7 @@ class cmd_drs_kcc(Command):
 
 
 
-def drs_local_replicate(self, SOURCE_DC, NC):
+def drs_local_replicate(self, SOURCE_DC, NC, full_sync=False):
     '''replicate from a source DC to the local SAM'''
 
     self.server = SOURCE_DC
@@ -252,16 +255,50 @@ def drs_local_replicate(self, SOURCE_DC, NC):
                        credentials=self.creds, lp=self.lp)
 
     # work out the source and destination GUIDs
-    res = self.local_samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+    res = self.local_samdb.search(base="", scope=ldb.SCOPE_BASE,
+                                  attrs=["dsServiceName"])
     self.ntds_dn = res[0]["dsServiceName"][0]
 
-    res = self.local_samdb.search(base=self.ntds_dn, scope=ldb.SCOPE_BASE, attrs=["objectGUID"])
+    res = self.local_samdb.search(base=self.ntds_dn, scope=ldb.SCOPE_BASE,
+                                  attrs=["objectGUID"])
     self.ntds_guid = misc.GUID(self.samdb.schema_format_value("objectGUID", res[0]["objectGUID"][0]))
-
 
     source_dsa_invocation_id = misc.GUID(self.samdb.get_invocation_id())
     dest_dsa_invocation_id = misc.GUID(self.local_samdb.get_invocation_id())
     destination_dsa_guid = self.ntds_guid
+
+    # If we can't find an upToDateVector, replicate fully
+    hwm = drsuapi.DsReplicaHighWaterMark()
+    hwm.tmp_highest_usn = 0
+    hwm.reserved_usn = 0
+    hwm.highest_usn = 0
+
+    udv = None
+    if not full_sync:
+        res = self.local_samdb.search(base=NC, scope=ldb.SCOPE_BASE,
+                                      attrs=["repsFrom"])
+        if "repsFrom" in res[0]:
+            for reps_from_packed in res[0]["repsFrom"]:
+                reps_from_obj = ndr_unpack(drsblobs.repsFromToBlob, reps_from_packed)
+                if reps_from_obj.ctr.source_dsa_invocation_id == source_dsa_invocation_id:
+                    hwm = reps_from_obj.ctr.highwatermark
+
+        udv = drsuapi.DsReplicaCursorCtrEx()
+        udv.version = 1
+        udv.reserved1 = 0
+        udv.reserved2 = 0
+
+        cursors_v1 = []
+        cursors_v2 = dsdb._dsdb_load_udv_v2(self.local_samdb,
+                                            self.local_samdb.get_default_basedn())
+        for cursor_v2 in cursors_v2:
+            cursor_v1 = drsuapi.DsReplicaCursor()
+            cursor_v1.source_dsa_invocation_id = cursor_v2.source_dsa_invocation_id
+            cursor_v1.highest_usn = cursor_v2.highest_usn
+            cursors_v1.append(cursor_v1)
+
+        udv.cursors = cursors_v1
+        udv.count = len(cursors_v1)
 
     self.samdb.transaction_start()
     repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % self.server, self.lp,
@@ -271,13 +308,19 @@ def drs_local_replicate(self, SOURCE_DC, NC):
     # with the admin pw does not sync passwords
     rodc = self.local_samdb.am_rodc()
     try:
-        repl.replicate(NC, source_dsa_invocation_id, destination_dsa_guid, rodc=rodc)
+        (num_objects, num_links) = repl.replicate(NC,
+                                                  source_dsa_invocation_id, destination_dsa_guid,
+                                                  rodc=rodc, highwatermark=hwm, udv=udv)
     except Exception, e:
         raise CommandError("Error replicating DN %s" % NC, e)
     self.samdb.transaction_commit()
 
-    self.message("Replicate from %s to %s was successful." % (SOURCE_DC, self.local_samdb.url))
-
+    if full_sync:
+        self.message("Full Replication of all %d objects and %d links from %s to %s was successful."
+                     % (num_objects, num_links, SOURCE_DC, self.local_samdb.url))
+    else:
+        self.message("Incremental replication of %d objects and %d links from %s to %s was successful."
+                     % (num_objects, num_links, SOURCE_DC, self.local_samdb.url))
 
 
 class cmd_drs_replicate(Command):
@@ -314,7 +357,7 @@ class cmd_drs_replicate(Command):
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         if local:
-            drs_local_replicate(self, SOURCE_DC, NC)
+            drs_local_replicate(self, SOURCE_DC, NC, full_sync=full_sync)
             return
 
         if local_online:
