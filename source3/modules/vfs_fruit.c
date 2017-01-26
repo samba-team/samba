@@ -3539,7 +3539,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 				struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	if (!config->use_aapl) {
+	if (!config->nego_aapl) {
 		return SMB_VFS_NEXT_READDIR_ATTR(handle, fname, mem_ctx, pattr_data);
 	}
 
