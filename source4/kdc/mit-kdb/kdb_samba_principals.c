@@ -93,7 +93,7 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 		code = krb5_copy_principal(context, princ, &kentry->princ);
 	}
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -101,7 +101,7 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 
 	code = krb5_dbe_update_mod_princ_data(context, kentry, now, kentry->princ);
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -109,7 +109,7 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 	kentry->n_key_data = 1;
 	kentry->key_data = calloc(1, sizeof(krb5_key_data));
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -119,7 +119,7 @@ static krb5_error_code ks_get_master_key_principal(krb5_context context,
 	key_data->key_data_kvno         = 1;
 	key_data->key_data_type[0]      = ENCTYPE_UNKNOWN;
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -169,7 +169,7 @@ static krb5_error_code ks_create_principal(krb5_context context,
 
 	code = krb5_copy_principal(context, princ, &kentry->princ);
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -177,13 +177,13 @@ static krb5_error_code ks_create_principal(krb5_context context,
 
 	code = krb5_dbe_update_mod_princ_data(context, kentry, now, kentry->princ);
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
 	code = mit_samba_generate_salt(&salt);
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -194,7 +194,7 @@ static krb5_error_code ks_create_principal(krb5_context context,
 		/* create a random password */
 		code = mit_samba_generate_random_password(&pwd);
 		if (code != 0) {
-			ks_free_krb5_db_entry(context, kentry);
+			krb5_db_free_principal(context, kentry);
 			return code;
 		}
 	}
@@ -202,14 +202,14 @@ static krb5_error_code ks_create_principal(krb5_context context,
 	code = krb5_c_string_to_key(context, enctype, &pwd, &salt, &key);
 	SAFE_FREE(pwd.data);
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
 	kentry->n_key_data = 1;
 	kentry->key_data = calloc(1, sizeof(krb5_key_data));
 	if (code != 0) {
-		ks_free_krb5_db_entry(context, kentry);
+		krb5_db_free_principal(context, kentry);
 		return code;
 	}
 
@@ -286,19 +286,6 @@ krb5_error_code kdb_samba_db_get_principal(krb5_context context,
 	}
 
 	return code;
-}
-
-void kdb_samba_db_free_principal(krb5_context context,
-				 krb5_db_entry *entry)
-{
-	struct mit_samba_context *mit_ctx;
-
-	mit_ctx = ks_get_context(context);
-	if (mit_ctx == NULL) {
-		return;
-	}
-
-	ks_free_krb5_db_entry(context, entry);
 }
 
 krb5_error_code kdb_samba_db_put_principal(krb5_context context,

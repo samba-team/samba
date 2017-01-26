@@ -318,27 +318,35 @@ static int samba_kdc_kdb_entry_destructor(struct samba_kdc_entry *p)
 	krb5_error_code ret;
 	krb5_context context;
 
+	if (entry_ex->e_data != NULL) {
+		struct samba_kdc_entry *skdc_entry;
+
+		skdc_entry = talloc_get_type(entry_ex->e_data,
+					     struct samba_kdc_entry);
+		talloc_set_destructor(skdc_entry, NULL);
+		entry_ex->e_data = NULL;
+	}
+
 	ret = krb5_init_context(&context);
 	if (ret) {
 		return ret;
 	}
 
-	free_krb5_db_entry(context, entry_ex);
+	krb5_db_free_principal(context, entry_ex);
 	krb5_free_context(context);
 
 	return 0;
 }
 
-
 int sdb_entry_ex_to_kdb_entry_ex(krb5_context context,
 				 const struct sdb_entry_ex *s,
 				 krb5_db_entry *k)
 {
-	struct samba_kdc_entry *skdc_entry;
-
 	ZERO_STRUCTP(k);
 
 	if (s->ctx != NULL) {
+		struct samba_kdc_entry *skdc_entry;
+
 		skdc_entry = talloc_get_type(s->ctx, struct samba_kdc_entry);
 
 		k->e_data	= (void *)skdc_entry;

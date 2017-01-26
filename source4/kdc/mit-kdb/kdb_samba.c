@@ -126,60 +126,50 @@ static krb5_error_code kdb_samba_db_unlock(krb5_context context)
 	return 0;
 }
 
-static void *kdb_samba_db_alloc(krb5_context context, void *ptr, size_t size)
+static void kdb_samba_db_free_principal_e_data(krb5_context context,
+					       krb5_octet *e_data)
 {
-	return realloc(ptr, size);
-}
+	struct samba_kdc_entry *skdc_entry;
 
-static void kdb_samba_db_free(krb5_context context, void *ptr)
-{
-	free(ptr);
+	skdc_entry = talloc_get_type_abort(e_data,
+					   struct samba_kdc_entry);
+	talloc_set_destructor(skdc_entry, NULL);
+	TALLOC_FREE(skdc_entry);
 }
 
 kdb_vftabl kdb_function_table = {
-	KRB5_KDB_DAL_MAJOR_VERSION,        /* major version number */
-	0,                                 /* minor version number */
-	kdb_samba_init_library,            /* init_library */
-	kdb_samba_fini_library,            /* fini_library */
-	kdb_samba_init_module,             /* init_module */
-	kdb_samba_fini_module,             /* fini_module */
+	.maj_ver                   = KRB5_KDB_DAL_MAJOR_VERSION,
+	.min_ver                   = 1,
 
-	kdb_samba_db_create,               /* db_create */
-	kdb_samba_db_destroy,              /* db_destroy */
-	kdb_samba_db_get_age,              /* db_get_age */
-	kdb_samba_db_lock,                 /* db_lock */
-	kdb_samba_db_unlock,               /* db_unlock */
+	.init_library              = kdb_samba_init_library,
+	.fini_library              = kdb_samba_fini_library,
+	.init_module               = kdb_samba_init_module,
+	.fini_module               = kdb_samba_fini_module,
 
-	kdb_samba_db_get_principal,        /* db_get_principal */
-	kdb_samba_db_free_principal,       /* db_free_principal */
-	kdb_samba_db_put_principal,        /* db_put_principal */
-	kdb_samba_db_delete_principal,     /* db_delete_principal */
-	kdb_samba_db_iterate,              /* db_iterate */
+	.create                    = kdb_samba_db_create,
+	.destroy                   = kdb_samba_db_destroy,
+	.get_age                   = kdb_samba_db_get_age,
+	.lock                      = kdb_samba_db_lock,
+	.unlock                    = kdb_samba_db_unlock,
 
-	NULL,                              /* create_policy */
-	NULL,                              /* get_policy */
-	NULL,                              /* put_policy */
-	NULL,                              /* iter_policy */
-	NULL,                              /* delete_policy */
-	NULL,                              /* free_policy */
+	.get_principal             = kdb_samba_db_get_principal,
+	.put_principal             = kdb_samba_db_put_principal,
+	.delete_principal          = kdb_samba_db_delete_principal,
 
-	kdb_samba_db_alloc,                /* db_alloc */
-	kdb_samba_db_free,                 /* db_free */
+	.iterate                   = kdb_samba_db_iterate,
 
-	kdb_samba_fetch_master_key,        /* fetch_master_key */
-	kdb_samba_fetch_master_key_list,   /* fetch_master_key_list */
-	NULL,                              /* store_master_key_list */
-	NULL,                              /* dbe_search_enctype */
-	kdb_samba_change_pwd,              /* change_pwd */
-	NULL,                              /* promote_db */
-	kdb_samba_dbekd_decrypt_key_data,  /* decrypt_key_data */
-	kdb_samba_dbekd_encrypt_key_data,  /* encrypt_key_data */
+	.fetch_master_key          = kdb_samba_fetch_master_key,
+	.fetch_master_key_list     = kdb_samba_fetch_master_key_list,
 
-	kdb_samba_db_sign_auth_data,       /* sign_authdata */
-	NULL,                              /* check_transited_realms */
-	kdb_samba_db_check_policy_as,      /* check_policy_as */
-	NULL,                              /* check_policy_tgs */
-	kdb_samba_db_audit_as_req,         /* audit_as_req */
-	NULL,                              /* refresh_config */
-	kdb_samba_db_check_allowed_to_delegate
+	.change_pwd                = kdb_samba_change_pwd,
+
+	.decrypt_key_data          = kdb_samba_dbekd_decrypt_key_data,
+	.encrypt_key_data          = kdb_samba_dbekd_encrypt_key_data,
+
+	.sign_authdata             = kdb_samba_db_sign_auth_data,
+	.check_policy_as           = kdb_samba_db_check_policy_as,
+	.audit_as_req              = kdb_samba_db_audit_as_req,
+	.check_allowed_to_delegate = kdb_samba_db_check_allowed_to_delegate,
+
+	.free_principal_e_data     = kdb_samba_db_free_principal_e_data,
 };

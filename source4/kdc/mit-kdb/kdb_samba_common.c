@@ -43,54 +43,6 @@ struct mit_samba_context *ks_get_context(krb5_context kcontext)
 	return (struct mit_samba_context *)db_ctx;
 }
 
-void ks_free_krb5_db_entry(krb5_context context,
-			   krb5_db_entry *entry)
-{
-	krb5_tl_data *tl_data_next = NULL;
-	krb5_tl_data *tl_data = NULL;
-	int i, j;
-
-	if (entry == NULL) {
-		return;
-	}
-
-#if 0 /* TODO FIXME do we have something to free? */
-	if (entry->e_data != NULL) {
-		/* FREE ME! */
-	}
-#endif
-
-	krb5_free_principal(context, entry->princ);
-
-	for (tl_data = entry->tl_data; tl_data; tl_data = tl_data_next) {
-		tl_data_next = tl_data->tl_data_next;
-		if (tl_data->tl_data_contents != NULL)
-			free(tl_data->tl_data_contents);
-		free(tl_data);
-	}
-
-	if (entry->key_data != NULL) {
-		for (i = 0; i < entry->n_key_data; i++) {
-			for (j = 0; j < entry->key_data[i].key_data_ver; j++) {
-				if (entry->key_data[i].key_data_length[j] != 0) {
-					if (entry->key_data[i].key_data_contents[j] != NULL) {
-						memset(entry->key_data[i].key_data_contents[j],
-								0,
-								entry->key_data[i].key_data_length[j]);
-						free(entry->key_data[i].key_data_contents[j]);
-					}
-				}
-				entry->key_data[i].key_data_contents[j] = NULL;
-				entry->key_data[i].key_data_length[j] = 0;
-				entry->key_data[i].key_data_type[j] = 0;
-			}
-		}
-		free(entry->key_data);
-	}
-
-	free(entry);
-}
-
 bool ks_data_eq_string(krb5_data d, const char *s)
 {
 	int rc;
