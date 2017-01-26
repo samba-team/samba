@@ -198,7 +198,7 @@ class drs_Replicate(object):
 
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
                   schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False,
-                  replica_flags=None):
+                  replica_flags=None, highwatermark=None, udv=None):
         '''replicate a single DN'''
 
         # setup for a GetNCChanges call
@@ -208,11 +208,16 @@ class drs_Replicate(object):
         req8.source_dsa_invocation_id = source_dsa_invocation_id
         req8.naming_context = drsuapi.DsReplicaObjectIdentifier()
         req8.naming_context.dn = dn
-        req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
-        req8.highwatermark.tmp_highest_usn = 0
-        req8.highwatermark.reserved_usn = 0
-        req8.highwatermark.highest_usn = 0
-        req8.uptodateness_vector = None
+
+        if highwatermark is not None:
+            req8.highwatermark = highwatermark
+        else:
+            req8.highwatermark = drsuapi.DsReplicaHighWaterMark()
+            req8.highwatermark.tmp_highest_usn = 0
+            req8.highwatermark.reserved_usn = 0
+            req8.highwatermark.highest_usn = 0
+
+        req8.uptodateness_vector = udv
 
         if replica_flags is not None:
             req8.replica_flags = replica_flags
