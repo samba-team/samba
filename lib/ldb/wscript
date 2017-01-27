@@ -46,7 +46,7 @@ def configure(conf):
     conf.find_program('xsltproc', var='XSLTPROC')
     conf.check_tool('python')
     conf.check_python_version((2,4,2))
-    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
+    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=not conf.env.disable_python)
 
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
@@ -55,23 +55,30 @@ def configure(conf):
     conf.env.standalone_ldb = conf.IN_LAUNCH_DIR()
 
     if not conf.env.standalone_ldb:
-        using_system_pyldb_util = True
-        if not conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
+        if conf.env.disable_python:
+            if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
+                                         onlyif='talloc tdb tevent',
+                                         implied_deps='replace talloc tdb tevent'):
+                conf.define('USING_SYSTEM_LDB', 1)
+        else:
+            using_system_pyldb_util = True
+            if not conf.CHECK_BUNDLED_SYSTEM_PKG('pyldb-util', minversion=VERSION,
                                              onlyif='talloc tdb tevent',
                                              implied_deps='replace talloc tdb tevent ldb'):
-            using_system_pyldb_util = False
-
-        # We need to get a pyldb-util for all the python versions
-        # we are building for
-        if conf.env['EXTRA_PYTHON']:
-            name = 'pyldb-util' + conf.all_envs['extrapython']['PYTHON_SO_ABI_FLAG']
-            if not conf.CHECK_BUNDLED_SYSTEM_PKG(name, minversion=VERSION,
-                                                 onlyif='talloc tdb tevent',
-                                                 implied_deps='replace talloc tdb tevent ldb'):
                 using_system_pyldb_util = False
 
-        if using_system_pyldb_util:
-            conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
+            # We need to get a pyldb-util for all the python versions
+            # we are building for
+            if conf.env['EXTRA_PYTHON']:
+                name = 'pyldb-util' + conf.all_envs['extrapython']['PYTHON_SO_ABI_FLAG']
+                if not conf.CHECK_BUNDLED_SYSTEM_PKG(name, minversion=VERSION,
+                                                     onlyif='talloc tdb tevent',
+                                                     implied_deps='replace talloc tdb tevent ldb'):
+                    using_system_pyldb_util = False
+
+            if using_system_pyldb_util:
+                conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
+
             if conf.CHECK_BUNDLED_SYSTEM_PKG('ldb', minversion=VERSION,
                                          onlyif='talloc tdb tevent pyldb-util',
                                          implied_deps='replace talloc tdb tevent'):
@@ -125,7 +132,7 @@ def build(bld):
                      internal_module=False,
                      subsystem='ldb')
 
-    if not bld.env.disable_python:
+    if bld.PYTHON_BUILD_IS_ENABLED():
         if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
             for env in bld.gen_python_environments(['PKGCONFIGDIR']):
                 # we're not currently linking against the ldap libs, but ldb.pc.in
@@ -146,6 +153,7 @@ def build(bld):
                                   private_library=private_library,
                                   pc_files='pyldb-util.pc',
                                   pyembed=True,
+                                  enabled=bld.PYTHON_BUILD_IS_ENABLED(),
                                   abi_directory='ABI',
                                   abi_match='pyldb_*')
 
@@ -155,7 +163,7 @@ def build(bld):
                                      realname='ldb.so',
                                      cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
-            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
                 bld.SAMBA_SCRIPT('_ldb_text.py',
                                  pattern='_ldb_text.py',
                                  installdir='python')
