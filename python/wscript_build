@@ -5,7 +5,8 @@ bld.SAMBA_LIBRARY('samba_python',
 	deps='LIBPYTHON pytalloc-util pyrpc_util',
 	grouping_library=True,
 	private_library=True,
-	pyembed=True)
+	pyembed=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
 bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 	source='modules.c',
@@ -13,7 +14,7 @@ bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 	init_function_sentinel='{NULL,NULL}',
 	deps='talloc',
 	pyext=True,
-	)
+	enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
 for env in bld.gen_python_environments():
 	pytalloc_util = bld.pyembed_libname('pytalloc-util')
@@ -25,7 +26,8 @@ for env in bld.gen_python_environments():
 		realname='samba/_glue.so'
 		)
 
-for env in bld.gen_python_environments():
+if bld.PYTHON_BUILD_IS_ENABLED():
+    for env in bld.gen_python_environments():
 	# install out various python scripts for use by make test
 	bld.SAMBA_SCRIPT('samba_python_files',
 	                 pattern='samba/**/*.py',
