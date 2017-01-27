@@ -137,6 +137,10 @@ static DIR *dirsort_opendir(vfs_handle_struct *handle,
 		return NULL;
 	}
 
+	if (ISDOT(data->smb_fname->base_name)) {
+		data->smb_fname->base_name = vfs_GetWd(data, handle->conn);
+	}
+
 	/* Open the underlying directory and count the number of entries */
 	data->source_directory = SMB_VFS_NEXT_OPENDIR(handle, fname, mask,
 						      attr);
