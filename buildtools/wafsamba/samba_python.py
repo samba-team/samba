@@ -40,6 +40,18 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,4,2)):
 
 @conf
 def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
+    if conf.env.disable_python:
+        if mandatory:
+            raise Utils.WafError("Cannot check for python headers when "
+                                 "--disable-python specified")
+
+        conf.msg("python headers", "Check disabled due to --disable-python")
+        # we don't want PYTHONDIR in config.h, as otherwise changing
+        # --prefix causes a complete rebuild
+        del(conf.env.defines['PYTHONDIR'])
+        del(conf.env.defines['PYTHONARCHDIR'])
+        return
+
     if conf.env["python_headers_checked"] == []:
         if conf.env['EXTRA_PYTHON']:
             conf.setenv('extrapython')
@@ -79,6 +91,12 @@ def _check_python_headers(conf, mandatory):
         conf.env['PYTHON_SO_ABI_FLAG'].replace('_', '-'))
 
 
+def PYTHON_BUILD_IS_ENABLED(self):
+    return self.CONFIG_SET('HAVE_PYTHON_H')
+
+Build.BuildContext.PYTHON_BUILD_IS_ENABLED = PYTHON_BUILD_IS_ENABLED
+
+
 def SAMBA_PYTHON(bld, name,
                  source='',
                  deps='',
@@ -92,6 +110,11 @@ def SAMBA_PYTHON(bld, name,
                  install=True,
                  enabled=True):
     '''build a python extension for Samba'''
+
+    # force-disable when we can't build python modules, so
+    # every single call doesn't need to pass this in.
+    if not bld.PYTHON_BUILD_IS_ENABLED():
+        enabled = False
 
     if bld.env['IS_EXTRA_PYTHON']:
         name = 'extra-' + name
@@ -140,7 +163,10 @@ Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
 
 
 def pyembed_libname(bld, name, extrapython=False):
-    return name + bld.env['PYTHON_SO_ABI_FLAG']
+    if bld.env['PYTHON_SO_ABI_FLAG']:
+        return name + bld.env['PYTHON_SO_ABI_FLAG']
+    else:
+        return name
 
 Build.BuildContext.pyembed_libname = pyembed_libname
 
