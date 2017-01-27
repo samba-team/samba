@@ -122,6 +122,12 @@ static struct tevent_req *get_public_ips_send(
 		return tevent_req_post(req, ev);
 	}
 
+	/* Short circuit if no nodes being asked for IPs */
+	if (state->count == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
 	ctdb_req_control_get_public_ips(&request, available_only);
 	subreq = ctdb_client_control_multi_send(mem_ctx, ev, client,
 						state->pnns,
