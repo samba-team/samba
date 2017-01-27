@@ -4,6 +4,7 @@ bld.SAMBA_SUBSYSTEM('PROVISION',
 	source='provision.c pyparam.c',
 	deps='LIBPYTHON pyparam_util ldb pytalloc-util pyldb-util',
 	pyext=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED(),
 	)
 
 
@@ -48,8 +49,9 @@ for env in bld.gen_python_environments():
 	bld.SAMBA_SUBSYSTEM(pyparam_util,
 	    source='pyparam_util.c',
 	    deps='LIBPYTHON samba-hostconfig %s' % pytalloc_util,
-	    pyext=True
-		)
+	    pyext=True,
+	    enabled=bld.PYTHON_BUILD_IS_ENABLED()
+	    )
 
 bld.SAMBA_SUBSYSTEM('param_options',
 	source='loadparm.c',
