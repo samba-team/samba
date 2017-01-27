@@ -11020,6 +11020,49 @@ static bool run_local_tdb_writer(int dummy)
 	return true;
 }
 
+static bool run_local_canonicalize_path(int dummy)
+{
+	const char *src[] = {
+			"/foo/..",
+			"/..",
+			"/foo/bar/../baz",
+			"/foo/././",
+			"/../foo",
+			".././././",
+			".././././../../../boo",
+			"./..",
+			NULL
+			};
+	const char *dst[] = {
+			"/",
+			"/",
+			"/foo/baz",
+			"/foo",
+			"/foo",
+			"/",
+			"/boo",
+			"/",
+			NULL
+			};
+	unsigned int i;
+
+	for (i = 0; src[i] != NULL; i++) {
+		char *d = canonicalize_absolute_path(talloc_tos(), src[i]);
+		if (d == NULL) {
+			perror("talloc fail\n");
+			return false;
+		}
+		if (strcmp(d, dst[i]) != 0) {
+			d_fprintf(stderr,
+				"canonicalize missmatch %s -> %s != %s",
+				src[i], d, dst[i]);
+			return false;
+		}
+		talloc_free(d);
+	}
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -11256,6 +11299,7 @@ static struct {
 	{ "LOCAL-DBWRAP-CTDB", run_local_dbwrap_ctdb, 0 },
 	{ "LOCAL-BENCH-PTHREADPOOL", run_bench_pthreadpool, 0 },
 	{ "LOCAL-PTHREADPOOL-TEVENT", run_pthreadpool_tevent, 0 },
+	{ "LOCAL-CANONICALIZE-PATH", run_local_canonicalize_path, 0 },
 	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
 	{NULL, NULL, 0}};
 
