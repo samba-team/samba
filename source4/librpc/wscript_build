@@ -183,6 +183,7 @@ for env in bld.gen_python_environments():
 		source='rpc/pyrpc_util.c',
 		public_deps='%s %s dcerpc MESSAGING' % (pytalloc_util, pyparam_util),
 		pyext=True,
+		enabled=bld.PYTHON_BUILD_IS_ENABLED(),
 		)
 
 	bld.SAMBA_PYTHON('python_dcerpc',
@@ -393,9 +394,10 @@ bld.SAMBA_PYTHON('python_dcerpc_smb_acl',
 	realname='samba/dcerpc/smb_acl.so'
 	)
 
-bld.SAMBA_SCRIPT('python_dcerpc_init',
+if bld.PYTHON_BUILD_IS_ENABLED():
+    bld.SAMBA_SCRIPT('python_dcerpc_init',
                  pattern='rpc/dcerpc.py',
                  installdir='python/samba/dcerpc',
                  installname='__init__.py')
 
-bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/dcerpc', 'rpc/dcerpc.py', destname='__init__.py')
+    bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/dcerpc', 'rpc/dcerpc.py', destname='__init__.py')
