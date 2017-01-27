@@ -1995,7 +1995,7 @@ TLDAPRC tldap_search(struct tldap_context *ld,
 		rc = TLDAP_OPERATIONS_ERROR;
 		goto fail;
 	}
-	rc = tldap_search_all_recv(req, mem_ctx, &msgs, &result);
+	rc = tldap_search_all_recv(req, frame, &msgs, &result);
 	TALLOC_FREE(req);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		goto fail;
@@ -2004,7 +2004,9 @@ TLDAPRC tldap_search(struct tldap_context *ld,
 	TALLOC_FREE(ld->last_msg);
 	ld->last_msg = talloc_move(ld, &result);
 
-	*pmsgs = msgs;
+	if (pmsgs != NULL) {
+		*pmsgs = talloc_move(mem_ctx, &msgs);
+	}
 fail:
 	TALLOC_FREE(frame);
 	return rc;
