@@ -6643,7 +6643,9 @@ linked_attributes[0]:
 	}
 
 	/* parse the existing links */
-	ret = get_parsed_dns(module, tmp_ctx, old_el, &pdn_list, attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns_trusted(module, replmd_private, tmp_ctx, old_el, &pdn_list,
+				     attr->syntax->ldap_oid, parent);
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -6834,11 +6836,32 @@ linked_attributes[0]:
 			}
 		}
 	} else {
+		unsigned offset;
 		/* get a seq_num for this change */
 		ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
+		}
+		/*
+		 * We know where the new one needs to be, from the *next
+		 * pointer into pdn_list.
+		 */
+		if (next == NULL) {
+			offset = old_el->num_values;
+		} else {
+			if (next->dsdb_dn == NULL) {
+				ret = really_parse_trusted_dn(tmp_ctx, ldb, next,
+							      attr->syntax->ldap_oid);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+			offset = next - pdn_list;
+			if (offset > old_el->num_values) {
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 		}
 
 		old_el->values = talloc_realloc(msg->elements, old_el->values,
@@ -6847,9 +6870,15 @@ linked_attributes[0]:
 			ldb_module_oom(module);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
+
+		if (offset != old_el->num_values) {
+			memmove(&old_el->values[offset + 1], &old_el->values[offset],
+				(old_el->num_values - offset) * sizeof(old_el->values[0]));
+		}
+
 		old_el->num_values++;
 
-		ret = replmd_build_la_val(tmp_ctx, &old_el->values[old_el->num_values-1], dsdb_dn,
+		ret = replmd_build_la_val(tmp_ctx, &old_el->values[offset], dsdb_dn,
 					  &la->meta_data.originating_invocation_id,
 					  la->meta_data.originating_usn, seq_num,
 					  la->meta_data.originating_change_time,
