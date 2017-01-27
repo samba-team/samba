@@ -189,7 +189,7 @@ sub ShowHelp()
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
 Copyright (C) Stefan Metzmacher <metze\@samba.org>
 
-Usage: $Script [OPTIONS] TESTNAME-REGEX
+Usage: $Script [OPTIONS] TESTNAME-REGEX [TESTNAME-REGEX...]
 
 Generic options:
  --help                     this help page
