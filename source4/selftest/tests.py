@@ -670,7 +670,9 @@ planoldpythontestsuite(env, "ridalloc_exop",
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc']:
-    planoldpythontestsuite("%s:local" % env, "samba.tests.blackbox.samba_tool_drs",
+    planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
+                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                           name="samba4.drs.samba_tool_drs.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite("%s:local" % env, "replica_sync",

@@ -21,8 +21,9 @@ import samba.tests
 import shutil
 import os
 import ldb
+import drs_base
 
-class SambaToolDrsTests(samba.tests.BlackboxTestCase):
+class SambaToolDrsTests(drs_base.DrsBaseTestCase):
     """Blackbox test case for samba-tool drs."""
 
     def setUp(self):
