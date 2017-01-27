@@ -1109,15 +1109,17 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 {
 	time_t timestamp_src = 0;
 	time_t timestamp_dst = 0;
+	char *snappath_src = NULL;
+	char *snappath_dst = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
 					 smb_fname_src->base_name,
-					 &timestamp_src, NULL)) {
+					 &timestamp_src, NULL, &snappath_src)) {
 		return -1;
 	}
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
 					 smb_fname_dst->base_name,
-					 &timestamp_dst, NULL)) {
+					 &timestamp_dst, NULL, &snappath_dst)) {
 		return -1;
 	}
 	if (timestamp_src != 0) {
@@ -1125,6 +1127,17 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 		return -1;
 	}
 	if (timestamp_dst != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	/*
+	 * Don't allow rename on already converted paths.
+	 */
+	if (snappath_src != NULL) {
+		errno = EXDEV;
+		return -1;
+	}
+	if (snappath_dst != NULL) {
 		errno = EROFS;
 		return -1;
 	}
@@ -1136,16 +1149,25 @@ static int shadow_copy2_symlink(vfs_handle_struct *handle,
 {
 	time_t timestamp_old = 0;
 	time_t timestamp_new = 0;
+	char *snappath_old = NULL;
+	char *snappath_new = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, oldname,
-					 &timestamp_old, NULL)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, oldname,
+					 &timestamp_old, NULL, &snappath_old)) {
 		return -1;
 	}
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, newname,
-					 &timestamp_new, NULL)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, newname,
+					 &timestamp_new, NULL, &snappath_new)) {
 		return -1;
 	}
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
+		errno = EROFS;
+		return -1;
+	}
+	/*
+	 * Don't allow symlinks on already converted paths.
+	 */
+	if ((snappath_old != NULL) || (snappath_new != NULL)) {
 		errno = EROFS;
 		return -1;
 	}
@@ -1157,16 +1179,25 @@ static int shadow_copy2_link(vfs_handle_struct *handle,
 {
 	time_t timestamp_old = 0;
 	time_t timestamp_new = 0;
+	char *snappath_old = NULL;
+	char *snappath_new = NULL;
 
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, oldname,
-					 &timestamp_old, NULL)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, oldname,
+					 &timestamp_old, NULL, &snappath_old)) {
 		return -1;
 	}
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle, newname,
-					 &timestamp_new, NULL)) {
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle, newname,
+					 &timestamp_new, NULL, &snappath_new)) {
 		return -1;
 	}
 	if ((timestamp_old != 0) || (timestamp_new != 0)) {
+		errno = EROFS;
+		return -1;
+	}
+	/*
+	 * Don't allow links on already converted paths.
+	 */
+	if ((snappath_old != NULL) || (snappath_new != NULL)) {
 		errno = EROFS;
 		return -1;
 	}
