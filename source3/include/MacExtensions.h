@@ -51,9 +51,6 @@
 #define AFP_Version			0x00000100
 #define AFP_BackupTime		0x80000000
 #define AFP_FinderSize		32
-
-#define AFP_OFF_FinderInfo	16
-
 /*
 ** Orginal AFP_AfpInfo stream used by NT 
 ** We needed a way to store the create date so SAMBA

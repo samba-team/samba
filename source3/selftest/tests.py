@@ -323,7 +323,7 @@ nbt = ["nbt.dgram" ]
 
 libsmbclient = ["libsmbclient"]
 
-vfs = ["vfs.fruit", "vfs.acl_xattr", "vfs.fruit_netatalk"]
+vfs = ["vfs.fruit", "vfs.acl_xattr"]
 
 tests= base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap + vfs
 
@@ -404,11 +404,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmpsort -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "vfs.fruit":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share --option=torture:share2=vfs_wo_fruit', 'metadata_netatalk')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_metadata_stream --option=torture:share2=vfs_wo_fruit -U$USERNAME%$PASSWORD', 'metadata_stream')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_stream_depot --option=torture:share2=vfs_wo_fruit_stream_depot -U$USERNAME%$PASSWORD', 'streams_depot')
-    elif t == "vfs.fruit_netatalk":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share')
+        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/ad_dc/share')
     elif t == "rpc.schannel_anon_setpw":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$%', description="anonymous password set")
         plansmbtorture4testsuite(t, "nt4_dc_schannel", '//$SERVER_IP/tmp -U$%', description="anonymous password set (schannel enforced server-side)")

@@ -357,16 +357,6 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
-#define torture_assert_mem_equal_goto(torture_ctx,got,expected,len,ret,label,cmt) \
-	do { const void *__got = (got), *__expected = (expected); \
-	if (memcmp(__got, __expected, len) != 0) { \
-		torture_result(torture_ctx, TORTURE_FAIL, \
-			       __location__": "#got" of len %d did not match "#expected": %s", (int)len, cmt); \
-		return false; \
-		goto label; \
-	} \
-	} while(0)
-
 static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 {
 	char **dump = (char **)private_data;
