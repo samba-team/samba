@@ -188,6 +188,7 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	krb5_db_entry *kentry;
 	int ret;
 	int sflags = 0;
+	krb5_principal referral_principal = NULL;
 
 	kentry = calloc(1, sizeof(krb5_db_entry));
 	if (kentry == NULL) {
@@ -217,6 +218,8 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	 * backend and we will fail to parse the entry later */
 	sflags |= SDB_F_ADMIN_DATA;
 
+
+fetch_referral_principal:
 	ret = samba_kdc_fetch(ctx->context, ctx->db_ctx,
 			      principal, sflags, 0, &sentry);
 	switch (ret) {
@@ -225,14 +228,72 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	case SDB_ERR_NOENTRY:
 		ret = KRB5_KDB_NOENTRY;
 		goto done;
-	case SDB_ERR_WRONG_REALM:
+	case SDB_ERR_WRONG_REALM: {
+		char *dest_realm = NULL;
+		const char *our_realm = lpcfg_realm(ctx->db_ctx->lp_ctx);
+
+		if (sflags & SDB_F_FOR_AS_REQ) {
+			/*
+			 * If this is a request for a TGT, we are done. The KDC
+			 * will return the correct error to the client.
+			 */
+			ret = 0;
+			break;
+		}
+
+		if (referral_principal != NULL) {
+			sdb_free_entry(&sentry);
+			ret = KRB5_KDB_NOENTRY;
+			goto done;
+		}
+
 		/*
-		 * If we have a wrong realm e.g. if we try get a cross forest
-		 * ticket, we return a ticket with the correct realm. The KDC
-		 * will detect this an return the appropriate return code.
+		 * We get a TGS request
+		 *
+		 *     cifs/dc7.SAMBA2008R2.EXAMPLE.COM@ADDOM.SAMBA.EXAMPLE.COM
+		 *
+		 * to our DC for the realm
+		 *
+		 *     ADDOM.SAMBA.EXAMPLE.COM
+		 *
+		 * We look up if we have and entry in the database and get an
+		 * entry with the pricipal:
+		 *
+		 *     cifs/dc7.SAMBA2008R2.EXAMPLE.COM@SAMBA2008R2.EXAMPLE.COM
+		 *
+		 * and the error: SDB_ERR_WRONG_REALM.
+		 *
+		 * In the case of a TGS-REQ we need to return a referral ticket
+		 * fo the next trust hop to the client. This ticket will have
+		 * the following principal:
+		 *
+		 *     krbtgt/SAMBA2008R2.EXAMPLE.COM@ADDOM.SAMBA.EXAMPLE.COM
+		 *
+		 * We just redo the lookup in the database with the referral
+		 * principal and return success.
 		 */
-		ret = 0;
-		break;
+		dest_realm = smb_krb5_principal_get_realm(ctx->context,
+							  sentry.entry.principal);
+		sdb_free_entry(&sentry);
+		if (dest_realm == NULL) {
+			ret = KRB5_KDB_NOENTRY;
+			goto done;
+		}
+
+		ret = smb_krb5_make_principal(ctx->context,
+					      &referral_principal,
+					      our_realm,
+					      KRB5_TGS_NAME,
+					      dest_realm,
+					      NULL);
+		SAFE_FREE(dest_realm);
+		if (ret != 0) {
+			goto done;
+		}
+
+		principal = referral_principal;
+		goto fetch_referral_principal;
+	}
 	case SDB_ERR_NOT_FOUND_HERE:
 		/* FIXME: RODC support */
 	default:
@@ -244,6 +305,9 @@ int mit_samba_get_principal(struct mit_samba_context *ctx,
 	sdb_free_entry(&sentry);
 
 done:
+	krb5_free_principal(ctx->context, referral_principal);
+	referral_principal = NULL;
+
 	if (ret) {
 		free(kentry);
 	} else {
