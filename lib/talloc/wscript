@@ -32,9 +32,6 @@ def set_options(opt):
         opt.add_option('--enable-talloc-compat1',
                        help=("Build talloc 1.x.x compat library [False]"),
                        action="store_true", dest='TALLOC_COMPAT1', default=False)
-        opt.add_option('--disable-python',
-                       help=("disable the pytalloc module"),
-                       action="store_true", dest='disable_python', default=False)
 
 
 def configure(conf):
@@ -46,13 +43,12 @@ def configure(conf):
     conf.define('TALLOC_BUILD_VERSION_MINOR', int(VERSION.split('.')[1]))
     conf.define('TALLOC_BUILD_VERSION_RELEASE', int(VERSION.split('.')[2]))
 
-    conf.env.disable_python = getattr(Options.options, 'disable_python', False)
-
     if not conf.env.standalone_talloc:
         if conf.CHECK_BUNDLED_SYSTEM_PKG('talloc', minversion=VERSION,
                                      implied_deps='replace'):
             conf.define('USING_SYSTEM_TALLOC', 1)
-        if conf.CHECK_BUNDLED_SYSTEM_PKG('pytalloc-util', minversion=VERSION,
+        if not conf.env.disable_python and \
+            conf.CHECK_BUNDLED_SYSTEM_PKG('pytalloc-util', minversion=VERSION,
                                      implied_deps='talloc replace'):
             conf.define('USING_SYSTEM_PYTALLOC_UTIL', 1)
 
@@ -126,7 +122,7 @@ def build(bld):
                           private_library=private_library,
                           manpages='man/talloc.3')
 
-    if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL') and not bld.env.disable_python:
+    if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL'):
         for env in bld.gen_python_environments(['PKGCONFIGDIR']):
             name = bld.pyembed_libname('pytalloc-util')
 
@@ -140,16 +136,19 @@ def build(bld):
                 abi_match='pytalloc_* _pytalloc_*',
                 private_library=private_library,
                 public_headers=('' if private_library else 'pytalloc.h'),
-                pc_files='pytalloc-util.pc'
+                pc_files='pytalloc-util.pc',
+                enabled=bld.PYTHON_BUILD_IS_ENABLED()
                 )
             bld.SAMBA_PYTHON('pytalloc',
                             'pytalloc.c',
                             deps='talloc ' + name,
+                            enabled=bld.PYTHON_BUILD_IS_ENABLED(),
                             realname='talloc.so')
 
             bld.SAMBA_PYTHON('test_pytalloc',
                             'test_pytalloc.c',
                             deps='pytalloc',
+                            enabled=bld.PYTHON_BUILD_IS_ENABLED(),
                             realname='_test_pytalloc.so',
                             install=False)
 
