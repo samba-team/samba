@@ -28,6 +28,8 @@
 #if defined(LINUX_SENDFILE_API)
 
 #include <sys/sendfile.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #ifndef MSG_MORE
 #define MSG_MORE 0x8000
@@ -35,9 +37,17 @@
 
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
 {
-	size_t total=0;
-	ssize_t ret;
 	size_t hdr_len = 0;
+	int val;
+	ssize_t nwritten;
+
+	if((val = fcntl(tofd, F_GETFL, 0)) == -1) {
+		return -1;
+	}
+
+	if (set_blocking(tofd, true) == -1) {
+		return -1;
+	}
 
 	/*
 	 * Send the header first.
@@ -46,43 +56,33 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 
 	if (header) {
 		hdr_len = header->length;
-		while (total < hdr_len) {
-			ret = sys_send(tofd, header->data + total,hdr_len - total, MSG_MORE);
-			if (ret == -1)
-				return -1;
-			total += ret;
+		if(sys_send(tofd, header->data, hdr_len, MSG_MORE) == -1) {
+			fcntl(tofd, F_SETFL, val);
+			return -1;
 		}
 	}
 
-	total = count;
-	while (total) {
-		ssize_t nwritten;
-		do {
-			nwritten = sendfile(tofd, fromfd, &offset, total);
-		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-		if (nwritten == -1) {
-			if (errno == ENOSYS || errno == EINVAL) {
+	if((nwritten = sendfile(tofd, fromfd, &offset, count)) == -1) {
+		if (errno == ENOSYS || errno == EINVAL) {
 				/* Ok - we're in a world of pain here. We just sent
-				 * the header, but the sendfile failed. We have to
-				 * emulate the sendfile at an upper layer before we
-				 * disable it's use. So we do something really ugly.
-				 * We set the errno to a strange value so we can detect
-				 * this at the upper level and take care of it without
-				 * layer violation. JRA.
-				 */
-				errno = EINTR; /* Normally we can never return this. */
-			}
-			return -1;
+				* the header, but the sendfile failed. We have to
+				* emulate the sendfile at an upper layer before we
+				* disable it's use. So we do something really ugly.
+				* We set the errno to a strange value so we can detect
+				* this at the upper level and take care of it without
+				* layer violation. JRA.
+				*/
+			errno = EINTR; /* Normally we can never return this. */
 		}
-		if (nwritten == 0) {
-			/*
-			 * EOF, return a short read
-			 */
-			return hdr_len + (count - total);
-		}
-		total -= nwritten;
+		fcntl(tofd, F_SETFL, val);
+		return -1;
 	}
-	return count + hdr_len;
+
+	if (fcntl(tofd, F_SETFL, val) == -1) {
+		return -1;
+	}
+
+	return nwritten + hdr_len;
 }
 
 #elif defined(SOLARIS_SENDFILE_API)
@@ -241,6 +241,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+#include <fcntl.h>
 
 ssize_t sys_sendfile(int tofd, int fromfd,
 	    const DATA_BLOB *header, off_t offset, size_t count)
@@ -250,6 +251,15 @@ ssize_t sys_sendfile(int tofd, int fromfd,
 
 	off_t	nwritten;
 	int	ret;
+	int val;
+
+	if((val = fcntl(tofd, F_GETFL, 0)) == -1) {
+		return -1;
+	}
+
+	if (set_blocking(tofd, true) == -1) {
+		return -1;
+	}
 
 	if (header) {
 		sf_header.headers = &io_header;
@@ -260,43 +270,21 @@ ssize_t sys_sendfile(int tofd, int fromfd,
 		sf_header.trl_cnt = 0;
 	}
 
-	while (count != 0) {
-
-		nwritten = count;
+	nwritten = count;
 #if defined(DARWIN_SENDFILE_API)
-		/* Darwin recycles nwritten as a value-result parameter, apart from that this
-		   sendfile implementation is quite the same as the FreeBSD one */
-		ret = sendfile(fromfd, tofd, offset, &nwritten, &sf_header, 0);
+	/* Darwin recycles nwritten as a value-result parameter, apart from that this
+		sendfile implementation is quite the same as the FreeBSD one */
+	ret = sendfile(fromfd, tofd, offset, &nwritten, &sf_header, 0);
 #else
-		ret = sendfile(fromfd, tofd, offset, count, &sf_header, &nwritten, 0);
+	ret = sendfile(fromfd, tofd, offset, count, &sf_header, &nwritten, 0);
 #endif
-		if (ret == -1 && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
-			/* Send failed, we are toast. */
-			return -1;
-		}
 
-		if (nwritten == 0) {
-			/* EOF of offset is after EOF. */
-			break;
-		}
+	if (fcntl(tofd, F_SETFL, val) == -1) {
+		return -1;
+	}
 
-		if (sf_header.hdr_cnt) {
-			if (io_header.iov_len <= nwritten) {
-				/* Entire header was sent. */
-				sf_header.headers = NULL;
-				sf_header.hdr_cnt = 0;
-				nwritten -= io_header.iov_len;
-			} else {
-				/* Partial header was sent. */
-				io_header.iov_len -= nwritten;
-				io_header.iov_base =
-				    ((uint8_t *)io_header.iov_base) + nwritten;
-				nwritten = 0;
-			}
-		}
-
-		offset += nwritten;
-		count -= nwritten;
+	if (ret == -1 && errno != EINTR) {
+		return -1;
 	}
 
 	return nwritten;
