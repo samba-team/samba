@@ -32,5 +32,6 @@ bld.SAMBA_MODULE('TORTURE_LOCAL',
 	subsystem='smbtorture',
 	init_function='torture_local_init',
 	deps=TORTURE_LOCAL_DEPS,
-	internal_module=True
+	internal_module=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)
