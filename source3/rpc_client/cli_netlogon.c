@@ -472,15 +472,10 @@ NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 	struct netr_NetworkInfo *network_info;
 	uint16_t validation_level = 0;
 	union netr_Validation *validation = NULL;
-	uint32_t _flags = 0;
 	struct netr_ChallengeResponse lm;
 	struct netr_ChallengeResponse nt;
 
 	*info3 = NULL;
-
-	if (flags == NULL) {
-		flags = &_flags;
-	}
 
 	ZERO_STRUCT(lm);
 	ZERO_STRUCT(nt);
