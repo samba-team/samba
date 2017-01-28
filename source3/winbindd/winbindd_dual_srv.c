@@ -860,6 +860,8 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 	struct winbindd_domain *domain;
 	NTSTATUS status;
 	DATA_BLOB lm_response, nt_response;
+	uint32_t flags;
+
 	domain = wb_child_domain();
 	if (domain == NULL) {
 		return NT_STATUS_REQUEST_NOT_ACCEPTED;
@@ -883,7 +885,9 @@ NTSTATUS _winbind_SamLogon(struct pipes_struct *p,
 				       r->in.logon.network->identity_info.domain_name.string,
 				       r->in.logon.network->identity_info.workstation.string,
 				       r->in.logon.network->challenge,
-				       lm_response, nt_response, &r->out.validation.sam3);
+				       lm_response, nt_response,
+				       &r->out.authoritative, &flags,
+				       &r->out.validation.sam3);
 	return status;
 }
 

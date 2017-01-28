@@ -452,6 +452,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       const uint8_t chal[8],
 			       DATA_BLOB lm_response,
 			       DATA_BLOB nt_response,
+			       uint8_t *authoritative,
+			       uint32_t *flags,
 			       struct netr_SamInfo3 **info3);
 
 /* The following definitions come from winbindd/winbindd_util.c  */

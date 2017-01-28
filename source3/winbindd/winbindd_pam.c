@@ -1950,10 +1950,10 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       const uint8_t chal[8],
 			       DATA_BLOB lm_response,
 			       DATA_BLOB nt_response,
+			       uint8_t *authoritative,
+			       uint32_t *flags,
 			       struct netr_SamInfo3 **info3)
 {
-	uint8_t authoritative = 0;
-	uint32_t flags = 0;
 	NTSTATUS result;
 
 	if (strequal(name_domain, get_global_sam_name())) {
@@ -1972,6 +1972,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 		 * We need to try the remote NETLOGON server if this is NOT_IMPLEMENTED 
 		 */
 		if (!NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
+			*authoritative = 1;
+			*flags = 0;
 			goto process_result;
 		}
 	}
@@ -1988,8 +1990,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     lm_response,
 					     nt_response,
 					     false, /* interactive */
-					     &authoritative,
-					     &flags,
+					     authoritative,
+					     flags,
 					     info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -2053,6 +2055,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
+	uint8_t authoritative;
+	uint32_t flags;
 
 	DATA_BLOB lm_resp, nt_resp;
 
@@ -2105,6 +2109,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       state->request->data.auth_crap.chal,
 				       lm_resp,
 				       nt_resp,
+				       &authoritative,
+				       &flags,
 				       &info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
