@@ -310,6 +310,8 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 					const char *password,
 					const char *workstation,
 					enum netr_LogonInfoClass logon_type,
+					uint8_t *authoritative,
+					uint32_t *flags,
 					struct netr_SamInfo3 **info3)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -317,8 +319,6 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 	union netr_LogonLevel *logon;
 	uint16_t validation_level = 0;
 	union netr_Validation *validation = NULL;
-	uint8_t authoritative = 0;
-	uint32_t flags = 0;
 	char *workstation_slash = NULL;
 
 	logon = talloc_zero(frame, union netr_LogonLevel);
@@ -426,8 +426,8 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 						  frame,
 						  &validation_level,
 						  &validation,
-						  &authoritative,
-						  &flags);
+						  authoritative,
+						  flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return status;

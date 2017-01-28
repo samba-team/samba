@@ -1392,6 +1392,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 								password,
 								workstation,
 								NetlogonInteractiveInformation,
+								&authoritative,
+								&flags,
 								info3);
 		} else {
 			result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds,

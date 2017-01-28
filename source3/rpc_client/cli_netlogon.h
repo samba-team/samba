@@ -65,6 +65,8 @@ NTSTATUS rpccli_netlogon_password_logon(struct netlogon_creds_cli_context *creds
 					const char *password,
 					const char *workstation,
 					enum netr_LogonInfoClass logon_type,
+					uint8_t *authoritative,
+					uint32_t *flags,
 					struct netr_SamInfo3 **info3);
 NTSTATUS rpccli_netlogon_network_logon(struct netlogon_creds_cli_context *creds,
 				       struct dcerpc_binding_handle *binding_handle,
