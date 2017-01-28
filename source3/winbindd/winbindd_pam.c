@@ -1320,6 +1320,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    DATA_BLOB lm_response,
 					    DATA_BLOB nt_response,
 					    bool interactive,
+					    uint8_t *authoritative,
+					    uint32_t *flags,
 					    struct netr_SamInfo3 **info3)
 {
 	int attempts = 0;
@@ -1329,8 +1331,6 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 
 	do {
 		struct rpc_pipe_client *netlogon_pipe;
-		uint8_t authoritative = 0;
-		uint32_t flags = 0;
 
 		ZERO_STRUCTP(info3);
 		retry = false;
@@ -1392,8 +1392,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 								password,
 								workstation,
 								NetlogonInteractiveInformation,
-								&authoritative,
-								&flags,
+								authoritative,
+								flags,
 								info3);
 		} else {
 			result = rpccli_netlogon_network_logon(domain->conn.netlogon_creds,
@@ -1406,8 +1406,8 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 							chal,
 							lm_response,
 							nt_response,
-							&authoritative,
-							&flags,
+							authoritative,
+							flags,
 							info3);
 		}
 
@@ -1493,6 +1493,8 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 	fstring name_domain, name_user;
 	NTSTATUS result;
 	struct netr_SamInfo3 *my_info3 = NULL;
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
 
 	*info3 = NULL;
 
@@ -1567,6 +1569,8 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 					     lm_resp,
 					     nt_resp,
 					     true, /* interactive */
+					     &authoritative,
+					     &flags,
 					     &my_info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1948,6 +1952,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       DATA_BLOB nt_response,
 			       struct netr_SamInfo3 **info3)
 {
+	uint8_t authoritative = 0;
+	uint32_t flags = 0;
 	NTSTATUS result;
 
 	if (strequal(name_domain, get_global_sam_name())) {
@@ -1982,6 +1988,8 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     lm_response,
 					     nt_response,
 					     false, /* interactive */
+					     &authoritative,
+					     &flags,
 					     info3);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
