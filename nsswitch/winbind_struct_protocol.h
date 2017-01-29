@@ -58,8 +58,9 @@ typedef char fstring[FSTRING_LEN];
  *     removed WINBINDD_SID_TO_GID
  *     removed WINBINDD_GID_TO_SID
  *     removed WINBINDD_UID_TO_SID
+ * 29: added "authoritative" to response.data.auth
  */
-#define WINBIND_INTERFACE_VERSION 28
+#define WINBIND_INTERFACE_VERSION 29
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -432,7 +433,8 @@ struct winbindd_response {
 			char first_8_lm_hash[8];
 			fstring krb5ccname;
 			uint32_t reject_reason;
-			uint32_t padding;
+			uint8_t authoritative;
+			uint8_t padding[3];
 			struct policy_settings {
 				uint32_t min_length_password;
 				uint32_t password_history;
