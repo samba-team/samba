@@ -141,13 +141,11 @@ def build(bld):
             bld.SAMBA_PYTHON('pytalloc',
                             'pytalloc.c',
                             deps='talloc ' + name,
-                            enabled=True,
                             realname='talloc.so')
 
             bld.SAMBA_PYTHON('test_pytalloc',
                             'test_pytalloc.c',
                             deps='pytalloc',
-                            enabled=True,
                             realname='_test_pytalloc.so',
                             install=False)
 
