@@ -837,7 +837,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonE
 
   This version of the function allows other wrappers to say 'do not check the credentials'
 
-  We can't do the traditional 'wrapping' format completly, as this function must only run under schannel
+  We can't do the traditional 'wrapping' format completely, as this
+  function must only run under schannel
 */
 static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonSamLogonEx *r, struct netlogon_creds_CredentialState *creds)
