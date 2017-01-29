@@ -1660,7 +1660,9 @@ server_lookup:
 	Realm req_rlm;
 	krb5_realm *realms;
 
-	if ((req_rlm = get_krbtgt_realm(&sp->name)) != NULL) {
+	if (!config->autodetect_referrals) {
+		/* noop */
+	} else if ((req_rlm = get_krbtgt_realm(&sp->name)) != NULL) {
 	    if(nloop++ < 2) {
 		new_rlm = find_rpath(context, tgt->crealm, req_rlm);
 		if(new_rlm) {
