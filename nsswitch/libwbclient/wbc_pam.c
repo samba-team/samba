@@ -259,6 +259,7 @@ static wbcErr wbc_create_error_info(const struct winbindd_response *resp,
 
 	e->nt_status = resp->data.auth.nt_status;
 	e->pam_error = resp->data.auth.pam_error;
+	e->authoritative = resp->data.auth.authoritative;
 	e->nt_string = strdup(resp->data.auth.nt_status_string);
 	BAIL_ON_PTR_ERROR(e->nt_string, wbc_status);
 

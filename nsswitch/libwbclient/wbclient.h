@@ -74,9 +74,10 @@ const char *wbcErrorString(wbcErr error);
  *  0.11: Extended wbcAuthenticateUserEx to provide PAC parsing
  *  0.12: Added wbcCtxCreate and friends
  *  0.13: Added wbcCtxUnixIdsToSids and wbcUnixIdsToSids
+ *  0.14: Added "authoritative" to wbcAuthErrorInfo
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 13
+#define WBCLIENT_MINOR_VERSION 14
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -419,6 +420,7 @@ struct wbcAuthErrorInfo {
 	char *nt_string;
 	int32_t pam_error;
 	char *display_string;
+	uint8_t authoritative;
 };
 
 /**
