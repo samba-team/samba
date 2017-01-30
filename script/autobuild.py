@@ -32,6 +32,7 @@ builddirs = {
     "samba-static"  : ".",
     "samba-test-only"  : ".",
     "samba-systemkrb5"  : ".",
+    "samba-nopython"  : ".",
     "ldb"     : "lib/ldb",
     "tdb"     : "lib/tdb",
     "talloc"  : "lib/talloc",
@@ -43,7 +44,7 @@ builddirs = {
     "retry"   : "."
     }
 
-defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "samba-systemkrb5", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+defaulttasks = [ "ctdb", "samba", "samba-xc", "samba-o3", "samba-ctdb", "samba-libs", "samba-static", "samba-systemkrb5", "samba-nopython", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
@@ -173,6 +174,21 @@ tasks = {
                       # we currently cannot run a full make test, a limited list of tests could be run
                       # via "make test TESTS=sometests"
                       ("test", "make test FAIL_IMMEDIATELY=1 TESTS='samba3.*ktest'", "text/plain"),
+                      ("install", "make install", "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                      ("clean", "make clean", "text/plain")
+                      ],
+
+    # Test Samba without python still builds.  When this test fails
+    # due to more use of Python, the expectations is that the newly
+    # failing part of the code should be disabled when
+    # --disable-python is set (rather than major work being done to
+    # support this environment).  The target here is for vendors
+    # shipping a minimal smbd.
+    "samba-nopython" : [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
+                      ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain")
