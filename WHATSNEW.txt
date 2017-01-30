@@ -1,4 +1,55 @@
                    =============================
+                   Release Notes for Samba 4.5.5
+                          January 30, 2017
+                   =============================
+
+
+This is the latest stable release of the Samba 4.5 release series.
+
+Samba 4.5.4 erroneously included a rewrite of the vfs_fruit module.
+This patchset will be reverted with this release, because it needs to pass the
+review process first. If you are using the vfs_fruit module, please do not use
+Samba 4.5.4.
+
+Changes since 4.5.4:
+--------------------
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 12469: ctdb-locking: Explicitly unlock record/db in lock helper.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 12535: vfs_default: Unlock the right file in copy chunk.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 12512: ctdb-scripts: Fix remaining uses of "ctdb gratiousarp".
+   * BUG 12516: /etc/iproute2/rt_tables gets populated with multiple
+     'default' entries.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the Samba 4.1 and newer product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.5.4
                           January 18, 2017
                    =============================
@@ -68,8 +119,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.5.3
