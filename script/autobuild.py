@@ -285,7 +285,7 @@ class builder(object):
         self.stdin  = open("/dev/null", 'r')
         self.sdir = "%s/%s" % (testbase, self.tag)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
-        do_print("%s: __INIT__: removing %s and %s" % self.name, self.sdir, self.prefix)
+        do_print("%s: __INIT__: removing %s and %s" % (self.name, self.sdir, self.prefix))
         run_cmd("rm -rf %s" % self.sdir)
         run_cmd("rm -rf %s" % self.prefix)
         if cp:
@@ -297,7 +297,7 @@ class builder(object):
     def start_next(self):
         if self.next == len(self.sequence):
             if not options.nocleanup:
-                do_print("%s: START_NEXT: removing %s and %s" % self.name, self.sdir, self.prefix)
+                do_print("%s: START_NEXT: removing %s and %s" % (self.name, self.sdir, self.prefix))
                 run_cmd("rm -rf %s" % self.sdir)
                 run_cmd("rm -rf %s" % self.prefix)
             do_print('%s: Completed OK' % self.name)
