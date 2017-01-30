@@ -25,64 +25,122 @@
 
 #include "includes.h"
 
+#if defined(FREEBSD_SENDFILE_API) || defined(DARWIN_SENDFILE_API) || defined(LINUX_SENDFILE_API)
+
+#include <sys/uio.h>
+#include <poll.h>
+
+ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, struct iovec *hv);
+
+ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
+{
+	struct iovec hv;
+	size_t hdr_len = 0;
+	int total = 0;
+	int nwritten;
+	struct pollfd pfd;
+
+	if(header) {
+		hv.iov_base = (void *)header->data;
+		hv.iov_len = header->length;
+		hdr_len = header->length;
+	} else {
+		hv.iov_len = 0;
+	}
+
+	pfd.fd = tofd;
+	pfd.events = POLLOUT;
+
+	while(total < count + hdr_len) {
+		if((nwritten = sys_sendfile_native(tofd, fromfd, offset + total - hdr_len + hv.iov_len, count - total + hdr_len - hv.iov_len, &hv)) == -1) {
+			return -1;
+		}
+
+		total += nwritten;
+
+		if(total == count + hdr_len) {
+			break;
+		}
+
+		if(hv.iov_len > 0) {
+			if(hv.iov_len <= total) {
+				hv.iov_len = 0;
+			} else {
+				hv.iov_len -= nwritten;
+				hv.iov_base = ((uint8_t *)hv.iov_base) + nwritten;
+			}
+		}
+
+		if(poll(&pfd, 1, -1) == -1) {
+			if(errno != EINTR) {
+				return -1;
+			}
+		}
+	}
+
+	return total;
+}
+
+#endif
+
 #if defined(LINUX_SENDFILE_API)
 
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/sendfile.h>
+#include <unistd.h>
 
 #ifndef MSG_MORE
 #define MSG_MORE 0x8000
 #endif
 
-ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset, size_t count)
+ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, struct iovec *hv)
 {
-	size_t total=0;
-	ssize_t ret;
-	size_t hdr_len = 0;
+	ssize_t nwritten;
+	int total = 0;
 
 	/*
 	 * Send the header first.
 	 * Use MSG_MORE to cork the TCP output until sendfile is called.
 	 */
 
-	if (header) {
-		hdr_len = header->length;
-		while (total < hdr_len) {
-			ret = sys_send(tofd, header->data + total,hdr_len - total, MSG_MORE);
-			if (ret == -1)
+	if (hv->iov_len > 0) {
+		if((nwritten = send(tofd, hv->iov_base, hv->iov_len, MSG_MORE)) == -1) {
+			if(errno != EINTR || errno != EAGAIN || errno != EWOULDBLOCK) {
 				return -1;
-			total += ret;
+			} else {
+				return 0;
+			}
+		}
+
+		if(nwritten < hv->iov_len) {
+			return nwritten;
 		}
 	}
 
-	total = count;
-	while (total) {
-		ssize_t nwritten;
-		do {
-			nwritten = sendfile(tofd, fromfd, &offset, total);
-		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-		if (nwritten == -1) {
-			if (errno == ENOSYS || errno == EINVAL) {
+	total += nwritten;
+
+	if((nwritten = sendfile(tofd, fromfd, &offset, count)) == -1) {
+		if (errno == ENOSYS || errno == EINVAL) {
 				/* Ok - we're in a world of pain here. We just sent
-				 * the header, but the sendfile failed. We have to
-				 * emulate the sendfile at an upper layer before we
-				 * disable it's use. So we do something really ugly.
-				 * We set the errno to a strange value so we can detect
-				 * this at the upper level and take care of it without
-				 * layer violation. JRA.
-				 */
-				errno = EINTR; /* Normally we can never return this. */
-			}
+				* the header, but the sendfile failed. We have to
+				* emulate the sendfile at an upper layer before we
+				* disable it's use. So we do something really ugly.
+				* We set the errno to a strange value so we can detect
+				* this at the upper level and take care of it without
+				* layer violation. JRA.
+				*/
+			errno = EINTR; /* Normally we can never return this. */
+		}
+		if (errno != EINTR || errno != EAGAIN || errno != EWOULDBLOCK) {
 			return -1;
 		}
-		if (nwritten == 0) {
-			/*
-			 * EOF, return a short read
-			 */
-			return hdr_len + (count - total);
-		}
-		total -= nwritten;
+		nwritten = 0;
 	}
-	return count + hdr_len;
+
+	total += nwritten;
+
+	return total;
 }
 
 #elif defined(SOLARIS_SENDFILE_API)
@@ -240,63 +298,32 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, off_t offset
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/uio.h>
 
-ssize_t sys_sendfile(int tofd, int fromfd,
-	    const DATA_BLOB *header, off_t offset, size_t count)
+ssize_t sys_sendfile_native(int tofd, int fromfd, off_t offset, size_t count, struct iovec *hv)
 {
 	struct sf_hdtr	sf_header = {0};
-	struct iovec	io_header = {0};
 
-	off_t	nwritten;
+	off_t nwritten;
 	int	ret;
 
-	if (header) {
-		sf_header.headers = &io_header;
+	if (hv->iov_len > 0) {
+		sf_header.headers = hv;
 		sf_header.hdr_cnt = 1;
-		io_header.iov_base = header->data;
-		io_header.iov_len = header->length;
 		sf_header.trailers = NULL;
 		sf_header.trl_cnt = 0;
 	}
 
-	while (count != 0) {
-
-		nwritten = count;
+	nwritten = count;
 #if defined(DARWIN_SENDFILE_API)
-		/* Darwin recycles nwritten as a value-result parameter, apart from that this
-		   sendfile implementation is quite the same as the FreeBSD one */
-		ret = sendfile(fromfd, tofd, offset, &nwritten, &sf_header, 0);
+	/* Darwin recycles nwritten as a value-result parameter, apart from that this
+		sendfile implementation is quite the same as the FreeBSD one */
+	ret = sendfile(fromfd, tofd, offset, &nwritten, &sf_header, 0);
 #else
-		ret = sendfile(fromfd, tofd, offset, count, &sf_header, &nwritten, 0);
+	ret = sendfile(fromfd, tofd, offset, count, &sf_header, &nwritten, 0);
 #endif
-		if (ret == -1 && errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
-			/* Send failed, we are toast. */
-			return -1;
-		}
 
-		if (nwritten == 0) {
-			/* EOF of offset is after EOF. */
-			break;
-		}
-
-		if (sf_header.hdr_cnt) {
-			if (io_header.iov_len <= nwritten) {
-				/* Entire header was sent. */
-				sf_header.headers = NULL;
-				sf_header.hdr_cnt = 0;
-				nwritten -= io_header.iov_len;
-			} else {
-				/* Partial header was sent. */
-				io_header.iov_len -= nwritten;
-				io_header.iov_base =
-				    ((uint8_t *)io_header.iov_base) + nwritten;
-				nwritten = 0;
-			}
-		}
-
-		offset += nwritten;
-		count -= nwritten;
+	if (ret == -1 && errno != EINTR && errno != EAGAIN) {
+		return -1;
 	}
 
 	return nwritten;
