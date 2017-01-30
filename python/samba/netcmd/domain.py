@@ -298,9 +298,9 @@ class cmd_domain_provision(Command):
             partitions_only=None,
             targetdir=None,
             ol_mmr_urls=None,
-            use_xattrs=None,
+            use_xattrs="auto",
             slapd_path=None,
-            use_ntvfs=None,
+            use_ntvfs=False,
             use_rfc2307=None,
             ldap_backend_nosync=None,
             ldap_backend_extra_port=None,
@@ -413,9 +413,9 @@ class cmd_domain_provision(Command):
 
         if use_xattrs == "yes":
             eadb = False
-        elif use_xattrs == "auto" and use_ntvfs == False or use_ntvfs == None:
+        elif use_xattrs == "auto" and use_ntvfs == False:
             eadb = False
-        elif use_ntvfs == False or use_ntvfs == None:
+        elif use_ntvfs == False:
             raise CommandError("--use-xattrs=no requires --use-ntvfs (not supported for production use).  "
                                "Please re-run with --use-xattrs omitted.")
         elif use_xattrs == "auto" and not lp.get("posix:eadb"):
@@ -1491,7 +1491,7 @@ class cmd_domain_classicupgrade(Command):
     takes_args = ["smbconf"]
 
     def run(self, smbconf=None, targetdir=None, dbdir=None, testparm=None,
-            quiet=False, verbose=False, use_xattrs=None, sambaopts=None, versionopts=None,
+            quiet=False, verbose=False, use_xattrs="auto", sambaopts=None, versionopts=None,
             dns_backend=None, use_ntvfs=False):
 
         if not os.path.exists(smbconf):
@@ -1532,9 +1532,9 @@ class cmd_domain_classicupgrade(Command):
         eadb = True
         if use_xattrs == "yes":
             eadb = False
-        elif use_xattrs == "auto" and use_ntvfs == False or use_ntvfs == None:
+        elif use_xattrs == "auto" and use_ntvfs == False:
             eadb = False
-        elif use_ntvfs == False or use_ntvfs == None:
+        elif use_ntvfs == False:
             raise CommandError("--use-xattrs=no requires --use-ntvfs (not supported for production use).  "
                                "Please re-run with --use-xattrs omitted.")
         elif use_xattrs == "auto" and not s3conf.get("posix:eadb"):
