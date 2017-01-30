@@ -45,6 +45,7 @@
 #include "common/common.h"
 #include "common/logging.h"
 #include "common/pidfile.h"
+#include "common/sock_io.h"
 
 struct ctdb_client_pid_list {
 	struct ctdb_client_pid_list *next, *prev;
@@ -1007,14 +1008,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path)-1);
 
-	/* Remove any old socket */
-	ret = unlink(ctdb->daemon.name);
-	if (ret == 0) {
-		DEBUG(DEBUG_WARNING,
-		      ("Removed stale socket %s\n", ctdb->daemon.name));
-	} else if (errno != ENOENT) {
-		DEBUG(DEBUG_ERR,
-		      ("Failed to remove stale socket %s\n", ctdb->daemon.name));
+	if (! sock_clean(ctdb->daemon.name)) {
 		return -1;
 	}
 
