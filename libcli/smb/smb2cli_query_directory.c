@@ -80,7 +80,7 @@ struct tevent_req *smb2cli_query_directory_send(TALLOC_CTX *mem_ctx,
 	SBVAL(fixed, 16, fid_volatile);
 	SSVAL(fixed, 24, SMB2_HDR_BODY + 32);
 	SSVAL(fixed, 26, dyn_len);
-	SSVAL(fixed, 28, outbuf_len);
+	SIVAL(fixed, 28, outbuf_len);
 
 	if (dyn_len == 0) {
 		dyn = state->dyn_pad;
