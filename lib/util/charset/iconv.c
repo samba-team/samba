@@ -740,12 +740,12 @@ static size_t utf8_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		}
 
 		if ((uc[1] & 0xfc) == 0xdc) {
-			/* its the second part of a 4 byte sequence. Illegal */
+			errno = EILSEQ;
+#ifndef HAVE_ICONV_ERRNO_ILLEGAL_MULTIBYTE
 			if (in_left < 4) {
 				errno = EINVAL;
-			} else {
-				errno = EILSEQ;
 			}
+#endif
 			goto error;
 		}
 
