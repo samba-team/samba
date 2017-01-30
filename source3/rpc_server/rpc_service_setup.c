@@ -535,18 +535,15 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 
 	/* Initialize shared modules */
 	mod_init_fns = load_samba_modules(tmp_ctx, "rpc");
-	if (mod_init_fns == NULL) {
-		if (errno != ENOENT) {
-			/*
-			 * ENOENT means the directory doesn't exist
-			 * which can happen if all modules are
-			 * static. So ENOENT is ok, everything else is
-			 * not ok.
-			 */
-			DBG_ERR("Loading shared RPC modules failed [%s]\n",
-				strerror(errno));
-			ok = false;
-		}
+	if ((mod_init_fns == NULL) && (errno != ENOENT)) {
+		/*
+		 * ENOENT means the directory doesn't exist which can happen if
+		 * all modules are static. So ENOENT is ok, everything else is
+		 * not ok.
+		 */
+		DBG_ERR("Loading shared RPC modules failed [%s]\n",
+			strerror(errno));
+		ok = false;
 		goto done;
 	}
 
