@@ -25,6 +25,7 @@ typedef void (*sock_queue_callback_fn_t)(uint8_t *buf, size_t buflen,
 
 struct sock_queue;
 
+bool sock_clean(const char *sockpath);
 int sock_connect(const char *sockpath);
 
 struct sock_queue *sock_queue_setup(TALLOC_CTX *mem_ctx,

@@ -31,6 +31,21 @@
 #include "common/logging.h"
 #include "common/sock_io.h"
 
+bool sock_clean(const char *sockpath)
+{
+	int ret;
+
+	ret = unlink(sockpath);
+	if (ret == 0) {
+		D_WARNING("Removed stale socket %s\n", sockpath);
+	} else if (errno != ENOENT) {
+		D_ERR("Failed to remove stale socket %s\n", sockpath);
+		return false;
+	}
+
+	return true;
+}
+
 int sock_connect(const char *sockpath)
 {
 	struct sockaddr_un addr;
