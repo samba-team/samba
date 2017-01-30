@@ -1683,7 +1683,7 @@ main() {
                                       vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
                                       vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
                                       vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2
-                                      vfs_readahead vfs_xattr_tdb vfs_posix_eadb
+                                      vfs_readahead vfs_xattr_tdb
                                       vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
                                       vfs_preopen vfs_catia
                                       vfs_media_harmony vfs_unityed_media vfs_fruit vfs_shell_snap
@@ -1706,6 +1706,7 @@ main() {
 
     if conf.CONFIG_SET('AD_DC_BUILD_IS_ENABLED'):
         default_static_modules.extend(TO_LIST('pdb_samba_dsdb auth_samba4 vfs_dfs_samba4'))
+        default_shared_modules.extend('vfs_posix_eadb')
 
     if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
         default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
