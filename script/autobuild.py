@@ -295,9 +295,10 @@ class builder(object):
 
     def start_next(self):
         if self.next == len(self.sequence):
-            if not options.nocleanup:
-                run_cmd("rm -rf %s" % self.sdir)
-                run_cmd("rm -rf %s" % self.prefix)
+# don't clean here in an attempt to allow 'clean' to pass properly
+#            if not options.nocleanup:
+#                run_cmd("rm -rf %s" % self.sdir)
+#                run_cmd("rm -rf %s" % self.prefix)
             do_print('%s: Completed OK' % self.name)
             self.done = True
             return
