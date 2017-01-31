@@ -133,6 +133,11 @@ const struct sl_attr_map *sl_attr_map_by_spotlight(const char *sl_attr)
 			.type = ssmt_type,
 			.sparql_attr = NULL,
 		},
+		{
+			.spotlight_attr = "kMDItemContentType",
+			.type = ssmt_type,
+			.sparql_attr = NULL,
+		},
 
 		/* Image metadata */
 		{
