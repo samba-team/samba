@@ -5,6 +5,7 @@
    Copyright (C) Simo Sorce  2004-2008
    Copyright (C) Matthias Dieter Wallnöfer 2009-2011
    Copyright (C) Matthieu Patou 2012
+   Copyright (C) Catalyst.Net Ltd 2017
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -272,6 +273,171 @@ static int samldb_schema_ldapdisplayname_valid_check(struct samldb_ctx *ac)
 	return ret;
 }
 
+static int samldb_check_linkid_used(struct samldb_ctx *ac,
+				    struct dsdb_schema *schema,
+				    struct ldb_dn *schema_dn,
+				    struct ldb_context *ldb,
+				    int32_t linkID,
+				    bool *found)
+{
+	int ret;
+	struct ldb_result *ldb_res;
+
+	if (dsdb_attribute_by_linkID(schema, linkID)) {
+		*found = true;
+		return LDB_SUCCESS;
+	}
+
+	ret = dsdb_module_search(ac->module, ac,
+				 &ldb_res,
+				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
+				 DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
+				 "(linkID=%d)", linkID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			      __location__": Searching for linkID=%d failed - %s\n",
+			      linkID,
+			      ldb_errstring(ldb));
+		return ldb_operr(ldb);
+	}
+
+	*found = (ldb_res->count != 0);
+	talloc_free(ldb_res);
+
+	return LDB_SUCCESS;
+}
+
+/* Find the next open forward linkID in the schema. */
+static int samldb_generate_next_linkid(struct samldb_ctx *ac,
+				       struct dsdb_schema *schema,
+				       int32_t *next_linkID)
+{
+	int ret;
+	struct ldb_context *ldb;
+	struct ldb_dn *schema_dn;
+	bool linkID_used = true;
+
+	/*
+	 * Windows starts at about 0xB0000000 in order to stop potential
+	 * collisions with future additions to the schema. We pass this
+	 * around as a signed int sometimes, but this should be sufficient.
+	 */
+	*next_linkID = 0x40000000;
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema_dn = ldb_get_schema_basedn(ldb);
+
+	while (linkID_used) {
+		*next_linkID += 2;
+		ret = samldb_check_linkid_used(ac, schema,
+					       schema_dn, ldb,
+					       *next_linkID, &linkID_used);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_schema_add_handle_linkid(struct samldb_ctx *ac)
+{
+	int ret;
+	bool ok, found;
+	struct ldb_message_element *el;
+	const char *enc_str;
+	const struct dsdb_attribute *attr;
+	struct ldb_context *ldb;
+	struct ldb_dn *schema_dn;
+	struct dsdb_schema *schema;
+	int32_t new_linkID = 0;
+
+	ldb = ldb_module_get_ctx(ac->module);
+	schema = dsdb_get_schema(ldb, ac);
+	schema_dn = ldb_get_schema_basedn(ldb);
+
+	el = dsdb_get_single_valued_attr(ac->msg, "linkID",
+					 ac->req->operation);
+	if (el == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	enc_str = ldb_binary_encode(ac, el->values[0]);
+	if (enc_str == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+
+	ok = (strcmp(enc_str, "0") == 0);
+	if (ok) {
+		return LDB_SUCCESS;
+	}
+
+	/*
+	 * This OID indicates that the caller wants the linkID
+	 * to be automatically generated. We therefore assign
+	 * it the next open linkID.
+	 */
+	ok = (strcmp(enc_str, "1.2.840.113556.1.2.50") == 0);
+	if (ok) {
+		ret = samldb_generate_next_linkid(ac, schema, &new_linkID);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		ldb_msg_remove_element(ac->msg, el);
+		ret = samdb_msg_add_int(ldb, ac->msg, ac->msg, "linkID",
+					new_linkID);
+		return ret;
+	}
+
+	/*
+	 * Using either the attributeID or lDAPDisplayName of
+	 * another attribute in the linkID field indicates that
+	 * we should make this the backlink of that attribute.
+	 */
+	attr = dsdb_attribute_by_attributeID_oid(schema, enc_str);
+	if (attr == NULL) {
+		attr = dsdb_attribute_by_lDAPDisplayName(schema, enc_str);
+	}
+
+	if (attr != NULL) {
+		/*
+		 * The attribute we're adding this as a backlink of must
+		 * be a forward link.
+		 */
+		if (attr->linkID % 2 != 0) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		new_linkID = attr->linkID + 1;
+
+		/* Make sure that this backlink doesn't already exist. */
+		ret = samldb_check_linkid_used(ac, schema,
+					       schema_dn, ldb,
+					       new_linkID, &found);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		if (found) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+
+		ldb_msg_remove_element(ac->msg, el);
+		ret = samdb_msg_add_int(ldb, ac->msg, ac->msg, "linkID",
+					new_linkID);
+		return ret;
+	}
+
+	schema_dn = ldb_get_schema_basedn(ldb_module_get_ctx(ac->module));
+	ret = samldb_unique_attr_check(ac, "linkID", NULL, schema_dn);
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	} else {
+		return ret;
+	}
+}
 
 /* sAMAccountName handling */
 
@@ -3224,6 +3390,11 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 		/* If in provision, these checks are too slow to do */
 		if (!ldb_request_get_control(req, DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID)) {
 			ret = samldb_schema_attributeid_valid_check(ac);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
+			ret = samldb_schema_add_handle_linkid(ac);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
