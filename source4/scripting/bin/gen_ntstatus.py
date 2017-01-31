@@ -180,6 +180,10 @@ def generatePythonFile(out_file):
     out_file.write("\t\treturn PyInt_FromLong(v);\n");
     out_file.write("\t}\n");
     out_file.write("}\n\n");
+    # This is needed to avoid a missing prototype error from the C
+    # compiler. There is never a prototype for this function, it is a
+    # module loaded by python with dlopen() and found with dlsym().
+    out_file.write("void initntstatus(void);\n")
     out_file.write("void initntstatus(void)\n")
     out_file.write("{\n")
     out_file.write("\tPyObject *m;\n\n")
