@@ -995,6 +995,8 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	struct named_mutex *mutex;
 
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS tmp_status;
+	NTSTATUS tcon_status = NT_STATUS_NETWORK_NAME_DELETED;
 
 	enum smb_signing_setting smb_sign_client_connections = lp_client_ipc_signing();
 
@@ -1186,8 +1188,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	goto done;
 
  ipc_fallback:
-	result = cm_get_ipc_credentials(talloc_tos(), &creds);
-	if (!NT_STATUS_IS_OK(result)) {
+	TALLOC_FREE(creds);
+	tmp_status = cm_get_ipc_credentials(talloc_tos(), &creds);
+	if (!NT_STATUS_IS_OK(tmp_status)) {
+		result = tmp_status;
 		goto done;
 	}
 
@@ -1274,11 +1278,11 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 	}
 
 	result = cli_tree_connect(*cli, "IPC$", "IPC", "", 0);
-
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));
 		goto done;
 	}
+	tcon_status = result;
 
 	/* cache the server name for later connections */
 
@@ -1296,6 +1300,10 @@ static NTSTATUS cm_prepare_connection(struct winbindd_domain *domain,
 
  done:
 	TALLOC_FREE(mutex);
+
+	if (NT_STATUS_IS_OK(result)) {
+		result = tcon_status;
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		winbind_add_failed_connection_entry(domain, controller, result);
