@@ -38,21 +38,11 @@
  *  If no pid is printed, then no process is holding the mutex.
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <inttypes.h>
-#include <sys/types.h>
-#include <sys/fcntl.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/wait.h>
-#include <sched.h>
-#include <sys/mman.h>
-#include <pthread.h>
-#include <errno.h>
-#include <stdbool.h>
-
-int pthread_mutex_consistent_np(pthread_mutex_t *);
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/wait.h"
+#include "system/shmem.h"
+#include "system/threads.h"
 
 static void set_realtime(void)
 {
@@ -99,7 +89,7 @@ static void run_child(const char *filename)
 again:
 	ret = pthread_mutex_lock(mutex);
 	if (ret == EOWNERDEAD) {
-		ret = pthread_mutex_consistent_np(mutex);
+		ret = pthread_mutex_consistent(mutex);
 	} else if (ret == EAGAIN) {
 		goto again;
 	}
@@ -172,7 +162,7 @@ int main(int argc, const char **argv)
 	if (strcmp(argv[2], "debug") == 0) {
 		ret = pthread_mutex_trylock(mutex);
 		if (ret == EOWNERDEAD) {
-			ret = pthread_mutex_consistent_np(mutex);
+			ret = pthread_mutex_consistent(mutex);
 			if (ret == 0) {
 				pthread_mutex_unlock(mutex);
 			}
