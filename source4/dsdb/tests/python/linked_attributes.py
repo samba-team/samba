@@ -115,8 +115,7 @@ class LATests(samba.tests.TestCase):
         m[attr] = ldb.MessageElement(dest, ldb.FLAG_MOD_REPLACE, attr)
         self.samdb.modify(m, controls=controls)
 
-    def attr_search(self, obj, expected, attr, scope=ldb.SCOPE_BASE,
-                    **controls):
+    def attr_search(self, obj, attr, scope=ldb.SCOPE_BASE, **controls):
         if opts.no_reveal_internals:
             if 'reveal_internals' in controls:
                 del controls['reveal_internals']
@@ -130,7 +129,7 @@ class LATests(samba.tests.TestCase):
         return res
 
     def assert_links(self, obj, expected, attr, msg='', **kwargs):
-        res = self.attr_search(obj, expected, attr, **kwargs)
+        res = self.attr_search(obj, attr, **kwargs)
 
         if len(expected) == 0:
             if attr in res[0]:
