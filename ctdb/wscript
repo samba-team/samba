@@ -850,8 +850,13 @@ def build(bld):
         'tool'
     ]
 
+    if bld.env.standalone_ctdb:
+        testdir = 'tests'
+    else:
+        testdir = 'ctdb/tests'
+
     for t in test_subdirs:
-        files = SUBDIR_MODE('tests/%s' % t, trim_path='tests')
+        files = SUBDIR_MODE('%s/%s' % (testdir, t), trim_path=testdir)
         for fmode in files:
             bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR, 'tests/%s' % fmode[0],
                               destname=fmode[0], chmod=fmode[1])
