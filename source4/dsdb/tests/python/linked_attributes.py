@@ -95,23 +95,26 @@ class LATests(samba.tests.TestCase):
                                        objectclass))
         return dns
 
-    def add_linked_attribute(self, src, dest, attr='member'):
+    def add_linked_attribute(self, src, dest, attr='member',
+                             controls=None):
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, src)
         m[attr] = ldb.MessageElement(dest, ldb.FLAG_MOD_ADD, attr)
-        self.samdb.modify(m)
+        self.samdb.modify(m, controls=controls)
 
-    def remove_linked_attribute(self, src, dest, attr='member'):
+    def remove_linked_attribute(self, src, dest, attr='member',
+                                controls=None):
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, src)
         m[attr] = ldb.MessageElement(dest, ldb.FLAG_MOD_DELETE, attr)
-        self.samdb.modify(m)
+        self.samdb.modify(m, controls=controls)
 
-    def replace_linked_attribute(self, src, dest, attr='member'):
+    def replace_linked_attribute(self, src, dest, attr='member',
+                                 controls=None):
         m = ldb.Message()
         m.dn = ldb.Dn(self.samdb, src)
         m[attr] = ldb.MessageElement(dest, ldb.FLAG_MOD_REPLACE, attr)
-        self.samdb.modify(m)
+        self.samdb.modify(m, controls=controls)
 
     def attr_search(self, obj, expected, attr, scope=ldb.SCOPE_BASE,
                     **controls):
@@ -502,6 +505,72 @@ class LATests(samba.tests.TestCase):
 
         for u in users:
             self.assert_back_links(u, [])
+
+    def test_la_links_relaxed(self):
+        """Check that the relax control doesn't mess with linked attributes."""
+        relax_control = ['relax:0']
+
+        users = self.add_objects(10, 'user', 'u_relax')
+        groups = self.add_objects(3, 'group', 'g_relax')
+        g_relax1, g_relax2, g_uptight = groups
+
+        # g_relax1 has all users added at once
+        # g_relax2 gets them one at a time in reverse order
+        # g_uptight never relaxes
+
+        self.add_linked_attribute(g_relax1, users[:5], controls=relax_control)
+
+        for u in reversed(users[:5]):
+            self.add_linked_attribute(g_relax2, u, controls=relax_control)
+            self.add_linked_attribute(g_uptight, u)
+
+        for g in groups:
+            self.assert_forward_links(g, users[:5])
+
+            self.add_linked_attribute(g, users[5:7])
+            self.assert_forward_links(g, users[:7])
+
+            for u in users[7:]:
+                self.add_linked_attribute(g, u)
+
+            self.assert_forward_links(g, users)
+
+        for u in users:
+            self.assert_back_links(u, groups)
+
+        # try some replacement permutations
+        import random
+        random.seed(1)
+        users2 = users[:]
+        for i in range(5):
+            random.shuffle(users2)
+            self.replace_linked_attribute(g_relax1, users2,
+                                          controls=relax_control)
+
+            self.assert_forward_links(g_relax1, users)
+
+        for i in range(5):
+            random.shuffle(users2)
+            self.remove_linked_attribute(g_relax2, users2,
+                                         controls=relax_control)
+            self.remove_linked_attribute(g_uptight, users2)
+
+            self.replace_linked_attribute(g_relax1, [], controls=relax_control)
+
+            random.shuffle(users2)
+            self.add_linked_attribute(g_relax2, users2,
+                                      controls=relax_control)
+            self.add_linked_attribute(g_uptight, users2)
+            self.replace_linked_attribute(g_relax1, users2,
+                                          controls=relax_control)
+
+            self.assert_forward_links(g_relax1, users)
+            self.assert_forward_links(g_relax2, users)
+            self.assert_forward_links(g_uptight, users)
+
+        for u in users:
+            self.assert_back_links(u, groups)
+
 
     def test_one_way_attributes(self):
         e1, e2 = self.add_objects(2, 'msExchConfigurationContainer',
