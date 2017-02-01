@@ -12,4 +12,5 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_CMOCKA'):
         bld.SAMBA_BINARY('test_krb5samba',
                          source='test_krb5_samba.c',
-                         deps='krb5samba cmocka')
+                         deps='krb5samba cmocka',
+                         install=False)
