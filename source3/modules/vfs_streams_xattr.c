@@ -521,8 +521,15 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 
         sio->xattr_name = talloc_strdup(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
 					xattr_name);
+	/*
+	 * so->base needs to be a copy of fsp->fsp_name->base_name,
+	 * making it identical to streams_xattr_recheck(). If the
+	 * open is changing directories, fsp->fsp_name->base_name
+	 * will be the full path from the share root, whilst
+	 * smb_fname will be relative to the $cwd.
+	 */
         sio->base = talloc_strdup(VFS_MEMCTX_FSP_EXTENSION(handle, fsp),
-				  smb_fname->base_name);
+				  fsp->fsp_name->base_name);
 	sio->fsp_name_ptr = fsp->fsp_name;
 	sio->handle = handle;
 	sio->fsp = fsp;
