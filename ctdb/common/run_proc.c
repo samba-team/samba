@@ -132,8 +132,9 @@ static void proc_read_handler(struct tevent_context *ev,
 {
 	struct proc_context *proc = talloc_get_type_abort(
 		private_data, struct proc_context);
-	size_t offset, len = 0;
+	size_t offset;
 	ssize_t nread;
+	int len = 0;
 	int ret;
 
 	ret = ioctl(proc->fd, FIONREAD, &len);
