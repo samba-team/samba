@@ -27,7 +27,8 @@
 #include "time_basic.h"
 #include "close_low_fd.h"
 #include "memory.h"
-#include "samba_util.h" /* LIST_SEP */
+#include "util_strlist.h" /* LIST_SEP */
+#include "blocking.h"
 #include "debug.h"
 
 /* define what facility to use for syslog */
