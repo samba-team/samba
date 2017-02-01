@@ -841,68 +841,72 @@ static int replmd_build_la_val(TALLOC_CTX *mem_ctx, struct ldb_val *v, struct ds
 			       const struct GUID *invocation_id, uint64_t seq_num,
 			       uint64_t local_usn, NTTIME nttime, uint32_t version, bool deleted);
 
+struct parsed_dn {
+	struct dsdb_dn *dsdb_dn;
+	struct GUID guid;
+	struct ldb_val *v;
+};
+
+static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
+			  struct ldb_message_element *el, struct parsed_dn **pdn,
+			  const char *ldap_oid, struct ldb_request *parent);
 
 /*
   fix up linked attributes in replmd_add.
   This involves setting up the right meta-data in extended DN
   components, and creating backlinks to the object
  */
-static int replmd_add_fix_la(struct ldb_module *module,
+static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 			     struct replmd_private *replmd_private,
 			     struct ldb_message_element *el,
 			     uint64_t seq_num, const struct GUID *invocationId, NTTIME now,
-			     struct GUID *guid, const struct dsdb_attribute *sa, struct ldb_request *parent)
+			     struct GUID *guid, const struct dsdb_attribute *sa,
+			     struct ldb_request *parent)
 {
 	unsigned int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(el->values);
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-
+	struct parsed_dn *pdn;
 	/* We will take a reference to the schema in replmd_add_backlink */
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
+	struct ldb_val *new_values = NULL;
 
-	for (i=0; i<el->num_values; i++) {
-		struct ldb_val *v = &el->values[i];
-		struct dsdb_dn *dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, v, sa->syntax->ldap_oid);
-		struct GUID target_guid;
-		NTSTATUS status;
-		int ret;
+	int ret = get_parsed_dns(module, tmp_ctx, el, &pdn,
+				 sa->syntax->ldap_oid, parent);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
-		if (dsdb_dn == NULL) {
-			talloc_free(tmp_ctx);
-			return LDB_ERR_INVALID_DN_SYNTAX;
-		}
+	new_values = talloc_array(tmp_ctx, struct ldb_val, el->num_values);
+	if (new_values == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
-		/* note that the DN already has the extended
-		   components from the extended_dn_store module */
-		status = dsdb_get_extended_dn_guid(dsdb_dn->dn, &target_guid, "GUID");
-		if (!NT_STATUS_IS_OK(status) || GUID_all_zero(&target_guid)) {
-			ret = dsdb_module_guid_by_dn(module, dsdb_dn->dn, &target_guid, parent);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-			ret = dsdb_set_extended_dn_guid(dsdb_dn->dn, &target_guid, "GUID");
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-		}
-
-		ret = replmd_build_la_val(el->values, v, dsdb_dn, invocationId,
+	for (i = 0; i < el->num_values; i++) {
+		struct parsed_dn *p = &pdn[i];
+		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
+					  invocationId,
 					  seq_num, seq_num, now, 0, false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
 
+		/* This is the only place we are doing deferred back-links */
 		ret = replmd_add_backlink(module, replmd_private,
-					  schema, guid, &target_guid, true, sa,
+					  schema, guid, &p->guid, true, sa,
 					  false);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
+
+		new_values[i] = *p->v;
 	}
+	el->values = talloc_steal(mem_ctx, new_values);
 
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
@@ -1079,7 +1083,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		if (sa->linkID != 0 && functional_level > DS_DOMAIN_FUNCTION_2000) {
-			ret = replmd_add_fix_la(module, replmd_private, e,
+			ret = replmd_add_fix_la(module, msg->elements,
+						replmd_private, e,
 						ac->seq_num,
 						&ac->our_invocation_id, now,
 						&guid, sa, req);
@@ -1788,12 +1793,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 	return LDB_SUCCESS;
 }
-
-struct parsed_dn {
-	struct dsdb_dn *dsdb_dn;
-	struct GUID guid;
-	struct ldb_val *v;
-};
 
 struct compare_ctx {
 	struct GUID *guid;
