@@ -55,9 +55,6 @@ extern const char *panic_action;
 
 #include "lib/util/memory.h"
 
-#include "../libcli/util/ntstatus.h"
-#include "lib/util/string_wrappers.h"
-
 #include "fault.h"
 
 #include "lib/util/util.h"
