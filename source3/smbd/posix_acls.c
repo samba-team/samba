@@ -2700,9 +2700,9 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 			.attr = ALLOW_ACE,
 			.trustee = sid,
 			.unix_ug = unix_ug,
-			.owner_type = owner_type,
-			.ace_flags = get_pai_flags(pal, ace, is_default_acl)
+			.owner_type = owner_type
 		};
+		ace->ace_flags = get_pai_flags(pal, ace, is_default_acl);
 
 		DLIST_ADD(l_head, ace);
 	}
